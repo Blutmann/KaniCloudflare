@@ -1,3 +1,4 @@
+import { env as cloudflareEnv } from "cloudflare:workers";
 import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
@@ -51,7 +52,11 @@ export default {
       // bundles read process.env during module initialization, so setting it only
       // after import can leave server functions with an empty Supabase config.
       // Preview and production are separate Worker deployments, so values remain scoped.
+      // Prefer the Workers runtime module bindings as a fallback: depending on the
+      // Nitro/TanStack wrapper, the second fetch argument may not expose the raw
+      // binding object to this entry point.
       mirrorRuntimeBindings(env);
+      mirrorRuntimeBindings(cloudflareEnv);
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
       return await normalizeCatastrophicSsrResponse(response);
@@ -79,8 +84,17 @@ function mirrorRuntimeBindings(bindings: unknown): void {
     "RESEND_FROM_EMAIL",
     "KANI_ENVIRONMENT",
   ];
+  const runtimeValues = (globalThis as typeof globalThis & {
+    __KANI_RUNTIME_ENV?: Record<string, string>;
+  }).__KANI_RUNTIME_ENV ?? {};
   for (const name of names) {
     const value = values[name];
-    if (typeof value === "string" && value.trim()) process.env[name] = value;
+    if (typeof value === "string" && value.trim()) {
+      process.env[name] = value;
+      runtimeValues[name] = value;
+    }
   }
+  (globalThis as typeof globalThis & {
+    __KANI_RUNTIME_ENV?: Record<string, string>;
+  }).__KANI_RUNTIME_ENV = runtimeValues;
 }
