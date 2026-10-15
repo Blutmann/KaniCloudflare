@@ -528,6 +528,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      record_appointment_notification_dispatch_error: {
+        Args: {
+          p_appointment_id: string
+          p_claim_token: string
+          p_error: string
+        }
+        Returns: boolean
+      }
       retry_appointment_notification: {
         Args: { p_appointment_id: string }
         Returns: string | null
