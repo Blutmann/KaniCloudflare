@@ -46,6 +46,7 @@ type NotificationPayload = {
 type DispatchResult = {
   sent: boolean;
   status: "SENT" | "ALREADY_SENT" | "IN_PROGRESS" | "FAILED" | "SKIPPED";
+  errorCode?: string;
 };
 
 export const sendAppointmentNotification = createServerFn({ method: "POST" })
@@ -137,23 +138,31 @@ export const sendAppointmentNotification = createServerFn({ method: "POST" })
     } catch (error) {
       const safeMessage = safeErrorMessage(error);
       console.error(`[KANI notification] ${safeMessage}`);
-      if (notificationId) {
-        try {
-          const supabase = await createRequestSupabaseClient();
+      try {
+        const supabase = await createRequestSupabaseClient();
+        if (notificationId) {
           const { error: recordError } = await supabase.rpc("fail_appointment_notification", {
             p_notification_id: notificationId,
             p_claim_token: data.claimToken,
             p_error: safeMessage,
           });
           if (recordError) throw recordError;
-        } catch (recordError) {
-          console.error(
-            `[KANI notification] failed to record failure: ${safeErrorMessage(recordError)}`,
-          );
+        } else {
+          // Persist failures before the claim increments attempts, using the one-time token.
+          const { error: recordError } = await supabase.rpc("record_appointment_notification_dispatch_error", {
+            p_appointment_id: data.appointmentId,
+            p_claim_token: data.claimToken,
+            p_error: safeMessage,
+          });
+          if (recordError) throw recordError;
         }
+      } catch (recordError) {
+        console.error(
+          `[KANI notification] failed to record failure: ${safeErrorMessage(recordError)}`,
+        );
       }
-      // El outbox registra el fallo; nunca se propaga a la transacción de reserva o estado.
-      return { sent: false, status: "FAILED" };
+      // Client-side fallback persists a generic cause if this server function cannot write it.
+      return { sent: false, status: "FAILED", errorCode: safeMessage };
     }
   });
 
