@@ -74,9 +74,12 @@ export const sendAppointmentNotification = createServerFn({ method: "POST" })
       if (event.dispatch_status === "IN_PROGRESS") return { sent: false, status: "IN_PROGRESS" };
       if (!event.recipient_email) throw new Error("NOTIFICATION_RECIPIENT_MISSING");
 
-      const apiKey = getRuntimeEnv("RESEND_API_KEY");
-      const fromEmail = getRuntimeEnv("RESEND_FROM_EMAIL");
-      if (!apiKey || !fromEmail) throw new Error("RESEND_CONFIGURATION_MISSING");
+      // These values must be Worker runtime bindings, not VITE_* build variables.
+      // Trim whitespace so an accidentally blank dashboard value is reported as missing.
+      const apiKey = getRuntimeEnv("RESEND_API_KEY")?.trim();
+      const fromEmail = getRuntimeEnv("RESEND_FROM_EMAIL")?.trim();
+      if (!apiKey) throw new Error("RESEND_API_KEY_MISSING");
+      if (!fromEmail) throw new Error("RESEND_FROM_EMAIL_MISSING");
 
       const payload: NotificationPayload = {
         notificationId: event.notification_id,
@@ -97,10 +100,11 @@ export const sendAppointmentNotification = createServerFn({ method: "POST" })
         transferHolderName: event.transfer_holder_name,
       };
       const email = buildEmail(payload);
-      const environment = getRuntimeEnv("KANI_ENVIRONMENT")?.toUpperCase();
-      const subject = environment && environment !== "PRODUCTION"
-        ? `[${environment}] ${email.subject}`
-        : email.subject;
+      const environment = (getRuntimeEnv("KANI_ENVIRONMENT") ?? "UNCONFIGURED").trim().toUpperCase();
+      // Never let an unlabelled non-production deployment send a production-looking subject.
+      const subject = environment === "PRODUCTION"
+        ? email.subject
+        : `[${environment}] ${email.subject}`;
       const response = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: {
