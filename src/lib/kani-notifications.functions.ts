@@ -173,8 +173,18 @@ function getRuntimeEnv(name: string): string | undefined {
   const runtimeValues = (globalThis as typeof globalThis & {
     __KANI_RUNTIME_ENV?: Record<string, string>;
   }).__KANI_RUNTIME_ENV;
-  const value = runtimeValues?.[name] ??
+  const runtimeValue = runtimeValues?.[name] ??
     (typeof process !== "undefined" ? process.env[name] : undefined);
+
+  // VITE_* values are public configuration and are also supplied to the Cloudflare
+  // build. Use them as a fallback if the split TanStack server-function bundle cannot
+  // see the Worker's runtime bindings. Never fall back to build-time values for secrets
+  // such as RESEND_API_KEY.
+  const buildValue = name === "VITE_SUPABASE_URL" || name === "VITE_SUPABASE_ANON_KEY" ||
+    name === "VITE_SUPABASE_PUBLISHABLE_KEY"
+    ? import.meta.env[name]
+    : undefined;
+  const value = runtimeValue ?? buildValue;
   return typeof value === "string" && value.trim() ? value : undefined;
 }
 
