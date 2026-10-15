@@ -1,0 +1,2 @@
+minimumReleaseAgeExclude:
+  - '@lovable.dev/vite-tanstack-config@2.25.2'

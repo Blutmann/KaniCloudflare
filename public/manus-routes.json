@@ -1,0 +1,12 @@
+{
+  "routes": [
+    { "path": "/", "title": "Kani Barber Studio - Solicitar turno" },
+    { "path": "/reservar", "title": "Kani Barber Studio - Solicitar turno" },
+    { "path": "/estudio", "title": "Kani Barber Studio - Conocé Kani" },
+    { "path": "/case-study", "title": "Kani Barber Studio — Product Design Case Study" },
+    { "path": "/admin", "title": "Kani Barber Studio - Panel de control" },
+    { "path": "/admin/mantenimiento", "title": "Kani Barber Studio - Panel de control" },
+    { "path": "/admin/movil", "title": "Kani Barber Studio - Turnos" },
+    { "path": "/admin/horarios", "title": "Kani Barber Studio - Gestiona tus horarios" }
+  ]
+}
