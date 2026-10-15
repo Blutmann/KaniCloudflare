@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
+import { env as cloudflareEnv } from "cloudflare:workers";
 
 import type { Database } from "@/integrations/supabase/types";
 
@@ -73,9 +74,12 @@ export const sendAppointmentNotification = createServerFn({ method: "POST" })
       if (event.dispatch_status === "IN_PROGRESS") return { sent: false, status: "IN_PROGRESS" };
       if (!event.recipient_email) throw new Error("NOTIFICATION_RECIPIENT_MISSING");
 
-      const apiKey = process.env["RESEND_API_KEY"];
-      const fromEmail = process.env["RESEND_FROM_EMAIL"];
-      if (!apiKey || !fromEmail) throw new Error("RESEND_CONFIGURATION_MISSING");
+      // These values must be Worker runtime bindings, not VITE_* build variables.
+      // Trim whitespace so an accidentally blank dashboard value is reported as missing.
+      const apiKey = getRuntimeEnv("RESEND_API_KEY")?.trim();
+      const fromEmail = getRuntimeEnv("RESEND_FROM_EMAIL")?.trim();
+      if (!apiKey) throw new Error("RESEND_API_KEY_MISSING");
+      if (!fromEmail) throw new Error("RESEND_FROM_EMAIL_MISSING");
 
       const payload: NotificationPayload = {
         notificationId: event.notification_id,
@@ -96,6 +100,11 @@ export const sendAppointmentNotification = createServerFn({ method: "POST" })
         transferHolderName: event.transfer_holder_name,
       };
       const email = buildEmail(payload);
+      const environment = (getRuntimeEnv("KANI_ENVIRONMENT") ?? "UNCONFIGURED").trim().toUpperCase();
+      // Never let an unlabelled non-production deployment send a production-looking subject.
+      const subject = environment === "PRODUCTION"
+        ? email.subject
+        : `[${environment}] ${email.subject}`;
       const response = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: {
@@ -106,7 +115,7 @@ export const sendAppointmentNotification = createServerFn({ method: "POST" })
         body: JSON.stringify({
           from: fromEmail,
           to: [event.recipient_email],
-          subject: email.subject,
+          subject,
           html: email.html,
           text: email.text,
         }),
@@ -149,16 +158,23 @@ export const sendAppointmentNotification = createServerFn({ method: "POST" })
     }
   });
 
+function getRuntimeEnv(name: string): string | undefined {
+  const bindings = cloudflareEnv as unknown as Record<string, string | undefined>;
+  const processValue = typeof process !== "undefined" ? process.env[name] : undefined;
+  return bindings[name] ?? processValue;
+}
+
 async function createRequestSupabaseClient() {
   const [{ createClient }, request] = await Promise.all([
     import("@supabase/supabase-js"),
     Promise.resolve(getRequest()),
   ]);
-  const supabaseUrl = process.env["VITE_SUPABASE_URL"] ?? process.env["SUPABASE_URL"];
+  const supabaseUrl = getRuntimeEnv("SUPABASE_URL") ?? getRuntimeEnv("VITE_SUPABASE_URL");
   const supabaseKey =
-    process.env["VITE_SUPABASE_ANON_KEY"] ??
-    process.env["SUPABASE_ANON_KEY"] ??
-    process.env["SUPABASE_PUBLISHABLE_KEY"];
+    getRuntimeEnv("SUPABASE_ANON_KEY") ??
+    getRuntimeEnv("SUPABASE_PUBLISHABLE_KEY") ??
+    getRuntimeEnv("VITE_SUPABASE_ANON_KEY") ??
+    getRuntimeEnv("VITE_SUPABASE_PUBLISHABLE_KEY");
   if (!supabaseUrl || !supabaseKey) throw new Error("SUPABASE_SERVER_CONFIGURATION_MISSING");
 
   const authorization = request?.headers.get("authorization");
