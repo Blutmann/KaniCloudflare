@@ -189,7 +189,13 @@ async function createRequestSupabaseClient() {
     getRuntimeEnv("SUPABASE_PUBLISHABLE_KEY") ??
     getRuntimeEnv("VITE_SUPABASE_ANON_KEY") ??
     getRuntimeEnv("VITE_SUPABASE_PUBLISHABLE_KEY");
-  if (!supabaseUrl || !supabaseKey) throw new Error("SUPABASE_SERVER_CONFIGURATION_MISSING");
+  if (!supabaseUrl || !supabaseKey) {
+    // Record presence only; never include URLs, API keys, or other secret values.
+    const missing: string[] = [];
+    if (!supabaseUrl) missing.push("SUPABASE_URL_OR_VITE_SUPABASE_URL");
+    if (!supabaseKey) missing.push("SUPABASE_ANON_OR_PUBLISHABLE_KEY");
+    throw new Error(`SUPABASE_SERVER_CONFIGURATION_MISSING:${missing.join(",")}`);
+  }
 
   const authorization = request?.headers.get("authorization");
   return createClient<Database>(supabaseUrl, supabaseKey, {
