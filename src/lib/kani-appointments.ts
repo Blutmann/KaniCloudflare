@@ -86,12 +86,16 @@ async function dispatchAppointmentNotification(appointmentId: string, claimToken
     const result = await sendAppointmentNotification({
       data: { appointmentId, claimToken },
     });
-    if (result.status === 'FAILED') {
-      // Fallback for failures before the server function can claim the outbox row.
+    if (result.status === 'FAILED' || result.status === 'SKIPPED') {
+      // A skipped claim can leave the outbox row PENDING with attempts=0.
+      // Record it so token/claim mismatches are visible instead of silently pending.
       await recordNotificationDispatchError(
         appointmentId,
         claimToken,
-        result.errorCode ?? 'SERVER_NOTIFICATION_FAILED',
+        result.errorCode ??
+          (result.status === 'SKIPPED'
+            ? 'SERVER_NOTIFICATION_SKIPPED'
+            : 'SERVER_NOTIFICATION_FAILED'),
       );
     }
     return result;
