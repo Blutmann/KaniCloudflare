@@ -2,7 +2,6 @@ import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
-import { runWithCloudflareBindings } from "./lib/cloudflare-runtime-env";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -49,9 +48,12 @@ export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
       const handler = await getServerEntry();
-      // Pass the actual per-request Worker bindings through AsyncLocalStorage.
-      // This is reliable even when TanStack server functions run in split bundles.
-      const response = await runWithCloudflareBindings(env, () => handler.fetch(request, env, ctx));
+      // TanStack server-function bundles may not inherit Cloudflare's env module
+      // bindings consistently. Mirror this Worker deployment's runtime bindings
+      // into process.env before dispatching the request. Preview and production
+      // are separate Worker deployments, so their values remain environment-scoped.
+      mirrorRuntimeBindings(env);
+      const response = await handler.fetch(request, env, ctx);
       return await normalizeCatastrophicSsrResponse(response);
     } catch (error) {
       console.error(error);
@@ -62,3 +64,23 @@ export default {
     }
   },
 };
+
+function mirrorRuntimeBindings(bindings: unknown): void {
+  if (typeof bindings !== "object" || bindings === null) return;
+  const values = bindings as Record<string, unknown>;
+  const names = [
+    "SUPABASE_URL",
+    "SUPABASE_ANON_KEY",
+    "SUPABASE_PUBLISHABLE_KEY",
+    "VITE_SUPABASE_URL",
+    "VITE_SUPABASE_ANON_KEY",
+    "VITE_SUPABASE_PUBLISHABLE_KEY",
+    "RESEND_API_KEY",
+    "RESEND_FROM_EMAIL",
+    "KANI_ENVIRONMENT",
+  ];
+  for (const name of names) {
+    const value = values[name];
+    if (typeof value === "string" && value.trim()) process.env[name] = value;
+  }
+}
