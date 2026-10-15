@@ -181,7 +181,7 @@ function getRuntimeEnv(name: string): string | undefined {
   // see the Worker's runtime bindings. Never fall back to build-time values for secrets
   // such as RESEND_API_KEY.
   const buildValue = name === "VITE_SUPABASE_URL" || name === "VITE_SUPABASE_ANON_KEY" ||
-    name === "VITE_SUPABASE_PUBLISHABLE_KEY"
+    name === "VITE_SUPABASE_PUBLISHABLE_KEY" || name === "RESEND_FROM_EMAIL"
     ? import.meta.env[name]
     : undefined;
   const value = runtimeValue ?? buildValue;
