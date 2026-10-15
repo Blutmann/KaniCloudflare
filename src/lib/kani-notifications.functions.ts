@@ -1,6 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
-import { env as cloudflareEnv } from "cloudflare:workers";
 
 import type { Database } from "@/integrations/supabase/types";
 
@@ -159,9 +158,11 @@ export const sendAppointmentNotification = createServerFn({ method: "POST" })
   });
 
 function getRuntimeEnv(name: string): string | undefined {
-  const bindings = cloudflareEnv as unknown as Record<string, string | undefined>;
-  const processValue = typeof process !== "undefined" ? process.env[name] : undefined;
-  return bindings[name] ?? processValue;
+  // src/server.ts mirrors the current Worker's runtime bindings into process.env
+  // before TanStack dispatches the request. Avoid importing "cloudflare:workers"
+  // here: TanStack splits server functions into separate bundles, where that
+  // runtime-only module can fail to load before the notification handler starts.
+  return typeof process !== "undefined" ? process.env[name] : undefined;
 }
 
 async function createRequestSupabaseClient() {
