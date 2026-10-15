@@ -60,12 +60,18 @@ export async function createRealAppointment(input: CreateAppointmentInput) {
   const row = data?.[0];
   if (!row) throw new Error('La reserva no devolvió un resultado válido.');
   if (row.notification_claim_token) {
-    void sendAppointmentNotification({
-      data: {
-        appointmentId: row.appointment_id,
-        claimToken: row.notification_claim_token,
-      },
-    }).catch(error => console.error('[KANI notification] dispatch request failed', error));
+    // Await dispatch so the browser keeps the server-function request alive.
+    // A notification failure must never invalidate the appointment request.
+    try {
+      await sendAppointmentNotification({
+        data: {
+          appointmentId: row.appointment_id,
+          claimToken: row.notification_claim_token,
+        },
+      });
+    } catch (error) {
+      console.error('[KANI notification] dispatch request failed', error);
+    }
   }
   return row;
 }
@@ -126,12 +132,17 @@ export async function updateRealAppointmentStatus(id: string, status: 'CONFIRMED
   if (error) throw error;
   const row = data?.[0];
   if (row?.notification_claim_token) {
-    void sendAppointmentNotification({
-      data: {
-        appointmentId: id,
-        claimToken: row.notification_claim_token,
-      },
-    }).catch(error => console.error('[KANI notification] dispatch request failed', error));
+    // Await dispatch so the request isn't abandoned during client navigation.
+    try {
+      await sendAppointmentNotification({
+        data: {
+          appointmentId: id,
+          claimToken: row.notification_claim_token,
+        },
+      });
+    } catch (error) {
+      console.error('[KANI notification] dispatch request failed', error);
+    }
   }
   return row?.appointment_status;
 }
