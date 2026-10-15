@@ -62,18 +62,37 @@ export async function createRealAppointment(input: CreateAppointmentInput) {
   if (row.notification_claim_token) {
     // Await dispatch so the browser keeps the server-function request alive.
     // A notification failure must never invalidate the appointment request.
-    try {
-      await sendAppointmentNotification({
-        data: {
-          appointmentId: row.appointment_id,
-          claimToken: row.notification_claim_token,
-        },
-      });
-    } catch (error) {
-      console.error('[KANI notification] dispatch request failed', error);
-    }
+    await dispatchAppointmentNotification(row.appointment_id, row.notification_claim_token);
   }
   return row;
+}
+
+async function dispatchAppointmentNotification(appointmentId: string, claimToken: string) {
+  try {
+    const result = await sendAppointmentNotification({
+      data: { appointmentId, claimToken },
+    });
+    if (result.status === 'FAILED') {
+      // Fallback for failures before the server function can claim the outbox row.
+      const { error } = await supabase.rpc('record_appointment_notification_dispatch_error', {
+        p_appointment_id: appointmentId,
+        p_claim_token: claimToken,
+        p_error: result.errorCode ?? 'SERVER_NOTIFICATION_FAILED',
+      });
+      if (error) console.error('[KANI notification] fallback diagnostic failed', error.message);
+    }
+    return result;
+  } catch (error) {
+    // The server function may fail before its handler runs (module/transport error).
+    console.error('[KANI notification] dispatch request failed', error);
+    const { error: recordError } = await supabase.rpc('record_appointment_notification_dispatch_error', {
+      p_appointment_id: appointmentId,
+      p_claim_token: claimToken,
+      p_error: 'SERVER_FUNCTION_DISPATCH_FAILED',
+    });
+    if (recordError) console.error('[KANI notification] fallback diagnostic failed', recordError.message);
+    return { sent: false, status: 'FAILED' as const };
+  }
 }
 
 export async function readRealAppointments() {
@@ -133,16 +152,7 @@ export async function updateRealAppointmentStatus(id: string, status: 'CONFIRMED
   const row = data?.[0];
   if (row?.notification_claim_token) {
     // Await dispatch so the request isn't abandoned during client navigation.
-    try {
-      await sendAppointmentNotification({
-        data: {
-          appointmentId: id,
-          claimToken: row.notification_claim_token,
-        },
-      });
-    } catch (error) {
-      console.error('[KANI notification] dispatch request failed', error);
-    }
+    await dispatchAppointmentNotification(id, row.notification_claim_token);
   }
   return row?.appointment_status;
 }
@@ -153,9 +163,7 @@ export async function retryRealAppointmentNotification(id: string) {
   });
   if (error) throw error;
   if (!claimToken) return 'ALREADY_SENT' as const;
-  return (await sendAppointmentNotification({
-    data: { appointmentId: id, claimToken },
-  })).status;
+  return (await dispatchAppointmentNotification(id, claimToken)).status;
 }
 
 function serviceIdForName(name: string): ServiceId {
