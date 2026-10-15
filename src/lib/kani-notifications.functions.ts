@@ -167,11 +167,15 @@ export const sendAppointmentNotification = createServerFn({ method: "POST" })
   });
 
 function getRuntimeEnv(name: string): string | undefined {
-  // src/server.ts mirrors the current Worker's runtime bindings into process.env
-  // before TanStack dispatches the request. Avoid importing "cloudflare:workers"
-  // here: TanStack splits server functions into separate bundles, where that
-  // runtime-only module can fail to load before the notification handler starts.
-  return typeof process !== "undefined" ? process.env[name] : undefined;
+  // src/server.ts reads the Worker's runtime bindings before TanStack dispatches
+  // the request and stores them in a shared, non-secret-accessible app runtime map.
+  // The process.env fallback remains for local development and compatible runtimes.
+  const runtimeValues = (globalThis as typeof globalThis & {
+    __KANI_RUNTIME_ENV?: Record<string, string>;
+  }).__KANI_RUNTIME_ENV;
+  const value = runtimeValues?.[name] ??
+    (typeof process !== "undefined" ? process.env[name] : undefined);
+  return typeof value === "string" && value.trim() ? value : undefined;
 }
 
 async function createRequestSupabaseClient() {
