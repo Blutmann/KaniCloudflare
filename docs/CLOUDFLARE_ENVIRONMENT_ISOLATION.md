@@ -10,11 +10,11 @@
 
 Cambiar el nombre del entorno o el asunto del email **no aísla** las reservas. Para que las pruebas no aparezcan en el panel online ni bloqueen horarios reales, Cloudflare Preview debe usar un **proyecto Supabase distinto** del de producción.
 
-Crear un proyecto Supabase DEV e instalar en él las migraciones SQL de este repositorio antes de probar reservas. No reutilizar la URL ni la clave pública de producción en Preview.
+El proyecto Supabase DEV de pruebas ya existe: Cloudflare Preview debe apuntar a ese proyecto e incluir las migraciones SQL necesarias. No reutilizar la URL ni la clave pública de producción en Preview.
 
 ## Variables de Cloudflare
 
-Configurar valores separados en los ámbitos Production y Preview, tanto en variables de build como en variables y secretos de runtime cuando corresponda.
+Configurar valores separados en los ámbitos Production y Preview. Importante: las funciones del servidor necesitan las variables en el entorno de runtime del Worker; que aparezcan solamente en “Builds” no alcanza. Las variables VITE_* de cliente se usan durante el build y no deben contener secretos.
 
 ### Build — necesarias para el cliente web
 
@@ -46,4 +46,4 @@ No guardar ni commitear claves secretas en el repositorio. Las claves Supabase d
 
 ## Notificaciones en Cloudflare
 
-Las funciones del servidor leen secretos desde los bindings de runtime de Cloudflare, con fallback a `process.env` para entornos compatibles. Esto evita depender exclusivamente de que Cloudflare copie los bindings a `process.env`.
+Las funciones del servidor leen `RESEND_API_KEY` y `RESEND_FROM_EMAIL` desde los bindings de runtime de Cloudflare, con fallback a `process.env` para entornos compatibles. Si falta alguna, el registro de notificación indicará específicamente `RESEND_API_KEY_MISSING` o `RESEND_FROM_EMAIL_MISSING`. El asunto solo queda sin prefijo cuando `KANI_ENVIRONMENT=PRODUCTION`; si la variable falta, el email se etiqueta `[UNCONFIGURED]` para no confundirlo con producción.
