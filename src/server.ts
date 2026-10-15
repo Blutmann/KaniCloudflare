@@ -19,7 +19,7 @@ async function getServerEntry(): Promise<ServerEntry> {
 }
 
 // h3 swallows in-handler throws into a normal 500 Response with body
-// {"unhandled":true,"message":"HTTPError"} — try/catch alone never fires for those.
+// { "unhandled": true, "message": "HTTPError" } — try/catch alone never fires for those.
 async function normalizeCatastrophicSsrResponse(response: Response): Promise<Response> {
   if (response.status < 500) return response;
   const contentType = response.headers.get("content-type") ?? "";
@@ -48,6 +48,11 @@ export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
       const handler = await getServerEntry();
+      // TanStack server-function bundles may not inherit Cloudflare's env module
+      // bindings consistently. Mirror this Worker deployment's runtime bindings
+      // into process.env before dispatching the request. Preview and production
+      // are separate Worker deployments, so their values remain environment-scoped.
+      mirrorRuntimeBindings(env);
       const response = await handler.fetch(request, env, ctx);
       return await normalizeCatastrophicSsrResponse(response);
     } catch (error) {
@@ -59,3 +64,23 @@ export default {
     }
   },
 };
+
+function mirrorRuntimeBindings(bindings: unknown): void {
+  if (typeof bindings !== "object" || bindings === null) return;
+  const values = bindings as Record<string, unknown>;
+  const names = [
+    "SUPABASE_URL",
+    "SUPABASE_ANON_KEY",
+    "SUPABASE_PUBLISHABLE_KEY",
+    "VITE_SUPABASE_URL",
+    "VITE_SUPABASE_ANON_KEY",
+    "VITE_SUPABASE_PUBLISHABLE_KEY",
+    "RESEND_API_KEY",
+    "RESEND_FROM_EMAIL",
+    "KANI_ENVIRONMENT",
+  ];
+  for (const name of names) {
+    const value = values[name];
+    if (typeof value === "string" && value.trim()) process.env[name] = value;
+  }
+}
