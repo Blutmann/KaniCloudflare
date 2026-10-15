@@ -47,12 +47,12 @@ function isH3SwallowedErrorBody(body: string): boolean {
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
-      const handler = await getServerEntry();
-      // TanStack server-function bundles may not inherit Cloudflare's env module
-      // bindings consistently. Mirror this Worker deployment's runtime bindings
-      // into process.env before dispatching the request. Preview and production
-      // are separate Worker deployments, so their values remain environment-scoped.
+      // Mirror bindings before importing TanStack's server entry. Some server
+      // bundles read process.env during module initialization, so setting it only
+      // after import can leave server functions with an empty Supabase config.
+      // Preview and production are separate Worker deployments, so values remain scoped.
       mirrorRuntimeBindings(env);
+      const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
       return await normalizeCatastrophicSsrResponse(response);
     } catch (error) {
