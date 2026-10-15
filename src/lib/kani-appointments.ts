@@ -67,6 +67,20 @@ export async function createRealAppointment(input: CreateAppointmentInput) {
   return row;
 }
 
+async function recordNotificationDispatchError(appointmentId: string, claimToken: string, errorCode: string) {
+  try {
+    const { error } = await supabase.rpc('record_appointment_notification_dispatch_error', {
+      p_appointment_id: appointmentId,
+      p_claim_token: claimToken,
+      p_error: errorCode,
+    });
+    if (error) console.error('[KANI notification] fallback diagnostic failed', error.message);
+  } catch (error) {
+    // Diagnostics must never turn a saved appointment into a failed booking flow.
+    console.error('[KANI notification] fallback diagnostic failed', error);
+  }
+}
+
 async function dispatchAppointmentNotification(appointmentId: string, claimToken: string) {
   try {
     const result = await sendAppointmentNotification({
@@ -74,23 +88,21 @@ async function dispatchAppointmentNotification(appointmentId: string, claimToken
     });
     if (result.status === 'FAILED') {
       // Fallback for failures before the server function can claim the outbox row.
-      const { error } = await supabase.rpc('record_appointment_notification_dispatch_error', {
-        p_appointment_id: appointmentId,
-        p_claim_token: claimToken,
-        p_error: result.errorCode ?? 'SERVER_NOTIFICATION_FAILED',
-      });
-      if (error) console.error('[KANI notification] fallback diagnostic failed', error.message);
+      await recordNotificationDispatchError(
+        appointmentId,
+        claimToken,
+        result.errorCode ?? 'SERVER_NOTIFICATION_FAILED',
+      );
     }
     return result;
   } catch (error) {
     // The server function may fail before its handler runs (module/transport error).
     console.error('[KANI notification] dispatch request failed', error);
-    const { error: recordError } = await supabase.rpc('record_appointment_notification_dispatch_error', {
-      p_appointment_id: appointmentId,
-      p_claim_token: claimToken,
-      p_error: 'SERVER_FUNCTION_DISPATCH_FAILED',
-    });
-    if (recordError) console.error('[KANI notification] fallback diagnostic failed', recordError.message);
+    await recordNotificationDispatchError(
+      appointmentId,
+      claimToken,
+      'SERVER_FUNCTION_DISPATCH_FAILED',
+    );
     return { sent: false, status: 'FAILED' as const };
   }
 }
