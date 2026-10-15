@@ -8,6 +8,9 @@ import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
 export default defineConfig({
   vite: {
+    // The sender address is non-secret and must be available to the server-function bundle
+    // as a build-time fallback when Cloudflare runtime bindings are not propagated.
+    envPrefix: ["VITE_", "RESEND_FROM_EMAIL"],
     server: {
       allowedHosts: ['.manus.computer'],
     },
