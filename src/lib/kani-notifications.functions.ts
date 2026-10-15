@@ -197,7 +197,7 @@ async function createRequestSupabaseClient() {
 }
 
 function buildEmail(payload: NotificationPayload) {
-  const date = new Date(`${payload.bookingDate}T12:00:00:00Z`).toLocaleDateString("es-AR", {
+  const date = new Date(`${payload.bookingDate}T12:00:00Z`).toLocaleDateString("es-AR", {
     timeZone: "America/Argentina/Buenos_Aires",
     day: "2-digit",
     month: "2-digit",
