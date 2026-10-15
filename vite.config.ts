@@ -11,6 +11,13 @@ export default defineConfig({
     server: {
       allowedHosts: ['.manus.computer'],
     },
+    // cloudflare:workers is a Workers runtime built-in, not an npm package.
+    // Keep it external so Vite/Rolldown doesn't try to resolve it during build.
+    build: {
+      rolldownOptions: {
+        external: ["cloudflare:workers"],
+      },
+    },
     optimizeDeps: {
       // Prebundle the complete UI dependency set together. Discovering these
       // during navigation can invalidate React URLs in an already-open preview.
