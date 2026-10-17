@@ -60,7 +60,7 @@ export const createBookingOrderFn = createServerFn({ method: "POST" })
       // URL del webhook registrada en Mercado Pago Developers
       const notificationUrl =
         getRuntimeEnv("MERCADOPAGO_NOTIFICATION_URL") ??
-        "https://kanibarberstudio-cloudflare.tomasblutmannliriumprive.workers.dev/api/webhook/mercadopago";
+        "https://kanibarberstudio-cloudflare.kanibarber.workers.dev/api/webhook/mercadopago";
 
       const orderResult = await createMercadoPagoOrder({
         input: {
