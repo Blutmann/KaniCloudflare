@@ -59,6 +59,76 @@ export default {
       mirrorRuntimeBindings(cloudflareEnv);
 
       const url = new URL(request.url);
+      if (url.pathname === "/api/webhook/mercadopago") {
+        if (request.method === "POST") {
+          try {
+            const { verifyMercadoPagoWebhookSignature, getMercadoPagoOrder, isOrderFullyApproved } =
+              await import("./lib/kani-mercadopago");
+            const webhookSecret =
+              process.env.MERCADOPAGO_WEBHOOK_SECRET ??
+              (globalThis as typeof globalThis & {
+                __KANI_RUNTIME_ENV?: Record<string, string>;
+              }).__KANI_RUNTIME_ENV?.MERCADOPAGO_WEBHOOK_SECRET;
+
+            const xSignature = request.headers.get("x-signature");
+            const xRequestId = request.headers.get("x-request-id");
+            const dataId = url.searchParams.get("data.id") ?? url.searchParams.get("id");
+
+            // Si está configurado el secreto, verificar firma HMAC-SHA256 obligatoriamente
+            if (webhookSecret && webhookSecret.trim()) {
+              const isValidSignature = verifyMercadoPagoWebhookSignature({
+                xSignature,
+                xRequestId,
+                dataId,
+                secret: webhookSecret,
+              });
+              if (!isValidSignature) {
+                console.warn("[Mercado Pago Webhook] Firma inválida rechazada");
+                return new Response("Invalid signature", { status: 401 });
+              }
+            } else {
+              console.warn("[Mercado Pago Webhook] MERCADOPAGO_WEBHOOK_SECRET no configurado, omitiendo validación de firma");
+            }
+
+            // Consultar el estado real de la orden en la API si dataId existe
+            const accessToken =
+              process.env.MERCADOPAGO_ACCESS_TOKEN ??
+              (globalThis as typeof globalThis & {
+                __KANI_RUNTIME_ENV?: Record<string, string>;
+              }).__KANI_RUNTIME_ENV?.MERCADOPAGO_ACCESS_TOKEN;
+
+            if (dataId && accessToken) {
+              const orderResult = await getMercadoPagoOrder({
+                orderId: dataId,
+                accessToken,
+              });
+
+              if (orderResult.success && orderResult.order) {
+                const order = orderResult.order;
+                const appointmentId = order.external_reference;
+
+                if (appointmentId && isOrderFullyApproved(order)) {
+                  console.log(`[Mercado Pago Webhook] Orden ${order.id} aprobada para turno ${appointmentId}. Confirmando...`);
+                  const { updateRealAppointmentStatus } = await import("./lib/kani-appointments");
+                  try {
+                    await updateRealAppointmentStatus(appointmentId, "CONFIRMED");
+                    console.log(`[Mercado Pago Webhook] Turno ${appointmentId} confirmado automáticamente con éxito.`);
+                  } catch (updateErr) {
+                    console.error(`[Mercado Pago Webhook] Error al confirmar turno ${appointmentId}:`, updateErr);
+                  }
+                }
+              }
+            }
+
+            return new Response("OK", { status: 200 });
+          } catch (err) {
+            console.error("[Mercado Pago Webhook Error]:", err);
+            return new Response("Internal Server Error", { status: 500 });
+          }
+        }
+        return new Response("Method Not Allowed", { status: 405 });
+      }
+
       if (url.pathname === "/api/webhook/whatsapp") {
         if (request.method === "GET") {
           const { handleWhatsAppWebhookVerification } = await import("./lib/kani-whatsapp");
@@ -112,6 +182,9 @@ function mirrorRuntimeBindings(bindings: unknown): void {
     "WHATSAPP_ACCESS_TOKEN",
     "WHATSAPP_WEBHOOK_VERIFY_TOKEN",
     "WHATSAPP_TEMPLATE_NAME",
+    "MERCADOPAGO_ACCESS_TOKEN",
+    "MERCADOPAGO_PUBLIC_KEY",
+    "MERCADOPAGO_WEBHOOK_SECRET",
   ];
   const runtimeValues = (globalThis as typeof globalThis & {
     __KANI_RUNTIME_ENV?: Record<string, string>;
