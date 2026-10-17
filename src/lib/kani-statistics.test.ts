@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   aggregateClientsDirectory,
+  classifyAppointmentTime,
   computeDailyDemand,
   computeHourlyDistribution,
   computeKpiSummary,
@@ -106,7 +107,7 @@ describe('Statistics Module Unit Tests', () => {
     });
     expect(res1).toHaveLength(3);
 
-    // Morning slot filter only (< 14:00)
+    // Morning slot filter only (10:00 <= hora < 12:00)
     const resMorning = filterStatisticsAppointments(appointments, {
       dateRange: null,
       timeSlotFilter: 'MORNING',
@@ -117,7 +118,7 @@ describe('Statistics Module Unit Tests', () => {
     });
     expect(resMorning.map((a) => a.id)).toEqual(['1', '3']);
 
-    // Afternoon slot filter (>= 14:00)
+    // Afternoon slot filter (12:00 <= hora < 18:00)
     const resAfternoon = filterStatisticsAppointments(appointments, {
       dateRange: null,
       timeSlotFilter: 'AFTERNOON',
@@ -127,6 +128,17 @@ describe('Statistics Module Unit Tests', () => {
       permittedBarberIds: permitted,
     });
     expect(resAfternoon.map((a) => a.id)).toEqual(['2']);
+
+    // Night slot filter (18:00 <= hora < 20:00)
+    const resNight = filterStatisticsAppointments(appointments, {
+      dateRange: null,
+      timeSlotFilter: 'NIGHT',
+      barberFilter: 'Todos',
+      role: 'ADMIN',
+      profileBarberId: null,
+      permittedBarberIds: permitted,
+    });
+    expect(resNight.map((a) => a.id)).toEqual([]);
 
     // Barber role scope
     const resBarber = filterStatisticsAppointments(appointments, {
@@ -138,6 +150,21 @@ describe('Statistics Module Unit Tests', () => {
       permittedBarberIds: permitted,
     });
     expect(resBarber.map((a) => a.id)).toEqual(['1', '2']);
+  });
+
+  it('classifyAppointmentTime categorizes slots and tests exact boundary conditions', () => {
+    // Exact boundaries
+    expect(classifyAppointmentTime('09:59')).toBe('OUTSIDE');
+    expect(classifyAppointmentTime('10:00')).toBe('MORNING');
+    expect(classifyAppointmentTime('11:59')).toBe('MORNING');
+    expect(classifyAppointmentTime('12:00')).toBe('AFTERNOON');
+    expect(classifyAppointmentTime('17:59')).toBe('AFTERNOON');
+    expect(classifyAppointmentTime('18:00')).toBe('NIGHT');
+    expect(classifyAppointmentTime('19:59')).toBe('NIGHT');
+    expect(classifyAppointmentTime('20:00')).toBe('OUTSIDE');
+    expect(classifyAppointmentTime('21:30')).toBe('OUTSIDE');
+    expect(classifyAppointmentTime('')).toBe('OUTSIDE');
+    expect(classifyAppointmentTime('invalid')).toBe('OUTSIDE');
   });
 
   it('computeKpiSummary calculates totals, statuses, and completion rate accurately', () => {
@@ -175,21 +202,24 @@ describe('Statistics Module Unit Tests', () => {
     expect(demand.points.find((p) => p.date === '2026-10-15')?.isPeak).toBe(false);
   });
 
-  it('computeHourlyDistribution identifies morning vs afternoon and peak hour', () => {
+  it('computeHourlyDistribution identifies morning, afternoon, night and peak hour', () => {
     const list: RealAppointment[] = [
-      makeMockAppointment({ id: '1', time: '10:00' }),
-      makeMockAppointment({ id: '2', time: '11:00' }),
-      makeMockAppointment({ id: '3', time: '11:30' }),
-      makeMockAppointment({ id: '4', time: '16:00' }),
+      makeMockAppointment({ id: '1', time: '10:00' }), // MORNING
+      makeMockAppointment({ id: '2', time: '11:00' }), // MORNING
+      makeMockAppointment({ id: '3', time: '14:00' }), // AFTERNOON
+      makeMockAppointment({ id: '4', time: '16:00' }), // AFTERNOON
+      makeMockAppointment({ id: '5', time: '18:30' }), // NIGHT
+      makeMockAppointment({ id: '6', time: '19:00' }), // NIGHT
     ];
 
     const hourly = computeHourlyDistribution(list);
-    expect(hourly.morningCount).toBe(3);
-    expect(hourly.morningPercentage).toBe(75);
-    expect(hourly.afternoonCount).toBe(1);
-    expect(hourly.afternoonPercentage).toBe(25);
-    expect(hourly.peakHour).toBe('11:00');
-    expect(hourly.peakHourCount).toBe(2);
+    expect(hourly.morningCount).toBe(2);
+    expect(hourly.morningPercentage).toBe(33);
+    expect(hourly.afternoonCount).toBe(2);
+    expect(hourly.afternoonPercentage).toBe(33);
+    expect(hourly.nightCount).toBe(2);
+    expect(hourly.nightPercentage).toBe(33);
+    expect(hourly.peakHourCount).toBe(1);
   });
 
   it('computeServiceDemand returns ranking with percentages and revenues', () => {

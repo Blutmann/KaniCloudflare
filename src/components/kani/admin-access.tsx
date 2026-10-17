@@ -29,11 +29,11 @@ export function AdminAccess({ onAuthenticated }: { onAuthenticated: () => void }
   }
 
   return (
-    <main className="site-container admin-page">
-      <div className="mx-auto max-w-sm py-12">
+    <main className="site-container admin-page admin-login-page">
+      <div className="admin-login-shell mx-auto max-w-sm">
         <img src={kaniSymbol} alt="Kani Barber Studio" width={1724} height={1752} className="admin-login-symbol" />
-        <h1 className="eyebrow mt-8 text-center">ADMINISTRACIÓN</h1>
-        <form className="mt-8 space-y-6" onSubmit={submit}>
+        <h1 className="eyebrow admin-login-title text-center">ADMINISTRACIÓN</h1>
+        <form className="admin-login-form space-y-5" onSubmit={submit}>
           <label className="field-label">
             Email
             <Input name="email" type="email" autoComplete="username" required disabled={busy} />
@@ -43,7 +43,7 @@ export function AdminAccess({ onAuthenticated }: { onAuthenticated: () => void }
             <Input name="password" type="password" autoComplete="current-password" required maxLength={1024} disabled={busy} />
           </label>
           {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
-          <Button type="submit" className="h-12 w-full" disabled={busy}>
+          <Button type="submit" className="admin-login-submit h-12 w-full" disabled={busy}>
             {busy ? 'VERIFICANDO…' : 'INGRESAR'}
             <ArrowRight />
           </Button>

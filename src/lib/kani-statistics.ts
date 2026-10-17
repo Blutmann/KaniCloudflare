@@ -12,7 +12,42 @@ export type StatisticsDatePreset =
   | 'SPECIFIC'
   | 'CUSTOM';
 
-export type TimeSlotFilter = 'ALL' | 'MORNING' | 'AFTERNOON';
+export type TimeSlotCategory = 'MORNING' | 'AFTERNOON' | 'NIGHT' | 'OUTSIDE';
+
+export type TimeSlotFilter = 'ALL' | 'MORNING' | 'AFTERNOON' | 'NIGHT';
+
+/**
+ * Categoriza el horario de una reserva según las 3 franjas oficiales:
+ * - Mañana: 10:00 a 12:00 (10:00 <= hora < 12:00)
+ * - Tarde: 12:00 a 18:00 (12:00 <= hora < 18:00)
+ * - Noche: 18:00 a 20:00 (18:00 <= hora < 20:00)
+ * - Fuera de franja: turnos especiales antes de las 10:00 o a partir de las 20:00.
+ */
+export function classifyAppointmentTime(timeStr: string): TimeSlotCategory {
+  if (!timeStr) return 'OUTSIDE';
+  const parts = timeStr.trim().split(':');
+  if (parts.length < 2) return 'OUTSIDE';
+  const hour = parseInt(parts[0], 10);
+  const minute = parseInt(parts[1], 10);
+  if (Number.isNaN(hour) || Number.isNaN(minute)) return 'OUTSIDE';
+
+  const totalMinutes = hour * 60 + minute;
+  const morningStart = 10 * 60; // 10:00
+  const afternoonStart = 12 * 60; // 12:00
+  const nightStart = 18 * 60; // 18:00
+  const nightEnd = 20 * 60; // 20:00
+
+  if (totalMinutes >= morningStart && totalMinutes < afternoonStart) {
+    return 'MORNING';
+  }
+  if (totalMinutes >= afternoonStart && totalMinutes < nightStart) {
+    return 'AFTERNOON';
+  }
+  if (totalMinutes >= nightStart && totalMinutes < nightEnd) {
+    return 'NIGHT';
+  }
+  return 'OUTSIDE';
+}
 
 export const statisticsPresetLabels: Record<StatisticsDatePreset, string> = {
   LAST_7_DAYS: 'Últimos 7 días',
@@ -100,10 +135,8 @@ export function filterStatisticsAppointments(
 
     // Time Slot Filter
     if (options.timeSlotFilter !== 'ALL') {
-      const hour = parseInt(appointment.time.slice(0, 2), 10);
-      if (Number.isNaN(hour)) return false;
-      if (options.timeSlotFilter === 'MORNING' && hour >= 14) return false;
-      if (options.timeSlotFilter === 'AFTERNOON' && hour < 14) return false;
+      const category = classifyAppointmentTime(appointment.time);
+      if (category !== options.timeSlotFilter) return false;
     }
 
     return true;
@@ -221,6 +254,9 @@ export type HourlyDistributionSummary = {
   morningPercentage: number;
   afternoonCount: number;
   afternoonPercentage: number;
+  nightCount: number;
+  nightPercentage: number;
+  outsideCount: number;
   peakHour: string | null;
   peakHourCount: number;
   slots: HourlyDemandPoint[];
@@ -230,19 +266,23 @@ export function computeHourlyDistribution(appointments: RealAppointment[]): Hour
   const countsByHour = new Map<string, number>();
   let morningCount = 0;
   let afternoonCount = 0;
+  let nightCount = 0;
+  let outsideCount = 0;
 
   for (const appointment of appointments) {
     const timePrefix = appointment.time.slice(0, 2);
     const hourSlot = `${timePrefix}:00`;
     countsByHour.set(hourSlot, (countsByHour.get(hourSlot) ?? 0) + 1);
 
-    const hourNum = parseInt(timePrefix, 10);
-    if (!Number.isNaN(hourNum)) {
-      if (hourNum < 14) {
-        morningCount++;
-      } else {
-        afternoonCount++;
-      }
+    const category = classifyAppointmentTime(appointment.time);
+    if (category === 'MORNING') {
+      morningCount++;
+    } else if (category === 'AFTERNOON') {
+      afternoonCount++;
+    } else if (category === 'NIGHT') {
+      nightCount++;
+    } else {
+      outsideCount++;
     }
   }
 
@@ -274,6 +314,9 @@ export function computeHourlyDistribution(appointments: RealAppointment[]): Hour
     morningPercentage: total > 0 ? Math.round((morningCount / total) * 100) : 0,
     afternoonCount,
     afternoonPercentage: total > 0 ? Math.round((afternoonCount / total) * 100) : 0,
+    nightCount,
+    nightPercentage: total > 0 ? Math.round((nightCount / total) * 100) : 0,
+    outsideCount,
     peakHour,
     peakHourCount,
     slots,

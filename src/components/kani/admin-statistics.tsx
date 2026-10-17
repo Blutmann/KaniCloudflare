@@ -14,6 +14,7 @@ import {
   Scissors,
   Sun,
   Sunset,
+  Moon,
   TrendingUp,
   Users,
   XCircle,
@@ -238,25 +239,30 @@ export function AdminStatistics() {
           </span>
         </div>
 
-        {/* Quick Date Presets */}
-        <div className="flex flex-wrap gap-1.5">
-          {presets.map((preset) => {
-            const active = datePreset === preset;
-            return (
-              <button
-                key={preset}
-                type="button"
-                onClick={() => setDatePreset(preset)}
-                className={`text-xs px-2.5 py-1 rounded-md font-medium transition-colors border ${
-                  active
-                    ? 'stat-preset-btn-active shadow-xs'
-                    : 'bg-background hover:bg-muted/40 text-muted-foreground hover:text-foreground border-border'
-                }`}
-              >
-                {statisticsPresetLabels[preset]}
-              </button>
-            );
-          })}
+        {/* Cohesive Grouped Period Presets Container */}
+        <div>
+          <label className="block text-xs font-medium text-muted-foreground mb-2">
+            Período predefinido
+          </label>
+          <div className="flex flex-wrap items-center gap-1.5 p-1.5 rounded-lg border border-border bg-background/50">
+            {presets.map((preset) => {
+              const active = datePreset === preset;
+              return (
+                <button
+                  key={preset}
+                  type="button"
+                  onClick={() => setDatePreset(preset)}
+                  className={`text-xs px-2.5 py-1 rounded-md font-medium transition-all ${
+                    active
+                      ? 'bg-foreground text-background shadow-xs font-semibold'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
+                  }`}
+                >
+                  {statisticsPresetLabels[preset]}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* Dynamic Filters Row */}
@@ -311,7 +317,7 @@ export function AdminStatistics() {
             </>
           )}
 
-          {/* Time Slot Filter */}
+          {/* Time Slot Filter - 3 categorized slots + ALL */}
           <div>
             <label htmlFor="stat-slot-filter" className="block text-muted-foreground mb-1">
               Franja horaria
@@ -323,8 +329,9 @@ export function AdminStatistics() {
               className="select-control w-full h-8 px-2 text-xs bg-background border-border rounded-md"
             >
               <option value="ALL">Todas las franjas</option>
-              <option value="MORNING">Mañana (09:00 - 13:59)</option>
-              <option value="AFTERNOON">Tarde (14:00 - 21:00)</option>
+              <option value="MORNING">Mañana (10:00 a 12:00)</option>
+              <option value="AFTERNOON">Tarde (12:00 a 18:00)</option>
+              <option value="NIGHT">Noche (18:00 a 20:00)</option>
             </select>
           </div>
 
@@ -521,40 +528,61 @@ export function AdminStatistics() {
                 <span>Demanda por Horario</span>
               </h3>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Distribución por turno (mañana vs. tarde) y horas pico.
+                Distribución por franja horaria (mañana, tarde y noche) y horas pico.
               </p>
             </div>
 
-            {/* Morning vs Afternoon Summary */}
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <div className="p-2.5 rounded-lg bg-background border border-border">
-                <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
-                  <Sun size={14} className="text-amber-500" />
-                  <span>Mañana</span>
+            {/* Morning vs Afternoon vs Night Summary (3 categories) */}
+            <div className="grid grid-cols-3 gap-2 text-xs">
+              {/* Mañana: 10:00 a 12:00 */}
+              <div className="p-2.5 rounded-lg bg-background border border-border flex flex-col justify-between">
+                <div className="flex items-center gap-1 text-muted-foreground mb-1">
+                  <Sun size={13} className="text-amber-500 shrink-0" />
+                  <span className="truncate">Mañana</span>
                 </div>
-                <div className="flex items-baseline justify-between">
+                <div className="flex items-baseline justify-between mt-1">
                   <strong className="text-base text-foreground font-semibold">
                     {hourlyDemand.morningCount}
                   </strong>
-                  <span className="text-muted-foreground font-medium">
+                  <span className="text-[11px] text-muted-foreground font-medium">
                     {hourlyDemand.morningPercentage}%
                   </span>
                 </div>
+                <span className="text-[10px] text-muted-foreground/75 mt-0.5">10:00 - 12:00</span>
               </div>
 
-              <div className="p-2.5 rounded-lg bg-background border border-border">
-                <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
-                  <Sunset size={14} className="text-indigo-400" />
-                  <span>Tarde</span>
+              {/* Tarde: 12:00 a 18:00 */}
+              <div className="p-2.5 rounded-lg bg-background border border-border flex flex-col justify-between">
+                <div className="flex items-center gap-1 text-muted-foreground mb-1">
+                  <Sunset size={13} className="text-indigo-400 shrink-0" />
+                  <span className="truncate">Tarde</span>
                 </div>
-                <div className="flex items-baseline justify-between">
+                <div className="flex items-baseline justify-between mt-1">
                   <strong className="text-base text-foreground font-semibold">
                     {hourlyDemand.afternoonCount}
                   </strong>
-                  <span className="text-muted-foreground font-medium">
+                  <span className="text-[11px] text-muted-foreground font-medium">
                     {hourlyDemand.afternoonPercentage}%
                   </span>
                 </div>
+                <span className="text-[10px] text-muted-foreground/75 mt-0.5">12:00 - 18:00</span>
+              </div>
+
+              {/* Noche: 18:00 a 20:00 */}
+              <div className="p-2.5 rounded-lg bg-background border border-border flex flex-col justify-between">
+                <div className="flex items-center gap-1 text-muted-foreground mb-1">
+                  <Moon size={13} className="text-blue-400 shrink-0" />
+                  <span className="truncate">Noche</span>
+                </div>
+                <div className="flex items-baseline justify-between mt-1">
+                  <strong className="text-base text-foreground font-semibold">
+                    {hourlyDemand.nightCount}
+                  </strong>
+                  <span className="text-[11px] text-muted-foreground font-medium">
+                    {hourlyDemand.nightPercentage}%
+                  </span>
+                </div>
+                <span className="text-[10px] text-muted-foreground/75 mt-0.5">18:00 - 20:00</span>
               </div>
             </div>
 
