@@ -792,7 +792,7 @@ html[data-theme="light"] .admin-section-nav-link.is-active:active { background: 
     display: flex;
     align-items: center;
     justify-content: space-between;
-    width: min(1184px, calc(100% - 80px));
+    width: 100%;
     margin-inline: auto;
     padding-inline: 0;
     margin-top: .75rem;
@@ -820,10 +820,44 @@ html[data-theme="light"] .admin-section-nav-link.is-active:active { background: 
   }
 }
 @media (max-width: 767px) {
-  .admin-section-nav-wrapper { display: flex; justify-content: center; width: 100%; padding-inline: .5rem; margin-top: .75rem; margin-bottom: .5rem; }
-  .admin-section-nav { display: inline-flex; align-items: center; justify-content: center; width: auto; max-width: 100%; gap: .25rem; padding: .25rem; }
-  .admin-section-nav-link { flex: 0 0 auto; min-height: 2.2rem; padding: .4rem .75rem; font-size: .78rem; gap: .35rem; }
-  .admin-section-nav-refresh { display: none; }
+  .admin-section-nav-wrapper {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    max-width: 320px;
+    margin-inline: auto;
+    padding-inline: 0.5rem;
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
+    gap: 0.5rem;
+    box-sizing: border-box;
+  }
+  .admin-section-nav {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: auto;
+    max-width: 100%;
+    gap: 0.25rem;
+    padding: 0.25rem;
+  }
+  .admin-section-nav-link {
+    flex: 0 0 auto;
+    min-height: 2.2rem;
+    padding: 0.4rem 0.55rem;
+    font-size: 0.76rem;
+    gap: 0.25rem;
+  }
+  .admin-section-nav-refresh {
+    display: inline-flex;
+    flex-shrink: 0;
+    height: 2.2rem;
+    font-size: 0.76rem;
+    padding-inline: 0.55rem;
+    gap: 0.35rem;
+  }
 }
 
 /* Mobile appointments panel: isolated from the current admin layout. */
@@ -1890,5 +1924,77 @@ html[data-theme='dark'] .admin-section-nav-link.is-active:active {
 
 .stat-bar-fill-service {
   background-color: var(--stat-bar-service) !important;
+}
+
+/* 
+ * Regla de ancho máximo 320px en mobile para todo el panel administrativo 
+ * (Turnos, Horarios, Estadísticas, Filtros, Gráficos y Directorio de Clientes).
+ * En desktop (>= 768px) no aplica, manteniendo el ancho completo del contenedor.
+ */
+@media (max-width: 767px) {
+  .admin-page,
+  .admin-mobile-page,
+  .admin-schedule-page,
+  .admin-mobile-shell,
+  .admin-schedule-shell {
+    width: 100% !important;
+    max-width: 320px !important;
+    margin-inline: auto !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
+  }
+
+  .admin-mobile-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 0.35rem !important;
+  }
+
+  .admin-mobile-filters {
+    grid-template-columns: 1fr !important;
+    padding: 0.65rem !important;
+    gap: 0.5rem !important;
+  }
+
+  .admin-mobile-period-control {
+    grid-template-columns: 1fr !important;
+    gap: 0.35rem !important;
+  }
+
+  .admin-schedule-filters {
+    grid-template-columns: 1fr !important;
+    padding: 0.65rem !important;
+    gap: 0.5rem !important;
+  }
+
+  .admin-schedule-cards {
+    grid-template-columns: 1fr !important;
+    gap: 0.5rem !important;
+  }
+
+  .admin-schedule-starts {
+    padding: 0.5rem !important;
+  }
+
+  .admin-schedule-start-list {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Estadísticas en mobile */
+  .admin-page section[aria-label="Indicadores clave"] {
+    grid-template-columns: 1fr !important;
+    gap: 0.5rem !important;
+  }
+
+  .admin-page section[aria-label="Indicadores clave"] > div {
+    grid-column: span 1 !important;
+  }
+
+  /* Tablas y modales móviles */
+  .admin-mobile-dialog,
+  .admin-schedule-dialog,
+  [role="dialog"] {
+    max-width: min(92vw, 320px) !important;
+    box-sizing: border-box !important;
+  }
 }
 
