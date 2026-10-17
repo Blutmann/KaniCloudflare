@@ -358,12 +358,14 @@ export function Booking() {
 
       // Si falla la creación de la orden:
       // Conservar el identificador y el estado pendiente para reintentar sin duplicar la reserva
-      console.error('[Mercado Pago] No se pudo inicializar la orden:', orderRes?.error);
-      setError('No pudimos iniciar el pago. Tus datos no se perdieron. Podés volver a intentarlo.');
+      const errorMsg = orderRes?.error || 'ORDER_CREATION_FAILED';
+      console.error('[Mercado Pago] No se pudo inicializar la orden:', errorMsg);
+      setError(`No pudimos iniciar el pago (${errorMsg}). Tus datos no se perdieron. Podés volver a intentarlo.`);
       setSubmitting(false);
     } catch (cause) {
-      console.error('[Mercado Pago] Error durante el proceso de reserva/pago:', cause);
-      setError('No pudimos iniciar el pago. Tus datos no se perdieron. Podés volver a intentarlo.');
+      const causeMsg = cause instanceof Error ? cause.message : String(cause);
+      console.error('[Mercado Pago] Error durante el proceso de reserva/pago:', causeMsg);
+      setError(`No pudimos iniciar el pago (${causeMsg}). Tus datos no se perdieron. Podés volver a intentarlo.`);
       setSubmitting(false);
     }
   }

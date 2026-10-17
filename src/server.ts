@@ -75,7 +75,16 @@ export default {
 
             const xSignature = request.headers.get("x-signature");
             const xRequestId = request.headers.get("x-request-id");
-            const dataId = url.searchParams.get("data.id") ?? url.searchParams.get("id");
+            let dataId = url.searchParams.get("data.id") ?? url.searchParams.get("id");
+
+            if (!dataId) {
+              try {
+                const bodyJson = (await request.clone().json()) as { data?: { id?: string }; id?: string } | null;
+                dataId = bodyJson?.data?.id ?? bodyJson?.id ?? null;
+              } catch {
+                // Non-JSON body
+              }
+            }
 
             // Si está configurado el secreto, verificar firma HMAC-SHA256 obligatoriamente
             if (webhookSecret && webhookSecret.trim()) {
