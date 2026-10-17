@@ -482,4 +482,34 @@ describe("Mercado Pago Integration Unit Tests", () => {
       expect(result.checkoutUrl).toBe("https://www.mercadopago.com.ar/checkout/v1/redirect?order_id=9988776655");
     });
   });
+
+  describe("Deterministic Idempotency Key (toValidUuid)", () => {
+    it("returns identical UUID for multiple calls with the exact same non-UUID input", () => {
+      const input = "custom-order-ref-12345";
+      const key1 = toValidUuid(input);
+      const key2 = toValidUuid(input);
+      expect(key1).toBe(key2);
+      expect(key1).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
+    });
+
+    it("preserves standard valid UUID inputs in lowercase", () => {
+      const validUuid = "C56A4180-65AA-42EC-A945-5FD21DEC0538";
+      expect(toValidUuid(validUuid)).toBe(validUuid.toLowerCase());
+      expect(toValidUuid(validUuid.toLowerCase())).toBe(validUuid.toLowerCase());
+    });
+  });
+
+  describe("Runtime Environment Resolution (getRuntimeEnv)", () => {
+    it("resolves variables stored in globalThis.__env__", async () => {
+      const { getRuntimeEnv } = await import("./kani-mercadopago.functions");
+      const globalObj = globalThis as typeof globalThis & { __env__?: Record<string, string> };
+      globalObj.__env__ = {
+        MERCADOPAGO_ACCESS_TOKEN: "TEST-from-nitro-env-12345",
+      };
+
+      expect(getRuntimeEnv("MERCADOPAGO_ACCESS_TOKEN")).toBe("TEST-from-nitro-env-12345");
+
+      delete globalObj.__env__;
+    });
+  });
 });

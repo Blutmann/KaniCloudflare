@@ -1,4 +1,4 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHmac, timingSafeEqual, createHash } from "node:crypto";
 
 export type MercadoPagoOrderPayer = {
   email: string;
@@ -150,6 +150,14 @@ export function toValidUuid(input?: string): string {
   if (input) {
     const match = input.match(/[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/i);
     if (match) return match[0].toLowerCase();
+
+    // Deterministic UUID for any string input, ensuring retries with the same ID produce the identical idempotency key
+    try {
+      const hash = createHash("sha256").update(input).digest("hex");
+      return `${hash.slice(0, 8)}-${hash.slice(8, 12)}-4${hash.slice(13, 16)}-a${hash.slice(17, 20)}-${hash.slice(20, 32)}`;
+    } catch {
+      // fallback
+    }
   }
   return crypto.randomUUID();
 }
@@ -224,6 +232,15 @@ export async function createMercadoPagoOrder({
 
   const validIdempotencyKey = toValidUuid(idempotencyKey);
 
+  console.log("[Mercado Pago Orders API Request]", {
+    endpoint: `${apiBaseUrl}/v1/orders`,
+    externalReference: input.externalReference,
+    totalAmount: bodyPayload.total_amount,
+    idempotencyKey: validIdempotencyKey,
+    hasReturnUrl: Boolean(input.returnUrl),
+    hasNotificationUrl: Boolean(input.notificationUrl),
+  });
+
   try {
     const response = await fetch(`${apiBaseUrl}/v1/orders`, {
       method: "POST",
@@ -274,6 +291,11 @@ export async function createMercadoPagoOrder({
         error: "NO_CHECKOUT_URL",
       };
     }
+
+    console.log("[Mercado Pago Orders API Success]", {
+      orderId,
+      hasCheckoutUrl: Boolean(checkoutUrl),
+    });
 
     return {
       success: true,

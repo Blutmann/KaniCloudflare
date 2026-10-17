@@ -20,12 +20,14 @@ export type CreateBookingOrderResult = {
   error?: string;
 };
 
-function getRuntimeEnv(name: string): string | undefined {
-  const runtimeValues = (globalThis as typeof globalThis & {
+export function getRuntimeEnv(name: string): string | undefined {
+  const globalObj = globalThis as typeof globalThis & {
+    __env__?: Record<string, unknown>;
     __KANI_RUNTIME_ENV?: Record<string, string>;
-  }).__KANI_RUNTIME_ENV;
+  };
   const runtimeValue =
-    runtimeValues?.[name] ??
+    globalObj.__env__?.[name] ??
+    globalObj.__KANI_RUNTIME_ENV?.[name] ??
     (typeof process !== "undefined" ? process.env[name] : undefined);
   return typeof runtimeValue === "string" && runtimeValue.trim()
     ? runtimeValue.trim()
@@ -42,9 +44,45 @@ export const createBookingOrderFn = createServerFn({ method: "POST" })
   .handler(async ({ data }): Promise<CreateBookingOrderResult> => {
     try {
       const accessToken = getRuntimeEnv("MERCADOPAGO_ACCESS_TOKEN");
+      const notificationUrl =
+        getRuntimeEnv("MERCADOPAGO_NOTIFICATION_URL") ??
+        "https://kanibarberstudio-cloudflare.tomasblutmannliriumprive.workers.dev/api/webhook/mercadopago";
+
+      const appBaseUrl =
+        getRuntimeEnv("KANI_APP_URL") ??
+        "https://kanibarberstudio-cloudflare.tomasblutmannliriumprive.workers.dev";
+      const returnUrl = `${appBaseUrl.replace(/\/$/, "")}/reservar?status=return&appointment_id=${encodeURIComponent(data.appointmentId)}`;
+
+      const tokenType = accessToken
+        ? accessToken.startsWith("TEST-")
+          ? "SANDBOX"
+          : accessToken.startsWith("APP_USR-")
+            ? "PRODUCTION"
+            : "CUSTOM"
+        : "MISSING";
+
+      const envSource = (globalThis as any).__env__?.MERCADOPAGO_ACCESS_TOKEN
+        ? "__env__"
+        : (globalThis as any).__KANI_RUNTIME_ENV?.MERCADOPAGO_ACCESS_TOKEN
+          ? "__KANI_RUNTIME_ENV"
+          : typeof process !== "undefined" && process.env?.MERCADOPAGO_ACCESS_TOKEN
+            ? "process.env"
+            : "none";
+
+      console.log("[Mercado Pago Order Init Diagnostics]", {
+        hasAccessToken: Boolean(accessToken),
+        tokenType,
+        tokenLength: accessToken ? accessToken.length : 0,
+        envSource,
+        hasNotificationUrl: Boolean(notificationUrl),
+        appointmentId: data.appointmentId,
+        serviceName: data.serviceName,
+        barberName: data.barberName,
+      });
+
       if (!accessToken) {
-        console.warn(
-          "[Mercado Pago] MERCADOPAGO_ACCESS_TOKEN no configurado en variables de entorno.",
+        console.error(
+          "[Mercado Pago Order Error] MERCADOPAGO_ACCESS_TOKEN no configurado en variables de entorno (revisado: __env__, __KANI_RUNTIME_ENV, process.env).",
         );
         return {
           success: false,
@@ -57,16 +95,6 @@ export const createBookingOrderFn = createServerFn({ method: "POST" })
       const depositAmount = data.servicePrice > 0
         ? Math.min(dynamicDeposit, data.servicePrice)
         : dynamicDeposit;
-
-      // URL del webhook registrada en Mercado Pago Developers
-      const notificationUrl =
-        getRuntimeEnv("MERCADOPAGO_NOTIFICATION_URL") ??
-        "https://kanibarberstudio-cloudflare.tomasblutmannliriumprive.workers.dev/api/webhook/mercadopago";
-
-      const appBaseUrl =
-        getRuntimeEnv("KANI_APP_URL") ??
-        "https://kanibarberstudio-cloudflare.tomasblutmannliriumprive.workers.dev";
-      const returnUrl = `${appBaseUrl.replace(/\/$/, "")}/reservar?status=return&appointment_id=${encodeURIComponent(data.appointmentId)}`;
 
       const orderResult = await createMercadoPagoOrder({
         input: {
@@ -89,6 +117,10 @@ export const createBookingOrderFn = createServerFn({ method: "POST" })
       });
 
       if (!orderResult.success) {
+        console.error("[Mercado Pago Order Failed]", {
+          appointmentId: data.appointmentId,
+          error: orderResult.error ?? "ORDER_CREATION_FAILED",
+        });
         return {
           success: false,
           error: orderResult.error ?? "ORDER_CREATION_FAILED",

@@ -56,6 +56,8 @@ export default {
       // Nitro/TanStack wrapper, the second fetch argument may not expose the raw
       // binding object to this entry point.
       mirrorRuntimeBindings(env);
+      mirrorRuntimeBindings((globalThis as typeof globalThis & { __env__?: unknown }).__env__);
+      mirrorRuntimeBindings((request as typeof request & { runtime?: { cloudflare?: { env?: unknown } } })?.runtime?.cloudflare?.env);
       mirrorRuntimeBindings(cloudflareEnv);
 
       const url = new URL(request.url);
@@ -65,6 +67,7 @@ export default {
             const { verifyMercadoPagoWebhookSignature, getMercadoPagoOrder, isOrderFullyApproved } =
               await import("./lib/kani-mercadopago");
             const webhookSecret =
+              (globalThis as typeof globalThis & { __env__?: Record<string, string> }).__env__?.MERCADOPAGO_WEBHOOK_SECRET ??
               process.env.MERCADOPAGO_WEBHOOK_SECRET ??
               (globalThis as typeof globalThis & {
                 __KANI_RUNTIME_ENV?: Record<string, string>;
@@ -92,6 +95,7 @@ export default {
 
             // Consultar el estado real de la orden en la API si dataId existe
             const accessToken =
+              (globalThis as typeof globalThis & { __env__?: Record<string, string> }).__env__?.MERCADOPAGO_ACCESS_TOKEN ??
               process.env.MERCADOPAGO_ACCESS_TOKEN ??
               (globalThis as typeof globalThis & {
                 __KANI_RUNTIME_ENV?: Record<string, string>;

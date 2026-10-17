@@ -219,11 +219,15 @@ export const sendAppointmentNotification = createServerFn({ method: "POST" })
 function getRuntimeEnv(name: string): string | undefined {
   // src/server.ts reads the Worker's runtime bindings before TanStack dispatches
   // the request and stores them in a shared, non-secret-accessible app runtime map.
+  // Nitro stores Worker bindings in globalThis.__env__.
   // The process.env fallback remains for local development and compatible runtimes.
-  const runtimeValues = (globalThis as typeof globalThis & {
+  const globalObj = globalThis as typeof globalThis & {
+    __env__?: Record<string, unknown>;
     __KANI_RUNTIME_ENV?: Record<string, string>;
-  }).__KANI_RUNTIME_ENV;
-  const runtimeValue = runtimeValues?.[name] ??
+  };
+  const runtimeValue =
+    globalObj.__env__?.[name] ??
+    globalObj.__KANI_RUNTIME_ENV?.[name] ??
     (typeof process !== "undefined" ? process.env[name] : undefined);
 
   // VITE_* values are public configuration and are also supplied to the Cloudflare
