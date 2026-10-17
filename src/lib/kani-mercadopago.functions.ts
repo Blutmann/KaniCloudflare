@@ -46,11 +46,11 @@ export const createBookingOrderFn = createServerFn({ method: "POST" })
       const accessToken = getRuntimeEnv("MERCADOPAGO_ACCESS_TOKEN");
       const notificationUrl =
         getRuntimeEnv("MERCADOPAGO_NOTIFICATION_URL") ??
-        "https://kanibarberstudio-cloudflare.tomasblutmannliriumprive.workers.dev/api/webhook/mercadopago";
+        "https://kanibarberstudio-cloudflare.kanibarber.workers.dev/api/webhook/mercadopago";
 
       const appBaseUrl =
         getRuntimeEnv("KANI_APP_URL") ??
-        "https://kanibarberstudio-cloudflare.tomasblutmannliriumprive.workers.dev";
+        "https://kanibarberstudio-cloudflare.kanibarber.workers.dev";
       const returnUrl = `${appBaseUrl.replace(/\/$/, "")}/reservar?status=return&appointment_id=${encodeURIComponent(data.appointmentId)}`;
 
       const tokenType = accessToken
