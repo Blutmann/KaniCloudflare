@@ -486,6 +486,46 @@ export type Database = {
           notification_claim_token: string | null
         }[]
       }
+      read_public_deposit_amount: {
+        Args: {
+          p_barber_name?: string | null
+        }
+        Returns: number
+      }
+      get_appointment_payment_details: {
+        Args: {
+          p_appointment_id: string
+        }
+        Returns: {
+          appointment_id: string
+          appointment_status: "PENDING" | "CONFIRMED" | "CANCELLED" | "COMPLETED"
+          booking_date: string
+          start_time: string
+          end_time: string
+          barber_id: string
+          barber_name: string
+          service_id: string
+          service_name: string
+          service_price_ars: number
+          down_payment_ars: number
+          client_name: string
+          client_email: string
+          client_phone: string
+          created_at: string
+        }[]
+      }
+      confirm_appointment_from_payment: {
+        Args: {
+          p_appointment_id: string
+          p_order_id?: string | null
+          p_paid_amount?: number | null
+        }
+        Returns: {
+          appointment_status: "PENDING" | "CONFIRMED" | "CANCELLED" | "COMPLETED" | null
+          result_code: string
+          notification_claim_token: string | null
+        }[]
+      }
       claim_appointment_notification: {
         Args: {
           p_appointment_id: string

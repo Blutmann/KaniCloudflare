@@ -6,6 +6,8 @@ import { services, barbers, serviceFor, money, bookingEndDateFor, parseDate, iso
 import { availabilityStartTimesForServiceDate, eligibleBarbersForAvailabilityStart, readConfiguredServices, readPublicAvailabilityStarts, type ConfiguredService, type PublicAvailabilityStart } from '@/lib/kani-availability';
 import { businessDateToday } from '@/lib/kani-mobile-appointments';
 import { appointmentErrorMessage, createRealAppointment } from '@/lib/kani-appointments';
+import { getDynamicDownPayment } from '@/lib/kani-mercadopago';
+import { createBookingOrderFn } from '@/lib/kani-mercadopago.functions';
 import { formatPhoneInput, normalizeCountrySearch, normalizePhone, otherPhoneCountries, phoneCountries, phonePlaceholder, primaryPhoneCountries, type PhoneCountry, type PhoneCountryOption } from '@/lib/kani-phone';
 import { MobileMenuAction } from '@/components/kani/site-header';
 import { useKani } from '@/components/kani/store';
@@ -50,6 +52,10 @@ export function Booking() {
   const [phoneCountryQuery, setPhoneCountryQuery] = useState('');
   const phoneCountryPickerRef = useRef<HTMLDivElement>(null);
   const [result, setResult] = useState<Appointment | null>(null);
+  const [paymentInitPoint, setPaymentInitPoint] = useState<string | null>(null);
+  const [creatingPaymentOrder, setCreatingPaymentOrder] = useState(false);
+  const [paymentOrderError, setPaymentOrderError] = useState<string | null>(null);
+  const [dynamicDownPayment, setDynamicDownPayment] = useState(10000);
   const [error, setError] = useState('');
   const [publicSlots, setPublicSlots] = useState<PublicAvailabilityStart[]>([]);
   const [availabilityLoading, setAvailabilityLoading] = useState(false);
@@ -128,8 +134,16 @@ export function Booking() {
       : countries;
     return { primary: filter(primaryPhoneCountries), other: filter(otherPhoneCountries) };
   }, [phoneCountryQuery]);
-  const downPaymentArs = 10000;
-  const depositArs = selected ? Math.min(downPaymentArs, selected.price) : downPaymentArs;
+  useEffect(() => {
+    let cancelled = false;
+    void getDynamicDownPayment(barber).then(amount => {
+      if (!cancelled && typeof amount === 'number' && amount > 0) {
+        setDynamicDownPayment(amount);
+      }
+    });
+    return () => { cancelled = true; };
+  }, [barber]);
+  const depositArs = selected ? Math.min(dynamicDownPayment, selected.price) : dynamicDownPayment;
   const remainingPaymentArs = selected ? Math.max(0, selected.price - depositArs) : 0;
   const todayValue = businessToday;
   const bookingEndValue = bookingEndDateFor(todayValue);
@@ -239,14 +253,44 @@ export function Booking() {
     if (!normalizedPhone) { move(4); setError('Ingresá un número de teléfono válido para el país seleccionado.'); return; }
     if (!slots.includes(time)) { move(3); setError('Ese horario ya no está disponible. Elegí otro para continuar.'); return; }
     setSubmitting(true);
+    setCreatingPaymentOrder(true);
+    setPaymentOrderError(null);
+    setPaymentInitPoint(null);
     try {
       const created = await createRealAppointment({ barber, serviceName: selected?.name ?? serviceFor(service).name, date, time, name: contact.name.trim(), phone: normalizedPhone.e164, email: contact.email.trim(), notes: contact.notes });
       setResult({ id: created.appointment_id, requestNumber: created.request_number, service, barber, date, time, name: contact.name.trim(), email: contact.email.trim(), phone: contact.phone.trim(), notes: contact.notes, status: 'Pendiente' });
       window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      // Crear la orden de pago en Mercado Pago
+      try {
+        const orderRes = await createBookingOrderFn({
+          data: {
+            appointmentId: created.appointment_id,
+            serviceName: selected?.name ?? serviceFor(service).name,
+            barberName: barber,
+            servicePrice: selected?.price ?? serviceFor(service).price,
+            clientName: contact.name.trim(),
+            clientEmail: contact.email.trim(),
+            clientPhone: normalizedPhone.e164,
+          },
+        });
+        if (orderRes.success && orderRes.initPoint) {
+          setPaymentInitPoint(orderRes.initPoint);
+        } else if (orderRes.error) {
+          console.warn('[Mercado Pago] Error al generar la orden:', orderRes.error);
+          setPaymentOrderError(orderRes.error);
+        }
+      } catch (orderErr) {
+        console.error('[Mercado Pago] Excepción al crear la orden:', orderErr);
+        setPaymentOrderError('No se pudo conectar con Mercado Pago.');
+      } finally {
+        setCreatingPaymentOrder(false);
+      }
     } catch (cause) {
       setTime('');
       move(3);
       setError(appointmentErrorMessage(cause));
+      setCreatingPaymentOrder(false);
     } finally {
       setSubmitting(false);
     }
@@ -256,9 +300,42 @@ export function Booking() {
       <div className="confirmation-mark"><Check size={30} /></div>
       <h1>Solicitaste un turno</h1>
       <p className="confirmation-lead text-muted-foreground">Recibimos tu solicitud correctamente.</p>
-      <p className="confirmation-deposit-title">Un paso más para confirmar tu turno</p>
-      <p className="confirmation-deposit-copy">Para confirmar la reserva, deberás abonar la seña correspondiente al servicio. Encontrarás el importe y los datos para realizar el pago en el email que te enviaremos.</p>
-      <p className="confirmation-pending-copy text-muted-foreground">Tu turno quedará pendiente hasta que el barbero lo confirme.</p>
+
+      <div className="confirmation-deposit-section my-6 p-6 rounded-lg border border-gold/30 bg-surface text-center">
+        <p className="confirmation-deposit-title text-xl font-semibold m-0">
+          Aboná la seña para confirmar tu turno.
+        </p>
+        <p className="confirmation-deposit-copy text-sm text-muted-foreground mt-2 mb-5">
+          Tenés 10 minutos para abonar la seña de {money(depositArs)} y confirmar tu reserva de forma automática.
+        </p>
+
+        {creatingPaymentOrder ? (
+          <p className="text-sm text-muted-foreground animate-pulse py-2">
+            Preparando checkout seguro de Mercado Pago...
+          </p>
+        ) : paymentInitPoint ? (
+          <Button asChild size="lg" className="action-positive h-12 px-8 text-base font-semibold w-full sm:w-auto">
+            <a href={paymentInitPoint} rel="noopener noreferrer">
+              Pagar seña
+            </a>
+          </Button>
+        ) : (
+          <div className="text-xs text-muted-foreground">
+            {paymentOrderError && (
+              <p className="text-destructive mb-2 font-medium">
+                No pudimos inicializar el checkout de Mercado Pago automáticamente.
+              </p>
+            )}
+            <p>
+              Para confirmar la reserva, deberás abonar la seña correspondiente. Encontrarás el importe y los datos para realizar la transferencia en el email que te enviamos.
+            </p>
+          </div>
+        )}
+      </div>
+
+      <p className="confirmation-pending-copy text-muted-foreground text-sm">
+        Tu turno se confirmará automáticamente en cuanto Mercado Pago acredite la seña.
+      </p>
       <div className="confirmation-details">
         <div className="confirmation-request-number">Solicitud #{result.requestNumber}</div>
         <dl className="summary-list">

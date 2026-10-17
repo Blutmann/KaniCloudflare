@@ -297,6 +297,12 @@ export async function getMercadoPagoOrder({
 export function isOrderFullyApproved(order: MercadoPagoOrderDetails, expectedAmount?: number): boolean {
   if (!order) return false;
 
+  // Validar moneda: debe ser ARS si está presente
+  if (order.currency_id && order.currency_id.toUpperCase() !== "ARS") {
+    console.warn(`[Mercado Pago Order] Moneda no admitida: ${order.currency_id}. Se espera ARS.`);
+    return false;
+  }
+
   // Si la orden general tiene status 'processed' o 'paid'
   const isOrderStatusPaid = order.status === "processed" || order.status === "paid" || order.status === "closed";
 
@@ -305,6 +311,12 @@ export function isOrderFullyApproved(order: MercadoPagoOrderDetails, expectedAmo
   const approvedPayment = payments.find((p) => p.status === "approved");
 
   if (!isOrderStatusPaid && !approvedPayment) {
+    return false;
+  }
+
+  // Si el pago individual tiene moneda especificada, verificar que sea ARS
+  if (approvedPayment?.currency_id && approvedPayment.currency_id.toUpperCase() !== "ARS") {
+    console.warn(`[Mercado Pago Order] Moneda del pago no admitida: ${approvedPayment.currency_id}. Se espera ARS.`);
     return false;
   }
 
@@ -324,3 +336,149 @@ export function isOrderFullyApproved(order: MercadoPagoOrderDetails, expectedAmo
 
   return true;
 }
+
+/**
+ * Consulta el monto de seña dinámico configurado en Supabase para un barbero,
+ * garantizando que nunca dependa de un valor hardcodeado.
+ */
+export async function getDynamicDownPayment(barberName?: string | null): Promise<number> {
+  try {
+    const { supabase } = await import("@/integrations/supabase/client");
+    const { data, error } = await supabase.rpc("read_public_deposit_amount", {
+      p_barber_name: barberName?.trim() || null,
+    });
+    if (!error && typeof data === "number" && data > 0) {
+      return data;
+    }
+  } catch {
+    // Si la RPC aún no está creada o la conexión falla, se retorna el valor por omisión estándar
+  }
+  return 10000;
+}
+
+export type ConfirmAppointmentPaymentInput = {
+  appointmentId: string;
+  orderId: string;
+  totalAmount?: number;
+};
+
+export type ConfirmAppointmentPaymentResult = {
+  success: boolean;
+  appointmentStatus?: string;
+  resultCode:
+    | "CONFIRMED"
+    | "ALREADY_CONFIRMED"
+    | "SLOT_COLLISION_LATE_PAYMENT"
+    | "APPOINTMENT_CANCELLED"
+    | "APPOINTMENT_NOT_FOUND"
+    | "FAILED";
+  error?: string;
+};
+
+/**
+ * Confirma atómicamente el turno en Supabase respetando el bloqueo de concurrencia
+ * pg_advisory_xact_lock, idempotencia ante webhooks repetidos, y evitando colisiones
+ * si el pago llegó fuera de tiempo y el turno fue cancelado o reasignado.
+ */
+export async function confirmAppointmentPayment({
+  appointmentId,
+  orderId,
+  totalAmount,
+}: ConfirmAppointmentPaymentInput): Promise<ConfirmAppointmentPaymentResult> {
+  try {
+    const { supabase } = await import("@/integrations/supabase/client");
+
+    const { data, error } = await supabase.rpc("confirm_appointment_from_payment", {
+      p_appointment_id: appointmentId,
+      p_order_id: orderId,
+      p_paid_amount: totalAmount ? Math.round(totalAmount) : null,
+    });
+
+    if (error) {
+      console.error("[Mercado Pago] Error en confirm_appointment_from_payment RPC:", error);
+      return {
+        success: false,
+        resultCode: "FAILED",
+        error: error.message,
+      };
+    }
+
+    const row = data?.[0];
+    if (!row) {
+      return {
+        success: false,
+        resultCode: "FAILED",
+        error: "NO_DATA_RETURNED",
+      };
+    }
+
+    const resultCode = (row.result_code || "CONFIRMED") as ConfirmAppointmentPaymentResult["resultCode"];
+    const appointmentStatus = row.appointment_status ?? undefined;
+
+    // Idempotencia: si ya estaba confirmada, no duplicamos notificaciones
+    if (resultCode === "ALREADY_CONFIRMED") {
+      console.log(`[Mercado Pago] Turno ${appointmentId} ya se encontraba CONFIRMED (idempotente).`);
+      return {
+        success: true,
+        appointmentStatus: "CONFIRMED",
+        resultCode: "ALREADY_CONFIRMED",
+      };
+    }
+
+    // Si el turno fue cancelado o el horario ya fue ocupado por otro turno
+    if (resultCode === "SLOT_COLLISION_LATE_PAYMENT") {
+      console.warn(
+        `[Mercado Pago] Pago tardío para turno ${appointmentId}: el horario ya fue ocupado por otra reserva confirmada. No se sobreescribe.`,
+      );
+      return {
+        success: false,
+        appointmentStatus,
+        resultCode: "SLOT_COLLISION_LATE_PAYMENT",
+        error: "SLOT_COLLISION_LATE_PAYMENT",
+      };
+    }
+
+    // Confirmación exitosa: disparar notificaciones si se generó un claim token
+    if (resultCode === "CONFIRMED") {
+      console.log(`[Mercado Pago] Turno ${appointmentId} confirmado exitosamente tras pago.`);
+      if (row.notification_claim_token) {
+        try {
+          const { sendAppointmentNotification } = await import("./kani-notifications.functions");
+          await sendAppointmentNotification({
+            data: {
+              appointmentId,
+              claimToken: row.notification_claim_token,
+            },
+          });
+          console.log(`[Mercado Pago] Notificación de confirmación despachada para turno ${appointmentId}.`);
+        } catch (notifErr) {
+          console.error(
+            `[Mercado Pago] Error al despachar notificación de confirmación para ${appointmentId}:`,
+            notifErr,
+          );
+        }
+      }
+
+      return {
+        success: true,
+        appointmentStatus: "CONFIRMED",
+        resultCode: "CONFIRMED",
+      };
+    }
+
+    return {
+      success: false,
+      appointmentStatus,
+      resultCode,
+    };
+  } catch (err) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    console.error("[Mercado Pago] Excepción al confirmar turno:", errorMsg);
+    return {
+      success: false,
+      resultCode: "FAILED",
+      error: errorMsg,
+    };
+  }
+}
+

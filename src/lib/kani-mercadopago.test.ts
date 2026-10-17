@@ -5,9 +5,19 @@ import {
   createMercadoPagoOrder,
   getMercadoPagoOrder,
   isOrderFullyApproved,
+  getDynamicDownPayment,
+  confirmAppointmentPayment,
   type CreateMercadoPagoOrderInput,
   type MercadoPagoOrderDetails,
 } from "./kani-mercadopago";
+
+const mockRpc = vi.fn();
+
+vi.mock("@/integrations/supabase/client", () => ({
+  supabase: {
+    rpc: (...args: unknown[]) => mockRpc(...args),
+  },
+}));
 
 describe("Mercado Pago Integration Unit Tests", () => {
   describe("verifyMercadoPagoWebhookSignature", () => {
@@ -208,6 +218,25 @@ describe("Mercado Pago Integration Unit Tests", () => {
       expect(isOrderFullyApproved(wrongAmountOrder, 10000)).toBe(false);
     });
 
+    it("rejects orders when currency is not ARS", () => {
+      const usdOrder: MercadoPagoOrderDetails = {
+        id: "order_103",
+        status: "processed",
+        currency_id: "USD",
+        total_amount: 10000,
+        payments: [
+          {
+            id: 123459,
+            status: "approved",
+            transaction_amount: 10000,
+            currency_id: "USD",
+          },
+        ],
+      };
+
+      expect(isOrderFullyApproved(usdOrder, 10000)).toBe(false);
+    });
+
     it("rejects orders when payment is pending or rejected", () => {
       const pendingOrder: MercadoPagoOrderDetails = {
         id: "order_102",
@@ -224,6 +253,136 @@ describe("Mercado Pago Integration Unit Tests", () => {
       };
 
       expect(isOrderFullyApproved(pendingOrder, 10000)).toBe(false);
+    });
+  });
+
+  describe("getDynamicDownPayment", () => {
+    it("returns dynamic down payment from RPC when available", async () => {
+      mockRpc.mockResolvedValueOnce({
+        data: 12500,
+        error: null,
+      });
+
+      const amount = await getDynamicDownPayment("Lautaro");
+      expect(amount).toBe(12500);
+      expect(mockRpc).toHaveBeenCalledWith("read_public_deposit_amount", {
+        p_barber_name: "Lautaro",
+      });
+    });
+
+    it("falls back to default 10000 when RPC returns error", async () => {
+      mockRpc.mockResolvedValueOnce({
+        data: null,
+        error: { message: "function does not exist" },
+      });
+
+      const amount = await getDynamicDownPayment("Gonzalo");
+      expect(amount).toBe(10000);
+    });
+  });
+
+  describe("confirmAppointmentPayment", () => {
+    it("confirms appointment successfully and dispatches notification on valid approved payment", async () => {
+      const notifModule = await import("./kani-notifications.functions");
+      const sendNotifSpy = vi
+        .spyOn(notifModule, "sendAppointmentNotification")
+        .mockResolvedValueOnce({ sent: true, status: "SENT" });
+
+      mockRpc.mockResolvedValueOnce({
+        data: [
+          {
+            appointment_status: "CONFIRMED",
+            result_code: "CONFIRMED",
+            notification_claim_token: "test_token_abc123",
+          },
+        ],
+        error: null,
+      });
+
+      const result = await confirmAppointmentPayment({
+        appointmentId: "apt_111",
+        orderId: "order_999",
+        totalAmount: 10000,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.resultCode).toBe("CONFIRMED");
+      expect(result.appointmentStatus).toBe("CONFIRMED");
+      expect(sendNotifSpy).toHaveBeenCalledWith({
+        data: {
+          appointmentId: "apt_111",
+          claimToken: "test_token_abc123",
+        },
+      });
+
+      sendNotifSpy.mockRestore();
+    });
+
+    it("handles idempotent webhook retries safely without duplicating notifications", async () => {
+      const notifModule = await import("./kani-notifications.functions");
+      const sendNotifSpy = vi.spyOn(notifModule, "sendAppointmentNotification");
+
+      mockRpc.mockResolvedValueOnce({
+        data: [
+          {
+            appointment_status: "CONFIRMED",
+            result_code: "ALREADY_CONFIRMED",
+            notification_claim_token: null,
+          },
+        ],
+        error: null,
+      });
+
+      const result = await confirmAppointmentPayment({
+        appointmentId: "apt_111",
+        orderId: "order_999",
+        totalAmount: 10000,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.resultCode).toBe("ALREADY_CONFIRMED");
+      expect(sendNotifSpy).not.toHaveBeenCalled();
+
+      sendNotifSpy.mockRestore();
+    });
+
+    it("prevents double-booking when payment arrives late and slot was taken", async () => {
+      mockRpc.mockResolvedValueOnce({
+        data: [
+          {
+            appointment_status: "PENDING",
+            result_code: "SLOT_COLLISION_LATE_PAYMENT",
+            notification_claim_token: null,
+          },
+        ],
+        error: null,
+      });
+
+      const result = await confirmAppointmentPayment({
+        appointmentId: "apt_late",
+        orderId: "order_999",
+        totalAmount: 10000,
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.resultCode).toBe("SLOT_COLLISION_LATE_PAYMENT");
+      expect(result.error).toBe("SLOT_COLLISION_LATE_PAYMENT");
+    });
+
+    it("handles RPC database failure safely without throwing an unhandled exception", async () => {
+      mockRpc.mockResolvedValueOnce({
+        data: null,
+        error: { message: "database connection failed" },
+      });
+
+      const result = await confirmAppointmentPayment({
+        appointmentId: "apt_err",
+        orderId: "order_999",
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.resultCode).toBe("FAILED");
+      expect(result.error).toBe("database connection failed");
     });
   });
 });

@@ -109,13 +109,13 @@ export default {
 
                 if (appointmentId && isOrderFullyApproved(order)) {
                   console.log(`[Mercado Pago Webhook] Orden ${order.id} aprobada para turno ${appointmentId}. Confirmando...`);
-                  const { updateRealAppointmentStatus } = await import("./lib/kani-appointments");
-                  try {
-                    await updateRealAppointmentStatus(appointmentId, "CONFIRMED");
-                    console.log(`[Mercado Pago Webhook] Turno ${appointmentId} confirmado automáticamente con éxito.`);
-                  } catch (updateErr) {
-                    console.error(`[Mercado Pago Webhook] Error al confirmar turno ${appointmentId}:`, updateErr);
-                  }
+                  const { confirmAppointmentPayment } = await import("./lib/kani-mercadopago");
+                  const confirmation = await confirmAppointmentPayment({
+                    appointmentId,
+                    orderId: String(order.id),
+                    totalAmount: order.total_amount ? Number(order.total_amount) : undefined,
+                  });
+                  console.log(`[Mercado Pago Webhook] Resultado de confirmación para ${appointmentId}:`, confirmation.resultCode);
                 }
               }
             }
