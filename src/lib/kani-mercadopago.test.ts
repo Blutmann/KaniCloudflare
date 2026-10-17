@@ -7,6 +7,7 @@ import {
   isOrderFullyApproved,
   getDynamicDownPayment,
   confirmAppointmentPayment,
+  toValidUuid,
   type CreateMercadoPagoOrderInput,
   type MercadoPagoOrderDetails,
 } from "./kani-mercadopago";
@@ -121,7 +122,7 @@ describe("Mercado Pago Integration Unit Tests", () => {
         json: async () => ({
           id: "mp_order_998877",
           status: "pending",
-          init_point: "https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=998877",
+          checkout_url: "https://www.mercadopago.com.ar/checkout/v1/redirect?order_id=mp_order_998877",
         }),
       });
       global.fetch = mockFetch;
@@ -129,19 +130,20 @@ describe("Mercado Pago Integration Unit Tests", () => {
       const result = await createMercadoPagoOrder({
         input,
         accessToken: "TEST-1234567890-mock",
-        idempotencyKey: "unique-uuid-key",
+        idempotencyKey: "123e4567-e89b-12d3-a456-426614174000",
       });
 
       expect(result.success).toBe(true);
       expect(result.orderId).toBe("mp_order_998877");
-      expect(result.initPoint).toContain("redirect?pref_id=998877");
+      expect(result.checkoutUrl).toBe("https://www.mercadopago.com.ar/checkout/v1/redirect?order_id=mp_order_998877");
+      expect(result.initPoint).toBe("https://www.mercadopago.com.ar/checkout/v1/redirect?order_id=mp_order_998877");
 
       expect(mockFetch).toHaveBeenCalledTimes(1);
       const [url, options] = mockFetch.mock.calls[0];
       expect(url).toBe("https://api.mercadopago.com/v1/orders");
       expect(options.method).toBe("POST");
       expect(options.headers["Authorization"]).toBe("Bearer TEST-1234567890-mock");
-      expect(options.headers["X-Idempotency-Key"]).toBe("unique-uuid-key");
+      expect(options.headers["X-Idempotency-Key"]).toBe("123e4567-e89b-12d3-a456-426614174000");
 
       const body = JSON.parse(options.body);
       expect(body.type).toBe("online");
@@ -383,6 +385,101 @@ describe("Mercado Pago Integration Unit Tests", () => {
       expect(result.success).toBe(false);
       expect(result.resultCode).toBe("FAILED");
       expect(result.error).toBe("database connection failed");
+    });
+  });
+
+  describe("toValidUuid & Idempotency Key Handling", () => {
+    it("preserves valid UUID v4 unchanged (in lowercase)", () => {
+      const validUuid = "123e4567-e89b-12d3-a456-426614174000";
+      expect(toValidUuid(validUuid)).toBe(validUuid);
+    });
+
+    it("extracts UUID from prefixed strings like order_<uuid>", () => {
+      const uuid = "e58ed763-928c-4155-bee9-fdbaaadc15f3";
+      expect(toValidUuid(`order_${uuid}`)).toBe(uuid);
+    });
+
+    it("generates a valid UUID v4 when input is not a UUID", () => {
+      const generated = toValidUuid("not-a-uuid");
+      expect(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(generated)).toBe(true);
+    });
+  });
+
+  describe("createMercadoPagoOrder Advanced Resolution", () => {
+    const input: CreateMercadoPagoOrderInput = {
+      externalReference: "123e4567-e89b-12d3-a456-426614174000",
+      title: "Seña reserva de turno",
+      description: "Corte de pelo con Lautaro",
+      amount: 10000,
+      payer: { email: "cliente@example.com" },
+      returnUrl: "https://example.com/reservar?status=return",
+    };
+
+    it("includes config.online returnUrl in the payload", async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          id: "mp_order_123",
+          status: "pending",
+          checkout_url: "https://www.mercadopago.com.ar/checkout/v1/redirect?order_id=mp_order_123",
+        }),
+      });
+      global.fetch = mockFetch;
+
+      const result = await createMercadoPagoOrder({
+        input,
+        accessToken: "TEST-TOKEN",
+        idempotencyKey: input.externalReference,
+      });
+
+      expect(result.success).toBe(true);
+      const [, options] = mockFetch.mock.calls[0];
+      const body = JSON.parse(options.body);
+      expect(body.config.online.success_url).toBe("https://example.com/reservar?status=return");
+      expect(body.config.online.auto_return).toBe("approved");
+    });
+
+    it("extracts error cause descriptions from Mercado Pago error response", async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 400,
+        text: async () =>
+          JSON.stringify({
+            message: "Validation error",
+            error: "bad_request",
+            cause: [{ description: "payer.email is invalid", code: "3001" }],
+          }),
+      });
+      global.fetch = mockFetch;
+
+      const result = await createMercadoPagoOrder({
+        input,
+        accessToken: "TEST-TOKEN",
+        idempotencyKey: input.externalReference,
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("payer.email is invalid");
+    });
+
+    it("falls back to standard redirect URL with order_id if neither checkout_url nor init_point is present", async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          id: "9988776655",
+          status: "pending",
+        }),
+      });
+      global.fetch = mockFetch;
+
+      const result = await createMercadoPagoOrder({
+        input,
+        accessToken: "TEST-TOKEN",
+        idempotencyKey: input.externalReference,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.checkoutUrl).toBe("https://www.mercadopago.com.ar/checkout/v1/redirect?order_id=9988776655");
     });
   });
 });

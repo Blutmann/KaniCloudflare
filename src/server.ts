@@ -185,15 +185,27 @@ function mirrorRuntimeBindings(bindings: unknown): void {
     "MERCADOPAGO_ACCESS_TOKEN",
     "MERCADOPAGO_PUBLIC_KEY",
     "MERCADOPAGO_WEBHOOK_SECRET",
+    "MERCADOPAGO_NOTIFICATION_URL",
+    "KANI_APP_URL",
   ];
   const runtimeValues = (globalThis as typeof globalThis & {
     __KANI_RUNTIME_ENV?: Record<string, string>;
   }).__KANI_RUNTIME_ENV ?? {};
+  try {
+    for (const [k, v] of Object.entries(values)) {
+      if (typeof v === "string" && v.trim()) {
+        process.env[k] = v.trim();
+        runtimeValues[k] = v.trim();
+      }
+    }
+  } catch {
+    // If values is not iterable via Object.entries
+  }
   for (const name of names) {
     const value = values[name];
     if (typeof value === "string" && value.trim()) {
-      process.env[name] = value;
-      runtimeValues[name] = value;
+      process.env[name] = value.trim();
+      runtimeValues[name] = value.trim();
     }
   }
   (globalThis as typeof globalThis & {

@@ -15,6 +15,7 @@ export type CreateBookingOrderResult = {
   success: boolean;
   orderId?: string;
   initPoint?: string;
+  checkoutUrl?: string;
   depositAmount?: number;
   error?: string;
 };
@@ -27,7 +28,7 @@ function getRuntimeEnv(name: string): string | undefined {
     runtimeValues?.[name] ??
     (typeof process !== "undefined" ? process.env[name] : undefined);
   return typeof runtimeValue === "string" && runtimeValue.trim()
-    ? runtimeValue
+    ? runtimeValue.trim()
     : undefined;
 }
 
@@ -60,7 +61,12 @@ export const createBookingOrderFn = createServerFn({ method: "POST" })
       // URL del webhook registrada en Mercado Pago Developers
       const notificationUrl =
         getRuntimeEnv("MERCADOPAGO_NOTIFICATION_URL") ??
-        "https://kanibarberstudio-cloudflare.kanibarber.workers.dev/api/webhook/mercadopago";
+        "https://kanibarberstudio-cloudflare.tomasblutmannliriumprive.workers.dev/api/webhook/mercadopago";
+
+      const appBaseUrl =
+        getRuntimeEnv("KANI_APP_URL") ??
+        "https://kanibarberstudio-cloudflare.tomasblutmannliriumprive.workers.dev";
+      const returnUrl = `${appBaseUrl.replace(/\/$/, "")}/reservar?status=return&appointment_id=${encodeURIComponent(data.appointmentId)}`;
 
       const orderResult = await createMercadoPagoOrder({
         input: {
@@ -75,10 +81,11 @@ export const createBookingOrderFn = createServerFn({ method: "POST" })
             phone: data.clientPhone.trim(),
           },
           notificationUrl,
+          returnUrl,
           expirationMinutes: 10,
         },
         accessToken,
-        idempotencyKey: `order_${data.appointmentId}`,
+        idempotencyKey: data.appointmentId,
       });
 
       if (!orderResult.success) {
@@ -88,10 +95,13 @@ export const createBookingOrderFn = createServerFn({ method: "POST" })
         };
       }
 
+      const checkoutUrl = orderResult.checkoutUrl || orderResult.initPoint;
+
       return {
         success: true,
         orderId: orderResult.orderId,
-        initPoint: orderResult.initPoint,
+        initPoint: checkoutUrl,
+        checkoutUrl,
         depositAmount,
       };
     } catch (error) {

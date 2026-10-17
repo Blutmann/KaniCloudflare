@@ -25,6 +25,7 @@ export type CreateMercadoPagoOrderInput = {
   payer: MercadoPagoOrderPayer;
   notificationUrl?: string;
   expirationMinutes?: number;
+  returnUrl?: string;
 };
 
 export type MercadoPagoOrderResponse = {
@@ -35,6 +36,9 @@ export type MercadoPagoOrderResponse = {
   external_reference?: string;
   status: string;
   init_point?: string;
+  checkout_url?: string;
+  sandbox_init_point?: string;
+  redirect_url?: string;
   expires?: boolean;
   expiration_date_from?: string;
   expiration_date_to?: string;
@@ -65,6 +69,7 @@ export type CreateOrderResult = {
   success: boolean;
   orderId?: string;
   initPoint?: string;
+  checkoutUrl?: string;
   error?: string;
 };
 
@@ -138,6 +143,17 @@ export function verifyMercadoPagoWebhookSignature({
   }
 }
 
+export function toValidUuid(input?: string): string {
+  if (input && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(input)) {
+    return input.toLowerCase();
+  }
+  if (input) {
+    const match = input.match(/[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/i);
+    if (match) return match[0].toLowerCase();
+  }
+  return crypto.randomUUID();
+}
+
 /**
  * Crea una orden de pago en Mercado Pago mediante la Orders API oficial (POST /v1/orders).
  * Diseñado para ser invocado de forma segura en el servidor, utilizando idempotencia
@@ -179,6 +195,7 @@ export async function createMercadoPagoOrder({
     },
     items: [
       {
+        id: input.externalReference,
         title: input.title,
         description: input.description,
         unit_price: amountStr,
@@ -194,12 +211,25 @@ export async function createMercadoPagoOrder({
     bodyPayload.notification_url = input.notificationUrl;
   }
 
+  if (input.returnUrl) {
+    bodyPayload.config = {
+      online: {
+        success_url: input.returnUrl,
+        failure_url: input.returnUrl,
+        pending_url: input.returnUrl,
+        auto_return: "approved",
+      },
+    };
+  }
+
+  const validIdempotencyKey = toValidUuid(idempotencyKey);
+
   try {
     const response = await fetch(`${apiBaseUrl}/v1/orders`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${accessToken.trim()}`,
-        "X-Idempotency-Key": idempotencyKey,
+        "X-Idempotency-Key": validIdempotencyKey,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(bodyPayload),
@@ -209,8 +239,15 @@ export async function createMercadoPagoOrder({
       const errorText = await response.text();
       let errorDetail = `HTTP ${response.status}`;
       try {
-        const errorJson = JSON.parse(errorText) as { message?: string; error?: string };
-        errorDetail = errorJson.message || errorJson.error || errorText;
+        const errorJson = JSON.parse(errorText) as {
+          message?: string;
+          error?: string;
+          cause?: Array<{ description?: string; code?: string | number }>;
+        };
+        const causeDescriptions = Array.isArray(errorJson.cause)
+          ? errorJson.cause.map((c) => c.description).filter(Boolean).join("; ")
+          : "";
+        errorDetail = causeDescriptions || errorJson.message || errorJson.error || errorText;
       } catch {
         errorDetail = errorText;
       }
@@ -221,11 +258,28 @@ export async function createMercadoPagoOrder({
       };
     }
 
-    const data = (await response.json()) as MercadoPagoOrderResponse;
+    const data = (await response.json()) as MercadoPagoOrderResponse & Record<string, unknown>;
+    const orderId = typeof data.id === "string" ? data.id : String(data.id ?? "");
+    const checkoutUrl =
+      (typeof data.checkout_url === "string" && data.checkout_url) ||
+      (typeof data.init_point === "string" && data.init_point) ||
+      (typeof data.sandbox_init_point === "string" && data.sandbox_init_point) ||
+      (typeof data.redirect_url === "string" && data.redirect_url) ||
+      (orderId ? `https://www.mercadopago.com.ar/checkout/v1/redirect?order_id=${orderId}` : undefined);
+
+    if (!checkoutUrl) {
+      console.error("[Mercado Pago] No se obtuvo checkout_url ni init_point en la respuesta:", data);
+      return {
+        success: false,
+        error: "NO_CHECKOUT_URL",
+      };
+    }
+
     return {
       success: true,
-      orderId: data.id,
-      initPoint: data.init_point,
+      orderId,
+      initPoint: checkoutUrl,
+      checkoutUrl,
     };
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);
