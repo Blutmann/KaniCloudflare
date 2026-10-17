@@ -304,7 +304,7 @@ html[data-theme="light"] .booking-progress .complete > span { border-color: #702
 
 .booking-aside .eyebrow { font-size: 9px; }
 .booking-option { width: 100%; display: flex; gap: 18px; height: 104px; padding: 20px 22px; background: var(--surface); box-shadow: 0 10px 26px rgb(0 0 0 / 0.14); white-space: normal; }
-.booking-option.selected, .barber-choice-list .selected, .booking-time-slot.selected { border-color: #702B3A !important; background: #702B3A !important; color: #FFFFFF !important; }
+.booking-option.selected, .barber-choice-list .selected { border-color: #702B3A !important; background: #702B3A !important; color: #FFFFFF !important; }
 .selection-circle { width: 18px; height: 18px; display: grid; place-items: center; border: 1px solid var(--border); border-radius: 50%; flex-shrink: 0; }
 .booking-option.selected .selection-circle { background: transparent; border-color: #FFFFFF; color: #FFFFFF; }
 .booking-option.selected .text-muted-foreground { color: #FFFFFF !important; }
@@ -1686,9 +1686,10 @@ html[data-theme='dark'] .booking-time-slot.selected,
 html[data-theme='dark'] .booking-time-slot.selected:hover:not(:disabled),
 html[data-theme='dark'] .booking-time-slot.selected:focus-visible,
 html[data-theme='dark'] .booking-time-slot.selected:active {
-  border-color: var(--primary) !important;
-  background: var(--primary) !important;
-  color: var(--primary-foreground) !important;
+  border-color: var(--gold) !important;
+  background: var(--gold) !important;
+  color: #191919 !important;
+  font-weight: 700;
 }
 
 html[data-theme='dark'] .booking-back-button {
