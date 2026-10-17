@@ -57,6 +57,31 @@ export default {
       // binding object to this entry point.
       mirrorRuntimeBindings(env);
       mirrorRuntimeBindings(cloudflareEnv);
+
+      const url = new URL(request.url);
+      if (url.pathname === "/api/webhook/whatsapp") {
+        if (request.method === "GET") {
+          const { handleWhatsAppWebhookVerification } = await import("./lib/kani-whatsapp");
+          const verifyToken =
+            process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN ??
+            (globalThis as typeof globalThis & {
+              __KANI_RUNTIME_ENV?: Record<string, string>;
+            }).__KANI_RUNTIME_ENV?.WHATSAPP_WEBHOOK_VERIFY_TOKEN;
+          const verifyResponse = handleWhatsAppWebhookVerification(url, verifyToken);
+          if (verifyResponse) return verifyResponse;
+          return new Response("Forbidden: Invalid verification token", { status: 403 });
+        }
+        if (request.method === "POST") {
+          try {
+            const body = await request.json();
+            console.log("[WhatsApp Webhook Event]:", JSON.stringify(body));
+            return new Response("EVENT_RECEIVED", { status: 200 });
+          } catch {
+            return new Response("BAD_REQUEST", { status: 400 });
+          }
+        }
+      }
+
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
       return await normalizeCatastrophicSsrResponse(response);
@@ -83,6 +108,10 @@ function mirrorRuntimeBindings(bindings: unknown): void {
     "RESEND_API_KEY",
     "RESEND_FROM_EMAIL",
     "KANI_ENVIRONMENT",
+    "WHATSAPP_PHONE_NUMBER_ID",
+    "WHATSAPP_ACCESS_TOKEN",
+    "WHATSAPP_WEBHOOK_VERIFY_TOKEN",
+    "WHATSAPP_TEMPLATE_NAME",
   ];
   const runtimeValues = (globalThis as typeof globalThis & {
     __KANI_RUNTIME_ENV?: Record<string, string>;
