@@ -62,7 +62,7 @@ export async function createRealAppointment(input: CreateAppointmentInput) {
   if (row.notification_claim_token) {
     // Await dispatch so the browser keeps the server-function request alive.
     // A notification failure must never invalidate the appointment request.
-    await dispatchAppointmentNotification(row.appointment_id, row.notification_claim_token);
+    await dispatchAppointmentNotification(row.appointment_id, row.notification_claim_token, input.phone);
   }
   return row;
 }
@@ -81,10 +81,10 @@ async function recordNotificationDispatchError(appointmentId: string, claimToken
   }
 }
 
-async function dispatchAppointmentNotification(appointmentId: string, claimToken: string) {
+async function dispatchAppointmentNotification(appointmentId: string, claimToken: string, clientPhone?: string) {
   try {
     const result = await sendAppointmentNotification({
-      data: { appointmentId, claimToken },
+      data: { appointmentId, claimToken, clientPhone },
     });
     if (result.status === 'FAILED' || result.status === 'SKIPPED') {
       // A skipped claim can leave the outbox row PENDING with attempts=0.

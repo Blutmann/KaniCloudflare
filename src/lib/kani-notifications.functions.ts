@@ -8,6 +8,7 @@ type NotificationClaim = {
   notification_id: string;
   notification_type: NotificationType;
   recipient_email: string | null;
+  recipient_phone?: string | null;
   client_name: string;
   barber_name: string;
   service_name: string;
@@ -28,6 +29,7 @@ type NotificationPayload = {
   notificationId: string;
   notificationType: NotificationType;
   recipientEmail: string;
+  recipientPhone?: string | null;
   clientName: string;
   barberName: string;
   serviceName: string;
@@ -50,7 +52,7 @@ type DispatchResult = {
 };
 
 export const sendAppointmentNotification = createServerFn({ method: "POST" })
-  .validator((data: { appointmentId: string; claimToken: string }) => {
+  .validator((data: { appointmentId: string; claimToken: string; clientPhone?: string }) => {
     if (!data?.appointmentId || !data?.claimToken) throw new Error("NOTIFICATION_INPUT_INVALID");
     return data;
   })
@@ -85,6 +87,7 @@ export const sendAppointmentNotification = createServerFn({ method: "POST" })
         notificationId: event.notification_id,
         notificationType: event.notification_type,
         recipientEmail: event.recipient_email,
+        recipientPhone: event.recipient_phone ?? data.clientPhone ?? null,
         clientName: event.client_name,
         barberName: event.barber_name,
         serviceName: event.service_name,
@@ -126,6 +129,53 @@ export const sendAppointmentNotification = createServerFn({ method: "POST" })
       } | null;
       if (!response.ok) {
         throw new Error(`RESEND_${response.status}: ${result?.message ?? "SEND_FAILED"}`);
+      }
+
+      // Despacho de WhatsApp si las credenciales y el teléfono están disponibles
+      const whatsappToken = getRuntimeEnv("WHATSAPP_ACCESS_TOKEN")?.trim();
+      const whatsappPhoneId = getRuntimeEnv("WHATSAPP_PHONE_NUMBER_ID")?.trim();
+      const recipientPhone = payload.recipientPhone;
+
+      if (!whatsappToken || !whatsappPhoneId) {
+        console.info(
+          "[KANI notification] WhatsApp no configurado aún en variables de entorno (pendiente Meta); omitiendo envío de WhatsApp de forma segura.",
+        );
+      } else if (!recipientPhone) {
+        console.info(
+          "[KANI notification] No se proveyó teléfono del cliente; omitiendo notificación de WhatsApp.",
+        );
+      } else {
+        try {
+          const { sendWhatsAppNotification } = await import("./kani-whatsapp");
+          const dateFormatted = new Date(`${payload.bookingDate}T12:00:00Z`).toLocaleDateString("es-AR", {
+            timeZone: "America/Argentina/Buenos_Aires",
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+          });
+          const timeFormatted = `${payload.startTime.slice(0, 5)} hs`;
+          const templateName = getRuntimeEnv("WHATSAPP_TEMPLATE_NAME")?.trim() || "confirmacion_turno_kani";
+
+          const waResult = await sendWhatsAppNotification({
+            payload: {
+              toPhone: recipientPhone,
+              clientName: payload.clientName,
+              serviceName: payload.serviceName,
+              barberName: payload.barberName,
+              bookingDate: dateFormatted,
+              startTime: timeFormatted,
+            },
+            phoneNumberId: whatsappPhoneId,
+            accessToken: whatsappToken,
+            templateName,
+          });
+
+          if (!waResult.success) {
+            console.warn(`[KANI WhatsApp] Aviso de turno no enviado: ${waResult.error}`);
+          }
+        } catch (waError) {
+          console.warn("[KANI WhatsApp] Error durante el despacho:", waError);
+        }
       }
 
       const { error: completeError } = await supabase.rpc("complete_appointment_notification", {
