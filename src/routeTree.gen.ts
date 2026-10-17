@@ -15,6 +15,7 @@ import { Route as CaseStudyRouteImport } from './routes/case-study'
 import { Route as EstudioRouteImport } from './routes/estudio'
 import { Route as ReservarRouteImport } from './routes/reservar'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as AdminEstadisticasRouteImport } from './routes/admin.estadisticas'
 import { Route as AdminHorariosRouteImport } from './routes/admin.horarios'
 import { Route as AdminMantenimientoRouteImport } from './routes/admin.mantenimiento'
 import { Route as AdminMovilRouteImport } from './routes/admin.movil'
@@ -49,6 +50,11 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminEstadisticasRoute = AdminEstadisticasRouteImport.update({
+  id: '/estadisticas',
+  path: '/estadisticas',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminHorariosRoute = AdminHorariosRouteImport.update({
   id: '/horarios',
   path: '/horarios',
@@ -71,6 +77,7 @@ export interface FileRoutesByFullPath {
   '/case-study': typeof CaseStudyRoute
   '/estudio': typeof EstudioRoute
   '/reservar': typeof ReservarRoute
+  '/admin/estadisticas': typeof AdminEstadisticasRoute
   '/admin/horarios': typeof AdminHorariosRoute
   '/admin/mantenimiento': typeof AdminMantenimientoRoute
   '/admin/movil': typeof AdminMovilRoute
@@ -81,6 +88,7 @@ export interface FileRoutesByTo {
   '/case-study': typeof CaseStudyRoute
   '/estudio': typeof EstudioRoute
   '/reservar': typeof ReservarRoute
+  '/admin/estadisticas': typeof AdminEstadisticasRoute
   '/admin/horarios': typeof AdminHorariosRoute
   '/admin/mantenimiento': typeof AdminMantenimientoRoute
   '/admin/movil': typeof AdminMovilRoute
@@ -93,6 +101,7 @@ export interface FileRoutesById {
   '/case-study': typeof CaseStudyRoute
   '/estudio': typeof EstudioRoute
   '/reservar': typeof ReservarRoute
+  '/admin/estadisticas': typeof AdminEstadisticasRoute
   '/admin/horarios': typeof AdminHorariosRoute
   '/admin/mantenimiento': typeof AdminMantenimientoRoute
   '/admin/movil': typeof AdminMovilRoute
@@ -106,6 +115,7 @@ export interface FileRouteTypes {
     | '/case-study'
     | '/estudio'
     | '/reservar'
+    | '/admin/estadisticas'
     | '/admin/horarios'
     | '/admin/mantenimiento'
     | '/admin/movil'
@@ -116,6 +126,7 @@ export interface FileRouteTypes {
     | '/case-study'
     | '/estudio'
     | '/reservar'
+    | '/admin/estadisticas'
     | '/admin/horarios'
     | '/admin/mantenimiento'
     | '/admin/movil'
@@ -127,6 +138,7 @@ export interface FileRouteTypes {
     | '/case-study'
     | '/estudio'
     | '/reservar'
+    | '/admin/estadisticas'
     | '/admin/horarios'
     | '/admin/mantenimiento'
     | '/admin/movil'
@@ -185,6 +197,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/estadisticas': {
+      id: '/admin/estadisticas'
+      path: '/estadisticas'
+      fullPath: '/admin/estadisticas'
+      preLoaderRoute: typeof AdminEstadisticasRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/horarios': {
       id: '/admin/horarios'
       path: '/horarios'
@@ -210,6 +229,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AdminRouteChildren {
+  AdminEstadisticasRoute: typeof AdminEstadisticasRoute
   AdminHorariosRoute: typeof AdminHorariosRoute
   AdminMantenimientoRoute: typeof AdminMantenimientoRoute
   AdminMovilRoute: typeof AdminMovilRoute
@@ -217,6 +237,7 @@ interface AdminRouteChildren {
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminEstadisticasRoute: AdminEstadisticasRoute,
   AdminHorariosRoute: AdminHorariosRoute,
   AdminMantenimientoRoute: AdminMantenimientoRoute,
   AdminMovilRoute: AdminMovilRoute,

@@ -440,13 +440,23 @@ export function AdminScheduleManager() {
                       </button>
                     );
                   })}
-                  <Button
-                    className="action-positive admin-schedule-add admin-schedule-card admin-schedule-capsule"
+                  <button
+                    type="button"
+                    className="admin-schedule-card admin-schedule-capsule booking-time-slot admin-schedule-add is-add-slot"
+                    aria-label={`Agregar horario para ${date}`}
                     onClick={() => openManualDialog(date, dateSlots[0]?.barber_id)}
                   >
-                    <Plus size={17} />
-                    Agregar horario
-                  </Button>
+                    <div className="admin-schedule-card-top">
+                      <div className="admin-schedule-time">
+                        <strong>+ Horario</strong>
+                        <span>nuevo inicio</span>
+                      </div>
+                      <span className="admin-schedule-status available">
+                        <Plus size={14} />
+                        Agregar horario
+                      </span>
+                    </div>
+                  </button>
                 </div>
                 {validStarts.filter((start) => start.slot_date === date).length > 0 && (
                   <div className="admin-schedule-starts" aria-label={`Inicios válidos del ${date}`}>
