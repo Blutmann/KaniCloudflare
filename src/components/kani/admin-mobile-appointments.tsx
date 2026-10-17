@@ -40,7 +40,7 @@ function statusTone(value: StatusFilter) {
 }
 
 export function AdminMobileAppointments() {
-  const { profile, barbers: permittedRows } = useAdminStaff();
+  const { profile, barbers: permittedRows, refreshCount, setIsRefreshing } = useAdminStaff();
   const permittedBarbers = useMemo(() => permittedBarberNames(profile, permittedRows), [profile, permittedRows]);
   const [appointments, setAppointments] = useState<RealAppointment[]>([]);
   const [businessToday, setBusinessToday] = useState(() => businessDateToday());
@@ -57,6 +57,7 @@ export function AdminMobileAppointments() {
 
   async function reload() {
     setLoading(true);
+    setIsRefreshing(true);
     try {
       setAppointments(await readRealAppointments());
       setError('');
@@ -64,10 +65,14 @@ export function AdminMobileAppointments() {
       setError(appointmentErrorMessage(cause));
     } finally {
       setLoading(false);
+      setIsRefreshing(false);
     }
   }
 
   useEffect(() => { void reload(); }, []);
+  useEffect(() => {
+    if (refreshCount > 0) void reload();
+  }, [refreshCount]);
   useEffect(() => {
     if (profile.role === 'BARBER' && permittedBarbers[0]) setBarberFilter(permittedBarbers[0]);
   }, [profile.role, permittedBarbers]);

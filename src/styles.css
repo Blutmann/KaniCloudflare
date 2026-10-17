@@ -787,10 +787,43 @@ html[data-theme="light"] .booking-option.selected .option-icon img { filter: bri
 html[data-theme="light"] .admin-section-nav-link.is-active,
 html[data-theme="light"] .admin-section-nav-link.is-active:hover,
 html[data-theme="light"] .admin-section-nav-link.is-active:active { background: #702B3A; color: #FFFFFF; }
+@media (min-width: 768px) {
+  .admin-section-nav-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: min(1184px, calc(100% - 80px));
+    margin-inline: auto;
+    padding-inline: 0;
+    margin-top: .75rem;
+    margin-bottom: 1rem;
+  }
+  .admin-section-nav {
+    display: inline-flex;
+    align-items: center;
+    width: auto;
+    margin-inline: 0;
+    padding: .35rem;
+    gap: .5rem;
+  }
+  .admin-section-nav-link {
+    flex: 0 0 auto;
+  }
+  .admin-section-nav-refresh {
+    display: inline-flex;
+  }
+  .admin-mobile-shell,
+  .admin-schedule-shell {
+    width: 100%;
+    max-width: 100%;
+    margin-inline: 0;
+  }
+}
 @media (max-width: 767px) {
   .admin-section-nav-wrapper { display: flex; justify-content: center; width: 100%; padding-inline: .5rem; margin-top: .75rem; margin-bottom: .5rem; }
   .admin-section-nav { display: inline-flex; align-items: center; justify-content: center; width: auto; max-width: 100%; gap: .25rem; padding: .25rem; }
   .admin-section-nav-link { flex: 0 0 auto; min-height: 2.2rem; padding: .4rem .75rem; font-size: .78rem; gap: .35rem; }
+  .admin-section-nav-refresh { display: none; }
 }
 
 /* Mobile appointments panel: isolated from the current admin layout. */

@@ -89,7 +89,7 @@ function overlaps(slot: AvailabilitySlot, appointment: RealAppointment) {
 }
 
 export function AdminScheduleManager() {
-  const { profile, barbers: permittedRows } = useAdminStaff();
+  const { profile, barbers: permittedRows, refreshCount, setIsRefreshing } = useAdminStaff();
   const permittedBarbers = useMemo(
     () => permittedBarberNames(profile, permittedRows),
     [permittedRows, profile],
@@ -149,6 +149,7 @@ export function AdminScheduleManager() {
 
   async function loadSlots() {
     setLoading(true);
+    setIsRefreshing(true);
     setError("");
     try {
       const [slotRows, starts, appointments] = await Promise.all([
@@ -184,12 +185,17 @@ export function AdminScheduleManager() {
       setError(errorMessage(cause));
     } finally {
       setLoading(false);
+      setIsRefreshing(false);
     }
   }
 
   useEffect(() => {
     void loadSlots();
   }, [dateRange, selectedRows]);
+
+  useEffect(() => {
+    if (refreshCount > 0) void loadSlots();
+  }, [refreshCount]);
 
   function selectPreset(next: MobileDatePreset) {
     setSpecificDate(
@@ -385,13 +391,19 @@ export function AdminScheduleManager() {
                 <p>Podés agregar una disponibilidad en cualquier fecha futura de atención.</p>
               </div>
               <div className="admin-schedule-cards admin-schedule-cards-empty">
-                <Button
-                  className="action-positive admin-schedule-add admin-schedule-card admin-schedule-capsule"
+                <button
+                  type="button"
+                  className="admin-schedule-card admin-schedule-capsule admin-schedule-add is-add-slot"
+                  aria-label="Agregar horario"
                   onClick={() => openManualDialog(specificDate, selectedRows[0]?.id)}
                 >
-                  <Plus size={17} />
-                  Agregar horario
-                </Button>
+                  <div className="admin-schedule-card-top flex items-center justify-center h-full">
+                    <span className="admin-schedule-add-label inline-flex items-center justify-center gap-1.5 font-semibold text-sm">
+                      <Plus size={16} aria-hidden="true" />
+                      <span>Agregar horario</span>
+                    </span>
+                  </div>
+                </button>
               </div>
             </>
           )}
@@ -420,7 +432,7 @@ export function AdminScheduleManager() {
                       <button
                         type="button"
                         key={slot.id}
-                        className={`admin-schedule-card admin-schedule-capsule booking-time-slot is-${slotTone}`}
+                        className={`admin-schedule-card admin-schedule-capsule is-${slotTone}`}
                         disabled={slot.occupied || saving}
                         aria-label={`${slot.start_time.slice(0, 5)}: ${slot.occupied ? "Con reserva, no modificable" : available ? "Disponible, tocar para marcar no disponible" : "No disponible, tocar para habilitar"}`}
                         onClick={() => void saveSlot(slot, available ? "UNAVAILABLE" : "AVAILABLE")}
@@ -450,7 +462,7 @@ export function AdminScheduleManager() {
                   })}
                   <button
                     type="button"
-                    className="admin-schedule-card admin-schedule-capsule booking-time-slot admin-schedule-add is-add-slot"
+                    className="admin-schedule-card admin-schedule-capsule admin-schedule-add is-add-slot"
                     aria-label={`Agregar horario para ${date}`}
                     onClick={() => openManualDialog(date, dateSlots[0]?.barber_id)}
                   >

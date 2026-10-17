@@ -67,7 +67,7 @@ const presets: StatisticsDatePreset[] = [
 ];
 
 export function AdminStatistics() {
-  const { profile, barbers: permittedRows } = useAdminStaff();
+  const { profile, barbers: permittedRows, refreshCount, setIsRefreshing } = useAdminStaff();
   const permittedBarbers = useMemo(
     () => permittedBarberNames(profile, permittedRows),
     [profile, permittedRows],
@@ -92,6 +92,7 @@ export function AdminStatistics() {
 
   async function loadData() {
     setLoading(true);
+    setIsRefreshing(true);
     setError('');
     try {
       const data = await readRealAppointments();
@@ -100,12 +101,17 @@ export function AdminStatistics() {
       setError(appointmentErrorMessage(err));
     } finally {
       setLoading(false);
+      setIsRefreshing(false);
     }
   }
 
   useEffect(() => {
     void loadData();
   }, []);
+
+  useEffect(() => {
+    if (refreshCount > 0) void loadData();
+  }, [refreshCount]);
 
   useEffect(() => {
     if (profile.role === 'BARBER' && permittedBarbers[0]) {
@@ -187,7 +193,7 @@ export function AdminStatistics() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 sm:hidden">
           <Button
             variant="outline"
             size="sm"
