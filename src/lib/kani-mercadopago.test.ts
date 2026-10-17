@@ -151,7 +151,10 @@ describe("Mercado Pago Integration Unit Tests", () => {
       expect(body.external_reference).toBe("apt_12345");
       expect(body.payer.email).toBe("cliente@example.com");
       expect(body.items[0].unit_price).toBe("10000.00");
-      expect(body.expiration_date_to).toBeDefined();
+      expect(body.items[0].title).toBe("Seña reserva de turno");
+      expect(body.items[0].id).toBeUndefined();
+      expect(body.expiration_date_to).toBeUndefined();
+      expect(body.notification_url).toBeUndefined();
     });
 
     it("handles Mercado Pago API errors gracefully", async () => {
@@ -480,6 +483,33 @@ describe("Mercado Pago Integration Unit Tests", () => {
 
       expect(result.success).toBe(true);
       expect(result.checkoutUrl).toBe("https://www.mercadopago.com.ar/checkout/v1/redirect?order_id=9988776655");
+    });
+
+    it("extracts error details from modern Orders API errors array", async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 400,
+        text: async () =>
+          JSON.stringify({
+            errors: [
+              {
+                code: "property_value",
+                message: "Invalid value for property",
+                details: ["'$.items[0].external_code' - length must be <= 30, but got 36"],
+              },
+            ],
+          }),
+      });
+      global.fetch = mockFetch;
+
+      const result = await createMercadoPagoOrder({
+        input,
+        accessToken: "TEST-TOKEN",
+        idempotencyKey: input.externalReference,
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain("'$.items[0].external_code' - length must be <= 30, but got 36");
     });
   });
 

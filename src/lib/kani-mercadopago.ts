@@ -203,21 +203,13 @@ export async function createMercadoPagoOrder({
     },
     items: [
       {
-        id: input.externalReference,
         title: input.title,
         description: input.description,
         unit_price: amountStr,
         quantity: 1,
-        category_id: "services",
-        external_code: input.externalReference,
       },
     ],
-    expiration_date_to: expirationTo,
   };
-
-  if (input.notificationUrl) {
-    bodyPayload.notification_url = input.notificationUrl;
-  }
 
   if (input.returnUrl) {
     bodyPayload.config = {
@@ -238,7 +230,6 @@ export async function createMercadoPagoOrder({
     totalAmount: bodyPayload.total_amount,
     idempotencyKey: validIdempotencyKey,
     hasReturnUrl: Boolean(input.returnUrl),
-    hasNotificationUrl: Boolean(input.notificationUrl),
   });
 
   try {
@@ -260,11 +251,18 @@ export async function createMercadoPagoOrder({
           message?: string;
           error?: string;
           cause?: Array<{ description?: string; code?: string | number }>;
+          errors?: Array<{ code?: string; message?: string; details?: string[] }>;
         };
         const causeDescriptions = Array.isArray(errorJson.cause)
           ? errorJson.cause.map((c) => c.description).filter(Boolean).join("; ")
           : "";
-        errorDetail = causeDescriptions || errorJson.message || errorJson.error || errorText;
+        const errorsDescriptions = Array.isArray(errorJson.errors)
+          ? errorJson.errors
+              .map((e) => (e.details && e.details.length ? e.details.join("; ") : e.message))
+              .filter(Boolean)
+              .join("; ")
+          : "";
+        errorDetail = causeDescriptions || errorsDescriptions || errorJson.message || errorJson.error || errorText;
       } catch {
         errorDetail = errorText;
       }
