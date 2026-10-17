@@ -260,6 +260,44 @@ export async function updateAvailabilitySlot({
   return updated as AvailabilitySlot;
 }
 
+export function validateAvailabilityRange(startTime: string, endTime?: string | null) {
+  const parseTime = (value: string) => {
+    const [hoursText, minutesText] = value.split(':');
+    return { hours: Number(hoursText), minutesValue: Number(minutesText) };
+  };
+  const start = parseTime(startTime);
+  const validTime = (value: { hours: number; minutesValue: number }, isEnd = false) =>
+    Number.isInteger(value.hours)
+    && Number.isInteger(value.minutesValue)
+    && value.hours >= 0
+    && value.hours <= 23
+    && value.minutesValue >= 0
+    && value.minutesValue <= 59
+    && (value.minutesValue % AVAILABILITY_STEP_MINUTES === 0 || (isEnd && value.hours === 23 && value.minutesValue === 59));
+
+  if (!validTime(start)) {
+    throw new Error('La hora de inicio debe ser válida entre 00:00 y 23:59.');
+  }
+
+  const normalizedStart = `${String(start.hours).padStart(2, '0')}:${String(start.minutesValue).padStart(2, '0')}`;
+  let normalizedEnd: string | null = null;
+  if (endTime) {
+    const end = parseTime(endTime);
+    if (!validTime(end, true)) {
+      throw new Error('La hora de fin debe ser válida entre 00:00 y 23:59.');
+    }
+    normalizedEnd = `${String(end.hours).padStart(2, '0')}:${String(end.minutesValue).padStart(2, '0')}:00`;
+    if (normalizedEnd <= `${normalizedStart}:00`) {
+      throw new Error('La hora de fin debe ser posterior a la hora de inicio.');
+    }
+  }
+
+  return {
+    normalizedStart: `${normalizedStart}:00`,
+    normalizedEnd,
+  };
+}
+
 export async function createAvailabilitySlots({
   barberId,
   dates,
@@ -273,23 +311,9 @@ export async function createAvailabilitySlots({
 }) {
   const { data: { user }, error: userError } = await supabase.auth.getUser();
   if (userError || !user) throw userError ?? new Error('Sesión no disponible');
-  const parseTime = (value: string) => {
-    const [hoursText, minutesText] = value.split(':');
-    return { hours: Number(hoursText), minutesValue: Number(minutesText) };
-  };
-  const start = parseTime(startTime);
-  const validTime = (value: { hours: number; minutesValue: number }) =>
-    Number.isInteger(value.hours)
-    && Number.isInteger(value.minutesValue)
-    && value.hours >= 0
-    && value.hours <= 23
-    && value.minutesValue >= 0
-    && value.minutesValue <= 59
-    && value.minutesValue % AVAILABILITY_STEP_MINUTES === 0;
-  const normalizedStart = `${String(start.hours).padStart(2, '0')}:${String(start.minutesValue).padStart(2, '0')}`;
-  if (!validTime(start) || !isFixedBookingStart(normalizedStart)) {
-    throw new Error('El inicio debe ser uno de los horarios comerciales: 10:00, 10:45, 11:30, 12:15, 13:00, 13:45, 14:30, 15:15, 16:00, 16:45, 17:30, 18:15 o 19:00.');
-  }
+
+  const { normalizedStart, normalizedEnd } = validateAvailabilityRange(startTime, endTime);
+
   const businessToday = businessDateToday();
   const validDates = dates.filter(slotDate => isManageableScheduleDate(slotDate, businessToday));
   if (validDates.length !== dates.filter(Boolean).length) throw new Error(`La fecha debe ser un día de atención desde ${businessToday}; los domingos permanecen cerrados.`);
@@ -297,8 +321,8 @@ export async function createAvailabilitySlots({
   const { data, error } = await supabase.rpc('create_availability_slots', {
     p_barber_id: barberId,
     p_slot_dates: validDates,
-    p_start_time: `${normalizedStart}:00`,
-    p_end_time: endTime ?? null,
+    p_start_time: normalizedStart,
+    p_end_time: normalizedEnd,
   });
   if (error) throw error;
   return (data ?? []) as AvailabilitySlot[];

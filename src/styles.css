@@ -121,6 +121,15 @@ html[data-theme="dark"] {
   --button-destructive-bg: #762936;
   --button-destructive-text: #FFFFFF;
   --button-destructive-hover: #8A3342;
+  --stat-accent: #B99A5B;
+  --stat-accent-bg: rgba(185, 154, 91, 0.12);
+  --stat-accent-border: rgba(185, 154, 91, 0.28);
+  --stat-peak: #34D399;
+  --stat-peak-bg: rgba(52, 211, 153, 0.12);
+  --stat-peak-border: rgba(52, 211, 153, 0.28);
+  --stat-bar-normal: rgba(185, 154, 91, 0.45);
+  --stat-bar-peak: #34D399;
+  --stat-bar-service: #B99A5B;
 }
 
 html[data-theme="light"] {
@@ -175,6 +184,15 @@ html[data-theme="light"] {
   --button-destructive-bg: #762936;
   --button-destructive-text: #FFFFFF;
   --button-destructive-hover: #63212C;
+  --stat-accent: #762936;
+  --stat-accent-bg: rgba(118, 41, 54, 0.08);
+  --stat-accent-border: rgba(118, 41, 54, 0.22);
+  --stat-peak: #15803D;
+  --stat-peak-bg: rgba(21, 128, 61, 0.10);
+  --stat-peak-border: rgba(21, 128, 61, 0.25);
+  --stat-bar-normal: #94A3B8;
+  --stat-bar-peak: #15803D;
+  --stat-bar-service: #762936;
 }
 
 @layer base {
@@ -762,17 +780,17 @@ html[data-theme="light"] .booking-option.selected .option-icon img { filter: bri
 /* Shared admin section navigation. */
 .admin-shell { min-width: 0; }
 .admin-section-nav-wrapper { display: flex; justify-content: center; width: 100%; padding-inline: 1rem; margin-top: .75rem; margin-bottom: .5rem; }
-.admin-section-nav { display: inline-flex; align-items: center; justify-content: center; gap: .35rem; width: auto; max-width: 100%; padding: .3rem; border: 1px solid var(--border); border-radius: .9rem; background: var(--surface); box-shadow: 0 4px 14px rgb(0 0 0 / .06); }
-.admin-section-nav-link { display: inline-flex; min-width: 0; flex: 0 0 auto; align-items: center; justify-content: center; gap: .5rem; min-height: 2.35rem; padding: .45rem 1.15rem; border-radius: .65rem; color: var(--muted-foreground); font-size: .84rem; font-weight: 500; text-align: center; text-decoration: none; white-space: nowrap; transition: background-color .2s ease, color .2s ease; }
+.admin-section-nav { display: grid; grid-template-columns: repeat(3, 1fr); width: min(100%, 52rem); margin-inline: auto; padding: .35rem; gap: .5rem; border: 1px solid var(--border); border-radius: .9rem; background: var(--surface); box-shadow: 0 4px 14px rgb(0 0 0 / .06); }
+.admin-section-nav-link { display: inline-flex; min-width: 0; flex: 1 1 0; align-items: center; justify-content: center; gap: .5rem; min-height: 2.5rem; padding: .5rem 1rem; border-radius: .65rem; color: var(--muted-foreground); font-size: .85rem; font-weight: 500; text-align: center; text-decoration: none; white-space: nowrap; transition: background-color .2s ease, color .2s ease; }
 .admin-section-nav-link:hover { color: var(--foreground); }
 .admin-section-nav-link.is-active { background: var(--gold); color: var(--gold-foreground, #18130b); font-weight: 600; }
 html[data-theme="light"] .admin-section-nav-link.is-active,
 html[data-theme="light"] .admin-section-nav-link.is-active:hover,
 html[data-theme="light"] .admin-section-nav-link.is-active:active { background: #702B3A; color: #FFFFFF; }
-@media (max-width: 480px) {
-  .admin-section-nav-wrapper { padding-inline: .5rem; }
-  .admin-section-nav { gap: .25rem; padding: .25rem; }
-  .admin-section-nav-link { min-height: 2.2rem; padding: .4rem .75rem; font-size: .78rem; gap: .35rem; }
+@media (max-width: 767px) {
+  .admin-section-nav-wrapper { display: flex; justify-content: center; width: 100%; padding-inline: .5rem; margin-top: .75rem; margin-bottom: .5rem; }
+  .admin-section-nav { display: inline-flex; align-items: center; justify-content: center; width: auto; max-width: 100%; gap: .25rem; padding: .25rem; }
+  .admin-section-nav-link { flex: 0 0 auto; min-height: 2.2rem; padding: .4rem .75rem; font-size: .78rem; gap: .35rem; }
 }
 
 /* Mobile appointments panel: isolated from the current admin layout. */
@@ -1111,11 +1129,14 @@ html[data-theme='light'] .admin-schedule-capsule.is-occupied { border-color: col
 
 /* «Agregar horario» comparte exactamente la misma geometría, padding, tipografía y presencia que las cápsulas de horarios */
 .admin-schedule-cards > .admin-schedule-add.admin-schedule-capsule {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border: 1px dashed color-mix(in oklch, var(--gold) 45%, var(--border));
   border-radius: .8rem;
   background: color-mix(in oklch, var(--gold) 4%, var(--surface));
   color: var(--foreground);
-  text-align: left;
+  text-align: center;
   box-shadow: 0 5px 14px rgb(0 0 0 / .08);
   cursor: pointer;
   transition: border-color .2s ease, background-color .2s ease, transform .15s ease;
@@ -1125,6 +1146,15 @@ html[data-theme='light'] .admin-schedule-capsule.is-occupied { border-color: col
   border-color: var(--gold);
   border-style: solid;
   background: color-mix(in oklch, var(--gold) 12%, var(--surface));
+  color: var(--foreground);
+}
+.admin-schedule-cards > .admin-schedule-add .admin-schedule-add-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .45rem;
+  font-size: .88rem;
+  font-weight: 600;
   color: var(--foreground);
 }
 html[data-theme='light'] .admin-schedule-cards > .admin-schedule-add.admin-schedule-capsule {
@@ -1748,3 +1778,43 @@ html[data-theme='dark'] .admin-section-nav-link.is-active:active {
 .booking-page .booking-barber-options .booking-option-copy {
   text-align: left !important;
 }
+
+/* Statistics Visual Palette System */
+.stat-badge-peak {
+  color: var(--stat-peak) !important;
+  background-color: var(--stat-peak-bg) !important;
+  border-color: var(--stat-peak-border) !important;
+}
+
+.stat-badge-accent {
+  color: var(--stat-accent) !important;
+  background-color: var(--stat-accent-bg) !important;
+  border-color: var(--stat-accent-border) !important;
+}
+
+.stat-text-peak {
+  color: var(--stat-peak) !important;
+}
+
+.stat-text-accent {
+  color: var(--stat-accent) !important;
+}
+
+.stat-preset-btn-active {
+  background-color: var(--stat-accent) !important;
+  color: #FFFFFF !important;
+  border-color: var(--stat-accent) !important;
+}
+
+.stat-bar-fill-peak {
+  background-color: var(--stat-bar-peak) !important;
+}
+
+.stat-bar-fill-normal {
+  background-color: var(--stat-bar-normal) !important;
+}
+
+.stat-bar-fill-service {
+  background-color: var(--stat-bar-service) !important;
+}
+

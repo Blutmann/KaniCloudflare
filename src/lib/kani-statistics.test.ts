@@ -210,7 +210,7 @@ describe('Statistics Module Unit Tests', () => {
     expect(services[1].totalRevenue).toBe(6000);
   });
 
-  it('aggregateClientsDirectory merges appointments by client and finds last booking', () => {
+  it('aggregateClientsDirectory merges appointments by client, computes totals, cancellations, and history', () => {
     const list: RealAppointment[] = [
       makeMockAppointment({
         id: '1',
@@ -219,6 +219,11 @@ describe('Statistics Module Unit Tests', () => {
         email: 'carlos@example.com',
         date: '2026-10-10',
         time: '11:00',
+        endTime: '11:45',
+        serviceName: 'Corte tradicional',
+        barber: 'Kani',
+        statusCode: 'COMPLETED',
+        createdAt: '2026-10-01T12:00:00Z',
       }),
       makeMockAppointment({
         id: '2',
@@ -227,6 +232,11 @@ describe('Statistics Module Unit Tests', () => {
         email: 'carlos@example.com',
         date: '2026-10-17',
         time: '16:00',
+        endTime: '16:45',
+        serviceName: 'Barba',
+        barber: 'Kani',
+        statusCode: 'CANCELLED',
+        createdAt: '2026-10-15T15:30:00Z',
       }),
       makeMockAppointment({
         id: '3',
@@ -235,6 +245,11 @@ describe('Statistics Module Unit Tests', () => {
         email: 'ana@example.com',
         date: '2026-10-12',
         time: '14:00',
+        endTime: '14:30',
+        serviceName: 'Perfilado',
+        barber: 'Other',
+        statusCode: 'CONFIRMED',
+        createdAt: '2026-10-11T10:00:00Z',
       }),
     ];
 
@@ -243,12 +258,27 @@ describe('Statistics Module Unit Tests', () => {
 
     const carlos = directory.find((c) => c.email === 'carlos@example.com')!;
     expect(carlos.totalAppointments).toBe(2);
+    expect(carlos.totalCompleted).toBe(1);
+    expect(carlos.totalCancelled).toBe(1);
+    expect(carlos.totalActive).toBe(0);
     expect(carlos.lastBookingDate).toBe('2026-10-17');
     expect(carlos.lastBookingTime).toBe('16:00');
+    expect(carlos.appointments).toHaveLength(2);
+    // Newest first
+    expect(carlos.appointments[0].id).toBe('2');
+    expect(carlos.appointments[0].statusCode).toBe('CANCELLED');
+    expect(carlos.appointments[0].createdAt).toBe('2026-10-15T15:30:00Z');
+    expect(carlos.appointments[1].id).toBe('1');
+    expect(carlos.appointments[1].statusCode).toBe('COMPLETED');
 
     const ana = directory.find((c) => c.email === 'ana@example.com')!;
     expect(ana.totalAppointments).toBe(1);
+    expect(ana.totalCompleted).toBe(0);
+    expect(ana.totalCancelled).toBe(0);
+    expect(ana.totalActive).toBe(1);
     expect(ana.lastBookingDate).toBe('2026-10-12');
+    expect(ana.appointments).toHaveLength(1);
+    expect(ana.appointments[0].serviceName).toBe('Perfilado');
   });
 
   it('filterAndSortClients filters by partial name/email/phone and sorts asc/desc', () => {

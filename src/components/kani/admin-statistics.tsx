@@ -177,7 +177,7 @@ export function AdminStatistics() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 pb-4 border-b border-border">
         <div>
           <div className="flex items-center gap-2">
-            <BarChart2 className="text-gold" size={24} />
+            <BarChart2 className="stat-text-accent" size={24} />
             <h1 className="text-xl font-bold tracking-tight text-foreground">
               Estadísticas y Métricas
             </h1>
@@ -243,7 +243,7 @@ export function AdminStatistics() {
                 onClick={() => setDatePreset(preset)}
                 className={`text-xs px-2.5 py-1 rounded-md font-medium transition-colors border ${
                   active
-                    ? 'bg-gold text-gold-foreground border-gold'
+                    ? 'stat-preset-btn-active shadow-xs'
                     : 'bg-background hover:bg-muted/40 text-muted-foreground hover:text-foreground border-border'
                 }`}
               >
@@ -371,13 +371,13 @@ export function AdminStatistics() {
         </div>
 
         {/* Confirmados */}
-        <div className="p-3.5 rounded-xl border border-gold/30 bg-gold/5 flex flex-col justify-between">
-          <span className="text-xs text-gold font-medium">Confirmados</span>
+        <div className="p-3.5 rounded-xl border border-[var(--stat-accent)]/30 bg-[var(--stat-accent)]/5 flex flex-col justify-between">
+          <span className="text-xs font-medium stat-text-accent">Confirmados</span>
           <div className="mt-2 flex items-baseline justify-between">
-            <span className="text-2xl font-bold text-gold">
+            <span className="text-2xl font-bold stat-text-accent">
               {loading ? '…' : kpis.confirmed}
             </span>
-            <Clock3 size={16} className="text-gold" />
+            <Clock3 size={16} className="stat-text-accent" />
           </div>
         </div>
 
@@ -438,7 +438,7 @@ export function AdminStatistics() {
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
-                  <TrendingUp size={16} className="text-gold" />
+                  <TrendingUp size={16} className="stat-text-accent" />
                   <span>Demanda por Fecha</span>
                 </h3>
                 <p className="text-xs text-muted-foreground mt-0.5">
@@ -447,8 +447,8 @@ export function AdminStatistics() {
               </div>
 
               {dailyDemand.peakDate && (
-                <div className="flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-gold/10 text-gold border border-gold/20 font-medium">
-                  <Flame size={12} />
+                <div className="flex items-center gap-1 text-[11px] px-2.5 py-0.5 rounded-full stat-badge-peak border font-medium">
+                  <Flame size={12} className="stat-text-peak" />
                   <span>Pico: {dailyDemand.peakDate} ({dailyDemand.peakCount} turnos)</span>
                 </div>
               )}
@@ -477,7 +477,7 @@ export function AdminStatistics() {
                           return (
                             <div className="p-2.5 rounded-lg border border-border bg-surface text-xs shadow-md space-y-1">
                               <p className="font-semibold text-foreground">{data.date}</p>
-                              <p className="text-gold">Total reservas: {data.count}</p>
+                              <p className="stat-text-accent">Total reservas: {data.count}</p>
                               <p className="text-success">Completados: {data.completed}</p>
                               <p className="text-destructive">Cancelados: {data.cancelled}</p>
                             </div>
@@ -490,7 +490,7 @@ export function AdminStatistics() {
                       {dailyDemand.points.map((entry, index) => (
                         <Cell
                           key={`cell-${index}`}
-                          fill={entry.isPeak ? 'var(--gold)' : 'color-mix(in srgb, var(--gold) 45%, var(--muted))'}
+                          fill={entry.isPeak ? 'var(--stat-bar-peak)' : 'var(--stat-bar-normal)'}
                         />
                       ))}
                     </Bar>
@@ -511,7 +511,7 @@ export function AdminStatistics() {
           >
             <div>
               <h3 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
-                <Clock3 size={16} className="text-gold" />
+                <Clock3 size={16} className="stat-text-accent" />
                 <span>Demanda por Horario</span>
               </h3>
               <p className="text-xs text-muted-foreground mt-0.5">
@@ -554,12 +554,12 @@ export function AdminStatistics() {
 
             {/* Peak Hour Badge */}
             {hourlyDemand.peakHour && (
-              <div className="p-2 rounded-lg bg-gold/10 border border-gold/20 flex items-center justify-between text-xs">
-                <span className="text-muted-foreground flex items-center gap-1">
-                  <Flame size={13} className="text-gold" />
+              <div className="p-2 rounded-lg stat-badge-peak border flex items-center justify-between text-xs font-medium">
+                <span className="flex items-center gap-1 opacity-90">
+                  <Flame size={13} className="stat-text-peak" />
                   Hora de mayor concentración:
                 </span>
-                <span className="font-bold text-gold">
+                <span className="font-bold stat-text-peak">
                   {hourlyDemand.peakHour} ({hourlyDemand.peakHourCount} turnos)
                 </span>
               </div>
@@ -578,7 +578,7 @@ export function AdminStatistics() {
                   <div className="w-full h-2 rounded-full bg-muted/40 overflow-hidden">
                     <div
                       className={`h-full rounded-full transition-all ${
-                        slot.isPeak ? 'bg-gold' : 'bg-gold/50'
+                        slot.isPeak ? 'stat-bar-fill-peak' : 'stat-bar-fill-normal'
                       }`}
                       style={{ width: `${Math.max(4, slot.percentage)}%` }}
                     />
@@ -596,7 +596,7 @@ export function AdminStatistics() {
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
-                  <Scissors size={16} className="text-gold" />
+                  <Scissors size={16} className="stat-text-accent" />
                   <span>Servicios más Solicitados</span>
                 </h3>
                 <p className="text-xs text-muted-foreground mt-0.5">
@@ -613,7 +613,7 @@ export function AdminStatistics() {
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <span className="text-[10px] font-bold text-gold uppercase tracking-wider">
+                      <span className="text-[10px] font-bold stat-text-accent uppercase tracking-wider">
                         #{index + 1} en demanda
                       </span>
                       <h4 className="font-semibold text-sm text-foreground truncate mt-0.5">
@@ -632,7 +632,7 @@ export function AdminStatistics() {
                     </div>
                     <div className="w-full h-2 rounded-full bg-muted/40 overflow-hidden">
                       <div
-                        className="h-full rounded-full bg-gold transition-all"
+                        className="h-full rounded-full stat-bar-fill-service transition-all"
                         style={{ width: `${Math.max(4, srv.percentage)}%` }}
                       />
                     </div>

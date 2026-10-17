@@ -14,6 +14,8 @@ export type RealAppointment = Appointment & {
   serviceName?: string;
   serviceDuration?: number;
   servicePrice?: number;
+  clientId?: string;
+  createdAt?: string;
 };
 
 type AppointmentRow = Tables<'appointments'>;
@@ -155,6 +157,8 @@ export async function readRealAppointments() {
       serviceName: service.name,
       serviceDuration: service.duration_minutes,
       servicePrice: service.price_ars,
+      clientId: row.client_id,
+      createdAt: row.created_at,
     } satisfies RealAppointment];
   });
 }

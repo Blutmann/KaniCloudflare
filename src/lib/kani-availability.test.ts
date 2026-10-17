@@ -7,6 +7,7 @@ import {
   effectiveServiceDurationSeconds,
   FIXED_BOOKING_START_TIMES,
   isManageableScheduleDate,
+  validateAvailabilityRange,
   type PublicAvailabilityStart,
   type PublicAvailabilitySlot,
 } from "./kani-availability";
@@ -127,3 +128,42 @@ describe("fechas administrables de horarios", () => {
     expect(isManageableScheduleDate("2026-10-10", "2026-10-11")).toBe(false);
   });
 });
+
+describe("validación de disponibilidad extendida (00:00 - 23:59)", () => {
+  it("permite el rango completo de 00:00 a 23:59", () => {
+    expect(validateAvailabilityRange("00:00", "23:59")).toEqual({
+      normalizedStart: "00:00:00",
+      normalizedEnd: "23:59:00",
+    });
+  });
+
+  it("permite horarios comerciales estándar y nocturnos extendidos", () => {
+    expect(validateAvailabilityRange("10:00", "20:00")).toEqual({
+      normalizedStart: "10:00:00",
+      normalizedEnd: "20:00:00",
+    });
+    expect(validateAvailabilityRange("20:00", "23:59")).toEqual({
+      normalizedStart: "20:00:00",
+      normalizedEnd: "23:59:00",
+    });
+  });
+
+  it("rechaza hora de fin anterior o igual al inicio", () => {
+    expect(() => validateAvailabilityRange("20:00", "19:00")).toThrow(
+      "La hora de fin debe ser posterior a la hora de inicio.",
+    );
+    expect(() => validateAvailabilityRange("15:00", "15:00")).toThrow(
+      "La hora de fin debe ser posterior a la hora de inicio.",
+    );
+  });
+
+  it("rechaza horas fuera del rango válido de 24 horas", () => {
+    expect(() => validateAvailabilityRange("24:00")).toThrow(
+      "La hora de inicio debe ser válida entre 00:00 y 23:59.",
+    );
+    expect(() => validateAvailabilityRange("10:00", "24:00")).toThrow(
+      "La hora de fin debe ser válida entre 00:00 y 23:59.",
+    );
+  });
+});
+

@@ -310,17 +310,35 @@ export function computeServiceDemand(appointments: RealAppointment[]): ServiceDe
     .sort((a, b) => b.count - a.count);
 }
 
+export type ClientAppointmentHistoryItem = {
+  id: string;
+  requestNumber: number;
+  bookingDate: string;
+  startTime: string;
+  endTime?: string;
+  serviceName: string;
+  barberName: string;
+  status: string;
+  statusCode: RealAppointmentStatus;
+  notes: string;
+  createdAt?: string;
+};
+
 export type ClientDirectoryItem = {
   id: string;
   name: string;
   email: string;
   phone: string;
   totalAppointments: number;
+  totalCancelled: number;
+  totalCompleted: number;
+  totalActive: number;
   lastBookingDate: string;
   lastBookingTime?: string;
   lastBookingStatus?: RealAppointmentStatus;
   lastServiceName?: string;
   lastBarberName?: string;
+  appointments: ClientAppointmentHistoryItem[];
 };
 
 export type ClientSortField = 'name' | 'email' | 'phone' | 'totalAppointments' | 'lastBookingDate';
@@ -330,26 +348,50 @@ export function aggregateClientsDirectory(appointments: RealAppointment[]): Clie
   const clientsMap = new Map<string, ClientDirectoryItem>();
 
   for (const appointment of appointments) {
-    // Unique key: phone or email or name
-    const key = (appointment.phone || appointment.email || appointment.name).trim().toLowerCase();
+    const historyItem: ClientAppointmentHistoryItem = {
+      id: appointment.id,
+      requestNumber: appointment.requestNumber,
+      bookingDate: appointment.date,
+      startTime: appointment.time,
+      endTime: appointment.endTime,
+      serviceName: appointment.serviceName || appointment.service || 'Servicio',
+      barberName: appointment.barber,
+      status: appointment.status,
+      statusCode: appointment.statusCode,
+      notes: appointment.notes,
+      createdAt: appointment.createdAt,
+    };
+
+    // Unique key: client_id if present, otherwise phone or email or name
+    const key = (appointment.clientId || appointment.phone || appointment.email || appointment.name).trim().toLowerCase();
     if (!key) continue;
 
     const existing = clientsMap.get(key);
     if (!existing) {
       clientsMap.set(key, {
-        id: appointment.id,
+        id: appointment.clientId || appointment.id,
         name: appointment.name,
         email: appointment.email,
         phone: appointment.phone,
         totalAppointments: 1,
+        totalCancelled: appointment.statusCode === 'CANCELLED' ? 1 : 0,
+        totalCompleted: appointment.statusCode === 'COMPLETED' ? 1 : 0,
+        totalActive: appointment.statusCode === 'CONFIRMED' || appointment.statusCode === 'REQUESTED' ? 1 : 0,
         lastBookingDate: appointment.date,
         lastBookingTime: appointment.time,
         lastBookingStatus: appointment.statusCode,
         lastServiceName: appointment.serviceName,
         lastBarberName: appointment.barber,
+        appointments: [historyItem],
       });
     } else {
       existing.totalAppointments++;
+      if (appointment.statusCode === 'CANCELLED') existing.totalCancelled++;
+      if (appointment.statusCode === 'COMPLETED') existing.totalCompleted++;
+      if (appointment.statusCode === 'CONFIRMED' || appointment.statusCode === 'REQUESTED') {
+        existing.totalActive++;
+      }
+
       // Compare if this appointment is more recent
       if (
         appointment.date > existing.lastBookingDate ||
@@ -367,7 +409,16 @@ export function aggregateClientsDirectory(appointments: RealAppointment[]): Clie
       }
       if (appointment.email && !existing.email) existing.email = appointment.email;
       if (appointment.phone && !existing.phone) existing.phone = appointment.phone;
+
+      existing.appointments.push(historyItem);
     }
+  }
+
+  // Sort appointments in each client newest first
+  for (const client of clientsMap.values()) {
+    client.appointments.sort((a, b) =>
+      (b.bookingDate + (b.startTime || '')).localeCompare(a.bookingDate + (a.startTime || ''))
+    );
   }
 
   return [...clientsMap.values()];
