@@ -136,7 +136,15 @@ export const sendAppointmentNotification = createServerFn({ method: "POST" })
       const whatsappPhoneId = getRuntimeEnv("WHATSAPP_PHONE_NUMBER_ID")?.trim();
       const recipientPhone = payload.recipientPhone;
 
-      if (whatsappToken && whatsappPhoneId && recipientPhone) {
+      if (!whatsappToken || !whatsappPhoneId) {
+        console.info(
+          "[KANI notification] WhatsApp no configurado aún en variables de entorno (pendiente Meta); omitiendo envío de WhatsApp de forma segura.",
+        );
+      } else if (!recipientPhone) {
+        console.info(
+          "[KANI notification] No se proveyó teléfono del cliente; omitiendo notificación de WhatsApp.",
+        );
+      } else {
         try {
           const { sendWhatsAppNotification } = await import("./kani-whatsapp");
           const dateFormatted = new Date(`${payload.bookingDate}T12:00:00Z`).toLocaleDateString("es-AR", {

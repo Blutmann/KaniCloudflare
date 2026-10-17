@@ -107,6 +107,7 @@ export async function sendWhatsAppNotification({
         "Content-Type": "application/json",
       },
       body: JSON.stringify(requestBody),
+      signal: AbortSignal.timeout(5000),
     });
 
     const data = (await response.json().catch(() => null)) as {
@@ -115,17 +116,26 @@ export async function sendWhatsAppNotification({
     } | null;
 
     if (!response.ok) {
-      const errorMsg = data?.error?.message ?? `HTTP_${response.status}`;
-      console.error(`[WhatsApp API Error] (${response.status}): ${errorMsg}`);
-      return { success: false, error: errorMsg };
+      const rawError = data?.error?.message ?? `HTTP_${response.status}`;
+      const safeError = sanitizeWhatsAppError(rawError);
+      console.warn(`[WhatsApp API Error] (${response.status}): ${safeError}`);
+      return { success: false, error: safeError };
     }
 
     const messageId = data?.messages?.[0]?.id;
-    console.log(`[WhatsApp API] Mensaje enviado con éxito: ${messageId}`);
+    console.log(`[WhatsApp API] Mensaje enviado con éxito`);
     return { success: true, messageId };
   } catch (error) {
-    const errorMsg = error instanceof Error ? error.message : String(error);
-    console.error(`[WhatsApp API Exception]: ${errorMsg}`);
-    return { success: false, error: errorMsg };
+    const rawError = error instanceof Error ? error.message : String(error);
+    const safeError = sanitizeWhatsAppError(rawError);
+    console.warn(`[WhatsApp API Exception]: ${safeError}`);
+    return { success: false, error: safeError };
   }
+}
+
+function sanitizeWhatsAppError(message: string): string {
+  return message
+    .replace(/Bearer\s+[^\s]+/gi, "Bearer [redacted]")
+    .replace(/[a-zA-Z0-9_\-]{20,}/g, "[redacted_token]")
+    .slice(0, 300);
 }
