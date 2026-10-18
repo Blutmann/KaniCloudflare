@@ -551,6 +551,27 @@ html[data-theme="light"] .booking-option.selected .option-icon img { filter: bri
 .phone-country-empty { padding: 20px 9px; color: var(--muted-foreground); font-size: 12px; text-align: center; }
 .phone-country-option { display: flex; width: 100%; min-height: 38px; align-items: center; justify-content: space-between; gap: 12px; padding: 7px 9px; border-radius: 3px; color: var(--foreground); font-family: var(--font-sans); font-size: 12px; text-align: left; }
 .phone-country-option:hover, .phone-country-option[aria-selected="true"] { background: color-mix(in oklch, var(--gold) 12%, transparent); color: var(--gold); }
+.phone-input-row.admin-phone-input-row,
+.admin-phone-input-row {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+  gap: 8px;
+  margin-top: 0;
+  width: 100%;
+}
+.phone-country-trigger.is-compact {
+  height: 2.5rem;
+  padding-inline: 8px;
+  gap: 5px;
+  font-size: 11px;
+}
+@media (max-width: 639px) {
+  .phone-input-row.admin-phone-input-row,
+  .admin-phone-input-row {
+    grid-template-columns: 106px minmax(0, 1fr);
+    gap: 6px;
+  }
+}
 .studio-page { max-width: 1020px; padding-top: 64px; padding-bottom: 88px; min-height: 620px; }
 .studio-page-header { display: flex; align-items: end; justify-content: space-between; gap: 30px; border-bottom: 1px solid var(--border); padding-bottom: 34px; }
 .studio-page-lead { max-width: 560px; margin-top: 16px; color: var(--muted-foreground); line-height: 1.7; }
@@ -1232,6 +1253,7 @@ html[data-theme="light"] .admin-section-nav-link.is-active:active {
 
 /* Manual appointment form dialog: full-screen & 100% opaque on mobile, responsive modal on desktop */
 @media (max-width: 639px) {
+  .admin-manual-dialog,
   .admin-manual-dialog-fullscreen {
     position: fixed !important;
     inset: 0 !important;
@@ -1248,8 +1270,9 @@ html[data-theme="light"] .admin-section-nav-link.is-active:active {
     border: none !important;
     background-color: var(--background) !important;
     opacity: 1 !important;
-    padding: max(1.25rem, env(safe-area-inset-top)) 1.25rem max(1.25rem, env(safe-area-inset-bottom)) 1.25rem !important;
-    overflow-y: auto !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: hidden !important;
     overscroll-behavior: contain !important;
     z-index: 60 !important;
     box-sizing: border-box !important;
@@ -1257,29 +1280,27 @@ html[data-theme="light"] .admin-section-nav-link.is-active:active {
     flex-direction: column !important;
   }
 
-  .admin-manual-dialog-fullscreen form {
-    display: flex;
-    flex-direction: column;
-    min-height: 100%;
-    width: 100%;
-  }
-
-  .admin-manual-dialog-fullscreen .manual-dialog-body {
-    flex: 1 0 auto;
-  }
-
-  .admin-manual-dialog-fullscreen .manual-dialog-footer {
-    margin-top: auto;
-    padding-top: 1.25rem;
-    padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+  .admin-manual-dialog > button,
+  .admin-manual-dialog-fullscreen > button {
+    top: max(0.85rem, env(safe-area-inset-top)) !important;
+    right: 1rem !important;
+    width: 2.25rem !important;
+    height: 2.25rem !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    z-index: 30 !important;
   }
 }
 
 @media (min-width: 640px) {
+  .admin-manual-dialog,
   .admin-manual-dialog-fullscreen {
-    max-width: 32rem !important;
+    width: 95vw !important;
+    max-width: 56rem !important; /* 896px = max-w-4xl */
     max-height: 90vh !important;
-    overflow-y: auto !important;
+    overflow: hidden !important;
+    border-radius: 0.75rem !important;
   }
 
   .admin-mobile-page,

@@ -5,7 +5,9 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { dateLabel, money, serviceFor } from '@/lib/kani-model';
-import { formatPhoneDisplay } from '@/lib/kani-phone';
+import { formatPhoneDisplay, normalizePhone, type PhoneCountry } from '@/lib/kani-phone';
+import { PhoneInput } from '@/components/kani/phone-input';
+import { cn } from '@/lib/utils';
 import { useAdminStaff } from '@/lib/kani-admin-context';
 import { appointmentErrorMessage, createManualAppointment, readRealAppointments, retryRealAppointmentNotification, updateRealAppointmentStatus, type ManualFrequency, MANUAL_FREQUENCY_LABELS, type RealAppointment, type RealAppointmentStatus } from '@/lib/kani-appointments';
 import { addCalendarDays, businessDateToday, dateRangeForAppointmentsPreset, filterMobileAppointments, appointmentsPresets, appointmentsPresetLabels, type AppointmentsDatePreset, type MobileStatusFilter } from '@/lib/kani-mobile-appointments';
@@ -67,6 +69,7 @@ export function AdminMobileAppointments() {
   const [manualTime, setManualTime] = useState('10:00');
   const [manualClientName, setManualClientName] = useState('');
   const [manualClientPhone, setManualClientPhone] = useState('');
+  const [phoneCountry, setPhoneCountry] = useState<PhoneCountry>('AR');
   const [manualClientEmail, setManualClientEmail] = useState('');
   const [manualServiceId, setManualServiceId] = useState('');
   const [manualBarberId, setManualBarberId] = useState('');
@@ -170,6 +173,7 @@ export function AdminMobileAppointments() {
     setManualTime('10:00');
     setManualClientName('');
     setManualClientPhone('');
+    setPhoneCountry('AR');
     setManualClientEmail('');
     setManualNotes('');
     setManualFrequency('ONCE');
@@ -219,8 +223,9 @@ export function AdminMobileAppointments() {
       setManualError('El nombre del cliente debe tener al menos 3 caracteres.');
       return;
     }
-    if (manualClientPhone.trim().length < 6) {
-      setManualError('El celular del cliente debe tener al menos 6 caracteres.');
+    const normalized = normalizePhone(manualClientPhone, phoneCountry);
+    if (!normalized) {
+      setManualError('Ingresá un celular válido para el país seleccionado.');
       return;
     }
 
@@ -237,9 +242,9 @@ export function AdminMobileAppointments() {
         serviceId: manualServiceId,
         date: manualDate,
         time: manualTime,
-        name: manualClientName,
-        phone: manualClientPhone,
-        email: manualClientEmail,
+        name: manualClientName.trim(),
+        phone: normalized.e164,
+        email: manualClientEmail.trim() || undefined,
         notes: notesPayload,
         isRecurring,
         frequency: manualFrequency,
@@ -390,58 +395,85 @@ export function AdminMobileAppointments() {
 
     {/* Diálogo para agregar turno manual */}
     <Dialog open={manualOpen} onOpenChange={open => { if (!open) handleCancel(); }}>
-      <DialogContent className="admin-manual-dialog-fullscreen">
-        <form onSubmit={handleCreateManualAppointment}>
-          <DialogHeader className="space-y-0 text-left pb-1">
-            <DialogTitle className="text-base sm:text-lg font-semibold text-foreground">
-              Agregar turno manual
-            </DialogTitle>
-            <DialogDescription className="sr-only">
-              Formulario para agregar un turno manual
-            </DialogDescription>
-          </DialogHeader>
+      <DialogContent
+        className={cn(
+          "admin-manual-dialog",
+          "fixed inset-0 top-0 left-0 right-0 bottom-0 z-50",
+          "w-full h-[100dvh] max-w-none max-h-[100dvh]",
+          "translate-x-0 translate-y-0",
+          "rounded-none border-0 p-0 m-0",
+          "bg-background text-foreground",
+          "flex flex-col overflow-hidden",
+          "sm:left-[50%] sm:top-[50%] sm:right-auto sm:bottom-auto",
+          "sm:translate-x-[-50%] sm:translate-y-[-50%]",
+          "sm:w-full sm:max-w-4xl sm:h-auto sm:max-h-[90vh]",
+          "sm:rounded-xl sm:border sm:border-border sm:p-6 sm:shadow-2xl"
+        )}
+        onCloseAutoFocus={(e) => {
+          e.preventDefault();
+          const savedY = scrollPosRef.current;
+          window.scrollTo({ top: savedY, behavior: 'instant' });
+        }}
+      >
+        <form onSubmit={handleCreateManualAppointment} className="flex flex-col h-full sm:h-auto overflow-hidden">
+          {/* Encabezado: fijo en mobile, con respeto al área segura superior */}
+          <div className="shrink-0 px-4 sm:px-0 pt-[max(1rem,env(safe-area-inset-top))] sm:pt-0 pb-3 sm:pb-4 border-b border-border/60 sm:border-b-0">
+            <DialogHeader className="space-y-0 text-left">
+              <DialogTitle className="text-base sm:text-xl font-semibold text-foreground tracking-tight">
+                Agregar turno manual
+              </DialogTitle>
+              <DialogDescription className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+                Configurá los datos del turno y del cliente.
+              </DialogDescription>
+            </DialogHeader>
+          </div>
 
-          {manualError && (
-            <div role="alert" className="admin-mobile-notice is-error my-3">
-              <XCircle size={16} />
-              {manualError}
-            </div>
-          )}
+          {/* Cuerpo con scroll interno */}
+          <div className="manual-dialog-body flex-1 overflow-y-auto overscroll-contain px-4 sm:px-0 py-3.5 sm:py-4 space-y-3.5 sm:space-y-4">
+            {manualError && (
+              <div role="alert" className="admin-mobile-notice is-error">
+                <XCircle size={16} />
+                {manualError}
+              </div>
+            )}
 
-          <div className="manual-dialog-body grid gap-3.5 py-3 text-xs">
-            <div className="grid grid-cols-2 gap-3">
+            {/* Primera fila: Fecha | Horario | Servicio */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
               <div>
-                <label htmlFor="manual-date" className="font-medium text-foreground block mb-1">Fecha</label>
+                <label htmlFor="manual-date" className="font-medium text-foreground block mb-1.5 text-xs sm:text-sm">
+                  Fecha
+                </label>
                 <Input
                   id="manual-date"
                   type="date"
                   value={manualDate}
                   onChange={e => setManualDate(e.target.value)}
                   required
-                  className="bg-background h-9 text-xs"
+                  className="bg-background h-10 text-xs sm:text-sm"
                 />
               </div>
               <div>
-                <label htmlFor="manual-time" className="font-medium text-foreground block mb-1">Horario de inicio</label>
+                <label htmlFor="manual-time" className="font-medium text-foreground block mb-1.5 text-xs sm:text-sm">
+                  Horario
+                </label>
                 <Input
                   id="manual-time"
                   type="time"
                   value={manualTime}
                   onChange={e => setManualTime(e.target.value)}
                   required
-                  className="bg-background h-9 text-xs"
+                  className="bg-background h-10 text-xs sm:text-sm"
                 />
               </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label htmlFor="manual-service" className="font-medium text-foreground block mb-1">Servicio y duración</label>
+                <label htmlFor="manual-service" className="font-medium text-foreground block mb-1.5 text-xs sm:text-sm">
+                  Servicio
+                </label>
                 <select
                   id="manual-service"
                   value={manualServiceId}
                   onChange={e => setManualServiceId(e.target.value)}
-                  className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-xs sm:text-sm shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 >
                   {servicesList.map(s => (
                     <option key={s.id} value={s.id}>
@@ -450,50 +482,31 @@ export function AdminMobileAppointments() {
                   ))}
                 </select>
               </div>
+            </div>
 
+            {/* Segunda fila: Frecuencia | Nombre del cliente | Celular del cliente */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
               <div>
-                <label htmlFor="manual-barber" className="font-medium text-foreground block mb-1">Barbero asignado</label>
-                {profile.role === 'ADMIN' ? (
-                  <select
-                    id="manual-barber"
-                    value={manualBarberId}
-                    onChange={e => setManualBarberId(e.target.value)}
-                    className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                  >
-                    {permittedRows.map(b => (
-                      <option key={b.id} value={b.id}>{b.name}</option>
-                    ))}
-                  </select>
-                ) : (
-                  <output id="manual-barber" className="flex items-center h-9 px-3 rounded-md border border-input bg-muted/40 font-medium">
-                    {permittedRows[0]?.name ?? 'Tu agenda'}
-                  </output>
-                )}
+                <label htmlFor="manual-frequency" className="font-medium text-foreground block mb-1.5 text-xs sm:text-sm">
+                  Frecuencia
+                </label>
+                <select
+                  id="manual-frequency"
+                  value={manualFrequency}
+                  onChange={e => setManualFrequency(e.target.value as ManualFrequency)}
+                  className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-xs sm:text-sm shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                >
+                  <option value="ONCE">Única vez</option>
+                  <option value="WEEKLY">Una vez a la semana</option>
+                  <option value="BIWEEKLY">Una vez cada dos semanas</option>
+                  <option value="TRIWEEKLY">Una vez cada tres semanas</option>
+                  <option value="MONTHLY">Una vez al mes</option>
+                </select>
               </div>
-            </div>
-
-            {/* Selector desplegable para la frecuencia */}
-            <div>
-              <label htmlFor="manual-frequency" className="font-medium text-foreground block mb-1">
-                Frecuencia
-              </label>
-              <select
-                id="manual-frequency"
-                value={manualFrequency}
-                onChange={e => setManualFrequency(e.target.value as ManualFrequency)}
-                className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-              >
-                <option value="ONCE">Única vez</option>
-                <option value="WEEKLY">Una vez a la semana</option>
-                <option value="BIWEEKLY">Una vez cada dos semanas</option>
-                <option value="TRIWEEKLY">Una vez cada tres semanas</option>
-                <option value="MONTHLY">Una vez al mes</option>
-              </select>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label htmlFor="manual-client-name" className="font-medium text-foreground block mb-1">Nombre del cliente</label>
+                <label htmlFor="manual-client-name" className="font-medium text-foreground block mb-1.5 text-xs sm:text-sm">
+                  Nombre del cliente
+                </label>
                 <Input
                   id="manual-client-name"
                   type="text"
@@ -501,66 +514,98 @@ export function AdminMobileAppointments() {
                   value={manualClientName}
                   onChange={e => setManualClientName(e.target.value)}
                   required
-                  className="bg-background h-9 text-xs"
+                  className="bg-background h-10 text-xs sm:text-sm"
                 />
               </div>
               <div>
-                <label htmlFor="manual-client-phone" className="font-medium text-foreground block mb-1">Celular del cliente</label>
-                <Input
+                <label htmlFor="manual-client-phone" className="font-medium text-foreground block mb-1.5 text-xs sm:text-sm">
+                  Celular del cliente
+                </label>
+                <PhoneInput
                   id="manual-client-phone"
-                  type="tel"
-                  placeholder="Ej. 11 1234 5678"
                   value={manualClientPhone}
-                  onChange={e => setManualClientPhone(e.target.value)}
+                  onChange={setManualClientPhone}
+                  country={phoneCountry}
+                  onCountryChange={setPhoneCountry}
                   required
-                  className="bg-background h-9 text-xs"
+                  size="sm"
                 />
               </div>
             </div>
 
-            <div>
-              <label htmlFor="manual-client-email" className="font-medium text-foreground block mb-1">Email del cliente (opcional)</label>
-              <Input
-                id="manual-client-email"
-                type="email"
-                placeholder="cliente@ejemplo.com"
-                value={manualClientEmail}
-                onChange={e => setManualClientEmail(e.target.value)}
-                className="bg-background h-9 text-xs"
-              />
+            {/* Fila adicional: Barbero asignado | Email del cliente */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+              <div>
+                <label htmlFor="manual-barber" className="font-medium text-foreground block mb-1.5 text-xs sm:text-sm">
+                  Barbero asignado
+                </label>
+                {profile.role === 'ADMIN' ? (
+                  <select
+                    id="manual-barber"
+                    value={manualBarberId}
+                    onChange={e => setManualBarberId(e.target.value)}
+                    className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-xs sm:text-sm shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  >
+                    {permittedRows.map(b => (
+                      <option key={b.id} value={b.id}>{b.name}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <output id="manual-barber" className="flex items-center h-10 px-3 rounded-md border border-input bg-muted/40 font-medium text-xs sm:text-sm">
+                    {permittedRows[0]?.name ?? 'Tu agenda'}
+                  </output>
+                )}
+              </div>
+              <div>
+                <label htmlFor="manual-client-email" className="font-medium text-foreground block mb-1.5 text-xs sm:text-sm">
+                  Email del cliente (opcional)
+                </label>
+                <Input
+                  id="manual-client-email"
+                  type="email"
+                  placeholder="cliente@ejemplo.com"
+                  value={manualClientEmail}
+                  onChange={e => setManualClientEmail(e.target.value)}
+                  className="bg-background h-10 text-xs sm:text-sm"
+                />
+              </div>
             </div>
 
+            {/* Fila adicional: Observaciones */}
             <div>
-              <label htmlFor="manual-notes" className="font-medium text-foreground block mb-1">Observaciones (opcional)</label>
+              <label htmlFor="manual-notes" className="font-medium text-foreground block mb-1.5 text-xs sm:text-sm">
+                Observaciones (opcional)
+              </label>
               <Textarea
                 id="manual-notes"
                 placeholder="Detalles sobre el turno o preferencias del cliente..."
                 value={manualNotes}
                 onChange={e => setManualNotes(e.target.value)}
                 rows={2}
-                className="bg-background text-xs resize-none"
+                className="bg-background text-xs sm:text-sm resize-none"
               />
             </div>
           </div>
 
-          <DialogFooter className="manual-dialog-footer mt-4 flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+          {/* Acciones del formulario: accesibles y fijas en mobile */}
+          <div className="manual-dialog-footer shrink-0 px-4 sm:px-0 pt-3 sm:pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:pb-0 border-t border-border/60 sm:border-t-0 flex flex-col-reverse sm:flex-row sm:justify-end gap-2 sm:gap-3 bg-background">
             <Button
               type="button"
               variant="outline"
               disabled={manualSaving}
               onClick={handleCancel}
-              className="w-full sm:w-auto h-9 text-xs"
+              className="w-full sm:w-auto h-10 text-xs sm:text-sm"
             >
               Cancelar
             </Button>
             <Button
               type="submit"
-              className="action-brand w-full sm:w-auto h-9 text-xs"
+              className="action-brand w-full sm:w-auto h-10 text-xs sm:text-sm"
               disabled={manualSaving}
             >
               {manualSaving ? 'Guardando…' : 'Guardar turno'}
             </Button>
-          </DialogFooter>
+          </div>
         </form>
       </DialogContent>
     </Dialog>

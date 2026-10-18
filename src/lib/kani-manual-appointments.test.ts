@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { appointmentErrorMessage, type RealAppointment } from './kani-appointments';
 import { aggregateClientsDirectory } from './kani-statistics';
+import { normalizePhone } from './kani-phone';
 
 describe('Manual Appointments & Recurring Logic Unit Tests', () => {
   it('correctly categorizes manual appointment collision errors in appointmentErrorMessage', () => {
@@ -167,5 +168,31 @@ describe('Manual Appointments & Recurring Logic Unit Tests', () => {
     const newlyCreated = occurrences.filter(date => !existingDates.has(date));
 
     expect(newlyCreated).toEqual(['2026-10-27', '2026-11-10', '2026-11-17']);
+  });
+
+  it('normalizes Argentine client phone identically to public reservations (+549...)', () => {
+    const localInput = '11 2345 6789';
+    const norm = normalizePhone(localInput, 'AR');
+    expect(norm).not.toBeNull();
+    expect(norm?.e164).toBe('+5491123456789');
+    expect(norm?.display).toBe('+54 9 11 2345-6789');
+
+    const formattedInput = '+54 9 11 2345-6789';
+    const norm2 = normalizePhone(formattedInput, 'AR');
+    expect(norm2?.e164).toBe('+5491123456789');
+
+    // Invalid phone is rejected
+    const invalidInput = '1234';
+    expect(normalizePhone(invalidInput, 'AR')).toBeNull();
+  });
+
+  it('normalizes international client phone correctly for non-AR countries', () => {
+    const usPhone = '202 555 0123';
+    const normUS = normalizePhone(usPhone, 'US');
+    expect(normUS?.e164).toBe('+12025550123');
+
+    const clPhone = '9 1234 5678';
+    const normCL = normalizePhone(clPhone, 'CL');
+    expect(normCL?.e164).toBe('+56912345678');
   });
 });
