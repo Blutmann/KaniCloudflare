@@ -94,6 +94,10 @@ create policy staff_can_read_recurring_conflicts
     )
   );
 
+grant select on table public.appointments to authenticated;
+grant select on table public.recurring_appointment_rules to authenticated;
+grant select on table public.recurring_rule_conflicts to authenticated;
+
 -- 5. RPC para sincronizar / proyectar recurrencias futuras de forma idempotente
 create or replace function public.sync_recurring_appointment_rules(
   p_horizon_days integer default 28
