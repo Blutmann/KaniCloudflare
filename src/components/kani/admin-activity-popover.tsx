@@ -140,7 +140,8 @@ export function AdminActivityPopover({ role = 'ADMIN' }: { role?: 'ADMIN' | 'BAR
       setIsDeletingAll(true);
       setError('');
       if (role === 'ADMIN') {
-        await deleteAllAdminActivityNotificationsGlobal();
+        const ids = notifications.map(n => n.id);
+        await deleteAllAdminActivityNotificationsGlobal(ids);
       } else {
         const ids = notifications.map(n => n.id);
         await dismissAllAdminActivityNotificationsPersonal(ids);

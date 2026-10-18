@@ -304,7 +304,7 @@ export async function dismissAdminActivityNotificationPersonal(id: string): Prom
  * Utiliza el RPC seguro `delete_all_staff_activity_notifications_global`
  * con fallback a DELETE directo en `admin_activity_notifications` y descarte personal en caso de restricción RLS.
  */
-export async function deleteAllAdminActivityNotificationsGlobal(): Promise<number> {
+export async function deleteAllAdminActivityNotificationsGlobal(knownIds: string[] = []): Promise<number> {
   try {
     const { data, error } = await supabase.rpc('delete_all_staff_activity_notifications_global');
     if (!error) {
@@ -327,18 +327,24 @@ export async function deleteAllAdminActivityNotificationsGlobal(): Promise<numbe
 
   console.warn('[KANI activity] Error en deleteAllAdminActivityNotificationsGlobal fallback directo, intentando descarte masivo:', error);
 
-  // Fallback 2: Si RLS bloquea el DELETE directo, descartar masivamente para el usuario actual
+  // Fallback 2: Si RLS o privilegios bloquean el DELETE directo en tabla, descartar masivamente en user_state
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-      const { data: notifs } = await supabase
-        .from('admin_activity_notifications')
-        .select('id')
-        .limit(100);
+      let idsToDismiss = knownIds;
+      if (idsToDismiss.length === 0) {
+        const { data: notifs } = await supabase
+          .from('admin_activity_notifications')
+          .select('id')
+          .limit(100);
+        if (notifs && notifs.length > 0) {
+          idsToDismiss = notifs.map(n => n.id);
+        }
+      }
 
-      if (notifs && notifs.length > 0) {
-        const rows = notifs.map(n => ({
-          notification_id: n.id,
+      if (idsToDismiss.length > 0) {
+        const rows = idsToDismiss.map(id => ({
+          notification_id: id,
           user_id: user.id,
           dismissed_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
@@ -353,7 +359,7 @@ export async function deleteAllAdminActivityNotificationsGlobal(): Promise<numbe
       }
     }
   } catch {
-    // Continuar para lanzar el error original
+    // Continuar para lanzar el error original si falla todo
   }
 
   throw error;
