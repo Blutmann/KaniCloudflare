@@ -16,9 +16,29 @@ export type RealAppointment = Appointment & {
   servicePrice?: number;
   clientId?: string;
   createdAt?: string;
+  isManual?: boolean;
+  origin?: 'PUBLIC_WEB' | 'MANUAL';
+  createdByUserId?: string | null;
+  createdByDisplayName?: string | null;
+  recurringRuleId?: string | null;
+  depositRequired?: boolean;
+  depositPaid?: boolean;
 };
 
 type AppointmentRow = Tables<'appointments'>;
+
+export type CreateManualAppointmentInput = {
+  barberId: string;
+  serviceId: string;
+  date: string;
+  time: string;
+  name: string;
+  phone: string;
+  email?: string;
+  notes?: string;
+  isRecurring?: boolean;
+  durationMinutes?: number;
+};
 
 type CreateAppointmentInput = {
   barber: Barber;
@@ -40,11 +60,32 @@ const statusToUi: Record<RealAppointmentStatus, Status> = {
 
 export function appointmentErrorMessage(error: unknown) {
   const message = error instanceof Error ? error.message : String(error);
-  if (message.includes('SLOT_ALREADY_BOOKED')) return 'Ese horario acaba de dejar de estar disponible. Elegí otro para continuar.';
+  if (message.includes('SLOT_ALREADY_BOOKED')) return 'Ese horario acaba de dejar de estar disponible o ya tiene un turno reservado.';
   if (message.includes('SLOT_UNAVAILABLE')) return 'Ese horario ya no está disponible. Elegí otro para continuar.';
   if (message.includes('BOOKING_DATE_OUT_OF_RANGE')) return 'La fecha seleccionada ya no está disponible.';
   if (message.includes('SUNDAY_CLOSED')) return 'El estudio permanece cerrado los domingos.';
+  if (message.includes('MANUAL_APPOINTMENT_NOT_ALLOWED')) return 'No tenés permisos para agendar en la agenda de otro barbero.';
+  if (message.includes('AUTH_REQUIRED')) return 'Tenés que iniciar sesión para realizar esta acción.';
   return 'No se pudo guardar la solicitud. Revisá los datos e intentá nuevamente.';
+}
+
+export async function createManualAppointment(input: CreateManualAppointmentInput) {
+  const { data, error } = await supabase.rpc('create_manual_appointment', {
+    p_barber_id: input.barberId,
+    p_service_id: input.serviceId,
+    p_booking_date: input.date,
+    p_start_time: input.time.length === 5 ? `${input.time}:00` : input.time,
+    p_client_name: input.name.trim(),
+    p_client_phone: input.phone.trim(),
+    p_client_email: input.email?.trim() || null,
+    p_notes: input.notes?.trim() || null,
+    p_is_recurring: Boolean(input.isRecurring),
+    p_duration_minutes: input.durationMinutes ?? null,
+  });
+  if (error) throw error;
+  const row = data?.[0];
+  if (!row) throw new Error('No se pudo crear el turno manual.');
+  return row;
 }
 
 export async function createRealAppointment(input: CreateAppointmentInput) {
@@ -116,7 +157,7 @@ async function dispatchAppointmentNotification(appointmentId: string, claimToken
 export async function readRealAppointments() {
   const { data: rows, error } = await supabase
     .from('appointments')
-    .select('id, request_number, client_id, barber_id, service_id, booking_date, start_time, end_time, status, notes, created_at, updated_at')
+    .select('id, request_number, client_id, barber_id, service_id, booking_date, start_time, end_time, status, notes, created_at, updated_at, is_manual, origin, created_by_user_id, created_by_display_name, recurring_rule_id, deposit_required, deposit_paid')
     .order('booking_date', { ascending: true })
     .order('start_time', { ascending: true });
   if (error) throw error;
@@ -159,6 +200,13 @@ export async function readRealAppointments() {
       servicePrice: service.price_ars,
       clientId: row.client_id,
       createdAt: row.created_at,
+      isManual: Boolean(row.is_manual),
+      origin: (row.origin ?? 'PUBLIC_WEB') as 'PUBLIC_WEB' | 'MANUAL',
+      createdByUserId: row.created_by_user_id,
+      createdByDisplayName: row.created_by_display_name,
+      recurringRuleId: row.recurring_rule_id,
+      depositRequired: row.deposit_required ?? true,
+      depositPaid: row.deposit_paid ?? false,
     } satisfies RealAppointment];
   });
 }

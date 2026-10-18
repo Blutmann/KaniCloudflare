@@ -353,6 +353,9 @@ export type ClientAppointmentHistoryItem = {
   statusCode: RealAppointmentStatus;
   notes: string;
   createdAt?: string;
+  origin?: 'PUBLIC_WEB' | 'MANUAL';
+  isManual?: boolean;
+  createdByDisplayName?: string | null;
 };
 
 export type ClientDirectoryItem = {
@@ -392,6 +395,9 @@ export function aggregateClientsDirectory(appointments: RealAppointment[]): Clie
       statusCode: appointment.statusCode,
       notes: appointment.notes,
       createdAt: appointment.createdAt,
+      origin: appointment.origin,
+      isManual: appointment.isManual,
+      createdByDisplayName: appointment.createdByDisplayName,
     };
 
     // Unique key: client_id if present, otherwise phone or email or name

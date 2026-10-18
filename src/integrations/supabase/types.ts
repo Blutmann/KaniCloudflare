@@ -139,6 +139,13 @@ export type Database = {
           notes: string | null
           created_at: string
           updated_at: string
+          is_manual?: boolean
+          origin?: "PUBLIC_WEB" | "MANUAL"
+          created_by_user_id?: string | null
+          created_by_display_name?: string | null
+          recurring_rule_id?: string | null
+          deposit_required?: boolean
+          deposit_paid?: boolean
         }
         Insert: {
           id?: string
@@ -153,6 +160,13 @@ export type Database = {
           notes?: string | null
           created_at?: string
           updated_at?: string
+          is_manual?: boolean
+          origin?: "PUBLIC_WEB" | "MANUAL"
+          created_by_user_id?: string | null
+          created_by_display_name?: string | null
+          recurring_rule_id?: string | null
+          deposit_required?: boolean
+          deposit_paid?: boolean
         }
         Update: {
           id?: string
@@ -657,6 +671,49 @@ export type Database = {
           updated_at: string
           updated_by: string | null
         }[]
+      create_manual_appointment: {
+        Args: {
+          p_barber_id: string
+          p_service_id: string
+          p_booking_date: string
+          p_start_time: string
+          p_client_name: string
+          p_client_phone: string
+          p_client_email?: string | null
+          p_notes?: string | null
+          p_is_recurring?: boolean
+          p_duration_minutes?: number | null
+        }
+        Returns: {
+          appointment_id: string
+          appointment_status: "PENDING" | "CONFIRMED" | "CANCELLED" | "COMPLETED"
+          booking_date: string
+          start_time: string
+          end_time: string
+          request_number: number
+          is_manual: boolean
+          origin: string
+          created_by_display_name: string
+          recurring_rule_id: string | null
+        }[]
+      }
+      sync_recurring_appointment_rules: {
+        Args: {
+          p_horizon_days?: number
+        }
+        Returns: {
+          rule_id: string
+          target_date: string
+          action_taken: string
+          appointment_id: string | null
+        }[]
+      }
+      set_recurring_rule_active: {
+        Args: {
+          p_rule_id: string
+          p_active: boolean
+        }
+        Returns: boolean
       }
     }
     Enums: {

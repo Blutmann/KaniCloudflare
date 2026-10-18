@@ -613,6 +613,21 @@ export function AdminClients({ clients, loading = false }: AdminClientsProps) {
                               </span>
                             </div>
                           )}
+                          <div className="flex items-center gap-1.5 text-muted-foreground sm:col-span-2 text-[11px]">
+                            <span className="font-medium">Origen:</span>
+                            <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold ${
+                              apt.isManual || apt.origin === 'MANUAL'
+                                ? 'bg-gold/15 text-gold border border-gold/30'
+                                : 'bg-muted text-muted-foreground'
+                            }`}>
+                              {apt.isManual || apt.origin === 'MANUAL' ? 'Turno manual' : 'Reserva pública'}
+                            </span>
+                            {(apt.isManual || apt.origin === 'MANUAL') && apt.createdByDisplayName && (
+                              <span className="ml-1 text-muted-foreground">
+                                · Generado por: <strong className="text-foreground">{apt.createdByDisplayName}</strong>
+                              </span>
+                            )}
+                          </div>
                           {apt.notes && (
                             <div className="sm:col-span-2 mt-1 p-2 rounded bg-muted/30 text-[11px] text-muted-foreground border border-border/40">
                               <span className="font-semibold text-foreground">Nota:</span> {apt.notes}
