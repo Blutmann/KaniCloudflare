@@ -2,9 +2,19 @@ import { useEffect, useState } from 'react';
 import { Bell, CalendarDays, Mail, MailOpen, SlidersHorizontal, Trash2 } from 'lucide-react';
 import { Link } from '@tanstack/react-router';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
+  deleteAllAdminActivityNotificationsGlobal,
   deleteAdminActivityNotificationGlobal,
+  dismissAllAdminActivityNotificationsPersonal,
   dismissAdminActivityNotificationPersonal,
   markAllAdminActivityNotificationsRead,
   readAdminActivityNotifications,
@@ -52,6 +62,8 @@ export function AdminActivityPopover({ role = 'ADMIN' }: { role?: 'ADMIN' | 'BAR
   const [notifications, setNotifications] = useState<AdminNotification[]>([]);
   const [error, setError] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [confirmDeleteAllOpen, setConfirmDeleteAllOpen] = useState(false);
+  const [isDeletingAll, setIsDeletingAll] = useState(false);
   const unreadNotifications = notifications.filter(notification => !notification.readAt);
 
   function reload() {
@@ -110,64 +122,129 @@ export function AdminActivityPopover({ role = 'ADMIN' }: { role?: 'ADMIN' | 'BAR
     }
   }
 
-  return <Popover>
-    <PopoverTrigger asChild>
-      <Button variant="outline" size="icon" className="notification-trigger" aria-label={unreadNotifications.length ? `${unreadNotifications.length} notificaciones sin leer` : 'Notificaciones'}>
-        <Bell />
-        {unreadNotifications.length > 0 && <span className="notification-count" aria-label={`${unreadNotifications.length} sin leer`}>{unreadNotifications.length}</span>}
-      </Button>
-    </PopoverTrigger>
-    <PopoverContent side="bottom" sideOffset={10} align="end" className="notification-popover">
-      <div className="notification-header">
-        <div>
-          <span className="eyebrow">ACTIVIDAD</span>
-          <h2 className="mt-1 text-lg">Notificaciones</h2>
-          <p className="notification-unread-summary">{unreadNotifications.length ? `${unreadNotifications.length} sin leer` : 'Todas leídas'}</p>
-        </div>
-      </div>
-      {error && <p role="alert" className="mt-3 text-xs text-destructive">{error}</p>}
-      {unreadNotifications.length > 0 && (
-        <Button variant="ghost" className="notification-mark-all" onClick={() => void markAllNotificationsRead()}>
-          Marcar todas como leídas
-        </Button>
-      )}
-      {notifications.length === 0 ? (
-        <div className="notification-empty">
-          <Bell size={24} />
-          <p>No hay novedades recientes.</p>
-        </div>
-      ) : (
-        <div className="notification-list">
-          {notifications.map(notification => (
-            <article key={notification.id} className={`notification-item ${notification.readAt ? 'is-read' : 'is-unread'}`}>
-              <span className={`notification-kind ${notification.type}`} aria-hidden="true">
-                {notification.type === 'availability' ? <SlidersHorizontal size={13} /> : <CalendarDays size={13} />}
-              </span>
-              <div className="notification-body">
-                <Link to={notification.href} className="notification-link" aria-label={notification.message}>
-                  <p className="text-sm leading-relaxed">{notification.message}</p>
-                  <time>{notification.time}</time>
-                </Link>
-                <div className="notification-meta flex items-center justify-between gap-2 mt-2">
-                  <button type="button" className="notification-toggle" onClick={() => void toggleNotificationRead(notification)}>
-                    {notification.readAt ? <><Mail size={13} /> Marcar como no leída</> : <><MailOpen size={13} /> Marcar como leída</>}
-                  </button>
-                  <button
-                    type="button"
-                    className="notification-delete text-xs text-muted-foreground hover:text-destructive flex items-center gap-1 transition-colors p-1"
-                    title={role === 'ADMIN' ? 'Eliminar notificación globalmente' : 'Eliminar de mi vista'}
-                    disabled={deletingId === notification.id}
-                    onClick={() => void handleDeleteNotification(notification)}
-                  >
-                    <Trash2 size={13} />
-                    <span>Eliminar</span>
-                  </button>
-                </div>
-              </div>
-            </article>
-          ))}
-        </div>
-      )}
-    </PopoverContent>
-  </Popover>;
+  async function handleConfirmDeleteAll() {
+    try {
+      setIsDeletingAll(true);
+      setError('');
+      if (role === 'ADMIN') {
+        await deleteAllAdminActivityNotificationsGlobal();
+      } else {
+        const ids = notifications.map(n => n.id);
+        await dismissAllAdminActivityNotificationsPersonal(ids);
+      }
+      setNotifications([]);
+      setConfirmDeleteAllOpen(false);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No se pudieron eliminar las notificaciones.');
+    } finally {
+      setIsDeletingAll(false);
+    }
+  }
+
+  return (
+    <>
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button variant="outline" size="icon" className="notification-trigger" aria-label={unreadNotifications.length ? `${unreadNotifications.length} notificaciones sin leer` : 'Notificaciones'}>
+            <Bell />
+            {unreadNotifications.length > 0 && <span className="notification-count" aria-label={`${unreadNotifications.length} sin leer`}>{unreadNotifications.length}</span>}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent side="bottom" sideOffset={10} align="end" className="notification-popover">
+          <div className="notification-header">
+            <div>
+              <span className="eyebrow">ACTIVIDAD</span>
+              <h2 className="mt-1 text-lg">Notificaciones</h2>
+              <p className="notification-unread-summary">{unreadNotifications.length ? `${unreadNotifications.length} sin leer` : 'Todas leídas'}</p>
+            </div>
+          </div>
+          {error && <p role="alert" className="mt-3 text-xs text-destructive">{error}</p>}
+          <div className="flex items-center justify-between gap-2 mt-2">
+            {unreadNotifications.length > 0 && (
+              <Button variant="ghost" size="sm" className="notification-mark-all text-xs h-7 px-2" onClick={() => void markAllNotificationsRead()}>
+                Marcar todas como leídas
+              </Button>
+            )}
+            {notifications.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-xs h-7 px-2 text-destructive hover:text-destructive hover:bg-destructive/10 ml-auto flex items-center gap-1"
+                onClick={() => setConfirmDeleteAllOpen(true)}
+              >
+                <Trash2 size={12} />
+                <span>Eliminar notificaciones</span>
+              </Button>
+            )}
+          </div>
+          {notifications.length === 0 ? (
+            <div className="notification-empty">
+              <Bell size={24} />
+              <p>No hay novedades recientes.</p>
+            </div>
+          ) : (
+            <div className="notification-list">
+              {notifications.map(notification => (
+                <article key={notification.id} className={`notification-item ${notification.readAt ? 'is-read' : 'is-unread'}`}>
+                  <span className={`notification-kind ${notification.type}`} aria-hidden="true">
+                    {notification.type === 'availability' ? <SlidersHorizontal size={13} /> : <CalendarDays size={13} />}
+                  </span>
+                  <div className="notification-body">
+                    <Link to={notification.href} className="notification-link" aria-label={notification.message}>
+                      <p className="text-sm leading-relaxed">{notification.message}</p>
+                      <time>{notification.time}</time>
+                    </Link>
+                    <div className="notification-meta flex items-center justify-between gap-2 mt-2">
+                      <button type="button" className="notification-toggle" onClick={() => void toggleNotificationRead(notification)}>
+                        {notification.readAt ? <><Mail size={13} /> Marcar como no leída</> : <><MailOpen size={13} /> Marcar como leída</>}
+                      </button>
+                      <button
+                        type="button"
+                        className="notification-delete text-xs text-muted-foreground hover:text-destructive flex items-center gap-1 transition-colors p-1"
+                        title={role === 'ADMIN' ? 'Eliminar notificación globalmente' : 'Eliminar de mi vista'}
+                        disabled={deletingId === notification.id}
+                        onClick={() => void handleDeleteNotification(notification)}
+                      >
+                        <Trash2 size={13} />
+                        <span>Eliminar</span>
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </PopoverContent>
+      </Popover>
+
+      <Dialog open={confirmDeleteAllOpen} onOpenChange={setConfirmDeleteAllOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Eliminar notificaciones</DialogTitle>
+            <DialogDescription className="text-sm pt-2 text-foreground font-normal">
+              ¿Estás seguro que deseas eliminar todas las notificaciones?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex flex-row justify-end gap-2 mt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setConfirmDeleteAllOpen(false)}
+              disabled={isDeletingAll}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => void handleConfirmDeleteAll()}
+              disabled={isDeletingAll}
+            >
+              {isDeletingAll ? 'Eliminando...' : 'Eliminar notificaciones'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
 }

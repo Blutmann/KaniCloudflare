@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Check, CircleDot, Clock3, Plus, SlidersHorizontal, X, XCircle } from "lucide-react";
+import { Check, CircleDot, Clock3, SlidersHorizontal, X, XCircle } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import {
@@ -397,10 +397,9 @@ export function AdminScheduleManager() {
                   aria-label="Agregar horario"
                   onClick={() => openManualDialog(specificDate, selectedRows[0]?.id)}
                 >
-                  <div className="admin-schedule-card-top flex items-center justify-center h-full">
-                    <span className="admin-schedule-add-label inline-flex items-center justify-center gap-1.5 font-semibold text-sm">
-                      <Plus size={16} aria-hidden="true" />
-                      <span>Agregar horario</span>
+                  <div className="admin-schedule-card-top flex items-center justify-center h-full w-full">
+                    <span className="admin-schedule-add-label font-semibold text-sm">
+                      Agregar horario
                     </span>
                   </div>
                 </button>
@@ -466,31 +465,13 @@ export function AdminScheduleManager() {
                     aria-label={`Agregar horario para ${date}`}
                     onClick={() => openManualDialog(date, dateSlots[0]?.barber_id)}
                   >
-                    <div className="admin-schedule-card-top flex items-center justify-center h-full">
-                      <span className="admin-schedule-add-label inline-flex items-center justify-center gap-1.5 font-semibold text-sm">
-                        <Plus size={16} aria-hidden="true" />
-                        <span>Agregar horario</span>
+                    <div className="admin-schedule-card-top flex items-center justify-center h-full w-full">
+                      <span className="admin-schedule-add-label font-semibold text-sm">
+                        Agregar horario
                       </span>
                     </div>
                   </button>
                 </div>
-                {validStarts.filter((start) => start.slot_date === date).length > 0 && (
-                  <div className="admin-schedule-starts" aria-label={`Inicios válidos del ${date}`}>
-                    <div className="admin-schedule-starts-heading">
-                      <span>Inicios que puede ofrecer</span>
-                      <span>La reserva pública usa esta misma lista</span>
-                    </div>
-                    <div className="admin-schedule-start-list">
-                      {validStarts.filter((start) => start.slot_date === date).map((start) => (
-                        <div key={`${start.barber_id}-${start.slot_date}-${start.start_time}`} className={`admin-schedule-start ${start.is_exception ? "is-exception" : "is-standard"}`}>
-                          <strong>{start.start_time.slice(0, 5)}</strong>
-                          <span>{start.is_exception ? "Excepción manual" : "Estándar"}</span>
-                          <small>{start.compatible_services.join(" · ")}</small>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </section>
             ))}
         </section>

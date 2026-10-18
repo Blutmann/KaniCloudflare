@@ -29,7 +29,6 @@ import {
   Cell,
 } from 'recharts';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { useAdminStaff } from '@/lib/kani-admin-context';
 import {
   appointmentErrorMessage,
@@ -56,15 +55,13 @@ import {
 import { AdminClients } from './admin-clients';
 
 const presets: StatisticsDatePreset[] = [
-  'LAST_7_DAYS',
-  'LAST_10_DAYS',
-  'LAST_30_DAYS',
-  'LAST_90_DAYS',
-  'LAST_6_MONTHS',
-  'LAST_1_YEAR',
-  'ALL',
-  'SPECIFIC',
-  'CUSTOM',
+  'TODAY',
+  'TOMORROW',
+  'THIS_WEEK',
+  'NEXT_7_DAYS',
+  'NEXT_10_DAYS',
+  'NEXT_14_DAYS',
+  'NEXT_21_DAYS',
 ];
 
 export function AdminStatistics() {
@@ -81,9 +78,7 @@ export function AdminStatistics() {
 
   // Filters
   const [businessToday, setBusinessToday] = useState(() => businessDateToday());
-  const [datePreset, setDatePreset] = useState<StatisticsDatePreset>('LAST_30_DAYS');
-  const [specificDate, setSpecificDate] = useState(() => businessDateToday());
-  const [customRange, setCustomRange] = useState({ start: '', end: '' });
+  const [datePreset, setDatePreset] = useState<StatisticsDatePreset>('TODAY');
   const [timeSlotFilter, setTimeSlotFilter] = useState<TimeSlotFilter>('ALL');
   const [barberFilter, setBarberFilter] = useState('Todos');
 
@@ -131,8 +126,8 @@ export function AdminStatistics() {
 
   // Compute Active Date Range
   const activeDateRange = useMemo(() => {
-    return dateRangeForStatisticsPreset(datePreset, businessToday, specificDate, customRange);
-  }, [datePreset, businessToday, specificDate, customRange]);
+    return dateRangeForStatisticsPreset(datePreset, businessToday);
+  }, [datePreset, businessToday]);
 
   // Filter Appointments for Statistics
   const permittedBarberIds = useMemo(
@@ -272,58 +267,6 @@ export function AdminStatistics() {
             )}
           </div>
         </div>
-
-        {/* Dynamic date inputs if SPECIFIC or CUSTOM selected */}
-        {(datePreset === 'SPECIFIC' || datePreset === 'CUSTOM') && (
-          <div className="pt-3 border-t border-border/50 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-            {datePreset === 'SPECIFIC' && (
-              <div>
-                <label htmlFor="stat-specific-date" className="block text-xs font-medium text-muted-foreground mb-1.5">
-                  Fecha puntual
-                </label>
-                <Input
-                  id="stat-specific-date"
-                  type="date"
-                  value={specificDate}
-                  onChange={(e) => setSpecificDate(e.target.value)}
-                  className="h-9 px-3 text-xs bg-background border border-border rounded-lg text-foreground"
-                />
-              </div>
-            )}
-            {datePreset === 'CUSTOM' && (
-              <>
-                <div>
-                  <label htmlFor="stat-range-start" className="block text-xs font-medium text-muted-foreground mb-1.5">
-                    Desde
-                  </label>
-                  <Input
-                    id="stat-range-start"
-                    type="date"
-                    value={customRange.start}
-                    onChange={(e) =>
-                      setCustomRange((curr) => ({ ...curr, start: e.target.value }))
-                    }
-                    className="h-9 px-3 text-xs bg-background border border-border rounded-lg text-foreground"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="stat-range-end" className="block text-xs font-medium text-muted-foreground mb-1.5">
-                    Hasta
-                  </label>
-                  <Input
-                    id="stat-range-end"
-                    type="date"
-                    value={customRange.end}
-                    onChange={(e) =>
-                      setCustomRange((curr) => ({ ...curr, end: e.target.value }))
-                    }
-                    className="h-9 px-3 text-xs bg-background border border-border rounded-lg text-foreground"
-                  />
-                </div>
-              </>
-            )}
-          </div>
-        )}
       </section>
 
       {/* KPI Summary Cards - 4 visible categories */}
@@ -385,13 +328,13 @@ export function AdminStatistics() {
             variant="outline"
             size="sm"
             onClick={() => {
-              setDatePreset('ALL');
+              setDatePreset('TODAY');
               setTimeSlotFilter('ALL');
               setBarberFilter('Todos');
             }}
             className="mt-3 text-xs"
           >
-            Ver todos los registros
+            Restablecer filtros
           </Button>
         </div>
       )}

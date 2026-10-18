@@ -109,3 +109,38 @@ export async function dismissAdminActivityNotificationPersonal(id: string) {
     if (error) throw error;
   }
 }
+
+/**
+ * Borra todas las notificaciones globalmente (para ADMIN).
+ */
+export async function deleteAllAdminActivityNotificationsGlobal() {
+  const { error } = await supabase
+    .from('admin_activity_notifications')
+    .delete()
+    .neq('id', '00000000-0000-0000-0000-000000000000');
+
+  if (error) throw error;
+}
+
+/**
+ * Descarta todas las notificaciones de la vista del usuario (BARBER).
+ */
+export async function dismissAllAdminActivityNotificationsPersonal(ids: string[]) {
+  if (ids.length === 0) return;
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+
+  const rows = ids.map((id) => ({
+    notification_id: id,
+    user_id: user.id,
+    dismissed_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  }));
+
+  const { error } = await supabase
+    .from('admin_activity_user_state' as any)
+    .upsert(rows);
+
+  if (error) throw error;
+}
+

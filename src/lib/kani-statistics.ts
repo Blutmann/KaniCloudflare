@@ -1,16 +1,14 @@
 import type { RealAppointment, RealAppointmentStatus } from './kani-appointments';
-import { addCalendarDays, businessDateToday, BUSINESS_TIME_ZONE } from './kani-mobile-appointments';
+import { addCalendarDays, businessDateToday, startOfBusinessWeek, BUSINESS_TIME_ZONE } from './kani-mobile-appointments';
 
 export type StatisticsDatePreset =
-  | 'LAST_7_DAYS'
-  | 'LAST_10_DAYS'
-  | 'LAST_30_DAYS'
-  | 'LAST_90_DAYS'
-  | 'LAST_6_MONTHS'
-  | 'LAST_1_YEAR'
-  | 'ALL'
-  | 'SPECIFIC'
-  | 'CUSTOM';
+  | 'TODAY'
+  | 'TOMORROW'
+  | 'THIS_WEEK'
+  | 'NEXT_7_DAYS'
+  | 'NEXT_10_DAYS'
+  | 'NEXT_14_DAYS'
+  | 'NEXT_21_DAYS';
 
 export type TimeSlotCategory = 'MORNING' | 'AFTERNOON' | 'NIGHT' | 'OUTSIDE';
 
@@ -50,15 +48,13 @@ export function classifyAppointmentTime(timeStr: string): TimeSlotCategory {
 }
 
 export const statisticsPresetLabels: Record<StatisticsDatePreset, string> = {
-  LAST_7_DAYS: 'Últimos 7 días',
-  LAST_10_DAYS: 'Últimos 10 días',
-  LAST_30_DAYS: 'Últimos 30 días',
-  LAST_90_DAYS: 'Últimos 90 días',
-  LAST_6_MONTHS: 'Últimos 6 meses',
-  LAST_1_YEAR: 'Último año',
-  ALL: 'Histórico completo',
-  SPECIFIC: 'Día específico',
-  CUSTOM: 'Rango personalizado',
+  TODAY: 'Hoy',
+  TOMORROW: 'Mañana',
+  THIS_WEEK: 'Esta semana',
+  NEXT_7_DAYS: 'Próximos 7 días',
+  NEXT_10_DAYS: 'Próximos 10 días',
+  NEXT_14_DAYS: 'Próximos 14 días',
+  NEXT_21_DAYS: 'Próximos 21 días',
 };
 
 export type DateRange = {
@@ -69,37 +65,29 @@ export type DateRange = {
 export function dateRangeForStatisticsPreset(
   preset: StatisticsDatePreset,
   today: string,
-  specificDate = '',
-  customRange: { start: string; end: string } = { start: '', end: '' },
 ): DateRange {
-  if (preset === 'ALL') return null;
-  if (preset === 'LAST_7_DAYS') {
-    return { start: addCalendarDays(today, -6), end: today };
+  if (preset === 'TODAY') {
+    return { start: today, end: today };
   }
-  if (preset === 'LAST_10_DAYS') {
-    return { start: addCalendarDays(today, -9), end: today };
+  if (preset === 'TOMORROW') {
+    const tomorrow = addCalendarDays(today, 1);
+    return { start: tomorrow, end: tomorrow };
   }
-  if (preset === 'LAST_30_DAYS') {
-    return { start: addCalendarDays(today, -29), end: today };
+  if (preset === 'THIS_WEEK') {
+    const start = startOfBusinessWeek(today);
+    return { start, end: addCalendarDays(start, 6) };
   }
-  if (preset === 'LAST_90_DAYS') {
-    return { start: addCalendarDays(today, -89), end: today };
+  if (preset === 'NEXT_7_DAYS') {
+    return { start: today, end: addCalendarDays(today, 6) };
   }
-  if (preset === 'LAST_6_MONTHS') {
-    return { start: addCalendarDays(today, -180), end: today };
+  if (preset === 'NEXT_10_DAYS') {
+    return { start: today, end: addCalendarDays(today, 9) };
   }
-  if (preset === 'LAST_1_YEAR') {
-    return { start: addCalendarDays(today, -365), end: today };
+  if (preset === 'NEXT_14_DAYS') {
+    return { start: today, end: addCalendarDays(today, 13) };
   }
-  if (preset === 'SPECIFIC') {
-    const target = specificDate || today;
-    return { start: target, end: target };
-  }
-  if (preset === 'CUSTOM') {
-    if (!customRange.start && !customRange.end) return null;
-    const start = customRange.start || customRange.end || today;
-    const end = customRange.end || customRange.start || today;
-    return start <= end ? { start, end } : { start: end, end: start };
+  if (preset === 'NEXT_21_DAYS') {
+    return { start: today, end: addCalendarDays(today, 20) };
   }
   return null;
 }

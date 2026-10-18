@@ -41,31 +41,33 @@ describe('Statistics Module Unit Tests', () => {
   it('dateRangeForStatisticsPreset calculates correct bounds', () => {
     const today = '2026-10-17';
 
-    expect(dateRangeForStatisticsPreset('ALL', today)).toBeNull();
-    expect(dateRangeForStatisticsPreset('LAST_7_DAYS', today)).toEqual({
-      start: '2026-10-11',
+    expect(dateRangeForStatisticsPreset('TODAY', today)).toEqual({
+      start: '2026-10-17',
       end: '2026-10-17',
     });
-    expect(dateRangeForStatisticsPreset('LAST_10_DAYS', today)).toEqual({
-      start: '2026-10-08',
-      end: '2026-10-17',
+    expect(dateRangeForStatisticsPreset('TOMORROW', today)).toEqual({
+      start: '2026-10-18',
+      end: '2026-10-18',
     });
-    expect(dateRangeForStatisticsPreset('LAST_30_DAYS', today)).toEqual({
-      start: '2026-09-18',
-      end: '2026-10-17',
+    expect(dateRangeForStatisticsPreset('THIS_WEEK', today)).toEqual({
+      start: '2026-10-12',
+      end: '2026-10-18',
     });
-    expect(dateRangeForStatisticsPreset('SPECIFIC', today, '2026-10-15')).toEqual({
-      start: '2026-10-15',
-      end: '2026-10-15',
+    expect(dateRangeForStatisticsPreset('NEXT_7_DAYS', today)).toEqual({
+      start: '2026-10-17',
+      end: '2026-10-23',
     });
-    expect(
-      dateRangeForStatisticsPreset('CUSTOM', today, '', {
-        start: '2026-10-01',
-        end: '2026-10-05',
-      }),
-    ).toEqual({
-      start: '2026-10-01',
-      end: '2026-10-05',
+    expect(dateRangeForStatisticsPreset('NEXT_10_DAYS', today)).toEqual({
+      start: '2026-10-17',
+      end: '2026-10-26',
+    });
+    expect(dateRangeForStatisticsPreset('NEXT_14_DAYS', today)).toEqual({
+      start: '2026-10-17',
+      end: '2026-10-30',
+    });
+    expect(dateRangeForStatisticsPreset('NEXT_21_DAYS', today)).toEqual({
+      start: '2026-10-17',
+      end: '2026-11-06',
     });
   });
 
