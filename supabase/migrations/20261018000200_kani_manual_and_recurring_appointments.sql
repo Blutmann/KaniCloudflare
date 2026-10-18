@@ -123,6 +123,7 @@ declare
   v_conflict_id uuid;
   v_conflict_reason text;
   v_apt_id uuid;
+  v_interval_days integer;
 begin
   if auth.uid() is null then
     raise exception using errcode = '42501', message = 'AUTH_REQUIRED';
@@ -139,13 +140,23 @@ begin
   loop
     v_curr_date := greatest(v_rule.start_date, v_today);
 
+    v_interval_days := 7;
+    if v_rule.notes like '%[Frecuencia: Una vez cada dos semanas]%' then
+      v_interval_days := 14;
+    elsif v_rule.notes like '%[Frecuencia: Una vez cada tres semanas]%' then
+      v_interval_days := 21;
+    elsif v_rule.notes like '%[Frecuencia: Una vez al mes]%' then
+      v_interval_days := 28;
+    end if;
+
     while v_curr_date <= v_horizon_end loop
       if v_rule.end_date is not null and v_curr_date > v_rule.end_date then
         exit;
       end if;
 
-      -- Verificar si el día de la semana coincide (1: Lun .. 7: Dom)
-      if extract(isodow from v_curr_date)::integer = v_rule.day_of_week then
+      -- Verificar si el día de la semana coincide (1: Lun .. 7: Dom) y respeta el intervalo de frecuencia
+      if extract(isodow from v_curr_date)::integer = v_rule.day_of_week
+         and ((v_curr_date - v_rule.start_date) % v_interval_days = 0) then
         v_end_time := (v_rule.start_time + (v_rule.duration_minutes || ' minutes')::interval)::time;
         v_target_start_ts := (v_curr_date + v_rule.start_time)::timestamp;
         v_target_end_ts := (v_curr_date + v_end_time)::timestamp;
@@ -160,7 +171,7 @@ begin
             and a.booking_date = v_curr_date
         ) then
           -- Ya procesado previamente
-          v_curr_date := v_curr_date + 7;
+          v_curr_date := v_curr_date + 1;
           continue;
         end if;
 
@@ -184,7 +195,7 @@ begin
                         resolved = false;
 
           return query select v_rule.id, v_curr_date, 'CONFLICT_RECORDED'::text, null::uuid;
-          v_curr_date := v_curr_date + 7;
+          v_curr_date := v_curr_date + 1;
           continue;
         end if;
 

@@ -168,12 +168,12 @@ export function AdminStatistics() {
   const serviceDemand = useMemo(() => computeServiceDemand(filteredAppointments), [filteredAppointments]);
 
   return (
-    <main className="site-container admin-page py-4">
+    <main className="site-container admin-stats-page">
       {/* Error state */}
       {error && (
         <div
           role="alert"
-          className="mb-6 p-4 rounded-xl border border-destructive/40 bg-destructive/10 text-destructive text-sm flex items-center justify-between"
+          className="mb-4 p-4 rounded-xl border border-destructive/40 bg-destructive/10 text-destructive text-sm flex items-center justify-between"
         >
           <div className="flex items-center gap-2">
             <AlertCircle size={18} />
@@ -187,7 +187,7 @@ export function AdminStatistics() {
 
       {/* Filter Controls Card - Unified controls group */}
       <section
-        className="p-4 rounded-xl border border-border bg-surface shadow-xs mb-6 space-y-3"
+        className="p-3.5 rounded-xl border border-border bg-surface shadow-xs mb-4 space-y-3"
         aria-label="Filtros de estadísticas"
       >
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
@@ -276,7 +276,7 @@ export function AdminStatistics() {
       </section>
 
       {/* KPI Summary Cards - 4 visible categories */}
-      <section className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6" aria-label="Indicadores clave">
+      <section className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4" aria-label="Indicadores clave">
         {/* Total */}
         <div className="p-3.5 rounded-xl border border-border bg-surface flex flex-col justify-between">
           <span className="text-xs text-muted-foreground">Total de turnos</span>

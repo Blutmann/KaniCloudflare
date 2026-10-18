@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowUp, CalendarPlus, Check, CircleDot, Clock3, RefreshCw, X, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { dateLabel, money, serviceFor } from '@/lib/kani-model';
 import { formatPhoneDisplay } from '@/lib/kani-phone';
 import { useAdminStaff } from '@/lib/kani-admin-context';
-import { appointmentErrorMessage, createManualAppointment, readRealAppointments, retryRealAppointmentNotification, updateRealAppointmentStatus, type RealAppointment, type RealAppointmentStatus } from '@/lib/kani-appointments';
+import { appointmentErrorMessage, createManualAppointment, readRealAppointments, retryRealAppointmentNotification, updateRealAppointmentStatus, type ManualFrequency, MANUAL_FREQUENCY_LABELS, type RealAppointment, type RealAppointmentStatus } from '@/lib/kani-appointments';
 import { addCalendarDays, businessDateToday, dateRangeForAppointmentsPreset, filterMobileAppointments, appointmentsPresets, appointmentsPresetLabels, type AppointmentsDatePreset, type MobileStatusFilter } from '@/lib/kani-mobile-appointments';
 import { permittedBarberNames } from '@/lib/kani-role-scope';
 import { supabase } from '@/integrations/supabase/client';
@@ -59,6 +59,7 @@ export function AdminMobileAppointments() {
   const [showScrollTop, setShowScrollTop] = useState(false);
 
   // Modal para agregar turno manual
+  const scrollPosRef = useRef<number>(0);
   const [manualOpen, setManualOpen] = useState(false);
   const [manualSaving, setManualSaving] = useState(false);
   const [manualError, setManualError] = useState('');
@@ -69,7 +70,7 @@ export function AdminMobileAppointments() {
   const [manualClientEmail, setManualClientEmail] = useState('');
   const [manualServiceId, setManualServiceId] = useState('');
   const [manualBarberId, setManualBarberId] = useState('');
-  const [manualMode, setManualMode] = useState<'ONCE' | 'RECURRING'>('ONCE');
+  const [manualFrequency, setManualFrequency] = useState<ManualFrequency>('ONCE');
   const [manualNotes, setManualNotes] = useState('');
 
   // Cargar lista de servicios activos
@@ -163,6 +164,7 @@ export function AdminMobileAppointments() {
   }
 
   function openManualAppointmentDialog() {
+    scrollPosRef.current = window.scrollY || document.documentElement.scrollTop;
     setManualError('');
     setManualDate(specificDate || businessToday);
     setManualTime('10:00');
@@ -170,7 +172,7 @@ export function AdminMobileAppointments() {
     setManualClientPhone('');
     setManualClientEmail('');
     setManualNotes('');
-    setManualMode('ONCE');
+    setManualFrequency('ONCE');
     if (profile.role === 'BARBER') {
       setManualBarberId(profile.barber_id || permittedRows[0]?.id || '');
     } else {
@@ -180,6 +182,17 @@ export function AdminMobileAppointments() {
       setManualServiceId(servicesList[0].id);
     }
     setManualOpen(true);
+  }
+
+  function handleCancel() {
+    const savedY = scrollPosRef.current;
+    setManualOpen(false);
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: savedY, behavior: 'instant' });
+      setTimeout(() => {
+        window.scrollTo({ top: savedY, behavior: 'instant' });
+      }, 40);
+    });
   }
 
   async function handleCreateManualAppointment(e: React.FormEvent) {
@@ -213,6 +226,12 @@ export function AdminMobileAppointments() {
 
     setManualSaving(true);
     try {
+      const isRecurring = manualFrequency !== 'ONCE';
+      const freqLabel = MANUAL_FREQUENCY_LABELS[manualFrequency];
+      const notesPayload = isRecurring
+        ? (manualNotes.trim() ? `${manualNotes.trim()}\n[Frecuencia: ${freqLabel}]` : `[Frecuencia: ${freqLabel}]`)
+        : manualNotes.trim() || undefined;
+
       await createManualAppointment({
         barberId: manualBarberId,
         serviceId: manualServiceId,
@@ -221,13 +240,14 @@ export function AdminMobileAppointments() {
         name: manualClientName,
         phone: manualClientPhone,
         email: manualClientEmail,
-        notes: manualNotes,
-        isRecurring: manualMode === 'RECURRING',
+        notes: notesPayload,
+        isRecurring,
+        frequency: manualFrequency,
       });
 
       setNotice(
-        manualMode === 'RECURRING'
-          ? `Turno permanente registrado para ${manualClientName.trim()} y proyectado a las próximas 4 semanas.`
+        isRecurring
+          ? `Turno recurrente (${freqLabel.toLowerCase()}) registrado para ${manualClientName.trim()}.`
           : `Turno manual confirmado para ${manualClientName.trim()}.`
       );
       setManualOpen(false);
@@ -369,13 +389,15 @@ export function AdminMobileAppointments() {
     </Dialog>
 
     {/* Diálogo para agregar turno manual */}
-    <Dialog open={manualOpen} onOpenChange={open => { if (!open) setManualOpen(false); }}>
-      <DialogContent className="admin-mobile-dialog max-w-lg">
+    <Dialog open={manualOpen} onOpenChange={open => { if (!open) handleCancel(); }}>
+      <DialogContent className="admin-manual-dialog-fullscreen">
         <form onSubmit={handleCreateManualAppointment}>
-          <DialogHeader>
-            <DialogTitle>Agregar turno manual</DialogTitle>
-            <DialogDescription>
-              Agendá un turno manual por única vez o recurrente semanalmente, sin requerir seña ni pasarela de pago.
+          <DialogHeader className="space-y-0 text-left pb-1">
+            <DialogTitle className="text-base sm:text-lg font-semibold text-foreground">
+              Agregar turno manual
+            </DialogTitle>
+            <DialogDescription className="sr-only">
+              Formulario para agregar un turno manual
             </DialogDescription>
           </DialogHeader>
 
@@ -386,7 +408,7 @@ export function AdminMobileAppointments() {
             </div>
           )}
 
-          <div className="grid gap-3.5 py-3 text-xs">
+          <div className="manual-dialog-body grid gap-3.5 py-3 text-xs">
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label htmlFor="manual-date" className="font-medium text-foreground block mb-1">Fecha</label>
@@ -396,7 +418,7 @@ export function AdminMobileAppointments() {
                   value={manualDate}
                   onChange={e => setManualDate(e.target.value)}
                   required
-                  className="bg-background"
+                  className="bg-background h-9 text-xs"
                 />
               </div>
               <div>
@@ -407,12 +429,12 @@ export function AdminMobileAppointments() {
                   value={manualTime}
                   onChange={e => setManualTime(e.target.value)}
                   required
-                  className="bg-background"
+                  className="bg-background h-9 text-xs"
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label htmlFor="manual-service" className="font-medium text-foreground block mb-1">Servicio y duración</label>
                 <select
@@ -450,6 +472,25 @@ export function AdminMobileAppointments() {
               </div>
             </div>
 
+            {/* Selector desplegable para la frecuencia */}
+            <div>
+              <label htmlFor="manual-frequency" className="font-medium text-foreground block mb-1">
+                Frecuencia
+              </label>
+              <select
+                id="manual-frequency"
+                value={manualFrequency}
+                onChange={e => setManualFrequency(e.target.value as ManualFrequency)}
+                className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              >
+                <option value="ONCE">Única vez</option>
+                <option value="WEEKLY">Una vez a la semana</option>
+                <option value="BIWEEKLY">Una vez cada dos semanas</option>
+                <option value="TRIWEEKLY">Una vez cada tres semanas</option>
+                <option value="MONTHLY">Una vez al mes</option>
+              </select>
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label htmlFor="manual-client-name" className="font-medium text-foreground block mb-1">Nombre del cliente</label>
@@ -460,7 +501,7 @@ export function AdminMobileAppointments() {
                   value={manualClientName}
                   onChange={e => setManualClientName(e.target.value)}
                   required
-                  className="bg-background"
+                  className="bg-background h-9 text-xs"
                 />
               </div>
               <div>
@@ -472,7 +513,7 @@ export function AdminMobileAppointments() {
                   value={manualClientPhone}
                   onChange={e => setManualClientPhone(e.target.value)}
                   required
-                  className="bg-background"
+                  className="bg-background h-9 text-xs"
                 />
               </div>
             </div>
@@ -485,43 +526,8 @@ export function AdminMobileAppointments() {
                 placeholder="cliente@ejemplo.com"
                 value={manualClientEmail}
                 onChange={e => setManualClientEmail(e.target.value)}
-                className="bg-background"
+                className="bg-background h-9 text-xs"
               />
-            </div>
-
-            <div>
-              <label className="font-medium text-foreground block mb-1.5">Modalidad de turno</label>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  className={`p-2.5 rounded-lg border text-left transition-all ${
-                    manualMode === 'ONCE'
-                      ? 'border-gold bg-gold/10 text-foreground font-semibold shadow-xs'
-                      : 'border-border bg-background text-muted-foreground hover:bg-muted/40'
-                  }`}
-                  onClick={() => setManualMode('ONCE')}
-                >
-                  <div className="text-xs">Guardar turno por única vez</div>
-                  <div className="text-[10px] font-normal text-muted-foreground mt-0.5">
-                    Se agenda únicamente en la fecha y hora seleccionada.
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  className={`p-2.5 rounded-lg border text-left transition-all ${
-                    manualMode === 'RECURRING'
-                      ? 'border-gold bg-gold/10 text-foreground font-semibold shadow-xs'
-                      : 'border-border bg-background text-muted-foreground hover:bg-muted/40'
-                  }`}
-                  onClick={() => setManualMode('RECURRING')}
-                >
-                  <div className="text-xs">Guardar turno permanente</div>
-                  <div className="text-[10px] font-normal text-muted-foreground mt-0.5">
-                    Recurrencia semanal (mismo día y hora durante 4 semanas).
-                  </div>
-                </button>
-              </div>
             </div>
 
             <div>
@@ -537,21 +543,22 @@ export function AdminMobileAppointments() {
             </div>
           </div>
 
-          <DialogFooter className="mt-2">
+          <DialogFooter className="manual-dialog-footer mt-4 flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
             <Button
               type="button"
               variant="outline"
               disabled={manualSaving}
-              onClick={() => setManualOpen(false)}
+              onClick={handleCancel}
+              className="w-full sm:w-auto h-9 text-xs"
             >
               Cancelar
             </Button>
             <Button
               type="submit"
-              className="action-brand"
+              className="action-brand w-full sm:w-auto h-9 text-xs"
               disabled={manualSaving}
             >
-              {manualSaving ? 'Guardando…' : manualMode === 'RECURRING' ? 'Crear turno permanente' : 'Guardar turno manual'}
+              {manualSaving ? 'Guardando…' : 'Guardar turno'}
             </Button>
           </DialogFooter>
         </form>

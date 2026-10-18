@@ -27,6 +27,21 @@ export type RealAppointment = Appointment & {
 
 type AppointmentRow = Tables<'appointments'>;
 
+export type ManualFrequency =
+  | 'ONCE'
+  | 'WEEKLY'
+  | 'BIWEEKLY'
+  | 'TRIWEEKLY'
+  | 'MONTHLY';
+
+export const MANUAL_FREQUENCY_LABELS: Record<ManualFrequency, string> = {
+  ONCE: 'Única vez',
+  WEEKLY: 'Una vez a la semana',
+  BIWEEKLY: 'Una vez cada dos semanas',
+  TRIWEEKLY: 'Una vez cada tres semanas',
+  MONTHLY: 'Una vez al mes',
+};
+
 export type CreateManualAppointmentInput = {
   barberId: string;
   serviceId: string;
@@ -37,6 +52,7 @@ export type CreateManualAppointmentInput = {
   email?: string;
   notes?: string;
   isRecurring?: boolean;
+  frequency?: ManualFrequency;
   durationMinutes?: number;
 };
 
