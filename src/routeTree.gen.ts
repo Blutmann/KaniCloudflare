@@ -19,6 +19,7 @@ import { Route as AdminEstadisticasRouteImport } from './routes/admin.estadistic
 import { Route as AdminHorariosRouteImport } from './routes/admin.horarios'
 import { Route as AdminMantenimientoRouteImport } from './routes/admin.mantenimiento'
 import { Route as AdminMovilRouteImport } from './routes/admin.movil'
+import { Route as AdminTurnosRouteImport } from './routes/admin.turnos'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -70,6 +71,11 @@ const AdminMovilRoute = AdminMovilRouteImport.update({
   path: '/movil',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminTurnosRoute = AdminTurnosRouteImport.update({
+  id: '/turnos',
+  path: '/turnos',
+  getParentRoute: () => AdminRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -81,6 +87,7 @@ export interface FileRoutesByFullPath {
   '/admin/horarios': typeof AdminHorariosRoute
   '/admin/mantenimiento': typeof AdminMantenimientoRoute
   '/admin/movil': typeof AdminMovilRoute
+  '/admin/turnos': typeof AdminTurnosRoute
   '/admin/': typeof AdminIndexRoute
 }
 export interface FileRoutesByTo {
@@ -92,6 +99,7 @@ export interface FileRoutesByTo {
   '/admin/horarios': typeof AdminHorariosRoute
   '/admin/mantenimiento': typeof AdminMantenimientoRoute
   '/admin/movil': typeof AdminMovilRoute
+  '/admin/turnos': typeof AdminTurnosRoute
   '/admin': typeof AdminIndexRoute
 }
 export interface FileRoutesById {
@@ -105,6 +113,7 @@ export interface FileRoutesById {
   '/admin/horarios': typeof AdminHorariosRoute
   '/admin/mantenimiento': typeof AdminMantenimientoRoute
   '/admin/movil': typeof AdminMovilRoute
+  '/admin/turnos': typeof AdminTurnosRoute
   '/admin/': typeof AdminIndexRoute
 }
 export interface FileRouteTypes {
@@ -119,6 +128,7 @@ export interface FileRouteTypes {
     | '/admin/horarios'
     | '/admin/mantenimiento'
     | '/admin/movil'
+    | '/admin/turnos'
     | '/admin/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -130,6 +140,7 @@ export interface FileRouteTypes {
     | '/admin/horarios'
     | '/admin/mantenimiento'
     | '/admin/movil'
+    | '/admin/turnos'
     | '/admin'
   id:
     | '__root__'
@@ -142,6 +153,7 @@ export interface FileRouteTypes {
     | '/admin/horarios'
     | '/admin/mantenimiento'
     | '/admin/movil'
+    | '/admin/turnos'
     | '/admin/'
   fileRoutesById: FileRoutesById
 }
@@ -225,6 +237,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminMovilRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/turnos': {
+      id: '/admin/turnos'
+      path: '/turnos'
+      fullPath: '/admin/turnos'
+      preLoaderRoute: typeof AdminTurnosRouteImport
+      parentRoute: typeof AdminRoute
+    }
   }
 }
 
@@ -233,6 +252,7 @@ interface AdminRouteChildren {
   AdminHorariosRoute: typeof AdminHorariosRoute
   AdminMantenimientoRoute: typeof AdminMantenimientoRoute
   AdminMovilRoute: typeof AdminMovilRoute
+  AdminTurnosRoute: typeof AdminTurnosRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
@@ -241,6 +261,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminHorariosRoute: AdminHorariosRoute,
   AdminMantenimientoRoute: AdminMantenimientoRoute,
   AdminMovilRoute: AdminMovilRoute,
+  AdminTurnosRoute: AdminTurnosRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
 

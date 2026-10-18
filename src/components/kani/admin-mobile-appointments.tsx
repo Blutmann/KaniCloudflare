@@ -8,7 +8,7 @@ import { dateLabel, money, serviceFor } from '@/lib/kani-model';
 import { formatPhoneDisplay } from '@/lib/kani-phone';
 import { useAdminStaff } from '@/lib/kani-admin-context';
 import { appointmentErrorMessage, createManualAppointment, readRealAppointments, retryRealAppointmentNotification, updateRealAppointmentStatus, type RealAppointment, type RealAppointmentStatus } from '@/lib/kani-appointments';
-import { addCalendarDays, businessDateToday, dateRangeForMobilePreset, filterMobileAppointments, mobileDatePresetLabels, type MobileDatePreset, type MobileStatusFilter } from '@/lib/kani-mobile-appointments';
+import { addCalendarDays, businessDateToday, dateRangeForAppointmentsPreset, filterMobileAppointments, appointmentsPresets, appointmentsPresetLabels, type AppointmentsDatePreset, type MobileStatusFilter } from '@/lib/kani-mobile-appointments';
 import { permittedBarberNames } from '@/lib/kani-role-scope';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -35,7 +35,7 @@ const statusFilters: Array<{ value: StatusFilter; label: string }> = [
 
 const summaryFilters = statusFilters;
 
-const datePresets: MobileDatePreset[] = ['TODAY', 'TOMORROW', 'NEXT_10_DAYS', 'THIS_WEEK', 'SPECIFIC'];
+const datePresets = appointmentsPresets;
 
 function statusTone(value: StatusFilter) {
   return value === 'ALL' ? 'all' : statusMeta[value].tone;
@@ -47,7 +47,7 @@ export function AdminMobileAppointments() {
   const [appointments, setAppointments] = useState<RealAppointment[]>([]);
   const [servicesList, setServicesList] = useState<Array<{ id: string; name: string; duration_minutes: number; price_ars: number }>>([]);
   const [businessToday, setBusinessToday] = useState(() => businessDateToday());
-  const [datePreset, setDatePreset] = useState<MobileDatePreset>('TODAY');
+  const [datePreset, setDatePreset] = useState<AppointmentsDatePreset>('TODAY');
   const [specificDate, setSpecificDate] = useState(() => businessDateToday());
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
   const [barberFilter, setBarberFilter] = useState('Todos');
@@ -121,7 +121,7 @@ export function AdminMobileAppointments() {
   }, []);
 
   const permittedBarberIds = useMemo(() => new Set(permittedRows.map(barber => barber.id)), [permittedRows]);
-  const dateRange = useMemo(() => dateRangeForMobilePreset(datePreset, businessToday, specificDate), [businessToday, datePreset, specificDate]);
+  const dateRange = useMemo(() => dateRangeForAppointmentsPreset(datePreset, businessToday, specificDate), [businessToday, datePreset, specificDate]);
   const dayAppointments = useMemo(() => filterMobileAppointments(appointments, {
     dateRange,
     statusFilter: 'ALL',
@@ -145,10 +145,10 @@ export function AdminMobileAppointments() {
   }), [dayAppointments]);
   const countContext = datePreset === 'SPECIFIC' && specificDate
     ? `el ${specificDate.split('-').reverse().join('/')}`
-    : datePreset === 'ALL' ? 'en todos los días' : mobileDatePresetLabels[datePreset].toLowerCase();
+    : appointmentsPresetLabels[datePreset].toLowerCase();
   const appointmentCountLabel = `${filteredAppointments.length} ${filteredAppointments.length === 1 ? 'turno' : 'turnos'} ${countContext}`;
 
-  function selectDatePreset(next: MobileDatePreset) {
+  function selectDatePreset(next: AppointmentsDatePreset) {
     if (next === 'TODAY') setSpecificDate(businessToday);
     else if (next === 'TOMORROW') setSpecificDate(addCalendarDays(businessToday, 1));
     else if (next === 'SPECIFIC') setSpecificDate(current => current || businessToday);
@@ -157,7 +157,7 @@ export function AdminMobileAppointments() {
   }
 
   function selectSpecificDate(next: string) {
-    const safeDate = next && next >= businessToday ? next : businessToday;
+    const safeDate = next || businessToday;
     setSpecificDate(safeDate);
     setDatePreset('SPECIFIC');
   }
@@ -282,10 +282,10 @@ export function AdminMobileAppointments() {
         <div className="admin-mobile-filter-field admin-mobile-filter-period">
           <label htmlFor="mobile-date-preset">Período y fecha</label>
           <div className="admin-mobile-period-control">
-            <select id="mobile-date-preset" value={datePreset} onChange={event => selectDatePreset(event.target.value as MobileDatePreset)} aria-label="Filtrar por período">
-              {datePresets.map(preset => <option key={preset} value={preset}>{mobileDatePresetLabels[preset]}</option>)}
+            <select id="mobile-date-preset" value={datePreset} onChange={event => selectDatePreset(event.target.value as AppointmentsDatePreset)} aria-label="Filtrar por período">
+              {appointmentsPresets.map(preset => <option key={preset} value={preset}>{appointmentsPresetLabels[preset]}</option>)}
             </select>
-            <input id="mobile-date-filter" type="date" min={businessToday} value={specificDate} onChange={event => selectSpecificDate(event.target.value)} aria-label="Elegir fecha específica" />
+            <input id="mobile-date-filter" type="date" value={specificDate} onChange={event => selectSpecificDate(event.target.value)} aria-label="Elegir fecha específica" />
           </div>
         </div>
         <div className="admin-mobile-filter-field"><label htmlFor="mobile-status-filter">Estado</label><select id="mobile-status-filter" value={statusFilter} onChange={event => setStatusFilter(event.target.value as StatusFilter)}>{statusFilters.map(filter => <option key={filter.value} value={filter.value}>{filter.label}</option>)}</select></div>

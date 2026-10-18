@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest';
 import type { RealAppointment } from './kani-appointments';
 import {
   addCalendarDays,
+  appointmentsPresetLabels,
+  appointmentsPresets,
   businessDateToday,
-  dateRangeForMobilePreset,
+  dateRangeForAppointmentsPreset,
   dateRangeForSchedulePreset,
   filterMobileAppointments,
   startOfBusinessWeek,
@@ -38,13 +40,89 @@ const adminOptions = {
   permittedBarberIds: new Set(['barber-lautaro', 'barber-gonzalo']),
 };
 
-describe('rangos del filtro de fechas del panel móvil', () => {
-  it('calcula días simples y diez fechas inclusivas', () => {
-    expect(addCalendarDays('2026-10-10', 1)).toBe('2026-10-11');
-    expect(dateRangeForMobilePreset('TODAY', '2026-10-10')).toEqual({ start: '2026-10-10', end: '2026-10-10' });
-    expect(dateRangeForMobilePreset('TOMORROW', '2026-10-10')).toEqual({ start: '2026-10-11', end: '2026-10-11' });
-    expect(dateRangeForMobilePreset('NEXT_10_DAYS', '2026-10-10')).toEqual({ start: '2026-10-10', end: '2026-10-19' });
-    expect(dateRangeForMobilePreset('ALL', '2026-10-10')).toBeNull();
+describe('rangos del selector de período para Turnos (/admin/turnos)', () => {
+  const today = '2026-10-10'; // Saturday, Oct 10, 2026
+
+  it('ofrece exactamente las 8 opciones en el orden especificado con sus etiquetas', () => {
+    expect(appointmentsPresets).toEqual([
+      'TODAY',
+      'TOMORROW',
+      'THIS_WEEK',
+      'THIS_MONTH',
+      'NEXT_7_DAYS',
+      'NEXT_14_DAYS',
+      'NEXT_21_DAYS',
+      'SPECIFIC',
+    ]);
+    expect(appointmentsPresets.map(p => appointmentsPresetLabels[p])).toEqual([
+      'Hoy',
+      'Mañana',
+      'Esta semana',
+      'Este mes',
+      'Próximos 7 días',
+      'Próximos 14 días',
+      'Próximos 21 días',
+      'Fecha específica',
+    ]);
+  });
+
+  it('calcula límites consistentes: inicio inclusivo y final exclusivo', () => {
+    // 1. Hoy
+    expect(dateRangeForAppointmentsPreset('TODAY', today)).toEqual({
+      start: '2026-10-10',
+      end: '2026-10-10',
+      endExclusive: '2026-10-11',
+    });
+
+    // 2. Mañana
+    expect(dateRangeForAppointmentsPreset('TOMORROW', today)).toEqual({
+      start: '2026-10-11',
+      end: '2026-10-11',
+      endExclusive: '2026-10-12',
+    });
+
+    // 3. Esta semana: lunes a domingo
+    expect(dateRangeForAppointmentsPreset('THIS_WEEK', today)).toEqual({
+      start: '2026-10-05',
+      end: '2026-10-11',
+      endExclusive: '2026-10-12',
+    });
+
+    // 4. Este mes: mes calendario completo
+    expect(dateRangeForAppointmentsPreset('THIS_MONTH', today)).toEqual({
+      start: '2026-10-01',
+      end: '2026-10-31',
+      endExclusive: '2026-11-01',
+    });
+
+    // 5. Próximos 7 días: incluye hoy
+    expect(dateRangeForAppointmentsPreset('NEXT_7_DAYS', today)).toEqual({
+      start: '2026-10-10',
+      end: '2026-10-16',
+      endExclusive: '2026-10-17',
+    });
+
+    // 6. Próximos 14 días: incluye hoy
+    expect(dateRangeForAppointmentsPreset('NEXT_14_DAYS', today)).toEqual({
+      start: '2026-10-10',
+      end: '2026-10-23',
+      endExclusive: '2026-10-24',
+    });
+
+    // 7. Próximos 21 días: incluye hoy
+    expect(dateRangeForAppointmentsPreset('NEXT_21_DAYS', today)).toEqual({
+      start: '2026-10-10',
+      end: '2026-10-30',
+      endExclusive: '2026-10-31',
+    });
+
+    // 8. Fecha específica
+    expect(dateRangeForAppointmentsPreset('SPECIFIC', today, '2026-10-25')).toEqual({
+      start: '2026-10-25',
+      end: '2026-10-25',
+      endExclusive: '2026-10-26',
+    });
+    expect(dateRangeForAppointmentsPreset('SPECIFIC', today, '')).toBeNull();
   });
 
   it('usa America/Argentina/Buenos_Aires en el cambio de día', () => {
@@ -53,27 +131,9 @@ describe('rangos del filtro de fechas del panel móvil', () => {
   });
 
   it('mantiene la semana lunes-domingo en lunes, sábado y domingo', () => {
-    expect(startOfBusinessWeek('2026-10-05')).toBe('2026-10-05');
-    expect(dateRangeForMobilePreset('THIS_WEEK', '2026-10-10')).toEqual({ start: '2026-10-05', end: '2026-10-11' });
-    expect(dateRangeForMobilePreset('THIS_WEEK', '2026-10-11')).toEqual({ start: '2026-10-05', end: '2026-10-11' });
-  });
-
-  it('permite que una fecha específica sea el único día activo', () => {
-    expect(dateRangeForMobilePreset('SPECIFIC', '2026-10-10', '2026-11-02')).toEqual({ start: '2026-11-02', end: '2026-11-02' });
-    expect(dateRangeForMobilePreset('SPECIFIC', '2026-10-10')).toBeNull();
-  });
-
-  it('dateRangeForSchedulePreset calcula los 8 rangos correctos para Horarios', () => {
-    const today = '2026-10-10'; // Saturday, Oct 10, 2026
-
-    expect(dateRangeForSchedulePreset('TODAY', today)).toEqual({ start: '2026-10-10', end: '2026-10-10' });
-    expect(dateRangeForSchedulePreset('TOMORROW', today)).toEqual({ start: '2026-10-11', end: '2026-10-11' });
-    expect(dateRangeForSchedulePreset('THIS_WEEK', today)).toEqual({ start: '2026-10-05', end: '2026-10-11' });
-    expect(dateRangeForSchedulePreset('THIS_MONTH', today)).toEqual({ start: '2026-10-01', end: '2026-10-31' });
-    expect(dateRangeForSchedulePreset('NEXT_7_DAYS', today)).toEqual({ start: '2026-10-10', end: '2026-10-16' });
-    expect(dateRangeForSchedulePreset('NEXT_14_DAYS', today)).toEqual({ start: '2026-10-10', end: '2026-10-23' });
-    expect(dateRangeForSchedulePreset('NEXT_21_DAYS', today)).toEqual({ start: '2026-10-10', end: '2026-10-30' });
-    expect(dateRangeForSchedulePreset('SPECIFIC', today, '2026-10-25')).toEqual({ start: '2026-10-25', end: '2026-10-25' });
+    expect(startOfBusinessWeek('2026-10-05')).toBe('2026-10-05'); // Lunes
+    expect(startOfBusinessWeek('2026-10-10')).toBe('2026-10-05'); // Sábado
+    expect(startOfBusinessWeek('2026-10-11')).toBe('2026-10-05'); // Domingo
   });
 });
 
@@ -86,26 +146,22 @@ describe('filtro combinado de turnos del panel móvil', () => {
     appointment({ id: 'gonzalo-today', barber: 'Gonzalo', barberId: 'barber-gonzalo', date: '2026-10-10', time: '13:00' }),
   ];
 
-  it('Todos los días incluye fechas distintas y no oculta turnos anteriores', () => {
-    expect(filterMobileAppointments(appointments, adminOptions).map(item => item.id)).toEqual([
-      'pending-today', 'gonzalo-today', 'confirmed-tomorrow', 'cancelled-week', 'completed-next-week',
-    ]);
-  });
-
-  it('combina rango y estado sin perder estados cancelados o completados', () => {
+  it('combina rango y estado sin perder turnos en los límites ni duplicar', () => {
     expect(filterMobileAppointments(appointments, {
       ...adminOptions,
-      dateRange: dateRangeForMobilePreset('NEXT_10_DAYS', '2026-10-10'),
+      dateRange: dateRangeForAppointmentsPreset('NEXT_7_DAYS', '2026-10-10'),
       statusFilter: 'PENDING',
     }).map(item => item.id)).toEqual(['pending-today', 'gonzalo-today']);
+
     expect(filterMobileAppointments(appointments, {
       ...adminOptions,
-      dateRange: dateRangeForMobilePreset('THIS_WEEK', '2026-10-10'),
+      dateRange: dateRangeForAppointmentsPreset('THIS_WEEK', '2026-10-10'),
       statusFilter: 'CANCELLED',
     }).map(item => item.id)).toEqual(['cancelled-week']);
+
     expect(filterMobileAppointments(appointments, {
       ...adminOptions,
-      dateRange: dateRangeForMobilePreset('SPECIFIC', '2026-10-10', '2026-10-20'),
+      dateRange: dateRangeForAppointmentsPreset('SPECIFIC', '2026-10-10', '2026-10-20'),
       statusFilter: 'CONFIRMED',
     }).map(item => item.id)).toEqual(['completed-next-week']);
   });

@@ -1,19 +1,49 @@
 import type { RealAppointment, RealAppointmentStatus } from './kani-appointments';
 
 export type MobileStatusFilter = 'ALL' | RealAppointmentStatus;
-export type MobileDatePreset = 'ALL' | 'TODAY' | 'TOMORROW' | 'NEXT_10_DAYS' | 'THIS_WEEK' | 'SPECIFIC';
-export type MobileDateRange = { start: string; end: string } | null;
+export type AppointmentsDatePreset =
+  | 'TODAY'
+  | 'TOMORROW'
+  | 'THIS_WEEK'
+  | 'THIS_MONTH'
+  | 'NEXT_7_DAYS'
+  | 'NEXT_14_DAYS'
+  | 'NEXT_21_DAYS'
+  | 'SPECIFIC';
+
+export type MobileDatePreset = AppointmentsDatePreset;
+export type MobileDateRange = {
+  start: string;
+  end: string;
+  endExclusive?: string;
+} | null;
 
 export const BUSINESS_TIME_ZONE = 'America/Argentina/Buenos_Aires';
 
-export const mobileDatePresetLabels: Record<MobileDatePreset, string> = {
-  ALL: 'Todos los días',
+export const appointmentsPresets: AppointmentsDatePreset[] = [
+  'TODAY',
+  'TOMORROW',
+  'THIS_WEEK',
+  'THIS_MONTH',
+  'NEXT_7_DAYS',
+  'NEXT_14_DAYS',
+  'NEXT_21_DAYS',
+  'SPECIFIC',
+];
+
+export const appointmentsPresetLabels: Record<AppointmentsDatePreset, string> = {
   TODAY: 'Hoy',
   TOMORROW: 'Mañana',
-  NEXT_10_DAYS: 'Próximos 10 días',
   THIS_WEEK: 'Esta semana',
+  THIS_MONTH: 'Este mes',
+  NEXT_7_DAYS: 'Próximos 7 días',
+  NEXT_14_DAYS: 'Próximos 14 días',
+  NEXT_21_DAYS: 'Próximos 21 días',
   SPECIFIC: 'Fecha específica',
 };
+
+export const mobileDatePresets = appointmentsPresets;
+export const mobileDatePresetLabels = appointmentsPresetLabels;
 
 function isoFromParts(parts: Intl.DateTimeFormatPart[]) {
   const values = Object.fromEntries(parts.filter(part => ['year', 'month', 'day'].includes(part.type)).map(part => [part.type, part.value]));
@@ -42,24 +72,61 @@ export function startOfBusinessWeek(date: string) {
   return addCalendarDays(date, -((day + 6) % 7));
 }
 
-export function dateRangeForMobilePreset(
-  preset: MobileDatePreset,
+export function dateRangeForAppointmentsPreset(
+  preset: AppointmentsDatePreset,
   today: string,
   specificDate = '',
 ): MobileDateRange {
-  if (preset === 'ALL') return null;
-  if (preset === 'TODAY') return { start: today, end: today };
+  if (preset === 'TODAY') {
+    const endExclusive = addCalendarDays(today, 1);
+    return { start: today, end: today, endExclusive };
+  }
   if (preset === 'TOMORROW') {
     const tomorrow = addCalendarDays(today, 1);
-    return { start: tomorrow, end: tomorrow };
+    const endExclusive = addCalendarDays(today, 2);
+    return { start: tomorrow, end: tomorrow, endExclusive };
   }
-  if (preset === 'NEXT_10_DAYS') return { start: today, end: addCalendarDays(today, 9) };
   if (preset === 'THIS_WEEK') {
     const start = startOfBusinessWeek(today);
-    return { start, end: addCalendarDays(start, 6) };
+    const endExclusive = addCalendarDays(start, 7);
+    const end = addCalendarDays(start, 6);
+    return { start, end, endExclusive };
   }
-  return specificDate ? { start: specificDate, end: specificDate } : null;
+  if (preset === 'THIS_MONTH') {
+    const [yearStr, monthStr] = today.split('-');
+    const currentYear = parseInt(yearStr, 10);
+    const currentMonth = parseInt(monthStr, 10);
+    const start = `${yearStr}-${monthStr}-01`;
+    const nextMonthDate = new Date(Date.UTC(currentYear, currentMonth, 1));
+    const endExclusive = nextMonthDate.toISOString().slice(0, 10);
+    const lastDayOfMonth = new Date(Date.UTC(currentYear, currentMonth, 0)).getUTCDate();
+    const end = `${yearStr}-${monthStr}-${String(lastDayOfMonth).padStart(2, '0')}`;
+    return { start, end, endExclusive };
+  }
+  if (preset === 'NEXT_7_DAYS') {
+    const endExclusive = addCalendarDays(today, 7);
+    const end = addCalendarDays(today, 6);
+    return { start: today, end, endExclusive };
+  }
+  if (preset === 'NEXT_14_DAYS') {
+    const endExclusive = addCalendarDays(today, 14);
+    const end = addCalendarDays(today, 13);
+    return { start: today, end, endExclusive };
+  }
+  if (preset === 'NEXT_21_DAYS') {
+    const endExclusive = addCalendarDays(today, 21);
+    const end = addCalendarDays(today, 20);
+    return { start: today, end, endExclusive };
+  }
+  if (preset === 'SPECIFIC') {
+    if (!specificDate) return null;
+    const endExclusive = addCalendarDays(specificDate, 1);
+    return { start: specificDate, end: specificDate, endExclusive };
+  }
+  return null;
 }
+
+export const dateRangeForMobilePreset = dateRangeForAppointmentsPreset;
 
 export type ScheduleDatePreset =
   | 'TODAY'
@@ -153,7 +220,13 @@ export function filterMobileAppointments(
       if (options.role === 'BARBER') return appointment.barberId === options.profileBarberId;
       return options.barberFilter === 'Todos' || appointment.barber === options.barberFilter;
     })
-    .filter(appointment => !options.dateRange || (appointment.date >= options.dateRange.start && appointment.date <= options.dateRange.end))
+    .filter(appointment => {
+      if (!options.dateRange) return true;
+      if (options.dateRange.endExclusive) {
+        return appointment.date >= options.dateRange.start && appointment.date < options.dateRange.endExclusive;
+      }
+      return appointment.date >= options.dateRange.start && appointment.date <= options.dateRange.end;
+    })
     .filter(appointment => {
       if (options.statusFilter === 'ALL') return true;
       if (options.statusFilter === 'CONFIRMED') {

@@ -20,7 +20,7 @@ export function AdminSectionNav() {
           {items.map(({ to, label, icon: Icon }) => {
             const active =
               to === "/admin"
-                ? pathname === "/admin" || pathname === "/admin/"
+                ? pathname === "/admin" || pathname === "/admin/" || pathname === "/admin/turnos"
                 : pathname.startsWith(to);
             return (
               <Link
