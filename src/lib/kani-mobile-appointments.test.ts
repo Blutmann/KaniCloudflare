@@ -4,6 +4,7 @@ import {
   addCalendarDays,
   businessDateToday,
   dateRangeForMobilePreset,
+  dateRangeForSchedulePreset,
   filterMobileAppointments,
   startOfBusinessWeek,
 } from './kani-mobile-appointments';
@@ -60,6 +61,19 @@ describe('rangos del filtro de fechas del panel móvil', () => {
   it('permite que una fecha específica sea el único día activo', () => {
     expect(dateRangeForMobilePreset('SPECIFIC', '2026-10-10', '2026-11-02')).toEqual({ start: '2026-11-02', end: '2026-11-02' });
     expect(dateRangeForMobilePreset('SPECIFIC', '2026-10-10')).toBeNull();
+  });
+
+  it('dateRangeForSchedulePreset calcula los 8 rangos correctos para Horarios', () => {
+    const today = '2026-10-10'; // Saturday, Oct 10, 2026
+
+    expect(dateRangeForSchedulePreset('TODAY', today)).toEqual({ start: '2026-10-10', end: '2026-10-10' });
+    expect(dateRangeForSchedulePreset('TOMORROW', today)).toEqual({ start: '2026-10-11', end: '2026-10-11' });
+    expect(dateRangeForSchedulePreset('THIS_WEEK', today)).toEqual({ start: '2026-10-05', end: '2026-10-11' });
+    expect(dateRangeForSchedulePreset('THIS_MONTH', today)).toEqual({ start: '2026-10-01', end: '2026-10-31' });
+    expect(dateRangeForSchedulePreset('NEXT_7_DAYS', today)).toEqual({ start: '2026-10-10', end: '2026-10-16' });
+    expect(dateRangeForSchedulePreset('NEXT_14_DAYS', today)).toEqual({ start: '2026-10-10', end: '2026-10-23' });
+    expect(dateRangeForSchedulePreset('NEXT_21_DAYS', today)).toEqual({ start: '2026-10-10', end: '2026-10-30' });
+    expect(dateRangeForSchedulePreset('SPECIFIC', today, '2026-10-25')).toEqual({ start: '2026-10-25', end: '2026-10-25' });
   });
 });
 

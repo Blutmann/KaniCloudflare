@@ -14,9 +14,10 @@ import { useAdminStaff } from "@/lib/kani-admin-context";
 import {
   addCalendarDays,
   businessDateToday,
-  dateRangeForMobilePreset,
-  mobileDatePresetLabels,
-  type MobileDatePreset,
+  dateRangeForSchedulePreset,
+  schedulePresetLabels,
+  schedulePresets,
+  type ScheduleDatePreset,
 } from "@/lib/kani-mobile-appointments";
 import { dateLabel, minutes, type Barber } from "@/lib/kani-model";
 import {
@@ -30,13 +31,7 @@ import {
 import { readRealAppointments, type RealAppointment } from "@/lib/kani-appointments";
 import { permittedBarberNames } from "@/lib/kani-role-scope";
 
-const datePresets: MobileDatePreset[] = [
-  "TODAY",
-  "TOMORROW",
-  "NEXT_10_DAYS",
-  "THIS_WEEK",
-  "SPECIFIC",
-];
+const datePresets: ScheduleDatePreset[] = schedulePresets;
 type ScheduleSlot = AvailabilitySlot & { barberName: Barber; occupied: boolean };
 type ScheduleStart = Awaited<ReturnType<typeof readAvailabilityStartsForRange>>[number] & { barberName: Barber };
 
@@ -100,7 +95,7 @@ export function AdminScheduleManager() {
   );
   const ownBarberId = profile.role === "BARBER" ? profile.barber_id : null;
   const [businessToday, setBusinessToday] = useState(() => businessDateToday());
-  const [datePreset, setDatePreset] = useState<MobileDatePreset>("TODAY");
+  const [datePreset, setDatePreset] = useState<ScheduleDatePreset>("TODAY");
   const [specificDate, setSpecificDate] = useState(() => businessDateToday());
   const [barberFilter, setBarberFilter] = useState("");
   const [slots, setSlots] = useState<ScheduleSlot[]>([]);
@@ -138,7 +133,7 @@ export function AdminScheduleManager() {
   }, []);
 
   const dateRange = useMemo(
-    () => dateRangeForMobilePreset(datePreset, businessToday, specificDate),
+    () => dateRangeForSchedulePreset(datePreset, businessToday, specificDate),
     [businessToday, datePreset, specificDate],
   );
   const selectedRows = useMemo(() => {
@@ -197,7 +192,7 @@ export function AdminScheduleManager() {
     if (refreshCount > 0) void loadSlots();
   }, [refreshCount]);
 
-  function selectPreset(next: MobileDatePreset) {
+  function selectPreset(next: ScheduleDatePreset) {
     setSpecificDate(
       next === "TOMORROW"
         ? addCalendarDays(businessToday, 1)
@@ -302,11 +297,11 @@ export function AdminScheduleManager() {
             <select
               id="schedule-date-preset"
               value={datePreset}
-              onChange={(event) => selectPreset(event.target.value as MobileDatePreset)}
+              onChange={(event) => selectPreset(event.target.value as ScheduleDatePreset)}
             >
               {datePresets.map((preset) => (
                 <option key={preset} value={preset}>
-                  {mobileDatePresetLabels[preset]}
+                  {schedulePresetLabels[preset]}
                 </option>
               ))}
             </select>

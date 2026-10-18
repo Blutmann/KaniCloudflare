@@ -38,36 +38,64 @@ function makeMockAppointment(overrides: Partial<RealAppointment> = {}): RealAppo
 }
 
 describe('Statistics Module Unit Tests', () => {
-  it('dateRangeForStatisticsPreset calculates correct bounds', () => {
-    const today = '2026-10-17';
+  it('dateRangeForStatisticsPreset calculates correct bounds for all 14 presets', () => {
+    const today = '2026-10-17'; // Saturday, October 17, 2026
 
     expect(dateRangeForStatisticsPreset('TODAY', today)).toEqual({
       start: '2026-10-17',
       end: '2026-10-17',
     });
-    expect(dateRangeForStatisticsPreset('TOMORROW', today)).toEqual({
-      start: '2026-10-18',
-      end: '2026-10-18',
+    expect(dateRangeForStatisticsPreset('YESTERDAY', today)).toEqual({
+      start: '2026-10-16',
+      end: '2026-10-16',
     });
     expect(dateRangeForStatisticsPreset('THIS_WEEK', today)).toEqual({
-      start: '2026-10-12',
-      end: '2026-10-18',
+      start: '2026-10-12', // Monday
+      end: '2026-10-18',   // Sunday
     });
-    expect(dateRangeForStatisticsPreset('NEXT_7_DAYS', today)).toEqual({
-      start: '2026-10-17',
-      end: '2026-10-23',
+    expect(dateRangeForStatisticsPreset('THIS_MONTH', today)).toEqual({
+      start: '2026-10-01',
+      end: '2026-10-31',
     });
-    expect(dateRangeForStatisticsPreset('NEXT_10_DAYS', today)).toEqual({
-      start: '2026-10-17',
-      end: '2026-10-26',
+    expect(dateRangeForStatisticsPreset('THIS_YEAR', today)).toEqual({
+      start: '2026-01-01',
+      end: '2026-12-31',
     });
-    expect(dateRangeForStatisticsPreset('NEXT_14_DAYS', today)).toEqual({
-      start: '2026-10-17',
-      end: '2026-10-30',
+    expect(dateRangeForStatisticsPreset('PREVIOUS_MONTH', today)).toEqual({
+      start: '2026-09-01',
+      end: '2026-09-30',
     });
-    expect(dateRangeForStatisticsPreset('NEXT_21_DAYS', today)).toEqual({
-      start: '2026-10-17',
-      end: '2026-11-06',
+    expect(dateRangeForStatisticsPreset('PREVIOUS_YEAR', today)).toEqual({
+      start: '2025-01-01',
+      end: '2025-12-31',
+    });
+    expect(dateRangeForStatisticsPreset('LAST_7_DAYS', today)).toEqual({
+      start: '2026-10-11',
+      end: '2026-10-17',
+    });
+    expect(dateRangeForStatisticsPreset('LAST_30_DAYS', today)).toEqual({
+      start: '2026-09-18',
+      end: '2026-10-17',
+    });
+    expect(dateRangeForStatisticsPreset('LAST_60_DAYS', today)).toEqual({
+      start: '2026-08-19',
+      end: '2026-10-17',
+    });
+    expect(dateRangeForStatisticsPreset('LAST_90_DAYS', today)).toEqual({
+      start: '2026-07-20',
+      end: '2026-10-17',
+    });
+    expect(dateRangeForStatisticsPreset('LAST_180_DAYS', today)).toEqual({
+      start: '2026-04-21',
+      end: '2026-10-17',
+    });
+    expect(dateRangeForStatisticsPreset('LAST_365_DAYS', today)).toEqual({
+      start: '2025-10-18',
+      end: '2026-10-17',
+    });
+    expect(dateRangeForStatisticsPreset('SPECIFIC', today, '2026-10-05')).toEqual({
+      start: '2026-10-05',
+      end: '2026-10-05',
     });
   });
 

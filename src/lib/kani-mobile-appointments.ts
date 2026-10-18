@@ -61,6 +61,78 @@ export function dateRangeForMobilePreset(
   return specificDate ? { start: specificDate, end: specificDate } : null;
 }
 
+export type ScheduleDatePreset =
+  | 'TODAY'
+  | 'TOMORROW'
+  | 'THIS_WEEK'
+  | 'THIS_MONTH'
+  | 'NEXT_7_DAYS'
+  | 'NEXT_14_DAYS'
+  | 'NEXT_21_DAYS'
+  | 'SPECIFIC';
+
+export const schedulePresets: ScheduleDatePreset[] = [
+  'TODAY',
+  'TOMORROW',
+  'THIS_WEEK',
+  'THIS_MONTH',
+  'NEXT_7_DAYS',
+  'NEXT_14_DAYS',
+  'NEXT_21_DAYS',
+  'SPECIFIC',
+];
+
+export const schedulePresetLabels: Record<ScheduleDatePreset, string> = {
+  TODAY: 'Hoy',
+  TOMORROW: 'Mañana',
+  THIS_WEEK: 'Esta semana',
+  THIS_MONTH: 'Este mes',
+  NEXT_7_DAYS: 'Próximos 7 días',
+  NEXT_14_DAYS: 'Próximos 14 días',
+  NEXT_21_DAYS: 'Próximos 21 días',
+  SPECIFIC: 'Fecha específica',
+};
+
+export function dateRangeForSchedulePreset(
+  preset: ScheduleDatePreset,
+  today: string,
+  specificDate = '',
+): MobileDateRange {
+  if (preset === 'TODAY') {
+    return { start: today, end: today };
+  }
+  if (preset === 'TOMORROW') {
+    const tomorrow = addCalendarDays(today, 1);
+    return { start: tomorrow, end: tomorrow };
+  }
+  if (preset === 'THIS_WEEK') {
+    const start = startOfBusinessWeek(today);
+    return { start, end: addCalendarDays(start, 6) };
+  }
+  if (preset === 'THIS_MONTH') {
+    const [yearStr, monthStr] = today.split('-');
+    const currentYear = parseInt(yearStr, 10);
+    const currentMonth = parseInt(monthStr, 10);
+    const start = `${yearStr}-${monthStr}-01`;
+    const lastDayOfMonth = new Date(Date.UTC(currentYear, currentMonth, 0)).getUTCDate();
+    const end = `${yearStr}-${monthStr}-${String(lastDayOfMonth).padStart(2, '0')}`;
+    return { start, end };
+  }
+  if (preset === 'NEXT_7_DAYS') {
+    return { start: today, end: addCalendarDays(today, 6) };
+  }
+  if (preset === 'NEXT_14_DAYS') {
+    return { start: today, end: addCalendarDays(today, 13) };
+  }
+  if (preset === 'NEXT_21_DAYS') {
+    return { start: today, end: addCalendarDays(today, 20) };
+  }
+  if (preset === 'SPECIFIC') {
+    return specificDate ? { start: specificDate, end: specificDate } : null;
+  }
+  return null;
+}
+
 type MobileAppointmentFilterOptions = {
   dateRange: MobileDateRange;
   statusFilter: MobileStatusFilter;

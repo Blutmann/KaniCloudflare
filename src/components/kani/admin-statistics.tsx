@@ -48,21 +48,14 @@ import {
   computeServiceDemand,
   dateRangeForStatisticsPreset,
   filterStatisticsAppointments,
+  statisticsPresets,
   statisticsPresetLabels,
   type StatisticsDatePreset,
   type TimeSlotFilter,
 } from '@/lib/kani-statistics';
 import { AdminClients } from './admin-clients';
 
-const presets: StatisticsDatePreset[] = [
-  'TODAY',
-  'TOMORROW',
-  'THIS_WEEK',
-  'NEXT_7_DAYS',
-  'NEXT_10_DAYS',
-  'NEXT_14_DAYS',
-  'NEXT_21_DAYS',
-];
+const presets: StatisticsDatePreset[] = statisticsPresets;
 
 export function AdminStatistics() {
   const { profile, barbers: permittedRows, refreshCount, setIsRefreshing } = useAdminStaff();
@@ -79,6 +72,7 @@ export function AdminStatistics() {
   // Filters
   const [businessToday, setBusinessToday] = useState(() => businessDateToday());
   const [datePreset, setDatePreset] = useState<StatisticsDatePreset>('TODAY');
+  const [specificDate, setSpecificDate] = useState(() => businessDateToday());
   const [timeSlotFilter, setTimeSlotFilter] = useState<TimeSlotFilter>('ALL');
   const [barberFilter, setBarberFilter] = useState('Todos');
 
@@ -126,8 +120,8 @@ export function AdminStatistics() {
 
   // Compute Active Date Range
   const activeDateRange = useMemo(() => {
-    return dateRangeForStatisticsPreset(datePreset, businessToday);
-  }, [datePreset, businessToday]);
+    return dateRangeForStatisticsPreset(datePreset, businessToday, specificDate);
+  }, [datePreset, businessToday, specificDate]);
 
   // Filter Appointments for Statistics
   const permittedBarberIds = useMemo(
@@ -202,18 +196,30 @@ export function AdminStatistics() {
             <label htmlFor="stat-period-filter" className="block text-xs font-medium text-muted-foreground mb-1.5">
               Período
             </label>
-            <select
-              id="stat-period-filter"
-              value={datePreset}
-              onChange={(e) => setDatePreset(e.target.value as StatisticsDatePreset)}
-              className="select-control w-full h-9 px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20"
-            >
-              {presets.map((preset) => (
-                <option key={preset} value={preset}>
-                  {statisticsPresetLabels[preset]}
-                </option>
-              ))}
-            </select>
+            <div className={datePreset === 'SPECIFIC' ? 'grid grid-cols-2 gap-2' : ''}>
+              <select
+                id="stat-period-filter"
+                value={datePreset}
+                onChange={(e) => setDatePreset(e.target.value as StatisticsDatePreset)}
+                className="select-control w-full h-9 px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20"
+              >
+                {presets.map((preset) => (
+                  <option key={preset} value={preset}>
+                    {statisticsPresetLabels[preset]}
+                  </option>
+                ))}
+              </select>
+              {datePreset === 'SPECIFIC' && (
+                <input
+                  id="stat-specific-date"
+                  type="date"
+                  value={specificDate}
+                  onChange={(e) => setSpecificDate(e.target.value)}
+                  className="w-full h-9 px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20"
+                  aria-label="Elegir fecha específica"
+                />
+              )}
+            </div>
           </div>
 
           {/* Selector 2: Franja horaria */}
