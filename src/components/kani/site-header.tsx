@@ -55,6 +55,14 @@ export function SiteHeader() {
   }, []);
   useEffect(() => { onMenuOpenChange(false); }, [path, onMenuOpenChange]);
   useEffect(() => {
+    if (!menuOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onMenuOpenChange(false);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [menuOpen, onMenuOpenChange]);
+  useEffect(() => {
     const body = document.body;
     if (menuOpen) {
       const scrollY = window.scrollY;
@@ -67,14 +75,14 @@ export function SiteHeader() {
     }
     return () => {
       const top = body.style.top;
-      const restoreY = top ? Math.max(0, Number.parseInt(top, 10) * -1) : window.scrollY;
+      const restoreY = top ? Math.max(0, Number.parseInt(top, 10) * -1) : 0;
       body.style.position = '';
       body.style.top = '';
       body.style.left = '';
       body.style.right = '';
       body.style.width = '';
       body.style.overflow = '';
-      if (menuOpen && top) window.scrollTo(0, restoreY);
+      if (top) window.scrollTo(0, restoreY);
     };
   }, [menuOpen]);
   const closeMenu = () => onMenuOpenChange(false);
@@ -86,7 +94,7 @@ export function SiteHeader() {
   };
   const sessionRole = staff?.profile.role === 'ADMIN' ? 'Administrador' : staff?.profile.role === 'BARBER' ? 'Barbero' : '';
   const mobileMenu = menuOpen ? (
-    <nav className="mobile-menu" aria-label="Menú principal" aria-modal="true" role="dialog">
+    <nav className="mobile-menu" aria-label="Menú principal" aria-modal="true">
       <Link to="/reservar" onClick={continueBooking}><ArrowUpRight />Solicitar turno</Link>
       <Link to="/estudio" onClick={closeMenu}><Building2 />Contacto</Link>
       <a href="https://www.google.com/maps/place/KANI+BARBER+STUDIO/data=!4m2!3m1!1s0x0:0x48bcfe7b2ea7ba60" target="_blank" rel="noreferrer" onClick={closeMenu}><MapPin />Ver ubicación</a>
@@ -120,7 +128,7 @@ export function SiteHeader() {
     </nav>
   ) : null;
   return <>
-    <header className="site-header"><div className="site-container flex items-center gap-4"><div className="admin-header-left"><Link to="/" aria-label="Kani Barber Studio, inicio" className="w-fit"><Wordmark /></Link></div><div className="header-controls ml-auto">{staff && <AdminActivityPopover role={staff.profile.role} />}<ThemeToggle /><Button variant="outline" size="icon" className={`mobile-menu-trigger header-control-button ${admin ? 'admin-menu-trigger' : ''}`} aria-label={menuOpen ? 'Cerrar menú' : 'Abrir menú'} aria-expanded={menuOpen} onClick={() => onMenuOpenChange(!menuOpen)}>{menuOpen ? <X /> : <Menu />}</Button></div></div></header>
+    <header className={`site-header ${menuOpen ? 'menu-open' : ''}`}><div className="site-container flex items-center gap-4"><div className="admin-header-left"><Link to="/" aria-label="Kani Barber Studio, inicio" className="w-fit" onClick={closeMenu}><Wordmark /></Link></div><div className="header-controls ml-auto">{staff && <AdminActivityPopover role={staff.profile.role} />}<ThemeToggle /><Button variant="outline" size="icon" className={`mobile-menu-trigger header-control-button ${admin ? 'admin-menu-trigger' : ''}`} aria-label={menuOpen ? 'Cerrar menú' : 'Abrir menú'} aria-expanded={menuOpen} onClick={() => onMenuOpenChange(!menuOpen)}>{menuOpen ? <X /> : <Menu />}</Button></div></div></header>
     {typeof document !== 'undefined' && mobileMenu ? createPortal(mobileMenu, document.body) : null}
     {typeof document !== 'undefined' && menuOpen && path !== '/reservar' ? createPortal(<MobileMenuAction />, document.body) : null}
   </>;

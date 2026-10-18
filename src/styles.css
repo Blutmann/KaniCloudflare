@@ -446,8 +446,58 @@ html[data-theme="light"] input[type=date], html[data-theme="light"] input[type=t
 .admin-menu-trigger { display: inline-flex; }
 .theme-toggle { color: var(--gold); }
 .mobile-menu-cta { display: none; }
-.mobile-menu { position: fixed; inset: 98px 0 0; z-index: 130; display: grid; align-content: start; gap: 0; overflow-y: auto; padding: 14px max(20px, calc((100vw - 1184px) / 2)) 32px; border-top: 1px solid color-mix(in oklch, var(--gold) 28%, var(--border)); background: var(--chrome); background-image: url('/kani-menu-oscuro-desktop.webp'); background-position: center top; background-repeat: no-repeat; background-size: cover; box-shadow: none; }
-html[data-theme="light"] .mobile-menu { background-image: url('/kani-menu-claro-desktop-blanco.webp'); }
+.site-header.menu-open {
+  position: fixed !important;
+  inset: 0 0 auto !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
+  z-index: 140 !important;
+  background-color: var(--chrome) !important;
+  border-bottom: 1px solid color-mix(in oklch, var(--gold) 28%, var(--border)) !important;
+}
+.mobile-menu,
+nav.mobile-menu {
+  position: fixed !important;
+  inset: 0 !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  width: 100dvw !important;
+  max-width: none !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+  max-height: none !important;
+  min-height: 100vh !important;
+  min-height: 100dvh !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  border: none !important;
+  box-sizing: border-box !important;
+  z-index: 130 !important;
+  display: grid !important;
+  align-content: start !important;
+  gap: 0 !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+  touch-action: pan-y !important;
+  -webkit-overflow-scrolling: touch !important;
+  padding: calc(98px + 14px) max(20px, calc((100vw - 1184px) / 2)) 40px !important;
+  background-color: var(--chrome) !important;
+  background-image: url('/kani-menu-oscuro-desktop.webp') !important;
+  background-position: center top !important;
+  background-repeat: no-repeat !important;
+  background-size: cover !important;
+  box-shadow: none !important;
+}
+html[data-theme="light"] .mobile-menu,
+html[data-theme="light"] nav.mobile-menu {
+  background-color: var(--chrome) !important;
+  background-image: url('/kani-menu-claro-desktop-blanco.webp') !important;
+}
 .mobile-menu a { display: flex; align-items: center; gap: 12px; min-height: 60px; padding: 0 8px; border-bottom: 1px solid color-mix(in oklch, var(--gold) 28%, var(--border)); color: var(--foreground); font-size: 15px; }
 .mobile-menu a:hover, .mobile-menu a:focus-visible { background: color-mix(in oklch, var(--gold) 12%, transparent); color: var(--gold); outline: none; }
 .mobile-menu svg { width: 17px; height: 17px; color: var(--gold); }
@@ -554,10 +604,52 @@ html[data-theme="light"] .booking-option.selected .option-icon img { filter: bri
  .site-header > div { gap: 10px; }
  .header-controls { margin-left: auto; }
  .desktop-primary-nav, .admin-public-cta { display: none !important; }
+ .site-header.menu-open {
+   position: fixed !important;
+   inset: 0 0 auto !important;
+   top: 0 !important;
+   left: 0 !important;
+   right: 0 !important;
+   width: 100% !important;
+   height: 72px !important;
+   z-index: 140 !important;
+   background-color: var(--chrome) !important;
+   border-bottom: 1px solid color-mix(in oklch, var(--gold) 28%, var(--border)) !important;
+ }
  .mobile-menu-trigger { display: inline-flex; }
- .mobile-menu { position: fixed; inset: 72px 0 0; z-index: 130; padding: 14px 20px calc(132px + env(safe-area-inset-bottom)); background-position: center top; }
- html[data-theme="light"] .mobile-menu { background-image: url('/kani-menu-claro-mobile-blanco.webp'); }
- html[data-theme="dark"] .mobile-menu { background-image: url('/kani-menu-oscuro-mobile.webp'); }
+ .mobile-menu,
+ nav.mobile-menu {
+   position: fixed !important;
+   inset: 0 !important;
+   top: 0 !important;
+   left: 0 !important;
+   right: 0 !important;
+   bottom: 0 !important;
+   width: 100vw !important;
+   width: 100dvw !important;
+   max-width: none !important;
+   height: 100vh !important;
+   height: 100dvh !important;
+   max-height: none !important;
+   min-height: 100vh !important;
+   min-height: 100dvh !important;
+   z-index: 130 !important;
+   padding: calc(72px + 14px + env(safe-area-inset-top, 0px)) 20px calc(132px + env(safe-area-inset-bottom, 0px)) !important;
+   background-color: var(--chrome) !important;
+   background-position: center top !important;
+   background-repeat: no-repeat !important;
+   background-size: cover !important;
+ }
+ html[data-theme="light"] .mobile-menu,
+ html[data-theme="light"] nav.mobile-menu {
+   background-color: var(--chrome) !important;
+   background-image: url('/kani-menu-claro-mobile-blanco.webp') !important;
+ }
+ html[data-theme="dark"] .mobile-menu,
+ html[data-theme="dark"] nav.mobile-menu {
+   background-color: var(--chrome) !important;
+   background-image: url('/kani-menu-oscuro-mobile.webp') !important;
+ }
  .mobile-menu a { display: flex; align-items: center; gap: 12px; min-height: 60px; padding: 0 8px; border-bottom: 1px solid color-mix(in oklch, var(--gold) 28%, var(--border)); color: var(--foreground); font-size: 15px; }
  .mobile-menu a:hover, .mobile-menu a:focus-visible { background: color-mix(in oklch, var(--gold) 12%, transparent); color: var(--gold); outline: none; }
  .mobile-menu svg { width: 17px; height: 17px; color: var(--gold); }
@@ -1779,9 +1871,10 @@ html[data-theme='dark'] .header-control-button {
   color: var(--gold) !important;
 }
 
-html[data-theme='dark'] .mobile-menu {
-  background-color: var(--chrome);
-  color: var(--foreground);
+html[data-theme='dark'] .mobile-menu,
+html[data-theme='dark'] nav.mobile-menu {
+  background-color: var(--chrome) !important;
+  color: var(--foreground) !important;
 }
 
 html[data-theme='dark'] .booking-option,
