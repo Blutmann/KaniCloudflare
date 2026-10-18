@@ -611,6 +611,28 @@ html[data-theme="light"] .booking-option.selected .option-icon img { filter: bri
     width: min(860px, calc(100% - 48px));
   }
 }
+@media(min-width: 1024px) {
+  .booking-page {
+    width: min(1184px, calc(100% - 80px));
+    max-width: none;
+    margin-inline: auto;
+  }
+  .booking-layout {
+    display: block;
+    width: 100%;
+    max-width: none;
+    margin-inline: auto;
+  }
+  .booking-cta-inner {
+    width: min(1184px, calc(100% - 80px));
+    max-width: none;
+    margin-inline: auto;
+  }
+  .booking-time-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+  }
+}
 @media(max-width:1023px) {
  .site-container,.site-header > div { width: calc(100% - 48px); }
  .booking-layout { gap: 30px; grid-template-columns: minmax(0,1fr) 260px; }
