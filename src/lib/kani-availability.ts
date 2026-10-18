@@ -50,7 +50,18 @@ export function isManageableScheduleDate(slotDate: string, today = businessDateT
 const slotFields = 'id, barber_id, slot_date, start_time, end_time, status, internal_note, created_at, updated_at, updated_by';
 const publicSlotFields = 'id, barber_id, slot_date, start_time, end_time, status';
 
-export async function readConfiguredServices(): Promise<ConfiguredService[]> {
+let cachedServices: { data: ConfiguredService[]; timestamp: number } | null = null;
+const SERVICES_CACHE_TTL_MS = 2 * 60 * 1000; // 2 minutes
+
+export function clearServicesCache() {
+  cachedServices = null;
+}
+
+export async function readConfiguredServices(options: { bypassCache?: boolean } = {}): Promise<ConfiguredService[]> {
+  const now = Date.now();
+  if (!options.bypassCache && cachedServices && now - cachedServices.timestamp < SERVICES_CACHE_TTL_MS) {
+    return cachedServices.data;
+  }
   const { data, error } = await supabase
     .from('services')
     .select('name, duration_minutes, price_ars')
@@ -58,18 +69,37 @@ export async function readConfiguredServices(): Promise<ConfiguredService[]> {
     .order('name', { ascending: true });
   if (error) throw error;
   const byName = new Map((data ?? []).map(row => [row.name, row]));
-  return services.flatMap(service => {
+  const result = services.flatMap(service => {
     const configured = byName.get(service.name);
     return configured ? [{ ...service, price: configured.price_ars, duration: configured.duration_minutes }] : [];
   });
+  cachedServices = { data: result, timestamp: now };
+  return result;
+}
+
+let cachedActiveBarbers: { data: { id: string; name: string }[]; timestamp: number } | null = null;
+const BARBERS_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+export function clearActiveBarbersCache() {
+  cachedActiveBarbers = null;
+}
+
+async function getActiveBarbers(): Promise<{ id: string; name: string }[]> {
+  const now = Date.now();
+  if (cachedActiveBarbers && now - cachedActiveBarbers.timestamp < BARBERS_CACHE_TTL_MS) {
+    return cachedActiveBarbers.data;
+  }
+  const { data, error } = await supabase.from('barbers').select('id, name').eq('active', true);
+  if (error) throw error;
+  const result = data ?? [];
+  cachedActiveBarbers = { data: result, timestamp: now };
+  return result;
 }
 
 export async function readPublicAvailabilityStarts(barber: Barber | null, fromDate: string, toDate: string) {
-  let barberQuery = supabase.from('barbers').select('id, name').eq('active', true);
-  if (barber) barberQuery = barberQuery.eq('name', barber);
-  const { data: barberRows, error: barberError } = await barberQuery;
-  if (barberError) throw barberError;
-  if (!barberRows?.length) return [] as PublicAvailabilityStart[];
+  const allBarbers = await getActiveBarbers();
+  const barberRows = barber ? allBarbers.filter(b => b.name === barber) : allBarbers;
+  if (!barberRows.length) return [] as PublicAvailabilityStart[];
   const barberById = new Map(barberRows.map(row => [row.id, row.name as Barber]));
   const { data, error } = await supabase.rpc('read_valid_availability_starts', {
     p_barber_id: barber ? barberRows[0]?.id ?? null : null,

@@ -1,5 +1,5 @@
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router';
-import { useEffect, useLayoutEffect, useRef, useState, type MouseEvent } from 'react';
+import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState, type MouseEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { ArrowUpRight, BarChart3, Building2, CalendarClock, Instagram, LogIn, LogOut, MapPin, Menu, Moon, Sun, Wrench, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -7,7 +7,10 @@ import kaniLogo from '@/assets/kani-logo-transparent.webp';
 import { getAuthenticatedStaff, signOut, type AuthenticatedStaff } from '@/lib/kani-auth';
 import { supabase } from '@/integrations/supabase/client';
 import { useKani } from '@/components/kani/store';
-import { AdminActivityPopover } from '@/components/kani/admin-activity-popover';
+
+const AdminActivityPopover = lazy(() =>
+  import('@/components/kani/admin-activity-popover').then(m => ({ default: m.AdminActivityPopover }))
+);
 
 export function Wordmark() {
   return <img src={kaniLogo} alt="Kani Barber Studio" width={2048} height={958} className="wordmark-img" />;
@@ -128,7 +131,7 @@ export function SiteHeader() {
     </nav>
   ) : null;
   return <>
-    <header className={`site-header ${menuOpen ? 'menu-open' : ''}`}><div className="site-container flex items-center gap-4"><div className="admin-header-left"><Link to="/" aria-label="Kani Barber Studio, inicio" className="w-fit" onClick={closeMenu}><Wordmark /></Link></div><div className="header-controls ml-auto">{staff && <AdminActivityPopover role={staff.profile.role} />}<ThemeToggle /><Button variant="outline" size="icon" className={`mobile-menu-trigger header-control-button ${admin ? 'admin-menu-trigger' : ''}`} aria-label={menuOpen ? 'Cerrar menú' : 'Abrir menú'} aria-expanded={menuOpen} onClick={() => onMenuOpenChange(!menuOpen)}>{menuOpen ? <X /> : <Menu />}</Button></div></div></header>
+    <header className={`site-header ${menuOpen ? 'menu-open' : ''}`}><div className="site-container flex items-center gap-4"><div className="admin-header-left"><Link to="/" aria-label="Kani Barber Studio, inicio" className="w-fit" onClick={closeMenu}><Wordmark /></Link></div><div className="header-controls ml-auto">{staff && <Suspense fallback={null}><AdminActivityPopover role={staff.profile.role} /></Suspense>}<ThemeToggle /><Button variant="outline" size="icon" className={`mobile-menu-trigger header-control-button ${admin ? 'admin-menu-trigger' : ''}`} aria-label={menuOpen ? 'Cerrar menú' : 'Abrir menú'} aria-expanded={menuOpen} onClick={() => onMenuOpenChange(!menuOpen)}>{menuOpen ? <X /> : <Menu />}</Button></div></div></header>
     {typeof document !== 'undefined' && mobileMenu ? createPortal(mobileMenu, document.body) : null}
     {typeof document !== 'undefined' && menuOpen && path !== '/reservar' ? createPortal(<MobileMenuAction />, document.body) : null}
   </>;

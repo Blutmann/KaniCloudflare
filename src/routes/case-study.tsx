@@ -60,7 +60,7 @@ function CaseStudyPage() {
         </div>
         <div className="case-study-hero-visual">
           <div className="case-study-window-bar"><span /><span /><span /><small>kanibarber.com/reservar</small></div>
-          <img src="/case-study/booking-step-1.png" alt="Captura real del primer paso de solicitud de turno de Kani Barber Studio" />
+          <img src="/case-study/booking-step-1.png" alt="Captura real del primer paso de solicitud de turno de Kani Barber Studio" loading="lazy" decoding="async" />
           <p>Captura real de Preview · primer paso del flujo de solicitud</p>
         </div>
       </section>
@@ -112,7 +112,7 @@ function CaseStudyPage() {
         </div>
         <div className="case-study-evidence-layout">
           <div className="case-study-evidence-copy"><EvidenceTag kind="verified" /><h3>La interfaz reduce la carga de decisión.</h3><p>La selección se divide en unidades pequeñas y el resumen final reúne servicio, barbero, fecha, horario, importe total y seña. El cliente no necesita comprender la base de datos para saber qué está solicitando.</p><ul className="case-study-check-list"><li><Check size={15} /> Duraciones comerciales integradas al cálculo</li><li><Check size={15} /> Disponibilidad contextual por barbero</li><li><Check size={15} /> Confirmación posterior diferenciada</li></ul></div>
-          <figure className="case-study-image-card"><img src="/case-study/contacto-real.png" alt="Captura real de la página de contacto de Kani Barber Studio" /><figcaption>Otra pantalla real del producto: contacto, ubicación y horarios. Se utiliza como evidencia del sistema visual, no como mockup.</figcaption></figure>
+          <figure className="case-study-image-card"><img src="/case-study/contacto-real.png" alt="Captura real de la página de contacto de Kani Barber Studio" loading="lazy" decoding="async" /><figcaption>Otra pantalla real del producto: contacto, ubicación y horarios. Se utiliza como evidencia del sistema visual, no como mockup.</figcaption></figure>
         </div>
       </section>
 

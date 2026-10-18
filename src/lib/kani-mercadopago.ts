@@ -411,17 +411,36 @@ export function isOrderFullyApproved(order: MercadoPagoOrderDetails, expectedAmo
   return true;
 }
 
+const downPaymentCache = new Map<string, { amount: number; timestamp: number }>();
+const DOWN_PAYMENT_CACHE_TTL_MS = 2 * 60 * 1000; // 2 minutes
+
+export function clearDownPaymentCache() {
+  downPaymentCache.clear();
+}
+
 /**
  * Consulta el monto de seña dinámico configurado en Supabase para un barbero,
  * garantizando que nunca dependa de un valor hardcodeado.
  */
-export async function getDynamicDownPayment(barberName?: string | null): Promise<number> {
+export async function getDynamicDownPayment(
+  barberName?: string | null,
+  options: { bypassCache?: boolean } = {},
+): Promise<number> {
+  const key = barberName?.trim() || "__ALL__";
+  const now = Date.now();
+  if (!options.bypassCache) {
+    const cached = downPaymentCache.get(key);
+    if (cached && now - cached.timestamp < DOWN_PAYMENT_CACHE_TTL_MS) {
+      return cached.amount;
+    }
+  }
   try {
     const { supabase } = await import("@/integrations/supabase/client");
     const { data, error } = await supabase.rpc("read_public_deposit_amount", {
       p_barber_name: barberName?.trim() || null,
     });
     if (!error && typeof data === "number" && data > 0) {
+      downPaymentCache.set(key, { amount: data, timestamp: now });
       return data;
     }
   } catch {

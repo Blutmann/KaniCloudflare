@@ -25,6 +25,11 @@ export async function signOut() {
 
 export async function getAuthenticatedStaff(): Promise<AuthenticatedStaff | null> {
   const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session) return null;
+
+  const {
     data: { user },
     error: userError,
   } = await supabase.auth.getUser();
