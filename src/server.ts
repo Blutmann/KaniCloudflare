@@ -219,7 +219,12 @@ export default {
             );
           }
 
-          const client = createClient(supabaseUrl, supabaseKey);
+          const authHeader = request.headers.get("Authorization");
+          const client = createClient(supabaseUrl, supabaseKey, {
+            global: {
+              headers: authHeader ? { Authorization: authHeader } : {},
+            },
+          });
 
           // Get counts of appointments by status
           const { data: allAppointments, error: fetchErr } = await client
