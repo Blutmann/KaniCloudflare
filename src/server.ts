@@ -167,33 +167,10 @@ export default {
 
       if (url.pathname === "/api/admin/status-audit") {
         try {
-          const { createClient } = await import("@supabase/supabase-js");
-          const supabaseUrl =
-            process.env.SUPABASE_URL ??
-            process.env.VITE_SUPABASE_URL ??
-            (globalThis as typeof globalThis & { __KANI_RUNTIME_ENV?: Record<string, string> }).__KANI_RUNTIME_ENV?.SUPABASE_URL ??
-            (globalThis as typeof globalThis & { __KANI_RUNTIME_ENV?: Record<string, string> }).__KANI_RUNTIME_ENV?.VITE_SUPABASE_URL;
-
-          const supabaseKey =
-            process.env.SUPABASE_SERVICE_ROLE_KEY ??
-            process.env.SUPABASE_ANON_KEY ??
-            process.env.SUPABASE_PUBLISHABLE_KEY ??
-            process.env.VITE_SUPABASE_ANON_KEY ??
-            process.env.VITE_SUPABASE_PUBLISHABLE_KEY ??
-            (globalThis as typeof globalThis & { __KANI_RUNTIME_ENV?: Record<string, string> }).__KANI_RUNTIME_ENV?.SUPABASE_ANON_KEY ??
-            (globalThis as typeof globalThis & { __KANI_RUNTIME_ENV?: Record<string, string> }).__KANI_RUNTIME_ENV?.VITE_SUPABASE_ANON_KEY;
-
-          if (!supabaseUrl || !supabaseKey) {
-            return new Response(JSON.stringify({ error: "Missing Supabase configuration" }), {
-              status: 500,
-              headers: { "content-type": "application/json" },
-            });
-          }
-
-          const client = createClient(supabaseUrl, supabaseKey);
+          const { supabase } = await import("./integrations/supabase/client");
 
           // Get counts of appointments by status
-          const { data: allAppointments, error: fetchErr } = await client
+          const { data: allAppointments, error: fetchErr } = await supabase
             .from("appointments")
             .select("id, status, booking_date, start_time");
 
