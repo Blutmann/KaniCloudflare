@@ -1325,6 +1325,87 @@ html[data-theme="light"] .admin-section-nav-link.is-active:active {
   .admin-mobile-heading { margin-bottom: 1.75rem; }
 }
 
+/* Manual appointment responsive form grid */
+.manual-appointment-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.manual-appointment-grid .manual-grid-field {
+  min-width: 0;
+}
+
+.manual-appointment-grid .manual-field-fecha {
+  grid-column: span 1;
+}
+.manual-appointment-grid .manual-field-horario {
+  grid-column: span 1;
+}
+.manual-appointment-grid .manual-field-servicio {
+  grid-column: span 1;
+}
+.manual-appointment-grid .manual-field-barbero {
+  grid-column: span 1;
+}
+.manual-appointment-grid .manual-field-frecuencia {
+  grid-column: span 2;
+}
+.manual-appointment-grid .manual-field-nombre {
+  grid-column: span 2;
+}
+.manual-appointment-grid .manual-field-celular {
+  grid-column: span 2;
+}
+.manual-appointment-grid .manual-field-email {
+  grid-column: span 2;
+}
+.manual-appointment-grid .manual-field-observaciones {
+  grid-column: span 2;
+}
+
+@media (min-width: 640px) {
+  .manual-appointment-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 1rem;
+  }
+  .manual-appointment-grid .manual-field-fecha {
+    grid-column: span 2;
+    order: 1;
+  }
+  .manual-appointment-grid .manual-field-horario {
+    grid-column: span 2;
+    order: 2;
+  }
+  .manual-appointment-grid .manual-field-servicio {
+    grid-column: span 2;
+    order: 3;
+  }
+  .manual-appointment-grid .manual-field-frecuencia {
+    grid-column: span 2;
+    order: 4;
+  }
+  .manual-appointment-grid .manual-field-nombre {
+    grid-column: span 2;
+    order: 5;
+  }
+  .manual-appointment-grid .manual-field-celular {
+    grid-column: span 2;
+    order: 6;
+  }
+  .manual-appointment-grid .manual-field-barbero {
+    grid-column: span 3;
+    order: 7;
+  }
+  .manual-appointment-grid .manual-field-email {
+    grid-column: span 3;
+    order: 8;
+  }
+  .manual-appointment-grid .manual-field-observaciones {
+    grid-column: span 6;
+    order: 9;
+  }
+}
 
 /* Schedule management: mobile-first, isolated from the existing admin table. */
 .admin-schedule-page { min-height: 100%; overflow-x: clip; }

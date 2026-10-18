@@ -49,7 +49,7 @@ export type CreateManualAppointmentInput = {
   time: string;
   name: string;
   phone: string;
-  email?: string;
+  email: string;
   notes?: string;
   isRecurring?: boolean;
   frequency?: ManualFrequency;
@@ -76,6 +76,9 @@ const statusToUi: Record<RealAppointmentStatus, Status> = {
 
 export function appointmentErrorMessage(error: unknown) {
   const message = error instanceof Error ? error.message : String(error);
+  if (message.includes('correo electrónico') || message.includes('email')) {
+    return 'El correo electrónico del cliente es obligatorio y debe tener un formato válido.';
+  }
   if (message.includes('SLOT_ALREADY_BOOKED')) return 'Ese horario acaba de dejar de estar disponible o ya tiene un turno reservado.';
   if (message.includes('SLOT_UNAVAILABLE')) return 'Ese horario ya no está disponible. Elegí otro para continuar.';
   if (message.includes('BOOKING_DATE_OUT_OF_RANGE')) return 'La fecha seleccionada ya no está disponible.';
@@ -89,6 +92,11 @@ export function appointmentErrorMessage(error: unknown) {
 }
 
 export async function createManualAppointment(input: CreateManualAppointmentInput) {
+  const email = input.email?.trim();
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    throw new Error('El correo electrónico del cliente es obligatorio y debe tener un formato válido.');
+  }
+
   const { data, error } = await supabase.rpc('create_manual_appointment', {
     p_barber_id: input.barberId,
     p_service_id: input.serviceId,
@@ -96,7 +104,7 @@ export async function createManualAppointment(input: CreateManualAppointmentInpu
     p_start_time: input.time.length === 5 ? `${input.time}:00` : input.time,
     p_client_name: input.name.trim(),
     p_client_phone: input.phone.trim(),
-    p_client_email: input.email?.trim() || null,
+    p_client_email: email,
     p_notes: input.notes?.trim() || null,
     p_is_recurring: Boolean(input.isRecurring),
     p_duration_minutes: input.durationMinutes ?? null,

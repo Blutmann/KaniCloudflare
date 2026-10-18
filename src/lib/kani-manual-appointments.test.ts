@@ -195,4 +195,75 @@ describe('Manual Appointments & Recurring Logic Unit Tests', () => {
     const normCL = normalizePhone(clPhone, 'CL');
     expect(normCL?.e164).toBe('+56961234567');
   });
+
+  it('rejects manual appointment creation if client email is missing or empty', async () => {
+    const { createManualAppointment } = await import('./kani-appointments');
+    await expect(
+      createManualAppointment({
+        barberId: 'barber-1',
+        serviceId: 'service-1',
+        date: '2026-10-25',
+        time: '11:00',
+        name: 'Carlos Tevez',
+        phone: '+5491112345678',
+        email: '',
+      })
+    ).rejects.toThrow('El correo electrónico del cliente es obligatorio y debe tener un formato válido.');
+
+    await expect(
+      createManualAppointment({
+        barberId: 'barber-1',
+        serviceId: 'service-1',
+        date: '2026-10-25',
+        time: '11:00',
+        name: 'Carlos Tevez',
+        phone: '+5491112345678',
+        email: '   ',
+      })
+    ).rejects.toThrow('El correo electrónico del cliente es obligatorio y debe tener un formato válido.');
+  });
+
+  it('rejects manual appointment creation if client email format is invalid', async () => {
+    const { createManualAppointment } = await import('./kani-appointments');
+    const invalidEmails = ['invalid', 'test@', '@domain.com', 'test @domain.com', 'test@domain'];
+    for (const email of invalidEmails) {
+      await expect(
+        createManualAppointment({
+          barberId: 'barber-1',
+          serviceId: 'service-1',
+          date: '2026-10-25',
+          time: '11:00',
+          name: 'Carlos Tevez',
+          phone: '+5491112345678',
+          email,
+        })
+      ).rejects.toThrow('El correo electrónico del cliente es obligatorio y debe tener un formato válido.');
+    }
+  });
+
+  it('formats email error message clearly via appointmentErrorMessage', () => {
+    const err = new Error('El correo electrónico del cliente es obligatorio y debe tener un formato válido.');
+    expect(appointmentErrorMessage(err)).toBe('El correo electrónico del cliente es obligatorio y debe tener un formato válido.');
+  });
+
+  it('defines manual appointment responsive mobile and desktop grid styles in styles.css', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+    const cssContent = fs.readFileSync(path.resolve(process.cwd(), 'src/styles.css'), 'utf-8');
+
+    // Mobile grid: 2 columns, rows 1 and 2 sharing 2 equal columns, rows 3-7 taking full width (span 2)
+    expect(cssContent).toContain('.manual-appointment-grid');
+    expect(cssContent).toContain('.manual-field-fecha');
+    expect(cssContent).toContain('.manual-field-horario');
+    expect(cssContent).toContain('.manual-field-servicio');
+    expect(cssContent).toContain('.manual-field-barbero');
+    expect(cssContent).toContain('.manual-field-frecuencia');
+    expect(cssContent).toContain('.manual-field-nombre');
+    expect(cssContent).toContain('.manual-field-celular');
+    expect(cssContent).toContain('.manual-field-email');
+    expect(cssContent).toContain('.manual-field-observaciones');
+
+    // Desktop media query (min-width: 640px)
+    expect(cssContent).toContain('@media (min-width: 640px)');
+  });
 });

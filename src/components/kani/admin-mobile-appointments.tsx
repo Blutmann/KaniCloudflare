@@ -71,6 +71,8 @@ export function AdminMobileAppointments() {
   const [manualClientPhone, setManualClientPhone] = useState('');
   const [phoneCountry, setPhoneCountry] = useState<PhoneCountry>('AR');
   const [manualClientEmail, setManualClientEmail] = useState('');
+  const [manualEmailError, setManualEmailError] = useState('');
+  const [manualEmailTouched, setManualEmailTouched] = useState(false);
   const [manualServiceId, setManualServiceId] = useState('');
   const [manualBarberId, setManualBarberId] = useState('');
   const [manualFrequency, setManualFrequency] = useState<ManualFrequency>('ONCE');
@@ -166,9 +168,22 @@ export function AdminMobileAppointments() {
     setDatePreset('SPECIFIC');
   }
 
+  function validateManualEmail(value: string) {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return 'El correo electrónico es obligatorio.';
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      return 'Ingresá un formato de correo válido (ej. cliente@ejemplo.com).';
+    }
+    return '';
+  }
+
   function openManualAppointmentDialog() {
     scrollPosRef.current = window.scrollY || document.documentElement.scrollTop;
     setManualError('');
+    setManualEmailError('');
+    setManualEmailTouched(false);
     setManualDate(specificDate || businessToday);
     setManualTime('10:00');
     setManualClientName('');
@@ -191,6 +206,9 @@ export function AdminMobileAppointments() {
   function handleCancel() {
     const savedY = scrollPosRef.current;
     setManualOpen(false);
+    setManualError('');
+    setManualEmailError('');
+    setManualEmailTouched(false);
     requestAnimationFrame(() => {
       window.scrollTo({ top: savedY, behavior: 'instant' });
       setTimeout(() => {
@@ -229,6 +247,15 @@ export function AdminMobileAppointments() {
       return;
     }
 
+    const emailValidation = validateManualEmail(manualClientEmail);
+    if (emailValidation) {
+      setManualEmailTouched(true);
+      setManualEmailError(emailValidation);
+      setManualError(emailValidation);
+      return;
+    }
+    const cleanEmail = manualClientEmail.trim();
+
     setManualSaving(true);
     try {
       const isRecurring = manualFrequency !== 'ONCE';
@@ -244,7 +271,7 @@ export function AdminMobileAppointments() {
         time: manualTime,
         name: manualClientName.trim(),
         phone: normalized.e164,
-        email: manualClientEmail.trim() || undefined,
+        email: cleanEmail,
         notes: notesPayload,
         isRecurring,
         frequency: manualFrequency,
@@ -256,6 +283,8 @@ export function AdminMobileAppointments() {
           : `Turno manual confirmado para ${manualClientName.trim()}.`
       );
       setManualOpen(false);
+      setManualEmailError('');
+      setManualEmailTouched(false);
       await reload();
     } catch (cause) {
       setManualError(appointmentErrorMessage(cause));
@@ -437,9 +466,9 @@ export function AdminMobileAppointments() {
               </div>
             )}
 
-            {/* Primera fila: Fecha | Horario | Servicio */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-              <div>
+            <div className="manual-appointment-grid grid grid-cols-2 sm:grid-cols-6 gap-3 sm:gap-4">
+              {/* Fila 1 Columna izquierda en mobile | Col 1-2 en desktop */}
+              <div className="manual-grid-field manual-field-fecha col-span-1 sm:col-span-2 sm:order-1 min-w-0">
                 <label htmlFor="manual-date" className="font-medium text-foreground block mb-1.5 text-xs sm:text-sm">
                   Fecha
                 </label>
@@ -452,7 +481,9 @@ export function AdminMobileAppointments() {
                   className="bg-background h-10 text-xs sm:text-sm"
                 />
               </div>
-              <div>
+
+              {/* Fila 1 Columna derecha en mobile | Col 3-4 en desktop */}
+              <div className="manual-grid-field manual-field-horario col-span-1 sm:col-span-2 sm:order-2 min-w-0">
                 <label htmlFor="manual-time" className="font-medium text-foreground block mb-1.5 text-xs sm:text-sm">
                   Horario
                 </label>
@@ -465,7 +496,9 @@ export function AdminMobileAppointments() {
                   className="bg-background h-10 text-xs sm:text-sm"
                 />
               </div>
-              <div>
+
+              {/* Fila 2 Columna izquierda en mobile | Col 5-6 en desktop */}
+              <div className="manual-grid-field manual-field-servicio col-span-1 sm:col-span-2 sm:order-3 min-w-0">
                 <label htmlFor="manual-service" className="font-medium text-foreground block mb-1.5 text-xs sm:text-sm">
                   Servicio
                 </label>
@@ -473,7 +506,7 @@ export function AdminMobileAppointments() {
                   id="manual-service"
                   value={manualServiceId}
                   onChange={e => setManualServiceId(e.target.value)}
-                  className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-xs sm:text-sm shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  className="w-full h-10 rounded-md border border-input bg-background px-2.5 sm:px-3 py-2 text-xs sm:text-sm shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring truncate"
                 >
                   {servicesList.map(s => (
                     <option key={s.id} value={s.id}>
@@ -482,11 +515,32 @@ export function AdminMobileAppointments() {
                   ))}
                 </select>
               </div>
-            </div>
 
-            {/* Segunda fila: Frecuencia | Nombre del cliente | Celular del cliente */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-              <div>
+              {/* Fila 2 Columna derecha en mobile | Col 1-3 en desktop Fila 3 */}
+              <div className="manual-grid-field manual-field-barbero col-span-1 sm:col-span-3 sm:order-7 min-w-0">
+                <label htmlFor="manual-barber" className="font-medium text-foreground block mb-1.5 text-xs sm:text-sm">
+                  Barbero
+                </label>
+                {profile.role === 'ADMIN' ? (
+                  <select
+                    id="manual-barber"
+                    value={manualBarberId}
+                    onChange={e => setManualBarberId(e.target.value)}
+                    className="w-full h-10 rounded-md border border-input bg-background px-2.5 sm:px-3 py-2 text-xs sm:text-sm shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring truncate"
+                  >
+                    {permittedRows.map(b => (
+                      <option key={b.id} value={b.id}>{b.name}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <output id="manual-barber" className="flex items-center h-10 px-3 rounded-md border border-input bg-muted/40 font-medium text-xs sm:text-sm truncate">
+                    {permittedRows[0]?.name ?? 'Tu agenda'}
+                  </output>
+                )}
+              </div>
+
+              {/* Fila 3 ancho completo en mobile | Col 1-2 en desktop Fila 2 */}
+              <div className="manual-grid-field manual-field-frecuencia col-span-2 sm:col-span-2 sm:order-4 min-w-0">
                 <label htmlFor="manual-frequency" className="font-medium text-foreground block mb-1.5 text-xs sm:text-sm">
                   Frecuencia
                 </label>
@@ -503,7 +557,9 @@ export function AdminMobileAppointments() {
                   <option value="MONTHLY">Una vez al mes</option>
                 </select>
               </div>
-              <div>
+
+              {/* Fila 4 ancho completo en mobile | Col 3-4 en desktop Fila 2 */}
+              <div className="manual-grid-field manual-field-nombre col-span-2 sm:col-span-2 sm:order-5 min-w-0">
                 <label htmlFor="manual-client-name" className="font-medium text-foreground block mb-1.5 text-xs sm:text-sm">
                   Nombre del cliente
                 </label>
@@ -517,7 +573,9 @@ export function AdminMobileAppointments() {
                   className="bg-background h-10 text-xs sm:text-sm"
                 />
               </div>
-              <div>
+
+              {/* Fila 5 ancho completo en mobile | Col 5-6 en desktop Fila 2 */}
+              <div className="manual-grid-field manual-field-celular col-span-2 sm:col-span-2 sm:order-6 min-w-0">
                 <label htmlFor="manual-client-phone" className="font-medium text-foreground block mb-1.5 text-xs sm:text-sm">
                   Celular del cliente
                 </label>
@@ -531,59 +589,57 @@ export function AdminMobileAppointments() {
                   size="sm"
                 />
               </div>
-            </div>
 
-            {/* Fila adicional: Barbero asignado | Email del cliente */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-              <div>
-                <label htmlFor="manual-barber" className="font-medium text-foreground block mb-1.5 text-xs sm:text-sm">
-                  Barbero asignado
-                </label>
-                {profile.role === 'ADMIN' ? (
-                  <select
-                    id="manual-barber"
-                    value={manualBarberId}
-                    onChange={e => setManualBarberId(e.target.value)}
-                    className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-xs sm:text-sm shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                  >
-                    {permittedRows.map(b => (
-                      <option key={b.id} value={b.id}>{b.name}</option>
-                    ))}
-                  </select>
-                ) : (
-                  <output id="manual-barber" className="flex items-center h-10 px-3 rounded-md border border-input bg-muted/40 font-medium text-xs sm:text-sm">
-                    {permittedRows[0]?.name ?? 'Tu agenda'}
-                  </output>
-                )}
-              </div>
-              <div>
+              {/* Fila 6 ancho completo en mobile | Col 4-6 en desktop Fila 3 */}
+              <div className="manual-grid-field manual-field-email col-span-2 sm:col-span-3 sm:order-8 min-w-0">
                 <label htmlFor="manual-client-email" className="font-medium text-foreground block mb-1.5 text-xs sm:text-sm">
-                  Email del cliente (opcional)
+                  Mail del cliente <span className="text-destructive font-normal" aria-hidden="true">*</span> <span className="text-[11px] text-muted-foreground font-normal">(obligatorio)</span>
                 </label>
                 <Input
                   id="manual-client-email"
                   type="email"
+                  required
                   placeholder="cliente@ejemplo.com"
                   value={manualClientEmail}
-                  onChange={e => setManualClientEmail(e.target.value)}
-                  className="bg-background h-10 text-xs sm:text-sm"
+                  onChange={e => {
+                    const val = e.target.value;
+                    setManualClientEmail(val);
+                    if (manualEmailTouched) {
+                      setManualEmailError(validateManualEmail(val));
+                    }
+                  }}
+                  onBlur={() => {
+                    setManualEmailTouched(true);
+                    setManualEmailError(validateManualEmail(manualClientEmail));
+                  }}
+                  aria-invalid={manualEmailTouched && Boolean(manualEmailError)}
+                  aria-describedby={manualEmailTouched && manualEmailError ? 'manual-email-error' : undefined}
+                  className={cn(
+                    "bg-background h-10 text-xs sm:text-sm",
+                    manualEmailTouched && manualEmailError && "border-destructive focus-visible:ring-destructive"
+                  )}
+                />
+                {manualEmailTouched && manualEmailError && (
+                  <span id="manual-email-error" className="field-validation-message text-xs text-destructive mt-1 block font-normal" role="alert">
+                    {manualEmailError}
+                  </span>
+                )}
+              </div>
+
+              {/* Fila 7 ancho completo en mobile | Fila 4 ancho completo en desktop */}
+              <div className="manual-grid-field manual-field-observaciones col-span-2 sm:col-span-6 sm:order-9 min-w-0">
+                <label htmlFor="manual-notes" className="font-medium text-foreground block mb-1.5 text-xs sm:text-sm">
+                  Observaciones <span className="text-xs font-normal text-muted-foreground">(opcional)</span>
+                </label>
+                <Textarea
+                  id="manual-notes"
+                  placeholder="Detalles sobre el turno o preferencias del cliente..."
+                  value={manualNotes}
+                  onChange={e => setManualNotes(e.target.value)}
+                  rows={2}
+                  className="bg-background text-xs sm:text-sm resize-none"
                 />
               </div>
-            </div>
-
-            {/* Fila adicional: Observaciones */}
-            <div>
-              <label htmlFor="manual-notes" className="font-medium text-foreground block mb-1.5 text-xs sm:text-sm">
-                Observaciones (opcional)
-              </label>
-              <Textarea
-                id="manual-notes"
-                placeholder="Detalles sobre el turno o preferencias del cliente..."
-                value={manualNotes}
-                onChange={e => setManualNotes(e.target.value)}
-                rows={2}
-                className="bg-background text-xs sm:text-sm resize-none"
-              />
             </div>
           </div>
 
