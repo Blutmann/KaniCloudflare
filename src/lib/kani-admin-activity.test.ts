@@ -19,8 +19,10 @@ import {
   deleteAdminActivityNotificationGlobal,
   dismissAllAdminActivityNotificationsPersonal,
   extractErrorMessage,
+  markAllAdminActivityNotificationsRead,
   markAllAdminActivityNotificationsUnread,
   readAdminActivityNotifications,
+  setAdminActivityNotificationRead,
 } from './kani-admin-activity';
 
 describe('kani-admin-activity bulk notifications management', () => {
@@ -211,6 +213,69 @@ describe('kani-admin-activity bulk notifications management', () => {
 
       // Should succeed via secondary fallback
       await expect(deleteAdminActivityNotificationGlobal('notif-123')).resolves.not.toThrow();
+    });
+  });
+
+  describe('setAdminActivityNotificationRead', () => {
+    it('uses set_staff_activity_notification_read RPC when available', async () => {
+      mockRpc.mockResolvedValue({
+        data: null,
+        error: null,
+      });
+
+      await setAdminActivityNotificationRead('notif-1', '2026-10-18T12:00:00Z');
+      expect(mockRpc).toHaveBeenCalledWith('set_staff_activity_notification_read', {
+        p_notification_id: 'notif-1',
+        p_read_at: '2026-10-18T12:00:00Z',
+      });
+    });
+
+    it('falls back to direct table update and user_state upsert when RPC fails', async () => {
+      mockRpc.mockResolvedValue({
+        data: null,
+        error: { message: 'RPC not found' },
+      });
+
+      const mockUpdate = vi.fn().mockReturnValue({
+        eq: vi.fn().mockResolvedValue({ error: null }),
+      });
+      mockFrom.mockReturnValue({
+        update: mockUpdate,
+      });
+
+      await setAdminActivityNotificationRead('notif-1', '2026-10-18T12:00:00Z');
+      expect(mockFrom).toHaveBeenCalledWith('admin_activity_notifications');
+      expect(mockUpdate).toHaveBeenCalledWith({ read_at: '2026-10-18T12:00:00Z' });
+    });
+  });
+
+  describe('markAllAdminActivityNotificationsRead', () => {
+    it('uses mark_all_staff_activity_notifications_read RPC when available', async () => {
+      mockRpc.mockResolvedValue({
+        data: null,
+        error: null,
+      });
+
+      await markAllAdminActivityNotificationsRead();
+      expect(mockRpc).toHaveBeenCalledWith('mark_all_staff_activity_notifications_read');
+    });
+
+    it('falls back to bulk table update when RPC fails', async () => {
+      mockRpc.mockResolvedValue({
+        data: null,
+        error: { message: 'RPC not found' },
+      });
+
+      const mockUpdate = vi.fn().mockReturnValue({
+        is: vi.fn().mockResolvedValue({ error: null }),
+      });
+      mockFrom.mockReturnValue({
+        update: mockUpdate,
+      });
+
+      await markAllAdminActivityNotificationsRead();
+      expect(mockFrom).toHaveBeenCalledWith('admin_activity_notifications');
+      expect(mockUpdate).toHaveBeenCalledWith(expect.objectContaining({ read_at: expect.any(String) }));
     });
   });
 

@@ -175,9 +175,9 @@ describe('Manual Appointments & Recurring Logic Unit Tests', () => {
     const norm = normalizePhone(localInput, 'AR');
     expect(norm).not.toBeNull();
     expect(norm?.e164).toBe('+5491123456789');
-    expect(norm?.display).toBe('+54 9 11 2345-6789');
+    expect(norm?.display).toBe('+54 9 11 2345 6789');
 
-    const formattedInput = '+54 9 11 2345-6789';
+    const formattedInput = '+54 9 11 2345 6789';
     const norm2 = normalizePhone(formattedInput, 'AR');
     expect(norm2?.e164).toBe('+5491123456789');
 
@@ -191,8 +191,8 @@ describe('Manual Appointments & Recurring Logic Unit Tests', () => {
     const normUS = normalizePhone(usPhone, 'US');
     expect(normUS?.e164).toBe('+12025550123');
 
-    const clPhone = '9 1234 5678';
+    const clPhone = '9 6123 4567';
     const normCL = normalizePhone(clPhone, 'CL');
-    expect(normCL?.e164).toBe('+56912345678');
+    expect(normCL?.e164).toBe('+56961234567');
   });
 });

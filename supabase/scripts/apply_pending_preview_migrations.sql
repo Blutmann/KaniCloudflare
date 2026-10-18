@@ -1,3 +1,7 @@
+-- ==============================================================================
+-- FILE: supabase/migrations/20261017000100_kani_whatsapp_notification_phone.sql
+-- ==============================================================================
+
 -- KANI Barber Studio - Soporte para notificaciones de WhatsApp
 -- Almacena el teléfono del cliente en el evento de notificación y lo expone a través de claim_appointment_notification
 
@@ -160,6 +164,12 @@ $$;
 
 revoke all on function public.claim_appointment_notification(uuid, text) from public;
 grant execute on function public.claim_appointment_notification(uuid, text) to anon, authenticated;
+
+
+-- ==============================================================================
+-- FILE: supabase/migrations/20261017000500_kani_notification_role_dismissals.sql
+-- ==============================================================================
+
 -- KANI Barber Studio — Notificaciones: borrado por rol y estado por usuario
 -- ADMIN: borrado global (elimina de admin_activity_notifications en cascada).
 -- BARBER: borrado personal de su vista (registrado en admin_activity_user_state como dismissed_at).
@@ -416,6 +426,12 @@ grant execute on function public.set_staff_activity_notification_read to authent
 grant execute on function public.mark_all_staff_activity_notifications_read to authenticated;
 grant execute on function public.dismiss_staff_activity_notification_personal to authenticated;
 grant execute on function public.delete_staff_activity_notification_global to authenticated;
+
+
+-- ==============================================================================
+-- FILE: supabase/migrations/20261018000200_kani_manual_and_recurring_appointments.sql
+-- ==============================================================================
+
 -- Kani Barber Studio — Turnos manuales y recurrencia semanal
 -- Permite agendar turnos manuales por única vez y recurrentes (semanales) desde el panel administrativo.
 -- Desacopla la seña (deposit_required = false) y amplía la franja horaria permitida para turnos manuales (00:00 a 23:59).
@@ -990,6 +1006,12 @@ $$;
 
 revoke all on function public.set_recurring_rule_active(uuid, boolean) from public;
 grant execute on function public.set_recurring_rule_active(uuid, boolean) to authenticated;
+
+
+-- ==============================================================================
+-- FILE: supabase/migrations/20261018000300_kani_delete_all_notifications_rpc.sql
+-- ==============================================================================
+
 -- Migration: 20261018000300_kani_delete_all_notifications_rpc.sql
 -- KANI Barber Studio — Operaciones atómicas y seguras para eliminar y descartar todas las notificaciones
 -- Resuelve el error "No se pudieron eliminar las notificaciones."
@@ -1084,7 +1106,226 @@ create policy admin_can_delete_activity_notifications
   for delete to authenticated
   using (public.is_admin());
 
--- RPC: Marcar todas las notificaciones como no leídas (bulk unread)
+
+-- ==============================================================================
+-- FILE: supabase/migrations/20261018000400_kani_notification_repairs.sql
+-- ==============================================================================
+
+-- Migration: 20261018000400_kani_notification_repairs.sql
+-- KANI Barber Studio — Reparación integral del sistema de notificaciones y permisos Supabase
+--
+-- Causa raíz identificada:
+-- 1. Faltaba GRANT UPDATE y política RLS 'FOR UPDATE' en admin_activity_notifications para authenticated.
+-- 2. Faltaban funciones RPC críticas (delete_all_staff_activity_notifications_global, mark_all_staff_activity_notifications_unread).
+-- 3. Faltaba GRANT DELETE en admin_activity_user_state para authenticated.
+-- 4. Las fallas de RPC obligaban al frontend a ejecutar consultas directas que eran rechazadas con error 42501.
+
+-- ==============================================================================
+-- 1. Tabla de estado por usuario para notificaciones (admin_activity_user_state)
+-- ==============================================================================
+create table if not exists public.admin_activity_user_state (
+  notification_id uuid not null references public.admin_activity_notifications(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  read_at timestamptz,
+  dismissed_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  primary key (notification_id, user_id)
+);
+
+create index if not exists admin_activity_user_state_user_idx
+  on public.admin_activity_user_state (user_id, dismissed_at);
+
+alter table public.admin_activity_user_state enable row level security;
+revoke all on table public.admin_activity_user_state from anon, public;
+grant select, insert, update, delete on table public.admin_activity_user_state to authenticated;
+
+drop policy if exists user_can_manage_own_notification_state on public.admin_activity_user_state;
+create policy user_can_manage_own_notification_state
+  on public.admin_activity_user_state
+  for all to authenticated
+  using (user_id = (select auth.uid()))
+  with check (user_id = (select auth.uid()));
+
+-- ==============================================================================
+-- 2. Privilegios SQL y políticas RLS en admin_activity_notifications
+-- ==============================================================================
+revoke all on table public.admin_activity_notifications from anon, public;
+grant select, update, delete on table public.admin_activity_notifications to authenticated;
+
+alter table public.admin_activity_notifications enable row level security;
+
+-- SELECT: ADMIN ve todo; BARBER solo sus eventos no descartados
+drop policy if exists admin_can_read_activity_notifications on public.admin_activity_notifications;
+drop policy if exists staff_can_read_activity_notifications on public.admin_activity_notifications;
+create policy staff_can_read_activity_notifications
+  on public.admin_activity_notifications
+  for select to authenticated
+  using (
+    (
+      public.is_admin()
+      or (
+        barber_id is not null
+        and barber_id = public.current_staff_barber_id()
+      )
+    )
+    and not exists (
+      select 1
+      from public.admin_activity_user_state us
+      where us.notification_id = admin_activity_notifications.id
+        and us.user_id = (select auth.uid())
+        and us.dismissed_at is not null
+    )
+  );
+
+-- UPDATE: Exclusivo para ADMIN (actualizar read_at)
+drop policy if exists admin_can_update_activity_read_state on public.admin_activity_notifications;
+drop policy if exists admin_can_update_activity_notifications on public.admin_activity_notifications;
+create policy admin_can_update_activity_notifications
+  on public.admin_activity_notifications
+  for update to authenticated
+  using (public.is_admin())
+  with check (public.is_admin());
+
+-- DELETE: Exclusivo para ADMIN (eliminación permanente)
+drop policy if exists admin_can_delete_activity_notifications on public.admin_activity_notifications;
+create policy admin_can_delete_activity_notifications
+  on public.admin_activity_notifications
+  for delete to authenticated
+  using (public.is_admin());
+
+-- ==============================================================================
+-- 3. Funciones RPC seguras (SECURITY DEFINER con search_path explícito)
+-- ==============================================================================
+
+-- 3.1. Leer notificaciones del staff autenticado
+create or replace function public.read_staff_activity_notifications()
+returns table (
+  id uuid,
+  event_type public.admin_activity_event_type,
+  actor_user_id uuid,
+  actor_display_name text,
+  barber_id uuid,
+  appointment_id uuid,
+  availability_slot_id uuid,
+  barber_name text,
+  client_name text,
+  event_date date,
+  event_time time,
+  created_at timestamptz,
+  read_at timestamptz
+)
+language plpgsql
+security definer
+set search_path = pg_catalog, public, extensions
+as $$
+declare
+  v_uid uuid := (select auth.uid());
+  v_is_admin boolean := public.is_admin();
+  v_barber_id uuid := public.current_staff_barber_id();
+begin
+  if v_uid is null or (not v_is_admin and v_barber_id is null) then
+    return;
+  end if;
+
+  return query
+  select
+    n.id,
+    n.event_type,
+    n.actor_user_id,
+    n.actor_display_name,
+    n.barber_id,
+    n.appointment_id,
+    n.availability_slot_id,
+    n.barber_name,
+    n.client_name,
+    n.event_date,
+    n.event_time,
+    n.created_at,
+    coalesce(us.read_at, case when v_is_admin then n.read_at else null end) as read_at
+  from public.admin_activity_notifications n
+  left join public.admin_activity_user_state us
+    on us.notification_id = n.id and us.user_id = v_uid
+  where
+    (v_is_admin or n.barber_id = v_barber_id)
+    and (us.dismissed_at is null)
+  order by n.created_at desc
+  limit 40;
+end;
+$$;
+
+-- 3.2. Marcar/desmarcar notificación individual como leída
+create or replace function public.set_staff_activity_notification_read(
+  p_notification_id uuid,
+  p_read_at timestamptz
+)
+returns void
+language plpgsql
+security definer
+set search_path = pg_catalog, public, extensions
+as $$
+declare
+  v_uid uuid := (select auth.uid());
+  v_is_admin boolean := public.is_admin();
+  v_barber_id uuid := public.current_staff_barber_id();
+begin
+  if v_uid is null or (not v_is_admin and v_barber_id is null) then
+    raise exception 'No autorizado';
+  end if;
+
+  if v_is_admin then
+    update public.admin_activity_notifications
+    set read_at = p_read_at
+    where id = p_notification_id;
+  end if;
+
+  insert into public.admin_activity_user_state (notification_id, user_id, read_at, updated_at)
+  values (p_notification_id, v_uid, p_read_at, now())
+  on conflict (notification_id, user_id)
+  do update set
+    read_at = p_read_at,
+    updated_at = now();
+end;
+$$;
+
+-- 3.3. Marcar todas las notificaciones como leídas (bulk read)
+create or replace function public.mark_all_staff_activity_notifications_read()
+returns void
+language plpgsql
+security definer
+set search_path = pg_catalog, public, extensions
+as $$
+declare
+  v_uid uuid := (select auth.uid());
+  v_is_admin boolean := public.is_admin();
+  v_barber_id uuid := public.current_staff_barber_id();
+  v_now timestamptz := now();
+begin
+  if v_uid is null or (not v_is_admin and v_barber_id is null) then
+    raise exception 'No autorizado';
+  end if;
+
+  if v_is_admin then
+    update public.admin_activity_notifications
+    set read_at = v_now
+    where read_at is null;
+  end if;
+
+  insert into public.admin_activity_user_state (notification_id, user_id, read_at, updated_at)
+  select n.id, v_uid, v_now, v_now
+  from public.admin_activity_notifications n
+  left join public.admin_activity_user_state us
+    on us.notification_id = n.id and us.user_id = v_uid
+  where (v_is_admin or n.barber_id = v_barber_id)
+    and (us.dismissed_at is null)
+  on conflict (notification_id, user_id)
+  do update set
+    read_at = v_now,
+    updated_at = v_now;
+end;
+$$;
+
+-- 3.4. Marcar todas las notificaciones como no leídas (bulk unread)
 create or replace function public.mark_all_staff_activity_notifications_unread()
 returns void
 language plpgsql
@@ -1114,12 +1355,160 @@ begin
 end;
 $$;
 
-grant execute on function public.mark_all_staff_activity_notifications_unread to authenticated;
-grant select, insert, update, delete on table public.admin_activity_user_state to authenticated;
+-- 3.5. Borrado individual global (ADMIN)
+create or replace function public.delete_staff_activity_notification_global(
+  p_notification_id uuid
+)
+returns void
+language plpgsql
+security definer
+set search_path = pg_catalog, public, extensions
+as $$
+begin
+  if not public.is_admin() then
+    raise exception 'Acción reservada exclusivamente para el Administrador';
+  end if;
+
+  delete from public.admin_activity_notifications
+  where id = p_notification_id;
+end;
+$$;
+
+-- 3.6. Borrado masivo global de todas las notificaciones (ADMIN)
+create or replace function public.delete_all_staff_activity_notifications_global()
+returns integer
+language plpgsql
+security definer
+set search_path = pg_catalog, public, extensions
+as $$
+declare
+  v_uid uuid := (select auth.uid());
+  v_is_admin boolean := public.is_admin();
+  v_count integer := 0;
+begin
+  if v_uid is null or not v_is_admin then
+    raise exception 'Acción reservada exclusivamente para el Administrador';
+  end if;
+
+  with deleted as (
+    delete from public.admin_activity_notifications
+    returning 1
+  )
+  select count(*) into v_count from deleted;
+
+  return v_count;
+end;
+$$;
+
+-- 3.7. Descarte de notificación individual de la vista personal (BARBER)
+create or replace function public.dismiss_staff_activity_notification_personal(
+  p_notification_id uuid
+)
+returns void
+language plpgsql
+security definer
+set search_path = pg_catalog, public, extensions
+as $$
+declare
+  v_uid uuid := (select auth.uid());
+  v_is_admin boolean := public.is_admin();
+  v_barber_id uuid := public.current_staff_barber_id();
+  v_notif_barber uuid;
+begin
+  if v_uid is null or (not v_is_admin and v_barber_id is null) then
+    raise exception 'No autorizado';
+  end if;
+
+  select barber_id into v_notif_barber
+  from public.admin_activity_notifications
+  where id = p_notification_id;
+
+  if not found then
+    return;
+  end if;
+
+  if not v_is_admin and v_notif_barber is distinct from v_barber_id then
+    raise exception 'No autorizado para modificar esta notificación';
+  end if;
+
+  insert into public.admin_activity_user_state (notification_id, user_id, dismissed_at, updated_at)
+  values (p_notification_id, v_uid, now(), now())
+  on conflict (notification_id, user_id)
+  do update set
+    dismissed_at = now(),
+    updated_at = now();
+end;
+$$;
+
+-- 3.8. Descarte de todas las notificaciones personales (BARBER / Staff)
+create or replace function public.dismiss_all_staff_activity_notifications_personal()
+returns integer
+language plpgsql
+security definer
+set search_path = pg_catalog, public, extensions
+as $$
+declare
+  v_uid uuid := (select auth.uid());
+  v_is_admin boolean := public.is_admin();
+  v_barber_id uuid := public.current_staff_barber_id();
+  v_now timestamptz := now();
+  v_count integer := 0;
+begin
+  if v_uid is null or (not v_is_admin and v_barber_id is null) then
+    raise exception 'No autorizado';
+  end if;
+
+  with inserted as (
+    insert into public.admin_activity_user_state (notification_id, user_id, dismissed_at, updated_at)
+    select n.id, v_uid, v_now, v_now
+    from public.admin_activity_notifications n
+    left join public.admin_activity_user_state us
+      on us.notification_id = n.id and us.user_id = v_uid
+    where (v_is_admin or n.barber_id = v_barber_id)
+      and (us.dismissed_at is null)
+    on conflict (notification_id, user_id)
+    do update set
+      dismissed_at = v_now,
+      updated_at = v_now
+    returning 1
+  )
+  select count(*) into v_count from inserted;
+
+  return v_count;
+end;
+$$;
 
 -- ==============================================================================
--- 20261018000500_kani_client_consolidation.sql
+-- 4. Asignación de permisos de ejecución para funciones RPC
 -- ==============================================================================
+revoke all on function public.read_staff_activity_notifications() from public, anon;
+revoke all on function public.set_staff_activity_notification_read(uuid, timestamptz) from public, anon;
+revoke all on function public.mark_all_staff_activity_notifications_read() from public, anon;
+revoke all on function public.mark_all_staff_activity_notifications_unread() from public, anon;
+revoke all on function public.delete_staff_activity_notification_global(uuid) from public, anon;
+revoke all on function public.delete_all_staff_activity_notifications_global() from public, anon;
+revoke all on function public.dismiss_staff_activity_notification_personal(uuid) from public, anon;
+revoke all on function public.dismiss_all_staff_activity_notifications_personal() from public, anon;
+
+grant execute on function public.read_staff_activity_notifications() to authenticated;
+grant execute on function public.set_staff_activity_notification_read(uuid, timestamptz) to authenticated;
+grant execute on function public.mark_all_staff_activity_notifications_read() to authenticated;
+grant execute on function public.mark_all_staff_activity_notifications_unread() to authenticated;
+grant execute on function public.delete_staff_activity_notification_global(uuid) to authenticated;
+grant execute on function public.delete_all_staff_activity_notifications_global() to authenticated;
+grant execute on function public.dismiss_staff_activity_notification_personal(uuid) to authenticated;
+grant execute on function public.dismiss_all_staff_activity_notifications_personal() to authenticated;
+
+
+-- ==============================================================================
+-- FILE: supabase/migrations/20261018000500_kani_client_consolidation.sql
+-- ==============================================================================
+
+-- Migration: 20261018000500_kani_client_consolidation.sql
+-- KANI Barber Studio — Consolidación de clientes por teléfono o correo e historial unificado
+-- 1. Función canónica find_or_create_consolidated_client
+-- 2. Consolidación segura de registros preexistentes en clients y appointments
+-- 3. Actualización de request_appointment y create_manual_appointment
 
 -- 1. Función segura de resolución y consolidación de clientes
 create or replace function public.find_or_create_consolidated_client(
@@ -1199,11 +1588,13 @@ begin
     end if;
   elsif v_client_by_phone.id is not null then
     v_target_id := v_client_by_phone.id;
+    -- Si el cliente existente no tenía correo y ahora se aportó uno válido, completarlo
     if v_email_norm is not null and (v_client_by_phone.email is null or v_client_by_phone.email like '%@kanibarber.internal') then
       update public.clients set email = v_email_norm, updated_at = now() where id = v_target_id;
     end if;
   elsif v_client_by_email.id is not null then
     v_target_id := v_client_by_email.id;
+    -- Si el cliente existente no tenía teléfono y ahora se aportó uno válido, completarlo
     if v_phone_canon is not null and (v_client_by_email.phone is null or length(trim(v_client_by_email.phone)) < 8) then
       update public.clients set phone = trim(p_phone), updated_at = now() where id = v_target_id;
     end if;
@@ -1219,6 +1610,7 @@ begin
     )
     returning id into v_target_id;
   else
+    -- Si el nuevo nombre es más completo (mayor longitud descriptiva), actualizar
     if length(v_clean_name) > length(coalesce(v_client_by_phone.name, v_client_by_email.name, '')) then
       update public.clients set name = v_clean_name, updated_at = now() where id = v_target_id;
     end if;
@@ -1236,6 +1628,7 @@ declare
   r record;
   v_canonical_id uuid;
 begin
+  -- 2.1 Consolidar duplicados por teléfono normalizado
   for r in
     select regexp_replace(phone, '[^0-9]', '', 'g') as norm_p, array_agg(id order by created_at asc) as client_ids
     from public.clients
@@ -1244,6 +1637,7 @@ begin
     having count(*) > 1
   loop
     v_canonical_id := r.client_ids[1];
+    -- Re-asociar turnos existentes al cliente canónico preservando turnos, estados e importes
     update public.appointments
     set client_id = v_canonical_id
     where client_id = any(r.client_ids[2:]);
@@ -1256,11 +1650,13 @@ begin
       null;
     end;
 
+    -- Eliminar registros redundantes que hayan quedado sin turnos asociados
     delete from public.clients
     where id = any(r.client_ids[2:])
       and not exists (select 1 from public.appointments where client_id = clients.id);
   end loop;
 
+  -- 2.2 Consolidar duplicados por correo normalizado
   for r in
     select lower(trim(email)) as norm_e, array_agg(id order by created_at asc) as client_ids
     from public.clients
@@ -1287,4 +1683,5 @@ begin
   end loop;
 end;
 $$;
+
 
