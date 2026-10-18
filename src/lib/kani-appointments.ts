@@ -35,7 +35,7 @@ const statusToUi: Record<RealAppointmentStatus, Status> = {
   PENDING: 'Pendiente',
   CONFIRMED: 'Confirmado',
   CANCELLED: 'Cancelado',
-  COMPLETED: 'Completado',
+  COMPLETED: 'Confirmado',
 };
 
 export function appointmentErrorMessage(error: unknown) {
@@ -163,7 +163,7 @@ export async function readRealAppointments() {
   });
 }
 
-export async function updateRealAppointmentStatus(id: string, status: 'CONFIRMED' | 'CANCELLED' | 'COMPLETED') {
+export async function updateRealAppointmentStatus(id: string, status: 'CONFIRMED' | 'CANCELLED') {
   const { data, error } = await supabase.rpc('update_appointment_status', {
     p_appointment_id: id,
     p_status: status,

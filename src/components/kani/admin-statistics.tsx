@@ -179,22 +179,7 @@ export function AdminStatistics() {
   const serviceDemand = useMemo(() => computeServiceDemand(filteredAppointments), [filteredAppointments]);
 
   return (
-    <main className="site-container admin-page py-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 pb-4 border-b border-border">
-        <div>
-          <div className="flex items-center gap-2">
-            <BarChart2 className="stat-text-accent" size={24} />
-            <h1 className="text-xl font-bold tracking-tight text-foreground">
-              Estadísticas y Métricas
-            </h1>
-          </div>
-          <p className="text-xs text-muted-foreground mt-1">
-            Análisis de demanda, horarios pico, rendimiento de servicios y clientes en tiempo real.
-          </p>
-        </div>
-      </div>
-
+    <main className="site-container admin-page py-4">
       {/* Error state */}
       {error && (
         <div
@@ -211,109 +196,41 @@ export function AdminStatistics() {
         </div>
       )}
 
-      {/* Filter Controls Card */}
+      {/* Filter Controls Card - Unified controls group */}
       <section
-        className="p-4 rounded-xl border border-border bg-surface shadow-xs mb-6 space-y-4"
+        className="p-4 rounded-xl border border-border bg-surface shadow-xs mb-6 space-y-3"
         aria-label="Filtros de estadísticas"
       >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            <Filter size={14} />
-            <span>Período y Filtros</span>
-          </div>
-          <span className="text-[11px] text-muted-foreground">
-            Zona: Buenos Aires ({BUSINESS_TIME_ZONE})
-          </span>
-        </div>
-
-        {/* Cohesive Grouped Period Presets Container */}
-        <div>
-          <label className="block text-xs font-medium text-muted-foreground mb-2">
-            Período predefinido
-          </label>
-          <div className="flex flex-wrap items-center gap-1.5 p-1.5 rounded-lg border border-border bg-background/50">
-            {presets.map((preset) => {
-              const active = datePreset === preset;
-              return (
-                <button
-                  key={preset}
-                  type="button"
-                  onClick={() => setDatePreset(preset)}
-                  className={`text-xs px-2.5 py-1 rounded-md font-medium transition-all ${
-                    active
-                      ? 'bg-foreground text-background shadow-xs font-semibold'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
-                  }`}
-                >
-                  {statisticsPresetLabels[preset]}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Dynamic Filters Row */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 pt-2 border-t border-border/50 text-xs">
-          {/* Specific date picker if selected */}
-          {datePreset === 'SPECIFIC' && (
-            <div>
-              <label htmlFor="stat-specific-date" className="block text-muted-foreground mb-1">
-                Fecha puntual
-              </label>
-              <Input
-                id="stat-specific-date"
-                type="date"
-                value={specificDate}
-                onChange={(e) => setSpecificDate(e.target.value)}
-                className="h-8 text-xs bg-background"
-              />
-            </div>
-          )}
-
-          {/* Custom range pickers if selected */}
-          {datePreset === 'CUSTOM' && (
-            <>
-              <div>
-                <label htmlFor="stat-range-start" className="block text-muted-foreground mb-1">
-                  Desde
-                </label>
-                <Input
-                  id="stat-range-start"
-                  type="date"
-                  value={customRange.start}
-                  onChange={(e) =>
-                    setCustomRange((curr) => ({ ...curr, start: e.target.value }))
-                  }
-                  className="h-8 text-xs bg-background"
-                />
-              </div>
-              <div>
-                <label htmlFor="stat-range-end" className="block text-muted-foreground mb-1">
-                  Hasta
-                </label>
-                <Input
-                  id="stat-range-end"
-                  type="date"
-                  value={customRange.end}
-                  onChange={(e) =>
-                    setCustomRange((curr) => ({ ...curr, end: e.target.value }))
-                  }
-                  className="h-8 text-xs bg-background"
-                />
-              </div>
-            </>
-          )}
-
-          {/* Time Slot Filter - 3 categorized slots + ALL */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+          {/* Selector 1: Período */}
           <div>
-            <label htmlFor="stat-slot-filter" className="block text-muted-foreground mb-1">
+            <label htmlFor="stat-period-filter" className="block text-xs font-medium text-muted-foreground mb-1.5">
+              Período
+            </label>
+            <select
+              id="stat-period-filter"
+              value={datePreset}
+              onChange={(e) => setDatePreset(e.target.value as StatisticsDatePreset)}
+              className="select-control w-full h-9 px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20"
+            >
+              {presets.map((preset) => (
+                <option key={preset} value={preset}>
+                  {statisticsPresetLabels[preset]}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Selector 2: Franja horaria */}
+          <div>
+            <label htmlFor="stat-slot-filter" className="block text-xs font-medium text-muted-foreground mb-1.5">
               Franja horaria
             </label>
             <select
               id="stat-slot-filter"
               value={timeSlotFilter}
               onChange={(e) => setTimeSlotFilter(e.target.value as TimeSlotFilter)}
-              className="select-control w-full h-8 px-2 text-xs bg-background border-border rounded-md"
+              className="select-control w-full h-9 px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20"
             >
               <option value="ALL">Todas las franjas</option>
               <option value="MORNING">Mañana (10:00 a 12:00)</option>
@@ -322,17 +239,17 @@ export function AdminStatistics() {
             </select>
           </div>
 
-          {/* Barber filter (Admin only) */}
-          {profile.role === 'ADMIN' && (
-            <div>
-              <label htmlFor="stat-barber-filter" className="block text-muted-foreground mb-1">
-                Barbero
-              </label>
+          {/* Selector 3: Barbero */}
+          <div>
+            <label htmlFor="stat-barber-filter" className="block text-xs font-medium text-muted-foreground mb-1.5">
+              Barbero
+            </label>
+            {profile.role === 'ADMIN' ? (
               <select
                 id="stat-barber-filter"
                 value={barberFilter}
                 onChange={(e) => setBarberFilter(e.target.value)}
-                className="select-control w-full h-8 px-2 text-xs bg-background border-border rounded-md"
+                className="select-control w-full h-9 px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20"
               >
                 <option value="Todos">Todos los barberos</option>
                 {permittedBarbers.map((barber) => (
@@ -341,13 +258,76 @@ export function AdminStatistics() {
                   </option>
                 ))}
               </select>
-            </div>
-          )}
+            ) : (
+              <select
+                id="stat-barber-filter"
+                value={profile.barber_id ? (permittedBarbers[0] || 'Mi agenda') : 'Mi agenda'}
+                disabled
+                className="select-control w-full h-9 px-3 text-xs bg-muted/40 border border-border rounded-lg text-muted-foreground cursor-not-allowed"
+              >
+                <option value={profile.barber_id ? (permittedBarbers[0] || 'Mi agenda') : 'Mi agenda'}>
+                  {profile.barber_id ? (permittedBarbers[0] || 'Mi agenda') : 'Mi agenda'}
+                </option>
+              </select>
+            )}
+          </div>
         </div>
+
+        {/* Dynamic date inputs if SPECIFIC or CUSTOM selected */}
+        {(datePreset === 'SPECIFIC' || datePreset === 'CUSTOM') && (
+          <div className="pt-3 border-t border-border/50 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+            {datePreset === 'SPECIFIC' && (
+              <div>
+                <label htmlFor="stat-specific-date" className="block text-xs font-medium text-muted-foreground mb-1.5">
+                  Fecha puntual
+                </label>
+                <Input
+                  id="stat-specific-date"
+                  type="date"
+                  value={specificDate}
+                  onChange={(e) => setSpecificDate(e.target.value)}
+                  className="h-9 px-3 text-xs bg-background border border-border rounded-lg text-foreground"
+                />
+              </div>
+            )}
+            {datePreset === 'CUSTOM' && (
+              <>
+                <div>
+                  <label htmlFor="stat-range-start" className="block text-xs font-medium text-muted-foreground mb-1.5">
+                    Desde
+                  </label>
+                  <Input
+                    id="stat-range-start"
+                    type="date"
+                    value={customRange.start}
+                    onChange={(e) =>
+                      setCustomRange((curr) => ({ ...curr, start: e.target.value }))
+                    }
+                    className="h-9 px-3 text-xs bg-background border border-border rounded-lg text-foreground"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="stat-range-end" className="block text-xs font-medium text-muted-foreground mb-1.5">
+                    Hasta
+                  </label>
+                  <Input
+                    id="stat-range-end"
+                    type="date"
+                    value={customRange.end}
+                    onChange={(e) =>
+                      setCustomRange((curr) => ({ ...curr, end: e.target.value }))
+                    }
+                    className="h-9 px-3 text-xs bg-background border border-border rounded-lg text-foreground"
+                  />
+                </div>
+              </>
+            )}
+          </div>
+        )}
       </section>
 
-      {/* KPI Summary Cards */}
-      <section className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6" aria-label="Indicadores clave">
+      {/* KPI Summary Cards - 4 visible categories */}
+      <section className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6" aria-label="Indicadores clave">
         {/* Total */}
         <div className="p-3.5 rounded-xl border border-border bg-surface flex flex-col justify-between">
           <span className="text-xs text-muted-foreground">Total de turnos</span>
@@ -359,25 +339,14 @@ export function AdminStatistics() {
           </div>
         </div>
 
-        {/* Completados */}
+        {/* Confirmados */}
         <div className="p-3.5 rounded-xl border border-success/30 bg-success/5 flex flex-col justify-between">
-          <span className="text-xs text-success font-medium">Completados</span>
+          <span className="text-xs text-success font-medium">Confirmados</span>
           <div className="mt-2 flex items-baseline justify-between">
             <span className="text-2xl font-bold text-success">
-              {loading ? '…' : kpis.completed}
-            </span>
-            <CheckCircle2 size={16} className="text-success" />
-          </div>
-        </div>
-
-        {/* Confirmados */}
-        <div className="p-3.5 rounded-xl border border-[var(--stat-accent)]/30 bg-[var(--stat-accent)]/5 flex flex-col justify-between">
-          <span className="text-xs font-medium stat-text-accent">Confirmados</span>
-          <div className="mt-2 flex items-baseline justify-between">
-            <span className="text-2xl font-bold stat-text-accent">
               {loading ? '…' : kpis.confirmed}
             </span>
-            <Clock3 size={16} className="stat-text-accent" />
+            <CheckCircle2 size={16} className="text-success" />
           </div>
         </div>
 
@@ -393,7 +362,7 @@ export function AdminStatistics() {
         </div>
 
         {/* Cancelados */}
-        <div className="p-3.5 rounded-xl border border-destructive/30 bg-destructive/5 flex flex-col justify-between col-span-2 md:col-span-1">
+        <div className="p-3.5 rounded-xl border border-destructive/30 bg-destructive/5 flex flex-col justify-between">
           <span className="text-xs text-destructive font-medium">Cancelados</span>
           <div className="mt-2 flex items-baseline justify-between">
             <span className="text-2xl font-bold text-destructive">
@@ -478,7 +447,7 @@ export function AdminStatistics() {
                             <div className="p-2.5 rounded-lg border border-border bg-surface text-xs shadow-md space-y-1">
                               <p className="font-semibold text-foreground">{data.date}</p>
                               <p className="stat-text-accent">Total reservas: {data.count}</p>
-                              <p className="text-success">Completados: {data.completed}</p>
+                              <p className="text-success">Confirmados: {data.confirmed}</p>
                               <p className="text-destructive">Cancelados: {data.cancelled}</p>
                             </div>
                           );

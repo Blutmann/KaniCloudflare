@@ -82,6 +82,12 @@ export function filterMobileAppointments(
       return options.barberFilter === 'Todos' || appointment.barber === options.barberFilter;
     })
     .filter(appointment => !options.dateRange || (appointment.date >= options.dateRange.start && appointment.date <= options.dateRange.end))
-    .filter(appointment => options.statusFilter === 'ALL' || appointment.statusCode === options.statusFilter)
+    .filter(appointment => {
+      if (options.statusFilter === 'ALL') return true;
+      if (options.statusFilter === 'CONFIRMED') {
+        return appointment.statusCode === 'CONFIRMED' || (appointment.statusCode as string) === 'COMPLETED';
+      }
+      return appointment.statusCode === options.statusFilter;
+    })
     .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
 }

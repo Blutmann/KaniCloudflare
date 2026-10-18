@@ -92,7 +92,7 @@ describe('filtro combinado de turnos del panel móvil', () => {
     expect(filterMobileAppointments(appointments, {
       ...adminOptions,
       dateRange: dateRangeForMobilePreset('SPECIFIC', '2026-10-10', '2026-10-20'),
-      statusFilter: 'COMPLETED',
+      statusFilter: 'CONFIRMED',
     }).map(item => item.id)).toEqual(['completed-next-week']);
   });
 

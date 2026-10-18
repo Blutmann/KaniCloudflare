@@ -178,11 +178,9 @@ describe('Statistics Module Unit Tests', () => {
 
     const summary = computeKpiSummary(list);
     expect(summary.total).toBe(5);
-    expect(summary.completed).toBe(2);
-    expect(summary.confirmed).toBe(1);
+    expect(summary.confirmed).toBe(3);
     expect(summary.pending).toBe(1);
     expect(summary.cancelled).toBe(1);
-    expect(summary.completionRate).toBe(40);
   });
 
   it('computeDailyDemand groups by date and detects peak demand day', () => {

@@ -120,11 +120,11 @@ export function filterAppointments(appointments: RealAppointment[], range: Dashb
 
 export function summarizeAppointments(appointments: RealAppointment[]): DashboardMetrics {
   const requested = appointments.length;
-  const confirmed = appointments.filter(appointment => appointment.statusCode === 'CONFIRMED').length;
+  const confirmed = appointments.filter(appointment => appointment.statusCode === 'CONFIRMED' || (appointment.statusCode as string) === 'COMPLETED').length;
   const pending = appointments.filter(appointment => appointment.statusCode === 'PENDING').length;
   const cancelled = appointments.filter(appointment => appointment.statusCode === 'CANCELLED').length;
-  const completed = appointments.filter(appointment => appointment.statusCode === 'COMPLETED').length;
-  const resolved = confirmed + cancelled + completed;
+  const completed = 0;
+  const resolved = confirmed + cancelled;
   return { requested, confirmed, pending, cancelled, completed, resolved, confirmationRate: resolved ? confirmed / resolved : null };
 }
 
@@ -141,7 +141,7 @@ export function buildDailyDemand(appointments: RealAppointment[], range: Dashboa
       label: day.label,
       fullLabel: day.fullLabel,
       requested: rows.length,
-      confirmed: rows.filter(appointment => appointment.statusCode === 'CONFIRMED').length,
+      confirmed: rows.filter(appointment => appointment.statusCode === 'CONFIRMED' || (appointment.statusCode as string) === 'COMPLETED').length,
     };
   });
 }

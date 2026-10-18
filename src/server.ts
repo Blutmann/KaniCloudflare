@@ -165,6 +165,91 @@ export default {
         }
       }
 
+      if (url.pathname === "/api/admin/status-audit") {
+        try {
+          const { createClient } = await import("@supabase/supabase-js");
+          const supabaseUrl =
+            process.env.SUPABASE_URL ??
+            process.env.VITE_SUPABASE_URL ??
+            (globalThis as typeof globalThis & { __KANI_RUNTIME_ENV?: Record<string, string> }).__KANI_RUNTIME_ENV?.SUPABASE_URL ??
+            (globalThis as typeof globalThis & { __KANI_RUNTIME_ENV?: Record<string, string> }).__KANI_RUNTIME_ENV?.VITE_SUPABASE_URL;
+
+          const supabaseKey =
+            process.env.SUPABASE_SERVICE_ROLE_KEY ??
+            process.env.SUPABASE_ANON_KEY ??
+            process.env.SUPABASE_PUBLISHABLE_KEY ??
+            process.env.VITE_SUPABASE_ANON_KEY ??
+            process.env.VITE_SUPABASE_PUBLISHABLE_KEY ??
+            (globalThis as typeof globalThis & { __KANI_RUNTIME_ENV?: Record<string, string> }).__KANI_RUNTIME_ENV?.SUPABASE_ANON_KEY ??
+            (globalThis as typeof globalThis & { __KANI_RUNTIME_ENV?: Record<string, string> }).__KANI_RUNTIME_ENV?.VITE_SUPABASE_ANON_KEY;
+
+          if (!supabaseUrl || !supabaseKey) {
+            return new Response(JSON.stringify({ error: "Missing Supabase configuration" }), {
+              status: 500,
+              headers: { "content-type": "application/json" },
+            });
+          }
+
+          const client = createClient(supabaseUrl, supabaseKey);
+
+          // Get counts of appointments by status
+          const { data: allAppointments, error: fetchErr } = await client
+            .from("appointments")
+            .select("id, status, booking_date, start_time");
+
+          if (fetchErr) {
+            return new Response(JSON.stringify({ error: fetchErr.message }), {
+              status: 500,
+              headers: { "content-type": "application/json" },
+            });
+          }
+
+          const rows = allAppointments || [];
+          const completedCount = rows.filter((a) => a.status === "COMPLETED").length;
+          const confirmedCount = rows.filter((a) => a.status === "CONFIRMED").length;
+          const pendingCount = rows.filter((a) => a.status === "PENDING").length;
+          const cancelledCount = rows.filter((a) => a.status === "CANCELLED").length;
+
+          let migrated = 0;
+          if (url.searchParams.get("action") === "migrate" && completedCount > 0) {
+            const { data: updated, error: updateErr } = await client
+              .from("appointments")
+              .update({ status: "CONFIRMED" })
+              .eq("status", "COMPLETED")
+              .select("id");
+
+            if (updateErr) {
+              return new Response(JSON.stringify({ error: updateErr.message }), {
+                status: 500,
+                headers: { "content-type": "application/json" },
+              });
+            }
+            migrated = updated?.length ?? 0;
+          }
+
+          return new Response(
+            JSON.stringify({
+              total: rows.length,
+              completed: completedCount,
+              confirmed: confirmedCount,
+              pending: pendingCount,
+              cancelled: cancelledCount,
+              migrated,
+            }),
+            {
+              status: 200,
+              headers: { "content-type": "application/json" },
+            }
+          );
+        } catch (err: unknown) {
+          const message = err instanceof Error ? err.message : String(err);
+          return new Response(JSON.stringify({ error: message }), {
+            status: 500,
+            headers: { "content-type": "application/json" },
+          });
+        }
+      }
+
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
       return await normalizeCatastrophicSsrResponse(response);

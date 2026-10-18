@@ -23,7 +23,6 @@ export type AvailabilityMaintenanceResult = {
 export const cleanupStatusOptions: Array<{ value: CleanupStatus; label: string; description: string }> = [
   { value: 'PENDING', label: 'Pendientes', description: 'Solicitudes que todavía no fueron confirmadas.' },
   { value: 'CONFIRMED', label: 'Confirmados', description: 'Turnos confirmados por el equipo.' },
-  { value: 'COMPLETED', label: 'Completados', description: 'Turnos marcados como realizados.' },
   { value: 'CANCELLED', label: 'Cancelados', description: 'Turnos rechazados o cancelados.' },
 ];
 

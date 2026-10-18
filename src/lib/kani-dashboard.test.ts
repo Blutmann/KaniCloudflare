@@ -50,7 +50,7 @@ describe('dashboard de demanda', () => {
       appointment({ id: 'appointment-3', statusCode: 'PENDING' }),
       appointment({ id: 'appointment-4', statusCode: 'COMPLETED' }),
     ]);
-    expect(values).toMatchObject({ requested: 4, confirmed: 1, pending: 1, cancelled: 1, completed: 1, resolved: 3, confirmationRate: 1 / 3 });
+    expect(values).toMatchObject({ requested: 4, confirmed: 2, pending: 1, cancelled: 1, resolved: 3, confirmationRate: 2 / 3 });
     expect(hasComparableMetrics(values, summarizeAppointments([appointment({ statusCode: 'CONFIRMED' })]))).toBe(true);
     expect(hasComparableMetrics(values, summarizeAppointments([appointment({ statusCode: 'PENDING' })]))).toBe(false);
   });
@@ -63,7 +63,7 @@ describe('dashboard de demanda', () => {
       appointment({ id: 'appointment-3', date: '2026-10-11', statusCode: 'CONFIRMED' }),
     ], range);
     expect(values.find(value => value.label === 'Lun')).toMatchObject({ requested: 1, confirmed: 0 });
-    expect(values.find(value => value.label === 'Sáb')).toMatchObject({ requested: 2, confirmed: 1 });
+    expect(values.find(value => value.label === 'Sáb')).toMatchObject({ requested: 2, confirmed: 2 });
     expect(values.reduce((sum, value) => sum + value.requested, 0)).toBe(3);
   });
 

@@ -66,10 +66,8 @@ function formatDateTime(isoString?: string) {
 
 function statusBadge(statusCode: string, label: string) {
   let badgeClass = 'bg-muted/40 text-muted-foreground border-border';
-  if (statusCode === 'COMPLETED') {
+  if (statusCode === 'CONFIRMED' || statusCode === 'COMPLETED') {
     badgeClass = 'bg-success/15 text-success border-success/30';
-  } else if (statusCode === 'CONFIRMED') {
-    badgeClass = 'bg-gold/15 text-gold border-gold/30';
   } else if (statusCode === 'PENDING') {
     badgeClass = 'bg-amber-500/15 text-amber-500 border-amber-500/30';
   } else if (statusCode === 'CANCELLED') {
@@ -80,10 +78,10 @@ function statusBadge(statusCode: string, label: string) {
     <span
       className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold border ${badgeClass}`}
     >
-      {statusCode === 'COMPLETED' && <CheckCircle2 size={11} />}
+      {(statusCode === 'CONFIRMED' || statusCode === 'COMPLETED') && <CheckCircle2 size={11} />}
       {statusCode === 'CANCELLED' && <XCircle size={11} />}
       {statusCode === 'PENDING' && <Clock size={11} />}
-      {label}
+      {statusCode === 'COMPLETED' ? 'Confirmado' : label}
     </span>
   );
 }
@@ -543,9 +541,9 @@ export function AdminClients({ clients, loading = false }: AdminClientsProps) {
                     </div>
                   </div>
                   <div className="p-2 rounded-lg bg-success/10 border border-success/20">
-                    <div className="text-[11px] text-success font-medium">Completados</div>
+                    <div className="text-[11px] text-success font-medium">Confirmados</div>
                     <div className="text-base font-bold text-success mt-0.5">
-                      {selectedClient.totalCompleted}
+                      {selectedClient.totalConfirmed ?? selectedClient.totalCompleted}
                     </div>
                   </div>
                   <div className="p-2 rounded-lg bg-destructive/10 border border-destructive/20">

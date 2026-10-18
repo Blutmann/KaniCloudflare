@@ -20,7 +20,7 @@ const statusMeta: Record<RealAppointmentStatus, StatusMeta> = {
   PENDING: { label: 'Pendiente', tone: 'pending' },
   CONFIRMED: { label: 'Confirmado', tone: 'confirmed' },
   CANCELLED: { label: 'Cancelado', tone: 'cancelled' },
-  COMPLETED: { label: 'Completado', tone: 'completed' },
+  COMPLETED: { label: 'Confirmado', tone: 'confirmed' },
 };
 
 const statusFilters: Array<{ value: StatusFilter; label: string }> = [
@@ -28,10 +28,9 @@ const statusFilters: Array<{ value: StatusFilter; label: string }> = [
   { value: 'PENDING', label: 'Pendientes' },
   { value: 'CONFIRMED', label: 'Confirmados' },
   { value: 'CANCELLED', label: 'Cancelados' },
-  { value: 'COMPLETED', label: 'Completados' },
 ];
 
-const summaryFilters = statusFilters.filter(filter => filter.value !== 'COMPLETED');
+const summaryFilters = statusFilters;
 
 const datePresets: MobileDatePreset[] = ['TODAY', 'TOMORROW', 'NEXT_10_DAYS', 'THIS_WEEK', 'SPECIFIC'];
 
@@ -101,15 +100,18 @@ export function AdminMobileAppointments() {
     profileBarberId: profile.barber_id,
     permittedBarberIds,
   }), [appointments, barberFilter, dateRange, permittedBarberIds, profile.barber_id, profile.role]);
-  const filteredAppointments = useMemo(() => statusFilter === 'ALL'
-    ? dayAppointments
-    : dayAppointments.filter(appointment => appointment.statusCode === statusFilter), [dayAppointments, statusFilter]);
+  const filteredAppointments = useMemo(() => {
+    if (statusFilter === 'ALL') return dayAppointments;
+    if (statusFilter === 'CONFIRMED') {
+      return dayAppointments.filter(appointment => appointment.statusCode === 'CONFIRMED' || (appointment.statusCode as string) === 'COMPLETED');
+    }
+    return dayAppointments.filter(appointment => appointment.statusCode === statusFilter);
+  }, [dayAppointments, statusFilter]);
   const counts = useMemo(() => ({
     ALL: dayAppointments.length,
     PENDING: dayAppointments.filter(appointment => appointment.statusCode === 'PENDING').length,
-    CONFIRMED: dayAppointments.filter(appointment => appointment.statusCode === 'CONFIRMED').length,
+    CONFIRMED: dayAppointments.filter(appointment => appointment.statusCode === 'CONFIRMED' || (appointment.statusCode as string) === 'COMPLETED').length,
     CANCELLED: dayAppointments.filter(appointment => appointment.statusCode === 'CANCELLED').length,
-    COMPLETED: dayAppointments.filter(appointment => appointment.statusCode === 'COMPLETED').length,
   }), [dayAppointments]);
   const countContext = datePreset === 'SPECIFIC' && specificDate
     ? `el ${specificDate.split('-').reverse().join('/')}`

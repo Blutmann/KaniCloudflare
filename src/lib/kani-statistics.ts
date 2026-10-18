@@ -55,9 +55,9 @@ export const statisticsPresetLabels: Record<StatisticsDatePreset, string> = {
   LAST_30_DAYS: 'Últimos 30 días',
   LAST_90_DAYS: 'Últimos 90 días',
   LAST_6_MONTHS: 'Últimos 6 meses',
-  LAST_1_YEAR: 'Último 1 año',
-  ALL: 'Todos los registros',
-  SPECIFIC: 'Fecha específica',
+  LAST_1_YEAR: 'Último año',
+  ALL: 'Histórico completo',
+  SPECIFIC: 'Día específico',
   CUSTOM: 'Rango personalizado',
 };
 
@@ -145,25 +145,22 @@ export function filterStatisticsAppointments(
 
 export type AppointmentKpiSummary = {
   total: number;
-  completed: number;
   confirmed: number;
   pending: number;
   cancelled: number;
-  completionRate: number; // percentage completed over (completed + confirmed + cancelled + pending)
+  completed?: number;
+  completionRate?: number;
 };
 
 export function computeKpiSummary(appointments: RealAppointment[]): AppointmentKpiSummary {
-  let completed = 0;
   let confirmed = 0;
   let pending = 0;
   let cancelled = 0;
 
   for (const appointment of appointments) {
     switch (appointment.statusCode) {
-      case 'COMPLETED':
-        completed++;
-        break;
       case 'CONFIRMED':
+      case 'COMPLETED' as any:
         confirmed++;
         break;
       case 'PENDING':
@@ -176,15 +173,14 @@ export function computeKpiSummary(appointments: RealAppointment[]): AppointmentK
   }
 
   const total = appointments.length;
-  const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
 
   return {
     total,
-    completed,
     confirmed,
     pending,
     cancelled,
-    completionRate,
+    completed: 0,
+    completionRate: 0,
   };
 }
 
@@ -192,7 +188,8 @@ export type DailyDemandPoint = {
   date: string;
   label: string;
   count: number;
-  completed: number;
+  confirmed: number;
+  completed?: number;
   cancelled: number;
   isPeak: boolean;
 };
@@ -202,12 +199,14 @@ export function computeDailyDemand(appointments: RealAppointment[]): {
   peakDate: string | null;
   peakCount: number;
 } {
-  const countsByDate = new Map<string, { total: number; completed: number; cancelled: number }>();
+  const countsByDate = new Map<string, { total: number; confirmed: number; cancelled: number }>();
 
   for (const appointment of appointments) {
-    const current = countsByDate.get(appointment.date) ?? { total: 0, completed: 0, cancelled: 0 };
+    const current = countsByDate.get(appointment.date) ?? { total: 0, confirmed: 0, cancelled: 0 };
     current.total++;
-    if (appointment.statusCode === 'COMPLETED') current.completed++;
+    if (appointment.statusCode === 'CONFIRMED' || (appointment.statusCode as string) === 'COMPLETED') {
+      current.confirmed++;
+    }
     if (appointment.statusCode === 'CANCELLED') current.cancelled++;
     countsByDate.set(appointment.date, current);
   }
@@ -233,7 +232,8 @@ export function computeDailyDemand(appointments: RealAppointment[]): {
       date,
       label,
       count: entry.total,
-      completed: entry.completed,
+      confirmed: entry.confirmed,
+      completed: entry.confirmed,
       cancelled: entry.cancelled,
       isPeak: entry.total === peakCount && peakCount > 0,
     };
@@ -374,6 +374,7 @@ export type ClientDirectoryItem = {
   phone: string;
   totalAppointments: number;
   totalCancelled: number;
+  totalConfirmed: number;
   totalCompleted: number;
   totalActive: number;
   lastBookingDate: string;
@@ -409,6 +410,9 @@ export function aggregateClientsDirectory(appointments: RealAppointment[]): Clie
     const key = (appointment.clientId || appointment.phone || appointment.email || appointment.name).trim().toLowerCase();
     if (!key) continue;
 
+    const isCompleted = (appointment.statusCode as string) === 'COMPLETED';
+    const isConfirmedOrCompleted = appointment.statusCode === 'CONFIRMED' || isCompleted;
+
     const existing = clientsMap.get(key);
     if (!existing) {
       clientsMap.set(key, {
@@ -418,7 +422,8 @@ export function aggregateClientsDirectory(appointments: RealAppointment[]): Clie
         phone: appointment.phone,
         totalAppointments: 1,
         totalCancelled: appointment.statusCode === 'CANCELLED' ? 1 : 0,
-        totalCompleted: appointment.statusCode === 'COMPLETED' ? 1 : 0,
+        totalConfirmed: isConfirmedOrCompleted ? 1 : 0,
+        totalCompleted: isCompleted ? 1 : 0,
         totalActive: appointment.statusCode === 'CONFIRMED' || appointment.statusCode === 'REQUESTED' ? 1 : 0,
         lastBookingDate: appointment.date,
         lastBookingTime: appointment.time,
@@ -430,7 +435,12 @@ export function aggregateClientsDirectory(appointments: RealAppointment[]): Clie
     } else {
       existing.totalAppointments++;
       if (appointment.statusCode === 'CANCELLED') existing.totalCancelled++;
-      if (appointment.statusCode === 'COMPLETED') existing.totalCompleted++;
+      if (isConfirmedOrCompleted) {
+        existing.totalConfirmed = (existing.totalConfirmed || 0) + 1;
+      }
+      if (isCompleted) {
+        existing.totalCompleted++;
+      }
       if (appointment.statusCode === 'CONFIRMED' || appointment.statusCode === 'REQUESTED') {
         existing.totalActive++;
       }
