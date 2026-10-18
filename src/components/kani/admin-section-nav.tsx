@@ -1,6 +1,5 @@
 import { BarChart3, CalendarDays, Clock3, RefreshCw } from "lucide-react";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Button } from "@/components/ui/button";
 import { useAdminStaff } from "@/lib/kani-admin-context";
 
 const items = [
@@ -16,37 +15,37 @@ export function AdminSectionNav() {
   return (
     <div className="admin-section-nav-wrapper site-container">
       <nav className="admin-section-nav" aria-label="Secciones administrativas">
-        {items.map(({ to, label, icon: Icon }) => {
-          const active =
-            to === "/admin"
-              ? pathname === "/admin" || pathname === "/admin/"
-              : pathname.startsWith(to);
-          return (
-            <Link
-              key={to}
-              to={to}
-              className={`admin-section-nav-link ${active ? "is-active" : ""}`}
-              aria-current={active ? "page" : undefined}
-            >
-              <Icon size={16} aria-hidden="true" />
-              <span>{label}</span>
-            </Link>
-          );
-        })}
+        <div className="admin-section-nav-items">
+          {items.map(({ to, label, icon: Icon }) => {
+            const active =
+              to === "/admin"
+                ? pathname === "/admin" || pathname === "/admin/"
+                : pathname.startsWith(to);
+            return (
+              <Link
+                key={to}
+                to={to}
+                className={`admin-section-nav-link ${active ? "is-active" : ""}`}
+                aria-current={active ? "page" : undefined}
+              >
+                <Icon size={16} aria-hidden="true" />
+                <span>{label}</span>
+              </Link>
+            );
+          })}
+        </div>
+        <div className="admin-section-nav-divider" aria-hidden="true" />
+        <button
+          type="button"
+          onClick={() => triggerRefresh()}
+          disabled={isRefreshing}
+          className="admin-section-nav-refresh-btn"
+          aria-label="Actualizar datos"
+          title="Actualizar datos"
+        >
+          <RefreshCw size={15} className={isRefreshing ? "animate-spin" : ""} />
+        </button>
       </nav>
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        onClick={() => triggerRefresh()}
-        disabled={isRefreshing}
-        className="admin-section-nav-refresh text-xs h-9 px-3 gap-1.5"
-        aria-label="Actualizar datos"
-      >
-        <RefreshCw size={14} className={isRefreshing ? "animate-spin" : ""} />
-        <span>Actualizar</span>
-      </Button>
     </div>
   );
 }
-

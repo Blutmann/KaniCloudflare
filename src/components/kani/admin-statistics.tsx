@@ -193,19 +193,6 @@ export function AdminStatistics() {
             Análisis de demanda, horarios pico, rendimiento de servicios y clientes en tiempo real.
           </p>
         </div>
-
-        <div className="flex items-center gap-2 sm:hidden">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => void loadData()}
-            disabled={loading}
-            className="text-xs h-9 px-3 gap-1.5"
-          >
-            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-            <span>Actualizar</span>
-          </Button>
-        </div>
       </div>
 
       {/* Error state */}

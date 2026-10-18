@@ -777,41 +777,125 @@ html[data-theme="light"] .booking-option.selected .option-icon img { filter: bri
 
 
 
-/* Shared admin section navigation. */
-.admin-shell { min-width: 0; }
-.admin-section-nav-wrapper { display: flex; justify-content: center; width: 100%; padding-inline: 1rem; margin-top: .75rem; margin-bottom: .5rem; }
-.admin-section-nav { display: grid; grid-template-columns: repeat(3, 1fr); width: min(100%, 52rem); margin-inline: auto; padding: .35rem; gap: .5rem; border: 1px solid var(--border); border-radius: .9rem; background: var(--surface); box-shadow: 0 4px 14px rgb(0 0 0 / .06); }
-.admin-section-nav-link { display: inline-flex; min-width: 0; flex: 1 1 0; align-items: center; justify-content: center; gap: .5rem; min-height: 2.5rem; padding: .5rem 1rem; border-radius: .65rem; color: var(--muted-foreground); font-size: .85rem; font-weight: 500; text-align: center; text-decoration: none; white-space: nowrap; transition: background-color .2s ease, color .2s ease; }
-.admin-section-nav-link:hover { color: var(--foreground); }
-.admin-section-nav-link.is-active { background: var(--gold); color: var(--gold-foreground, #18130b); font-weight: 600; }
+/* Shared admin section navigation — Single unified capsule */
+.admin-shell { min-width: 0; width: 100%; }
+
+.admin-section-nav-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  margin-top: 0.75rem;
+  margin-bottom: 1rem;
+  box-sizing: border-box;
+}
+
+.admin-section-nav {
+  display: inline-flex;
+  align-items: center;
+  width: 100%;
+  padding: 0.35rem;
+  gap: 0.35rem;
+  border: 1px solid var(--border);
+  border-radius: 0.9rem;
+  background: var(--surface);
+  box-shadow: 0 4px 14px rgb(0 0 0 / 0.06);
+  box-sizing: border-box;
+}
+
+.admin-section-nav-items {
+  display: inline-flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.admin-section-nav-link {
+  display: inline-flex;
+  flex: 1 1 0;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.5rem;
+  padding: 0.5rem 0.85rem;
+  border-radius: 0.65rem;
+  color: var(--muted-foreground);
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.admin-section-nav-link svg {
+  flex-shrink: 0;
+}
+
+.admin-section-nav-link span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-section-nav-link:hover {
+  color: var(--foreground);
+}
+
+.admin-section-nav-link.is-active {
+  background: var(--gold);
+  color: var(--gold-foreground, #18130b);
+  font-weight: 600;
+}
+
 html[data-theme="light"] .admin-section-nav-link.is-active,
 html[data-theme="light"] .admin-section-nav-link.is-active:hover,
-html[data-theme="light"] .admin-section-nav-link.is-active:active { background: #702B3A; color: #FFFFFF; }
+html[data-theme="light"] .admin-section-nav-link.is-active:active {
+  background: #702B3A;
+  color: #FFFFFF;
+}
+
+.admin-section-nav-divider {
+  width: 1px;
+  height: 1.5rem;
+  background: var(--border);
+  flex-shrink: 0;
+  margin-inline: 0.25rem;
+}
+
+.admin-section-nav-refresh-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.65rem;
+  border: none;
+  background: transparent;
+  color: var(--muted-foreground);
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.admin-section-nav-refresh-btn:hover:not(:disabled) {
+  background: var(--muted);
+  color: var(--foreground);
+}
+
+.admin-section-nav-refresh-btn:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.admin-section-nav-refresh-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 @media (min-width: 768px) {
-  .admin-section-nav-wrapper {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    margin-inline: auto;
-    padding-inline: 0;
-    margin-top: .75rem;
-    margin-bottom: 1rem;
-  }
-  .admin-section-nav {
-    display: inline-flex;
-    align-items: center;
-    width: auto;
-    margin-inline: 0;
-    padding: .35rem;
-    gap: .5rem;
-  }
-  .admin-section-nav-link {
-    flex: 0 0 auto;
-  }
-  .admin-section-nav-refresh {
-    display: inline-flex;
-  }
   .admin-mobile-shell,
   .admin-schedule-shell {
     width: 100%;
@@ -819,44 +903,32 @@ html[data-theme="light"] .admin-section-nav-link.is-active:active { background: 
     margin-inline: 0;
   }
 }
+
 @media (max-width: 767px) {
   .admin-section-nav-wrapper {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    max-width: 320px;
-    margin-inline: auto;
-    padding-inline: 0.5rem;
     margin-top: 0.5rem;
     margin-bottom: 0.5rem;
-    gap: 0.5rem;
-    box-sizing: border-box;
   }
   .admin-section-nav {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: auto;
-    max-width: 100%;
-    gap: 0.25rem;
     padding: 0.25rem;
+    gap: 0.2rem;
+  }
+  .admin-section-nav-items {
+    gap: 0.2rem;
   }
   .admin-section-nav-link {
-    flex: 0 0 auto;
-    min-height: 2.2rem;
-    padding: 0.4rem 0.55rem;
-    font-size: 0.76rem;
-    gap: 0.25rem;
+    min-height: 2.25rem;
+    padding: 0.4rem 0.5rem;
+    font-size: 0.78rem;
+    gap: 0.3rem;
   }
-  .admin-section-nav-refresh {
-    display: inline-flex;
-    flex-shrink: 0;
-    height: 2.2rem;
-    font-size: 0.76rem;
-    padding-inline: 0.55rem;
-    gap: 0.35rem;
+  .admin-section-nav-divider {
+    height: 1.25rem;
+    margin-inline: 0.15rem;
+  }
+  .admin-section-nav-refresh-btn {
+    width: 2.25rem;
+    height: 2.25rem;
   }
 }
 
@@ -868,9 +940,10 @@ html[data-theme="light"] .admin-section-nav-link.is-active:active { background: 
 }
 
 .admin-mobile-shell {
-  width: min(100%, 48rem);
+  width: 100%;
+  max-width: 100%;
   min-width: 0;
-  margin-inline: auto;
+  margin-inline: 0;
 }
 
 .admin-mobile-heading {
@@ -1060,7 +1133,7 @@ html[data-theme="light"] .admin-section-nav-link.is-active:active { background: 
 
 /* Schedule management: mobile-first, isolated from the existing admin table. */
 .admin-schedule-page { min-height: 100%; overflow-x: clip; padding-block: 1.25rem 4rem; }
-.admin-schedule-shell { width: min(100%, 52rem); min-width: 0; margin-inline: auto; }
+.admin-schedule-shell { width: 100%; max-width: 100%; min-width: 0; margin-inline: 0; }
 .admin-schedule-add { min-height: 2.75rem; flex: 0 0 auto; }
 .admin-schedule-filters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .75rem; margin-bottom: .85rem; padding: .9rem; border: 1px solid var(--border); border-radius: 1rem; background: var(--surface); }
 .admin-schedule-control { min-width: 0; }
@@ -1926,75 +1999,4 @@ html[data-theme='dark'] .admin-section-nav-link.is-active:active {
   background-color: var(--stat-bar-service) !important;
 }
 
-/* 
- * Regla de ancho máximo 320px en mobile para todo el panel administrativo 
- * (Turnos, Horarios, Estadísticas, Filtros, Gráficos y Directorio de Clientes).
- * En desktop (>= 768px) no aplica, manteniendo el ancho completo del contenedor.
- */
-@media (max-width: 767px) {
-  .admin-page,
-  .admin-mobile-page,
-  .admin-schedule-page,
-  .admin-mobile-shell,
-  .admin-schedule-shell {
-    width: 100% !important;
-    max-width: 320px !important;
-    margin-inline: auto !important;
-    box-sizing: border-box !important;
-    overflow-x: hidden !important;
-  }
-
-  .admin-mobile-summary {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 0.35rem !important;
-  }
-
-  .admin-mobile-filters {
-    grid-template-columns: 1fr !important;
-    padding: 0.65rem !important;
-    gap: 0.5rem !important;
-  }
-
-  .admin-mobile-period-control {
-    grid-template-columns: 1fr !important;
-    gap: 0.35rem !important;
-  }
-
-  .admin-schedule-filters {
-    grid-template-columns: 1fr !important;
-    padding: 0.65rem !important;
-    gap: 0.5rem !important;
-  }
-
-  .admin-schedule-cards {
-    grid-template-columns: 1fr !important;
-    gap: 0.5rem !important;
-  }
-
-  .admin-schedule-starts {
-    padding: 0.5rem !important;
-  }
-
-  .admin-schedule-start-list {
-    grid-template-columns: 1fr !important;
-  }
-
-  /* Estadísticas en mobile */
-  .admin-page section[aria-label="Indicadores clave"] {
-    grid-template-columns: 1fr !important;
-    gap: 0.5rem !important;
-  }
-
-  .admin-page section[aria-label="Indicadores clave"] > div {
-    grid-column: span 1 !important;
-  }
-
-  /* Tablas y modales móviles */
-  .admin-mobile-dialog,
-  .admin-schedule-dialog,
-  [role="dialog"] {
-    max-width: min(92vw, 320px) !important;
-    box-sizing: border-box !important;
-  }
-}
 
