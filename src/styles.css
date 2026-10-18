@@ -1274,21 +1274,35 @@ html[data-theme="light"] .admin-section-nav-link.is-active:active {
 .admin-mobile-detail-notes { padding-top: .75rem; border-top: 1px solid var(--border); }
 .admin-mobile-dialog { max-width: min(92vw, 30rem); }
 
-/* Manual appointment form dialog: full-screen & 100% opaque on mobile, responsive modal on desktop */
+/* Manual appointment form dialog: full-screen below header on mobile, responsive modal on desktop */
 @media (max-width: 639px) {
+  /* En mobile, cuando el formulario de turno manual está abierto, asegurar que el header se mantiene fijo arriba */
+  body:has(.admin-manual-dialog) .site-header {
+    position: fixed !important;
+    inset: 0 0 auto !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    height: calc(72px + env(safe-area-inset-top, 0px)) !important;
+    padding-top: env(safe-area-inset-top, 0px) !important;
+    z-index: 120 !important;
+    background-color: var(--chrome) !important;
+    border-bottom: 1px solid var(--border) !important;
+  }
+
   .admin-manual-dialog,
   .admin-manual-dialog-fullscreen {
     position: fixed !important;
-    inset: 0 !important;
-    top: 0 !important;
+    top: calc(72px + env(safe-area-inset-top, 0px)) !important;
     left: 0 !important;
     right: 0 !important;
     bottom: 0 !important;
     transform: none !important;
     width: 100vw !important;
     max-width: 100vw !important;
-    height: 100dvh !important;
-    max-height: 100dvh !important;
+    height: calc(100dvh - 72px - env(safe-area-inset-top, 0px)) !important;
+    max-height: calc(100dvh - 72px - env(safe-area-inset-top, 0px)) !important;
     border-radius: 0 !important;
     border: none !important;
     background-color: var(--background) !important;
@@ -1305,7 +1319,7 @@ html[data-theme="light"] .admin-section-nav-link.is-active:active {
 
   .admin-manual-dialog > button,
   .admin-manual-dialog-fullscreen > button {
-    top: max(0.85rem, env(safe-area-inset-top)) !important;
+    top: 0.85rem !important;
     right: 1rem !important;
     width: 2.25rem !important;
     height: 2.25rem !important;
@@ -1382,6 +1396,9 @@ html[data-theme="light"] .admin-section-nav-link.is-active:active {
 .manual-appointment-grid .manual-field-email {
   grid-column: span 2;
 }
+.manual-appointment-grid .manual-field-sena {
+  grid-column: span 2;
+}
 .manual-appointment-grid .manual-field-observaciones {
   grid-column: span 2;
 }
@@ -1416,16 +1433,20 @@ html[data-theme="light"] .admin-section-nav-link.is-active:active {
     order: 6;
   }
   .manual-appointment-grid .manual-field-barbero {
-    grid-column: span 3;
+    grid-column: span 2;
     order: 7;
   }
   .manual-appointment-grid .manual-field-email {
-    grid-column: span 3;
+    grid-column: span 2;
     order: 8;
+  }
+  .manual-appointment-grid .manual-field-sena {
+    grid-column: span 2;
+    order: 9;
   }
   .manual-appointment-grid .manual-field-observaciones {
     grid-column: span 6;
-    order: 9;
+    order: 10;
   }
 }
 

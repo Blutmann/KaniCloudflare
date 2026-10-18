@@ -261,9 +261,121 @@ describe('Manual Appointments & Recurring Logic Unit Tests', () => {
     expect(cssContent).toContain('.manual-field-nombre');
     expect(cssContent).toContain('.manual-field-celular');
     expect(cssContent).toContain('.manual-field-email');
+    expect(cssContent).toContain('.manual-field-sena');
     expect(cssContent).toContain('.manual-field-observaciones');
 
     // Desktop media query (min-width: 640px)
     expect(cssContent).toContain('@media (min-width: 640px)');
+  });
+
+  it('verifies mobile manual dialog is positioned below site header without overlap', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+    const cssContent = fs.readFileSync(path.resolve(process.cwd(), 'src/styles.css'), 'utf-8');
+
+    // On mobile, the dialog must start immediately below the 72px header respecting safe-area-inset-top
+    expect(cssContent).toContain('top: calc(72px + env(safe-area-inset-top, 0px)) !important;');
+    expect(cssContent).toContain('height: calc(100dvh - 72px - env(safe-area-inset-top, 0px)) !important;');
+
+    // Header must remain fixed at top when manual dialog is active
+    expect(cssContent).toContain('body:has(.admin-manual-dialog) .site-header');
+  });
+
+  it('supports «Abona seña» option with Sí/No, defaulting to No, and reflecting in appointment and client history', () => {
+    // Appointment with Abona seña = No (default)
+    const aptSinSena: RealAppointment = {
+      id: 'apt-sin-sena',
+      requestNumber: 201,
+      service: 'corte',
+      barber: 'Gonzalo',
+      date: '2026-10-25',
+      time: '15:00',
+      name: 'Lucas Vázquez',
+      email: 'lucas@vazquez.internal',
+      phone: '+5491122334455',
+      status: 'Confirmado',
+      statusCode: 'CONFIRMED',
+      notes: '',
+      barberId: 'barber-gonzalo',
+      serviceId: 'svc-corte',
+      serviceName: 'Corte',
+      serviceDuration: 45,
+      servicePrice: 25000,
+      isManual: true,
+      origin: 'MANUAL',
+      depositRequired: false,
+      depositPaid: false,
+    };
+
+    // Appointment with Abona seña = Sí
+    const aptConSena: RealAppointment = {
+      id: 'apt-con-sena',
+      requestNumber: 202,
+      service: 'barba',
+      barber: 'Gonzalo',
+      date: '2026-10-26',
+      time: '16:00',
+      name: 'Lucas Vázquez',
+      email: 'lucas@vazquez.internal',
+      phone: '+5491122334455',
+      status: 'Confirmado',
+      statusCode: 'CONFIRMED',
+      notes: '',
+      barberId: 'barber-gonzalo',
+      serviceId: 'svc-barba',
+      serviceName: 'Barba',
+      serviceDuration: 30,
+      servicePrice: 10000,
+      isManual: true,
+      origin: 'MANUAL',
+      depositRequired: true,
+      depositPaid: false,
+    };
+
+    expect(aptSinSena.depositRequired).toBe(false);
+    expect(aptSinSena.depositPaid).toBe(false);
+    // Detail display for Sin seña: No
+    expect(aptSinSena.depositPaid || aptSinSena.depositRequired ? 'Sí' : 'No').toBe('No');
+
+    expect(aptConSena.depositRequired).toBe(true);
+    expect(aptConSena.depositPaid).toBe(false); // must not falsely assume deposit is paid
+    // Detail display for Con seña: Sí
+    expect(aptConSena.depositPaid || aptConSena.depositRequired ? 'Sí' : 'No').toBe('Sí');
+
+    // Aggregate in client history directory
+    const directory = aggregateClientsDirectory([aptSinSena, aptConSena]);
+    expect(directory.length).toBe(1);
+    const client = directory[0];
+    expect(client.appointments.length).toBe(2);
+
+    const historySinSena = client.appointments.find(a => a.id === 'apt-sin-sena');
+    expect(historySinSena?.depositRequired).toBe(false);
+    expect(historySinSena?.depositPaid || historySinSena?.depositRequired ? 'Sí' : 'No').toBe('No');
+
+    const historyConSena = client.appointments.find(a => a.id === 'apt-con-sena');
+    expect(historyConSena?.depositRequired).toBe(true);
+    expect(historyConSena?.depositPaid || historyConSena?.depositRequired ? 'Sí' : 'No').toBe('Sí');
+  });
+
+  it('ensures the manual appointment dialog removes visible descriptive text and shows simplified service name', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+    const componentCode = fs.readFileSync(
+      path.resolve(process.cwd(), 'src/components/kani/admin-mobile-appointments.tsx'),
+      'utf-8'
+    );
+
+    // Visible description removed (only sr-only for accessibility)
+    expect(componentCode).not.toContain('Configurá los datos del turno y del cliente.');
+    expect(componentCode).toContain('<DialogDescription className="sr-only">');
+
+    // Service dropdown simplified: displays {s.name} without duration and price strings
+    expect(componentCode).toMatch(/<option key=\{s\.id\} value=\{s\.id\}>\s*\{s\.name\}\s*<\/option>/);
+    expect(componentCode).not.toContain('{s.duration_minutes} min');
+
+    // Abona seña field with exclusively No / Sí options
+    expect(componentCode).toContain('<label htmlFor="manual-deposit"');
+    expect(componentCode).toContain('<option value="NO">No</option>');
+    expect(componentCode).toContain('<option value="YES">Sí</option>');
   });
 });

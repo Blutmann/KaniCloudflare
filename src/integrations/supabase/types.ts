@@ -683,6 +683,7 @@ export type Database = {
           p_notes?: string | null
           p_is_recurring?: boolean
           p_duration_minutes?: number | null
+          p_deposit_required?: boolean
         }
         Returns: {
           appointment_id: string
@@ -695,6 +696,8 @@ export type Database = {
           origin: string
           created_by_display_name: string
           recurring_rule_id: string | null
+          deposit_required?: boolean
+          deposit_paid?: boolean
         }[]
       }
       sync_recurring_appointment_rules: {

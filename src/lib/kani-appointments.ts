@@ -54,6 +54,7 @@ export type CreateManualAppointmentInput = {
   isRecurring?: boolean;
   frequency?: ManualFrequency;
   durationMinutes?: number;
+  depositRequired?: boolean;
 };
 
 type CreateAppointmentInput = {
@@ -108,6 +109,7 @@ export async function createManualAppointment(input: CreateManualAppointmentInpu
     p_notes: input.notes?.trim() || null,
     p_is_recurring: Boolean(input.isRecurring),
     p_duration_minutes: input.durationMinutes ?? null,
+    p_deposit_required: Boolean(input.depositRequired),
   });
   if (error) throw error;
   const row = data?.[0];

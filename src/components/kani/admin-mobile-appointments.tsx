@@ -76,6 +76,7 @@ export function AdminMobileAppointments() {
   const [manualServiceId, setManualServiceId] = useState('');
   const [manualBarberId, setManualBarberId] = useState('');
   const [manualFrequency, setManualFrequency] = useState<ManualFrequency>('ONCE');
+  const [manualDepositRequired, setManualDepositRequired] = useState(false);
   const [manualNotes, setManualNotes] = useState('');
 
   // Cargar lista de servicios activos
@@ -192,6 +193,7 @@ export function AdminMobileAppointments() {
     setManualClientEmail('');
     setManualNotes('');
     setManualFrequency('ONCE');
+    setManualDepositRequired(false);
     if (profile.role === 'BARBER') {
       setManualBarberId(profile.barber_id || permittedRows[0]?.id || '');
     } else {
@@ -209,6 +211,7 @@ export function AdminMobileAppointments() {
     setManualError('');
     setManualEmailError('');
     setManualEmailTouched(false);
+    setManualDepositRequired(false);
     requestAnimationFrame(() => {
       window.scrollTo({ top: savedY, behavior: 'instant' });
       setTimeout(() => {
@@ -275,6 +278,7 @@ export function AdminMobileAppointments() {
         notes: notesPayload,
         isRecurring,
         frequency: manualFrequency,
+        depositRequired: manualDepositRequired,
       });
 
       setNotice(
@@ -398,6 +402,10 @@ export function AdminMobileAppointments() {
                 <div><span>Barbero</span><strong>{appointment.barber}</strong></div>
                 <div><span>Celular</span><a href={`tel:${phoneHref}`}>{phoneLabel}</a></div>
                 <div><span>Email</span><a href={`mailto:${appointment.email}`}>{appointment.email}</a></div>
+                <div>
+                  <span>Abona seña</span>
+                  <strong>{appointment.depositPaid || appointment.depositRequired ? 'Sí' : 'No'}</strong>
+                </div>
                 {appointment.servicePrice !== undefined && <div><span>Importe total</span><strong>{money(appointment.servicePrice)}</strong></div>}
                 {isManual && (
                   <div>
@@ -445,14 +453,14 @@ export function AdminMobileAppointments() {
         }}
       >
         <form onSubmit={handleCreateManualAppointment} className="flex flex-col h-full sm:h-auto overflow-hidden">
-          {/* Encabezado: fijo en mobile, con respeto al área segura superior */}
-          <div className="shrink-0 px-4 sm:px-0 pt-[max(1rem,env(safe-area-inset-top))] sm:pt-0 pb-3 sm:pb-4 border-b border-border/60 sm:border-b-0">
+          {/* Encabezado: fijo en mobile, inmediatamente debajo del header */}
+          <div className="shrink-0 px-4 sm:px-0 pt-3.5 sm:pt-0 pb-3 sm:pb-4 border-b border-border/60 sm:border-b-0">
             <DialogHeader className="space-y-0 text-left">
               <DialogTitle className="text-base sm:text-xl font-semibold text-foreground tracking-tight">
                 Agregar turno manual
               </DialogTitle>
-              <DialogDescription className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-                Configurá los datos del turno y del cliente.
+              <DialogDescription className="sr-only">
+                Creación de turno manual
               </DialogDescription>
             </DialogHeader>
           </div>
@@ -510,14 +518,14 @@ export function AdminMobileAppointments() {
                 >
                   {servicesList.map(s => (
                     <option key={s.id} value={s.id}>
-                      {s.name} ({s.duration_minutes} min) — {money(s.price_ars)}
+                      {s.name}
                     </option>
                   ))}
                 </select>
               </div>
 
-              {/* Fila 2 Columna derecha en mobile | Col 1-3 en desktop Fila 3 */}
-              <div className="manual-grid-field manual-field-barbero col-span-1 sm:col-span-3 sm:order-7 min-w-0">
+              {/* Fila 2 Columna derecha en mobile | Col 1-2 en desktop Fila 3 */}
+              <div className="manual-grid-field manual-field-barbero col-span-1 sm:col-span-2 sm:order-7 min-w-0">
                 <label htmlFor="manual-barber" className="font-medium text-foreground block mb-1.5 text-xs sm:text-sm">
                   Barbero
                 </label>
@@ -590,8 +598,8 @@ export function AdminMobileAppointments() {
                 />
               </div>
 
-              {/* Fila 6 ancho completo en mobile | Col 4-6 en desktop Fila 3 */}
-              <div className="manual-grid-field manual-field-email col-span-2 sm:col-span-3 sm:order-8 min-w-0">
+              {/* Fila 6 ancho completo en mobile | Col 3-4 en desktop Fila 3 */}
+              <div className="manual-grid-field manual-field-email col-span-2 sm:col-span-2 sm:order-8 min-w-0">
                 <label htmlFor="manual-client-email" className="font-medium text-foreground block mb-1.5 text-xs sm:text-sm">
                   Mail del cliente <span className="text-destructive font-normal" aria-hidden="true">*</span> <span className="text-[11px] text-muted-foreground font-normal">(obligatorio)</span>
                 </label>
@@ -626,8 +634,24 @@ export function AdminMobileAppointments() {
                 )}
               </div>
 
-              {/* Fila 7 ancho completo en mobile | Fila 4 ancho completo en desktop */}
-              <div className="manual-grid-field manual-field-observaciones col-span-2 sm:col-span-6 sm:order-9 min-w-0">
+              {/* Fila 7 ancho completo en mobile | Col 5-6 en desktop Fila 3 */}
+              <div className="manual-grid-field manual-field-sena col-span-2 sm:col-span-2 sm:order-9 min-w-0">
+                <label htmlFor="manual-deposit" className="font-medium text-foreground block mb-1.5 text-xs sm:text-sm">
+                  Abona seña
+                </label>
+                <select
+                  id="manual-deposit"
+                  value={manualDepositRequired ? 'YES' : 'NO'}
+                  onChange={e => setManualDepositRequired(e.target.value === 'YES')}
+                  className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-xs sm:text-sm shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                >
+                  <option value="NO">No</option>
+                  <option value="YES">Sí</option>
+                </select>
+              </div>
+
+              {/* Fila 8 ancho completo en mobile | Fila 4 ancho completo en desktop */}
+              <div className="manual-grid-field manual-field-observaciones col-span-2 sm:col-span-6 sm:order-10 min-w-0">
                 <label htmlFor="manual-notes" className="font-medium text-foreground block mb-1.5 text-xs sm:text-sm">
                   Observaciones <span className="text-xs font-normal text-muted-foreground">(opcional)</span>
                 </label>

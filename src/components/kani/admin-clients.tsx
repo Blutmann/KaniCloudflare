@@ -777,6 +777,12 @@ export function AdminClients({
                               </span>
                             )}
                           </div>
+                          <div className="flex items-center gap-1.5 text-muted-foreground sm:col-span-2 text-[11px]">
+                            <span className="font-medium">Abona seña:</span>
+                            <strong className="text-foreground font-medium">
+                              {apt.depositPaid || apt.depositRequired ? 'Sí' : 'No'}
+                            </strong>
+                          </div>
                           {apt.notes && (
                             <div className="sm:col-span-2 mt-1 p-2 rounded bg-muted/30 text-[11px] text-muted-foreground border border-border/40">
                               <span className="font-semibold text-foreground">Nota:</span> {apt.notes}

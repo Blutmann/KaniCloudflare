@@ -429,6 +429,8 @@ export type ClientAppointmentHistoryItem = {
   origin?: 'PUBLIC_WEB' | 'MANUAL';
   isManual?: boolean;
   createdByDisplayName?: string | null;
+  depositRequired?: boolean;
+  depositPaid?: boolean;
 };
 
 export type ClientDirectoryItem = {
@@ -474,6 +476,8 @@ export function aggregateClientsDirectory(appointments: RealAppointment[]): Clie
       origin: appointment.origin,
       isManual: appointment.isManual,
       createdByDisplayName: appointment.createdByDisplayName,
+      depositRequired: appointment.depositRequired,
+      depositPaid: appointment.depositPaid,
     };
 
     const normPhone = normalizePhoneForComparison(appointment.phone);
