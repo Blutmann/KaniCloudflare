@@ -167,10 +167,62 @@ export default {
 
       if (url.pathname === "/api/admin/status-audit") {
         try {
-          const { supabase } = await import("./integrations/supabase/client");
+          const { createClient } = await import("@supabase/supabase-js");
+          const globalObj = globalThis as typeof globalThis & {
+            __env__?: Record<string, unknown>;
+            __KANI_RUNTIME_ENV?: Record<string, string>;
+          };
+          const envObj = (typeof env === "object" && env !== null ? env : {}) as Record<string, any>;
+          const supabaseUrl =
+            (import.meta.env.VITE_SUPABASE_URL as string) ||
+            envObj.SUPABASE_URL ||
+            envObj.VITE_SUPABASE_URL ||
+            globalObj.__env__?.SUPABASE_URL ||
+            globalObj.__env__?.VITE_SUPABASE_URL ||
+            globalObj.__KANI_RUNTIME_ENV?.SUPABASE_URL ||
+            globalObj.__KANI_RUNTIME_ENV?.VITE_SUPABASE_URL ||
+            process.env.SUPABASE_URL ||
+            process.env.VITE_SUPABASE_URL;
+
+          const supabaseKey =
+            (import.meta.env.VITE_SUPABASE_ANON_KEY as string) ||
+            (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string) ||
+            envObj.SUPABASE_SERVICE_ROLE_KEY ||
+            envObj.SUPABASE_ANON_KEY ||
+            envObj.SUPABASE_PUBLISHABLE_KEY ||
+            envObj.VITE_SUPABASE_ANON_KEY ||
+            envObj.VITE_SUPABASE_PUBLISHABLE_KEY ||
+            globalObj.__env__?.SUPABASE_SERVICE_ROLE_KEY ||
+            globalObj.__env__?.SUPABASE_ANON_KEY ||
+            globalObj.__env__?.SUPABASE_PUBLISHABLE_KEY ||
+            globalObj.__env__?.VITE_SUPABASE_ANON_KEY ||
+            globalObj.__env__?.VITE_SUPABASE_PUBLISHABLE_KEY ||
+            globalObj.__KANI_RUNTIME_ENV?.SUPABASE_SERVICE_ROLE_KEY ||
+            globalObj.__KANI_RUNTIME_ENV?.SUPABASE_ANON_KEY ||
+            globalObj.__KANI_RUNTIME_ENV?.SUPABASE_PUBLISHABLE_KEY ||
+            process.env.SUPABASE_SERVICE_ROLE_KEY ||
+            process.env.SUPABASE_ANON_KEY ||
+            process.env.SUPABASE_PUBLISHABLE_KEY;
+
+          if (!supabaseUrl || !supabaseKey) {
+            return new Response(
+              JSON.stringify({
+                error: "Missing Supabase configuration",
+                availableEnvKeys: Object.keys(envObj),
+                availableProcessKeys: Object.keys(process.env || {}),
+                hasViteUrl: !!import.meta.env.VITE_SUPABASE_URL,
+              }),
+              {
+                status: 500,
+                headers: { "content-type": "application/json" },
+              }
+            );
+          }
+
+          const client = createClient(supabaseUrl, supabaseKey);
 
           // Get counts of appointments by status
-          const { data: allAppointments, error: fetchErr } = await supabase
+          const { data: allAppointments, error: fetchErr } = await client
             .from("appointments")
             .select("id, status, booking_date, start_time");
 
