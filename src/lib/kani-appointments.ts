@@ -66,6 +66,9 @@ export function appointmentErrorMessage(error: unknown) {
   if (message.includes('SUNDAY_CLOSED')) return 'El estudio permanece cerrado los domingos.';
   if (message.includes('MANUAL_APPOINTMENT_NOT_ALLOWED')) return 'No tenés permisos para agendar en la agenda de otro barbero.';
   if (message.includes('AUTH_REQUIRED')) return 'Tenés que iniciar sesión para realizar esta acción.';
+  if (message.includes('create_manual_appointment') || message.includes('PGRST202')) {
+    return 'La base de datos aún no tiene aplicada la migración de turnos manuales (create_manual_appointment). Aplicá la migración pendiente en Supabase.';
+  }
   return 'No se pudo guardar la solicitud. Revisá los datos e intentá nuevamente.';
 }
 
@@ -154,13 +157,34 @@ async function dispatchAppointmentNotification(appointmentId: string, claimToken
   }
 }
 
-export async function readRealAppointments() {
-  const { data: rows, error } = await supabase
+export async function readRealAppointments(): Promise<RealAppointment[]> {
+  const fullColumns = 'id, request_number, client_id, barber_id, service_id, booking_date, start_time, end_time, status, notes, created_at, updated_at, is_manual, origin, created_by_user_id, created_by_display_name, recurring_rule_id, deposit_required, deposit_paid';
+  const baseColumns = 'id, request_number, client_id, barber_id, service_id, booking_date, start_time, end_time, status, notes, created_at, updated_at';
+
+  let rows: AppointmentRow[] | null = null;
+  const { data: fullRows, error: fullError } = await supabase
     .from('appointments')
-    .select('id, request_number, client_id, barber_id, service_id, booking_date, start_time, end_time, status, notes, created_at, updated_at, is_manual, origin, created_by_user_id, created_by_display_name, recurring_rule_id, deposit_required, deposit_paid')
+    .select(fullColumns)
     .order('booking_date', { ascending: true })
     .order('start_time', { ascending: true });
-  if (error) throw error;
+
+  if (!fullError && fullRows) {
+    rows = fullRows as AppointmentRow[];
+  } else if (fullError && fullError.message && (fullError.message.includes('is_manual') || fullError.code === '42703')) {
+    // Schema fallback if migrations have not yet been applied to the target database
+    console.warn('[KANI appointments] Columnas manuales no detectadas en appointments, ejecutando consulta base:', fullError.message);
+    const { data: fallbackRows, error: fallbackError } = await supabase
+      .from('appointments')
+      .select(baseColumns)
+      .order('booking_date', { ascending: true })
+      .order('start_time', { ascending: true });
+
+    if (fallbackError) throw fallbackError;
+    rows = (fallbackRows ?? []) as AppointmentRow[];
+  } else if (fullError) {
+    throw fullError;
+  }
+
   const appointments = (rows ?? []) as AppointmentRow[];
   const clientIds = [...new Set(appointments.map(row => row.client_id))];
   const barberIds = [...new Set(appointments.map(row => row.barber_id))];
@@ -200,13 +224,13 @@ export async function readRealAppointments() {
       servicePrice: service.price_ars,
       clientId: row.client_id,
       createdAt: row.created_at,
-      isManual: Boolean(row.is_manual),
-      origin: (row.origin ?? 'PUBLIC_WEB') as 'PUBLIC_WEB' | 'MANUAL',
-      createdByUserId: row.created_by_user_id,
-      createdByDisplayName: row.created_by_display_name,
-      recurringRuleId: row.recurring_rule_id,
-      depositRequired: row.deposit_required ?? true,
-      depositPaid: row.deposit_paid ?? false,
+      isManual: Boolean((row as any).is_manual),
+      origin: ((row as any).origin ?? 'PUBLIC_WEB') as 'PUBLIC_WEB' | 'MANUAL',
+      createdByUserId: (row as any).created_by_user_id ?? null,
+      createdByDisplayName: (row as any).created_by_display_name ?? null,
+      recurringRuleId: (row as any).recurring_rule_id ?? null,
+      depositRequired: (row as any).deposit_required ?? true,
+      depositPaid: (row as any).deposit_paid ?? false,
     } satisfies RealAppointment];
   });
 }
