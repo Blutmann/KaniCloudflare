@@ -339,6 +339,119 @@ describe('Statistics Module Unit Tests', () => {
     expect(ana.appointments[0].serviceName).toBe('Perfilado');
   });
 
+  it('consolidates clients sharing normalized phone across format differences', () => {
+    const list: RealAppointment[] = [
+      makeMockAppointment({
+        id: 'apt-1',
+        name: 'Martin Palermo',
+        phone: '+54 9 11 4444-5555',
+        email: 'martin@boca.com',
+        date: '2026-10-01',
+        time: '10:00',
+      }),
+      makeMockAppointment({
+        id: 'apt-2',
+        name: 'Martin P.',
+        phone: '11 4444 5555',
+        email: '',
+        date: '2026-10-15',
+        time: '11:00',
+      }),
+    ];
+
+    const directory = aggregateClientsDirectory(list);
+    expect(directory).toHaveLength(1);
+    expect(directory[0].name).toBe('Martin Palermo');
+    expect(directory[0].totalAppointments).toBe(2);
+    expect(directory[0].appointments).toHaveLength(2);
+  });
+
+  it('consolidates clients sharing normalized email across case differences', () => {
+    const list: RealAppointment[] = [
+      makeMockAppointment({
+        id: 'apt-1',
+        name: 'Lucas Pratto',
+        phone: '+5491100000001',
+        email: '  Lucas.Pratto@River.COM  ',
+        date: '2026-10-02',
+        time: '12:00',
+      }),
+      makeMockAppointment({
+        id: 'apt-2',
+        name: 'Lucas',
+        phone: '+5491100000002',
+        email: 'lucas.pratto@river.com',
+        date: '2026-10-16',
+        time: '14:00',
+      }),
+    ];
+
+    const directory = aggregateClientsDirectory(list);
+    expect(directory).toHaveLength(1);
+    expect(directory[0].name).toBe('Lucas Pratto');
+    expect(directory[0].totalAppointments).toBe(2);
+  });
+
+  it('does NOT merge clients solely because of identical names', () => {
+    const list: RealAppointment[] = [
+      makeMockAppointment({
+        id: 'apt-1',
+        name: 'Juan Perez',
+        phone: '+5491111111111',
+        email: 'juan.perez.1@gmail.com',
+        date: '2026-10-01',
+      }),
+      makeMockAppointment({
+        id: 'apt-2',
+        name: 'Juan Perez',
+        phone: '+5491122222222',
+        email: 'juan.perez.2@gmail.com',
+        date: '2026-10-05',
+      }),
+    ];
+
+    const directory = aggregateClientsDirectory(list);
+    expect(directory).toHaveLength(2);
+    expect(directory.map((c) => c.phone)).toContain('+5491111111111');
+    expect(directory.map((c) => c.phone)).toContain('+5491122222222');
+  });
+
+  it('handles phone vs email conflict safely without cross-contaminating clients', () => {
+    const list: RealAppointment[] = [
+      makeMockAppointment({
+        id: 'apt-1',
+        name: 'Esteban Cambiasso',
+        phone: '+5491133333333',
+        email: 'esteban@inter.com',
+        date: '2026-10-01',
+      }),
+      makeMockAppointment({
+        id: 'apt-2',
+        name: 'Diego Milito',
+        phone: '+5491144444444',
+        email: 'diego@racing.com',
+        date: '2026-10-02',
+      }),
+      makeMockAppointment({
+        id: 'apt-3',
+        name: 'Esteban Cambiasso',
+        phone: '+5491133333333', // matches Esteban's phone
+        email: 'diego@racing.com', // matches Diego's email
+        date: '2026-10-10',
+      }),
+    ];
+
+    const directory = aggregateClientsDirectory(list);
+    // Should NOT merge Esteban and Diego
+    expect(directory.length).toBeGreaterThanOrEqual(2);
+    const esteban = directory.find((c) => c.name === 'Esteban Cambiasso')!;
+    const diego = directory.find((c) => c.name === 'Diego Milito')!;
+    expect(esteban).toBeDefined();
+    expect(diego).toBeDefined();
+    expect(esteban.id).not.toBe(diego.id);
+  });
+
+
   it('filterAndSortClients filters by partial name/email/phone and sorts asc/desc', () => {
     const clients: ClientDirectoryItem[] = [
       {

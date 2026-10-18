@@ -1,5 +1,6 @@
 import type { RealAppointment, RealAppointmentStatus } from './kani-appointments';
 import { addCalendarDays, businessDateToday, startOfBusinessWeek, BUSINESS_TIME_ZONE } from './kani-mobile-appointments';
+import { normalizeEmailForComparison, normalizePhoneForComparison } from './kani-phone';
 
 export type StatisticsDatePreset =
   | 'TODAY'
@@ -452,7 +453,10 @@ export type ClientSortField = 'name' | 'email' | 'phone' | 'totalAppointments' |
 export type SortDirection = 'asc' | 'desc';
 
 export function aggregateClientsDirectory(appointments: RealAppointment[]): ClientDirectoryItem[] {
-  const clientsMap = new Map<string, ClientDirectoryItem>();
+  const clientsList: ClientDirectoryItem[] = [];
+  const phoneMap = new Map<string, ClientDirectoryItem>();
+  const emailMap = new Map<string, ClientDirectoryItem>();
+  const idMap = new Map<string, ClientDirectoryItem>();
 
   for (const appointment of appointments) {
     const historyItem: ClientAppointmentHistoryItem = {
@@ -472,75 +476,119 @@ export function aggregateClientsDirectory(appointments: RealAppointment[]): Clie
       createdByDisplayName: appointment.createdByDisplayName,
     };
 
-    // Unique key: client_id if present, otherwise phone or email or name
-    const key = (appointment.clientId || appointment.phone || appointment.email || appointment.name).trim().toLowerCase();
-    if (!key) continue;
+    const normPhone = normalizePhoneForComparison(appointment.phone);
+    const normEmail = normalizeEmailForComparison(appointment.email);
+    const clientId = appointment.clientId?.trim();
+
+    let targetClient: ClientDirectoryItem | null = null;
+    const clientByPhone = normPhone ? phoneMap.get(normPhone) : null;
+    const clientByEmail = normEmail ? emailMap.get(normEmail) : null;
+
+    // Detectar y resolver posibles conflictos entre teléfono y correo
+    if (clientByPhone && clientByEmail && clientByPhone !== clientByEmail) {
+      // Conflicto: el teléfono coincide con el cliente A y el email con el cliente B.
+      // Desambiguar por nombre si coincide exactamente con uno y no con el otro.
+      const aptName = (appointment.name || '').trim().toLowerCase();
+      const namePhone = clientByPhone.name.trim().toLowerCase();
+      const nameEmail = clientByEmail.name.trim().toLowerCase();
+
+      if (aptName && aptName === namePhone && aptName !== nameEmail) {
+        targetClient = clientByPhone;
+      } else if (aptName && aptName === nameEmail && aptName !== namePhone) {
+        targetClient = clientByEmail;
+      } else {
+        // Si no se puede desambiguar con certeza, no fusionar arbitrariamente: mantener separado
+        targetClient = null;
+      }
+    } else if (clientByPhone && clientByEmail && clientByPhone === clientByEmail) {
+      targetClient = clientByPhone;
+    } else if (clientByPhone) {
+      targetClient = clientByPhone;
+      if (normEmail && !emailMap.has(normEmail)) {
+        emailMap.set(normEmail, targetClient);
+        if (!targetClient.email) targetClient.email = appointment.email?.trim() || '';
+      }
+    } else if (clientByEmail) {
+      targetClient = clientByEmail;
+      if (normPhone && !phoneMap.has(normPhone)) {
+        phoneMap.set(normPhone, targetClient);
+        if (!targetClient.phone) targetClient.phone = appointment.phone?.trim() || '';
+      }
+    } else if (clientId && idMap.has(clientId)) {
+      targetClient = idMap.get(clientId)!;
+      if (normPhone && !phoneMap.has(normPhone)) phoneMap.set(normPhone, targetClient);
+      if (normEmail && !emailMap.has(normEmail)) emailMap.set(normEmail, targetClient);
+    }
 
     const isCompleted = (appointment.statusCode as string) === 'COMPLETED';
     const isConfirmedOrCompleted = appointment.statusCode === 'CONFIRMED' || isCompleted;
 
-    const existing = clientsMap.get(key);
-    if (!existing) {
-      clientsMap.set(key, {
-        id: appointment.clientId || appointment.id,
-        name: appointment.name,
-        email: appointment.email,
-        phone: appointment.phone,
+    if (!targetClient) {
+      targetClient = {
+        id: clientId || appointment.id,
+        name: (appointment.name || '').trim() || 'Cliente',
+        email: appointment.email?.trim() || '',
+        phone: appointment.phone?.trim() || '',
         totalAppointments: 1,
         totalCancelled: appointment.statusCode === 'CANCELLED' ? 1 : 0,
         totalConfirmed: isConfirmedOrCompleted ? 1 : 0,
         totalCompleted: isCompleted ? 1 : 0,
-        totalActive: appointment.statusCode === 'CONFIRMED' || appointment.statusCode === 'REQUESTED' ? 1 : 0,
+        totalActive: appointment.statusCode === 'CONFIRMED' || appointment.statusCode === 'REQUESTED' || appointment.statusCode === 'PENDING' ? 1 : 0,
         lastBookingDate: appointment.date,
         lastBookingTime: appointment.time,
         lastBookingStatus: appointment.statusCode,
         lastServiceName: appointment.serviceName,
         lastBarberName: appointment.barber,
         appointments: [historyItem],
-      });
+      };
+      clientsList.push(targetClient);
+      if (normPhone && !phoneMap.has(normPhone)) phoneMap.set(normPhone, targetClient);
+      if (normEmail && !emailMap.has(normEmail)) emailMap.set(normEmail, targetClient);
+      if (clientId && !idMap.has(clientId)) idMap.set(clientId, targetClient);
     } else {
-      existing.totalAppointments++;
-      if (appointment.statusCode === 'CANCELLED') existing.totalCancelled++;
+      targetClient.totalAppointments++;
+      if (appointment.statusCode === 'CANCELLED') targetClient.totalCancelled++;
       if (isConfirmedOrCompleted) {
-        existing.totalConfirmed = (existing.totalConfirmed || 0) + 1;
+        targetClient.totalConfirmed = (targetClient.totalConfirmed || 0) + 1;
       }
       if (isCompleted) {
-        existing.totalCompleted++;
+        targetClient.totalCompleted++;
       }
-      if (appointment.statusCode === 'CONFIRMED' || appointment.statusCode === 'REQUESTED') {
-        existing.totalActive++;
+      if (appointment.statusCode === 'CONFIRMED' || appointment.statusCode === 'REQUESTED' || appointment.statusCode === 'PENDING') {
+        targetClient.totalActive++;
       }
 
-      // Compare if this appointment is more recent
+      // Actualizar a la reserva más reciente
       if (
-        appointment.date > existing.lastBookingDate ||
-        (appointment.date === existing.lastBookingDate && (appointment.time || '') > (existing.lastBookingTime || ''))
+        appointment.date > targetClient.lastBookingDate ||
+        (appointment.date === targetClient.lastBookingDate && (appointment.time || '') > (targetClient.lastBookingTime || ''))
       ) {
-        existing.lastBookingDate = appointment.date;
-        existing.lastBookingTime = appointment.time;
-        existing.lastBookingStatus = appointment.statusCode;
-        existing.lastServiceName = appointment.serviceName;
-        existing.lastBarberName = appointment.barber;
+        targetClient.lastBookingDate = appointment.date;
+        targetClient.lastBookingTime = appointment.time;
+        targetClient.lastBookingStatus = appointment.statusCode;
+        targetClient.lastServiceName = appointment.serviceName;
+        targetClient.lastBarberName = appointment.barber;
       }
-      // Preserve cleanest formatted name/phone/email if available
-      if (appointment.name && (!existing.name || existing.name.length < appointment.name.length)) {
-        existing.name = appointment.name;
-      }
-      if (appointment.email && !existing.email) existing.email = appointment.email;
-      if (appointment.phone && !existing.phone) existing.phone = appointment.phone;
 
-      existing.appointments.push(historyItem);
+      // Preservar el nombre más completo
+      if (appointment.name && (!targetClient.name || targetClient.name.length < appointment.name.length)) {
+        targetClient.name = appointment.name.trim();
+      }
+      if (appointment.email && !targetClient.email) targetClient.email = appointment.email.trim();
+      if (appointment.phone && !targetClient.phone) targetClient.phone = appointment.phone.trim();
+
+      targetClient.appointments.push(historyItem);
     }
   }
 
-  // Sort appointments in each client newest first
-  for (const client of clientsMap.values()) {
+  // Ordenar turnos de cada cliente del más reciente al más antiguo
+  for (const client of clientsList) {
     client.appointments.sort((a, b) =>
       (b.bookingDate + (b.startTime || '')).localeCompare(a.bookingDate + (a.startTime || ''))
     );
   }
 
-  return [...clientsMap.values()];
+  return clientsList;
 }
 
 export function filterAndSortClients(

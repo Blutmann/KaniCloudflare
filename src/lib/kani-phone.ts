@@ -340,3 +340,67 @@ export function phonePlaceholder(country: PhoneCountry) {
   if (!example) return 'Número de celular';
   return new AsYouType(country).input(example);
 }
+
+/**
+ * Normaliza un número de teléfono para comparación y consolidación unívoca de clientes.
+ * Preserva código de país, normaliza celulares argentinos (+549) y tolera separadores.
+ */
+export function normalizePhoneForComparison(phone?: string | null): string {
+  if (!phone) return '';
+  const trimmed = phone.trim();
+  if (!trimmed) return '';
+
+  let num = '';
+  try {
+    const parsed = parsePhoneNumberFromString(trimmed, 'AR');
+    if (parsed && parsed.isValid()) {
+      num = parsed.number;
+    }
+  } catch {
+    // ignorar error de parseo y continuar
+  }
+
+  if (!num) {
+    const digits = trimmed.replace(/\D/g, '');
+    if (digits.length >= 8 && digits.length <= 11) {
+      try {
+        const candidate = parsePhoneNumberFromString(`+549${digits.replace(/^0+/, '')}`, 'AR');
+        if (candidate && candidate.isValid()) {
+          num = candidate.number;
+        }
+      } catch {
+        // ignorar
+      }
+    }
+  }
+
+  // En Argentina (+54), libphonenumber agrega '9' para móviles internacionales (+54911...).
+  // Para comparación y consolidación unívoca, normalizamos removiendo el '9' si está presente.
+  if (num.startsWith('+549') && num.length === 14) {
+    num = `+54${num.slice(4)}`;
+  }
+
+  if (num) return num;
+
+  // Fallback: dígitos normalizados si tiene longitud suficiente
+  const digitsOnly = trimmed.replace(/\D/g, '');
+  if (digitsOnly.length >= 7) {
+    return trimmed.startsWith('+') ? `+${digitsOnly}` : digitsOnly;
+  }
+
+  return '';
+}
+
+/**
+ * Normaliza un correo electrónico para comparación y consolidación unívoca de clientes.
+ * Elimina espacios iniciales/finales, pasa a minúsculas y excluye placeholders internos.
+ */
+export function normalizeEmailForComparison(email?: string | null): string {
+  if (!email) return '';
+  const trimmed = email.trim().toLowerCase();
+  if (!trimmed.includes('@') || trimmed.endsWith('@kanibarber.internal')) {
+    return '';
+  }
+  return trimmed;
+}
+

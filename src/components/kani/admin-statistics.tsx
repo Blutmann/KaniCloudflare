@@ -593,7 +593,23 @@ export function AdminStatistics() {
       )}
 
       {/* Clientes Section (Directorio de Clientes) */}
-      <AdminClients clients={clientsData} loading={loading} />
+      <AdminClients
+        clients={clientsData}
+        loading={loading}
+        onAppointmentStatusChange={(appointmentId, newStatus) => {
+          setAppointments((curr) =>
+            curr.map((apt) =>
+              apt.id === appointmentId
+                ? {
+                    ...apt,
+                    statusCode: newStatus,
+                    status: newStatus === 'CONFIRMED' ? 'Confirmado' : 'Cancelado',
+                  }
+                : apt
+            )
+          );
+        }}
+      />
     </main>
   );
 }

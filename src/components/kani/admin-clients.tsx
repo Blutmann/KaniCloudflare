@@ -4,6 +4,7 @@ import {
   ArrowUp,
   ArrowUpDown,
   Calendar,
+  Check,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
@@ -26,11 +27,14 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
 import { formatPhoneDisplay } from '@/lib/kani-phone';
 import { dateLabel } from '@/lib/kani-model';
+import { updateRealAppointmentStatus } from '@/lib/kani-appointments';
+import { extractErrorMessage } from '@/lib/kani-admin-activity';
 import {
   filterAndSortClients,
   type ClientAppointmentHistoryItem,
@@ -42,6 +46,7 @@ import {
 interface AdminClientsProps {
   clients: ClientDirectoryItem[];
   loading?: boolean;
+  onAppointmentStatusChange?: (appointmentId: string, newStatus: 'CONFIRMED' | 'CANCELLED') => void;
 }
 
 const PAGE_SIZE = 10;
@@ -86,12 +91,92 @@ function statusBadge(statusCode: string, label: string) {
   );
 }
 
-export function AdminClients({ clients, loading = false }: AdminClientsProps) {
+export function AdminClients({
+  clients,
+  loading = false,
+  onAppointmentStatusChange,
+}: AdminClientsProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortField, setSortField] = useState<ClientSortField>('lastBookingDate');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedClient, setSelectedClient] = useState<ClientDirectoryItem | null>(null);
+
+  // Estados para confirmación previa y persistencia de cambios de estado en turnos
+  const [pendingAction, setPendingAction] = useState<{
+    appointment: ClientAppointmentHistoryItem;
+    nextStatus: 'CONFIRMED' | 'CANCELLED';
+  } | null>(null);
+  const [isSavingAction, setIsSavingAction] = useState(false);
+  const [actionError, setActionError] = useState('');
+
+  // 4 Métricas superiores del Directorio calculadas sobre la totalidad de turnos en alcance
+  const metrics = useMemo(() => {
+    let totales = 0;
+    let confirmados = 0;
+    let cancelados = 0;
+    let pendientes = 0;
+
+    for (const client of clients) {
+      for (const apt of client.appointments) {
+        totales++;
+        const status = apt.statusCode;
+        if (status === 'CONFIRMED' || (status as string) === 'COMPLETED') {
+          confirmados++;
+        } else if (status === 'CANCELLED') {
+          cancelados++;
+        } else if (status === 'PENDING' || (status as string) === 'REQUESTED') {
+          pendientes++;
+        }
+      }
+    }
+
+    return { totales, confirmados, cancelados, pendientes };
+  }, [clients]);
+
+  async function handleConfirmAction() {
+    if (!pendingAction || !selectedClient) return;
+    const { appointment, nextStatus } = pendingAction;
+    try {
+      setIsSavingAction(true);
+      setActionError('');
+      await updateRealAppointmentStatus(appointment.id, nextStatus);
+
+      // Actualizar visualmente el cliente seleccionado y sus contadores internos
+      setSelectedClient((current) => {
+        if (!current) return null;
+        const updatedAppointments = current.appointments.map((a) =>
+          a.id === appointment.id
+            ? {
+                ...a,
+                statusCode: nextStatus,
+                status: nextStatus === 'CONFIRMED' ? 'Confirmado' : 'Cancelado',
+              }
+            : a
+        );
+        return {
+          ...current,
+          totalConfirmed: updatedAppointments.filter(
+            (a) => a.statusCode === 'CONFIRMED' || (a.statusCode as string) === 'COMPLETED'
+          ).length,
+          totalCancelled: updatedAppointments.filter((a) => a.statusCode === 'CANCELLED').length,
+          totalActive: updatedAppointments.filter(
+            (a) => a.statusCode === 'PENDING' || (a.statusCode as string) === 'REQUESTED'
+          ).length,
+          appointments: updatedAppointments,
+        };
+      });
+
+      // Notificar al componente contenedor para sincronizar estadísticas globales
+      onAppointmentStatusChange?.(appointment.id, nextStatus);
+
+      setPendingAction(null);
+    } catch (err) {
+      setActionError(extractErrorMessage(err, 'No se pudo actualizar el turno.'));
+    } finally {
+      setIsSavingAction(false);
+    }
+  }
 
   function handleSort(field: ClientSortField) {
     if (sortField === field) {
@@ -128,19 +213,45 @@ export function AdminClients({ clients, loading = false }: AdminClientsProps) {
 
   return (
     <section className="admin-clients-section mt-10" aria-label="Directorio de clientes">
+      {/* Encabezado limpio: únicamente Directorio de Clientes sin descripción */}
       <div className="admin-clients-header flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4 pb-3 border-b border-border">
         <div>
           <div className="flex items-center gap-2">
             <Users className="text-gold" size={20} />
             <h2 className="text-lg font-semibold tracking-tight">Directorio de Clientes</h2>
           </div>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Historial consolidado de clientes que han reservado turnos en el estudio.
-          </p>
         </div>
 
         <div className="flex items-center gap-2 text-xs text-muted-foreground self-start sm:self-auto">
           <span className="font-semibold text-foreground">{clients.length}</span> clientes registrados
+        </div>
+      </div>
+
+      {/* 4 Métricas superiores del Directorio en una sola fila */}
+      <div className="grid grid-cols-4 gap-1.5 sm:gap-3 mb-4">
+        <div className="p-2 sm:p-3 rounded-lg sm:rounded-xl bg-surface border border-border flex flex-col justify-between text-center min-w-0">
+          <span className="text-[10px] sm:text-xs text-muted-foreground font-medium truncate">Totales</span>
+          <span className="text-sm sm:text-lg md:text-xl font-bold text-foreground mt-0.5 sm:mt-1 truncate">
+            {metrics.totales}
+          </span>
+        </div>
+        <div className="p-2 sm:p-3 rounded-lg sm:rounded-xl bg-success/10 border border-success/20 flex flex-col justify-between text-center min-w-0">
+          <span className="text-[10px] sm:text-xs text-success font-medium truncate">Confirmados</span>
+          <span className="text-sm sm:text-lg md:text-xl font-bold text-success mt-0.5 sm:mt-1 truncate">
+            {metrics.confirmados}
+          </span>
+        </div>
+        <div className="p-2 sm:p-3 rounded-lg sm:rounded-xl bg-destructive/10 border border-destructive/20 flex flex-col justify-between text-center min-w-0">
+          <span className="text-[10px] sm:text-xs text-destructive font-medium truncate">Cancelados</span>
+          <span className="text-sm sm:text-lg md:text-xl font-bold text-destructive mt-0.5 sm:mt-1 truncate">
+            {metrics.cancelados}
+          </span>
+        </div>
+        <div className="p-2 sm:p-3 rounded-lg sm:rounded-xl bg-amber-500/10 border border-amber-500/20 flex flex-col justify-between text-center min-w-0">
+          <span className="text-[10px] sm:text-xs text-amber-500 font-medium truncate">Pendientes</span>
+          <span className="text-sm sm:text-lg md:text-xl font-bold text-amber-500 mt-0.5 sm:mt-1 truncate">
+            {metrics.pendientes}
+          </span>
         </div>
       </div>
 
@@ -301,14 +412,9 @@ export function AdminClients({ clients, loading = false }: AdminClientsProps) {
                     onClick={() => setSelectedClient(client)}
                   >
                     <td className="py-3 px-4 font-medium text-foreground">
-                      <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-full bg-gold/15 text-gold flex items-center justify-center font-bold text-xs shrink-0">
-                          {client.name.charAt(0).toUpperCase()}
-                        </div>
-                        <span className="truncate max-w-[14rem]" title={client.name}>
-                          {client.name}
-                        </span>
-                      </div>
+                      <span className="truncate max-w-[16rem] block font-semibold text-foreground" title={client.name}>
+                        {client.name}
+                      </span>
                     </td>
                     <td className="py-3 px-4 text-muted-foreground whitespace-nowrap">
                       {client.phone ? (
@@ -396,18 +502,13 @@ export function AdminClients({ clients, loading = false }: AdminClientsProps) {
                 onClick={() => setSelectedClient(client)}
               >
                 <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <div className="w-8 h-8 rounded-full bg-gold/15 text-gold flex items-center justify-center font-bold text-xs shrink-0">
-                      {client.name.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="min-w-0">
-                      <h4 className="font-semibold text-sm text-foreground truncate" title={client.name}>
-                        {client.name}
-                      </h4>
-                      <div className="text-xs text-muted-foreground">
-                        {client.totalAppointments} {client.totalAppointments === 1 ? 'reserva' : 'reservas'}
-                        {client.totalCancelled > 0 && ` (${client.totalCancelled} canceladas)`}
-                      </div>
+                  <div className="min-w-0">
+                    <h4 className="font-semibold text-sm text-foreground truncate" title={client.name}>
+                      {client.name}
+                    </h4>
+                    <div className="text-xs text-muted-foreground mt-0.5">
+                      {client.totalAppointments} {client.totalAppointments === 1 ? 'reserva' : 'reservas'}
+                      {client.totalCancelled > 0 && ` (${client.totalCancelled} canceladas)`}
                     </div>
                   </div>
 
@@ -421,7 +522,7 @@ export function AdminClients({ clients, loading = false }: AdminClientsProps) {
                     className="h-7 px-2 text-xs gap-1 text-gold border-gold/30 hover:bg-gold/10 shrink-0"
                   >
                     <History size={12} />
-                    <span>Ver</span>
+                    <span>Historial</span>
                   </Button>
                 </div>
 
@@ -504,52 +605,53 @@ export function AdminClients({ clients, loading = false }: AdminClientsProps) {
         <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col p-0 overflow-hidden bg-surface border-border">
           {selectedClient && (
             <>
-              <DialogHeader className="p-5 pb-3 border-b border-border bg-muted/20">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-gold/15 text-gold flex items-center justify-center font-bold text-base shrink-0">
-                      {selectedClient.name.charAt(0).toUpperCase()}
-                    </div>
-                    <div>
-                      <DialogTitle className="text-lg font-bold text-foreground">
-                        {selectedClient.name}
-                      </DialogTitle>
-                      <DialogDescription className="text-xs text-muted-foreground mt-0.5 flex flex-wrap gap-x-3 gap-y-1">
-                        {selectedClient.phone && (
-                          <span className="inline-flex items-center gap-1">
-                            <Phone size={12} />
-                            {formatPhoneDisplay(selectedClient.phone)}
-                          </span>
-                        )}
-                        {selectedClient.email && (
-                          <span className="inline-flex items-center gap-1">
-                            <Mail size={12} />
-                            {selectedClient.email}
-                          </span>
-                        )}
-                      </DialogDescription>
-                    </div>
+              <DialogHeader className="p-5 pb-3 border-b border-border bg-muted/20 text-left sm:text-left">
+                <div className="flex items-start justify-between gap-3 text-left">
+                  <div className="min-w-0 text-left">
+                    <DialogTitle className="text-lg font-bold text-foreground text-left">
+                      {selectedClient.name}
+                    </DialogTitle>
+                    <DialogDescription className="text-xs text-muted-foreground mt-0.5 flex flex-wrap gap-x-3 gap-y-1 text-left">
+                      {selectedClient.phone && (
+                        <span className="inline-flex items-center gap-1">
+                          <Phone size={12} />
+                          {formatPhoneDisplay(selectedClient.phone)}
+                        </span>
+                      )}
+                      {selectedClient.email && (
+                        <span className="inline-flex items-center gap-1">
+                          <Mail size={12} />
+                          {selectedClient.email}
+                        </span>
+                      )}
+                    </DialogDescription>
                   </div>
                 </div>
 
-                {/* Summary counters in detail dialog */}
-                <div className="grid grid-cols-3 gap-2 mt-4 pt-3 border-t border-border/60 text-center">
-                  <div className="p-2 rounded-lg bg-background border border-border">
-                    <div className="text-[11px] text-muted-foreground">Total agendados</div>
-                    <div className="text-base font-bold text-foreground mt-0.5">
+                {/* Métricas del cliente en el Historial */}
+                <div className="grid grid-cols-4 gap-1.5 sm:gap-2 mt-4 pt-3 border-t border-border/60 text-center">
+                  <div className="p-1.5 sm:p-2 rounded-lg bg-background border border-border min-w-0">
+                    <div className="text-[10px] sm:text-[11px] text-muted-foreground font-medium truncate">Totales</div>
+                    <div className="text-sm sm:text-base font-bold text-foreground mt-0.5 truncate">
                       {selectedClient.totalAppointments}
                     </div>
                   </div>
-                  <div className="p-2 rounded-lg bg-success/10 border border-success/20">
-                    <div className="text-[11px] text-success font-medium">Confirmados</div>
-                    <div className="text-base font-bold text-success mt-0.5">
+                  <div className="p-1.5 sm:p-2 rounded-lg bg-success/10 border border-success/20 min-w-0">
+                    <div className="text-[10px] sm:text-[11px] text-success font-medium truncate">Confirmados</div>
+                    <div className="text-sm sm:text-base font-bold text-success mt-0.5 truncate">
                       {selectedClient.totalConfirmed ?? selectedClient.totalCompleted}
                     </div>
                   </div>
-                  <div className="p-2 rounded-lg bg-destructive/10 border border-destructive/20">
-                    <div className="text-[11px] text-destructive font-medium">Cancelados</div>
-                    <div className="text-base font-bold text-destructive mt-0.5">
+                  <div className="p-1.5 sm:p-2 rounded-lg bg-destructive/10 border border-destructive/20 min-w-0">
+                    <div className="text-[10px] sm:text-[11px] text-destructive font-medium truncate">Cancelados</div>
+                    <div className="text-sm sm:text-base font-bold text-destructive mt-0.5 truncate">
                       {selectedClient.totalCancelled}
+                    </div>
+                  </div>
+                  <div className="p-1.5 sm:p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 min-w-0">
+                    <div className="text-[10px] sm:text-[11px] text-amber-500 font-medium truncate">Pendientes</div>
+                    <div className="text-sm sm:text-base font-bold text-amber-500 mt-0.5 truncate">
+                      {selectedClient.appointments.filter((a) => a.statusCode === 'PENDING' || (a.statusCode as string) === 'REQUESTED').length}
                     </div>
                   </div>
                 </div>
@@ -590,7 +692,54 @@ export function AdminClients({ clients, loading = false }: AdminClientsProps) {
                               {apt.endTime ? ` hasta ${apt.endTime}` : ''}
                             </span>
                           </div>
-                          <div>{statusBadge(apt.statusCode, apt.status)}</div>
+                          <div className="flex items-center gap-2 self-start sm:self-auto">
+                            <div>{statusBadge(apt.statusCode, apt.status)}</div>
+                            {/* Acciones de gestión directa desde el Historial */}
+                            {apt.statusCode === 'PENDING' && (
+                              <div className="flex items-center gap-1 ml-1">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setActionError('');
+                                    setPendingAction({ appointment: apt, nextStatus: 'CONFIRMED' });
+                                  }}
+                                  className="h-6 w-6 rounded-md flex items-center justify-center text-success border border-success/30 hover:bg-success/15 hover:border-success/50 transition-colors"
+                                  title="Confirmar turno"
+                                  aria-label={`Confirmar turno de ${selectedClient.name} para ${dateLabel(apt.bookingDate)} a las ${apt.startTime}`}
+                                >
+                                  <Check size={13} strokeWidth={2.5} />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setActionError('');
+                                    setPendingAction({ appointment: apt, nextStatus: 'CANCELLED' });
+                                  }}
+                                  className="h-6 w-6 rounded-md flex items-center justify-center text-destructive border border-destructive/30 hover:bg-destructive/15 hover:border-destructive/50 transition-colors"
+                                  title="Cancelar turno"
+                                  aria-label={`Cancelar turno de ${selectedClient.name} para ${dateLabel(apt.bookingDate)} a las ${apt.startTime}`}
+                                >
+                                  <X size={13} strokeWidth={2.5} />
+                                </button>
+                              </div>
+                            )}
+                            {apt.statusCode === 'CONFIRMED' && (
+                              <div className="flex items-center gap-1 ml-1">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setActionError('');
+                                    setPendingAction({ appointment: apt, nextStatus: 'CANCELLED' });
+                                  }}
+                                  className="h-6 w-6 rounded-md flex items-center justify-center text-destructive border border-destructive/30 hover:bg-destructive/15 hover:border-destructive/50 transition-colors"
+                                  title="Cancelar turno"
+                                  aria-label={`Cancelar turno de ${selectedClient.name} para ${dateLabel(apt.bookingDate)} a las ${apt.startTime}`}
+                                >
+                                  <X size={13} strokeWidth={2.5} />
+                                </button>
+                              </div>
+                            )}
+                          </div>
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 text-xs">
@@ -641,6 +790,78 @@ export function AdminClients({ clients, loading = false }: AdminClientsProps) {
               </div>
             </>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Diálogo de confirmación previa antes de persistir cambio de estado */}
+      <Dialog
+        open={pendingAction !== null}
+        onOpenChange={(open) => {
+          if (!open && !isSavingAction) {
+            setPendingAction(null);
+            setActionError('');
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md bg-surface border-border">
+          <DialogHeader className="text-left sm:text-left">
+            <DialogTitle className="text-base font-bold text-foreground">
+              {pendingAction?.nextStatus === 'CONFIRMED' ? '¿Confirmar turno?' : '¿Cancelar turno?'}
+            </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground pt-2">
+              {pendingAction?.nextStatus === 'CONFIRMED' ? (
+                <span>
+                  ¿Estás seguro de que deseás confirmar el turno de{' '}
+                  <strong className="text-foreground">{selectedClient?.name}</strong> para el{' '}
+                  <strong className="text-foreground">{dateLabel(pendingAction.appointment.bookingDate)}</strong> a las{' '}
+                  <strong className="text-foreground">{pendingAction.appointment.startTime}</strong> con{' '}
+                  <strong className="text-foreground">{pendingAction.appointment.barberName}</strong>?
+                </span>
+              ) : (
+                <span>
+                  ¿Estás seguro de que deseás cancelar el turno de{' '}
+                  <strong className="text-foreground">{selectedClient?.name}</strong> para el{' '}
+                  <strong className="text-foreground">{pendingAction ? dateLabel(pendingAction.appointment.bookingDate) : ''}</strong> a las{' '}
+                  <strong className="text-foreground">{pendingAction?.appointment.startTime}</strong>? El turno quedará registrado como cancelado en el historial.
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          {actionError && (
+            <div role="alert" className="p-2.5 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive text-xs">
+              {actionError}
+            </div>
+          )}
+
+          <DialogFooter className="flex flex-row justify-end gap-2 mt-4">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={isSavingAction}
+              onClick={() => {
+                setPendingAction(null);
+                setActionError('');
+              }}
+            >
+              Cancelar acción
+            </Button>
+            <Button
+              type="button"
+              variant={pendingAction?.nextStatus === 'CANCELLED' ? 'destructive' : 'default'}
+              size="sm"
+              disabled={isSavingAction}
+              onClick={() => void handleConfirmAction()}
+              className={pendingAction?.nextStatus === 'CONFIRMED' ? 'bg-success hover:bg-success/90 text-white font-medium' : ''}
+            >
+              {isSavingAction
+                ? 'Guardando...'
+                : pendingAction?.nextStatus === 'CONFIRMED'
+                  ? 'Confirmar turno'
+                  : 'Cancelar turno'}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </section>
