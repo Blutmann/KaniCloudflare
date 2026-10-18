@@ -715,6 +715,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      delete_all_staff_activity_notifications_global: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      dismiss_all_staff_activity_notifications_personal: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
     }
     Enums: {
       appointment_status: "PENDING" | "CONFIRMED" | "CANCELLED" | "COMPLETED"

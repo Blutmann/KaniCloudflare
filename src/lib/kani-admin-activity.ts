@@ -112,23 +112,52 @@ export async function dismissAdminActivityNotificationPersonal(id: string) {
 
 /**
  * Borra todas las notificaciones globalmente (para ADMIN).
+ * Utiliza el RPC seguro `delete_all_staff_activity_notifications_global`
+ * con fallback a DELETE directo en `admin_activity_notifications`.
  */
-export async function deleteAllAdminActivityNotificationsGlobal() {
+export async function deleteAllAdminActivityNotificationsGlobal(): Promise<number> {
+  try {
+    const { data, error } = await supabase.rpc('delete_all_staff_activity_notifications_global');
+    if (!error) {
+      return typeof data === 'number' ? data : 0;
+    }
+    console.warn('[KANI activity] RPC delete_all_staff_activity_notifications_global warning, intentando fallback directo:', error);
+  } catch (err) {
+    console.warn('[KANI activity] Error llamando a RPC delete_all_staff_activity_notifications_global, intentando fallback directo:', err);
+  }
+
+  // Fallback a DELETE directo en tabla
   const { error } = await supabase
     .from('admin_activity_notifications')
     .delete()
     .neq('id', '00000000-0000-0000-0000-000000000000');
 
-  if (error) throw error;
+  if (error) {
+    console.error('[KANI activity] Error en deleteAllAdminActivityNotificationsGlobal fallback:', error);
+    throw error;
+  }
+  return 0;
 }
 
 /**
  * Descarta todas las notificaciones de la vista del usuario (BARBER).
+ * Utiliza el RPC seguro `dismiss_all_staff_activity_notifications_personal`
+ * con fallback a upsert en `admin_activity_user_state`.
  */
-export async function dismissAllAdminActivityNotificationsPersonal(ids: string[]) {
-  if (ids.length === 0) return;
+export async function dismissAllAdminActivityNotificationsPersonal(ids: string[]): Promise<number> {
+  try {
+    const { data, error } = await supabase.rpc('dismiss_all_staff_activity_notifications_personal');
+    if (!error) {
+      return typeof data === 'number' ? data : 0;
+    }
+    console.warn('[KANI activity] RPC dismiss_all_staff_activity_notifications_personal warning, intentando fallback:', error);
+  } catch (err) {
+    console.warn('[KANI activity] Error llamando a RPC dismiss_all_staff_activity_notifications_personal, intentando fallback:', err);
+  }
+
+  if (ids.length === 0) return 0;
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return;
+  if (!user) return 0;
 
   const rows = ids.map((id) => ({
     notification_id: id,
@@ -141,6 +170,10 @@ export async function dismissAllAdminActivityNotificationsPersonal(ids: string[]
     .from('admin_activity_user_state' as any)
     .upsert(rows);
 
-  if (error) throw error;
+  if (error) {
+    console.error('[KANI activity] Error en dismissAllAdminActivityNotificationsPersonal fallback:', error);
+    throw error;
+  }
+  return rows.length;
 }
 
