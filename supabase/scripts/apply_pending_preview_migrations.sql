@@ -1,0 +1,1074 @@
+-- KANI Barber Studio - Soporte para notificaciones de WhatsApp
+-- Almacena el teléfono del cliente en el evento de notificación y lo expone a través de claim_appointment_notification
+
+alter table public.appointment_notification_events
+  add column if not exists recipient_phone text;
+
+create or replace function public.create_appointment_notification_event(
+  p_appointment_id uuid,
+  p_notification_type public.notification_type
+)
+returns text
+language plpgsql
+security definer
+set search_path = pg_catalog, extensions
+as $$
+declare
+  v_token text := gen_random_uuid()::text;
+  v_recipient_email text;
+  v_recipient_phone text;
+  v_client_name text;
+  v_barber_name text;
+  v_service_name text;
+  v_booking_date date;
+  v_start_time time;
+  v_end_time time;
+  v_client_notes text;
+  v_service_price_ars integer;
+  v_service_duration_minutes integer;
+  v_down_payment_ars integer;
+  v_transfer_alias text;
+  v_transfer_cuit text;
+  v_transfer_holder_name text;
+begin
+  select c.email, c.phone, c.name, b.name, s.name, a.booking_date, a.start_time, a.end_time,
+         a.notes, s.price_ars, s.duration_minutes, td.down_payment_ars,
+         td.alias, td.cuit, td.holder_name
+    into v_recipient_email, v_recipient_phone, v_client_name, v_barber_name, v_service_name,
+         v_booking_date, v_start_time, v_end_time, v_client_notes,
+         v_service_price_ars, v_service_duration_minutes, v_down_payment_ars,
+         v_transfer_alias, v_transfer_cuit, v_transfer_holder_name
+  from public.appointments a
+  join public.clients c on c.id = a.client_id
+  join public.barbers b on b.id = a.barber_id
+  join public.services s on s.id = a.service_id
+  left join public.barber_transfer_details td on td.barber_id = a.barber_id
+    and td.active = true
+  where a.id = p_appointment_id;
+
+  if not found then
+    raise exception using errcode = 'P0001', message = 'APPOINTMENT_NOT_FOUND';
+  end if;
+
+  insert into public.appointment_notification_events (
+    appointment_id, notification_type, recipient_email, recipient_phone, client_name, barber_name,
+    service_name, booking_date, start_time, end_time, client_notes,
+    service_price_ars, service_duration_minutes, down_payment_ars,
+    transfer_alias, transfer_cuit, transfer_holder_name, claim_token_digest
+  ) values (
+    p_appointment_id, p_notification_type, v_recipient_email, v_recipient_phone, v_client_name,
+    v_barber_name, v_service_name, v_booking_date, v_start_time, v_end_time,
+    v_client_notes, v_service_price_ars, v_service_duration_minutes,
+    v_down_payment_ars, v_transfer_alias, v_transfer_cuit, v_transfer_holder_name,
+    encode(digest(v_token, 'sha256'), 'hex')
+  ) on conflict (appointment_id, notification_type) do nothing;
+
+  if found then
+    return v_token;
+  end if;
+  return null;
+end;
+$$;
+
+drop function if exists public.claim_appointment_notification(uuid, text);
+
+create function public.claim_appointment_notification(
+  p_appointment_id uuid,
+  p_claim_token text
+)
+returns table (
+  notification_id uuid,
+  notification_type public.notification_type,
+  recipient_email text,
+  recipient_phone text,
+  client_name text,
+  barber_name text,
+  service_name text,
+  booking_date date,
+  start_time time,
+  end_time time,
+  client_notes text,
+  service_price_ars integer,
+  service_duration_minutes integer,
+  down_payment_ars integer,
+  transfer_alias text,
+  transfer_cuit text,
+  transfer_holder_name text,
+  dispatch_status text,
+  attempt integer
+)
+language plpgsql
+security definer
+set search_path = pg_catalog, extensions
+as $$
+declare
+  v_event public.appointment_notification_events%rowtype;
+begin
+  if p_claim_token is null or length(trim(p_claim_token)) < 20 then
+    raise exception using errcode = '42501', message = 'NOTIFICATION_CLAIM_INVALID';
+  end if;
+
+  select e.* into v_event
+  from public.appointment_notification_events e
+  where e.appointment_id = p_appointment_id
+    and e.claim_token_digest = encode(digest(p_claim_token, 'sha256'), 'hex')
+  for update;
+
+  if not found then
+    raise exception using errcode = '42501', message = 'NOTIFICATION_CLAIM_INVALID';
+  end if;
+
+  if v_event.status = 'SENT' then
+    return query
+    select v_event.id, v_event.notification_type, v_event.recipient_email,
+           v_event.recipient_phone, v_event.client_name, v_event.barber_name,
+           v_event.service_name, v_event.booking_date, v_event.start_time,
+           v_event.end_time, v_event.client_notes, v_event.service_price_ars,
+           v_event.service_duration_minutes, v_event.down_payment_ars,
+           v_event.transfer_alias, v_event.transfer_cuit,
+           v_event.transfer_holder_name, 'ALREADY_SENT'::text, v_event.attempts;
+    return;
+  end if;
+
+  if v_event.status = 'SENDING' and v_event.updated_at > now() - interval '10 minutes' then
+    return query
+    select v_event.id, v_event.notification_type, v_event.recipient_email,
+           v_event.recipient_phone, v_event.client_name, v_event.barber_name,
+           v_event.service_name, v_event.booking_date, v_event.start_time,
+           v_event.end_time, v_event.client_notes, v_event.service_price_ars,
+           v_event.service_duration_minutes, v_event.down_payment_ars,
+           v_event.transfer_alias, v_event.transfer_cuit,
+           v_event.transfer_holder_name, 'IN_PROGRESS'::text, v_event.attempts;
+    return;
+  end if;
+
+  update public.appointment_notification_events as updated
+  set status = 'SENDING', attempts = updated.attempts + 1,
+      last_error = null, updated_at = now()
+  where updated.id = v_event.id;
+
+  return query
+  select v_event.id, v_event.notification_type, v_event.recipient_email,
+         v_event.recipient_phone, v_event.client_name, v_event.barber_name,
+         v_event.service_name, v_event.booking_date, v_event.start_time,
+         v_event.end_time, v_event.client_notes, v_event.service_price_ars,
+         v_event.service_duration_minutes, v_event.down_payment_ars,
+         v_event.transfer_alias, v_event.transfer_cuit,
+         v_event.transfer_holder_name, 'READY'::text, v_event.attempts + 1;
+end;
+$$;
+
+revoke all on function public.claim_appointment_notification(uuid, text) from public;
+grant execute on function public.claim_appointment_notification(uuid, text) to anon, authenticated;
+-- KANI Barber Studio — Notificaciones: borrado por rol y estado por usuario
+-- ADMIN: borrado global (elimina de admin_activity_notifications en cascada).
+-- BARBER: borrado personal de su vista (registrado en admin_activity_user_state como dismissed_at).
+-- Preserva la visibilidad y lectura aislada para cada barbero y el administrador.
+
+create table if not exists public.admin_activity_user_state (
+  notification_id uuid not null references public.admin_activity_notifications(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  read_at timestamptz,
+  dismissed_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  primary key (notification_id, user_id)
+);
+
+create index if not exists admin_activity_user_state_user_idx
+  on public.admin_activity_user_state (user_id, dismissed_at);
+
+alter table public.admin_activity_user_state enable row level security;
+revoke all on table public.admin_activity_user_state from anon, authenticated;
+grant select, insert, update on table public.admin_activity_user_state to authenticated;
+
+create policy user_can_manage_own_notification_state
+  on public.admin_activity_user_state
+  for all to authenticated
+  using (user_id = (select auth.uid()))
+  with check (user_id = (select auth.uid()));
+
+-- Permitir DELETE en admin_activity_notifications exclusivamente para ADMIN
+grant delete on table public.admin_activity_notifications to authenticated;
+
+drop policy if exists admin_can_delete_activity_notifications on public.admin_activity_notifications;
+create policy admin_can_delete_activity_notifications
+  on public.admin_activity_notifications
+  for delete to authenticated
+  using (public.is_admin());
+
+-- Actualizar política de SELECT para barberos y admin:
+-- ADMIN ve todo lo que no haya sido eliminado globalmente.
+-- BARBER ve solo sus notificaciones (donde barber_id = current_staff_barber_id() o barber_name coincide)
+-- y que no hayan sido ocultadas/descartadas por este barbero en admin_activity_user_state.
+drop policy if exists admin_can_read_activity_notifications on public.admin_activity_notifications;
+drop policy if exists staff_can_read_activity_notifications on public.admin_activity_notifications;
+
+create policy staff_can_read_activity_notifications
+  on public.admin_activity_notifications
+  for select to authenticated
+  using (
+    (
+      public.is_admin()
+      or (
+        barber_id is not null
+        and barber_id = public.current_staff_barber_id()
+      )
+    )
+    and not exists (
+      select 1
+      from public.admin_activity_user_state us
+      where us.notification_id = admin_activity_notifications.id
+        and us.user_id = (select auth.uid())
+        and us.dismissed_at is not null
+    )
+  );
+
+-- RPC: Leer notificaciones del staff autenticado (resuelve estado de lectura por usuario o fallback global)
+create or replace function public.read_staff_activity_notifications()
+returns table (
+  id uuid,
+  event_type public.admin_activity_event_type,
+  actor_user_id uuid,
+  actor_display_name text,
+  barber_id uuid,
+  appointment_id uuid,
+  availability_slot_id uuid,
+  barber_name text,
+  client_name text,
+  event_date date,
+  event_time time,
+  created_at timestamptz,
+  read_at timestamptz
+)
+language plpgsql
+security definer
+set search_path = pg_catalog, public, extensions
+as $$
+declare
+  v_uid uuid := (select auth.uid());
+  v_is_admin boolean := public.is_admin();
+  v_barber_id uuid := public.current_staff_barber_id();
+begin
+  if v_uid is null or (not v_is_admin and v_barber_id is null) then
+    return;
+  end if;
+
+  return query
+  select
+    n.id,
+    n.event_type,
+    n.actor_user_id,
+    n.actor_display_name,
+    n.barber_id,
+    n.appointment_id,
+    n.availability_slot_id,
+    n.barber_name,
+    n.client_name,
+    n.event_date,
+    n.event_time,
+    n.created_at,
+    coalesce(us.read_at, case when v_is_admin then n.read_at else null end) as read_at
+  from public.admin_activity_notifications n
+  left join public.admin_activity_user_state us
+    on us.notification_id = n.id and us.user_id = v_uid
+  where
+    (v_is_admin or n.barber_id = v_barber_id)
+    and (us.dismissed_at is null)
+  order by n.created_at desc
+  limit 40;
+end;
+$$;
+
+-- RPC: Marcar notificación como leída o no leída
+create or replace function public.set_staff_activity_notification_read(
+  p_notification_id uuid,
+  p_read_at timestamptz
+)
+returns void
+language plpgsql
+security definer
+set search_path = pg_catalog, public, extensions
+as $$
+declare
+  v_uid uuid := (select auth.uid());
+  v_is_admin boolean := public.is_admin();
+  v_barber_id uuid := public.current_staff_barber_id();
+begin
+  if v_uid is null or (not v_is_admin and v_barber_id is null) then
+    raise exception 'No autorizado';
+  end if;
+
+  -- Para admin, actualizamos también la columna legacy n.read_at
+  if v_is_admin then
+    update public.admin_activity_notifications
+    set read_at = p_read_at
+    where id = p_notification_id;
+  end if;
+
+  insert into public.admin_activity_user_state (notification_id, user_id, read_at, updated_at)
+  values (p_notification_id, v_uid, p_read_at, now())
+  on conflict (notification_id, user_id)
+  do update set
+    read_at = p_read_at,
+    updated_at = now();
+end;
+$$;
+
+-- RPC: Marcar todas como leídas
+create or replace function public.mark_all_staff_activity_notifications_read()
+returns void
+language plpgsql
+security definer
+set search_path = pg_catalog, public, extensions
+as $$
+declare
+  v_uid uuid := (select auth.uid());
+  v_is_admin boolean := public.is_admin();
+  v_barber_id uuid := public.current_staff_barber_id();
+  v_now timestamptz := now();
+begin
+  if v_uid is null or (not v_is_admin and v_barber_id is null) then
+    raise exception 'No autorizado';
+  end if;
+
+  if v_is_admin then
+    update public.admin_activity_notifications
+    set read_at = v_now
+    where read_at is null;
+  end if;
+
+  insert into public.admin_activity_user_state (notification_id, user_id, read_at, updated_at)
+  select n.id, v_uid, v_now, v_now
+  from public.admin_activity_notifications n
+  left join public.admin_activity_user_state us
+    on us.notification_id = n.id and us.user_id = v_uid
+  where (v_is_admin or n.barber_id = v_barber_id)
+    and (us.dismissed_at is null)
+  on conflict (notification_id, user_id)
+  do update set
+    read_at = v_now,
+    updated_at = v_now;
+end;
+$$;
+
+-- RPC: Descartar de la vista personal (BARBER o ADMIN de su propia vista sin borrar para el resto)
+create or replace function public.dismiss_staff_activity_notification_personal(
+  p_notification_id uuid
+)
+returns void
+language plpgsql
+security definer
+set search_path = pg_catalog, public, extensions
+as $$
+declare
+  v_uid uuid := (select auth.uid());
+  v_is_admin boolean := public.is_admin();
+  v_barber_id uuid := public.current_staff_barber_id();
+  v_notif_barber uuid;
+begin
+  if v_uid is null or (not v_is_admin and v_barber_id is null) then
+    raise exception 'No autorizado';
+  end if;
+
+  select barber_id into v_notif_barber
+  from public.admin_activity_notifications
+  where id = p_notification_id;
+
+  if not found then
+    return;
+  end if;
+
+  if not v_is_admin and v_notif_barber is distinct from v_barber_id then
+    raise exception 'No autorizado para modificar esta notificación';
+  end if;
+
+  insert into public.admin_activity_user_state (notification_id, user_id, dismissed_at, updated_at)
+  values (p_notification_id, v_uid, now(), now())
+  on conflict (notification_id, user_id)
+  do update set
+    dismissed_at = now(),
+    updated_at = now();
+end;
+$$;
+
+-- RPC: Borrado global exclusivo para ADMIN
+create or replace function public.delete_staff_activity_notification_global(
+  p_notification_id uuid
+)
+returns void
+language plpgsql
+security definer
+set search_path = pg_catalog, public, extensions
+as $$
+begin
+  if not public.is_admin() then
+    raise exception 'Acción reservada exclusivamente para el Administrador';
+  end if;
+
+  delete from public.admin_activity_notifications
+  where id = p_notification_id;
+end;
+$$;
+
+grant execute on function public.read_staff_activity_notifications to authenticated;
+grant execute on function public.set_staff_activity_notification_read to authenticated;
+grant execute on function public.mark_all_staff_activity_notifications_read to authenticated;
+grant execute on function public.dismiss_staff_activity_notification_personal to authenticated;
+grant execute on function public.delete_staff_activity_notification_global to authenticated;
+-- Kani Barber Studio — Turnos manuales y recurrencia semanal
+-- Permite agendar turnos manuales por única vez y recurrentes (semanales) desde el panel administrativo.
+-- Desacopla la seña (deposit_required = false) y amplía la franja horaria permitida para turnos manuales (00:00 a 23:59).
+
+-- 1. Modificar tabla appointments
+-- Eliminar restricción de horario comercial rígido para permitir turnos en cualquier franja validada
+alter table public.appointments
+  drop constraint if exists appointment_inside_business_hours;
+
+-- Agregar columnas de auditoría y recurrencia
+alter table public.appointments
+  add column if not exists is_manual boolean not null default false,
+  add column if not exists origin text not null default 'PUBLIC_WEB' check (origin in ('PUBLIC_WEB', 'MANUAL')),
+  add column if not exists created_by_user_id uuid references auth.users(id) on delete set null,
+  add column if not exists created_by_display_name text,
+  add column if not exists recurring_rule_id uuid,
+  add column if not exists deposit_required boolean not null default true,
+  add column if not exists deposit_paid boolean not null default false;
+
+-- 2. Tabla de reglas de recurrencia semanal
+create table if not exists public.recurring_appointment_rules (
+  id uuid primary key default gen_random_uuid(),
+  client_id uuid not null references public.clients(id) on delete restrict,
+  barber_id uuid not null references public.barbers(id) on delete restrict,
+  service_id uuid not null references public.services(id) on delete restrict,
+  day_of_week integer not null check (day_of_week between 1 and 7), -- 1: Lunes, 7: Domingo
+  start_time time not null,
+  duration_minutes integer not null check (duration_minutes > 0),
+  start_date date not null,
+  end_date date,
+  active boolean not null default true,
+  created_by_user_id uuid references auth.users(id) on delete set null,
+  created_by_display_name text not null,
+  time_zone text not null default 'America/Argentina/Buenos_Aires',
+  notes text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+-- Agregar foreign key desde appointments hacia recurring_appointment_rules
+do $$
+begin
+  if not exists (
+    select 1
+    from information_schema.table_constraints
+    where constraint_name = 'appointments_recurring_rule_id_fkey'
+      and table_name = 'appointments'
+  ) then
+    alter table public.appointments
+      add constraint appointments_recurring_rule_id_fkey
+      foreign key (recurring_rule_id)
+      references public.recurring_appointment_rules(id)
+      on delete set null;
+  end if;
+end;
+$$;
+
+create index if not exists idx_recurring_rules_barber on public.recurring_appointment_rules (barber_id, active);
+create index if not exists idx_recurring_rules_client on public.recurring_appointment_rules (client_id);
+create index if not exists idx_appointments_recurring_rule on public.appointments (recurring_rule_id, booking_date);
+
+-- 3. Tabla de conflictos detectados en la recurrencia
+create table if not exists public.recurring_rule_conflicts (
+  id uuid primary key default gen_random_uuid(),
+  rule_id uuid not null references public.recurring_appointment_rules(id) on delete cascade,
+  target_date date not null,
+  conflict_reason text not null,
+  conflicting_appointment_id uuid references public.appointments(id) on delete set null,
+  resolved boolean not null default false,
+  created_at timestamptz not null default now(),
+  unique(rule_id, target_date)
+);
+
+-- 4. RLS para las nuevas tablas
+alter table public.recurring_appointment_rules enable row level security;
+alter table public.recurring_rule_conflicts enable row level security;
+
+drop policy if exists staff_can_read_recurring_rules on public.recurring_appointment_rules;
+create policy staff_can_read_recurring_rules
+  on public.recurring_appointment_rules for select to authenticated
+  using (
+    public.is_admin()
+    or barber_id = public.current_staff_barber_id()
+  );
+
+drop policy if exists staff_can_read_recurring_conflicts on public.recurring_rule_conflicts;
+create policy staff_can_read_recurring_conflicts
+  on public.recurring_rule_conflicts for select to authenticated
+  using (
+    public.is_admin()
+    or exists (
+      select 1 from public.recurring_appointment_rules r
+      where r.id = rule_id and r.barber_id = public.current_staff_barber_id()
+    )
+  );
+
+grant select on table public.appointments to authenticated;
+grant select on table public.recurring_appointment_rules to authenticated;
+grant select on table public.recurring_rule_conflicts to authenticated;
+
+-- 5. RPC para sincronizar / proyectar recurrencias futuras de forma idempotente
+create or replace function public.sync_recurring_appointment_rules(
+  p_horizon_days integer default 28
+)
+returns table (
+  rule_id uuid,
+  target_date date,
+  action_taken text,
+  appointment_id uuid
+)
+language plpgsql
+security definer
+set search_path = pg_catalog, public, extensions
+as $$
+declare
+  v_today date := (timezone('America/Argentina/Buenos_Aires', clock_timestamp()))::date;
+  v_horizon_end date := v_today + p_horizon_days;
+  v_rule record;
+  v_curr_date date;
+  v_end_time time;
+  v_target_end_ts timestamp;
+  v_target_start_ts timestamp;
+  v_conflict_id uuid;
+  v_conflict_reason text;
+  v_apt_id uuid;
+begin
+  if auth.uid() is null then
+    raise exception using errcode = '42501', message = 'AUTH_REQUIRED';
+  end if;
+
+  for v_rule in
+    select r.*, b.name as barber_name, s.name as service_name
+    from public.recurring_appointment_rules r
+    join public.barbers b on b.id = r.barber_id
+    join public.services s on s.id = r.service_id
+    where r.active = true
+      and (r.end_date is null or r.end_date >= v_today)
+      and (public.is_admin() or r.barber_id = public.current_staff_barber_id())
+  loop
+    v_curr_date := greatest(v_rule.start_date, v_today);
+
+    while v_curr_date <= v_horizon_end loop
+      if v_rule.end_date is not null and v_curr_date > v_rule.end_date then
+        exit;
+      end if;
+
+      -- Verificar si el día de la semana coincide (1: Lun .. 7: Dom)
+      if extract(isodow from v_curr_date)::integer = v_rule.day_of_week then
+        v_end_time := (v_rule.start_time + (v_rule.duration_minutes || ' minutes')::interval)::time;
+        v_target_start_ts := (v_curr_date + v_rule.start_time)::timestamp;
+        v_target_end_ts := (v_curr_date + v_end_time)::timestamp;
+
+        -- Bloqueo transaccional por barbero y fecha
+        perform pg_advisory_xact_lock(hashtextextended(v_rule.barber_id::text || '|' || v_curr_date::text, 0));
+
+        -- 1. Si ya existe un turno para esta regla en esta fecha (incluso si fue CANCELLED), no volver a crearlo
+        if exists (
+          select 1 from public.appointments a
+          where a.recurring_rule_id = v_rule.id
+            and a.booking_date = v_curr_date
+        ) then
+          -- Ya procesado previamente
+          v_curr_date := v_curr_date + 7;
+          continue;
+        end if;
+
+        -- 2. Verificar colisión con otro turno activo
+        select a.id into v_conflict_id
+        from public.appointments a
+        where a.barber_id = v_rule.barber_id
+          and a.booking_date = v_curr_date
+          and a.status <> 'CANCELLED'
+          and (a.booking_date + a.start_time)::timestamp < v_target_end_ts
+          and (a.booking_date + a.end_time)::timestamp > v_target_start_ts
+        limit 1;
+
+        if v_conflict_id is not null then
+          v_conflict_reason := 'SLOT_COLLISION_WITH_APPOINTMENT';
+          insert into public.recurring_rule_conflicts (rule_id, target_date, conflict_reason, conflicting_appointment_id)
+          values (v_rule.id, v_curr_date, v_conflict_reason, v_conflict_id)
+          on conflict (rule_id, target_date)
+          do update set conflict_reason = excluded.conflict_reason,
+                        conflicting_appointment_id = excluded.conflicting_appointment_id,
+                        resolved = false;
+
+          return query select v_rule.id, v_curr_date, 'CONFLICT_RECORDED'::text, null::uuid;
+          v_curr_date := v_curr_date + 7;
+          continue;
+        end if;
+
+        -- 3. Asegurar slot en barber_availability_slots para cubrir el intervalo
+        if not exists (
+          select 1
+          from public.barber_availability_slots s
+          where s.barber_id = v_rule.barber_id
+            and s.slot_date = v_curr_date
+            and s.status = 'AVAILABLE'
+            and s.start_time <= v_rule.start_time
+            and s.end_time >= v_end_time
+        ) then
+          -- Insertar o actualizar slot
+          insert into public.barber_availability_slots (
+            barber_id, slot_date, start_time, end_time, status, internal_note
+          ) values (
+            v_rule.barber_id,
+            v_curr_date,
+            v_rule.start_time,
+            v_end_time,
+            'AVAILABLE',
+            'Generado automáticamente por turno recurrente'
+          )
+          on conflict (barber_id, slot_date, start_time)
+          do update set status = 'AVAILABLE', end_time = greatest(barber_availability_slots.end_time, v_end_time);
+        end if;
+
+        -- 4. Insertar la ocurrencia como turno confirmado exento de seña
+        insert into public.appointments (
+          client_id,
+          barber_id,
+          service_id,
+          booking_date,
+          start_time,
+          end_time,
+          status,
+          notes,
+          is_manual,
+          origin,
+          created_by_user_id,
+          created_by_display_name,
+          recurring_rule_id,
+          deposit_required,
+          deposit_paid
+        ) values (
+          v_rule.client_id,
+          v_rule.barber_id,
+          v_rule.service_id,
+          v_curr_date,
+          v_rule.start_time,
+          v_end_time,
+          'CONFIRMED',
+          v_rule.notes,
+          true,
+          'MANUAL',
+          v_rule.created_by_user_id,
+          v_rule.created_by_display_name,
+          v_rule.id,
+          false,
+          false
+        )
+        returning id into v_apt_id;
+
+        return query select v_rule.id, v_curr_date, 'OCCURRENCE_CREATED'::text, v_apt_id;
+      end if;
+
+      v_curr_date := v_curr_date + 1;
+    end loop;
+  end loop;
+end;
+$$;
+
+revoke all on function public.sync_recurring_appointment_rules(integer) from public;
+grant execute on function public.sync_recurring_appointment_rules(integer) to authenticated;
+
+-- 6. RPC para crear turno manual (por única vez o recurrente)
+create or replace function public.create_manual_appointment(
+  p_barber_id uuid,
+  p_service_id uuid,
+  p_booking_date date,
+  p_start_time time,
+  p_client_name text,
+  p_client_phone text,
+  p_client_email text,
+  p_notes text default null,
+  p_is_recurring boolean default false,
+  p_duration_minutes integer default null
+)
+returns table (
+  appointment_id uuid,
+  appointment_status public.appointment_status,
+  booking_date date,
+  start_time time,
+  end_time time,
+  request_number bigint,
+  is_manual boolean,
+  origin text,
+  created_by_display_name text,
+  recurring_rule_id uuid
+)
+language plpgsql
+security definer
+set search_path = pg_catalog, public, extensions
+as $$
+declare
+  v_staff_barber_id uuid;
+  v_is_admin boolean;
+  v_creator_user_id uuid := auth.uid();
+  v_creator_name text;
+  v_barber public.barbers%rowtype;
+  v_service public.services%rowtype;
+  v_duration_min integer;
+  v_duration interval;
+  v_end_time time;
+  v_start_ts timestamp;
+  v_end_ts timestamp;
+  v_client_id uuid;
+  v_apt_id uuid;
+  v_rule_id uuid := null;
+  v_req_num bigint;
+  v_day_of_week integer;
+begin
+  if v_creator_user_id is null then
+    raise exception using errcode = '42501', message = 'AUTH_REQUIRED';
+  end if;
+
+  v_is_admin := public.is_admin();
+  v_staff_barber_id := public.current_staff_barber_id();
+
+  -- Validar permisos de barbero: si no es admin, solo puede agendar para su propio id
+  if not v_is_admin and (v_staff_barber_id is null or v_staff_barber_id is distinct from p_barber_id) then
+    raise exception using errcode = '42501', message = 'MANUAL_APPOINTMENT_NOT_ALLOWED';
+  end if;
+
+  -- Determinar nombre para auditoría "Turno generado por"
+  if v_is_admin then
+    v_creator_name := 'Admin';
+  else
+    select b.name into v_creator_name
+    from public.barbers b
+    where b.id = v_staff_barber_id;
+    if v_creator_name is null then
+      v_creator_name := 'Barbero';
+    end if;
+  end if;
+
+  -- Validaciones de entrada
+  if p_barber_id is null then
+    raise exception using errcode = '22023', message = 'BARBER_REQUIRED';
+  end if;
+  if p_service_id is null then
+    raise exception using errcode = '22023', message = 'SERVICE_REQUIRED';
+  end if;
+  if p_booking_date is null then
+    raise exception using errcode = '22023', message = 'DATE_REQUIRED';
+  end if;
+  if p_start_time is null then
+    raise exception using errcode = '22023', message = 'START_TIME_REQUIRED';
+  end if;
+  if p_client_name is null or length(trim(p_client_name)) < 3 then
+    raise exception using errcode = '22023', message = 'CLIENT_NAME_INVALID';
+  end if;
+  if p_client_phone is null or length(trim(p_client_phone)) < 6 then
+    raise exception using errcode = '22023', message = 'CLIENT_PHONE_INVALID';
+  end if;
+
+  select * into strict v_barber
+  from public.barbers
+  where id = p_barber_id and active = true;
+
+  select * into strict v_service
+  from public.services
+  where id = p_service_id and active = true;
+
+  v_duration_min := coalesce(p_duration_minutes, v_service.duration_minutes);
+  if v_duration_min <= 0 then
+    v_duration_min := 45;
+  end if;
+  v_duration := (v_duration_min || ' minutes')::interval;
+
+  v_end_time := (p_start_time + v_duration)::time;
+  v_start_ts := (p_booking_date + p_start_time)::timestamp;
+  v_end_ts := (p_booking_date + v_end_time)::timestamp;
+
+  -- Bloqueo transaccional
+  perform pg_advisory_xact_lock(hashtextextended(v_barber.id::text || '|' || p_booking_date::text, 0));
+
+  -- Validar colisión de turno activo
+  if exists (
+    select 1
+    from public.appointments a
+    where a.barber_id = v_barber.id
+      and a.booking_date = p_booking_date
+      and a.status <> 'CANCELLED'
+      and (a.booking_date + a.start_time)::timestamp < v_end_ts
+      and (a.booking_date + a.end_time)::timestamp > v_start_ts
+  ) then
+    raise exception using errcode = '23P01', message = 'SLOT_ALREADY_BOOKED';
+  end if;
+
+  -- Normalizar y upsert cliente
+  select c.id into v_client_id
+  from public.clients c
+  where lower(trim(c.email)) = lower(trim(coalesce(p_client_email, '')))
+     or regexp_replace(c.phone, '[^0-9+]', '', 'g') = regexp_replace(trim(p_client_phone), '[^0-9+]', '', 'g')
+  order by c.created_at asc
+  limit 1;
+
+  if v_client_id is null then
+    insert into public.clients (name, phone, email)
+    values (
+      trim(p_client_name),
+      trim(p_client_phone),
+      lower(trim(coalesce(p_client_email, 'sin-email@kanibarber.internal')))
+    )
+    returning id into v_client_id;
+  else
+    update public.clients
+    set name = trim(p_client_name),
+        phone = trim(p_client_phone),
+        email = coalesce(nullif(lower(trim(p_client_email)), ''), email),
+        updated_at = now()
+    where id = v_client_id;
+  end if;
+
+  -- Asegurar disponibilidad en barber_availability_slots para cubrir el intervalo
+  if not exists (
+    select 1
+    from public.barber_availability_slots s
+    where s.barber_id = v_barber.id
+      and s.slot_date = p_booking_date
+      and s.status = 'AVAILABLE'
+      and s.start_time <= p_start_time
+      and s.end_time >= v_end_time
+  ) then
+    insert into public.barber_availability_slots (
+      barber_id, slot_date, start_time, end_time, status, internal_note
+    ) values (
+      v_barber.id,
+      p_booking_date,
+      p_start_time,
+      v_end_time,
+      'AVAILABLE',
+      'Habilitado automáticamente por turno manual'
+    )
+    on conflict (barber_id, slot_date, start_time)
+    do update set status = 'AVAILABLE', end_time = greatest(barber_availability_slots.end_time, v_end_time);
+  end if;
+
+  -- Si es recurrente, crear regla de recurrencia
+  if p_is_recurring then
+    v_day_of_week := extract(isodow from p_booking_date)::integer;
+    insert into public.recurring_appointment_rules (
+      client_id,
+      barber_id,
+      service_id,
+      day_of_week,
+      start_time,
+      duration_minutes,
+      start_date,
+      active,
+      created_by_user_id,
+      created_by_display_name,
+      notes
+    ) values (
+      v_client_id,
+      v_barber.id,
+      v_service.id,
+      v_day_of_week,
+      p_start_time,
+      v_duration_min,
+      p_booking_date,
+      true,
+      v_creator_user_id,
+      v_creator_name,
+      nullif(trim(coalesce(p_notes, '')), '')
+    )
+    returning id into v_rule_id;
+  end if;
+
+  -- Insertar el turno manual (confirmado, sin seña)
+  insert into public.appointments (
+    client_id,
+    barber_id,
+    service_id,
+    booking_date,
+    start_time,
+    end_time,
+    status,
+    notes,
+    is_manual,
+    origin,
+    created_by_user_id,
+    created_by_display_name,
+    recurring_rule_id,
+    deposit_required,
+    deposit_paid
+  ) values (
+    v_client_id,
+    v_barber.id,
+    v_service.id,
+    p_booking_date,
+    p_start_time,
+    v_end_time,
+    'CONFIRMED',
+    nullif(trim(coalesce(p_notes, '')), ''),
+    true,
+    'MANUAL',
+    v_creator_user_id,
+    v_creator_name,
+    v_rule_id,
+    false,
+    false
+  )
+  returning id, status, booking_date, start_time, end_time, request_number
+  into v_apt_id, appointment_status, booking_date, start_time, end_time, v_req_num;
+
+  -- Si es recurrente, sincronizar las siguientes 4 semanas
+  if p_is_recurring then
+    perform public.sync_recurring_appointment_rules(28);
+  end if;
+
+  return query select
+    v_apt_id,
+    appointment_status,
+    booking_date,
+    start_time,
+    end_time,
+    v_req_num,
+    true,
+    'MANUAL'::text,
+    v_creator_name,
+    v_rule_id;
+end;
+$$;
+
+revoke all on function public.create_manual_appointment(uuid, uuid, date, time, text, text, text, text, boolean, integer) from public;
+grant execute on function public.create_manual_appointment(uuid, uuid, date, time, text, text, text, text, boolean, integer) to authenticated;
+
+-- 7. RPC para activar o desactivar regla de recurrencia
+create or replace function public.set_recurring_rule_active(
+  p_rule_id uuid,
+  p_active boolean
+)
+returns boolean
+language plpgsql
+security definer
+set search_path = pg_catalog, public, extensions
+as $$
+declare
+  v_rule public.recurring_appointment_rules%rowtype;
+begin
+  if auth.uid() is null then
+    raise exception using errcode = '42501', message = 'AUTH_REQUIRED';
+  end if;
+
+  select * into strict v_rule
+  from public.recurring_appointment_rules
+  where id = p_rule_id;
+
+  if not public.is_admin() and v_rule.barber_id is distinct from public.current_staff_barber_id() then
+    raise exception using errcode = '42501', message = 'NOT_ALLOWED';
+  end if;
+
+  update public.recurring_appointment_rules
+  set active = p_active,
+      updated_at = now()
+  where id = p_rule_id;
+
+  return true;
+end;
+$$;
+
+revoke all on function public.set_recurring_rule_active(uuid, boolean) from public;
+grant execute on function public.set_recurring_rule_active(uuid, boolean) to authenticated;
+-- Migration: 20261018000300_kani_delete_all_notifications_rpc.sql
+-- KANI Barber Studio — Operaciones atómicas y seguras para eliminar y descartar todas las notificaciones
+-- Resuelve el error "No se pudieron eliminar las notificaciones."
+--
+-- 1. public.delete_all_staff_activity_notifications_global():
+--    Exclusivo para ADMIN.
+--    Elimina todas las notificaciones de public.admin_activity_notifications de forma atómica.
+--    La clave foránea en admin_activity_user_state (notification_id) tiene ON DELETE CASCADE,
+--    por lo que se limpian automáticamente los estados asociados.
+--    JAMÁS toca appointments, clients, pagos ni turnos manuales o recurrentes.
+--
+-- 2. public.dismiss_all_staff_activity_notifications_personal():
+--    Para BARBERS (y staff individual).
+--    Marca como dismissed_at = now() todas las notificaciones visibles para dicho usuario
+--    en la tabla admin_activity_user_state sin afectar a otros barberos ni al ADMIN.
+
+-- RPC 1: Borrado global de todas las notificaciones (ADMIN)
+create or replace function public.delete_all_staff_activity_notifications_global()
+returns integer
+language plpgsql
+security definer
+set search_path = pg_catalog, public, extensions
+as $$
+declare
+  v_uid uuid := (select auth.uid());
+  v_is_admin boolean := public.is_admin();
+  v_count integer := 0;
+begin
+  if v_uid is null or not v_is_admin then
+    raise exception 'Acción reservada exclusivamente para el Administrador';
+  end if;
+
+  with deleted as (
+    delete from public.admin_activity_notifications
+    returning 1
+  )
+  select count(*) into v_count from deleted;
+
+  return v_count;
+end;
+$$;
+
+-- RPC 2: Descarte masivo de notificaciones de la vista personal (BARBER / Staff)
+create or replace function public.dismiss_all_staff_activity_notifications_personal()
+returns integer
+language plpgsql
+security definer
+set search_path = pg_catalog, public, extensions
+as $$
+declare
+  v_uid uuid := (select auth.uid());
+  v_is_admin boolean := public.is_admin();
+  v_barber_id uuid := public.current_staff_barber_id();
+  v_now timestamptz := now();
+  v_count integer := 0;
+begin
+  if v_uid is null or (not v_is_admin and v_barber_id is null) then
+    raise exception 'No autorizado';
+  end if;
+
+  with inserted as (
+    insert into public.admin_activity_user_state (notification_id, user_id, dismissed_at, updated_at)
+    select n.id, v_uid, v_now, v_now
+    from public.admin_activity_notifications n
+    left join public.admin_activity_user_state us
+      on us.notification_id = n.id and us.user_id = v_uid
+    where (v_is_admin or n.barber_id = v_barber_id)
+      and (us.dismissed_at is null)
+    on conflict (notification_id, user_id)
+    do update set
+      dismissed_at = v_now,
+      updated_at = v_now
+    returning 1
+  )
+  select count(*) into v_count from inserted;
+
+  return v_count;
+end;
+$$;
+
+-- Asegurar permisos de ejecución a authenticated
+grant execute on function public.delete_all_staff_activity_notifications_global to authenticated;
+grant execute on function public.dismiss_all_staff_activity_notifications_personal to authenticated;
+
+-- Asegurar que la política RLS de DELETE en admin_activity_notifications permita delete condicional
+-- (como fallback en caso de ejecuciones directas de cliente autenticado con rol ADMIN)
+grant delete on table public.admin_activity_notifications to authenticated;
+
+drop policy if exists admin_can_delete_activity_notifications on public.admin_activity_notifications;
+create policy admin_can_delete_activity_notifications
+  on public.admin_activity_notifications
+  for delete to authenticated
+  using (public.is_admin());
