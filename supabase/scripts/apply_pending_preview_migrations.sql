@@ -1083,3 +1083,36 @@ create policy admin_can_delete_activity_notifications
   on public.admin_activity_notifications
   for delete to authenticated
   using (public.is_admin());
+
+-- RPC: Marcar todas las notificaciones como no leídas (bulk unread)
+create or replace function public.mark_all_staff_activity_notifications_unread()
+returns void
+language plpgsql
+security definer
+set search_path = pg_catalog, public, extensions
+as $$
+declare
+  v_uid uuid := (select auth.uid());
+  v_is_admin boolean := public.is_admin();
+  v_barber_id uuid := public.current_staff_barber_id();
+begin
+  if v_uid is null or (not v_is_admin and v_barber_id is null) then
+    raise exception 'No autorizado';
+  end if;
+
+  if v_is_admin then
+    update public.admin_activity_notifications
+    set read_at = null
+    where read_at is not null;
+  end if;
+
+  update public.admin_activity_user_state
+  set read_at = null,
+      updated_at = now()
+  where user_id = v_uid
+    and read_at is not null;
+end;
+$$;
+
+grant execute on function public.mark_all_staff_activity_notifications_unread to authenticated;
+grant select, insert, update, delete on table public.admin_activity_user_state to authenticated;

@@ -16,7 +16,9 @@ import {
   deleteAdminActivityNotificationGlobal,
   dismissAllAdminActivityNotificationsPersonal,
   dismissAdminActivityNotificationPersonal,
+  extractErrorMessage,
   markAllAdminActivityNotificationsRead,
+  markAllAdminActivityNotificationsUnread,
   readAdminActivityNotifications,
   setAdminActivityNotificationRead,
   type AdminActivityEvent,
@@ -70,7 +72,7 @@ export function AdminActivityPopover({ role = 'ADMIN' }: { role?: 'ADMIN' | 'BAR
     let cancelled = false;
     readAdminActivityNotifications()
       .then(events => { if (!cancelled) setNotifications(events.map(toAdminNotification)); })
-      .catch(cause => { if (!cancelled) setError(cause instanceof Error ? cause.message : 'No se pudieron cargar las novedades.'); });
+      .catch(cause => { if (!cancelled) setError(extractErrorMessage(cause, 'No se pudieron cargar las novedades.')); });
     return () => { cancelled = true; };
   }
 
@@ -84,7 +86,7 @@ export function AdminActivityPopover({ role = 'ADMIN' }: { role?: 'ADMIN' | 'BAR
       await setAdminActivityNotificationRead(notification.id, readAt);
       setNotifications(current => current.map(item => item.id === notification.id ? { ...item, readAt } : item));
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'No se pudo actualizar la notificación.');
+      setError(extractErrorMessage(cause, 'No se pudo actualizar la notificación.'));
     }
   }
 
@@ -95,7 +97,18 @@ export function AdminActivityPopover({ role = 'ADMIN' }: { role?: 'ADMIN' | 'BAR
       const readAt = new Date().toISOString();
       setNotifications(current => current.map(item => ({ ...item, readAt })));
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'No se pudieron marcar las notificaciones.');
+      setError(extractErrorMessage(cause, 'No se pudieron marcar las notificaciones.'));
+    }
+  }
+
+  async function markAllNotificationsUnread() {
+    const hasRead = notifications.some(item => Boolean(item.readAt));
+    if (!hasRead) return;
+    try {
+      await markAllAdminActivityNotificationsUnread();
+      setNotifications(current => current.map(item => ({ ...item, readAt: null })));
+    } catch (cause) {
+      setError(extractErrorMessage(cause, 'No se pudieron marcar las notificaciones como no leídas.'));
     }
   }
 
@@ -116,7 +129,7 @@ export function AdminActivityPopover({ role = 'ADMIN' }: { role?: 'ADMIN' | 'BAR
       }
       setNotifications(current => current.filter(item => item.id !== notification.id));
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'No se pudo eliminar la notificación.');
+      setError(extractErrorMessage(cause, 'No se pudo eliminar la notificación.'));
     } finally {
       setDeletingId(null);
     }
@@ -135,7 +148,7 @@ export function AdminActivityPopover({ role = 'ADMIN' }: { role?: 'ADMIN' | 'BAR
       setNotifications([]);
       setConfirmDeleteAllOpen(false);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'No se pudieron eliminar las notificaciones.');
+      setError(extractErrorMessage(cause, 'No se pudieron eliminar las notificaciones.'));
     } finally {
       setIsDeletingAll(false);
     }
@@ -160,11 +173,25 @@ export function AdminActivityPopover({ role = 'ADMIN' }: { role?: 'ADMIN' | 'BAR
           </div>
           {error && <p role="alert" className="mt-3 text-xs text-destructive">{error}</p>}
           <div className="flex items-center justify-between gap-2 mt-2">
-            {unreadNotifications.length > 0 && (
-              <Button variant="ghost" size="sm" className="notification-mark-all text-xs h-7 px-2" onClick={() => void markAllNotificationsRead()}>
+            {unreadNotifications.length > 0 ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="notification-mark-all text-xs h-7 px-2 w-auto mt-0"
+                onClick={() => void markAllNotificationsRead()}
+              >
                 Marcar todas como leídas
               </Button>
-            )}
+            ) : notifications.length > 0 ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="notification-mark-all text-xs h-7 px-2 w-auto mt-0"
+                onClick={() => void markAllNotificationsUnread()}
+              >
+                Marcar todas como no leídas
+              </Button>
+            ) : null}
             {notifications.length > 0 && (
               <Button
                 variant="ghost"

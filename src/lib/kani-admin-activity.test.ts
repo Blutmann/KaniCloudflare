@@ -16,7 +16,11 @@ vi.mock('@/integrations/supabase/client', () => ({
 
 import {
   deleteAllAdminActivityNotificationsGlobal,
+  deleteAdminActivityNotificationGlobal,
   dismissAllAdminActivityNotificationsPersonal,
+  extractErrorMessage,
+  markAllAdminActivityNotificationsUnread,
+  readAdminActivityNotifications,
 } from './kani-admin-activity';
 
 describe('kani-admin-activity bulk notifications management', () => {
@@ -111,4 +115,126 @@ describe('kani-admin-activity bulk notifications management', () => {
       expect(count).toBe(2);
     });
   });
+
+  describe('markAllAdminActivityNotificationsUnread', () => {
+    it('uses mark_all_staff_activity_notifications_unread RPC when available', async () => {
+      mockRpc.mockResolvedValue({
+        data: 4,
+        error: null,
+      });
+
+      await markAllAdminActivityNotificationsUnread();
+      expect(mockRpc).toHaveBeenCalledWith('mark_all_staff_activity_notifications_unread');
+    });
+
+    it('falls back to admin_activity_user_state update when RPC fails', async () => {
+      mockRpc.mockResolvedValue({
+        data: null,
+        error: { message: 'RPC not found' },
+      });
+
+      mockGetUser.mockResolvedValue({
+        data: { user: { id: 'test-user-id' } },
+        error: null,
+      });
+
+      const mockUpdate = vi.fn().mockReturnValue({
+        eq: vi.fn().mockResolvedValue({ error: null }),
+        neq: vi.fn().mockResolvedValue({ error: null }),
+      });
+      mockFrom.mockReturnValue({
+        update: mockUpdate,
+      });
+
+      await markAllAdminActivityNotificationsUnread();
+      expect(mockFrom).toHaveBeenCalledWith('admin_activity_user_state');
+    });
+  });
+
+  describe('deleteAdminActivityNotificationGlobal', () => {
+    it('uses delete_staff_activity_notification_global RPC when available', async () => {
+      mockRpc.mockResolvedValue({
+        data: true,
+        error: null,
+      });
+
+      await deleteAdminActivityNotificationGlobal('notif-123');
+      expect(mockRpc).toHaveBeenCalledWith('delete_staff_activity_notification_global', {
+        p_notification_id: 'notif-123',
+      });
+    });
+
+    it('falls back to direct table delete when RPC fails', async () => {
+      mockRpc.mockResolvedValue({
+        data: null,
+        error: { message: 'RPC failure' },
+      });
+
+      const mockDelete = vi.fn().mockReturnValue({
+        eq: vi.fn().mockResolvedValue({ error: null }),
+      });
+      mockFrom.mockReturnValue({
+        delete: mockDelete,
+      });
+
+      await deleteAdminActivityNotificationGlobal('notif-123');
+      expect(mockFrom).toHaveBeenCalledWith('admin_activity_notifications');
+      expect(mockDelete).toHaveBeenCalled();
+    });
+
+    it('falls back to personal dismissal in user_state if table delete fails with RLS/permissions', async () => {
+      mockRpc.mockResolvedValue({
+        data: null,
+        error: { message: 'RPC failure' },
+      });
+
+      mockFrom.mockImplementation((tableName: string) => {
+        if (tableName === 'admin_activity_notifications') {
+          return {
+            delete: vi.fn().mockReturnValue({
+              eq: vi.fn().mockResolvedValue({ error: { message: 'permission denied', code: '42501' } }),
+            }),
+          };
+        }
+        if (tableName === 'admin_activity_user_state') {
+          return {
+            upsert: vi.fn().mockResolvedValue({ error: null }),
+          };
+        }
+        return {};
+      });
+
+      mockGetUser.mockResolvedValue({
+        data: { user: { id: 'user-uuid' } },
+        error: null,
+      });
+
+      // Should succeed via secondary fallback
+      await expect(deleteAdminActivityNotificationGlobal('notif-123')).resolves.not.toThrow();
+    });
+  });
+
+  describe('extractErrorMessage', () => {
+    it('extracts error from Error object', () => {
+      expect(extractErrorMessage(new Error('Test error message'))).toBe('Test error message');
+    });
+
+    it('extracts message from PostgREST-like error object', () => {
+      expect(extractErrorMessage({ message: 'permission denied for table', code: '42501' })).toBe('permission denied for table');
+    });
+
+    it('extracts details or hint when available', () => {
+      expect(extractErrorMessage({ details: 'Key (id)=(1) not found' })).toBe('Key (id)=(1) not found');
+    });
+
+    it('returns string input directly', () => {
+      expect(extractErrorMessage('Direct string error')).toBe('Direct string error');
+    });
+
+    it('returns fallback for unknown or empty input', () => {
+      expect(extractErrorMessage(null, 'Fallback error')).toBe('Fallback error');
+      expect(extractErrorMessage({}, 'Fallback error')).toBe('Fallback error');
+    });
+  });
 });
+
