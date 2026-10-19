@@ -1,9 +1,32 @@
 import { describe, expect, it } from "vitest";
-import { formatPhoneDisplay, formatPhoneInput, normalizeCountrySearch, normalizePhone, otherPhoneCountries, phoneCountries, phonePlaceholder, primaryPhoneCountries } from "./kani-phone";
+import { formatPhoneDisplay, formatPhoneInput, formatPhoneWithCountryAndWhatsApp, normalizeCountrySearch, normalizePhone, otherPhoneCountries, phoneCountries, phonePlaceholder, primaryPhoneCountries } from "./kani-phone";
 
 describe("phone normalization", () => {
   it("normalizes an Argentine mobile number to E.164", () => {
     expect(normalizePhone("9 11 0000-0000", "AR")?.e164).toBe("+5491100000000");
+  });
+
+  it("formats phone with country flag and WhatsApp format", () => {
+    const res = formatPhoneWithCountryAndWhatsApp("+5491133992102");
+    expect(res.flag).toBe("🇦🇷");
+    expect(res.display).toBe("🇦🇷 +54 9 11 3399-2102");
+    expect(res.e164).toBe("+5491133992102");
+  });
+
+  it("handles foreign numbers correctly with their flag and international format", () => {
+    const cl = formatPhoneWithCountryAndWhatsApp("+56987654321");
+    expect(cl.flag).toBe("🇨🇱");
+    expect(cl.display).toContain("🇨🇱 +56 9 8765 4321");
+
+    const br = formatPhoneWithCountryAndWhatsApp("+5511961234567");
+    expect(br.flag).toBe("🇧🇷");
+    expect(br.display).toContain("🇧🇷 +55 11 96123 4567");
+  });
+
+  it("does not invent a flag for invalid/unparseable phones", () => {
+    const invalid = formatPhoneWithCountryAndWhatsApp("123");
+    expect(invalid.flag).toBe("");
+    expect(invalid.display).toBe("123");
   });
 
   it("adds Argentina's mobile access code to national Buenos Aires input", () => {

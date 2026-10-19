@@ -335,6 +335,63 @@ export function formatPhoneDisplay(value: string) {
   return parsed?.isValid() ? parsed.formatInternational() : value;
 }
 
+/**
+ * Formatea un número de teléfono con la bandera de su país y el formato internacional de WhatsApp.
+ * Si es de Argentina (+54 9), usa el formato "+54 9 11 3399-2102".
+ * Si no hay información suficiente para identificar el país, no inventa la bandera.
+ */
+export function formatPhoneWithCountryAndWhatsApp(rawPhone?: string | null): {
+  display: string;
+  e164: string;
+  flag: string;
+} {
+  if (!rawPhone || typeof rawPhone !== 'string') {
+    return { display: '', e164: '', flag: '' };
+  }
+
+  const trimmed = rawPhone.trim();
+  let parsed = parsePhoneNumberFromString(trimmed);
+  if (!parsed || !parsed.isValid()) {
+    const compact = trimmed.replace(/\D/g, '');
+    const mobileAr = parsePhoneNumberFromString(`+549${compact}`);
+    if (mobileAr?.isValid()) {
+      parsed = mobileAr;
+    } else {
+      parsed = parsePhoneNumberFromString(trimmed, 'AR');
+    }
+  }
+
+  if (parsed && (parsed.isValid() || parsed.isPossible()) && parsed.country) {
+    const country = parsed.country;
+    const flag = country ? countryToFlag(country) : '';
+    let intl = parsed.formatInternational ? parsed.formatInternational() : trimmed;
+
+    // Formato de WhatsApp para números de Argentina (+54 9): unir los últimos dos bloques con guión
+    if (country === 'AR') {
+      const parts = intl.split(' ');
+      if (parts.length >= 4) {
+        const lastPart = parts.pop();
+        parts[parts.length - 1] = `${parts[parts.length - 1]}-${lastPart}`;
+        intl = parts.join(' ');
+      }
+    }
+
+    return {
+      display: flag ? `${flag} ${intl}` : intl,
+      e164: parsed.number || trimmed,
+      flag,
+    };
+  }
+
+  // Fallback si no es un número parseable
+  const digitsOnly = trimmed.replace(/[^\d+]/g, '');
+  return {
+    display: trimmed,
+    e164: digitsOnly.startsWith('+') ? digitsOnly : (digitsOnly ? `+${digitsOnly}` : ''),
+    flag: '',
+  };
+}
+
 export function phonePlaceholder(country: PhoneCountry) {
   const example = mobileExampleNumbers[country];
   if (!example) return 'Número de celular';

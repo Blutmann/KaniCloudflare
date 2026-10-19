@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowUp, Calendar, CalendarPlus, Check, CheckCircle2, CircleDot, Clock, Clock3, RefreshCw, X, XCircle } from 'lucide-react';
+import { ArrowUp, Calendar, CalendarPlus, Check, CheckCircle2, CircleDot, Clock, Clock3, Mail, RefreshCw, X, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { dateLabel, money, serviceFor } from '@/lib/kani-model';
-import { formatPhoneDisplay, normalizePhone, type PhoneCountry } from '@/lib/kani-phone';
+import { formatPhoneDisplay, formatPhoneWithCountryAndWhatsApp, normalizePhone, type PhoneCountry } from '@/lib/kani-phone';
 import { PhoneInput } from '@/components/kani/phone-input';
 import { cn } from '@/lib/utils';
 import { useAdminStaff } from '@/lib/kani-admin-context';
@@ -409,7 +409,7 @@ export function AdminMobileAppointments() {
               value={specificDate}
               onChange={event => selectSpecificDate(event.target.value)}
               aria-label="Elegir fecha específica"
-              className="w-full h-9 px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20"
+              className="select-control w-full h-[44px] min-h-[44px] px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20 leading-normal"
             />
           </div>
           <div>
@@ -444,7 +444,7 @@ export function AdminMobileAppointments() {
                 ))}
               </select>
             ) : (
-              <output id="mobile-barber-filter" className="w-full h-9 px-3 text-xs bg-muted/40 border border-border rounded-lg text-muted-foreground flex items-center cursor-not-allowed">
+              <output id="mobile-barber-filter" className="select-control w-full h-[44px] min-h-[44px] px-3 text-xs bg-muted/40 border border-border rounded-lg text-muted-foreground flex items-center cursor-not-allowed">
                 {permittedBarbers[0] ?? 'Tu agenda'}
               </output>
             )}
@@ -452,7 +452,7 @@ export function AdminMobileAppointments() {
         </div>
       </section>
 
-      {/* 2. Cards de estado / resumen (idéntico a los KPI cards de Estadísticas) */}
+      {/* 2. Cards de estado / resumen (idéntico a los KPI cards de Estadísticas con fondo bordó activo) */}
       <section className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4" aria-label="Resumen de turnos">
         {summaryFilters.map(filter => {
           const config = summaryCardConfig[filter.value];
@@ -464,27 +464,26 @@ export function AdminMobileAppointments() {
               type="button"
               className={cn(
                 "p-3.5 rounded-xl border flex flex-col justify-between text-left transition-all cursor-pointer relative",
-                config.cardBase,
                 isActive
-                  ? "ring-2 ring-primary border-primary shadow-xs"
-                  : "hover:border-foreground/25 hover:shadow-xs"
+                  ? "!bg-[#702B3A] !border-[#702B3A] !text-white shadow-xs"
+                  : cn(config.cardBase, "hover:border-foreground/25 hover:shadow-xs")
               )}
               aria-pressed={isActive}
               onClick={() => setStatusFilter(filter.value)}
             >
               <div className="flex items-center justify-between w-full">
-                <span className={cn("text-xs font-medium", config.labelTone)}>
+                <span className={cn("text-xs font-medium", isActive ? "!text-white" : config.labelTone)}>
                   {filter.label}
                 </span>
                 {isActive && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-primary" aria-hidden="true" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-white" aria-hidden="true" />
                 )}
               </div>
               <div className="mt-2 flex items-baseline justify-between w-full">
-                <span className={cn("text-2xl font-bold", config.numberTone)}>
+                <span className={cn("text-2xl font-bold", isActive ? "!text-white" : config.numberTone)}>
                   {counts[filter.value]}
                 </span>
-                <Icon size={16} className={config.iconTone} />
+                <Icon size={16} className={isActive ? "!text-white" : config.iconTone} />
               </div>
             </button>
           );
@@ -555,8 +554,9 @@ export function AdminMobileAppointments() {
           const fallbackService = serviceFor(appointment.service);
           const serviceName = appointment.serviceName ?? fallbackService.name;
           const serviceDuration = appointment.serviceDuration ?? fallbackService.duration;
-          const phoneHref = appointment.phone.replace(/[^\d+]/g, '');
-          const phoneLabel = formatPhoneDisplay(appointment.phone);
+          const phoneInfo = formatPhoneWithCountryAndWhatsApp(appointment.phone);
+          const phoneHref = phoneInfo.e164 || appointment.phone.replace(/[^\d+]/g, '');
+          const phoneLabel = phoneInfo.display || appointment.phone;
           const isManual = Boolean(appointment.isManual || appointment.origin === 'MANUAL');
 
           return <article className="p-4 rounded-xl border border-border bg-surface shadow-xs space-y-3" key={appointment.id}>
@@ -577,70 +577,150 @@ export function AdminMobileAppointments() {
 
             <div className="pt-2 border-t border-border/60">
               <h3 className="font-semibold text-foreground text-sm">{appointment.name}</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mt-2 text-xs">
-                <div className="p-2 rounded-lg bg-background border border-border/70">
+              <div className="grid grid-cols-2 gap-2 mt-2 text-xs">
+                {/* Fila 1: Servicio | Barbero */}
+                <div className="p-2 rounded-lg bg-background border border-border/70 min-w-0">
                   <span className="text-[11px] text-muted-foreground block">Servicio</span>
-                  <strong className="font-medium text-foreground">{serviceName} · {serviceDuration} min</strong>
+                  <strong className="font-medium text-foreground block truncate" title={`${serviceName} · ${serviceDuration} min`}>
+                    {serviceName} · {serviceDuration} min
+                  </strong>
                 </div>
-                <div className="p-2 rounded-lg bg-background border border-border/70">
+                <div className="p-2 rounded-lg bg-background border border-border/70 min-w-0">
                   <span className="text-[11px] text-muted-foreground block">Barbero</span>
-                  <strong className="font-medium text-foreground">{appointment.barber}</strong>
+                  <strong className="font-medium text-foreground block truncate" title={appointment.barber}>
+                    {appointment.barber}
+                  </strong>
                 </div>
-                <div className="p-2 rounded-lg bg-background border border-border/70">
+
+                {/* Fila 2: Celular | Abona seña */}
+                <div className="p-2 rounded-lg bg-background border border-border/70 min-w-0">
                   <span className="text-[11px] text-muted-foreground block">Celular</span>
-                  <a href={`tel:${phoneHref}`} className="font-medium text-foreground hover:underline">{phoneLabel}</a>
+                  <a
+                    href={`tel:${phoneHref}`}
+                    className="font-medium text-foreground truncate block hover:underline"
+                    title={phoneLabel}
+                  >
+                    {phoneLabel}
+                  </a>
                 </div>
-                <div className="p-2 rounded-lg bg-background border border-border/70">
-                  <span className="text-[11px] text-muted-foreground block">Email</span>
-                  <a href={`mailto:${appointment.email}`} className="font-medium text-foreground truncate block hover:underline">{appointment.email}</a>
-                </div>
-                <div className="p-2 rounded-lg bg-background border border-border/70">
+                <div className="p-2 rounded-lg bg-background border border-border/70 min-w-0">
                   <span className="text-[11px] text-muted-foreground block">Abona seña</span>
-                  <strong className="font-medium text-foreground">{appointment.depositPaid || appointment.depositRequired ? 'Sí' : 'No'}</strong>
+                  <strong className="font-medium text-foreground block truncate">
+                    {appointment.depositPaid || appointment.depositRequired ? 'Sí' : 'No'}
+                  </strong>
                 </div>
-                {appointment.servicePrice !== undefined && (
-                  <div className="p-2 rounded-lg bg-background border border-border/70">
-                    <span className="text-[11px] text-muted-foreground block">Importe total</span>
-                    <strong className="font-medium text-foreground">{money(appointment.servicePrice)}</strong>
-                  </div>
-                )}
-                {isManual && (
-                  <div className="p-2 rounded-lg bg-background border border-border/70 sm:col-span-2 md:col-span-3">
-                    <span className="text-[11px] text-muted-foreground block">Origen</span>
-                    <strong className="text-gold font-medium">
-                      Manual {appointment.createdByDisplayName ? `· Generado por: ${appointment.createdByDisplayName}` : ''}
-                    </strong>
-                  </div>
-                )}
+
+                {/* Fila 3: Email | Importe total */}
+                <div className="p-2 rounded-lg bg-background border border-border/70 min-w-0">
+                  <span className="text-[11px] text-muted-foreground block">Email</span>
+                  <a
+                    href={`mailto:${appointment.email}`}
+                    className="font-medium text-foreground truncate block hover:underline"
+                    title={appointment.email}
+                  >
+                    {appointment.email}
+                  </a>
+                </div>
+                <div className="p-2 rounded-lg bg-background border border-border/70 min-w-0">
+                  <span className="text-[11px] text-muted-foreground block">Importe total</span>
+                  <strong className="font-medium text-foreground block truncate">
+                    {appointment.servicePrice !== undefined ? money(appointment.servicePrice) : '—'}
+                  </strong>
+                </div>
               </div>
+
+              {/* Origen manual en bloque inferior */}
+              {isManual && (
+                <div className="mt-2 p-2 rounded-lg bg-background border border-border/70 text-xs">
+                  <span className="text-[11px] text-muted-foreground block">Origen</span>
+                  <strong className="text-gold font-medium block truncate">
+                    Manual {appointment.createdByDisplayName ? `· Generado por: ${appointment.createdByDisplayName}` : ''}
+                  </strong>
+                </div>
+              )}
+
+              {/* Observaciones en bloque inferior */}
               {appointment.notes?.trim() && (
-                <div className="mt-2.5 p-2.5 rounded-lg bg-background border border-border/70 text-xs">
+                <div className="mt-2 p-2.5 rounded-lg bg-background border border-border/70 text-xs">
                   <span className="text-[11px] text-muted-foreground block mb-0.5">Observaciones</span>
-                  <p className="text-foreground text-xs leading-relaxed">{appointment.notes.trim()}</p>
+                  <p className="text-foreground text-xs leading-relaxed break-words">{appointment.notes.trim()}</p>
                 </div>
               )}
             </div>
 
             {(appointment.statusCode === 'PENDING' || appointment.statusCode === 'CONFIRMED' || appointment.statusCode === 'CANCELLED') && (
-              <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-border/60">
+              <div className="pt-2 border-t border-border/60">
                 {appointment.statusCode === 'PENDING' && (
-                  <>
-                    <Button size="sm" className="action-positive h-8 text-xs px-3" disabled={busyId === appointment.id} onClick={() => void changeStatus(appointment, 'CONFIRMED')}>
-                      <Check size={14} className="mr-1" />Confirmar
+                  <div className="grid grid-cols-3 gap-2 w-full">
+                    <Button
+                      size="sm"
+                      className="action-positive h-9 text-xs px-2 w-full justify-center min-w-0"
+                      disabled={busyId === appointment.id}
+                      onClick={() => void changeStatus(appointment, 'CONFIRMED')}
+                    >
+                      <Check size={14} className="mr-1 shrink-0" />
+                      <span className="truncate">Confirmar</span>
                     </Button>
-                    <Button size="sm" variant="outline" className="action-brand-outline h-8 text-xs px-3" disabled={busyId === appointment.id} onClick={() => setCancelTarget(appointment)}>
-                      <X size={14} className="mr-1" />Rechazar
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="action-brand-outline h-9 text-xs px-2 w-full justify-center min-w-0"
+                      disabled={busyId === appointment.id}
+                      onClick={() => setCancelTarget(appointment)}
+                    >
+                      <X size={14} className="mr-1 shrink-0" />
+                      <span className="truncate">Rechazar</span>
                     </Button>
-                  </>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-9 text-xs px-2 w-full justify-center min-w-0 text-muted-foreground hover:text-foreground"
+                      disabled={busyId === appointment.id}
+                      onClick={() => void retryNotification(appointment)}
+                    >
+                      <Mail size={14} className="mr-1 shrink-0" />
+                      <span className="truncate">Enviar correo</span>
+                    </Button>
+                  </div>
                 )}
                 {appointment.statusCode === 'CONFIRMED' && (
-                  <Button size="sm" variant="outline" className="action-brand-outline h-8 text-xs px-3" disabled={busyId === appointment.id} onClick={() => setCancelTarget(appointment)}>
-                    <X size={14} className="mr-1" />Cancelar turno
-                  </Button>
+                  <div className="grid grid-cols-2 gap-2 w-full">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="action-brand-outline h-9 text-xs px-2 w-full justify-center min-w-0"
+                      disabled={busyId === appointment.id}
+                      onClick={() => setCancelTarget(appointment)}
+                    >
+                      <X size={14} className="mr-1 shrink-0" />
+                      <span className="truncate">Cancelar turno</span>
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-9 text-xs px-2 w-full justify-center min-w-0 text-muted-foreground hover:text-foreground"
+                      disabled={busyId === appointment.id}
+                      onClick={() => void retryNotification(appointment)}
+                    >
+                      <Mail size={14} className="mr-1 shrink-0" />
+                      <span className="truncate">Enviar correo</span>
+                    </Button>
+                  </div>
                 )}
-                <Button size="sm" variant="outline" className="h-8 text-xs px-3 text-muted-foreground hover:text-foreground" disabled={busyId === appointment.id} onClick={() => void retryNotification(appointment)}>
-                  <RefreshCw size={14} className="mr-1" />Reenviar notificación
-                </Button>
+                {appointment.statusCode === 'CANCELLED' && (
+                  <div className="w-full">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-9 text-xs px-2 w-full justify-center min-w-0 text-muted-foreground hover:text-foreground"
+                      disabled={busyId === appointment.id}
+                      onClick={() => void retryNotification(appointment)}
+                    >
+                      <Mail size={14} className="mr-1 shrink-0" />
+                      <span className="truncate">Enviar correo</span>
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
           </article>;

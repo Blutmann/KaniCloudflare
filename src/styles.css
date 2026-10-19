@@ -430,6 +430,18 @@ html[data-theme='light'] .booking-time-slot.selected:active { border-color: var(
 .manual-dialog-footer > button { min-width: 0; }
 input[type=date], input[type=time] { color-scheme: dark; }
 html[data-theme="light"] input[type=date], html[data-theme="light"] input[type=time] { color-scheme: light; }
+input[type=date].select-control {
+  min-height: 44px;
+  height: 44px;
+  line-height: normal;
+  display: inline-flex;
+  align-items: center;
+}
+input[type=date]::-webkit-date-and-time-value {
+  text-align: left;
+  min-height: 1.5em;
+  margin: 0;
+}
 .field-control { position: relative; display: block; min-width: 0; }
 .field-control > input, .field-control > textarea { padding-right: 44px; }
 .field-control.valid > input, .field-control.valid > textarea { border-color: color-mix(in oklch, var(--success) 62%, var(--input)); }
