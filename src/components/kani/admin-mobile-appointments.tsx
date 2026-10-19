@@ -9,7 +9,7 @@ import { formatPhoneDisplay, formatPhoneWithCountryAndWhatsApp, normalizePhone, 
 import { PhoneInput } from '@/components/kani/phone-input';
 import { cn } from '@/lib/utils';
 import { useAdminStaff } from '@/lib/kani-admin-context';
-import { appointmentErrorMessage, completeRealAppointment, createManualAppointment, readRealAppointments, recordNoShowException, retryRealAppointmentNotification, updateRealAppointmentStatus, type ManualFrequency, MANUAL_FREQUENCY_LABELS, type NoShowDecision, type RealAppointment, type RealAppointmentStatus } from '@/lib/kani-appointments';
+import { appointmentErrorMessage, completeRealAppointment, createManualAppointment, readRealAppointments, recordNoShowException, retryRealAppointmentNotification, shortenFrequencyText, updateRealAppointmentStatus, type ManualFrequency, MANUAL_FREQUENCY_LABELS, type NoShowDecision, type RealAppointment, type RealAppointmentStatus } from '@/lib/kani-appointments';
 import { addCalendarDays, businessDateToday, dateRangeForAppointmentsPreset, filterMobileAppointments, appointmentsPresets, appointmentsPresetLabels, type AppointmentsDatePreset, type MobileStatusFilter } from '@/lib/kani-mobile-appointments';
 import { permittedBarberNames } from '@/lib/kani-role-scope';
 import { supabase } from '@/integrations/supabase/client';
@@ -774,7 +774,9 @@ export function AdminMobileAppointments() {
               {appointment.notes?.trim() && (
                 <div className="mt-2 p-2.5 rounded-lg bg-background border border-border/70 text-xs">
                   <span className="text-[11px] text-muted-foreground block mb-0.5">Observaciones</span>
-                  <p className="text-foreground text-xs leading-relaxed break-words">{appointment.notes.trim()}</p>
+                  <p className="text-foreground text-xs leading-relaxed break-words">
+                    {shortenFrequencyText(appointment.notes.trim())}
+                  </p>
                 </div>
               )}
             </div>
@@ -1274,7 +1276,7 @@ export function AdminMobileAppointments() {
               </div>
             )}
 
-            <div className="manual-appointment-grid grid grid-cols-2 sm:grid-cols-6 gap-3 sm:gap-4">
+            <div className="manual-appointment-grid grid grid-cols-[minmax(0,7fr)_minmax(0,3fr)] sm:grid-cols-6 gap-2.5 sm:gap-4">
               {/* Fila 1 Columna izquierda en mobile | Col 1-2 en desktop */}
               <div className="manual-grid-field manual-field-fecha col-span-1 sm:col-span-2 sm:order-1 min-w-0">
                 <label htmlFor="manual-date" className="font-medium text-foreground block mb-1.5 text-xs sm:text-sm">
@@ -1305,7 +1307,7 @@ export function AdminMobileAppointments() {
 
               {/* Fila 1 Columna derecha en mobile | Col 3-4 en desktop */}
               <div className="manual-grid-field manual-field-horario col-span-1 sm:col-span-2 sm:order-2 min-w-0">
-                <label htmlFor="manual-time" className="font-medium text-foreground block mb-1.5 text-xs sm:text-sm">
+                <label htmlFor="manual-time" className="font-medium text-foreground block mb-1.5 text-xs sm:text-sm truncate" title="Horario">
                   Horario <span className="text-destructive font-normal" aria-hidden="true">*</span>
                 </label>
                 <Input
@@ -1320,7 +1322,7 @@ export function AdminMobileAppointments() {
                   required
                   aria-invalid={Boolean(showFieldError('time'))}
                   className={cn(
-                    "bg-background h-10 text-xs sm:text-sm",
+                    "bg-background h-10 text-xs sm:text-sm px-2 sm:px-3 text-center sm:text-left",
                     showFieldError('time') && "border-destructive focus-visible:ring-destructive"
                   )}
                 />
@@ -1366,7 +1368,7 @@ export function AdminMobileAppointments() {
 
               {/* Fila 2 Columna derecha en mobile | Col 1-2 en desktop Fila 2 */}
               <div className="manual-grid-field manual-field-barbero col-span-1 sm:col-span-2 sm:order-4 min-w-0">
-                <label htmlFor="manual-barber" className="font-medium text-foreground block mb-1.5 text-xs sm:text-sm">
+                <label htmlFor="manual-barber" className="font-medium text-foreground block mb-1.5 text-xs sm:text-sm truncate" title="Barbero">
                   Barbero <span className="text-destructive font-normal" aria-hidden="true">*</span>
                 </label>
                 {profile.role === 'ADMIN' ? (
@@ -1381,7 +1383,7 @@ export function AdminMobileAppointments() {
                     required
                     aria-invalid={Boolean(showFieldError('barber'))}
                     className={cn(
-                      "w-full h-10 rounded-md border border-input bg-background px-2.5 sm:px-3 py-2 text-xs sm:text-sm shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring truncate",
+                      "w-full h-10 rounded-md border border-input bg-background px-2 sm:px-3 py-2 text-xs sm:text-sm shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring truncate",
                       showFieldError('barber') && "border-destructive focus-visible:ring-destructive"
                     )}
                   >
@@ -1390,7 +1392,7 @@ export function AdminMobileAppointments() {
                     ))}
                   </select>
                 ) : (
-                  <output id="manual-barber" className="flex items-center h-10 px-3 rounded-md border border-input bg-muted/40 font-medium text-xs sm:text-sm truncate">
+                  <output id="manual-barber" className="flex items-center h-10 px-2 sm:px-3 rounded-md border border-input bg-muted/40 font-medium text-xs sm:text-sm truncate">
                     {permittedRows[0]?.name ?? 'Tu agenda'}
                   </output>
                 )}
@@ -1432,20 +1434,20 @@ export function AdminMobileAppointments() {
 
               {/* Fila 3 Columna derecha en mobile | Col 3-4 en desktop Fila 2 */}
               <div className="manual-grid-field manual-field-frecuencia col-span-1 sm:col-span-2 sm:order-5 min-w-0">
-                <label htmlFor="manual-frequency" className="font-medium text-foreground block mb-1.5 text-xs sm:text-sm">
+                <label htmlFor="manual-frequency" className="font-medium text-foreground block mb-1.5 text-xs sm:text-sm truncate" title="Frecuencia">
                   Frecuencia <span className="text-destructive font-normal" aria-hidden="true">*</span>
                 </label>
                 <select
                   id="manual-frequency"
                   value={manualFrequency}
                   onChange={e => setManualFrequency(e.target.value as ManualFrequency)}
-                  className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-xs sm:text-sm shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  className="w-full h-10 rounded-md border border-input bg-background px-2 sm:px-3 py-2 text-xs sm:text-sm shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring truncate"
                 >
-                  <option value="ONCE">Única vez</option>
-                  <option value="WEEKLY">Una vez a la semana</option>
-                  <option value="BIWEEKLY">Una vez cada dos semanas</option>
-                  <option value="TRIWEEKLY">Una vez cada tres semanas</option>
-                  <option value="MONTHLY">Una vez al mes</option>
+                  <option value="ONCE">1 vez</option>
+                  <option value="WEEKLY">1 vez a la semana</option>
+                  <option value="BIWEEKLY">1 vez cada 2 semanas</option>
+                  <option value="TRIWEEKLY">1 vez cada 3 semanas</option>
+                  <option value="MONTHLY">1 vez al mes</option>
                 </select>
               </div>
 
@@ -1477,14 +1479,14 @@ export function AdminMobileAppointments() {
 
               {/* Fila 4 Columna derecha en mobile | Col 1-2 en desktop Fila 4 */}
               <div className="manual-grid-field manual-field-sena col-span-1 sm:col-span-2 sm:order-10 min-w-0">
-                <label htmlFor="manual-deposit" className="font-medium text-foreground block mb-1.5 text-xs sm:text-sm">
+                <label htmlFor="manual-deposit" className="font-medium text-foreground block mb-1.5 text-xs sm:text-sm truncate" title="Abona seña">
                   Abona seña <span className="text-destructive font-normal" aria-hidden="true">*</span>
                 </label>
                 <select
                   id="manual-deposit"
                   value={manualDepositRequired ? 'YES' : 'NO'}
                   onChange={e => setManualDepositRequired(e.target.value === 'YES')}
-                  className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-xs sm:text-sm shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  className="w-full h-10 rounded-md border border-input bg-background px-2 sm:px-3 py-2 text-xs sm:text-sm shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring truncate"
                 >
                   <option value="NO">No</option>
                   <option value="YES">Sí</option>
@@ -1524,7 +1526,7 @@ export function AdminMobileAppointments() {
 
               {/* Fila 5 Columna derecha en mobile | Col 5-6 en desktop Fila 2 */}
               <div className="manual-grid-field manual-field-importe col-span-1 sm:col-span-2 sm:order-6 min-w-0">
-                <label htmlFor="manual-total-amount" className="font-medium text-foreground block mb-1.5 text-xs sm:text-sm">
+                <label htmlFor="manual-total-amount" className="font-medium text-foreground block mb-1.5 text-xs sm:text-sm truncate" title="Importe total">
                   Importe total
                 </label>
                 <Input
@@ -1532,7 +1534,7 @@ export function AdminMobileAppointments() {
                   type="text"
                   readOnly
                   value={manualTotalAmountFormatted}
-                  className="bg-muted/40 h-10 text-xs sm:text-sm font-semibold text-foreground cursor-default select-none border-border"
+                  className="bg-muted/40 h-10 text-xs sm:text-sm font-semibold text-foreground cursor-default select-none border-border px-2 sm:px-3 truncate"
                   aria-label="Importe total"
                 />
               </div>

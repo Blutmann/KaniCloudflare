@@ -547,4 +547,44 @@ describe('Manual Appointments & Recurring Logic Unit Tests', () => {
     expect(componentCode).toContain('<option value="NO">No</option>');
     expect(componentCode).toContain('<option value="YES">Sí</option>');
   });
+
+  it('verifies shortened numeric frequency labels and shortenFrequencyText conversion', async () => {
+    const { MANUAL_FREQUENCY_LABELS, shortenFrequencyText } = await import('./kani-appointments');
+
+    // MANUAL_FREQUENCY_LABELS uses digits instead of written numbers
+    expect(MANUAL_FREQUENCY_LABELS.ONCE).toBe('1 vez');
+    expect(MANUAL_FREQUENCY_LABELS.WEEKLY).toBe('1 vez a la semana');
+    expect(MANUAL_FREQUENCY_LABELS.BIWEEKLY).toBe('1 vez cada 2 semanas');
+    expect(MANUAL_FREQUENCY_LABELS.TRIWEEKLY).toBe('1 vez cada 3 semanas');
+    expect(MANUAL_FREQUENCY_LABELS.MONTHLY).toBe('1 vez al mes');
+
+    // shortenFrequencyText converts written numbers to digits
+    expect(shortenFrequencyText('Una vez')).toBe('1 vez');
+    expect(shortenFrequencyText('Dos semanas')).toBe('2 semanas');
+    expect(shortenFrequencyText('Una vez cada tres semanas')).toBe('1 vez cada 3 semanas');
+    expect(shortenFrequencyText('Una vez cada dos semanas')).toBe('1 vez cada 2 semanas');
+    expect(shortenFrequencyText('Dos veces por semana')).toBe('2 veces por semana');
+    expect(shortenFrequencyText('Turno de prueba\n[Frecuencia: Una vez cada dos semanas]')).toBe(
+      'Turno de prueba\n[Frecuencia: 1 vez cada 2 semanas]'
+    );
+  });
+
+  it('verifies 70/30 column distribution on mobile and 50/50 on desktop for manual appointment grid', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+    const cssContent = fs.readFileSync(path.resolve(process.cwd(), 'src/styles.css'), 'utf-8');
+    const componentCode = fs.readFileSync(
+      path.resolve(process.cwd(), 'src/components/kani/admin-mobile-appointments.tsx'),
+      'utf-8'
+    );
+
+    // CSS defines 7fr / 3fr ratio (70% / 30%) on mobile
+    expect(cssContent).toContain('grid-template-columns: minmax(0, 7fr) minmax(0, 3fr);');
+
+    // Desktop media query (min-width: 640px) preserves 6 equal columns (50%/50% pair distribution)
+    expect(cssContent).toContain('grid-template-columns: repeat(6, minmax(0, 1fr));');
+
+    // Component includes 70/30 mobile grid template
+    expect(componentCode).toContain('grid-cols-[minmax(0,7fr)_minmax(0,3fr)]');
+  });
 });

@@ -42,12 +42,37 @@ export type ManualFrequency =
   | 'MONTHLY';
 
 export const MANUAL_FREQUENCY_LABELS: Record<ManualFrequency, string> = {
-  ONCE: 'Única vez',
-  WEEKLY: 'Una vez a la semana',
-  BIWEEKLY: 'Una vez cada dos semanas',
-  TRIWEEKLY: 'Una vez cada tres semanas',
-  MONTHLY: 'Una vez al mes',
+  ONCE: '1 vez',
+  WEEKLY: '1 vez a la semana',
+  BIWEEKLY: '1 vez cada 2 semanas',
+  TRIWEEKLY: '1 vez cada 3 semanas',
+  MONTHLY: '1 vez al mes',
 };
+
+/**
+ * Convierte palabras numéricas de frecuencias e intervalos en cifras:
+ * - «Una vez» -> «1 vez»
+ * - «Dos semanas» -> «2 semanas»
+ * - «Una vez cada dos semanas» -> «1 vez cada 2 semanas»
+ * - «Una vez cada tres semanas» -> «1 vez cada 3 semanas»
+ * - «Dos veces por semana» -> «2 veces por semana»
+ */
+export function shortenFrequencyText(text: string): string {
+  if (!text) return '';
+  return text
+    .replace(/\bUna vez cada tres semanas\b/gi, '1 vez cada 3 semanas')
+    .replace(/\bUna vez cada dos semanas\b/gi, '1 vez cada 2 semanas')
+    .replace(/\bDos veces por semana\b/gi, '2 veces por semana')
+    .replace(/\bUna vez a la semana\b/gi, '1 vez a la semana')
+    .replace(/\bUna vez al mes\b/gi, '1 vez al mes')
+    .replace(/\bDos semanas\b/gi, '2 semanas')
+    .replace(/\bTres semanas\b/gi, '3 semanas')
+    .replace(/\bUna vez\b/gi, '1 vez')
+    .replace(/\bÚnica vez\b/gi, '1 vez')
+    .replace(/\bDos veces\b/gi, '2 veces')
+    .replace(/\bTres veces\b/gi, '3 veces')
+    .replace(/\bCuatro veces\b/gi, '4 veces');
+}
 
 export type CreateManualAppointmentInput = {
   barberId: string;
