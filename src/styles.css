@@ -941,7 +941,8 @@ html[data-theme="light"] .booking-option.selected .option-icon img { filter: bri
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   margin-top: 0.75rem;
   margin-bottom: 1rem;
   box-sizing: border-box;
@@ -1075,15 +1076,18 @@ html[data-theme="light"] .admin-section-nav-link.is-active:active {
   }
   .admin-section-nav {
     padding: 0.25rem;
-    gap: 0.2rem;
+    gap: 0.25rem;
+    max-width: 100%;
   }
   .admin-section-nav-items {
     gap: 0.2rem;
+    min-width: 0;
   }
   .admin-section-nav-link {
-    min-height: 2.15rem;
-    padding: 0.35rem 0.35rem;
-    font-size: 0.66rem;
+    min-height: 2.5rem;
+    padding: 0.35rem 0.25rem;
+    font-size: clamp(0.64rem, 2.3vw, 0.76rem);
+    letter-spacing: -0.01em;
     gap: 0.25rem;
   }
   .admin-section-nav-link svg {
@@ -1093,14 +1097,6 @@ html[data-theme="light"] .admin-section-nav-link.is-active:active {
   .admin-section-nav-divider {
     height: 1.25rem;
     margin-inline: 0.15rem;
-  }
-  .admin-section-nav-refresh-btn {
-    width: 2.15rem;
-    height: 2.15rem;
-  }
-  .admin-section-nav-refresh-btn svg {
-    width: 13px;
-    height: 13px;
   }
 }
 
