@@ -1538,6 +1538,19 @@ html[data-theme="light"] .admin-section-nav-link.is-active:active {
 .admin-mobile-appointment-details a { color: var(--gold); text-decoration: none; }
 .admin-mobile-appointment-details a:hover { text-decoration: underline; }
 .admin-mobile-appointment-details .admin-mobile-detail-notes { grid-column: 1 / -1; padding-top: .65rem; border-top: 1px solid var(--border); }
+
+/* Cards de turnos: distribución 70% / 30% en mobile, 50% / 50% en desktop */
+.admin-card-info-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 3fr);
+  gap: 0.5rem;
+}
+
+@media (min-width: 768px) {
+  .admin-card-info-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
 .admin-mobile-card-actions { margin-top: .85rem; }
 .admin-mobile-card-actions > button { min-height: 2.6rem; }
 .admin-mobile-scroll-top { position: fixed; right: 1rem; bottom: calc(1rem + env(safe-area-inset-bottom)); z-index: 45; width: 2.7rem; height: 2.7rem; border-color: var(--gold); background: var(--chrome); color: var(--gold); box-shadow: 0 10px 24px rgb(0 0 0 / .2); }

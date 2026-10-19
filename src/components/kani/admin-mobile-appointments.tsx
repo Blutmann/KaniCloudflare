@@ -708,7 +708,7 @@ export function AdminMobileAppointments() {
 
             <div className="pt-2 border-t border-border/60">
               <h3 className="font-semibold text-foreground text-sm">{appointment.name}</h3>
-              <div className="grid grid-cols-2 gap-2 mt-2 text-xs">
+              <div className="admin-card-info-grid grid grid-cols-[minmax(0,7fr)_minmax(0,3fr)] md:grid-cols-2 gap-2 mt-2 text-xs">
                 {/* Fila 1: Servicio | Barbero */}
                 <div className="p-2 rounded-lg bg-background border border-border/70 min-w-0">
                   <span className="text-[11px] text-muted-foreground block">Servicio</span>
@@ -717,7 +717,7 @@ export function AdminMobileAppointments() {
                   </strong>
                 </div>
                 <div className="p-2 rounded-lg bg-background border border-border/70 min-w-0">
-                  <span className="text-[11px] text-muted-foreground block">Barbero</span>
+                  <span className="text-[11px] text-muted-foreground block truncate" title="Barbero">Barbero</span>
                   <strong className="font-medium text-foreground block truncate" title={appointment.barber}>
                     {appointment.barber}
                   </strong>
@@ -735,7 +735,7 @@ export function AdminMobileAppointments() {
                   </a>
                 </div>
                 <div className="p-2 rounded-lg bg-background border border-border/70 min-w-0">
-                  <span className="text-[11px] text-muted-foreground block">Abona seña</span>
+                  <span className="text-[11px] text-muted-foreground block truncate leading-tight" title="Abona seña">Abona seña</span>
                   <strong className="font-medium text-foreground block truncate">
                     {appointment.depositPaid || appointment.depositRequired ? 'Sí' : 'No'}
                   </strong>
@@ -746,14 +746,14 @@ export function AdminMobileAppointments() {
                   <span className="text-[11px] text-muted-foreground block">Email</span>
                   <a
                     href={`mailto:${appointment.email}`}
-                    className="font-medium text-foreground truncate block hover:underline"
+                    className="font-medium text-foreground break-all md:truncate block hover:underline leading-snug"
                     title={appointment.email}
                   >
                     {appointment.email}
                   </a>
                 </div>
                 <div className="p-2 rounded-lg bg-background border border-border/70 min-w-0">
-                  <span className="text-[11px] text-muted-foreground block">Importe total</span>
+                  <span className="text-[11px] text-muted-foreground block truncate leading-tight" title="Importe total">Importe total</span>
                   <strong className="font-medium text-foreground block truncate">
                     {appointment.servicePrice !== undefined ? money(appointment.servicePrice) : '—'}
                   </strong>
