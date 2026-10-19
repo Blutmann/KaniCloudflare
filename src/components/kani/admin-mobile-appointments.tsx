@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowUp, CalendarPlus, Check, CircleDot, Clock3, RefreshCw, X, XCircle } from 'lucide-react';
+import { ArrowUp, Calendar, CalendarPlus, Check, CheckCircle2, CircleDot, Clock, Clock3, RefreshCw, X, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -36,6 +36,43 @@ const statusFilters: Array<{ value: StatusFilter; label: string }> = [
 ];
 
 const summaryFilters = statusFilters;
+
+const summaryCardConfig: Record<StatusFilter, {
+  icon: typeof Calendar;
+  cardBase: string;
+  labelTone: string;
+  numberTone: string;
+  iconTone: string;
+}> = {
+  ALL: {
+    icon: Calendar,
+    cardBase: 'border-border bg-surface',
+    labelTone: 'text-muted-foreground',
+    numberTone: 'text-foreground',
+    iconTone: 'text-muted-foreground opacity-60',
+  },
+  CONFIRMED: {
+    icon: CheckCircle2,
+    cardBase: 'border-success/30 bg-success/5',
+    labelTone: 'text-success font-medium',
+    numberTone: 'text-success',
+    iconTone: 'text-success',
+  },
+  PENDING: {
+    icon: Clock,
+    cardBase: 'border-amber-500/30 bg-amber-500/5',
+    labelTone: 'text-amber-500 font-medium',
+    numberTone: 'text-amber-500',
+    iconTone: 'text-amber-500',
+  },
+  CANCELLED: {
+    icon: XCircle,
+    cardBase: 'border-destructive/30 bg-destructive/5',
+    labelTone: 'text-destructive font-medium',
+    numberTone: 'text-destructive',
+    iconTone: 'text-destructive',
+  },
+};
 
 const datePresets = appointmentsPresets;
 
@@ -327,53 +364,167 @@ export function AdminMobileAppointments() {
   function renderStatus(status: RealAppointmentStatus) {
     const meta = statusMeta[status];
     const Icon = status === 'PENDING' ? CircleDot : status === 'CANCELLED' ? XCircle : Check;
-    return <span className={`admin-mobile-status ${meta.tone}`}><Icon size={14} />{meta.label}</span>;
+    const toneClasses =
+      status === 'PENDING'
+        ? 'border-amber-500/30 bg-amber-500/10 text-amber-500'
+        : status === 'CANCELLED'
+          ? 'border-destructive/30 bg-destructive/10 text-destructive'
+          : 'border-success/30 bg-success/10 text-success';
+    return (
+      <span className={cn('inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border', toneClasses)}>
+        <Icon size={13} />
+        {meta.label}
+      </span>
+    );
   }
 
   return <main className="site-container admin-mobile-page">
     <div className="admin-mobile-shell">
-      <section className="admin-mobile-filters" aria-label="Filtros de agenda">
-        <div className="admin-mobile-filter-field">
-          <label htmlFor="mobile-date-preset">Período</label>
-          <select id="mobile-date-preset" value={datePreset} onChange={event => selectDatePreset(event.target.value as AppointmentsDatePreset)} aria-label="Filtrar por período">
-            {appointmentsPresets.map(preset => <option key={preset} value={preset}>{appointmentsPresetLabels[preset]}</option>)}
-          </select>
-        </div>
-        <div className="admin-mobile-filter-field">
-          <label htmlFor="mobile-date-filter">Fecha</label>
-          <input id="mobile-date-filter" type="date" value={specificDate} onChange={event => selectSpecificDate(event.target.value)} aria-label="Elegir fecha específica" />
-        </div>
-        <div className="admin-mobile-filter-field">
-          <label htmlFor="mobile-status-filter">Estado</label>
-          <select id="mobile-status-filter" value={statusFilter} onChange={event => setStatusFilter(event.target.value as StatusFilter)}>
-            {statusFilters.map(filter => <option key={filter.value} value={filter.value}>{filter.label}</option>)}
-          </select>
-        </div>
-        <div className="admin-mobile-filter-field">
-          <label htmlFor="mobile-barber-filter">Barbero</label>
-          {profile.role === 'ADMIN' ? (
-            <select id="mobile-barber-filter" value={barberFilter} onChange={event => setBarberFilter(event.target.value)}>
-              <option value="Todos">Todos</option>
-              {permittedBarbers.map(barber => <option key={barber} value={barber}>{barber}</option>)}
-            </select>
-          ) : (
-            <output id="mobile-barber-filter" className="admin-mobile-filter-readonly">{permittedBarbers[0] ?? 'Tu agenda'}</output>
-          )}
-        </div>
-      </section>
-
-      <section className="admin-mobile-summary" aria-label="Resumen de turnos">
-        {summaryFilters.map(filter => <button key={filter.value} type="button" className={`admin-mobile-summary-card ${statusTone(filter.value)} ${statusFilter === filter.value ? 'is-active' : ''}`} aria-pressed={statusFilter === filter.value} onClick={() => setStatusFilter(filter.value)}><span>{filter.label}</span><strong>{counts[filter.value]}</strong></button>)}
-      </section>
-
-      {notice && <div role="status" className="admin-mobile-notice"><Check size={16} />{notice}<Button variant="ghost" size="icon" aria-label="Cerrar aviso" onClick={() => setNotice('')}><X /></Button></div>}
-      {error && <div role="alert" className="admin-mobile-notice is-error"><XCircle size={16} />{error}</div>}
-
-      <section className="admin-mobile-agenda" aria-labelledby="mobile-agenda-title">
-        <div className="admin-mobile-section-heading flex items-center justify-between gap-3">
+      {/* 1. Filtros de agenda (idéntico a la card de filtros de Estadísticas) */}
+      <section className="p-3.5 rounded-xl border border-border bg-surface shadow-xs mb-4" aria-label="Filtros de agenda">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <div>
-            <h2 id="mobile-agenda-title">{appointmentCountLabel}</h2>
-            <span className="text-sm text-muted-foreground">{statusFilter === 'ALL' ? 'Todos los estados' : statusMeta[statusFilter].label}</span>
+            <label htmlFor="mobile-date-preset" className="block text-xs font-medium text-muted-foreground mb-1.5">
+              Período
+            </label>
+            <select
+              id="mobile-date-preset"
+              value={datePreset}
+              onChange={event => selectDatePreset(event.target.value as AppointmentsDatePreset)}
+              aria-label="Filtrar por período"
+              className="select-control w-full h-9 px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20"
+            >
+              {appointmentsPresets.map(preset => (
+                <option key={preset} value={preset}>{appointmentsPresetLabels[preset]}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="mobile-date-filter" className="block text-xs font-medium text-muted-foreground mb-1.5">
+              Fecha
+            </label>
+            <input
+              id="mobile-date-filter"
+              type="date"
+              value={specificDate}
+              onChange={event => selectSpecificDate(event.target.value)}
+              aria-label="Elegir fecha específica"
+              className="w-full h-9 px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20"
+            />
+          </div>
+          <div>
+            <label htmlFor="mobile-status-filter" className="block text-xs font-medium text-muted-foreground mb-1.5">
+              Estado
+            </label>
+            <select
+              id="mobile-status-filter"
+              value={statusFilter}
+              onChange={event => setStatusFilter(event.target.value as StatusFilter)}
+              className="select-control w-full h-9 px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20"
+            >
+              {statusFilters.map(filter => (
+                <option key={filter.value} value={filter.value}>{filter.label}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="mobile-barber-filter" className="block text-xs font-medium text-muted-foreground mb-1.5">
+              Barbero
+            </label>
+            {profile.role === 'ADMIN' ? (
+              <select
+                id="mobile-barber-filter"
+                value={barberFilter}
+                onChange={event => setBarberFilter(event.target.value)}
+                className="select-control w-full h-9 px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20"
+              >
+                <option value="Todos">Todos</option>
+                {permittedBarbers.map(barber => (
+                  <option key={barber} value={barber}>{barber}</option>
+                ))}
+              </select>
+            ) : (
+              <output id="mobile-barber-filter" className="w-full h-9 px-3 text-xs bg-muted/40 border border-border rounded-lg text-muted-foreground flex items-center cursor-not-allowed">
+                {permittedBarbers[0] ?? 'Tu agenda'}
+              </output>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* 2. Cards de estado / resumen (idéntico a los KPI cards de Estadísticas) */}
+      <section className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4" aria-label="Resumen de turnos">
+        {summaryFilters.map(filter => {
+          const config = summaryCardConfig[filter.value];
+          const Icon = config.icon;
+          const isActive = statusFilter === filter.value;
+          return (
+            <button
+              key={filter.value}
+              type="button"
+              className={cn(
+                "p-3.5 rounded-xl border flex flex-col justify-between text-left transition-all cursor-pointer relative",
+                config.cardBase,
+                isActive
+                  ? "ring-2 ring-primary border-primary shadow-xs"
+                  : "hover:border-foreground/25 hover:shadow-xs"
+              )}
+              aria-pressed={isActive}
+              onClick={() => setStatusFilter(filter.value)}
+            >
+              <div className="flex items-center justify-between w-full">
+                <span className={cn("text-xs font-medium", config.labelTone)}>
+                  {filter.label}
+                </span>
+                {isActive && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary" aria-hidden="true" />
+                )}
+              </div>
+              <div className="mt-2 flex items-baseline justify-between w-full">
+                <span className={cn("text-2xl font-bold", config.numberTone)}>
+                  {counts[filter.value]}
+                </span>
+                <Icon size={16} className={config.iconTone} />
+              </div>
+            </button>
+          );
+        })}
+      </section>
+
+      {/* 3. Avisos contextuales */}
+      {notice && (
+        <div role="status" className="p-3.5 rounded-xl border border-success/30 bg-success/10 text-success text-xs font-medium flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Check size={16} />
+            <span>{notice}</span>
+          </div>
+          <Button variant="ghost" size="icon" className="h-6 w-6 text-success hover:bg-success/20" aria-label="Cerrar aviso" onClick={() => setNotice('')}>
+            <X size={14} />
+          </Button>
+        </div>
+      )}
+      {error && (
+        <div role="alert" className="p-3.5 rounded-xl border border-destructive/40 bg-destructive/10 text-destructive text-xs font-medium flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <XCircle size={16} />
+            <span>{error}</span>
+          </div>
+          <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive hover:bg-destructive/20" aria-label="Cerrar error" onClick={() => setError('')}>
+            <X size={14} />
+          </Button>
+        </div>
+      )}
+
+      {/* 4. Agenda y lista de turnos */}
+      <section className="admin-mobile-agenda" aria-labelledby="mobile-agenda-title">
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <div>
+            <h2 id="mobile-agenda-title" className="text-sm font-semibold text-foreground">
+              {appointmentCountLabel}
+            </h2>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {statusFilter === 'ALL' ? 'Todos los estados' : statusMeta[statusFilter].label}
+            </p>
           </div>
           <Button
             type="button"
@@ -385,9 +536,22 @@ export function AdminMobileAppointments() {
           </Button>
         </div>
 
-        {loading && <div className="admin-mobile-empty"><Clock3 size={28} /><p>Cargando turnos…</p></div>}
-        {!loading && filteredAppointments.length === 0 && <div className="admin-mobile-empty"><Clock3 size={28} /><h3>No hay turnos para estos filtros.</h3><p>Probá con otro período, fecha o estado. Los turnos cancelados permanecen en el historial.</p></div>}
-        <div className="admin-mobile-list">{filteredAppointments.map(appointment => {
+        {loading && (
+          <div className="p-8 text-center border border-dashed border-border rounded-xl bg-surface/50 my-6">
+            <Clock3 size={32} className="mx-auto text-muted-foreground/60 mb-2 animate-spin" />
+            <p className="text-xs text-muted-foreground">Cargando turnos…</p>
+          </div>
+        )}
+        {!loading && filteredAppointments.length === 0 && (
+          <div className="p-8 text-center border border-dashed border-border rounded-xl bg-surface/50 my-6">
+            <Clock3 size={32} className="mx-auto text-muted-foreground/60 mb-2" />
+            <h3 className="text-sm font-semibold text-foreground">No hay turnos para estos filtros</h3>
+            <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">
+              Probá con otro período, fecha o estado. Los turnos cancelados permanecen en el historial.
+            </p>
+          </div>
+        )}
+        <div className="grid gap-3">{filteredAppointments.map(appointment => {
           const fallbackService = serviceFor(appointment.service);
           const serviceName = appointment.serviceName ?? fallbackService.name;
           const serviceDuration = appointment.serviceDuration ?? fallbackService.duration;
@@ -395,46 +559,90 @@ export function AdminMobileAppointments() {
           const phoneLabel = formatPhoneDisplay(appointment.phone);
           const isManual = Boolean(appointment.isManual || appointment.origin === 'MANUAL');
 
-          return <article className="admin-mobile-appointment" key={appointment.id}>
-            <div className="admin-mobile-appointment-top">
-              <div className="admin-mobile-time">
-                <strong>{appointment.time}</strong>
-                <span>hasta {appointment.endTime?.slice(0, 5) ?? '—'} · {dateLabel(appointment.date)}</span>
+          return <article className="p-4 rounded-xl border border-border bg-surface shadow-xs space-y-3" key={appointment.id}>
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex flex-col">
+                <strong className="text-xl font-bold text-foreground leading-none">{appointment.time}</strong>
+                <span className="text-xs text-muted-foreground mt-1 capitalize">hasta {appointment.endTime?.slice(0, 5) ?? '—'} · {dateLabel(appointment.date)}</span>
               </div>
-              <div className="flex flex-col items-end gap-1">
+              <div className="flex flex-col items-end gap-1.5">
                 {renderStatus(appointment.statusCode)}
                 {isManual && (
-                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-gold/15 text-gold border border-gold/30">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-gold/15 text-gold border border-gold/30">
                     {appointment.recurringRuleId ? 'Turno permanente' : 'Turno manual'}
                   </span>
                 )}
               </div>
             </div>
 
-            <div className="admin-mobile-appointment-main">
-              <h3>{appointment.name}</h3>
-              <div className="admin-mobile-appointment-details">
-                <div><span>Servicio</span><strong>{serviceName} · {serviceDuration} min</strong></div>
-                <div><span>Barbero</span><strong>{appointment.barber}</strong></div>
-                <div><span>Celular</span><a href={`tel:${phoneHref}`}>{phoneLabel}</a></div>
-                <div><span>Email</span><a href={`mailto:${appointment.email}`}>{appointment.email}</a></div>
-                <div>
-                  <span>Abona seña</span>
-                  <strong>{appointment.depositPaid || appointment.depositRequired ? 'Sí' : 'No'}</strong>
+            <div className="pt-2 border-t border-border/60">
+              <h3 className="font-semibold text-foreground text-sm">{appointment.name}</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 mt-2 text-xs">
+                <div className="p-2 rounded-lg bg-background border border-border/70">
+                  <span className="text-[11px] text-muted-foreground block">Servicio</span>
+                  <strong className="font-medium text-foreground">{serviceName} · {serviceDuration} min</strong>
                 </div>
-                {appointment.servicePrice !== undefined && <div><span>Importe total</span><strong>{money(appointment.servicePrice)}</strong></div>}
+                <div className="p-2 rounded-lg bg-background border border-border/70">
+                  <span className="text-[11px] text-muted-foreground block">Barbero</span>
+                  <strong className="font-medium text-foreground">{appointment.barber}</strong>
+                </div>
+                <div className="p-2 rounded-lg bg-background border border-border/70">
+                  <span className="text-[11px] text-muted-foreground block">Celular</span>
+                  <a href={`tel:${phoneHref}`} className="font-medium text-foreground hover:underline">{phoneLabel}</a>
+                </div>
+                <div className="p-2 rounded-lg bg-background border border-border/70">
+                  <span className="text-[11px] text-muted-foreground block">Email</span>
+                  <a href={`mailto:${appointment.email}`} className="font-medium text-foreground truncate block hover:underline">{appointment.email}</a>
+                </div>
+                <div className="p-2 rounded-lg bg-background border border-border/70">
+                  <span className="text-[11px] text-muted-foreground block">Abona seña</span>
+                  <strong className="font-medium text-foreground">{appointment.depositPaid || appointment.depositRequired ? 'Sí' : 'No'}</strong>
+                </div>
+                {appointment.servicePrice !== undefined && (
+                  <div className="p-2 rounded-lg bg-background border border-border/70">
+                    <span className="text-[11px] text-muted-foreground block">Importe total</span>
+                    <strong className="font-medium text-foreground">{money(appointment.servicePrice)}</strong>
+                  </div>
+                )}
                 {isManual && (
-                  <div>
-                    <span>Origen</span>
+                  <div className="p-2 rounded-lg bg-background border border-border/70 sm:col-span-2 md:col-span-3">
+                    <span className="text-[11px] text-muted-foreground block">Origen</span>
                     <strong className="text-gold font-medium">
                       Manual {appointment.createdByDisplayName ? `· Generado por: ${appointment.createdByDisplayName}` : ''}
                     </strong>
                   </div>
                 )}
-                {appointment.notes?.trim() && <div className="admin-mobile-detail-notes"><span>Observaciones</span><p>{appointment.notes.trim()}</p></div>}
               </div>
+              {appointment.notes?.trim() && (
+                <div className="mt-2.5 p-2.5 rounded-lg bg-background border border-border/70 text-xs">
+                  <span className="text-[11px] text-muted-foreground block mb-0.5">Observaciones</span>
+                  <p className="text-foreground text-xs leading-relaxed">{appointment.notes.trim()}</p>
+                </div>
+              )}
             </div>
-            {(appointment.statusCode === 'PENDING' || appointment.statusCode === 'CONFIRMED' || appointment.statusCode === 'CANCELLED') && <div className="admin-mobile-card-actions">{appointment.statusCode === 'PENDING' && <><Button className="action-positive" disabled={busyId === appointment.id} onClick={() => void changeStatus(appointment, 'CONFIRMED')}><Check size={16} />Confirmar</Button><Button variant="outline" className="action-brand-outline" disabled={busyId === appointment.id} onClick={() => setCancelTarget(appointment)}><X size={16} />Rechazar</Button></>}{appointment.statusCode === 'CONFIRMED' && <Button variant="outline" className="action-brand-outline" disabled={busyId === appointment.id} onClick={() => setCancelTarget(appointment)}><X size={16} />Cancelar turno</Button>}<Button variant="outline" disabled={busyId === appointment.id} onClick={() => void retryNotification(appointment)}><RefreshCw size={16} />Reenviar notificación</Button></div>}
+
+            {(appointment.statusCode === 'PENDING' || appointment.statusCode === 'CONFIRMED' || appointment.statusCode === 'CANCELLED') && (
+              <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-border/60">
+                {appointment.statusCode === 'PENDING' && (
+                  <>
+                    <Button size="sm" className="action-positive h-8 text-xs px-3" disabled={busyId === appointment.id} onClick={() => void changeStatus(appointment, 'CONFIRMED')}>
+                      <Check size={14} className="mr-1" />Confirmar
+                    </Button>
+                    <Button size="sm" variant="outline" className="action-brand-outline h-8 text-xs px-3" disabled={busyId === appointment.id} onClick={() => setCancelTarget(appointment)}>
+                      <X size={14} className="mr-1" />Rechazar
+                    </Button>
+                  </>
+                )}
+                {appointment.statusCode === 'CONFIRMED' && (
+                  <Button size="sm" variant="outline" className="action-brand-outline h-8 text-xs px-3" disabled={busyId === appointment.id} onClick={() => setCancelTarget(appointment)}>
+                    <X size={14} className="mr-1" />Cancelar turno
+                  </Button>
+                )}
+                <Button size="sm" variant="outline" className="h-8 text-xs px-3 text-muted-foreground hover:text-foreground" disabled={busyId === appointment.id} onClick={() => void retryNotification(appointment)}>
+                  <RefreshCw size={14} className="mr-1" />Reenviar notificación
+                </Button>
+              </div>
+            )}
           </article>;
         })}</div>
       </section>

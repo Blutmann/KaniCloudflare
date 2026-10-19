@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useAdminStaff } from "@/lib/kani-admin-context";
+import { cn } from "@/lib/utils";
 import {
   addCalendarDays,
   businessDateToday,
@@ -291,108 +292,140 @@ export function AdminScheduleManager() {
   return (
     <main className="site-container admin-schedule-page">
       <div className="admin-schedule-shell">
-        <section className="admin-schedule-filters" aria-label="Filtros de horarios">
-          <div className="admin-schedule-control">
-            <label htmlFor="schedule-date-preset">Período</label>
-            <select
-              id="schedule-date-preset"
-              value={datePreset}
-              onChange={(event) => selectPreset(event.target.value as ScheduleDatePreset)}
-            >
-              {datePresets.map((preset) => (
-                <option key={preset} value={preset}>
-                  {schedulePresetLabels[preset]}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="admin-schedule-control">
-            <label htmlFor="schedule-specific-date">Fecha</label>
-            <input
-              id="schedule-specific-date"
-              type="date"
-              min={businessToday}
-              value={specificDate}
-              onChange={(event) => selectSpecificDate(event.target.value)}
-            />
-          </div>
-          <div className="admin-schedule-control">
-            <label htmlFor="schedule-barber-filter">Barbero</label>
-            {profile.role === "ADMIN" ? (
+        {/* 1. Filtros de horarios (idéntico a la card de filtros de Estadísticas) */}
+        <section className="p-3.5 rounded-xl border border-border bg-surface shadow-xs mb-4" aria-label="Filtros de horarios">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label htmlFor="schedule-date-preset" className="block text-xs font-medium text-muted-foreground mb-1.5">
+                Período
+              </label>
               <select
-                id="schedule-barber-filter"
-                value={barberFilter}
-                onChange={(event) => setBarberFilter(event.target.value)}
+                id="schedule-date-preset"
+                value={datePreset}
+                onChange={(event) => selectPreset(event.target.value as ScheduleDatePreset)}
+                className="select-control w-full h-9 px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20"
               >
-                {permittedBarbers.map((barber) => (
-                  <option key={barber} value={barber}>
-                    {barber}
+                {datePresets.map((preset) => (
+                  <option key={preset} value={preset}>
+                    {schedulePresetLabels[preset]}
                   </option>
                 ))}
               </select>
-            ) : (
-              <output className="admin-schedule-filter-value">
-                {permittedBarbers[0] ?? "Tu agenda"}
-              </output>
-            )}
+            </div>
+            <div>
+              <label htmlFor="schedule-specific-date" className="block text-xs font-medium text-muted-foreground mb-1.5">
+                Fecha
+              </label>
+              <input
+                id="schedule-specific-date"
+                type="date"
+                min={businessToday}
+                value={specificDate}
+                onChange={(event) => selectSpecificDate(event.target.value)}
+                className="w-full h-9 px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20"
+              />
+            </div>
+            <div>
+              <label htmlFor="schedule-barber-filter" className="block text-xs font-medium text-muted-foreground mb-1.5">
+                Barbero
+              </label>
+              {profile.role === "ADMIN" ? (
+                <select
+                  id="schedule-barber-filter"
+                  value={barberFilter}
+                  onChange={(event) => setBarberFilter(event.target.value)}
+                  className="select-control w-full h-9 px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20"
+                >
+                  {permittedBarbers.map((barber) => (
+                    <option key={barber} value={barber}>
+                      {barber}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <output className="w-full h-9 px-3 text-xs bg-muted/40 border border-border rounded-lg text-muted-foreground flex items-center cursor-not-allowed">
+                  {permittedBarbers[0] ?? "Tu agenda"}
+                </output>
+              )}
+            </div>
           </div>
         </section>
-        <div className="admin-schedule-legend" aria-label="Leyenda de horarios">
-          <span>
-            <CircleDot size={14} />
+
+        {/* 2. Leyenda sutil de disponibilidad */}
+        <div className="flex flex-wrap items-center gap-2 mb-4 text-xs" aria-label="Leyenda de horarios">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-success/30 bg-success/5 text-success font-medium text-xs">
+            <CircleDot size={13} />
             Disponible
           </span>
-          <span>
-            <XCircle size={14} />
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-destructive/30 bg-destructive/5 text-destructive font-medium text-xs">
+            <XCircle size={13} />
             No disponible
           </span>
-          <span>
-            <Clock3 size={14} />
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-amber-500/30 bg-amber-500/5 text-amber-500 font-medium text-xs">
+            <Clock3 size={13} />
             Con reserva
           </span>
         </div>
+
+        {/* 3. Avisos contextuales */}
         {notice && (
-          <div role="status" className="admin-mobile-notice">
-            <Check size={16} />
-            {notice}
+          <div role="status" className="p-3.5 rounded-xl border border-success/30 bg-success/10 text-success text-xs font-medium flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Check size={16} />
+              <span>{notice}</span>
+            </div>
             <Button
               variant="ghost"
               size="icon"
+              className="h-6 w-6 text-success hover:bg-success/20"
               aria-label="Cerrar aviso"
               onClick={() => setNotice("")}
             >
-              <X />
+              <X size={14} />
             </Button>
           </div>
         )}
         {error && (
-          <div role="alert" className="admin-mobile-notice is-error">
-            <XCircle size={16} />
-            {error}
+          <div role="alert" className="p-3.5 rounded-xl border border-destructive/40 bg-destructive/10 text-destructive text-xs font-medium flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <XCircle size={16} />
+              <span>{error}</span>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 text-destructive hover:bg-destructive/20"
+              aria-label="Cerrar error"
+              onClick={() => setError("")}
+            >
+              <X size={14} />
+            </Button>
           </div>
         )}
+
+        {/* 4. Lista de horarios */}
         <section className="admin-schedule-list" aria-label="Disponibilidad horaria">
           {loading && (
-            <div className="admin-mobile-empty">
-              <Clock3 size={28} />
-              <p>Cargando horarios…</p>
+            <div className="p-8 text-center border border-dashed border-border rounded-xl bg-surface/50 my-6">
+              <Clock3 size={32} className="mx-auto text-muted-foreground/60 mb-2 animate-spin" />
+              <p className="text-xs text-muted-foreground">Cargando horarios…</p>
             </div>
           )}
           {!loading && groupedSlots.length === 0 && (
             <>
-              <div className="admin-mobile-empty">
-                <SlidersHorizontal size={28} />
-                <h2>No hay horarios para estos filtros.</h2>
-                <p>Podés agregar una disponibilidad en cualquier fecha futura de atención.</p>
+              <div className="p-8 text-center border border-dashed border-border rounded-xl bg-surface/50 my-6">
+                <SlidersHorizontal size={32} className="mx-auto text-muted-foreground/60 mb-2" />
+                <h2 className="text-sm font-semibold text-foreground">No hay horarios para estos filtros</h2>
+                <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">Podés agregar una disponibilidad en cualquier fecha futura de atención.</p>
               </div>
-              <div className="admin-schedule-cards admin-schedule-cards-empty">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                 <button
                   type="button"
-                  className="admin-schedule-card admin-schedule-capsule admin-schedule-add is-add-slot"
+                  className="min-h-[4.75rem] p-3 rounded-xl border border-dashed border-border bg-surface/50 hover:border-primary hover:bg-surface text-foreground font-medium text-xs flex items-center justify-center transition-all cursor-pointer shadow-xs"
                   aria-label="Agregar horario"
                   onClick={() => openManualDialog(specificDate, selectedRows[0]?.id)}
                 >
-                  <span className="admin-schedule-add-label font-semibold text-sm">
+                  <span className="font-semibold text-xs sm:text-sm">
                     Agregar horario
                   </span>
                 </button>
@@ -401,52 +434,65 @@ export function AdminScheduleManager() {
           )}
           {!loading &&
             groupedSlots.map(([date, dateSlots]) => (
-              <section key={date} className="admin-schedule-day">
-                <div className="admin-schedule-day-heading">
-                  <div>
-                    <span className="eyebrow">FECHA</span>
-                    <h2>{dateLabel(date)}</h2>
+              <section key={date} className="space-y-3 mb-6">
+                <div className="flex items-center justify-between pb-2 border-b border-border">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-bold tracking-wider uppercase text-muted-foreground px-1.5 py-0.5 rounded bg-muted">Fecha</span>
+                    <h2 className="text-sm font-semibold text-foreground capitalize">{dateLabel(date)}</h2>
                   </div>
-                  <span>
+                  <span className="text-xs text-muted-foreground">
                     {dateSlots.length} {dateSlots.length === 1 ? "horario" : "horarios"}
                   </span>
                 </div>
-                <div className="admin-schedule-cards">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                   {dateSlots.map((slot) => {
                     const available = slot.status === "AVAILABLE";
                     const saving = savingId === slot.id;
-                    const slotTone = slot.occupied
-                      ? "occupied"
+                    const toneConfig = slot.occupied
+                      ? {
+                          border: "border-amber-500/30 bg-amber-500/5",
+                          statusTone: "text-amber-500",
+                          label: "Con reserva",
+                          Icon: Clock3,
+                        }
                       : available
-                        ? "available"
-                        : "unavailable";
+                        ? {
+                            border: "border-success/30 bg-success/5 hover:border-success/50 hover:bg-success/10",
+                            statusTone: "text-success",
+                            label: "Disponible",
+                            Icon: CircleDot,
+                          }
+                        : {
+                            border: "border-destructive/30 bg-destructive/5 hover:border-destructive/50",
+                            statusTone: "text-destructive",
+                            label: "No disponible",
+                            Icon: XCircle,
+                          };
                     return (
                       <button
                         type="button"
                         key={slot.id}
-                        className={`admin-schedule-card admin-schedule-capsule is-${slotTone}`}
+                        className={cn(
+                          "min-h-[4.75rem] p-3 rounded-xl border flex flex-col justify-between text-left transition-all shadow-xs",
+                          toneConfig.border,
+                          slot.occupied ? "cursor-default opacity-90" : "cursor-pointer"
+                        )}
                         disabled={slot.occupied || saving}
                         aria-label={`${slot.start_time.slice(0, 5)}: ${slot.occupied ? "Con reserva, no modificable" : available ? "Disponible, tocar para marcar no disponible" : "No disponible, tocar para habilitar"}`}
                         onClick={() => void saveSlot(slot, available ? "UNAVAILABLE" : "AVAILABLE")}
                       >
-                        <div className="admin-schedule-card-top">
-                          <div className="admin-schedule-time">
-                            <strong>{slot.start_time.slice(0, 5)}</strong>
-                            <span>hasta {slot.end_time.slice(0, 5)}</span>
-                          </div>
-                          <span className={`admin-schedule-status ${slotTone}`}>
-                            {slot.occupied ? (
-                              <Clock3 size={14} />
-                            ) : available ? (
-                              <CircleDot size={14} />
-                            ) : (
-                              <XCircle size={14} />
-                            )}
-                            {slot.occupied
-                              ? "Con reserva"
-                              : available
-                                ? "Disponible"
-                                : "No disponible"}
+                        <div className="flex items-baseline justify-between w-full">
+                          <strong className="text-lg font-bold text-foreground leading-none">
+                            {slot.start_time.slice(0, 5)}
+                          </strong>
+                          <span className="text-[11px] text-muted-foreground">
+                            hasta {slot.end_time.slice(0, 5)}
+                          </span>
+                        </div>
+                        <div className="mt-2 flex items-center justify-between w-full">
+                          <span className={cn("text-xs font-medium inline-flex items-center gap-1", toneConfig.statusTone)}>
+                            <toneConfig.Icon size={12} />
+                            {toneConfig.label}
                           </span>
                         </div>
                       </button>
@@ -454,11 +500,11 @@ export function AdminScheduleManager() {
                   })}
                   <button
                     type="button"
-                    className="admin-schedule-card admin-schedule-capsule admin-schedule-add is-add-slot"
+                    className="min-h-[4.75rem] p-3 rounded-xl border border-dashed border-border bg-surface/50 hover:border-primary hover:bg-surface text-foreground font-medium text-xs flex items-center justify-center transition-all cursor-pointer shadow-xs"
                     aria-label={`Agregar horario para ${date}`}
                     onClick={() => openManualDialog(date, dateSlots[0]?.barber_id)}
                   >
-                    <span className="admin-schedule-add-label font-semibold text-sm">
+                    <span className="font-semibold text-xs sm:text-sm">
                       Agregar horario
                     </span>
                   </button>
