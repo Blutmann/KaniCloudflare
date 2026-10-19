@@ -812,7 +812,8 @@ export function AdminMobileAppointments() {
                     onClick={() => void retryNotification(appointment)}
                   >
                     <Mail size={14} className="mr-1 shrink-0" />
-                    <span className="truncate">Enviar correo</span>
+                    <span className="truncate md:hidden">Enviar mail</span>
+                    <span className="truncate hidden md:inline">Enviar correo</span>
                   </Button>
                 </div>
               )}
@@ -859,7 +860,8 @@ export function AdminMobileAppointments() {
                       onClick={() => void retryNotification(appointment)}
                     >
                       <Mail size={14} className="mr-1 shrink-0" />
-                      <span className="truncate">Enviar correo</span>
+                      <span className="truncate md:hidden">Enviar mail</span>
+                      <span className="truncate hidden md:inline">Enviar correo</span>
                     </Button>
                   </div>
                 </div>
@@ -941,7 +943,8 @@ export function AdminMobileAppointments() {
                     onClick={() => void retryNotification(appointment)}
                   >
                     <Mail size={14} className="mr-1 shrink-0" />
-                    <span className="truncate">Enviar correo</span>
+                    <span className="truncate md:hidden">Enviar mail</span>
+                    <span className="truncate hidden md:inline">Enviar correo</span>
                   </Button>
                 </div>
               )}
