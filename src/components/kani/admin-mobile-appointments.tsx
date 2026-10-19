@@ -1276,7 +1276,7 @@ export function AdminMobileAppointments() {
               </div>
             )}
 
-            <div className="manual-appointment-grid grid grid-cols-[minmax(0,7fr)_minmax(0,3fr)] sm:grid-cols-6 gap-2.5 sm:gap-4">
+            <div className="manual-appointment-grid grid grid-cols-[minmax(0,65fr)_minmax(0,35fr)] sm:grid-cols-6 gap-2.5 sm:gap-4">
               {/* Fila 1 Columna izquierda en mobile | Col 1-2 en desktop */}
               <div className="manual-grid-field manual-field-fecha col-span-1 sm:col-span-2 sm:order-1 min-w-0">
                 <label htmlFor="manual-date" className="font-medium text-foreground block mb-1.5 text-xs sm:text-sm">

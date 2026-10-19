@@ -569,7 +569,7 @@ describe('Manual Appointments & Recurring Logic Unit Tests', () => {
     );
   });
 
-  it('verifies 70/30 column distribution on mobile and 50/50 on desktop for manual appointment grid', async () => {
+  it('verifies 65/35 column distribution on mobile and 50/50 on desktop for manual appointment grid', async () => {
     const fs = await import('fs');
     const path = await import('path');
     const cssContent = fs.readFileSync(path.resolve(process.cwd(), 'src/styles.css'), 'utf-8');
@@ -578,13 +578,13 @@ describe('Manual Appointments & Recurring Logic Unit Tests', () => {
       'utf-8'
     );
 
-    // CSS defines 7fr / 3fr ratio (70% / 30%) on mobile
-    expect(cssContent).toContain('grid-template-columns: minmax(0, 7fr) minmax(0, 3fr);');
+    // CSS defines 65fr / 35fr ratio (65% / 35%) on mobile
+    expect(cssContent).toContain('grid-template-columns: minmax(0, 65fr) minmax(0, 35fr);');
 
     // Desktop media query (min-width: 640px) preserves 6 equal columns (50%/50% pair distribution)
     expect(cssContent).toContain('grid-template-columns: repeat(6, minmax(0, 1fr));');
 
-    // Component includes 70/30 mobile grid template
-    expect(componentCode).toContain('grid-cols-[minmax(0,7fr)_minmax(0,3fr)]');
+    // Component includes 65/35 mobile grid template
+    expect(componentCode).toContain('grid-cols-[minmax(0,65fr)_minmax(0,35fr)]');
   });
 });

@@ -1377,17 +1377,10 @@ html[data-theme="light"] .admin-section-nav-link.is-active:active {
   .admin-mobile-heading { margin-bottom: 1.75rem; }
 }
 
-/* Manual appointment responsive form grid */
+/* Grilla del formulario Agregar turno manual: 65% / 35% en mobile, 50% / 50% en desktop */
 .manual-appointment-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.75rem;
-}
-
-/* Grilla del formulario Agregar turno manual: 70% / 30% en mobile, 50% / 50% en desktop */
-.manual-appointment-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 7fr) minmax(0, 3fr);
+  grid-template-columns: minmax(0, 65fr) minmax(0, 35fr);
   gap: 0.625rem;
 }
 
