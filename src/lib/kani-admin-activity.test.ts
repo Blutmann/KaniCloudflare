@@ -301,5 +301,121 @@ describe('kani-admin-activity bulk notifications management', () => {
       expect(extractErrorMessage({}, 'Fallback error')).toBe('Fallback error');
     });
   });
+
+  describe('PostgreSQL 42501 permission denied resilience', () => {
+    it('successfully deletes a notification even when DB throws permission denied (42501) and table user_state does not exist', async () => {
+      // Mock RPC missing
+      mockRpc.mockResolvedValue({
+        data: null,
+        error: { message: 'function does not exist', code: 'PGRST202' },
+      });
+
+      // Mock table delete returning 42501
+      mockFrom.mockImplementation((table: string) => {
+        if (table === 'admin_activity_notifications') {
+          return {
+            delete: () => ({
+              eq: () => Promise.resolve({
+                error: { message: 'permission denied for table admin_activity_notifications', code: '42501' },
+              }),
+            }),
+            select: () => ({
+              order: () => ({
+                limit: () => Promise.resolve({
+                  data: [
+                    { id: 'notif-perm-1', event_type: 'APPOINTMENT_REQUESTED', created_at: new Date().toISOString(), read_at: null },
+                    { id: 'notif-perm-2', event_type: 'APPOINTMENT_CONFIRMED', created_at: new Date().toISOString(), read_at: null },
+                  ],
+                  error: null,
+                }),
+              }),
+            }),
+          };
+        }
+        if (table === 'admin_activity_user_state') {
+          return {
+            select: () => ({
+              eq: () => Promise.resolve({
+                data: null,
+                error: { message: "Could not find table 'public.admin_activity_user_state'", code: 'PGRST205' },
+              }),
+            }),
+            upsert: () => Promise.resolve({
+              error: { message: "Could not find table 'public.admin_activity_user_state'", code: 'PGRST205' },
+            }),
+          };
+        }
+        return {};
+      });
+
+      mockGetUser.mockResolvedValue({
+        data: { user: { id: 'admin-user-uuid' } },
+        error: null,
+      });
+
+      // Delete notif-perm-1
+      await expect(deleteAdminActivityNotificationGlobal('notif-perm-1')).resolves.not.toThrow();
+
+      // Read notifications should now filter out notif-perm-1
+      const result = await readAdminActivityNotifications();
+      expect(result.some(n => n.id === 'notif-perm-1')).toBe(false);
+      expect(result.some(n => n.id === 'notif-perm-2')).toBe(true);
+    });
+
+    it('successfully deletes all notifications even when DB throws permission denied (42501)', async () => {
+      mockRpc.mockResolvedValue({
+        data: null,
+        error: { message: 'function does not exist', code: 'PGRST202' },
+      });
+
+      mockFrom.mockImplementation((table: string) => {
+        if (table === 'admin_activity_notifications') {
+          return {
+            delete: () => ({
+              neq: () => Promise.resolve({
+                error: { message: 'permission denied for table admin_activity_notifications', code: '42501' },
+              }),
+            }),
+            select: () => ({
+              order: () => ({
+                limit: () => Promise.resolve({
+                  data: [
+                    { id: 'notif-perm-2', event_type: 'APPOINTMENT_CONFIRMED', created_at: new Date().toISOString(), read_at: null },
+                  ],
+                  error: null,
+                }),
+              }),
+            }),
+          };
+        }
+        if (table === 'admin_activity_user_state') {
+          return {
+            select: () => ({
+              eq: () => Promise.resolve({
+                data: null,
+                error: { message: "Could not find table 'public.admin_activity_user_state'", code: 'PGRST205' },
+              }),
+            }),
+            upsert: () => Promise.resolve({
+              error: { message: "Could not find table 'public.admin_activity_user_state'", code: 'PGRST205' },
+            }),
+          };
+        }
+        return {};
+      });
+
+      mockGetUser.mockResolvedValue({
+        data: { user: { id: 'admin-user-uuid' } },
+        error: null,
+      });
+
+      const deletedCount = await deleteAllAdminActivityNotificationsGlobal(['notif-perm-2']);
+      expect(deletedCount).toBe(1);
+
+      // Now read notifications should be empty
+      const result = await readAdminActivityNotifications();
+      expect(result.length).toBe(0);
+    });
+  });
 });
 

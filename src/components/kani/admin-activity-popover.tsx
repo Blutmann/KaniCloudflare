@@ -93,7 +93,7 @@ export function AdminActivityPopover({ role = 'ADMIN' }: { role?: 'ADMIN' | 'BAR
   async function markAllNotificationsRead() {
     if (!unreadNotifications.length) return;
     try {
-      await markAllAdminActivityNotificationsRead();
+      await markAllAdminActivityNotificationsRead(notifications.map(n => n.id));
       const readAt = new Date().toISOString();
       setNotifications(current => current.map(item => ({ ...item, readAt })));
     } catch (cause) {
@@ -105,7 +105,7 @@ export function AdminActivityPopover({ role = 'ADMIN' }: { role?: 'ADMIN' | 'BAR
     const hasRead = notifications.some(item => Boolean(item.readAt));
     if (!hasRead) return;
     try {
-      await markAllAdminActivityNotificationsUnread();
+      await markAllAdminActivityNotificationsUnread(notifications.map(n => n.id));
       setNotifications(current => current.map(item => ({ ...item, readAt: null })));
     } catch (cause) {
       setError(extractErrorMessage(cause, 'No se pudieron marcar las notificaciones como no leídas.'));

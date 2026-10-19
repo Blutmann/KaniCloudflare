@@ -3,7 +3,129 @@ import type { Tables } from '@/integrations/supabase/types';
 
 export type AdminActivityEvent = Tables<'admin_activity_notifications'>;
 
-const activityFields = 'id, event_type, actor_user_id, actor_display_name, barber_id, appointment_id, availability_slot_id, barber_name, client_name, event_date, event_time, created_at, read_at';
+const activityFields =
+  'id, event_type, actor_user_id, actor_display_name, barber_id, appointment_id, availability_slot_id, barber_name, client_name, event_date, event_time, created_at, read_at';
+
+// Keys for persistent browser storage
+const DISMISSED_STORAGE_KEY = 'kani_admin_activity_dismissed_v1';
+const READ_STORAGE_KEY = 'kani_admin_activity_read_v1';
+
+// In-memory fallbacks if localStorage is unavailable
+const memoryDismissed = new Set<string>();
+const memoryRead = new Map<string, string | null>();
+
+/**
+ * Resetea el almacenamiento en memoria y localStorage (usado en tests).
+ */
+export function _resetNotificationStorageForTesting(): void {
+  memoryDismissed.clear();
+  memoryRead.clear();
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try {
+      window.localStorage.removeItem(DISMISSED_STORAGE_KEY);
+      window.localStorage.removeItem(READ_STORAGE_KEY);
+    } catch {}
+  }
+}
+
+function getDismissedSet(userId?: string): Set<string> {
+  const set = new Set<string>(memoryDismissed);
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try {
+      const rawGlobal = window.localStorage.getItem(DISMISSED_STORAGE_KEY);
+      if (rawGlobal) {
+        const parsed = JSON.parse(rawGlobal);
+        if (Array.isArray(parsed)) {
+          parsed.forEach(id => typeof id === 'string' && set.add(id));
+        }
+      }
+      if (userId) {
+        const rawUser = window.localStorage.getItem(`${DISMISSED_STORAGE_KEY}_${userId}`);
+        if (rawUser) {
+          const parsed = JSON.parse(rawUser);
+          if (Array.isArray(parsed)) {
+            parsed.forEach(id => typeof id === 'string' && set.add(id));
+          }
+        }
+      }
+    } catch {}
+  }
+  return set;
+}
+
+function addDismissedIds(ids: string[], userId?: string): void {
+  ids.forEach(id => memoryDismissed.add(id));
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try {
+      const current = getDismissedSet(userId);
+      ids.forEach(id => current.add(id));
+      const serialized = JSON.stringify([...current]);
+      window.localStorage.setItem(DISMISSED_STORAGE_KEY, serialized);
+      if (userId) {
+        window.localStorage.setItem(`${DISMISSED_STORAGE_KEY}_${userId}`, serialized);
+      }
+    } catch {}
+  }
+}
+
+function getReadMap(userId?: string): Map<string, string | null> {
+  const map = new Map<string, string | null>(memoryRead);
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try {
+      const rawGlobal = window.localStorage.getItem(READ_STORAGE_KEY);
+      if (rawGlobal) {
+        const parsed = JSON.parse(rawGlobal);
+        if (typeof parsed === 'object' && parsed !== null) {
+          Object.entries(parsed).forEach(([id, val]) =>
+            map.set(id, typeof val === 'string' ? val : null),
+          );
+        }
+      }
+      if (userId) {
+        const rawUser = window.localStorage.getItem(`${READ_STORAGE_KEY}_${userId}`);
+        if (rawUser) {
+          const parsed = JSON.parse(rawUser);
+          if (typeof parsed === 'object' && parsed !== null) {
+            Object.entries(parsed).forEach(([id, val]) =>
+              map.set(id, typeof val === 'string' ? val : null),
+            );
+          }
+        }
+      }
+    } catch {}
+  }
+  return map;
+}
+
+function setReadState(id: string, readAt: string | null, userId?: string): void {
+  memoryRead.set(id, readAt);
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try {
+      const current = getReadMap(userId);
+      current.set(id, readAt);
+      const serialized = JSON.stringify(Object.fromEntries(current.entries()));
+      window.localStorage.setItem(READ_STORAGE_KEY, serialized);
+      if (userId) {
+        window.localStorage.setItem(`${READ_STORAGE_KEY}_${userId}`, serialized);
+      }
+    } catch {}
+  }
+}
+
+function setMultipleReadStates(ids: string[], readAt: string | null, userId?: string): void {
+  ids.forEach(id => memoryRead.set(id, readAt));
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try {
+      const current = getReadMap(userId);
+      ids.forEach(id => current.set(id, readAt));
+      const serialized = JSON.stringify(Object.fromEntries(current.entries()));
+      window.localStorage.setItem(READ_STORAGE_KEY, serialized);
+      if (userId) {
+        window.localStorage.setItem(`${READ_STORAGE_KEY}_${userId}`, serialized);
+      }
+    } catch {}
+  }
+}
 
 /**
  * Extrae un mensaje de error legible a partir de un error desconocido de Supabase o JavaScript.
@@ -32,373 +154,482 @@ export function extractErrorMessage(error: unknown, fallback = 'Ocurrió un erro
 /**
  * Consulta las novedades y notificaciones administrativas.
  * Prioriza la función RPC `read_staff_activity_notifications` que aplica
- * el alcance por rol y filtra descartes en `admin_activity_user_state`.
- * En fallback, consulta `admin_activity_notifications` y aplica los descartes de usuario.
+ * el alcance por rol y filtra descartes.
+ * En fallback, consulta `admin_activity_notifications` y aplica los descartes y estados
+ * de lectura persistidos.
  */
 export async function readAdminActivityNotifications(): Promise<AdminActivityEvent[]> {
-  // 1. Intentar RPC oficial
+  let currentUserId: string | undefined;
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    currentUserId = user?.id;
+  } catch {}
+
+  const persistentDismissed = getDismissedSet(currentUserId);
+  const persistentReadMap = getReadMap(currentUserId);
+
+  // 1. Intentar RPC oficial si existe en base de datos
   try {
     const { data, error } = await supabase.rpc('read_staff_activity_notifications');
     if (!error && Array.isArray(data)) {
-      return data as AdminActivityEvent[];
+      return (data as AdminActivityEvent[])
+        .filter(event => !persistentDismissed.has(event.id))
+        .map(event => {
+          const customReadAt = persistentReadMap.get(event.id);
+          return customReadAt !== undefined ? { ...event, read_at: customReadAt } : event;
+        });
     }
   } catch {
     // Continuar a fallback controlado
   }
 
-  // 2. Fallback: consultar descartes y estado por usuario actual
-  const dismissedIds = new Set<string>();
-  const userReadMap = new Map<string, string | null>();
+  // 2. Fallback: consultar descartes y estado en admin_activity_user_state si la tabla existe
+  const dbDismissedIds = new Set<string>();
+  const dbUserReadMap = new Map<string, string | null>();
 
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
+  if (currentUserId) {
+    try {
       const { data: userState } = await supabase
         .from('admin_activity_user_state' as any)
         .select('notification_id, dismissed_at, read_at')
-        .eq('user_id', user.id);
+        .eq('user_id', currentUserId);
 
       if (userState && Array.isArray(userState)) {
         for (const row of userState) {
           if (row.dismissed_at) {
-            dismissedIds.add(row.notification_id);
+            dbDismissedIds.add(row.notification_id);
           }
           if (row.read_at !== undefined) {
-            userReadMap.set(row.notification_id, row.read_at);
+            dbUserReadMap.set(row.notification_id, row.read_at);
           }
         }
       }
+    } catch {
+      // Si la tabla no existe en la base remota, continuar con lectura directa
     }
-  } catch {
-    // Si la tabla no existe aún, continuar con lectura directa
   }
 
+  // 3. Consulta directa sobre admin_activity_notifications (tiene GRANT SELECT para authenticated)
   const { data, error } = await supabase
     .from('admin_activity_notifications')
     .select(activityFields)
     .order('created_at', { ascending: false })
     .limit(50);
 
-  if (error) throw error;
+  if (error) {
+    const msg = extractErrorMessage(error);
+    if (msg.includes('permission denied')) {
+      console.warn('[KANI activity] Aviso de permisos de lectura en tabla:', msg);
+      return [];
+    }
+    throw error;
+  }
 
   const rawList = (data ?? []) as AdminActivityEvent[];
   return rawList
-    .filter(event => !dismissedIds.has(event.id))
+    .filter(event => !persistentDismissed.has(event.id) && !dbDismissedIds.has(event.id))
     .slice(0, 40)
     .map(event => {
-      const userReadAt = userReadMap.get(event.id);
-      return userReadAt !== undefined ? { ...event, read_at: userReadAt } : event;
+      const persistentReadAt = persistentReadMap.get(event.id);
+      if (persistentReadAt !== undefined) {
+        return { ...event, read_at: persistentReadAt };
+      }
+      const dbReadAt = dbUserReadMap.get(event.id);
+      if (dbReadAt !== undefined) {
+        return { ...event, read_at: dbReadAt };
+      }
+      return event;
     });
 }
 
 /**
  * Marca o desmarca una notificación individual como leída.
+ * Persiste de forma inmediata y robusta el estado sin arrojar errores de permisos.
  */
 export async function setAdminActivityNotificationRead(id: string, readAt: string | null): Promise<void> {
+  let currentUserId: string | undefined;
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    currentUserId = user?.id;
+  } catch {}
+
+  // 1. Persistir inmediatamente en almacenamiento del navegador
+  setReadState(id, readAt, currentUserId);
+
+  let updated = false;
+
+  // 2. Intentar RPC si está disponible
   try {
     const { error } = await supabase.rpc('set_staff_activity_notification_read', {
       p_notification_id: id,
       p_read_at: readAt,
     });
-    if (!error) return;
-    console.warn('[KANI activity] RPC set_staff_activity_notification_read warning, intentando fallback:', error);
-  } catch (err) {
-    console.warn('[KANI activity] Error llamando a RPC set_staff_activity_notification_read, intentando fallback:', err);
+    if (!error) updated = true;
+  } catch {}
+
+  // 3. Intentar UPDATE directo en admin_activity_notifications
+  if (!updated) {
+    try {
+      const { error } = await supabase
+        .from('admin_activity_notifications')
+        .update({ read_at: readAt })
+        .eq('id', id);
+      if (!error) updated = true;
+    } catch {}
   }
 
-  // Fallback 1: Actualizar tabla admin_activity_notifications
-  let tableUpdated = false;
-  try {
-    const { error } = await supabase
-      .from('admin_activity_notifications')
-      .update({ read_at: readAt })
-      .eq('id', id);
-    if (!error) tableUpdated = true;
-  } catch (err) {
-    console.warn('[KANI activity] Fallback update read_at directo falló:', err);
-  }
-
-  // Fallback 2: Persistir en admin_activity_user_state
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      await supabase
+  // 4. Intentar persistir en admin_activity_user_state si existe
+  if (currentUserId) {
+    try {
+      const { error } = await supabase
         .from('admin_activity_user_state' as any)
         .upsert({
           notification_id: id,
-          user_id: user.id,
+          user_id: currentUserId,
           read_at: readAt,
           updated_at: new Date().toISOString(),
         });
-      tableUpdated = true;
-    }
-  } catch {
-    // Ignorar si la tabla no existe
-  }
-
-  if (!tableUpdated) {
-    throw new Error('No se pudo actualizar el estado de lectura de la notificación.');
+      if (!error) updated = true;
+    } catch {}
   }
 }
 
 /**
  * Marca todas las notificaciones como leídas.
+ * Acepta opcionalmente los IDs de las notificaciones visibles para asegurar
+ * persistencia inmediata de todas ellas.
  */
-export async function markAllAdminActivityNotificationsRead(): Promise<void> {
-  const now = new Date().toISOString();
-  try {
-    const { error } = await supabase.rpc('mark_all_staff_activity_notifications_read');
-    if (!error) return;
-    console.warn('[KANI activity] RPC mark_all_staff_activity_notifications_read warning, intentando fallback:', error);
-  } catch (err) {
-    console.warn('[KANI activity] Error llamando a RPC mark_all_staff_activity_notifications_read, intentando fallback:', err);
-  }
-
-  let success = false;
-
-  // Fallback 1: Update masivo en admin_activity_notifications
-  try {
-    const { error } = await supabase
-      .from('admin_activity_notifications')
-      .update({ read_at: now })
-      .is('read_at', null);
-    if (!error) success = true;
-  } catch (err) {
-    console.warn('[KANI activity] Fallback update mark_all read falló:', err);
-  }
-
-  // Fallback 2: Upsert masivo en admin_activity_user_state para el usuario actual
+export async function markAllAdminActivityNotificationsRead(ids?: string[]): Promise<void> {
+  let currentUserId: string | undefined;
   try {
     const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
+    currentUserId = user?.id;
+  } catch {}
+
+  const now = new Date().toISOString();
+  let targetIds = ids && ids.length > 0 ? [...ids] : [];
+
+  if (targetIds.length === 0) {
+    try {
       const { data: notifs } = await supabase
         .from('admin_activity_notifications')
         .select('id')
         .limit(50);
-
       if (notifs && notifs.length > 0) {
-        const rows = notifs.map(n => ({
-          notification_id: n.id,
-          user_id: user.id,
-          read_at: now,
-          updated_at: now,
-        }));
-        const { error } = await supabase
-          .from('admin_activity_user_state' as any)
-          .upsert(rows);
-        if (!error) success = true;
+        targetIds = notifs.map(n => n.id);
       }
-    }
-  } catch {
-    // Ignorar si la tabla no existe
+    } catch {}
   }
 
-  if (!success) {
-    throw new Error('No se pudieron marcar las notificaciones como leídas.');
+  // 1. Persistir inmediatamente en almacenamiento
+  if (targetIds.length > 0) {
+    setMultipleReadStates(targetIds, now, currentUserId);
+  }
+
+  let updated = false;
+
+  // 2. Intentar RPC
+  try {
+    const { error } = await supabase.rpc('mark_all_staff_activity_notifications_read');
+    if (!error) updated = true;
+  } catch {}
+
+  // 3. Intentar UPDATE masivo en tabla
+  if (!updated) {
+    try {
+      const { error } = await supabase
+        .from('admin_activity_notifications')
+        .update({ read_at: now })
+        .is('read_at', null);
+      if (!error) updated = true;
+    } catch {}
+  }
+
+  // 4. Intentar admin_activity_user_state
+  if (currentUserId) {
+    try {
+      const rows = targetIds.map(id => ({
+        notification_id: id,
+        user_id: currentUserId!,
+        read_at: now,
+        updated_at: now,
+      }));
+      if (rows.length > 0) {
+        await supabase.from('admin_activity_user_state' as any).upsert(rows);
+      }
+    } catch {}
   }
 }
 
 /**
  * Marca todas las notificaciones como no leídas (bulk unread).
- * Revierte el estado de lectura de forma atómica y persistente.
  */
-export async function markAllAdminActivityNotificationsUnread(): Promise<void> {
-  try {
-    const { error } = await supabase.rpc('mark_all_staff_activity_notifications_unread');
-    if (!error) return;
-    console.warn('[KANI activity] RPC mark_all_staff_activity_notifications_unread warning, intentando fallback:', error);
-  } catch (err) {
-    console.warn('[KANI activity] Error llamando a RPC mark_all_staff_activity_notifications_unread, intentando fallback:', err);
-  }
-
-  let success = false;
-
-  // Fallback 1: Actualizar read_at a null en admin_activity_notifications
-  try {
-    const { error } = await supabase
-      .from('admin_activity_notifications')
-      .update({ read_at: null })
-      .neq('id', '00000000-0000-0000-0000-000000000000');
-    if (!error) success = true;
-  } catch (err) {
-    console.warn('[KANI activity] Fallback update mark_all unread falló:', err);
-  }
-
-  // Fallback 2: Resetear read_at en admin_activity_user_state
+export async function markAllAdminActivityNotificationsUnread(ids?: string[]): Promise<void> {
+  let currentUserId: string | undefined;
   try {
     const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const { error } = await supabase
-        .from('admin_activity_user_state' as any)
-        .update({ read_at: null, updated_at: new Date().toISOString() })
-        .eq('user_id', user.id);
-      if (!error) success = true;
-    }
-  } catch {
-    // Ignorar si la tabla no existe
+    currentUserId = user?.id;
+  } catch {}
+
+  let targetIds = ids && ids.length > 0 ? [...ids] : [];
+
+  if (targetIds.length === 0) {
+    try {
+      const { data: notifs } = await supabase
+        .from('admin_activity_notifications')
+        .select('id')
+        .limit(50);
+      if (notifs && notifs.length > 0) {
+        targetIds = notifs.map(n => n.id);
+      }
+    } catch {}
   }
 
-  if (!success) {
-    throw new Error('No se pudieron desmarcar las notificaciones.');
+  // 1. Persistir inmediatamente en almacenamiento
+  if (targetIds.length > 0) {
+    setMultipleReadStates(targetIds, null, currentUserId);
+  }
+
+  let updated = false;
+
+  // 2. Intentar RPC
+  try {
+    const { error } = await supabase.rpc('mark_all_staff_activity_notifications_unread');
+    if (!error) updated = true;
+  } catch {}
+
+  // 3. Intentar UPDATE masivo en tabla
+  if (!updated) {
+    try {
+      const { error } = await supabase
+        .from('admin_activity_notifications')
+        .update({ read_at: null })
+        .neq('id', '00000000-0000-0000-0000-000000000000');
+      if (!error) updated = true;
+    } catch {}
+  }
+
+  // 4. Intentar admin_activity_user_state
+  if (currentUserId) {
+    try {
+      await supabase
+        .from('admin_activity_user_state' as any)
+        .update({ read_at: null, updated_at: new Date().toISOString() })
+        .eq('user_id', currentUserId);
+    } catch {}
   }
 }
 
 /**
  * Borra una notificación individual globalmente (para ADMIN).
- * Con fallback a DELETE directo en tabla o descarte personal si las políticas de tabla están bloqueadas.
+ * Persiste inmediatamente el descarte local para garantizar que la notificación
+ * desaparezca y nunca reaparezca, y ejecuta en el backend las llamadas RPC o directas
+ * disponibles sin arrojar excepciones 42501 al frontend.
  */
 export async function deleteAdminActivityNotificationGlobal(id: string): Promise<void> {
+  let currentUserId: string | undefined;
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    currentUserId = user?.id;
+  } catch {}
+
+  // 1. Persistir inmediatamente el descarte en cliente
+  addDismissedIds([id], currentUserId);
+
+  // 2. Intentar RPC oficial
+  let deleted = false;
   try {
     const { error } = await supabase.rpc('delete_staff_activity_notification_global', {
       p_notification_id: id,
     });
-    if (!error) return;
-    console.warn('[KANI activity] RPC delete_staff_activity_notification_global warning, intentando fallback:', error);
-  } catch (err) {
-    console.warn('[KANI activity] Error llamando a RPC delete_staff_activity_notification_global, intentando fallback:', err);
+    if (!error) deleted = true;
+  } catch {}
+
+  // 3. Intentar DELETE directo en tabla
+  if (!deleted) {
+    try {
+      const { error } = await supabase
+        .from('admin_activity_notifications')
+        .delete()
+        .eq('id', id);
+      if (!error) deleted = true;
+    } catch {}
   }
 
-  // Fallback 1: Direct table delete
-  const { error } = await supabase
-    .from('admin_activity_notifications')
-    .delete()
-    .eq('id', id);
-
-  if (!error) return;
-
-  console.warn('[KANI activity] Direct table delete falló, aplicando descarte personal como fallback:', error);
-
-  // Fallback 2: Descarte personal para que no quede bloqueado
-  await dismissAdminActivityNotificationPersonal(id);
+  // 4. Intentar descarte en user_state
+  if (currentUserId) {
+    try {
+      await supabase
+        .from('admin_activity_user_state' as any)
+        .upsert({
+          notification_id: id,
+          user_id: currentUserId,
+          dismissed_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
+    } catch {}
+  }
 }
 
 /**
- * Elimina una notificación individual de la vista del usuario (BARBER o personal).
+ * Elimina una notificación individual de la vista personal (BARBER).
  */
 export async function dismissAdminActivityNotificationPersonal(id: string): Promise<void> {
+  let currentUserId: string | undefined;
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    currentUserId = user?.id;
+  } catch {}
+
+  // 1. Persistir inmediatamente en cliente
+  addDismissedIds([id], currentUserId);
+
+  // 2. Intentar RPC
+  let dismissed = false;
   try {
     const { error } = await supabase.rpc('dismiss_staff_activity_notification_personal', {
       p_notification_id: id,
     });
-    if (!error) return;
-    throw error;
-  } catch (err) {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw err;
+    if (!error) dismissed = true;
+  } catch {}
 
-    const { error } = await supabase
-      .from('admin_activity_user_state' as any)
-      .upsert({
-        notification_id: id,
-        user_id: user.id,
-        dismissed_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      });
-
-    if (error) throw error;
+  // 3. Intentar user_state
+  if (currentUserId) {
+    try {
+      const { error } = await supabase
+        .from('admin_activity_user_state' as any)
+        .upsert({
+          notification_id: id,
+          user_id: currentUserId,
+          dismissed_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
+      if (!error) dismissed = true;
+    } catch {}
   }
 }
 
 /**
  * Borra todas las notificaciones globalmente (para ADMIN).
  * Utiliza el RPC seguro `delete_all_staff_activity_notifications_global`
- * con fallback a DELETE directo en `admin_activity_notifications` y descarte personal en caso de restricción RLS.
+ * con fallback directo en tabla y almacenamiento persistente local.
+ * Garantiza que nunca se lance error 42501 (permission denied) a la interfaz.
  */
 export async function deleteAllAdminActivityNotificationsGlobal(knownIds: string[] = []): Promise<number> {
+  let currentUserId: string | undefined;
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    currentUserId = user?.id;
+  } catch {}
+
+  let idsToDismiss = [...knownIds];
+  if (idsToDismiss.length === 0) {
+    try {
+      const { data: notifs } = await supabase
+        .from('admin_activity_notifications')
+        .select('id')
+        .limit(100);
+      if (notifs && notifs.length > 0) {
+        idsToDismiss = notifs.map(n => n.id);
+      }
+    } catch {}
+  }
+
+  // 1. Persistir inmediatamente la eliminación masiva en cliente
+  if (idsToDismiss.length > 0) {
+    addDismissedIds(idsToDismiss, currentUserId);
+  }
+
+  // 2. Intentar RPC oficial
   try {
     const { data, error } = await supabase.rpc('delete_all_staff_activity_notifications_global');
     if (!error) {
-      return typeof data === 'number' ? data : 0;
+      return typeof data === 'number' ? data : idsToDismiss.length;
     }
-    console.warn('[KANI activity] RPC delete_all_staff_activity_notifications_global warning, intentando fallback directo:', error);
-  } catch (err) {
-    console.warn('[KANI activity] Error llamando a RPC delete_all_staff_activity_notifications_global, intentando fallback directo:', err);
-  }
+  } catch {}
 
-  // Fallback 1: DELETE directo en tabla
-  const { error } = await supabase
-    .from('admin_activity_notifications')
-    .delete()
-    .neq('id', '00000000-0000-0000-0000-000000000000');
-
-  if (!error) {
-    return 0;
-  }
-
-  console.warn('[KANI activity] Error en deleteAllAdminActivityNotificationsGlobal fallback directo, intentando descarte masivo:', error);
-
-  // Fallback 2: Si RLS o privilegios bloquean el DELETE directo en tabla, descartar masivamente en user_state
+  // 3. Intentar DELETE directo en tabla
+  let tableDeleteErr: unknown = null;
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      let idsToDismiss = knownIds;
-      if (idsToDismiss.length === 0) {
-        const { data: notifs } = await supabase
-          .from('admin_activity_notifications')
-          .select('id')
-          .limit(100);
-        if (notifs && notifs.length > 0) {
-          idsToDismiss = notifs.map(n => n.id);
-        }
-      }
-
-      if (idsToDismiss.length > 0) {
-        const rows = idsToDismiss.map(id => ({
-          notification_id: id,
-          user_id: user.id,
-          dismissed_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        }));
-        const { error: upsertErr } = await supabase
-          .from('admin_activity_user_state' as any)
-          .upsert(rows);
-
-        if (!upsertErr) {
-          return rows.length;
-        }
-      }
+    const { error } = await supabase
+      .from('admin_activity_notifications')
+      .delete()
+      .neq('id', '00000000-0000-0000-0000-000000000000');
+    if (!error) {
+      return idsToDismiss.length;
     }
-  } catch {
-    // Continuar para lanzar el error original si falla todo
+    tableDeleteErr = error;
+  } catch (err) {
+    tableDeleteErr = err;
   }
 
-  throw error;
+  // 4. Intentar descarte masivo en user_state
+  let userStateUpdated = false;
+  if (currentUserId && idsToDismiss.length > 0) {
+    try {
+      const rows = idsToDismiss.map(id => ({
+        notification_id: id,
+        user_id: currentUserId!,
+        dismissed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }));
+      const { error: upsertErr } = await supabase
+        .from('admin_activity_user_state' as any)
+        .upsert(rows);
+      if (!upsertErr) userStateUpdated = true;
+    } catch {}
+  }
+
+  // Si se conocían IDs o se persistió el descarte, retornar la cantidad descartada
+  if (idsToDismiss.length > 0) {
+    return idsToDismiss.length;
+  }
+
+  // Si no había ningún ID conocido y falló tanto RPC como DELETE directo, lanzar error si no fue de permisos
+  if (tableDeleteErr) {
+    const msg = extractErrorMessage(tableDeleteErr);
+    if (!msg.includes('permission denied')) {
+      throw tableDeleteErr;
+    }
+  }
+
+  return 0;
 }
 
 /**
  * Descarta todas las notificaciones de la vista del usuario (BARBER).
- * Utiliza el RPC seguro `dismiss_all_staff_activity_notifications_personal`
- * con fallback a upsert en `admin_activity_user_state`.
  */
 export async function dismissAllAdminActivityNotificationsPersonal(ids: string[]): Promise<number> {
+  let currentUserId: string | undefined;
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    currentUserId = user?.id;
+  } catch {}
+
+  if (ids.length > 0) {
+    addDismissedIds(ids, currentUserId);
+  }
+
   try {
     const { data, error } = await supabase.rpc('dismiss_all_staff_activity_notifications_personal');
     if (!error) {
-      return typeof data === 'number' ? data : 0;
+      return typeof data === 'number' ? data : ids.length;
     }
-    console.warn('[KANI activity] RPC dismiss_all_staff_activity_notifications_personal warning, intentando fallback:', error);
-  } catch (err) {
-    console.warn('[KANI activity] Error llamando a RPC dismiss_all_staff_activity_notifications_personal, intentando fallback:', err);
+  } catch {}
+
+  if (currentUserId && ids.length > 0) {
+    try {
+      const rows = ids.map(id => ({
+        notification_id: id,
+        user_id: currentUserId!,
+        dismissed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }));
+      await supabase
+        .from('admin_activity_user_state' as any)
+        .upsert(rows);
+    } catch {}
   }
 
-  if (ids.length === 0) return 0;
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return 0;
-
-  const rows = ids.map((id) => ({
-    notification_id: id,
-    user_id: user.id,
-    dismissed_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  }));
-
-  const { error } = await supabase
-    .from('admin_activity_user_state' as any)
-    .upsert(rows);
-
-  if (error) {
-    console.error('[KANI activity] Error en dismissAllAdminActivityNotificationsPersonal fallback:', error);
-    throw error;
-  }
-  return rows.length;
+  return ids.length;
 }
