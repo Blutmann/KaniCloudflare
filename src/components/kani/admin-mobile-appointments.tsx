@@ -332,10 +332,6 @@ export function AdminMobileAppointments() {
 
   return <main className="site-container admin-mobile-page">
     <div className="admin-mobile-shell">
-      <section className="admin-mobile-summary" aria-label="Resumen de turnos">
-        {summaryFilters.map(filter => <button key={filter.value} type="button" className={`admin-mobile-summary-card ${statusTone(filter.value)} ${statusFilter === filter.value ? 'is-active' : ''}`} aria-pressed={statusFilter === filter.value} onClick={() => setStatusFilter(filter.value)}><span>{filter.label}</span><strong>{counts[filter.value]}</strong></button>)}
-      </section>
-
       <section className="admin-mobile-filters" aria-label="Filtros de agenda">
         <div className="admin-mobile-filter-field">
           <label htmlFor="mobile-date-preset">Período</label>
@@ -364,6 +360,10 @@ export function AdminMobileAppointments() {
             <output id="mobile-barber-filter" className="admin-mobile-filter-readonly">{permittedBarbers[0] ?? 'Tu agenda'}</output>
           )}
         </div>
+      </section>
+
+      <section className="admin-mobile-summary" aria-label="Resumen de turnos">
+        {summaryFilters.map(filter => <button key={filter.value} type="button" className={`admin-mobile-summary-card ${statusTone(filter.value)} ${statusFilter === filter.value ? 'is-active' : ''}`} aria-pressed={statusFilter === filter.value} onClick={() => setStatusFilter(filter.value)}><span>{filter.label}</span><strong>{counts[filter.value]}</strong></button>)}
       </section>
 
       {notice && <div role="status" className="admin-mobile-notice"><Check size={16} />{notice}<Button variant="ghost" size="icon" aria-label="Cerrar aviso" onClick={() => setNotice('')}><X /></Button></div>}
