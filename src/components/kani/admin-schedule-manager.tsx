@@ -322,7 +322,7 @@ export function AdminScheduleManager() {
                 min={businessToday}
                 value={specificDate}
                 onChange={(event) => selectSpecificDate(event.target.value)}
-                className="w-full h-9 px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20"
+                className="select-control w-full h-[44px] min-h-[44px] px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20 leading-normal text-left"
               />
             </div>
             <div>
@@ -343,7 +343,7 @@ export function AdminScheduleManager() {
                   ))}
                 </select>
               ) : (
-                <output className="w-full h-9 px-3 text-xs bg-muted/40 border border-border rounded-lg text-muted-foreground flex items-center cursor-not-allowed">
+                <output className="select-control w-full h-[44px] min-h-[44px] px-3 text-xs bg-muted/40 border border-border rounded-lg text-muted-foreground flex items-center cursor-not-allowed">
                   {permittedBarbers[0] ?? "Tu agenda"}
                 </output>
               )}

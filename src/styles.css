@@ -428,7 +428,7 @@ html[data-theme='light'] .booking-time-slot.selected:active { border-color: var(
 .manual-dialog-date { overflow-wrap: anywhere; }
 .manual-dialog-footer { gap: 8px; }
 .manual-dialog-footer > button { min-width: 0; }
-input[type=date], input[type=time] { color-scheme: dark; }
+input[type=date], input[type=time] { color-scheme: dark; text-align: left; }
 html[data-theme="light"] input[type=date], html[data-theme="light"] input[type=time] { color-scheme: light; }
 input[type=date].select-control {
   min-height: 44px;
@@ -436,9 +436,17 @@ input[type=date].select-control {
   line-height: normal;
   display: inline-flex;
   align-items: center;
+  justify-content: flex-start;
+  text-align: left;
+  padding: 0 12px;
+}
+input[type=date]::-webkit-datetime-edit,
+input[type=date]::-webkit-datetime-edit-fields-wrapper {
+  text-align: left;
+  padding: 0;
 }
 input[type=date]::-webkit-date-and-time-value {
-  text-align: left;
+  text-align: left !important;
   min-height: 1.5em;
   margin: 0;
 }

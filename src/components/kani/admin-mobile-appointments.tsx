@@ -409,7 +409,7 @@ export function AdminMobileAppointments() {
               value={specificDate}
               onChange={event => selectSpecificDate(event.target.value)}
               aria-label="Elegir fecha específica"
-              className="select-control w-full h-[44px] min-h-[44px] px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20 leading-normal"
+              className="select-control w-full h-[44px] min-h-[44px] px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20 leading-normal text-left"
             />
           </div>
           <div>
