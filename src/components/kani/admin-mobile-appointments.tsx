@@ -337,17 +337,33 @@ export function AdminMobileAppointments() {
       </section>
 
       <section className="admin-mobile-filters" aria-label="Filtros de agenda">
-        <div className="admin-mobile-filter-field admin-mobile-filter-period">
-          <label htmlFor="mobile-date-preset">Período y fecha</label>
-          <div className="admin-mobile-period-control">
-            <select id="mobile-date-preset" value={datePreset} onChange={event => selectDatePreset(event.target.value as AppointmentsDatePreset)} aria-label="Filtrar por período">
-              {appointmentsPresets.map(preset => <option key={preset} value={preset}>{appointmentsPresetLabels[preset]}</option>)}
-            </select>
-            <input id="mobile-date-filter" type="date" value={specificDate} onChange={event => selectSpecificDate(event.target.value)} aria-label="Elegir fecha específica" />
-          </div>
+        <div className="admin-mobile-filter-field">
+          <label htmlFor="mobile-date-preset">Período</label>
+          <select id="mobile-date-preset" value={datePreset} onChange={event => selectDatePreset(event.target.value as AppointmentsDatePreset)} aria-label="Filtrar por período">
+            {appointmentsPresets.map(preset => <option key={preset} value={preset}>{appointmentsPresetLabels[preset]}</option>)}
+          </select>
         </div>
-        <div className="admin-mobile-filter-field"><label htmlFor="mobile-status-filter">Estado</label><select id="mobile-status-filter" value={statusFilter} onChange={event => setStatusFilter(event.target.value as StatusFilter)}>{statusFilters.map(filter => <option key={filter.value} value={filter.value}>{filter.label}</option>)}</select></div>
-        <div className="admin-mobile-filter-field"><label htmlFor="mobile-barber-filter">Barbero</label>{profile.role === 'ADMIN' ? <select id="mobile-barber-filter" value={barberFilter} onChange={event => setBarberFilter(event.target.value)}><option value="Todos">Todos</option>{permittedBarbers.map(barber => <option key={barber} value={barber}>{barber}</option>)}</select> : <output id="mobile-barber-filter" className="admin-mobile-filter-readonly">{permittedBarbers[0] ?? 'Tu agenda'}</output>}</div>
+        <div className="admin-mobile-filter-field">
+          <label htmlFor="mobile-date-filter">Fecha</label>
+          <input id="mobile-date-filter" type="date" value={specificDate} onChange={event => selectSpecificDate(event.target.value)} aria-label="Elegir fecha específica" />
+        </div>
+        <div className="admin-mobile-filter-field">
+          <label htmlFor="mobile-status-filter">Estado</label>
+          <select id="mobile-status-filter" value={statusFilter} onChange={event => setStatusFilter(event.target.value as StatusFilter)}>
+            {statusFilters.map(filter => <option key={filter.value} value={filter.value}>{filter.label}</option>)}
+          </select>
+        </div>
+        <div className="admin-mobile-filter-field">
+          <label htmlFor="mobile-barber-filter">Barbero</label>
+          {profile.role === 'ADMIN' ? (
+            <select id="mobile-barber-filter" value={barberFilter} onChange={event => setBarberFilter(event.target.value)}>
+              <option value="Todos">Todos</option>
+              {permittedBarbers.map(barber => <option key={barber} value={barber}>{barber}</option>)}
+            </select>
+          ) : (
+            <output id="mobile-barber-filter" className="admin-mobile-filter-readonly">{permittedBarbers[0] ?? 'Tu agenda'}</output>
+          )}
+        </div>
       </section>
 
       {notice && <div role="status" className="admin-mobile-notice"><Check size={16} />{notice}<Button variant="ghost" size="icon" aria-label="Cerrar aviso" onClick={() => setNotice('')}><X /></Button></div>}

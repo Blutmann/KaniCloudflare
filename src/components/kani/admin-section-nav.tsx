@@ -1,6 +1,5 @@
 import { BarChart3, CalendarDays, Clock3, RefreshCw } from "lucide-react";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Button } from "@/components/ui/button";
 import { useAdminStaff } from "@/lib/kani-admin-context";
 
 const items = [
@@ -35,31 +34,18 @@ export function AdminSectionNav() {
             );
           })}
         </div>
-        <div className="admin-section-nav-divider md:hidden" aria-hidden="true" />
+        <div className="admin-section-nav-divider" aria-hidden="true" />
         <button
           type="button"
           onClick={() => triggerRefresh()}
           disabled={isRefreshing}
-          className="admin-section-nav-refresh-btn md:hidden"
+          className="admin-section-nav-refresh-btn"
           aria-label="Actualizar datos"
           title="Actualizar datos"
         >
           <RefreshCw size={14} className={isRefreshing ? "animate-spin" : ""} />
         </button>
       </nav>
-
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        onClick={() => triggerRefresh()}
-        disabled={isRefreshing}
-        className="admin-section-nav-refresh hidden md:inline-flex text-xs h-10 px-3.5 gap-2 shrink-0"
-        aria-label="Actualizar datos"
-      >
-        <RefreshCw size={14} className={isRefreshing ? "animate-spin" : ""} />
-        <span>Actualizar</span>
-      </Button>
     </div>
   );
 }

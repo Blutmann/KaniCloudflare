@@ -1165,7 +1165,7 @@ html[data-theme="light"] .admin-section-nav-link.is-active:active {
 
 .admin-mobile-filters {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   align-items: center;
   gap: .6rem .75rem;
   margin-bottom: 1.2rem;
@@ -1551,13 +1551,11 @@ html[data-theme="light"] .admin-section-nav-link.is-active:active {
 
 /* Final visual system: one source of truth for compact admin controls, capsules and focus states. */
 .admin-mobile-filters {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   align-items: stretch;
 }
 
 .admin-mobile-filter-field { min-width: 0; }
-.admin-mobile-filter-period { grid-column: span 1; }
-.admin-mobile-period-control { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: .55rem; min-width: 0; }
 .admin-mobile-filters input,
 .admin-mobile-filters select,
 .admin-mobile-filter-readonly { box-sizing: border-box; max-width: 100%; min-width: 0; }
@@ -1585,20 +1583,25 @@ html[data-theme='light'] .admin-schedule-status.occupied { color: var(--foregrou
 html[data-theme='light'] .admin-schedule-capsule.is-unavailable { border-color: color-mix(in srgb, var(--foreground) 40%, var(--border)); background: color-mix(in srgb, var(--foreground) 4%, var(--surface)); }
 html[data-theme='light'] .admin-schedule-capsule.is-occupied { border-color: color-mix(in srgb, var(--foreground) 42%, var(--border)); background: color-mix(in srgb, var(--foreground) 5%, var(--surface)); }
 
-/* «Agregar horario» comparte exactamente la misma geometría, padding, tipografía y presencia que las cápsulas de horarios */
+/* «Agregar horario» centrado exacto horizontal y vertical en desktop y mobile */
+.admin-schedule-card.admin-schedule-add,
 .admin-schedule-cards > .admin-schedule-add.admin-schedule-capsule {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
   border: 1px solid color-mix(in oklch, var(--gold) 45%, var(--border));
   border-radius: .8rem;
   background: color-mix(in oklch, var(--gold) 8%, var(--surface));
   color: var(--foreground);
-  text-align: center;
+  text-align: center !important;
   box-shadow: 0 5px 14px rgb(0 0 0 / .08);
   cursor: pointer;
   transition: border-color .2s ease, background-color .2s ease, transform .15s ease;
 }
+.admin-schedule-card.admin-schedule-add:hover,
+.admin-schedule-card.admin-schedule-add:focus-visible,
 .admin-schedule-cards > .admin-schedule-add.admin-schedule-capsule:hover,
 .admin-schedule-cards > .admin-schedule-add.admin-schedule-capsule:focus-visible {
   border-color: var(--gold);
@@ -1606,26 +1609,36 @@ html[data-theme='light'] .admin-schedule-capsule.is-occupied { border-color: col
   background: color-mix(in oklch, var(--gold) 16%, var(--surface));
   color: var(--foreground);
 }
+.admin-schedule-add .admin-schedule-add-label,
 .admin-schedule-cards > .admin-schedule-add .admin-schedule-add-label {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: .88rem;
-  font-weight: 600;
-  color: inherit;
-  text-align: center;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  height: 100% !important;
+  margin: 0 !important;
+  padding: .5rem .75rem !important;
+  font-size: .88rem !important;
+  font-weight: 600 !important;
+  line-height: 1.2 !important;
+  color: inherit !important;
+  text-align: center !important;
 }
+html[data-theme='light'] .admin-schedule-card.admin-schedule-add,
 html[data-theme='light'] .admin-schedule-cards > .admin-schedule-add.admin-schedule-capsule {
   border-color: #702B3A !important;
   background: #702B3A !important;
   color: #FFFFFF !important;
 }
+html[data-theme='light'] .admin-schedule-card.admin-schedule-add:hover,
+html[data-theme='light'] .admin-schedule-card.admin-schedule-add:focus-visible,
 html[data-theme='light'] .admin-schedule-cards > .admin-schedule-add.admin-schedule-capsule:hover,
 html[data-theme='light'] .admin-schedule-cards > .admin-schedule-add.admin-schedule-capsule:focus-visible {
   border-color: #5A222E !important;
   background: #5A222E !important;
   color: #FFFFFF !important;
 }
+html[data-theme='light'] .admin-schedule-add .admin-schedule-add-label,
 html[data-theme='light'] .admin-schedule-cards > .admin-schedule-add .admin-schedule-add-label {
   color: #FFFFFF !important;
 }
@@ -1644,11 +1657,11 @@ textarea:focus-visible { outline: 2px solid var(--ring); outline-offset: 3px; }
 
 @media (max-width: 767px) {
   .admin-mobile-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .admin-mobile-filter-period { grid-column: 1 / -1; }
   .admin-mobile-summary { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .admin-schedule-filters { grid-template-columns: 1fr; }
   .admin-schedule-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .55rem; }
   .admin-schedule-card { min-height: 5.35rem; padding: .65rem; border-radius: .75rem; }
+  .admin-schedule-card.admin-schedule-add { padding: 0 !important; }
   .admin-schedule-card-top { display: grid; min-height: 4rem; grid-template-rows: auto minmax(1.15rem, auto); gap: .45rem; align-content: space-between; }
   .admin-schedule-time strong { font-size: 1.25rem; }
   .admin-schedule-time span { font-size: .7rem; }
@@ -1662,12 +1675,12 @@ textarea:focus-visible { outline: 2px solid var(--ring); outline-offset: 3px; }
   .admin-mobile-summary-card span { font-size: .56rem; }
   .admin-mobile-summary-card strong { font-size: 1.08rem; }
   .admin-mobile-filters { gap: .5rem; padding: .7rem; }
-  .admin-mobile-period-control { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: .35rem; }
   .admin-mobile-filters select,
   .admin-mobile-filters input,
   .admin-mobile-filter-readonly { font-size: .78rem; padding-inline: .5rem; }
   .admin-schedule-cards { gap: .4rem; }
   .admin-schedule-card { padding: .55rem; }
+  .admin-schedule-card.admin-schedule-add { padding: 0 !important; }
   .admin-schedule-status { font-size: .64rem; }
 }
 

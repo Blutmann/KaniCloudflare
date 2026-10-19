@@ -392,11 +392,9 @@ export function AdminScheduleManager() {
                   aria-label="Agregar horario"
                   onClick={() => openManualDialog(specificDate, selectedRows[0]?.id)}
                 >
-                  <div className="admin-schedule-card-top flex items-center justify-center h-full w-full">
-                    <span className="admin-schedule-add-label font-semibold text-sm">
-                      Agregar horario
-                    </span>
-                  </div>
+                  <span className="admin-schedule-add-label font-semibold text-sm">
+                    Agregar horario
+                  </span>
                 </button>
               </div>
             </>
@@ -460,11 +458,9 @@ export function AdminScheduleManager() {
                     aria-label={`Agregar horario para ${date}`}
                     onClick={() => openManualDialog(date, dateSlots[0]?.barber_id)}
                   >
-                    <div className="admin-schedule-card-top flex items-center justify-center h-full w-full">
-                      <span className="admin-schedule-add-label font-semibold text-sm">
-                        Agregar horario
-                      </span>
-                    </div>
+                    <span className="admin-schedule-add-label font-semibold text-sm">
+                      Agregar horario
+                    </span>
                   </button>
                 </div>
               </section>
