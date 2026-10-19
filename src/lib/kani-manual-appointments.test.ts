@@ -281,7 +281,7 @@ describe('Manual Appointments & Recurring Logic Unit Tests', () => {
     expect(cssContent).toContain('body:has(.admin-manual-dialog) .site-header');
   });
 
-  it('supports «Abona seña» option with Sí/No, defaulting to No, and reflecting in appointment and client history', () => {
+  it('supports «Abona seña» option with Sí/No, defaulting to No, and registering deposit_paid = true when Sí', () => {
     // Appointment with Abona seña = No (default)
     const aptSinSena: RealAppointment = {
       id: 'apt-sin-sena',
@@ -307,7 +307,7 @@ describe('Manual Appointments & Recurring Logic Unit Tests', () => {
       depositPaid: false,
     };
 
-    // Appointment with Abona seña = Sí
+    // Appointment with Abona seña = Sí: records deposit_paid = true ($5.000 effectively received)
     const aptConSena: RealAppointment = {
       id: 'apt-con-sena',
       requestNumber: 202,
@@ -329,17 +329,15 @@ describe('Manual Appointments & Recurring Logic Unit Tests', () => {
       isManual: true,
       origin: 'MANUAL',
       depositRequired: true,
-      depositPaid: false,
+      depositPaid: true,
     };
 
     expect(aptSinSena.depositRequired).toBe(false);
     expect(aptSinSena.depositPaid).toBe(false);
-    // Detail display for Sin seña: No
     expect(aptSinSena.depositPaid || aptSinSena.depositRequired ? 'Sí' : 'No').toBe('No');
 
     expect(aptConSena.depositRequired).toBe(true);
-    expect(aptConSena.depositPaid).toBe(false); // must not falsely assume deposit is paid
-    // Detail display for Con seña: Sí
+    expect(aptConSena.depositPaid).toBe(true);
     expect(aptConSena.depositPaid || aptConSena.depositRequired ? 'Sí' : 'No').toBe('Sí');
 
     // Aggregate in client history directory
@@ -350,11 +348,182 @@ describe('Manual Appointments & Recurring Logic Unit Tests', () => {
 
     const historySinSena = client.appointments.find(a => a.id === 'apt-sin-sena');
     expect(historySinSena?.depositRequired).toBe(false);
+    expect(historySinSena?.depositPaid).toBe(false);
     expect(historySinSena?.depositPaid || historySinSena?.depositRequired ? 'Sí' : 'No').toBe('No');
 
     const historyConSena = client.appointments.find(a => a.id === 'apt-con-sena');
     expect(historyConSena?.depositRequired).toBe(true);
+    expect(historyConSena?.depositPaid).toBe(true);
     expect(historyConSena?.depositPaid || historyConSena?.depositRequired ? 'Sí' : 'No').toBe('Sí');
+  });
+
+  it('defines centralized KANI_MANUAL_DEPOSIT_ARS = 5000 and calculates remaining balances correctly', async () => {
+    const { KANI_MANUAL_DEPOSIT_ARS, calculateAppointmentBalance } = await import('./kani-appointments');
+    expect(KANI_MANUAL_DEPOSIT_ARS).toBe(5000);
+
+    // Case 1: Service $25.000 with deposit paid (Sí) -> Deposit: $5.000, Remaining balance: $20.000
+    const balanceWithDeposit = calculateAppointmentBalance(25000, true);
+    expect(balanceWithDeposit.totalPrice).toBe(25000);
+    expect(balanceWithDeposit.depositAmount).toBe(5000);
+    expect(balanceWithDeposit.remainingBalance).toBe(20000);
+
+    // Case 2: Service $25.000 without deposit (No) -> Deposit: $0, Remaining balance: $25.000
+    const balanceWithoutDeposit = calculateAppointmentBalance(25000, false);
+    expect(balanceWithoutDeposit.totalPrice).toBe(25000);
+    expect(balanceWithoutDeposit.depositAmount).toBe(0);
+    expect(balanceWithoutDeposit.remainingBalance).toBe(25000);
+
+    // Case 3: Service price lower than deposit (e.g. $4.000) does not produce negative remaining balance
+    const edgeCase = calculateAppointmentBalance(4000, true);
+    expect(edgeCase.remainingBalance).toBe(0);
+  });
+
+  it('validates all required fields before creating a manual appointment', async () => {
+    const { createManualAppointment } = await import('./kani-appointments');
+
+    // Missing barberId
+    await expect(
+      createManualAppointment({
+        barberId: '',
+        serviceId: 'svc-1',
+        date: '2026-10-25',
+        time: '10:00',
+        name: 'Martín Palermo',
+        phone: '+5491144445555',
+        email: 'palermo@boca.internal',
+      })
+    ).rejects.toThrow('El barbero es obligatorio.');
+
+    // Missing serviceId
+    await expect(
+      createManualAppointment({
+        barberId: 'barber-1',
+        serviceId: '',
+        date: '2026-10-25',
+        time: '10:00',
+        name: 'Martín Palermo',
+        phone: '+5491144445555',
+        email: 'palermo@boca.internal',
+      })
+    ).rejects.toThrow('El servicio es obligatorio.');
+
+    // Missing date
+    await expect(
+      createManualAppointment({
+        barberId: 'barber-1',
+        serviceId: 'svc-1',
+        date: '',
+        time: '10:00',
+        name: 'Martín Palermo',
+        phone: '+5491144445555',
+        email: 'palermo@boca.internal',
+      })
+    ).rejects.toThrow('La fecha es obligatoria.');
+
+    // Missing time
+    await expect(
+      createManualAppointment({
+        barberId: 'barber-1',
+        serviceId: 'svc-1',
+        date: '2026-10-25',
+        time: '',
+        name: 'Martín Palermo',
+        phone: '+5491144445555',
+        email: 'palermo@boca.internal',
+      })
+    ).rejects.toThrow('El horario es obligatorio.');
+
+    // Name too short
+    await expect(
+      createManualAppointment({
+        barberId: 'barber-1',
+        serviceId: 'svc-1',
+        date: '2026-10-25',
+        time: '10:00',
+        name: 'Al',
+        phone: '+5491144445555',
+        email: 'palermo@boca.internal',
+      })
+    ).rejects.toThrow('El nombre del cliente es obligatorio y debe tener al menos 3 caracteres.');
+
+    // Invalid phone
+    await expect(
+      createManualAppointment({
+        barberId: 'barber-1',
+        serviceId: 'svc-1',
+        date: '2026-10-25',
+        time: '10:00',
+        name: 'Martín Palermo',
+        phone: '123',
+        email: 'palermo@boca.internal',
+      })
+    ).rejects.toThrow('El celular del cliente es obligatorio y debe ser válido.');
+  });
+
+  it('ensures manual dialog enforces the exact 2-column mobile layout and auto total price field', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+    const componentCode = fs.readFileSync(
+      path.resolve(process.cwd(), 'src/components/kani/admin-mobile-appointments.tsx'),
+      'utf-8'
+    );
+
+    // Row 1: Fecha | Horario
+    expect(componentCode).toContain('manual-field-fecha');
+    expect(componentCode).toContain('manual-field-horario');
+
+    // Row 2: Servicio | Barbero
+    expect(componentCode).toContain('manual-field-servicio');
+    expect(componentCode).toContain('manual-field-barbero');
+
+    // Row 3: Nombre del cliente | Frecuencia
+    expect(componentCode).toContain('manual-field-nombre');
+    expect(componentCode).toContain('manual-field-frecuencia');
+
+    // Row 4: Celular del cliente | Abona seña
+    expect(componentCode).toContain('manual-field-celular');
+    expect(componentCode).toContain('manual-field-sena');
+
+    // Row 5: Mail del cliente | Importe total
+    expect(componentCode).toContain('manual-field-email');
+    expect(componentCode).toContain('manual-field-importe');
+    expect(componentCode).toContain('Importe total');
+
+    // Full width under rows: Observaciones (opcional)
+    expect(componentCode).toContain('manual-field-observaciones');
+    expect(componentCode).toContain('Observaciones <span className="text-xs font-normal text-muted-foreground">(opcional)</span>');
+
+    // Validation messages alongside inputs
+    expect(componentCode).toContain('showFieldError(\'date\')');
+    expect(componentCode).toContain('showFieldError(\'time\')');
+    expect(componentCode).toContain('showFieldError(\'service\')');
+    expect(componentCode).toContain('showFieldError(\'barber\')');
+    expect(componentCode).toContain('showFieldError(\'name\')');
+    expect(componentCode).toContain('showFieldError(\'phone\')');
+    expect(componentCode).toContain('showFieldError(\'email\')');
+
+    // Total amount automatically formatted from selected service
+    expect(componentCode).toContain('selectedManualService?.price_ars');
+    expect(componentCode).toContain('manualTotalAmountFormatted');
+  });
+
+  it('verifies the SQL migration sets deposit_paid = true when p_deposit_required is true', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+    const migrationContent = fs.readFileSync(
+      path.resolve(process.cwd(), 'supabase/migrations/20261019000100_kani_manual_appointment_deposit_payment.sql'),
+      'utf-8'
+    );
+
+    // Function parameter p_deposit_required
+    expect(migrationContent).toContain('p_deposit_required boolean default false');
+
+    // Sets deposit_required and deposit_paid to v_deposit_flag
+    expect(migrationContent).toContain('v_deposit_flag boolean := coalesce(p_deposit_required, false);');
+    expect(migrationContent).toContain('deposit_required,');
+    expect(migrationContent).toContain('deposit_paid');
+    expect(migrationContent).toContain('v_deposit_flag,');
+    expect(migrationContent).toContain('v_deposit_flag');
   });
 
   it('ensures the manual appointment dialog removes visible descriptive text and shows simplified service name', async () => {

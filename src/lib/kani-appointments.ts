@@ -92,7 +92,39 @@ export function appointmentErrorMessage(error: unknown) {
   return 'No se pudo guardar la solicitud. Revisá los datos e intentá nuevamente.';
 }
 
+export const KANI_MANUAL_DEPOSIT_ARS = 5000;
+
+export function calculateAppointmentBalance(totalPriceArs: number, depositPaid: boolean) {
+  const deposit = depositPaid ? KANI_MANUAL_DEPOSIT_ARS : 0;
+  const remaining = Math.max(0, totalPriceArs - deposit);
+  return {
+    totalPrice: totalPriceArs,
+    depositAmount: deposit,
+    remainingBalance: remaining,
+  };
+}
+
 export async function createManualAppointment(input: CreateManualAppointmentInput) {
+  if (!input.barberId) {
+    throw new Error('El barbero es obligatorio.');
+  }
+  if (!input.serviceId) {
+    throw new Error('El servicio es obligatorio.');
+  }
+  if (!input.date) {
+    throw new Error('La fecha es obligatoria.');
+  }
+  if (!input.time) {
+    throw new Error('El horario es obligatorio.');
+  }
+  const name = input.name?.trim();
+  if (!name || name.length < 3) {
+    throw new Error('El nombre del cliente es obligatorio y debe tener al menos 3 caracteres.');
+  }
+  const phone = input.phone?.trim();
+  if (!phone || phone.length < 6) {
+    throw new Error('El celular del cliente es obligatorio y debe ser válido.');
+  }
   const email = input.email?.trim();
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     throw new Error('El correo electrónico del cliente es obligatorio y debe tener un formato válido.');
@@ -103,8 +135,8 @@ export async function createManualAppointment(input: CreateManualAppointmentInpu
     p_service_id: input.serviceId,
     p_booking_date: input.date,
     p_start_time: input.time.length === 5 ? `${input.time}:00` : input.time,
-    p_client_name: input.name.trim(),
-    p_client_phone: input.phone.trim(),
+    p_client_name: name,
+    p_client_phone: phone,
     p_client_email: email,
     p_notes: input.notes?.trim() || null,
     p_is_recurring: Boolean(input.isRecurring),

@@ -1404,20 +1404,23 @@ html[data-theme="light"] .admin-section-nav-link.is-active:active {
 .manual-appointment-grid .manual-field-barbero {
   grid-column: span 1;
 }
-.manual-appointment-grid .manual-field-frecuencia {
-  grid-column: span 2;
-}
 .manual-appointment-grid .manual-field-nombre {
-  grid-column: span 2;
+  grid-column: span 1;
+}
+.manual-appointment-grid .manual-field-frecuencia {
+  grid-column: span 1;
 }
 .manual-appointment-grid .manual-field-celular {
-  grid-column: span 2;
-}
-.manual-appointment-grid .manual-field-email {
-  grid-column: span 2;
+  grid-column: span 1;
 }
 .manual-appointment-grid .manual-field-sena {
-  grid-column: span 2;
+  grid-column: span 1;
+}
+.manual-appointment-grid .manual-field-email {
+  grid-column: span 1;
+}
+.manual-appointment-grid .manual-field-importe {
+  grid-column: span 1;
 }
 .manual-appointment-grid .manual-field-observaciones {
   grid-column: span 2;
@@ -1440,33 +1443,37 @@ html[data-theme="light"] .admin-section-nav-link.is-active:active {
     grid-column: span 2;
     order: 3;
   }
-  .manual-appointment-grid .manual-field-frecuencia {
+  .manual-appointment-grid .manual-field-barbero {
     grid-column: span 2;
     order: 4;
   }
-  .manual-appointment-grid .manual-field-nombre {
+  .manual-appointment-grid .manual-field-frecuencia {
     grid-column: span 2;
     order: 5;
   }
-  .manual-appointment-grid .manual-field-celular {
+  .manual-appointment-grid .manual-field-importe {
     grid-column: span 2;
     order: 6;
   }
-  .manual-appointment-grid .manual-field-barbero {
+  .manual-appointment-grid .manual-field-nombre {
     grid-column: span 2;
     order: 7;
   }
-  .manual-appointment-grid .manual-field-email {
+  .manual-appointment-grid .manual-field-celular {
     grid-column: span 2;
     order: 8;
   }
-  .manual-appointment-grid .manual-field-sena {
+  .manual-appointment-grid .manual-field-email {
     grid-column: span 2;
     order: 9;
   }
+  .manual-appointment-grid .manual-field-sena {
+    grid-column: span 2;
+    order: 10;
+  }
   .manual-appointment-grid .manual-field-observaciones {
     grid-column: span 6;
-    order: 10;
+    order: 11;
   }
 }
 
