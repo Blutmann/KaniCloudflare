@@ -1,4 +1,4 @@
-import type { RealAppointment, RealAppointmentStatus } from './kani-appointments';
+import { KANI_MANUAL_DEPOSIT_ARS, type RealAppointment, type RealAppointmentStatus } from './kani-appointments';
 import { addCalendarDays, businessDateToday, startOfBusinessWeek, BUSINESS_TIME_ZONE } from './kani-mobile-appointments';
 import { normalizeEmailForComparison, normalizePhoneForComparison } from './kani-phone';
 
@@ -243,6 +243,170 @@ export function computeKpiSummary(appointments: RealAppointment[]): AppointmentK
     completed: 0,
     completionRate: 0,
   };
+}
+
+export type FinancialControlSummary = {
+  // A. Señas cobradas
+  depositsCollected: {
+    totalArs: number;
+    count: number;
+  };
+  // B. Cobros pendientes (de turnos vigentes con seña abonada que todavía no se ejecutaron)
+  pendingBalances: {
+    totalArs: number;
+    count: number;
+  };
+  // C. Total cobrado por servicios ejecutados
+  completedServices: {
+    totalCollectedArs: number; // Efectivamente recibido
+    totalServiceValueArs: number; // Valor nominal de los servicios
+    unpaidBalanceArs: number; // Saldo impago diferenciado de servicios ejecutados
+    count: number;
+  };
+  // D. Señas retenidas por inasistencias
+  retainedNoShowDeposits: {
+    totalArs: number;
+    count: number;
+    items: Array<{
+      appointmentId: string;
+      requestNumber?: number;
+      clientName: string;
+      serviceName: string;
+      barberName: string;
+      date: string;
+      time: string;
+      depositAmountArs: number;
+      reason?: string | null;
+    }>;
+  };
+  // E. Devoluciones y condonaciones
+  refundsAndWaives: {
+    refundsTotalArs: number;
+    refundsCount: number;
+    waivesCount: number;
+    waivesTotalArs: number;
+    totalImpactArs: number;
+    items: Array<{
+      appointmentId: string;
+      requestNumber?: number;
+      clientName: string;
+      decision: 'REFUND' | 'WAIVE';
+      amountArs: number;
+      reason: string;
+      date: string;
+      actor?: string;
+    }>;
+  };
+};
+
+export function getAppointmentDepositAmount(appointment: RealAppointment): number {
+  if (appointment.depositAmountArs !== undefined && appointment.depositAmountArs !== null) {
+    return appointment.depositAmountArs;
+  }
+  const servicePrice = appointment.servicePrice || 0;
+  const standardDeposit = appointment.isManual ? KANI_MANUAL_DEPOSIT_ARS : 10000;
+  return servicePrice > 0 ? Math.min(servicePrice, standardDeposit) : standardDeposit;
+}
+
+export function computeFinancialControl(appointments: RealAppointment[]): FinancialControlSummary {
+  const summary: FinancialControlSummary = {
+    depositsCollected: { totalArs: 0, count: 0 },
+    pendingBalances: { totalArs: 0, count: 0 },
+    completedServices: { totalCollectedArs: 0, totalServiceValueArs: 0, unpaidBalanceArs: 0, count: 0 },
+    retainedNoShowDeposits: { totalArs: 0, count: 0, items: [] },
+    refundsAndWaives: { refundsTotalArs: 0, refundsCount: 0, waivesCount: 0, waivesTotalArs: 0, totalImpactArs: 0, items: [] },
+  };
+
+  for (const apt of appointments) {
+    const servicePrice = apt.servicePrice || 0;
+    const depositAmount = getAppointmentDepositAmount(apt);
+    const hasDepositPaid = Boolean(apt.depositPaid);
+    const effectiveDeposit = hasDepositPaid ? depositAmount : 0;
+
+    // A. Señas cobradas: dinero efectivamente recibido por señas de turnos
+    if (hasDepositPaid && effectiveDeposit > 0) {
+      summary.depositsCollected.totalArs += effectiveDeposit;
+      summary.depositsCollected.count += 1;
+    }
+
+    // B. Cobros pendientes: saldo pendiente de los turnos vigentes que todavía no se ejecutaron y que ya tienen una seña abonada.
+    // Saldo pendiente = importe total del servicio − seña efectivamente recibida.
+    // Excluye cancelaciones (CANCELLED), inasistencias (NO_SHOW), ejecutados (COMPLETED) y turnos sin seña recibida.
+    if (apt.statusCode === 'CONFIRMED' && hasDepositPaid) {
+      const remainingBalance = Math.max(0, servicePrice - effectiveDeposit);
+      summary.pendingBalances.totalArs += remainingBalance;
+      summary.pendingBalances.count += 1;
+    }
+
+    // C. Total cobrado por servicios ejecutados: importe total de servicios efectivamente realizados y cobrados
+    if (apt.statusCode === 'COMPLETED') {
+      summary.completedServices.count += 1;
+      summary.completedServices.totalServiceValueArs += servicePrice;
+
+      // Si balancePaid no es false, el servicio está totalmente cobrado (saldo + seña = total servicio)
+      const isBalancePaid = apt.balancePaid !== false;
+      if (isBalancePaid) {
+        summary.completedServices.totalCollectedArs += servicePrice;
+      } else {
+        // Servicio ejecutado con saldo impago: solo se contabiliza lo efectivamente recibido (la seña) y se diferencia el saldo impago
+        summary.completedServices.totalCollectedArs += effectiveDeposit;
+        summary.completedServices.unpaidBalanceArs += Math.max(0, servicePrice - effectiveDeposit);
+      }
+    }
+
+    // D. Señas retenidas por inasistencias: dinero correspondiente a señas de clientes que no asistieron
+    // Solo turnos explícitamente marcados como inasistencia (NO_SHOW), con seña efectivamente abonada, no devuelta ni condonada
+    if (apt.statusCode === 'NO_SHOW' && hasDepositPaid && apt.noShowDecision !== 'WAIVE' && apt.noShowDecision !== 'REFUND') {
+      summary.retainedNoShowDeposits.totalArs += effectiveDeposit;
+      summary.retainedNoShowDeposits.count += 1;
+      summary.retainedNoShowDeposits.items.push({
+        appointmentId: apt.id,
+        requestNumber: apt.requestNumber,
+        clientName: apt.name,
+        serviceName: apt.serviceName || apt.service || 'Servicio',
+        barberName: apt.barber,
+        date: apt.date,
+        time: apt.time,
+        depositAmountArs: effectiveDeposit,
+        reason: apt.noShowReason,
+      });
+    }
+
+    // E. Devoluciones y condonaciones
+    if (apt.noShowDecision === 'REFUND') {
+      const refundAmount = apt.noShowRefundAmountArs && apt.noShowRefundAmountArs > 0 ? apt.noShowRefundAmountArs : effectiveDeposit;
+      summary.refundsAndWaives.refundsTotalArs += refundAmount;
+      summary.refundsAndWaives.refundsCount += 1;
+      summary.refundsAndWaives.totalImpactArs += refundAmount;
+      summary.refundsAndWaives.items.push({
+        appointmentId: apt.id,
+        requestNumber: apt.requestNumber,
+        clientName: apt.name,
+        decision: 'REFUND',
+        amountArs: refundAmount,
+        reason: apt.noShowReason || 'Devolución de seña acordada',
+        date: apt.date,
+        actor: apt.createdByDisplayName || undefined,
+      });
+    } else if (apt.noShowDecision === 'WAIVE') {
+      const waivedAmount = depositAmount;
+      summary.refundsAndWaives.waivesCount += 1;
+      summary.refundsAndWaives.waivesTotalArs += waivedAmount;
+      summary.refundsAndWaives.totalImpactArs += waivedAmount;
+      summary.refundsAndWaives.items.push({
+        appointmentId: apt.id,
+        requestNumber: apt.requestNumber,
+        clientName: apt.name,
+        decision: 'WAIVE',
+        amountArs: waivedAmount,
+        reason: apt.noShowReason || 'Condonación de penalización autorizada',
+        date: apt.date,
+        actor: apt.createdByDisplayName || undefined,
+      });
+    }
+  }
+
+  return summary;
 }
 
 export type DailyDemandPoint = {

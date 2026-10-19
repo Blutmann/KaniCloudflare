@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowUp, Calendar, CalendarPlus, Check, CheckCircle2, CircleDot, Clock, Clock3, Mail, RefreshCw, X, XCircle } from 'lucide-react';
+import { ArrowUp, Calendar, CalendarPlus, Check, CheckCircle2, CircleDot, Clock, Clock3, Mail, RefreshCw, ShieldAlert, UserX, X, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -9,10 +9,11 @@ import { formatPhoneDisplay, formatPhoneWithCountryAndWhatsApp, normalizePhone, 
 import { PhoneInput } from '@/components/kani/phone-input';
 import { cn } from '@/lib/utils';
 import { useAdminStaff } from '@/lib/kani-admin-context';
-import { appointmentErrorMessage, createManualAppointment, readRealAppointments, retryRealAppointmentNotification, updateRealAppointmentStatus, type ManualFrequency, MANUAL_FREQUENCY_LABELS, type RealAppointment, type RealAppointmentStatus } from '@/lib/kani-appointments';
+import { appointmentErrorMessage, completeRealAppointment, createManualAppointment, readRealAppointments, recordNoShowException, retryRealAppointmentNotification, updateRealAppointmentStatus, type ManualFrequency, MANUAL_FREQUENCY_LABELS, type NoShowDecision, type RealAppointment, type RealAppointmentStatus } from '@/lib/kani-appointments';
 import { addCalendarDays, businessDateToday, dateRangeForAppointmentsPreset, filterMobileAppointments, appointmentsPresets, appointmentsPresetLabels, type AppointmentsDatePreset, type MobileStatusFilter } from '@/lib/kani-mobile-appointments';
 import { permittedBarberNames } from '@/lib/kani-role-scope';
 import { supabase } from '@/integrations/supabase/client';
+import { getAppointmentDepositAmount } from '@/lib/kani-statistics';
 
 type StatusFilter = MobileStatusFilter;
 
@@ -25,7 +26,8 @@ const statusMeta: Record<RealAppointmentStatus, StatusMeta> = {
   PENDING: { label: 'Pendiente', tone: 'pending' },
   CONFIRMED: { label: 'Confirmado', tone: 'confirmed' },
   CANCELLED: { label: 'Cancelado', tone: 'cancelled' },
-  COMPLETED: { label: 'Confirmado', tone: 'confirmed' },
+  COMPLETED: { label: 'Ejecutado', tone: 'completed' },
+  NO_SHOW: { label: 'Inasistencia', tone: 'cancelled' },
 };
 
 const statusFilters: Array<{ value: StatusFilter; label: string }> = [
@@ -33,9 +35,16 @@ const statusFilters: Array<{ value: StatusFilter; label: string }> = [
   { value: 'PENDING', label: 'Pendientes' },
   { value: 'CONFIRMED', label: 'Confirmados' },
   { value: 'CANCELLED', label: 'Cancelados' },
+  { value: 'COMPLETED', label: 'Ejecutados' },
+  { value: 'NO_SHOW', label: 'Inasistencias' },
 ];
 
-const summaryFilters = statusFilters;
+const summaryFilters: Array<{ value: StatusFilter; label: string }> = [
+  { value: 'ALL', label: 'Todos' },
+  { value: 'PENDING', label: 'Pendientes' },
+  { value: 'CONFIRMED', label: 'Confirmados' },
+  { value: 'CANCELLED', label: 'Cancelados' },
+];
 
 const summaryCardConfig: Record<StatusFilter, {
   icon: typeof Calendar;
@@ -72,6 +81,20 @@ const summaryCardConfig: Record<StatusFilter, {
     numberTone: 'text-destructive',
     iconTone: 'text-destructive',
   },
+  COMPLETED: {
+    icon: CheckCircle2,
+    cardBase: 'border-blue-500/30 bg-blue-500/5',
+    labelTone: 'text-blue-500 font-medium',
+    numberTone: 'text-blue-500',
+    iconTone: 'text-blue-500',
+  },
+  NO_SHOW: {
+    icon: UserX,
+    cardBase: 'border-destructive/30 bg-destructive/5',
+    labelTone: 'text-destructive font-medium',
+    numberTone: 'text-destructive',
+    iconTone: 'text-destructive',
+  },
 };
 
 const datePresets = appointmentsPresets;
@@ -96,6 +119,18 @@ export function AdminMobileAppointments() {
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
   const [showScrollTop, setShowScrollTop] = useState(false);
+
+  // Modal para registrar inasistencia y excepciones
+  const [noShowTarget, setNoShowTarget] = useState<RealAppointment | null>(null);
+  const [noShowDecision, setNoShowDecision] = useState<NoShowDecision>('RETAIN');
+  const [noShowReason, setNoShowReason] = useState('');
+  const [noShowReasonError, setNoShowReasonError] = useState('');
+  const [noShowSubmitting, setNoShowSubmitting] = useState(false);
+
+  // Modal para completar turno
+  const [completeTarget, setCompleteTarget] = useState<RealAppointment | null>(null);
+  const [completeBalancePaid, setCompleteBalancePaid] = useState(true);
+  const [completeSubmitting, setCompleteSubmitting] = useState(false);
 
   // Modal para agregar turno manual
   const scrollPosRef = useRef<number>(0);
@@ -383,15 +418,89 @@ export function AdminMobileAppointments() {
     }
   }
 
+  function openNoShowDialog(appointment: RealAppointment) {
+    setNoShowTarget(appointment);
+    setNoShowDecision('RETAIN');
+    setNoShowReason('');
+    setNoShowReasonError('');
+  }
+
+  async function handleConfirmNoShow() {
+    if (!noShowTarget) return;
+    const trimmedReason = noShowReason.trim();
+    if (trimmedReason.length < 3) {
+      setNoShowReasonError('El motivo de la decisión es obligatorio (mínimo 3 caracteres).');
+      return;
+    }
+    setNoShowSubmitting(true);
+    setNoShowReasonError('');
+    try {
+      const depositAmt = getAppointmentDepositAmount(noShowTarget);
+      await recordNoShowException(
+        noShowTarget.id,
+        noShowDecision,
+        trimmedReason,
+        noShowDecision === 'REFUND' ? depositAmt : undefined
+      );
+      await reload();
+      const decisionLabels: Record<NoShowDecision, string> = {
+        RETAIN: 'seña retenida',
+        WAIVE: 'penalización condonada',
+        REFUND: 'seña devuelta',
+      };
+      setNotice(`Inasistencia registrada para ${noShowTarget.name} (${decisionLabels[noShowDecision]}).`);
+      setNoShowTarget(null);
+    } catch (cause) {
+      setError(appointmentErrorMessage(cause));
+    } finally {
+      setNoShowSubmitting(false);
+    }
+  }
+
+  function openCompleteDialog(appointment: RealAppointment) {
+    setCompleteTarget(appointment);
+    setCompleteBalancePaid(true);
+  }
+
+  async function handleConfirmComplete() {
+    if (!completeTarget) return;
+    setCompleteSubmitting(true);
+    try {
+      await completeRealAppointment(completeTarget.id, completeBalancePaid);
+      await reload();
+      setNotice(
+        completeBalancePaid
+          ? `Turno de ${completeTarget.name} marcado como ejecutado y totalmente cobrado.`
+          : `Turno de ${completeTarget.name} marcado como ejecutado con saldo pendiente.`
+      );
+      setCompleteTarget(null);
+    } catch (cause) {
+      setError(appointmentErrorMessage(cause));
+    } finally {
+      setCompleteSubmitting(false);
+    }
+  }
+
   function renderStatus(status: RealAppointmentStatus) {
     const meta = statusMeta[status];
-    const Icon = status === 'PENDING' ? CircleDot : status === 'CANCELLED' ? XCircle : Check;
+    const Icon =
+      status === 'PENDING'
+        ? CircleDot
+        : status === 'CANCELLED'
+          ? XCircle
+          : status === 'NO_SHOW'
+            ? UserX
+            : status === 'COMPLETED'
+              ? CheckCircle2
+              : Check;
     const toneClasses =
       status === 'PENDING'
         ? 'border-amber-500/30 bg-amber-500/10 text-amber-500'
-        : status === 'CANCELLED'
+        : status === 'CANCELLED' || status === 'NO_SHOW'
           ? 'border-destructive/30 bg-destructive/10 text-destructive'
-          : 'border-success/30 bg-success/10 text-success';
+          : status === 'COMPLETED'
+            ? 'border-blue-500/30 bg-blue-500/10 text-blue-500'
+            : 'border-success/30 bg-success/10 text-success';
     return (
       <span className={cn('inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border', toneClasses)}>
         <Icon size={13} />
@@ -670,42 +779,65 @@ export function AdminMobileAppointments() {
               )}
             </div>
 
-            {(appointment.statusCode === 'PENDING' || appointment.statusCode === 'CONFIRMED' || appointment.statusCode === 'CANCELLED') && (
-              <div className="pt-2 border-t border-border/60">
-                {appointment.statusCode === 'PENDING' && (
-                  <div className="grid grid-cols-3 gap-2 w-full">
+            {/* Acciones y resoluciones según estado */}
+            <div className="pt-2 border-t border-border/60">
+              {appointment.statusCode === 'PENDING' && (
+                <div className="grid grid-cols-3 gap-2 w-full">
+                  <Button
+                    size="sm"
+                    className="action-positive h-9 text-xs px-2 w-full justify-center min-w-0"
+                    disabled={busyId === appointment.id}
+                    onClick={() => void changeStatus(appointment, 'CONFIRMED')}
+                  >
+                    <Check size={14} className="mr-1 shrink-0" />
+                    <span className="truncate">Confirmar</span>
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="action-brand-outline h-9 text-xs px-2 w-full justify-center min-w-0"
+                    disabled={busyId === appointment.id}
+                    onClick={() => setCancelTarget(appointment)}
+                  >
+                    <X size={14} className="mr-1 shrink-0" />
+                    <span className="truncate">Rechazar</span>
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-9 text-xs px-2 w-full justify-center min-w-0 text-muted-foreground hover:text-foreground"
+                    disabled={busyId === appointment.id}
+                    onClick={() => void retryNotification(appointment)}
+                  >
+                    <Mail size={14} className="mr-1 shrink-0" />
+                    <span className="truncate">Enviar correo</span>
+                  </Button>
+                </div>
+              )}
+
+              {appointment.statusCode === 'CONFIRMED' && (
+                <div className="space-y-2 w-full">
+                  <div className="grid grid-cols-2 gap-2 w-full">
                     <Button
                       size="sm"
-                      className="action-positive h-9 text-xs px-2 w-full justify-center min-w-0"
+                      className="action-positive h-9 text-xs px-2 w-full justify-center min-w-0 font-medium"
                       disabled={busyId === appointment.id}
-                      onClick={() => void changeStatus(appointment, 'CONFIRMED')}
+                      onClick={() => openCompleteDialog(appointment)}
                     >
-                      <Check size={14} className="mr-1 shrink-0" />
-                      <span className="truncate">Confirmar</span>
+                      <CheckCircle2 size={14} className="mr-1.5 shrink-0" />
+                      <span className="truncate">Completar servicio</span>
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
-                      className="action-brand-outline h-9 text-xs px-2 w-full justify-center min-w-0"
+                      className="border-destructive/40 text-destructive hover:bg-destructive/10 h-9 text-xs px-2 w-full justify-center min-w-0 font-medium"
                       disabled={busyId === appointment.id}
-                      onClick={() => setCancelTarget(appointment)}
+                      onClick={() => openNoShowDialog(appointment)}
                     >
-                      <X size={14} className="mr-1 shrink-0" />
-                      <span className="truncate">Rechazar</span>
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-9 text-xs px-2 w-full justify-center min-w-0 text-muted-foreground hover:text-foreground"
-                      disabled={busyId === appointment.id}
-                      onClick={() => void retryNotification(appointment)}
-                    >
-                      <Mail size={14} className="mr-1 shrink-0" />
-                      <span className="truncate">Enviar correo</span>
+                      <UserX size={14} className="mr-1.5 shrink-0" />
+                      <span className="truncate">Inasistencia</span>
                     </Button>
                   </div>
-                )}
-                {appointment.statusCode === 'CONFIRMED' && (
                   <div className="grid grid-cols-2 gap-2 w-full">
                     <Button
                       size="sm"
@@ -728,23 +860,90 @@ export function AdminMobileAppointments() {
                       <span className="truncate">Enviar correo</span>
                     </Button>
                   </div>
-                )}
-                {appointment.statusCode === 'CANCELLED' && (
-                  <div className="w-full">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-9 text-xs px-2 w-full justify-center min-w-0 text-muted-foreground hover:text-foreground"
-                      disabled={busyId === appointment.id}
-                      onClick={() => void retryNotification(appointment)}
-                    >
-                      <Mail size={14} className="mr-1 shrink-0" />
-                      <span className="truncate">Enviar correo</span>
-                    </Button>
+                </div>
+              )}
+
+              {appointment.statusCode === 'COMPLETED' && (
+                <div className="space-y-2 w-full">
+                  {appointment.balancePaid === false ? (
+                    <div className="flex items-center justify-between p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-xs">
+                      <div className="flex flex-col">
+                        <span className="text-amber-500 font-semibold">Servicio ejecutado · Saldo pendiente</span>
+                        <span className="text-muted-foreground text-[11px]">
+                          Resta cobrar: {money(Math.max(0, (appointment.servicePrice || 0) - (appointment.depositPaid ? getAppointmentDepositAmount(appointment) : 0)))}
+                        </span>
+                      </div>
+                      <Button
+                        size="sm"
+                        className="action-positive h-7 text-xs px-2.5 shrink-0"
+                        disabled={busyId === appointment.id}
+                        onClick={async () => {
+                          setBusyId(appointment.id);
+                          try {
+                            await completeRealAppointment(appointment.id, true);
+                            await reload();
+                            setNotice(`Saldo registrado como cobrado para el turno de ${appointment.name}.`);
+                          } catch (e) {
+                            setError(appointmentErrorMessage(e));
+                          } finally {
+                            setBusyId(null);
+                          }
+                        }}
+                      >
+                        Marcar cobrado
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="p-2 rounded-lg bg-blue-500/10 border border-blue-500/30 text-xs text-blue-400 flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <CheckCircle2 size={13} className="shrink-0" />
+                        <span className="font-medium">Servicio ejecutado y cobrado totalmente</span>
+                      </div>
+                      <span className="font-semibold text-foreground">
+                        {appointment.servicePrice ? money(appointment.servicePrice) : ''}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {appointment.statusCode === 'NO_SHOW' && (
+                <div className="p-2.5 rounded-lg bg-destructive/10 border border-destructive/30 text-xs space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-destructive flex items-center gap-1">
+                      <UserX size={13} />
+                      Inasistencia registrada
+                    </span>
+                    <span className="font-medium text-foreground text-[11px] px-2 py-0.5 rounded bg-background border border-border">
+                      {appointment.noShowDecision === 'RETAIN' && 'Seña retenida'}
+                      {appointment.noShowDecision === 'WAIVE' && 'Penalización condonada'}
+                      {appointment.noShowDecision === 'REFUND' && 'Seña devuelta'}
+                      {!appointment.noShowDecision && 'Sin resolución'}
+                    </span>
                   </div>
-                )}
-              </div>
-            )}
+                  {appointment.noShowReason && (
+                    <p className="text-muted-foreground text-[11px] leading-relaxed pt-1 border-t border-destructive/20">
+                      <span className="font-medium text-foreground">Motivo:</span> {appointment.noShowReason}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {appointment.statusCode === 'CANCELLED' && (
+                <div className="w-full">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-9 text-xs px-2 w-full justify-center min-w-0 text-muted-foreground hover:text-foreground"
+                    disabled={busyId === appointment.id}
+                    onClick={() => void retryNotification(appointment)}
+                  >
+                    <Mail size={14} className="mr-1 shrink-0" />
+                    <span className="truncate">Enviar correo</span>
+                  </Button>
+                </div>
+              )}
+            </div>
           </article>;
         })}</div>
       </section>
@@ -754,6 +953,281 @@ export function AdminMobileAppointments() {
 
     <Dialog open={Boolean(cancelTarget)} onOpenChange={open => { if (!open) setCancelTarget(null); }}>
       <DialogContent className="admin-mobile-dialog"><DialogTitle>¿Cancelar este turno?</DialogTitle><DialogDescription>El turno quedará cancelado y seguirá disponible en el historial. Esta acción respeta la operación existente del sistema.</DialogDescription><DialogFooter><Button variant="outline" onClick={() => setCancelTarget(null)}>Volver</Button><Button className="action-brand" disabled={!cancelTarget || busyId === cancelTarget.id} onClick={() => cancelTarget && void changeStatus(cancelTarget, 'CANCELLED')}>Cancelar turno</Button></DialogFooter></DialogContent>
+    </Dialog>
+
+    {/* Diálogo para gestión excepcional de inasistencia */}
+    <Dialog open={Boolean(noShowTarget)} onOpenChange={open => { if (!open) setNoShowTarget(null); }}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-destructive">
+            <UserX size={18} />
+            <span>Gestión de inasistencia</span>
+          </DialogTitle>
+          <DialogDescription>
+            Registrá la inasistencia del cliente y definí la resolución administrativa correspondiente de manera auditable.
+          </DialogDescription>
+        </DialogHeader>
+
+        {noShowTarget && (() => {
+          const depositAmt = getAppointmentDepositAmount(noShowTarget);
+          const hasDeposit = Boolean(noShowTarget.depositPaid);
+
+          return (
+            <div className="space-y-4 py-2 text-xs sm:text-sm">
+              <div className="p-3 rounded-lg border border-border bg-surface/70 space-y-1">
+                <div className="flex justify-between font-medium">
+                  <span className="text-foreground">{noShowTarget.name}</span>
+                  <span className="text-muted-foreground">{dateLabel(noShowTarget.date)} {noShowTarget.time}</span>
+                </div>
+                <div className="flex justify-between text-muted-foreground text-xs">
+                  <span>{noShowTarget.serviceName || noShowTarget.service} · {noShowTarget.barber}</span>
+                  <span>Total: {money(noShowTarget.servicePrice || 0)}</span>
+                </div>
+                <div className="pt-1.5 mt-1 border-t border-border/50 flex justify-between items-center text-xs">
+                  <span className="text-muted-foreground">Seña registrada:</span>
+                  <strong className={hasDeposit ? 'text-success font-semibold' : 'text-amber-500 font-semibold'}>
+                    {money(depositAmt)} {hasDeposit ? '(Abonada)' : '(No cobrada)'}
+                  </strong>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="font-semibold text-foreground block">
+                  Resolución administrativa:
+                </label>
+                <div className="space-y-2">
+                  <label className={cn(
+                    "flex items-start gap-2.5 p-2.5 rounded-lg border cursor-pointer transition-colors",
+                    noShowDecision === 'RETAIN' ? "border-[#702B3A] bg-[#702B3A]/10" : "border-border hover:bg-surface"
+                  )}>
+                    <input
+                      type="radio"
+                      name="no-show-decision"
+                      value="RETAIN"
+                      checked={noShowDecision === 'RETAIN'}
+                      onChange={() => setNoShowDecision('RETAIN')}
+                      className="mt-0.5"
+                    />
+                    <div>
+                      <strong className="block text-foreground font-medium text-xs sm:text-sm">
+                        Conservar seña (Retención legítima)
+                      </strong>
+                      <span className="block text-muted-foreground text-[11px] leading-relaxed">
+                        La barbería retiene la seña de {money(depositAmt)} conforme a la política de inasistencia sin aviso previo.
+                      </span>
+                    </div>
+                  </label>
+
+                  <label className={cn(
+                    "flex items-start gap-2.5 p-2.5 rounded-lg border cursor-pointer transition-colors",
+                    noShowDecision === 'WAIVE' ? "border-[#702B3A] bg-[#702B3A]/10" : "border-border hover:bg-surface"
+                  )}>
+                    <input
+                      type="radio"
+                      name="no-show-decision"
+                      value="WAIVE"
+                      checked={noShowDecision === 'WAIVE'}
+                      onChange={() => setNoShowDecision('WAIVE')}
+                      className="mt-0.5"
+                    />
+                    <div>
+                      <strong className="block text-foreground font-medium text-xs sm:text-sm">
+                        Condonar penalización (Excepción)
+                      </strong>
+                      <span className="block text-muted-foreground text-[11px] leading-relaxed">
+                        No se aplica penalización por motivo de fuerza mayor o cortesía administrativa acordada.
+                      </span>
+                    </div>
+                  </label>
+
+                  <label className={cn(
+                    "flex items-start gap-2.5 p-2.5 rounded-lg border transition-colors",
+                    !hasDeposit ? "opacity-50 cursor-not-allowed border-border" : (
+                      noShowDecision === 'REFUND' ? "border-[#702B3A] bg-[#702B3A]/10 cursor-pointer" : "border-border hover:bg-surface cursor-pointer"
+                    )
+                  )}>
+                    <input
+                      type="radio"
+                      name="no-show-decision"
+                      value="REFUND"
+                      disabled={!hasDeposit}
+                      checked={noShowDecision === 'REFUND'}
+                      onChange={() => setNoShowDecision('REFUND')}
+                      className="mt-0.5"
+                    />
+                    <div>
+                      <strong className="block text-foreground font-medium text-xs sm:text-sm">
+                        Devolver seña ({money(depositAmt)})
+                      </strong>
+                      <span className="block text-muted-foreground text-[11px] leading-relaxed">
+                        {hasDeposit
+                          ? `Reintegro extraordinario de la seña al cliente por causa justificada.`
+                          : `No disponible: este turno no tiene una seña cobrada para reintegrar.`}
+                      </span>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label htmlFor="no-show-reason" className="font-semibold text-foreground flex items-center justify-between">
+                  <span>Motivo fundado de la resolución <span className="text-destructive">*</span></span>
+                  <span className="text-[11px] text-muted-foreground font-normal">Obligatorio</span>
+                </label>
+                <Textarea
+                  id="no-show-reason"
+                  rows={3}
+                  value={noShowReason}
+                  onChange={e => {
+                    setNoShowReason(e.target.value);
+                    if (noShowReasonError && e.target.value.trim().length >= 3) {
+                      setNoShowReasonError('');
+                    }
+                  }}
+                  placeholder="Detallá la causa de la inasistencia o el acuerdo con el cliente (ej. urgencia médica con aviso tardío, corte general de luz, o inasistencia sin comunicación)..."
+                  className={cn("bg-background text-xs sm:text-sm", noShowReasonError && "border-destructive focus-visible:ring-destructive")}
+                />
+                {noShowReasonError && (
+                  <p className="text-xs text-destructive font-medium">{noShowReasonError}</p>
+                )}
+              </div>
+            </div>
+          );
+        })()}
+
+        <DialogFooter className="gap-2 sm:gap-0">
+          <Button
+            type="button"
+            variant="outline"
+            disabled={noShowSubmitting}
+            onClick={() => setNoShowTarget(null)}
+          >
+            Volver
+          </Button>
+          <Button
+            type="button"
+            className="action-brand"
+            disabled={noShowSubmitting}
+            onClick={() => void handleConfirmNoShow()}
+          >
+            {noShowSubmitting ? 'Registrando…' : 'Registrar inasistencia'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    {/* Diálogo para marcar turno como completado / ejecutado */}
+    <Dialog open={Boolean(completeTarget)} onOpenChange={open => { if (!open) setCompleteTarget(null); }}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-blue-400">
+            <CheckCircle2 size={18} />
+            <span>Completar servicio</span>
+          </DialogTitle>
+          <DialogDescription>
+            Confirmá la realización del servicio y el estado del cobro del saldo restante.
+          </DialogDescription>
+        </DialogHeader>
+
+        {completeTarget && (() => {
+          const servicePrice = completeTarget.servicePrice || 0;
+          const depositAmt = getAppointmentDepositAmount(completeTarget);
+          const hasDeposit = Boolean(completeTarget.depositPaid);
+          const effectiveDeposit = hasDeposit ? depositAmt : 0;
+          const remainingBalance = Math.max(0, servicePrice - effectiveDeposit);
+
+          return (
+            <div className="space-y-4 py-2 text-xs sm:text-sm">
+              <div className="p-3 rounded-lg border border-border bg-surface/70 space-y-1">
+                <div className="flex justify-between font-medium">
+                  <span className="text-foreground">{completeTarget.name}</span>
+                  <span className="text-muted-foreground">{dateLabel(completeTarget.date)} {completeTarget.time}</span>
+                </div>
+                <div className="flex justify-between text-muted-foreground text-xs">
+                  <span>{completeTarget.serviceName || completeTarget.service} · {completeTarget.barber}</span>
+                  <span>Total servicio: {money(servicePrice)}</span>
+                </div>
+                <div className="pt-1.5 mt-1 border-t border-border/50 flex justify-between items-center text-xs">
+                  <span className="text-muted-foreground">Seña abonada: {money(effectiveDeposit)}</span>
+                  <strong className="text-foreground font-semibold">
+                    Saldo restante: {money(remainingBalance)}
+                  </strong>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="font-semibold text-foreground block">
+                  Estado del cobro:
+                </label>
+                <div className="space-y-2">
+                  <label className={cn(
+                    "flex items-start gap-2.5 p-2.5 rounded-lg border cursor-pointer transition-colors",
+                    completeBalancePaid ? "border-success bg-success/10" : "border-border hover:bg-surface"
+                  )}>
+                    <input
+                      type="radio"
+                      name="complete-balance-paid"
+                      checked={completeBalancePaid}
+                      onChange={() => setCompleteBalancePaid(true)}
+                      className="mt-0.5"
+                    />
+                    <div>
+                      <strong className="block text-foreground font-medium text-xs sm:text-sm">
+                        Servicio totalmente cobrado
+                      </strong>
+                      <span className="block text-muted-foreground text-[11px] leading-relaxed">
+                        {remainingBalance > 0
+                          ? `El cliente abonó el saldo de ${money(remainingBalance)}. El valor total (${money(servicePrice)}) queda liquidado.`
+                          : `El total del servicio (${money(servicePrice)}) se encuentra completamente abonado.`}
+                      </span>
+                    </div>
+                  </label>
+
+                  <label className={cn(
+                    "flex items-start gap-2.5 p-2.5 rounded-lg border cursor-pointer transition-colors",
+                    !completeBalancePaid ? "border-amber-500 bg-amber-500/10" : "border-border hover:bg-surface"
+                  )}>
+                    <input
+                      type="radio"
+                      name="complete-balance-paid"
+                      checked={!completeBalancePaid}
+                      onChange={() => setCompleteBalancePaid(false)}
+                      className="mt-0.5"
+                    />
+                    <div>
+                      <strong className="block text-foreground font-medium text-xs sm:text-sm">
+                        Servicio ejecutado con saldo pendiente
+                      </strong>
+                      <span className="block text-muted-foreground text-[11px] leading-relaxed">
+                        El corte o servicio se realizó, pero el saldo de {money(remainingBalance)} queda debiéndose para cobro posterior.
+                      </span>
+                    </div>
+                  </label>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
+        <DialogFooter className="gap-2 sm:gap-0">
+          <Button
+            type="button"
+            variant="outline"
+            disabled={completeSubmitting}
+            onClick={() => setCompleteTarget(null)}
+          >
+            Volver
+          </Button>
+          <Button
+            type="button"
+            className="action-brand"
+            disabled={completeSubmitting}
+            onClick={() => void handleConfirmComplete()}
+          >
+            {completeSubmitting ? 'Guardando…' : 'Confirmar ejecución'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
     </Dialog>
 
     {/* Diálogo para agregar turno manual */}

@@ -5,18 +5,24 @@ import {
   BarChart2,
   Calendar,
   CheckCircle2,
+  ChevronDown,
+  ChevronUp,
   Clock,
   Clock3,
   Filter,
   Flame,
   PieChart,
+  Receipt,
   RefreshCw,
+  RotateCcw,
   Scissors,
+  ShieldAlert,
   Sun,
   Sunset,
   Moon,
   TrendingUp,
   Users,
+  Wallet,
   XCircle,
 } from 'lucide-react';
 import {
@@ -35,6 +41,7 @@ import {
   readRealAppointments,
   type RealAppointment,
 } from '@/lib/kani-appointments';
+import { money } from '@/lib/kani-model';
 import {
   businessDateToday,
   BUSINESS_TIME_ZONE,
@@ -43,6 +50,7 @@ import { permittedBarberNames } from '@/lib/kani-role-scope';
 import {
   aggregateClientsDirectory,
   computeDailyDemand,
+  computeFinancialControl,
   computeHourlyDistribution,
   computeKpiSummary,
   computeServiceDemand,
@@ -158,8 +166,11 @@ export function AdminStatistics() {
     return aggregateClientsDirectory(scopedAppointments);
   }, [appointments, permittedBarberIds, profile.role, profile.barber_id]);
 
+  const [showFinancialDetails, setShowFinancialDetails] = useState(false);
+
   // Analytics Metrics
   const kpis = useMemo(() => computeKpiSummary(filteredAppointments), [filteredAppointments]);
+  const financial = useMemo(() => computeFinancialControl(filteredAppointments), [filteredAppointments]);
   const dailyDemand = useMemo(() => computeDailyDemand(filteredAppointments), [filteredAppointments]);
   const hourlyDemand = useMemo(
     () => computeHourlyDistribution(filteredAppointments),
@@ -320,6 +331,181 @@ export function AdminStatistics() {
             <XCircle size={16} className="text-destructive" />
           </div>
         </div>
+      </section>
+
+      {/* Apartado visual: Control de cobros */}
+      <section className="mb-6 space-y-3" aria-label="Control de cobros">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+          <div>
+            <h3 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+              <Wallet size={16} className="text-gold" />
+              <span>Control de cobros</span>
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              Ingresos efectivamente recibidos, saldos pendientes y señas retenidas por inasistencias en el período.
+            </p>
+          </div>
+          {(financial.retainedNoShowDeposits.count > 0 || financial.refundsAndWaives.items.length > 0) && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setShowFinancialDetails((curr) => !curr)}
+              className="text-xs h-8 px-2.5 self-start sm:self-auto gap-1 text-muted-foreground hover:text-foreground"
+            >
+              {showFinancialDetails ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+              <span>{showFinancialDetails ? 'Ocultar auditoría' : 'Ver detalle de excepciones'}</span>
+            </Button>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+          {/* A. Señas cobradas */}
+          <div className="p-3.5 rounded-xl border border-emerald-500/30 bg-emerald-500/5 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-emerald-400 font-medium">Señas cobradas</span>
+                <Receipt size={16} className="text-emerald-400" />
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-0.5">Dinero efectivamente recibido</p>
+            </div>
+            <div className="mt-3">
+              <span className="text-xl sm:text-2xl font-bold text-foreground">
+                {loading ? '…' : money(financial.depositsCollected.totalArs)}
+              </span>
+              <span className="text-[11px] text-muted-foreground block mt-0.5">
+                {financial.depositsCollected.count} {financial.depositsCollected.count === 1 ? 'seña recibida' : 'señas recibidas'}
+              </span>
+            </div>
+          </div>
+
+          {/* B. Cobros pendientes */}
+          <div className="p-3.5 rounded-xl border border-amber-500/30 bg-amber-500/5 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-amber-500 font-medium">Cobros pendientes</span>
+                <Clock size={16} className="text-amber-500" />
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-0.5">Saldo de turnos vigentes con seña</p>
+            </div>
+            <div className="mt-3">
+              <span className="text-xl sm:text-2xl font-bold text-foreground">
+                {loading ? '…' : money(financial.pendingBalances.totalArs)}
+              </span>
+              <span className="text-[11px] text-muted-foreground block mt-0.5">
+                {financial.pendingBalances.count} {financial.pendingBalances.count === 1 ? 'turno por cobrar' : 'turnos por cobrar'}
+              </span>
+            </div>
+          </div>
+
+          {/* C. Total cobrado por servicios ejecutados */}
+          <div className="p-3.5 rounded-xl border border-border bg-surface flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-foreground font-medium">Servicios ejecutados</span>
+                <CheckCircle2 size={16} className="text-foreground/70" />
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-0.5">Cobro de servicios realizados</p>
+            </div>
+            <div className="mt-3">
+              <span className="text-xl sm:text-2xl font-bold text-foreground">
+                {loading ? '…' : money(financial.completedServices.totalCollectedArs)}
+              </span>
+              <span className="text-[11px] text-muted-foreground block mt-0.5">
+                {financial.completedServices.count} {financial.completedServices.count === 1 ? 'servicio ejecutado' : 'servicios ejecutados'}
+                {financial.completedServices.unpaidBalanceArs > 0 ? ` · Saldo impago: ${money(financial.completedServices.unpaidBalanceArs)}` : ''}
+              </span>
+            </div>
+          </div>
+
+          {/* D. Señas retenidas por inasistencias */}
+          <div className="p-3.5 rounded-xl border border-purple-500/30 bg-purple-500/5 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-purple-400 font-medium">Señas retenidas</span>
+                <ShieldAlert size={16} className="text-purple-400" />
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-0.5">Inasistencias no devueltas</p>
+            </div>
+            <div className="mt-3">
+              <span className="text-xl sm:text-2xl font-bold text-foreground">
+                {loading ? '…' : money(financial.retainedNoShowDeposits.totalArs)}
+              </span>
+              <span className="text-[11px] text-muted-foreground block mt-0.5">
+                {financial.retainedNoShowDeposits.count} {financial.retainedNoShowDeposits.count === 1 ? 'seña retenida' : 'señas retenidas'}
+              </span>
+            </div>
+          </div>
+
+          {/* E. Devoluciones y condonaciones */}
+          <div className="p-3.5 rounded-xl border border-rose-500/30 bg-rose-500/5 flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-rose-400 font-medium">Devoluciones / Condonadas</span>
+                <RotateCcw size={16} className="text-rose-400" />
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-0.5">Impacto de excepciones</p>
+            </div>
+            <div className="mt-3">
+              <span className="text-xl sm:text-2xl font-bold text-foreground">
+                {loading ? '…' : money(financial.refundsAndWaives.totalImpactArs)}
+              </span>
+              <span className="text-[11px] text-muted-foreground block mt-0.5">
+                {financial.refundsAndWaives.refundsCount > 0 ? `${financial.refundsAndWaives.refundsCount} dev. (${money(financial.refundsAndWaives.refundsTotalArs)})` : '0 dev.'}
+                {financial.refundsAndWaives.waivesCount > 0 ? ` · ${financial.refundsAndWaives.waivesCount} cond. (${money(financial.refundsAndWaives.waivesTotalArs)})` : ''}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Desglose auditable de inasistencias y excepciones */}
+        {showFinancialDetails && (financial.retainedNoShowDeposits.count > 0 || financial.refundsAndWaives.items.length > 0) && (
+          <div className="p-3.5 rounded-xl border border-border bg-surface/70 space-y-3 mt-3 animate-in fade-in duration-200">
+            <h4 className="text-xs font-semibold text-foreground tracking-tight">
+              Registro auditable de inasistencias y excepciones del período
+            </h4>
+            <div className="space-y-2 text-xs">
+              {financial.retainedNoShowDeposits.items.map((item) => (
+                <div
+                  key={`retained-${item.appointmentId}`}
+                  className="p-2.5 rounded-lg border border-purple-500/20 bg-purple-500/5 flex flex-col sm:flex-row sm:items-center justify-between gap-1.5"
+                >
+                  <div>
+                    <span className="font-semibold text-foreground">{item.clientName}</span>
+                    <span className="text-muted-foreground"> · {item.serviceName} ({item.barberName})</span>
+                    <span className="text-muted-foreground block text-[11px]">
+                      {item.date} {item.time} hs {item.reason ? `· Motivo: ${item.reason}` : ''}
+                    </span>
+                  </div>
+                  <div className="text-left sm:text-right shrink-0">
+                    <span className="inline-block px-2 py-0.5 rounded text-[11px] font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                      Seña retenida: {money(item.depositAmountArs)}
+                    </span>
+                  </div>
+                </div>
+              ))}
+
+              {financial.refundsAndWaives.items.map((item) => (
+                <div
+                  key={`exc-${item.appointmentId}`}
+                  className="p-2.5 rounded-lg border border-rose-500/20 bg-rose-500/5 flex flex-col sm:flex-row sm:items-center justify-between gap-1.5"
+                >
+                  <div>
+                    <span className="font-semibold text-foreground">{item.clientName}</span>
+                    <span className="text-muted-foreground block text-[11px]">
+                      {item.date} · Motivo: {item.reason} {item.actor ? `(Autorizado por: ${item.actor})` : ''}
+                    </span>
+                  </div>
+                  <div className="text-left sm:text-right shrink-0">
+                    <span className="inline-block px-2 py-0.5 rounded text-[11px] font-medium bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                      {item.decision === 'REFUND' ? `Seña devuelta: ${money(item.amountArs)}` : `Penalización condonada: ${money(item.amountArs)}`}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </section>
 
       {/* Empty State */}

@@ -4,6 +4,8 @@ import type { Appointment, Barber, ServiceId, Status } from '@/lib/kani-model';
 import { sendAppointmentNotification } from '@/lib/kani-notifications.functions';
 
 export type RealAppointmentStatus = Tables<'appointments'>['status'];
+export type NoShowDecision = 'RETAIN' | 'WAIVE' | 'REFUND';
+
 export type RealAppointment = Appointment & {
   notes: string;
   statusCode: RealAppointmentStatus;
@@ -23,6 +25,11 @@ export type RealAppointment = Appointment & {
   recurringRuleId?: string | null;
   depositRequired?: boolean;
   depositPaid?: boolean;
+  depositAmountArs?: number;
+  balancePaid?: boolean;
+  noShowDecision?: NoShowDecision | null;
+  noShowRefundAmountArs?: number;
+  noShowReason?: string | null;
 };
 
 type AppointmentRow = Tables<'appointments'>;
@@ -72,7 +79,8 @@ const statusToUi: Record<RealAppointmentStatus, Status> = {
   PENDING: 'Pendiente',
   CONFIRMED: 'Confirmado',
   CANCELLED: 'Cancelado',
-  COMPLETED: 'Confirmado',
+  COMPLETED: 'Ejecutado',
+  NO_SHOW: 'Inasistencia',
 };
 
 export function appointmentErrorMessage(error: unknown) {
@@ -216,7 +224,7 @@ async function dispatchAppointmentNotification(appointmentId: string, claimToken
 }
 
 export async function readRealAppointments(): Promise<RealAppointment[]> {
-  const fullColumns = 'id, request_number, client_id, barber_id, service_id, booking_date, start_time, end_time, status, notes, created_at, updated_at, is_manual, origin, created_by_user_id, created_by_display_name, recurring_rule_id, deposit_required, deposit_paid';
+  const fullColumns = 'id, request_number, client_id, barber_id, service_id, booking_date, start_time, end_time, status, notes, created_at, updated_at, is_manual, origin, created_by_user_id, created_by_display_name, recurring_rule_id, deposit_required, deposit_paid, deposit_amount_ars, balance_paid, no_show_decision, no_show_refund_amount_ars';
   const baseColumns = 'id, request_number, client_id, barber_id, service_id, booking_date, start_time, end_time, status, notes, created_at, updated_at';
 
   let rows: AppointmentRow[] | null = null;
@@ -228,9 +236,9 @@ export async function readRealAppointments(): Promise<RealAppointment[]> {
 
   if (!fullError && fullRows) {
     rows = fullRows as AppointmentRow[];
-  } else if (fullError && fullError.message && (fullError.message.includes('is_manual') || fullError.code === '42703')) {
+  } else if (fullError && fullError.message && (fullError.message.includes('deposit_amount_ars') || fullError.message.includes('is_manual') || fullError.code === '42703')) {
     // Schema fallback if migrations have not yet been applied to the target database
-    console.warn('[KANI appointments] Columnas manuales no detectadas en appointments, ejecutando consulta base:', fullError.message);
+    console.warn('[KANI appointments] Columnas extendidas no detectadas en appointments, ejecutando consulta base:', fullError.message);
     const { data: fallbackRows, error: fallbackError } = await supabase
       .from('appointments')
       .select(baseColumns)
@@ -247,20 +255,33 @@ export async function readRealAppointments(): Promise<RealAppointment[]> {
   const clientIds = [...new Set(appointments.map(row => row.client_id))];
   const barberIds = [...new Set(appointments.map(row => row.barber_id))];
   const serviceIds = [...new Set(appointments.map(row => row.service_id))];
-  const [{ data: clients, error: clientsError }, { data: barbers, error: barbersError }, { data: services, error: servicesError }] = await Promise.all([
+  const appointmentIds = appointments.map(row => row.id);
+
+  const [
+    { data: clients, error: clientsError },
+    { data: barbers, error: barbersError },
+    { data: services, error: servicesError },
+    { data: exceptionsData },
+  ] = await Promise.all([
     clientIds.length ? supabase.from('clients').select('id, name, phone, email').in('id', clientIds) : Promise.resolve({ data: [], error: null }),
     barberIds.length ? supabase.from('barbers').select('id, name').in('id', barberIds) : Promise.resolve({ data: [], error: null }),
     serviceIds.length ? supabase.from('services').select('id, name, duration_minutes, price_ars').in('id', serviceIds) : Promise.resolve({ data: [], error: null }),
+    appointmentIds.length
+      ? supabase.from('appointment_no_show_exceptions').select('appointment_id, decision, deposit_amount_ars, refund_amount_ars, reason, created_by_display_name, created_at').in('appointment_id', appointmentIds)
+      : Promise.resolve({ data: [] }),
   ]);
   if (clientsError || barbersError || servicesError) throw clientsError ?? barbersError ?? servicesError;
   const clientById = new Map((clients ?? []).map(client => [client.id, client]));
   const barberById = new Map((barbers ?? []).map(barber => [barber.id, barber]));
   const serviceById = new Map((services ?? []).map(service => [service.id, service]));
+  const exceptionByApt = new Map(((exceptionsData as any[]) ?? []).map(e => [e.appointment_id, e]));
+
   return appointments.flatMap(row => {
     const client = clientById.get(row.client_id);
     const barber = barberById.get(row.barber_id);
     const service = serviceById.get(row.service_id);
     if (!client || !barber || !service) return [];
+    const exc = exceptionByApt.get(row.id);
     return [{
       id: row.id,
       requestNumber: row.request_number,
@@ -272,7 +293,7 @@ export async function readRealAppointments(): Promise<RealAppointment[]> {
       name: client.name,
       email: client.email,
       phone: client.phone,
-      status: statusToUi[row.status],
+      status: statusToUi[row.status] || 'Confirmado',
       notes: row.notes ?? '',
       statusCode: row.status,
       barberId: row.barber_id,
@@ -289,11 +310,16 @@ export async function readRealAppointments(): Promise<RealAppointment[]> {
       recurringRuleId: (row as any).recurring_rule_id ?? null,
       depositRequired: (row as any).deposit_required ?? true,
       depositPaid: (row as any).deposit_paid ?? false,
+      depositAmountArs: (row as any).deposit_amount_ars ?? undefined,
+      balancePaid: (row as any).balance_paid ?? false,
+      noShowDecision: (exc?.decision ?? (row as any).no_show_decision ?? null) as NoShowDecision | null,
+      noShowRefundAmountArs: exc?.refund_amount_ars ?? (row as any).no_show_refund_amount_ars ?? 0,
+      noShowReason: exc?.reason ?? null,
     } satisfies RealAppointment];
   });
 }
 
-export async function updateRealAppointmentStatus(id: string, status: 'CONFIRMED' | 'CANCELLED') {
+export async function updateRealAppointmentStatus(id: string, status: 'CONFIRMED' | 'CANCELLED' | 'COMPLETED' | 'NO_SHOW') {
   const { data, error } = await supabase.rpc('update_appointment_status', {
     p_appointment_id: id,
     p_status: status,
@@ -305,6 +331,31 @@ export async function updateRealAppointmentStatus(id: string, status: 'CONFIRMED
     await dispatchAppointmentNotification(id, row.notification_claim_token);
   }
   return row?.appointment_status;
+}
+
+export async function completeRealAppointment(id: string, balancePaid = true) {
+  const { data, error } = await supabase.rpc('complete_appointment', {
+    p_appointment_id: id,
+    p_balance_paid: balancePaid,
+  });
+  if (error) throw error;
+  return data?.[0];
+}
+
+export async function recordNoShowException(input: {
+  appointmentId: string;
+  decision: NoShowDecision;
+  reason: string;
+  refundAmountArs?: number;
+}) {
+  const { data, error } = await supabase.rpc('record_appointment_no_show_exception', {
+    p_appointment_id: input.appointmentId,
+    p_decision: input.decision,
+    p_reason: input.reason.trim(),
+    p_refund_amount_ars: input.refundAmountArs ?? null,
+  });
+  if (error) throw error;
+  return data?.[0];
 }
 
 export async function retryRealAppointmentNotification(id: string) {

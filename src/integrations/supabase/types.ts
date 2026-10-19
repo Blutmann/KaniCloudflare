@@ -135,7 +135,7 @@ export type Database = {
           booking_date: string
           start_time: string
           end_time: string
-          status: "PENDING" | "CONFIRMED" | "CANCELLED" | "COMPLETED"
+          status: "PENDING" | "CONFIRMED" | "CANCELLED" | "COMPLETED" | "NO_SHOW"
           notes: string | null
           created_at: string
           updated_at: string
@@ -146,6 +146,10 @@ export type Database = {
           recurring_rule_id?: string | null
           deposit_required?: boolean
           deposit_paid?: boolean
+          deposit_amount_ars?: number | null
+          balance_paid?: boolean
+          no_show_decision?: "RETAIN" | "WAIVE" | "REFUND" | null
+          no_show_refund_amount_ars?: number
         }
         Insert: {
           id?: string
@@ -156,7 +160,7 @@ export type Database = {
           booking_date: string
           start_time: string
           end_time: string
-          status?: "PENDING" | "CONFIRMED" | "CANCELLED" | "COMPLETED"
+          status?: "PENDING" | "CONFIRMED" | "CANCELLED" | "COMPLETED" | "NO_SHOW"
           notes?: string | null
           created_at?: string
           updated_at?: string
@@ -167,6 +171,10 @@ export type Database = {
           recurring_rule_id?: string | null
           deposit_required?: boolean
           deposit_paid?: boolean
+          deposit_amount_ars?: number | null
+          balance_paid?: boolean
+          no_show_decision?: "RETAIN" | "WAIVE" | "REFUND" | null
+          no_show_refund_amount_ars?: number
         }
         Update: {
           id?: string
@@ -177,8 +185,58 @@ export type Database = {
           booking_date?: string
           start_time?: string
           end_time?: string
-          status?: "PENDING" | "CONFIRMED" | "CANCELLED" | "COMPLETED"
+          status?: "PENDING" | "CONFIRMED" | "CANCELLED" | "COMPLETED" | "NO_SHOW"
           notes?: string | null
+          created_at?: string
+          updated_at?: string
+          is_manual?: boolean
+          origin?: "PUBLIC_WEB" | "MANUAL"
+          created_by_user_id?: string | null
+          created_by_display_name?: string | null
+          recurring_rule_id?: string | null
+          deposit_required?: boolean
+          deposit_paid?: boolean
+          deposit_amount_ars?: number | null
+          balance_paid?: boolean
+          no_show_decision?: "RETAIN" | "WAIVE" | "REFUND" | null
+          no_show_refund_amount_ars?: number
+        }
+        Relationships: []
+      }
+      appointment_no_show_exceptions: {
+        Row: {
+          id: string
+          appointment_id: string
+          decision: "RETAIN" | "WAIVE" | "REFUND"
+          deposit_amount_ars: number
+          refund_amount_ars: number
+          reason: string
+          created_by_user_id: string | null
+          created_by_display_name: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          appointment_id: string
+          decision: "RETAIN" | "WAIVE" | "REFUND"
+          deposit_amount_ars?: number
+          refund_amount_ars?: number
+          reason: string
+          created_by_user_id?: string | null
+          created_by_display_name: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          appointment_id?: string
+          decision?: "RETAIN" | "WAIVE" | "REFUND"
+          deposit_amount_ars?: number
+          refund_amount_ars?: number
+          reason?: string
+          created_by_user_id?: string | null
+          created_by_display_name?: string
           created_at?: string
           updated_at?: string
         }
@@ -728,7 +786,7 @@ export type Database = {
       }
     }
     Enums: {
-      appointment_status: "PENDING" | "CONFIRMED" | "CANCELLED" | "COMPLETED"
+      appointment_status: "PENDING" | "CONFIRMED" | "CANCELLED" | "COMPLETED" | "NO_SHOW"
       notification_type: "NEW_REQUEST" | "CONFIRMED" | "CANCELLED"
       notification_delivery_status: "PENDING" | "SENDING" | "SENT" | "FAILED"
       admin_activity_event_type: "AVAILABILITY_UNAVAILABLE" | "AVAILABILITY_AVAILABLE" | "APPOINTMENT_REQUESTED" | "APPOINTMENT_CONFIRMED" | "APPOINTMENT_CANCELLED"

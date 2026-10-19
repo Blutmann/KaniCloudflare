@@ -3,12 +3,14 @@ import {
   aggregateClientsDirectory,
   classifyAppointmentTime,
   computeDailyDemand,
+  computeFinancialControl,
   computeHourlyDistribution,
   computeKpiSummary,
   computeServiceDemand,
   dateRangeForStatisticsPreset,
   filterAndSortClients,
   filterStatisticsAppointments,
+  getAppointmentDepositAmount,
   type ClientDirectoryItem,
 } from './kani-statistics';
 import type { RealAppointment } from './kani-appointments';
@@ -502,5 +504,314 @@ describe('Statistics Module Unit Tests', () => {
     // Sort by name ascending
     const sortedByNameAsc = filterAndSortClients(clients, '', 'name', 'asc');
     expect(sortedByNameAsc.map((c) => c.name)).toEqual(['Ana Perez', 'Beto Ruiz', 'Carlos Gomez']);
+  });
+
+  describe('Financial Control («Control de cobros») and No-Show Exceptions', () => {
+    // 1. Seña recibida para turno futuro
+    it('1. Seña recibida para turno futuro: computa en señas cobradas y saldo en cobros pendientes; no computa en ejecutados ni retenidos', () => {
+      const apt = makeMockAppointment({
+        id: 'future-1',
+        statusCode: 'CONFIRMED',
+        servicePrice: 25000,
+        depositPaid: true,
+        depositAmountArs: 10000,
+        date: '2026-10-25',
+      });
+
+      const summary = computeFinancialControl([apt]);
+
+      // Seña cobrada efectivamente
+      expect(summary.depositsCollected.totalArs).toBe(10000);
+      expect(summary.depositsCollected.count).toBe(1);
+
+      // Saldo pendiente = 25.000 - 10.000 = 15.000
+      expect(summary.pendingBalances.totalArs).toBe(15000);
+      expect(summary.pendingBalances.count).toBe(1);
+
+      // No se computa en servicios ejecutados
+      expect(summary.completedServices.count).toBe(0);
+      expect(summary.completedServices.totalCollectedArs).toBe(0);
+
+      // No se computa en señas retenidas
+      expect(summary.retainedNoShowDeposits.count).toBe(0);
+      expect(summary.retainedNoShowDeposits.totalArs).toBe(0);
+
+      // No hay devoluciones ni condonaciones
+      expect(summary.refundsAndWaives.totalImpactArs).toBe(0);
+    });
+
+    // 2. Turno ejecutado con seña y saldo pendiente
+    it('2. Turno ejecutado con seña y saldo pendiente: computa lo efectivamente ingresado y diferencia el saldo impago', () => {
+      const apt = makeMockAppointment({
+        id: 'completed-unpaid-1',
+        statusCode: 'COMPLETED',
+        servicePrice: 30000,
+        depositPaid: true,
+        depositAmountArs: 10000,
+        balancePaid: false, // saldo impago
+      });
+
+      const summary = computeFinancialControl([apt]);
+
+      // Solo computa lo efectivamente ingresado (la seña)
+      expect(summary.completedServices.count).toBe(1);
+      expect(summary.completedServices.totalCollectedArs).toBe(10000);
+      expect(summary.completedServices.totalServiceValueArs).toBe(30000);
+
+      // Diferencia el saldo impago: 30.000 - 10.000 = 20.000
+      expect(summary.completedServices.unpaidBalanceArs).toBe(20000);
+
+      // No figura en cobros pendientes (los pendientes son solo de turnos vigentes futuros)
+      expect(summary.pendingBalances.count).toBe(0);
+      expect(summary.pendingBalances.totalArs).toBe(0);
+    });
+
+    // 3. Turno ejecutado y totalmente cobrado
+    it('3. Turno ejecutado y totalmente cobrado: computa el valor total una sola vez sin duplicar con la seña', () => {
+      const apt = makeMockAppointment({
+        id: 'completed-paid-1',
+        statusCode: 'COMPLETED',
+        servicePrice: 25000,
+        depositPaid: true,
+        depositAmountArs: 10000,
+        balancePaid: true, // totalmente cobrado
+      });
+
+      const summary = computeFinancialControl([apt]);
+
+      // Total servicio computado exactamente una vez ($25.000), no $35.000
+      expect(summary.completedServices.count).toBe(1);
+      expect(summary.completedServices.totalCollectedArs).toBe(25000);
+      expect(summary.completedServices.totalServiceValueArs).toBe(25000);
+      expect(summary.completedServices.unpaidBalanceArs).toBe(0);
+
+      // Seña cobrada registrada en indicador A
+      expect(summary.depositsCollected.totalArs).toBe(10000);
+    });
+
+    // 4. Inasistencia con seña retenida
+    it('4. Inasistencia con seña retenida: computa en señas retenidas; no en cobros pendientes ni como ejecutado', () => {
+      const apt = makeMockAppointment({
+        id: 'no-show-retain-1',
+        statusCode: 'NO_SHOW',
+        servicePrice: 20000,
+        depositPaid: true,
+        depositAmountArs: 10000,
+        noShowDecision: 'RETAIN',
+        noShowReason: 'Cliente no se presentó sin previo aviso',
+      });
+
+      const summary = computeFinancialControl([apt]);
+
+      // Computa en señas retenidas con detalle
+      expect(summary.retainedNoShowDeposits.count).toBe(1);
+      expect(summary.retainedNoShowDeposits.totalArs).toBe(10000);
+      expect(summary.retainedNoShowDeposits.items[0]).toMatchObject({
+        appointmentId: 'no-show-retain-1',
+        depositAmountArs: 10000,
+        reason: 'Cliente no se presentó sin previo aviso',
+      });
+
+      // No debe figurar en cobros pendientes ni como servicio ejecutado
+      expect(summary.pendingBalances.count).toBe(0);
+      expect(summary.completedServices.count).toBe(0);
+
+      // No es devolución ni condonación
+      expect(summary.refundsAndWaives.items).toHaveLength(0);
+    });
+
+    // 5. Inasistencia cuya penalización se condona
+    it('5. Inasistencia cuya penalización se condona: no figura como retenida ni como ingreso; registra excepción con motivo', () => {
+      const apt = makeMockAppointment({
+        id: 'no-show-waive-1',
+        statusCode: 'NO_SHOW',
+        servicePrice: 20000,
+        depositPaid: true,
+        depositAmountArs: 10000,
+        noShowDecision: 'WAIVE',
+        noShowReason: 'Urgencia de salud imprevista con certificado',
+      });
+
+      const summary = computeFinancialControl([apt]);
+
+      // No debe figurar como seña retenida
+      expect(summary.retainedNoShowDeposits.count).toBe(0);
+      expect(summary.retainedNoShowDeposits.totalArs).toBe(0);
+
+      // Debe quedar registrada la excepción condonada con su motivo
+      expect(summary.refundsAndWaives.waivesCount).toBe(1);
+      expect(summary.refundsAndWaives.waivesTotalArs).toBe(10000);
+      expect(summary.refundsAndWaives.items[0]).toMatchObject({
+        appointmentId: 'no-show-waive-1',
+        decision: 'WAIVE',
+        amountArs: 10000,
+        reason: 'Urgencia de salud imprevista con certificado',
+      });
+    });
+
+    // 6. Seña devuelta después de haber sido recibida
+    it('6. Seña devuelta después de haber sido recibida: se refleja como devolución sin duplicarse en otros conceptos', () => {
+      const apt = makeMockAppointment({
+        id: 'no-show-refund-1',
+        statusCode: 'NO_SHOW',
+        servicePrice: 22000,
+        depositPaid: true,
+        depositAmountArs: 10000,
+        noShowDecision: 'REFUND',
+        noShowRefundAmountArs: 10000,
+        noShowReason: 'Corte de luz general en la zona acordado reembolso',
+      });
+
+      const summary = computeFinancialControl([apt]);
+
+      // Se refleja en devoluciones
+      expect(summary.refundsAndWaives.refundsCount).toBe(1);
+      expect(summary.refundsAndWaives.refundsTotalArs).toBe(10000);
+      expect(summary.refundsAndWaives.items[0]).toMatchObject({
+        appointmentId: 'no-show-refund-1',
+        decision: 'REFUND',
+        amountArs: 10000,
+        reason: 'Corte de luz general en la zona acordado reembolso',
+      });
+
+      // No figura como seña retenida
+      expect(summary.retainedNoShowDeposits.count).toBe(0);
+      expect(summary.retainedNoShowDeposits.totalArs).toBe(0);
+    });
+
+    // 7. Prevención de devoluciones y contabilizaciones duplicadas
+    it('7. Prevención de devoluciones y contabilizaciones duplicadas', () => {
+      const aptRefund = makeMockAppointment({
+        id: 'dup-refund-1',
+        statusCode: 'NO_SHOW',
+        servicePrice: 25000,
+        depositPaid: true,
+        depositAmountArs: 10000,
+        noShowDecision: 'REFUND',
+        noShowRefundAmountArs: 10000,
+        noShowReason: 'Reintegro único registrado',
+      });
+
+      const summary = computeFinancialControl([aptRefund]);
+
+      // Exactamente 1 ítem devuelto
+      expect(summary.refundsAndWaives.items).toHaveLength(1);
+      expect(summary.retainedNoShowDeposits.items).toHaveLength(0);
+
+      // Si no hay seña cobrada (depositPaid = false), no puede haber retención
+      const aptNoDeposit = makeMockAppointment({
+        id: 'no-dep-1',
+        statusCode: 'NO_SHOW',
+        servicePrice: 20000,
+        depositPaid: false,
+        noShowDecision: 'RETAIN',
+      });
+      const summaryNoDep = computeFinancialControl([aptNoDeposit]);
+      expect(summaryNoDep.retainedNoShowDeposits.count).toBe(0);
+      expect(summaryNoDep.retainedNoShowDeposits.totalArs).toBe(0);
+    });
+
+    // 8. Coherencia de los indicadores al cambiar filtros de período
+    it('8. Coherencia de los indicadores al cambiar filtros de período y barbero', () => {
+      const aptToday = makeMockAppointment({
+        id: 'apt-today',
+        date: '2026-10-17',
+        barber: 'Kani',
+        statusCode: 'CONFIRMED',
+        depositPaid: true,
+        depositAmountArs: 10000,
+        servicePrice: 20000,
+      });
+
+      const aptYesterday = makeMockAppointment({
+        id: 'apt-yesterday',
+        date: '2026-10-16',
+        barber: 'Kani',
+        statusCode: 'COMPLETED',
+        depositPaid: true,
+        depositAmountArs: 10000,
+        balancePaid: true,
+        servicePrice: 20000,
+      });
+
+      const aptOtherBarber = makeMockAppointment({
+        id: 'apt-other-barber',
+        date: '2026-10-17',
+        barber: 'Valentín',
+        barberId: 'barber-valentin',
+        statusCode: 'CONFIRMED',
+        depositPaid: true,
+        depositAmountArs: 10000,
+        servicePrice: 25000,
+      });
+
+      const all = [aptToday, aptYesterday, aptOtherBarber];
+      const permittedBarberIds = new Set(['barber-kani', 'barber-valentin']);
+
+      // Filtro: Solo HOY y Barbero Kani
+      const todayRange = dateRangeForStatisticsPreset('TODAY', '2026-10-17');
+      const filteredTodayKani = filterStatisticsAppointments(all, {
+        dateRange: todayRange,
+        barberFilter: 'Kani',
+        timeSlotFilter: 'ALL',
+        role: 'ADMIN',
+        profileBarberId: null,
+        permittedBarberIds,
+      });
+      expect(filteredTodayKani).toHaveLength(1);
+      expect(filteredTodayKani[0].id).toBe('apt-today');
+
+      const summaryToday = computeFinancialControl(filteredTodayKani);
+      expect(summaryToday.depositsCollected.totalArs).toBe(10000);
+      expect(summaryToday.pendingBalances.totalArs).toBe(10000);
+      expect(summaryToday.completedServices.totalCollectedArs).toBe(0);
+
+      // Filtro: Últimos 7 días y Todos los barberos
+      const weekRange = dateRangeForStatisticsPreset('LAST_7_DAYS', '2026-10-17');
+      const filteredWeek = filterStatisticsAppointments(all, {
+        dateRange: weekRange,
+        barberFilter: 'Todos',
+        timeSlotFilter: 'ALL',
+        role: 'ADMIN',
+        profileBarberId: null,
+        permittedBarberIds,
+      });
+      expect(filteredWeek).toHaveLength(3);
+
+      const summaryWeek = computeFinancialControl(filteredWeek);
+      expect(summaryWeek.depositsCollected.totalArs).toBe(30000);
+      expect(summaryWeek.completedServices.totalCollectedArs).toBe(20000);
+      expect(summaryWeek.pendingBalances.totalArs).toBe(25000); // 10k de aptToday + 15k de aptOtherBarber
+    });
+
+    // 9. Cálculo correcto de señas para turnos manuales vs reservas públicas
+    it('9. getAppointmentDepositAmount respeta seña manual ($5.000), pública ($10.000) y tope por valor de servicio', () => {
+      // Manual estándar
+      const manualApt = makeMockAppointment({
+        isManual: true,
+        servicePrice: 15000,
+      });
+      expect(getAppointmentDepositAmount(manualApt)).toBe(5000);
+
+      // Pública estándar
+      const publicApt = makeMockAppointment({
+        isManual: false,
+        servicePrice: 25000,
+      });
+      expect(getAppointmentDepositAmount(publicApt)).toBe(10000);
+
+      // Servicio más barato que la seña (ej. perfilado $4.000 < seña $10.000)
+      const cheapApt = makeMockAppointment({
+        isManual: false,
+        servicePrice: 4000,
+      });
+      expect(getAppointmentDepositAmount(cheapApt)).toBe(4000);
+
+      // Con depositAmountArs explícito en BD
+      const customApt = makeMockAppointment({
+        depositAmountArs: 7500,
+      });
+      expect(getAppointmentDepositAmount(customApt)).toBe(7500);
+    });
   });
 });
