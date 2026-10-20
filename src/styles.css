@@ -1122,7 +1122,9 @@ html[data-theme="light"] .booking-option.selected .option-icon img { filter: bri
  .booking-date-heading + .calendar-panel { margin-top: 0; }
  .booking-time-grid { row-gap: 12px; column-gap: .45rem; }
  .barber-choice-list { gap: 12px; }
- .booking-page form.space-y-6 > :not([hidden]) ~ :not([hidden]) { margin-top: 12px; }
+ .booking-page form.space-y-3 > :not([hidden]) ~ :not([hidden]),
+  .booking-page form.space-y-6 > :not([hidden]) ~ :not([hidden]),
+  .booking-page .booking-contact-form > :not([hidden]) ~ :not([hidden]) { margin-top: 12px; }
  .booking-summary-page .review-line { margin-bottom: 12px; }
  .booking-summary-page .summary-list { gap: 12px; }
  .booking-summary-page .summary-list + div { margin-top: 12px !important; }
@@ -1166,6 +1168,18 @@ html[data-theme="light"] .booking-option.selected .option-icon img { filter: bri
 .booking-page form textarea[name="notes"]::placeholder {
   font-family: var(--font-sans);
   font-size: 16px;
+}
+
+/* Paso «Completá tus datos»: espaciado vertical compacto y consistente con los pasos anteriores (12px / space-y-3) */
+.booking-page .booking-contact-form.space-y-3 > :not([hidden]) ~ :not([hidden]),
+.booking-page .booking-contact-form > :not([hidden]) ~ :not([hidden]) {
+  margin-top: 12px;
+}
+
+.booking-page .booking-contact-form .field-label input,
+.booking-page .booking-contact-form .phone-input-row,
+.booking-page .booking-contact-form .notes-input {
+  margin-top: 6px;
 }
 
 
