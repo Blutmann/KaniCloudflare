@@ -36,6 +36,22 @@ const datePresets: ScheduleDatePreset[] = schedulePresets;
 type ScheduleSlot = AvailabilitySlot & { barberName: Barber; occupied: boolean };
 type ScheduleStart = Awaited<ReturnType<typeof readAvailabilityStartsForRange>>[number] & { barberName: Barber };
 
+const SCHEDULE_TIME_OPTIONS = Array.from({ length: 96 }, (_, index) => {
+  const totalMinutes = index * 15;
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+});
+
+function defaultSlotEndTime(startTime: string): string {
+  const [hours, minutes] = startTime.split(':').map(Number);
+  if (hours >= 23) {
+    return '23:59';
+  }
+  const nextHour = hours + 1;
+  return `${String(nextHour).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+}
+
 function errorMessage(cause: unknown) {
   const error = cause as { code?: unknown; message?: unknown; details?: unknown } | null;
   const message = [
@@ -110,8 +126,7 @@ export function AdminScheduleManager() {
   const [manualBarberId, setManualBarberId] = useState(
     () => ownBarberId ?? permittedRows[0]?.id ?? "",
   );
-  const [manualStartTime, setManualStartTime] = useState("10:00");
-  const [manualEndTime, setManualEndTime] = useState("20:00");
+  const [manualTime, setManualTime] = useState("10:00");
 
   useEffect(() => {
     if (profile.role === "BARBER") {
@@ -241,27 +256,24 @@ export function AdminScheduleManager() {
   }
 
   async function saveManualSlot() {
-    if (!manualBarberId || !manualDate) return;
-    if (manualEndTime && manualEndTime <= manualStartTime) {
-      setError("La hora de fin debe ser posterior a la hora de inicio.");
-      return;
-    }
+    if (!manualBarberId || !manualDate || !manualTime) return;
     setSavingId("manual");
     setError("");
     setNotice("");
     try {
+      const endTime = defaultSlotEndTime(manualTime);
       const created = await createAvailabilitySlots({
         barberId: manualBarberId,
         dates: [manualDate],
-        startTime: manualStartTime,
-        endTime: manualEndTime || null,
+        startTime: manualTime,
+        endTime,
       });
       setManualOpen(false);
       await loadSlots();
       const barberName = barberById.get(manualBarberId)?.name ?? "Agenda";
       setNotice(
         created.length > 0
-          ? `${barberName} · disponibilidad guardada (${manualStartTime} a ${manualEndTime || "1 hora después"}).`
+          ? `${barberName} · disponibilidad guardada (${manualTime} a ${endTime}).`
           : "Ese intervalo ya estaba cubierto; no se creó un duplicado.",
       );
     } catch (cause) {
@@ -273,8 +285,7 @@ export function AdminScheduleManager() {
 
   function openManualDialog(date: string, barberId?: string) {
     setManualDate(date || specificDate || businessToday);
-    setManualStartTime("10:00");
-    setManualEndTime("20:00");
+    setManualTime("10:00");
     const contextualBarberId = barberId ?? selectedRows[0]?.id;
     if (contextualBarberId && permittedRows.some((row) => row.id === contextualBarberId))
       setManualBarberId(contextualBarberId);
@@ -522,8 +533,8 @@ export function AdminScheduleManager() {
       >
         <DialogContent className="manual-dialog admin-schedule-dialog">
           <DialogTitle>Agregar horario de disponibilidad</DialogTitle>
-          <DialogDescription>
-            Configurá un intervalo de disponibilidad para el barbero seleccionado, desde las 00:00 hasta las 23:59.
+          <DialogDescription className="sr-only">
+            Agregar horario
           </DialogDescription>
           <div className="admin-schedule-manual-fields">
             {profile.role === "ADMIN" && (
@@ -553,66 +564,20 @@ export function AdminScheduleManager() {
                 onChange={(event) => setManualDate(event.target.value)}
               />
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label htmlFor="schedule-manual-start">Hora de inicio</label>
-                <Input
-                  id="schedule-manual-start"
-                  type="time"
-                  step="300"
-                  min="00:00"
-                  max="23:59"
-                  value={manualStartTime}
-                  onChange={(event) => setManualStartTime(event.target.value)}
-                  className="w-full text-xs bg-background"
-                />
-              </div>
-              <div>
-                <label htmlFor="schedule-manual-end">Hora de fin</label>
-                <Input
-                  id="schedule-manual-end"
-                  type="time"
-                  step="60"
-                  min="00:01"
-                  max="23:59"
-                  value={manualEndTime}
-                  onChange={(event) => setManualEndTime(event.target.value)}
-                  className="w-full text-xs bg-background"
-                />
-              </div>
-            </div>
-            <div className="flex flex-wrap gap-1.5 pt-1">
-              <span className="text-[11px] text-muted-foreground w-full">Atajos rápidos:</span>
-              <button
-                type="button"
-                className="text-[11px] px-2 py-0.5 rounded border border-border bg-background hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                onClick={() => {
-                  setManualStartTime("00:00");
-                  setManualEndTime("23:59");
-                }}
+            <div>
+              <label htmlFor="schedule-manual-time">Horario</label>
+              <select
+                id="schedule-manual-time"
+                className="select-control w-full"
+                value={manualTime}
+                onChange={(event) => setManualTime(event.target.value)}
               >
-                Día completo (00:00 a 23:59)
-              </button>
-              <button
-                type="button"
-                className="text-[11px] px-2 py-0.5 rounded border border-border bg-background hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                onClick={() => {
-                  setManualStartTime("10:00");
-                  setManualEndTime("20:00");
-                }}
-              >
-                Comercial estándar (10:00 a 20:00)
-              </button>
-              <button
-                type="button"
-                className="text-[11px] px-2 py-0.5 rounded border border-border bg-background hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                onClick={() => {
-                  setManualStartTime("20:00");
-                  setManualEndTime("23:59");
-                }}
-              >
-                Noche extendida (20:00 a 23:59)
-              </button>
+                {SCHEDULE_TIME_OPTIONS.map((time) => (
+                  <option key={time} value={time}>
+                    {time}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
           <p className="manual-dialog-date text-xs text-muted-foreground">
