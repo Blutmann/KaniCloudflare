@@ -18,6 +18,7 @@ import {
   deleteAllAdminActivityNotificationsGlobal,
   deleteAdminActivityNotificationGlobal,
   dismissAllAdminActivityNotificationsPersonal,
+  dismissAdminActivityNotificationPersonal,
   extractErrorMessage,
   markAllAdminActivityNotificationsRead,
   markAllAdminActivityNotificationsUnread,
@@ -302,8 +303,8 @@ describe('kani-admin-activity bulk notifications management', () => {
     });
   });
 
-  describe('PostgreSQL 42501 permission denied resilience', () => {
-    it('successfully deletes a notification even when DB throws permission denied (42501) and table user_state does not exist', async () => {
+  describe('Persistent storage error handling and fallback resilience', () => {
+    it('successfully persists deletion via admin_activity_user_state when direct table delete fails with 42501', async () => {
       // Mock RPC missing
       mockRpc.mockResolvedValue({
         data: null,
@@ -336,12 +337,12 @@ describe('kani-admin-activity bulk notifications management', () => {
           return {
             select: () => ({
               eq: () => Promise.resolve({
-                data: null,
-                error: { message: "Could not find table 'public.admin_activity_user_state'", code: 'PGRST205' },
+                data: [{ notification_id: 'notif-perm-1', dismissed_at: new Date().toISOString(), read_at: null }],
+                error: null,
               }),
             }),
             upsert: () => Promise.resolve({
-              error: { message: "Could not find table 'public.admin_activity_user_state'", code: 'PGRST205' },
+              error: null,
             }),
           };
         }
@@ -356,13 +357,13 @@ describe('kani-admin-activity bulk notifications management', () => {
       // Delete notif-perm-1
       await expect(deleteAdminActivityNotificationGlobal('notif-perm-1')).resolves.not.toThrow();
 
-      // Read notifications should now filter out notif-perm-1
+      // Read notifications should filter out notif-perm-1 based on user_state dismissal in DB
       const result = await readAdminActivityNotifications();
       expect(result.some(n => n.id === 'notif-perm-1')).toBe(false);
       expect(result.some(n => n.id === 'notif-perm-2')).toBe(true);
     });
 
-    it('successfully deletes all notifications even when DB throws permission denied (42501)', async () => {
+    it('rejects and does not falsely confirm deletion when DB storage fails to update completely', async () => {
       mockRpc.mockResolvedValue({
         data: null,
         error: { message: 'function does not exist', code: 'PGRST202' },
@@ -372,30 +373,20 @@ describe('kani-admin-activity bulk notifications management', () => {
         if (table === 'admin_activity_notifications') {
           return {
             delete: () => ({
-              neq: () => Promise.resolve({
+              eq: () => Promise.resolve({
                 error: { message: 'permission denied for table admin_activity_notifications', code: '42501' },
               }),
-            }),
-            select: () => ({
-              order: () => ({
-                limit: () => Promise.resolve({
-                  data: [
-                    { id: 'notif-perm-2', event_type: 'APPOINTMENT_CONFIRMED', created_at: new Date().toISOString(), read_at: null },
-                  ],
-                  error: null,
-                }),
+              in: () => Promise.resolve({
+                error: { message: 'permission denied for table admin_activity_notifications', code: '42501' },
+              }),
+              neq: () => Promise.resolve({
+                error: { message: 'permission denied for table admin_activity_notifications', code: '42501' },
               }),
             }),
           };
         }
         if (table === 'admin_activity_user_state') {
           return {
-            select: () => ({
-              eq: () => Promise.resolve({
-                data: null,
-                error: { message: "Could not find table 'public.admin_activity_user_state'", code: 'PGRST205' },
-              }),
-            }),
             upsert: () => Promise.resolve({
               error: { message: "Could not find table 'public.admin_activity_user_state'", code: 'PGRST205' },
             }),
@@ -409,12 +400,83 @@ describe('kani-admin-activity bulk notifications management', () => {
         error: null,
       });
 
-      const deletedCount = await deleteAllAdminActivityNotificationsGlobal(['notif-perm-2']);
-      expect(deletedCount).toBe(1);
+      // Individual deletion must reject if backend storage could not be updated
+      await expect(deleteAdminActivityNotificationGlobal('notif-failed')).rejects.toThrow(
+        /permission denied|Could not find table|No se pudo eliminar/
+      );
 
-      // Now read notifications should be empty
-      const result = await readAdminActivityNotifications();
-      expect(result.length).toBe(0);
+      // Bulk deletion must reject if backend storage could not be updated
+      await expect(deleteAllAdminActivityNotificationsGlobal(['notif-failed'])).rejects.toThrow(
+        /permission denied|Could not find table|No se pudieron eliminar/
+      );
+    });
+
+    it('persists deletion across page reload and re-login even when local storage is wiped', async () => {
+      // Setup: DB has notification 1 and 2, and RPC delete works
+      mockRpc.mockImplementation((rpcName: string) => {
+        if (rpcName === 'delete_staff_activity_notification_global') {
+          return Promise.resolve({ error: null });
+        }
+        if (rpcName === 'read_staff_activity_notifications') {
+          // DB only returns notif-2 because notif-1 was deleted in database
+          return Promise.resolve({
+            data: [
+              { id: 'notif-2', event_type: 'APPOINTMENT_REQUESTED', created_at: new Date().toISOString(), read_at: null },
+            ],
+            error: null,
+          });
+        }
+        return Promise.resolve({ data: null, error: null });
+      });
+
+      mockGetUser.mockResolvedValue({
+        data: { user: { id: 'admin-user-uuid' } },
+        error: null,
+      });
+
+      // 1. Delete notification
+      await deleteAdminActivityNotificationGlobal('notif-1');
+
+      // 2. Simulate complete browser restart, cache clear, or re-login
+      const { _resetNotificationStorageForTesting } = await import('./kani-admin-activity');
+      _resetNotificationStorageForTesting();
+
+      // 3. Read notifications after reload/re-login: notif-1 does not reappear because DB persisted the deletion
+      const notificationsAfterReload = await readAdminActivityNotifications();
+      expect(notificationsAfterReload.some(n => n.id === 'notif-1')).toBe(false);
+      expect(notificationsAfterReload.some(n => n.id === 'notif-2')).toBe(true);
+    });
+
+    it('personal barber dismissal applies only to user_state and never modifies operational tables', async () => {
+      const touchedTables: string[] = [];
+
+      mockRpc.mockResolvedValue({
+        data: null,
+        error: { message: 'RPC not found', code: 'PGRST202' },
+      });
+
+      mockFrom.mockImplementation((table: string) => {
+        touchedTables.push(table);
+        if (table === 'admin_activity_user_state') {
+          return {
+            upsert: () => Promise.resolve({ error: null }),
+          };
+        }
+        return {};
+      });
+
+      mockGetUser.mockResolvedValue({
+        data: { user: { id: 'barber-user-uuid' } },
+        error: null,
+      });
+
+      await dismissAdminActivityNotificationPersonal('notif-barber-1');
+
+      // Must only touch admin_activity_user_state, never appointments or clients
+      expect(touchedTables).toContain('admin_activity_user_state');
+      expect(touchedTables).not.toContain('appointments');
+      expect(touchedTables).not.toContain('clients');
+      expect(touchedTables).not.toContain('availability_slots');
     });
   });
 });

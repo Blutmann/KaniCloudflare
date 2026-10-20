@@ -245,7 +245,10 @@ export function AdminActivityPopover({ role = 'ADMIN' }: { role?: 'ADMIN' | 'BAR
         </PopoverContent>
       </Popover>
 
-      <Dialog open={confirmDeleteAllOpen} onOpenChange={setConfirmDeleteAllOpen}>
+      <Dialog open={confirmDeleteAllOpen} onOpenChange={open => {
+        setConfirmDeleteAllOpen(open);
+        if (!open) setError('');
+      }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Eliminar notificaciones</DialogTitle>
@@ -253,6 +256,7 @@ export function AdminActivityPopover({ role = 'ADMIN' }: { role?: 'ADMIN' | 'BAR
               ¿Estás seguro que deseas eliminar todas las notificaciones?
             </DialogDescription>
           </DialogHeader>
+          {error && <p role="alert" className="mt-2 text-xs text-destructive">{error}</p>}
           <DialogFooter className="flex flex-row justify-end gap-2 mt-4">
             <Button
               type="button"

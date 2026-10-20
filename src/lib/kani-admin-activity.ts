@@ -422,9 +422,9 @@ export async function markAllAdminActivityNotificationsUnread(ids?: string[]): P
 
 /**
  * Borra una notificación individual globalmente (para ADMIN).
- * Persiste inmediatamente el descarte local para garantizar que la notificación
- * desaparezca y nunca reaparezca, y ejecuta en el backend las llamadas RPC o directas
- * disponibles sin arrojar excepciones 42501 al frontend.
+ * Intenta eliminarla de forma persistente en la base de datos (RPC o DELETE directo en tabla).
+ * Si la base de datos falla en actualizar el almacenamiento persistente, arroja un error
+ * para evitar confirmar falsamente la eliminación en la interfaz.
  */
 export async function deleteAdminActivityNotificationGlobal(id: string): Promise<void> {
   let currentUserId: string | undefined;
@@ -433,33 +433,47 @@ export async function deleteAdminActivityNotificationGlobal(id: string): Promise
     currentUserId = user?.id;
   } catch {}
 
-  // 1. Persistir inmediatamente el descarte en cliente
-  addDismissedIds([id], currentUserId);
+  let persisted = false;
+  let lastError: unknown = null;
 
-  // 2. Intentar RPC oficial
-  let deleted = false;
+  // 1. Intentar RPC oficial
   try {
     const { error } = await supabase.rpc('delete_staff_activity_notification_global', {
       p_notification_id: id,
     });
-    if (!error) deleted = true;
-  } catch {}
+    if (!error) {
+      persisted = true;
+    } else {
+      lastError = error;
+    }
+  } catch (err) {
+    lastError = err;
+  }
 
-  // 3. Intentar DELETE directo en tabla
-  if (!deleted) {
+  // 2. Intentar DELETE directo en tabla admin_activity_notifications
+  if (!persisted) {
     try {
-      const { error } = await supabase
+      const deleteOp = supabase
         .from('admin_activity_notifications')
         .delete()
         .eq('id', id);
-      if (!error) deleted = true;
-    } catch {}
+      const res = typeof (deleteOp as any)?.select === 'function'
+        ? await (deleteOp as any).select('id')
+        : await deleteOp;
+      if (!res?.error) {
+        persisted = true;
+      } else {
+        lastError = res.error;
+      }
+    } catch (err) {
+      lastError = err;
+    }
   }
 
-  // 4. Intentar descarte en user_state
-  if (currentUserId) {
+  // 3. Fallback de persistencia en admin_activity_user_state si existe la tabla
+  if (!persisted && currentUserId) {
     try {
-      await supabase
+      const { error } = await supabase
         .from('admin_activity_user_state' as any)
         .upsert({
           notification_id: id,
@@ -467,12 +481,30 @@ export async function deleteAdminActivityNotificationGlobal(id: string): Promise
           dismissed_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         });
-    } catch {}
+      if (!error) {
+        persisted = true;
+      } else {
+        lastError = error;
+      }
+    } catch (err) {
+      lastError = err;
+    }
   }
+
+  // 4. Si falló en todos los medios de almacenamiento backend, arrojar error
+  if (!persisted) {
+    throw new Error(
+      extractErrorMessage(lastError, 'No se pudo eliminar la notificación de forma persistente.')
+    );
+  }
+
+  // 5. Solo confirmar en el estado local una vez confirmada la persistencia en el backend
+  addDismissedIds([id], currentUserId);
 }
 
 /**
  * Elimina una notificación individual de la vista personal (BARBER).
+ * Persiste el descarte en la base de datos y arroja error si el almacenamiento no se actualizó.
  */
 export async function dismissAdminActivityNotificationPersonal(id: string): Promise<void> {
   let currentUserId: string | undefined;
@@ -481,20 +513,25 @@ export async function dismissAdminActivityNotificationPersonal(id: string): Prom
     currentUserId = user?.id;
   } catch {}
 
-  // 1. Persistir inmediatamente en cliente
-  addDismissedIds([id], currentUserId);
+  let persisted = false;
+  let lastError: unknown = null;
 
-  // 2. Intentar RPC
-  let dismissed = false;
+  // 1. Intentar RPC oficial
   try {
     const { error } = await supabase.rpc('dismiss_staff_activity_notification_personal', {
       p_notification_id: id,
     });
-    if (!error) dismissed = true;
-  } catch {}
+    if (!error) {
+      persisted = true;
+    } else {
+      lastError = error;
+    }
+  } catch (err) {
+    lastError = err;
+  }
 
-  // 3. Intentar user_state
-  if (currentUserId) {
+  // 2. Intentar user_state
+  if (!persisted && currentUserId) {
     try {
       const { error } = await supabase
         .from('admin_activity_user_state' as any)
@@ -504,16 +541,29 @@ export async function dismissAdminActivityNotificationPersonal(id: string): Prom
           dismissed_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         });
-      if (!error) dismissed = true;
-    } catch {}
+      if (!error) {
+        persisted = true;
+      } else {
+        lastError = error;
+      }
+    } catch (err) {
+      lastError = err;
+    }
   }
+
+  if (!persisted) {
+    throw new Error(
+      extractErrorMessage(lastError, 'No se pudo eliminar la notificación de tu vista.')
+    );
+  }
+
+  addDismissedIds([id], currentUserId);
 }
 
 /**
  * Borra todas las notificaciones globalmente (para ADMIN).
- * Utiliza el RPC seguro `delete_all_staff_activity_notifications_global`
- * con fallback directo en tabla y almacenamiento persistente local.
- * Garantiza que nunca se lance error 42501 (permission denied) a la interfaz.
+ * Utiliza el RPC seguro delete_all_staff_activity_notifications_global con fallback directo
+ * en tabla y descarte persistente en backend. Arroja error si no se pudo actualizar el almacenamiento.
  */
 export async function deleteAllAdminActivityNotificationsGlobal(knownIds: string[] = []): Promise<number> {
   let currentUserId: string | undefined;
@@ -535,37 +585,48 @@ export async function deleteAllAdminActivityNotificationsGlobal(knownIds: string
     } catch {}
   }
 
-  // 1. Persistir inmediatamente la eliminación masiva en cliente
-  if (idsToDismiss.length > 0) {
-    addDismissedIds(idsToDismiss, currentUserId);
-  }
+  let persisted = false;
+  let deletedCount = 0;
+  let lastError: unknown = null;
 
-  // 2. Intentar RPC oficial
+  // 1. Intentar RPC oficial
   try {
     const { data, error } = await supabase.rpc('delete_all_staff_activity_notifications_global');
     if (!error) {
-      return typeof data === 'number' ? data : idsToDismiss.length;
+      persisted = true;
+      deletedCount = typeof data === 'number' ? data : (idsToDismiss.length || 0);
+    } else {
+      lastError = error;
     }
-  } catch {}
-
-  // 3. Intentar DELETE directo en tabla
-  let tableDeleteErr: unknown = null;
-  try {
-    const { error } = await supabase
-      .from('admin_activity_notifications')
-      .delete()
-      .neq('id', '00000000-0000-0000-0000-000000000000');
-    if (!error) {
-      return idsToDismiss.length;
-    }
-    tableDeleteErr = error;
   } catch (err) {
-    tableDeleteErr = err;
+    lastError = err;
   }
 
-  // 4. Intentar descarte masivo en user_state
-  let userStateUpdated = false;
-  if (currentUserId && idsToDismiss.length > 0) {
+  // 2. Intentar DELETE directo en tabla
+  if (!persisted) {
+    try {
+      let query = supabase.from('admin_activity_notifications').delete();
+      if (idsToDismiss.length > 0) {
+        query = (query as any).in('id', idsToDismiss);
+      } else {
+        query = (query as any).neq('id', '00000000-0000-0000-0000-000000000000');
+      }
+      const res = typeof (query as any)?.select === 'function'
+        ? await (query as any).select('id')
+        : await query;
+      if (!res?.error) {
+        persisted = true;
+        deletedCount = Array.isArray(res?.data) ? res.data.length : idsToDismiss.length;
+      } else {
+        lastError = res.error;
+      }
+    } catch (err) {
+      lastError = err;
+    }
+  }
+
+  // 3. Intentar descarte masivo en user_state
+  if (!persisted && currentUserId && idsToDismiss.length > 0) {
     try {
       const rows = idsToDismiss.map(id => ({
         notification_id: id,
@@ -576,28 +637,35 @@ export async function deleteAllAdminActivityNotificationsGlobal(knownIds: string
       const { error: upsertErr } = await supabase
         .from('admin_activity_user_state' as any)
         .upsert(rows);
-      if (!upsertErr) userStateUpdated = true;
-    } catch {}
-  }
-
-  // Si se conocían IDs o se persistió el descarte, retornar la cantidad descartada
-  if (idsToDismiss.length > 0) {
-    return idsToDismiss.length;
-  }
-
-  // Si no había ningún ID conocido y falló tanto RPC como DELETE directo, lanzar error si no fue de permisos
-  if (tableDeleteErr) {
-    const msg = extractErrorMessage(tableDeleteErr);
-    if (!msg.includes('permission denied')) {
-      throw tableDeleteErr;
+      if (!upsertErr) {
+        persisted = true;
+        deletedCount = idsToDismiss.length;
+      } else {
+        lastError = upsertErr;
+      }
+    } catch (err) {
+      lastError = err;
     }
   }
 
-  return 0;
+  // 4. Si falló la persistencia en el backend, no confirmar la eliminación
+  if (!persisted) {
+    throw new Error(
+      extractErrorMessage(lastError, 'No se pudieron eliminar las notificaciones en el almacenamiento.')
+    );
+  }
+
+  // 5. Solo confirmar localmente si se persistió en el backend
+  if (idsToDismiss.length > 0) {
+    addDismissedIds(idsToDismiss, currentUserId);
+  }
+
+  return deletedCount;
 }
 
 /**
  * Descarta todas las notificaciones de la vista del usuario (BARBER).
+ * Persiste el descarte en admin_activity_user_state y arroja error si falla.
  */
 export async function dismissAllAdminActivityNotificationsPersonal(ids: string[]): Promise<number> {
   let currentUserId: string | undefined;
@@ -606,18 +674,23 @@ export async function dismissAllAdminActivityNotificationsPersonal(ids: string[]
     currentUserId = user?.id;
   } catch {}
 
-  if (ids.length > 0) {
-    addDismissedIds(ids, currentUserId);
-  }
+  let persisted = false;
+  let dismissedCount = 0;
+  let lastError: unknown = null;
 
   try {
     const { data, error } = await supabase.rpc('dismiss_all_staff_activity_notifications_personal');
     if (!error) {
-      return typeof data === 'number' ? data : ids.length;
+      persisted = true;
+      dismissedCount = typeof data === 'number' ? data : ids.length;
+    } else {
+      lastError = error;
     }
-  } catch {}
+  } catch (err) {
+    lastError = err;
+  }
 
-  if (currentUserId && ids.length > 0) {
+  if (!persisted && currentUserId && ids.length > 0) {
     try {
       const rows = ids.map(id => ({
         notification_id: id,
@@ -625,11 +698,30 @@ export async function dismissAllAdminActivityNotificationsPersonal(ids: string[]
         dismissed_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       }));
-      await supabase
+      const { error: upsertErr } = await supabase
         .from('admin_activity_user_state' as any)
         .upsert(rows);
-    } catch {}
+      if (!upsertErr) {
+        persisted = true;
+        dismissedCount = ids.length;
+      } else {
+        lastError = upsertErr;
+      }
+    } catch (err) {
+      lastError = err;
+    }
   }
 
-  return ids.length;
+  if (!persisted) {
+    if (ids.length === 0) return 0;
+    throw new Error(
+      extractErrorMessage(lastError, 'No se pudieron descartar las notificaciones de tu vista.')
+    );
+  }
+
+  if (ids.length > 0) {
+    addDismissedIds(ids, currentUserId);
+  }
+
+  return dismissedCount;
 }
