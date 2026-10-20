@@ -12,7 +12,17 @@ export type AuthenticatedStaff = {
   barbers: StaffBarber[];
 };
 
+let cachedStaff: { data: AuthenticatedStaff | null; timestamp: number } | null = null;
+let inFlightStaff: Promise<AuthenticatedStaff | null> | null = null;
+const STAFF_CACHE_TTL_MS = 15 * 1000; // 15s fast-cache for staff sessions
+
+export function clearStaffCache() {
+  cachedStaff = null;
+  inFlightStaff = null;
+}
+
 export async function signInWithPassword(email: string, password: string) {
+  clearStaffCache();
   return supabase.auth.signInWithPassword({
     email: email.trim(),
     password,
@@ -20,10 +30,11 @@ export async function signInWithPassword(email: string, password: string) {
 }
 
 export async function signOut() {
+  clearStaffCache();
   return supabase.auth.signOut();
 }
 
-export async function getAuthenticatedStaff(): Promise<AuthenticatedStaff | null> {
+async function fetchAuthenticatedStaff(): Promise<AuthenticatedStaff | null> {
   const {
     data: { session },
   } = await supabase.auth.getSession();
@@ -60,4 +71,28 @@ export async function getAuthenticatedStaff(): Promise<AuthenticatedStaff | null
   if (profile.role === 'BARBER' && (barbers.length !== 1 || !onlyBarber || onlyBarber.id !== profile.barber_id)) return null;
 
   return { user, profile, barbers };
+}
+
+export async function getAuthenticatedStaff(options?: { bypassCache?: boolean }): Promise<AuthenticatedStaff | null> {
+  const now = Date.now();
+  if (!options?.bypassCache && cachedStaff && now - cachedStaff.timestamp < STAFF_CACHE_TTL_MS) {
+    return cachedStaff.data;
+  }
+
+  if (!options?.bypassCache && inFlightStaff) {
+    return inFlightStaff;
+  }
+
+  const promise = (async () => {
+    try {
+      const result = await fetchAuthenticatedStaff();
+      cachedStaff = { data: result, timestamp: Date.now() };
+      return result;
+    } finally {
+      inFlightStaff = null;
+    }
+  })();
+
+  inFlightStaff = promise;
+  return promise;
 }

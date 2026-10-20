@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import {
   AlertCircle,
   ArrowUpRight,
@@ -61,7 +61,7 @@ import {
   type StatisticsDatePreset,
   type TimeSlotFilter,
 } from '@/lib/kani-statistics';
-import { AdminClients } from './admin-clients';
+const AdminClients = lazy(() => import('./admin-clients').then(m => ({ default: m.AdminClients })));
 
 const presets: StatisticsDatePreset[] = statisticsPresets;
 
@@ -779,7 +779,8 @@ export function AdminStatistics() {
       )}
 
       {/* Clientes Section (Directorio de Clientes) */}
-      <AdminClients
+      <Suspense fallback={<div className="h-48 w-full animate-pulse rounded-xl border border-border bg-surface p-6" />}>
+        <AdminClients
         clients={clientsData}
         loading={loading}
         onAppointmentStatusChange={(appointmentId, newStatus) => {
@@ -795,7 +796,8 @@ export function AdminStatistics() {
             )
           );
         }}
-      />
+        />
+      </Suspense>
     </main>
   );
 }

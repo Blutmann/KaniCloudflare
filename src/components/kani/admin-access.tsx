@@ -31,7 +31,7 @@ export function AdminAccess({ onAuthenticated }: { onAuthenticated: () => void }
   return (
     <main className="site-container admin-page admin-login-page">
       <div className="admin-login-shell mx-auto max-w-sm">
-        <img src={kaniSymbol} alt="Kani Barber Studio" width={1724} height={1752} className="admin-login-symbol" />
+        <img src={kaniSymbol} alt="Kani Barber Studio" width={336} height={341} decoding="async" className="admin-login-symbol" />
         <h1 className="eyebrow admin-login-title text-center">ADMINISTRACIÓN</h1>
         <form className="admin-login-form space-y-5" onSubmit={submit}>
           <label className="field-label">

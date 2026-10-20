@@ -248,7 +248,19 @@ async function dispatchAppointmentNotification(appointmentId: string, claimToken
   }
 }
 
-export async function readRealAppointments(): Promise<RealAppointment[]> {
+
+let cachedBarbersMap: { data: Map<string, { id: string; name: string }>; timestamp: number } | null = null;
+let cachedServicesMap: { data: Map<string, { id: string; name: string; duration_minutes: number; price_ars: number }>; timestamp: number } | null = null;
+let inFlightAppointments: Promise<RealAppointment[]> | null = null;
+const STATIC_CACHE_TTL_MS = 5 * 60 * 1000;
+
+export function clearAppointmentsReferenceCache() {
+  cachedBarbersMap = null;
+  cachedServicesMap = null;
+  inFlightAppointments = null;
+}
+
+async function executeReadRealAppointments(options?: { bypassCache?: boolean }): Promise<RealAppointment[]> {
   const fullColumns = 'id, request_number, client_id, barber_id, service_id, booking_date, start_time, end_time, status, notes, created_at, updated_at, is_manual, origin, created_by_user_id, created_by_display_name, recurring_rule_id, deposit_required, deposit_paid, deposit_amount_ars, balance_paid, no_show_decision, no_show_refund_amount_ars';
   const baseColumns = 'id, request_number, client_id, barber_id, service_id, booking_date, start_time, end_time, status, notes, created_at, updated_at';
 
@@ -282,20 +294,45 @@ export async function readRealAppointments(): Promise<RealAppointment[]> {
   const serviceIds = [...new Set(appointments.map(row => row.service_id))];
   const appointmentIds = appointments.map(row => row.id);
 
+  const now = Date.now();
+  const needBarbers = options?.bypassCache || !cachedBarbersMap || (now - cachedBarbersMap.timestamp >= STATIC_CACHE_TTL_MS) || barberIds.some(id => !cachedBarbersMap!.data.has(id));
+  const needServices = options?.bypassCache || !cachedServicesMap || (now - cachedServicesMap.timestamp >= STATIC_CACHE_TTL_MS) || serviceIds.some(id => !cachedServicesMap!.data.has(id));
+
   const [
     { data: clients, error: clientsError },
-    { data: barbers, error: barbersError },
-    { data: services, error: servicesError },
+    barbersResult,
+    servicesResult,
     { data: exceptionsData },
   ] = await Promise.all([
     clientIds.length ? supabase.from('clients').select('id, name, phone, email').in('id', clientIds) : Promise.resolve({ data: [], error: null }),
-    barberIds.length ? supabase.from('barbers').select('id, name').in('id', barberIds) : Promise.resolve({ data: [], error: null }),
-    serviceIds.length ? supabase.from('services').select('id, name, duration_minutes, price_ars').in('id', serviceIds) : Promise.resolve({ data: [], error: null }),
+    needBarbers && barberIds.length
+      ? supabase.from('barbers').select('id, name').in('id', barberIds)
+      : Promise.resolve({ data: Array.from(cachedBarbersMap?.data.values() ?? []), error: null }),
+    needServices && serviceIds.length
+      ? supabase.from('services').select('id, name, duration_minutes, price_ars').in('id', serviceIds)
+      : Promise.resolve({ data: Array.from(cachedServicesMap?.data.values() ?? []), error: null }),
     appointmentIds.length
       ? supabase.from('appointment_no_show_exceptions').select('appointment_id, decision, deposit_amount_ars, refund_amount_ars, reason, created_by_display_name, created_at').in('appointment_id', appointmentIds)
       : Promise.resolve({ data: [] }),
   ]);
-  if (clientsError || barbersError || servicesError) throw clientsError ?? barbersError ?? servicesError;
+
+  if (clientsError || barbersResult.error || servicesResult.error) {
+    throw clientsError ?? barbersResult.error ?? servicesResult.error;
+  }
+
+  if (needBarbers && barbersResult.data) {
+    const existing = cachedBarbersMap?.data ?? new Map();
+    barbersResult.data.forEach(b => existing.set(b.id, b));
+    cachedBarbersMap = { data: existing, timestamp: now };
+  }
+  if (needServices && servicesResult.data) {
+    const existing = cachedServicesMap?.data ?? new Map();
+    servicesResult.data.forEach(s => existing.set(s.id, s));
+    cachedServicesMap = { data: existing, timestamp: now };
+  }
+
+  const barbers = barbersResult.data;
+  const services = servicesResult.data;
   const clientById = new Map((clients ?? []).map(client => [client.id, client]));
   const barberById = new Map((barbers ?? []).map(barber => [barber.id, barber]));
   const serviceById = new Map((services ?? []).map(service => [service.id, service]));
@@ -396,4 +433,21 @@ function serviceIdForName(name: string): ServiceId {
   if (name === 'Corte + barba') return 'corte-barba';
   if (name === 'Barba') return 'barba';
   return 'corte';
+}
+
+export async function readRealAppointments(options?: { bypassCache?: boolean }): Promise<RealAppointment[]> {
+  if (!options?.bypassCache && inFlightAppointments) {
+    return inFlightAppointments;
+  }
+
+  const promise = (async () => {
+    try {
+      return await executeReadRealAppointments(options);
+    } finally {
+      inFlightAppointments = null;
+    }
+  })();
+
+  inFlightAppointments = promise;
+  return promise;
 }

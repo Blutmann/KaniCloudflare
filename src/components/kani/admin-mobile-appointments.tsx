@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowUp, Calendar, CalendarPlus, Check, CheckCircle2, CircleDot, Clock, Clock3, Mail, RefreshCw, ShieldAlert, UserX, X, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { dateLabel, money, serviceFor } from '@/lib/kani-model';
 import { formatPhoneDisplay, formatPhoneWithCountryAndWhatsApp, normalizePhone, type PhoneCountry } from '@/lib/kani-phone';
-import { PhoneInput } from '@/components/kani/phone-input';
+const PhoneInput = lazy(() => import('@/components/kani/phone-input').then(m => ({ default: m.PhoneInput })));
 import { cn } from '@/lib/utils';
 import { useAdminStaff } from '@/lib/kani-admin-context';
 import { appointmentErrorMessage, completeRealAppointment, createManualAppointment, readRealAppointments, recordNoShowException, retryRealAppointmentNotification, shortenFrequencyText, updateRealAppointmentStatus, type ManualFrequency, MANUAL_FREQUENCY_LABELS, type NoShowDecision, type RealAppointment, type RealAppointmentStatus } from '@/lib/kani-appointments';
@@ -207,7 +207,16 @@ export function AdminMobileAppointments() {
     return () => window.clearInterval(interval);
   }, []);
   useEffect(() => {
-    const updateScrollState = () => setShowScrollTop(window.scrollY > 420);
+    let ticking = false;
+    const updateScrollState = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          setShowScrollTop(window.scrollY > 420);
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
     updateScrollState();
     window.addEventListener('scroll', updateScrollState, { passive: true });
     return () => window.removeEventListener('scroll', updateScrollState);
@@ -1459,20 +1468,22 @@ export function AdminMobileAppointments() {
                 <label htmlFor="manual-client-phone" className="font-medium text-foreground block mb-1.5 text-xs sm:text-sm">
                   Celular del cliente <span className="text-destructive font-normal" aria-hidden="true">*</span>
                 </label>
-                <PhoneInput
-                  id="manual-client-phone"
-                  value={manualClientPhone}
-                  onChange={val => {
-                    setManualClientPhone(val);
-                    markTouched('phone');
-                  }}
-                  country={phoneCountry}
-                  onCountryChange={setPhoneCountry}
-                  required
-                  size="sm"
-                  aria-invalid={Boolean(showFieldError('phone'))}
-                  className={cn(showFieldError('phone') && "border-destructive focus-visible:ring-destructive")}
-                />
+                <Suspense fallback={<div className="h-9 w-full animate-pulse rounded-md bg-muted" />}>
+                  <PhoneInput
+                    id="manual-client-phone"
+                    value={manualClientPhone}
+                    onChange={val => {
+                      setManualClientPhone(val);
+                      markTouched('phone');
+                    }}
+                    country={phoneCountry}
+                    onCountryChange={setPhoneCountry}
+                    required
+                    size="sm"
+                    aria-invalid={Boolean(showFieldError('phone'))}
+                    className={cn(showFieldError('phone') && "border-destructive focus-visible:ring-destructive")}
+                  />
+                </Suspense>
                 {showFieldError('phone') && (
                   <span className="field-validation-message text-xs text-destructive mt-1 block font-normal" role="alert">
                     {showFieldError('phone')}
