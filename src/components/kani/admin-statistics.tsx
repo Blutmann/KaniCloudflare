@@ -11,7 +11,7 @@ import {
   Clock3,
   Filter,
   Flame,
-  PieChart,
+  PieChart as PieChartIcon,
   Receipt,
   RefreshCw,
   RotateCcw,
@@ -28,6 +28,8 @@ import {
 import {
   BarChart,
   Bar,
+  PieChart as RechartsPieChart,
+  Pie,
   XAxis,
   YAxis,
   Tooltip,
@@ -171,6 +173,80 @@ export function AdminStatistics() {
   // Analytics Metrics
   const kpis = useMemo(() => computeKpiSummary(filteredAppointments), [filteredAppointments]);
   const financial = useMemo(() => computeFinancialControl(filteredAppointments), [filteredAppointments]);
+
+  const financialComparisonData = useMemo(() => {
+    return [
+      {
+        id: 'completed',
+        name: 'Servicios ejecutados',
+        shortName: 'Servicios',
+        amount: financial.completedServices.totalCollectedArs,
+        category: 'Ingreso cobrado',
+        nature: 'Cobro de turnos realizados y cobrados',
+        color: '#B99A5B',
+      },
+      {
+        id: 'pending',
+        name: 'Cobros pendientes',
+        shortName: 'Pendientes',
+        amount: financial.pendingBalances.totalArs,
+        category: 'Ingreso potencial',
+        nature: 'Saldo a percibir al realizarse turnos confirmados',
+        color: '#F59E0B',
+      },
+      {
+        id: 'retained',
+        name: 'Señas retenidas',
+        shortName: 'Retenidas',
+        amount: financial.retainedNoShowDeposits.totalArs,
+        category: 'Ingreso por inasistencia',
+        nature: 'Anticipos conservados por clientes ausentes',
+        color: '#A855F7',
+      },
+      {
+        id: 'refunds',
+        name: 'Devoluciones',
+        shortName: 'Devoluciones',
+        amount: financial.refundsAndWaives.refundsTotalArs,
+        category: 'Egreso real',
+        nature: 'Dinero efectivamente devuelto al cliente',
+        color: '#F43F5E',
+      },
+      {
+        id: 'waives',
+        name: 'Condonaciones',
+        shortName: 'Condonadas',
+        amount: financial.refundsAndWaives.waivesTotalArs,
+        category: 'Ingreso no percibido',
+        nature: 'Penalización perdonada (no es salida de dinero)',
+        color: '#94A3B8',
+      },
+    ];
+  }, [financial]);
+
+  const financialCompositionData = useMemo(() => {
+    return financialComparisonData
+      .filter((item) => item.amount > 0)
+      .map((item) => ({
+        name: item.shortName,
+        fullName: item.name,
+        value: item.amount,
+        color: item.color,
+        category: item.category,
+      }));
+  }, [financialComparisonData]);
+
+  const hasFinancialActivity = useMemo(() => {
+    return (
+      financialComparisonData.some((item) => item.amount > 0) ||
+      financial.depositsCollected.totalArs > 0
+    );
+  }, [financialComparisonData, financial.depositsCollected.totalArs]);
+
+  const totalFinancialVolume = useMemo(() => {
+    return financialCompositionData.reduce((acc, item) => acc + item.value, 0);
+  }, [financialCompositionData]);
+
   const dailyDemand = useMemo(() => computeDailyDemand(filteredAppointments), [filteredAppointments]);
   const hourlyDemand = useMemo(
     () => computeHourlyDistribution(filteredAppointments),
@@ -334,7 +410,7 @@ export function AdminStatistics() {
       </section>
 
       {/* Apartado visual: Control de cobros */}
-      <section className="mb-6 space-y-3" aria-label="Control de cobros">
+      <section className="mb-6 space-y-4" aria-label="Control de cobros">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
           <div>
             <h3 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
@@ -359,101 +435,293 @@ export function AdminStatistics() {
           )}
         </div>
 
+        {/* 1. Tarjetas de métricas con jerarquía clara y distinción precisa */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-          {/* A. Señas cobradas */}
-          <div className="p-3.5 rounded-xl border border-emerald-500/30 bg-emerald-500/5 flex flex-col justify-between">
+          {/* A. Servicios ejecutados (Ingreso principal por servicios completados) */}
+          <div className="p-3.5 rounded-xl border border-border bg-surface flex flex-col justify-between shadow-xs">
             <div>
               <div className="flex items-center justify-between">
-                <span className="text-xs text-emerald-400 font-medium">Señas cobradas</span>
-                <Receipt size={16} className="text-emerald-400" />
+                <span className="text-xs text-foreground font-semibold">Servicios ejecutados</span>
+                <CheckCircle2 size={16} className="text-gold" />
               </div>
-              <p className="text-[11px] text-muted-foreground mt-0.5">Dinero efectivamente recibido</p>
-            </div>
-            <div className="mt-3">
-              <span className="text-xl sm:text-2xl font-bold text-foreground">
-                {loading ? '…' : money(financial.depositsCollected.totalArs)}
-              </span>
-              <span className="text-[11px] text-muted-foreground block mt-0.5">
-                {financial.depositsCollected.count} {financial.depositsCollected.count === 1 ? 'seña recibida' : 'señas recibidas'}
-              </span>
-            </div>
-          </div>
-
-          {/* B. Cobros pendientes */}
-          <div className="p-3.5 rounded-xl border border-amber-500/30 bg-amber-500/5 flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-amber-500 font-medium">Cobros pendientes</span>
-                <Clock size={16} className="text-amber-500" />
-              </div>
-              <p className="text-[11px] text-muted-foreground mt-0.5">Saldo de turnos vigentes con seña</p>
-            </div>
-            <div className="mt-3">
-              <span className="text-xl sm:text-2xl font-bold text-foreground">
-                {loading ? '…' : money(financial.pendingBalances.totalArs)}
-              </span>
-              <span className="text-[11px] text-muted-foreground block mt-0.5">
-                {financial.pendingBalances.count} {financial.pendingBalances.count === 1 ? 'turno por cobrar' : 'turnos por cobrar'}
-              </span>
-            </div>
-          </div>
-
-          {/* C. Total cobrado por servicios ejecutados */}
-          <div className="p-3.5 rounded-xl border border-border bg-surface flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-foreground font-medium">Servicios ejecutados</span>
-                <CheckCircle2 size={16} className="text-foreground/70" />
-              </div>
-              <p className="text-[11px] text-muted-foreground mt-0.5">Cobro de servicios realizados</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">Ingresos por turnos completados</p>
             </div>
             <div className="mt-3">
               <span className="text-xl sm:text-2xl font-bold text-foreground">
                 {loading ? '…' : money(financial.completedServices.totalCollectedArs)}
               </span>
               <span className="text-[11px] text-muted-foreground block mt-0.5">
-                {financial.completedServices.count} {financial.completedServices.count === 1 ? 'servicio ejecutado' : 'servicios ejecutados'}
+                {financial.completedServices.count} {financial.completedServices.count === 1 ? 'servicio realizado' : 'servicios realizados'}
                 {financial.completedServices.unpaidBalanceArs > 0 ? ` · Saldo impago: ${money(financial.completedServices.unpaidBalanceArs)}` : ''}
               </span>
             </div>
           </div>
 
-          {/* D. Señas retenidas por inasistencias */}
-          <div className="p-3.5 rounded-xl border border-purple-500/30 bg-purple-500/5 flex flex-col justify-between">
+          {/* B. Señas cobradas (Anticipos efectivamente percibidos) */}
+          <div className="p-3.5 rounded-xl border border-emerald-500/25 bg-emerald-500/5 flex flex-col justify-between shadow-xs">
             <div>
               <div className="flex items-center justify-between">
-                <span className="text-xs text-purple-400 font-medium">Señas retenidas</span>
-                <ShieldAlert size={16} className="text-purple-400" />
+                <span className="text-xs text-emerald-400 font-semibold">Señas cobradas</span>
+                <Receipt size={16} className="text-emerald-400" />
               </div>
-              <p className="text-[11px] text-muted-foreground mt-0.5">Inasistencias no devueltas</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">Anticipos efectivamente recibidos</p>
             </div>
             <div className="mt-3">
               <span className="text-xl sm:text-2xl font-bold text-foreground">
-                {loading ? '…' : money(financial.retainedNoShowDeposits.totalArs)}
+                {loading ? '…' : money(financial.depositsCollected.totalArs)}
               </span>
+              <span className="text-[11px] text-muted-foreground block mt-0.5">
+                {financial.depositsCollected.count} {financial.depositsCollected.count === 1 ? 'seña registrada' : 'señas registradas'}
+              </span>
+            </div>
+          </div>
+
+          {/* C. Cobros pendientes (Ingreso potencial futuro) */}
+          <div className="p-3.5 rounded-xl border border-amber-500/25 bg-amber-500/5 flex flex-col justify-between shadow-xs">
+            <div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-amber-500 font-semibold">Cobros pendientes</span>
+                <Clock size={16} className="text-amber-500" />
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-0.5">Saldo de turnos vigentes con seña</p>
+            </div>
+            <div className="mt-3">
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-xl sm:text-2xl font-bold text-foreground">
+                  {loading ? '…' : money(financial.pendingBalances.totalArs)}
+                </span>
+                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                  Potencial
+                </span>
+              </div>
+              <span className="text-[11px] text-muted-foreground block mt-0.5">
+                {financial.pendingBalances.count} {financial.pendingBalances.count === 1 ? 'turno por cobrar' : 'turnos por cobrar'}
+              </span>
+            </div>
+          </div>
+
+          {/* D. Señas retenidas (Compensación por inasistencia) */}
+          <div className="p-3.5 rounded-xl border border-purple-500/25 bg-purple-500/5 flex flex-col justify-between shadow-xs">
+            <div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-purple-400 font-semibold">Señas retenidas</span>
+                <ShieldAlert size={16} className="text-purple-400" />
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-0.5">Conservadas por inasistencias</p>
+            </div>
+            <div className="mt-3">
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-xl sm:text-2xl font-bold text-foreground">
+                  {loading ? '…' : money(financial.retainedNoShowDeposits.totalArs)}
+                </span>
+                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                  Inasistencias
+                </span>
+              </div>
               <span className="text-[11px] text-muted-foreground block mt-0.5">
                 {financial.retainedNoShowDeposits.count} {financial.retainedNoShowDeposits.count === 1 ? 'seña retenida' : 'señas retenidas'}
               </span>
             </div>
           </div>
 
-          {/* E. Devoluciones y condonaciones */}
-          <div className="p-3.5 rounded-xl border border-rose-500/30 bg-rose-500/5 flex flex-col justify-between">
+          {/* E. Devoluciones / Condonaciones (Distinción entre egreso real y no percibido) */}
+          <div className="p-3.5 rounded-xl border border-rose-500/25 bg-rose-500/5 flex flex-col justify-between shadow-xs">
             <div>
               <div className="flex items-center justify-between">
-                <span className="text-xs text-rose-400 font-medium">Devoluciones / Condonadas</span>
+                <span className="text-xs text-rose-400 font-semibold">Devoluciones / Condonadas</span>
                 <RotateCcw size={16} className="text-rose-400" />
               </div>
-              <p className="text-[11px] text-muted-foreground mt-0.5">Impacto de excepciones</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">Ajustes y excepciones de cobro</p>
             </div>
-            <div className="mt-3">
-              <span className="text-xl sm:text-2xl font-bold text-foreground">
-                {loading ? '…' : money(financial.refundsAndWaives.totalImpactArs)}
-              </span>
-              <span className="text-[11px] text-muted-foreground block mt-0.5">
-                {financial.refundsAndWaives.refundsCount > 0 ? `${financial.refundsAndWaives.refundsCount} dev. (${money(financial.refundsAndWaives.refundsTotalArs)})` : '0 dev.'}
-                {financial.refundsAndWaives.waivesCount > 0 ? ` · ${financial.refundsAndWaives.waivesCount} cond. (${money(financial.refundsAndWaives.waivesTotalArs)})` : ''}
-              </span>
+            <div className="mt-2.5 space-y-1.5">
+              <div className="flex items-baseline justify-between">
+                <div className="flex items-center gap-1">
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-rose-400" />
+                  <span className="text-[11px] text-muted-foreground">Devolución:</span>
+                </div>
+                <div className="text-right">
+                  <span className="text-sm font-bold text-foreground">
+                    {loading ? '…' : money(financial.refundsAndWaives.refundsTotalArs)}
+                  </span>
+                  <span className="text-[10px] text-rose-400 font-medium block -mt-0.5">
+                    {financial.refundsAndWaives.refundsCount} {financial.refundsAndWaives.refundsCount === 1 ? 'egreso real' : 'egresos reales'}
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-baseline justify-between pt-1 border-t border-rose-500/15">
+                <div className="flex items-center gap-1">
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-muted-foreground" />
+                  <span className="text-[11px] text-muted-foreground">Condonado:</span>
+                </div>
+                <div className="text-right">
+                  <span className="text-sm font-semibold text-foreground/90">
+                    {loading ? '…' : money(financial.refundsAndWaives.waivesTotalArs)}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground block -mt-0.5">
+                    {financial.refundsAndWaives.waivesCount} {financial.refundsAndWaives.waivesCount === 1 ? 'no percibido' : 'no percibidos'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 2. Visualización gráfica financiera */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 pt-1">
+          {/* Gráfico A: Comparativa de importes financieros (BarChart) - 7 cols */}
+          <div className="lg:col-span-7 p-3.5 sm:p-4 rounded-xl border border-border bg-surface flex flex-col justify-between shadow-xs">
+            <div>
+              <h4 className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                <BarChart2 size={14} className="text-gold" />
+                <span>Comparativa de importes</span>
+              </h4>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                Ingresos ejecutados, cobros potenciales y ajustes excepcionales.
+              </p>
+            </div>
+
+            <div className="w-full h-56 pt-2">
+              {mounted && hasFinancialActivity ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={financialComparisonData}
+                    margin={{ top: 12, right: 10, left: -20, bottom: 20 }}
+                  >
+                    <XAxis
+                      dataKey="shortName"
+                      tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }}
+                      interval={0}
+                      stroke="var(--border)"
+                    />
+                    <YAxis
+                      tick={{ fill: 'var(--muted-foreground)', fontSize: 10 }}
+                      stroke="var(--border)"
+                      tickFormatter={(val) => `${val >= 1000 ? `${Math.round(val / 1000)}k` : val}`}
+                    />
+                    <Tooltip
+                      content={({ active, payload }) => {
+                        if (active && payload && payload.length) {
+                          const data = payload[0].payload;
+                          return (
+                            <div className="p-2.5 rounded-lg border border-border bg-surface text-xs shadow-md space-y-1 min-w-[12rem]">
+                              <p className="font-semibold text-foreground">{data.name}</p>
+                              <p className="text-xs font-bold" style={{ color: data.color }}>
+                                {money(data.amount)}
+                              </p>
+                              <div className="inline-block px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground border border-border/50">
+                                {data.category}
+                              </div>
+                              <p className="text-[11px] text-muted-foreground leading-tight pt-0.5">
+                                {data.nature}
+                              </p>
+                            </div>
+                          );
+                        }
+                        return null;
+                      }}
+                    />
+                    <Bar dataKey="amount" radius={[4, 4, 0, 0]} maxBarSize={38}>
+                      {financialComparisonData.map((entry, index) => (
+                        <Cell key={`fin-bar-${index}`} fill={entry.color} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex flex-col items-center justify-center text-center p-4">
+                  <Wallet size={28} className="text-muted-foreground/30 mb-1.5" />
+                  <p className="text-xs font-semibold text-foreground">Sin movimientos financieros</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5 max-w-xs">
+                    No se registraron cobros, saldos ni excepciones en las fechas y filtros seleccionados.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Gráfico B: Composición Financiera (DonutChart) - 5 cols */}
+          <div className="lg:col-span-5 p-3.5 sm:p-4 rounded-xl border border-border bg-surface flex flex-col justify-between shadow-xs">
+            <div>
+              <h4 className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                <PieChartIcon size={14} className="text-gold" />
+                <span>Composición financiera</span>
+              </h4>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                Distribución proporcional de los movimientos analizados.
+              </p>
+            </div>
+
+            <div className="w-full h-56 pt-2 flex flex-col sm:flex-row items-center justify-between gap-3">
+              {mounted && hasFinancialActivity && totalFinancialVolume > 0 ? (
+                <>
+                  <div className="w-full sm:w-1/2 h-44 sm:h-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <RechartsPieChart>
+                        <Pie
+                          data={financialCompositionData}
+                          dataKey="value"
+                          nameKey="name"
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={38}
+                          outerRadius={64}
+                          paddingAngle={financialCompositionData.length > 1 ? 3 : 0}
+                        >
+                          {financialCompositionData.map((entry, index) => (
+                            <Cell key={`fin-slice-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          content={({ active, payload }) => {
+                            if (active && payload && payload.length) {
+                              const data = payload[0].payload;
+                              const pct = totalFinancialVolume > 0 ? Math.round((data.value / totalFinancialVolume) * 100) : 0;
+                              return (
+                                <div className="p-2 rounded-lg border border-border bg-surface text-xs shadow-md space-y-0.5">
+                                  <p className="font-semibold text-foreground">{data.fullName || data.name}</p>
+                                  <p className="text-xs font-bold" style={{ color: data.color }}>
+                                    {money(data.value)} ({pct}%)
+                                  </p>
+                                  <p className="text-[10px] text-muted-foreground">{data.category}</p>
+                                </div>
+                              );
+                            }
+                            return null;
+                          }}
+                        />
+                      </RechartsPieChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="w-full sm:w-1/2 flex flex-col justify-center space-y-1 text-xs">
+                    {financialCompositionData.map((slice, idx) => {
+                      const pct = totalFinancialVolume > 0 ? Math.round((slice.value / totalFinancialVolume) * 100) : 0;
+                      return (
+                        <div key={`comp-item-${idx}`} className="flex items-center justify-between gap-2 py-0.5">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <span
+                              className="w-2 h-2 rounded-full shrink-0"
+                              style={{ backgroundColor: slice.color }}
+                            />
+                            <span className="text-[11px] text-muted-foreground truncate">{slice.name}</span>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <span className="text-[11px] font-semibold text-foreground">{money(slice.value)}</span>
+                            <span className="text-[10px] text-muted-foreground ml-1">({pct}%)</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center text-center p-4">
+                  <PieChartIcon size={28} className="text-muted-foreground/30 mb-1.5" />
+                  <p className="text-xs font-semibold text-foreground">Sin datos de composición</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5 max-w-xs">
+                    Los importes registrados en el período equivalen a $0.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>
