@@ -446,7 +446,7 @@ export async function getDynamicDownPayment(
   } catch {
     // Si la RPC aún no está creada o la conexión falla, se retorna el valor por omisión estándar
   }
-  return 10000;
+  return 5000;
 }
 
 export type ConfirmAppointmentPaymentInput = {

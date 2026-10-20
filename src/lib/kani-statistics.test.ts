@@ -785,7 +785,7 @@ describe('Statistics Module Unit Tests', () => {
     });
 
     // 9. Cálculo correcto de señas para turnos manuales vs reservas públicas
-    it('9. getAppointmentDepositAmount respeta seña manual ($5.000), pública ($10.000) y tope por valor de servicio', () => {
+    it('9. getAppointmentDepositAmount unifica la seña a $5.000 para todos los servicios y respeta tope por valor de servicio y montos explícitos', () => {
       // Manual estándar
       const manualApt = makeMockAppointment({
         isManual: true,
@@ -798,9 +798,9 @@ describe('Statistics Module Unit Tests', () => {
         isManual: false,
         servicePrice: 25000,
       });
-      expect(getAppointmentDepositAmount(publicApt)).toBe(10000);
+      expect(getAppointmentDepositAmount(publicApt)).toBe(5000);
 
-      // Servicio más barato que la seña (ej. perfilado $4.000 < seña $10.000)
+      // Servicio más barato que la seña (ej. perfilado $4.000 < seña $5.000)
       const cheapApt = makeMockAppointment({
         isManual: false,
         servicePrice: 4000,

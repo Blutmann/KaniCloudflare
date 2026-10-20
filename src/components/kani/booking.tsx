@@ -69,7 +69,7 @@ export function Booking() {
   const [paymentInitPoint, setPaymentInitPoint] = useState<string | null>(null);
   const [creatingPaymentOrder, setCreatingPaymentOrder] = useState(false);
   const [paymentOrderError, setPaymentOrderError] = useState<string | null>(null);
-  const [dynamicDownPayment, setDynamicDownPayment] = useState(10000);
+  const [dynamicDownPayment, setDynamicDownPayment] = useState(5000);
   const [error, setError] = useState('');
   const [publicSlots, setPublicSlots] = useState<PublicAvailabilityStart[]>([]);
   const [availabilityLoading, setAvailabilityLoading] = useState(false);

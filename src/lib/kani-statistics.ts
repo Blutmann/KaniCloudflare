@@ -1,4 +1,4 @@
-import { KANI_MANUAL_DEPOSIT_ARS, type RealAppointment, type RealAppointmentStatus } from './kani-appointments';
+import { KANI_DEPOSIT_ARS, KANI_MANUAL_DEPOSIT_ARS, type RealAppointment, type RealAppointmentStatus } from './kani-appointments';
 import { addCalendarDays, businessDateToday, startOfBusinessWeek, BUSINESS_TIME_ZONE } from './kani-mobile-appointments';
 import { normalizeEmailForComparison, normalizePhoneForComparison } from './kani-phone';
 
@@ -304,7 +304,7 @@ export function getAppointmentDepositAmount(appointment: RealAppointment): numbe
     return appointment.depositAmountArs;
   }
   const servicePrice = appointment.servicePrice || 0;
-  const standardDeposit = appointment.isManual ? KANI_MANUAL_DEPOSIT_ARS : 10000;
+  const standardDeposit = KANI_DEPOSIT_ARS;
   return servicePrice > 0 ? Math.min(servicePrice, standardDeposit) : standardDeposit;
 }
 

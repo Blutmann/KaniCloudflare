@@ -275,14 +275,14 @@ describe("Mercado Pago Integration Unit Tests", () => {
       });
     });
 
-    it("falls back to default 10000 when RPC returns error", async () => {
+    it("falls back to default 5000 when RPC returns error", async () => {
       mockRpc.mockResolvedValueOnce({
         data: null,
         error: { message: "function does not exist" },
       });
 
       const amount = await getDynamicDownPayment("Gonzalo");
-      expect(amount).toBe(10000);
+      expect(amount).toBe(5000);
     });
   });
 

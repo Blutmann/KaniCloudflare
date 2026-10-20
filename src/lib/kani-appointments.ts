@@ -125,7 +125,8 @@ export function appointmentErrorMessage(error: unknown) {
   return 'No se pudo guardar la solicitud. Revisá los datos e intentá nuevamente.';
 }
 
-export const KANI_MANUAL_DEPOSIT_ARS = 5000;
+export const KANI_DEPOSIT_ARS = 5000;
+export const KANI_MANUAL_DEPOSIT_ARS = KANI_DEPOSIT_ARS;
 
 export function calculateAppointmentBalance(totalPriceArs: number, depositPaid: boolean) {
   const deposit = depositPaid ? KANI_MANUAL_DEPOSIT_ARS : 0;
