@@ -2217,8 +2217,16 @@ html[data-theme='light'] .booking-option,
 html[data-theme='light'] .booking-defer-option,
 html[data-theme='light'] .barber-choice-list > button {
   border-color: var(--border) !important;
-  background: var(--card) !important;
+  background: #ffffff29 !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   color: var(--foreground) !important;
+}
+html[data-theme='light'] .booking-option:not(.selected):hover,
+html[data-theme='light'] .booking-defer-option:not(.selected):hover,
+html[data-theme='light'] .barber-choice-list > button:not(.selected):hover {
+  border-color: color-mix(in srgb, var(--primary) 35%, var(--border)) !important;
+  background: color-mix(in srgb, var(--primary) 5%, #ffffff29) !important;
 }
 html[data-theme='light'] .booking-option.selected,
 html[data-theme='light'] .booking-option.selected:hover:not(:disabled),
@@ -2320,8 +2328,14 @@ html[data-theme='light'] .booking-time-slot.selected:active {
 }
 html[data-theme='light'] .booking-time-slot:not(.selected):not(:disabled) {
   border-color: var(--border) !important;
-  background: var(--card) !important;
+  background: #ffffff29 !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   color: var(--foreground) !important;
+}
+html[data-theme='light'] .booking-time-slot:not(.selected):not(:disabled):hover {
+  border-color: color-mix(in srgb, var(--primary) 35%, var(--border)) !important;
+  background: color-mix(in srgb, var(--primary) 5%, #ffffff29) !important;
 }
 html[data-theme='light'] .booking-time-slot.time-unavailable,
 html[data-theme='light'] .booking-time-slot:disabled:not(.selected) {
@@ -2387,7 +2401,15 @@ html[data-theme='light'] .booking-next-button {
 }
 html[data-theme='light'] .booking-back-button {
   border-color: var(--border) !important;
-  background: var(--card) !important;
+  background: #ffffff29 !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: var(--foreground) !important;
+}
+html[data-theme='light'] .booking-back-button:hover:not(:disabled),
+html[data-theme='light'] .booking-back-button:focus-visible {
+  border-color: color-mix(in srgb, var(--primary) 35%, var(--border)) !important;
+  background: color-mix(in srgb, var(--primary) 6%, #ffffff29) !important;
   color: var(--foreground) !important;
 }
 html[data-theme='light'] .booking-back-button svg {
@@ -2395,7 +2417,9 @@ html[data-theme='light'] .booking-back-button svg {
 }
 html[data-theme='light'] .booking-next-button:disabled {
   border-color: var(--border) !important;
-  background: var(--card) !important;
+  background: #ffffff29 !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   color: var(--muted-foreground) !important;
   opacity: 0.5 !important;
 }
@@ -2403,6 +2427,43 @@ html[data-theme='light'] .booking-next-button:not(:disabled) {
   border-color: var(--button-primary-border) !important;
   background: var(--button-primary-bg) !important;
   color: var(--button-primary-text) !important;
+}
+
+/* Paneles y cards contenedoras en blanco translúcido (#ffffff29) para modo claro */
+html[data-theme='light'] .calendar-panel {
+  background: #ffffff29 !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+@media (min-width: 768px) {
+  html[data-theme='light'] .booking-summary-card {
+    background: #ffffff29 !important;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+}
+
+html[data-theme='light'] .booking-summary-card .summary-deposit-box {
+  background: color-mix(in srgb, var(--gold) 12%, #ffffff29) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+html[data-theme='light'] .booking-summary-card .summary-avatar-circle {
+  background: color-mix(in srgb, var(--gold) 12%, #ffffff29) !important;
+}
+
+html[data-theme='light'] .booking-deposit-notice {
+  background: #ffffff29 !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+html[data-theme='light'] .confirmation-details {
+  background: #ffffff29 !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 /* Fondos del header iguales a las cards inactivas en modo claro. */
