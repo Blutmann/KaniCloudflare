@@ -385,8 +385,9 @@ html[data-theme="light"] .booking-progress .complete > span { border-color: #702
 .admin-signout:hover { color: var(--foreground); }
 .select-control { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; padding: 0 30px 0 12px; height: 44px; border: 1px solid var(--border); background: var(--background); color: var(--foreground); border-radius: 4px; font-size: 12px; }
 .small-avatar { width: 28px; height: 28px; display: grid; place-items: center; color: var(--gold); background: var(--secondary); border-radius: 50%; font-size: 11px; flex-shrink: 0; }
-.booking-cta { position: fixed; inset-inline: 0; bottom: var(--site-footer-height, 170px); z-index: 30; width: 100%; box-sizing: border-box; padding: 0; border-top: 1px solid transparent; background: transparent; box-shadow: none; backdrop-filter: none; }
-.booking-cta-inner { width: min(860px, calc(100% - 40px)); margin-inline: auto; gap: 12px; padding-block: 10px; }
+.booking-cta { position: fixed; inset-inline: 0; bottom: var(--site-footer-height, 170px); z-index: 30; width: 100%; box-sizing: border-box; padding: 0; border-top: 1px solid transparent; background: transparent; box-shadow: none; backdrop-filter: none; pointer-events: none; }
+.booking-cta-inner { width: min(860px, calc(100% - 40px)); margin-inline: auto; gap: 12px; padding-block: 10px; pointer-events: auto; }
+.booking-whatsapp-fab { display: none !important; }
 .booking-home-button { flex: 0 0 44px; width: 44px; height: 44px; margin-right: 12px; color: var(--primary-foreground) !important; }
 .booking-home-button:hover { background: color-mix(in oklch, var(--primary) 88%, white) !important; }
 html[data-theme='light'] .booking-progress .current { border-bottom-color: #702B3A; }
@@ -610,6 +611,251 @@ html[data-theme="light"] .booking-option.selected .option-icon img { filter: bri
 @media(min-width:1500px) { .home-hero { height: 660px; } }
 @media(min-width:768px) {
   .site-shell:has(.booking-cta) { padding-bottom: calc(var(--site-footer-height, 170px) + var(--booking-cta-height, 70px)); }
+
+  .booking-progress {
+    margin-top: 16px;
+    margin-bottom: 32px;
+  }
+
+  .booking-page .booking-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    min-height: 44px;
+    margin-top: 0;
+    margin-bottom: 24px;
+  }
+
+  .booking-page .booking-title-row .section-title,
+  .booking-page .section-title {
+    margin: 0;
+    font-size: 28px;
+    line-height: 1.2;
+    letter-spacing: .01em;
+  }
+
+  .booking-time-heading {
+    margin-bottom: 24px;
+  }
+
+  .booking-time-heading-date {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    border: 1px solid color-mix(in oklch, var(--gold) 28%, var(--border));
+    background: color-mix(in oklch, var(--gold) 8%, var(--surface));
+    border-radius: 9999px;
+    color: var(--gold);
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.2;
+    text-transform: capitalize;
+    box-shadow: 0 2px 8px rgb(0 0 0 / 0.1);
+  }
+
+  .booking-time-heading-date svg {
+    width: 15px;
+    height: 15px;
+    color: var(--gold);
+    flex-shrink: 0;
+  }
+
+  .booking-summary-card {
+    background: var(--surface);
+    border: 1px solid color-mix(in oklch, var(--gold) 22%, var(--border));
+    border-radius: 6px;
+    padding: 28px 32px;
+    box-shadow: 0 12px 30px rgb(0 0 0 / 0.16);
+  }
+
+  .booking-summary-card .summary-card-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding-block: 0 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .booking-summary-card .summary-avatar-circle {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 1px solid color-mix(in oklch, var(--gold) 35%, var(--border));
+    background: color-mix(in oklch, var(--gold) 10%, var(--surface));
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+  }
+
+  .booking-summary-card .summary-contact h2 {
+    font-family: var(--font-display);
+    font-size: 19px;
+    font-weight: 600;
+    line-height: 1.25;
+    color: var(--foreground);
+  }
+
+  .booking-summary-card .summary-contact p {
+    margin-top: 3px;
+    font-size: 13px;
+    line-height: 1.35;
+    color: var(--muted-foreground);
+  }
+
+  .booking-summary-card .summary-edit-button {
+    color: var(--gold);
+    font-size: 13px;
+    font-weight: 500;
+  }
+
+  .booking-summary-card .summary-details-list {
+    padding-block: 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    font-size: 14px;
+  }
+
+  .booking-summary-card .summary-details-list > div {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .booking-summary-card .summary-details-list dt {
+    color: var(--muted-foreground);
+  }
+
+  .booking-summary-card .summary-details-list dd {
+    color: var(--foreground);
+    font-weight: 500;
+    text-align: right;
+  }
+
+  .booking-summary-card .summary-financial-block {
+    padding-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .booking-summary-card .summary-financial-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+    padding-inline: 4px;
+  }
+
+  .booking-summary-card .summary-financial-label {
+    color: var(--muted-foreground);
+  }
+
+  .booking-summary-card .summary-financial-amount {
+    color: var(--foreground);
+    font-weight: 600;
+  }
+
+  .booking-summary-card .summary-deposit-box {
+    background: color-mix(in oklch, var(--gold) 10%, var(--surface));
+    border: 1px solid color-mix(in oklch, var(--gold) 35%, var(--border));
+    border-radius: 6px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-block: 4px;
+  }
+
+  .booking-summary-card .summary-deposit-title {
+    display: block;
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--foreground);
+  }
+
+  .booking-summary-card .summary-deposit-subtitle {
+    display: block;
+    font-size: 12px;
+    color: var(--muted-foreground);
+    margin-top: 2px;
+  }
+
+  .booking-summary-card .summary-deposit-amount {
+    font-family: var(--font-sans);
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--gold);
+    white-space: nowrap;
+  }
+
+  .booking-summary-card .summary-card-notice {
+    margin-top: 20px;
+    padding-top: 18px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 13px;
+    color: var(--muted-foreground);
+  }
+
+  .booking-whatsapp-fab {
+    display: inline-flex !important;
+    align-items: center;
+    gap: 10px;
+    position: fixed;
+    right: 32px;
+    bottom: calc(var(--site-footer-height, 70px) + var(--booking-cta-height, 68px) + 16px);
+    z-index: 40;
+    height: 44px;
+    padding: 0 16px 0 12px;
+    border-radius: 9999px;
+    border: 1px solid color-mix(in oklch, var(--gold) 35%, var(--border));
+    background: var(--surface);
+    color: var(--foreground);
+    box-shadow: 0 8px 24px rgb(0 0 0 / 0.22);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1;
+    transition: transform 0.2s ease, border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .booking-whatsapp-fab:hover {
+    transform: translateY(-2px);
+    border-color: var(--gold);
+    background: color-mix(in oklch, var(--gold) 12%, var(--surface));
+    box-shadow: 0 12px 28px rgb(0 0 0 / 0.32);
+    color: var(--foreground);
+  }
+
+  .booking-whatsapp-icon {
+    width: 20px;
+    height: 20px;
+    color: #25D366;
+    flex-shrink: 0;
+  }
+
+  .booking-whatsapp-label {
+    white-space: nowrap;
+  }
+
+  html[data-theme="light"] .booking-whatsapp-fab {
+    background: #FFFFFF;
+    border-color: color-mix(in srgb, var(--gold) 45%, var(--border));
+    box-shadow: 0 8px 20px rgb(0 0 0 / 0.08);
+  }
+
+  html[data-theme="light"] .booking-whatsapp-fab:hover {
+    background: #FAF8F5;
+    border-color: var(--gold);
+  }
   .booking-cta-inner {
     width: min(860px, calc(100% - 80px));
     margin-inline: auto;
@@ -754,6 +1000,66 @@ html[data-theme="light"] .booking-option.selected .option-icon img { filter: bri
  .booking-summary-page .summary-list + div { margin-top: 10px !important; gap: 8px; font-size: 12px; line-height: 1.35; }
  .booking-summary-page .booking-cta-inner { padding-block: 8px; }
  .booking-summary-page .booking-next-button, .booking-summary-page .booking-back-button { height: 44px; }
+ .booking-summary-card {
+   background: transparent;
+   border: none;
+   box-shadow: none;
+   padding: 0;
+ }
+ .booking-summary-card .summary-avatar-circle {
+   display: contents;
+ }
+ .booking-summary-card .summary-details-list {
+   padding-block: 10px;
+   gap: 8px;
+ }
+ .booking-summary-card .summary-financial-block {
+   margin-top: 10px;
+   display: flex;
+   flex-direction: column;
+   gap: 8px;
+ }
+ .booking-summary-card .summary-financial-row {
+   display: flex;
+   justify-content: space-between;
+   gap: 8px;
+   font-size: 12px;
+ }
+ .booking-summary-card .summary-financial-label {
+   color: var(--muted-foreground);
+ }
+ .booking-summary-card .summary-financial-amount {
+   color: var(--foreground);
+   font-weight: 500;
+ }
+ .booking-summary-card .summary-deposit-box {
+   display: flex;
+   justify-content: space-between;
+   align-items: center;
+   gap: 8px;
+   padding: 8px 10px;
+   border-radius: 4px;
+   background: color-mix(in oklch, var(--gold) 8%, var(--surface));
+   border: 1px solid color-mix(in oklch, var(--gold) 25%, var(--border));
+ }
+ .booking-summary-card .summary-deposit-title {
+   font-size: 12px;
+   font-weight: 600;
+ }
+ .booking-summary-card .summary-deposit-subtitle {
+   display: none;
+ }
+ .booking-summary-card .summary-deposit-amount {
+   font-size: 15px;
+   font-weight: 700;
+   color: var(--gold);
+ }
+ .booking-summary-card .summary-card-notice {
+   margin-top: 12px !important;
+   gap: 8px;
+   font-size: 12px;
+   line-height: 1.35;
+ }
  .site-footer { display: none; }
  .booking-progress { gap: 5px; margin-top: 10px; margin-bottom: 16px; }
  .booking-progress > button { flex-direction: column; gap: 8px; padding-bottom: 13px; }
