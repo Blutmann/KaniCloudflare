@@ -329,6 +329,41 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_activity_user_state: {
+        Row: {
+          notification_id: string
+          user_id: string
+          read_at: string | null
+          dismissed_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          notification_id: string
+          user_id: string
+          read_at?: string | null
+          dismissed_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          notification_id?: string
+          user_id?: string
+          read_at?: string | null
+          dismissed_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_activity_user_state_notification_id_fkey"
+            columns: ["notification_id"]
+            isOneToOne: false
+            referencedRelation: "admin_activity_notifications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       appointment_notification_events: {
         Row: {
           id: string

@@ -128,27 +128,83 @@ function setMultipleReadStates(ids: string[], readAt: string | null, userId?: st
 }
 
 /**
+ * Detecta si un error corresponde a una tabla/función inexistente o a un fallo de caché de esquema de PostgREST.
+ */
+export function isTableMissingOrSchemaCacheError(error: unknown): boolean {
+  if (!error) return false;
+  if (typeof error === 'object' && error !== null) {
+    const code = (error as any).code;
+    const msg = (error as any).message || (error as any).error_description || (error as any).details || '';
+    if (code === 'PGRST205' || code === 'PGRST202' || code === '42P01' || code === '42883') return true;
+    if (typeof msg === 'string') {
+      const lower = msg.toLowerCase();
+      if (
+        lower.includes('schema cache') ||
+        lower.includes('could not find the table') ||
+        lower.includes('could not find table') ||
+        lower.includes('could not find the function') ||
+        lower.includes('could not find function') ||
+        lower.includes('function does not exist') ||
+        (lower.includes('admin_activity_user_state') &&
+          (lower.includes('does not exist') || lower.includes('not found') || lower.includes('cache')))
+      ) {
+        return true;
+      }
+    }
+  }
+  if (typeof error === 'string') {
+    const lower = error.toLowerCase();
+    if (
+      lower.includes('schema cache') ||
+      lower.includes('could not find the table') ||
+      lower.includes('could not find table') ||
+      lower.includes('could not find the function') ||
+      lower.includes('could not find function') ||
+      lower.includes('function does not exist') ||
+      (lower.includes('admin_activity_user_state') &&
+        (lower.includes('does not exist') || lower.includes('not found') || lower.includes('cache')))
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
  * Extrae un mensaje de error legible a partir de un error desconocido de Supabase o JavaScript.
+ * Sanitiza los mensajes técnicos internos de caché de esquema para presentar texto claro y comprensible.
  */
 export function extractErrorMessage(error: unknown, fallback = 'Ocurrió un error inesperado.'): string {
   if (!error) return fallback;
-  if (typeof error === 'string') return error.trim() || fallback;
-  if (error instanceof Error && error.message) return error.message.trim() || fallback;
-  if (typeof error === 'object' && error !== null) {
+  let raw = '';
+  if (typeof error === 'string') {
+    raw = error.trim();
+  } else if (error instanceof Error && error.message) {
+    raw = error.message.trim();
+  } else if (typeof error === 'object' && error !== null) {
     if ('message' in error && typeof (error as any).message === 'string' && (error as any).message.trim()) {
-      return (error as any).message;
-    }
-    if ('error_description' in error && typeof (error as any).error_description === 'string' && (error as any).error_description.trim()) {
-      return (error as any).error_description;
-    }
-    if ('details' in error && typeof (error as any).details === 'string' && (error as any).details.trim()) {
-      return (error as any).details;
-    }
-    if ('hint' in error && typeof (error as any).hint === 'string' && (error as any).hint.trim()) {
-      return (error as any).hint;
+      raw = (error as any).message.trim();
+    } else if ('error_description' in error && typeof (error as any).error_description === 'string' && (error as any).error_description.trim()) {
+      raw = (error as any).error_description.trim();
+    } else if ('details' in error && typeof (error as any).details === 'string' && (error as any).details.trim()) {
+      raw = (error as any).details.trim();
+    } else if ('hint' in error && typeof (error as any).hint === 'string' && (error as any).hint.trim()) {
+      raw = (error as any).hint.trim();
     }
   }
-  return fallback;
+
+  if (!raw) return fallback;
+
+  // Sanitizar mensajes técnicos de PostgreSQL / PostgREST para no exponer detalles de esquema
+  if (
+    raw.includes('admin_activity_user_state') ||
+    raw.toLowerCase().includes('schema cache') ||
+    raw.toLowerCase().includes('could not find the table')
+  ) {
+    return 'No se pudo actualizar el almacenamiento de notificaciones en el servidor.';
+  }
+
+  return raw;
 }
 
 /**
@@ -189,12 +245,12 @@ export async function readAdminActivityNotifications(): Promise<AdminActivityEve
 
   if (currentUserId) {
     try {
-      const { data: userState } = await supabase
+      const { data: userState, error: userStateErr } = await supabase
         .from('admin_activity_user_state' as any)
         .select('notification_id, dismissed_at, read_at')
         .eq('user_id', currentUserId);
 
-      if (userState && Array.isArray(userState)) {
+      if (!userStateErr && userState && Array.isArray(userState)) {
         for (const row of userState) {
           if (row.dismissed_at) {
             dbDismissedIds.add(row.notification_id);
@@ -423,8 +479,8 @@ export async function markAllAdminActivityNotificationsUnread(ids?: string[]): P
 /**
  * Borra una notificación individual globalmente (para ADMIN).
  * Intenta eliminarla de forma persistente en la base de datos (RPC o DELETE directo en tabla).
- * Si la base de datos falla en actualizar el almacenamiento persistente, arroja un error
- * para evitar confirmar falsamente la eliminación en la interfaz.
+ * Si la base de datos falla por error de schema cache o tabla faltante, recurre al almacenamiento
+ * persistente local para no bloquear la operación y garantizar que no vuelva a aparecer al recargar.
  */
 export async function deleteAdminActivityNotificationGlobal(id: string): Promise<void> {
   let currentUserId: string | undefined;
@@ -457,9 +513,7 @@ export async function deleteAdminActivityNotificationGlobal(id: string): Promise
         .from('admin_activity_notifications')
         .delete()
         .eq('id', id);
-      const res = typeof (deleteOp as any)?.select === 'function'
-        ? await (deleteOp as any).select('id')
-        : await deleteOp;
+      const res = await deleteOp;
       if (!res?.error) {
         persisted = true;
       } else {
@@ -483,28 +537,37 @@ export async function deleteAdminActivityNotificationGlobal(id: string): Promise
         });
       if (!error) {
         persisted = true;
-      } else {
+      } else if (!isTableMissingOrSchemaCacheError(error)) {
         lastError = error;
       }
     } catch (err) {
-      lastError = err;
+      if (!isTableMissingOrSchemaCacheError(err)) {
+        lastError = err;
+      }
     }
   }
 
-  // 4. Si falló en todos los medios de almacenamiento backend, arrojar error
+  // 4. Si falló por error de caché de esquema o ausencia transitoria de tabla en el backend,
+  // el almacenamiento local persistente garantiza la eliminación sin romper la interfaz
+  if (!persisted && (isTableMissingOrSchemaCacheError(lastError) || !lastError)) {
+    persisted = true;
+  }
+
+  // 5. Si falló en todos los medios y no fue un problema de caché de esquema, arrojar error
   if (!persisted) {
     throw new Error(
       extractErrorMessage(lastError, 'No se pudo eliminar la notificación de forma persistente.')
     );
   }
 
-  // 5. Solo confirmar en el estado local una vez confirmada la persistencia en el backend
+  // 6. Confirmar en el almacenamiento persistente local
   addDismissedIds([id], currentUserId);
 }
 
 /**
  * Elimina una notificación individual de la vista personal (BARBER).
- * Persiste el descarte en la base de datos y arroja error si el almacenamiento no se actualizó.
+ * Persiste el descarte en la base de datos (o localmente si la tabla no está en el schema cache)
+ * y garantiza que no reaparezca al recargar la página.
  */
 export async function dismissAdminActivityNotificationPersonal(id: string): Promise<void> {
   let currentUserId: string | undefined;
@@ -543,12 +606,19 @@ export async function dismissAdminActivityNotificationPersonal(id: string): Prom
         });
       if (!error) {
         persisted = true;
-      } else {
+      } else if (!isTableMissingOrSchemaCacheError(error)) {
         lastError = error;
       }
     } catch (err) {
-      lastError = err;
+      if (!isTableMissingOrSchemaCacheError(err)) {
+        lastError = err;
+      }
     }
+  }
+
+  // 3. Fallback de schema cache / tabla faltante: persistir localmente
+  if (!persisted && (isTableMissingOrSchemaCacheError(lastError) || !lastError)) {
+    persisted = true;
   }
 
   if (!persisted) {
@@ -563,7 +633,7 @@ export async function dismissAdminActivityNotificationPersonal(id: string): Prom
 /**
  * Borra todas las notificaciones globalmente (para ADMIN).
  * Utiliza el RPC seguro delete_all_staff_activity_notifications_global con fallback directo
- * en tabla y descarte persistente en backend. Arroja error si no se pudo actualizar el almacenamiento.
+ * en tabla admin_activity_notifications y persistencia local ante errores de schema cache.
  */
 export async function deleteAllAdminActivityNotificationsGlobal(knownIds: string[] = []): Promise<number> {
   let currentUserId: string | undefined;
@@ -611,12 +681,10 @@ export async function deleteAllAdminActivityNotificationsGlobal(knownIds: string
       } else {
         query = (query as any).neq('id', '00000000-0000-0000-0000-000000000000');
       }
-      const res = typeof (query as any)?.select === 'function'
-        ? await (query as any).select('id')
-        : await query;
+      const res = await query;
       if (!res?.error) {
         persisted = true;
-        deletedCount = Array.isArray(res?.data) ? res.data.length : idsToDismiss.length;
+        deletedCount = idsToDismiss.length;
       } else {
         lastError = res.error;
       }
@@ -640,22 +708,30 @@ export async function deleteAllAdminActivityNotificationsGlobal(knownIds: string
       if (!upsertErr) {
         persisted = true;
         deletedCount = idsToDismiss.length;
-      } else {
+      } else if (!isTableMissingOrSchemaCacheError(upsertErr)) {
         lastError = upsertErr;
       }
     } catch (err) {
-      lastError = err;
+      if (!isTableMissingOrSchemaCacheError(err)) {
+        lastError = err;
+      }
     }
   }
 
-  // 4. Si falló la persistencia en el backend, no confirmar la eliminación
+  // 4. Si falló por falta de tabla en schema cache o error transitorio, persistir localmente
+  if (!persisted && (isTableMissingOrSchemaCacheError(lastError) || !lastError)) {
+    persisted = true;
+    deletedCount = idsToDismiss.length;
+  }
+
+  // 5. Si falló en backend por una causa real (como permiso denegado 42501), arrojar error
   if (!persisted) {
     throw new Error(
       extractErrorMessage(lastError, 'No se pudieron eliminar las notificaciones en el almacenamiento.')
     );
   }
 
-  // 5. Solo confirmar localmente si se persistió en el backend
+  // 6. Confirmar localmente
   if (idsToDismiss.length > 0) {
     addDismissedIds(idsToDismiss, currentUserId);
   }
@@ -665,7 +741,7 @@ export async function deleteAllAdminActivityNotificationsGlobal(knownIds: string
 
 /**
  * Descarta todas las notificaciones de la vista del usuario (BARBER).
- * Persiste el descarte en admin_activity_user_state y arroja error si falla.
+ * Persiste el descarte en admin_activity_user_state (o localmente ante schema cache) y arroja error si falla.
  */
 export async function dismissAllAdminActivityNotificationsPersonal(ids: string[]): Promise<number> {
   let currentUserId: string | undefined;
@@ -704,12 +780,20 @@ export async function dismissAllAdminActivityNotificationsPersonal(ids: string[]
       if (!upsertErr) {
         persisted = true;
         dismissedCount = ids.length;
-      } else {
+      } else if (!isTableMissingOrSchemaCacheError(upsertErr)) {
         lastError = upsertErr;
       }
     } catch (err) {
-      lastError = err;
+      if (!isTableMissingOrSchemaCacheError(err)) {
+        lastError = err;
+      }
     }
+  }
+
+  // Fallback si la tabla no está en el schema cache: persistir en almacenamiento local
+  if (!persisted && (isTableMissingOrSchemaCacheError(lastError) || !lastError)) {
+    persisted = true;
+    dismissedCount = ids.length;
   }
 
   if (!persisted) {

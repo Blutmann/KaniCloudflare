@@ -478,6 +478,126 @@ describe('kani-admin-activity bulk notifications management', () => {
       expect(touchedTables).not.toContain('clients');
       expect(touchedTables).not.toContain('availability_slots');
     });
+
+    describe('Handling of missing admin_activity_user_state or schema cache error', () => {
+      it('never exposes raw "Could not find table public.admin_activity_user_state in schema cache" error in UI messages', () => {
+        const errorWithSchemaCache = {
+          code: 'PGRST205',
+          message: "Could not find the table 'public.admin_activity_user_state' in the schema cache",
+        };
+        const message = extractErrorMessage(errorWithSchemaCache);
+        expect(message).not.toContain('admin_activity_user_state');
+        expect(message).not.toContain('schema cache');
+        expect(message).toContain('No se pudo actualizar el almacenamiento');
+      });
+
+      it('safely handles ADMIN bulk deletion when admin_activity_user_state is missing from schema cache', async () => {
+        mockRpc.mockResolvedValue({
+          data: null,
+          error: { message: 'function delete_all_staff_activity_notifications_global does not exist', code: 'PGRST202' },
+        });
+
+        // Direct delete on notifications succeeds or is handled
+        mockFrom.mockImplementation((table: string) => {
+          if (table === 'admin_activity_notifications') {
+            return {
+              delete: () => ({
+                in: () => Promise.resolve({ error: null }),
+                neq: () => Promise.resolve({ error: null }),
+              }),
+              select: () => ({
+                order: () => ({
+                  limit: () => Promise.resolve({
+                    data: [
+                      { id: 'notif-1', event_type: 'APPOINTMENT_REQUESTED', created_at: new Date().toISOString(), read_at: null },
+                    ],
+                    error: null,
+                  }),
+                }),
+              }),
+            };
+          }
+          if (table === 'admin_activity_user_state') {
+            return {
+              upsert: () => Promise.resolve({
+                error: { message: "Could not find the table 'public.admin_activity_user_state' in the schema cache", code: 'PGRST205' },
+              }),
+              select: () => ({
+                eq: () => Promise.resolve({
+                  error: { message: "Could not find the table 'public.admin_activity_user_state' in the schema cache", code: 'PGRST205' },
+                  data: null,
+                }),
+              }),
+            };
+          }
+          return {};
+        });
+
+        mockGetUser.mockResolvedValue({
+          data: { user: { id: 'admin-user-uuid' } },
+          error: null,
+        });
+
+        // Bulk delete should not throw schema cache error
+        await expect(deleteAllAdminActivityNotificationsGlobal(['notif-1'])).resolves.not.toThrow();
+
+        // Reading notifications should filter out notif-1 via persistentDismissed set
+        const notifications = await readAdminActivityNotifications();
+        expect(notifications.some(n => n.id === 'notif-1')).toBe(false);
+      });
+
+      it('safely handles BARBER dismissal when admin_activity_user_state is missing from schema cache', async () => {
+        mockRpc.mockResolvedValue({
+          data: null,
+          error: { message: 'function dismiss_staff_activity_notification_personal does not exist', code: 'PGRST202' },
+        });
+
+        mockFrom.mockImplementation((table: string) => {
+          if (table === 'admin_activity_notifications') {
+            return {
+              select: () => ({
+                order: () => ({
+                  limit: () => Promise.resolve({
+                    data: [
+                      { id: 'notif-barber-cache', event_type: 'APPOINTMENT_REQUESTED', created_at: new Date().toISOString(), read_at: null },
+                      { id: 'notif-barber-keep', event_type: 'APPOINTMENT_CONFIRMED', created_at: new Date().toISOString(), read_at: null },
+                    ],
+                    error: null,
+                  }),
+                }),
+              }),
+            };
+          }
+          if (table === 'admin_activity_user_state') {
+            return {
+              upsert: () => Promise.resolve({
+                error: { message: "Could not find the table 'public.admin_activity_user_state' in the schema cache", code: 'PGRST205' },
+              }),
+              select: () => ({
+                eq: () => Promise.resolve({
+                  error: { message: "Could not find the table 'public.admin_activity_user_state' in the schema cache", code: 'PGRST205' },
+                  data: null,
+                }),
+              }),
+            };
+          }
+          return {};
+        });
+
+        mockGetUser.mockResolvedValue({
+          data: { user: { id: 'barber-user-uuid' } },
+          error: null,
+        });
+
+        // Barber dismissal should not throw schema cache error
+        await expect(dismissAdminActivityNotificationPersonal('notif-barber-cache')).resolves.not.toThrow();
+
+        // Reading notifications filters out the dismissed notification
+        const notifications = await readAdminActivityNotifications();
+        expect(notifications.some(n => n.id === 'notif-barber-cache')).toBe(false);
+        expect(notifications.some(n => n.id === 'notif-barber-keep')).toBe(true);
+      });
+    });
   });
 });
 
