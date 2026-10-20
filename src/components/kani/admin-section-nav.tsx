@@ -1,4 +1,4 @@
-import { BarChart3, CalendarDays, Clock3, RefreshCw } from "lucide-react";
+import { BarChart3, CalendarDays, Clock3, DollarSign, RefreshCw } from "lucide-react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useAdminStaff } from "@/lib/kani-admin-context";
 
@@ -6,6 +6,7 @@ const items = [
   { to: "/admin" as const, label: "Turnos", icon: CalendarDays },
   { to: "/admin/horarios" as const, label: "Horarios", icon: Clock3 },
   { to: "/admin/estadisticas" as const, label: "Datos", icon: BarChart3 },
+  { to: "/admin/pagos" as const, label: "Pagos", icon: DollarSign },
 ];
 
 export function AdminSectionNav() {
@@ -49,4 +50,3 @@ export function AdminSectionNav() {
     </div>
   );
 }
-

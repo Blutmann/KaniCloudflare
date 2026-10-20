@@ -547,6 +547,78 @@ export type Database = {
         }
         Relationships: []
       }
+      service_payments: {
+        Row: {
+          id: string
+          barber_id: string
+          service_id: string | null
+          service_name: "Corte" | "Corte y barba" | "Corte + barba" | "Barba" | "Otros"
+          service_other_detail: string | null
+          service_price_ars: number
+          discount_ars: number
+          final_amount_ars: number
+          payment_date: string
+          payment_time: string
+          payment_method: "Efectivo" | "Transferencia"
+          online_deposit_paid: boolean
+          online_deposit_amount_ars: number
+          collected_amount_ars: number
+          client_name: string | null
+          client_contact: string | null
+          appointment_id: string | null
+          created_by_user_id: string | null
+          created_by_display_name: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          barber_id: string
+          service_id?: string | null
+          service_name: "Corte" | "Corte y barba" | "Corte + barba" | "Barba" | "Otros"
+          service_other_detail?: string | null
+          service_price_ars: number
+          discount_ars?: number
+          final_amount_ars: number
+          payment_date?: string
+          payment_time?: string
+          payment_method: "Efectivo" | "Transferencia"
+          online_deposit_paid?: boolean
+          online_deposit_amount_ars?: number
+          collected_amount_ars: number
+          client_name?: string | null
+          client_contact?: string | null
+          appointment_id?: string | null
+          created_by_user_id?: string | null
+          created_by_display_name: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          barber_id?: string
+          service_id?: string | null
+          service_name?: "Corte" | "Corte y barba" | "Corte + barba" | "Barba" | "Otros"
+          service_other_detail?: string | null
+          service_price_ars?: number
+          discount_ars?: number
+          final_amount_ars?: number
+          payment_date?: string
+          payment_time?: string
+          payment_method?: "Efectivo" | "Transferencia"
+          online_deposit_paid?: boolean
+          online_deposit_amount_ars?: number
+          collected_amount_ars?: number
+          client_name?: string | null
+          client_contact?: string | null
+          appointment_id?: string | null
+          created_by_user_id?: string | null
+          created_by_display_name?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       available_barber_slots: {
@@ -818,6 +890,32 @@ export type Database = {
       dismiss_all_staff_activity_notifications_personal: {
         Args: Record<PropertyKey, never>
         Returns: number
+      }
+      record_service_payment: {
+        Args: {
+          p_barber_id: string
+          p_service_name: string
+          p_service_other_detail?: string | null
+          p_service_price_ars?: number | null
+          p_discount_ars?: number
+          p_payment_date?: string | null
+          p_payment_time?: string | null
+          p_payment_method?: string
+          p_online_deposit_paid?: boolean
+          p_client_name?: string | null
+          p_client_contact?: string | null
+          p_appointment_id?: string | null
+        }
+        Returns: {
+          payment_id: string
+          barber_id: string
+          service_name: string
+          final_amount_ars: number
+          collected_amount_ars: number
+          payment_date: string
+          payment_time: string
+          appointment_id: string | null
+        }[]
       }
     }
     Enums: {
