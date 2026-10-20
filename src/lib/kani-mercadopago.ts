@@ -440,8 +440,9 @@ export async function getDynamicDownPayment(
       p_barber_name: barberName?.trim() || null,
     });
     if (!error && typeof data === "number" && data > 0) {
-      downPaymentCache.set(key, { amount: data, timestamp: now });
-      return data;
+      const unified = data <= 5000 ? data : 5000;
+      downPaymentCache.set(key, { amount: unified, timestamp: now });
+      return unified;
     }
   } catch {
     // Si la RPC aún no está creada o la conexión falla, se retorna el valor por omisión estándar

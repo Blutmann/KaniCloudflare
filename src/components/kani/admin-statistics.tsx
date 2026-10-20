@@ -417,9 +417,6 @@ export function AdminStatistics() {
               <Wallet size={16} className="text-gold" />
               <span>Control de cobros</span>
             </h3>
-            <p className="text-xs text-muted-foreground">
-              Ingresos efectivamente recibidos, saldos pendientes y señas retenidas por inasistencias en el período.
-            </p>
           </div>
           {(financial.retainedNoShowDeposits.count > 0 || financial.refundsAndWaives.items.length > 0) && (
             <Button
@@ -992,9 +989,6 @@ export function AdminStatistics() {
                   <Scissors size={16} className="stat-text-accent" />
                   <span>Servicios más Solicitados</span>
                 </h3>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Desglose comparativo de servicios configurados en el sistema por volumen de demanda.
-                </p>
               </div>
             </div>
 

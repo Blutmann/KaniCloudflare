@@ -142,7 +142,7 @@ export function Booking() {
     let cancelled = false;
     void getDynamicDownPayment(barber).then(amount => {
       if (!cancelled && typeof amount === 'number' && amount > 0) {
-        setDynamicDownPayment(amount);
+        setDynamicDownPayment(Math.min(5000, amount));
       }
     });
     return () => { cancelled = true; };
@@ -173,7 +173,7 @@ export function Booking() {
       });
     }
   }, []);
-  const depositArs = selected ? Math.min(dynamicDownPayment, selected.price) : dynamicDownPayment;
+  const depositArs = 5000;
   const remainingPaymentArs = selected ? Math.max(0, selected.price - depositArs) : 0;
   const todayValue = businessToday;
   const bookingEndValue = bookingEndDateFor(todayValue);

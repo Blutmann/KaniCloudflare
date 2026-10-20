@@ -264,12 +264,12 @@ describe("Mercado Pago Integration Unit Tests", () => {
   describe("getDynamicDownPayment", () => {
     it("returns dynamic down payment from RPC when available", async () => {
       mockRpc.mockResolvedValueOnce({
-        data: 12500,
+        data: 5000,
         error: null,
       });
 
       const amount = await getDynamicDownPayment("Lautaro");
-      expect(amount).toBe(12500);
+      expect(amount).toBe(5000);
       expect(mockRpc).toHaveBeenCalledWith("read_public_deposit_amount", {
         p_barber_name: "Lautaro",
       });

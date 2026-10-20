@@ -106,7 +106,7 @@ export function SiteHeader() {
         <>
           <Link to="/admin" onClick={closeMenu}><CalendarClock />Turnos</Link>
           <Link to="/admin/horarios" onClick={closeMenu}><CalendarClock />Horarios</Link>
-          <Link to="/admin/estadisticas" onClick={closeMenu}><BarChart3 />Estadísticas</Link>
+          <Link to="/admin/estadisticas" onClick={closeMenu}><BarChart3 />Datos</Link>
           {staff.profile.role === 'ADMIN' && <Link to="/admin/mantenimiento" onClick={closeMenu}><Wrench />Mantenimiento</Link>}
           <div className="mobile-menu-session">
             <div className="mobile-menu-session-identity">

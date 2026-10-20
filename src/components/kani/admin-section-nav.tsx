@@ -5,7 +5,7 @@ import { useAdminStaff } from "@/lib/kani-admin-context";
 const items = [
   { to: "/admin" as const, label: "Turnos", icon: CalendarDays },
   { to: "/admin/horarios" as const, label: "Horarios", icon: Clock3 },
-  { to: "/admin/estadisticas" as const, label: "Estadísticas", icon: BarChart3 },
+  { to: "/admin/estadisticas" as const, label: "Datos", icon: BarChart3 },
 ];
 
 export function AdminSectionNav() {
