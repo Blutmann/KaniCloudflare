@@ -18,7 +18,8 @@ describe('Kani Barber Studio - Ajustes en Contacto e integración de Google Maps
     expect(estudioCode).toContain('Kani Barber Studio');
     expect(estudioCode).toContain('Contacto');
     expect(estudioCode).toContain('Ubicación');
-    expect(estudioCode).toContain('San Isidro Labrador 7, Martínez');
+    expect(estudioCode).toContain('San Isidro Labrador 7');
+    expect(estudioCode).toContain('Martinez, Provincia de Buenos Aires');
     expect(estudioCode).toContain('Provincia de Buenos Aires');
     expect(estudioCode).toContain('Horarios');
     expect(estudioCode).toContain('Lunes a sábados');
@@ -75,5 +76,16 @@ describe('Kani Barber Studio - Ajustes en Contacto e integración de Google Maps
 
     // 2 columnas en mobile y desktop
     expect(css).toMatch(/\.studio-info-grid\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/);
+  });
+
+  it('5. Ubicación ocupa exactamente 2 renglones y todas las cards tienen dimensiones uniformes', () => {
+    // Dirección en 2 renglones
+    expect(estudioCode).toContain('San Isidro Labrador 7<br />Martinez, Provincia de Buenos Aires');
+
+    // Layout estructural uniforme en grid
+    expect(css).toMatch(/\.studio-info-grid\s*\{[^}]*grid-auto-rows:\s*1fr/);
+    expect(css).toMatch(/\.studio-info-grid\s*\{[^}]*align-items:\s*stretch/);
+    expect(css).toMatch(/\.studio-info-card\s*\{[^}]*height:\s*100%/);
+    expect(css).toMatch(/\.studio-card-action\s*\{[^}]*margin-top:\s*auto/);
   });
 });

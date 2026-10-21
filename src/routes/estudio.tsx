@@ -53,7 +53,7 @@ function StudioPage() {
             <h2 className="studio-card-title">Ubicación</h2>
           </div>
           <p className="studio-card-desc">
-            San Isidro Labrador 7, Martínez<br />Provincia de Buenos Aires
+            San Isidro Labrador 7<br />Martinez, Provincia de Buenos Aires
           </p>
           <span className="studio-card-action">
             Ver ubicación <ArrowRight size={13} aria-hidden="true" />
