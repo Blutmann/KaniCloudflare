@@ -81,54 +81,40 @@ export function Booking() {
     if (step >= 2) void import('@/components/kani/phone-input');
   }, [step]);
   const formRef = useRef<HTMLFormElement>(null);
-  // Recuperación automática de posición y visualización del header al cerrar el teclado en mobile
+  // Adaptación natural del viewport móvil: preserva la posición del usuario, permite scroll continuo y evita bloqueos por teclado o zoom
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    const handleFocusOut = () => {
-      // Pequeño retardo para verificar si el foco pasó a otro campo del mismo formulario
-      window.setTimeout(() => {
-        const active = document.activeElement;
-        const isFormField = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.tagName === 'SELECT');
-        if (!isFormField && window.scrollY > 0) {
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-      }, 100);
-    };
-
-    let prevHeight = window.visualViewport?.height ?? window.innerHeight;
-    const handleViewportResize = () => {
-      const currentHeight = window.visualViewport?.height ?? window.innerHeight;
-      // Cuando el viewport se expande tras cerrarse el teclado virtual (mínimo 60px de diferencia)
-      if (currentHeight > prevHeight + 60) {
-        if (window.scrollY > 0) {
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
+    const handleViewportChange = () => {
+      const vv = window.visualViewport;
+      // Si el usuario está realizando zoom (escala distinta a 1), no intervenir en el scroll ni cancelar el gesto
+      if (vv && Math.abs(vv.scale - 1) > 0.05) {
+        return;
       }
-      prevHeight = currentHeight;
+
+      // Al cerrarse el teclado o cambiar el viewport, si el scroll quedó fuera del límite válido del documento,
+      // ajustar naturalmente al máximo sin forzar saltos arbitrarios al inicio ni usar temporizadores.
+      const doc = document.documentElement;
+      const maxScroll = Math.max(0, doc.scrollHeight - window.innerHeight);
+      if (window.scrollY > maxScroll) {
+        window.scrollTo({ top: maxScroll, behavior: 'auto' });
+      }
     };
 
-    const form = formRef.current;
-    if (form) {
-      form.addEventListener('focusout', handleFocusOut);
-    }
     if (window.visualViewport) {
-      window.visualViewport.addEventListener('resize', handleViewportResize);
+      window.visualViewport.addEventListener('resize', handleViewportChange);
     } else {
-      window.addEventListener('resize', handleViewportResize);
+      window.addEventListener('resize', handleViewportChange);
     }
 
     return () => {
-      if (form) {
-        form.removeEventListener('focusout', handleFocusOut);
-      }
       if (window.visualViewport) {
-        window.visualViewport.removeEventListener('resize', handleViewportResize);
+        window.visualViewport.removeEventListener('resize', handleViewportChange);
       } else {
-        window.removeEventListener('resize', handleViewportResize);
+        window.removeEventListener('resize', handleViewportChange);
       }
     };
-  }, [step]);
+  }, []);
   const ctaRef = useRef<HTMLDivElement>(null);
   const progressRef = useRef<HTMLDivElement>(null);
   const [progressStart, setProgressStart] = useState(0);
