@@ -108,6 +108,7 @@ export function AdminPayments() {
   const [formOnlineDepositPaid, setFormOnlineDepositPaid] = useState<boolean>(false);
   const [linkedAppointment, setLinkedAppointment] = useState<RealAppointment | null>(null);
   const [showCandidateSearch, setShowCandidateSearch] = useState<boolean>(false);
+  const [formOrigin, setFormOrigin] = useState<ServicePaymentOrigin>("walk_in");
 
   // Inicializar barberId si staff cambia
   useEffect(() => {
@@ -161,6 +162,29 @@ export function AdminPayments() {
   const alreadyPaidAppointmentIds = useMemo(() => {
     return new Set(payments.map((p) => p.appointmentId).filter(Boolean) as string[]);
   }, [payments]);
+
+  // Turnos disponibles para vinculación (excluyendo los que ya tienen cobro registrado, salvo el turno en edición)
+  const availableAppointments = useMemo(() => {
+    return appointments
+      .filter((apt) => {
+        if (alreadyPaidAppointmentIds.has(apt.id)) {
+          if (!editingPayment || editingPayment.appointmentId !== apt.id) {
+            return false;
+          }
+        }
+        if (!isAdmin && staff.profile.barber_id) {
+          if (apt.barberId && apt.barberId !== staff.profile.barber_id) {
+            return false;
+          }
+        }
+        return true;
+      })
+      .sort((a, b) => {
+        if (a.date === formDate && b.date !== formDate) return -1;
+        if (a.date !== formDate && b.date === formDate) return 1;
+        return (b.date + (b.time || "")).localeCompare(a.date + (a.time || ""));
+      });
+  }, [appointments, alreadyPaidAppointmentIds, editingPayment, isAdmin, staff.profile.barber_id, formDate]);
 
   // Estadísticas calculadas en tiempo real sobre los cobros filtrados
   const paymentStats = useMemo(() => {
@@ -302,6 +326,39 @@ export function AdminPayments() {
     setFormOnlineDepositPaid(false);
   }
 
+  // Cambiar origen del servicio (Con turno / Sin turno)
+  function handleOriginChange(origin: ServicePaymentOrigin) {
+    setFormOrigin(origin);
+    if (origin === "walk_in") {
+      setLinkedAppointment(null);
+      setFormOnlineDepositPaid(false);
+    }
+  }
+
+  // Seleccionar turno directamente de la lista de turnos disponibles
+  function handleSelectAppointment(apt: RealAppointment) {
+    setLinkedAppointment(apt);
+    setFormDate(apt.date);
+    if (apt.time) setFormTime(apt.time);
+    if (apt.barberId) setFormBarberId(apt.barberId);
+    if (apt.name) setFormClientName(apt.name);
+    if (apt.phone || apt.email) setFormClientContact(apt.phone || apt.email || "");
+
+    const srvLower = (apt.service || "").toLowerCase();
+    if (srvLower.includes("barba") && srvLower.includes("corte")) {
+      setFormServiceName("Corte y barba");
+      setFormPriceArs(STANDARD_SERVICE_PRICES["Corte y barba"]);
+    } else if (srvLower.includes("barba")) {
+      setFormServiceName("Barba");
+      setFormPriceArs(STANDARD_SERVICE_PRICES["Barba"]);
+    } else {
+      setFormServiceName("Corte");
+      setFormPriceArs(STANDARD_SERVICE_PRICES["Corte"]);
+    }
+
+    setFormOnlineDepositPaid(Boolean(apt.depositPaid));
+  }
+
   // Cálculos económicos en vivo
   const numericDiscount = Math.max(0, Number(formDiscountArs) || 0);
   const totalCalculated = Math.max(0, formPriceArs - numericDiscount);
@@ -333,6 +390,7 @@ export function AdminPayments() {
     setFormClientContact(p.clientContact || "");
     setFormPaymentMethod(p.paymentMethod);
     setFormOnlineDepositPaid(p.onlineDepositPaid);
+    setFormOrigin(p.serviceOrigin || (p.appointmentId ? "appointment" : "walk_in"));
     if (p.appointmentId) {
       const match = appointments.find((a) => a.id === p.appointmentId);
       setLinkedAppointment(match || null);
@@ -382,6 +440,7 @@ export function AdminPayments() {
   // Reiniciar formulario
   function handleResetForm() {
     setEditingPayment(null);
+    setFormOrigin("walk_in");
     setFormBarberId(defaultBarberId);
     setFormDate(businessDateToday());
     setFormTime(businessTimeNow());
@@ -421,6 +480,8 @@ export function AdminPayments() {
         paymentMethod: formPaymentMethod,
         clientName: formClientName.trim() || undefined,
         clientContact: formClientContact.trim() || undefined,
+        appointmentId: formOrigin === "appointment" ? (linkedAppointment?.id || null) : null,
+        serviceOrigin: formOrigin,
       };
 
       setIsSubmitting(true);
@@ -450,10 +511,11 @@ export function AdminPayments() {
       paymentDate: formDate,
       paymentTime: formTime,
       paymentMethod: formPaymentMethod,
-      onlineDepositPaid: formOnlineDepositPaid,
+      onlineDepositPaid: formOrigin === "appointment" ? formOnlineDepositPaid : false,
       clientName: formClientName.trim() || undefined,
       clientContact: formClientContact.trim() || undefined,
-      appointmentId: linkedAppointment?.id || undefined,
+      appointmentId: formOrigin === "appointment" ? (linkedAppointment?.id || undefined) : undefined,
+      serviceOrigin: formOrigin,
     };
 
     const validation = validatePaymentInput(input, { appointment: linkedAppointment });
@@ -1163,10 +1225,21 @@ export function AdminPayments() {
                           )}
                         </td>
                         <td className="py-3 px-4 text-left">
-                          <div className="font-semibold text-foreground">
-                            {payment.serviceName === "Otros" && payment.serviceOtherDetail
-                              ? `${payment.serviceOtherDetail} (Otros)`
-                              : payment.serviceName}
+                          <div className="flex items-center gap-1.5 font-semibold text-foreground">
+                            <span>
+                              {payment.serviceName === "Otros" && payment.serviceOtherDetail
+                                ? `${payment.serviceOtherDetail} (Otros)`
+                                : payment.serviceName}
+                            </span>
+                            {payment.serviceOrigin === 'appointment' || payment.appointmentId ? (
+                              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary/10 text-primary border border-primary/20">
+                                Con turno
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted/60 text-muted-foreground border border-border/50">
+                                Sin turno
+                              </span>
+                            )}
                           </div>
                           {payment.discountArs > 0 && (
                             <div className="text-[10px] text-destructive">
@@ -1264,11 +1337,22 @@ export function AdminPayments() {
                     </div>
 
                     <div className="flex items-center justify-between text-xs">
-                      <span className="font-medium text-foreground">
-                        {payment.serviceName === "Otros" && payment.serviceOtherDetail
-                          ? `${payment.serviceOtherDetail} (Otros)`
-                          : payment.serviceName}
-                      </span>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-medium text-foreground">
+                          {payment.serviceName === "Otros" && payment.serviceOtherDetail
+                            ? `${payment.serviceOtherDetail} (Otros)`
+                            : payment.serviceName}
+                        </span>
+                        {payment.serviceOrigin === 'appointment' || payment.appointmentId ? (
+                          <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-medium bg-primary/10 text-primary border border-primary/20">
+                            Con turno
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-medium bg-muted/60 text-muted-foreground border border-border/50">
+                            Sin turno
+                          </span>
+                        )}
+                      </div>
                       <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground">
                         {payment.paymentMethod}
                       </span>
