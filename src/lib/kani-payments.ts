@@ -51,6 +51,8 @@ export type RecordServicePaymentInput = {
 
 export type ServicePaymentFilters = {
   date?: string; // YYYY-MM-DD or empty for all
+  startDate?: string;
+  endDate?: string;
   barberId?: string; // 'ALL' or specific barber id
   serviceName?: 'ALL' | ServicePaymentType;
   otherDetail?: string;
@@ -255,10 +257,20 @@ export async function fetchServicePayments(
     query = query.eq('barber_id', filters.barberId);
   }
 
-  // Filtro por fecha persistida
+  // Filtro por fecha persistida o rango de fechas
   if (filters.date) {
     query = query.eq('payment_date', filters.date);
-  }
+  } else if (filters.startDate && filters.endDate) {
+    if (filters.startDate === filters.endDate) {
+      query = query.eq('payment_date', filters.startDate);
+    } else {
+      query = query.gte('payment_date', filters.startDate).lte('payment_date', filters.endDate);
+    }
+  } else if (filters.startDate) {
+    query = query.gte('payment_date', filters.startDate);
+  } else if (filters.endDate) {
+    query = query.lte('payment_date', filters.endDate);
+  } 
 
   // Filtro por servicio persistido
   if (filters.serviceName && filters.serviceName !== 'ALL') {

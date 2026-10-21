@@ -11,6 +11,7 @@ export type StatisticsDatePreset =
   | 'PREVIOUS_MONTH'
   | 'PREVIOUS_YEAR'
   | 'LAST_7_DAYS'
+  | 'LAST_14_DAYS'
   | 'LAST_30_DAYS'
   | 'LAST_60_DAYS'
   | 'LAST_90_DAYS'
@@ -55,6 +56,119 @@ export function classifyAppointmentTime(timeStr: string): TimeSlotCategory {
   return 'OUTSIDE';
 }
 
+export const SPANISH_MONTH_NAMES = [
+  '',
+  'Enero',
+  'Febrero',
+  'Marzo',
+  'Abril',
+  'Mayo',
+  'Junio',
+  'Julio',
+  'Agosto',
+  'Septiembre',
+  'Octubre',
+  'Noviembre',
+  'Diciembre',
+];
+
+export const SPANISH_MONTH_ABBR = [
+  '',
+  'Ene',
+  'Feb',
+  'Mar',
+  'Abr',
+  'May',
+  'Jun',
+  'Jul',
+  'Ago',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dic',
+];
+
+export function computePeriodStartMonth(
+  currentYear: number,
+  currentMonth: number,
+  monthsCount: number,
+): { year: number; month: number } {
+  let startM = currentMonth - (monthsCount - 1);
+  let startY = currentYear;
+  while (startM < 1) {
+    startM += 12;
+    startY -= 1;
+  }
+  return { year: startY, month: startM };
+}
+
+export function computePeriodMonthRangeLabel(
+  currentYear: number,
+  currentMonth: number,
+  monthsCount: number,
+): string {
+  const { year: startY, month: startM } = computePeriodStartMonth(
+    currentYear,
+    currentMonth,
+    monthsCount,
+  );
+  const startAbbr = SPANISH_MONTH_ABBR[startM];
+  const endAbbr = SPANISH_MONTH_ABBR[currentMonth];
+
+  if (startY === currentYear) {
+    return `${startAbbr} - ${endAbbr} ${currentYear}`;
+  }
+  return `${startAbbr} ${startY} - ${endAbbr} ${currentYear}`;
+}
+
+export function getStatisticsPresetLabels(
+  todayStr: string = businessDateToday(),
+): Record<StatisticsDatePreset, string> {
+  const parts = todayStr.split('-');
+  const currentYear = parseInt(parts[0], 10) || new Date().getFullYear();
+  const currentMonth = parseInt(parts[1], 10) || new Date().getMonth() + 1; // 1-12
+
+  // 1. Mes actual: Nombre completo del mes + año
+  const thisMonthLabel = `${SPANISH_MONTH_NAMES[currentMonth]} ${currentYear}`;
+
+  // 2. Año actual: año
+  const thisYearLabel = `${currentYear}`;
+
+  // 3. Mes anterior: Nombre completo del mes anterior + año (con ajuste de año si cambia)
+  let prevMonth = currentMonth - 1;
+  let prevMonthYear = currentYear;
+  if (prevMonth < 1) {
+    prevMonth = 12;
+    prevMonthYear -= 1;
+  }
+  const prevMonthLabel = `${SPANISH_MONTH_NAMES[prevMonth]} ${prevMonthYear}`;
+
+  // 4. Año anterior: año anterior
+  const prevYearLabel = `${currentYear - 1}`;
+
+  // 5. Último trimestre (3 meses) y Último semestre (6 meses) con soporte multi-año
+  const quarterLabel = computePeriodMonthRangeLabel(currentYear, currentMonth, 3);
+  const semesterLabel = computePeriodMonthRangeLabel(currentYear, currentMonth, 6);
+
+  return {
+    TODAY: 'Hoy',
+    YESTERDAY: 'Ayer',
+    THIS_WEEK: 'Esta semana',
+    THIS_MONTH: thisMonthLabel,
+    THIS_YEAR: thisYearLabel,
+    PREVIOUS_MONTH: prevMonthLabel,
+    PREVIOUS_YEAR: prevYearLabel,
+    LAST_7_DAYS: 'Últimos 7 días',
+    LAST_14_DAYS: 'Últimos 14 días',
+    LAST_30_DAYS: 'Últimos 30 días',
+    LAST_60_DAYS: 'Últimos 60 días',
+    LAST_90_DAYS: quarterLabel,
+    LAST_180_DAYS: semesterLabel,
+    LAST_365_DAYS: 'Últimos 365 días',
+    SPECIFIC: 'Fecha específica',
+  };
+}
+
 export const statisticsPresets: StatisticsDatePreset[] = [
   'TODAY',
   'YESTERDAY',
@@ -64,30 +178,13 @@ export const statisticsPresets: StatisticsDatePreset[] = [
   'PREVIOUS_MONTH',
   'PREVIOUS_YEAR',
   'LAST_7_DAYS',
-  'LAST_30_DAYS',
-  'LAST_60_DAYS',
+  'LAST_14_DAYS',
   'LAST_90_DAYS',
   'LAST_180_DAYS',
-  'LAST_365_DAYS',
   'SPECIFIC',
 ];
 
-export const statisticsPresetLabels: Record<StatisticsDatePreset, string> = {
-  TODAY: 'Hoy',
-  YESTERDAY: 'Ayer',
-  THIS_WEEK: 'Esta semana',
-  THIS_MONTH: 'Este mes',
-  THIS_YEAR: 'Este año',
-  PREVIOUS_MONTH: 'El mes anterior',
-  PREVIOUS_YEAR: 'El año anterior',
-  LAST_7_DAYS: 'Últimos 7 días',
-  LAST_30_DAYS: 'Últimos 30 días',
-  LAST_60_DAYS: 'Últimos 60 días',
-  LAST_90_DAYS: 'Últimos 90 días',
-  LAST_180_DAYS: 'Últimos 180 días',
-  LAST_365_DAYS: 'Últimos 365 días',
-  SPECIFIC: 'Fecha específica',
-};
+export const statisticsPresetLabels: Record<StatisticsDatePreset, string> = getStatisticsPresetLabels();
 
 export type DateRange = {
   start: string;
@@ -111,20 +208,21 @@ export function dateRangeForStatisticsPreset(
     return { start: yesterday, end: yesterday };
   }
   if (preset === 'THIS_WEEK') {
+    // Desde el lunes de la semana actual hasta el momento/día actual. No incluir días futuros.
     const start = startOfBusinessWeek(today);
-    return { start, end: addCalendarDays(start, 6) };
+    return { start, end: today };
   }
   if (preset === 'THIS_MONTH') {
+    // Desde el día 1 del mes actual hasta el momento/día actual. No incluir días futuros del mismo mes.
     const start = `${yearStr}-${monthStr}-01`;
-    // Last day of current month: Day 0 of next month
-    const lastDayOfMonth = new Date(Date.UTC(currentYear, currentMonth, 0)).getUTCDate();
-    const end = `${yearStr}-${monthStr}-${String(lastDayOfMonth).padStart(2, '0')}`;
-    return { start, end };
+    return { start, end: today };
   }
   if (preset === 'THIS_YEAR') {
-    return { start: `${yearStr}-01-01`, end: `${yearStr}-12-31` };
+    // Desde el 1 de enero del año actual hasta el momento/día actual.
+    return { start: `${yearStr}-01-01`, end: today };
   }
   if (preset === 'PREVIOUS_MONTH') {
+    // Mes calendario anterior completo, desde su primer hasta su último día.
     let prevYear = currentYear;
     let prevMonth = currentMonth - 1;
     if (prevMonth < 1) {
@@ -138,11 +236,17 @@ export function dateRangeForStatisticsPreset(
     return { start, end };
   }
   if (preset === 'PREVIOUS_YEAR') {
+    // Año calendario anterior completo, del 1 de enero al 31 de diciembre.
     const prevYear = currentYear - 1;
     return { start: `${prevYear}-01-01`, end: `${prevYear}-12-31` };
   }
   if (preset === 'LAST_7_DAYS') {
+    // Hoy + los 6 días calendario anteriores.
     return { start: addCalendarDays(today, -6), end: today };
+  }
+  if (preset === 'LAST_14_DAYS') {
+    // Hoy + los 13 días calendario anteriores.
+    return { start: addCalendarDays(today, -13), end: today };
   }
   if (preset === 'LAST_30_DAYS') {
     return { start: addCalendarDays(today, -29), end: today };
@@ -151,10 +255,16 @@ export function dateRangeForStatisticsPreset(
     return { start: addCalendarDays(today, -59), end: today };
   }
   if (preset === 'LAST_90_DAYS') {
-    return { start: addCalendarDays(today, -89), end: today };
+    // Mes actual + los 2 meses calendario anteriores, desde el día 1 del primer mes hasta el momento/día actual.
+    const { year: startY, month: startM } = computePeriodStartMonth(currentYear, currentMonth, 3);
+    const start = `${startY}-${String(startM).padStart(2, '0')}-01`;
+    return { start, end: today };
   }
   if (preset === 'LAST_180_DAYS') {
-    return { start: addCalendarDays(today, -179), end: today };
+    // Mes actual + los 5 meses calendario anteriores, desde el día 1 del primer mes hasta el momento/día actual.
+    const { year: startY, month: startM } = computePeriodStartMonth(currentYear, currentMonth, 6);
+    const start = `${startY}-${String(startM).padStart(2, '0')}-01`;
+    return { start, end: today };
   }
   if (preset === 'LAST_365_DAYS') {
     return { start: addCalendarDays(today, -364), end: today };

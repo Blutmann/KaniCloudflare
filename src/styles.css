@@ -492,11 +492,11 @@ html[data-theme="light"] .booking-progress .complete > span { border-color: #702
   justify-content: center;
   position: fixed;
   right: calc(20px + env(safe-area-inset-right));
-  bottom: calc(100px + env(safe-area-inset-bottom));
+  bottom: calc(88px + env(safe-area-inset-bottom));
   z-index: 45;
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-control, 0.65rem);
   border: 1px solid color-mix(in oklch, var(--gold) 40%, var(--border));
   background: var(--surface);
   color: #25D366;
@@ -1243,9 +1243,7 @@ html[data-theme='dark'] .studio-map-card {
   }
 
   .booking-whatsapp-fab {
-    display: flex !important;
-    right: max(24px, calc((100% - 860px) / 2));
-    bottom: calc(var(--site-footer-height, 170px) + 100px);
+    display: none !important;
   }
   .booking-cta-inner {
     width: min(860px, calc(100% - 80px));
@@ -1378,8 +1376,8 @@ html[data-theme='dark'] .studio-map-card {
  .studio-note { flex-direction: column; align-items: flex-start; }
  .studio-note > div { align-items: flex-start; }
  .studio-note > a { margin-left: 45px; }
- .booking-page { padding-top: 8px; min-height: 0; padding-bottom: calc(150px + env(safe-area-inset-bottom)); }
- .booking-summary-page { padding-top: 0; padding-bottom: calc(104px + env(safe-area-inset-bottom)); }
+ .booking-page { padding-top: 8px; min-height: 0; padding-bottom: calc(76px + env(safe-area-inset-bottom)); }
+ .booking-summary-page { padding-top: 0; padding-bottom: calc(76px + env(safe-area-inset-bottom)); }
  .booking-summary-page .booking-progress { margin-bottom: 12px; }
  .booking-summary-page .section-title { font-size: 22px; }
  .booking-summary-page .review-line { gap: 8px; padding-block: 8px; }

@@ -5,15 +5,20 @@ import {
   CheckCircle2,
   Clock,
   DollarSign,
-  Filter,
   Link2,
   RotateCcw,
-  Sparkles,
   Trash2,
   User,
   UserCheck,
   X,
 } from "lucide-react";
+import {
+  dateRangeForStatisticsPreset,
+  getStatisticsPresetLabels,
+  statisticsPresets,
+  type StatisticsDatePreset,
+} from "@/lib/kani-statistics";
+import { addCalendarDays } from "@/lib/kani-mobile-appointments";
 import { useAdminStaff } from "@/lib/kani-admin-context";
 import { readRealAppointments, type RealAppointment } from "@/lib/kani-appointments";
 import {
@@ -49,10 +54,27 @@ export function AdminPayments() {
 
   // Filtros aplicados a datos persistidos
   const todayStr = useMemo(() => businessDateToday(), []);
+  const [filterPeriod, setFilterPeriod] = useState<StatisticsDatePreset>("TODAY");
   const [filterDate, setFilterDate] = useState<string>(todayStr);
   const [filterBarberId, setFilterBarberId] = useState<string>("ALL");
   const [filterServiceName, setFilterServiceName] = useState<"ALL" | ServicePaymentType>("ALL");
   const [filterOtherDetail, setFilterOtherDetail] = useState<string>("");
+
+  const presetLabels = useMemo(() => getStatisticsPresetLabels(todayStr), [todayStr]);
+
+  const handlePeriodChange = (newPreset: StatisticsDatePreset) => {
+    setFilterPeriod(newPreset);
+    if (newPreset === "TODAY") {
+      setFilterDate(todayStr);
+    } else if (newPreset === "YESTERDAY") {
+      setFilterDate(addCalendarDays(todayStr, -1));
+    }
+  };
+
+  const handleSpecificDateChange = (newDate: string) => {
+    setFilterDate(newDate);
+    setFilterPeriod("SPECIFIC");
+  };
 
   // Estado del formulario de nuevo cobro
   const defaultBarberId = isAdmin
@@ -89,15 +111,21 @@ export function AdminPayments() {
           console.warn("[AdminPayments] No se pudieron cargar turnos:", e);
           return [] as RealAppointment[];
         }),
-        fetchServicePayments(
-          {
-            date: filterDate || undefined,
+        (() => {
+          const periodRange = filterPeriod !== "SPECIFIC"
+            ? dateRangeForStatisticsPreset(filterPeriod, todayStr, filterDate)
+            : null;
+
+          const queryFilters: ServicePaymentFilters = {
+            date: filterPeriod === "SPECIFIC" ? (filterDate || undefined) : undefined,
+            startDate: periodRange ? periodRange.start : undefined,
+            endDate: periodRange ? periodRange.end : undefined,
             barberId: filterBarberId,
             serviceName: filterServiceName,
             otherDetail: filterOtherDetail,
-          },
-          staff,
-        ),
+          };
+          return fetchServicePayments(queryFilters, staff);
+        })(),
       ]);
       setAppointments(aptsData);
       setPayments(paymentsData);
@@ -113,7 +141,7 @@ export function AdminPayments() {
   // Recargar al cambiar filtros o disparar actualización general
   useEffect(() => {
     void loadData();
-  }, [filterDate, filterBarberId, filterServiceName, filterOtherDetail, staff.refreshCount]);
+  }, [filterPeriod, filterDate, filterBarberId, filterServiceName, filterOtherDetail, staff.refreshCount]);
 
   // Turnos ya pagados para evitar duplicación
   const alreadyPaidAppointmentIds = useMemo(() => {
@@ -293,14 +321,10 @@ export function AdminPayments() {
         {/* 1. Formulario de registro rápido */}
         <section
           className="p-3.5 sm:p-5 rounded-xl border border-border bg-surface shadow-xs mb-4 sm:mb-6"
-          aria-labelledby="payment-form-heading"
+          aria-label="Registrar cobro de servicio"
         >
-          <div className="flex items-center justify-between pb-2.5 sm:pb-3 mb-3 sm:mb-4 border-b border-border/60">
-            <h2 id="payment-form-heading" className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-gold" aria-hidden="true" />
-              Registrar nuevo cobro
-            </h2>
-            {linkedAppointment && (
+          {linkedAppointment && (
+            <div className="flex items-center justify-between pb-2.5 sm:pb-3 mb-3 sm:mb-4 border-b border-border/60">
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20">
                 <Link2 className="w-3.5 h-3.5" />
                 Turno #{linkedAppointment.requestNumber} vinculado
@@ -314,8 +338,8 @@ export function AdminPayments() {
                   <X className="w-3 h-3" />
                 </button>
               </span>
-            )}
-          </div>
+            </div>
+          )}
 
           <form onSubmit={handleSubmitForm} className="space-y-3 sm:space-y-4">
             <div className={`admin-payment-form-grid ${formServiceName === "Otros" ? "has-other" : ""}`}>
@@ -667,47 +691,56 @@ export function AdminPayments() {
 
         {/* 2. Filtros de historial persistido */}
         <section
-          className="p-3.5 rounded-xl border border-border bg-surface shadow-xs mb-4"
+          className="p-3.5 sm:p-4 rounded-xl border border-border bg-surface shadow-xs mb-4"
           aria-label="Filtros de registros de pagos"
         >
-          <div className="flex items-center gap-1.5 mb-2.5 text-xs font-semibold text-foreground">
-            <Filter className="w-3.5 h-3.5 text-gold" aria-hidden="true" />
-            Filtros de búsqueda
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-            {/* Filtro Fecha */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {/* 1. Filtro Período */}
             <div>
-              <label htmlFor="filter-date" className="block text-xs font-medium text-muted-foreground mb-1">
-                Fecha
+              <label htmlFor="filter-period" className="block text-xs font-medium text-muted-foreground mb-1">
+                Período
               </label>
-              <div className="flex items-center gap-1.5">
-                <input
-                  id="filter-date"
-                  type="date"
-                  value={filterDate}
-                  onChange={(e) => setFilterDate(e.target.value)}
-                  className="select-control w-full h-9 px-2.5 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20"
-                />
-                {filterDate && (
-                  <button
-                    type="button"
-                    onClick={() => setFilterDate("")}
-                    className="p-2 text-muted-foreground hover:text-foreground text-xs"
-                    title="Ver todas las fechas"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
+              <select
+                id="filter-period"
+                value={filterPeriod}
+                onChange={(e) => handlePeriodChange(e.target.value as StatisticsDatePreset)}
+                className="select-control w-full h-9 px-2.5 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20"
+              >
+                {statisticsPresets.map((preset) => (
+                  <option key={preset} value={preset}>
+                    {presetLabels[preset]}
+                  </option>
+                ))}
+              </select>
             </div>
 
-            {/* Filtro Barbero (Solo ADMIN) */}
-            {isAdmin && (
-              <div>
-                <label htmlFor="filter-barber" className="block text-xs font-medium text-muted-foreground mb-1">
-                  Barbero
-                </label>
+            {/* 2. Filtro Fecha específica */}
+            <div>
+              <label htmlFor="filter-date" className="block text-xs font-medium text-muted-foreground mb-1">
+                Fecha específica
+              </label>
+              <input
+                id="filter-date"
+                type="date"
+                value={filterDate}
+                onChange={(e) => handleSpecificDateChange(e.target.value)}
+                className={`select-control w-full h-9 px-2.5 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20 ${
+                  filterPeriod !== "SPECIFIC" ? "opacity-75" : ""
+                }`}
+                title={
+                  filterPeriod !== "SPECIFIC"
+                    ? `Filtro por período activo (${presetLabels[filterPeriod]}). Elegí una fecha para filtrar un día puntual.`
+                    : "Filtrando por fecha específica"
+                }
+              />
+            </div>
+
+            {/* 3. Filtro Barbero */}
+            <div>
+              <label htmlFor="filter-barber" className="block text-xs font-medium text-muted-foreground mb-1">
+                Barbero
+              </label>
+              {isAdmin ? (
                 <select
                   id="filter-barber"
                   value={filterBarberId}
@@ -721,10 +754,14 @@ export function AdminPayments() {
                     </option>
                   ))}
                 </select>
-              </div>
-            )}
+              ) : (
+                <div className="select-control w-full h-9 px-2.5 text-xs bg-muted/40 border border-border rounded-lg text-muted-foreground flex items-center">
+                  {staff.profile.display_name || "Mi cuenta"}
+                </div>
+              )}
+            </div>
 
-            {/* Filtro Servicio */}
+            {/* 4. Filtro Servicio */}
             <div>
               <label htmlFor="filter-service" className="block text-xs font-medium text-muted-foreground mb-1">
                 Servicio
@@ -745,7 +782,7 @@ export function AdminPayments() {
 
             {/* Filtro Detalle de Otros si aplica */}
             {filterServiceName === "Otros" && (
-              <div>
+              <div className="sm:col-span-2 lg:col-span-4">
                 <label htmlFor="filter-detail" className="block text-xs font-medium text-muted-foreground mb-1">
                   Detalle del servicio
                 </label>

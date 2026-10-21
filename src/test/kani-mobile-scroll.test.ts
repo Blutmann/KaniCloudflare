@@ -70,15 +70,13 @@ describe('Kani Barber Studio - Mobile Scroll & Viewport Navigation', () => {
     expect(rootRouteCode).toContain('viewport-fit=cover');
   });
 
-  it('6. Booking adapta el viewport al teclado y zoom sin forzar saltos arbitrarios ni usar timers', () => {
-    // No debe usar focusout ni temporizadores que salten al inicio al cambiar o abandonar campos
+  it('6. Booking preserva el scroll nativo del viewport sin listeners artificiales ni timers', () => {
+    // No debe usar focusout ni temporizadores que compitan con el scroll nativo
     expect(bookingCode).not.toContain("addEventListener('focusout'");
     expect(bookingCode).not.toMatch(/setTimeout\([^)]*window\.scrollTo/);
 
-    // Debe verificar escala de visualViewport para no interferir en gestos de zoom in / zoom out
-    expect(bookingCode).toContain('vv.scale');
-
-    // Debe limitar el ajuste a cuando scrollY excede el máximo permitido por el documento
-    expect(bookingCode).toContain('window.scrollY > maxScroll');
+    // No debe forzar scrollTo en resize de visualViewport que genere rebote y bloquee el header
+    expect(bookingCode).not.toContain("window.visualViewport.addEventListener('resize'");
+    expect(bookingCode).not.toContain('window.scrollY > maxScroll');
   });
 });

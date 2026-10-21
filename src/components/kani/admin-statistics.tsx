@@ -59,6 +59,7 @@ import {
   dateRangeForStatisticsPreset,
   filterStatisticsAppointments,
   statisticsPresets,
+  getStatisticsPresetLabels,
   statisticsPresetLabels,
   type StatisticsDatePreset,
   type TimeSlotFilter,
@@ -85,6 +86,10 @@ export function AdminStatistics() {
   const [specificDate, setSpecificDate] = useState(() => businessDateToday());
   const [timeSlotFilter, setTimeSlotFilter] = useState<TimeSlotFilter>('ALL');
   const [barberFilter, setBarberFilter] = useState('Todos');
+  const presetLabels = useMemo(
+    () => getStatisticsPresetLabels(businessToday),
+    [businessToday],
+  );
 
   useEffect(() => {
     setMounted(true);
@@ -292,7 +297,7 @@ export function AdminStatistics() {
               >
                 {presets.map((preset) => (
                   <option key={preset} value={preset}>
-                    {statisticsPresetLabels[preset]}
+                    {presetLabels[preset]}
                   </option>
                 ))}
               </select>
