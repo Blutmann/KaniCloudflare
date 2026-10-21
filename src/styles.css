@@ -204,15 +204,24 @@ html[data-theme="light"] {
     border-color: var(--color-border);
   }
 
+  html {
+    min-height: 100%;
+    height: auto;
+    overflow-x: clip;
+    -webkit-text-size-adjust: 100%;
+    background-color: var(--page-background);
+  }
+
   body {
-    position: relative;
-    isolation: isolate;
-    min-height: 100vh;
+    min-height: 100%;
+    min-height: 100dvh;
     background-color: var(--page-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
     letter-spacing: 0;
     -webkit-font-smoothing: antialiased;
+    overflow-x: clip;
+    overscroll-behavior-y: auto;
   }
 
   body::before {
@@ -225,11 +234,11 @@ html[data-theme="light"] {
   }
 
   html[data-theme="light"] body::before {
-    background: var(--page-background) url('/kani-fondo-claro-mobile-blanco.webp') center top / cover fixed no-repeat;
+    background: var(--page-background) url('/kani-fondo-claro-mobile-blanco.webp') center top / cover no-repeat;
   }
 
   html[data-theme="dark"] body::before {
-    background: var(--page-background) url('/kani-fondo-oscuro-mobile.webp') center top / cover fixed no-repeat;
+    background: var(--page-background) url('/kani-fondo-oscuro-mobile.webp') center top / cover no-repeat;
   }
 
   @media (min-width: 1024px) {
@@ -243,7 +252,7 @@ html[data-theme="light"] {
   }
 }
 
-.site-shell { display: flex; min-height: 100vh; flex-direction: column; padding-top: 98px; padding-bottom: var(--site-footer-height, 170px); }
+.site-shell { display: flex; min-height: 100vh; min-height: 100dvh; flex-direction: column; padding-top: 98px; padding-bottom: var(--site-footer-height, 170px); width: 100%; max-width: 100%; box-sizing: border-box; }
 .site-shell > main { flex: 1 0 auto; }
 .site-shell > .site-footer { margin-top: auto; }
 .site-container { width: min(1184px, calc(100% - 80px)); margin-inline: auto; }
@@ -509,7 +518,6 @@ nav.mobile-menu {
   overflow-y: auto !important;
   overscroll-behavior: contain !important;
   touch-action: pan-y !important;
-  -webkit-overflow-scrolling: touch !important;
   padding: calc(98px + 14px) max(20px, calc((100vw - 1184px) / 2)) 40px !important;
   background-color: var(--chrome) !important;
   background-image: url('/kani-menu-oscuro-desktop.webp') !important;
@@ -950,7 +958,7 @@ html[data-theme="light"] .booking-option.selected .option-icon img { filter: bri
  .hero-caption { display: none; }
 }
 @media(max-width:767px) {
- .site-shell { padding-top: 0; padding-bottom: 0; }
+ .site-shell { padding-top: 0; padding-bottom: 0; min-height: 100dvh; }
  .site-container,.site-header > div { width: calc(100% - 40px); }
  .site-footer > .site-container { width: calc(100% - 40px); padding-inline: 0; }
  .site-header { height: 72px; position: relative; }
@@ -1105,9 +1113,9 @@ html[data-theme="light"] .booking-option.selected .option-icon img { filter: bri
    line-height: 1.35;
  }
  .site-footer { display: none; }
- .booking-progress { gap: 5px; margin-top: 10px; margin-bottom: 16px; }
- .booking-progress > button { flex-direction: column; gap: 8px; padding-bottom: 13px; }
- .booking-progress small { font-size: 10px; }
+ .booking-progress { gap: 4px; margin-top: 10px; margin-bottom: 16px; width: 100%; max-width: 100%; box-sizing: border-box; }
+ .booking-progress > button { flex-direction: column; gap: 6px; padding-bottom: 12px; min-width: 0; overflow: hidden; }
+ .booking-progress small { font-size: 9.5px; white-space: normal; line-height: 1.1; word-break: break-word; }
  .booking-layout { display: block; }
  .booking-aside { display: none; }
  .booking-service-heading { margin-top: 0; }
@@ -1193,13 +1201,22 @@ html[data-theme="light"] .booking-option.selected .option-icon img { filter: bri
 }
 @media(prefers-reduced-motion:reduce) { *,*::before,*::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; } }
 
-/* Form values: slightly more compact without changing labels or placeholders. */
+/* Form values: 16px on mobile to prevent iOS Safari auto-zoom scroll-lock, 14px on desktop */
 .booking-page form input[name="name"],
 .booking-page form input[name="phone"],
 .booking-page form input[name="email"],
 .booking-page form textarea[name="notes"] {
   font-family: var(--font-sans);
-  font-size: 14px;
+  font-size: 16px;
+}
+
+@media (min-width: 768px) {
+  .booking-page form input[name="name"],
+  .booking-page form input[name="phone"],
+  .booking-page form input[name="email"],
+  .booking-page form textarea[name="notes"] {
+    font-size: 14px;
+  }
 }
 
 .booking-page form input[name="name"]::placeholder,

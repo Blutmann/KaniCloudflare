@@ -65,9 +65,11 @@ export function SiteHeader() {
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [menuOpen, onMenuOpenChange]);
+  const openPathRef = useRef(path);
   useEffect(() => {
     const body = document.body;
     if (menuOpen) {
+      openPathRef.current = path;
       const scrollY = window.scrollY;
       body.style.position = 'fixed';
       body.style.top = `-${scrollY}px`;
@@ -85,9 +87,23 @@ export function SiteHeader() {
       body.style.right = '';
       body.style.width = '';
       body.style.overflow = '';
-      if (top) window.scrollTo(0, restoreY);
+      if (top && window.location.pathname === openPathRef.current) {
+        window.scrollTo(0, restoreY);
+      }
     };
-  }, [menuOpen]);
+  }, [menuOpen, path]);
+
+  useEffect(() => {
+    const body = document.body;
+    if (!menuOpen && (body.style.position === 'fixed' || body.style.overflow === 'hidden')) {
+      body.style.position = '';
+      body.style.top = '';
+      body.style.left = '';
+      body.style.right = '';
+      body.style.width = '';
+      body.style.overflow = '';
+    }
+  }, [path, menuOpen]);
   const closeMenu = () => onMenuOpenChange(false);
   const continueBooking = (event: MouseEvent<HTMLAnchorElement>) => {
     if (path === '/reservar') {
