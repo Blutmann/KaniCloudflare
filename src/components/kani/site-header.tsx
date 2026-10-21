@@ -1,7 +1,7 @@
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router';
 import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState, type MouseEvent } from 'react';
 import { createPortal } from 'react-dom';
-import { ArrowUpRight, BarChart3, Building2, CalendarClock, Instagram, LogIn, LogOut, MapPin, Menu, Moon, Sun, Wrench, X } from 'lucide-react';
+import { ArrowUpRight, Building2, CalendarClock, Instagram, LogIn, LogOut, MapPin, Menu, Moon, Sun, Wrench, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import kaniLogo from '@/assets/kani-logo-transparent.webp';
 import { getAuthenticatedStaff, signOut, type AuthenticatedStaff } from '@/lib/kani-auth';
@@ -98,33 +98,40 @@ export function SiteHeader() {
   const sessionRole = staff?.profile.role === 'ADMIN' ? 'Administrador' : staff?.profile.role === 'BARBER' ? 'Barbero' : '';
   const mobileMenu = menuOpen ? (
     <nav className="mobile-menu" aria-label="Menú principal" aria-modal="true">
+      {/* 1. Solicitar turno — Todos */}
       <Link to="/reservar" onClick={continueBooking}><ArrowUpRight />Solicitar turno</Link>
+      {/* 2. Contacto — Todos */}
       <Link to="/estudio" onClick={closeMenu}><Building2 />Contacto</Link>
-      <a href="https://www.google.com/maps/place/KANI+BARBER+STUDIO/data=!4m2!3m1!1s0x0:0x48bcfe7b2ea7ba60" target="_blank" rel="noreferrer" onClick={closeMenu}><MapPin />Ver ubicación</a>
+      {/* 3. Ubicación — Todos */}
+      <a href="https://www.google.com/maps/place/KANI+BARBER+STUDIO/data=!4m2!3m1!1s0x0:0x48bcfe7b2ea7ba60" target="_blank" rel="noreferrer" onClick={closeMenu}><MapPin />Ubicación</a>
+      {/* 4. Instagram — Todos */}
       <a href="https://www.instagram.com/kanibarberstudio/" target="_blank" rel="noreferrer" onClick={closeMenu}><Instagram />Instagram</a>
+      {/* 5. Panel de administración — ADMIN y Barbero */}
+      {staff && (staff.profile.role === 'ADMIN' || staff.profile.role === 'BARBER') && (
+        <Link to="/admin" onClick={closeMenu}><CalendarClock />Panel de administración</Link>
+      )}
+      {/* 6. Panel de mantenimiento — Solo ADMIN */}
+      {staff?.profile.role === 'ADMIN' && (
+        <Link to="/admin/mantenimiento" onClick={closeMenu}><Wrench />Panel de mantenimiento</Link>
+      )}
+      {/* 7. Autenticación */}
       {staff ? (
-        <>
-          <Link to="/admin" onClick={closeMenu}><CalendarClock />Turnos</Link>
-          <Link to="/admin/horarios" onClick={closeMenu}><CalendarClock />Horarios</Link>
-          <Link to="/admin/estadisticas" onClick={closeMenu}><BarChart3 />Datos</Link>
-          {staff.profile.role === 'ADMIN' && <Link to="/admin/mantenimiento" onClick={closeMenu}><Wrench />Mantenimiento</Link>}
-          <div className="mobile-menu-session">
-            <div className="mobile-menu-session-identity">
-              <strong>{staff.profile.role === 'ADMIN' ? 'KANI Admin' : staff.profile.display_name}</strong>
-              <span>{sessionRole}</span>
-            </div>
-            <button
-              type="button"
-              className="mobile-menu-signout"
-              onClick={() => {
-                closeMenu();
-                void signOut().then(() => setStaff(null));
-              }}
-            >
-              <LogOut />Cerrar sesión
-            </button>
+        <div className="mobile-menu-session">
+          <div className="mobile-menu-session-identity">
+            <strong>{staff.profile.role === 'ADMIN' ? 'KANI Admin' : staff.profile.display_name}</strong>
+            <span>{sessionRole}</span>
           </div>
-        </>
+          <button
+            type="button"
+            className="mobile-menu-signout"
+            onClick={() => {
+              closeMenu();
+              void signOut().then(() => setStaff(null));
+            }}
+          >
+            <LogOut />Cerrar sesión
+          </button>
+        </div>
       ) : (
         <Link to="/admin" onClick={closeMenu}><LogIn />Iniciar sesión</Link>
       )}

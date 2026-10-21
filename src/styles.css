@@ -530,8 +530,48 @@ html[data-theme="light"] nav.mobile-menu {
 .mobile-menu-session-identity { display: flex; min-width: 0; flex-direction: column; gap: 4px; color: var(--foreground); }
 .mobile-menu-session-identity strong { overflow-wrap: anywhere; font-family: var(--font-display); font-size: 15px; font-weight: 600; }
 .mobile-menu-session-identity span { color: var(--muted-foreground); font-family: var(--font-sans); font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
-.mobile-menu-signout { display: inline-flex; min-height: 42px; flex: 0 0 auto; align-items: center; gap: 8px; padding: 0 12px; border: 1px solid var(--border); border-radius: var(--radius-control, 0.65rem); color: var(--foreground); font: inherit; font-size: 12px; white-space: nowrap; }
-.mobile-menu-signout:hover, .mobile-menu-signout:focus-visible { border-color: var(--gold); color: var(--gold); outline: none; }
+.mobile-menu-signout {
+  display: inline-flex;
+  min-height: 42px;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px;
+  border: 1px solid var(--button-primary-border, #762936);
+  border-radius: var(--radius-control, 0.65rem);
+  background-color: var(--button-primary-bg, #762936);
+  color: #FFFFFF !important;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.mobile-menu-signout svg {
+  width: 15px !important;
+  height: 15px !important;
+  color: #FFFFFF !important;
+  stroke: #FFFFFF !important;
+}
+.mobile-menu-signout:hover {
+  background-color: var(--button-primary-hover, #8A3342) !important;
+  border-color: var(--button-primary-hover, #8A3342) !important;
+  color: #FFFFFF !important;
+  outline: none;
+}
+.mobile-menu-signout:focus-visible {
+  background-color: var(--button-primary-hover, #8A3342) !important;
+  border-color: var(--button-primary-hover, #8A3342) !important;
+  color: #FFFFFF !important;
+  outline: none;
+  box-shadow: 0 0 0 2px var(--ring, #B99A5B);
+}
+.mobile-menu-signout:active {
+  background-color: var(--button-primary-active, #63212C) !important;
+  border-color: var(--button-primary-active, #63212C) !important;
+  color: #FFFFFF !important;
+}
 html[data-theme="light"] .barber-choice-list .selected,
 html[data-theme="light"] .barber-choice-list .selected:hover:not(:disabled),
 html[data-theme="light"] .barber-choice-list .selected:focus-visible,

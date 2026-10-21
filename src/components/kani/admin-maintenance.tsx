@@ -4,8 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogTitle } from '@/components/ui/dialog';
 import { cleanupAppointmentRecords, cleanupAvailabilityNotifications, cleanupStatusOptions, countAvailabilityNotifications, reauthenticateAdmin, type AvailabilityMaintenanceResult, type CleanupStatus, type MaintenanceResult } from '@/lib/kani-maintenance';
+import { useAdminStaff } from '@/lib/kani-admin-context';
 
 export function AdminMaintenance() {
+  const staff = useAdminStaff();
+  const isAdmin = staff.profile.role === 'ADMIN';
+
   const [selectedStatuses, setSelectedStatuses] = useState<CleanupStatus[]>([]);
   const [password, setPassword] = useState('');
   const [reauthOpen, setReauthOpen] = useState(false);
@@ -25,12 +29,13 @@ export function AdminMaintenance() {
   );
 
   useEffect(() => {
+    if (!isAdmin) return;
     let cancelled = false;
     void countAvailabilityNotifications()
       .then(count => { if (!cancelled) setAvailabilityCount(count); })
       .catch(cause => { if (!cancelled) setAvailabilityError(cause instanceof Error ? cause.message : 'No se pudo consultar el historial de disponibilidad.'); });
     return () => { cancelled = true; };
-  }, []);
+  }, [isAdmin]);
 
   function toggleStatus(status: CleanupStatus) {
     setResult(null);
@@ -80,6 +85,20 @@ export function AdminMaintenance() {
     } finally {
       setAvailabilityBusy(false);
     }
+  }
+
+  if (!isAdmin) {
+    return (
+      <section className="py-9" aria-labelledby="maintenance-unauthorized">
+        <div className="max-w-xl">
+          <span className="eyebrow">ACCESO RESTRINGIDO</span>
+          <h2 id="maintenance-unauthorized" className="mt-2 text-2xl font-semibold">Solo administradores</h2>
+          <p className="mt-3 text-sm text-muted-foreground">
+            El panel de mantenimiento está reservado exclusivamente para cuentas con rol ADMIN.
+          </p>
+        </div>
+      </section>
+    );
   }
 
   return <section className="py-9" aria-labelledby="maintenance-title">

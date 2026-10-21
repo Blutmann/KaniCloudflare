@@ -44,7 +44,7 @@ export function AdminAccess({ onAuthenticated }: { onAuthenticated: () => void }
           </label>
           {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
           <Button type="submit" className="admin-login-submit h-12 w-full" disabled={busy}>
-            {busy ? 'VERIFICANDO…' : 'INGRESAR'}
+            {busy ? 'VERIFICANDO…' : 'Iniciar sesión'}
             <ArrowRight />
           </Button>
         </form>
