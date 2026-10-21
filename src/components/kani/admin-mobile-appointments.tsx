@@ -543,7 +543,7 @@ export function AdminMobileAppointments() {
               ))}
             </select>
           </div>
-          <div>
+          <div className="min-w-0">
             <label htmlFor="mobile-date-filter" className="block text-xs font-medium text-muted-foreground mb-1.5">
               Fecha
             </label>
@@ -553,7 +553,7 @@ export function AdminMobileAppointments() {
               value={specificDate}
               onChange={event => selectSpecificDate(event.target.value)}
               aria-label="Elegir fecha específica"
-              className="select-control w-full h-[44px] min-h-[44px] px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20 leading-normal text-left"
+              className="select-control w-full h-[44px] min-h-[44px] px-2 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20 leading-normal text-left min-w-0 max-w-full"
             />
           </div>
           <div>
@@ -1315,7 +1315,7 @@ export function AdminMobileAppointments() {
                   required
                   aria-invalid={Boolean(showFieldError('date'))}
                   className={cn(
-                    "bg-background h-10 text-xs sm:text-sm",
+                    "bg-background h-10 text-xs sm:text-sm min-w-0 max-w-full px-2",
                     showFieldError('date') && "border-destructive focus-visible:ring-destructive"
                   )}
                 />
@@ -1343,7 +1343,7 @@ export function AdminMobileAppointments() {
                   required
                   aria-invalid={Boolean(showFieldError('time'))}
                   className={cn(
-                    "bg-background h-10 text-xs sm:text-sm px-2 sm:px-3 text-center sm:text-left",
+                    "bg-background h-10 text-xs sm:text-sm px-2 text-left min-w-0 max-w-full",
                     showFieldError('time') && "border-destructive focus-visible:ring-destructive"
                   )}
                 />

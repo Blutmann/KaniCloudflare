@@ -323,7 +323,7 @@ export function AdminScheduleManager() {
                 ))}
               </select>
             </div>
-            <div>
+            <div className="min-w-0">
               <label htmlFor="schedule-specific-date" className="block text-xs font-medium text-muted-foreground mb-1.5">
                 Fecha
               </label>
@@ -333,7 +333,7 @@ export function AdminScheduleManager() {
                 min={businessToday}
                 value={specificDate}
                 onChange={(event) => selectSpecificDate(event.target.value)}
-                className="select-control w-full h-[44px] min-h-[44px] px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20 leading-normal text-left"
+                className="select-control w-full h-[44px] min-h-[44px] px-2 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20 leading-normal text-left min-w-0 max-w-full"
               />
             </div>
             <div>
@@ -554,7 +554,7 @@ export function AdminScheduleManager() {
                 </select>
               </div>
             )}
-            <div>
+            <div className="min-w-0">
               <label htmlFor="schedule-manual-date">Fecha</label>
               <Input
                 id="schedule-manual-date"
@@ -562,6 +562,7 @@ export function AdminScheduleManager() {
                 min={businessToday}
                 value={manualDate}
                 onChange={(event) => setManualDate(event.target.value)}
+                className="min-w-0 max-w-full px-2"
               />
             </div>
             <div>

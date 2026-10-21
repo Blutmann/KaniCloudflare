@@ -530,7 +530,8 @@ html[data-theme='light'] .booking-time-slot.selected:active { border-color: var(
 .manual-dialog-footer > button { min-width: 0; }
 input[type=date], input[type=time] { color-scheme: dark; text-align: left; }
 html[data-theme="light"] input[type=date], html[data-theme="light"] input[type=time] { color-scheme: light; }
-input[type=date].select-control {
+input[type=date].select-control,
+input[type=time].select-control {
   min-height: 44px;
   height: 44px;
   line-height: normal;
@@ -541,14 +542,26 @@ input[type=date].select-control {
   padding: 0 12px;
 }
 input[type=date]::-webkit-datetime-edit,
-input[type=date]::-webkit-datetime-edit-fields-wrapper {
+input[type=date]::-webkit-datetime-edit-fields-wrapper,
+input[type=time]::-webkit-datetime-edit,
+input[type=time]::-webkit-datetime-edit-fields-wrapper {
   text-align: left;
   padding: 0;
+  min-width: 0;
 }
-input[type=date]::-webkit-date-and-time-value {
+input[type=date]::-webkit-date-and-time-value,
+input[type=time]::-webkit-date-and-time-value {
   text-align: left !important;
   min-height: 1.5em;
   margin: 0;
+  min-width: 0;
+}
+input[type=date]::-webkit-calendar-picker-indicator,
+input[type=time]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  margin: 0;
+  padding: 0;
+  opacity: 0.75;
 }
 .field-control { position: relative; display: block; min-width: 0; }
 .field-control > input, .field-control > textarea { padding-right: 44px; border-radius: var(--radius-control, 0.65rem); }
@@ -3463,6 +3476,111 @@ html[data-theme='dark'] .admin-section-nav-link.is-active:active {
       "descuento descuento descuento descuento . . . . . . . ."
       "cliente cliente cliente contacto contacto contacto metodo metodo metodo sena sena sena";
   }
+}
+
+/* ==============================================================================
+   KANI Admin - Reglas compartidas de dimensionamiento para controles de Fecha/Horario
+   Garantiza que ningún control desborde su columna o se superponga verticalmente en mobile.
+   Scoped exclusivamente al Panel de Administración (preserva /reservar intacto).
+   ============================================================================== */
+
+/* 1. Wrappers y celdas de grilla en formularios y filtros administrativos */
+.admin-payment-form-grid > div,
+.payment-field-fecha,
+.payment-field-horario,
+.payment-field-barbero,
+.payment-field-servicio,
+.payment-field-detalle,
+.payment-field-importe,
+.payment-field-descuento,
+.payment-field-metodo,
+.payment-field-sena,
+.payment-field-cliente,
+.payment-field-contacto,
+.manual-appointment-grid > div,
+.manual-grid-field,
+.admin-mobile-filters > div,
+.admin-mobile-filter-field,
+.admin-schedule-filters > div,
+.admin-schedule-control {
+  min-width: 0 !important;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* 2. Todos los controles de Fecha y Horario en el Panel de Administración */
+.admin-page input[type="date"],
+.admin-page input[type="time"],
+.admin-schedule-page input[type="date"],
+.admin-schedule-page input[type="time"],
+.admin-payment-form-grid input[type="date"],
+.admin-payment-form-grid input[type="time"],
+.manual-appointment-grid input[type="date"],
+.manual-appointment-grid input[type="time"],
+.admin-mobile-filters input[type="date"],
+.admin-schedule-filters input[type="date"] {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+  text-align: left;
+  line-height: normal;
+  padding-left: 0.5rem !important;
+  padding-right: 0.5rem !important;
+  overflow: visible;
+}
+
+/* 3. Normalización de pseudo-elementos nativos WebKit/Safari/Chromium en Admin */
+.admin-page input[type="date"]::-webkit-datetime-edit,
+.admin-page input[type="date"]::-webkit-datetime-edit-fields-wrapper,
+.admin-page input[type="time"]::-webkit-datetime-edit,
+.admin-page input[type="time"]::-webkit-datetime-edit-fields-wrapper,
+.admin-schedule-page input[type="date"]::-webkit-datetime-edit,
+.admin-schedule-page input[type="date"]::-webkit-datetime-edit-fields-wrapper,
+.admin-schedule-page input[type="time"]::-webkit-datetime-edit,
+.admin-schedule-page input[type="time"]::-webkit-datetime-edit-fields-wrapper {
+  text-align: left;
+  padding: 0;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.admin-page input[type="date"]::-webkit-date-and-time-value,
+.admin-page input[type="time"]::-webkit-date-and-time-value,
+.admin-schedule-page input[type="date"]::-webkit-date-and-time-value,
+.admin-schedule-page input[type="time"]::-webkit-date-and-time-value {
+  text-align: left !important;
+  min-height: 1.5em;
+  margin: 0;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.admin-page input[type="date"]::-webkit-calendar-picker-indicator,
+.admin-page input[type="time"]::-webkit-calendar-picker-indicator,
+.admin-schedule-page input[type="date"]::-webkit-calendar-picker-indicator,
+.admin-schedule-page input[type="time"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  margin: 0;
+  padding: 0;
+  opacity: 0.75;
+  flex-shrink: 0;
+}
+
+/* 4. Altura homogénea para la grilla de Registrar servicio en Admin Pagos */
+.admin-payment-form-grid {
+  align-items: start;
+}
+
+.admin-payment-form-grid input,
+.admin-payment-form-grid select,
+.admin-payment-form-grid output.select-control {
+  height: 2.25rem !important;
+  min-height: 2.25rem !important;
+  max-height: 2.25rem !important;
+  line-height: normal;
 }
 
 

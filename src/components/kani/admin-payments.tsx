@@ -671,7 +671,7 @@ export function AdminPayments() {
           <form onSubmit={handleSubmitForm} className="space-y-3">
             <div className={`admin-payment-form-grid ${formServiceName === "Otros" ? "has-other" : ""}`}>
               {/* Fecha */}
-              <div className="payment-field-fecha">
+              <div className="payment-field-fecha min-w-0">
                 <label htmlFor="form-date" className="block text-xs font-medium text-muted-foreground mb-1">
                   Fecha *
                 </label>
@@ -680,7 +680,7 @@ export function AdminPayments() {
                   type="date"
                   value={formDate}
                   onChange={(e) => setFormDate(e.target.value)}
-                  className={`select-control w-full h-9 px-2.5 text-xs bg-background rounded-lg transition-colors focus:outline-none ${
+                  className={`select-control w-full h-9 px-2 text-xs bg-background rounded-lg transition-colors focus:outline-none min-w-0 max-w-full ${
                     isDateValid
                       ? "border border-emerald-500/60 focus:border-emerald-500 text-foreground"
                       : "border border-border focus:ring-1 focus:ring-foreground/20 text-foreground"
@@ -690,7 +690,7 @@ export function AdminPayments() {
               </div>
 
               {/* Horario */}
-              <div className="payment-field-horario">
+              <div className="payment-field-horario min-w-0">
                 <label htmlFor="form-time" className="block text-xs font-medium text-muted-foreground mb-1">
                   Horario *
                 </label>
@@ -699,7 +699,7 @@ export function AdminPayments() {
                   type="time"
                   value={formTime}
                   onChange={(e) => setFormTime(e.target.value)}
-                  className={`select-control w-full h-9 px-2.5 text-xs bg-background rounded-lg transition-colors focus:outline-none text-right ${
+                  className={`select-control w-full h-9 px-2 text-xs bg-background rounded-lg transition-colors focus:outline-none min-w-0 max-w-full ${
                     isTimeValid
                       ? "border border-emerald-500/60 focus:border-emerald-500 text-foreground"
                       : "border border-border focus:ring-1 focus:ring-foreground/20 text-foreground"
@@ -709,7 +709,7 @@ export function AdminPayments() {
               </div>
 
               {/* Barbero */}
-              <div className="payment-field-barbero">
+              <div className="payment-field-barbero min-w-0">
                 {isAdmin ? (
                   <>
                     <label htmlFor="form-barber" className="block text-xs font-medium text-muted-foreground mb-1">
@@ -719,7 +719,7 @@ export function AdminPayments() {
                       id="form-barber"
                       value={formBarberId}
                       onChange={(e) => setFormBarberId(e.target.value)}
-                      className={`select-control w-full h-9 px-2.5 text-xs bg-background rounded-lg transition-colors focus:outline-none ${
+                      className={`select-control w-full h-9 px-2 text-xs bg-background rounded-lg transition-colors focus:outline-none min-w-0 max-w-full ${
                         isBarberValid
                           ? "border border-emerald-500/60 focus:border-emerald-500 text-foreground"
                           : "border border-border focus:ring-1 focus:ring-foreground/20 text-foreground"
@@ -738,7 +738,7 @@ export function AdminPayments() {
                     <label className="block text-xs font-medium text-muted-foreground mb-1">
                       Barbero
                     </label>
-                    <output className="select-control w-full h-9 px-2.5 text-xs bg-muted/40 border border-emerald-500/60 rounded-lg text-foreground flex items-center">
+                    <output className="select-control w-full h-9 px-2 text-xs bg-muted/40 border border-emerald-500/60 rounded-lg text-foreground flex items-center min-w-0 max-w-full">
                       {staff.profile.display_name}
                     </output>
                   </>
@@ -746,7 +746,7 @@ export function AdminPayments() {
               </div>
 
               {/* Servicio */}
-              <div className="payment-field-servicio">
+              <div className="payment-field-servicio min-w-0">
                 <label htmlFor="form-service" className="block text-xs font-medium text-muted-foreground mb-1">
                   Servicio *
                 </label>
@@ -754,7 +754,7 @@ export function AdminPayments() {
                   id="form-service"
                   value={formServiceName}
                   onChange={(e) => handleServiceChange(e.target.value as ServicePaymentType)}
-                  className={`select-control w-full h-9 px-2.5 text-xs bg-background rounded-lg transition-colors focus:outline-none font-medium ${
+                  className={`select-control w-full h-9 px-2 text-xs bg-background rounded-lg transition-colors focus:outline-none font-medium min-w-0 max-w-full ${
                     isServiceValid
                       ? "border border-emerald-500/60 focus:border-emerald-500 text-foreground"
                       : "border border-border focus:ring-1 focus:ring-foreground/20 text-foreground"
@@ -769,7 +769,7 @@ export function AdminPayments() {
 
               {/* Detalle del servicio (solo si Otros) */}
               {formServiceName === "Otros" && (
-                <div className="payment-field-detalle">
+                <div className="payment-field-detalle min-w-0">
                   <label htmlFor="form-other-detail" className="block text-xs font-medium text-muted-foreground mb-1">
                     Detalle del servicio *
                   </label>
@@ -779,7 +779,7 @@ export function AdminPayments() {
                     placeholder="Ej: Lavado, Color, Peinado..."
                     value={formOtherDetail}
                     onChange={(e) => setFormOtherDetail(e.target.value)}
-                    className={`select-control w-full h-9 px-2.5 text-xs bg-background rounded-lg transition-colors focus:outline-none ${
+                    className={`select-control w-full h-9 px-2 text-xs bg-background rounded-lg transition-colors focus:outline-none min-w-0 max-w-full ${
                       formOtherDetail.trim().length > 0
                         ? "border border-emerald-500/60 focus:border-emerald-500 text-foreground"
                         : "border border-border focus:ring-1 focus:ring-foreground/20 text-foreground"
@@ -790,7 +790,7 @@ export function AdminPayments() {
               )}
 
               {/* Importe */}
-              <div className="payment-field-importe">
+              <div className="payment-field-importe min-w-0">
                 <label htmlFor="form-price" className="block text-xs font-medium text-muted-foreground mb-1">
                   Importe *
                 </label>
@@ -803,7 +803,7 @@ export function AdminPayments() {
                     placeholder="0"
                     value={formPriceArs || ""}
                     onChange={(e) => setFormPriceArs(Math.max(0, parseInt(e.target.value, 10) || 0))}
-                    className={`select-control w-full h-9 px-2.5 text-xs bg-background rounded-lg transition-colors focus:outline-none text-right font-medium ${
+                    className={`select-control w-full h-9 px-2 text-xs bg-background rounded-lg transition-colors focus:outline-none text-right font-medium min-w-0 max-w-full ${
                       isPriceValid
                         ? "border border-emerald-500/60 focus:border-emerald-500 text-foreground"
                         : "border border-border focus:ring-1 focus:ring-foreground/20 text-foreground"
@@ -813,7 +813,7 @@ export function AdminPayments() {
                 ) : (
                   <output
                     id="form-price"
-                    className={`select-control w-full h-9 px-2.5 text-xs bg-muted/30 rounded-lg text-foreground font-semibold flex items-center justify-end text-right ${
+                    className={`select-control w-full h-9 px-2 text-xs bg-muted/30 rounded-lg text-foreground font-semibold flex items-center justify-end text-right min-w-0 max-w-full ${
                       isPriceValid
                         ? "border border-emerald-500/60"
                         : "border border-border"
@@ -825,7 +825,7 @@ export function AdminPayments() {
               </div>
 
               {/* Descuento (opcional) */}
-              <div className="payment-field-descuento">
+              <div className="payment-field-descuento min-w-0">
                 <label htmlFor="form-discount" className="block text-xs font-medium text-muted-foreground mb-1">
                   Descuento
                 </label>
@@ -840,12 +840,12 @@ export function AdminPayments() {
                     const val = e.target.value;
                     setFormDiscountArs(val === "" ? "" : Math.max(0, parseInt(val, 10) || 0));
                   }}
-                  className="select-control w-full h-9 px-2.5 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20 text-right font-medium"
+                  className="select-control w-full h-9 px-2 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20 text-right font-medium min-w-0 max-w-full"
                 />
               </div>
 
               {/* Método de pago */}
-              <div className="payment-field-metodo">
+              <div className="payment-field-metodo min-w-0">
                 <label htmlFor="form-payment-method" className="block text-xs font-medium text-muted-foreground mb-1">
                   Método de pago *
                 </label>
@@ -853,7 +853,7 @@ export function AdminPayments() {
                   id="form-payment-method"
                   value={formPaymentMethod}
                   onChange={(e) => setFormPaymentMethod(e.target.value as PaymentMethod)}
-                  className={`select-control w-full h-9 px-2.5 text-xs bg-background rounded-lg transition-colors focus:outline-none font-medium ${
+                  className={`select-control w-full h-9 px-2 text-xs bg-background rounded-lg transition-colors focus:outline-none font-medium min-w-0 max-w-full ${
                     isMethodValid
                       ? "border border-emerald-500/60 focus:border-emerald-500 text-foreground"
                       : "border border-border focus:ring-1 focus:ring-foreground/20 text-foreground"
@@ -865,7 +865,7 @@ export function AdminPayments() {
               </div>
 
               {/* Seña abonada */}
-              <div className="payment-field-sena">
+              <div className="payment-field-sena min-w-0">
                 <label htmlFor="form-online-deposit" className="block text-xs font-medium text-muted-foreground mb-1">
                   Seña abonada
                 </label>
@@ -883,7 +883,7 @@ export function AdminPayments() {
                     }
                     setFormOnlineDepositPaid(isYes);
                   }}
-                  className={`select-control w-full h-9 px-2.5 text-xs bg-background rounded-lg transition-colors focus:outline-none ${
+                  className={`select-control w-full h-9 px-2 text-xs bg-background rounded-lg transition-colors focus:outline-none min-w-0 max-w-full ${
                     formOnlineDepositPaid
                       ? "border border-emerald-500/60 focus:border-emerald-500 text-foreground font-medium"
                       : "border border-border focus:ring-1 focus:ring-foreground/20 text-foreground"
@@ -895,7 +895,7 @@ export function AdminPayments() {
               </div>
 
               {/* Cliente (opcional) */}
-              <div className="payment-field-cliente">
+              <div className="payment-field-cliente min-w-0">
                 <label htmlFor="form-client-name" className="block text-xs font-medium text-muted-foreground mb-1">
                   Cliente (opcional)
                 </label>
@@ -905,7 +905,7 @@ export function AdminPayments() {
                   placeholder="Nombre y apellido"
                   value={formClientName}
                   onChange={(e) => setFormClientName(e.target.value)}
-                  className={`select-control w-full h-9 px-2.5 text-xs bg-background rounded-lg transition-colors focus:outline-none text-foreground ${
+                  className={`select-control w-full h-9 px-2 text-xs bg-background rounded-lg transition-colors focus:outline-none text-foreground min-w-0 max-w-full ${
                     formClientName.trim().length > 0
                       ? "border border-emerald-500/60 focus:border-emerald-500"
                       : "border border-border focus:ring-1 focus:ring-foreground/20"
@@ -914,7 +914,7 @@ export function AdminPayments() {
               </div>
 
               {/* Contacto (opcional) */}
-              <div className="payment-field-contacto">
+              <div className="payment-field-contacto min-w-0">
                 <label htmlFor="form-client-contact" className="block text-xs font-medium text-muted-foreground mb-1">
                   Contacto (opcional)
                 </label>
@@ -924,7 +924,7 @@ export function AdminPayments() {
                   placeholder="Celular o email"
                   value={formClientContact}
                   onChange={(e) => setFormClientContact(e.target.value)}
-                  className={`select-control w-full h-9 px-2.5 text-xs bg-background rounded-lg transition-colors focus:outline-none text-foreground ${
+                  className={`select-control w-full h-9 px-2 text-xs bg-background rounded-lg transition-colors focus:outline-none text-foreground min-w-0 max-w-full ${
                     formClientContact.trim().length > 0
                       ? "border border-emerald-500/60 focus:border-emerald-500"
                       : "border border-border focus:ring-1 focus:ring-foreground/20"
@@ -1018,7 +1018,7 @@ export function AdminPayments() {
             </div>
 
             {/* 2. Filtro Fecha específica */}
-            <div>
+            <div className="min-w-0">
               <label htmlFor="filter-date" className="block text-xs font-medium text-muted-foreground mb-1">
                 Fecha específica
               </label>
@@ -1027,7 +1027,7 @@ export function AdminPayments() {
                 type="date"
                 value={filterDate}
                 onChange={(e) => handleSpecificDateChange(e.target.value)}
-                className={`select-control w-full h-9 px-2.5 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20 ${
+                className={`select-control w-full h-9 px-2 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20 min-w-0 max-w-full ${
                   filterPeriod !== "SPECIFIC" ? "opacity-75" : ""
                 }`}
                 title={
