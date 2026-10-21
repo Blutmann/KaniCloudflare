@@ -326,8 +326,8 @@ html[data-theme="light"] .booking-progress .complete > span { border-color: #702
 .booking-page .field-label { font-family: var(--font-sans); }
 .admin-page, .admin-page h1, .admin-page h2, .admin-page h3, .admin-page button, .admin-page input, .admin-page select { font-family: var(--font-sans); }
 .booking-page .section-title { margin-bottom: 12px; }
-.booking-deposit-notice { display: flex; width: 100%; box-sizing: border-box; align-items: flex-start; gap: 9px; margin: 20px 0 0; padding: 12px 14px; border: 1px solid color-mix(in srgb, var(--gold) 28%, var(--border)); border-radius: var(--radius-control, 0.65rem); background: var(--card); color: var(--muted-foreground); font-size: 12px; line-height: 1.5; }
-.booking-deposit-notice svg { flex: 0 0 auto; margin-top: 1px; color: var(--gold); }
+.booking-deposit-notice { display: flex; width: 100%; box-sizing: border-box; align-items: flex-start; gap: 9px; margin: 20px 0 0; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius-control, 0.65rem); background: var(--surface); box-shadow: 0 10px 26px rgb(0 0 0 / 0.14); color: var(--primary); font-size: 12px; line-height: 1.5; }
+.booking-deposit-notice svg { flex: 0 0 auto; margin-top: 1px; color: inherit; }
 .booking-aside { margin-top: 9px; padding: 27px 0 27px 28px; border-left: 1px solid var(--border); }
 .booking-defer-option { width: 100%; height: 104px; min-height: 104px; display: flex; align-items: center; gap: 18px; padding: 20px 22px; border-radius: var(--radius-control, 0.65rem); background: var(--surface); box-shadow: 0 10px 26px rgb(0 0 0 / 0.14); text-align: left; white-space: normal; }
 .booking-defer-option.selected,
@@ -1065,8 +1065,7 @@ html[data-theme='dark'] .studio-map-card {
     display: flex;
     flex-direction: column;
     gap: 12px;
-    max-width: 860px;
-    margin-inline: auto;
+    width: 100%;
   }
 
   .booking-summary-card {
@@ -1422,6 +1421,12 @@ html[data-theme='dark'] .studio-map-card {
    background: var(--surface);
    padding: 10px 14px;
    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+ }
+ .summary-pending-notice {
+   padding: 8px 12px;
+   gap: 8px;
+   font-size: 12px;
+   line-height: 1.35;
  }
  .summary-client-name {
    font-family: var(--font-sans);
@@ -3020,6 +3025,11 @@ html[data-theme='light'] .booking-deposit-notice {
   background: #ffffff29 !important;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  border-color: var(--border) !important;
+  color: #702B3A !important;
+}
+html[data-theme='light'] .booking-deposit-notice svg {
+  color: #702B3A !important;
 }
 
 html[data-theme='light'] .confirmation-details {
@@ -3306,6 +3316,11 @@ html[data-theme='dark'] .booking-deposit-notice {
   background: #1818189c !important;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  border-color: var(--border) !important;
+  color: color-mix(in srgb, var(--primary) 70%, #FFFFFF) !important;
+}
+html[data-theme='dark'] .booking-deposit-notice svg {
+  color: color-mix(in srgb, var(--primary) 70%, #FFFFFF) !important;
 }
 
 html[data-theme='dark'] .confirmation-details {
@@ -3465,12 +3480,34 @@ html[data-theme='dark'] .admin-section-nav-link.is-active:active {
 }
 
 
-/* Aviso de solicitud pendiente en Bordó */
+/* Aviso de solicitud pendiente en container propio — Bordó */
+.summary-pending-notice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 18px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--primary);
+}
+.summary-pending-notice svg {
+  flex-shrink: 0;
+  color: inherit;
+}
+.summary-pending-notice p {
+  margin: 0;
+}
 .summary-card-notice {
   color: var(--primary);
 }
 .summary-card-notice svg {
   color: inherit;
+}
+html[data-theme='light'] .summary-pending-notice {
+  color: #702B3A !important;
+}
+html[data-theme='light'] .summary-pending-notice svg {
+  color: #702B3A !important;
 }
 html[data-theme='light'] .summary-card-notice {
   color: #702B3A !important;
@@ -3478,9 +3515,24 @@ html[data-theme='light'] .summary-card-notice {
 html[data-theme='light'] .summary-card-notice svg {
   color: #702B3A !important;
 }
+html[data-theme='dark'] .summary-pending-notice {
+  color: color-mix(in srgb, var(--primary) 70%, #FFFFFF) !important;
+}
+html[data-theme='dark'] .summary-pending-notice svg {
+  color: color-mix(in srgb, var(--primary) 70%, #FFFFFF) !important;
+}
 html[data-theme='dark'] .summary-card-notice {
   color: color-mix(in srgb, var(--primary) 70%, #FFFFFF) !important;
 }
 html[data-theme='dark'] .summary-card-notice svg {
   color: color-mix(in srgb, var(--primary) 70%, #FFFFFF) !important;
+}
+
+@media (max-width: 767px) {
+  .summary-pending-notice {
+    padding: 8px 12px !important;
+    gap: 8px;
+    font-size: 12px;
+    line-height: 1.35;
+  }
 }

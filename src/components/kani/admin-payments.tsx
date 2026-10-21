@@ -1,15 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
+  BarChart2,
   Check,
   CheckCircle2,
   Clock,
   DollarSign,
   Link2,
+  Receipt,
   RotateCcw,
+  Scissors,
   Trash2,
   User,
   UserCheck,
+  Wallet,
   X,
 } from "lucide-react";
 import {
@@ -146,6 +150,85 @@ export function AdminPayments() {
   // Turnos ya pagados para evitar duplicación
   const alreadyPaidAppointmentIds = useMemo(() => {
     return new Set(payments.map((p) => p.appointmentId).filter(Boolean) as string[]);
+  }, [payments]);
+
+  // Estadísticas calculadas en tiempo real sobre los cobros filtrados
+  const paymentStats = useMemo(() => {
+    const totalCollected = payments.reduce((sum, p) => sum + (p.finalAmountArs || 0), 0);
+    const servicesCount = payments.length;
+    const averageTicket = servicesCount > 0 ? Math.round(totalCollected / servicesCount) : 0;
+
+    // 1. Desglose por método de pago (valores reales en service_payments)
+    const byMethodMap = new Map<string, { total: number; count: number }>();
+    byMethodMap.set("Efectivo", { total: 0, count: 0 });
+    byMethodMap.set("Transferencia", { total: 0, count: 0 });
+
+    for (const p of payments) {
+      const method = p.paymentMethod || "Otros";
+      const current = byMethodMap.get(method) || { total: 0, count: 0 };
+      current.total += (p.finalAmountArs || 0);
+      current.count += 1;
+      byMethodMap.set(method, current);
+    }
+
+    const byMethod = Array.from(byMethodMap.entries())
+      .filter(([_, data]) => servicesCount === 0 || data.count > 0 || data.total > 0)
+      .map(([method, data]) => ({
+        method,
+        total: data.total,
+        count: data.count,
+        percentage: totalCollected > 0 ? (data.total / totalCollected) * 100 : 0,
+      }))
+      .sort((a, b) => b.total - a.total);
+
+    // 2. Desglose por servicio
+    const byServiceMap = new Map<string, { total: number; count: number }>();
+    for (const p of payments) {
+      const sName = p.serviceName === "Otros" && p.serviceOtherDetail
+        ? `${p.serviceOtherDetail} (Otros)`
+        : p.serviceName;
+      const current = byServiceMap.get(sName) || { total: 0, count: 0 };
+      current.total += (p.finalAmountArs || 0);
+      current.count += 1;
+      byServiceMap.set(sName, current);
+    }
+
+    const byService = Array.from(byServiceMap.entries())
+      .map(([service, data]) => ({
+        service,
+        total: data.total,
+        count: data.count,
+        percentage: totalCollected > 0 ? (data.total / totalCollected) * 100 : 0,
+      }))
+      .sort((a, b) => b.total - a.total);
+
+    // 3. Desglose por barbero
+    const byBarberMap = new Map<string, { total: number; count: number }>();
+    for (const p of payments) {
+      const bName = p.barberName || "Barbero";
+      const current = byBarberMap.get(bName) || { total: 0, count: 0 };
+      current.total += (p.finalAmountArs || 0);
+      current.count += 1;
+      byBarberMap.set(bName, current);
+    }
+
+    const byBarber = Array.from(byBarberMap.entries())
+      .map(([barber, data]) => ({
+        barber,
+        total: data.total,
+        count: data.count,
+        percentage: totalCollected > 0 ? (data.total / totalCollected) * 100 : 0,
+      }))
+      .sort((a, b) => b.total - a.total);
+
+    return {
+      totalCollected,
+      servicesCount,
+      averageTicket,
+      byMethod,
+      byService,
+      byBarber,
+    };
   }, [payments]);
 
   // Turnos candidatos para vinculación
@@ -817,22 +900,23 @@ export function AdminPayments() {
             </div>
           ) : (
             <>
-              {/* Vista desktop: tabla */}
+              {/* Vista desktop: tabla con 6 columnas independientes */}
               <div className="hidden md:block overflow-x-auto">
                 <table className="w-full text-left text-xs text-foreground">
                   <thead className="bg-muted/40 border-b border-border font-medium text-muted-foreground">
                     <tr>
-                      <th scope="col" className="py-2.5 px-4 font-medium">Hora</th>
-                      <th scope="col" className="py-2.5 px-4 font-medium">Servicio</th>
-                      {isAdmin && <th scope="col" className="py-2.5 px-4 font-medium">Barbero</th>}
-                      <th scope="col" className="py-2.5 px-4 font-medium">Cliente</th>
+                      <th scope="col" className="py-2.5 px-4 font-medium text-left">Hora</th>
+                      <th scope="col" className="py-2.5 px-4 font-medium text-left">Servicio</th>
+                      <th scope="col" className="py-2.5 px-4 font-medium text-left">Barbero</th>
+                      <th scope="col" className="py-2.5 px-4 font-medium text-left">Cliente</th>
                       <th scope="col" className="py-2.5 px-4 font-medium text-right">Importe</th>
+                      <th scope="col" className="py-2.5 px-4 font-medium text-left">Método de pago</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/60">
                     {payments.map((payment) => (
                       <tr key={payment.id} className="hover:bg-muted/20 transition-colors">
-                        <td className="py-3 px-4 font-medium whitespace-nowrap">
+                        <td className="py-3 px-4 font-medium whitespace-nowrap text-left">
                           {payment.paymentTime} hs
                           {payment.paymentDate !== todayStr && (
                             <span className="block text-[10px] text-muted-foreground font-normal">
@@ -840,7 +924,7 @@ export function AdminPayments() {
                             </span>
                           )}
                         </td>
-                        <td className="py-3 px-4">
+                        <td className="py-3 px-4 text-left">
                           <div className="font-semibold text-foreground">
                             {payment.serviceName === "Otros" && payment.serviceOtherDetail
                               ? `${payment.serviceOtherDetail} (Otros)`
@@ -852,16 +936,14 @@ export function AdminPayments() {
                             </div>
                           )}
                         </td>
-                        {isAdmin && (
-                          <td className="py-3 px-4 font-medium text-foreground">
-                            {payment.barberName}
-                          </td>
-                        )}
-                        <td className="py-3 px-4 text-muted-foreground">
+                        <td className="py-3 px-4 font-medium text-foreground text-left">
+                          {payment.barberName}
+                        </td>
+                        <td className="py-3 px-4 text-muted-foreground text-left">
                           {payment.clientName ? (
                             <span className="text-foreground font-medium">{payment.clientName}</span>
                           ) : (
-                            <span className="italic text-muted-foreground/80">—</span>
+                            <span className="text-muted-foreground/80">—</span>
                           )}
                           {payment.clientContact && (
                             <span className="block text-[10px] text-muted-foreground">
@@ -869,17 +951,30 @@ export function AdminPayments() {
                             </span>
                           )}
                         </td>
-                        <td className="py-3 px-4 text-right">
-                          <div className="font-bold text-foreground">
-                            {money(payment.finalAmountArs)}
-                          </div>
-                          <span className="inline-block mt-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground">
+                        <td className="py-3 px-4 text-right font-bold text-foreground whitespace-nowrap">
+                          {money(payment.finalAmountArs)}
+                        </td>
+                        <td className="py-3 px-4 text-left whitespace-nowrap">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-muted/60 text-foreground border border-border/50">
                             {payment.paymentMethod}
                           </span>
                         </td>
                       </tr>
                     ))}
                   </tbody>
+                  <tfoot className="bg-muted/30 border-t border-border/80 font-medium">
+                    <tr>
+                      <td colSpan={4} className="py-3 px-4 font-semibold text-muted-foreground text-left">
+                        Total cobrado
+                      </td>
+                      <td className="py-3 px-4 text-right font-bold text-foreground text-sm whitespace-nowrap">
+                        {money(paymentStats.totalCollected)}
+                      </td>
+                      <td className="py-3 px-4 text-left text-xs text-muted-foreground">
+                        {payments.length} {payments.length === 1 ? "servicio" : "servicios"}
+                      </td>
+                    </tr>
+                  </tfoot>
                 </table>
               </div>
 
@@ -935,16 +1030,237 @@ export function AdminPayments() {
                         )}
                       </div>
 
-                      {isAdmin && (
-                        <div className="text-[11px] font-medium text-foreground">
-                          Barbero: {payment.barberName}
-                        </div>
-                      )}
+                      <div className="text-[11px] font-medium text-foreground">
+                        Barbero: {payment.barberName}
+                      </div>
                     </div>
                   </div>
                 ))}
+                {/* Total cobrado en mobile footer */}
+                <div className="p-3.5 bg-muted/30 border-t border-border/80 flex items-center justify-between">
+                  <span className="text-xs font-semibold text-muted-foreground">Total cobrado</span>
+                  <span className="font-bold text-sm text-foreground">{money(paymentStats.totalCollected)}</span>
+                </div>
               </div>
             </>
+          )}
+        </section>
+
+        {/* Total cobrado destacado debajo de Servicios registrados */}
+        <section
+          className="p-4 sm:p-5 rounded-xl border border-border bg-surface shadow-xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+          aria-label="Resumen de Total cobrado"
+        >
+          <div>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+              Total cobrado
+            </h3>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Suma exacta de los registros en <code className="text-[11px]">service_payments</code> según los filtros activos.
+            </p>
+          </div>
+          <div className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
+            {money(paymentStats.totalCollected)}
+          </div>
+        </section>
+
+        {/* 4. Estadísticas visuales de los cobros registrados */}
+        <section
+          className="rounded-xl border border-border bg-surface p-4 sm:p-5 shadow-xs space-y-5"
+          aria-label="Estadísticas visuales de cobros"
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 pb-3 border-b border-border/70">
+            <div>
+              <h2 className="text-base font-bold text-foreground flex items-center gap-2">
+                <BarChart2 className="w-4 h-4 text-gold" />
+                Estadísticas de cobros
+              </h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Métricas calculadas exclusivamente sobre los cobros registrados con los filtros activos.
+              </p>
+            </div>
+            <div className="text-xs text-muted-foreground">
+              Filtro: <span className="font-semibold text-foreground">{presetLabels[filterPeriod]}</span>
+            </div>
+          </div>
+
+          {/* Resumen - 3 KPI Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {/* KPI 1: Total cobrado */}
+            <div className="p-3.5 rounded-lg border border-border/80 bg-background/50 flex flex-col justify-between">
+              <div className="flex items-center justify-between text-muted-foreground mb-1">
+                <span className="text-xs font-medium">Total cobrado</span>
+                <DollarSign className="w-4 h-4 text-gold" />
+              </div>
+              <div className="text-xl sm:text-2xl font-bold text-foreground">
+                {money(paymentStats.totalCollected)}
+              </div>
+              <span className="text-[11px] text-muted-foreground mt-1">
+                {paymentStats.servicesCount} {paymentStats.servicesCount === 1 ? "servicio" : "servicios"} registrados
+              </span>
+            </div>
+
+            {/* KPI 2: Cantidad de servicios registrados */}
+            <div className="p-3.5 rounded-lg border border-border/80 bg-background/50 flex flex-col justify-between">
+              <div className="flex items-center justify-between text-muted-foreground mb-1">
+                <span className="text-xs font-medium">Cantidad de servicios</span>
+                <Scissors className="w-4 h-4 text-gold" />
+              </div>
+              <div className="text-xl sm:text-2xl font-bold text-foreground">
+                {paymentStats.servicesCount}
+              </div>
+              <span className="text-[11px] text-muted-foreground mt-1">
+                En el conjunto filtrado
+              </span>
+            </div>
+
+            {/* KPI 3: Ticket promedio */}
+            <div className="p-3.5 rounded-lg border border-border/80 bg-background/50 flex flex-col justify-between">
+              <div className="flex items-center justify-between text-muted-foreground mb-1">
+                <span className="text-xs font-medium">Ticket promedio</span>
+                <Receipt className="w-4 h-4 text-gold" />
+              </div>
+              <div className="text-xl sm:text-2xl font-bold text-foreground">
+                {money(paymentStats.averageTicket)}
+              </div>
+              <span className="text-[11px] text-muted-foreground mt-1">
+                Total cobrado / servicios
+              </span>
+            </div>
+          </div>
+
+          {/* Gráficos / Desgloses visuales */}
+          {paymentStats.servicesCount === 0 ? (
+            <div className="p-8 text-center text-xs text-muted-foreground border border-dashed border-border/60 rounded-lg">
+              No hay servicios registrados para calcular gráficos con los filtros seleccionados.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              {/* Gráfico 1: Cobros por método de pago */}
+              <div className="p-4 rounded-lg border border-border/70 bg-background/40 space-y-3">
+                <div className="flex items-center justify-between pb-2 border-b border-border/60">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-1.5">
+                    <Wallet className="w-3.5 h-3.5 text-gold" />
+                    Cobros por método de pago
+                  </h3>
+                  <span className="text-[11px] text-muted-foreground">
+                    {paymentStats.byMethod.length} métodos
+                  </span>
+                </div>
+                <div className="space-y-3 pt-1">
+                  {paymentStats.byMethod.map((item) => (
+                    <div key={item.method} className="space-y-1">
+                      <div className="flex justify-between items-baseline text-xs">
+                        <span className="font-semibold text-foreground">{item.method}</span>
+                        <div className="text-right">
+                          <span className="font-bold text-foreground">{money(item.total)}</span>
+                          <span className="text-[10px] text-muted-foreground ml-1.5">
+                            ({Math.round(item.percentage)}%)
+                          </span>
+                        </div>
+                      </div>
+                      <div className="w-full h-2 rounded-full bg-muted/50 overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-300"
+                          style={{
+                            width: `${Math.max(item.total > 0 ? 4 : 0, item.percentage)}%`,
+                            backgroundColor: item.method === "Efectivo" ? "var(--gold)" : "var(--primary)",
+                          }}
+                        />
+                      </div>
+                      <div className="flex justify-between text-[10px] text-muted-foreground">
+                        <span>{item.count} {item.count === 1 ? "servicio" : "servicios"}</span>
+                        <span>{item.percentage.toFixed(1)}%</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Gráfico 2: Cobros por servicio */}
+              <div className="p-4 rounded-lg border border-border/70 bg-background/40 space-y-3">
+                <div className="flex items-center justify-between pb-2 border-b border-border/60">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-1.5">
+                    <Scissors className="w-3.5 h-3.5 text-gold" />
+                    Cobros por servicio
+                  </h3>
+                  <span className="text-[11px] text-muted-foreground">
+                    {paymentStats.byService.length} servicios
+                  </span>
+                </div>
+                <div className="space-y-3 pt-1">
+                  {paymentStats.byService.map((item) => (
+                    <div key={item.service} className="space-y-1">
+                      <div className="flex justify-between items-baseline text-xs">
+                        <span className="font-semibold text-foreground truncate max-w-[55%]">
+                          {item.service}
+                        </span>
+                        <div className="text-right">
+                          <span className="font-bold text-foreground">{money(item.total)}</span>
+                          <span className="text-[10px] text-muted-foreground ml-1.5">
+                            ({Math.round(item.percentage)}%)
+                          </span>
+                        </div>
+                      </div>
+                      <div className="w-full h-2 rounded-full bg-muted/50 overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-300"
+                          style={{
+                            width: `${Math.max(item.total > 0 ? 4 : 0, item.percentage)}%`,
+                            backgroundColor: "var(--primary)",
+                          }}
+                        />
+                      </div>
+                      <div className="flex justify-between text-[10px] text-muted-foreground">
+                        <span>{item.count} {item.count === 1 ? "servicio" : "servicios"}</span>
+                        <span>{item.percentage.toFixed(1)}%</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Gráfico 3: Cobros por barbero */}
+              <div className="p-4 rounded-lg border border-border/70 bg-background/40 space-y-3">
+                <div className="flex items-center justify-between pb-2 border-b border-border/60">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-1.5">
+                    <User className="w-3.5 h-3.5 text-gold" />
+                    Cobros por barbero
+                  </h3>
+                  <span className="text-[11px] text-muted-foreground">
+                    {paymentStats.byBarber.length} barberos
+                  </span>
+                </div>
+                <div className="space-y-3 pt-1">
+                  {paymentStats.byBarber.map((item) => (
+                    <div key={item.barber} className="space-y-1">
+                      <div className="flex justify-between items-baseline text-xs">
+                        <span className="font-semibold text-foreground">{item.barber}</span>
+                        <div className="text-right">
+                          <span className="font-bold text-foreground">{money(item.total)}</span>
+                          <span className="text-[10px] text-muted-foreground ml-1.5">
+                            ({Math.round(item.percentage)}%)
+                          </span>
+                        </div>
+                      </div>
+                      <div className="w-full h-2 rounded-full bg-muted/50 overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-300"
+                          style={{
+                            width: `${Math.max(item.total > 0 ? 4 : 0, item.percentage)}%`,
+                            backgroundColor: "var(--gold)",
+                          }}
+                        />
+                      </div>
+                      <div className="flex justify-between text-[10px] text-muted-foreground">
+                        <span>{item.count} {item.count === 1 ? "servicio" : "servicios"}</span>
+                        <span>{item.percentage.toFixed(1)}%</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
           )}
         </section>
       </div>

@@ -911,10 +911,10 @@ export function Booking() {
                   )}
                 </section>
 
-                {/* 4. Aviso de solicitud pendiente — Bordó */}
-                <div className="summary-card-notice flex items-center gap-2 text-xs sm:text-sm" role="note">
+                {/* 4. Aviso de solicitud pendiente en container propio — Bordó */}
+                <div className="booking-summary-card summary-pending-notice summary-card-notice flex items-center gap-2.5 text-xs sm:text-sm" role="note">
                   <Clock3 size={15} className="shrink-0" aria-hidden="true" />
-                  <p>Tu solicitud está pendiente hasta que abones la seña.</p>
+                  <p className="m-0 leading-normal">Tu solicitud está pendiente hasta que abones la seña.</p>
                 </div>
               </div>
             )}
