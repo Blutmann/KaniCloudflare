@@ -2573,7 +2573,9 @@ html[data-theme='dark'] .service-option .booking-option-price {
 /* Modo oscuro premium: solo color y contraste; la geometría queda compartida. */
 html[data-theme='dark'] .header-control-button {
   border-color: var(--border) !important;
-  background: var(--card) !important;
+  background: #1818189c !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   color: var(--gold) !important;
 }
 
@@ -2587,8 +2589,16 @@ html[data-theme='dark'] .booking-option,
 html[data-theme='dark'] .booking-defer-option,
 html[data-theme='dark'] .barber-choice-list > button {
   border-color: var(--border) !important;
-  background: var(--card) !important;
+  background: #1818189c !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   color: var(--foreground) !important;
+}
+html[data-theme='dark'] .booking-option:not(.selected):hover,
+html[data-theme='dark'] .booking-defer-option:not(.selected):hover,
+html[data-theme='dark'] .barber-choice-list > button:not(.selected):hover {
+  border-color: color-mix(in srgb, var(--gold) 35%, var(--border)) !important;
+  background: color-mix(in srgb, var(--gold) 5%, #1818189c) !important;
 }
 
 html[data-theme='dark'] .booking-option.selected,
@@ -2622,7 +2632,7 @@ html[data-theme='dark'] .booking-option.selected .text-muted-foreground {
 }
 
 html[data-theme='dark'] .booking-option:not(.selected) .service-icon-dark {
-  filter: none !important;
+  filter: brightness(0) invert(7.06%) !important;
 }
 
 html[data-theme='dark'] .booking-option.selected .selection-circle,
@@ -2719,16 +2729,30 @@ html[data-theme='dark'] .booking-time-slot.selected:active {
   font-weight: 700;
 }
 
+html[data-theme='dark'] .booking-time-slot:not(.selected):not(:disabled) {
+  border-color: var(--border) !important;
+  background: #1818189c !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: var(--foreground) !important;
+}
+html[data-theme='dark'] .booking-time-slot:not(.selected):not(:disabled):hover {
+  border-color: color-mix(in srgb, var(--gold) 35%, var(--border)) !important;
+  background: color-mix(in srgb, var(--gold) 5%, #1818189c) !important;
+}
+
 html[data-theme='dark'] .booking-back-button {
   border-color: var(--border) !important;
-  background: var(--card) !important;
+  background: #1818189c !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   color: var(--foreground) !important;
 }
 
 html[data-theme='dark'] .booking-back-button:hover:not(:disabled),
 html[data-theme='dark'] .booking-back-button:focus-visible {
   border-color: var(--gold) !important;
-  background: color-mix(in srgb, var(--gold) 8%, var(--card)) !important;
+  background: color-mix(in srgb, var(--gold) 8%, #1818189c) !important;
   color: var(--foreground) !important;
 }
 
@@ -2745,6 +2769,53 @@ html[data-theme='dark'] .booking-next-button:not(:disabled):active {
   border-color: var(--gold) !important;
   background: var(--gold) !important;
   color: #191919 !important;
+}
+
+/* Paneles y cards contenedoras en gris oscuro translúcido (#1818189c) para modo oscuro */
+html[data-theme='dark'] .calendar-panel {
+  background: #1818189c !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+@media (min-width: 768px) {
+  html[data-theme='dark'] .booking-summary-card {
+    background: #1818189c !important;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+}
+
+html[data-theme='dark'] .booking-summary-card .summary-deposit-box {
+  background: color-mix(in srgb, var(--gold) 12%, #1818189c) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+html[data-theme='dark'] .booking-summary-card .summary-avatar-circle {
+  background: color-mix(in srgb, var(--gold) 12%, #1818189c) !important;
+}
+
+html[data-theme='dark'] .booking-deposit-notice {
+  background: #1818189c !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+html[data-theme='dark'] .confirmation-details {
+  background: #1818189c !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+html[data-theme='dark'] .booking-whatsapp-fab {
+  background: #1818189c !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+html[data-theme='dark'] .booking-whatsapp-fab:hover {
+  background: color-mix(in srgb, var(--gold) 12%, #1818189c) !important;
+  border-color: var(--gold);
 }
 
 html[data-theme='dark'] .admin-section-nav-link.is-active,
