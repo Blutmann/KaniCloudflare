@@ -796,7 +796,7 @@ export function AdminMobileAppointments() {
                 <div className="grid grid-cols-3 gap-2 w-full">
                   <Button
                     size="sm"
-                    className="action-positive h-9 text-xs px-2 w-full justify-center min-w-0"
+                    className="action-confirm h-9 text-xs px-2 w-full justify-center min-w-0"
                     disabled={busyId === appointment.id}
                     onClick={() => void changeStatus(appointment, 'CONFIRMED')}
                   >
@@ -805,8 +805,7 @@ export function AdminMobileAppointments() {
                   </Button>
                   <Button
                     size="sm"
-                    variant="outline"
-                    className="action-brand-outline h-9 text-xs px-2 w-full justify-center min-w-0"
+                    className="action-reject h-9 text-xs px-2 w-full justify-center min-w-0"
                     disabled={busyId === appointment.id}
                     onClick={() => setCancelTarget(appointment)}
                   >
@@ -815,8 +814,7 @@ export function AdminMobileAppointments() {
                   </Button>
                   <Button
                     size="sm"
-                    variant="outline"
-                    className="h-9 text-xs px-2 w-full justify-center min-w-0 text-muted-foreground hover:text-foreground"
+                    className="action-mail h-9 text-xs px-2 w-full justify-center min-w-0"
                     disabled={busyId === appointment.id}
                     onClick={() => void retryNotification(appointment)}
                   >
@@ -863,8 +861,7 @@ export function AdminMobileAppointments() {
                     </Button>
                     <Button
                       size="sm"
-                      variant="outline"
-                      className="h-9 text-xs px-2 w-full justify-center min-w-0 text-muted-foreground hover:text-foreground"
+                      className="action-mail h-9 text-xs px-2 w-full justify-center min-w-0"
                       disabled={busyId === appointment.id}
                       onClick={() => void retryNotification(appointment)}
                     >
@@ -946,8 +943,7 @@ export function AdminMobileAppointments() {
                 <div className="w-full">
                   <Button
                     size="sm"
-                    variant="outline"
-                    className="h-9 text-xs px-2 w-full justify-center min-w-0 text-muted-foreground hover:text-foreground"
+                    className="action-mail h-9 text-xs px-2 w-full justify-center min-w-0"
                     disabled={busyId === appointment.id}
                     onClick={() => void retryNotification(appointment)}
                   >

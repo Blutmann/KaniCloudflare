@@ -387,6 +387,82 @@ html[data-theme="light"] .booking-progress .complete > span { border-color: #702
 .action-brand-outline:hover { background: color-mix(in oklch, var(--primary) 18%, transparent) !important; color: var(--foreground) !important; }
 .action-brand-text { color: color-mix(in oklch, var(--primary) 88%, white) !important; }
 .action-brand-text:hover { color: var(--foreground) !important; }
+
+/* Botones de acción en Panel de administración → Turnos */
+.action-confirm {
+  background: var(--success) !important;
+  border: 1px solid var(--success) !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 18%);
+  font-weight: 500;
+}
+.action-confirm:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--success) 88%, black) !important;
+  border-color: color-mix(in srgb, var(--success) 88%, black) !important;
+  color: #FFFFFF !important;
+}
+.action-confirm:active:not(:disabled) {
+  background: color-mix(in srgb, var(--success) 75%, black) !important;
+  border-color: color-mix(in srgb, var(--success) 75%, black) !important;
+}
+.action-confirm:focus-visible {
+  outline: none !important;
+  box-shadow: 0 0 0 2px var(--success), 0 0 0 4px var(--background) !important;
+}
+.action-confirm:disabled {
+  opacity: 0.55 !important;
+  cursor: not-allowed;
+}
+
+.action-reject {
+  background: #702B3A !important;
+  border: 1px solid #702B3A !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 18%);
+  font-weight: 500;
+}
+.action-reject:hover:not(:disabled) {
+  background: #8A3342 !important;
+  border-color: #8A3342 !important;
+  color: #FFFFFF !important;
+}
+.action-reject:active:not(:disabled) {
+  background: #5E202D !important;
+  border-color: #5E202D !important;
+}
+.action-reject:focus-visible {
+  outline: none !important;
+  box-shadow: 0 0 0 2px #702B3A, 0 0 0 4px var(--background) !important;
+}
+.action-reject:disabled {
+  opacity: 0.55 !important;
+  cursor: not-allowed;
+}
+
+.action-mail {
+  background: #FFFFFF !important;
+  border: 1px solid #E4E4E7 !important;
+  color: #000000 !important;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 12%);
+  font-weight: 500;
+}
+.action-mail:hover:not(:disabled) {
+  background: #F4F4F5 !important;
+  border-color: #D4D4D8 !important;
+  color: #000000 !important;
+}
+.action-mail:active:not(:disabled) {
+  background: #E4E4E7 !important;
+  border-color: #A1A1AA !important;
+}
+.action-mail:focus-visible {
+  outline: none !important;
+  box-shadow: 0 0 0 2px #A1A1AA, 0 0 0 4px var(--background) !important;
+}
+.action-mail:disabled {
+  opacity: 0.55 !important;
+  cursor: not-allowed;
+}
 .admin-page { padding-top: 28px; padding-bottom: 70px; min-height: 760px; }
 .admin-header-left { display: flex; align-items: center; gap: 28px; min-width: 0; }
 .admin-public-cta { border-color: var(--button-primary-border) !important; }
