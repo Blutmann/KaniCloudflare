@@ -215,7 +215,7 @@ html[data-theme="light"] {
   body {
     min-height: 100%;
     min-height: 100dvh;
-    background-color: var(--page-background);
+    background-color: transparent;
     color: var(--color-foreground);
     font-family: var(--font-sans);
     letter-spacing: 0;
@@ -239,6 +239,16 @@ html[data-theme="light"] {
 
   html[data-theme="dark"] body::before {
     background: var(--page-background) url('/kani-fondo-oscuro-mobile.webp') center top / cover no-repeat;
+  }
+
+  @media (min-width: 768px) {
+    html[data-theme="light"] body::before {
+      background-image: url('/kani-fondo-claro-desktop-blanco.webp');
+    }
+
+    html[data-theme="dark"] body::before {
+      background-image: url('/kani-fondo-oscuro-desktop.webp');
+    }
   }
 
   @media (min-width: 1024px) {
@@ -687,10 +697,10 @@ html[data-theme="light"] .booking-option.selected .option-icon img { filter: bri
 .booking-defer-option .barber-defer-mark { width: 48px; height: 48px; flex-basis: 48px; }
 .booking-time-slot { border-color: color-mix(in oklch, var(--gold) 18%, var(--border)); border-radius: var(--radius-control, 0.65rem); background: var(--surface); box-shadow: 0 5px 14px rgb(0 0 0 / 0.12); }
 .booking-time-slot:hover:not(:disabled) { border-color: color-mix(in oklch, var(--gold) 58%, var(--border)); background: color-mix(in oklch, var(--gold) 8%, var(--surface)); }
-.phone-input-row { display: grid; grid-template-columns: 138px minmax(0, 1fr); gap: 8px; margin-top: 10px; }
+.phone-input-row { display: grid; grid-template-columns: 138px minmax(0, 1fr); gap: 8px; margin-top: 10px; align-items: center; }
 .phone-input-row input { margin-top: 0; border-radius: var(--radius-control, 0.65rem); }
-.phone-country-picker { position: relative; min-width: 0; }
-.phone-country-trigger { display: flex; width: 100%; height: 52px; align-items: center; justify-content: flex-start; gap: 5px; padding-inline: 12px; border: 1px solid var(--input); border-radius: var(--radius-control, 0.65rem); background: var(--surface); color: var(--foreground); font: inherit; font-size: 12px; font-weight: 700; letter-spacing: .03em; white-space: nowrap; }
+.phone-country-picker { position: relative; min-width: 0; height: 52px; display: flex; align-items: center; }
+.phone-country-trigger { display: flex; width: 100%; height: 52px; align-items: center; justify-content: flex-start; gap: 5px; padding-inline: 12px; border: 1px solid var(--input); border-radius: var(--radius-control, 0.65rem); background: var(--surface); color: var(--foreground); font: inherit; font-size: 12px; font-weight: 700; letter-spacing: .03em; white-space: nowrap; box-sizing: border-box; }
 .phone-country-trigger:focus-visible, .phone-country-option:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 .phone-country-options { position: absolute; z-index: 120; top: calc(100% + 6px); left: 0; width: min(290px, 82vw); max-height: 280px; overflow-y: auto; padding: 6px; border: 1px solid var(--border); border-radius: var(--radius-card, 0.9rem); background: var(--chrome); box-shadow: 0 16px 34px rgb(0 0 0 / 40%); }
 .phone-country-search { position: sticky; top: 0; z-index: 1; display: block; width: 100%; height: 36px; margin-bottom: 6px; padding: 0 9px; border: 1px solid var(--input); border-radius: var(--radius-control, 0.65rem); background: var(--surface); color: var(--foreground); font: inherit; font-size: 12px; outline: none; }
@@ -1359,10 +1369,10 @@ html[data-theme='dark'] .studio-map-card {
  .barber-choice-list { grid-template-columns: repeat(3,minmax(0,1fr)); }
  .barber-choice-list > button { min-height: 48px; padding-inline: 6px; font-size: 12px; }
  .booking-defer-copy { font-size: 12px; }
- .booking-page form .field-label { font-size: 15px; }
+ .booking-page form .field-label { font-size: 13px; font-weight: 500; }
  .booking-page form .field-label input, .booking-page form .field-label textarea { font-size: 16px; min-height: 52px; }
- .booking-page form .field-label textarea { min-height: 108px; padding-top: 14px; }
- .booking-page form .field-label input::placeholder, .booking-page form .field-label textarea::placeholder { color: color-mix(in oklch, var(--foreground) 58%, var(--muted-foreground)); opacity: 1; }
+ .booking-page form .field-label textarea { min-height: 96px; padding-top: 12px; }
+ .booking-page form .field-label input::placeholder, .booking-page form .field-label textarea::placeholder { font-size: 13px; color: var(--muted-foreground); opacity: 0.85; }
  .phone-country-trigger { font-size: 12px; }
  .barber-choice-inline { margin-top: 12px; padding-top: 10px; }
  .booking-option .option-icon, .booking-option .barber-avatar { width: 40px; height: 40px; }
@@ -1439,7 +1449,9 @@ html[data-theme='dark'] .studio-map-card {
 .booking-page form input[name="email"]::placeholder,
 .booking-page form textarea[name="notes"]::placeholder {
   font-family: var(--font-sans);
-  font-size: 16px;
+  font-size: 13px;
+  color: var(--muted-foreground);
+  opacity: 0.85;
 }
 
 /* Paso «Completá tus datos»: espaciado vertical compacto y consistente con los pasos anteriores (12px / space-y-3) */
@@ -1452,6 +1464,39 @@ html[data-theme='dark'] .studio-map-card {
 .booking-page .booking-contact-form .phone-input-row,
 .booking-page .booking-contact-form .notes-input {
   margin-top: 6px;
+}
+
+/* Teléfono mobile & desktop: alineación vertical perfecta entre trigger de prefijo y número */
+.phone-input-row {
+  align-items: center;
+}
+
+.phone-input-row .phone-country-picker {
+  height: 52px;
+  display: flex;
+  align-items: center;
+}
+
+.phone-input-row .field-control {
+  height: 52px;
+  display: flex;
+  align-items: center;
+  margin: 0 !important;
+}
+
+.phone-input-row input,
+.booking-page .booking-contact-form .phone-input-row input,
+.booking-page .booking-contact-form .field-label .phone-input-row input {
+  height: 52px !important;
+  min-height: 52px !important;
+  max-height: 52px !important;
+  margin: 0 !important;
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  line-height: 52px !important;
+  box-sizing: border-box;
+  align-self: center;
 }
 
 
@@ -2525,12 +2570,15 @@ html[data-theme='light'] .booking-option.selected .option-icon img {
   display: none;
 }
 
-/* Modo claro: activa máscara light */
+/* Modo claro: activa máscara light y color bordó institucional */
 html[data-theme='light'] .booking-option:not(.selected) .service-icon-mask-light {
   display: block;
 }
 html[data-theme='light'] .booking-option:not(.selected) .service-icon-mask-dark {
   display: none;
+}
+html[data-theme='light'] .booking-option:not(.selected) .service-icon-mask {
+  background-color: #702B3A !important;
 }
 
 /* En cards no seleccionadas, se ocultan las imágenes img directas para exhibir la máscara con el color del token */

@@ -50,4 +50,12 @@ describe('Kani Barber Studio - Unificar color de iconos de servicios no seleccio
     // Conserva el filtro dorado para el icono de la card seleccionada en modo oscuro
     expect(css).toMatch(/html\[data-theme='dark'\] \.booking-option\.selected \.option-icon img\s*\{[^}]*filter:\s*brightness\(0\)\s*saturate\(100%\)\s*invert\(69%\)/);
   });
+
+  it('5. En modo claro, los iconos no seleccionados aplican el color bordó institucional #702B3A mientras que la duración conserva text-muted-foreground', () => {
+    // Los iconos sin seleccionar en modo claro aplican el color bordó institucional #702B3A
+    expect(css).toMatch(/html\[data-theme='light'\] \.booking-option:not\(\.selected\)\s*\.service-icon-mask\s*\{[^}]*background-color:\s*#702B3A\s*!important/);
+
+    // El texto de duración conserva su clase text-muted-foreground
+    expect(bookingCode).toContain('booking-option-duration block text-sm text-muted-foreground');
+  });
 });

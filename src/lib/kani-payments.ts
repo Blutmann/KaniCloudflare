@@ -234,127 +234,83 @@ export function findCandidateAppointments(
   return matches.sort((a, b) => b.score - a.score);
 }
 
-// Almacén en memoria / local fallback para pruebas o contingencia de migración
-let localPaymentsStore: ServicePayment[] = [];
-
-export function clearLocalPaymentsStore() {
-  localPaymentsStore = [];
-}
-
 /** Carga los registros de pagos desde Supabase con filtros a nivel persistido */
 export async function fetchServicePayments(
   filters: ServicePaymentFilters,
   staff: AuthenticatedStaff,
 ): Promise<ServicePayment[]> {
-  try {
-    let query = supabase
-      .from('service_payments')
-      .select('*')
-      .order('payment_date', { ascending: false })
-      .order('payment_time', { ascending: false })
-      .order('created_at', { ascending: false });
+  let query = supabase
+    .from('service_payments')
+    .select('*')
+    .order('payment_date', { ascending: false })
+    .order('payment_time', { ascending: false })
+    .order('created_at', { ascending: false });
 
-    // Filtro por barbero: los barberos solo leen sus registros; ADMIN puede filtrar o ver todos
-    if (staff.profile.role === 'BARBER') {
-      if (staff.profile.barber_id) {
-        query = query.eq('barber_id', staff.profile.barber_id);
-      }
-    } else if (filters.barberId && filters.barberId !== 'ALL') {
-      query = query.eq('barber_id', filters.barberId);
+  // Filtro por barbero: los barberos solo leen sus registros; ADMIN puede filtrar o ver todos
+  if (staff.profile.role === 'BARBER') {
+    if (staff.profile.barber_id) {
+      query = query.eq('barber_id', staff.profile.barber_id);
     }
-
-    // Filtro por fecha persistida
-    if (filters.date) {
-      query = query.eq('payment_date', filters.date);
-    }
-
-    // Filtro por servicio persistido
-    if (filters.serviceName && filters.serviceName !== 'ALL') {
-      if (filters.serviceName === 'Corte y barba') {
-        query = query.or('service_name.eq.Corte y barba,service_name.eq.Corte + barba');
-      } else {
-        query = query.eq('service_name', filters.serviceName);
-      }
-
-      // Si es Otros y se ingresó un detalle
-      if (filters.serviceName === 'Otros' && filters.otherDetail?.trim()) {
-        query = query.ilike('service_other_detail', `%${filters.otherDetail.trim()}%`);
-      }
-    }
-
-    const { data, error } = await query;
-
-    if (error) {
-      // Manejo de tabla inexistente si la migración aún no corrió en la base remota
-      if (error.code === '42P01' || error.message.includes('schema cache') || error.message.includes('does not exist')) {
-        console.warn('[KANI payments] Tabla service_payments no disponible aún en base remota, usando almacén local:', error.message);
-        return filterLocalPayments(localPaymentsStore, filters, staff);
-      }
-      throw error;
-    }
-
-    // Mapear filas agregando nombre del barbero
-    const barberMap = new Map(staff.barbers.map((b) => [b.id, b.name]));
-
-    return (data || []).map((row: any) => ({
-      id: row.id,
-      barberId: row.barber_id,
-      barberName: barberMap.get(row.barber_id) || 'Barbero',
-      serviceId: row.service_id,
-      serviceName: row.service_name === 'Corte + barba' ? 'Corte y barba' : (row.service_name as ServicePaymentType),
-      serviceOtherDetail: row.service_other_detail,
-      servicePriceArs: row.service_price_ars,
-      discountArs: row.discount_ars,
-      finalAmountArs: row.final_amount_ars,
-      paymentDate: row.payment_date,
-      paymentTime: (row.payment_time || '').slice(0, 5),
-      paymentMethod: row.payment_method as PaymentMethod,
-      onlineDepositPaid: row.online_deposit_paid,
-      onlineDepositAmountArs: row.online_deposit_amount_ars,
-      collectedAmountArs: row.collected_amount_ars,
-      clientName: row.client_name,
-      clientContact: row.client_contact,
-      appointmentId: row.appointment_id,
-      createdByUserId: row.created_by_user_id,
-      createdByDisplayName: row.created_by_display_name,
-      createdAt: row.created_at,
-      updatedAt: row.updated_at,
-    }));
-  } catch (err) {
-    console.warn('[KANI payments] Error al leer service_payments, recurriendo a almacén seguro:', err);
-    return filterLocalPayments(localPaymentsStore, filters, staff);
+  } else if (filters.barberId && filters.barberId !== 'ALL') {
+    query = query.eq('barber_id', filters.barberId);
   }
+
+  // Filtro por fecha persistida
+  if (filters.date) {
+    query = query.eq('payment_date', filters.date);
+  }
+
+  // Filtro por servicio persistido
+  if (filters.serviceName && filters.serviceName !== 'ALL') {
+    if (filters.serviceName === 'Corte y barba') {
+      query = query.or('service_name.eq.Corte y barba,service_name.eq.Corte + barba');
+    } else {
+      query = query.eq('service_name', filters.serviceName);
+    }
+
+    // Si es Otros y se ingresó un detalle
+    if (filters.serviceName === 'Otros' && filters.otherDetail?.trim()) {
+      query = query.ilike('service_other_detail', `%${filters.otherDetail.trim()}%`);
+    }
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.error('[KANI payments] Error al leer service_payments de la base de datos:', error);
+    throw error;
+  }
+
+  // Mapear filas agregando nombre del barbero
+  const barberMap = new Map(staff.barbers.map((b) => [b.id, b.name]));
+
+  return (data || []).map((row: any) => ({
+    id: row.id,
+    barberId: row.barber_id,
+    barberName: barberMap.get(row.barber_id) || 'Barbero',
+    serviceId: row.service_id,
+    serviceName: row.service_name === 'Corte + barba' ? 'Corte y barba' : (row.service_name as ServicePaymentType),
+    serviceOtherDetail: row.service_other_detail,
+    servicePriceArs: row.service_price_ars,
+    discountArs: row.discount_ars,
+    finalAmountArs: row.final_amount_ars,
+    paymentDate: row.payment_date,
+    paymentTime: (row.payment_time || '').slice(0, 5),
+    paymentMethod: row.payment_method as PaymentMethod,
+    onlineDepositPaid: row.online_deposit_paid,
+    onlineDepositAmountArs: row.online_deposit_amount_ars,
+    collectedAmountArs: row.collected_amount_ars,
+    clientName: row.client_name,
+    clientContact: row.client_contact,
+    appointmentId: row.appointment_id,
+    createdByUserId: row.created_by_user_id,
+    createdByDisplayName: row.created_by_display_name,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }));
 }
 
-function filterLocalPayments(
-  payments: ServicePayment[],
-  filters: ServicePaymentFilters,
-  staff: AuthenticatedStaff,
-): ServicePayment[] {
-  return payments.filter((p) => {
-    // Seguridad de rol
-    if (staff.profile.role === 'BARBER' && p.barberId !== staff.profile.barber_id) {
-      return false;
-    }
-    if (staff.profile.role === 'ADMIN' && filters.barberId && filters.barberId !== 'ALL' && p.barberId !== filters.barberId) {
-      return false;
-    }
-    if (filters.date && p.paymentDate !== filters.date) {
-      return false;
-    }
-    if (filters.serviceName && filters.serviceName !== 'ALL') {
-      if (p.serviceName !== filters.serviceName) return false;
-      if (filters.serviceName === 'Otros' && filters.otherDetail?.trim()) {
-        const detailNorm = normalizeClientString(filters.otherDetail);
-        const pDetailNorm = normalizeClientString(p.serviceOtherDetail || '');
-        if (!pDetailNorm.includes(detailNorm)) return false;
-      }
-    }
-    return true;
-  });
-}
-
-/** Registra un nuevo servicio y cobro garantizando atomicidad y permisos */
+/** Registra un nuevo servicio y cobro garantizando persistencia real en base de datos y permisos */
 export async function recordServicePayment(
   input: RecordServicePaymentInput,
   staff: AuthenticatedStaff,
@@ -377,6 +333,7 @@ export async function recordServicePayment(
 
   const paymentDate = input.paymentDate || businessDateToday();
   const paymentTime = input.paymentTime || businessTimeNow();
+  const formattedTime = paymentTime.length === 5 ? `${paymentTime}:00` : paymentTime;
   const discountArs = input.discountArs || 0;
   const finalAmountArs = input.servicePriceArs - discountArs;
 
@@ -391,7 +348,11 @@ export async function recordServicePayment(
 
   const collectedAmountArs = Math.max(0, finalAmountArs - (onlineDepositPaid ? onlineDepositAmountArs : 0));
 
-  // Intentar ejecutar mediante la RPC transaccional segura
+  let persistedRecord: ServicePayment | null = null;
+  let rpcFailed = false;
+  let rpcError: any = null;
+
+  // 1. Intentar registrar vía RPC transaccional segura si está disponible
   try {
     const { data, error } = await (supabase.rpc as any)('record_service_payment', {
       p_barber_id: input.barberId,
@@ -400,112 +361,140 @@ export async function recordServicePayment(
       p_service_price_ars: input.servicePriceArs,
       p_discount_ars: discountArs,
       p_payment_date: paymentDate,
-      p_payment_time: paymentTime,
+      p_payment_time: formattedTime,
       p_payment_method: input.paymentMethod,
       p_online_deposit_paid: onlineDepositPaid,
       p_client_name: input.clientName?.trim() || null,
       p_client_contact: input.clientContact?.trim() || null,
-      p_appointment_id: input.appointmentId || null,
+      p_appointment_id: input.appointmentId ? input.appointmentId : null,
     });
 
-    if (error) {
-      // Si la RPC o tabla no existen todavía en el remoto
-      if (error.code === '42883' || error.code === '42P01' || error.message.includes('schema cache') || error.message.includes('does not exist')) {
-        console.warn('[KANI payments] RPC record_service_payment no disponible, aplicando fallback directo:', error.message);
-        return fallbackDirectRecord(input, staff, appointment, barberName, paymentDate, paymentTime, discountArs, finalAmountArs, onlineDepositPaid, onlineDepositAmountArs, collectedAmountArs);
-      }
-      throw error;
+    if (!error && data) {
+      const row = Array.isArray(data) ? data[0] : data;
+      persistedRecord = {
+        id: row?.payment_id || row?.id || crypto.randomUUID(),
+        barberId: input.barberId,
+        barberName,
+        serviceId: null,
+        serviceName: input.serviceName,
+        serviceOtherDetail: input.serviceName === 'Otros' ? input.serviceOtherDetail || null : null,
+        servicePriceArs: input.servicePriceArs,
+        discountArs,
+        finalAmountArs,
+        paymentDate,
+        paymentTime: (paymentTime || '').slice(0, 5),
+        paymentMethod: input.paymentMethod,
+        onlineDepositPaid,
+        onlineDepositAmountArs,
+        collectedAmountArs,
+        clientName: input.clientName || null,
+        clientContact: input.clientContact || null,
+        appointmentId: input.appointmentId || null,
+        appointmentRequestNumber: appointment?.requestNumber,
+        createdByUserId: staff.user.id,
+        createdByDisplayName: staff.profile.display_name,
+        createdAt: new Date().toISOString(),
+      };
+    } else {
+      rpcFailed = true;
+      rpcError = error;
+    }
+  } catch (err) {
+    rpcFailed = true;
+    rpcError = err;
+  }
+
+  // 2. Persistencia directa en tabla service_payments (si la RPC falló o no está en caché de esquema)
+  if (rpcFailed || !persistedRecord) {
+    let resolvedServiceId: string | null = null;
+    if (input.serviceName !== 'Otros') {
+      try {
+        const { data: srvData } = await supabase
+          .from('services')
+          .select('id')
+          .or(`name.eq.${input.serviceName},name.eq.Corte + barba`)
+          .limit(1)
+          .maybeSingle();
+        if (srvData?.id) resolvedServiceId = srvData.id;
+      } catch {}
     }
 
-    const row = Array.isArray(data) ? data[0] : data;
-    const newRecord: ServicePayment = {
-      id: row?.payment_id || crypto.randomUUID(),
-      barberId: input.barberId,
-      barberName,
-      serviceId: null,
-      serviceName: input.serviceName,
-      serviceOtherDetail: input.serviceName === 'Otros' ? input.serviceOtherDetail || null : null,
-      servicePriceArs: input.servicePriceArs,
-      discountArs,
-      finalAmountArs,
-      paymentDate,
-      paymentTime,
-      paymentMethod: input.paymentMethod,
-      onlineDepositPaid,
-      onlineDepositAmountArs,
-      collectedAmountArs,
-      clientName: input.clientName || null,
-      clientContact: input.clientContact || null,
-      appointmentId: input.appointmentId || null,
-      appointmentRequestNumber: appointment?.requestNumber,
-      createdByUserId: staff.user.id,
-      createdByDisplayName: staff.profile.display_name,
-      createdAt: new Date().toISOString(),
+    const insertPayload: any = {
+      barber_id: input.barberId,
+      service_id: resolvedServiceId,
+      service_name: input.serviceName === 'Corte y barba' ? 'Corte y barba' : input.serviceName,
+      service_other_detail: input.serviceName === 'Otros' ? (input.serviceOtherDetail?.trim() || null) : null,
+      service_price_ars: input.servicePriceArs,
+      discount_ars: discountArs,
+      final_amount_ars: finalAmountArs,
+      payment_date: paymentDate,
+      payment_time: formattedTime,
+      payment_method: input.paymentMethod,
+      online_deposit_paid: onlineDepositPaid,
+      online_deposit_amount_ars: onlineDepositAmountArs,
+      collected_amount_ars: collectedAmountArs,
+      client_name: input.clientName?.trim() || null,
+      client_contact: input.clientContact?.trim() || null,
+      appointment_id: input.appointmentId ? input.appointmentId : null,
+      created_by_user_id: staff.user.id,
+      created_by_display_name: staff.profile.display_name,
     };
 
-    // Actualizar también almacén local para sincronización inmediata
-    localPaymentsStore = [newRecord, ...localPaymentsStore];
-    return newRecord;
-  } catch (err) {
-    console.warn('[KANI payments] Excepción en record_service_payment, recurriendo a guardado compatible:', err);
-    return fallbackDirectRecord(input, staff, appointment, barberName, paymentDate, paymentTime, discountArs, finalAmountArs, onlineDepositPaid, onlineDepositAmountArs, collectedAmountArs);
-  }
-}
+    const { data: insertedRow, error: insertError } = await supabase
+      .from('service_payments')
+      .insert(insertPayload)
+      .select()
+      .single();
 
-async function fallbackDirectRecord(
-  input: RecordServicePaymentInput,
-  staff: AuthenticatedStaff,
-  appointment: RealAppointment | null | undefined,
-  barberName: string,
-  paymentDate: string,
-  paymentTime: string,
-  discountArs: number,
-  finalAmountArs: number,
-  onlineDepositPaid: boolean,
-  onlineDepositAmountArs: number,
-  collectedAmountArs: number,
-): Promise<ServicePayment> {
-  const newRecord: ServicePayment = {
-    id: crypto.randomUUID(),
-    barberId: input.barberId,
-    barberName,
-    serviceId: null,
-    serviceName: input.serviceName,
-    serviceOtherDetail: input.serviceName === 'Otros' ? input.serviceOtherDetail || null : null,
-    servicePriceArs: input.servicePriceArs,
-    discountArs,
-    finalAmountArs,
-    paymentDate,
-    paymentTime,
-    paymentMethod: input.paymentMethod,
-    onlineDepositPaid,
-    onlineDepositAmountArs,
-    collectedAmountArs,
-    clientName: input.clientName || null,
-    clientContact: input.clientContact || null,
-    appointmentId: input.appointmentId || null,
-    appointmentRequestNumber: appointment?.requestNumber,
-    createdByUserId: staff.user.id,
-    createdByDisplayName: staff.profile.display_name,
-    createdAt: new Date().toISOString(),
-  };
-
-  // Si hay un turno vinculado, actualizar su estado en Supabase si es posible
-  if (input.appointmentId) {
-    try {
-      await supabase
-        .from('appointments')
-        .update({
-          balance_paid: true,
-          status: appointment?.statusCode === 'CONFIRMED' || appointment?.statusCode === 'PENDING' ? 'COMPLETED' : appointment?.statusCode,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', input.appointmentId);
-    } catch (e) {
-      console.warn('[KANI payments] No se pudo actualizar balance_paid en appointments:', e);
+    if (insertError) {
+      console.error('[KANI payments] Error al persistir cobro en base de datos:', insertError);
+      throw new Error(
+        insertError.message || rpcError?.message || 'No se pudo guardar el registro de cobro en la base de datos.'
+      );
     }
+
+    // Si hay un turno vinculado, actualizar su estado en appointments
+    if (input.appointmentId) {
+      try {
+        await supabase
+          .from('appointments')
+          .update({
+            balance_paid: true,
+            status: (appointment?.statusCode === 'CONFIRMED' || appointment?.statusCode === 'PENDING') ? 'COMPLETED' : appointment?.statusCode,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', input.appointmentId);
+      } catch (e) {
+        console.warn('[KANI payments] No se pudo actualizar balance_paid en appointments:', e);
+      }
+    }
+
+    persistedRecord = {
+      id: insertedRow.id,
+      barberId: insertedRow.barber_id,
+      barberName,
+      serviceId: insertedRow.service_id,
+      serviceName: insertedRow.service_name === 'Corte + barba' ? 'Corte y barba' : (insertedRow.service_name as ServicePaymentType),
+      serviceOtherDetail: insertedRow.service_other_detail,
+      servicePriceArs: insertedRow.service_price_ars,
+      discountArs: insertedRow.discount_ars,
+      finalAmountArs: insertedRow.final_amount_ars,
+      paymentDate: insertedRow.payment_date,
+      paymentTime: (insertedRow.payment_time || '').slice(0, 5),
+      paymentMethod: insertedRow.payment_method as PaymentMethod,
+      onlineDepositPaid: insertedRow.online_deposit_paid,
+      onlineDepositAmountArs: insertedRow.online_deposit_amount_ars,
+      collectedAmountArs: insertedRow.collected_amount_ars,
+      clientName: insertedRow.client_name,
+      clientContact: insertedRow.client_contact,
+      appointmentId: insertedRow.appointment_id,
+      appointmentRequestNumber: appointment?.requestNumber,
+      createdByUserId: insertedRow.created_by_user_id,
+      createdByDisplayName: insertedRow.created_by_display_name,
+      createdAt: insertedRow.created_at,
+      updatedAt: insertedRow.updated_at,
+    };
   }
 
-  localPaymentsStore = [newRecord, ...localPaymentsStore];
-  return newRecord;
+  return persistedRecord;
 }

@@ -81,6 +81,54 @@ export function Booking() {
     if (step >= 2) void import('@/components/kani/phone-input');
   }, [step]);
   const formRef = useRef<HTMLFormElement>(null);
+  // Recuperación automática de posición y visualización del header al cerrar el teclado en mobile
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handleFocusOut = () => {
+      // Pequeño retardo para verificar si el foco pasó a otro campo del mismo formulario
+      window.setTimeout(() => {
+        const active = document.activeElement;
+        const isFormField = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.tagName === 'SELECT');
+        if (!isFormField && window.scrollY > 0) {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      }, 100);
+    };
+
+    let prevHeight = window.visualViewport?.height ?? window.innerHeight;
+    const handleViewportResize = () => {
+      const currentHeight = window.visualViewport?.height ?? window.innerHeight;
+      // Cuando el viewport se expande tras cerrarse el teclado virtual (mínimo 60px de diferencia)
+      if (currentHeight > prevHeight + 60) {
+        if (window.scrollY > 0) {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      }
+      prevHeight = currentHeight;
+    };
+
+    const form = formRef.current;
+    if (form) {
+      form.addEventListener('focusout', handleFocusOut);
+    }
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handleViewportResize);
+    } else {
+      window.addEventListener('resize', handleViewportResize);
+    }
+
+    return () => {
+      if (form) {
+        form.removeEventListener('focusout', handleFocusOut);
+      }
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', handleViewportResize);
+      } else {
+        window.removeEventListener('resize', handleViewportResize);
+      }
+    };
+  }, [step]);
   const ctaRef = useRef<HTMLDivElement>(null);
   const progressRef = useRef<HTMLDivElement>(null);
   const [progressStart, setProgressStart] = useState(0);

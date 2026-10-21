@@ -115,7 +115,7 @@ export function PhoneInput({
       placeholder={placeholder || phonePlaceholder(country)}
       className={cn(
         "bg-background",
-        size === 'sm' ? "h-10 text-xs sm:text-sm" : "h-12",
+        size === 'sm' ? "h-10 text-xs sm:text-sm" : "h-[52px]",
         inputClassName
       )}
       aria-invalid={ariaInvalid}
@@ -126,7 +126,7 @@ export function PhoneInput({
   return (
     <div
       className={cn(
-        "phone-input-row",
+        "phone-input-row items-center",
         size === 'sm' && "admin-phone-input-row",
         className
       )}
@@ -212,7 +212,7 @@ export function PhoneInput({
       </div>
 
       {controlClassName || feedback ? (
-        <span className={cn("field-control", controlClassName)}>
+        <span className={cn("field-control h-[52px] flex items-center", size === 'sm' && "h-10", controlClassName)}>
           {inputElement}
           {feedback}
         </span>

@@ -236,10 +236,15 @@ export function AdminPayments() {
 
     setIsSubmitting(true);
     try {
-      await recordServicePayment(input, staff, linkedAppointment);
+      const persisted = await recordServicePayment(input, staff, linkedAppointment);
       setSuccessMessage("Cobro de servicio registrado exitosamente.");
       handleResetForm();
-      await loadData();
+      // Si la fecha del cobro no coincide con el filtro de fecha activo, sincronizar para verlo de inmediato
+      if (filterDate && filterDate !== persisted.paymentDate) {
+        setFilterDate(persisted.paymentDate);
+      } else {
+        await loadData();
+      }
     } catch (err: any) {
       console.error("[AdminPayments] Error al guardar cobro:", err);
       setErrorMessage(err.message || "No se pudo guardar el registro de cobro.");
