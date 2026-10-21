@@ -760,6 +760,51 @@ html[data-theme='dark'] .studio-map-card {
     margin-bottom: 32px;
   }
 
+  /* Interacción limpia del stepper en desktop: elimina el fondo rectangular en hover/active de los pasos */
+  .booking-progress > button:hover,
+  .booking-progress > button:active,
+  .booking-progress > button:focus,
+  .booking-page .booking-progress > button:hover,
+  .booking-page .booking-progress > button:active,
+  .booking-page .booking-progress > button:focus {
+    background: transparent !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .booking-progress > button:focus-visible,
+  .booking-page .booking-progress > button:focus-visible {
+    outline: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    background-color: transparent !important;
+  }
+
+  /* Indicador de foco accesible y discreto en el círculo del paso, sin bloque rectangular */
+  .booking-progress > button:focus-visible > span,
+  .booking-page .booking-progress > button:focus-visible > span {
+    outline: 2px solid var(--gold);
+    outline-offset: 3px;
+    border-radius: 50%;
+  }
+
+  html[data-theme='light'] .booking-page .booking-progress > button:focus-visible > span,
+  html[data-theme='light'] .booking-progress > button:focus-visible > span {
+    outline-color: #702B3A;
+  }
+
+  /* Realce sutil en hover sobre pasos anteriores completados sin fondo rectangular */
+  .booking-progress > button.complete:hover,
+  .booking-page .booking-progress > button.complete:hover {
+    color: var(--foreground) !important;
+  }
+
+  .booking-progress > button.complete:hover > span,
+  .booking-page .booking-progress > button.complete:hover > span {
+    transform: scale(1.08);
+    transition: transform 0.15s ease;
+  }
+
   .booking-page .booking-title-row {
     display: flex;
     align-items: center;
