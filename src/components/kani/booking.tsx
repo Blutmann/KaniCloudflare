@@ -83,6 +83,30 @@ export function Booking() {
   const formRef = useRef<HTMLFormElement>(null);
   const ctaRef = useRef<HTMLDivElement>(null);
   const progressRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const prevStepRef = useRef(step);
+
+  useEffect(() => {
+    document.documentElement.classList.add('booking-flow-active');
+    document.body.classList.add('booking-flow-active');
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = 0;
+    }
+    return () => {
+      document.documentElement.classList.remove('booking-flow-active');
+      document.body.classList.remove('booking-flow-active');
+    };
+  }, []);
+
+  useEffect(() => {
+    if (prevStepRef.current !== step) {
+      prevStepRef.current = step;
+      if (scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTop = 0;
+      }
+    }
+  }, [step]);
+
   const [progressStart, setProgressStart] = useState(0);
   const [progressWidth, setProgressWidth] = useState(0);
   useLayoutEffect(() => {
@@ -546,91 +570,380 @@ export function Booking() {
   const timeSlots = visibleSlots;
   const daysInMonth = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
   const offset = (new Date(month.getFullYear(), month.getMonth(), 1).getDay() + 6) % 7;
-  return <main className={`site-container booking-page ${step === 5 ? 'booking-summary-page' : ''}`}><div ref={progressRef} className="booking-progress" style={{ '--progress-start': `${progressStart}px`, '--progress-width': `${progressWidth}px` } as CSSProperties} aria-label={`Paso ${step + 1} de 6: ${steps[step]}`}>{steps.map((name, i) => <Button key={name} variant="ghost" disabled={i > step} aria-current={i === step ? 'step' : undefined} onClick={() => move(i)} className={i === step ? 'current' : i < step ? 'complete' : ''}><span>{i < step ? <Check size={13} /> : String(i + 1).padStart(2, '0')}</span><small>{name}</small></Button>)}</div><div className="booking-layout"><section className="min-w-0"><div className={`booking-title-row ${step === 0 ? 'booking-service-heading' : ''} ${step === 1 ? 'booking-barber-heading' : ''} ${step === 2 ? 'booking-date-heading' : ''} ${step === 3 ? 'booking-time-heading' : ''} ${step === 4 ? 'booking-contact-heading' : ''} ${step === 5 ? 'booking-summary-heading' : ''}`}><h1 className="section-title">{titles[step]}</h1>{step === 3 && date && <span className="booking-time-heading-date"><CalendarDays size={16} />{dateLabel(date)}</span>}</div>{subtitles[step] && <p className="mb-8 mt-3 text-muted-foreground">{subtitles[step]}</p>}
-    {step === 0 && <div className="booking-service-options space-y-3">{configuredServices.map(s => <Button key={s.id} variant="outline" aria-pressed={service === s.id} className={`booking-option service-option ${service === s.id ? 'selected' : ''}`} onClick={() => { if (service !== s.id) chooseService(s.id) }}><span className="option-icon"><span className="service-icon-mask service-icon-mask-light" style={{ maskImage: `url(${serviceIconById[s.id].light})`, WebkitMaskImage: `url(${serviceIconById[s.id].light})` }} aria-hidden="true" /><span className="service-icon-mask service-icon-mask-dark" style={{ maskImage: `url(${serviceIconById[s.id].dark})`, WebkitMaskImage: `url(${serviceIconById[s.id].dark})` }} aria-hidden="true" /><img className="service-icon-light" src={serviceIconById[s.id].light} alt="" aria-hidden="true" width={44} height={44} /><img className="service-icon-dark" src={serviceIconById[s.id].dark} alt="" aria-hidden="true" width={44} height={44} /></span><span className="booking-option-copy min-w-0 flex-1 text-left"><span className="booking-option-name block text-lg font-medium">{s.name}</span><span className="booking-option-meta"><span className="booking-option-duration block text-sm text-muted-foreground">{s.duration} minutos</span><span className="booking-option-price block text-base">{money(s.price)}</span></span></span><span className="selection-circle">{service === s.id && <Check size={12} />}</span></Button>)}</div>}
-    {step === 1 && <div className="booking-barber-options space-y-3">{barbers.map((b, i) => <Button key={b} variant="outline" aria-pressed={barber === b && !barberDeferred} className={`booking-option ${barber === b && !barberDeferred ? 'selected' : ''}`} onClick={() => chooseBarber(b)}><span className={`barber-avatar avatar-${i}`}>{b.charAt(0)}</span><span className="booking-option-copy flex-1 text-center"><span className="booking-barber-name block text-lg">{b}</span><span className="booking-barber-handle mt-1 block text-sm text-muted-foreground">{({ Lautaro: '@lautarodejesus_', Gonzalo: '@gonzalopierucci', 'Valentín': '@valentincarrizo_' } as Record<Barber, string>)[b]}</span></span><span className="selection-circle">{barber === b && !barberDeferred && <Check size={12} />}</span></Button>)}<Button variant="outline" aria-pressed={barberDeferred} className={`booking-defer-option ${barberDeferred ? 'selected' : ''}`} onClick={() => { setBarber(null); setBarberDeferred(true); setPublicSlots([]); setAvailabilityError(''); setDate(''); setTime(''); }}><span className="barber-defer-mark">?</span><span className="booking-defer-copy booking-option-copy flex-1 text-center"><span className="block text-base font-medium">Elegir más adelante</span><span className="mt-1 block text-xs text-muted-foreground">Elegir según fecha y horario</span></span><span className="selection-circle">{barberDeferred && <Check size={12} />}</span></Button></div>}
-    {step === 2 && <div className="calendar-panel"><div className="calendar-header mb-7 flex items-center justify-between"><h2 className="capitalize">{month.toLocaleDateString('es-AR', { month: 'long' }).replace(/^./, letter => letter.toUpperCase()) + ' ' + month.getFullYear()}</h2><div className="flex gap-2"><Button variant="ghost" size="icon" aria-label="Mes anterior" disabled={month.getFullYear() === today.getFullYear() && month.getMonth() === today.getMonth()} onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))}><ChevronLeft /></Button><Button variant="ghost" size="icon" aria-label="Mes siguiente" disabled={month.getFullYear() === lastBookingDay.getFullYear() && month.getMonth() === lastBookingDay.getMonth()} onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))}><ChevronRight /></Button></div></div><div className="calendar-grid">{['L', 'M', 'X', 'J', 'V', 'S', 'D'].map((d, i) => <span key={i} className="calendar-weekday">{d}</span>)}{Array.from({ length: offset }, (_, i) => <span key={`blank-${i}`} />)}{Array.from({ length: daysInMonth }, (_, i) => { const day = new Date(month.getFullYear(), month.getMonth(), i + 1); const value = isoDate(day); const disabled = availabilityLoading || !service || !availabilityBarber && !barberDeferred || !isBookingDate(value, todayValue, bookingEndValue) || !availableDatesSet.has(value); return <Button key={value} variant="ghost" className={`calendar-day ${date === value ? 'selected' : ''} ${value === todayValue ? 'today' : ''}`} disabled={disabled} aria-label={dateLabel(value)} aria-pressed={date === value} onClick={() => { if (date !== value) { setDate(value); setTime(''); if (barberDeferred) setBarber(null); } }}>{i + 1}</Button>; })}</div>{availabilityError && <p role="alert" className="mt-5 text-destructive">{availabilityError}</p>}<p className="calendar-note mt-6 flex items-center gap-2 text-xs text-muted-foreground"><span className="h-1 w-1 rounded-full bg-gold" /> Atendemos de lunes a sábado de 10 a 20 hs.</p></div>}
-    {step === 3 && <div><div className="booking-time-grid grid grid-cols-3 gap-2 sm:grid-cols-4">{timeSlots.map(slot => <Button key={slot.time} variant="outline" className={`booking-time-slot h-12 ${time === slot.time ? 'selected' : ''}`} aria-pressed={time === slot.time} aria-label={slot.time} onClick={() => { setTime(slot.time); if (barberDeferred) setBarber(null); }}>{slot.time}</Button>)}</div>{barberDeferred && time && <div className="barber-choice-inline"><h2>¿Quién te va a atender?</h2><div className="barber-choice-list">{candidateBarbers.map(candidate => <Button key={candidate} variant="outline" aria-pressed={barber === candidate} className={barber === candidate ? 'selected' : ''} onClick={() => setBarber(candidate)}>{candidate}</Button>)}</div></div>}{availabilityError && <p role="alert" className="py-3 text-sm text-destructive">{availabilityError}</p>}{slots.length === 0 && !availabilityLoading && <p className="py-6 text-muted-foreground">No hay horarios disponibles. Elegí otra fecha.</p>}</div>}
-    {step === 4 && <form ref={formRef} className="booking-contact-form space-y-3" onSubmit={e => { e.preventDefault(); next(); }}><label className="field-label">Nombre y apellido<span className={`field-control ${statusFor('name')}`}><Input name="name" required minLength={3} autoComplete="name" value={contact.name} onBlur={() => markTouched('name')} onChange={e => setContact({ ...contact, name: e.target.value })} placeholder="Tu nombre completo" aria-invalid={statusFor('name') === 'invalid'} aria-describedby={statusFor('name') === 'invalid' ? 'name-error' : undefined} />{feedbackFor('name')}</span>{statusFor('name') === 'invalid' && <span id="name-error" className="field-validation-message" role="alert">{fieldMessage('name')}</span>}</label><label className="field-label">Celular<Suspense fallback={<div className="h-12 w-full animate-pulse rounded-md bg-muted" />}><PhoneInput name="phone" required value={contact.phone} country={phoneCountry} onCountryChange={setPhoneCountry} onChange={val => setContact(current => ({ ...current, phone: val }))} onBlur={() => markTouched('phone')} controlClassName={statusFor('phone')} feedback={feedbackFor('phone')} aria-invalid={statusFor('phone') === 'invalid'} aria-describedby={statusFor('phone') === 'invalid' ? 'phone-error' : undefined} /></Suspense>{statusFor('phone') === 'invalid' && <span id="phone-error" className="field-validation-message" role="alert">{fieldMessage('phone')}</span>}</label><label className="field-label">Email<span className={`field-control ${statusFor('email')}`}><Input name="email" type="email" required autoComplete="email" value={contact.email} onBlur={() => markTouched('email')} onChange={e => setContact({ ...contact, email: e.target.value })} placeholder="nombre@email.com" aria-invalid={statusFor('email') === 'invalid'} aria-describedby={statusFor('email') === 'invalid' ? 'email-error' : undefined} />{feedbackFor('email')}</span>{statusFor('email') === 'invalid' && <span id="email-error" className="field-validation-message" role="alert">{fieldMessage('email')}</span>}</label><label className="field-label">Observaciones <span className="text-xs font-normal text-muted-foreground">(opcional)</span><span className={`field-control ${statusFor('notes')}`}><textarea name="notes" className="notes-input" maxLength={500} value={contact.notes} onBlur={() => markTouched('notes')} onChange={e => setContact({ ...contact, notes: e.target.value })} placeholder="Algo que quieras contarnos" aria-invalid="false" />{feedbackFor('notes')}</span></label><Button type="submit" hidden className="hidden" tabIndex={-1}>Continuar</Button></form>}
-    {step === 5 && (
-      <div className="booking-summary-cards space-y-3.5">
-        {/* Card 1: Datos personales */}
-        <section className="booking-summary-card summary-client-card" aria-label="Datos personales">
-          <div className="summary-card-header flex items-center justify-between gap-3">
-            <h2 className="summary-client-name text-base font-semibold text-foreground tracking-tight">{contact.name}</h2>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="summary-edit-button text-gold hover:text-gold/80 h-auto p-0 font-medium text-sm"
-              onClick={() => move(4)}
-              aria-label="Editar datos de contacto"
-            >
-              Editar
-            </Button>
-          </div>
-          <div className="summary-client-details mt-2.5 flex flex-col gap-1.5 text-sm text-muted-foreground">
-            <p className="summary-client-email break-all">{contact.email}</p>
-            <p className="summary-client-phone">{contact.phone}</p>
-          </div>
-        </section>
+  return (
+    <main className={`site-container booking-page ${step === 5 ? 'booking-summary-page' : ''}`}>
+      <div
+        ref={progressRef}
+        className="booking-progress"
+        style={{ '--progress-start': `${progressStart}px`, '--progress-width': `${progressWidth}px` } as CSSProperties}
+        aria-label={`Paso ${step + 1} de 6: ${steps[step]}`}
+      >
+        {steps.map((name, i) => (
+          <Button
+            key={name}
+            variant="ghost"
+            disabled={i > step}
+            aria-current={i === step ? 'step' : undefined}
+            onClick={() => move(i)}
+            className={i === step ? 'current' : i < step ? 'complete' : ''}
+          >
+            <span>{i < step ? <Check size={13} /> : String(i + 1).padStart(2, '0')}</span>
+            <small>{name}</small>
+          </Button>
+        ))}
+      </div>
 
-        {/* Card 2: Datos del turno */}
-        <section className="booking-summary-card summary-appointment-card" aria-label="Datos del turno">
-          <dl className="summary-details-list flex flex-col gap-2.5 text-sm">
-            <div className="summary-detail-row flex justify-between items-baseline gap-4">
-              <dt className="summary-detail-label text-muted-foreground">Servicio</dt>
-              <dd className="summary-detail-value font-medium text-foreground text-right">{selected?.name}</dd>
+      <div ref={scrollContainerRef} className="booking-scroll-content">
+        <div className="booking-layout">
+          <section className="min-w-0">
+            <div className={`booking-title-row ${step === 0 ? 'booking-service-heading' : ''} ${step === 1 ? 'booking-barber-heading' : ''} ${step === 2 ? 'booking-date-heading' : ''} ${step === 3 ? 'booking-time-heading' : ''} ${step === 4 ? 'booking-contact-heading' : ''} ${step === 5 ? 'booking-summary-heading' : ''}`}>
+              <h1 className="section-title">{titles[step]}</h1>
+              {step === 3 && date && (
+                <span className="booking-time-heading-date">
+                  <CalendarDays size={16} />{dateLabel(date)}
+                </span>
+              )}
             </div>
-            <div className="summary-detail-row flex justify-between items-baseline gap-4">
-              <dt className="summary-detail-label text-muted-foreground">Barbero</dt>
-              <dd className="summary-detail-value font-medium text-foreground text-right">{barber}</dd>
-            </div>
-            <div className="summary-detail-row flex justify-between items-baseline gap-4">
-              <dt className="summary-detail-label text-muted-foreground">Fecha</dt>
-              <dd className="summary-detail-value font-medium text-foreground text-right capitalize">{dateLabel(date)}</dd>
-            </div>
-            <div className="summary-detail-row flex justify-between items-baseline gap-4">
-              <dt className="summary-detail-label text-muted-foreground">Horario</dt>
-              <dd className="summary-detail-value font-medium text-foreground text-right">{time} · {selected?.duration} min</dd>
-            </div>
-            {contact.notes.trim() && (
-              <div className="summary-detail-row flex justify-between items-baseline gap-4">
-                <dt className="summary-detail-label text-muted-foreground">Observaciones</dt>
-                <dd className="summary-detail-value text-foreground text-right max-w-[65%] whitespace-pre-wrap">{contact.notes.trim()}</dd>
+            {subtitles[step] && <p className="mb-8 mt-3 text-muted-foreground">{subtitles[step]}</p>}
+
+            {step === 0 && (
+              <div className="booking-service-options space-y-3">
+                {configuredServices.map(s => (
+                  <Button
+                    key={s.id}
+                    variant="outline"
+                    aria-pressed={service === s.id}
+                    className={`booking-option service-option ${service === s.id ? 'selected' : ''}`}
+                    onClick={() => { if (service !== s.id) chooseService(s.id) }}
+                  >
+                    <span className="option-icon">
+                      <span className="service-icon-mask service-icon-mask-light" style={{ maskImage: `url(${serviceIconById[s.id].light})`, WebkitMaskImage: `url(${serviceIconById[s.id].light})` }} aria-hidden="true" />
+                      <span className="service-icon-mask service-icon-mask-dark" style={{ maskImage: `url(${serviceIconById[s.id].dark})`, WebkitMaskImage: `url(${serviceIconById[s.id].dark})` }} aria-hidden="true" />
+                      <img className="service-icon-light" src={serviceIconById[s.id].light} alt="" aria-hidden="true" width={44} height={44} />
+                      <img className="service-icon-dark" src={serviceIconById[s.id].dark} alt="" aria-hidden="true" width={44} height={44} />
+                    </span>
+                    <span className="booking-option-copy min-w-0 flex-1 text-left">
+                      <span className="booking-option-name block text-lg font-medium">{s.name}</span>
+                      <span className="booking-option-meta">
+                        <span className="booking-option-duration block text-sm text-muted-foreground">{s.duration} minutos</span>
+                        <span className="booking-option-price block text-base">{money(s.price)}</span>
+                      </span>
+                    </span>
+                    <span className="selection-circle">{service === s.id && <Check size={12} />}</span>
+                  </Button>
+                ))}
               </div>
             )}
-          </dl>
-        </section>
 
-        {/* Card 3: Card de importes */}
-        <section className="booking-summary-card summary-pricing-card" aria-label="Importes">
-          <dl className="summary-pricing-list flex flex-col gap-2.5 text-sm">
-            <div className="summary-pricing-row flex justify-between items-baseline gap-4">
-              <dt className="summary-pricing-label text-muted-foreground">Precio total del servicio</dt>
-              <dd className="summary-pricing-value font-semibold text-foreground text-right">{selected && money(selected.price)}</dd>
-            </div>
-            <div className="summary-pricing-row flex justify-between items-baseline gap-4">
-              <dt className="summary-pricing-label text-muted-foreground">Importe de la seña</dt>
-              <dd className="summary-pricing-value font-semibold text-gold text-right">{money(depositArs)}</dd>
-            </div>
-            <div className="summary-pricing-row flex justify-between items-baseline gap-4">
-              <dt className="summary-pricing-label text-muted-foreground">Saldo a pagar en el local</dt>
-              <dd className="summary-pricing-value font-semibold text-foreground text-right">{money(remainingPaymentArs)}</dd>
-            </div>
-          </dl>
-          {remainingPaymentArs === 0 && (
-            <p className="summary-payment-note mt-2 text-xs text-muted-foreground">La seña cubre el total del servicio.</p>
-          )}
-        </section>
+            {step === 1 && (
+              <div className="booking-barber-options space-y-3">
+                {barbers.map((b, i) => (
+                  <Button
+                    key={b}
+                    variant="outline"
+                    aria-pressed={barber === b && !barberDeferred}
+                    className={`booking-option ${barber === b && !barberDeferred ? 'selected' : ''}`}
+                    onClick={() => chooseBarber(b)}
+                  >
+                    <span className={`barber-avatar avatar-${i}`}>{b.charAt(0)}</span>
+                    <span className="booking-option-copy flex-1 text-center">
+                      <span className="booking-barber-name block text-lg">{b}</span>
+                      <span className="booking-barber-handle mt-1 block text-sm text-muted-foreground">{({ Lautaro: '@lautarodejesus_', Gonzalo: '@gonzalopierucci', 'Valentín': '@valentincarrizo_' } as Record<Barber, string>)[b]}</span>
+                    </span>
+                    <span className="selection-circle">{barber === b && !barberDeferred && <Check size={12} />}</span>
+                  </Button>
+                ))}
+                <Button
+                  variant="outline"
+                  aria-pressed={barberDeferred}
+                  className={`booking-defer-option ${barberDeferred ? 'selected' : ''}`}
+                  onClick={() => { setBarber(null); setBarberDeferred(true); setPublicSlots([]); setAvailabilityError(''); setDate(''); setTime(''); }}
+                >
+                  <span className="barber-defer-mark">?</span>
+                  <span className="booking-defer-copy booking-option-copy flex-1 text-center">
+                    <span className="block text-base font-medium">Elegir más adelante</span>
+                    <span className="mt-1 block text-xs text-muted-foreground">Elegir según fecha y horario</span>
+                  </span>
+                  <span className="selection-circle">{barberDeferred && <Check size={12} />}</span>
+                </Button>
+              </div>
+            )}
 
-        {/* 4. Aviso de solicitud pendiente — Bordó */}
-        <div className="summary-card-notice flex items-center gap-2.5 text-sm" role="note">
-          <Clock3 size={18} className="shrink-0" aria-hidden="true" />
-          <p>Tu solicitud está pendiente hasta que abones la seña.</p>
+            {step === 2 && (
+              <div className="calendar-panel">
+                <div className="calendar-header mb-7 flex items-center justify-between">
+                  <h2 className="capitalize">{month.toLocaleDateString('es-AR', { month: 'long' }).replace(/^./, letter => letter.toUpperCase()) + ' ' + month.getFullYear()}</h2>
+                  <div className="flex gap-2">
+                    <Button variant="ghost" size="icon" aria-label="Mes anterior" disabled={month.getFullYear() === today.getFullYear() && month.getMonth() === today.getMonth()} onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))}><ChevronLeft /></Button>
+                    <Button variant="ghost" size="icon" aria-label="Mes siguiente" disabled={month.getFullYear() === lastBookingDay.getFullYear() && month.getMonth() === lastBookingDay.getMonth()} onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))}><ChevronRight /></Button>
+                  </div>
+                </div>
+                <div className="calendar-grid">
+                  {['L', 'M', 'X', 'J', 'V', 'S', 'D'].map((d, i) => <span key={i} className="calendar-weekday">{d}</span>)}
+                  {Array.from({ length: offset }, (_, i) => <span key={`blank-${i}`} />)}
+                  {Array.from({ length: daysInMonth }, (_, i) => {
+                    const day = new Date(month.getFullYear(), month.getMonth(), i + 1);
+                    const value = isoDate(day);
+                    const disabled = availabilityLoading || !service || !availabilityBarber && !barberDeferred || !isBookingDate(value, todayValue, bookingEndValue) || !availableDatesSet.has(value);
+                    return (
+                      <Button
+                        key={value}
+                        variant="ghost"
+                        className={`calendar-day ${date === value ? 'selected' : ''} ${value === todayValue ? 'today' : ''}`}
+                        disabled={disabled}
+                        aria-label={dateLabel(value)}
+                        aria-pressed={date === value}
+                        onClick={() => { if (date !== value) { setDate(value); setTime(''); if (barberDeferred) setBarber(null); } }}
+                      >
+                        {i + 1}
+                      </Button>
+                    );
+                  })}
+                </div>
+                {availabilityError && <p role="alert" className="mt-5 text-destructive">{availabilityError}</p>}
+                <p className="calendar-note mt-6 flex items-center gap-2 text-xs text-muted-foreground">
+                  <span className="h-1 w-1 rounded-full bg-gold" /> Atendemos de lunes a sábado de 10 a 20 hs.
+                </p>
+              </div>
+            )}
+
+            {step === 3 && (
+              <div>
+                <div className="booking-time-grid grid grid-cols-3 gap-2 sm:grid-cols-4">
+                  {timeSlots.map(slot => (
+                    <Button
+                      key={slot.time}
+                      variant="outline"
+                      className={`booking-time-slot h-12 ${time === slot.time ? 'selected' : ''}`}
+                      aria-pressed={time === slot.time}
+                      aria-label={slot.time}
+                      onClick={() => { setTime(slot.time); if (barberDeferred) setBarber(null); }}
+                    >
+                      {slot.time}
+                    </Button>
+                  ))}
+                </div>
+                {barberDeferred && time && (
+                  <div className="barber-choice-inline">
+                    <h2>¿Quién te va a atender?</h2>
+                    <div className="barber-choice-list">
+                      {candidateBarbers.map(candidate => (
+                        <Button
+                          key={candidate}
+                          variant="outline"
+                          aria-pressed={barber === candidate}
+                          className={barber === candidate ? 'selected' : ''}
+                          onClick={() => setBarber(candidate)}
+                        >
+                          {candidate}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {availabilityError && <p role="alert" className="py-3 text-sm text-destructive">{availabilityError}</p>}
+                {slots.length === 0 && !availabilityLoading && (
+                  <p className="py-6 text-muted-foreground">No hay horarios disponibles. Elegí otra fecha.</p>
+                )}
+              </div>
+            )}
+
+            {step === 4 && (
+              <form ref={formRef} className="booking-contact-form space-y-3" onSubmit={e => { e.preventDefault(); next(); }}>
+                <label className="field-label">
+                  Nombre y apellido
+                  <span className={`field-control ${statusFor('name')}`}>
+                    <Input
+                      name="name"
+                      required
+                      minLength={3}
+                      autoComplete="name"
+                      value={contact.name}
+                      onBlur={() => markTouched('name')}
+                      onChange={e => setContact({ ...contact, name: e.target.value })}
+                      placeholder="Tu nombre completo"
+                      aria-invalid={statusFor('name') === 'invalid'}
+                      aria-describedby={statusFor('name') === 'invalid' ? 'name-error' : undefined}
+                    />
+                    {feedbackFor('name')}
+                  </span>
+                  {statusFor('name') === 'invalid' && (
+                    <span id="name-error" className="field-validation-message" role="alert">
+                      {fieldMessage('name')}
+                    </span>
+                  )}
+                </label>
+                <label className="field-label">
+                  Celular
+                  <Suspense fallback={<div className="h-12 w-full animate-pulse rounded-md bg-muted" />}>
+                    <PhoneInput
+                      name="phone"
+                      required
+                      value={contact.phone}
+                      country={phoneCountry}
+                      onCountryChange={setPhoneCountry}
+                      onChange={val => setContact(current => ({ ...current, phone: val }))}
+                      onBlur={() => markTouched('phone')}
+                      controlClassName={statusFor('phone')}
+                      feedback={feedbackFor('phone')}
+                      aria-invalid={statusFor('phone') === 'invalid'}
+                      aria-describedby={statusFor('phone') === 'invalid' ? 'phone-error' : undefined}
+                    />
+                  </Suspense>
+                  {statusFor('phone') === 'invalid' && (
+                    <span id="phone-error" className="field-validation-message" role="alert">
+                      {fieldMessage('phone')}
+                    </span>
+                  )}
+                </label>
+                <label className="field-label">
+                  Email
+                  <span className={`field-control ${statusFor('email')}`}>
+                    <Input
+                      name="email"
+                      type="email"
+                      required
+                      autoComplete="email"
+                      value={contact.email}
+                      onBlur={() => markTouched('email')}
+                      onChange={e => setContact({ ...contact, email: e.target.value })}
+                      placeholder="nombre@email.com"
+                      aria-invalid={statusFor('email') === 'invalid'}
+                      aria-describedby={statusFor('email') === 'invalid' ? 'email-error' : undefined}
+                    />
+                    {feedbackFor('email')}
+                  </span>
+                  {statusFor('email') === 'invalid' && (
+                    <span id="email-error" className="field-validation-message" role="alert">
+                      {fieldMessage('email')}
+                    </span>
+                  )}
+                </label>
+                <label className="field-label">
+                  Observaciones <span className="text-xs font-normal text-muted-foreground">(opcional)</span>
+                  <span className={`field-control ${statusFor('notes')}`}>
+                    <textarea
+                      name="notes"
+                      className="notes-input"
+                      maxLength={500}
+                      value={contact.notes}
+                      onBlur={() => markTouched('notes')}
+                      onChange={e => setContact({ ...contact, notes: e.target.value })}
+                      placeholder="Algo que quieras contarnos"
+                      aria-invalid="false"
+                    />
+                    {feedbackFor('notes')}
+                  </span>
+                </label>
+                <Button type="submit" hidden className="hidden" tabIndex={-1}>Continuar</Button>
+              </form>
+            )}
+
+            {step === 5 && (
+              <div className="booking-summary-cards space-y-2 sm:space-y-3.5">
+                {/* Card 1: Datos personales compactada */}
+                <section className="booking-summary-card summary-client-card" aria-label="Datos personales">
+                  <div className="summary-card-header flex items-center justify-between gap-3">
+                    <h2 className="summary-client-name text-sm sm:text-base font-semibold text-foreground tracking-tight">{contact.name}</h2>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="summary-edit-button text-gold hover:text-gold/80 h-auto p-0 font-medium text-xs sm:text-sm"
+                      onClick={() => move(4)}
+                      aria-label="Editar datos de contacto"
+                    >
+                      Editar
+                    </Button>
+                  </div>
+                  <div className="summary-client-details mt-1.5 flex flex-col gap-1 text-xs sm:text-sm text-muted-foreground">
+                    <p className="summary-client-email break-all">{contact.email}</p>
+                    <p className="summary-client-phone">{contact.phone}</p>
+                  </div>
+                </section>
+
+                {/* Card 2: Datos del turno compactada */}
+                <section className="booking-summary-card summary-appointment-card" aria-label="Datos del turno">
+                  <dl className="summary-details-list flex flex-col gap-1.5 sm:gap-2.5 text-xs sm:text-sm">
+                    <div className="summary-detail-row flex justify-between items-baseline gap-3 sm:gap-4">
+                      <dt className="summary-detail-label text-muted-foreground">Servicio</dt>
+                      <dd className="summary-detail-value font-medium text-foreground text-right">{selected?.name}</dd>
+                    </div>
+                    <div className="summary-detail-row flex justify-between items-baseline gap-3 sm:gap-4">
+                      <dt className="summary-detail-label text-muted-foreground">Barbero</dt>
+                      <dd className="summary-detail-value font-medium text-foreground text-right">{barber}</dd>
+                    </div>
+                    <div className="summary-detail-row flex justify-between items-baseline gap-3 sm:gap-4">
+                      <dt className="summary-detail-label text-muted-foreground">Fecha</dt>
+                      <dd className="summary-detail-value font-medium text-foreground text-right capitalize">{dateLabel(date)}</dd>
+                    </div>
+                    <div className="summary-detail-row flex justify-between items-baseline gap-3 sm:gap-4">
+                      <dt className="summary-detail-label text-muted-foreground">Horario</dt>
+                      <dd className="summary-detail-value font-medium text-foreground text-right">{time} · {selected?.duration} min</dd>
+                    </div>
+                    {contact.notes.trim() && (
+                      <div className="summary-detail-row flex justify-between items-baseline gap-3 sm:gap-4">
+                        <dt className="summary-detail-label text-muted-foreground">Observaciones</dt>
+                        <dd className="summary-detail-value text-foreground text-right max-w-[65%] whitespace-pre-wrap">{contact.notes.trim()}</dd>
+                      </div>
+                    )}
+                  </dl>
+                </section>
+
+                {/* Card 3: Card de importes compactada */}
+                <section className="booking-summary-card summary-pricing-card" aria-label="Importes">
+                  <dl className="summary-pricing-list flex flex-col gap-1.5 sm:gap-2.5 text-xs sm:text-sm">
+                    <div className="summary-pricing-row flex justify-between items-baseline gap-3 sm:gap-4">
+                      <dt className="summary-pricing-label text-muted-foreground">Precio total del servicio</dt>
+                      <dd className="summary-pricing-value font-semibold text-foreground text-right">{selected && money(selected.price)}</dd>
+                    </div>
+                    <div className="summary-pricing-row flex justify-between items-baseline gap-3 sm:gap-4">
+                      <dt className="summary-pricing-label text-muted-foreground">Importe de la seña</dt>
+                      <dd className="summary-pricing-value font-semibold text-gold text-right">{money(depositArs)}</dd>
+                    </div>
+                    <div className="summary-pricing-row flex justify-between items-baseline gap-3 sm:gap-4">
+                      <dt className="summary-pricing-label text-muted-foreground">Saldo a pagar en el local</dt>
+                      <dd className="summary-pricing-value font-semibold text-foreground text-right">{money(remainingPaymentArs)}</dd>
+                    </div>
+                  </dl>
+                  {remainingPaymentArs === 0 && (
+                    <p className="summary-payment-note mt-1.5 text-xs text-muted-foreground">La seña cubre el total del servicio.</p>
+                  )}
+                </section>
+
+                {/* 4. Aviso de solicitud pendiente — Bordó */}
+                <div className="summary-card-notice flex items-center gap-2 text-xs sm:text-sm" role="note">
+                  <Clock3 size={15} className="shrink-0" aria-hidden="true" />
+                  <p>Tu solicitud está pendiente hasta que abones la seña.</p>
+                </div>
+              </div>
+            )}
+
+            {step === 0 && (
+              <p className="booking-deposit-notice" role="note">
+                <Clock3 size={16} aria-hidden="true" />
+                <span>Tu turno requiere abonar una seña. En el resumen verás el importe exacto, el total y el saldo restante.</span>
+              </p>
+            )}
+            {error && <p role="alert" className="mt-5 text-destructive">{error}</p>}
+          </section>
         </div>
       </div>
-    )}
-    {step === 0 && <p className="booking-deposit-notice" role="note"><Clock3 size={16} aria-hidden="true" /><span>Tu turno requiere abonar una seña. En el resumen verás el importe exacto, el total y el saldo restante.</span></p>}{error && <p role="alert" className="mt-5 text-destructive">{error}</p>}{mobileMenuOpen ? <MobileMenuAction /> : <div ref={ctaRef} className="booking-cta"><div className="booking-cta-inner flex items-center"><Button variant="outline" className="booking-back-button" onClick={() => move(step - 1)} disabled={step === 0 || submitting}><ArrowLeft size={14} aria-hidden="true" /> Volver</Button><Button disabled={!canNext || submitting} className="action-positive booking-next-button h-12 px-6" onClick={step === 5 ? submit : next}>{step === 5 ? (submitting ? 'Preparando pago seguro…' : 'Pagar seña') : 'Continuar'}</Button></div></div>}
-    </section></div></main>;
+
+      {mobileMenuOpen ? (
+        <MobileMenuAction />
+      ) : (
+        <div ref={ctaRef} className="booking-cta">
+          <div className="booking-cta-inner flex items-center">
+            <Button variant="outline" className="booking-back-button" onClick={() => move(step - 1)} disabled={step === 0 || submitting}>
+              <ArrowLeft size={14} aria-hidden="true" /> Volver
+            </Button>
+            <Button disabled={!canNext || submitting} className="action-positive booking-next-button h-12 px-6" onClick={step === 5 ? submit : next}>
+              {step === 5 ? (submitting ? 'Preparando pago seguro…' : 'Pagar seña') : 'Continuar'}
+            </Button>
+          </div>
+        </div>
+      )}
+    </main>
+  );
 }
