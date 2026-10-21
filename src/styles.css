@@ -646,8 +646,7 @@ html[data-theme="light"] .booking-option.selected .option-icon img { filter: bri
   }
 }
 .studio-page { max-width: 1020px; padding-top: 64px; padding-bottom: 88px; min-height: 620px; }
-.studio-page-header { display: flex; align-items: end; justify-content: space-between; gap: 30px; border-bottom: 1px solid var(--border); padding-bottom: 34px; }
-.studio-page-lead { max-width: 560px; margin-top: 16px; color: var(--muted-foreground); line-height: 1.7; }
+.studio-page-header { display: flex; align-items: end; justify-content: space-between; gap: 30px; border-bottom: 1px solid var(--border); padding-bottom: 22px; }
 .studio-booking-cta-wrap { display: flex; justify-content: center; width: calc((100% - 32px) / 3); margin-top: 22px; }
 .studio-booking-cta { width: 100%; min-height: 50px; flex-shrink: 0; border-color: var(--gold) !important; font-weight: 700; }
 .studio-booking-cta:hover { border-color: var(--gold) !important; }
@@ -660,6 +659,98 @@ html[data-theme="light"] .booking-option.selected .option-icon img { filter: bri
 .studio-info-card h2 { font-size: 17px; font-weight: 600; }
 .studio-info-card p { margin-top: 8px; color: var(--muted-foreground); line-height: 1.5; }
 .studio-card-action { display: inline-flex; align-items: center; gap: 6px; margin-top: 10px; color: var(--gold); font-family: var(--font-sans); font-size: 12px; font-weight: 700; }
+
+/* Card de Google Maps en Contacto */
+.studio-map-card {
+  width: 100%;
+  margin-top: 36px;
+  border: 1px solid color-mix(in oklch, var(--gold) 18%, var(--border));
+  border-radius: var(--radius-card, 0.9rem);
+  background: var(--surface);
+  box-shadow: 0 12px 30px rgb(0 0 0 / 0.16);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.studio-map-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in oklch, var(--surface) 95%, transparent);
+}
+
+.studio-map-header-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.studio-map-title {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--foreground);
+  margin: 0;
+  line-height: 1.25;
+}
+
+.studio-map-address {
+  font-size: 13px;
+  color: var(--muted-foreground);
+  margin-top: 2px;
+  line-height: 1.35;
+}
+
+.studio-map-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--gold);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 0.2s ease;
+}
+
+.studio-map-link:hover {
+  color: var(--foreground);
+}
+
+.studio-map-link:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
+}
+
+.studio-map-frame-wrap {
+  position: relative;
+  width: 100%;
+  height: 400px;
+  background: var(--chrome);
+}
+
+.studio-map-iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+}
+
+html[data-theme='light'] .studio-map-card {
+  background: #ffffff29;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+html[data-theme='dark'] .studio-map-card {
+  background: #1818189c !important;
+}
 @media(min-width:1500px) { .home-hero { height: 660px; } }
 @media(min-width:768px) {
   .site-shell:has(.booking-cta) { padding-bottom: calc(var(--site-footer-height, 170px) + var(--booking-cta-height, 70px)); }
@@ -1134,14 +1225,16 @@ html[data-theme="light"] .booking-option.selected .option-icon img { filter: bri
  .booking-defer-option .barber-defer-mark { width: 40px; height: 40px; flex-basis: 40px; }
  .phone-input-row { grid-template-columns: 126px minmax(0, 1fr); }
  .phone-country-trigger { font-size: 11px; }
- .studio-page { min-height: 0; padding-top: 32px; padding-bottom: 32px; }
- .studio-page-header { align-items: flex-start; flex-direction: column; gap: 22px; padding-bottom: 26px; }
- .studio-booking-cta-wrap { margin-top: 16px; }
- .studio-booking-cta-wrap { width: 100%; }
+ .studio-page { min-height: 0; padding-top: 32px; padding-bottom: 40px; }
+ .studio-page-header { align-items: flex-start; flex-direction: column; gap: 10px; padding-bottom: 18px; }
+ .studio-booking-cta-wrap { margin-top: 16px; width: 100%; }
  .studio-booking-cta { width: 100%; min-height: 50px; }
- .studio-page-lead { margin-top: 12px; line-height: 1.5; }
  .studio-info-grid { grid-template-columns: 1fr; grid-auto-rows: minmax(136px, auto); gap: 10px; }
  .studio-info-card { min-height: 0; padding: 14px; gap: 10px; }
+ .studio-map-card { margin-top: 24px; }
+ .studio-map-header { padding: 12px 14px; flex-wrap: wrap; gap: 10px; }
+ .studio-map-address { font-size: 12px; }
+ .studio-map-frame-wrap { height: 360px; }
  .barber-choice-list { grid-template-columns: repeat(3,minmax(0,1fr)); }
  .barber-choice-list > button { min-height: 48px; padding-inline: 6px; font-size: 12px; }
  .booking-defer-copy { font-size: 12px; }

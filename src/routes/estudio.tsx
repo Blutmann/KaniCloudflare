@@ -5,6 +5,8 @@ import { pageHead } from "@/lib/kani-head";
 
 const mapsUrl =
   "https://www.google.com/maps/place/KANI+BARBER+STUDIO/data=!4m2!3m1!1s0x0:0x48bcfe7b2ea7ba60";
+const mapsEmbedUrl =
+  "https://maps.google.com/maps?cid=5241343871369591392&hl=es&output=embed";
 const instagramUrl = "https://www.instagram.com/kanibarberstudio/";
 
 export const Route = createFileRoute("/estudio")({
@@ -24,9 +26,6 @@ function StudioPage() {
         <div>
           <p className="eyebrow">Kani Barber Studio</p>
           <h1 className="section-title">Contacto</h1>
-          <p className="studio-page-lead">
-            Bajá un cambio. Sentite vos.
-          </p>
         </div>
       </div>
       <div className="studio-info-grid">
@@ -50,7 +49,7 @@ function StudioPage() {
           <Instagram className="studio-info-icon" size={22} />
           <div>
             <h2>Instagram</h2>
-          <p>Seguinos en Instagram y conocé nuestro trabajo.</p>
+            <p>Seguinos en Instagram y conocé nuestro trabajo.</p>
             <span className="studio-card-action">@kanibarberstudio <ArrowRight size={15} /></span>
           </div>
         </a>
@@ -61,6 +60,43 @@ function StudioPage() {
             Solicitar turno <ArrowRight />
           </Link>
         </Button>
+      </div>
+      <div className="studio-map-card">
+        <div className="studio-map-header">
+          <div className="studio-map-header-info">
+            <MapPin className="studio-info-icon" size={20} />
+            <div>
+              <h2 className="studio-map-title">Kani Barber Studio</h2>
+              <p className="studio-map-address">San Isidro Labrador 7, Martínez · Buenos Aires</p>
+            </div>
+          </div>
+          <a
+            href={mapsUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="studio-map-link"
+            aria-label="Abrir Kani Barber Studio en Google Maps para obtener indicaciones"
+          >
+            Cómo llegar <ArrowRight size={14} />
+          </a>
+        </div>
+        <div className="studio-map-frame-wrap">
+          <iframe
+            src={mapsEmbedUrl}
+            title="Ubicación de Kani Barber Studio en Google Maps"
+            className="studio-map-iframe"
+            loading="lazy"
+            allowFullScreen
+            referrerPolicy="no-referrer-when-downgrade"
+          >
+            <p>
+              Tu navegador no soporta iframes. Podés{" "}
+              <a href={mapsUrl} target="_blank" rel="noreferrer">
+                ver la ubicación de Kani Barber Studio directamente en Google Maps
+              </a>.
+            </p>
+          </iframe>
+        </div>
       </div>
     </main>
   );
