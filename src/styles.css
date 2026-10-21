@@ -3485,6 +3485,18 @@ html[data-theme='dark'] .admin-section-nav-link.is-active:active {
    ============================================================================== */
 
 /* 1. Wrappers y celdas de grilla en formularios y filtros administrativos */
+.admin-shell .grid > div,
+.admin-shell .grid > input,
+.admin-shell .grid > select,
+.admin-page .grid > div,
+.admin-page .grid > input,
+.admin-page .grid > select,
+.admin-mobile-page .grid > div,
+.admin-mobile-page .grid > input,
+.admin-mobile-page .grid > select,
+.admin-schedule-page .grid > div,
+.admin-schedule-page .grid > input,
+.admin-schedule-page .grid > select,
 .admin-payment-form-grid > div,
 .payment-field-fecha,
 .payment-field-horario,
@@ -3502,15 +3514,22 @@ html[data-theme='dark'] .admin-section-nav-link.is-active:active {
 .admin-mobile-filters > div,
 .admin-mobile-filter-field,
 .admin-schedule-filters > div,
-.admin-schedule-control {
+.admin-schedule-control,
+.admin-schedule-manual-fields > div,
+[role="dialog"] .grid > div,
+[role="dialog"] .manual-appointment-grid > div {
   min-width: 0 !important;
   max-width: 100%;
   box-sizing: border-box;
 }
 
 /* 2. Todos los controles de Fecha y Horario en el Panel de Administración */
+.admin-shell input[type="date"],
+.admin-shell input[type="time"],
 .admin-page input[type="date"],
 .admin-page input[type="time"],
+.admin-mobile-page input[type="date"],
+.admin-mobile-page input[type="time"],
 .admin-schedule-page input[type="date"],
 .admin-schedule-page input[type="time"],
 .admin-payment-form-grid input[type="date"],
@@ -3518,13 +3537,16 @@ html[data-theme='dark'] .admin-section-nav-link.is-active:active {
 .manual-appointment-grid input[type="date"],
 .manual-appointment-grid input[type="time"],
 .admin-mobile-filters input[type="date"],
-.admin-schedule-filters input[type="date"] {
+.admin-schedule-filters input[type="date"],
+.admin-schedule-manual-fields input[type="date"],
+[role="dialog"] input[type="date"],
+[role="dialog"] input[type="time"] {
   display: block !important;
   width: 100% !important;
   max-width: 100% !important;
   min-width: 0 !important;
   box-sizing: border-box !important;
-  text-align: left;
+  text-align: left !important;
   line-height: normal;
   padding-left: 0.5rem !important;
   padding-right: 0.5rem !important;
@@ -3532,44 +3554,69 @@ html[data-theme='dark'] .admin-section-nav-link.is-active:active {
 }
 
 /* 3. Normalización de pseudo-elementos nativos WebKit/Safari/Chromium en Admin */
+.admin-shell input[type="date"]::-webkit-datetime-edit,
+.admin-shell input[type="date"]::-webkit-datetime-edit-fields-wrapper,
+.admin-shell input[type="time"]::-webkit-datetime-edit,
+.admin-shell input[type="time"]::-webkit-datetime-edit-fields-wrapper,
 .admin-page input[type="date"]::-webkit-datetime-edit,
 .admin-page input[type="date"]::-webkit-datetime-edit-fields-wrapper,
 .admin-page input[type="time"]::-webkit-datetime-edit,
 .admin-page input[type="time"]::-webkit-datetime-edit-fields-wrapper,
+.admin-mobile-page input[type="date"]::-webkit-datetime-edit,
+.admin-mobile-page input[type="date"]::-webkit-datetime-edit-fields-wrapper,
+.admin-mobile-page input[type="time"]::-webkit-datetime-edit,
+.admin-mobile-page input[type="time"]::-webkit-datetime-edit-fields-wrapper,
 .admin-schedule-page input[type="date"]::-webkit-datetime-edit,
 .admin-schedule-page input[type="date"]::-webkit-datetime-edit-fields-wrapper,
 .admin-schedule-page input[type="time"]::-webkit-datetime-edit,
-.admin-schedule-page input[type="time"]::-webkit-datetime-edit-fields-wrapper {
-  text-align: left;
-  padding: 0;
-  min-width: 0;
-  max-width: 100%;
-  box-sizing: border-box;
+.admin-schedule-page input[type="time"]::-webkit-datetime-edit-fields-wrapper,
+[role="dialog"] input[type="date"]::-webkit-datetime-edit,
+[role="dialog"] input[type="date"]::-webkit-datetime-edit-fields-wrapper,
+[role="dialog"] input[type="time"]::-webkit-datetime-edit,
+[role="dialog"] input[type="time"]::-webkit-datetime-edit-fields-wrapper {
+  text-align: left !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
 }
 
+.admin-shell input[type="date"]::-webkit-date-and-time-value,
+.admin-shell input[type="time"]::-webkit-date-and-time-value,
 .admin-page input[type="date"]::-webkit-date-and-time-value,
 .admin-page input[type="time"]::-webkit-date-and-time-value,
+.admin-mobile-page input[type="date"]::-webkit-date-and-time-value,
+.admin-mobile-page input[type="time"]::-webkit-date-and-time-value,
 .admin-schedule-page input[type="date"]::-webkit-date-and-time-value,
-.admin-schedule-page input[type="time"]::-webkit-date-and-time-value {
+.admin-schedule-page input[type="time"]::-webkit-date-and-time-value,
+[role="dialog"] input[type="date"]::-webkit-date-and-time-value,
+[role="dialog"] input[type="time"]::-webkit-date-and-time-value {
   text-align: left !important;
   min-height: 1.5em;
-  margin: 0;
-  min-width: 0;
-  max-width: 100%;
+  margin: 0 !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
 }
 
+.admin-shell input[type="date"]::-webkit-calendar-picker-indicator,
+.admin-shell input[type="time"]::-webkit-calendar-picker-indicator,
 .admin-page input[type="date"]::-webkit-calendar-picker-indicator,
 .admin-page input[type="time"]::-webkit-calendar-picker-indicator,
+.admin-mobile-page input[type="date"]::-webkit-calendar-picker-indicator,
+.admin-mobile-page input[type="time"]::-webkit-calendar-picker-indicator,
 .admin-schedule-page input[type="date"]::-webkit-calendar-picker-indicator,
-.admin-schedule-page input[type="time"]::-webkit-calendar-picker-indicator {
+.admin-schedule-page input[type="time"]::-webkit-calendar-picker-indicator,
+[role="dialog"] input[type="date"]::-webkit-calendar-picker-indicator,
+[role="dialog"] input[type="time"]::-webkit-calendar-picker-indicator {
   cursor: pointer;
-  margin: 0;
-  padding: 0;
+  margin: 0 !important;
+  padding: 0 !important;
   opacity: 0.75;
   flex-shrink: 0;
 }
 
-/* 4. Altura homogénea para la grilla de Registrar servicio en Admin Pagos */
+/* 4. Altura homogénea para controles en Admin */
 .admin-payment-form-grid {
   align-items: start;
 }
@@ -3581,6 +3628,19 @@ html[data-theme='dark'] .admin-section-nav-link.is-active:active {
   min-height: 2.25rem !important;
   max-height: 2.25rem !important;
   line-height: normal;
+}
+
+.admin-shell section[aria-label*="Filtros"] input[type="date"],
+.admin-shell section[aria-label*="Filtros"] select,
+.admin-page section[aria-label*="Filtros"] input[type="date"],
+.admin-page section[aria-label*="Filtros"] select,
+.admin-mobile-page section[aria-label*="Filtros"] input[type="date"],
+.admin-mobile-page section[aria-label*="Filtros"] select,
+.admin-schedule-page section[aria-label*="Filtros"] input[type="date"],
+.admin-schedule-page section[aria-label*="Filtros"] select {
+  height: 2.25rem !important;
+  min-height: 2.25rem !important;
+  max-height: 2.25rem !important;
 }
 
 

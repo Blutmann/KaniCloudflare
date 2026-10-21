@@ -306,7 +306,7 @@ export function AdminScheduleManager() {
         {/* 1. Filtros de horarios (idéntico a la card de filtros de Estadísticas) */}
         <section className="p-3.5 rounded-xl border border-border bg-surface shadow-xs mb-4" aria-label="Filtros de horarios">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
+            <div className="min-w-0">
               <label htmlFor="schedule-date-preset" className="block text-xs font-medium text-muted-foreground mb-1.5">
                 Período
               </label>
@@ -314,7 +314,7 @@ export function AdminScheduleManager() {
                 id="schedule-date-preset"
                 value={datePreset}
                 onChange={(event) => selectPreset(event.target.value as ScheduleDatePreset)}
-                className="select-control w-full h-9 px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20"
+                className="select-control w-full h-9 px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20 min-w-0 max-w-full"
               >
                 {datePresets.map((preset) => (
                   <option key={preset} value={preset}>
@@ -333,10 +333,10 @@ export function AdminScheduleManager() {
                 min={businessToday}
                 value={specificDate}
                 onChange={(event) => selectSpecificDate(event.target.value)}
-                className="select-control w-full h-[44px] min-h-[44px] px-2 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20 leading-normal text-left min-w-0 max-w-full"
+                className="select-control w-full h-9 px-2 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20 leading-normal text-left min-w-0 max-w-full"
               />
             </div>
-            <div>
+            <div className="min-w-0">
               <label htmlFor="schedule-barber-filter" className="block text-xs font-medium text-muted-foreground mb-1.5">
                 Barbero
               </label>

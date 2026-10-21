@@ -253,16 +253,16 @@ export function AdminStatistics() {
       >
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
           {/* Filtro 1: Período */}
-          <div>
+          <div className="min-w-0">
             <label htmlFor="stat-period-filter" className="block text-xs font-medium text-muted-foreground mb-1.5">
               Período
             </label>
-            <div className={datePreset === 'SPECIFIC' ? 'grid grid-cols-2 gap-2' : ''}>
+            <div className={datePreset === 'SPECIFIC' ? 'grid grid-cols-2 gap-2 min-w-0' : 'min-w-0'}>
               <select
                 id="stat-period-filter"
                 value={datePreset}
                 onChange={(e) => setDatePreset(e.target.value as StatisticsDatePreset)}
-                className="select-control w-full h-9 px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20"
+                className="select-control w-full h-9 px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20 min-w-0 max-w-full"
               >
                 {presets.map((preset) => (
                   <option key={preset} value={preset}>
@@ -276,7 +276,7 @@ export function AdminStatistics() {
                   type="date"
                   value={specificDate}
                   onChange={(e) => setSpecificDate(e.target.value)}
-                  className="w-full h-9 px-2 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20 min-w-0 max-w-full"
+                  className="select-control w-full h-9 px-2 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20 min-w-0 max-w-full"
                   aria-label="Elegir fecha específica"
                 />
               )}

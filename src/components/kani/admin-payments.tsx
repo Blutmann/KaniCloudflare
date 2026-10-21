@@ -955,8 +955,8 @@ export function AdminPayments() {
               </div>
 
               <div className="flex items-center gap-1.5 ml-auto text-xs">
-                <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-                  {depositDeduction > 0 ? "Saldo a cobrar:" : "Total final:"}
+                <span className="text-[11px] font-medium text-muted-foreground">
+                  {depositDeduction > 0 ? "Saldo a cobrar:" : "Total:"}
                 </span>
                 <span className="text-sm font-bold text-foreground">
                   {money(balanceToCollectAtShop)}

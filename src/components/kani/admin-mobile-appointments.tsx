@@ -527,7 +527,7 @@ export function AdminMobileAppointments() {
       {/* 1. Filtros de agenda (idéntico a la card de filtros de Estadísticas) */}
       <section className="p-3.5 rounded-xl border border-border bg-surface shadow-xs mb-4" aria-label="Filtros de agenda">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div>
+          <div className="min-w-0">
             <label htmlFor="mobile-date-preset" className="block text-xs font-medium text-muted-foreground mb-1.5">
               Período
             </label>
@@ -536,7 +536,7 @@ export function AdminMobileAppointments() {
               value={datePreset}
               onChange={event => selectDatePreset(event.target.value as AppointmentsDatePreset)}
               aria-label="Filtrar por período"
-              className="select-control w-full h-9 px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20"
+              className="select-control w-full h-9 px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20 min-w-0 max-w-full"
             >
               {appointmentsPresets.map(preset => (
                 <option key={preset} value={preset}>{appointmentsPresetLabels[preset]}</option>
@@ -553,10 +553,10 @@ export function AdminMobileAppointments() {
               value={specificDate}
               onChange={event => selectSpecificDate(event.target.value)}
               aria-label="Elegir fecha específica"
-              className="select-control w-full h-[44px] min-h-[44px] px-2 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20 leading-normal text-left min-w-0 max-w-full"
+              className="select-control w-full h-9 px-2 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20 leading-normal text-left min-w-0 max-w-full"
             />
           </div>
-          <div>
+          <div className="min-w-0">
             <label htmlFor="mobile-status-filter" className="block text-xs font-medium text-muted-foreground mb-1.5">
               Estado
             </label>
@@ -564,14 +564,14 @@ export function AdminMobileAppointments() {
               id="mobile-status-filter"
               value={statusFilter}
               onChange={event => setStatusFilter(event.target.value as StatusFilter)}
-              className="select-control w-full h-9 px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20"
+              className="select-control w-full h-9 px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20 min-w-0 max-w-full"
             >
               {statusFilters.map(filter => (
                 <option key={filter.value} value={filter.value}>{filter.label}</option>
               ))}
             </select>
           </div>
-          <div>
+          <div className="min-w-0">
             <label htmlFor="mobile-barber-filter" className="block text-xs font-medium text-muted-foreground mb-1.5">
               Barbero
             </label>
@@ -1297,7 +1297,7 @@ export function AdminMobileAppointments() {
               </div>
             )}
 
-            <div className="manual-appointment-grid grid grid-cols-[minmax(0,65fr)_minmax(0,35fr)] sm:grid-cols-6 gap-2.5 sm:gap-4">
+            <div className="manual-appointment-grid grid grid-cols-2 sm:grid-cols-6 gap-2.5 sm:gap-4">
               {/* Fila 1 Columna izquierda en mobile | Col 1-2 en desktop */}
               <div className="manual-grid-field manual-field-fecha col-span-1 sm:col-span-2 sm:order-1 min-w-0">
                 <label htmlFor="manual-date" className="font-medium text-foreground block mb-1.5 text-xs sm:text-sm">

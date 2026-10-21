@@ -73,7 +73,7 @@ describe('Kani Barber Studio — Panel de Administración -> Pagos (Tabla, Permi
 
   it('6. Card de cálculo simplificada y de baja altura', () => {
     expect(componentCode).toContain('Servicio:');
-    expect(componentCode).toContain('Total final:');
+    expect(componentCode).toContain('Total:');
     expect(componentCode).toContain('{money(balanceToCollectAtShop)}');
   });
 
