@@ -61,4 +61,19 @@ describe('Kani Barber Studio - Ajustes en Contacto e integración de Google Maps
     expect(css).toContain("html[data-theme='dark'] .studio-map-card");
     expect(css).toContain("html[data-theme='light'] .studio-map-card");
   });
+
+  it('4. Incorpora card de WhatsApp, elimina encabezados y aplica 2 columnas en mobile', () => {
+    // Encabezado eliminado
+    expect(estudioCode).not.toContain('studio-page-header');
+    expect(estudioCode).not.toContain('<h1 className="section-title">Contacto</h1>');
+
+    // Card de WhatsApp incorporada
+    expect(estudioCode).toContain('WhatsApp');
+    expect(estudioCode).toContain('Escribinos para realizar tu consulta.');
+    expect(estudioCode).toContain('Contactar por WhatsApp');
+    expect(estudioCode).toContain('https://wa.me/5491128436014');
+
+    // 2 columnas en mobile y desktop
+    expect(css).toMatch(/\.studio-info-grid\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/);
+  });
 });
