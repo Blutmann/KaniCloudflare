@@ -65,7 +65,7 @@ export type CandidateAppointmentMatch = {
 export const STANDARD_SERVICE_PRICES: Record<Exclude<ServicePaymentType, 'Otros'>, number> = {
   Corte: 25000,
   'Corte y barba': 30000,
-  Barba: 10000,
+  Barba: 15000,
 };
 
 /** Obtiene la hora actual en la zona horaria oficial del estudio (HH:mm) */
@@ -263,7 +263,7 @@ export async function fetchServicePayments(
   // Filtro por servicio persistido
   if (filters.serviceName && filters.serviceName !== 'ALL') {
     if (filters.serviceName === 'Corte y barba') {
-      query = query.or('service_name.eq.Corte y barba,service_name.eq.Corte + barba');
+      query = query.in('service_name', ['Corte y barba', 'Corte + barba']);
     } else {
       query = query.eq('service_name', filters.serviceName);
     }
@@ -412,7 +412,7 @@ export async function recordServicePayment(
         const { data: srvData } = await supabase
           .from('services')
           .select('id')
-          .or(`name.eq.${input.serviceName},name.eq.Corte + barba`)
+          .in('name', [input.serviceName, 'Corte y barba', 'Corte + barba'])
           .limit(1)
           .maybeSingle();
         if (srvData?.id) resolvedServiceId = srvData.id;

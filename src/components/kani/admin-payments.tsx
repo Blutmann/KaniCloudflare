@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
-  Banknote,
   Check,
   CheckCircle2,
   Clock,
@@ -104,7 +103,8 @@ export function AdminPayments() {
       setPayments(paymentsData);
     } catch (err: any) {
       console.error("[AdminPayments] Error al cargar pagos:", err);
-      setErrorMessage("No se pudieron cargar los registros de cobro.");
+      const detail = err?.message || err?.details || err?.hint || (typeof err === "string" ? err : "");
+      setErrorMessage(detail ? `No se pudieron cargar los registros de cobro: ${detail}` : "No se pudieron cargar los registros de cobro.");
     } finally {
       setIsLoading(false);
     }
@@ -238,13 +238,16 @@ export function AdminPayments() {
     try {
       const persisted = await recordServicePayment(input, staff, linkedAppointment);
       setSuccessMessage("Cobro de servicio registrado exitosamente.");
+      setPayments(prev => [persisted, ...prev.filter(p => p.id !== persisted.id)]);
       handleResetForm();
-      // Si la fecha del cobro no coincide con el filtro de fecha activo, sincronizar para verlo de inmediato
+      // Sincronizar filtros si la fecha o barbero filtrado no coinciden
       if (filterDate && filterDate !== persisted.paymentDate) {
         setFilterDate(persisted.paymentDate);
-      } else {
-        await loadData();
       }
+      if (filterBarberId !== 'ALL' && filterBarberId !== persisted.barberId) {
+        setFilterBarberId('ALL');
+      }
+      await loadData();
     } catch (err: any) {
       console.error("[AdminPayments] Error al guardar cobro:", err);
       setErrorMessage(err.message || "No se pudo guardar el registro de cobro.");
@@ -256,19 +259,6 @@ export function AdminPayments() {
   return (
     <main className="site-container admin-schedule-page">
       <div className="admin-schedule-shell">
-        {/* Cabecera descriptiva */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
-          <div>
-            <h1 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
-              <Banknote className="w-5 h-5 text-gold" aria-hidden="true" />
-              Registro de Pagos y Servicios
-            </h1>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Registrá servicios realizados y llevá el control de cobros de barbería.
-            </p>
-          </div>
-        </div>
-
         {/* Notificaciones de éxito o error */}
         {errorMessage && (
           <div className="mb-4 p-3 rounded-lg border border-destructive/40 bg-destructive/10 text-destructive text-xs flex items-center gap-2" role="alert">
@@ -403,9 +393,9 @@ export function AdminPayments() {
                   onChange={(e) => handleServiceChange(e.target.value as ServicePaymentType)}
                   className="select-control w-full h-[40px] sm:h-[42px] px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20 font-medium"
                 >
-                  <option value="Corte">Corte ($25.000)</option>
-                  <option value="Corte y barba">Corte y barba ($30.000)</option>
-                  <option value="Barba">Barba ($10.000)</option>
+                  <option value="Corte">Corte</option>
+                  <option value="Corte y barba">Corte y barba</option>
+                  <option value="Barba">Barba</option>
                   <option value="Otros">Otros (Personalizado)</option>
                 </select>
               </div>

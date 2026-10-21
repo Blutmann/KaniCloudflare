@@ -392,6 +392,64 @@ export function formatPhoneWithCountryAndWhatsApp(rawPhone?: string | null): {
   };
 }
 
+/**
+ * Normaliza un número telefónico y genera un enlace directo a WhatsApp (https://wa.me/<digits>).
+ * Para números de Argentina (+54), asegura el formato internacional wa.me con código 54 seguido de 9
+ * y código de área sin el 15. No duplica el 54 ni el 9.
+ * Para otros países, conserva el código internacional sin prefijos adicionales.
+ * Si el número está vacío o no es interpretable, retorna null para no renderizar enlaces rotos.
+ */
+export function getWhatsAppUrl(rawPhone?: string | null): string | null {
+  if (!rawPhone || typeof rawPhone !== 'string') return null;
+  const trimmed = rawPhone.trim();
+  if (!trimmed) return null;
+
+  let parsed = parsePhoneNumberFromString(trimmed);
+  if (!parsed || !parsed.isValid()) {
+    const digits = trimmed.replace(/\D/g, '');
+    if (!digits) return null;
+
+    if (digits.startsWith('549') && digits.length >= 12) {
+      parsed = parsePhoneNumberFromString(`+${digits}`);
+    } else if (digits.startsWith('54') && digits.length >= 12) {
+      parsed = parsePhoneNumberFromString(`+549${digits.slice(2).replace(/^0+/, '')}`);
+    } else if (trimmed.startsWith('+')) {
+      parsed = parsePhoneNumberFromString(trimmed);
+    } else {
+      parsed = parsePhoneNumberFromString(`+549${digits.replace(/^0+/, '').replace(/^15/, '')}`);
+    }
+  }
+
+  if (parsed && (parsed.isValid() || parsed.isPossible())) {
+    let num = parsed.number;
+    if (parsed.country === 'AR') {
+      if (num.startsWith('+54') && !num.startsWith('+549')) {
+        num = `+549${num.slice(3)}`;
+      }
+    }
+    const cleanDigits = num.replace(/\D/g, '');
+    if (cleanDigits.length >= 8) {
+      return `https://wa.me/${cleanDigits}`;
+    }
+  }
+
+  // Fallback seguro si no se pudo parsear formalmente pero tiene dígitos suficientes
+  const digitsOnly = trimmed.replace(/\D/g, '');
+  if (digitsOnly.length >= 8) {
+    let cleanDigits = digitsOnly;
+    if (cleanDigits.startsWith('549')) {
+      // ya tiene formato 549...
+    } else if (cleanDigits.startsWith('54')) {
+      cleanDigits = `549${cleanDigits.slice(2)}`;
+    } else if (cleanDigits.length === 10) {
+      cleanDigits = `549${cleanDigits}`;
+    }
+    return `https://wa.me/${cleanDigits}`;
+  }
+
+  return null;
+}
+
 export function phonePlaceholder(country: PhoneCountry) {
   const example = mobileExampleNumbers[country];
   if (!example) return 'Número de celular';

@@ -1,7 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { formatPhoneDisplay, formatPhoneInput, formatPhoneWithCountryAndWhatsApp, normalizeCountrySearch, normalizePhone, otherPhoneCountries, phoneCountries, phonePlaceholder, primaryPhoneCountries } from "./kani-phone";
+import { formatPhoneDisplay, formatPhoneInput, formatPhoneWithCountryAndWhatsApp, getWhatsAppUrl, normalizeCountrySearch, normalizePhone, otherPhoneCountries, phoneCountries, phonePlaceholder, primaryPhoneCountries } from "./kani-phone";
 
 describe("phone normalization", () => {
+  it("generates direct WhatsApp wa.me links correctly", () => {
+    expect(getWhatsAppUrl("🇦🇷 +54 9 11 2843-6014")).toBe("https://wa.me/5491128436014");
+    expect(getWhatsAppUrl("🇦🇷 +54 9 11 2345-6789")).toBe("https://wa.me/5491123456789");
+    expect(getWhatsAppUrl("+5491128436014")).toBe("https://wa.me/5491128436014");
+    expect(getWhatsAppUrl("1128436014")).toBe("https://wa.me/5491128436014");
+    expect(getWhatsAppUrl("+56 9 8765 4321")).toBe("https://wa.me/56987654321");
+    expect(getWhatsAppUrl("")).toBeNull();
+    expect(getWhatsAppUrl("abc")).toBeNull();
+    expect(getWhatsAppUrl(null)).toBeNull();
+  });
+
   it("normalizes an Argentine mobile number to E.164", () => {
     expect(normalizePhone("9 11 0000-0000", "AR")?.e164).toBe("+5491100000000");
   });

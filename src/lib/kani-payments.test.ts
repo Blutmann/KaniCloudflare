@@ -79,7 +79,7 @@ describe('Kani Payments Unit Tests', () => {
     it('proporciona importes oficiales para los servicios habituales', () => {
       expect(STANDARD_SERVICE_PRICES['Corte']).toBe(25000);
       expect(STANDARD_SERVICE_PRICES['Corte y barba']).toBe(30000);
-      expect(STANDARD_SERVICE_PRICES['Barba']).toBe(10000);
+      expect(STANDARD_SERVICE_PRICES['Barba']).toBe(15000);
     });
   });
 

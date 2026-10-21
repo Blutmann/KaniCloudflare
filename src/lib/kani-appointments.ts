@@ -184,9 +184,10 @@ export async function createManualAppointment(input: CreateManualAppointmentInpu
 }
 
 export async function createRealAppointment(input: CreateAppointmentInput) {
-  const { data, error } = await supabase.rpc('request_appointment', {
+  let targetServiceName = input.serviceName;
+  let { data, error } = await supabase.rpc('request_appointment', {
     p_barber_name: input.barber,
-    p_service_name: input.serviceName,
+    p_service_name: targetServiceName,
     p_booking_date: input.date,
     p_start_time: input.time,
     p_client_name: input.name,
@@ -194,6 +195,26 @@ export async function createRealAppointment(input: CreateAppointmentInput) {
     p_client_email: input.email,
     p_notes: input.notes?.trim() || null,
   });
+
+  // Si falló por discrepancia de nombre ('Corte y barba' vs 'Corte + barba'), intentar alternativo
+  if (error && (targetServiceName === 'Corte y barba' || targetServiceName === 'Corte + barba')) {
+    const alternativeName = targetServiceName === 'Corte y barba' ? 'Corte + barba' : 'Corte y barba';
+    const retry = await supabase.rpc('request_appointment', {
+      p_barber_name: input.barber,
+      p_service_name: alternativeName,
+      p_booking_date: input.date,
+      p_start_time: input.time,
+      p_client_name: input.name,
+      p_client_phone: input.phone,
+      p_client_email: input.email,
+      p_notes: input.notes?.trim() || null,
+    });
+    if (!retry.error && retry.data) {
+      data = retry.data;
+      error = null;
+    }
+  }
+
   if (error) throw error;
   const row = data?.[0];
   if (!row) throw new Error('La reserva no devolvió un resultado válido.');
@@ -361,7 +382,7 @@ async function executeReadRealAppointments(options?: { bypassCache?: boolean }):
       statusCode: row.status,
       barberId: row.barber_id,
       serviceId: row.service_id,
-      serviceName: service.name,
+      serviceName: (service.name === 'Corte + barba' || service.name === 'Corte + Barba') ? 'Corte y barba' : service.name,
       serviceDuration: service.duration_minutes,
       servicePrice: service.price_ars,
       clientId: row.client_id,
@@ -431,8 +452,9 @@ export async function retryRealAppointmentNotification(id: string) {
 }
 
 function serviceIdForName(name: string): ServiceId {
-  if (name === 'Corte + barba') return 'corte-barba';
-  if (name === 'Barba') return 'barba';
+  const normalized = (name || '').trim().toLowerCase();
+  if (normalized === 'corte + barba' || normalized === 'corte y barba') return 'corte-barba';
+  if (normalized === 'barba') return 'barba';
   return 'corte';
 }
 

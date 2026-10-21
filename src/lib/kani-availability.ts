@@ -70,7 +70,8 @@ export async function readConfiguredServices(options: { bypassCache?: boolean } 
   if (error) throw error;
   const byName = new Map((data ?? []).map(row => [row.name, row]));
   const result = services.flatMap(service => {
-    const configured = byName.get(service.name);
+    const configured = byName.get(service.name)
+      ?? (service.id === 'corte-barba' ? (byName.get('Corte + barba') ?? byName.get('Corte y barba')) : undefined);
     return configured ? [{ ...service, price: configured.price_ars, duration: configured.duration_minutes }] : [];
   });
   cachedServices = { data: result, timestamp: now };
@@ -124,7 +125,7 @@ export function availabilityStartTimesForServiceDate(
     .filter(start => start.slot_date === date)
     .filter(start => !barber || start.barber_name === barber)
     .filter(start => isFixedBookingStart(start.start_time))
-    .filter(start => start.compatible_services.includes(serviceName))
+    .filter(start => start.compatible_services.includes(serviceName) || ((serviceName === 'Corte y barba' || serviceName === 'Corte + barba') && (start.compatible_services.includes('Corte + barba') || start.compatible_services.includes('Corte y barba'))))
     .filter(start => slotCanStillBeBooked(start.slot_date, start.start_time, now))
     .map(start => start.start_time.slice(0, 5)))].sort();
 }
@@ -139,7 +140,7 @@ export function eligibleBarbersForAvailabilityStart(
   return [...new Set(starts
     .filter(start => start.slot_date === date && start.start_time.slice(0, 5) === time)
     .filter(start => isFixedBookingStart(start.start_time))
-    .filter(start => start.compatible_services.includes(serviceName))
+    .filter(start => start.compatible_services.includes(serviceName) || ((serviceName === 'Corte y barba' || serviceName === 'Corte + barba') && (start.compatible_services.includes('Corte + barba') || start.compatible_services.includes('Corte y barba'))))
     .filter(start => slotCanStillBeBooked(start.slot_date, start.start_time, now))
     .map(start => start.barber_name))];
 }

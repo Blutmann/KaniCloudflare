@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { dateLabel, money, serviceFor } from '@/lib/kani-model';
-import { formatPhoneDisplay, formatPhoneWithCountryAndWhatsApp, normalizePhone, type PhoneCountry } from '@/lib/kani-phone';
+import { formatPhoneDisplay, formatPhoneWithCountryAndWhatsApp, normalizePhone, getWhatsAppUrl, type PhoneCountry } from '@/lib/kani-phone';
 const PhoneInput = lazy(() => import('@/components/kani/phone-input').then(m => ({ default: m.PhoneInput })));
 import { cn } from '@/lib/utils';
 import { useAdminStaff } from '@/lib/kani-admin-context';
@@ -170,8 +170,12 @@ export function AdminMobileAppointments() {
     async function loadServices() {
       const { data } = await supabase.from('services').select('id, name, duration_minutes, price_ars').eq('active', true).order('name');
       if (data && data.length) {
-        setServicesList(data);
-        setManualServiceId(data[0].id);
+        const normalized = data.map(s => ({
+          ...s,
+          name: (s.name === 'Corte + barba' || s.name === 'Corte + Barba') ? 'Corte y barba' : s.name,
+        }));
+        setServicesList(normalized);
+        setManualServiceId(normalized[0].id);
       }
     }
     void loadServices();
@@ -697,6 +701,7 @@ export function AdminMobileAppointments() {
           const phoneInfo = formatPhoneWithCountryAndWhatsApp(appointment.phone);
           const phoneHref = phoneInfo.e164 || appointment.phone.replace(/[^\d+]/g, '');
           const phoneLabel = phoneInfo.display || appointment.phone;
+          const whatsAppUrl = getWhatsAppUrl(appointment.phone);
           const isManual = Boolean(appointment.isManual || appointment.origin === 'MANUAL');
 
           return <article className="p-4 rounded-xl border border-border bg-surface shadow-xs space-y-3" key={appointment.id}>
@@ -735,13 +740,21 @@ export function AdminMobileAppointments() {
                 {/* Fila 2: Celular | Abona seña */}
                 <div className="p-2 rounded-lg bg-background border border-border/70 min-w-0">
                   <span className="text-[11px] text-muted-foreground block">Celular</span>
-                  <a
-                    href={`tel:${phoneHref}`}
-                    className="font-medium text-foreground truncate block hover:underline"
-                    title={phoneLabel}
-                  >
-                    {phoneLabel}
-                  </a>
+                  {whatsAppUrl ? (
+                    <a
+                      href={whatsAppUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-medium text-foreground truncate block hover:underline"
+                      title="Enviar WhatsApp al cliente"
+                    >
+                      {phoneLabel}
+                    </a>
+                  ) : (
+                    <strong className="font-medium text-foreground truncate block" title={phoneLabel || 'No informado'}>
+                      {phoneLabel || 'No informado'}
+                    </strong>
+                  )}
                 </div>
                 <div className="p-2 rounded-lg bg-background border border-border/70 min-w-0">
                   <span className="text-[11px] text-muted-foreground block truncate leading-tight" title="Abona seña">Abona seña</span>

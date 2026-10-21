@@ -486,7 +486,43 @@ html[data-theme="light"] .booking-progress .complete > span { border-color: #702
 .small-avatar { width: 28px; height: 28px; display: grid; place-items: center; color: var(--gold); background: var(--secondary); border-radius: 50%; font-size: 11px; flex-shrink: 0; }
 .booking-cta { position: fixed; inset-inline: 0; bottom: var(--site-footer-height, 170px); z-index: 30; width: 100%; box-sizing: border-box; padding: 0; border-top: 1px solid transparent; background: transparent; box-shadow: none; backdrop-filter: none; pointer-events: none; }
 .booking-cta-inner { width: min(860px, calc(100% - 40px)); margin-inline: auto; gap: 12px; padding-block: 10px; pointer-events: auto; }
-.booking-whatsapp-fab { display: none !important; }
+.booking-whatsapp-fab {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  position: fixed;
+  right: 20px;
+  bottom: calc(74px + env(safe-area-inset-bottom));
+  z-index: 45;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 1px solid color-mix(in oklch, var(--gold) 40%, var(--border));
+  background: var(--surface);
+  color: #25D366;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28);
+  text-decoration: none;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.booking-whatsapp-fab:hover {
+  transform: scale(1.06);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.38);
+}
+.booking-whatsapp-icon {
+  width: 24px;
+  height: 24px;
+  color: #25D366;
+  flex-shrink: 0;
+}
+html[data-theme="light"] .booking-whatsapp-fab {
+  background: #FFFFFF;
+  border-color: color-mix(in srgb, var(--gold) 45%, var(--border));
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.14);
+}
+html[data-theme="light"] .booking-whatsapp-fab:hover {
+  background: #FAF8F5;
+  border-color: var(--gold);
+}
 .booking-home-button { flex: 0 0 44px; width: 44px; height: 44px; margin-right: 12px; color: var(--primary-foreground) !important; border-radius: var(--radius-control, 0.65rem); }
 .booking-home-button:hover { background: color-mix(in oklch, var(--primary) 88%, white) !important; }
 html[data-theme='light'] .booking-progress .current { border-bottom-color: #702B3A; }
@@ -1080,55 +1116,7 @@ html[data-theme='dark'] .studio-map-card {
   }
 
   .booking-whatsapp-fab {
-    display: inline-flex !important;
-    align-items: center;
-    gap: 10px;
-    position: fixed;
-    right: 32px;
-    bottom: calc(var(--site-footer-height, 70px) + var(--booking-cta-height, 68px) + 16px);
-    z-index: 40;
-    height: 44px;
-    padding: 0 16px 0 12px;
-    border-radius: 9999px;
-    border: 1px solid color-mix(in oklch, var(--gold) 35%, var(--border));
-    background: var(--surface);
-    color: var(--foreground);
-    box-shadow: 0 8px 24px rgb(0 0 0 / 0.22);
-    text-decoration: none;
-    font-size: 13px;
-    font-weight: 500;
-    line-height: 1;
-    transition: transform 0.2s ease, border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
-  }
-
-  .booking-whatsapp-fab:hover {
-    transform: translateY(-2px);
-    border-color: var(--gold);
-    background: color-mix(in oklch, var(--gold) 12%, var(--surface));
-    box-shadow: 0 12px 28px rgb(0 0 0 / 0.32);
-    color: var(--foreground);
-  }
-
-  .booking-whatsapp-icon {
-    width: 20px;
-    height: 20px;
-    color: #25D366;
-    flex-shrink: 0;
-  }
-
-  .booking-whatsapp-label {
-    white-space: nowrap;
-  }
-
-  html[data-theme="light"] .booking-whatsapp-fab {
-    background: #FFFFFF;
-    border-color: color-mix(in srgb, var(--gold) 45%, var(--border));
-    box-shadow: 0 8px 20px rgb(0 0 0 / 0.08);
-  }
-
-  html[data-theme="light"] .booking-whatsapp-fab:hover {
-    background: #FAF8F5;
-    border-color: var(--gold);
+    display: none !important;
   }
   .booking-cta-inner {
     width: min(860px, calc(100% - 80px));
