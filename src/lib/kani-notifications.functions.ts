@@ -279,7 +279,223 @@ async function createRequestSupabaseClient() {
   });
 }
 
+const WEEKDAYS = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
+const MONTHS = [
+  "enero", "febrero", "marzo", "abril", "mayo", "junio",
+  "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
+];
+
+export function formatSpanishDateNatural(isoDate: string): string {
+  const [yearStr, monthStr, dayStr] = (isoDate || "").split("-");
+  const year = parseInt(yearStr, 10);
+  const month = parseInt(monthStr, 10);
+  const day = parseInt(dayStr, 10);
+  if (!year || !month || !day) return isoDate;
+
+  const dateObj = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
+  const weekday = WEEKDAYS[dateObj.getUTCDay()];
+  const monthName = MONTHS[dateObj.getUTCMonth()];
+  return `${weekday} ${day} de ${monthName} de ${year}`;
+}
+
+export function buildConfirmedEmail(payload: NotificationPayload) {
+  const spanishDate = formatSpanishDateNatural(payload.bookingDate);
+  const cleanTime = (payload.startTime || "").slice(0, 5);
+  const servicePrice = payload.servicePriceArs ?? 0;
+  const downPayment = payload.downPaymentArs ?? 0;
+  const remainingPayment = Math.max(0, servicePrice - downPayment);
+
+  const safe = {
+    clientName: escapeHtml(payload.clientName),
+    barberName: escapeHtml(payload.barberName),
+    serviceName: escapeHtml(payload.serviceName),
+    date: escapeHtml(spanishDate),
+    time: escapeHtml(cleanTime),
+    servicePrice: escapeHtml(`$${servicePrice.toLocaleString("es-AR")}`),
+    downPayment: escapeHtml(`$${downPayment.toLocaleString("es-AR")}`),
+    remainingPayment: escapeHtml(`$${remainingPayment.toLocaleString("es-AR")}`),
+  };
+
+  const subject = "Kani - Se confirmó tu turno";
+  const mapsUrl = "https://maps.app.goo.gl/pS9iomLQhNKRFkXp7?g_st=ic";
+  const whatsAppUrl = "https://wa.me/5491128436014";
+
+  const html = `<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${subject}</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #FAF9F6; color: #252323; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; line-height: 1.5;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #FAF9F6; margin: 0; padding: 0; width: 100%;">
+    <tr>
+      <td align="center" style="padding: 32px 16px 48px;">
+        <!-- Card Contenedora Principal -->
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 560px; background-color: #FFFFFF; border: 1px solid #E5E0D8; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
+          
+          <!-- Header / Marca Kani -->
+          <tr>
+            <td style="background-color: #FAF9F6; border-bottom: 1px solid #E5E0D8; padding: 20px 28px; text-align: center;">
+              <span style="font-size: 13px; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: #252323;">Kani Barber Studio</span>
+            </td>
+          </tr>
+
+          <!-- Contenido Principal: Confirmación -->
+          <tr>
+            <td style="padding: 32px 28px 24px;">
+              <h1 style="margin: 0 0 16px; font-size: 22px; font-weight: 700; color: #252323; line-height: 1.25;">
+                Se confirmó tu turno
+              </h1>
+              <p style="margin: 0; font-size: 15px; line-height: 1.6; color: #252323;">
+                Se confirmó tu turno el día <strong>${safe.date}</strong> a las <strong>${safe.time} hs</strong>, para un servicio de <strong>${safe.serviceName}</strong> con <strong>${safe.barberName}</strong>.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Divisor -->
+          <tr>
+            <td style="padding: 0 28px;">
+              <div style="height: 1px; background-color: #E5E0D8; line-height: 1px; font-size: 1px;">&nbsp;</div>
+            </td>
+          </tr>
+
+          <!-- Resumen del pago -->
+          <tr>
+            <td style="padding: 24px 28px;">
+              <h2 style="margin: 0 0 14px; font-size: 13px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #5D5A54;">
+                Resumen
+              </h2>
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #FAF8F5; border: 1px solid #EBE7DF; border-radius: 8px; padding: 16px 20px;">
+                <tr>
+                  <td style="padding: 7px 0; font-size: 14px; color: #5D5A54;">Importe</td>
+                  <td align="right" style="padding: 7px 0; font-size: 15px; font-weight: 600; color: #252323;">${safe.servicePrice}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 7px 0; border-top: 1px solid #ECE7DE; font-size: 14px; color: #5D5A54;">Seña abonada</td>
+                  <td align="right" style="padding: 7px 0; border-top: 1px solid #ECE7DE; font-size: 15px; font-weight: 600; color: #2F6F43;">−${safe.downPayment}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 12px 0 6px; border-top: 2px solid #D8D3C9; font-size: 15px; font-weight: 700; color: #252323;">Saldo a pagar en el local</td>
+                  <td align="right" style="padding: 12px 0 6px; border-top: 2px solid #D8D3C9; font-size: 18px; font-weight: 700; color: #762936;">${safe.remainingPayment}</td>
+                </tr>
+                <tr>
+                  <td colspan="2" style="padding-top: 10px; font-size: 12px; line-height: 1.45; color: #71717A;">
+                    Podés abonar el saldo en efectivo o por transferencia.
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Divisor -->
+          <tr>
+            <td style="padding: 0 28px;">
+              <div style="height: 1px; background-color: #E5E0D8; line-height: 1px; font-size: 1px;">&nbsp;</div>
+            </td>
+          </tr>
+
+          <!-- Sección: ¿Cómo llego? -->
+          <tr>
+            <td style="padding: 24px 28px;">
+              <h2 style="margin: 0 0 14px; font-size: 13px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #5D5A54;">
+                ¿Cómo llego?
+              </h2>
+              <!-- Card de ubicación inspirada en Contacto -->
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #FAF8F5; border: 1px solid #EBE7DF; border-radius: 8px;">
+                <tr>
+                  <td style="padding: 20px;">
+                    <p style="margin: 0 0 4px; font-size: 15px; font-weight: 700; color: #252323;">
+                      San Isidro Labrador 7
+                    </p>
+                    <p style="margin: 0 0 16px; font-size: 13px; color: #6B6862;">
+                      Martinez, Provincia de Buenos Aires
+                    </p>
+                    <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td align="left">
+                          <a href="${mapsUrl}" target="_blank" rel="noopener noreferrer" style="display: inline-block; background-color: #762936; color: #FFFFFF; font-size: 13px; font-weight: 600; text-decoration: none; padding: 10px 18px; border-radius: 6px; letter-spacing: 0.02em;">
+                            Ver ubicación &rarr;
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Contactar vía WhatsApp -->
+          <tr>
+            <td style="padding: 0 28px 28px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td align="center">
+                    <a href="${whatsAppUrl}" target="_blank" rel="noopener noreferrer" style="display: block; width: 100%; box-sizing: border-box; text-align: center; background-color: #FFFFFF; color: #252323; border: 1px solid #D8D3C9; font-size: 13px; font-weight: 600; text-decoration: none; padding: 12px 18px; border-radius: 6px;">
+                      Contactar vía WhatsApp
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Footer institucional -->
+          <tr>
+            <td style="background-color: #FAF9F6; border-top: 1px solid #EBE7DF; padding: 16px 28px; text-align: center;">
+              <p style="margin: 0; font-size: 12px; color: #8D8883; line-height: 1.5;">
+                © 2026 Kani Barber Studio · San Isidro Labrador 7, Martínez<br>
+                Este correo fue enviado automáticamente para confirmar tu turno.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+  const text = `KANI BARBER STUDIO
+Se confirmó tu turno
+
+Se confirmó tu turno el día ${spanishDate} a las ${cleanTime} hs, para un servicio de ${payload.serviceName} con ${payload.barberName}.
+
+--------------------------------------------------
+RESUMEN DEL PAGO
+
+Importe: ${safe.servicePrice}
+Seña abonada: ${safe.downPayment}
+Saldo a pagar en el local: ${safe.remainingPayment}
+
+Podés abonar el saldo en efectivo o por transferencia.
+--------------------------------------------------
+
+¿CÓMO LLEGO?
+San Isidro Labrador 7
+Martinez, Provincia de Buenos Aires
+
+Ver ubicación:
+${mapsUrl}
+
+--------------------------------------------------
+CONTACTO
+Contactar vía WhatsApp:
+${whatsAppUrl}
+
+© 2026 Kani Barber Studio
+San Isidro Labrador 7, Martínez, Provincia de Buenos Aires`;
+
+  return { subject, html, text };
+}
+
 function buildEmail(payload: NotificationPayload) {
+  if (payload.notificationType === "CONFIRMED") {
+    return buildConfirmedEmail(payload);
+  }
+
   const date = new Date(`${payload.bookingDate}T12:00:00Z`).toLocaleDateString("es-AR", {
     timeZone: "America/Argentina/Buenos_Aires",
     day: "2-digit",
@@ -297,21 +513,13 @@ function buildEmail(payload: NotificationPayload) {
     date: escapeHtml(date),
     time: escapeHtml(time),
   };
-  const copy =
-    payload.notificationType === "CONFIRMED"
-      ? {
-          subject: "Tu turno en Kani Barber Studio está confirmado",
-          title: "Tu turno fue confirmado",
-          intro: `${payload.barberName} confirmó tu turno. Te esperamos en Kani Barber Studio.`,
-          status: "CONFIRMADO",
-        }
-      : {
-          subject: "Actualización de tu turno en Kani Barber Studio",
-          title: "Tu turno fue cancelado",
-          intro: `${payload.barberName} canceló tu turno. Si querés, podés solicitar uno nuevo desde nuestra web.`,
-          status: "CANCELADO",
-        };
-  const mapsUrl = "https://www.google.com/maps/place/KANI+BARBER+STUDIO/data=!4m2!3m1!1s0x0:0x48bcfe7b2ea7ba60";
+  const copy = {
+    subject: "Actualización de tu turno en Kani Barber Studio",
+    title: "Tu turno fue cancelado",
+    intro: `${payload.barberName} canceló tu turno. Si querés, podés solicitar uno nuevo desde nuestra web.`,
+    status: "CANCELADO",
+  };
+  const mapsUrl = "https://maps.app.goo.gl/pS9iomLQhNKRFkXp7?g_st=ic";
   const subject = copy.subject;
   const html = `<!doctype html><html lang="es"><body style="margin:0;background:#f4f1eb;color:#1c1c1c;font-family:Arial,sans-serif"><div style="max-width:560px;margin:0 auto;padding:36px 20px"><div style="background:#161616;padding:22px 24px;color:#f4f1eb;letter-spacing:.18em;font-weight:700;font-size:18px">Kani Barber Studio</div><main style="background:#fff;padding:34px 24px"><p style="margin:0 0 12px;color:#a37b43;font-size:11px;letter-spacing:.16em;font-weight:700">${copy.status}</p><h1 style="margin:0;font-size:28px;line-height:1.1">${copy.title}</h1><p style="color:#6d6d6d;line-height:1.6;margin:18px 0 28px">Hola ${safe.clientName},<br>${escapeHtml(copy.intro)}</p><div style="border-top:1px solid #e5e0d8;border-bottom:1px solid #e5e0d8;padding:18px 0"><p style="margin:0 0 10px"><strong>Servicio:</strong> ${safe.serviceName}</p><p style="margin:0 0 10px"><strong>Barbero:</strong> ${safe.barberName}</p><p style="margin:0 0 10px"><strong>Fecha:</strong> ${safe.date}</p><p style="margin:0"><strong>Horario:</strong> ${safe.time}</p></div><p style="color:#6d6d6d;line-height:1.6;margin:26px 0 8px">San Isidro Labrador 7<br>Martínez, Provincia de Buenos Aires</p><p style="margin:0"><a href="${mapsUrl}" style="color:#9f173b;font-weight:700;text-decoration:underline">Ver ubicación en Google Maps</a></p></main><p style="color:#8b8b8b;font-size:12px;line-height:1.5;text-align:center;margin:18px 8px">Este mensaje fue enviado automáticamente por Kani Barber Studio.</p></div></body></html>`;
   const text = `${copy.title}\n\nHola ${payload.clientName},\n${copy.intro}\n\nServicio: ${payload.serviceName}\nBarbero: ${payload.barberName}\nFecha: ${date}\nHorario: ${time}\n\nKani Barber Studio\nSan Isidro Labrador 7, Martínez, Provincia de Buenos Aires\nVer ubicación en Google Maps: ${mapsUrl}`;
