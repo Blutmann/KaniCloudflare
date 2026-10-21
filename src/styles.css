@@ -1290,6 +1290,7 @@ html[data-theme='dark'] .studio-map-card {
  .phone-country-trigger { font-size: 12px; }
  .barber-choice-inline { margin-top: 12px; padding-top: 10px; }
  .booking-option .option-icon, .booking-option .barber-avatar { width: 40px; height: 40px; }
+ .booking-option .option-icon .service-icon-mask { width: 40px; height: 40px; }
  .booking-defer-option .barber-defer-mark { width: 40px; height: 40px; flex-basis: 40px; }
  .booking-option .option-icon, .booking-option .barber-avatar { flex-basis: 40px; }
  .booking-option .barber-avatar { font-size: 21px; }
@@ -2424,6 +2425,48 @@ html[data-theme='light'] .booking-option.selected .option-icon img {
   filter: none !important;
 }
 
+/* Máscara para unificar color de iconos de servicios no seleccionados con var(--muted-foreground) */
+.service-icon-mask {
+  display: none;
+  width: 44px;
+  height: 44px;
+  background-color: var(--muted-foreground);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  border: 0 !important;
+  border-radius: 0 !important;
+}
+
+/* Modo oscuro por defecto: activa máscara dark */
+.booking-option:not(.selected) .service-icon-mask-dark {
+  display: block;
+}
+.booking-option:not(.selected) .service-icon-mask-light {
+  display: none;
+}
+
+/* Modo claro: activa máscara light */
+html[data-theme='light'] .booking-option:not(.selected) .service-icon-mask-light {
+  display: block;
+}
+html[data-theme='light'] .booking-option:not(.selected) .service-icon-mask-dark {
+  display: none;
+}
+
+/* En cards no seleccionadas, se ocultan las imágenes img directas para exhibir la máscara con el color del token */
+.booking-option:not(.selected) .option-icon img {
+  display: none !important;
+}
+
+/* En cards seleccionadas, se oculta la máscara y se preserva la imagen original con sus colores */
+.booking-option.selected .service-icon-mask {
+  display: none !important;
+}
+
 html[data-theme='light'] .booking-option,
 html[data-theme='light'] .booking-defer-option,
 html[data-theme='light'] .barber-choice-list > button {
@@ -2786,8 +2829,8 @@ html[data-theme='dark'] .booking-option.selected .text-muted-foreground {
   color: var(--muted-foreground) !important;
 }
 
-html[data-theme='dark'] .booking-option:not(.selected) .service-icon-dark {
-  filter: brightness(0) invert(7.06%) !important;
+html[data-theme='dark'] .booking-option:not(.selected) .service-icon-mask {
+  background-color: var(--muted-foreground) !important;
 }
 
 html[data-theme='dark'] .booking-option.selected .selection-circle,
