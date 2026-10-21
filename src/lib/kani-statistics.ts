@@ -279,6 +279,7 @@ export type StatisticsFilterOptions = {
   dateRange: DateRange;
   timeSlotFilter: TimeSlotFilter;
   barberFilter: string;
+  serviceFilter?: string;
   role: 'ADMIN' | 'BARBER';
   profileBarberId: string | null;
   permittedBarberIds: ReadonlySet<string>;
@@ -310,6 +311,20 @@ export function filterStatisticsAppointments(
       if (category !== options.timeSlotFilter) return false;
     }
 
+    // Service Filter
+    if (options.serviceFilter && options.serviceFilter !== 'Todos') {
+      const srvName = (appointment.serviceName || appointment.service || '').toLowerCase();
+      if (options.serviceFilter === 'Corte y barba') {
+        if (!srvName.includes('barba') || !srvName.includes('corte')) return false;
+      } else if (options.serviceFilter === 'Corte') {
+        if (srvName.includes('barba') || !srvName.includes('corte')) return false;
+      } else if (options.serviceFilter === 'Barba') {
+        if (srvName.includes('corte') || !srvName.includes('barba')) return false;
+      } else if (options.serviceFilter === 'Otros') {
+        if (srvName.includes('corte') || srvName.includes('barba')) return false;
+      }
+    }
+
     return true;
   });
 }
@@ -319,6 +334,7 @@ export type AppointmentKpiSummary = {
   confirmed: number;
   pending: number;
   cancelled: number;
+  noShow: number;
   completed?: number;
   completionRate?: number;
 };
@@ -327,6 +343,7 @@ export function computeKpiSummary(appointments: RealAppointment[]): AppointmentK
   let confirmed = 0;
   let pending = 0;
   let cancelled = 0;
+  let noShow = 0;
 
   for (const appointment of appointments) {
     switch (appointment.statusCode) {
@@ -340,6 +357,9 @@ export function computeKpiSummary(appointments: RealAppointment[]): AppointmentK
       case 'CANCELLED':
         cancelled++;
         break;
+      case 'NO_SHOW':
+        noShow++;
+        break;
     }
   }
 
@@ -350,6 +370,7 @@ export function computeKpiSummary(appointments: RealAppointment[]): AppointmentK
     confirmed,
     pending,
     cancelled,
+    noShow,
     completed: 0,
     completionRate: 0,
   };

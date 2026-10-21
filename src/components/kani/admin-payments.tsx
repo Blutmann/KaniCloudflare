@@ -38,6 +38,7 @@ import {
   type CandidateAppointmentMatch,
   type PaymentMethod,
   type RecordServicePaymentInput,
+  type ServicePaymentOrigin,
   type ServicePayment,
   type ServicePaymentFilters,
   type ServicePaymentType,
@@ -520,14 +521,56 @@ export function AdminPayments() {
         {/* 1. Formulario de registro rápido o edición */}
         <section
           className="p-3.5 sm:p-5 rounded-xl border border-border bg-surface shadow-xs mb-4 sm:mb-6"
-          aria-label={editingPayment ? "Editar cobro de servicio" : "Registrar cobro de servicio"}
+          aria-label={editingPayment ? "Editar servicio registrado" : "Registrar servicio"}
         >
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 pb-3 border-b border-border/60">
+            <div>
+              <h2 className="text-sm sm:text-base font-semibold text-foreground flex items-center gap-1.5">
+                <Scissors className="w-4 h-4 text-primary" />
+                <span>{editingPayment ? "Editar servicio registrado" : "Registrar servicio"}</span>
+              </h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {formOrigin === "appointment"
+                  ? "Servicio realizado correspondiente a un turno agendado."
+                  : "Servicio realizado directamente en el local sin turno previo (walk-in)."}
+              </p>
+            </div>
+
+            {/* Selector de Origen: Con turno / Sin turno */}
+            <div className="flex items-center gap-1 p-1 bg-muted/40 rounded-lg border border-border self-start sm:self-auto" role="radiogroup" aria-label="Origen del servicio">
+              <button
+                type="button"
+                onClick={() => handleOriginChange("appointment")}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                  formOrigin === "appointment"
+                    ? "bg-primary text-primary-foreground shadow-xs font-semibold"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+                aria-pressed={formOrigin === "appointment"}
+              >
+                Con turno
+              </button>
+              <button
+                type="button"
+                onClick={() => handleOriginChange("walk_in")}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                  formOrigin === "walk_in"
+                    ? "bg-primary text-primary-foreground shadow-xs font-semibold"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+                aria-pressed={formOrigin === "walk_in"}
+              >
+                Sin turno
+              </button>
+            </div>
+          </div>
+
           {editingPayment && (
             <div className="mb-3.5 p-3 rounded-lg border border-primary/40 bg-primary/10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs">
               <div className="flex items-center gap-2 text-foreground font-semibold">
                 <Pencil className="w-4 h-4 text-primary shrink-0" />
                 <span>
-                  Editando cobro registrado ({editingPayment.serviceName} · {money(editingPayment.finalAmountArs)})
+                  Editando servicio registrado ({editingPayment.serviceName} · {money(editingPayment.finalAmountArs)})
                 </span>
               </div>
               <Button
@@ -542,21 +585,80 @@ export function AdminPayments() {
             </div>
           )}
 
-          {linkedAppointment && (
-            <div className="flex items-center justify-between pb-2.5 sm:pb-3 mb-3 sm:mb-4 border-b border-border/60">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20">
-                <Link2 className="w-3.5 h-3.5" />
-                Turno #{linkedAppointment.requestNumber} vinculado
-                <button
-                  type="button"
-                  onClick={handleUnlinkAppointment}
-                  className="hover:text-destructive ml-1"
-                  title="Desvincular turno"
-                  aria-label="Desvincular turno"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </span>
+          {/* Selector de turno o resumen de turno vinculado en modo Con turno */}
+          {formOrigin === "appointment" && (
+            <div className="mb-4">
+              {linkedAppointment ? (
+                <div className="p-3.5 rounded-lg border border-primary/30 bg-primary/5 flex flex-col gap-2 text-xs">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-foreground text-sm flex items-center gap-1.5">
+                        <User className="w-4 h-4 text-primary" />
+                        {linkedAppointment.name}
+                      </span>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-primary/10 text-primary border border-primary/20">
+                        Turno #{linkedAppointment.requestNumber}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleUnlinkAppointment}
+                      className="text-xs text-muted-foreground hover:text-destructive flex items-center gap-1 font-medium"
+                      title="Cambiar turno"
+                    >
+                      <X className="w-3.5 h-3.5" /> Cambiar turno
+                    </button>
+                  </div>
+                  <div className="text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-0.5">
+                    <span>{formServiceName}</span>
+                    <span>·</span>
+                    <span>{staff.barbers.find((b) => b.id === formBarberId)?.name || "Barbero"}</span>
+                    <span>·</span>
+                    <span>{formTime} hs ({formDate})</span>
+                    {formClientContact && <span>· Contacto: {formClientContact}</span>}
+                  </div>
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-2 border-t border-border/50 text-foreground">
+                    <span>Precio total: <strong>{money(formPriceArs)}</strong></span>
+                    <span>Seña abonada: <strong className="text-emerald-500">{money(depositDeduction)}</strong></span>
+                    <span>Saldo esperado: <strong className="text-primary font-bold">{money(balanceToCollectAtShop)}</strong></span>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-3 rounded-lg border border-border bg-background/50 flex flex-col gap-1.5">
+                  <label htmlFor="form-select-appointment" className="block text-xs font-medium text-foreground">
+                    Elegir turno agendado *
+                  </label>
+                  <select
+                    id="form-select-appointment"
+                    value=""
+                    onChange={(e) => {
+                      const selectedId = e.target.value;
+                      const match = appointments.find((a) => a.id === selectedId);
+                      if (match) handleSelectAppointment(match);
+                    }}
+                    className="select-control w-full h-[40px] px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20"
+                  >
+                    <option value="">
+                      -- Seleccionar turno de la agenda ({availableAppointments.length} turnos disponibles) --
+                    </option>
+                    {availableAppointments.map((apt) => (
+                      <option key={apt.id} value={apt.id}>
+                        {apt.date === formDate ? "● [Fecha actual]" : "○"} {apt.date} {apt.time} hs · #{apt.requestNumber} {apt.name} ({apt.service}) · {apt.barber} {apt.depositPaid ? "(Seña paga)" : ""}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="text-[11px] text-muted-foreground">
+                    Al elegir el turno se completarán automáticamente el cliente, servicio, barbero, fecha, horario y seña abonada.
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {formOrigin === "walk_in" && (
+            <div className="mb-4 px-3 py-2 rounded-lg bg-muted/20 border border-border text-xs text-muted-foreground flex items-center gap-2">
+              <Scissors className="w-3.5 h-3.5 text-primary shrink-0" />
+              <span>Cliente atendido directamente en el local (walk-in). No requiere turno previo.</span>
             </div>
           )}
 

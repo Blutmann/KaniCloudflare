@@ -1,26 +1,27 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import {
   AlertCircle,
-  ArrowUpRight,
   BarChart2,
   Calendar,
+  CalendarDays,
   CheckCircle2,
   ChevronDown,
   ChevronUp,
   Clock,
   Clock3,
-  Filter,
+  CreditCard,
+  DollarSign,
   Flame,
+  Moon,
   PieChart as PieChartIcon,
   Receipt,
-  RefreshCw,
   RotateCcw,
   Scissors,
   ShieldAlert,
   Sun,
   Sunset,
-  Moon,
   TrendingUp,
+  User,
   Users,
   Wallet,
   XCircle,
@@ -28,8 +29,6 @@ import {
 import {
   BarChart,
   Bar,
-  PieChart as RechartsPieChart,
-  Pie,
   XAxis,
   YAxis,
   Tooltip,
@@ -60,16 +59,24 @@ import {
   filterStatisticsAppointments,
   statisticsPresets,
   getStatisticsPresetLabels,
-  statisticsPresetLabels,
   type StatisticsDatePreset,
   type TimeSlotFilter,
 } from '@/lib/kani-statistics';
-const AdminClients = lazy(() => import('./admin-clients').then(m => ({ default: m.AdminClients })));
+import {
+  fetchServicePayments,
+  filterServicePayments,
+  computeServicePaymentsOperationalStats,
+  computeServicePaymentsFinancialStats,
+  type ServicePayment,
+} from '@/lib/kani-payments';
+
+const AdminClients = lazy(() => import('./admin-clients').then((m) => ({ default: m.AdminClients })));
 
 const presets: StatisticsDatePreset[] = statisticsPresets;
 
 export function AdminStatistics() {
-  const { profile, barbers: permittedRows, refreshCount, setIsRefreshing } = useAdminStaff();
+  const staff = useAdminStaff();
+  const { profile, barbers: permittedRows, refreshCount, setIsRefreshing } = staff;
   const permittedBarbers = useMemo(
     () => permittedBarberNames(profile, permittedRows),
     [profile, permittedRows],
@@ -77,15 +84,18 @@ export function AdminStatistics() {
 
   const [mounted, setMounted] = useState(false);
   const [appointments, setAppointments] = useState<RealAppointment[]>([]);
+  const [payments, setPayments] = useState<ServicePayment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // Filters
+  // Filtros principales compartidos
   const [businessToday, setBusinessToday] = useState(() => businessDateToday());
   const [datePreset, setDatePreset] = useState<StatisticsDatePreset>('TODAY');
   const [specificDate, setSpecificDate] = useState(() => businessDateToday());
   const [timeSlotFilter, setTimeSlotFilter] = useState<TimeSlotFilter>('ALL');
   const [barberFilter, setBarberFilter] = useState('Todos');
+  const [serviceFilter, setServiceFilter] = useState('Todos');
+
   const presetLabels = useMemo(
     () => getStatisticsPresetLabels(businessToday),
     [businessToday],
@@ -100,8 +110,18 @@ export function AdminStatistics() {
     setIsRefreshing(true);
     setError('');
     try {
-      const data = await readRealAppointments();
-      setAppointments(data);
+      const [aptsData, paymentsData] = await Promise.all([
+        readRealAppointments().catch((e) => {
+          console.warn('[AdminStatistics] No se pudieron cargar turnos:', e);
+          return [] as RealAppointment[];
+        }),
+        fetchServicePayments({}, staff).catch((e) => {
+          console.warn('[AdminStatistics] No se pudieron cargar pagos:', e);
+          return [] as ServicePayment[];
+        }),
+      ]);
+      setAppointments(aptsData);
+      setPayments(paymentsData);
     } catch (err) {
       setError(appointmentErrorMessage(err));
     } finally {
@@ -124,7 +144,7 @@ export function AdminStatistics() {
     }
   }, [profile.role, permittedBarbers]);
 
-  // Keep business date updated
+  // Mantener fecha de negocio sincronizada
   useEffect(() => {
     const interval = window.setInterval(() => {
       const next = businessDateToday();
@@ -133,22 +153,23 @@ export function AdminStatistics() {
     return () => window.clearInterval(interval);
   }, []);
 
-  // Compute Active Date Range
+  // Rango de fechas activo
   const activeDateRange = useMemo(() => {
     return dateRangeForStatisticsPreset(datePreset, businessToday, specificDate);
   }, [datePreset, businessToday, specificDate]);
 
-  // Filter Appointments for Statistics
   const permittedBarberIds = useMemo(
     () => new Set(permittedRows.map((r) => r.id)),
     [permittedRows],
   );
 
+  // 1. Turnos filtrados
   const filteredAppointments = useMemo(() => {
     return filterStatisticsAppointments(appointments, {
       dateRange: activeDateRange,
       timeSlotFilter,
       barberFilter,
+      serviceFilter,
       role: profile.role,
       profileBarberId: profile.barber_id,
       permittedBarberIds,
@@ -158,12 +179,35 @@ export function AdminStatistics() {
     activeDateRange,
     timeSlotFilter,
     barberFilter,
+    serviceFilter,
     profile.role,
     profile.barber_id,
     permittedBarberIds,
   ]);
 
-  // Filter Appointments for Clients Directory (Scoped to permitted barbers, all time)
+  // 2. Cobros de servicios filtrados
+  const filteredPayments = useMemo(() => {
+    return filterServicePayments(payments, {
+      dateRange: activeDateRange,
+      timeSlotFilter,
+      barberFilter,
+      serviceFilter,
+      role: profile.role,
+      profileBarberId: profile.barber_id,
+      permittedBarberIds,
+    });
+  }, [
+    payments,
+    activeDateRange,
+    timeSlotFilter,
+    barberFilter,
+    serviceFilter,
+    profile.role,
+    profile.barber_id,
+    permittedBarberIds,
+  ]);
+
+  // Clientes para directorio (histórico general respetando alcance de barberos)
   const clientsData = useMemo(() => {
     const scopedAppointments = appointments.filter((apt) => {
       if (!permittedBarberIds.has(apt.barberId)) return false;
@@ -175,92 +219,17 @@ export function AdminStatistics() {
 
   const [showFinancialDetails, setShowFinancialDetails] = useState(false);
 
-  // Analytics Metrics
+  // Métricas analíticas de cada bloque
   const kpis = useMemo(() => computeKpiSummary(filteredAppointments), [filteredAppointments]);
-  const financial = useMemo(() => computeFinancialControl(filteredAppointments), [filteredAppointments]);
-
-  const financialComparisonData = useMemo(() => {
-    return [
-      {
-        id: 'completed',
-        name: 'Servicios ejecutados',
-        shortName: 'Servicios',
-        amount: financial.completedServices.totalCollectedArs,
-        category: 'Ingreso cobrado',
-        nature: 'Cobro de turnos realizados y cobrados',
-        color: '#B99A5B',
-      },
-      {
-        id: 'pending',
-        name: 'Cobros pendientes',
-        shortName: 'Pendientes',
-        amount: financial.pendingBalances.totalArs,
-        category: 'Ingreso potencial',
-        nature: 'Saldo a percibir al realizarse turnos confirmados',
-        color: '#F59E0B',
-      },
-      {
-        id: 'retained',
-        name: 'Señas retenidas',
-        shortName: 'Retenidas',
-        amount: financial.retainedNoShowDeposits.totalArs,
-        category: 'Ingreso por inasistencia',
-        nature: 'Anticipos conservados por clientes ausentes',
-        color: '#A855F7',
-      },
-      {
-        id: 'refunds',
-        name: 'Devoluciones',
-        shortName: 'Devoluciones',
-        amount: financial.refundsAndWaives.refundsTotalArs,
-        category: 'Egreso real',
-        nature: 'Dinero efectivamente devuelto al cliente',
-        color: '#F43F5E',
-      },
-      {
-        id: 'waives',
-        name: 'Condonaciones',
-        shortName: 'Condonadas',
-        amount: financial.refundsAndWaives.waivesTotalArs,
-        category: 'Ingreso no percibido',
-        nature: 'Penalización perdonada (no es salida de dinero)',
-        color: '#94A3B8',
-      },
-    ];
-  }, [financial]);
-
-  const financialCompositionData = useMemo(() => {
-    return financialComparisonData
-      .filter((item) => item.amount > 0)
-      .map((item) => ({
-        name: item.shortName,
-        fullName: item.name,
-        value: item.amount,
-        color: item.color,
-        category: item.category,
-      }));
-  }, [financialComparisonData]);
-
-  const hasFinancialActivity = useMemo(() => {
-    return (
-      financialComparisonData.some((item) => item.amount > 0) ||
-      financial.depositsCollected.totalArs > 0
-    );
-  }, [financialComparisonData, financial.depositsCollected.totalArs]);
-
-  const totalFinancialVolume = useMemo(() => {
-    return financialCompositionData.reduce((acc, item) => acc + item.value, 0);
-  }, [financialCompositionData]);
-
   const dailyDemand = useMemo(() => computeDailyDemand(filteredAppointments), [filteredAppointments]);
-  const hourlyDemand = useMemo(
-    () => computeHourlyDistribution(filteredAppointments),
-    [filteredAppointments],
-  );
-  const serviceDemand = useMemo(() => computeServiceDemand(filteredAppointments), [filteredAppointments]);
+  const hourlyDemand = useMemo(() => computeHourlyDistribution(filteredAppointments), [filteredAppointments]);
+  const financialControl = useMemo(() => computeFinancialControl(filteredAppointments), [filteredAppointments]);
+
+  const operationalStats = useMemo(() => computeServicePaymentsOperationalStats(filteredPayments), [filteredPayments]);
+  const financialStats = useMemo(() => computeServicePaymentsFinancialStats(filteredPayments), [filteredPayments]);
 
   return (
-    <main className="site-container admin-stats-page">
+    <main className="site-container admin-stats-page pb-12">
       {/* Error state */}
       {error && (
         <div
@@ -277,13 +246,13 @@ export function AdminStatistics() {
         </div>
       )}
 
-      {/* Filter Controls Card - Unified controls group */}
+      {/* 1. Panel de Filtros Compartidos */}
       <section
-        className="p-3.5 rounded-xl border border-border bg-surface shadow-xs mb-4 space-y-3"
-        aria-label="Filtros de estadísticas"
+        className="p-3.5 sm:p-4 rounded-xl border border-border bg-surface shadow-xs mb-6 space-y-3"
+        aria-label="Filtros principales de datos"
       >
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-          {/* Selector 1: Período */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+          {/* Filtro 1: Período */}
           <div>
             <label htmlFor="stat-period-filter" className="block text-xs font-medium text-muted-foreground mb-1.5">
               Período
@@ -314,7 +283,7 @@ export function AdminStatistics() {
             </div>
           </div>
 
-          {/* Selector 2: Franja horaria */}
+          {/* Filtro 2: Franja horaria */}
           <div>
             <label htmlFor="stat-slot-filter" className="block text-xs font-medium text-muted-foreground mb-1.5">
               Franja horaria
@@ -332,7 +301,7 @@ export function AdminStatistics() {
             </select>
           </div>
 
-          {/* Selector 3: Barbero */}
+          {/* Filtro 3: Barbero */}
           <div>
             <label htmlFor="stat-barber-filter" className="block text-xs font-medium text-muted-foreground mb-1.5">
               Barbero
@@ -364,705 +333,683 @@ export function AdminStatistics() {
               </select>
             )}
           </div>
-        </div>
-      </section>
 
-      {/* KPI Summary Cards - 4 visible categories */}
-      <section className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4" aria-label="Indicadores clave">
-        {/* Total */}
-        <div className="p-3.5 rounded-xl border border-border bg-surface flex flex-col justify-between">
-          <span className="text-xs text-muted-foreground">Total de turnos</span>
-          <div className="mt-2 flex items-baseline justify-between">
-            <span className="text-2xl font-bold text-foreground">
-              {loading ? '…' : kpis.total}
-            </span>
-            <Calendar size={16} className="text-muted-foreground opacity-60" />
-          </div>
-        </div>
-
-        {/* Confirmados */}
-        <div className="p-3.5 rounded-xl border border-success/30 bg-success/5 flex flex-col justify-between">
-          <span className="text-xs text-success font-medium">Confirmados</span>
-          <div className="mt-2 flex items-baseline justify-between">
-            <span className="text-2xl font-bold text-success">
-              {loading ? '…' : kpis.confirmed}
-            </span>
-            <CheckCircle2 size={16} className="text-success" />
-          </div>
-        </div>
-
-        {/* Pendientes */}
-        <div className="p-3.5 rounded-xl border border-amber-500/30 bg-amber-500/5 flex flex-col justify-between">
-          <span className="text-xs text-amber-500 font-medium">Pendientes</span>
-          <div className="mt-2 flex items-baseline justify-between">
-            <span className="text-2xl font-bold text-amber-500">
-              {loading ? '…' : kpis.pending}
-            </span>
-            <Clock size={16} className="text-amber-500" />
-          </div>
-        </div>
-
-        {/* Cancelados */}
-        <div className="p-3.5 rounded-xl border border-destructive/30 bg-destructive/5 flex flex-col justify-between">
-          <span className="text-xs text-destructive font-medium">Cancelados</span>
-          <div className="mt-2 flex items-baseline justify-between">
-            <span className="text-2xl font-bold text-destructive">
-              {loading ? '…' : kpis.cancelled}
-            </span>
-            <XCircle size={16} className="text-destructive" />
-          </div>
-        </div>
-      </section>
-
-      {/* Apartado visual: Control de cobros */}
-      <section className="mb-6 space-y-4" aria-label="Control de cobros">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+          {/* Filtro 4: Servicio */}
           <div>
-            <h3 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
-              <Wallet size={16} className="text-gold" />
-              <span>Control de cobros</span>
-            </h3>
-          </div>
-          {(financial.retainedNoShowDeposits.count > 0 || financial.refundsAndWaives.items.length > 0) && (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setShowFinancialDetails((curr) => !curr)}
-              className="text-xs h-8 px-2.5 self-start sm:self-auto gap-1 text-muted-foreground hover:text-foreground"
+            <label htmlFor="stat-service-filter" className="block text-xs font-medium text-muted-foreground mb-1.5">
+              Servicio
+            </label>
+            <select
+              id="stat-service-filter"
+              value={serviceFilter}
+              onChange={(e) => setServiceFilter(e.target.value)}
+              className="select-control w-full h-9 px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20 font-medium"
             >
-              {showFinancialDetails ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-              <span>{showFinancialDetails ? 'Ocultar auditoría' : 'Ver detalle de excepciones'}</span>
-            </Button>
-          )}
+              <option value="Todos">Todos los servicios</option>
+              <option value="Corte">Corte</option>
+              <option value="Corte y barba">Corte y barba</option>
+              <option value="Barba">Barba</option>
+              <option value="Otros">Otros</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      {/* ========================================================================= */}
+      {/* BLOQUE 1: TURNOS (Agenda) */}
+      {/* ========================================================================= */}
+      <section className="mb-8" aria-label="Bloque de turnos y agenda">
+        <div className="flex items-center justify-between gap-2 mb-3 pb-2 border-b border-border/60">
+          <div>
+            <h2 className="text-sm sm:text-base font-semibold text-foreground flex items-center gap-1.5">
+              <CalendarDays className="w-4 h-4 text-primary" />
+              <span>Turnos</span>
+            </h2>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Agenda y reservas solicitadas a través del sistema web o manuales.
+            </p>
+          </div>
+          <span className="text-xs font-medium text-muted-foreground bg-muted/40 px-2 py-0.5 rounded border border-border">
+            Agenda
+          </span>
         </div>
 
-        {/* 1. Tarjetas de métricas con jerarquía clara y distinción precisa */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-          {/* A. Servicios ejecutados (Ingreso principal por servicios completados) */}
+        {/* KPIs de Turnos */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-4">
+          {/* Total */}
           <div className="p-3.5 rounded-xl border border-border bg-surface flex flex-col justify-between shadow-xs">
-            <div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-foreground font-semibold">Servicios ejecutados</span>
-                <CheckCircle2 size={16} className="text-gold" />
-              </div>
-              <p className="text-[11px] text-muted-foreground mt-0.5">Ingresos por turnos completados</p>
-            </div>
-            <div className="mt-3">
-              <span className="text-xl sm:text-2xl font-bold text-foreground">
-                {loading ? '…' : money(financial.completedServices.totalCollectedArs)}
+            <span className="text-xs text-muted-foreground">Total de turnos</span>
+            <div className="mt-2 flex items-baseline justify-between">
+              <span className="text-2xl font-bold text-foreground">
+                {loading ? '…' : kpis.total}
               </span>
-              <span className="text-[11px] text-muted-foreground block mt-0.5">
-                {financial.completedServices.count} {financial.completedServices.count === 1 ? 'servicio realizado' : 'servicios realizados'}
-                {financial.completedServices.unpaidBalanceArs > 0 ? ` · Saldo impago: ${money(financial.completedServices.unpaidBalanceArs)}` : ''}
-              </span>
+              <Calendar size={16} className="text-muted-foreground opacity-60" />
             </div>
           </div>
 
-          {/* B. Señas cobradas (Anticipos efectivamente percibidos) */}
-          <div className="p-3.5 rounded-xl border border-emerald-500/25 bg-emerald-500/5 flex flex-col justify-between shadow-xs">
-            <div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-emerald-400 font-semibold">Señas cobradas</span>
-                <Receipt size={16} className="text-emerald-400" />
-              </div>
-              <p className="text-[11px] text-muted-foreground mt-0.5">Anticipos efectivamente recibidos</p>
-            </div>
-            <div className="mt-3">
-              <span className="text-xl sm:text-2xl font-bold text-foreground">
-                {loading ? '…' : money(financial.depositsCollected.totalArs)}
+          {/* Confirmados */}
+          <div className="p-3.5 rounded-xl border border-success/30 bg-success/5 flex flex-col justify-between shadow-xs">
+            <span className="text-xs text-success font-medium">Confirmados</span>
+            <div className="mt-2 flex items-baseline justify-between">
+              <span className="text-2xl font-bold text-success">
+                {loading ? '…' : kpis.confirmed}
               </span>
-              <span className="text-[11px] text-muted-foreground block mt-0.5">
-                {financial.depositsCollected.count} {financial.depositsCollected.count === 1 ? 'seña registrada' : 'señas registradas'}
-              </span>
+              <CheckCircle2 size={16} className="text-success" />
             </div>
           </div>
 
-          {/* C. Cobros pendientes (Ingreso potencial futuro) */}
-          <div className="p-3.5 rounded-xl border border-amber-500/25 bg-amber-500/5 flex flex-col justify-between shadow-xs">
-            <div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-amber-500 font-semibold">Cobros pendientes</span>
-                <Clock size={16} className="text-amber-500" />
-              </div>
-              <p className="text-[11px] text-muted-foreground mt-0.5">Saldo de turnos vigentes con seña</p>
-            </div>
-            <div className="mt-3">
-              <div className="flex items-baseline gap-1.5">
-                <span className="text-xl sm:text-2xl font-bold text-foreground">
-                  {loading ? '…' : money(financial.pendingBalances.totalArs)}
-                </span>
-                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-500 border border-amber-500/20">
-                  Potencial
-                </span>
-              </div>
-              <span className="text-[11px] text-muted-foreground block mt-0.5">
-                {financial.pendingBalances.count} {financial.pendingBalances.count === 1 ? 'turno por cobrar' : 'turnos por cobrar'}
+          {/* Pendientes */}
+          <div className="p-3.5 rounded-xl border border-amber-500/30 bg-amber-500/5 flex flex-col justify-between shadow-xs">
+            <span className="text-xs text-amber-500 font-medium">Pendientes</span>
+            <div className="mt-2 flex items-baseline justify-between">
+              <span className="text-2xl font-bold text-amber-500">
+                {loading ? '…' : kpis.pending}
               </span>
+              <Clock size={16} className="text-amber-500" />
             </div>
           </div>
 
-          {/* D. Señas retenidas (Compensación por inasistencia) */}
-          <div className="p-3.5 rounded-xl border border-purple-500/25 bg-purple-500/5 flex flex-col justify-between shadow-xs">
-            <div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-purple-400 font-semibold">Señas retenidas</span>
-                <ShieldAlert size={16} className="text-purple-400" />
-              </div>
-              <p className="text-[11px] text-muted-foreground mt-0.5">Conservadas por inasistencias</p>
-            </div>
-            <div className="mt-3">
-              <div className="flex items-baseline gap-1.5">
-                <span className="text-xl sm:text-2xl font-bold text-foreground">
-                  {loading ? '…' : money(financial.retainedNoShowDeposits.totalArs)}
-                </span>
-                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20">
-                  Inasistencias
-                </span>
-              </div>
-              <span className="text-[11px] text-muted-foreground block mt-0.5">
-                {financial.retainedNoShowDeposits.count} {financial.retainedNoShowDeposits.count === 1 ? 'seña retenida' : 'señas retenidas'}
+          {/* Cancelados */}
+          <div className="p-3.5 rounded-xl border border-destructive/30 bg-destructive/5 flex flex-col justify-between shadow-xs">
+            <span className="text-xs text-destructive font-medium">Cancelados</span>
+            <div className="mt-2 flex items-baseline justify-between">
+              <span className="text-2xl font-bold text-destructive">
+                {loading ? '…' : kpis.cancelled}
               </span>
+              <XCircle size={16} className="text-destructive" />
             </div>
           </div>
 
-          {/* E. Devoluciones / Condonaciones (Distinción entre egreso real y no percibido) */}
-          <div className="p-3.5 rounded-xl border border-rose-500/25 bg-rose-500/5 flex flex-col justify-between shadow-xs">
-            <div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-rose-400 font-semibold">Devoluciones / Condonadas</span>
-                <RotateCcw size={16} className="text-rose-400" />
-              </div>
-              <p className="text-[11px] text-muted-foreground mt-0.5">Ajustes y excepciones de cobro</p>
-            </div>
-            <div className="mt-2.5 space-y-1.5">
-              <div className="flex items-baseline justify-between">
-                <div className="flex items-center gap-1">
-                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-rose-400" />
-                  <span className="text-[11px] text-muted-foreground">Devolución:</span>
-                </div>
-                <div className="text-right">
-                  <span className="text-sm font-bold text-foreground">
-                    {loading ? '…' : money(financial.refundsAndWaives.refundsTotalArs)}
-                  </span>
-                  <span className="text-[10px] text-rose-400 font-medium block -mt-0.5">
-                    {financial.refundsAndWaives.refundsCount} {financial.refundsAndWaives.refundsCount === 1 ? 'egreso real' : 'egresos reales'}
-                  </span>
-                </div>
-              </div>
-              <div className="flex items-baseline justify-between pt-1 border-t border-rose-500/15">
-                <div className="flex items-center gap-1">
-                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-muted-foreground" />
-                  <span className="text-[11px] text-muted-foreground">Condonado:</span>
-                </div>
-                <div className="text-right">
-                  <span className="text-sm font-semibold text-foreground/90">
-                    {loading ? '…' : money(financial.refundsAndWaives.waivesTotalArs)}
-                  </span>
-                  <span className="text-[10px] text-muted-foreground block -mt-0.5">
-                    {financial.refundsAndWaives.waivesCount} {financial.refundsAndWaives.waivesCount === 1 ? 'no percibido' : 'no percibidos'}
-                  </span>
-                </div>
-              </div>
+          {/* Inasistencias (no-show) */}
+          <div className="p-3.5 rounded-xl border border-purple-500/30 bg-purple-500/5 flex flex-col justify-between shadow-xs col-span-2 sm:col-span-1">
+            <span className="text-xs text-purple-400 font-medium">Inasistencias</span>
+            <div className="mt-2 flex items-baseline justify-between">
+              <span className="text-2xl font-bold text-purple-400">
+                {loading ? '…' : kpis.noShow}
+              </span>
+              <ShieldAlert size={16} className="text-purple-400" />
             </div>
           </div>
         </div>
 
-        {/* 2. Visualización gráfica financiera */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 pt-1">
-          {/* Gráfico A: Comparativa de importes financieros (BarChart) - 7 cols */}
-          <div className="lg:col-span-7 p-3.5 sm:p-4 rounded-xl border border-border bg-surface flex flex-col justify-between shadow-xs">
-            <div>
-              <h4 className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                <BarChart2 size={14} className="text-gold" />
-                <span>Comparativa de importes</span>
-              </h4>
-              <p className="text-[11px] text-muted-foreground mt-0.5">
-                Ingresos ejecutados, cobros potenciales y ajustes excepcionales.
-              </p>
-            </div>
-
-            <div className="w-full h-56 pt-2">
-              {mounted && hasFinancialActivity ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={financialComparisonData}
-                    margin={{ top: 12, right: 10, left: -20, bottom: 20 }}
-                  >
-                    <XAxis
-                      dataKey="shortName"
-                      tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }}
-                      interval={0}
-                      stroke="var(--border)"
-                    />
-                    <YAxis
-                      tick={{ fill: 'var(--muted-foreground)', fontSize: 10 }}
-                      stroke="var(--border)"
-                      tickFormatter={(val) => `${val >= 1000 ? `${Math.round(val / 1000)}k` : val}`}
-                    />
-                    <Tooltip
-                      content={({ active, payload }) => {
-                        if (active && payload && payload.length) {
-                          const data = payload[0].payload;
-                          return (
-                            <div className="p-2.5 rounded-lg border border-border bg-surface text-xs shadow-md space-y-1 min-w-[12rem]">
-                              <p className="font-semibold text-foreground">{data.name}</p>
-                              <p className="text-xs font-bold" style={{ color: data.color }}>
-                                {money(data.amount)}
-                              </p>
-                              <div className="inline-block px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground border border-border/50">
-                                {data.category}
+        {/* Gráficos de Demanda de Turnos */}
+        {filteredAppointments.length === 0 ? (
+          <div className="p-5 text-center border border-dashed border-border rounded-xl bg-surface/40 text-xs text-muted-foreground">
+            No se registraron turnos en la agenda para el período y filtros seleccionados.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
+            {/* Demanda por Fecha (7 cols) */}
+            <div className="lg:col-span-7 p-3.5 sm:p-4 rounded-xl border border-border bg-surface shadow-xs space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                    <TrendingUp size={14} className="text-primary" />
+                    <span>Demanda por fecha</span>
+                  </h3>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    Evolución temporal de reservas registradas en el período.
+                  </p>
+                </div>
+                {dailyDemand.peakDate && (
+                  <div className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20 font-medium">
+                    <Flame size={11} className="text-amber-500" />
+                    <span>Pico: {dailyDemand.peakDate} ({dailyDemand.peakCount} turnos)</span>
+                  </div>
+                )}
+              </div>
+              <div className="w-full h-52 pt-1">
+                {mounted && dailyDemand.points.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={dailyDemand.points} margin={{ top: 8, right: 8, left: -22, bottom: 15 }}>
+                      <XAxis
+                        dataKey="label"
+                        tick={{ fill: 'var(--muted-foreground)', fontSize: 10 }}
+                        interval="preserveStartEnd"
+                        stroke="var(--border)"
+                      />
+                      <YAxis
+                        allowDecimals={false}
+                        tick={{ fill: 'var(--muted-foreground)', fontSize: 10 }}
+                        stroke="var(--border)"
+                      />
+                      <Tooltip
+                        content={({ active, payload }) => {
+                          if (active && payload && payload.length) {
+                            const data = payload[0].payload;
+                            return (
+                              <div className="p-2.5 rounded-lg border border-border bg-surface text-xs shadow-md space-y-1">
+                                <p className="font-semibold text-foreground">{data.date}</p>
+                                <p className="text-primary font-medium">Total: {data.count} turnos</p>
+                                <p className="text-success text-[11px]">Confirmados: {data.confirmed}</p>
+                                <p className="text-destructive text-[11px]">Cancelados: {data.cancelled}</p>
                               </div>
-                              <p className="text-[11px] text-muted-foreground leading-tight pt-0.5">
-                                {data.nature}
-                              </p>
-                            </div>
-                          );
-                        }
-                        return null;
-                      }}
-                    />
-                    <Bar dataKey="amount" radius={[4, 4, 0, 0]} maxBarSize={38}>
-                      {financialComparisonData.map((entry, index) => (
-                        <Cell key={`fin-bar-${index}`} fill={entry.color} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="h-full flex flex-col items-center justify-center text-center p-4">
-                  <Wallet size={28} className="text-muted-foreground/30 mb-1.5" />
-                  <p className="text-xs font-semibold text-foreground">Sin movimientos financieros</p>
-                  <p className="text-[11px] text-muted-foreground mt-0.5 max-w-xs">
-                    No se registraron cobros, saldos ni excepciones en las fechas y filtros seleccionados.
-                  </p>
+                            );
+                          }
+                          return null;
+                        }}
+                      />
+                      <Bar dataKey="count" radius={[3, 3, 0, 0]} maxBarSize={32}>
+                        {dailyDemand.points.map((entry, index) => (
+                          <Cell
+                            key={`daily-cell-${index}`}
+                            fill={entry.isPeak ? '#EAB308' : '#B99A5B'}
+                          />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="h-full flex items-center justify-center text-xs text-muted-foreground">
+                    Sin datos temporales suficientes.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Demanda por Horario (5 cols) */}
+            <div className="lg:col-span-5 p-3.5 sm:p-4 rounded-xl border border-border bg-surface shadow-xs space-y-3">
+              <div>
+                <h3 className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                  <Clock3 size={14} className="text-primary" />
+                  <span>Demanda por franja</span>
+                </h3>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  Distribución según mañana, tarde y noche.
+                </p>
+              </div>
+
+              {/* 3 Franjas */}
+              <div className="grid grid-cols-3 gap-2 text-xs">
+                <div className="p-2 rounded-lg bg-background border border-border flex flex-col justify-between">
+                  <div className="flex items-center gap-1 text-muted-foreground mb-1">
+                    <Sun size={12} className="text-amber-500 shrink-0" />
+                    <span className="truncate text-[11px]">Mañana</span>
+                  </div>
+                  <div className="flex items-baseline justify-between">
+                    <strong className="text-sm text-foreground font-semibold">{hourlyDemand.morningCount}</strong>
+                    <span className="text-[10px] text-muted-foreground">{hourlyDemand.morningPercentage}%</span>
+                  </div>
+                  <span className="text-[9px] text-muted-foreground/70 mt-0.5">10:00 - 12:00</span>
+                </div>
+
+                <div className="p-2 rounded-lg bg-background border border-border flex flex-col justify-between">
+                  <div className="flex items-center gap-1 text-muted-foreground mb-1">
+                    <Sunset size={12} className="text-indigo-400 shrink-0" />
+                    <span className="truncate text-[11px]">Tarde</span>
+                  </div>
+                  <div className="flex items-baseline justify-between">
+                    <strong className="text-sm text-foreground font-semibold">{hourlyDemand.afternoonCount}</strong>
+                    <span className="text-[10px] text-muted-foreground">{hourlyDemand.afternoonPercentage}%</span>
+                  </div>
+                  <span className="text-[9px] text-muted-foreground/70 mt-0.5">12:00 - 18:00</span>
+                </div>
+
+                <div className="p-2 rounded-lg bg-background border border-border flex flex-col justify-between">
+                  <div className="flex items-center gap-1 text-muted-foreground mb-1">
+                    <Moon size={12} className="text-blue-400 shrink-0" />
+                    <span className="truncate text-[11px]">Noche</span>
+                  </div>
+                  <div className="flex items-baseline justify-between">
+                    <strong className="text-sm text-foreground font-semibold">{hourlyDemand.nightCount}</strong>
+                    <span className="text-[10px] text-muted-foreground">{hourlyDemand.nightPercentage}%</span>
+                  </div>
+                  <span className="text-[9px] text-muted-foreground/70 mt-0.5">18:00 - 20:00</span>
+                </div>
+              </div>
+
+              {/* Hora pico */}
+              {hourlyDemand.peakHour && (
+                <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-between text-xs">
+                  <span className="flex items-center gap-1 text-amber-500 font-medium text-[11px]">
+                    <Flame size={12} /> Hora pico:
+                  </span>
+                  <span className="font-bold text-amber-500 text-[11px]">
+                    {hourlyDemand.peakHour} ({hourlyDemand.peakHourCount} turnos)
+                  </span>
                 </div>
               )}
-            </div>
-          </div>
-
-          {/* Gráfico B: Composición Financiera (DonutChart) - 5 cols */}
-          <div className="lg:col-span-5 p-3.5 sm:p-4 rounded-xl border border-border bg-surface flex flex-col justify-between shadow-xs">
-            <div>
-              <h4 className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                <PieChartIcon size={14} className="text-gold" />
-                <span>Composición financiera</span>
-              </h4>
-              <p className="text-[11px] text-muted-foreground mt-0.5">
-                Distribución proporcional de los movimientos analizados.
-              </p>
-            </div>
-
-            <div className="w-full h-56 pt-2 flex flex-col sm:flex-row items-center justify-between gap-3">
-              {mounted && hasFinancialActivity && totalFinancialVolume > 0 ? (
-                <>
-                  <div className="w-full sm:w-1/2 h-44 sm:h-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <RechartsPieChart>
-                        <Pie
-                          data={financialCompositionData}
-                          dataKey="value"
-                          nameKey="name"
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={38}
-                          outerRadius={64}
-                          paddingAngle={financialCompositionData.length > 1 ? 3 : 0}
-                        >
-                          {financialCompositionData.map((entry, index) => (
-                            <Cell key={`fin-slice-${index}`} fill={entry.color} />
-                          ))}
-                        </Pie>
-                        <Tooltip
-                          content={({ active, payload }) => {
-                            if (active && payload && payload.length) {
-                              const data = payload[0].payload;
-                              const pct = totalFinancialVolume > 0 ? Math.round((data.value / totalFinancialVolume) * 100) : 0;
-                              return (
-                                <div className="p-2 rounded-lg border border-border bg-surface text-xs shadow-md space-y-0.5">
-                                  <p className="font-semibold text-foreground">{data.fullName || data.name}</p>
-                                  <p className="text-xs font-bold" style={{ color: data.color }}>
-                                    {money(data.value)} ({pct}%)
-                                  </p>
-                                  <p className="text-[10px] text-muted-foreground">{data.category}</p>
-                                </div>
-                              );
-                            }
-                            return null;
-                          }}
-                        />
-                      </RechartsPieChart>
-                    </ResponsiveContainer>
-                  </div>
-                  <div className="w-full sm:w-1/2 flex flex-col justify-center space-y-1 text-xs">
-                    {financialCompositionData.map((slice, idx) => {
-                      const pct = totalFinancialVolume > 0 ? Math.round((slice.value / totalFinancialVolume) * 100) : 0;
-                      return (
-                        <div key={`comp-item-${idx}`} className="flex items-center justify-between gap-2 py-0.5">
-                          <div className="flex items-center gap-1.5 min-w-0">
-                            <span
-                              className="w-2 h-2 rounded-full shrink-0"
-                              style={{ backgroundColor: slice.color }}
-                            />
-                            <span className="text-[11px] text-muted-foreground truncate">{slice.name}</span>
-                          </div>
-                          <div className="text-right shrink-0">
-                            <span className="text-[11px] font-semibold text-foreground">{money(slice.value)}</span>
-                            <span className="text-[10px] text-muted-foreground ml-1">({pct}%)</span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </>
-              ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center text-center p-4">
-                  <PieChartIcon size={28} className="text-muted-foreground/30 mb-1.5" />
-                  <p className="text-xs font-semibold text-foreground">Sin datos de composición</p>
-                  <p className="text-[11px] text-muted-foreground mt-0.5 max-w-xs">
-                    Los importes registrados en el período equivalen a $0.
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Desglose auditable de inasistencias y excepciones */}
-        {showFinancialDetails && (financial.retainedNoShowDeposits.count > 0 || financial.refundsAndWaives.items.length > 0) && (
-          <div className="p-3.5 rounded-xl border border-border bg-surface/70 space-y-3 mt-3 animate-in fade-in duration-200">
-            <h4 className="text-xs font-semibold text-foreground tracking-tight">
-              Registro auditable de inasistencias y excepciones del período
-            </h4>
-            <div className="space-y-2 text-xs">
-              {financial.retainedNoShowDeposits.items.map((item) => (
-                <div
-                  key={`retained-${item.appointmentId}`}
-                  className="p-2.5 rounded-lg border border-purple-500/20 bg-purple-500/5 flex flex-col sm:flex-row sm:items-center justify-between gap-1.5"
-                >
-                  <div>
-                    <span className="font-semibold text-foreground">{item.clientName}</span>
-                    <span className="text-muted-foreground"> · {item.serviceName} ({item.barberName})</span>
-                    <span className="text-muted-foreground block text-[11px]">
-                      {item.date} {item.time} hs {item.reason ? `· Motivo: ${item.reason}` : ''}
-                    </span>
-                  </div>
-                  <div className="text-left sm:text-right shrink-0">
-                    <span className="inline-block px-2 py-0.5 rounded text-[11px] font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20">
-                      Seña retenida: {money(item.depositAmountArs)}
-                    </span>
-                  </div>
-                </div>
-              ))}
-
-              {financial.refundsAndWaives.items.map((item) => (
-                <div
-                  key={`exc-${item.appointmentId}`}
-                  className="p-2.5 rounded-lg border border-rose-500/20 bg-rose-500/5 flex flex-col sm:flex-row sm:items-center justify-between gap-1.5"
-                >
-                  <div>
-                    <span className="font-semibold text-foreground">{item.clientName}</span>
-                    <span className="text-muted-foreground block text-[11px]">
-                      {item.date} · Motivo: {item.reason} {item.actor ? `(Autorizado por: ${item.actor})` : ''}
-                    </span>
-                  </div>
-                  <div className="text-left sm:text-right shrink-0">
-                    <span className="inline-block px-2 py-0.5 rounded text-[11px] font-medium bg-rose-500/10 text-rose-400 border border-rose-500/20">
-                      {item.decision === 'REFUND' ? `Seña devuelta: ${money(item.amountArs)}` : `Penalización condonada: ${money(item.amountArs)}`}
-                    </span>
-                  </div>
-                </div>
-              ))}
             </div>
           </div>
         )}
       </section>
 
-      {/* Empty State */}
-      {!loading && filteredAppointments.length === 0 && (
-        <div className="p-8 text-center border border-dashed border-border rounded-xl bg-surface/50 my-6">
-          <BarChart2 size={36} className="mx-auto text-muted-foreground/60 mb-2" />
-          <h3 className="text-sm font-semibold text-foreground">Sin registros en este período</h3>
-          <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">
-            No se encontraron reservas con los filtros aplicados. Probá seleccionando otro rango de fechas o franja horaria.
-          </p>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              setDatePreset('TODAY');
-              setTimeSlotFilter('ALL');
-              setBarberFilter('Todos');
-            }}
-            className="mt-3 text-xs"
-          >
-            Restablecer filtros
-          </Button>
+      {/* ========================================================================= */}
+      {/* BLOQUE 2: SERVICIOS REALIZADOS (Operación) */}
+      {/* ========================================================================= */}
+      <section className="mb-8" aria-label="Bloque de servicios realizados">
+        <div className="flex items-center justify-between gap-2 mb-3 pb-2 border-b border-border/60">
+          <div>
+            <h2 className="text-sm sm:text-base font-semibold text-foreground flex items-center gap-1.5">
+              <Scissors className="w-4 h-4 text-primary" />
+              <span>Servicios realizados</span>
+            </h2>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Atenciones efectivamente ejecutadas en el local (registradas en Pagos).
+            </p>
+          </div>
+          <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-0.5 rounded border border-primary/20">
+            Operación
+          </span>
         </div>
-      )}
 
-      {/* Main Charts Grid */}
-      {!loading && filteredAppointments.length > 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          {/* Demanda por Fecha (2 cols) */}
-          <section
-            className="lg:col-span-2 p-4 rounded-xl border border-border bg-surface shadow-xs space-y-4"
-            aria-label="Demanda por fecha"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
-                  <TrendingUp size={16} className="stat-text-accent" />
-                  <span>Demanda por Fecha</span>
-                </h3>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Evolución temporal de reservas registradas en el período.
-                </p>
+        {operationalStats.totalServices === 0 ? (
+          <div className="p-6 text-center border border-dashed border-border rounded-xl bg-surface/40 text-xs text-muted-foreground">
+            No se registraron servicios realizados en este período con los filtros seleccionados.
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {/* KPIs de Servicios Realizados */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {/* Total realizados */}
+              <div className="p-3.5 rounded-xl border border-border bg-surface flex flex-col justify-between shadow-xs">
+                <span className="text-xs text-muted-foreground">Total servicios</span>
+                <div className="mt-2 flex items-baseline justify-between">
+                  <span className="text-2xl font-bold text-foreground">
+                    {operationalStats.totalServices}
+                  </span>
+                  <Scissors size={16} className="text-primary opacity-80" />
+                </div>
+                <span className="text-[11px] text-muted-foreground block mt-1">Efectivamente atendidos</span>
               </div>
 
-              {dailyDemand.peakDate && (
-                <div className="flex items-center gap-1 text-[11px] px-2.5 py-0.5 rounded-full stat-badge-peak border font-medium">
-                  <Flame size={12} className="stat-text-peak" />
-                  <span>Pico: {dailyDemand.peakDate} ({dailyDemand.peakCount} turnos)</span>
+              {/* Con turno */}
+              <div className="p-3.5 rounded-xl border border-primary/30 bg-primary/5 flex flex-col justify-between shadow-xs">
+                <span className="text-xs text-primary font-medium">Con turno</span>
+                <div className="mt-2 flex items-baseline justify-between">
+                  <span className="text-2xl font-bold text-primary">
+                    {operationalStats.withAppointment}
+                  </span>
+                  <CalendarDays size={16} className="text-primary" />
                 </div>
-              )}
+                <span className="text-[11px] text-primary/80 block mt-1">
+                  {operationalStats.withAppointmentPercentage}% del total
+                </span>
+              </div>
+
+              {/* Sin turno / Walk-in */}
+              <div className="p-3.5 rounded-xl border border-amber-500/30 bg-amber-500/5 flex flex-col justify-between shadow-xs">
+                <span className="text-xs text-amber-500 font-medium">Sin turno (walk-in)</span>
+                <div className="mt-2 flex items-baseline justify-between">
+                  <span className="text-2xl font-bold text-amber-500">
+                    {operationalStats.walkIn}
+                  </span>
+                  <User size={16} className="text-amber-500" />
+                </div>
+                <span className="text-[11px] text-amber-500/80 block mt-1">
+                  {operationalStats.walkInPercentage}% del total
+                </span>
+              </div>
+
+              {/* Relación proporcional */}
+              <div className="p-3.5 rounded-xl border border-border bg-surface flex flex-col justify-between shadow-xs">
+                <span className="text-xs text-muted-foreground">Proporción de origen</span>
+                <div className="mt-2 text-xs font-semibold text-foreground">
+                  {operationalStats.withAppointmentPercentage}% con turno
+                </div>
+                <div className="text-[11px] text-muted-foreground">
+                  {operationalStats.walkInPercentage}% sin turno
+                </div>
+                <div className="w-full h-2 rounded-full bg-muted/40 overflow-hidden flex mt-2">
+                  <div
+                    className="h-full bg-primary transition-all"
+                    style={{ width: `${operationalStats.withAppointmentPercentage}%` }}
+                    title={`Con turno: ${operationalStats.withAppointmentPercentage}%`}
+                  />
+                  <div
+                    className="h-full bg-amber-500 transition-all"
+                    style={{ width: `${operationalStats.walkInPercentage}%` }}
+                    title={`Sin turno: ${operationalStats.walkInPercentage}%`}
+                  />
+                </div>
+              </div>
             </div>
 
-            {/* Recharts BarChart */}
-            <div className="w-full h-64 pt-2">
-              {mounted && dailyDemand.points.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={dailyDemand.points} margin={{ top: 10, right: 10, left: -20, bottom: 20 }}>
-                    <XAxis
-                      dataKey="label"
-                      tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }}
-                      interval="preserveStartEnd"
-                      stroke="var(--border)"
-                    />
-                    <YAxis
-                      allowDecimals={false}
-                      tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }}
-                      stroke="var(--border)"
-                    />
-                    <Tooltip
-                      content={({ active, payload }) => {
-                        if (active && payload && payload.length) {
-                          const data = payload[0].payload;
-                          return (
-                            <div className="p-2.5 rounded-lg border border-border bg-surface text-xs shadow-md space-y-1">
-                              <p className="font-semibold text-foreground">{data.date}</p>
-                              <p className="stat-text-accent">Total reservas: {data.count}</p>
-                              <p className="text-success">Confirmados: {data.confirmed}</p>
-                              <p className="text-destructive">Cancelados: {data.cancelled}</p>
-                            </div>
-                          );
-                        }
-                        return null;
-                      }}
-                    />
-                    <Bar dataKey="count" radius={[4, 4, 0, 0]} maxBarSize={40}>
-                      {dailyDemand.points.map((entry, index) => (
-                        <Cell
-                          key={`cell-${index}`}
-                          fill={entry.isPeak ? 'var(--stat-bar-peak)' : 'var(--stat-bar-normal)'}
+            {/* Visualización Con turno vs Sin turno y desglose por Barbero / Servicio */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Servicios por Barbero */}
+              <div className="p-4 rounded-xl border border-border bg-surface shadow-xs space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                    <Users size={14} className="text-primary" />
+                    <span>Servicios realizados por barbero</span>
+                  </h3>
+                  <span className="text-[11px] text-muted-foreground">{operationalStats.byBarber.length} barberos</span>
+                </div>
+                <div className="space-y-2.5 pt-1">
+                  {operationalStats.byBarber.map((b) => (
+                    <div key={b.barberId} className="space-y-1 text-xs">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium text-foreground">{b.barberName}</span>
+                        <span className="font-semibold text-foreground">
+                          {b.count} {b.count === 1 ? 'servicio' : 'servicios'}{' '}
+                          <span className="text-muted-foreground font-normal">
+                            ({Math.round(b.percentage)}%)
+                          </span>
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                        <span>{b.withAppointmentCount} con turno</span>
+                        <span>{b.walkInCount} sin turno</span>
+                      </div>
+                      <div className="w-full h-2 rounded-full bg-muted/40 overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-primary transition-all"
+                          style={{ width: `${Math.max(4, b.percentage)}%` }}
                         />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Servicios por Tipo */}
+              <div className="p-4 rounded-xl border border-border bg-surface shadow-xs space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                    <Scissors size={14} className="text-primary" />
+                    <span>Servicios realizados por tipo</span>
+                  </h3>
+                  <span className="text-[11px] text-muted-foreground">{operationalStats.byService.length} tipos</span>
+                </div>
+                <div className="space-y-2.5 pt-1">
+                  {operationalStats.byService.map((s) => (
+                    <div key={s.serviceName} className="space-y-1 text-xs">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium text-foreground">{s.serviceName}</span>
+                        <span className="font-semibold text-foreground">
+                          {s.count} {s.count === 1 ? 'atención' : 'atenciones'}{' '}
+                          <span className="text-muted-foreground font-normal">
+                            ({Math.round(s.percentage)}%)
+                          </span>
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                        <span>{s.withAppointmentCount} con turno</span>
+                        <span>{s.walkInCount} sin turno</span>
+                      </div>
+                      <div className="w-full h-2 rounded-full bg-muted/40 overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-emerald-500 transition-all"
+                          style={{ width: `${Math.max(4, s.percentage)}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </section>
+
+      {/* ========================================================================= */}
+      {/* BLOQUE 3: COBRANZA (Finanzas) */}
+      {/* ========================================================================= */}
+      <section className="mb-8" aria-label="Bloque de cobranza y finanzas">
+        <div className="flex items-center justify-between gap-2 mb-3 pb-2 border-b border-border/60">
+          <div>
+            <h2 className="text-sm sm:text-base font-semibold text-foreground flex items-center gap-1.5">
+              <Wallet className="w-4 h-4 text-gold text-primary" />
+              <span>Cobranza</span>
+            </h2>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Ingresos reales cobrados, ticket promedio y métodos de pago sin duplicación de señas.
+            </p>
+          </div>
+          <span className="text-xs font-medium text-gold bg-amber-500/10 text-amber-500 px-2 py-0.5 rounded border border-amber-500/20">
+            Finanzas
+          </span>
+        </div>
+
+        {financialStats.servicesCount === 0 ? (
+          <div className="p-6 text-center border border-dashed border-border rounded-xl bg-surface/40 text-xs text-muted-foreground">
+            No se registraron cobros ni ingresos en este período con los filtros seleccionados.
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {/* KPIs Financieros */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {/* Total cobrado */}
+              <div className="p-3.5 rounded-xl border border-primary/30 bg-primary/5 flex flex-col justify-between shadow-xs">
+                <span className="text-xs text-primary font-medium">Total cobrado</span>
+                <div className="mt-2">
+                  <span className="text-xl sm:text-2xl font-bold text-foreground">
+                    {money(financialStats.totalCollected)}
+                  </span>
+                </div>
+                <span className="text-[11px] text-muted-foreground mt-1 block">
+                  {financialStats.servicesCount} {financialStats.servicesCount === 1 ? 'servicio' : 'servicios'}
+                </span>
+              </div>
+
+              {/* Ticket promedio */}
+              <div className="p-3.5 rounded-xl border border-border bg-surface flex flex-col justify-between shadow-xs">
+                <span className="text-xs text-muted-foreground">Ticket promedio</span>
+                <div className="mt-2">
+                  <span className="text-xl sm:text-2xl font-bold text-foreground">
+                    {money(financialStats.averageTicket)}
+                  </span>
+                </div>
+                <span className="text-[11px] text-muted-foreground mt-1 block">Por servicio realizado</span>
+              </div>
+
+              {/* Descuentos aplicados */}
+              <div className="p-3.5 rounded-xl border border-border bg-surface flex flex-col justify-between shadow-xs">
+                <span className="text-xs text-muted-foreground">Descuentos</span>
+                <div className="mt-2">
+                  <span className="text-xl sm:text-2xl font-bold text-foreground">
+                    {money(financialStats.totalDiscount)}
+                  </span>
+                </div>
+                <span className="text-[11px] text-muted-foreground mt-1 block">Bonificaciones comerciales</span>
+              </div>
+
+              {/* Desglose de Fondos (Señas vs Local) */}
+              <div className="p-3.5 rounded-xl border border-border bg-surface flex flex-col justify-between shadow-xs">
+                <span className="text-xs text-muted-foreground">Desglose de origen</span>
+                <div className="mt-1 space-y-1 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-[11px] text-muted-foreground">Señas online:</span>
+                    <strong className="text-emerald-500 font-semibold">{money(financialStats.depositsPrepaid)}</strong>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-[11px] text-muted-foreground">Cobrado en local:</span>
+                    <strong className="text-foreground font-semibold">{money(financialStats.collectedAtShop)}</strong>
+                  </div>
+                </div>
+                <span className="text-[10px] text-muted-foreground/75 mt-1 block pt-1 border-t border-border/50">
+                  Total conciliado: {money(financialStats.totalCollected)}
+                </span>
+              </div>
+            </div>
+
+            {/* Grid de Desglose: Método de Pago, Barbero y Servicio */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Cobranza por Método de Pago */}
+              <div className="p-4 rounded-xl border border-border bg-surface shadow-xs space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                    <CreditCard size={14} className="text-primary" />
+                    <span>Por método de pago</span>
+                  </h3>
+                  <span className="text-[11px] text-muted-foreground">{financialStats.byMethod.length} métodos</span>
+                </div>
+                <div className="space-y-2.5 pt-1">
+                  {financialStats.byMethod.map((m) => (
+                    <div key={m.method} className="space-y-1 text-xs">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium text-foreground">{m.method}</span>
+                        <span className="font-semibold text-foreground">
+                          {money(m.total)}{' '}
+                          <span className="text-muted-foreground font-normal">
+                            ({Math.round(m.percentage)}%)
+                          </span>
+                        </span>
+                      </div>
+                      <div className="w-full h-2 rounded-full bg-muted/40 overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-primary transition-all"
+                          style={{ width: `${Math.max(4, m.percentage)}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Cobranza por Barbero */}
+              <div className="p-4 rounded-xl border border-border bg-surface shadow-xs space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                    <Users size={14} className="text-primary" />
+                    <span>Cobranza por barbero</span>
+                  </h3>
+                  <span className="text-[11px] text-muted-foreground">{financialStats.byBarber.length} barberos</span>
+                </div>
+                <div className="space-y-2.5 pt-1">
+                  {financialStats.byBarber.map((b) => (
+                    <div key={b.barberId} className="space-y-1 text-xs">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium text-foreground">{b.barberName}</span>
+                        <span className="font-semibold text-foreground">
+                          {money(b.total)}{' '}
+                          <span className="text-muted-foreground font-normal">
+                            ({Math.round(b.percentage)}%)
+                          </span>
+                        </span>
+                      </div>
+                      <div className="w-full h-2 rounded-full bg-muted/40 overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-gold bg-amber-500 transition-all"
+                          style={{ width: `${Math.max(4, b.percentage)}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Cobranza por Servicio */}
+              <div className="p-4 rounded-xl border border-border bg-surface shadow-xs space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                    <Scissors size={14} className="text-primary" />
+                    <span>Cobranza por servicio</span>
+                  </h3>
+                  <span className="text-[11px] text-muted-foreground">{financialStats.byService.length} servicios</span>
+                </div>
+                <div className="space-y-2.5 pt-1">
+                  {financialStats.byService.map((s) => (
+                    <div key={s.serviceName} className="space-y-1 text-xs">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium text-foreground">{s.serviceName}</span>
+                        <span className="font-semibold text-foreground">
+                          {money(s.total)}{' '}
+                          <span className="text-muted-foreground font-normal">
+                            ({Math.round(s.percentage)}%)
+                          </span>
+                        </span>
+                      </div>
+                      <div className="w-full h-2 rounded-full bg-muted/40 overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-emerald-500 transition-all"
+                          style={{ width: `${Math.max(4, s.percentage)}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Auditoría de inasistencias y excepciones */}
+            {(financialControl.retainedNoShowDeposits.count > 0 || financialControl.refundsAndWaives.items.length > 0) && (
+              <div className="pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowFinancialDetails((curr) => !curr)}
+                  className="text-xs h-8 px-2.5 gap-1 text-muted-foreground hover:text-foreground"
+                >
+                  {showFinancialDetails ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                  <span>{showFinancialDetails ? 'Ocultar auditoría de inasistencias' : 'Ver auditoría de inasistencias y excepciones'}</span>
+                </Button>
+
+                {showFinancialDetails && (
+                  <div className="p-3.5 rounded-xl border border-border bg-surface/70 space-y-2.5 mt-3 animate-in fade-in duration-200">
+                    <h4 className="text-xs font-semibold text-foreground tracking-tight">
+                      Registro auditable de inasistencias del período
+                    </h4>
+                    <div className="space-y-2 text-xs">
+                      {financialControl.retainedNoShowDeposits.items.map((item) => (
+                        <div
+                          key={`retained-${item.appointmentId}`}
+                          className="p-2.5 rounded-lg border border-purple-500/20 bg-purple-500/5 flex flex-col sm:flex-row sm:items-center justify-between gap-1.5"
+                        >
+                          <div>
+                            <span className="font-semibold text-foreground">{item.clientName}</span>
+                            <span className="text-muted-foreground"> · {item.serviceName} ({item.barberName})</span>
+                            <span className="text-muted-foreground block text-[11px]">
+                              {item.date} {item.time} hs {item.reason ? `· Motivo: ${item.reason}` : ''}
+                            </span>
+                          </div>
+                          <div className="text-left sm:text-right shrink-0">
+                            <span className="inline-block px-2 py-0.5 rounded text-[11px] font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                              Seña retenida: {money(item.depositAmountArs)}
+                            </span>
+                          </div>
+                        </div>
                       ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="h-full flex items-center justify-center text-xs text-muted-foreground">
-                  Sin datos temporales suficientes.
-                </div>
-              )}
-            </div>
-          </section>
 
-          {/* Demanda por Horario (1 col) */}
-          <section
-            className="p-4 rounded-xl border border-border bg-surface shadow-xs space-y-4"
-            aria-label="Demanda por horario"
-          >
-            <div>
-              <h3 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
-                <Clock3 size={16} className="stat-text-accent" />
-                <span>Demanda por Horario</span>
-              </h3>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Distribución por franja horaria (mañana, tarde y noche) y horas pico.
-              </p>
-            </div>
-
-            {/* Morning vs Afternoon vs Night Summary (3 categories) */}
-            <div className="grid grid-cols-3 gap-2 text-xs">
-              {/* Mañana: 10:00 a 12:00 */}
-              <div className="p-2.5 rounded-lg bg-background border border-border flex flex-col justify-between">
-                <div className="flex items-center gap-1 text-muted-foreground mb-1">
-                  <Sun size={13} className="text-amber-500 shrink-0" />
-                  <span className="truncate">Mañana</span>
-                </div>
-                <div className="flex items-baseline justify-between mt-1">
-                  <strong className="text-base text-foreground font-semibold">
-                    {hourlyDemand.morningCount}
-                  </strong>
-                  <span className="text-[11px] text-muted-foreground font-medium">
-                    {hourlyDemand.morningPercentage}%
-                  </span>
-                </div>
-                <span className="text-[10px] text-muted-foreground/75 mt-0.5">10:00 - 12:00</span>
-              </div>
-
-              {/* Tarde: 12:00 a 18:00 */}
-              <div className="p-2.5 rounded-lg bg-background border border-border flex flex-col justify-between">
-                <div className="flex items-center gap-1 text-muted-foreground mb-1">
-                  <Sunset size={13} className="text-indigo-400 shrink-0" />
-                  <span className="truncate">Tarde</span>
-                </div>
-                <div className="flex items-baseline justify-between mt-1">
-                  <strong className="text-base text-foreground font-semibold">
-                    {hourlyDemand.afternoonCount}
-                  </strong>
-                  <span className="text-[11px] text-muted-foreground font-medium">
-                    {hourlyDemand.afternoonPercentage}%
-                  </span>
-                </div>
-                <span className="text-[10px] text-muted-foreground/75 mt-0.5">12:00 - 18:00</span>
-              </div>
-
-              {/* Noche: 18:00 a 20:00 */}
-              <div className="p-2.5 rounded-lg bg-background border border-border flex flex-col justify-between">
-                <div className="flex items-center gap-1 text-muted-foreground mb-1">
-                  <Moon size={13} className="text-blue-400 shrink-0" />
-                  <span className="truncate">Noche</span>
-                </div>
-                <div className="flex items-baseline justify-between mt-1">
-                  <strong className="text-base text-foreground font-semibold">
-                    {hourlyDemand.nightCount}
-                  </strong>
-                  <span className="text-[11px] text-muted-foreground font-medium">
-                    {hourlyDemand.nightPercentage}%
-                  </span>
-                </div>
-                <span className="text-[10px] text-muted-foreground/75 mt-0.5">18:00 - 20:00</span>
-              </div>
-            </div>
-
-            {/* Peak Hour Badge */}
-            {hourlyDemand.peakHour && (
-              <div className="p-2 rounded-lg stat-badge-peak border flex items-center justify-between text-xs font-medium">
-                <span className="flex items-center gap-1 opacity-90">
-                  <Flame size={13} className="stat-text-peak" />
-                  Hora de mayor concentración:
-                </span>
-                <span className="font-bold stat-text-peak">
-                  {hourlyDemand.peakHour} ({hourlyDemand.peakHourCount} turnos)
-                </span>
+                      {financialControl.refundsAndWaives.items.map((item) => (
+                        <div
+                          key={`exc-${item.appointmentId}`}
+                          className="p-2.5 rounded-lg border border-rose-500/20 bg-rose-500/5 flex flex-col sm:flex-row sm:items-center justify-between gap-1.5"
+                        >
+                          <div>
+                            <span className="font-semibold text-foreground">{item.clientName}</span>
+                            <span className="text-muted-foreground block text-[11px]">
+                              {item.date} · Motivo: {item.reason} {item.actor ? `(Autorizado por: ${item.actor})` : ''}
+                            </span>
+                          </div>
+                          <div className="text-left sm:text-right shrink-0">
+                            <span className="inline-block px-2 py-0.5 rounded text-[11px] font-medium bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                              {item.decision === 'REFUND' ? `Seña devuelta: ${money(item.amountArs)}` : `Penalización condonada: ${money(item.amountArs)}`}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
+          </div>
+        )}
+      </section>
 
-            {/* Hourly breakdown bars */}
-            <div className="space-y-2 pt-1 max-h-48 overflow-y-auto pr-1">
-              {hourlyDemand.slots.map((slot) => (
-                <div key={slot.hourSlot} className="text-xs space-y-1">
-                  <div className="flex justify-between text-muted-foreground">
-                    <span className="font-medium text-foreground">{slot.hourSlot}</span>
-                    <span>
-                      {slot.count} turnos ({slot.percentage}%)
-                    </span>
-                  </div>
-                  <div className="w-full h-2 rounded-full bg-muted/40 overflow-hidden">
-                    <div
-                      className={`h-full rounded-full transition-all ${
-                        slot.isPeak ? 'stat-bar-fill-peak' : 'stat-bar-fill-normal'
-                      }`}
-                      style={{ width: `${Math.max(4, slot.percentage)}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* Servicios Más Solicitados (Full width or span 3) */}
-          <section
-            className="lg:col-span-3 p-4 rounded-xl border border-border bg-surface shadow-xs space-y-4"
-            aria-label="Servicios más solicitados"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
-                  <Scissors size={16} className="stat-text-accent" />
-                  <span>Servicios más Solicitados</span>
-                </h3>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {serviceDemand.map((srv, index) => (
-                <div
-                  key={srv.serviceName}
-                  className="p-3.5 rounded-xl border border-border bg-background flex flex-col justify-between space-y-3"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <span className="text-[10px] font-bold stat-text-accent uppercase tracking-wider">
-                        #{index + 1} en demanda
-                      </span>
-                      <h4 className="font-semibold text-sm text-foreground truncate mt-0.5">
-                        {srv.serviceName}
-                      </h4>
-                    </div>
-                    <span className="text-xs font-bold text-foreground bg-muted/40 px-2 py-0.5 rounded-md shrink-0">
-                      {srv.count} turnos
-                    </span>
-                  </div>
-
-                  <div className="space-y-1">
-                    <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>Participación</span>
-                      <span className="font-semibold text-foreground">{srv.percentage}%</span>
-                    </div>
-                    <div className="w-full h-2 rounded-full bg-muted/40 overflow-hidden">
-                      <div
-                        className="h-full rounded-full stat-bar-fill-service transition-all"
-                        style={{ width: `${Math.max(4, srv.percentage)}%` }}
-                      />
-                    </div>
-                  </div>
-
-                  {srv.totalRevenue > 0 && (
-                    <div className="text-[11px] text-muted-foreground pt-2 border-t border-border/40 flex justify-between">
-                      <span>Monto estimado:</span>
-                      <span className="font-semibold text-foreground">
-                        ${srv.totalRevenue.toLocaleString('es-AR')}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </section>
-        </div>
-      )}
-
-      {/* Clientes Section (Directorio de Clientes) */}
+      {/* ========================================================================= */}
+      {/* DIRECTORIO HISTÓRICO DE CLIENTES */}
+      {/* ========================================================================= */}
       <Suspense fallback={<div className="h-48 w-full animate-pulse rounded-xl border border-border bg-surface p-6" />}>
         <AdminClients
-        clients={clientsData}
-        loading={loading}
-        onAppointmentStatusChange={(appointmentId, newStatus) => {
-          setAppointments((curr) =>
-            curr.map((apt) =>
-              apt.id === appointmentId
-                ? {
-                    ...apt,
-                    statusCode: newStatus,
-                    status: newStatus === 'CONFIRMED' ? 'Confirmado' : 'Cancelado',
-                  }
-                : apt
-            )
-          );
-        }}
+          clients={clientsData}
+          loading={loading}
+          onAppointmentStatusChange={(appointmentId, newStatus) => {
+            setAppointments((curr) =>
+              curr.map((apt) =>
+                apt.id === appointmentId
+                  ? {
+                      ...apt,
+                      statusCode: newStatus,
+                      status: newStatus === 'CONFIRMED' ? 'Confirmado' : 'Cancelado',
+                    }
+                  : apt
+              )
+            );
+          }}
         />
       </Suspense>
     </main>

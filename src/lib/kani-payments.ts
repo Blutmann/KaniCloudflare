@@ -7,6 +7,7 @@ import { services as defaultCatalogServices, minutes, money } from '@/lib/kani-m
 
 export type PaymentMethod = 'Efectivo' | 'Transferencia';
 export type ServicePaymentType = 'Corte' | 'Corte y barba' | 'Barba' | 'Otros';
+export type ServicePaymentOrigin = 'appointment' | 'walk_in' | 'legacy';
 
 export type ServicePayment = {
   id: string;
@@ -28,6 +29,7 @@ export type ServicePayment = {
   clientContact: string | null;
   appointmentId: string | null;
   appointmentRequestNumber?: number | null;
+  serviceOrigin: ServicePaymentOrigin;
   createdByUserId: string | null;
   createdByDisplayName: string;
   createdAt: string;
@@ -47,6 +49,7 @@ export type RecordServicePaymentInput = {
   clientName?: string;
   clientContact?: string;
   appointmentId?: string;
+  serviceOrigin?: ServicePaymentOrigin;
 };
 
 export type UpdateServicePaymentInput = {
@@ -60,6 +63,8 @@ export type UpdateServicePaymentInput = {
   paymentMethod: PaymentMethod;
   clientName?: string;
   clientContact?: string;
+  appointmentId?: string | null;
+  serviceOrigin?: ServicePaymentOrigin;
 };
 
 export type ServicePaymentFilters = {
@@ -156,6 +161,19 @@ export function validatePaymentInput(
   }
   if (discount > input.servicePriceArs) {
     return { valid: false, error: 'El descuento no puede ser superior al importe del servicio.' };
+  }
+
+  // Validación de origen del servicio (Con turno / Sin turno)
+  if (input.serviceOrigin === 'appointment' && !input.appointmentId) {
+    return { valid: false, error: 'Debés seleccionar un turno para registrar un servicio con turno.' };
+  }
+  if (input.serviceOrigin === 'walk_in') {
+    if (input.appointmentId) {
+      return { valid: false, error: 'Un servicio sin turno (walk-in) no puede tener un turno asociado.' };
+    }
+    if (input.onlineDepositPaid) {
+      return { valid: false, error: 'Un servicio sin turno no puede incluir seña abonada online.' };
+    }
   }
 
   if (input.onlineDepositPaid) {
@@ -328,6 +346,7 @@ export async function fetchServicePayments(
     clientName: row.client_name,
     clientContact: row.client_contact,
     appointmentId: row.appointment_id,
+    serviceOrigin: (row.service_origin as ServicePaymentOrigin) || (row.appointment_id ? 'appointment' : 'walk_in'),
     createdByUserId: row.created_by_user_id,
     createdByDisplayName: row.created_by_display_name,
     createdAt: row.created_at,
@@ -361,6 +380,8 @@ export async function recordServicePayment(
   const formattedTime = paymentTime.length === 5 ? `${paymentTime}:00` : paymentTime;
   const discountArs = input.discountArs || 0;
   const finalAmountArs = input.servicePriceArs - discountArs;
+  const serviceOrigin: ServicePaymentOrigin =
+    input.serviceOrigin || (input.appointmentId ? 'appointment' : 'walk_in');
 
   let onlineDepositPaid = false;
   let onlineDepositAmountArs = 0;
@@ -392,6 +413,7 @@ export async function recordServicePayment(
       p_client_name: input.clientName?.trim() || null,
       p_client_contact: input.clientContact?.trim() || null,
       p_appointment_id: input.appointmentId ? input.appointmentId : null,
+      p_service_origin: serviceOrigin,
     });
 
     if (!error && data) {
@@ -416,6 +438,7 @@ export async function recordServicePayment(
         clientContact: input.clientContact || null,
         appointmentId: input.appointmentId || null,
         appointmentRequestNumber: appointment?.requestNumber,
+        serviceOrigin,
         createdByUserId: staff.user.id,
         createdByDisplayName: staff.profile.display_name,
         createdAt: new Date().toISOString(),
@@ -461,6 +484,7 @@ export async function recordServicePayment(
       client_name: input.clientName?.trim() || null,
       client_contact: input.clientContact?.trim() || null,
       appointment_id: input.appointmentId ? input.appointmentId : null,
+      service_origin: serviceOrigin,
       created_by_user_id: staff.user.id,
       created_by_display_name: staff.profile.display_name,
     };
@@ -514,6 +538,7 @@ export async function recordServicePayment(
       clientContact: insertedRow.client_contact,
       appointmentId: insertedRow.appointment_id,
       appointmentRequestNumber: appointment?.requestNumber,
+      serviceOrigin: (insertedRow.service_origin as ServicePaymentOrigin) || serviceOrigin,
       createdByUserId: insertedRow.created_by_user_id,
       createdByDisplayName: insertedRow.created_by_display_name,
       createdAt: insertedRow.created_at,
@@ -581,6 +606,17 @@ export async function updateServicePayment(
   if (input.paymentDate) updatePayload.payment_date = input.paymentDate;
   if (formattedTime) updatePayload.payment_time = formattedTime;
 
+  // Actualizar origen y relación con turno si se especifica
+  if (input.serviceOrigin) {
+    updatePayload.service_origin = input.serviceOrigin;
+  }
+  if (input.appointmentId !== undefined) {
+    updatePayload.appointment_id = input.appointmentId;
+    if (!input.serviceOrigin) {
+      updatePayload.service_origin = input.appointmentId ? 'appointment' : 'walk_in';
+    }
+  }
+
   // Solo administradores pueden reasignar el barbero
   if (staff.profile.role === 'ADMIN' && input.barberId) {
     updatePayload.barber_id = input.barberId;
@@ -621,6 +657,7 @@ export async function updateServicePayment(
     clientContact: updatedRow.client_contact,
     appointmentId: updatedRow.appointment_id,
     appointmentRequestNumber: currentRecord?.appointmentRequestNumber,
+    serviceOrigin: (updatedRow.service_origin as ServicePaymentOrigin) || (updatedRow.appointment_id ? 'appointment' : 'walk_in'),
     createdByUserId: updatedRow.created_by_user_id,
     createdByDisplayName: updatedRow.created_by_display_name,
     createdAt: updatedRow.created_at,
@@ -648,4 +685,317 @@ export async function deleteServicePayment(
     console.error('[KANI payments] Error al eliminar cobro en base de datos:', error);
     throw new Error(error.message || 'No se pudo eliminar el cobro en la base de datos.');
   }
+}
+
+/**
+ * Clasifica el horario de un cobro según las 3 franjas horarias oficiales de Kani
+ */
+export function classifyPaymentTime(timeStr: string): 'MORNING' | 'AFTERNOON' | 'NIGHT' | 'OUTSIDE' {
+  if (!timeStr) return 'OUTSIDE';
+  const parts = timeStr.trim().split(':');
+  if (parts.length < 2) return 'OUTSIDE';
+  const hour = parseInt(parts[0], 10);
+  const minute = parseInt(parts[1], 10);
+  if (Number.isNaN(hour) || Number.isNaN(minute)) return 'OUTSIDE';
+
+  const totalMinutes = hour * 60 + minute;
+  const morningStart = 10 * 60; // 10:00
+  const afternoonStart = 12 * 60; // 12:00
+  const nightStart = 18 * 60; // 18:00
+  const nightEnd = 20 * 60; // 20:00
+
+  if (totalMinutes >= morningStart && totalMinutes < afternoonStart) return 'MORNING';
+  if (totalMinutes >= afternoonStart && totalMinutes < nightStart) return 'AFTERNOON';
+  if (totalMinutes >= nightStart && totalMinutes < nightEnd) return 'NIGHT';
+  return 'OUTSIDE';
+}
+
+export type ServicePaymentFilterOptions = {
+  dateRange: { start: string; end: string } | null;
+  timeSlotFilter?: 'ALL' | 'MORNING' | 'AFTERNOON' | 'NIGHT';
+  barberFilter?: string;
+  serviceFilter?: string;
+  role: 'ADMIN' | 'BARBER';
+  profileBarberId: string | null;
+  permittedBarberIds: ReadonlySet<string>;
+};
+
+/**
+ * Filtra la colección de servicios cobrados según los filtros reactivos compartidos
+ */
+export function filterServicePayments(
+  payments: ServicePayment[],
+  options: ServicePaymentFilterOptions,
+): ServicePayment[] {
+  return payments.filter((payment) => {
+    // 1. Permisos y alcance por barbero
+    if (!options.permittedBarberIds.has(payment.barberId)) return false;
+    if (options.role === 'BARBER') {
+      if (payment.barberId !== options.profileBarberId) return false;
+    } else if (options.barberFilter && options.barberFilter !== 'Todos' && payment.barberName !== options.barberFilter) {
+      return false;
+    }
+
+    // 2. Rango de fechas
+    if (options.dateRange) {
+      if (payment.paymentDate < options.dateRange.start || payment.paymentDate > options.dateRange.end) {
+        return false;
+      }
+    }
+
+    // 3. Franja horaria
+    if (options.timeSlotFilter && options.timeSlotFilter !== 'ALL') {
+      const slot = classifyPaymentTime(payment.paymentTime);
+      if (slot !== options.timeSlotFilter) return false;
+    }
+
+    // 4. Servicio
+    if (options.serviceFilter && options.serviceFilter !== 'Todos') {
+      if (options.serviceFilter === 'Corte y barba') {
+        if (payment.serviceName !== 'Corte y barba' && (payment.serviceName as string) !== 'Corte + barba') {
+          return false;
+        }
+      } else {
+        if (payment.serviceName !== options.serviceFilter) {
+          return false;
+        }
+      }
+    }
+
+    return true;
+  });
+}
+
+export type OperationalStatsSummary = {
+  totalServices: number;
+  withAppointment: number;
+  walkIn: number;
+  withAppointmentPercentage: number;
+  walkInPercentage: number;
+  byBarber: Array<{
+    barberId: string;
+    barberName: string;
+    count: number;
+    withAppointmentCount: number;
+    walkInCount: number;
+    percentage: number;
+  }>;
+  byService: Array<{
+    serviceName: string;
+    count: number;
+    withAppointmentCount: number;
+    walkInCount: number;
+    percentage: number;
+  }>;
+};
+
+/**
+ * Calcula las métricas operativas de servicios efectivamente realizados
+ */
+export function computeServicePaymentsOperationalStats(
+  payments: ServicePayment[],
+): OperationalStatsSummary {
+  const totalServices = payments.length;
+  let withAppointment = 0;
+  let walkIn = 0;
+
+  const barberMap = new Map<string, {
+    barberId: string;
+    barberName: string;
+    count: number;
+    withAppointmentCount: number;
+    walkInCount: number;
+  }>();
+
+  const serviceMap = new Map<string, {
+    serviceName: string;
+    count: number;
+    withAppointmentCount: number;
+    walkInCount: number;
+  }>();
+
+  for (const p of payments) {
+    const isWithAppointment = p.serviceOrigin === 'appointment' || (p.serviceOrigin !== 'walk_in' && Boolean(p.appointmentId));
+    if (isWithAppointment) {
+      withAppointment += 1;
+    } else {
+      walkIn += 1;
+    }
+
+    // Por barbero
+    const bName = p.barberName || 'Barbero';
+    const bEntry = barberMap.get(p.barberId) || {
+      barberId: p.barberId,
+      barberName: bName,
+      count: 0,
+      withAppointmentCount: 0,
+      walkInCount: 0,
+    };
+    bEntry.count += 1;
+    if (isWithAppointment) bEntry.withAppointmentCount += 1;
+    else bEntry.walkInCount += 1;
+    barberMap.set(p.barberId, bEntry);
+
+    // Por tipo de servicio
+    const sName = p.serviceName === 'Otros' && p.serviceOtherDetail
+      ? `${p.serviceOtherDetail} (Otros)`
+      : p.serviceName;
+    const sEntry = serviceMap.get(sName) || {
+      serviceName: sName,
+      count: 0,
+      withAppointmentCount: 0,
+      walkInCount: 0,
+    };
+    sEntry.count += 1;
+    if (isWithAppointment) sEntry.withAppointmentCount += 1;
+    else sEntry.walkInCount += 1;
+    serviceMap.set(sName, sEntry);
+  }
+
+  const withAppointmentPercentage = totalServices > 0 ? Math.round((withAppointment / totalServices) * 100) : 0;
+  const walkInPercentage = totalServices > 0 ? 100 - withAppointmentPercentage : 0;
+
+  const byBarber = Array.from(barberMap.values())
+    .map((b) => ({
+      ...b,
+      percentage: totalServices > 0 ? (b.count / totalServices) * 100 : 0,
+    }))
+    .sort((a, b) => b.count - a.count);
+
+  const byService = Array.from(serviceMap.values())
+    .map((s) => ({
+      ...s,
+      percentage: totalServices > 0 ? (s.count / totalServices) * 100 : 0,
+    }))
+    .sort((a, b) => b.count - a.count);
+
+  return {
+    totalServices,
+    withAppointment,
+    walkIn,
+    withAppointmentPercentage,
+    walkInPercentage,
+    byBarber,
+    byService,
+  };
+}
+
+export type FinancialStatsSummary = {
+  totalCollected: number;
+  averageTicket: number;
+  totalDiscount: number;
+  servicesCount: number;
+  depositsPrepaid: number;
+  collectedAtShop: number;
+  byMethod: Array<{
+    method: string;
+    total: number;
+    count: number;
+    percentage: number;
+  }>;
+  byBarber: Array<{
+    barberId: string;
+    barberName: string;
+    total: number;
+    count: number;
+    percentage: number;
+  }>;
+  byService: Array<{
+    serviceName: string;
+    total: number;
+    count: number;
+    percentage: number;
+  }>;
+};
+
+/**
+ * Calcula las métricas financieras garantizando que señas y saldos no se dupliquen
+ */
+export function computeServicePaymentsFinancialStats(
+  payments: ServicePayment[],
+): FinancialStatsSummary {
+  const totalCollected = payments.reduce((sum, p) => sum + (p.finalAmountArs || 0), 0);
+  const totalDiscount = payments.reduce((sum, p) => sum + (p.discountArs || 0), 0);
+  const depositsPrepaid = payments.reduce((sum, p) => sum + (p.onlineDepositPaid ? (p.onlineDepositAmountArs || 0) : 0), 0);
+  const collectedAtShop = payments.reduce((sum, p) => sum + (p.collectedAmountArs || 0), 0);
+  const servicesCount = payments.length;
+  const averageTicket = servicesCount > 0 ? Math.round(totalCollected / servicesCount) : 0;
+
+  // 1. Por método de pago
+  const methodMap = new Map<string, { total: number; count: number }>();
+  methodMap.set('Efectivo', { total: 0, count: 0 });
+  methodMap.set('Transferencia', { total: 0, count: 0 });
+
+  for (const p of payments) {
+    const m = p.paymentMethod || 'Otros';
+    const entry = methodMap.get(m) || { total: 0, count: 0 };
+    // Lo cobrado en el local con ese método
+    entry.total += (p.collectedAmountArs ?? p.finalAmountArs ?? 0);
+    entry.count += 1;
+    methodMap.set(m, entry);
+  }
+
+  // Si hubo señas abonadas online (ej. Mercado Pago), sumarlas como un método legítimo separado para reflejar el total
+  if (depositsPrepaid > 0) {
+    const depositsCount = payments.filter((p) => p.onlineDepositPaid && p.onlineDepositAmountArs > 0).length;
+    methodMap.set('Seña online (Mercado Pago)', { total: depositsPrepaid, count: depositsCount });
+  }
+
+  const byMethod = Array.from(methodMap.entries())
+    .filter(([_, data]) => data.count > 0 || data.total > 0 || servicesCount === 0)
+    .map(([method, data]) => ({
+      method,
+      total: data.total,
+      count: data.count,
+      percentage: totalCollected > 0 ? (data.total / totalCollected) * 100 : 0,
+    }))
+    .sort((a, b) => b.total - a.total);
+
+  // 2. Por barbero
+  const barberMap = new Map<string, { barberId: string; barberName: string; total: number; count: number }>();
+  for (const p of payments) {
+    const bName = p.barberName || 'Barbero';
+    const entry = barberMap.get(p.barberId) || { barberId: p.barberId, barberName: bName, total: 0, count: 0 };
+    entry.total += (p.finalAmountArs || 0);
+    entry.count += 1;
+    barberMap.set(p.barberId, entry);
+  }
+
+  const byBarber = Array.from(barberMap.values())
+    .map((b) => ({
+      ...b,
+      percentage: totalCollected > 0 ? (b.total / totalCollected) * 100 : 0,
+    }))
+    .sort((a, b) => b.total - a.total);
+
+  // 3. Por servicio
+  const serviceMap = new Map<string, { serviceName: string; total: number; count: number }>();
+  for (const p of payments) {
+    const sName = p.serviceName === 'Otros' && p.serviceOtherDetail
+      ? `${p.serviceOtherDetail} (Otros)`
+      : p.serviceName;
+    const entry = serviceMap.get(sName) || { serviceName: sName, total: 0, count: 0 };
+    entry.total += (p.finalAmountArs || 0);
+    entry.count += 1;
+    serviceMap.set(sName, entry);
+  }
+
+  const byService = Array.from(serviceMap.values())
+    .map((s) => ({
+      ...s,
+      percentage: totalCollected > 0 ? (s.total / totalCollected) * 100 : 0,
+    }))
+    .sort((a, b) => b.total - a.total);
+
+  return {
+    totalCollected,
+    averageTicket,
+    totalDiscount,
+    servicesCount,
+    depositsPrepaid,
+    collectedAtShop,
+    byMethod,
+    byBarber,
+    byService,
+  };
 }
