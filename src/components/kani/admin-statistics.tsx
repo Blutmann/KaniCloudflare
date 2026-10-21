@@ -627,9 +627,9 @@ export function AdminStatistics() {
                 </span>
               </div>
 
-              {/* Sin turno / Walk-in */}
+              {/* Sin turno */}
               <div className="p-3.5 rounded-xl border border-amber-500/30 bg-amber-500/5 flex flex-col justify-between shadow-xs">
-                <span className="text-xs text-amber-500 font-medium">Sin turno (walk-in)</span>
+                <span className="text-xs text-amber-500 font-medium">Sin turno</span>
                 <div className="mt-2 flex items-baseline justify-between">
                   <span className="text-2xl font-bold text-amber-500">
                     {operationalStats.walkIn}

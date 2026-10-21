@@ -30,12 +30,10 @@ import {
   businessTimeNow,
   deleteServicePayment,
   fetchServicePayments,
-  findCandidateAppointments,
   recordServicePayment,
   STANDARD_SERVICE_PRICES,
   updateServicePayment,
   validatePaymentInput,
-  type CandidateAppointmentMatch,
   type PaymentMethod,
   type RecordServicePaymentInput,
   type ServicePaymentOrigin,
@@ -107,7 +105,6 @@ export function AdminPayments() {
   const [formPaymentMethod, setFormPaymentMethod] = useState<PaymentMethod>("Efectivo");
   const [formOnlineDepositPaid, setFormOnlineDepositPaid] = useState<boolean>(false);
   const [linkedAppointment, setLinkedAppointment] = useState<RealAppointment | null>(null);
-  const [showCandidateSearch, setShowCandidateSearch] = useState<boolean>(false);
   const [formOrigin, setFormOrigin] = useState<ServicePaymentOrigin>("walk_in");
 
   // Inicializar barberId si staff cambia
@@ -265,20 +262,6 @@ export function AdminPayments() {
     };
   }, [payments]);
 
-  // Turnos candidatos para vinculación
-  const candidateMatches = useMemo(() => {
-    return findCandidateAppointments(
-      {
-        date: formDate,
-        time: formTime,
-        clientName: formClientName,
-        barberId: formBarberId,
-      },
-      appointments,
-      alreadyPaidAppointmentIds,
-    );
-  }, [formDate, formTime, formClientName, formBarberId, appointments, alreadyPaidAppointmentIds]);
-
   // Manejo de cambio de servicio en formulario
   function handleServiceChange(service: ServicePaymentType) {
     setFormServiceName(service);
@@ -288,36 +271,6 @@ export function AdminPayments() {
       setFormPriceArs(STANDARD_SERVICE_PRICES[service]);
       setFormOtherDetail("");
     }
-  }
-
-  // Vincular un turno candidato
-  function handleLinkAppointment(match: CandidateAppointmentMatch) {
-    const apt = match.appointment;
-    setLinkedAppointment(apt);
-
-    // Autocompletar datos si están vacíos
-    if (!formClientName.trim() && apt.name) {
-      setFormClientName(apt.name);
-    }
-    if (!formClientContact.trim() && (apt.phone || apt.email)) {
-      setFormClientContact(apt.phone || apt.email);
-    }
-
-    // Adaptar servicio al del turno si coincide
-    if (apt.service === "corte") {
-      setFormServiceName("Corte");
-      setFormPriceArs(STANDARD_SERVICE_PRICES["Corte"]);
-    } else if (apt.service === "corte-barba") {
-      setFormServiceName("Corte y barba");
-      setFormPriceArs(STANDARD_SERVICE_PRICES["Corte y barba"]);
-    } else if (apt.service === "barba") {
-      setFormServiceName("Barba");
-      setFormPriceArs(STANDARD_SERVICE_PRICES["Barba"]);
-    }
-
-    // Seña abonada online reflejada del turno real
-    setFormOnlineDepositPaid(Boolean(apt.depositPaid));
-    setShowCandidateSearch(false);
   }
 
   // Desvincular turno
@@ -453,7 +406,6 @@ export function AdminPayments() {
     setFormPaymentMethod("Efectivo");
     setFormOnlineDepositPaid(false);
     setLinkedAppointment(null);
-    setShowCandidateSearch(false);
     setErrorMessage(null);
   }
 
@@ -546,6 +498,14 @@ export function AdminPayments() {
     }
   }
 
+  // Cálculos de validación de campos para estado visual sutil (borde verde)
+  const isDateValid = Boolean(formDate && /^\d{4}-\d{2}-\d{2}$/.test(formDate));
+  const isTimeValid = Boolean(formTime && /^\d{2}:\d{2}/.test(formTime));
+  const isBarberValid = Boolean(formBarberId);
+  const isServiceValid = Boolean(formServiceName && (formServiceName !== "Otros" || formOtherDetail.trim().length > 0));
+  const isPriceValid = Number(formPriceArs) > 0;
+  const isMethodValid = Boolean(formPaymentMethod);
+
   return (
     <main className="site-container admin-schedule-page">
       <div className="admin-schedule-shell">
@@ -582,30 +542,25 @@ export function AdminPayments() {
 
         {/* 1. Formulario de registro rápido o edición */}
         <section
-          className="p-3.5 sm:p-5 rounded-xl border border-border bg-surface shadow-xs mb-4 sm:mb-6"
+          className="p-3 sm:p-4 rounded-xl border border-border bg-surface shadow-xs mb-4"
           aria-label={editingPayment ? "Editar servicio registrado" : "Registrar servicio"}
         >
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 pb-3 border-b border-border/60">
-            <div>
-              <h2 className="text-sm sm:text-base font-semibold text-foreground flex items-center gap-1.5">
-                <Scissors className="w-4 h-4 text-primary" />
-                <span>{editingPayment ? "Editar servicio registrado" : "Registrar servicio"}</span>
+          <div className="flex items-center justify-between gap-3 mb-3 pb-2.5 border-b border-border/60">
+            <div className="flex items-center gap-1.5">
+              <Scissors className="w-4 h-4 text-primary shrink-0" />
+              <h2 className="text-sm font-semibold text-foreground">
+                {editingPayment ? "Editar servicio registrado" : "Registrar servicio"}
               </h2>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {formOrigin === "appointment"
-                  ? "Servicio realizado correspondiente a un turno agendado."
-                  : "Servicio realizado directamente en el local sin turno previo (walk-in)."}
-              </p>
             </div>
 
             {/* Selector de Origen: Con turno / Sin turno */}
-            <div className="flex items-center gap-1 p-1 bg-muted/40 rounded-lg border border-border self-start sm:self-auto" role="radiogroup" aria-label="Origen del servicio">
+            <div className="flex items-center gap-1 p-0.5 bg-muted/40 rounded-lg border border-border shrink-0" role="radiogroup" aria-label="Origen del servicio">
               <button
                 type="button"
                 onClick={() => handleOriginChange("appointment")}
-                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                className={`px-2.5 py-1 text-xs rounded-md transition-all ${
                   formOrigin === "appointment"
-                    ? "bg-primary text-primary-foreground shadow-xs font-semibold"
+                    ? "bg-primary text-primary-foreground font-semibold shadow-xs"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
                 aria-pressed={formOrigin === "appointment"}
@@ -615,9 +570,9 @@ export function AdminPayments() {
               <button
                 type="button"
                 onClick={() => handleOriginChange("walk_in")}
-                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                className={`px-2.5 py-1 text-xs rounded-md transition-all ${
                   formOrigin === "walk_in"
-                    ? "bg-primary text-primary-foreground shadow-xs font-semibold"
+                    ? "bg-primary text-primary-foreground font-semibold shadow-xs"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
                 aria-pressed={formOrigin === "walk_in"}
@@ -628,9 +583,9 @@ export function AdminPayments() {
           </div>
 
           {editingPayment && (
-            <div className="mb-3.5 p-3 rounded-lg border border-primary/40 bg-primary/10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs">
+            <div className="mb-3 p-2.5 rounded-lg border border-primary/40 bg-primary/10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs">
               <div className="flex items-center gap-2 text-foreground font-semibold">
-                <Pencil className="w-4 h-4 text-primary shrink-0" />
+                <Pencil className="w-3.5 h-3.5 text-primary shrink-0" />
                 <span>
                   Editando servicio registrado ({editingPayment.serviceName} · {money(editingPayment.finalAmountArs)})
                 </span>
@@ -640,7 +595,7 @@ export function AdminPayments() {
                 variant="outline"
                 size="sm"
                 onClick={handleCancelEdit}
-                className="h-7 px-2.5 text-xs self-start sm:self-auto"
+                className="h-7 px-2 text-xs self-start sm:self-auto"
               >
                 Cancelar edición
               </Button>
@@ -649,47 +604,46 @@ export function AdminPayments() {
 
           {/* Selector de turno o resumen de turno vinculado en modo Con turno */}
           {formOrigin === "appointment" && (
-            <div className="mb-4">
+            <div className="mb-3">
               {linkedAppointment ? (
-                <div className="p-3.5 rounded-lg border border-primary/30 bg-primary/5 flex flex-col gap-2 text-xs">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-foreground text-sm flex items-center gap-1.5">
-                        <User className="w-4 h-4 text-primary" />
-                        {linkedAppointment.name}
+                <div className="px-3 py-2 rounded-lg border border-primary/30 bg-primary/5 flex flex-wrap items-center justify-between gap-2 text-xs">
+                  <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+                    <span className="font-semibold text-foreground flex items-center gap-1.5">
+                      <User className="w-3.5 h-3.5 text-primary" />
+                      {linkedAppointment.name}
+                    </span>
+                    <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-primary/10 text-primary border border-primary/20">
+                      Turno #{linkedAppointment.requestNumber}
+                    </span>
+                    <span className="text-muted-foreground text-[11px]">
+                      {formDate} · {formTime} hs · {formServiceName}
+                    </span>
+                    {depositDeduction > 0 && (
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+                        Seña {money(depositDeduction)}
                       </span>
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-primary/10 text-primary border border-primary/20">
-                        Turno #{linkedAppointment.requestNumber}
-                      </span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleUnlinkAppointment}
-                      className="text-xs text-muted-foreground hover:text-destructive flex items-center gap-1 font-medium"
-                      title="Cambiar turno"
-                    >
-                      <X className="w-3.5 h-3.5" /> Cambiar turno
-                    </button>
+                    )}
                   </div>
-                  <div className="text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-0.5">
-                    <span>{formServiceName}</span>
-                    <span>·</span>
-                    <span>{staff.barbers.find((b) => b.id === formBarberId)?.name || "Barbero"}</span>
-                    <span>·</span>
-                    <span>{formTime} hs ({formDate})</span>
-                    {formClientContact && <span>· Contacto: {formClientContact}</span>}
-                  </div>
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-2 border-t border-border/50 text-foreground">
-                    <span>Precio total: <strong>{money(formPriceArs)}</strong></span>
-                    <span>Seña abonada: <strong className="text-emerald-500">{money(depositDeduction)}</strong></span>
-                    <span>Saldo esperado: <strong className="text-primary font-bold">{money(balanceToCollectAtShop)}</strong></span>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={handleUnlinkAppointment}
+                    className="text-xs text-muted-foreground hover:text-destructive flex items-center gap-1 font-medium transition-colors ml-auto sm:ml-0"
+                    title="Cambiar turno"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                    <span>Cambiar turno</span>
+                  </button>
                 </div>
               ) : (
-                <div className="p-3 rounded-lg border border-border bg-background/50 flex flex-col gap-1.5">
-                  <label htmlFor="form-select-appointment" className="block text-xs font-medium text-foreground">
-                    Elegir turno agendado *
-                  </label>
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center justify-between">
+                    <label htmlFor="form-select-appointment" className="text-xs font-medium text-foreground">
+                      Elegir turno agendado
+                    </label>
+                    <span className="text-[11px] text-muted-foreground">
+                      {availableAppointments.length} turnos disponibles
+                    </span>
+                  </div>
                   <select
                     id="form-select-appointment"
                     value=""
@@ -698,33 +652,23 @@ export function AdminPayments() {
                       const match = appointments.find((a) => a.id === selectedId);
                       if (match) handleSelectAppointment(match);
                     }}
-                    className="select-control w-full h-[40px] px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20"
+                    className="select-control w-full h-9 px-2.5 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20"
                   >
                     <option value="">
-                      -- Seleccionar turno de la agenda ({availableAppointments.length} turnos disponibles) --
+                      -- Seleccionar turno de la agenda --
                     </option>
                     {availableAppointments.map((apt) => (
                       <option key={apt.id} value={apt.id}>
-                        {apt.date === formDate ? "● [Fecha actual]" : "○"} {apt.date} {apt.time} hs · #{apt.requestNumber} {apt.name} ({apt.service}) · {apt.barber} {apt.depositPaid ? "(Seña paga)" : ""}
+                        {apt.date === formDate ? "● [Hoy] " : ""}{apt.date} {apt.time} hs · #{apt.requestNumber} {apt.name} ({apt.service}) · {apt.barber} {apt.depositPaid ? "· Seña paga" : ""}
                       </option>
                     ))}
                   </select>
-                  <span className="text-[11px] text-muted-foreground">
-                    Al elegir el turno se completarán automáticamente el cliente, servicio, barbero, fecha, horario y seña abonada.
-                  </span>
                 </div>
               )}
             </div>
           )}
 
-          {formOrigin === "walk_in" && (
-            <div className="mb-4 px-3 py-2 rounded-lg bg-muted/20 border border-border text-xs text-muted-foreground flex items-center gap-2">
-              <Scissors className="w-3.5 h-3.5 text-primary shrink-0" />
-              <span>Cliente atendido directamente en el local (walk-in). No requiere turno previo.</span>
-            </div>
-          )}
-
-          <form onSubmit={handleSubmitForm} className="space-y-3 sm:space-y-4">
+          <form onSubmit={handleSubmitForm} className="space-y-3">
             <div className={`admin-payment-form-grid ${formServiceName === "Otros" ? "has-other" : ""}`}>
               {/* Fecha */}
               <div className="payment-field-fecha">
@@ -736,7 +680,11 @@ export function AdminPayments() {
                   type="date"
                   value={formDate}
                   onChange={(e) => setFormDate(e.target.value)}
-                  className="select-control w-full h-[40px] sm:h-[42px] px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20"
+                  className={`select-control w-full h-9 px-2.5 text-xs bg-background rounded-lg transition-colors focus:outline-none ${
+                    isDateValid
+                      ? "border border-emerald-500/60 focus:border-emerald-500 text-foreground"
+                      : "border border-border focus:ring-1 focus:ring-foreground/20 text-foreground"
+                  }`}
                   required
                 />
               </div>
@@ -751,7 +699,11 @@ export function AdminPayments() {
                   type="time"
                   value={formTime}
                   onChange={(e) => setFormTime(e.target.value)}
-                  className="select-control w-full h-[40px] sm:h-[42px] px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20"
+                  className={`select-control w-full h-9 px-2.5 text-xs bg-background rounded-lg transition-colors focus:outline-none text-right ${
+                    isTimeValid
+                      ? "border border-emerald-500/60 focus:border-emerald-500 text-foreground"
+                      : "border border-border focus:ring-1 focus:ring-foreground/20 text-foreground"
+                  }`}
                   required
                 />
               </div>
@@ -767,7 +719,11 @@ export function AdminPayments() {
                       id="form-barber"
                       value={formBarberId}
                       onChange={(e) => setFormBarberId(e.target.value)}
-                      className="select-control w-full h-[40px] sm:h-[42px] px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20"
+                      className={`select-control w-full h-9 px-2.5 text-xs bg-background rounded-lg transition-colors focus:outline-none ${
+                        isBarberValid
+                          ? "border border-emerald-500/60 focus:border-emerald-500 text-foreground"
+                          : "border border-border focus:ring-1 focus:ring-foreground/20 text-foreground"
+                      }`}
                       required
                     >
                       {staff.barbers.map((b) => (
@@ -782,7 +738,7 @@ export function AdminPayments() {
                     <label className="block text-xs font-medium text-muted-foreground mb-1">
                       Barbero
                     </label>
-                    <output className="select-control w-full h-[40px] sm:h-[42px] px-3 text-xs bg-muted/40 border border-border rounded-lg text-muted-foreground flex items-center">
+                    <output className="select-control w-full h-9 px-2.5 text-xs bg-muted/40 border border-emerald-500/60 rounded-lg text-foreground flex items-center">
                       {staff.profile.display_name}
                     </output>
                   </>
@@ -798,7 +754,11 @@ export function AdminPayments() {
                   id="form-service"
                   value={formServiceName}
                   onChange={(e) => handleServiceChange(e.target.value as ServicePaymentType)}
-                  className="select-control w-full h-[40px] sm:h-[42px] px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20 font-medium"
+                  className={`select-control w-full h-9 px-2.5 text-xs bg-background rounded-lg transition-colors focus:outline-none font-medium ${
+                    isServiceValid
+                      ? "border border-emerald-500/60 focus:border-emerald-500 text-foreground"
+                      : "border border-border focus:ring-1 focus:ring-foreground/20 text-foreground"
+                  }`}
                 >
                   <option value="Corte">Corte</option>
                   <option value="Corte y barba">Corte y barba</option>
@@ -816,10 +776,14 @@ export function AdminPayments() {
                   <input
                     id="form-other-detail"
                     type="text"
-                    placeholder="Ej: Lavado, Color, Peinado, Venta..."
+                    placeholder="Ej: Lavado, Color, Peinado..."
                     value={formOtherDetail}
                     onChange={(e) => setFormOtherDetail(e.target.value)}
-                    className="select-control w-full h-[40px] sm:h-[42px] px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20"
+                    className={`select-control w-full h-9 px-2.5 text-xs bg-background rounded-lg transition-colors focus:outline-none ${
+                      formOtherDetail.trim().length > 0
+                        ? "border border-emerald-500/60 focus:border-emerald-500 text-foreground"
+                        : "border border-border focus:ring-1 focus:ring-foreground/20 text-foreground"
+                    }`}
                     required
                   />
                 </div>
@@ -827,39 +791,43 @@ export function AdminPayments() {
 
               {/* Importe */}
               <div className="payment-field-importe">
+                <label htmlFor="form-price" className="block text-xs font-medium text-muted-foreground mb-1">
+                  Importe *
+                </label>
                 {formServiceName === "Otros" ? (
-                  <>
-                    <label htmlFor="form-price" className="block text-xs font-medium text-muted-foreground mb-1">
-                      Importe ($ ARS) *
-                    </label>
-                    <input
-                      id="form-price"
-                      type="number"
-                      min="1"
-                      step="100"
-                      placeholder="0"
-                      value={formPriceArs || ""}
-                      onChange={(e) => setFormPriceArs(Math.max(0, parseInt(e.target.value, 10) || 0))}
-                      className="select-control w-full h-[40px] sm:h-[42px] px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20 text-right font-medium"
-                      required
-                    />
-                  </>
+                  <input
+                    id="form-price"
+                    type="number"
+                    min="1"
+                    step="100"
+                    placeholder="0"
+                    value={formPriceArs || ""}
+                    onChange={(e) => setFormPriceArs(Math.max(0, parseInt(e.target.value, 10) || 0))}
+                    className={`select-control w-full h-9 px-2.5 text-xs bg-background rounded-lg transition-colors focus:outline-none text-right font-medium ${
+                      isPriceValid
+                        ? "border border-emerald-500/60 focus:border-emerald-500 text-foreground"
+                        : "border border-border focus:ring-1 focus:ring-foreground/20 text-foreground"
+                    }`}
+                    required
+                  />
                 ) : (
-                  <>
-                    <label className="block text-xs font-medium text-muted-foreground mb-1">
-                      Importe oficial
-                    </label>
-                    <output className="select-control w-full h-[40px] sm:h-[42px] px-3 text-xs bg-muted/30 border border-border rounded-lg text-foreground font-semibold flex items-center justify-end text-right">
-                      {money(formPriceArs)}
-                    </output>
-                  </>
+                  <output
+                    id="form-price"
+                    className={`select-control w-full h-9 px-2.5 text-xs bg-muted/30 rounded-lg text-foreground font-semibold flex items-center justify-end text-right ${
+                      isPriceValid
+                        ? "border border-emerald-500/60"
+                        : "border border-border"
+                    }`}
+                  >
+                    {money(formPriceArs)}
+                  </output>
                 )}
               </div>
 
               {/* Descuento (opcional) */}
               <div className="payment-field-descuento">
                 <label htmlFor="form-discount" className="block text-xs font-medium text-muted-foreground mb-1">
-                  Descuento (opcional)
+                  Descuento
                 </label>
                 <input
                   id="form-discount"
@@ -872,7 +840,7 @@ export function AdminPayments() {
                     const val = e.target.value;
                     setFormDiscountArs(val === "" ? "" : Math.max(0, parseInt(val, 10) || 0));
                   }}
-                  className="select-control w-full h-[40px] sm:h-[42px] px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20 text-right font-medium"
+                  className="select-control w-full h-9 px-2.5 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20 text-right font-medium"
                 />
               </div>
 
@@ -885,7 +853,11 @@ export function AdminPayments() {
                   id="form-payment-method"
                   value={formPaymentMethod}
                   onChange={(e) => setFormPaymentMethod(e.target.value as PaymentMethod)}
-                  className="select-control w-full h-[40px] sm:h-[42px] px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20 font-medium"
+                  className={`select-control w-full h-9 px-2.5 text-xs bg-background rounded-lg transition-colors focus:outline-none font-medium ${
+                    isMethodValid
+                      ? "border border-emerald-500/60 focus:border-emerald-500 text-foreground"
+                      : "border border-border focus:ring-1 focus:ring-foreground/20 text-foreground"
+                  }`}
                 >
                   <option value="Efectivo">Efectivo</option>
                   <option value="Transferencia">Transferencia</option>
@@ -911,7 +883,11 @@ export function AdminPayments() {
                     }
                     setFormOnlineDepositPaid(isYes);
                   }}
-                  className="select-control w-full h-[40px] sm:h-[42px] px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20"
+                  className={`select-control w-full h-9 px-2.5 text-xs bg-background rounded-lg transition-colors focus:outline-none ${
+                    formOnlineDepositPaid
+                      ? "border border-emerald-500/60 focus:border-emerald-500 text-foreground font-medium"
+                      : "border border-border focus:ring-1 focus:ring-foreground/20 text-foreground"
+                  }`}
                 >
                   <option value="NO">No</option>
                   <option value="SI">Sí (Verificado)</option>
@@ -929,7 +905,11 @@ export function AdminPayments() {
                   placeholder="Nombre y apellido"
                   value={formClientName}
                   onChange={(e) => setFormClientName(e.target.value)}
-                  className="select-control w-full h-[40px] sm:h-[42px] px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20"
+                  className={`select-control w-full h-9 px-2.5 text-xs bg-background rounded-lg transition-colors focus:outline-none text-foreground ${
+                    formClientName.trim().length > 0
+                      ? "border border-emerald-500/60 focus:border-emerald-500"
+                      : "border border-border focus:ring-1 focus:ring-foreground/20"
+                  }`}
                 />
               </div>
 
@@ -944,123 +924,63 @@ export function AdminPayments() {
                   placeholder="Celular o email"
                   value={formClientContact}
                   onChange={(e) => setFormClientContact(e.target.value)}
-                  className="select-control w-full h-[40px] sm:h-[42px] px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20"
+                  className={`select-control w-full h-9 px-2.5 text-xs bg-background rounded-lg transition-colors focus:outline-none text-foreground ${
+                    formClientContact.trim().length > 0
+                      ? "border border-emerald-500/60 focus:border-emerald-500"
+                      : "border border-border focus:ring-1 focus:ring-foreground/20"
+                  }`}
                 />
               </div>
             </div>
 
-            {/* Panel de coincidencias candidatas de turnos */}
-            <div className="pt-1">
-              {!linkedAppointment && candidateMatches.length > 0 && (
-                <div className="p-3 rounded-lg border border-primary/20 bg-primary/5">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-medium text-foreground flex items-center gap-1.5">
-                      <Clock className="w-3.5 h-3.5 text-primary" />
-                      Posibles turnos para vincular ({candidateMatches.length}):
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setShowCandidateSearch(!showCandidateSearch)}
-                      className="text-xs text-primary underline hover:text-primary/80"
-                    >
-                      {showCandidateSearch ? "Ocultar candidatos" : "Ver candidatos"}
-                    </button>
-                  </div>
-
-                  {showCandidateSearch && (
-                    <div className="space-y-1.5 max-h-48 overflow-y-auto">
-                      {candidateMatches.map(({ appointment, matchReasons }) => (
-                        <div
-                          key={appointment.id}
-                          className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2 rounded-md bg-background border border-border text-xs"
-                        >
-                          <div>
-                            <span className="font-semibold text-foreground">
-                              #{appointment.requestNumber} - {appointment.time} hs
-                            </span>
-                            <span className="mx-1 text-muted-foreground">·</span>
-                            <span className="text-foreground">{appointment.name}</span>
-                            <span className="mx-1 text-muted-foreground">·</span>
-                            <span className="text-muted-foreground">{appointment.serviceName || appointment.service}</span>
-                            {isAdmin && (
-                              <span className="ml-1.5 px-1.5 py-0.5 rounded text-[10px] bg-muted text-muted-foreground">
-                                {appointment.barber}
-                              </span>
-                            )}
-                            {appointment.depositPaid && (
-                              <span className="ml-1.5 px-1.5 py-0.5 rounded text-[10px] bg-success/15 text-success font-medium">
-                                Seña acreditada (${(appointment.depositAmountArs || 5000).toLocaleString("es-AR")})
-                              </span>
-                            )}
-                            <div className="text-[10px] text-muted-foreground mt-0.5">
-                              {matchReasons.join(", ")}
-                            </div>
-                          </div>
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="secondary"
-                            onClick={() => handleLinkAppointment({ appointment, score: 0, matchReasons })}
-                            className="h-7 text-xs shrink-0 self-end sm:self-auto"
-                          >
-                            Vincular
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
             {/* Resumen compacto del cobro final */}
-            <div className="py-2.5 px-3 sm:px-4 rounded-lg border border-border/80 bg-background/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs">
-              <div className="text-muted-foreground flex flex-wrap items-center gap-x-2 gap-y-0.5">
+            <div className="py-2 px-3 rounded-lg border border-border/70 bg-background/50 flex flex-wrap items-center justify-between gap-2 text-xs">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-muted-foreground">
                 <span>
-                  Servicio: <span className="font-semibold text-foreground">{money(formPriceArs)}</span>
+                  Importe: <strong className="text-foreground font-semibold">{money(formPriceArs)}</strong>
                 </span>
                 {numericDiscount > 0 && (
                   <span>
-                    · Desc: <span className="font-semibold text-destructive">−{money(numericDiscount)}</span>
+                    Desc: <strong className="text-destructive font-semibold">−{money(numericDiscount)}</strong>
                   </span>
                 )}
                 {depositDeduction > 0 && (
                   <span>
-                    · Seña: <span className="font-semibold text-success">−{money(depositDeduction)}</span>
+                    Seña: <strong className="text-emerald-500 font-semibold">−{money(depositDeduction)}</strong>
                   </span>
                 )}
                 <span>
-                  · <span className="font-medium text-foreground">{formPaymentMethod}</span>
+                  Método: <strong className="text-foreground font-semibold">{formPaymentMethod}</strong>
                 </span>
               </div>
 
-              <div className="text-left sm:text-right shrink-0 flex items-center sm:block gap-2">
-                <span className="text-[11px] text-muted-foreground font-semibold uppercase sm:mr-2">
-                  {depositDeduction > 0 ? "A cobrar:" : "Total final:"}
+              <div className="flex items-center gap-1.5 ml-auto text-xs">
+                <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                  {depositDeduction > 0 ? "Saldo a cobrar:" : "Total final:"}
                 </span>
-                <span className="text-base sm:text-lg font-bold text-foreground">
+                <span className="text-sm font-bold text-foreground">
                   {money(balanceToCollectAtShop)}
                 </span>
               </div>
             </div>
 
             {/* Botones de acción */}
-            <div className="flex items-center justify-end gap-2.5 pt-2">
+            <div className="flex items-center justify-end gap-2 pt-1">
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
                 onClick={editingPayment ? handleCancelEdit : handleResetForm}
                 disabled={isSubmitting}
-                className="h-9 px-4 text-xs"
+                className="h-8 px-3 text-xs"
               >
-                {editingPayment ? "Cancelar edición" : "Cancelar"}
+                {editingPayment ? "Cancelar edición" : "Limpiar"}
               </Button>
               <Button
                 type="submit"
                 size="sm"
                 disabled={isSubmitting}
-                className="h-9 px-5 text-xs font-semibold bg-primary hover:bg-primary/90 text-primary-foreground"
+                className="h-8 px-4 text-xs font-semibold bg-primary hover:bg-primary/90 text-primary-foreground"
               >
                 {isSubmitting
                   ? "Guardando…"

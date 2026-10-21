@@ -169,7 +169,7 @@ export function validatePaymentInput(
   }
   if (input.serviceOrigin === 'walk_in') {
     if (input.appointmentId) {
-      return { valid: false, error: 'Un servicio sin turno (walk-in) no puede tener un turno asociado.' };
+      return { valid: false, error: 'Un servicio sin turno no puede tener un turno asociado.' };
     }
     if (input.onlineDepositPaid) {
       return { valid: false, error: 'Un servicio sin turno no puede incluir seña abonada online.' };
