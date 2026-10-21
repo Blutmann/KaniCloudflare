@@ -527,7 +527,7 @@ export function AdminMobileAppointments() {
       {/* 1. Filtros de agenda (idéntico a la card de filtros de Estadísticas) */}
       <section className="p-3.5 rounded-xl border border-border bg-surface shadow-xs mb-4" aria-label="Filtros de agenda">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div className="min-w-0">
+          <div className="col-span-2 md:col-span-1 min-w-0">
             <label htmlFor="mobile-date-preset" className="block text-xs font-medium text-muted-foreground mb-1.5">
               Período
             </label>
@@ -543,7 +543,7 @@ export function AdminMobileAppointments() {
               ))}
             </select>
           </div>
-          <div className="min-w-0">
+          <div className="col-span-2 md:col-span-1 min-w-0">
             <label htmlFor="mobile-date-filter" className="block text-xs font-medium text-muted-foreground mb-1.5">
               Fecha
             </label>
@@ -556,7 +556,7 @@ export function AdminMobileAppointments() {
               className="select-control w-full h-9 px-2 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20 leading-normal text-left min-w-0 max-w-full"
             />
           </div>
-          <div className="min-w-0">
+          <div className="col-span-1 md:col-span-1 min-w-0">
             <label htmlFor="mobile-status-filter" className="block text-xs font-medium text-muted-foreground mb-1.5">
               Estado
             </label>
@@ -571,7 +571,7 @@ export function AdminMobileAppointments() {
               ))}
             </select>
           </div>
-          <div className="min-w-0">
+          <div className="col-span-1 md:col-span-1 min-w-0">
             <label htmlFor="mobile-barber-filter" className="block text-xs font-medium text-muted-foreground mb-1.5">
               Barbero
             </label>
@@ -1299,7 +1299,7 @@ export function AdminMobileAppointments() {
 
             <div className="manual-appointment-grid grid grid-cols-2 sm:grid-cols-6 gap-2.5 sm:gap-4">
               {/* Fila 1 Columna izquierda en mobile | Col 1-2 en desktop */}
-              <div className="manual-grid-field manual-field-fecha col-span-1 sm:col-span-2 sm:order-1 min-w-0">
+              <div className="manual-grid-field manual-field-fecha col-span-2 sm:col-span-2 sm:order-1 min-w-0">
                 <label htmlFor="manual-date" className="font-medium text-foreground block mb-1.5 text-xs sm:text-sm">
                   Fecha <span className="text-destructive font-normal" aria-hidden="true">*</span>
                 </label>
@@ -1327,7 +1327,7 @@ export function AdminMobileAppointments() {
               </div>
 
               {/* Fila 1 Columna derecha en mobile | Col 3-4 en desktop */}
-              <div className="manual-grid-field manual-field-horario col-span-1 sm:col-span-2 sm:order-2 min-w-0">
+              <div className="manual-grid-field manual-field-horario col-span-2 sm:col-span-2 sm:order-2 min-w-0">
                 <label htmlFor="manual-time" className="font-medium text-foreground block mb-1.5 text-xs sm:text-sm truncate" title="Horario">
                   Horario <span className="text-destructive font-normal" aria-hidden="true">*</span>
                 </label>

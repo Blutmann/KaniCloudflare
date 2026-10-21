@@ -257,7 +257,7 @@ export function AdminStatistics() {
             <label htmlFor="stat-period-filter" className="block text-xs font-medium text-muted-foreground mb-1.5">
               Período
             </label>
-            <div className={datePreset === 'SPECIFIC' ? 'grid grid-cols-2 gap-2 min-w-0' : 'min-w-0'}>
+            <div className={datePreset === 'SPECIFIC' ? 'grid grid-cols-1 sm:grid-cols-2 gap-2 min-w-0' : 'min-w-0'}>
               <select
                 id="stat-period-filter"
                 value={datePreset}
