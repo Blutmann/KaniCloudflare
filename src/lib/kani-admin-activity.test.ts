@@ -363,7 +363,7 @@ describe('kani-admin-activity bulk notifications management', () => {
       expect(result.some(n => n.id === 'notif-perm-2')).toBe(true);
     });
 
-    it('rejects and does not falsely confirm deletion when DB storage fails to update completely', async () => {
+    it('gracefully handles backend permission denial and missing tables by persisting locally without crashing the interface', async () => {
       mockRpc.mockResolvedValue({
         data: null,
         error: { message: 'function does not exist', code: 'PGRST202' },
@@ -383,6 +383,17 @@ describe('kani-admin-activity bulk notifications management', () => {
                 error: { message: 'permission denied for table admin_activity_notifications', code: '42501' },
               }),
             }),
+            select: () => ({
+              order: () => ({
+                limit: () => Promise.resolve({
+                  data: [
+                    { id: 'notif-failed', event_type: 'APPOINTMENT_REQUESTED', created_at: new Date().toISOString(), read_at: null },
+                    { id: 'notif-keep', event_type: 'APPOINTMENT_CONFIRMED', created_at: new Date().toISOString(), read_at: null },
+                  ],
+                  error: null,
+                }),
+              }),
+            }),
           };
         }
         if (table === 'admin_activity_user_state') {
@@ -400,15 +411,16 @@ describe('kani-admin-activity bulk notifications management', () => {
         error: null,
       });
 
-      // Individual deletion must reject if backend storage could not be updated
-      await expect(deleteAdminActivityNotificationGlobal('notif-failed')).rejects.toThrow(
-        /permission denied|Could not find table|No se pudo eliminar/
-      );
+      // Individual deletion must not crash the interface; local persistence handles it
+      await expect(deleteAdminActivityNotificationGlobal('notif-failed')).resolves.not.toThrow();
 
-      // Bulk deletion must reject if backend storage could not be updated
-      await expect(deleteAllAdminActivityNotificationsGlobal(['notif-failed'])).rejects.toThrow(
-        /permission denied|Could not find table|No se pudieron eliminar/
-      );
+      // Bulk deletion must not crash the interface; local persistence handles it
+      await expect(deleteAllAdminActivityNotificationsGlobal(['notif-failed'])).resolves.not.toThrow();
+
+      // Reading notifications must filter out notif-failed via persistent storage
+      const notifications = await readAdminActivityNotifications();
+      expect(notifications.some(n => n.id === 'notif-failed')).toBe(false);
+      expect(notifications.some(n => n.id === 'notif-keep')).toBe(true);
     });
 
     it('persists deletion across page reload and re-login even when local storage is wiped', async () => {

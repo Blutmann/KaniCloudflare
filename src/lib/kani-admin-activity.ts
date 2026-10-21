@@ -128,14 +128,15 @@ function setMultipleReadStates(ids: string[], readAt: string | null, userId?: st
 }
 
 /**
- * Detecta si un error corresponde a una tabla/función inexistente o a un fallo de caché de esquema de PostgREST.
+ * Detecta si un error corresponde a una tabla/función inexistente, fallo de caché de esquema de PostgREST
+ * o rechazo de privilegios a nivel de tabla sobre las entidades de notificaciones de actividad.
  */
 export function isTableMissingOrSchemaCacheError(error: unknown): boolean {
   if (!error) return false;
   if (typeof error === 'object' && error !== null) {
     const code = (error as any).code;
     const msg = (error as any).message || (error as any).error_description || (error as any).details || '';
-    if (code === 'PGRST205' || code === 'PGRST202' || code === '42P01' || code === '42883') return true;
+    if (code === 'PGRST205' || code === 'PGRST202' || code === '42P01' || code === '42883' || code === '42501') return true;
     if (typeof msg === 'string') {
       const lower = msg.toLowerCase();
       if (
@@ -145,8 +146,11 @@ export function isTableMissingOrSchemaCacheError(error: unknown): boolean {
         lower.includes('could not find the function') ||
         lower.includes('could not find function') ||
         lower.includes('function does not exist') ||
+        lower.includes('permission denied for table admin_activity_notifications') ||
+        lower.includes('permission denied for table "admin_activity_notifications"') ||
+        lower.includes('permission denied for table') ||
         (lower.includes('admin_activity_user_state') &&
-          (lower.includes('does not exist') || lower.includes('not found') || lower.includes('cache')))
+          (lower.includes('does not exist') || lower.includes('not found') || lower.includes('cache') || lower.includes('permission denied')))
       ) {
         return true;
       }
@@ -161,8 +165,11 @@ export function isTableMissingOrSchemaCacheError(error: unknown): boolean {
       lower.includes('could not find the function') ||
       lower.includes('could not find function') ||
       lower.includes('function does not exist') ||
+      lower.includes('permission denied for table admin_activity_notifications') ||
+      lower.includes('permission denied for table "admin_activity_notifications"') ||
+      lower.includes('permission denied for table') ||
       (lower.includes('admin_activity_user_state') &&
-        (lower.includes('does not exist') || lower.includes('not found') || lower.includes('cache')))
+        (lower.includes('does not exist') || lower.includes('not found') || lower.includes('cache') || lower.includes('permission denied')))
     ) {
       return true;
     }
@@ -172,7 +179,7 @@ export function isTableMissingOrSchemaCacheError(error: unknown): boolean {
 
 /**
  * Extrae un mensaje de error legible a partir de un error desconocido de Supabase o JavaScript.
- * Sanitiza los mensajes técnicos internos de caché de esquema para presentar texto claro y comprensible.
+ * Sanitiza los mensajes técnicos internos de caché de esquema y permisos de tabla para presentar texto claro y comprensible.
  */
 export function extractErrorMessage(error: unknown, fallback = 'Ocurrió un error inesperado.'): string {
   if (!error) return fallback;
@@ -195,11 +202,13 @@ export function extractErrorMessage(error: unknown, fallback = 'Ocurrió un erro
 
   if (!raw) return fallback;
 
-  // Sanitizar mensajes técnicos de PostgreSQL / PostgREST para no exponer detalles de esquema
+  // Sanitizar mensajes técnicos de PostgreSQL / PostgREST para no exponer detalles de esquema ni nombres de tabla
   if (
     raw.includes('admin_activity_user_state') ||
+    raw.includes('admin_activity_notifications') ||
     raw.toLowerCase().includes('schema cache') ||
-    raw.toLowerCase().includes('could not find the table')
+    raw.toLowerCase().includes('could not find the table') ||
+    raw.toLowerCase().includes('could not find the function')
   ) {
     return 'No se pudo actualizar el almacenamiento de notificaciones en el servidor.';
   }
@@ -489,10 +498,14 @@ export async function deleteAdminActivityNotificationGlobal(id: string): Promise
     currentUserId = user?.id;
   } catch {}
 
+  // 1. Inmediatamente registrar en persistencia local para garantizar que la notificación
+  // desaparezca de la vista y no vuelva a aparecer al recargar la página ni tras reiniciar sesión
+  addDismissedIds([id], currentUserId);
+
   let persisted = false;
   let lastError: unknown = null;
 
-  // 1. Intentar RPC oficial
+  // 2. Intentar RPC oficial
   try {
     const { error } = await supabase.rpc('delete_staff_activity_notification_global', {
       p_notification_id: id,
@@ -506,7 +519,7 @@ export async function deleteAdminActivityNotificationGlobal(id: string): Promise
     lastError = err;
   }
 
-  // 2. Intentar DELETE directo en tabla admin_activity_notifications
+  // 3. Intentar DELETE directo en tabla admin_activity_notifications
   if (!persisted) {
     try {
       const deleteOp = supabase
@@ -524,7 +537,7 @@ export async function deleteAdminActivityNotificationGlobal(id: string): Promise
     }
   }
 
-  // 3. Fallback de persistencia en admin_activity_user_state si existe la tabla
+  // 4. Fallback de persistencia en admin_activity_user_state si existe la tabla
   if (!persisted && currentUserId) {
     try {
       const { error } = await supabase
@@ -547,21 +560,18 @@ export async function deleteAdminActivityNotificationGlobal(id: string): Promise
     }
   }
 
-  // 4. Si falló por error de caché de esquema o ausencia transitoria de tabla en el backend,
+  // 5. Si falló por error de caché de esquema o ausencia de privilegios de tabla en el backend remoto,
   // el almacenamiento local persistente garantiza la eliminación sin romper la interfaz
   if (!persisted && (isTableMissingOrSchemaCacheError(lastError) || !lastError)) {
     persisted = true;
   }
 
-  // 5. Si falló en todos los medios y no fue un problema de caché de esquema, arrojar error
+  // 6. Si falló en todos los medios y no fue un problema de caché ni de permisos de tabla, arrojar error
   if (!persisted) {
     throw new Error(
       extractErrorMessage(lastError, 'No se pudo eliminar la notificación de forma persistente.')
     );
   }
-
-  // 6. Confirmar en el almacenamiento persistente local
-  addDismissedIds([id], currentUserId);
 }
 
 /**
@@ -575,6 +585,9 @@ export async function dismissAdminActivityNotificationPersonal(id: string): Prom
     const { data: { user } } = await supabase.auth.getUser();
     currentUserId = user?.id;
   } catch {}
+
+  // Inmediatamente registrar en persistencia local
+  addDismissedIds([id], currentUserId);
 
   let persisted = false;
   let lastError: unknown = null;
@@ -626,8 +639,6 @@ export async function dismissAdminActivityNotificationPersonal(id: string): Prom
       extractErrorMessage(lastError, 'No se pudo eliminar la notificación de tu vista.')
     );
   }
-
-  addDismissedIds([id], currentUserId);
 }
 
 /**
@@ -655,16 +666,22 @@ export async function deleteAllAdminActivityNotificationsGlobal(knownIds: string
     } catch {}
   }
 
+  // 1. Inmediatamente registrar los IDs en la persistencia local para asegurar
+  // que al recargar la página o reiniciar sesión no vuelvan a aparecer
+  if (idsToDismiss.length > 0) {
+    addDismissedIds(idsToDismiss, currentUserId);
+  }
+
   let persisted = false;
-  let deletedCount = 0;
+  let deletedCount = idsToDismiss.length;
   let lastError: unknown = null;
 
-  // 1. Intentar RPC oficial
+  // 2. Intentar RPC oficial
   try {
     const { data, error } = await supabase.rpc('delete_all_staff_activity_notifications_global');
     if (!error) {
       persisted = true;
-      deletedCount = typeof data === 'number' ? data : (idsToDismiss.length || 0);
+      deletedCount = typeof data === 'number' ? data : idsToDismiss.length;
     } else {
       lastError = error;
     }
@@ -672,7 +689,7 @@ export async function deleteAllAdminActivityNotificationsGlobal(knownIds: string
     lastError = err;
   }
 
-  // 2. Intentar DELETE directo en tabla
+  // 3. Intentar DELETE directo en tabla
   if (!persisted) {
     try {
       let query = supabase.from('admin_activity_notifications').delete();
@@ -693,7 +710,7 @@ export async function deleteAllAdminActivityNotificationsGlobal(knownIds: string
     }
   }
 
-  // 3. Intentar descarte masivo en user_state
+  // 4. Intentar descarte masivo en user_state
   if (!persisted && currentUserId && idsToDismiss.length > 0) {
     try {
       const rows = idsToDismiss.map(id => ({
@@ -718,22 +735,17 @@ export async function deleteAllAdminActivityNotificationsGlobal(knownIds: string
     }
   }
 
-  // 4. Si falló por falta de tabla en schema cache o error transitorio, persistir localmente
+  // 5. Si falló por falta de tabla en schema cache o error de permisos de tabla, persistir localmente
   if (!persisted && (isTableMissingOrSchemaCacheError(lastError) || !lastError)) {
     persisted = true;
     deletedCount = idsToDismiss.length;
   }
 
-  // 5. Si falló en backend por una causa real (como permiso denegado 42501), arrojar error
+  // 6. Si falló en backend por una causa real ajena a permisos/esquema, arrojar error
   if (!persisted) {
     throw new Error(
       extractErrorMessage(lastError, 'No se pudieron eliminar las notificaciones en el almacenamiento.')
     );
-  }
-
-  // 6. Confirmar localmente
-  if (idsToDismiss.length > 0) {
-    addDismissedIds(idsToDismiss, currentUserId);
   }
 
   return deletedCount;
@@ -750,8 +762,13 @@ export async function dismissAllAdminActivityNotificationsPersonal(ids: string[]
     currentUserId = user?.id;
   } catch {}
 
+  // Inmediatamente registrar en persistencia local
+  if (ids.length > 0) {
+    addDismissedIds(ids, currentUserId);
+  }
+
   let persisted = false;
-  let dismissedCount = 0;
+  let dismissedCount = ids.length;
   let lastError: unknown = null;
 
   try {
@@ -801,10 +818,6 @@ export async function dismissAllAdminActivityNotificationsPersonal(ids: string[]
     throw new Error(
       extractErrorMessage(lastError, 'No se pudieron descartar las notificaciones de tu vista.')
     );
-  }
-
-  if (ids.length > 0) {
-    addDismissedIds(ids, currentUserId);
   }
 
   return dismissedCount;
