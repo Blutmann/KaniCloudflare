@@ -7,6 +7,7 @@ import {
   Clock,
   DollarSign,
   Link2,
+  Pencil,
   Receipt,
   RotateCcw,
   Scissors,
@@ -27,10 +28,12 @@ import { useAdminStaff } from "@/lib/kani-admin-context";
 import { readRealAppointments, type RealAppointment } from "@/lib/kani-appointments";
 import {
   businessTimeNow,
+  deleteServicePayment,
   fetchServicePayments,
   findCandidateAppointments,
   recordServicePayment,
   STANDARD_SERVICE_PRICES,
+  updateServicePayment,
   validatePaymentInput,
   type CandidateAppointmentMatch,
   type PaymentMethod,
@@ -38,6 +41,7 @@ import {
   type ServicePayment,
   type ServicePaymentFilters,
   type ServicePaymentType,
+  type UpdateServicePaymentInput,
 } from "@/lib/kani-payments";
 import { businessDateToday } from "@/lib/kani-mobile-appointments";
 import { money } from "@/lib/kani-model";
@@ -53,8 +57,13 @@ export function AdminPayments() {
   const [payments, setPayments] = useState<ServicePayment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  // Estados para Edición y Eliminación
+  const [editingPayment, setEditingPayment] = useState<ServicePayment | null>(null);
+  const [paymentToDelete, setPaymentToDelete] = useState<ServicePayment | null>(null);
 
   // Filtros aplicados a datos persistidos
   const todayStr = useMemo(() => businessDateToday(), []);
@@ -301,8 +310,78 @@ export function AdminPayments() {
       : 0;
   const balanceToCollectAtShop = Math.max(0, totalCalculated - depositDeduction);
 
+  // Permisos de gestión
+  const canDelete = isAdmin;
+  const canEdit = (p: ServicePayment) => isAdmin || p.barberId === staff.profile.barber_id;
+
+  // Iniciar edición de un cobro
+  function handleStartEdit(p: ServicePayment) {
+    if (!canEdit(p)) {
+      setErrorMessage("No tenés permisos para editar este cobro.");
+      return;
+    }
+    setEditingPayment(p);
+    setFormBarberId(p.barberId);
+    setFormDate(p.paymentDate);
+    setFormTime(p.paymentTime);
+    setFormServiceName(p.serviceName);
+    setFormOtherDetail(p.serviceOtherDetail || "");
+    setFormPriceArs(p.servicePriceArs);
+    setFormDiscountArs(p.discountArs || 0);
+    setFormClientName(p.clientName || "");
+    setFormClientContact(p.clientContact || "");
+    setFormPaymentMethod(p.paymentMethod);
+    setFormOnlineDepositPaid(p.onlineDepositPaid);
+    if (p.appointmentId) {
+      const match = appointments.find((a) => a.id === p.appointmentId);
+      setLinkedAppointment(match || null);
+    } else {
+      setLinkedAppointment(null);
+    }
+    setErrorMessage(null);
+    setSuccessMessage(null);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  // Cancelar edición
+  function handleCancelEdit() {
+    setEditingPayment(null);
+    handleResetForm();
+  }
+
+  // Confirmar eliminación (exclusivo Admin)
+  async function handleConfirmDelete() {
+    if (!paymentToDelete) return;
+    if (!canDelete) {
+      setErrorMessage("No tenés permisos para eliminar registros de cobro.");
+      setPaymentToDelete(null);
+      return;
+    }
+    setIsDeleting(true);
+    setErrorMessage(null);
+    setSuccessMessage(null);
+    try {
+      await deleteServicePayment(paymentToDelete.id, staff);
+      setPayments((prev) => prev.filter((p) => p.id !== paymentToDelete.id));
+      setSuccessMessage("Cobro eliminado exitosamente.");
+      if (editingPayment?.id === paymentToDelete.id) {
+        setEditingPayment(null);
+        handleResetForm();
+      }
+      setPaymentToDelete(null);
+      await loadData();
+    } catch (err: any) {
+      console.error("[AdminPayments] Error al eliminar cobro:", err);
+      setErrorMessage(err.message || "No se pudo eliminar el registro de cobro.");
+    } finally {
+      setIsDeleting(false);
+    }
+  }
+
   // Reiniciar formulario
   function handleResetForm() {
+    setEditingPayment(null);
+    setFormBarberId(defaultBarberId);
     setFormDate(businessDateToday());
     setFormTime(businessTimeNow());
     setFormServiceName("Corte");
@@ -318,12 +397,49 @@ export function AdminPayments() {
     setErrorMessage(null);
   }
 
-  // Enviar formulario
+  // Enviar formulario (Creación o Edición)
   async function handleSubmitForm(e: React.FormEvent) {
     e.preventDefault();
     setErrorMessage(null);
     setSuccessMessage(null);
 
+    // Modo Edición
+    if (editingPayment) {
+      if (!canEdit(editingPayment)) {
+        setErrorMessage("No tenés permisos para editar este cobro.");
+        return;
+      }
+      const updateInput: UpdateServicePaymentInput = {
+        barberId: isAdmin ? formBarberId : undefined,
+        serviceName: formServiceName,
+        serviceOtherDetail: formServiceName === "Otros" ? formOtherDetail.trim() : undefined,
+        servicePriceArs: formPriceArs,
+        discountArs: numericDiscount,
+        paymentDate: formDate,
+        paymentTime: formTime,
+        paymentMethod: formPaymentMethod,
+        clientName: formClientName.trim() || undefined,
+        clientContact: formClientContact.trim() || undefined,
+      };
+
+      setIsSubmitting(true);
+      try {
+        const updated = await updateServicePayment(editingPayment.id, updateInput, staff, editingPayment);
+        setSuccessMessage("Cobro actualizado exitosamente.");
+        setPayments((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+        setEditingPayment(null);
+        handleResetForm();
+        await loadData();
+      } catch (err: any) {
+        console.error("[AdminPayments] Error al actualizar cobro:", err);
+        setErrorMessage(err.message || "No se pudo actualizar el registro de cobro.");
+      } finally {
+        setIsSubmitting(false);
+      }
+      return;
+    }
+
+    // Modo Creación
     const input: RecordServicePaymentInput = {
       barberId: formBarberId,
       serviceName: formServiceName,
@@ -401,11 +517,31 @@ export function AdminPayments() {
           </div>
         )}
 
-        {/* 1. Formulario de registro rápido */}
+        {/* 1. Formulario de registro rápido o edición */}
         <section
           className="p-3.5 sm:p-5 rounded-xl border border-border bg-surface shadow-xs mb-4 sm:mb-6"
-          aria-label="Registrar cobro de servicio"
+          aria-label={editingPayment ? "Editar cobro de servicio" : "Registrar cobro de servicio"}
         >
+          {editingPayment && (
+            <div className="mb-3.5 p-3 rounded-lg border border-primary/40 bg-primary/10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs">
+              <div className="flex items-center gap-2 text-foreground font-semibold">
+                <Pencil className="w-4 h-4 text-primary shrink-0" />
+                <span>
+                  Editando cobro registrado ({editingPayment.serviceName} · {money(editingPayment.finalAmountArs)})
+                </span>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleCancelEdit}
+                className="h-7 px-2.5 text-xs self-start sm:self-auto"
+              >
+                Cancelar edición
+              </Button>
+            </div>
+          )}
+
           {linkedAppointment && (
             <div className="flex items-center justify-between pb-2.5 sm:pb-3 mb-3 sm:mb-4 border-b border-border/60">
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20">
@@ -540,7 +676,7 @@ export function AdminPayments() {
                       placeholder="0"
                       value={formPriceArs || ""}
                       onChange={(e) => setFormPriceArs(Math.max(0, parseInt(e.target.value, 10) || 0))}
-                      className="select-control w-full h-[40px] sm:h-[42px] px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20"
+                      className="select-control w-full h-[40px] sm:h-[42px] px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20 text-right font-medium"
                       required
                     />
                   </>
@@ -549,17 +685,17 @@ export function AdminPayments() {
                     <label className="block text-xs font-medium text-muted-foreground mb-1">
                       Importe oficial
                     </label>
-                    <output className="select-control w-full h-[40px] sm:h-[42px] px-3 text-xs bg-muted/30 border border-border rounded-lg text-foreground font-semibold flex items-center">
+                    <output className="select-control w-full h-[40px] sm:h-[42px] px-3 text-xs bg-muted/30 border border-border rounded-lg text-foreground font-semibold flex items-center justify-end text-right">
                       {money(formPriceArs)}
                     </output>
                   </>
                 )}
               </div>
 
-              {/* Descuento */}
+              {/* Descuento (opcional) */}
               <div className="payment-field-descuento">
                 <label htmlFor="form-discount" className="block text-xs font-medium text-muted-foreground mb-1">
-                  Descuento ($ ARS opcional)
+                  Descuento (opcional)
                 </label>
                 <input
                   id="form-discount"
@@ -572,7 +708,7 @@ export function AdminPayments() {
                     const val = e.target.value;
                     setFormDiscountArs(val === "" ? "" : Math.max(0, parseInt(val, 10) || 0));
                   }}
-                  className="select-control w-full h-[40px] sm:h-[42px] px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20"
+                  className="select-control w-full h-[40px] sm:h-[42px] px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20 text-right font-medium"
                 />
               </div>
 
@@ -633,10 +769,10 @@ export function AdminPayments() {
                 />
               </div>
 
-              {/* Contacto del cliente (opcional) */}
+              {/* Contacto (opcional) */}
               <div className="payment-field-contacto">
                 <label htmlFor="form-client-contact" className="block text-xs font-medium text-muted-foreground mb-1">
-                  Contacto del cliente (opcional)
+                  Contacto (opcional)
                 </label>
                 <input
                   id="form-client-contact"
@@ -713,38 +849,34 @@ export function AdminPayments() {
               )}
             </div>
 
-            {/* Resumen del cobro final */}
-            <div className="p-3.5 rounded-lg border border-border/80 bg-background/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="text-xs space-y-0.5">
-                <div className="text-muted-foreground">
-                  Servicio: <span className="font-medium text-foreground">{money(formPriceArs)}</span>
-                  {numericDiscount > 0 && (
-                    <>
-                      {" "}
-                      − Descuento:{" "}
-                      <span className="font-medium text-destructive">−{money(numericDiscount)}</span>
-                    </>
-                  )}
-                  {depositDeduction > 0 && (
-                    <>
-                      {" "}
-                      − Seña online previa:{" "}
-                      <span className="font-medium text-success">−{money(depositDeduction)}</span>
-                    </>
-                  )}
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  Método: <span className="font-medium text-foreground">{formPaymentMethod}</span>
-                </div>
+            {/* Resumen compacto del cobro final */}
+            <div className="py-2.5 px-3 sm:px-4 rounded-lg border border-border/80 bg-background/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs">
+              <div className="text-muted-foreground flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                <span>
+                  Servicio: <span className="font-semibold text-foreground">{money(formPriceArs)}</span>
+                </span>
+                {numericDiscount > 0 && (
+                  <span>
+                    · Desc: <span className="font-semibold text-destructive">−{money(numericDiscount)}</span>
+                  </span>
+                )}
+                {depositDeduction > 0 && (
+                  <span>
+                    · Seña: <span className="font-semibold text-success">−{money(depositDeduction)}</span>
+                  </span>
+                )}
+                <span>
+                  · <span className="font-medium text-foreground">{formPaymentMethod}</span>
+                </span>
               </div>
 
-              <div className="text-right">
-                <div className="text-[11px] text-muted-foreground uppercase tracking-wider font-semibold">
-                  {depositDeduction > 0 ? "A cobrar en local" : "Total final calculado"}
-                </div>
-                <div className="text-lg font-bold text-foreground">
+              <div className="text-left sm:text-right shrink-0 flex items-center sm:block gap-2">
+                <span className="text-[11px] text-muted-foreground font-semibold uppercase sm:mr-2">
+                  {depositDeduction > 0 ? "A cobrar:" : "Total final:"}
+                </span>
+                <span className="text-base sm:text-lg font-bold text-foreground">
                   {money(balanceToCollectAtShop)}
-                </div>
+                </span>
               </div>
             </div>
 
@@ -754,11 +886,11 @@ export function AdminPayments() {
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={handleResetForm}
+                onClick={editingPayment ? handleCancelEdit : handleResetForm}
                 disabled={isSubmitting}
                 className="h-9 px-4 text-xs"
               >
-                Cancelar
+                {editingPayment ? "Cancelar edición" : "Cancelar"}
               </Button>
               <Button
                 type="submit"
@@ -766,7 +898,11 @@ export function AdminPayments() {
                 disabled={isSubmitting}
                 className="h-9 px-5 text-xs font-semibold bg-primary hover:bg-primary/90 text-primary-foreground"
               >
-                {isSubmitting ? "Guardando…" : "Guardar cobro"}
+                {isSubmitting
+                  ? "Guardando…"
+                  : editingPayment
+                  ? "Guardar cambios"
+                  : "Guardar cobro"}
               </Button>
             </div>
           </form>
@@ -900,7 +1036,7 @@ export function AdminPayments() {
             </div>
           ) : (
             <>
-              {/* Vista desktop: tabla con 6 columnas independientes */}
+              {/* Vista desktop: tabla con 6 columnas independientes (Importe es siempre la última) */}
               <div className="hidden md:block overflow-x-auto">
                 <table className="w-full text-left text-xs text-foreground">
                   <thead className="bg-muted/40 border-b border-border font-medium text-muted-foreground">
@@ -909,8 +1045,8 @@ export function AdminPayments() {
                       <th scope="col" className="py-2.5 px-4 font-medium text-left">Servicio</th>
                       <th scope="col" className="py-2.5 px-4 font-medium text-left">Barbero</th>
                       <th scope="col" className="py-2.5 px-4 font-medium text-left">Cliente</th>
-                      <th scope="col" className="py-2.5 px-4 font-medium text-right">Importe</th>
                       <th scope="col" className="py-2.5 px-4 font-medium text-left">Método de pago</th>
+                      <th scope="col" className="py-2.5 px-4 font-medium text-right">Importe</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/60">
@@ -951,13 +1087,39 @@ export function AdminPayments() {
                             </span>
                           )}
                         </td>
-                        <td className="py-3 px-4 text-right font-bold text-foreground whitespace-nowrap">
-                          {money(payment.finalAmountArs)}
-                        </td>
                         <td className="py-3 px-4 text-left whitespace-nowrap">
                           <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-muted/60 text-foreground border border-border/50">
                             {payment.paymentMethod}
                           </span>
+                        </td>
+                        <td className="py-3 px-4 text-right whitespace-nowrap">
+                          <div className="font-bold text-foreground text-sm">
+                            {money(payment.finalAmountArs)}
+                          </div>
+                          <div className="flex items-center justify-end gap-1.5 mt-1">
+                            {canEdit(payment) && (
+                              <button
+                                type="button"
+                                onClick={() => handleStartEdit(payment)}
+                                className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors px-1.5 py-0.5 rounded hover:bg-muted"
+                                title="Editar cobro"
+                              >
+                                <Pencil className="w-3 h-3" />
+                                <span>Editar</span>
+                              </button>
+                            )}
+                            {canDelete && (
+                              <button
+                                type="button"
+                                onClick={() => setPaymentToDelete(payment)}
+                                className="inline-flex items-center gap-1 text-[11px] text-destructive/80 hover:text-destructive transition-colors px-1.5 py-0.5 rounded hover:bg-destructive/10"
+                                title="Eliminar cobro"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                                <span>Eliminar</span>
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -967,11 +1129,11 @@ export function AdminPayments() {
                       <td colSpan={4} className="py-3 px-4 font-semibold text-muted-foreground text-left">
                         Total cobrado
                       </td>
+                      <td className="py-3 px-4 text-left text-xs text-muted-foreground whitespace-nowrap">
+                        {payments.length} {payments.length === 1 ? "servicio" : "servicios"}
+                      </td>
                       <td className="py-3 px-4 text-right font-bold text-foreground text-sm whitespace-nowrap">
                         {money(paymentStats.totalCollected)}
-                      </td>
-                      <td className="py-3 px-4 text-left text-xs text-muted-foreground">
-                        {payments.length} {payments.length === 1 ? "servicio" : "servicios"}
                       </td>
                     </tr>
                   </tfoot>
@@ -1034,6 +1196,36 @@ export function AdminPayments() {
                         Barbero: {payment.barberName}
                       </div>
                     </div>
+
+                    {/* Acciones en mobile */}
+                    {(canEdit(payment) || canDelete) && (
+                      <div className="flex items-center justify-end gap-2 pt-1.5 border-t border-border/40">
+                        {canEdit(payment) && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleStartEdit(payment)}
+                            className="h-7 text-xs px-2.5 gap-1"
+                          >
+                            <Pencil className="w-3 h-3" />
+                            Editar
+                          </Button>
+                        )}
+                        {canDelete && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setPaymentToDelete(payment)}
+                            className="h-7 text-xs px-2.5 gap-1 text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/30"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                            Eliminar
+                          </Button>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ))}
                 {/* Total cobrado en mobile footer */}
@@ -1046,44 +1238,11 @@ export function AdminPayments() {
           )}
         </section>
 
-        {/* Total cobrado destacado debajo de Servicios registrados */}
-        <section
-          className="p-4 sm:p-5 rounded-xl border border-border bg-surface shadow-xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
-          aria-label="Resumen de Total cobrado"
-        >
-          <div>
-            <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-              Total cobrado
-            </h3>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Suma exacta de los registros en <code className="text-[11px]">service_payments</code> según los filtros activos.
-            </p>
-          </div>
-          <div className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
-            {money(paymentStats.totalCollected)}
-          </div>
-        </section>
-
         {/* 4. Estadísticas visuales de los cobros registrados */}
         <section
-          className="rounded-xl border border-border bg-surface p-4 sm:p-5 shadow-xs space-y-5"
+          className="rounded-xl border border-border bg-surface p-4 sm:p-5 shadow-xs space-y-4"
           aria-label="Estadísticas visuales de cobros"
         >
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 pb-3 border-b border-border/70">
-            <div>
-              <h2 className="text-base font-bold text-foreground flex items-center gap-2">
-                <BarChart2 className="w-4 h-4 text-gold" />
-                Estadísticas de cobros
-              </h2>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Métricas calculadas exclusivamente sobre los cobros registrados con los filtros activos.
-              </p>
-            </div>
-            <div className="text-xs text-muted-foreground">
-              Filtro: <span className="font-semibold text-foreground">{presetLabels[filterPeriod]}</span>
-            </div>
-          </div>
-
           {/* Resumen - 3 KPI Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {/* KPI 1: Total cobrado */}
@@ -1263,6 +1422,57 @@ export function AdminPayments() {
             </div>
           )}
         </section>
+
+        {/* Modal de confirmación explícita para eliminar cobro (Exclusivo Administrador) */}
+        {paymentToDelete && (
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-dialog-title"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs"
+          >
+            <div className="bg-surface border border-border rounded-xl p-5 max-w-md w-full shadow-2xl space-y-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2 rounded-full bg-destructive/15 text-destructive shrink-0 mt-0.5">
+                  <Trash2 className="w-5 h-5" />
+                </div>
+                <div className="space-y-1">
+                  <h3 id="delete-dialog-title" className="text-sm font-bold text-foreground">
+                    ¿Eliminar este cobro?
+                  </h3>
+                  <p className="text-xs text-muted-foreground leading-normal">
+                    Esta acción no se puede deshacer. Se eliminará el registro de{" "}
+                    <strong className="text-foreground">{paymentToDelete.serviceName}</strong> (
+                    {money(paymentToDelete.finalAmountArs)}) correspondiente a{" "}
+                    <strong className="text-foreground">{paymentToDelete.barberName}</strong>.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-border/60">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPaymentToDelete(null)}
+                  disabled={isDeleting}
+                  className="h-9 px-4 text-xs"
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={handleConfirmDelete}
+                  disabled={isDeleting}
+                  className="h-9 px-4 text-xs font-semibold bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+                >
+                  {isDeleting ? "Eliminando…" : "Eliminar definitivamente"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </main>
   );

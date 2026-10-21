@@ -49,6 +49,19 @@ export type RecordServicePaymentInput = {
   appointmentId?: string;
 };
 
+export type UpdateServicePaymentInput = {
+  barberId?: string;
+  serviceName: ServicePaymentType;
+  serviceOtherDetail?: string;
+  servicePriceArs: number;
+  discountArs?: number;
+  paymentDate?: string;
+  paymentTime?: string;
+  paymentMethod: PaymentMethod;
+  clientName?: string;
+  clientContact?: string;
+};
+
 export type ServicePaymentFilters = {
   date?: string | undefined; // YYYY-MM-DD or empty for all
   startDate?: string | undefined;
@@ -509,4 +522,130 @@ export async function recordServicePayment(
   }
 
   return persistedRecord;
+}
+
+/** Actualiza un cobro existente garantizando autorización por rol y recálculo de montos */
+export async function updateServicePayment(
+  paymentId: string,
+  input: UpdateServicePaymentInput,
+  staff: AuthenticatedStaff,
+  currentRecord?: ServicePayment,
+): Promise<ServicePayment> {
+  if (!paymentId) throw new Error('ID de cobro requerido para actualizar.');
+
+  // Verificación de permisos de barbero
+  if (staff.profile.role === 'BARBER') {
+    if (currentRecord && currentRecord.barberId !== staff.profile.barber_id) {
+      throw new Error('No tenés permisos para editar los cobros de otro barbero.');
+    }
+    if (input.barberId && input.barberId !== staff.profile.barber_id) {
+      throw new Error('No tenés permisos para cambiar el barbero asignado al cobro.');
+    }
+  }
+
+  // Validaciones de negocio
+  if (input.serviceName === 'Otros' && (!input.serviceOtherDetail || !input.serviceOtherDetail.trim())) {
+    throw new Error('Para el servicio "Otros", debés especificar el detalle.');
+  }
+  if (!input.servicePriceArs || input.servicePriceArs <= 0) {
+    throw new Error('El precio del servicio debe ser mayor a 0.');
+  }
+  const discountArs = input.discountArs || 0;
+  if (discountArs < 0 || discountArs > input.servicePriceArs) {
+    throw new Error('El descuento no puede ser negativo ni superar el precio del servicio.');
+  }
+
+  const finalAmountArs = input.servicePriceArs - discountArs;
+  const depositDeduction = (currentRecord?.onlineDepositPaid && currentRecord?.onlineDepositAmountArs)
+    ? currentRecord.onlineDepositAmountArs
+    : 0;
+  const collectedAmountArs = Math.max(0, finalAmountArs - depositDeduction);
+
+  const formattedTime = input.paymentTime && input.paymentTime.length === 5
+    ? `${input.paymentTime}:00`
+    : input.paymentTime;
+
+  const updatePayload: any = {
+    service_name: input.serviceName === 'Corte y barba' ? 'Corte y barba' : input.serviceName,
+    service_other_detail: input.serviceName === 'Otros' ? (input.serviceOtherDetail?.trim() || null) : null,
+    service_price_ars: input.servicePriceArs,
+    discount_ars: discountArs,
+    final_amount_ars: finalAmountArs,
+    collected_amount_ars: collectedAmountArs,
+    payment_method: input.paymentMethod,
+    client_name: input.clientName?.trim() || null,
+    client_contact: input.clientContact?.trim() || null,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (input.paymentDate) updatePayload.payment_date = input.paymentDate;
+  if (formattedTime) updatePayload.payment_time = formattedTime;
+
+  // Solo administradores pueden reasignar el barbero
+  if (staff.profile.role === 'ADMIN' && input.barberId) {
+    updatePayload.barber_id = input.barberId;
+  }
+
+  const { data: updatedRow, error: updateError } = await supabase
+    .from('service_payments')
+    .update(updatePayload)
+    .eq('id', paymentId)
+    .select()
+    .single();
+
+  if (updateError) {
+    console.error('[KANI payments] Error al actualizar cobro en base de datos:', updateError);
+    throw new Error(updateError.message || 'No se pudo actualizar el cobro en la base de datos.');
+  }
+
+  const barber = staff.barbers.find((b) => b.id === updatedRow.barber_id);
+  const barberName = barber ? barber.name : (currentRecord?.barberName || 'Barbero');
+
+  return {
+    id: updatedRow.id,
+    barberId: updatedRow.barber_id,
+    barberName,
+    serviceId: updatedRow.service_id,
+    serviceName: updatedRow.service_name === 'Corte + barba' ? 'Corte y barba' : (updatedRow.service_name as ServicePaymentType),
+    serviceOtherDetail: updatedRow.service_other_detail,
+    servicePriceArs: updatedRow.service_price_ars,
+    discountArs: updatedRow.discount_ars,
+    finalAmountArs: updatedRow.final_amount_ars,
+    paymentDate: updatedRow.payment_date,
+    paymentTime: (updatedRow.payment_time || '').slice(0, 5),
+    paymentMethod: updatedRow.payment_method as PaymentMethod,
+    onlineDepositPaid: updatedRow.online_deposit_paid,
+    onlineDepositAmountArs: updatedRow.online_deposit_amount_ars,
+    collectedAmountArs: updatedRow.collected_amount_ars,
+    clientName: updatedRow.client_name,
+    clientContact: updatedRow.client_contact,
+    appointmentId: updatedRow.appointment_id,
+    appointmentRequestNumber: currentRecord?.appointmentRequestNumber,
+    createdByUserId: updatedRow.created_by_user_id,
+    createdByDisplayName: updatedRow.created_by_display_name,
+    createdAt: updatedRow.created_at,
+    updatedAt: updatedRow.updated_at,
+  };
+}
+
+/** Elimina un cobro registrado (exclusivo para Administradores) */
+export async function deleteServicePayment(
+  paymentId: string,
+  staff: AuthenticatedStaff,
+): Promise<void> {
+  if (!paymentId) throw new Error('ID de cobro requerido para eliminar.');
+
+  if (staff.profile.role !== 'ADMIN') {
+    throw new Error('Solo los administradores tienen permiso para eliminar registros de cobro.');
+  }
+
+  const { error } = await supabase
+    .from('service_payments')
+    .delete()
+    .eq('id', paymentId);
+
+  if (error) {
+    console.error('[KANI payments] Error al eliminar cobro en base de datos:', error);
+    throw new Error(error.message || 'No se pudo eliminar el cobro en la base de datos.');
+  }
 }
