@@ -50,12 +50,12 @@ export type RecordServicePaymentInput = {
 };
 
 export type ServicePaymentFilters = {
-  date?: string; // YYYY-MM-DD or empty for all
-  startDate?: string;
-  endDate?: string;
-  barberId?: string; // 'ALL' or specific barber id
-  serviceName?: 'ALL' | ServicePaymentType;
-  otherDetail?: string;
+  date?: string | undefined; // YYYY-MM-DD or empty for all
+  startDate?: string | undefined;
+  endDate?: string | undefined;
+  barberId?: string | undefined; // 'ALL' or specific barber id
+  serviceName?: ('ALL' | ServicePaymentType) | undefined;
+  otherDetail?: string | undefined;
 };
 
 export type CandidateAppointmentMatch = {

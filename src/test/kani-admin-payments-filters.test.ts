@@ -151,8 +151,8 @@ describe('Kani Barber Studio - Panel de administración: Pagos y etiquetas diná
   });
 
   it('7. Pagos filtra registros reales por rango en base de datos mediante fetchServicePayments', () => {
-    expect(paymentsLibCode).toContain('startDate?: string;');
-    expect(paymentsLibCode).toContain('endDate?: string;');
+    expect(paymentsLibCode).toMatch(/startDate\?:\s*string/);
+    expect(paymentsLibCode).toMatch(/endDate\?:\s*string/);
     expect(paymentsLibCode).toContain("query.gte('payment_date', filters.startDate)");
     expect(paymentsLibCode).toContain("query.lte('payment_date', filters.endDate)");
     expect(paymentsCode).toContain('dateRangeForStatisticsPreset(filterPeriod, todayStr, filterDate)');
