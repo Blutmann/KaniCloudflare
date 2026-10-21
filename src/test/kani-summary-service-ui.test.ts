@@ -27,9 +27,9 @@ describe('Kani Barber Studio — Ajustes visuales en Resumen y Servicio', () => 
     expect(css).toMatch(/html\[data-theme='dark'\]\s*\.summary-pending-notice\s*svg\s*\{[^}]*color:\s*color-mix\(in srgb,\s*var\(--primary\)\s*70%,\s*#FFFFFF\)\s*!important/);
   });
 
-  it('4. Servicio: el aviso sobre la seña utiliza ícono y texto en bordó institucional (claro y oscuro)', () => {
-    expect(css).toMatch(/html\[data-theme='light'\]\s*\.booking-deposit-notice\s*\{[^}]*color:\s*#702B3A\s*!important/);
-    expect(css).toMatch(/html\[data-theme='light'\]\s*\.booking-deposit-notice\s*svg\s*\{[^}]*color:\s*#702B3A\s*!important/);
+  it('4. Servicio: el aviso sobre la seña utiliza ícono y texto en negro (modo claro) y bordó de contraste (modo oscuro)', () => {
+    expect(css).toMatch(/html\[data-theme='light'\]\s*\.booking-deposit-notice\s*\{[^}]*color:\s*var\(--foreground\)\s*!important/);
+    expect(css).toMatch(/html\[data-theme='light'\]\s*\.booking-deposit-notice\s*svg\s*\{[^}]*color:\s*var\(--foreground\)\s*!important/);
     expect(css).toMatch(/html\[data-theme='dark'\]\s*\.booking-deposit-notice\s*\{[^}]*color:\s*color-mix\(in srgb,\s*var\(--primary\)\s*70%,\s*#FFFFFF\)\s*!important/);
     expect(css).toMatch(/html\[data-theme='dark'\]\s*\.booking-deposit-notice\s*svg\s*\{[^}]*color:\s*color-mix\(in srgb,\s*var\(--primary\)\s*70%,\s*#FFFFFF\)\s*!important/);
   });

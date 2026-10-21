@@ -326,8 +326,8 @@ html[data-theme="light"] .booking-progress .complete > span { border-color: #702
 .booking-page .field-label { font-family: var(--font-sans); }
 .admin-page, .admin-page h1, .admin-page h2, .admin-page h3, .admin-page button, .admin-page input, .admin-page select { font-family: var(--font-sans); }
 .booking-page .section-title { margin-bottom: 12px; }
-.booking-deposit-notice { display: flex; width: 100%; box-sizing: border-box; align-items: flex-start; gap: 9px; margin: 20px 0 0; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius-control, 0.65rem); background: var(--surface); box-shadow: 0 10px 26px rgb(0 0 0 / 0.14); color: var(--primary); font-size: 12px; line-height: 1.5; }
-.booking-deposit-notice svg { flex: 0 0 auto; margin-top: 1px; color: inherit; }
+.booking-deposit-notice { display: flex; width: 100%; box-sizing: border-box; align-items: center; gap: 9px; margin: 20px 0 0; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius-control, 0.65rem); background: var(--surface); box-shadow: 0 10px 26px rgb(0 0 0 / 0.14); color: var(--foreground); font-size: 12px; line-height: 1.5; }
+.booking-deposit-notice svg { flex: 0 0 auto; margin-top: 0; color: inherit; }
 .booking-aside { margin-top: 9px; padding: 27px 0 27px 28px; border-left: 1px solid var(--border); }
 .booking-defer-option { width: 100%; height: 104px; min-height: 104px; display: flex; align-items: center; gap: 18px; padding: 20px 22px; border-radius: var(--radius-control, 0.65rem); background: var(--surface); box-shadow: 0 10px 26px rgb(0 0 0 / 0.14); text-align: left; white-space: normal; }
 .booking-defer-option.selected,
@@ -3026,10 +3026,10 @@ html[data-theme='light'] .booking-deposit-notice {
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   border-color: var(--border) !important;
-  color: #702B3A !important;
+  color: var(--foreground) !important;
 }
 html[data-theme='light'] .booking-deposit-notice svg {
-  color: #702B3A !important;
+  color: var(--foreground) !important;
 }
 
 html[data-theme='light'] .confirmation-details {
