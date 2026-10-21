@@ -2758,4 +2758,89 @@ html[data-theme='dark'] .admin-section-nav-link.is-active:active {
   background-color: var(--stat-bar-service) !important;
 }
 
+/* ==============================================================================
+   KANI Admin - Formulario compacto de Pagos (Mobile 2 columnas / Desktop preservado)
+   ============================================================================== */
+.admin-payment-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem 0.6rem;
+}
+
+.payment-field-fecha { grid-area: fecha; }
+.payment-field-horario { grid-area: horario; }
+.payment-field-barbero { grid-area: barbero; }
+.payment-field-servicio { grid-area: servicio; }
+.payment-field-detalle { grid-area: detalle; }
+.payment-field-importe { grid-area: importe; }
+.payment-field-descuento { grid-area: descuento; }
+.payment-field-metodo { grid-area: metodo; }
+.payment-field-sena { grid-area: sena; }
+.payment-field-cliente { grid-area: cliente; }
+.payment-field-contacto { grid-area: contacto; }
+
+/* Mobile (< 640px): 2 columnas exactas según requerimiento */
+@media (max-width: 639px) {
+  .admin-payment-form-grid {
+    grid-template-areas:
+      "fecha horario"
+      "barbero servicio"
+      "importe descuento"
+      "metodo sena"
+      "cliente contacto";
+  }
+
+  .admin-payment-form-grid.has-other {
+    grid-template-areas:
+      "fecha horario"
+      "barbero servicio"
+      "detalle detalle"
+      "importe descuento"
+      "metodo sena"
+      "cliente contacto";
+  }
+
+  @media (max-width: 320px) {
+    .admin-payment-form-grid,
+    .admin-payment-form-grid.has-other {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-areas:
+        "fecha"
+        "horario"
+        "barbero"
+        "servicio"
+        "detalle"
+        "importe"
+        "descuento"
+        "metodo"
+        "sena"
+        "cliente"
+        "contacto";
+    }
+  }
+}
+
+/* Desktop (>= 640px): Preserva exactamente la distribución original */
+@media (min-width: 640px) {
+  .admin-payment-form-grid {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 0.75rem 0.75rem;
+    grid-template-areas:
+      "barbero barbero barbero barbero fecha fecha fecha fecha horario horario horario horario"
+      "servicio servicio servicio servicio importe importe importe importe descuento descuento descuento descuento"
+      "cliente cliente cliente contacto contacto contacto metodo metodo metodo sena sena sena";
+  }
+
+  .admin-payment-form-grid.has-other {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 0.75rem 0.75rem;
+    grid-template-areas:
+      "barbero barbero barbero barbero fecha fecha fecha fecha horario horario horario horario"
+      "servicio servicio servicio servicio detalle detalle detalle detalle importe importe importe importe"
+      "descuento descuento descuento descuento . . . . . . . ."
+      "cliente cliente cliente contacto contacto contacto metodo metodo metodo sena sena sena";
+  }
+}
+
+
 

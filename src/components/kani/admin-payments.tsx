@@ -297,10 +297,10 @@ export function AdminPayments() {
 
         {/* 1. Formulario de registro rápido */}
         <section
-          className="p-4 sm:p-5 rounded-xl border border-border bg-surface shadow-xs mb-6"
+          className="p-3.5 sm:p-5 rounded-xl border border-border bg-surface shadow-xs mb-4 sm:mb-6"
           aria-labelledby="payment-form-heading"
         >
-          <div className="flex items-center justify-between pb-3 mb-4 border-b border-border/60">
+          <div className="flex items-center justify-between pb-2.5 sm:pb-3 mb-3 sm:mb-4 border-b border-border/60">
             <h2 id="payment-form-heading" className="text-sm font-semibold text-foreground flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-gold" aria-hidden="true" />
               Registrar nuevo cobro
@@ -322,40 +322,10 @@ export function AdminPayments() {
             )}
           </div>
 
-          <form onSubmit={handleSubmitForm} className="space-y-4">
-            {/* Fila 1: Barbero (ADMIN), Fecha y Horario */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {isAdmin ? (
-                <div>
-                  <label htmlFor="form-barber" className="block text-xs font-medium text-muted-foreground mb-1">
-                    Barbero *
-                  </label>
-                  <select
-                    id="form-barber"
-                    value={formBarberId}
-                    onChange={(e) => setFormBarberId(e.target.value)}
-                    className="select-control w-full h-[42px] px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20"
-                    required
-                  >
-                    {staff.barbers.map((b) => (
-                      <option key={b.id} value={b.id}>
-                        {b.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              ) : (
-                <div>
-                  <label className="block text-xs font-medium text-muted-foreground mb-1">
-                    Barbero
-                  </label>
-                  <output className="select-control w-full h-[42px] px-3 text-xs bg-muted/40 border border-border rounded-lg text-muted-foreground flex items-center">
-                    {staff.profile.display_name}
-                  </output>
-                </div>
-              )}
-
-              <div>
+          <form onSubmit={handleSubmitForm} className="space-y-3 sm:space-y-4">
+            <div className={`admin-payment-form-grid ${formServiceName === "Otros" ? "has-other" : ""}`}>
+              {/* Fecha */}
+              <div className="payment-field-fecha">
                 <label htmlFor="form-date" className="block text-xs font-medium text-muted-foreground mb-1">
                   Fecha *
                 </label>
@@ -364,12 +334,13 @@ export function AdminPayments() {
                   type="date"
                   value={formDate}
                   onChange={(e) => setFormDate(e.target.value)}
-                  className="select-control w-full h-[42px] px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20"
+                  className="select-control w-full h-[40px] sm:h-[42px] px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20"
                   required
                 />
               </div>
 
-              <div>
+              {/* Horario */}
+              <div className="payment-field-horario">
                 <label htmlFor="form-time" className="block text-xs font-medium text-muted-foreground mb-1">
                   Horario *
                 </label>
@@ -378,15 +349,46 @@ export function AdminPayments() {
                   type="time"
                   value={formTime}
                   onChange={(e) => setFormTime(e.target.value)}
-                  className="select-control w-full h-[42px] px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20"
+                  className="select-control w-full h-[40px] sm:h-[42px] px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20"
                   required
                 />
               </div>
-            </div>
 
-            {/* Fila 2: Servicio, Importe, Descuento */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div>
+              {/* Barbero */}
+              <div className="payment-field-barbero">
+                {isAdmin ? (
+                  <>
+                    <label htmlFor="form-barber" className="block text-xs font-medium text-muted-foreground mb-1">
+                      Barbero *
+                    </label>
+                    <select
+                      id="form-barber"
+                      value={formBarberId}
+                      onChange={(e) => setFormBarberId(e.target.value)}
+                      className="select-control w-full h-[40px] sm:h-[42px] px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20"
+                      required
+                    >
+                      {staff.barbers.map((b) => (
+                        <option key={b.id} value={b.id}>
+                          {b.name}
+                        </option>
+                      ))}
+                    </select>
+                  </>
+                ) : (
+                  <>
+                    <label className="block text-xs font-medium text-muted-foreground mb-1">
+                      Barbero
+                    </label>
+                    <output className="select-control w-full h-[40px] sm:h-[42px] px-3 text-xs bg-muted/40 border border-border rounded-lg text-muted-foreground flex items-center">
+                      {staff.profile.display_name}
+                    </output>
+                  </>
+                )}
+              </div>
+
+              {/* Servicio */}
+              <div className="payment-field-servicio">
                 <label htmlFor="form-service" className="block text-xs font-medium text-muted-foreground mb-1">
                   Servicio *
                 </label>
@@ -394,7 +396,7 @@ export function AdminPayments() {
                   id="form-service"
                   value={formServiceName}
                   onChange={(e) => handleServiceChange(e.target.value as ServicePaymentType)}
-                  className="select-control w-full h-[42px] px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20 font-medium"
+                  className="select-control w-full h-[40px] sm:h-[42px] px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20 font-medium"
                 >
                   <option value="Corte">Corte ($25.000)</option>
                   <option value="Corte y barba">Corte y barba ($30.000)</option>
@@ -403,23 +405,28 @@ export function AdminPayments() {
                 </select>
               </div>
 
-              {formServiceName === "Otros" ? (
-                <>
-                  <div>
-                    <label htmlFor="form-other-detail" className="block text-xs font-medium text-muted-foreground mb-1">
-                      Detalle del servicio *
-                    </label>
-                    <input
-                      id="form-other-detail"
-                      type="text"
-                      placeholder="Ej: Lavado, Color, Peinado, Venta..."
-                      value={formOtherDetail}
-                      onChange={(e) => setFormOtherDetail(e.target.value)}
-                      className="select-control w-full h-[42px] px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20"
-                      required
-                    />
-                  </div>
-                  <div>
+              {/* Detalle del servicio (solo si Otros) */}
+              {formServiceName === "Otros" && (
+                <div className="payment-field-detalle">
+                  <label htmlFor="form-other-detail" className="block text-xs font-medium text-muted-foreground mb-1">
+                    Detalle del servicio *
+                  </label>
+                  <input
+                    id="form-other-detail"
+                    type="text"
+                    placeholder="Ej: Lavado, Color, Peinado, Venta..."
+                    value={formOtherDetail}
+                    onChange={(e) => setFormOtherDetail(e.target.value)}
+                    className="select-control w-full h-[40px] sm:h-[42px] px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20"
+                    required
+                  />
+                </div>
+              )}
+
+              {/* Importe */}
+              <div className="payment-field-importe">
+                {formServiceName === "Otros" ? (
+                  <>
                     <label htmlFor="form-price" className="block text-xs font-medium text-muted-foreground mb-1">
                       Importe ($ ARS) *
                     </label>
@@ -431,98 +438,44 @@ export function AdminPayments() {
                       placeholder="0"
                       value={formPriceArs || ""}
                       onChange={(e) => setFormPriceArs(Math.max(0, parseInt(e.target.value, 10) || 0))}
-                      className="select-control w-full h-[42px] px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20"
+                      className="select-control w-full h-[40px] sm:h-[42px] px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20"
                       required
                     />
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div>
+                  </>
+                ) : (
+                  <>
                     <label className="block text-xs font-medium text-muted-foreground mb-1">
                       Importe oficial
                     </label>
-                    <output className="select-control w-full h-[42px] px-3 text-xs bg-muted/30 border border-border rounded-lg text-foreground font-semibold flex items-center">
+                    <output className="select-control w-full h-[40px] sm:h-[42px] px-3 text-xs bg-muted/30 border border-border rounded-lg text-foreground font-semibold flex items-center">
                       {money(formPriceArs)}
                     </output>
-                  </div>
-                  <div>
-                    <label htmlFor="form-discount" className="block text-xs font-medium text-muted-foreground mb-1">
-                      Descuento ($ ARS opcional)
-                    </label>
-                    <input
-                      id="form-discount"
-                      type="number"
-                      min="0"
-                      max={formPriceArs}
-                      step="100"
-                      value={formDiscountArs === 0 ? "0" : formDiscountArs}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setFormDiscountArs(val === "" ? "" : Math.max(0, parseInt(val, 10) || 0));
-                      }}
-                      className="select-control w-full h-[42px] px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20"
-                    />
-                  </div>
-                </>
-              )}
-            </div>
-
-            {/* Fila 3: Si Otros, descuento se ubica aquí */}
-            {formServiceName === "Otros" && (
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div>
-                  <label htmlFor="form-discount-other" className="block text-xs font-medium text-muted-foreground mb-1">
-                    Descuento ($ ARS opcional)
-                  </label>
-                  <input
-                    id="form-discount-other"
-                    type="number"
-                    min="0"
-                    max={formPriceArs || 999999}
-                    step="100"
-                    value={formDiscountArs === 0 ? "0" : formDiscountArs}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setFormDiscountArs(val === "" ? "" : Math.max(0, parseInt(val, 10) || 0));
-                    }}
-                    className="select-control w-full h-[42px] px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20"
-                  />
-                </div>
+                  </>
+                )}
               </div>
-            )}
 
-            {/* Fila 4: Cliente, Contacto, Método de pago, Seña abonada online */}
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-              <div>
-                <label htmlFor="form-client-name" className="block text-xs font-medium text-muted-foreground mb-1">
-                  Cliente (opcional)
+              {/* Descuento */}
+              <div className="payment-field-descuento">
+                <label htmlFor="form-discount" className="block text-xs font-medium text-muted-foreground mb-1">
+                  Descuento ($ ARS opcional)
                 </label>
                 <input
-                  id="form-client-name"
-                  type="text"
-                  placeholder="Nombre y apellido"
-                  value={formClientName}
-                  onChange={(e) => setFormClientName(e.target.value)}
-                  className="select-control w-full h-[42px] px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20"
+                  id="form-discount"
+                  type="number"
+                  min="0"
+                  max={formPriceArs || 999999}
+                  step="100"
+                  value={formDiscountArs === 0 ? "0" : formDiscountArs}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setFormDiscountArs(val === "" ? "" : Math.max(0, parseInt(val, 10) || 0));
+                  }}
+                  className="select-control w-full h-[40px] sm:h-[42px] px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20"
                 />
               </div>
 
-              <div>
-                <label htmlFor="form-client-contact" className="block text-xs font-medium text-muted-foreground mb-1">
-                  Contacto del cliente (opcional)
-                </label>
-                <input
-                  id="form-client-contact"
-                  type="text"
-                  placeholder="Celular o email"
-                  value={formClientContact}
-                  onChange={(e) => setFormClientContact(e.target.value)}
-                  className="select-control w-full h-[42px] px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20"
-                />
-              </div>
-
-              <div>
+              {/* Método de pago */}
+              <div className="payment-field-metodo">
                 <label htmlFor="form-payment-method" className="block text-xs font-medium text-muted-foreground mb-1">
                   Método de pago *
                 </label>
@@ -530,16 +483,17 @@ export function AdminPayments() {
                   id="form-payment-method"
                   value={formPaymentMethod}
                   onChange={(e) => setFormPaymentMethod(e.target.value as PaymentMethod)}
-                  className="select-control w-full h-[42px] px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20 font-medium"
+                  className="select-control w-full h-[40px] sm:h-[42px] px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20 font-medium"
                 >
                   <option value="Efectivo">Efectivo</option>
                   <option value="Transferencia">Transferencia</option>
                 </select>
               </div>
 
-              <div>
+              {/* Seña abonada */}
+              <div className="payment-field-sena">
                 <label htmlFor="form-online-deposit" className="block text-xs font-medium text-muted-foreground mb-1">
-                  Seña abonada online
+                  Seña abonada
                 </label>
                 <select
                   id="form-online-deposit"
@@ -555,11 +509,41 @@ export function AdminPayments() {
                     }
                     setFormOnlineDepositPaid(isYes);
                   }}
-                  className="select-control w-full h-[42px] px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20"
+                  className="select-control w-full h-[40px] sm:h-[42px] px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20"
                 >
                   <option value="NO">No</option>
                   <option value="SI">Sí (Verificado)</option>
                 </select>
+              </div>
+
+              {/* Cliente (opcional) */}
+              <div className="payment-field-cliente">
+                <label htmlFor="form-client-name" className="block text-xs font-medium text-muted-foreground mb-1">
+                  Cliente (opcional)
+                </label>
+                <input
+                  id="form-client-name"
+                  type="text"
+                  placeholder="Nombre y apellido"
+                  value={formClientName}
+                  onChange={(e) => setFormClientName(e.target.value)}
+                  className="select-control w-full h-[40px] sm:h-[42px] px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20"
+                />
+              </div>
+
+              {/* Contacto del cliente (opcional) */}
+              <div className="payment-field-contacto">
+                <label htmlFor="form-client-contact" className="block text-xs font-medium text-muted-foreground mb-1">
+                  Contacto del cliente (opcional)
+                </label>
+                <input
+                  id="form-client-contact"
+                  type="text"
+                  placeholder="Celular o email"
+                  value={formClientContact}
+                  onChange={(e) => setFormClientContact(e.target.value)}
+                  className="select-control w-full h-[40px] sm:h-[42px] px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20"
+                />
               </div>
             </div>
 
