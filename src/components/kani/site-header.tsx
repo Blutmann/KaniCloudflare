@@ -34,7 +34,7 @@ export function HeaderWhatsApp() {
       asChild
       variant="outline"
       size="icon"
-      className="header-control-button header-whatsapp-button hidden md:inline-flex"
+      className="header-control-button header-whatsapp-button inline-flex"
       aria-label="Consultas por WhatsApp"
       title="Consultas por WhatsApp"
     >
