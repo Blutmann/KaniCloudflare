@@ -33,6 +33,7 @@ import { readRealAppointments, type RealAppointment } from "@/lib/kani-appointme
 import { permittedBarberNames } from "@/lib/kani-role-scope";
 
 const datePresets: ScheduleDatePreset[] = schedulePresets;
+export type ScheduleStatusFilter = "ALL" | "AVAILABLE" | "UNAVAILABLE" | "RESERVED";
 type ScheduleSlot = AvailabilitySlot & { barberName: Barber; occupied: boolean };
 type ScheduleStart = Awaited<ReturnType<typeof readAvailabilityStartsForRange>>[number] & { barberName: Barber };
 
@@ -115,6 +116,7 @@ export function AdminScheduleManager() {
   const [datePreset, setDatePreset] = useState<ScheduleDatePreset>("TODAY");
   const [specificDate, setSpecificDate] = useState(() => businessDateToday());
   const [barberFilter, setBarberFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState<ScheduleStatusFilter>("ALL");
   const [slots, setSlots] = useState<ScheduleSlot[]>([]);
   const [validStarts, setValidStarts] = useState<ScheduleStart[]>([]);
   const [loading, setLoading] = useState(true);
@@ -292,13 +294,21 @@ export function AdminScheduleManager() {
     setManualOpen(true);
   }
 
+  const filteredSlots = useMemo(() => {
+    if (statusFilter === "ALL") return slots;
+    if (statusFilter === "AVAILABLE") return slots.filter((slot) => !slot.occupied && slot.status === "AVAILABLE");
+    if (statusFilter === "UNAVAILABLE") return slots.filter((slot) => !slot.occupied && slot.status !== "AVAILABLE");
+    if (statusFilter === "RESERVED") return slots.filter((slot) => slot.occupied);
+    return slots;
+  }, [slots, statusFilter]);
+
   const groupedSlots = useMemo(() => {
     const groups = new Map<string, ScheduleSlot[]>();
-    slots.forEach((slot) =>
+    filteredSlots.forEach((slot) =>
       groups.set(slot.slot_date, [...(groups.get(slot.slot_date) ?? []), slot]),
     );
     return [...groups.entries()];
-  }, [slots]);
+  }, [filteredSlots]);
 
   return (
     <main className="site-container admin-schedule-page">
@@ -365,31 +375,22 @@ export function AdminScheduleManager() {
               )}
             </div>
 
-            {/* 4. Con reserva (Fila 2 Col 2 en Mobile / Fila 1 Col 6 en Desktop) */}
-            <div className="schedule-filter-con-reserva min-w-0 flex flex-col justify-end">
-              <span className="block text-xs font-medium text-transparent mb-1.5 select-none pointer-events-none" aria-hidden="true">&nbsp;</span>
-              <div className="w-full h-9 px-2.5 rounded-lg border border-amber-500/30 bg-amber-500/5 text-amber-500 font-medium text-xs flex items-center justify-center gap-1.5 whitespace-nowrap min-w-0">
-                <Clock3 size={13} className="shrink-0" />
-                <span className="truncate">Con reserva</span>
-              </div>
-            </div>
-
-            {/* 5. Disponible (Fila 3 Col 1 en Mobile / Fila 1 Col 4 en Desktop) */}
-            <div className="schedule-filter-disponible min-w-0 flex flex-col justify-end">
-              <span className="block text-xs font-medium text-transparent mb-1.5 select-none pointer-events-none hidden sm:block" aria-hidden="true">&nbsp;</span>
-              <div className="w-full h-9 px-2.5 rounded-lg border border-success/30 bg-success/5 text-success font-medium text-xs flex items-center justify-center gap-1.5 whitespace-nowrap min-w-0">
-                <CheckCircle2 size={13} className="shrink-0" />
-                <span className="truncate">Disponible</span>
-              </div>
-            </div>
-
-            {/* 6. No disponible (Fila 3 Col 2 en Mobile / Fila 1 Col 5 en Desktop) */}
-            <div className="schedule-filter-no-disponible min-w-0 flex flex-col justify-end">
-              <span className="block text-xs font-medium text-transparent mb-1.5 select-none pointer-events-none hidden sm:block" aria-hidden="true">&nbsp;</span>
-              <div className="w-full h-9 px-2.5 rounded-lg border border-destructive/30 bg-destructive/5 text-destructive font-medium text-xs flex items-center justify-center gap-1.5 whitespace-nowrap min-w-0">
-                <XCircle size={13} className="shrink-0" />
-                <span className="truncate">No disponible</span>
-              </div>
+            {/* 4. Estado (Fila 2 Col 2 en Mobile / Fila 1 Col 4 en Desktop) */}
+            <div className="schedule-filter-estado min-w-0">
+              <label htmlFor="schedule-status-filter" className="block text-xs font-medium text-muted-foreground mb-1.5">
+                Estado
+              </label>
+              <select
+                id="schedule-status-filter"
+                value={statusFilter}
+                onChange={(event) => setStatusFilter(event.target.value as ScheduleStatusFilter)}
+                className="select-control w-full h-9 px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20 min-w-0 max-w-full"
+              >
+                <option value="ALL">Todos</option>
+                <option value="AVAILABLE">Disponible</option>
+                <option value="UNAVAILABLE">No disponible</option>
+                <option value="RESERVED">Reservado</option>
+              </select>
             </div>
           </div>
         </section>
@@ -479,7 +480,7 @@ export function AdminScheduleManager() {
                       ? {
                           border: "border-amber-500/30 bg-amber-500/5",
                           statusTone: "text-amber-500",
-                          label: "Con reserva",
+                          label: "Reservado",
                           Icon: Clock3,
                         }
                       : available
@@ -505,7 +506,7 @@ export function AdminScheduleManager() {
                           slot.occupied ? "cursor-default opacity-90" : "cursor-pointer"
                         )}
                         disabled={slot.occupied || saving}
-                        aria-label={`${slot.start_time.slice(0, 5)}: ${slot.occupied ? "Con reserva, no modificable" : available ? "Disponible, tocar para marcar no disponible" : "No disponible, tocar para habilitar"}`}
+                        aria-label={`${slot.start_time.slice(0, 5)}: ${slot.occupied ? "Reservado, no modificable" : available ? "Disponible, tocar para marcar no disponible" : "No disponible, tocar para habilitar"}`}
                         onClick={() => void saveSlot(slot, available ? "UNAVAILABLE" : "AVAILABLE")}
                       >
                         <div className="flex items-baseline justify-between w-full">

@@ -3474,10 +3474,9 @@ html[data-theme='dark'] .admin-section-nav-link.is-active:active {
 }
 
 /* ==============================================================================
-   KANI Admin - Card unificada de Filtros y Estados de Horarios
-   Desktop (>= 1024px): 1 único renglón con los 6 elementos integrados
-   Mobile (< 640px): 3 filas x 2 columnas equilibradas
-   Tablet (640px - 1023px): 2 filas x 3 columnas
+   KANI Admin - Card unificada de Filtros de Horarios
+   Desktop (>= 640px): 1 único renglón con los 4 controles integrados
+   Mobile (< 640px): 2 filas x 2 columnas equilibradas
    ============================================================================== */
 .admin-schedule-filter-grid {
   display: grid;
@@ -3487,42 +3486,27 @@ html[data-theme='dark'] .admin-section-nav-link.is-active:active {
 .schedule-filter-periodo { grid-area: periodo; }
 .schedule-filter-fecha { grid-area: fecha; }
 .schedule-filter-barbero { grid-area: barbero; }
-.schedule-filter-disponible { grid-area: disponible; }
-.schedule-filter-no-disponible { grid-area: no-disponible; }
-.schedule-filter-con-reserva { grid-area: con-reserva; }
+.schedule-filter-estado { grid-area: estado; }
 
-/* Mobile (< 640px): 3 filas x 2 columnas equilibradas */
+/* Mobile (< 640px): 2 filas x 2 columnas equilibradas */
 @media (max-width: 639px) {
   .admin-schedule-filter-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.6rem 0.65rem;
     grid-template-areas:
       "periodo fecha"
-      "barbero con-reserva"
-      "disponible no-disponible";
+      "barbero estado";
   }
 }
 
-/* Tablet (640px - 1023px): 2 filas x 3 columnas */
-@media (min-width: 640px) and (max-width: 1023px) {
+/* Desktop (>= 640px): 1 única fila con los 4 controles integrados */
+@media (min-width: 640px) {
   .admin-schedule-filter-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 0.65rem 0.75rem;
-    align-items: end;
+    align-items: start;
     grid-template-areas:
-      "periodo fecha barbero"
-      "disponible no-disponible con-reserva";
-  }
-}
-
-/* Desktop (>= 1024px): 1 único renglón con los 6 elementos integrados */
-@media (min-width: 1024px) {
-  .admin-schedule-filter-grid {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-    gap: 0.65rem 0.75rem;
-    align-items: end;
-    grid-template-areas:
-      "periodo fecha barbero disponible no-disponible con-reserva";
+      "periodo fecha barbero estado";
   }
 }
 
@@ -3566,6 +3550,7 @@ html[data-theme='dark'] .admin-section-nav-link.is-active:active {
 .schedule-filter-periodo,
 .schedule-filter-fecha,
 .schedule-filter-barbero,
+.schedule-filter-estado,
 .schedule-filter-disponible,
 .schedule-filter-no-disponible,
 .schedule-filter-con-reserva,
