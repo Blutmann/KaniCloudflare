@@ -3430,7 +3430,7 @@ html[data-theme='dark'] .admin-section-nav-link.is-active:active {
     gap: 0.6rem 0.65rem;
     grid-template-areas:
       "fecha horario"
-      "barbero servicio"
+      "servicio barbero"
       "metodo importe"
       "cliente sena"
       "contacto descuento";
@@ -3441,7 +3441,7 @@ html[data-theme='dark'] .admin-section-nav-link.is-active:active {
     gap: 0.6rem 0.65rem;
     grid-template-areas:
       "fecha horario"
-      "barbero servicio"
+      "servicio barbero"
       "detalle detalle"
       "metodo importe"
       "cliente sena"
@@ -3456,7 +3456,7 @@ html[data-theme='dark'] .admin-section-nav-link.is-active:active {
     gap: 0.65rem 0.75rem;
     align-items: start;
     grid-template-areas:
-      "fecha horario barbero servicio"
+      "fecha horario servicio barbero"
       "metodo importe descuento sena"
       "cliente contacto total submit";
   }
@@ -3466,7 +3466,7 @@ html[data-theme='dark'] .admin-section-nav-link.is-active:active {
     gap: 0.65rem 0.75rem;
     align-items: start;
     grid-template-areas:
-      "fecha horario barbero servicio"
+      "fecha horario servicio barbero"
       "detalle detalle detalle detalle"
       "metodo importe descuento sena"
       "cliente contacto total submit";

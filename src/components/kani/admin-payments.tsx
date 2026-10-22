@@ -708,6 +708,28 @@ export function AdminPayments() {
                 />
               </div>
 
+              {/* Servicio */}
+              <div className="payment-field-servicio min-w-0">
+                <label htmlFor="form-service" className="block text-xs font-medium text-muted-foreground mb-1">
+                  Servicio *
+                </label>
+                <select
+                  id="form-service"
+                  value={formServiceName}
+                  onChange={(e) => handleServiceChange(e.target.value as ServicePaymentType)}
+                  className={`select-control w-full h-9 px-2 text-xs bg-background rounded-lg transition-colors focus:outline-none font-medium min-w-0 max-w-full ${
+                    isServiceValid
+                      ? "border border-emerald-500/60 focus:border-emerald-500 text-foreground"
+                      : "border border-border focus:ring-1 focus:ring-foreground/20 text-foreground"
+                  }`}
+                >
+                  <option value="Corte">Corte</option>
+                  <option value="Corte y barba">Corte y barba</option>
+                  <option value="Barba">Barba</option>
+                  <option value="Otros">Otros</option>
+                </select>
+              </div>
+
               {/* Barbero */}
               <div className="payment-field-barbero min-w-0">
                 {isAdmin ? (
@@ -743,28 +765,6 @@ export function AdminPayments() {
                     </output>
                   </>
                 )}
-              </div>
-
-              {/* Servicio */}
-              <div className="payment-field-servicio min-w-0">
-                <label htmlFor="form-service" className="block text-xs font-medium text-muted-foreground mb-1">
-                  Servicio *
-                </label>
-                <select
-                  id="form-service"
-                  value={formServiceName}
-                  onChange={(e) => handleServiceChange(e.target.value as ServicePaymentType)}
-                  className={`select-control w-full h-9 px-2 text-xs bg-background rounded-lg transition-colors focus:outline-none font-medium min-w-0 max-w-full ${
-                    isServiceValid
-                      ? "border border-emerald-500/60 focus:border-emerald-500 text-foreground"
-                      : "border border-border focus:ring-1 focus:ring-foreground/20 text-foreground"
-                  }`}
-                >
-                  <option value="Corte">Corte</option>
-                  <option value="Corte y barba">Corte y barba</option>
-                  <option value="Barba">Barba</option>
-                  <option value="Otros">Otros</option>
-                </select>
               </div>
 
               {/* Detalle del servicio (solo si Otros) */}

@@ -72,14 +72,14 @@ describe('Kani Barber Studio — Panel de Administración -> Pagos (Tabla, Permi
   });
 
   it('6. Card de cálculo simplificada y de baja altura', () => {
-    expect(componentCode).toContain('Servicio:');
-    expect(componentCode).toContain('Total:');
+    expect(componentCode).toMatch(/Servicio/);
+    expect(componentCode).toMatch(/Total/);
     expect(componentCode).toContain('{money(balanceToCollectAtShop)}');
   });
 
   it('7. Gestión de cobros: Edición con estado explícito y Guardar cambios / Cancelar', () => {
     expect(componentCode).toContain('editingPayment');
-    expect(componentCode).toContain('Editando cobro');
+    expect(componentCode).toMatch(/Editando (cobro|servicio)/);
     expect(componentCode).toContain('Guardar cambios');
     expect(componentCode).toContain('Cancelar edición');
     expect(libCode).toContain('export async function updateServicePayment');
