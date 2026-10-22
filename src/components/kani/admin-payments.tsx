@@ -933,32 +933,23 @@ export function AdminPayments() {
               </div>
             </div>
 
-            {/* Resumen compacto del cobro final */}
-            <div className="py-2 px-3 rounded-lg border border-border/70 bg-background/50 flex flex-wrap items-center justify-between gap-2 text-xs">
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-muted-foreground">
-                <span>
-                  Importe: <strong className="text-foreground font-semibold">{money(formPriceArs)}</strong>
-                </span>
-                {numericDiscount > 0 && (
-                  <span>
-                    Desc: <strong className="text-destructive font-semibold">−{money(numericDiscount)}</strong>
-                  </span>
-                )}
-                {depositDeduction > 0 && (
-                  <span>
-                    Seña: <strong className="text-emerald-500 font-semibold">−{money(depositDeduction)}</strong>
-                  </span>
-                )}
-                <span>
-                  Método: <strong className="text-foreground font-semibold">{formPaymentMethod}</strong>
+            {/* Resumen financiero compacto (Fila 6) */}
+            <div className="grid grid-cols-3 gap-2 py-1.5 px-3 rounded-lg border border-border/70 bg-background/50 text-xs items-center">
+              <div className="min-w-0">
+                <span className="block text-[11px] font-medium text-muted-foreground">Importe</span>
+                <span className="font-semibold text-foreground text-xs sm:text-sm truncate block">
+                  {money(formPriceArs)}
                 </span>
               </div>
-
-              <div className="flex items-center gap-1.5 ml-auto text-xs">
-                <span className="text-[11px] font-medium text-muted-foreground">
-                  {depositDeduction > 0 ? "Saldo a cobrar:" : "Total:"}
+              <div className="min-w-0 text-center">
+                <span className="block text-[11px] font-medium text-muted-foreground">Método</span>
+                <span className="font-semibold text-foreground text-xs sm:text-sm truncate block">
+                  {formPaymentMethod}
                 </span>
-                <span className="text-sm font-bold text-foreground">
+              </div>
+              <div className="min-w-0 text-right">
+                <span className="block text-[11px] font-medium text-muted-foreground">Total</span>
+                <span className="font-bold text-foreground text-xs sm:text-sm truncate block">
                   {money(balanceToCollectAtShop)}
                 </span>
               </div>
@@ -994,7 +985,7 @@ export function AdminPayments() {
 
         {/* 2. Filtros de historial persistido */}
         <section
-          className="p-3.5 sm:p-4 rounded-xl border border-border bg-surface shadow-xs mb-4"
+          className="p-3.5 sm:p-4 rounded-xl border border-border bg-surface shadow-xs mb-4 sm:mb-5"
           aria-label="Filtros de registros de pagos"
         >
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -1104,7 +1095,7 @@ export function AdminPayments() {
 
         {/* 3. Listado de servicios registrados */}
         <section
-          className="rounded-xl border border-border bg-surface shadow-xs overflow-hidden"
+          className="rounded-xl border border-border bg-surface shadow-xs overflow-hidden mb-4 sm:mb-5"
           aria-label="Listado de servicios registrados"
         >
           <div className="px-4 py-3 border-b border-border/80 flex items-center justify-between">

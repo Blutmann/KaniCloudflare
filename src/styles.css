@@ -3421,46 +3421,29 @@ html[data-theme='dark'] .admin-section-nav-link.is-active:active {
 .payment-field-cliente { grid-area: cliente; }
 .payment-field-contacto { grid-area: contacto; }
 
-/* Mobile (< 640px): Fecha y Horario en filas completas para máxima robustez en cualquier dispositivo */
+/* Mobile (< 640px): Grilla consistente de 2 columnas con orden optimizado */
 @media (max-width: 639px) {
   .admin-payment-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.6rem 0.65rem;
     grid-template-areas:
-      "fecha fecha"
-      "horario horario"
+      "fecha horario"
       "barbero servicio"
-      "importe descuento"
-      "metodo sena"
-      "cliente contacto";
+      "importe metodo"
+      "cliente sena"
+      "contacto descuento";
   }
 
   .admin-payment-form-grid.has-other {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.6rem 0.65rem;
     grid-template-areas:
-      "fecha fecha"
-      "horario horario"
+      "fecha horario"
       "barbero servicio"
       "detalle detalle"
-      "importe descuento"
-      "metodo sena"
-      "cliente contacto";
-  }
-
-  @media (max-width: 320px) {
-    .admin-payment-form-grid,
-    .admin-payment-form-grid.has-other {
-      grid-template-columns: minmax(0, 1fr);
-      grid-template-areas:
-        "fecha"
-        "horario"
-        "barbero"
-        "servicio"
-        "detalle"
-        "importe"
-        "descuento"
-        "metodo"
-        "sena"
-        "cliente"
-        "contacto";
-    }
+      "importe metodo"
+      "cliente sena"
+      "contacto descuento";
   }
 }
 
@@ -3559,19 +3542,22 @@ html[data-theme='dark'] .admin-section-nav-link.is-active:active {
   -webkit-appearance: none !important;
   -moz-appearance: none !important;
   appearance: none !important;
-  display: block !important;
+  display: inline-flex !important;
+  align-items: center !important;
   width: 100% !important;
   max-width: 100% !important;
   min-width: 0 !important;
   box-sizing: border-box !important;
   text-align: left !important;
-  line-height: normal;
+  line-height: normal !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
   padding-left: 0.65rem !important;
   padding-right: 0.65rem !important;
   overflow: hidden !important;
 }
 
-/* 3. Normalización de pseudo-elementos nativos WebKit/Safari/Chromium en Admin */
+/* 3. Normalización de pseudo-elementos nativos WebKit/Safari/Chromium en Admin con centrado vertical */
 .admin-shell input[type="date"]::-webkit-datetime-edit,
 .admin-shell input[type="date"]::-webkit-datetime-edit-fields-wrapper,
 .admin-shell input[type="time"]::-webkit-datetime-edit,
@@ -3596,6 +3582,9 @@ html[data-theme='dark'] .admin-section-nav-link.is-active:active {
 [role="dialog"] input[type="date"]::-webkit-datetime-edit-fields-wrapper,
 [role="dialog"] input[type="time"]::-webkit-datetime-edit,
 [role="dialog"] input[type="time"]::-webkit-datetime-edit-fields-wrapper {
+  display: inline-flex !important;
+  align-items: center !important;
+  height: 100% !important;
   text-align: left !important;
   padding: 0 !important;
   margin: 0 !important;
@@ -3603,6 +3592,7 @@ html[data-theme='dark'] .admin-section-nav-link.is-active:active {
   max-width: 100% !important;
   box-sizing: border-box !important;
   overflow: hidden !important;
+  line-height: normal !important;
 }
 
 .admin-shell input[type="date"]::-webkit-date-and-time-value,
@@ -3617,9 +3607,12 @@ html[data-theme='dark'] .admin-section-nav-link.is-active:active {
 .admin-stats-page input[type="time"]::-webkit-date-and-time-value,
 [role="dialog"] input[type="date"]::-webkit-date-and-time-value,
 [role="dialog"] input[type="time"]::-webkit-date-and-time-value {
+  display: flex !important;
+  align-items: center !important;
   text-align: left !important;
-  min-height: 1.5em;
-  margin: 0 !important;
+  height: 100% !important;
+  min-height: 100% !important;
+  margin: auto 0 !important;
   min-width: 0 !important;
   max-width: 100% !important;
   width: 100% !important;
@@ -3627,6 +3620,7 @@ html[data-theme='dark'] .admin-section-nav-link.is-active:active {
   text-overflow: ellipsis !important;
   white-space: nowrap !important;
   box-sizing: border-box !important;
+  line-height: normal !important;
 }
 
 .admin-shell input[type="date"]::-webkit-calendar-picker-indicator,
@@ -3642,11 +3636,12 @@ html[data-theme='dark'] .admin-section-nav-link.is-active:active {
 [role="dialog"] input[type="date"]::-webkit-calendar-picker-indicator,
 [role="dialog"] input[type="time"]::-webkit-calendar-picker-indicator {
   cursor: pointer;
-  margin: 0 !important;
+  margin: auto 0 !important;
   padding: 0 !important;
   opacity: 0.75;
   flex-shrink: 0 !important;
   max-width: 24px;
+  align-self: center !important;
 }
 
 /* 4. Altura homogénea para controles en Admin */
@@ -3656,13 +3651,7 @@ html[data-theme='dark'] .admin-section-nav-link.is-active:active {
 
 .admin-payment-form-grid input,
 .admin-payment-form-grid select,
-.admin-payment-form-grid output.select-control {
-  height: 2.25rem !important;
-  min-height: 2.25rem !important;
-  max-height: 2.25rem !important;
-  line-height: normal;
-}
-
+.admin-payment-form-grid output.select-control,
 .admin-shell section[aria-label*="Filtros"] input[type="date"],
 .admin-shell section[aria-label*="Filtros"] select,
 .admin-page section[aria-label*="Filtros"] input[type="date"],
@@ -3672,10 +3661,12 @@ html[data-theme='dark'] .admin-section-nav-link.is-active:active {
 .admin-schedule-page section[aria-label*="Filtros"] input[type="date"],
 .admin-schedule-page section[aria-label*="Filtros"] select,
 .admin-stats-page section[aria-label*="Filtros"] input[type="date"],
-.admin-stats-page section[aria-label*="Filtros"] select {
+.admin-stats-page section[aria-label*="Filtros"] select,
+#filter-date {
   height: 2.25rem !important;
   min-height: 2.25rem !important;
   max-height: 2.25rem !important;
+  line-height: normal;
 }
 
 
