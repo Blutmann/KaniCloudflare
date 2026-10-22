@@ -542,7 +542,7 @@ export function AdminPayments() {
 
         {/* 1. Formulario de registro rápido o edición */}
         <section
-          className="p-3 sm:p-4 rounded-xl border border-border bg-surface shadow-xs mb-4"
+          className="p-3 sm:p-4 rounded-xl border border-border bg-surface shadow-xs mb-6"
           aria-label={editingPayment ? "Editar servicio registrado" : "Registrar servicio"}
         >
           <div className="flex items-center justify-between gap-3 mb-3 pb-2.5 border-b border-border/60">
@@ -553,20 +553,8 @@ export function AdminPayments() {
               </h2>
             </div>
 
-            {/* Selector de Origen: Con turno / Sin turno */}
+            {/* Selector de Origen: Sin turno / Con turno */}
             <div className="flex items-center gap-1 p-0.5 bg-muted/40 rounded-lg border border-border shrink-0" role="radiogroup" aria-label="Origen del servicio">
-              <button
-                type="button"
-                onClick={() => handleOriginChange("appointment")}
-                className={`px-2.5 py-1 text-xs rounded-md transition-all ${
-                  formOrigin === "appointment"
-                    ? "bg-primary text-primary-foreground font-semibold shadow-xs"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-                aria-pressed={formOrigin === "appointment"}
-              >
-                Con turno
-              </button>
               <button
                 type="button"
                 onClick={() => handleOriginChange("walk_in")}
@@ -578,6 +566,18 @@ export function AdminPayments() {
                 aria-pressed={formOrigin === "walk_in"}
               >
                 Sin turno
+              </button>
+              <button
+                type="button"
+                onClick={() => handleOriginChange("appointment")}
+                className={`px-2.5 py-1 text-xs rounded-md transition-all ${
+                  formOrigin === "appointment"
+                    ? "bg-primary text-primary-foreground font-semibold shadow-xs"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+                aria-pressed={formOrigin === "appointment"}
+              >
+                Con turno
               </button>
             </div>
           </div>
@@ -931,47 +931,69 @@ export function AdminPayments() {
                   }`}
                 />
               </div>
+
+              {/* Total (Desktop Fila 3 Col 3) */}
+              <div className="payment-field-total min-w-0 hidden sm:block">
+                <span className="block text-xs font-medium text-muted-foreground mb-1">
+                  Total
+                </span>
+                <output
+                  id="form-desktop-total"
+                  className="select-control w-full h-9 px-3 text-xs bg-muted/30 border border-border rounded-lg text-foreground font-bold flex items-center justify-end text-right min-w-0 max-w-full"
+                >
+                  {money(balanceToCollectAtShop)}
+                </output>
+              </div>
+
+              {/* Guardar cobro (Desktop Fila 3 Col 4) */}
+              <div className="payment-field-submit min-w-0 hidden sm:flex flex-col justify-end">
+                <span className="block text-xs font-medium text-transparent mb-1 select-none pointer-events-none" aria-hidden="true">
+                  &nbsp;
+                </span>
+                <Button
+                  type="submit"
+                  size="sm"
+                  disabled={isSubmitting}
+                  className="w-full h-9 px-4 text-xs font-semibold bg-primary hover:bg-primary/90 text-primary-foreground transition-all shadow-xs flex items-center justify-center gap-1.5"
+                >
+                  {isSubmitting
+                    ? "Guardando…"
+                    : editingPayment
+                    ? "Guardar cambios"
+                    : "Guardar cobro"}
+                </Button>
+              </div>
             </div>
 
-            {/* Resumen financiero compacto (Fila 6) */}
-            <div className="grid grid-cols-3 gap-2 py-1.5 px-3 rounded-lg border border-border/70 bg-background/50 text-xs items-center">
+            {/* Resumen financiero compacto (Mobile) */}
+            <div className="sm:hidden grid grid-cols-3 gap-2 py-1.5 px-3 rounded-lg border border-border/70 bg-background/50 text-xs items-center">
               <div className="min-w-0">
                 <span className="block text-[11px] font-medium text-muted-foreground">Importe</span>
-                <span className="font-semibold text-foreground text-xs sm:text-sm truncate block">
+                <span className="font-semibold text-foreground text-xs truncate block">
                   {money(formPriceArs)}
                 </span>
               </div>
               <div className="min-w-0 text-center">
                 <span className="block text-[11px] font-medium text-muted-foreground">Método</span>
-                <span className="font-semibold text-foreground text-xs sm:text-sm truncate block">
+                <span className="font-semibold text-foreground text-xs truncate block">
                   {formPaymentMethod}
                 </span>
               </div>
               <div className="min-w-0 text-right">
                 <span className="block text-[11px] font-medium text-muted-foreground">Total</span>
-                <span className="font-bold text-foreground text-xs sm:text-sm truncate block">
+                <span className="font-bold text-foreground text-xs truncate block">
                   {money(balanceToCollectAtShop)}
                 </span>
               </div>
             </div>
 
-            {/* Botones de acción */}
-            <div className="flex items-center justify-end gap-2 pt-1">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={editingPayment ? handleCancelEdit : handleResetForm}
-                disabled={isSubmitting}
-                className="h-8 px-3 text-xs"
-              >
-                {editingPayment ? "Cancelar edición" : "Limpiar"}
-              </Button>
+            {/* CTA Guardar cobro (Mobile) */}
+            <div className="sm:hidden pt-1">
               <Button
                 type="submit"
                 size="sm"
                 disabled={isSubmitting}
-                className="h-8 px-4 text-xs font-semibold bg-primary hover:bg-primary/90 text-primary-foreground"
+                className="w-full h-9 text-xs font-semibold bg-primary hover:bg-primary/90 text-primary-foreground"
               >
                 {isSubmitting
                   ? "Guardando…"
@@ -985,7 +1007,7 @@ export function AdminPayments() {
 
         {/* 2. Filtros de historial persistido */}
         <section
-          className="p-3.5 sm:p-4 rounded-xl border border-border bg-surface shadow-xs mb-4 sm:mb-5"
+          className="p-3.5 sm:p-4 rounded-xl border border-border bg-surface shadow-xs mb-6"
           aria-label="Filtros de registros de pagos"
         >
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -1095,7 +1117,7 @@ export function AdminPayments() {
 
         {/* 3. Listado de servicios registrados */}
         <section
-          className="rounded-xl border border-border bg-surface shadow-xs overflow-hidden mb-4 sm:mb-5"
+          className="rounded-xl border border-border bg-surface shadow-xs overflow-hidden mb-6"
           aria-label="Listado de servicios registrados"
         >
           <div className="px-4 py-3 border-b border-border/80 flex items-center justify-between">

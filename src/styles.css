@@ -3420,6 +3420,8 @@ html[data-theme='dark'] .admin-section-nav-link.is-active:active {
 .payment-field-sena { grid-area: sena; }
 .payment-field-cliente { grid-area: cliente; }
 .payment-field-contacto { grid-area: contacto; }
+.payment-field-total { grid-area: total; }
+.payment-field-submit { grid-area: submit; }
 
 /* Mobile (< 640px): Grilla consistente de 2 columnas con orden optimizado */
 @media (max-width: 639px) {
@@ -3447,25 +3449,27 @@ html[data-theme='dark'] .admin-section-nav-link.is-active:active {
   }
 }
 
-/* Desktop (>= 640px): Preserva exactamente la distribución original */
+/* Desktop (>= 640px): Grilla exacta de 4 columnas x 3 filas con Total y Guardar cobro integrados */
 @media (min-width: 640px) {
   .admin-payment-form-grid {
-    grid-template-columns: repeat(12, minmax(0, 1fr));
-    gap: 0.75rem 0.75rem;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.65rem 0.75rem;
+    align-items: start;
     grid-template-areas:
-      "barbero barbero barbero barbero fecha fecha fecha fecha horario horario horario horario"
-      "servicio servicio servicio servicio importe importe importe importe descuento descuento descuento descuento"
-      "cliente cliente cliente contacto contacto contacto metodo metodo metodo sena sena sena";
+      "fecha horario barbero servicio"
+      "metodo importe descuento sena"
+      "cliente contacto total submit";
   }
 
   .admin-payment-form-grid.has-other {
-    grid-template-columns: repeat(12, minmax(0, 1fr));
-    gap: 0.75rem 0.75rem;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.65rem 0.75rem;
+    align-items: start;
     grid-template-areas:
-      "barbero barbero barbero barbero fecha fecha fecha fecha horario horario horario horario"
-      "servicio servicio servicio servicio detalle detalle detalle detalle importe importe importe importe"
-      "descuento descuento descuento descuento . . . . . . . ."
-      "cliente cliente cliente contacto contacto contacto metodo metodo metodo sena sena sena";
+      "fecha horario barbero servicio"
+      "detalle detalle detalle detalle"
+      "metodo importe descuento sena"
+      "cliente contacto total submit";
   }
 }
 
@@ -3503,6 +3507,8 @@ html[data-theme='dark'] .admin-section-nav-link.is-active:active {
 .payment-field-sena,
 .payment-field-cliente,
 .payment-field-contacto,
+.payment-field-total,
+.payment-field-submit,
 .manual-appointment-grid > div,
 .manual-grid-field,
 .admin-mobile-filters > div,
@@ -3652,6 +3658,8 @@ html[data-theme='dark'] .admin-section-nav-link.is-active:active {
 .admin-payment-form-grid input,
 .admin-payment-form-grid select,
 .admin-payment-form-grid output.select-control,
+.payment-field-total output,
+.payment-field-submit button,
 .admin-shell section[aria-label*="Filtros"] input[type="date"],
 .admin-shell section[aria-label*="Filtros"] select,
 .admin-page section[aria-label*="Filtros"] input[type="date"],
