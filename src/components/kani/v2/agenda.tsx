@@ -21,28 +21,19 @@ export function V2Home() {
   const staff = useAdminStaff();
   const today = businessDateToday();
   const now = businessTimeNow();
-  const appointments = scopeV2(
-    data.appointments,
-    staff.profile.role,
-    staff.profile.barber_id,
-    data.barberId,
-  );
+  const appointments = scopeV2(data.appointments, staff.profile.role, staff.profile.barber_id);
   const daily = appointments.filter((a) => a.date === today);
   const next = appointments.find(
     (a) =>
       (a.date > today || (a.date === today && a.time >= now)) &&
       ["CONFIRMED", "PENDING"].includes(a.statusCode),
   );
-  const payments = scopeV2(
-    data.payments,
-    staff.profile.role,
-    staff.profile.barber_id,
-    data.barberId,
-  ).filter((p) => p.paymentDate === today);
+  const payments = scopeV2(data.payments, staff.profile.role, staff.profile.barber_id).filter(
+    (p) => p.paymentDate === today,
+  );
   const nextSpace = data.starts
     .filter(
       (start) =>
-        (data.barberId === "ALL" || start.barber_id === data.barberId) &&
         (staff.profile.role === "ADMIN" || start.barber_id === staff.profile.barber_id) &&
         start.compatible_services.length > 0 &&
         (start.slot_date > today ||
@@ -53,9 +44,6 @@ export function V2Home() {
     )[0];
   return (
     <main className="v2-page">
-      <div className="v2-home-controls">
-        <BarberFilter />
-      </div>
       <section className="v2-hero-grid">
         <article className="v2-next">
           <span className="v2-eyebrow">PRÓXIMO TURNO</span>
@@ -111,7 +99,7 @@ export function V2Home() {
         </div>
         <div className="v2-team">
           {staff.barbers
-            .filter((b) => data.barberId === "ALL" || b.id === data.barberId)
+            .filter((b) => staff.profile.role === "ADMIN" || b.id === staff.profile.barber_id)
             .map((b) => (
               <article key={b.id}>
                 <span className="v2-avatar">{b.name[0]}</span>

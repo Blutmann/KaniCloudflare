@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { useAdminStaff } from "@/lib/kani-admin-context";
-import { readRealAppointments, type RealAppointment } from "@/lib/kani-appointments";
+import { readStaffAppointments, type RealAppointment } from "@/lib/kani-appointments";
 import { fetchServicePayments, type ServicePayment } from "@/lib/kani-payments";
 import {
   readConfiguredServices,
@@ -49,13 +49,28 @@ export function V2DataProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     setError("");
     try {
+      if (
+        staff.profile.role !== "ADMIN" &&
+        (staff.profile.role !== "BARBER" || !staff.profile.barber_id)
+      ) {
+        throw new Error("No pudimos determinar el barbero asociado a tu usuario.");
+      }
       const today = businessDateToday();
+      const barbers = staff.barbers.filter(
+        (barber) => staff.profile.role === "ADMIN" || barber.id === staff.profile.barber_id,
+      );
+      let capabilityQuery = supabase
+        .from("appointments")
+        .select("deposit_paid, deposit_amount_ars")
+        .limit(1);
+      if (staff.profile.role === "BARBER")
+        capabilityQuery = capabilityQuery.eq("barber_id", staff.profile.barber_id!);
       const [appointments, payments, starts, services, clientResult, capability] =
         await Promise.all([
-          readRealAppointments({ bypassCache: true }),
+          readStaffAppointments(staff),
           fetchServicePayments({}, staff),
           Promise.all(
-            staff.barbers.map((b) =>
+            barbers.map((b) =>
               readAvailabilityStartsForRange(b.id, {
                 start: today,
                 end: addCalendarDays(today, 7),
@@ -64,7 +79,7 @@ export function V2DataProvider({ children }: { children: ReactNode }) {
           ).then((rows) => rows.flat()),
           readConfiguredServices(),
           supabase.from("clients").select("*").order("name"),
-          supabase.from("appointments").select("deposit_paid, deposit_amount_ars").limit(1),
+          capabilityQuery,
         ]);
       if (clientResult.error) throw clientResult.error;
       setData({

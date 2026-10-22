@@ -4,7 +4,7 @@ import { useAdminStaff } from "@/lib/kani-admin-context";
 import { scopeV2, paymentSummary, changePercent } from "@/lib/kani-v2";
 import { businessDateToday, addCalendarDays } from "@/lib/kani-mobile-appointments";
 import { money } from "@/lib/kani-model";
-import { BarberFilter, Empty, Metric, PageTitle, statusLabels } from "./shared";
+import { BarberFilter, Empty, Metric, statusLabels } from "./shared";
 import { useV2 } from "./data";
 
 export function V2Insights() {
@@ -43,11 +43,6 @@ export function V2Insights() {
   }));
   return (
     <main className="v2-page">
-      <PageTitle
-        eyebrow="CLIENTE → APRENDIZAJE"
-        title="Entender para crecer"
-        description="Señales de tu actividad para decidir qué hacer después."
-      />
       <div className="v2-filters">
         <label className="v2-field">
           Período

@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { Tables } from '@/integrations/supabase/types';
+import type { AuthenticatedStaff } from '@/lib/kani-auth';
 import type { Appointment, Barber, ServiceId, Status } from '@/lib/kani-model';
 import { sendAppointmentNotification } from '@/lib/kani-notifications.functions';
 
@@ -282,27 +283,31 @@ export function clearAppointmentsReferenceCache() {
   inFlightAppointments = null;
 }
 
-async function executeReadRealAppointments(options?: { bypassCache?: boolean }): Promise<RealAppointment[]> {
+async function executeReadRealAppointments(options?: { bypassCache?: boolean; barberId?: string }): Promise<RealAppointment[]> {
   const fullColumns = 'id, request_number, client_id, barber_id, service_id, booking_date, start_time, end_time, status, notes, created_at, updated_at, is_manual, origin, created_by_user_id, created_by_display_name, recurring_rule_id, deposit_required, deposit_paid, deposit_amount_ars, balance_paid, no_show_decision, no_show_refund_amount_ars';
   const baseColumns = 'id, request_number, client_id, barber_id, service_id, booking_date, start_time, end_time, status, notes, created_at, updated_at';
 
   let rows: AppointmentRow[] | null = null;
-  const { data: fullRows, error: fullError } = await supabase
+  let fullQuery = supabase
     .from('appointments')
     .select(fullColumns)
     .order('booking_date', { ascending: true })
     .order('start_time', { ascending: true });
+  if (options?.barberId) fullQuery = fullQuery.eq('barber_id', options.barberId);
+  const { data: fullRows, error: fullError } = await fullQuery;
 
   if (!fullError && fullRows) {
     rows = fullRows as AppointmentRow[];
   } else if (fullError && fullError.message && (fullError.message.includes('deposit_amount_ars') || fullError.message.includes('is_manual') || fullError.code === '42703')) {
     // Schema fallback if migrations have not yet been applied to the target database
     console.warn('[KANI appointments] Columnas extendidas no detectadas en appointments, ejecutando consulta base:', fullError.message);
-    const { data: fallbackRows, error: fallbackError } = await supabase
+    let fallbackQuery = supabase
       .from('appointments')
       .select(baseColumns)
       .order('booking_date', { ascending: true })
       .order('start_time', { ascending: true });
+    if (options?.barberId) fallbackQuery = fallbackQuery.eq('barber_id', options.barberId);
+    const { data: fallbackRows, error: fallbackError } = await fallbackQuery;
 
     if (fallbackError) throw fallbackError;
     rows = (fallbackRows ?? []) as AppointmentRow[];
@@ -401,6 +406,17 @@ async function executeReadRealAppointments(options?: { bypassCache?: boolean }):
       noShowReason: exc?.reason ?? null,
     } satisfies RealAppointment];
   });
+}
+
+/** V2 staff reads use verified identity and never reuse another session's in-flight read. */
+export async function readStaffAppointments(staff: AuthenticatedStaff): Promise<RealAppointment[]> {
+  if (staff.profile.role === 'ADMIN') {
+    return executeReadRealAppointments({ bypassCache: true });
+  }
+  if (staff.profile.role !== 'BARBER' || !staff.profile.barber_id) {
+    throw new Error('No pudimos determinar el barbero asociado a tu usuario.');
+  }
+  return executeReadRealAppointments({ bypassCache: true, barberId: staff.profile.barber_id });
 }
 
 export async function updateRealAppointmentStatus(id: string, status: 'CONFIRMED' | 'CANCELLED' | 'COMPLETED' | 'NO_SHOW') {
