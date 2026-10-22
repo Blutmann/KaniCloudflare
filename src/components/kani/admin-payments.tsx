@@ -763,7 +763,7 @@ export function AdminPayments() {
                   <option value="Corte">Corte</option>
                   <option value="Corte y barba">Corte y barba</option>
                   <option value="Barba">Barba</option>
-                  <option value="Otros">Otros (Personalizado)</option>
+                  <option value="Otros">Otros</option>
                 </select>
               </div>
 
@@ -967,20 +967,20 @@ export function AdminPayments() {
 
             {/* Resumen financiero compacto (Mobile) */}
             <div className="sm:hidden grid grid-cols-3 gap-2 py-1.5 px-3 rounded-lg border border-border/70 bg-background/50 text-xs items-center">
-              <div className="min-w-0">
-                <span className="block text-[11px] font-medium text-muted-foreground">Importe</span>
-                <span className="font-semibold text-foreground text-xs truncate block">
-                  {money(formPriceArs)}
+              <div className="min-w-0 text-left">
+                <span className="block text-xs font-medium text-muted-foreground mb-0.5">Servicio</span>
+                <span className="font-semibold text-foreground text-xs truncate block" title={formServiceName === "Otros" && formOtherDetail.trim() ? formOtherDetail.trim() : formServiceName}>
+                  {formServiceName === "Otros" && formOtherDetail.trim() ? formOtherDetail.trim() : formServiceName}
                 </span>
               </div>
               <div className="min-w-0 text-center">
-                <span className="block text-[11px] font-medium text-muted-foreground">Método</span>
+                <span className="block text-xs font-medium text-muted-foreground mb-0.5">Método</span>
                 <span className="font-semibold text-foreground text-xs truncate block">
                   {formPaymentMethod}
                 </span>
               </div>
               <div className="min-w-0 text-right">
-                <span className="block text-[11px] font-medium text-muted-foreground">Total</span>
+                <span className="block text-xs font-medium text-muted-foreground mb-0.5">Total</span>
                 <span className="font-bold text-foreground text-xs truncate block">
                   {money(balanceToCollectAtShop)}
                 </span>

@@ -3405,7 +3405,7 @@ html[data-theme='dark'] .admin-section-nav-link.is-active:active {
    ============================================================================== */
 .admin-payment-form-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
   gap: 0.55rem 0.6rem;
 }
 
@@ -3423,27 +3423,27 @@ html[data-theme='dark'] .admin-section-nav-link.is-active:active {
 .payment-field-total { grid-area: total; }
 .payment-field-submit { grid-area: submit; }
 
-/* Mobile (< 640px): Grilla consistente de 2 columnas con orden optimizado */
+/* Mobile (< 640px): Grilla consistente de 2 columnas con proporción 60% / 40% y orden optimizado */
 @media (max-width: 639px) {
   .admin-payment-form-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
     gap: 0.6rem 0.65rem;
     grid-template-areas:
       "fecha horario"
       "barbero servicio"
-      "importe metodo"
+      "metodo importe"
       "cliente sena"
       "contacto descuento";
   }
 
   .admin-payment-form-grid.has-other {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
     gap: 0.6rem 0.65rem;
     grid-template-areas:
       "fecha horario"
       "barbero servicio"
       "detalle detalle"
-      "importe metodo"
+      "metodo importe"
       "cliente sena"
       "contacto descuento";
   }
