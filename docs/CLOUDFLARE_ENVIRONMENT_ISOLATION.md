@@ -4,7 +4,7 @@
 
 - `https://kanibarber.com`: reservas reales, en la base de datos de producción.
 - URL `workers.dev` de Cloudflare: reservas de prueba, en una base de datos DEV separada.
-- Ambos entornos envían notificaciones por Resend. Los asuntos de DEV/PREVIEW llevan el prefijo `[DEV/PREVIEW]`.
+- Ambos entornos envían notificaciones por Resend. Los asuntos de DEV/PREVIEW llevan el prefijo `[PRUEBA]`.
 
 ## Regla crítica: no compartir la base de datos
 
@@ -39,11 +39,11 @@ No guardar ni commitear claves secretas en el repositorio. Las claves Supabase d
 ## Validación antes de darlo por terminado
 
 1. Crear una reserva de prueba desde la URL Preview.
-2. Verificar que la fila aparece únicamente en el proyecto Supabase DEV y que llega el email con asunto `[DEV/PREVIEW]`.
+2. Verificar que la fila aparece únicamente en el proyecto Supabase DEV y que llega el email con asunto `[PRUEBA]`.
 3. Verificar que la reserva no aparece en el panel online y que no bloquea el horario en producción.
 4. Crear una reserva controlada en producción y comprobar que llega sin prefijo DEV y aparece únicamente en Supabase PROD.
 5. No promover una versión a producción hasta terminar estas pruebas.
 
 ## Notificaciones en Cloudflare
 
-Las funciones del servidor leen `RESEND_API_KEY` y `RESEND_FROM_EMAIL` desde los bindings de runtime de Cloudflare, con fallback a `process.env` para entornos compatibles. Si falta alguna, el registro de notificación indicará específicamente `RESEND_API_KEY_MISSING` o `RESEND_FROM_EMAIL_MISSING`. El asunto solo queda sin prefijo cuando `KANI_ENVIRONMENT=PRODUCTION`; si la variable falta, el email se etiqueta `[UNCONFIGURED]` para no confundirlo con producción.
+Las funciones del servidor leen `RESEND_API_KEY` y `RESEND_FROM_EMAIL` desde los bindings de runtime de Cloudflare, con fallback a `process.env` para entornos compatibles. Si falta alguna, el registro de notificación indicará específicamente `RESEND_API_KEY_MISSING` o `RESEND_FROM_EMAIL_MISSING`. El proyecto Supabase de pruebas `iockpxtkflyjfagkvgnr` utiliza siempre `[PRUEBA]`, incluso si falta `KANI_ENVIRONMENT`. Los entornos de prueba conocidos también utilizan ese prefijo. Producción conserva el asunto sin prefijo cuando `KANI_ENVIRONMENT=PRODUCTION`. Un despliegue no identificado y sin esa variable conserva `[UNCONFIGURED]`.

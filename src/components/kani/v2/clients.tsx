@@ -143,7 +143,7 @@ export function V2Clients() {
           if (!open) setSelectedId(null);
         }}
       >
-        <DialogContent className="v2-client-dialog">
+        <DialogContent className="v2-dialog v2-client-dialog">
           <DialogTitle>{selected?.name}</DialogTitle>
           <DialogDescription>
             Historial disponible {isAdmin ? "en Kani" : "en tu actividad"}. Los datos derivados no
@@ -234,7 +234,7 @@ export function V2Clients() {
           if (!open) setEditing(null);
         }}
       >
-        <DialogContent>
+        <DialogContent className="v2-dialog">
           <DialogTitle>
             {editing === "new" ? "Alta rápida · propuesta" : "Editar ficha · propuesta"}
           </DialogTitle>

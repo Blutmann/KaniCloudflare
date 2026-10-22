@@ -106,38 +106,43 @@ function V2Shell() {
   const { loading, error, refresh } = useV2();
   return (
     <div className="v2-shell">
-      <aside className="v2-sidebar">
-        <div className="v2-brand">
-          <span>KANI</span>
-          <small>ESTUDIO / ADMIN V2</small>
-        </div>
-        <nav aria-label="Administración V2">
-          {sections.map(({ to, title, icon: Icon }) => (
-            <Link key={to} to={to} activeProps={{ className: "is-active", "aria-current": "page" }}>
-              <Icon size={19} />
-              <span>{title}</span>
-            </Link>
-          ))}
-        </nav>
-        <a className="v2-old" href="/admin">
-          Panel actual <ArrowUpRight size={16} />
-        </a>
-      </aside>
-      <div className="v2-workspace">
+      <header className="v2-navigation">
         <div className="v2-environment">
           <span>
             <i />
-            ENTORNO DE PRUEBAS · V2
+            ADMINISTRACIÓN · V2 · PRUEBAS
           </span>
+          <a className="v2-old" href="/admin">
+            Comparar con V1 <ArrowUpRight size={13} />
+          </a>
+        </div>
+        <nav className="admin-section-nav v2-nav" aria-label="Administración V2">
+          <div className="admin-section-nav-items">
+            {sections.map(({ to, title, icon: Icon }) => (
+              <Link
+                key={to}
+                to={to}
+                className="admin-section-nav-link"
+                activeProps={{ className: "is-active", "aria-current": "page" }}
+              >
+                <Icon size={16} aria-hidden="true" />
+                <span>{title}</span>
+              </Link>
+            ))}
+          </div>
+          <div className="admin-section-nav-divider" aria-hidden="true" />
           <button
             type="button"
+            className="admin-section-nav-refresh-btn"
             onClick={() => void refresh()}
             disabled={loading}
             aria-label="Actualizar datos"
           >
             <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
           </button>
-        </div>
+        </nav>
+      </header>
+      <div className="v2-workspace">
         {error && (
           <div role="alert" className="v2-alert">
             {error} <button onClick={() => void refresh()}>Reintentar</button>

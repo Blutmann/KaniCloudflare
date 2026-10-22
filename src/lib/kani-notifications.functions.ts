@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
+import { notificationSubject } from './kani-email-environment';
 
 import type { Database } from "@/integrations/supabase/types";
 
@@ -103,11 +104,11 @@ export const sendAppointmentNotification = createServerFn({ method: "POST" })
         transferHolderName: event.transfer_holder_name,
       };
       const email = buildEmail(payload);
-      const environment = (getRuntimeEnv("KANI_ENVIRONMENT") ?? "UNCONFIGURED").trim().toUpperCase();
-      // Never let an unlabelled non-production deployment send a production-looking subject.
-      const subject = environment === "PRODUCTION"
-        ? email.subject
-        : `[${environment}] ${email.subject}`;
+      const subject = notificationSubject(
+        email.subject,
+        getRuntimeEnv('KANI_ENVIRONMENT'),
+        getRuntimeEnv('SUPABASE_URL') ?? getRuntimeEnv('VITE_SUPABASE_URL'),
+      );
       const response = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: {

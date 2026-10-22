@@ -296,7 +296,7 @@ export function V2Appointments() {
             <div className="v2-appointment-actions">
               {a.statusCode === "PENDING" && (
                 <button
-                  className="v2-primary"
+                  className="v2-primary action-confirm"
                   disabled={busy}
                   onClick={() => setAction({ appointment: a, status: "CONFIRMED" })}
                 >
@@ -305,7 +305,7 @@ export function V2Appointments() {
               )}
               {["PENDING", "CONFIRMED"].includes(a.statusCode) && (
                 <button
-                  className="v2-secondary"
+                  className="v2-secondary action-reject"
                   disabled={busy}
                   onClick={() => setAction({ appointment: a, status: "CANCELLED" })}
                 >
@@ -318,7 +318,7 @@ export function V2Appointments() {
                 </Link>
               )}
               <button
-                className="v2-quiet"
+                className="v2-quiet action-mail"
                 disabled={busy || !a.email}
                 onClick={() => void notify(a.id)}
               >
@@ -338,7 +338,7 @@ export function V2Appointments() {
           if (!open && !busy) setAction(null);
         }}
       >
-        <DialogContent>
+        <DialogContent className="v2-dialog">
           <DialogTitle>
             {action?.status === "CONFIRMED" ? "Confirmar turno" : "Cancelar turno"}
           </DialogTitle>
