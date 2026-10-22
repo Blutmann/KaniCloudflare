@@ -546,12 +546,12 @@ export function AdminPayments() {
           aria-label={editingPayment ? "Editar servicio registrado" : "Registrar servicio"}
         >
           <div className="flex items-center justify-between gap-3 mb-3 pb-2.5 border-b border-border/60">
-            <div className="flex items-center gap-1.5">
+            {editingPayment && <div className="flex items-center gap-1.5">
               <Scissors className="w-4 h-4 text-primary shrink-0" />
               <h2 className="text-sm font-semibold text-foreground">
-                {editingPayment ? "Editar servicio registrado" : "Registrar servicio"}
+                Editar servicio registrado
               </h2>
-            </div>
+            </div>}
 
             {/* Selector de Origen: Sin turno / Con turno */}
             <div className="flex items-center gap-1 p-0.5 bg-muted/40 rounded-lg border border-border shrink-0" role="radiogroup" aria-label="Origen del servicio">

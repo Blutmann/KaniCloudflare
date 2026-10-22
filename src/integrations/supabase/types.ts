@@ -836,6 +836,7 @@ export type Database = {
           updated_at: string
           updated_by: string | null
         }[]
+      }
       create_manual_appointment: {
         Args: {
           p_barber_id: string

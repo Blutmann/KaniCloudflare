@@ -359,13 +359,6 @@ export function AdminStatistics() {
       {/* BLOQUE 1: TURNOS (Agenda) */}
       {/* ========================================================================= */}
       <section className="mb-8" aria-label="Bloque de turnos y agenda">
-        <div className="flex items-center justify-between gap-2 mb-3 pb-2 border-b border-border/60">
-          <h2 className="text-sm sm:text-base font-semibold text-foreground flex items-center gap-1.5">
-            <CalendarDays className="w-4 h-4 text-primary" />
-            <span>Turnos</span>
-          </h2>
-        </div>
-
         {/* KPIs de Turnos */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-4">
           {/* Total */}

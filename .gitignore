@@ -13,6 +13,8 @@ lerna-debug.log*
 !.env.example
 
 node_modules
+.pnpm-store/
+.validation/
 dist
 dist-ssr
 .output

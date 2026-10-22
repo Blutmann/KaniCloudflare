@@ -11,9 +11,17 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
+import { Route as AdminV2RouteImport } from './routes/admin-v2'
 import { Route as CaseStudyRouteImport } from './routes/case-study'
 import { Route as EstudioRouteImport } from './routes/estudio'
 import { Route as ReservarRouteImport } from './routes/reservar'
+import { Route as AdminV2IndexRouteImport } from './routes/admin-v2.index'
+import { Route as AdminV2ClientesRouteImport } from './routes/admin-v2.clientes'
+import { Route as AdminV2DatosRouteImport } from './routes/admin-v2.datos'
+import { Route as AdminV2HorariosRouteImport } from './routes/admin-v2.horarios'
+import { Route as AdminV2InicioRouteImport } from './routes/admin-v2.inicio'
+import { Route as AdminV2PagosRouteImport } from './routes/admin-v2.pagos'
+import { Route as AdminV2TurnosRouteImport } from './routes/admin-v2.turnos'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminDatosRouteImport } from './routes/admin.datos'
 import { Route as AdminEstadisticasRouteImport } from './routes/admin.estadisticas'
@@ -33,6 +41,11 @@ const AdminRoute = AdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminV2Route = AdminV2RouteImport.update({
+  id: '/admin-v2',
+  path: '/admin-v2',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CaseStudyRoute = CaseStudyRouteImport.update({
   id: '/case-study',
   path: '/case-study',
@@ -47,6 +60,41 @@ const ReservarRoute = ReservarRouteImport.update({
   id: '/reservar',
   path: '/reservar',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AdminV2IndexRoute = AdminV2IndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminV2Route,
+} as any)
+const AdminV2ClientesRoute = AdminV2ClientesRouteImport.update({
+  id: '/clientes',
+  path: '/clientes',
+  getParentRoute: () => AdminV2Route,
+} as any)
+const AdminV2DatosRoute = AdminV2DatosRouteImport.update({
+  id: '/datos',
+  path: '/datos',
+  getParentRoute: () => AdminV2Route,
+} as any)
+const AdminV2HorariosRoute = AdminV2HorariosRouteImport.update({
+  id: '/horarios',
+  path: '/horarios',
+  getParentRoute: () => AdminV2Route,
+} as any)
+const AdminV2InicioRoute = AdminV2InicioRouteImport.update({
+  id: '/inicio',
+  path: '/inicio',
+  getParentRoute: () => AdminV2Route,
+} as any)
+const AdminV2PagosRoute = AdminV2PagosRouteImport.update({
+  id: '/pagos',
+  path: '/pagos',
+  getParentRoute: () => AdminV2Route,
+} as any)
+const AdminV2TurnosRoute = AdminV2TurnosRouteImport.update({
+  id: '/turnos',
+  path: '/turnos',
+  getParentRoute: () => AdminV2Route,
 } as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
@@ -92,9 +140,16 @@ const AdminTurnosRoute = AdminTurnosRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/admin-v2': typeof AdminV2RouteWithChildren
   '/case-study': typeof CaseStudyRoute
   '/estudio': typeof EstudioRoute
   '/reservar': typeof ReservarRoute
+  '/admin-v2/clientes': typeof AdminV2ClientesRoute
+  '/admin-v2/datos': typeof AdminV2DatosRoute
+  '/admin-v2/horarios': typeof AdminV2HorariosRoute
+  '/admin-v2/inicio': typeof AdminV2InicioRoute
+  '/admin-v2/pagos': typeof AdminV2PagosRoute
+  '/admin-v2/turnos': typeof AdminV2TurnosRoute
   '/admin/datos': typeof AdminDatosRoute
   '/admin/estadisticas': typeof AdminEstadisticasRoute
   '/admin/horarios': typeof AdminHorariosRoute
@@ -102,6 +157,7 @@ export interface FileRoutesByFullPath {
   '/admin/movil': typeof AdminMovilRoute
   '/admin/pagos': typeof AdminPagosRoute
   '/admin/turnos': typeof AdminTurnosRoute
+  '/admin-v2/': typeof AdminV2IndexRoute
   '/admin/': typeof AdminIndexRoute
 }
 export interface FileRoutesByTo {
@@ -109,27 +165,44 @@ export interface FileRoutesByTo {
   '/case-study': typeof CaseStudyRoute
   '/estudio': typeof EstudioRoute
   '/reservar': typeof ReservarRoute
+  '/admin-v2/clientes': typeof AdminV2ClientesRoute
+  '/admin-v2/datos': typeof AdminV2DatosRoute
+  '/admin-v2/horarios': typeof AdminV2HorariosRoute
+  '/admin-v2/inicio': typeof AdminV2InicioRoute
+  '/admin-v2/pagos': typeof AdminV2PagosRoute
+  '/admin-v2/turnos': typeof AdminV2TurnosRoute
+  '/admin/datos': typeof AdminDatosRoute
   '/admin/estadisticas': typeof AdminEstadisticasRoute
   '/admin/horarios': typeof AdminHorariosRoute
   '/admin/mantenimiento': typeof AdminMantenimientoRoute
   '/admin/movil': typeof AdminMovilRoute
   '/admin/pagos': typeof AdminPagosRoute
   '/admin/turnos': typeof AdminTurnosRoute
+  '/admin-v2': typeof AdminV2IndexRoute
   '/admin': typeof AdminIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/admin-v2': typeof AdminV2RouteWithChildren
   '/case-study': typeof CaseStudyRoute
   '/estudio': typeof EstudioRoute
   '/reservar': typeof ReservarRoute
+  '/admin-v2/clientes': typeof AdminV2ClientesRoute
+  '/admin-v2/datos': typeof AdminV2DatosRoute
+  '/admin-v2/horarios': typeof AdminV2HorariosRoute
+  '/admin-v2/inicio': typeof AdminV2InicioRoute
+  '/admin-v2/pagos': typeof AdminV2PagosRoute
+  '/admin-v2/turnos': typeof AdminV2TurnosRoute
+  '/admin/datos': typeof AdminDatosRoute
   '/admin/estadisticas': typeof AdminEstadisticasRoute
   '/admin/horarios': typeof AdminHorariosRoute
   '/admin/mantenimiento': typeof AdminMantenimientoRoute
   '/admin/movil': typeof AdminMovilRoute
   '/admin/pagos': typeof AdminPagosRoute
   '/admin/turnos': typeof AdminTurnosRoute
+  '/admin-v2/': typeof AdminV2IndexRoute
   '/admin/': typeof AdminIndexRoute
 }
 export interface FileRouteTypes {
@@ -137,9 +210,16 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
+    | '/admin-v2'
     | '/case-study'
     | '/estudio'
     | '/reservar'
+    | '/admin-v2/clientes'
+    | '/admin-v2/datos'
+    | '/admin-v2/horarios'
+    | '/admin-v2/inicio'
+    | '/admin-v2/pagos'
+    | '/admin-v2/turnos'
     | '/admin/datos'
     | '/admin/estadisticas'
     | '/admin/horarios'
@@ -147,6 +227,7 @@ export interface FileRouteTypes {
     | '/admin/movil'
     | '/admin/pagos'
     | '/admin/turnos'
+    | '/admin-v2/'
     | '/admin/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -154,32 +235,50 @@ export interface FileRouteTypes {
     | '/case-study'
     | '/estudio'
     | '/reservar'
+    | '/admin-v2/clientes'
+    | '/admin-v2/datos'
+    | '/admin-v2/horarios'
+    | '/admin-v2/inicio'
+    | '/admin-v2/pagos'
+    | '/admin-v2/turnos'
+    | '/admin/datos'
     | '/admin/estadisticas'
     | '/admin/horarios'
     | '/admin/mantenimiento'
     | '/admin/movil'
     | '/admin/pagos'
     | '/admin/turnos'
+    | '/admin-v2'
     | '/admin'
   id:
     | '__root__'
     | '/'
     | '/admin'
+    | '/admin-v2'
     | '/case-study'
     | '/estudio'
     | '/reservar'
+    | '/admin-v2/clientes'
+    | '/admin-v2/datos'
+    | '/admin-v2/horarios'
+    | '/admin-v2/inicio'
+    | '/admin-v2/pagos'
+    | '/admin-v2/turnos'
+    | '/admin/datos'
     | '/admin/estadisticas'
     | '/admin/horarios'
     | '/admin/mantenimiento'
     | '/admin/movil'
     | '/admin/pagos'
     | '/admin/turnos'
+    | '/admin-v2/'
     | '/admin/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
+  AdminV2Route: typeof AdminV2RouteWithChildren
   CaseStudyRoute: typeof CaseStudyRoute
   EstudioRoute: typeof EstudioRoute
   ReservarRoute: typeof ReservarRoute
@@ -199,6 +298,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin-v2': {
+      id: '/admin-v2'
+      path: '/admin-v2'
+      fullPath: '/admin-v2'
+      preLoaderRoute: typeof AdminV2RouteImport
       parentRoute: typeof rootRouteImport
     }
     '/case-study': {
@@ -221,6 +327,55 @@ declare module '@tanstack/react-router' {
       fullPath: '/reservar'
       preLoaderRoute: typeof ReservarRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/admin-v2/': {
+      id: '/admin-v2/'
+      path: '/'
+      fullPath: '/admin-v2/'
+      preLoaderRoute: typeof AdminV2IndexRouteImport
+      parentRoute: typeof AdminV2Route
+    }
+    '/admin-v2/clientes': {
+      id: '/admin-v2/clientes'
+      path: '/clientes'
+      fullPath: '/admin-v2/clientes'
+      preLoaderRoute: typeof AdminV2ClientesRouteImport
+      parentRoute: typeof AdminV2Route
+    }
+    '/admin-v2/datos': {
+      id: '/admin-v2/datos'
+      path: '/datos'
+      fullPath: '/admin-v2/datos'
+      preLoaderRoute: typeof AdminV2DatosRouteImport
+      parentRoute: typeof AdminV2Route
+    }
+    '/admin-v2/horarios': {
+      id: '/admin-v2/horarios'
+      path: '/horarios'
+      fullPath: '/admin-v2/horarios'
+      preLoaderRoute: typeof AdminV2HorariosRouteImport
+      parentRoute: typeof AdminV2Route
+    }
+    '/admin-v2/inicio': {
+      id: '/admin-v2/inicio'
+      path: '/inicio'
+      fullPath: '/admin-v2/inicio'
+      preLoaderRoute: typeof AdminV2InicioRouteImport
+      parentRoute: typeof AdminV2Route
+    }
+    '/admin-v2/pagos': {
+      id: '/admin-v2/pagos'
+      path: '/pagos'
+      fullPath: '/admin-v2/pagos'
+      preLoaderRoute: typeof AdminV2PagosRouteImport
+      parentRoute: typeof AdminV2Route
+    }
+    '/admin-v2/turnos': {
+      id: '/admin-v2/turnos'
+      path: '/turnos'
+      fullPath: '/admin-v2/turnos'
+      preLoaderRoute: typeof AdminV2TurnosRouteImport
+      parentRoute: typeof AdminV2Route
     }
     '/admin/': {
       id: '/admin/'
@@ -305,9 +460,33 @@ const AdminRouteChildren: AdminRouteChildren = {
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
+interface AdminV2RouteChildren {
+  AdminV2ClientesRoute: typeof AdminV2ClientesRoute
+  AdminV2DatosRoute: typeof AdminV2DatosRoute
+  AdminV2HorariosRoute: typeof AdminV2HorariosRoute
+  AdminV2InicioRoute: typeof AdminV2InicioRoute
+  AdminV2PagosRoute: typeof AdminV2PagosRoute
+  AdminV2TurnosRoute: typeof AdminV2TurnosRoute
+  AdminV2IndexRoute: typeof AdminV2IndexRoute
+}
+
+const AdminV2RouteChildren: AdminV2RouteChildren = {
+  AdminV2ClientesRoute: AdminV2ClientesRoute,
+  AdminV2DatosRoute: AdminV2DatosRoute,
+  AdminV2HorariosRoute: AdminV2HorariosRoute,
+  AdminV2InicioRoute: AdminV2InicioRoute,
+  AdminV2PagosRoute: AdminV2PagosRoute,
+  AdminV2TurnosRoute: AdminV2TurnosRoute,
+  AdminV2IndexRoute: AdminV2IndexRoute,
+}
+
+const AdminV2RouteWithChildren =
+  AdminV2Route._addFileChildren(AdminV2RouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
+  AdminV2Route: AdminV2RouteWithChildren,
   CaseStudyRoute: CaseStudyRoute,
   EstudioRoute: EstudioRoute,
   ReservarRoute: ReservarRoute,

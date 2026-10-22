@@ -2,6 +2,13 @@
 @source "../src";
 @import "tw-animate-css";
 
+/* Payment amounts override the centered shared select-control styling. */
+.admin-payment-form-grid .payment-field-importe output.select-control,
+.admin-payment-form-grid .payment-field-total output.select-control {
+  justify-content: flex-end;
+  text-align: right;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 /*
