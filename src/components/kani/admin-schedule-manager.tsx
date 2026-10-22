@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Check, CircleDot, Clock3, SlidersHorizontal, X, XCircle } from "lucide-react";
+import { Check, CheckCircle2, Clock3, SlidersHorizontal, X, XCircle } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import {
@@ -303,10 +303,11 @@ export function AdminScheduleManager() {
   return (
     <main className="site-container admin-schedule-page">
       <div className="admin-schedule-shell">
-        {/* 1. Filtros de horarios (idéntico a la card de filtros de Estadísticas) */}
-        <section className="p-3.5 rounded-xl border border-border bg-surface shadow-xs mb-4" aria-label="Filtros de horarios">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div className="min-w-0">
+        {/* 1. Card unificada de Filtros y Estados de horarios */}
+        <section className="p-3.5 sm:p-4 rounded-xl border border-border bg-surface shadow-xs mb-6" aria-label="Filtros de horarios">
+          <div className="admin-schedule-filter-grid">
+            {/* 1. Período */}
+            <div className="schedule-filter-periodo min-w-0">
               <label htmlFor="schedule-date-preset" className="block text-xs font-medium text-muted-foreground mb-1.5">
                 Período
               </label>
@@ -323,7 +324,9 @@ export function AdminScheduleManager() {
                 ))}
               </select>
             </div>
-            <div className="min-w-0">
+
+            {/* 2. Fecha */}
+            <div className="schedule-filter-fecha min-w-0">
               <label htmlFor="schedule-specific-date" className="block text-xs font-medium text-muted-foreground mb-1.5">
                 Fecha
               </label>
@@ -336,7 +339,9 @@ export function AdminScheduleManager() {
                 className="select-control w-full h-9 px-2 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20 leading-normal text-left min-w-0 max-w-full"
               />
             </div>
-            <div className="min-w-0">
+
+            {/* 3. Barbero */}
+            <div className="schedule-filter-barbero min-w-0">
               <label htmlFor="schedule-barber-filter" className="block text-xs font-medium text-muted-foreground mb-1.5">
                 Barbero
               </label>
@@ -354,29 +359,40 @@ export function AdminScheduleManager() {
                   ))}
                 </select>
               ) : (
-                <output className="select-control w-full h-[44px] min-h-[44px] px-3 text-xs bg-muted/40 border border-border rounded-lg text-muted-foreground flex items-center cursor-not-allowed">
+                <output className="select-control w-full h-9 px-3 text-xs bg-muted/40 border border-border rounded-lg text-muted-foreground flex items-center cursor-not-allowed">
                   {permittedBarbers[0] ?? "Tu agenda"}
                 </output>
               )}
             </div>
+
+            {/* 4. Con reserva (Fila 2 Col 2 en Mobile / Fila 1 Col 6 en Desktop) */}
+            <div className="schedule-filter-con-reserva min-w-0 flex flex-col justify-end">
+              <span className="block text-xs font-medium text-transparent mb-1.5 select-none pointer-events-none" aria-hidden="true">&nbsp;</span>
+              <div className="w-full h-9 px-2.5 rounded-lg border border-amber-500/30 bg-amber-500/5 text-amber-500 font-medium text-xs flex items-center justify-center gap-1.5 whitespace-nowrap min-w-0">
+                <Clock3 size={13} className="shrink-0" />
+                <span className="truncate">Con reserva</span>
+              </div>
+            </div>
+
+            {/* 5. Disponible (Fila 3 Col 1 en Mobile / Fila 1 Col 4 en Desktop) */}
+            <div className="schedule-filter-disponible min-w-0 flex flex-col justify-end">
+              <span className="block text-xs font-medium text-transparent mb-1.5 select-none pointer-events-none hidden sm:block" aria-hidden="true">&nbsp;</span>
+              <div className="w-full h-9 px-2.5 rounded-lg border border-success/30 bg-success/5 text-success font-medium text-xs flex items-center justify-center gap-1.5 whitespace-nowrap min-w-0">
+                <CheckCircle2 size={13} className="shrink-0" />
+                <span className="truncate">Disponible</span>
+              </div>
+            </div>
+
+            {/* 6. No disponible (Fila 3 Col 2 en Mobile / Fila 1 Col 5 en Desktop) */}
+            <div className="schedule-filter-no-disponible min-w-0 flex flex-col justify-end">
+              <span className="block text-xs font-medium text-transparent mb-1.5 select-none pointer-events-none hidden sm:block" aria-hidden="true">&nbsp;</span>
+              <div className="w-full h-9 px-2.5 rounded-lg border border-destructive/30 bg-destructive/5 text-destructive font-medium text-xs flex items-center justify-center gap-1.5 whitespace-nowrap min-w-0">
+                <XCircle size={13} className="shrink-0" />
+                <span className="truncate">No disponible</span>
+              </div>
+            </div>
           </div>
         </section>
-
-        {/* 2. Leyenda sutil de disponibilidad */}
-        <div className="flex flex-wrap items-center gap-2 mb-4 text-xs" aria-label="Leyenda de horarios">
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-success/30 bg-success/5 text-success font-medium text-xs">
-            <CircleDot size={13} />
-            Disponible
-          </span>
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-destructive/30 bg-destructive/5 text-destructive font-medium text-xs">
-            <XCircle size={13} />
-            No disponible
-          </span>
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-amber-500/30 bg-amber-500/5 text-amber-500 font-medium text-xs">
-            <Clock3 size={13} />
-            Con reserva
-          </span>
-        </div>
 
         {/* 3. Avisos contextuales */}
         {notice && (

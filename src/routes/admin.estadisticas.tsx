@@ -1,13 +1,11 @@
-import { createFileRoute } from '@tanstack/react-router';
-import { AdminStatistics } from '@/components/kani/admin-statistics';
-import { pageHead } from '@/lib/kani-head';
+import { createFileRoute, redirect, Navigate } from '@tanstack/react-router';
 
 export const Route = createFileRoute('/admin/estadisticas')({
-  head: () =>
-    pageHead(
-      'Datos y Métricas',
-      'Análisis de demanda, horarios pico, servicios y directorio de clientes de Kani Barber Studio.',
-      'Kani Barber Studio - Datos',
-    ),
-  component: AdminStatistics,
+  beforeLoad: () => {
+    throw redirect({
+      to: '/admin/datos',
+      statusCode: 301,
+    });
+  },
+  component: () => <Navigate to="/admin/datos" replace />,
 });

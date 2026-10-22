@@ -360,18 +360,10 @@ export function AdminStatistics() {
       {/* ========================================================================= */}
       <section className="mb-8" aria-label="Bloque de turnos y agenda">
         <div className="flex items-center justify-between gap-2 mb-3 pb-2 border-b border-border/60">
-          <div>
-            <h2 className="text-sm sm:text-base font-semibold text-foreground flex items-center gap-1.5">
-              <CalendarDays className="w-4 h-4 text-primary" />
-              <span>Turnos</span>
-            </h2>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Agenda y reservas solicitadas a través del sistema web o manuales.
-            </p>
-          </div>
-          <span className="text-xs font-medium text-muted-foreground bg-muted/40 px-2 py-0.5 rounded border border-border">
-            Agenda
-          </span>
+          <h2 className="text-sm sm:text-base font-semibold text-foreground flex items-center gap-1.5">
+            <CalendarDays className="w-4 h-4 text-primary" />
+            <span>Turnos</span>
+          </h2>
         </div>
 
         {/* KPIs de Turnos */}
@@ -579,18 +571,10 @@ export function AdminStatistics() {
       {/* ========================================================================= */}
       <section className="mb-8" aria-label="Bloque de servicios realizados">
         <div className="flex items-center justify-between gap-2 mb-3 pb-2 border-b border-border/60">
-          <div>
-            <h2 className="text-sm sm:text-base font-semibold text-foreground flex items-center gap-1.5">
-              <Scissors className="w-4 h-4 text-primary" />
-              <span>Servicios realizados</span>
-            </h2>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Atenciones efectivamente ejecutadas en el local (registradas en Pagos).
-            </p>
-          </div>
-          <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-0.5 rounded border border-primary/20">
-            Operación
-          </span>
+          <h2 className="text-sm sm:text-base font-semibold text-foreground flex items-center gap-1.5">
+            <Scissors className="w-4 h-4 text-primary" />
+            <span>Servicios realizados</span>
+          </h2>
         </div>
 
         {operationalStats.totalServices === 0 ? (
@@ -748,18 +732,10 @@ export function AdminStatistics() {
       {/* ========================================================================= */}
       <section className="mb-8" aria-label="Bloque de cobranza y finanzas">
         <div className="flex items-center justify-between gap-2 mb-3 pb-2 border-b border-border/60">
-          <div>
-            <h2 className="text-sm sm:text-base font-semibold text-foreground flex items-center gap-1.5">
-              <Wallet className="w-4 h-4 text-gold text-primary" />
-              <span>Cobranza</span>
-            </h2>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Ingresos reales cobrados, ticket promedio y métodos de pago sin duplicación de señas.
-            </p>
-          </div>
-          <span className="text-xs font-medium text-gold bg-amber-500/10 text-amber-500 px-2 py-0.5 rounded border border-amber-500/20">
-            Finanzas
-          </span>
+          <h2 className="text-sm sm:text-base font-semibold text-foreground flex items-center gap-1.5">
+            <Wallet className="w-4 h-4 text-gold text-primary" />
+            <span>Cobranza</span>
+          </h2>
         </div>
 
         {financialStats.servicesCount === 0 ? (

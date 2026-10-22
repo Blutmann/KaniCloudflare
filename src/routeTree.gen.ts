@@ -15,6 +15,7 @@ import { Route as CaseStudyRouteImport } from './routes/case-study'
 import { Route as EstudioRouteImport } from './routes/estudio'
 import { Route as ReservarRouteImport } from './routes/reservar'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as AdminDatosRouteImport } from './routes/admin.datos'
 import { Route as AdminEstadisticasRouteImport } from './routes/admin.estadisticas'
 import { Route as AdminHorariosRouteImport } from './routes/admin.horarios'
 import { Route as AdminMantenimientoRouteImport } from './routes/admin.mantenimiento'
@@ -50,6 +51,11 @@ const ReservarRoute = ReservarRouteImport.update({
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminDatosRoute = AdminDatosRouteImport.update({
+  id: '/datos',
+  path: '/datos',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminEstadisticasRoute = AdminEstadisticasRouteImport.update({
@@ -89,6 +95,7 @@ export interface FileRoutesByFullPath {
   '/case-study': typeof CaseStudyRoute
   '/estudio': typeof EstudioRoute
   '/reservar': typeof ReservarRoute
+  '/admin/datos': typeof AdminDatosRoute
   '/admin/estadisticas': typeof AdminEstadisticasRoute
   '/admin/horarios': typeof AdminHorariosRoute
   '/admin/mantenimiento': typeof AdminMantenimientoRoute
@@ -133,6 +140,7 @@ export interface FileRouteTypes {
     | '/case-study'
     | '/estudio'
     | '/reservar'
+    | '/admin/datos'
     | '/admin/estadisticas'
     | '/admin/horarios'
     | '/admin/mantenimiento'
@@ -221,6 +229,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/datos': {
+      id: '/admin/datos'
+      path: '/datos'
+      fullPath: '/admin/datos'
+      preLoaderRoute: typeof AdminDatosRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/estadisticas': {
       id: '/admin/estadisticas'
       path: '/estadisticas'
@@ -267,6 +282,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AdminRouteChildren {
+  AdminDatosRoute: typeof AdminDatosRoute
   AdminEstadisticasRoute: typeof AdminEstadisticasRoute
   AdminHorariosRoute: typeof AdminHorariosRoute
   AdminMantenimientoRoute: typeof AdminMantenimientoRoute
@@ -277,6 +293,7 @@ interface AdminRouteChildren {
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminDatosRoute: AdminDatosRoute,
   AdminEstadisticasRoute: AdminEstadisticasRoute,
   AdminHorariosRoute: AdminHorariosRoute,
   AdminMantenimientoRoute: AdminMantenimientoRoute,
