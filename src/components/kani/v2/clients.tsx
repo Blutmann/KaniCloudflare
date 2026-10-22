@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { Archive, ArrowRight, Plus, Search, UserRound } from "lucide-react";
+import { Archive, ArrowRight, Plus, Search } from "lucide-react";
 import { useAdminStaff } from "@/lib/kani-admin-context";
 import { sortClients, type ClientOrder } from "./client-order";
 import { clientHistory } from "@/lib/kani-v2";
@@ -62,21 +62,10 @@ export function V2Clients() {
         },
       ]);
     setEditing(null);
-    setNotice("Propuesta guardada solo en esta sesión. No se modificó la base de clientes.");
+    setNotice("Cambios temporales guardados. Se pierden al recargar.");
   }
   return (
     <main className="v2-page">
-      <div className="v2-callout">
-        <UserRound size={22} />
-        <div>
-          <h2>Historial real. Edición en evaluación.</h2>
-          <p>
-            Las fichas y los turnos provienen de pruebas. Crear, editar y archivar son una propuesta
-            local: se restablecen al recargar o actualizar los datos. No se fusionan clientes
-            automáticamente.
-          </p>
-        </div>
-      </div>
       {notice && (
         <p role="status" className="v2-success">
           {notice}
@@ -122,9 +111,9 @@ export function V2Clients() {
                 <span>{history.visits} visitas verificadas</span>
                 <span>
                   {c.archived
-                    ? "Archivado · propuesta"
+                    ? "Archivado temporalmente"
                     : c.draft
-                      ? "Alta de prueba local"
+                      ? "Cliente temporal"
                       : "Ficha existente"}
                 </span>
               </div>
@@ -133,6 +122,9 @@ export function V2Clients() {
           );
         })}
       </div>
+      <p className="v2-footnote v2-client-temporary">
+        Los cambios en Clientes son temporales y se pierden al recargar.
+      </p>
       <Dialog
         open={!!selected}
         onOpenChange={(open) => {
@@ -198,7 +190,7 @@ export function V2Clients() {
                     openEditor(selected);
                   }}
                 >
-                  Probar edición
+                  Editar cliente
                 </button>
                 {isAdmin && (
                   <button
@@ -210,13 +202,11 @@ export function V2Clients() {
                         ),
                       );
                       setSelectedId(null);
-                      setNotice(
-                        "Archivo de prueba aplicado solo en esta sesión. El historial se conserva.",
-                      );
+                      setNotice("Cambio temporal aplicado. El historial se conserva.");
                     }}
                   >
                     <Archive size={16} />
-                    {selected.archived ? "Restaurar" : "Archivar"} · propuesta
+                    {selected.archived ? "Restaurar" : "Archivar"}
                   </button>
                 )}
               </div>
@@ -231,11 +221,9 @@ export function V2Clients() {
         }}
       >
         <DialogContent className="v2-dialog">
-          <DialogTitle>
-            {editing === "new" ? "Alta rápida · propuesta" : "Editar ficha · propuesta"}
-          </DialogTitle>
+          <DialogTitle>{editing === "new" ? "Nuevo cliente" : "Editar cliente"}</DialogTitle>
           <DialogDescription>
-            Podés evaluar el formulario. No se guardará en Supabase ni se deduplicarán personas.
+            Los cambios son temporales y se pierden al recargar.
           </DialogDescription>
           <form onSubmit={save} className="v2-form">
             <label className="v2-field">
@@ -261,7 +249,7 @@ export function V2Clients() {
               Email · opcional
               <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
             </label>
-            <button className="v2-primary">Guardar propuesta local</button>
+            <button className="v2-primary">Guardar cambios temporales</button>
           </form>
         </DialogContent>
       </Dialog>

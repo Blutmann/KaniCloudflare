@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, Outlet, useLocation } from "@tanstack/react-router";
+import { Link, Outlet } from "@tanstack/react-router";
 import {
   CalendarDays,
   Clock3,
@@ -8,7 +8,6 @@ import {
   Users,
   ChartNoAxesCombined,
   RefreshCw,
-  ArrowUpRight,
 } from "lucide-react";
 import { AdminAccess } from "@/components/kani/admin-access";
 import { AdminStaffProvider } from "@/lib/kani-admin-context";
@@ -44,7 +43,7 @@ export function V2Layout() {
       setState({
         loading: false,
         staff: null,
-        error: "El panel V2 está habilitado únicamente en el entorno de pruebas.",
+        error: "Este panel no está disponible en este entorno.",
       });
       return;
     }
@@ -86,7 +85,7 @@ export function V2Layout() {
   if (state.error)
     return (
       <main className="v2-access">
-        <h1>Administración V2</h1>
+        <h1>Administración</h1>
         <p role="alert">{state.error}</p>
         <a href="/admin">Volver al panel actual</a>
       </main>
@@ -104,24 +103,10 @@ export function V2Layout() {
 
 function V2Shell() {
   const { loading, error, refresh } = useV2();
-  const isPayments = useLocation({
-    select: (location) => location.pathname.replace(/\/$/, "") === "/admin-v2/pagos",
-  });
   return (
     <div className="site-container v2-shell">
       <header className="v2-navigation">
-        {!isPayments && (
-          <div className="v2-environment">
-            <span>
-              <i />
-              ADMINISTRACIÓN · V2 · PRUEBAS
-            </span>
-            <a className="v2-old" href="/admin">
-              Comparar con V1 <ArrowUpRight size={13} />
-            </a>
-          </div>
-        )}
-        <nav className="admin-section-nav v2-nav" aria-label="Administración V2">
+        <nav className="admin-section-nav v2-nav" aria-label="Administración">
           <div className="admin-section-nav-items">
             {sections.map(({ to, title, icon: Icon }) => (
               <Link

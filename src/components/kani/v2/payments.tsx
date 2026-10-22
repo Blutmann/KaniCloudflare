@@ -100,7 +100,7 @@ export function V2Payments() {
           "No se recibió confirmación del cobro. Revisá el historial antes de reintentar.",
         );
       setSuccess(true);
-      setMessage("Cobro registrado en pruebas.");
+      setMessage("Cobro registrado.");
       setAppointmentId("");
       setDiscount(0);
       setPriceOverride(null);
@@ -174,8 +174,8 @@ export function V2Payments() {
                   )}
                   {!data.depositSupported && (
                     <p className="v2-alert">
-                      El esquema de pruebas no permite verificar las señas. El cobro con turno queda
-                      bloqueado hasta resolver esa compatibilidad.
+                      No se pueden verificar las señas de estos turnos. El cobro con turno está
+                      bloqueado hasta que esa información esté disponible.
                     </p>
                   )}
                 </>

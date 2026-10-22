@@ -62,7 +62,7 @@ describe("V2 quick collection", () => {
       p_online_deposit_paid: false,
     });
     expect(mocks.rpc.mock.calls[0]?.[1]).not.toHaveProperty("p_payment_date");
-    expect(await screen.findByText("Cobro registrado en pruebas.")).toBeTruthy();
+    expect(await screen.findByText("Cobro registrado.")).toBeTruthy();
   });
   it("preserves the form and exposes a failure without trying another insert", async () => {
     mocks.rpc.mockResolvedValue({ data: null, error: { message: "FORBIDDEN_BARBER_SCOPE" } });

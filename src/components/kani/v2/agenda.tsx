@@ -54,7 +54,9 @@ export function V2Home() {
               <p>
                 {next.serviceName} · {next.barber}
               </p>
-              <p>{dateLabel(next.date)}</p>
+              <p className={next.date === today ? "v2-current-day" : undefined}>
+                {dateLabel(next.date)}
+              </p>
               <Status code={next.statusCode} />
             </>
           ) : (
@@ -65,6 +67,17 @@ export function V2Home() {
           )}
           <Link className="v2-primary" to="/admin-v2/turnos">
             Ver agenda <ArrowRight size={17} />
+          </Link>
+        </article>
+        <article className="v2-panel v2-space-summary">
+          <span className="v2-eyebrow">PRÓXIMO ESPACIO</span>
+          <strong>{nextSpace ? nextSpace.start_time.slice(0, 5) : "Sin espacios"}</strong>
+          <p className={nextSpace?.slot_date === today ? "v2-current-day" : undefined}>
+            {nextSpace ? dateLabel(nextSpace.slot_date) : "En los próximos 7 días"}
+          </p>
+          {nextSpace && <p>{staff.barbers.find((b) => b.id === nextSpace.barber_id)?.name}</p>}
+          <Link className="v2-secondary" to="/admin-v2/horarios">
+            Ver horarios
           </Link>
         </article>
         <div className="v2-today">
@@ -120,7 +133,7 @@ export function V2Home() {
             ))}
         </div>
       </section>
-      <div className="v2-callout">
+      <div className="v2-callout v2-space-detail">
         <Clock3 size={22} />
         <div>
           <h2>
@@ -324,7 +337,7 @@ export function V2Appointments() {
           </DialogTitle>
           <DialogDescription>
             {action?.appointment.name} · {action?.appointment.time}. Esta acción actualiza el turno
-            de pruebas y utiliza las notificaciones existentes.
+            y utiliza las notificaciones existentes.
           </DialogDescription>
           <button className="v2-primary" disabled={busy} onClick={() => void confirmAction()}>
             {busy ? "Guardando…" : "Confirmar acción"}

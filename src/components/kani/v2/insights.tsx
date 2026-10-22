@@ -47,9 +47,9 @@ export function V2Insights() {
         <label className="v2-field">
           Período
           <select value={days} onChange={(e) => setDays(Number(e.target.value))}>
-            <option value={7}>Últimos 7 días completos</option>
-            <option value={14}>Últimos 14 días completos</option>
-            <option value={30}>Últimos 30 días completos</option>
+            <option value={7}>7 días completos</option>
+            <option value={14}>14 días completos</option>
+            <option value={30}>30 días completos</option>
           </select>
         </label>
         <BarberFilter />

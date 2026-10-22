@@ -64,40 +64,6 @@ html[data-theme="dark"] :is(.v2-shell, .v2-dialog) {
   display: grid;
   gap: 10px;
 }
-.v2-environment {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 0 4px;
-  min-height: 28px;
-}
-.v2-environment > span {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  font-size: 9px;
-  letter-spacing: 0.1em;
-  color: var(--muted-foreground);
-}
-.v2-environment i {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--gold);
-}
-.v2-old {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 44px;
-  font-size: 10px;
-  color: var(--muted-foreground);
-  text-decoration: none;
-}
-.v2-old:hover {
-  color: var(--foreground);
-}
 .v2-nav.admin-section-nav {
   background: var(--v2-surface);
   backdrop-filter: blur(12px);
@@ -284,6 +250,9 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
 }
 
 /* A working day, with secondary metrics grouped into one quiet surface. */
+.v2-space-summary {
+  display: none;
+}
 .v2-hero-grid {
   display: grid;
   align-items: start;
@@ -1061,11 +1030,9 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
 }
 
 /* Schedule component and behavior are reused unchanged. */
-@media (min-width: 768px) {
-  .v2-schedule > .admin-schedule-page.site-container {
-    width: 100%;
-    margin-inline: 0;
-  }
+.v2-schedule > .admin-schedule-page.site-container {
+  width: 100%;
+  margin-inline: 0;
 }
 .v2-schedule .admin-page {
   width: 100%;
@@ -1135,17 +1102,6 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
   }
   .v2-navigation {
     gap: 6px;
-  }
-  .v2-environment {
-    padding: 0 2px;
-  }
-  .v2-environment > span {
-    font-size: 8px;
-    letter-spacing: 0.05em;
-  }
-  .v2-old {
-    font-size: 9px;
-    gap: 3px;
   }
   .v2-nav .admin-section-nav-link {
     flex-direction: column;
@@ -1389,5 +1345,196 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
   .v2-client-order {
     min-width: 0;
     flex: 1;
+  }
+}
+
+/* Mobile: compact working surfaces, while keeping 44px interactive targets. */
+@media (max-width: 767px) {
+  .v2-schedule > .admin-schedule-page.site-container {
+    padding-block: 0;
+  }
+  .v2-schedule :is(button, input, select) {
+    min-height: 44px;
+  }
+  .v2-page {
+    padding-top: 12px;
+    gap: 12px;
+  }
+  .v2-shell {
+    padding-bottom: 20px;
+  }
+  .v2-hero-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    align-items: stretch;
+  }
+  .v2-next,
+  .v2-space-summary {
+    display: flex;
+    flex-direction: column;
+    padding: 12px;
+    gap: 5px;
+  }
+  .v2-next > .v2-eyebrow,
+  .v2-space-summary > .v2-eyebrow {
+    margin-bottom: 2px;
+    font-size: 10px;
+    letter-spacing: 0.04em;
+  }
+  .v2-next > strong,
+  .v2-space-summary > strong {
+    font-size: 26px;
+    font-weight: 500;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+  }
+  .v2-next > h2 {
+    font-size: 14px;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+  }
+  .v2-next > p,
+  .v2-space-summary > p {
+    font-size: 11px;
+    line-height: 1.6;
+    color: var(--muted-foreground);
+    overflow-wrap: anywhere;
+  }
+  .v2-next > .v2-primary,
+  .v2-space-summary > .v2-secondary {
+    margin-top: auto;
+    width: 100%;
+    padding-inline: 6px;
+    gap: 4px;
+  }
+  .v2-next > .v2-badge {
+    margin-block: 0 3px;
+  }
+  .v2-next > .v2-current-day,
+  .v2-space-summary > .v2-current-day {
+    display: none;
+  }
+  .v2-today {
+    grid-column: 1 / -1;
+    padding: 12px;
+    gap: 8px;
+  }
+  .v2-space-detail {
+    display: none;
+  }
+  .v2-panel,
+  .v2-insights {
+    padding: 12px;
+  }
+  .v2-section-title {
+    margin-bottom: 4px;
+  }
+  .v2-team article {
+    padding-block: 8px;
+  }
+  .v2-metric {
+    padding: 10px;
+    gap: 4px;
+  }
+  .v2-filters {
+    padding: 10px;
+    gap: 8px 10px;
+  }
+  .v2-field {
+    gap: 4px;
+  }
+  .v2-agenda {
+    gap: 10px;
+  }
+  .v2-appointment {
+    padding: 12px;
+    gap: 6px 10px;
+  }
+  .v2-time {
+    gap: 2px;
+  }
+  .v2-appointment-heading {
+    gap: 3px 8px;
+    margin-bottom: 2px;
+  }
+  .v2-appointment-details {
+    margin-block: 4px;
+    gap: 2px 8px;
+  }
+  .v2-appointment-body > .v2-note {
+    margin-block: 3px;
+  }
+  .v2-appointment .v2-contact {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 0 8px;
+    margin-top: 0;
+  }
+  .v2-appointment .v2-contact a {
+    min-height: 44px;
+  }
+  .v2-appointment .v2-contact a > svg {
+    flex-shrink: 0;
+  }
+  .v2-appointment .v2-contact a[href^="mailto:"] {
+    flex: 1;
+  }
+  .v2-appointment-actions {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    padding-top: 6px;
+  }
+  .v2-appointment-actions > * {
+    min-height: 44px;
+    padding: 8px 4px;
+    gap: 4px;
+  }
+  .v2-appointment-actions .action-mail {
+    grid-column: auto;
+  }
+  .v2-payment-form {
+    padding: 12px;
+  }
+  .v2-segmented {
+    padding: 2px;
+    margin-bottom: 8px;
+    gap: 2px;
+  }
+  .v2-segmented button {
+    padding: 6px;
+    min-height: 44px;
+  }
+  .v2-payment-form fieldset {
+    gap: 8px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .v2-payment-form fieldset > * {
+    grid-column: 1 / -1;
+  }
+  .v2-payment-form fieldset > button.v2-text-link {
+    grid-column: auto;
+    justify-content: flex-start;
+  }
+  .v2-total {
+    padding-top: 10px;
+  }
+  .v2-payment-form .v2-text-link {
+    min-height: 44px;
+  }
+  .v2-client-toolbar {
+    gap: 8px 10px;
+  }
+  .v2-client-card {
+    padding: 12px;
+    gap: 8px 10px;
+  }
+  .v2-client-meta {
+    padding-top: 8px;
+  }
+  .v2-client-grid {
+    gap: 10px;
+  }
+  .v2-insight-grid {
+    gap: 12px;
   }
 }
