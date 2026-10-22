@@ -487,7 +487,7 @@ export function AdminScheduleManager() {
                             border: "border-success/30 bg-success/5 hover:border-success/50 hover:bg-success/10",
                             statusTone: "text-success",
                             label: "Disponible",
-                            Icon: CircleDot,
+                            Icon: CheckCircle2,
                           }
                         : {
                             border: "border-destructive/30 bg-destructive/5 hover:border-destructive/50",
