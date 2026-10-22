@@ -14,7 +14,7 @@ import {
 } from "@/lib/kani-appointments";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { useV2 } from "./data";
-import { BarberFilter, Empty, Metric, PageTitle, Status, statusLabels } from "./shared";
+import { BarberFilter, Empty, Metric, Status, statusLabels } from "./shared";
 
 export function V2Home() {
   const data = useV2();
@@ -53,12 +53,9 @@ export function V2Home() {
     )[0];
   return (
     <main className="v2-page">
-      <PageTitle
-        eyebrow={dateLabel(today)}
-        title={`Tu jornada, ${staff.profile.display_name.split(" ")[0]}`}
-        description="Lo que necesitás para organizar el día."
-        action={<BarberFilter />}
-      />
+      <div className="v2-home-controls">
+        <BarberFilter />
+      </div>
       <section className="v2-hero-grid">
         <article className="v2-next">
           <span className="v2-eyebrow">PRÓXIMO TURNO</span>
@@ -208,11 +205,6 @@ export function V2Appointments() {
   }
   return (
     <main className="v2-page">
-      <PageTitle
-        eyebrow="AGENDA → ATENCIÓN"
-        title="Cada turno, en su lugar"
-        description="Quién viene, a qué hora y qué necesita tu atención."
-      />
       <div className="v2-filters">
         <label className="v2-field">
           Período

@@ -1,13 +1,13 @@
 import { useRef, useState, type FormEvent } from "react";
 import { useSearch } from "@tanstack/react-router";
-import { CheckCircle2, Plus, Receipt } from "lucide-react";
+import { CheckCircle2, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminStaff } from "@/lib/kani-admin-context";
 import { businessDateToday, addCalendarDays } from "@/lib/kani-mobile-appointments";
 import { money } from "@/lib/kani-model";
 import { paymentSummary, scopeV2 } from "@/lib/kani-v2";
 import type { PaymentMethod, ServicePaymentType } from "@/lib/kani-payments";
-import { BarberFilter, Empty, PageTitle } from "./shared";
+import { BarberFilter, Empty } from "./shared";
 import { useV2 } from "./data";
 
 export function V2Payments() {
@@ -120,11 +120,6 @@ export function V2Payments() {
   }
   return (
     <main className="v2-page">
-      <PageTitle
-        eyebrow="ATENCIÓN → COBRO"
-        title="Cobrar y seguir"
-        description="Los datos que ya tenés, sin volver a cargarlos."
-      />
       <div className="v2-payment-layout">
         <section className="v2-panel v2-payment-form">
           <div className="v2-segmented" aria-label="Origen del cobro">
@@ -364,22 +359,6 @@ export function V2Payments() {
             </p>
           )}
         </section>
-        <aside className="v2-payment-aside">
-          <Receipt size={28} />
-          <h2>
-            Menos carga.
-            <br />
-            Más atención.
-          </h2>
-          <p>
-            Con turno, elegís la atención y el método de pago. Sin turno, solo necesitás servicio,
-            barbero e importe.
-          </p>
-          <p>
-            Identificar al cliente es opcional. Podés registrar el servicio aunque tengas a alguien
-            esperando.
-          </p>
-        </aside>
       </div>
       <section className="v2-panel">
         <div className="v2-section-title">

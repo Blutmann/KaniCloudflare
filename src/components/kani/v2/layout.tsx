@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, Outlet } from "@tanstack/react-router";
+import { Link, Outlet, useLocation } from "@tanstack/react-router";
 import {
   CalendarDays,
   Clock3,
@@ -104,18 +104,23 @@ export function V2Layout() {
 
 function V2Shell() {
   const { loading, error, refresh } = useV2();
+  const isPayments = useLocation({
+    select: (location) => location.pathname.replace(/\/$/, "") === "/admin-v2/pagos",
+  });
   return (
-    <div className="v2-shell">
+    <div className="site-container v2-shell">
       <header className="v2-navigation">
-        <div className="v2-environment">
-          <span>
-            <i />
-            ADMINISTRACIÓN · V2 · PRUEBAS
-          </span>
-          <a className="v2-old" href="/admin">
-            Comparar con V1 <ArrowUpRight size={13} />
-          </a>
-        </div>
+        {!isPayments && (
+          <div className="v2-environment">
+            <span>
+              <i />
+              ADMINISTRACIÓN · V2 · PRUEBAS
+            </span>
+            <a className="v2-old" href="/admin">
+              Comparar con V1 <ArrowUpRight size={13} />
+            </a>
+          </div>
+        )}
         <nav className="admin-section-nav v2-nav" aria-label="Administración V2">
           <div className="admin-section-nav-items">
             {sections.map(({ to, title, icon: Icon }) => (

@@ -1,11 +1,12 @@
 import { useState, type FormEvent } from "react";
 import { Archive, ArrowRight, Plus, Search, UserRound } from "lucide-react";
 import { useAdminStaff } from "@/lib/kani-admin-context";
+import { sortClients, type ClientOrder } from "./client-order";
 import { clientHistory } from "@/lib/kani-v2";
 import { money } from "@/lib/kani-model";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { useV2, type V2Client } from "./data";
-import { Empty, Metric, PageTitle, Status } from "./shared";
+import { Empty, Metric, Status } from "./shared";
 
 export function V2Clients() {
   const data = useV2();
@@ -17,14 +18,17 @@ export function V2Clients() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
-  const [showArchived, setShowArchived] = useState(false);
+  const [order, setOrder] = useState<ClientOrder>("newest");
   const [notice, setNotice] = useState("");
   const selected = data.clients.find((c) => c.id === selectedId);
   const summary = selected ? clientHistory(selected.id, data.appointments, data.payments) : null;
-  const rows = data.clients.filter(
-    (c) =>
-      (showArchived || !c.archived) &&
-      `${c.name} ${c.phone} ${c.email}`.toLowerCase().includes(search.toLowerCase()),
+  const rows = sortClients(
+    data.clients.filter(
+      (c) =>
+        !c.archived &&
+        `${c.name} ${c.phone} ${c.email}`.toLowerCase().includes(search.toLowerCase()),
+    ),
+    order,
   );
   function openEditor(client?: V2Client) {
     setEditing(client ?? "new");
@@ -62,17 +66,6 @@ export function V2Clients() {
   }
   return (
     <main className="v2-page">
-      <PageTitle
-        eyebrow="COBRO → CLIENTE"
-        title="Personas, no registros"
-        description="Una ficha de Kani. Todas las atenciones que la conectan."
-        action={
-          <button className="v2-primary" onClick={() => openEditor()}>
-            <Plus size={17} />
-            Nuevo cliente
-          </button>
-        }
-      />
       <div className="v2-callout">
         <UserRound size={22} />
         <div>
@@ -99,16 +92,19 @@ export function V2Clients() {
             placeholder="Nombre, celular o email"
           />
         </label>
-        {isAdmin && (
-          <label className="v2-checkbox">
-            <input
-              type="checkbox"
-              checked={showArchived}
-              onChange={(e) => setShowArchived(e.target.checked)}
-            />
-            Ver archivados en esta sesión
-          </label>
-        )}
+        <label className="v2-field v2-client-order">
+          Ordenar por
+          <select value={order} onChange={(e) => setOrder(e.target.value as ClientOrder)}>
+            <option value="newest">Más recientes</option>
+            <option value="oldest">Más antiguos</option>
+            <option value="name-asc">Nombre A–Z</option>
+            <option value="name-desc">Nombre Z–A</option>
+          </select>
+        </label>
+        <button className="v2-primary" onClick={() => openEditor()}>
+          <Plus size={17} />
+          Nuevo cliente
+        </button>
       </div>
       <div className="v2-client-grid">
         {!rows.length && <Empty>No hay clientes para esta búsqueda.</Empty>}
@@ -116,13 +112,12 @@ export function V2Clients() {
           const history = clientHistory(c.id, data.appointments, data.payments);
           return (
             <button className="v2-client-card" key={c.id} onClick={() => setSelectedId(c.id)}>
-              <div className="v2-client-heading">
-                <span className="v2-avatar">{c.name[0]}</span>
-                <ArrowRight size={18} />
-              </div>
+              <span className="v2-avatar">{c.name[0]}</span>
               <h2>{c.name}</h2>
-              <p>{c.phone || "Sin celular"}</p>
-              <p className="v2-truncate">{c.email || "Sin email"}</p>
+              <div className="v2-client-contact">
+                <p>{c.phone || "Sin celular"}</p>
+                <p className="v2-truncate">{c.email || "Sin email"}</p>
+              </div>
               <div className="v2-client-meta">
                 <span>{history.visits} visitas verificadas</span>
                 <span>
@@ -133,6 +128,7 @@ export function V2Clients() {
                       : "Ficha existente"}
                 </span>
               </div>
+              <ArrowRight className="v2-client-arrow" size={18} aria-hidden="true" />
             </button>
           );
         })}
