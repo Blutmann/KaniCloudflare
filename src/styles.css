@@ -107,12 +107,12 @@ html[data-theme="dark"] {
   --success: #83AD88;
   --overlay: #121212;
   --surface: #1C1C1C;
-  --kani-surface: #181818d9;
+  --kani-surface: #1818189c;
   --kani-surface-inset: #1818189c;
   --kani-surface-border: #55514b;
   --kani-control-border: #827d75;
   --kani-surface-shadow: 0 2px 8px rgb(0 0 0 / 12%);
-  --kani-surface-hover: #252525ed;
+  --kani-surface-hover: #181818b3;
   --kani-surface-blur: 6px;
   --chart-1: #B99A5B;
   --chart-2: #83AD88;
@@ -177,12 +177,12 @@ html[data-theme="light"] {
   --success: #2F6F43;
   --overlay: #252323;
   --surface: rgb(255 255 255 / 85%);
-  --kani-surface: #ffffffe6;
-  --kani-surface-inset: #ffffffb8;
+  --kani-surface: #ffffff29;
+  --kani-surface-inset: #ffffff29;
   --kani-surface-border: #b9b5b2;
   --kani-control-border: #8d8883;
   --kani-surface-shadow: 0 2px 8px rgb(0 0 0 / 5%);
-  --kani-surface-hover: #fffffff5;
+  --kani-surface-hover: #ffffff40;
   --chart-1: #94743D;
   --chart-2: #3e7650;
   --chart-3: #762936;
@@ -3827,6 +3827,7 @@ html[data-theme='dark'] .summary-card-notice svg {
 /* Shared public surfaces: one family, with inset and selected states. */
 html[data-theme] :is(
   .header-control-button,
+  .site-header .notification-trigger,
   .studio-info-card,
   .studio-map-card,
   .booking-page .booking-option:not(.selected),
@@ -3845,16 +3846,16 @@ html[data-theme] :is(
 .booking-page :is(.calendar-panel, .booking-summary-card, .booking-option, .booking-defer-option) {
   border-radius: var(--radius-card);
 }
-html[data-theme] .booking-page :is(.field-label input, .phone-input-row, .notes-input, .summary-deposit-box) {
+html[data-theme] .booking-page :is(.field-label input, .phone-input-row, .phone-country-trigger, .notes-input, .summary-deposit-box) {
   background: var(--kani-surface-inset) !important;
   border-color: var(--kani-control-border);
   border-radius: var(--radius-control);
 }
-html[data-theme] :is(.header-control-button, .booking-page .booking-option:not(.selected), .booking-page .booking-defer-option:not(.selected)):hover:not(:disabled) {
+html[data-theme] :is(.header-control-button, .site-header .notification-trigger, .booking-page .booking-option:not(.selected), .booking-page .booking-defer-option:not(.selected)):hover:not(:disabled) {
   background: var(--kani-surface-hover) !important;
   border-color: var(--gold) !important;
 }
-html[data-theme] .header-control-button:active:not(:disabled) {
+html[data-theme] :is(.header-control-button, .site-header .notification-trigger):active:not(:disabled) {
   background: var(--kani-surface-inset) !important;
 }
 .header-control-button,
@@ -3874,17 +3875,36 @@ html[data-theme] .booking-page .booking-progress .current > span {
   border-color: var(--gold);
   box-shadow: 0 0 0 1px var(--gold);
 }
-html[data-theme] :is(.header-control-button, .mobile-menu a, .mobile-menu button, .booking-page button, .booking-page input, .booking-page textarea):focus-visible {
+html[data-theme] :is(.header-control-button, .site-header .notification-trigger, .mobile-menu a, .mobile-menu button, .booking-page button, .booking-page input, .booking-page textarea):focus-visible {
   outline: 2px solid var(--gold) !important;
   outline-offset: 3px;
 }
 .mobile-menu a:focus-visible { color: var(--foreground); }
 html[data-theme] .header-control-button,
+html[data-theme] .site-header .notification-trigger,
 html[data-theme] .booking-page .selection-circle,
 html[data-theme] .booking-page .booking-time-slot:not(.selected):not(:disabled) {
   border-color: var(--kani-control-border) !important;
 }
 html[data-theme='light'] .header-whatsapp-button svg { color: #128c4b; }
+/* The pending notice crosses the wallpaper's red seal on small screens. */
+html[data-theme='light'] .booking-page .summary-pending-notice {
+  background: #ffffff66 !important;
+}
+/* These controls can overlap the black brushstroke; keep the image visible
+   while providing a readable backing for entered text and the back action. */
+html[data-theme='light'] .booking-page :is(.notes-input, .field-label input, .booking-back-button) {
+  background: #ffffff80 !important;
+  color: #000000 !important;
+}
+html[data-theme='light'] .booking-page :is(.notes-input, .field-label input)::placeholder {
+  color: #111111;
+  opacity: 1;
+}
+html[data-theme='light'] .booking-contact-form .field-label {
+  text-shadow: 0 0 2px #ffffff, 0 0 4px #ffffff;
+}
+html[data-theme='light'] .booking-contact-form :is(input, textarea) { text-shadow: none; }
 .site-header-slot { flex-shrink: 0; }
 @media (max-width: 767px) {
   .site-header-slot { height: 72px; flex-basis: 72px; }
