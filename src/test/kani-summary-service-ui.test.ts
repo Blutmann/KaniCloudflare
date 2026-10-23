@@ -20,11 +20,11 @@ describe('Kani Barber Studio — Ajustes visuales en Resumen y Servicio', () => 
     expect(bookingCode).toContain('Tu solicitud está pendiente hasta que abones la seña.');
   });
 
-  it('3. Resumen: el aviso pendiente utiliza ícono y texto en bordó institucional (claro y oscuro)', () => {
-    expect(css).toMatch(/html\[data-theme='light'\]\s*\.summary-pending-notice[^{]*\{[^}]*color:\s*#702B3A\s*!important/);
-    expect(css).toMatch(/html\[data-theme='light'\]\s*\.summary-pending-notice\s*svg\s*\{[^}]*color:\s*#702B3A\s*!important/);
-    expect(css).toMatch(/html\[data-theme='dark'\]\s*\.summary-pending-notice[^{]*\{[^}]*color:\s*color-mix\(in srgb,\s*var\(--primary\)\s*70%,\s*#FFFFFF\)\s*!important/);
-    expect(css).toMatch(/html\[data-theme='dark'\]\s*\.summary-pending-notice\s*svg\s*\{[^}]*color:\s*color-mix\(in srgb,\s*var\(--primary\)\s*70%,\s*#FFFFFF\)\s*!important/);
+  it('3. Resumen: el aviso pendiente utiliza ícono y texto negro en claro y blanco en oscuro', () => {
+    expect(css).toMatch(/html\[data-theme='light'\]\s*\.summary-pending-notice[^{]*\{[^}]*color:\s*#000000\s*!important/);
+    expect(css).toMatch(/html\[data-theme='light'\]\s*\.summary-pending-notice\s*svg\s*\{[^}]*color:\s*#000000\s*!important/);
+    expect(css).toMatch(/html\[data-theme='dark'\]\s*\.summary-pending-notice[^{]*\{[^}]*color:\s*#FFFFFF\s*!important/);
+    expect(css).toMatch(/html\[data-theme='dark'\]\s*\.summary-pending-notice\s*svg\s*\{[^}]*color:\s*#FFFFFF\s*!important/);
   });
 
   it('4. Servicio: el aviso sobre la seña conserva texto e ícono de alto contraste en ambos temas', () => {
@@ -36,12 +36,12 @@ describe('Kani Barber Studio — Ajustes visuales en Resumen y Servicio', () => 
 
   it('5. Servicio: el aviso sobre la seña coincide en opacidad y fondo con las cards de servicios', () => {
     // Fondo claro con blur idéntico a booking-option
-    expect(css).toMatch(/html\[data-theme='light'\]\s*\.booking-deposit-notice\s*\{[^}]*background:\s*#ffffff29\s*!important/);
+    expect(css).toMatch(/html\[data-theme='light'\]\s*\.booking-deposit-notice\s*\{[^}]*background:\s*var\(--kani-surface\)\s*!important/);
     expect(css).toMatch(/html\[data-theme='light'\]\s*\.booking-deposit-notice\s*\{[^}]*backdrop-filter:\s*blur\(8px\)/);
     expect(css).toMatch(/html\[data-theme='light'\]\s*\.booking-deposit-notice\s*\{[^}]*border-color:\s*var\(--border\)\s*!important/);
 
     // Fondo oscuro con blur idéntico a booking-option
-    expect(css).toMatch(/html\[data-theme='dark'\]\s*\.booking-deposit-notice\s*\{[^}]*background:\s*#1818189c\s*!important/);
+    expect(css).toMatch(/html\[data-theme='dark'\]\s*\.booking-deposit-notice\s*\{[^}]*background:\s*var\(--kani-surface\)\s*!important/);
     expect(css).toMatch(/html\[data-theme='dark'\]\s*\.booking-deposit-notice\s*\{[^}]*backdrop-filter:\s*blur\(8px\)/);
     expect(css).toMatch(/html\[data-theme='dark'\]\s*\.booking-deposit-notice\s*\{[^}]*border-color:\s*var\(--border\)\s*!important/);
   });

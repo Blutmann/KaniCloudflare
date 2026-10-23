@@ -10,7 +10,6 @@ import { getDynamicDownPayment } from '@/lib/kani-mercadopago';
 import { createBookingOrderFn } from '@/lib/kani-mercadopago.functions';
 import { normalizePhone, type PhoneCountry } from '@/lib/kani-phone';
 const PhoneInput = lazy(() => import('@/components/kani/phone-input').then(m => ({ default: m.PhoneInput })));
-import { MobileMenuAction } from '@/components/kani/site-header';
 import { useKani } from '@/components/kani/store';
 const steps = ['Servicio', 'Barbero', 'Fecha', 'Horario', 'Datos', 'Resumen'];
 const serviceIconById: Record<ServiceId, { light: string; dark: string }> = {
@@ -911,7 +910,7 @@ export function Booking() {
                   )}
                 </section>
 
-                {/* 4. Aviso de solicitud pendiente en container propio — Bordó */}
+                {/* 4. Aviso de solicitud pendiente en container propio */}
                 <div className="booking-summary-card summary-pending-notice summary-card-notice flex items-center gap-2.5 text-xs sm:text-sm" role="note">
                   <Clock3 size={15} className="shrink-0" aria-hidden="true" />
                   <p className="m-0 leading-normal">Tu solicitud está pendiente hasta que abones la seña.</p>
@@ -930,10 +929,7 @@ export function Booking() {
         </div>
       </div>
 
-      {mobileMenuOpen ? (
-        <MobileMenuAction />
-      ) : (
-        <div ref={ctaRef} className="booking-cta">
+      <div ref={ctaRef} className="booking-cta" aria-hidden={mobileMenuOpen || undefined} inert={mobileMenuOpen} style={mobileMenuOpen ? { visibility: 'hidden' } : undefined}>
           <div className="booking-cta-inner flex items-center">
             <Button variant="outline" className="booking-back-button" onClick={() => move(step - 1)} disabled={step === 0 || submitting}>
               <ArrowLeft size={14} aria-hidden="true" /> Volver
@@ -943,7 +939,6 @@ export function Booking() {
             </Button>
           </div>
         </div>
-      )}
     </main>
   );
 }

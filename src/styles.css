@@ -107,6 +107,13 @@ html[data-theme="dark"] {
   --success: #83AD88;
   --overlay: #121212;
   --surface: #1C1C1C;
+  --kani-surface: #181818d9;
+  --kani-surface-inset: #1818189c;
+  --kani-surface-border: #55514b;
+  --kani-control-border: #827d75;
+  --kani-surface-shadow: 0 2px 8px rgb(0 0 0 / 12%);
+  --kani-surface-hover: #252525ed;
+  --kani-surface-blur: 6px;
   --chart-1: #B99A5B;
   --chart-2: #83AD88;
   --chart-3: #762936;
@@ -170,6 +177,12 @@ html[data-theme="light"] {
   --success: #2F6F43;
   --overlay: #252323;
   --surface: rgb(255 255 255 / 85%);
+  --kani-surface: #ffffffe6;
+  --kani-surface-inset: #ffffffb8;
+  --kani-surface-border: #b9b5b2;
+  --kani-control-border: #8d8883;
+  --kani-surface-shadow: 0 2px 8px rgb(0 0 0 / 5%);
+  --kani-surface-hover: #fffffff5;
   --chart-1: #94743D;
   --chart-2: #3e7650;
   --chart-3: #762936;
@@ -835,7 +848,7 @@ html[data-theme="light"] .booking-option.selected .option-icon img { filter: bri
 /* Contacto — Unificación temática con tarjetas de reserva */
 html[data-theme='light'] .studio-info-card {
   border-color: var(--border) !important;
-  background: #ffffff29 !important;
+  background: var(--kani-surface) !important;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   color: var(--foreground) !important;
@@ -864,7 +877,7 @@ html[data-theme='light'] .studio-card-action {
 
 html[data-theme='dark'] .studio-info-card {
   border-color: var(--border) !important;
-  background: #1818189c !important;
+  background: var(--kani-surface) !important;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   color: var(--foreground) !important;
@@ -974,13 +987,13 @@ html[data-theme='dark'] .studio-card-action {
 }
 
 html[data-theme='light'] .studio-map-card {
-  background: #ffffff29;
+  background: var(--kani-surface);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
 }
 
 html[data-theme='dark'] .studio-map-card {
-  background: #1818189c !important;
+  background: var(--kani-surface) !important;
 }
 @media(min-width:1500px) { .home-hero { height: 660px; } }
 @media(min-width:768px) {
@@ -1350,8 +1363,8 @@ html[data-theme='dark'] .studio-map-card {
    box-sizing: border-box !important;
  }
 
- .booking-flow-active .site-header,
- .site-shell:has(.booking-page) .site-header {
+ .booking-flow-active .site-header:not(.menu-open),
+ .site-shell:has(.booking-page) .site-header:not(.menu-open) {
    flex: 0 0 72px !important;
    height: 72px !important;
    position: relative !important;
@@ -1405,8 +1418,8 @@ html[data-theme='dark'] .studio-map-card {
    box-sizing: border-box !important;
  }
 
- .booking-flow-active .booking-cta,
- .site-shell:has(.booking-page) .booking-cta {
+ .booking-flow-active .booking-cta:not(.mobile-menu-cta),
+ .site-shell:has(.booking-page) .booking-cta:not(.mobile-menu-cta) {
    flex: 0 0 auto !important;
    position: relative !important;
    inset: auto !important;
@@ -1419,8 +1432,8 @@ html[data-theme='dark'] .studio-map-card {
    pointer-events: auto !important;
  }
 
- .booking-flow-active .booking-cta-inner,
- .site-shell:has(.booking-page) .booking-cta-inner {
+ .booking-flow-active .booking-cta:not(.mobile-menu-cta) .booking-cta-inner,
+ .site-shell:has(.booking-page) .booking-cta:not(.mobile-menu-cta) .booking-cta-inner {
    width: 100% !important;
    padding-block: 0 !important;
    gap: 10px !important;
@@ -2821,7 +2834,7 @@ html[data-theme='light'] .booking-option,
 html[data-theme='light'] .booking-defer-option,
 html[data-theme='light'] .barber-choice-list > button {
   border-color: var(--border) !important;
-  background: #ffffff29 !important;
+  background: var(--kani-surface) !important;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   color: var(--foreground) !important;
@@ -2830,7 +2843,7 @@ html[data-theme='light'] .booking-option:not(.selected):hover,
 html[data-theme='light'] .booking-defer-option:not(.selected):hover,
 html[data-theme='light'] .barber-choice-list > button:not(.selected):hover {
   border-color: color-mix(in srgb, var(--primary) 35%, var(--border)) !important;
-  background: color-mix(in srgb, var(--primary) 5%, #ffffff29) !important;
+  background: color-mix(in srgb, var(--primary) 5%, var(--kani-surface)) !important;
 }
 html[data-theme='light'] .booking-option.selected,
 html[data-theme='light'] .booking-option.selected:hover:not(:disabled),
@@ -2932,14 +2945,14 @@ html[data-theme='light'] .booking-time-slot.selected:active {
 }
 html[data-theme='light'] .booking-time-slot:not(.selected):not(:disabled) {
   border-color: var(--border) !important;
-  background: #ffffff29 !important;
+  background: var(--kani-surface) !important;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   color: var(--foreground) !important;
 }
 html[data-theme='light'] .booking-time-slot:not(.selected):not(:disabled):hover {
   border-color: color-mix(in srgb, var(--primary) 35%, var(--border)) !important;
-  background: color-mix(in srgb, var(--primary) 5%, #ffffff29) !important;
+  background: color-mix(in srgb, var(--primary) 5%, var(--kani-surface)) !important;
 }
 html[data-theme='light'] .booking-time-slot.time-unavailable,
 html[data-theme='light'] .booking-time-slot:disabled:not(.selected) {
@@ -3005,7 +3018,7 @@ html[data-theme='light'] .booking-next-button {
 }
 html[data-theme='light'] .booking-back-button {
   border-color: var(--border) !important;
-  background: #ffffff29 !important;
+  background: var(--kani-surface) !important;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   color: var(--foreground) !important;
@@ -3013,7 +3026,7 @@ html[data-theme='light'] .booking-back-button {
 html[data-theme='light'] .booking-back-button:hover:not(:disabled),
 html[data-theme='light'] .booking-back-button:focus-visible {
   border-color: color-mix(in srgb, var(--primary) 35%, var(--border)) !important;
-  background: color-mix(in srgb, var(--primary) 6%, #ffffff29) !important;
+  background: color-mix(in srgb, var(--primary) 6%, var(--kani-surface)) !important;
   color: var(--foreground) !important;
 }
 html[data-theme='light'] .booking-back-button svg {
@@ -3021,7 +3034,7 @@ html[data-theme='light'] .booking-back-button svg {
 }
 html[data-theme='light'] .booking-next-button:disabled {
   border-color: var(--border) !important;
-  background: #ffffff29 !important;
+  background: var(--kani-surface) !important;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   color: var(--muted-foreground) !important;
@@ -3033,33 +3046,33 @@ html[data-theme='light'] .booking-next-button:not(:disabled) {
   color: var(--button-primary-text) !important;
 }
 
-/* Paneles y cards contenedoras en blanco translúcido (#ffffff29) para modo claro */
+/* Paneles y cards contenedoras en blanco translúcido (var(--kani-surface)) para modo claro */
 html[data-theme='light'] .calendar-panel {
-  background: #ffffff29 !important;
+  background: var(--kani-surface) !important;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
 
 @media (min-width: 768px) {
   html[data-theme='light'] .booking-summary-card {
-    background: #ffffff29 !important;
+    background: var(--kani-surface) !important;
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
   }
 }
 
 html[data-theme='light'] .booking-summary-card .summary-deposit-box {
-  background: color-mix(in srgb, var(--gold) 12%, #ffffff29) !important;
+  background: color-mix(in srgb, var(--gold) 12%, var(--kani-surface)) !important;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
 }
 
 html[data-theme='light'] .booking-summary-card .summary-avatar-circle {
-  background: color-mix(in srgb, var(--gold) 12%, #ffffff29) !important;
+  background: color-mix(in srgb, var(--gold) 12%, var(--kani-surface)) !important;
 }
 
 html[data-theme='light'] .booking-deposit-notice {
-  background: #ffffff29 !important;
+  background: var(--kani-surface) !important;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   border-color: var(--border) !important;
@@ -3070,13 +3083,13 @@ html[data-theme='light'] .booking-deposit-notice svg {
 }
 
 html[data-theme='light'] .confirmation-details {
-  background: #ffffff29 !important;
+  background: var(--kani-surface) !important;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
 
 /* Fondos del header iguales a las cards inactivas en modo claro. */
-html[data-theme='light'] .header-control-button { background: var(--card) !important; }
+html[data-theme='light'] .header-control-button { background: var(--kani-surface) !important; }
 
 /* Alineación final: el precio queda centrado con la tarjeta y su selector. */
 .service-option .booking-option-price {
@@ -3126,7 +3139,7 @@ html[data-theme='dark'] .service-option .booking-option-price {
 /* Modo oscuro premium: solo color y contraste; la geometría queda compartida. */
 html[data-theme='dark'] .header-control-button {
   border-color: var(--border) !important;
-  background: #1818189c !important;
+  background: var(--kani-surface) !important;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   color: var(--gold) !important;
@@ -3142,7 +3155,7 @@ html[data-theme='dark'] .booking-option,
 html[data-theme='dark'] .booking-defer-option,
 html[data-theme='dark'] .barber-choice-list > button {
   border-color: var(--border) !important;
-  background: #1818189c !important;
+  background: var(--kani-surface) !important;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   color: var(--foreground) !important;
@@ -3151,7 +3164,7 @@ html[data-theme='dark'] .booking-option:not(.selected):hover,
 html[data-theme='dark'] .booking-defer-option:not(.selected):hover,
 html[data-theme='dark'] .barber-choice-list > button:not(.selected):hover {
   border-color: color-mix(in srgb, var(--gold) 35%, var(--border)) !important;
-  background: color-mix(in srgb, var(--gold) 5%, #1818189c) !important;
+  background: color-mix(in srgb, var(--gold) 5%, var(--kani-surface)) !important;
 }
 
 html[data-theme='dark'] .booking-option.selected,
@@ -3284,19 +3297,19 @@ html[data-theme='dark'] .booking-time-slot.selected:active {
 
 html[data-theme='dark'] .booking-time-slot:not(.selected):not(:disabled) {
   border-color: var(--border) !important;
-  background: #1818189c !important;
+  background: var(--kani-surface) !important;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   color: var(--foreground) !important;
 }
 html[data-theme='dark'] .booking-time-slot:not(.selected):not(:disabled):hover {
   border-color: color-mix(in srgb, var(--gold) 35%, var(--border)) !important;
-  background: color-mix(in srgb, var(--gold) 5%, #1818189c) !important;
+  background: color-mix(in srgb, var(--gold) 5%, var(--kani-surface)) !important;
 }
 
 html[data-theme='dark'] .booking-back-button {
   border-color: var(--border) !important;
-  background: #1818189c !important;
+  background: var(--kani-surface) !important;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   color: var(--foreground) !important;
@@ -3305,7 +3318,7 @@ html[data-theme='dark'] .booking-back-button {
 html[data-theme='dark'] .booking-back-button:hover:not(:disabled),
 html[data-theme='dark'] .booking-back-button:focus-visible {
   border-color: var(--gold) !important;
-  background: color-mix(in srgb, var(--gold) 8%, #1818189c) !important;
+  background: color-mix(in srgb, var(--gold) 8%, var(--kani-surface)) !important;
   color: var(--foreground) !important;
 }
 
@@ -3324,33 +3337,33 @@ html[data-theme='dark'] .booking-next-button:not(:disabled):active {
   color: #191919 !important;
 }
 
-/* Paneles y cards contenedoras en gris oscuro translúcido (#1818189c) para modo oscuro */
+/* Paneles y cards contenedoras en gris oscuro translúcido (var(--kani-surface)) para modo oscuro */
 html[data-theme='dark'] .calendar-panel {
-  background: #1818189c !important;
+  background: var(--kani-surface) !important;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
 
 @media (min-width: 768px) {
   html[data-theme='dark'] .booking-summary-card {
-    background: #1818189c !important;
+    background: var(--kani-surface) !important;
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
   }
 }
 
 html[data-theme='dark'] .booking-summary-card .summary-deposit-box {
-  background: color-mix(in srgb, var(--gold) 12%, #1818189c) !important;
+  background: color-mix(in srgb, var(--gold) 12%, var(--kani-surface)) !important;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
 }
 
 html[data-theme='dark'] .booking-summary-card .summary-avatar-circle {
-  background: color-mix(in srgb, var(--gold) 12%, #1818189c) !important;
+  background: color-mix(in srgb, var(--gold) 12%, var(--kani-surface)) !important;
 }
 
 html[data-theme='dark'] .booking-deposit-notice {
-  background: #1818189c !important;
+  background: var(--kani-surface) !important;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   border-color: var(--border) !important;
@@ -3361,7 +3374,7 @@ html[data-theme='dark'] .booking-deposit-notice svg {
 }
 
 html[data-theme='dark'] .confirmation-details {
-  background: #1818189c !important;
+  background: var(--kani-surface) !important;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
@@ -3779,28 +3792,28 @@ html[data-theme='dark'] .admin-section-nav-link.is-active:active {
   color: inherit;
 }
 html[data-theme='light'] .summary-pending-notice {
-  color: #702B3A !important;
+  color: #000000 !important;
 }
 html[data-theme='light'] .summary-pending-notice svg {
-  color: #702B3A !important;
+  color: #000000 !important;
 }
 html[data-theme='light'] .summary-card-notice {
-  color: #702B3A !important;
+  color: #000000 !important;
 }
 html[data-theme='light'] .summary-card-notice svg {
-  color: #702B3A !important;
+  color: #000000 !important;
 }
 html[data-theme='dark'] .summary-pending-notice {
-  color: color-mix(in srgb, var(--primary) 70%, #FFFFFF) !important;
+  color: #FFFFFF !important;
 }
 html[data-theme='dark'] .summary-pending-notice svg {
-  color: color-mix(in srgb, var(--primary) 70%, #FFFFFF) !important;
+  color: #FFFFFF !important;
 }
 html[data-theme='dark'] .summary-card-notice {
-  color: color-mix(in srgb, var(--primary) 70%, #FFFFFF) !important;
+  color: #FFFFFF !important;
 }
 html[data-theme='dark'] .summary-card-notice svg {
-  color: color-mix(in srgb, var(--primary) 70%, #FFFFFF) !important;
+  color: #FFFFFF !important;
 }
 
 @media (max-width: 767px) {
@@ -3810,4 +3823,73 @@ html[data-theme='dark'] .summary-card-notice svg {
     font-size: 12px;
     line-height: 1.35;
   }
+}
+/* Shared public surfaces: one family, with inset and selected states. */
+html[data-theme] :is(
+  .header-control-button,
+  .studio-info-card,
+  .studio-map-card,
+  .booking-page .booking-option:not(.selected),
+  .booking-page .booking-defer-option:not(.selected),
+  .booking-page .calendar-panel,
+  .booking-page .booking-summary-card,
+  .booking-page .booking-deposit-notice,
+  .booking-page .confirmation-details
+) {
+  background: var(--kani-surface) !important;
+  border-color: var(--kani-surface-border) !important;
+  box-shadow: var(--kani-surface-shadow);
+  backdrop-filter: blur(var(--kani-surface-blur));
+  -webkit-backdrop-filter: blur(var(--kani-surface-blur));
+}
+.booking-page :is(.calendar-panel, .booking-summary-card, .booking-option, .booking-defer-option) {
+  border-radius: var(--radius-card);
+}
+html[data-theme] .booking-page :is(.field-label input, .phone-input-row, .notes-input, .summary-deposit-box) {
+  background: var(--kani-surface-inset) !important;
+  border-color: var(--kani-control-border);
+  border-radius: var(--radius-control);
+}
+html[data-theme] :is(.header-control-button, .booking-page .booking-option:not(.selected), .booking-page .booking-defer-option:not(.selected)):hover:not(:disabled) {
+  background: var(--kani-surface-hover) !important;
+  border-color: var(--gold) !important;
+}
+html[data-theme] .header-control-button:active:not(:disabled) {
+  background: var(--kani-surface-inset) !important;
+}
+.header-control-button,
+.booking-page :is(.booking-option, .booking-defer-option, input, .notes-input, .booking-time-slot) {
+  transition: background-color 140ms ease, border-color 140ms ease, box-shadow 140ms ease;
+}
+html[data-theme] .booking-page .booking-progress > button > span {
+  background: var(--kani-surface);
+  box-shadow: var(--kani-surface-shadow);
+}
+html[data-theme] .booking-page .booking-progress .complete > span {
+  background: var(--kani-surface) !important;
+  border-color: var(--gold) !important;
+  color: var(--gold) !important;
+}
+html[data-theme] .booking-page .booking-progress .current > span {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 1px var(--gold);
+}
+html[data-theme] :is(.header-control-button, .mobile-menu a, .mobile-menu button, .booking-page button, .booking-page input, .booking-page textarea):focus-visible {
+  outline: 2px solid var(--gold) !important;
+  outline-offset: 3px;
+}
+.mobile-menu a:focus-visible { color: var(--foreground); }
+html[data-theme] .header-control-button,
+html[data-theme] .booking-page .selection-circle,
+html[data-theme] .booking-page .booking-time-slot:not(.selected):not(:disabled) {
+  border-color: var(--kani-control-border) !important;
+}
+html[data-theme='light'] .header-whatsapp-button svg { color: #128c4b; }
+.site-header-slot { flex-shrink: 0; }
+@media (max-width: 767px) {
+  .site-header-slot { height: 72px; flex-basis: 72px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .header-control-button,
+  .booking-page :is(.booking-option, .booking-defer-option, input, .notes-input, .booking-time-slot) { transition: none; }
 }

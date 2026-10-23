@@ -63,6 +63,7 @@ export function SiteHeader() {
   const admin = path.startsWith('/admin');
   const { mobileMenuOpen: menuOpen, setMobileMenuOpen: onMenuOpenChange } = useKani();
   const [staff, setStaff] = useState<AuthenticatedStaff | null>(null);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     let cancelled = false;
     const refreshStaff = () => {
@@ -83,51 +84,46 @@ export function SiteHeader() {
   useEffect(() => { onMenuOpenChange(false); }, [path, onMenuOpenChange]);
   useEffect(() => {
     if (!menuOpen) return;
+    const menuButton = menuButtonRef.current;
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onMenuOpenChange(false);
+      if (e.key === 'Tab') {
+        const targets = [...document.querySelectorAll<HTMLElement>('.site-header a, .site-header button, .mobile-menu a, .mobile-menu button, .mobile-menu-cta button')]
+          .filter(el => el.tabIndex >= 0 && !el.hasAttribute('disabled') && el.getClientRects().length > 0);
+        if (!targets.length) return;
+        const current = targets.indexOf(document.activeElement as HTMLElement);
+        const next = current < 0 ? (e.shiftKey ? targets.length - 1 : 0) : (current + (e.shiftKey ? -1 : 1) + targets.length) % targets.length;
+        e.preventDefault();
+        targets[next].focus();
+      }
     };
     window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      menuButton?.focus({ preventScroll: true });
+    };
   }, [menuOpen, onMenuOpenChange]);
   const openPathRef = useRef(path);
   useEffect(() => {
+    if (!menuOpen) return;
     const body = document.body;
-    if (menuOpen) {
-      openPathRef.current = path;
-      const scrollY = window.scrollY;
-      body.style.position = 'fixed';
-      body.style.top = `-${scrollY}px`;
-      body.style.left = '0';
-      body.style.right = '0';
-      body.style.width = '100%';
-      body.style.overflow = 'hidden';
-    }
+    const previous = { position: body.style.position, top: body.style.top, left: body.style.left, right: body.style.right, width: body.style.width, overflow: body.style.overflow };
+    const scrollY = window.scrollY;
+    openPathRef.current = window.location.pathname;
+    body.style.position = 'fixed';
+    body.style.top = `-${scrollY}px`;
+    body.style.left = '0';
+    body.style.right = '0';
+    body.style.width = '100%';
+    body.style.overflow = 'hidden';
     return () => {
-      const top = body.style.top;
-      const restoreY = top ? Math.max(0, Number.parseInt(top, 10) * -1) : 0;
-      body.style.position = '';
-      body.style.top = '';
-      body.style.left = '';
-      body.style.right = '';
-      body.style.width = '';
-      body.style.overflow = '';
-      if (top && window.location.pathname === openPathRef.current) {
-        window.scrollTo(0, restoreY);
+      Object.assign(body.style, previous);
+      if (window.location.pathname === openPathRef.current) {
+        window.scrollTo({ top: scrollY, behavior: 'instant' });
       }
     };
-  }, [menuOpen, path]);
+  }, [menuOpen]);
 
-  useEffect(() => {
-    const body = document.body;
-    if (!menuOpen && (body.style.position === 'fixed' || body.style.overflow === 'hidden')) {
-      body.style.position = '';
-      body.style.top = '';
-      body.style.left = '';
-      body.style.right = '';
-      body.style.width = '';
-      body.style.overflow = '';
-    }
-  }, [path, menuOpen]);
   const closeMenu = () => onMenuOpenChange(false);
   const continueBooking = (event: MouseEvent<HTMLAnchorElement>) => {
     if (path === '/reservar') {
@@ -137,7 +133,7 @@ export function SiteHeader() {
   };
   const sessionRole = staff?.profile.role === 'ADMIN' ? 'Administrador' : staff?.profile.role === 'BARBER' ? 'Barbero' : '';
   const mobileMenu = menuOpen ? (
-    <nav className="mobile-menu" aria-label="Menú principal" aria-modal="true">
+    <nav className="mobile-menu" id="kani-main-menu" aria-label="Menú principal">
       {/* 1. Solicitar turno — Todos */}
       <Link to="/reservar" onClick={continueBooking}><ArrowUpRight />Solicitar turno</Link>
       {/* 2. Contacto — Todos */}
@@ -178,9 +174,9 @@ export function SiteHeader() {
     </nav>
   ) : null;
   return <>
-    <header className={`site-header ${menuOpen ? 'menu-open' : ''}`}><div className="site-container flex items-center gap-4"><div className="admin-header-left"><Link to="/" aria-label="Kani Barber Studio, inicio" className="w-fit" onClick={closeMenu}><Wordmark /></Link></div><div className="header-controls ml-auto">{staff && <Suspense fallback={null}><AdminActivityPopover role={staff.profile.role} /></Suspense>}<HeaderWhatsApp /><ThemeToggle /><Button variant="outline" size="icon" className={`mobile-menu-trigger header-control-button ${admin ? 'admin-menu-trigger' : ''}`} aria-label={menuOpen ? 'Cerrar menú' : 'Abrir menú'} aria-expanded={menuOpen} onClick={() => onMenuOpenChange(!menuOpen)}>{menuOpen ? <X /> : <Menu />}</Button></div></div></header>
+    <div className="site-header-slot"><header className={`site-header ${menuOpen ? 'menu-open' : ''}`}><div className="site-container flex items-center gap-4"><div className="admin-header-left"><Link to="/" aria-label="Kani Barber Studio, inicio" className="w-fit" onClick={closeMenu}><Wordmark /></Link></div><div className="header-controls ml-auto">{staff && <Suspense fallback={null}><AdminActivityPopover role={staff.profile.role} /></Suspense>}<HeaderWhatsApp /><ThemeToggle /><Button variant="outline" size="icon" className={`mobile-menu-trigger header-control-button ${admin ? 'admin-menu-trigger' : ''}`} aria-label={menuOpen ? 'Cerrar menú' : 'Abrir menú'} aria-expanded={menuOpen} aria-controls={menuOpen ? "kani-main-menu" : undefined} ref={menuButtonRef} onClick={() => onMenuOpenChange(!menuOpen)}>{menuOpen ? <X /> : <Menu />}</Button></div></div></header></div>
     {typeof document !== 'undefined' && mobileMenu ? createPortal(mobileMenu, document.body) : null}
-    {typeof document !== 'undefined' && menuOpen && path !== '/reservar' ? createPortal(<MobileMenuAction />, document.body) : null}
+    {typeof document !== 'undefined' && menuOpen ? createPortal(<MobileMenuAction />, document.body) : null}
   </>;
 }
 

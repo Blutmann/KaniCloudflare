@@ -55,15 +55,15 @@ describe('Kani Barber Studio - Mobile Scroll & Viewport Navigation', () => {
 
   it('4. SiteHeader limpia estilos de scroll lock y evita restaurar posición cruzada entre rutas', () => {
     // Debe almacenar la ruta al abrirse
-    expect(siteHeaderCode).toContain('openPathRef.current = path;');
+    expect(siteHeaderCode).toContain('openPathRef.current = window.location.pathname;');
 
     // Solo restaura la posición si permanece en la misma ruta
     expect(siteHeaderCode).toContain('window.location.pathname === openPathRef.current');
 
-    // Debe incluir guardia de seguridad que limpie inline styles residuales en body
-    expect(siteHeaderCode).toContain("!menuOpen && (body.style.position === 'fixed' || body.style.overflow === 'hidden')");
-    expect(siteHeaderCode).toContain("body.style.position = '';");
-    expect(siteHeaderCode).toContain("body.style.overflow = '';");
+    // Restore the caller's previous styles, rather than clearing another overlay's lock.
+    expect(siteHeaderCode).toContain('Object.assign(body.style, previous)');
+    expect(siteHeaderCode).toContain('if (!menuOpen) return;');
+
   });
 
   it('5. Viewport meta tag en __root.tsx incluye viewport-fit=cover', () => {
