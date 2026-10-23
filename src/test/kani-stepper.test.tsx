@@ -10,6 +10,16 @@ describe("Reservation stepper navigation and accessible progress", () => {
     render(<BookingStepper currentStep={2} onStepChange={onStepChange} />);
     const buttons = screen.getAllByRole("button");
     expect(buttons).toHaveLength(6);
+    for (const [index, name] of [
+      "Servicio",
+      "Barbero",
+      "Fecha",
+      "Horario",
+      "Datos",
+      "Resumen",
+    ].entries()) {
+      expect(buttons[index]).toHaveTextContent(name);
+    }
     expect(buttons[2]).toHaveAttribute("aria-current", "step");
     expect(
       screen.getAllByRole("button").filter((button) => button.hasAttribute("aria-current")),
@@ -33,14 +43,14 @@ describe("Reservation stepper navigation and accessible progress", () => {
       <BookingStepper currentStep={0} onStepChange={onStepChange} />,
     );
     const summary = container.querySelector('[aria-live="polite"]');
-    expect(summary).toHaveTextContent("Paso 01 de 6Servicio");
+    expect(summary).toHaveTextContent("Paso 1 de 6: Servicio, actual");
     rerender(<BookingStepper currentStep={5} onStepChange={onStepChange} />);
-    expect(summary).toHaveTextContent("Paso 06 de 6Resumen");
+    expect(summary).toHaveTextContent("Paso 6 de 6: Resumen, actual");
     expect(screen.getAllByRole("button").every((button) => !button.hasAttribute("disabled"))).toBe(
       true,
     );
     rerender(<BookingStepper currentStep={1} onStepChange={onStepChange} />);
-    expect(summary).toHaveTextContent("Paso 02 de 6Barbero");
+    expect(summary).toHaveTextContent("Paso 2 de 6: Barbero, actual");
     expect(screen.getByRole("button", { name: "Fecha, paso 3 de 6: pendiente" })).toBeDisabled();
     expect(screen.getByRole("navigation", { name: "Progreso de la reserva" })).toBeInTheDocument();
   });

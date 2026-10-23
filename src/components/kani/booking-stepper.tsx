@@ -13,15 +13,11 @@ export function BookingStepper({
   return (
     <nav className="booking-stepper" aria-label="Progreso de la reserva">
       <p className="booking-stepper-summary" aria-live="polite" aria-atomic="true">
-        <span>
-          Paso <strong>{String(currentStep + 1).padStart(2, "0")}</strong>
-          <span className="booking-stepper-total"> de {steps.length}</span>
-        </span>
-        <span className="booking-stepper-current-name">{steps[currentStep]}</span>
+        Paso {currentStep + 1} de {steps.length}: {steps[currentStep]}, actual
       </p>
       <ol className="booking-stepper-list">
         {steps.map((name, i) => (
-          <li key={name}>
+          <li key={name} className={i < currentStep ? "is-complete" : undefined}>
             <Button
               type="button"
               variant="ghost"
@@ -35,9 +31,8 @@ export function BookingStepper({
                 <span className="booking-stepper-status">
                   {i < currentStep ? <Check size={14} /> : String(i + 1).padStart(2, "0")}
                 </span>
-                <span>{name}</span>
+                <span className="booking-stepper-label">{name}</span>
               </span>
-              <span className="booking-stepper-segment" aria-hidden="true" />
             </Button>
           </li>
         ))}
