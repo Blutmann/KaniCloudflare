@@ -241,11 +241,11 @@ html[data-theme="light"] {
   }
 
   html[data-theme="light"] body::before {
-    background: var(--page-background) url('/kani-fondo-claro-mobile-blanco.webp') center top / cover no-repeat;
+    background: var(--page-background) url('/kani-fondo-claro-mobile-blanco.webp') left bottom / cover no-repeat;
   }
 
   html[data-theme="dark"] body::before {
-    background: var(--page-background) url('/kani-fondo-oscuro-mobile.webp') center top / cover no-repeat;
+    background: var(--page-background) url('/kani-fondo-oscuro-mobile.webp') left bottom / cover no-repeat;
   }
 
   @media (min-width: 768px) {
@@ -2006,6 +2006,17 @@ html[data-theme="light"] .admin-section-nav-link.is-active:active {
   margin-bottom: .85rem;
 }
 
+/* Local reading backplates where the ink background crosses the agenda. */
+.admin-shell section[aria-label="Resumen de turnos"] {
+  background: var(--surface);
+  border-radius: var(--radius-card);
+}
+.admin-mobile-agenda > div:first-child > div:first-child {
+  background: var(--surface);
+  border-radius: var(--radius-control);
+  padding: 4px 6px;
+}
+
 .admin-mobile-summary-card {
   display: flex;
   min-height: 3.75rem;
@@ -3343,10 +3354,10 @@ html[data-theme='dark'] .booking-deposit-notice {
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   border-color: var(--border) !important;
-  color: color-mix(in srgb, var(--primary) 70%, #FFFFFF) !important;
+  color: var(--foreground) !important;
 }
 html[data-theme='dark'] .booking-deposit-notice svg {
-  color: color-mix(in srgb, var(--primary) 70%, #FFFFFF) !important;
+  color: var(--foreground) !important;
 }
 
 html[data-theme='dark'] .confirmation-details {

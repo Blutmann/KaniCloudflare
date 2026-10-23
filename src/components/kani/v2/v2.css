@@ -11,7 +11,7 @@
 }
 html[data-theme="dark"] :is(.v2-shell, .v2-dialog) {
   --v2-surface: #1818189c;
-  --v2-reading-surface: #1818189c;
+  --v2-reading-surface: #181818d9;
   --v2-inset: rgb(18 18 18 / 36%);
   --v2-line: color-mix(in srgb, var(--border) 86%, transparent);
   --v2-shadow: 0 2px 8px rgb(0 0 0 / 12%);
@@ -83,6 +83,13 @@ html[data-theme="dark"] :is(.v2-shell, .v2-dialog) {
 }
 .v2-workspace {
   min-width: 0;
+}
+
+/* Keep standalone notes readable over either tone of the ink brush. */
+.v2-page > .v2-footnote {
+  padding: 6px 8px;
+  border-radius: var(--radius-control);
+  background: var(--v2-reading-surface);
 }
 .v2-page {
   padding: 24px 0 0;
