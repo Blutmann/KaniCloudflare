@@ -254,11 +254,11 @@ html[data-theme="light"] {
   }
 
   html[data-theme="light"] body::before {
-    background: var(--page-background) url('/kani-fondo-claro-mobile-blanco.webp') left bottom / cover no-repeat;
+    background: var(--page-background) url('/kani-fondo-claro-mobile-blanco.webp') center center / cover no-repeat;
   }
 
   html[data-theme="dark"] body::before {
-    background: var(--page-background) url('/kani-fondo-oscuro-mobile.webp') left bottom / cover no-repeat;
+    background: var(--page-background) url('/kani-fondo-oscuro-mobile.webp') center center / cover no-repeat;
   }
 
   @media (min-width: 768px) {
@@ -3905,6 +3905,15 @@ html[data-theme='light'] .booking-contact-form .field-label {
   text-shadow: 0 0 2px #ffffff, 0 0 4px #ffffff;
 }
 html[data-theme='light'] .booking-contact-form :is(input, textarea) { text-shadow: none; }
+/* Keep small dark text legible where the light wallpaper's ink crosses it,
+   without increasing card opacity or covering the illustration. */
+html[data-theme='light'] .booking-page :is(
+  .booking-progress small,
+  .booking-step-title,
+  .booking-option:not(.selected) .booking-option-copy,
+  .booking-summary-card,
+  .calendar-day:not(.selected):not(:disabled)
+) { text-shadow: 0 0 2px #ffffff, 0 0 4px #ffffff; }
 .site-header-slot { flex-shrink: 0; }
 @media (max-width: 767px) {
   .site-header-slot { height: 72px; flex-basis: 72px; }
