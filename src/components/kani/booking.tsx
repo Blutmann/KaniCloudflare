@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Check, Clock3, CalendarDays, UserRound, ChevronLeft, ChevronRight, ArrowLeft, CircleAlert, MapPin, Instagram } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,8 +10,8 @@ import { getDynamicDownPayment } from '@/lib/kani-mercadopago';
 import { createBookingOrderFn } from '@/lib/kani-mercadopago.functions';
 import { normalizePhone, type PhoneCountry } from '@/lib/kani-phone';
 const PhoneInput = lazy(() => import('@/components/kani/phone-input').then(m => ({ default: m.PhoneInput })));
+import { BookingStepper } from '@/components/kani/booking-stepper';
 import { useKani } from '@/components/kani/store';
-const steps = ['Servicio', 'Barbero', 'Fecha', 'Horario', 'Datos', 'Resumen'];
 const serviceIconById: Record<ServiceId, { light: string; dark: string }> = {
   corte: { light: '/service-corte-light.png', dark: '/service-corte-dark-strokes.png' },
   'corte-barba': { light: '/service-corte-barba-light.png', dark: '/service-corte-barba-dark-strokes.png' },
@@ -81,7 +81,6 @@ export function Booking() {
   }, [step]);
   const formRef = useRef<HTMLFormElement>(null);
   const ctaRef = useRef<HTMLDivElement>(null);
-  const progressRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const prevStepRef = useRef(step);
 
@@ -106,8 +105,6 @@ export function Booking() {
     }
   }, [step]);
 
-  const [progressStart, setProgressStart] = useState(0);
-  const [progressWidth, setProgressWidth] = useState(0);
   useLayoutEffect(() => {
     const cta = ctaRef.current;
     if (!cta) return;
@@ -118,29 +115,6 @@ export function Booking() {
     window.addEventListener('resize', updateHeight);
     return () => { observer?.disconnect(); window.removeEventListener('resize', updateHeight); document.documentElement.style.removeProperty('--booking-cta-height'); };
   }, [mobileMenuOpen, step]);
-  useLayoutEffect(() => {
-    const progress = progressRef.current;
-    if (!progress) return;
-    const updateProgress = () => {
-      const buttons = Array.from(progress.querySelectorAll<HTMLButtonElement>(':scope > button'));
-      const active = buttons[step];
-      if (!active) return;
-      const progressRect = progress.getBoundingClientRect();
-      const activeRect = active.getBoundingClientRect();
-      const next = buttons[step + 1];
-      const start = 0;
-      const endpoint = next
-        ? (activeRect.right + next.getBoundingClientRect().left) / 2 - progressRect.left
-        : progressRect.width;
-      setProgressStart(Math.max(0, Math.min(progressRect.width, start)));
-      setProgressWidth(Math.max(0, Math.min(progressRect.width - start, endpoint - start)));
-    };
-    updateProgress();
-    const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(updateProgress) : null;
-    observer?.observe(progress);
-    window.addEventListener('resize', updateProgress);
-    return () => { observer?.disconnect(); window.removeEventListener('resize', updateProgress); };
-  }, [step]);
 
   useEffect(() => {
     let cancelled = false;
@@ -571,26 +545,7 @@ export function Booking() {
   const offset = (new Date(month.getFullYear(), month.getMonth(), 1).getDay() + 6) % 7;
   return (
     <main className={`site-container booking-page ${step === 5 ? 'booking-summary-page' : ''}`}>
-      <div
-        ref={progressRef}
-        className="booking-progress"
-        style={{ '--progress-start': `${progressStart}px`, '--progress-width': `${progressWidth}px` } as CSSProperties}
-        aria-label={`Paso ${step + 1} de 6: ${steps[step]}`}
-      >
-        {steps.map((name, i) => (
-          <Button
-            key={name}
-            variant="ghost"
-            disabled={i > step}
-            aria-current={i === step ? 'step' : undefined}
-            onClick={() => move(i)}
-            className={i === step ? 'current' : i < step ? 'complete' : ''}
-          >
-            <span>{i < step ? <Check size={13} /> : String(i + 1).padStart(2, '0')}</span>
-            <small>{name}</small>
-          </Button>
-        ))}
-      </div>
+      <BookingStepper currentStep={step} onStepChange={move} />
 
       <div ref={scrollContainerRef} className="booking-scroll-content">
         <div className="booking-layout">
