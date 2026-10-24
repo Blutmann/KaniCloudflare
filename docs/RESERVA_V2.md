@@ -1,30 +1,34 @@
-# Experimento de reserva en cinco pasos
+# Experimento de reserva en cuatro pasos
 
-Ruta experimental: `/reserva-v2`. `/` y `/reservar` continúan usando el flujo original de seis pasos; no hay redirecciones ni cambios de backend.
+Ruta experimental: `/reserva-v2`. `/` y `/reservar` conservan el flujo original de seis pasos, sin redirecciones ni cambios de backend.
 
-La variante opt-in `combinedDateTime` reutiliza el estado, consultas, calendario, reglas de disponibilidad, formulario, resumen y operaciones de reserva/pago de `Booking`. Mantiene separados fecha y horario en el payload. Las etapas internas originales se conservan; solo se agrupan las pantallas y se adapta la navegación. Los estilos nuevos están limitados a `.booking-v2`.
+## Composición
 
-En mobile, el calendario aparece sobre una grilla de cápsulas de 48 px de alto mínimo. Al elegir una fecha se revela la sección de horarios cuando queda fuera del área visible, conservando parte del contexto del calendario y sin mover el foco. Se respeta `prefers-reduced-motion`. El calendario se mantiene encima de los horarios en todos los tamaños. La grilla usa cuatro columnas hasta 1023 px y cinco desde 1024 px; las cápsulas conservan al menos 48 px de alto. El paso muestra únicamente «Elegí una fecha y horario» como título principal y omite el aviso de horarios comerciales, sin cambiar disponibilidad. El stepper conserva la presentación restaurada en `main`, adaptada a cinco pasos. `cc5805fb` no está disponible como objeto local ni como referencia remota; no se pudo verificar esa referencia específica.
+La variante opt-in `combinedDateTime` reutiliza el estado y las operaciones de `Booking`:
 
-La fecha elegida se anuncia junto a los horarios. Las cápsulas mantienen `aria-pressed`, foco visible y navegación por teclado. Cambiar de fecha limpia horario y, cuando corresponde, barbero diferido; volver desde Datos conserva las selecciones válidas. Continuar requiere fecha, horario y barbero válidos, incluyendo la selección diferida. Los errores de disponibilidad al enviar vuelven al paso combinado.
+1. Servicio.
+2. Barbero.
+3. Fecha y horario (label mobile: `Fecha/Hora`).
+4. Datos: formulario de contacto, Tu turno, Pago y CTA explícito `Pagar seña`.
 
-## Validación local
+Fecha y horario siguen separados en el payload. Continuar requiere una fecha y un horario válidos y, cuando corresponde, resolver el barbero diferido. Se eliminó el texto secundario de fecha y cantidad de horarios, incluido su espacio asociado.
 
-- Chromium con disponibilidad y configuración públicas interceptadas mediante fixtures, sin conexión a una base real: 360, 375, 390, 430, 1024, 1280, 1440 y 1920 px, a 800 px de alto, en light y dark. Las 16 combinaciones pasaron selección, cambio de fecha, volver, continuar, resumen, ausencia de overflow horizontal y visibilidad de navegación inferior.
-- `/reservar` comparado contra `56b9fc1411926f500485e2cbf710be054ecf9b32`: 16 capturas de servicio, fecha, horario y resumen en 360/1440 px y ambos temas, sin diferencias de píxeles detectadas. Conserva seis etapas y pantallas separadas de fecha/horario.
-- Tests de interacción: igualdad de payloads V1/V2 para crear turno y orden de pago; redirección a checkout simulada; elección diferida de barbero; selección incompleta; estado sin fecha; volver; stepper; horario vencido. Los servicios externos están mockeados.
-- Build de Cloudflare correcto. La suite completa ejecutó 306 pruebas: 304 aprobadas y los dos fallos previos: expectativas de rangos de estadísticas y proporciones de columnas en turnos manuales.
-- Teclado: Enter conserva el foco en el calendario; Tab avanza desde la última fecha habilitada a las cápsulas y Espacio selecciona un horario. Axe sobre el paso combinado y el stepper, en 360/1440 px y ambos temas: sin infracciones automáticas detectadas; las comprobaciones de contraste sobre fondos con imágenes requieren revisión manual. No se ejecutó una prueba con lector de pantalla real.
-- Typecheck: el `main` original ya presenta 175 diagnósticos. La variante mantiene el mismo número; no se corrigieron errores ajenos al experimento.
+El último paso muestra servicio, duración, barbero, fecha, horario, total, seña configurada y saldo restante desde el estado existente. No duplica los datos personales ni introduce una confirmación adicional. En mobile usa filas compactas debajo del formulario y scroll vertical; desde 1024 px distribuye formulario y revisión en dos columnas. Las superficies importantes Light reutilizan los tokens reforzados; no cambia las superficies Dark.
 
-Los resultados, scripts locales de navegador y capturas se conservaron en `.validation/reserva-v2/` (ignorado por Git).
+El stepper permite editar selecciones y conserva el contacto ingresado. El formulario no inicia el pago al pulsar Enter: hace falta el CTA explícito. Antes del pago se comprueban los campos, teléfono normalizado y disponibilidad con las operaciones existentes. Se conservan la creación de reserva, la orden de pago, el reintento de una reserva pendiente y la redirección al checkout; no cambian Mercado Pago, Supabase ni emails.
 
-## Pendiente de integración
+Los estilos nuevos se limitan a `.booking-v2`. Se conserva la presentación recuperada del stepper adaptada a cuatro pasos. El objeto `cc5805fb` no está disponible localmente para contrastarlo directamente.
 
-No se creó una reserva real ni se acreditó una seña ni se verificó el envío real de emails: faltan los bindings de Supabase DEV y credenciales de prueba correspondientes. No usar producción para esta validación.
+## Validación
 
-No se desplegó a Cloudflare: Wrangler no está autenticado y falta identificar el Worker Preview/Test de destino. La configuración generada toma por defecto el nombre del repositorio, que no debe asumirse como un destino de prueba. La URL exacta de Preview/Test se podrá informar después de un despliegue autenticado al Worker correcto; agregar `/reserva-v2` a ese origen. No se ejecutó ningún despliegue a Production.
+- Build Cloudflare correcto.
+- Pruebas de interacción con reserva/orden/checkout simulados: igualdad de payloads V1/V2, campos incompletos, envío del formulario sin pago, horario vencido, barbero diferido, cambio de fecha, edición de servicio/barbero/fecha/horario, revisión actualizada y persistencia del contacto.
+- Chromium con disponibilidad simulada: 360, 375, 390, 430, 1024, 1280, 1440 y 1920 px, alto 800, Light y Dark. Cuatro pasos, CTA único, revisión integrada y navegación sin overflow horizontal.
+- `/reservar`: seis pasos, mismos payloads; capturas de horario a 360/1440 px en ambos temas sin diferencias respecto de la referencia anterior a esta fusión.
+- La suite mantiene dos fallos previos ajenos al experimento: rangos de estadísticas y columnas de turnos manuales.
 
-## Ajuste compacto de Fecha/Horario
+No se creó una reserva ni un cobro real para validar esta modificación. La prueba de inicio de pago usa servicios simulados; no acredita integración real con Mercado Pago.
 
-Validado en Chromium a 360, 375, 390, 430, 768, 1024, 1280, 1440 y 1920 px (alto 800), Light y Dark: título único, sin aviso comercial, calendario encima, cuatro/cinco columnas, cápsulas de 48 px y sin overflow horizontal. Las pruebas usan disponibilidad simulada; no crean reservas ni pagos reales. Build correcto; suite: 304 aprobadas y los dos fallos previos.
+## Publicación
+
+Destino autorizado exclusivamente Preview/Test: `https://kanibarberstudio-cloudflare.kanibarber.workers.dev/reserva-v2`. No desplegar a Production ni reutilizar Supabase PROD para pruebas.

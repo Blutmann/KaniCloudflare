@@ -34,13 +34,12 @@ async function selectServiceAndBarber(combined = true, deferred = false) {
   await screen.findByRole('button', { name: dateLabel('2026-10-26') });
 }
 function chooseTime() { fireEvent.click(screen.getByRole('button', { name: '10:00' })); }
-async function fillContact() {
+async function fillContact(combined = true) {
   await screen.findByRole('textbox', { name: /^Nombre/ });
   fireEvent.change(screen.getByRole('textbox', { name: /^Nombre/ }), { target: { value: 'Cliente de prueba' } });
   fireEvent.change(screen.getByRole('textbox', { name: /^Email/ }), { target: { value: 'cliente@example.test' } });
   fireEvent.change(screen.getByPlaceholderText('11 2345-6789'), { target: { value: '1128436014' } });
-  next();
-  await screen.findByRole('heading', { name: 'Resumen' });
+  if (!combined) { next(); await screen.findByRole('heading', { name: 'Resumen' }); }
 }
 beforeEach(() => {
   Element.prototype.scrollTo = vi.fn();
@@ -54,10 +53,10 @@ beforeEach(() => {
 });
 afterEach(() => { cleanup(); vi.useRealTimers(); Object.defineProperty(window, 'location', { configurable: true, value: originalLocation }); });
 
-describe('isolated five-stage booking presentation', () => {
+describe('isolated four-stage booking presentation', () => {
   it('combines date/time, resets a changed date, and preserves a valid selection when returning from contact', async () => {
     await selectServiceAndBarber();
-    expect(screen.getByLabelText('Paso 3 de 5: Fecha y horario')).toBeInTheDocument();
+    expect(screen.getByLabelText('Paso 3 de 4: Fecha y horario')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Elegí una fecha y horario' })).toBeInTheDocument();
     expect(screen.queryByText('Atendemos de lunes a sábado de 10 a 20 hs.')).not.toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Elegí un horario' })).toBeInTheDocument();
@@ -71,7 +70,7 @@ describe('isolated five-stage booking presentation', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Volver' }));
     expect(screen.getByRole('button', { name: dateLabel('2026-10-27') })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('button', { name: '10:00' })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByLabelText('Paso 3 de 5: Fecha y horario')).toBeInTheDocument();
+    expect(screen.getByLabelText('Paso 3 de 4: Fecha y horario')).toBeInTheDocument();
   });
 
   it('requires the deferred barber choice as well as a date and time', async () => {
@@ -87,7 +86,7 @@ describe('isolated five-stage booking presentation', () => {
 
   it.each([false, true])('keeps future stages disabled and allows revisiting service with combined=%s', async combined => {
     render(<Booking combinedDateTime={combined} />);
-    const progress = screen.getByLabelText(`Paso 1 de ${combined ? 5 : 6}: Servicio`);
+    const progress = screen.getByLabelText(`Paso 1 de ${combined ? 4 : 6}: Servicio`);
     expect(within(progress).getByRole('button', { name: /Barbero/ })).toBeDisabled();
     fireEvent.click(screen.getByRole('button', { name: /^Corte 45/ })); next();
     fireEvent.click(within(progress).getByRole('button', { name: /Servicio/ }));
@@ -110,7 +109,7 @@ describe('isolated five-stage booking presentation', () => {
       vi.advanceTimersByTime(30_000);
     });
     fireEvent.click(screen.getByRole('button', { name: 'Pagar seña' }));
-    expect(screen.getByLabelText('Paso 3 de 5: Fecha y horario')).toBeInTheDocument();
+    expect(screen.getByLabelText('Paso 3 de 4: Fecha y horario')).toBeInTheDocument();
     expect(screen.getByRole('alert')).toHaveTextContent('Ese horario ya no está disponible');
     expect(screen.getByRole('button', { name: 'Continuar' })).toBeDisabled();
     expect(api.create).not.toHaveBeenCalled();
@@ -124,8 +123,8 @@ describe('isolated five-stage booking presentation', () => {
       next();
       expect(screen.getByLabelText('Paso 4 de 6: Horario')).toBeInTheDocument();
     }
-    chooseTime(); next(); await fillContact();
-    expect(screen.getByLabelText(`Paso ${combined ? 5 : 6} de ${combined ? 5 : 6}: Resumen`)).toBeInTheDocument();
+    chooseTime(); next(); await fillContact(combined);
+    expect(screen.getByLabelText(`Paso ${combined ? 4 : 6} de ${combined ? 4 : 6}: ${combined ? 'Datos' : 'Resumen'}`)).toBeInTheDocument();
     expect(screen.getByText('Fecha', { selector: 'dt' })).toBeInTheDocument();
     expect(screen.getByText('Horario', { selector: 'dt' })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Pagar seña' }));
@@ -139,4 +138,56 @@ describe('isolated five-stage booking presentation', () => {
       clientName: 'Cliente de prueba', clientEmail: 'cliente@example.test', clientPhone: '+5491128436014',
     } });
   });
+  it('keeps contact data while editing the time and updates the integrated review', async () => {
+    await selectServiceAndBarber(); chooseTime(); next(); await fillContact();
+    expect(screen.getByLabelText('Paso 4 de 4: Datos')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Resumen' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Continuar' })).not.toBeInTheDocument();
+    expect(screen.getByText('Duración', { selector: 'dt' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Pago' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Volver' }));
+    fireEvent.click(screen.getByRole('button', { name: '11:30', exact: true })); next();
+    expect(screen.getByRole('textbox', { name: /^Nombre/ })).toHaveValue('Cliente de prueba');
+    expect(screen.getByRole('textbox', { name: /^Email/ })).toHaveValue('cliente@example.test');
+    expect(screen.getByText('11:30', { selector: 'dd' })).toBeInTheDocument();
+    expect(api.create).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Pagar seña' }));
+    await waitFor(() => expect(api.create).toHaveBeenCalledWith(expect.objectContaining({ time: '11:30' })));
+  });
+
+  it('does not start payment with incomplete contact data or on form submit', async () => {
+    await selectServiceAndBarber(); chooseTime(); next();
+    expect(screen.getByRole('button', { name: 'Pagar seña' })).toBeDisabled();
+    const name = await screen.findByRole('textbox', { name: /^Nombre/ });
+    fireEvent.submit(name.closest('form')!);
+    expect(api.create).not.toHaveBeenCalled();
+    expect(screen.getByLabelText('Paso 4 de 4: Datos')).toBeInTheDocument();
+    await fillContact();
+    fireEvent.submit(name.closest('form')!);
+    expect(api.create).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Pagar seña' })).toBeEnabled();
+  });
+
+  it.each(['service', 'barber', 'date'])('preserves contact data and refreshes the review after editing %s', async field => {
+    await selectServiceAndBarber(); chooseTime(); next(); await fillContact();
+    const progress = screen.getByLabelText('Paso 4 de 4: Datos');
+    if (field === 'service') {
+      fireEvent.click(within(progress).getByRole('button', { name: /Servicio/ }));
+      fireEvent.click(screen.getByRole('button', { name: /^Barba/ })); next(); next();
+    } else if (field === 'barber') {
+      fireEvent.click(within(progress).getByRole('button', { name: /Barbero/ }));
+      fireEvent.click(screen.getByRole('button', { name: /Gonzalo/ })); next();
+    } else {
+      fireEvent.click(within(progress).getByRole('button', { name: /Fecha y horario/ }));
+      fireEvent.click(screen.getByRole('button', { name: dateLabel('2026-10-27') }));
+    }
+    await screen.findByRole('button', { name: '10:00' }); chooseTime(); next();
+    expect(screen.getByRole('textbox', { name: /^Nombre/ })).toHaveValue('Cliente de prueba');
+    expect(screen.getByRole('textbox', { name: /^Email/ })).toHaveValue('cliente@example.test');
+    expect(screen.getByRole('button', { name: 'Pagar seña' })).toBeEnabled();
+    const expected = field === 'service' ? 'Barba' : field === 'barber' ? 'Gonzalo' : dateLabel('2026-10-27');
+    expect(screen.getByText(expected, { selector: 'dd' })).toBeInTheDocument();
+    expect(api.create).not.toHaveBeenCalled();
+  });
+
 });
