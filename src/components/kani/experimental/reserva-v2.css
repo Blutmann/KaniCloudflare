@@ -69,11 +69,6 @@
 }
 
 .booking-v2 .booking-v2-final-layout { display: grid; gap: 16px; }
-.booking-v2 .booking-v2-review-title {
-  margin: 0 0 10px;
-  font-family: var(--font-display);
-  font-size: 18px;
-}
 .booking-v2-final .booking-summary-cards { min-width: 0; }
 @media (min-width: 1024px) {
   .booking-v2-final .booking-layout { max-width: none; }
@@ -85,7 +80,7 @@
 }
 
 /* The integrated payment details cross the light wallpaper's dark brushstroke. */
-html[data-theme='light'] main.booking-page.booking-v2-final .summary-pricing-card {
+html[data-theme='light'] main.booking-page.booking-v2-final .booking-v2-unified-summary {
   background: var(--kani-surface-strong) !important;
 }
 
@@ -138,3 +133,21 @@ html[data-theme='light'] main.booking-page.booking-v2 .barber-choice-list > butt
 html[data-theme='light'] .booking-v2 .barber-choice-inline .booking-v2-choice-title {
   text-shadow: 0 0 2px #ffffff, 0 0 4px #ffffff;
 }
+
+.booking-v2 .booking-v2-unified-summary .summary-details-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 16px;
+}
+.booking-v2 .booking-v2-unified-summary .summary-detail-row:nth-child(-n + 3) {
+  grid-column: 1 / -1;
+}
+.booking-v2 .booking-v2-unified-summary .summary-pricing-card {
+  margin-top: 12px;
+}
+.booking-v2 .booking-v2-unified-summary :is(.summary-detail-row, .summary-pricing-row) {
+  min-width: 0;
+}
+.booking-v2 .booking-v2-unified-summary dd { overflow-wrap: anywhere; }
+/* The parent gap provides the only separation from the status notice. */
+.booking-v2-final .booking-summary-cards > * { margin-block: 0; }

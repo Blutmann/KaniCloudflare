@@ -9,15 +9,15 @@ describe('Kani Barber Studio - Unificar color de iconos de servicios no seleccio
   const css = fs.readFileSync(stylesPath, 'utf-8');
   const bookingCode = fs.readFileSync(bookingPath, 'utf-8');
 
-  it('1. El color de los iconos sin seleccionar toma directamente el token var(--muted-foreground)', () => {
+  it('1. Los iconos Dark sin seleccionar usan el token dorado sin cambiar la duración', () => {
     // La máscara para tarjetas no seleccionadas usa background-color: var(--muted-foreground)
     expect(css).toMatch(/\.service-icon-mask\s*\{[^}]*background-color:\s*var\(--muted-foreground\)/);
     
     // El texto de duración de servicios utiliza la clase text-muted-foreground
     expect(bookingCode).toContain('booking-option-duration block text-sm text-muted-foreground');
 
-    // En modo oscuro se preserva el token var(--muted-foreground)
-    expect(css).toMatch(/html\[data-theme='dark'\] \.booking-option:not\(\.selected\)\s*\.service-icon-mask\s*\{[^}]*background-color:\s*var\(--muted-foreground\)\s*!important/);
+    // En modo oscuro los iconos inactivos usan el dorado del sistema
+    expect(css).toMatch(/html\[data-theme='dark'\] \.booking-option:not\(\.selected\)\s*\.service-icon-mask\s*\{[^}]*background-color:\s*var\(--gold\)\s*!important/);
   });
 
   it('2. Aplica el cambio a las tres cards de servicios mediante máscaras vectoriales para ambos temas', () => {

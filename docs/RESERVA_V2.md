@@ -9,7 +9,7 @@ La variante opt-in `combinedDateTime` reutiliza el estado y las operaciones de `
 1. Servicio.
 2. Barbero.
 3. Fecha y horario (label mobile: `Fecha/Hora`).
-4. Datos: formulario de contacto, Tu turno, Pago y CTA explícito `Pagar seña`.
+4. Datos: formulario de contacto, resumen único de turno e importes y CTA explícito `Pagar seña`.
 
 Fecha y horario siguen separados en el payload. Continuar requiere una fecha y un horario válidos y, cuando corresponde, resolver el barbero diferido. Se eliminó el texto secundario de fecha y cantidad de horarios, incluido su espacio asociado.
 
@@ -44,3 +44,9 @@ Se elimina el título visual «Elegí un horario»; el grupo de cápsulas conser
 El encabezado del calendario reduce su margen inferior a 4 px y conserva navegación con targets de 44 × 44 px. No cambia el tamaño del texto del mes. Medición con disponibilidad simulada: unos 43 px menos a 360 × 800 y 59 px menos en desktop, incluyendo la sección de barbero diferido.
 
 Se eliminan los límites particulares de 1080 px de Fecha/Hora y Datos: los cuatro pasos heredan el contenedor original de Servicio/Barbero (`min(1184px, calc(100% - 80px))` en desktop y los gutters mobile existentes). Medidos los cuatro pasos y stepper con 328 px a 360 y 1184 px a 1440, sin saltos. Se mantienen cuatro horarios por fila en mobile, cinco en desktop y calendario completo de siete columnas. Validado en los ocho anchos solicitados, Light/Dark; `/reservar` sin diferencias de píxeles en 360/1440, ambos temas.
+
+## Resumen único en Datos
+
+El paso final presenta una única card con los ocho conceptos: servicio, barbero, fecha, horario, duración, precio total, seña y saldo. Horario y duración comparten una fila, conservando pares `dt`/`dd` y orden de lectura. No hay títulos visuales «Tu turno» ni «Pago», ni una card económica independiente. Los importes siguen derivándose del servicio y de la seña configurada. El aviso V2 dice exactamente «Tu turno se confirma únicamente cuando abonas la seña», mantiene el 80% Light y su superficie Dark. El CTA y las validaciones no cambian.
+
+Las máscaras de iconos de servicios Dark no seleccionados usan `var(--gold)` en el componente compartido por V1/V2. Light, iconos seleccionados, textos, precios y superficies no cambian. `/reservar` conserva su estructura, resumen y mensaje originales.

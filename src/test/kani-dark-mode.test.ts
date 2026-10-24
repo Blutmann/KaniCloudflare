@@ -6,9 +6,9 @@ describe('Kani Barber Studio - Ajuste de transparencias en modo oscuro', () => {
   const stylesPath = path.resolve(__dirname, '../styles.css');
   const css = fs.readFileSync(stylesPath, 'utf-8');
 
-  it('1. Iconos de servicios inactivos toman el token var(--muted-foreground) y los activos conservan el dorado', () => {
-    // Inactivos: toman el color directamente de var(--muted-foreground)
-    expect(css).toMatch(/html\[data-theme='dark'\] \.booking-option:not\(\.selected\)\s*\.service-icon-mask\s*\{[^}]*background-color:\s*var\(--muted-foreground\)\s*!important/);
+  it('1. Iconos de servicios inactivos usan var(--gold) y los activos conservan su tratamiento', () => {
+    // Inactivos: toman el dorado directamente de var(--gold)
+    expect(css).toMatch(/html\[data-theme='dark'\] \.booking-option:not\(\.selected\)\s*\.service-icon-mask\s*\{[^}]*background-color:\s*var\(--gold\)\s*!important/);
 
     // Activo / seleccionado: conserva el filtro dorado original
     expect(css).toMatch(/html\[data-theme='dark'\] \.booking-option\.selected \.option-icon img\s*\{[^}]*filter:\s*brightness\(0\)\s*saturate\(100%\)\s*invert\(69%\)/);

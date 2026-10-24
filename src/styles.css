@@ -3200,7 +3200,7 @@ html[data-theme='dark'] .booking-option.selected .text-muted-foreground {
 }
 
 html[data-theme='dark'] .booking-option:not(.selected) .service-icon-mask {
-  background-color: var(--muted-foreground) !important;
+  background-color: var(--gold) !important;
 }
 
 html[data-theme='dark'] .booking-option.selected .selection-circle,

@@ -907,9 +907,9 @@ export function Booking({ combinedDateTime = false }: { combinedDateTime?: boole
                   </div>
                 </section>}
 
+                <ExperimentalLayout enabled={combinedDateTime} className="booking-summary-card booking-v2-unified-summary">
                 {/* Card 2: Datos del turno compactada */}
-                <section className="booking-summary-card summary-appointment-card" aria-label="Datos del turno">
-                  {combinedDateTime && <h2 className="booking-v2-review-title">Tu turno</h2>}
+                <section className={`${combinedDateTime ? '' : 'booking-summary-card '}summary-appointment-card`} aria-label="Datos del turno">
                   <dl className="summary-details-list flex flex-col gap-1.5 sm:gap-2.5 text-xs sm:text-sm">
                     <div className="summary-detail-row flex justify-between items-baseline gap-3 sm:gap-4">
                       <dt className="summary-detail-label text-muted-foreground">Servicio</dt>
@@ -941,8 +941,7 @@ export function Booking({ combinedDateTime = false }: { combinedDateTime?: boole
                 </section>
 
                 {/* Card 3: Card de importes compactada */}
-                <section className="booking-summary-card summary-pricing-card" aria-label="Importes">
-                  {combinedDateTime && <h2 className="booking-v2-review-title">Pago</h2>}
+                <section className={`${combinedDateTime ? '' : 'booking-summary-card '}summary-pricing-card`} aria-label="Importes">
                   <dl className="summary-pricing-list flex flex-col gap-1.5 sm:gap-2.5 text-xs sm:text-sm">
                     <div className="summary-pricing-row flex justify-between items-baseline gap-3 sm:gap-4">
                       <dt className="summary-pricing-label text-muted-foreground">Precio total del servicio</dt>
@@ -962,10 +961,12 @@ export function Booking({ combinedDateTime = false }: { combinedDateTime?: boole
                   )}
                 </section>
 
+                </ExperimentalLayout>
+
                 {/* 4. Aviso de solicitud pendiente en container propio */}
                 <div className="booking-summary-card summary-pending-notice summary-card-notice flex items-center gap-2.5 text-xs sm:text-sm" role="note">
                   <Clock3 size={15} className="shrink-0" aria-hidden="true" />
-                  <p className="m-0 leading-normal">Tu solicitud está pendiente hasta que abones la seña.</p>
+                  <p className="m-0 leading-normal">{combinedDateTime ? 'Tu turno se confirma únicamente cuando abonas la seña' : 'Tu solicitud está pendiente hasta que abones la seña.'}</p>
                 </div>
               </div>
             )}
