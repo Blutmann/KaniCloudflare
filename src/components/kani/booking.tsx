@@ -928,10 +928,6 @@ export function Booking({ combinedDateTime = false }: { combinedDateTime?: boole
                       <dt className="summary-detail-label text-muted-foreground">Horario</dt>
                       <dd className="summary-detail-value font-medium text-foreground text-right">{combinedDateTime ? time : <>{time} · {selected?.duration} min</>}</dd>
                     </div>
-                    {combinedDateTime && <div className="summary-detail-row flex justify-between items-baseline gap-3">
-                      <dt className="summary-detail-label text-muted-foreground">Duración</dt>
-                      <dd className="summary-detail-value font-medium text-foreground">{selected?.duration} min</dd>
-                    </div>}
                     {!combinedDateTime && contact.notes.trim() && (
                       <div className="summary-detail-row flex justify-between items-baseline gap-3 sm:gap-4">
                         <dt className="summary-detail-label text-muted-foreground">Observaciones</dt>

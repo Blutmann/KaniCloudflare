@@ -148,7 +148,8 @@ describe('isolated four-stage booking presentation', () => {
     expect(screen.getByLabelText('Paso 4 de 4: Datos')).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Resumen' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Continuar' })).not.toBeInTheDocument();
-    expect(screen.getByText('Duración', { selector: 'dt' })).toBeInTheDocument();
+    expect(screen.queryByText('Duración', { selector: 'dt' })).not.toBeInTheDocument();
+    expect(document.querySelectorAll('.booking-v2-unified-summary dt')).toHaveLength(7);
     expect(screen.queryByRole('heading', { name: 'Pago' })).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Tu turno' })).not.toBeInTheDocument();
     expect(document.querySelectorAll('.booking-v2-unified-summary')).toHaveLength(1);

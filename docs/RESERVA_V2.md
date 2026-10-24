@@ -13,7 +13,7 @@ La variante opt-in `combinedDateTime` reutiliza el estado y las operaciones de `
 
 Fecha y horario siguen separados en el payload. Continuar requiere una fecha y un horario válidos y, cuando corresponde, resolver el barbero diferido. Se eliminó el texto secundario de fecha y cantidad de horarios, incluido su espacio asociado.
 
-El último paso muestra servicio, duración, barbero, fecha, horario, total, seña configurada y saldo restante desde el estado existente. No duplica los datos personales ni introduce una confirmación adicional. En mobile usa filas compactas debajo del formulario y scroll vertical; desde 1024 px distribuye formulario y revisión en dos columnas. Las superficies importantes Light reutilizan los tokens reforzados; no cambia las superficies Dark.
+El último paso muestra servicio, barbero, fecha, horario, total, seña configurada y saldo restante desde el estado existente. No duplica los datos personales ni introduce una confirmación adicional. En mobile usa filas compactas debajo del formulario y scroll vertical; desde 1024 px distribuye formulario y revisión en dos columnas. Las superficies importantes Light reutilizan los tokens reforzados; no cambia las superficies Dark.
 
 El stepper permite editar selecciones y conserva el contacto ingresado. El formulario no inicia el pago al pulsar Enter: hace falta el CTA explícito. Antes del pago se comprueban los campos, teléfono normalizado y disponibilidad con las operaciones existentes. Se conservan la creación de reserva, la orden de pago, el reintento de una reserva pendiente y la redirección al checkout; no cambian Mercado Pago, Supabase ni emails.
 
@@ -47,6 +47,10 @@ Se eliminan los límites particulares de 1080 px de Fecha/Hora y Datos: los cuat
 
 ## Resumen único en Datos
 
-El paso final presenta una única card con los ocho conceptos: servicio, barbero, fecha, horario, duración, precio total, seña y saldo. Horario y duración comparten una fila, conservando pares `dt`/`dd` y orden de lectura. No hay títulos visuales «Tu turno» ni «Pago», ni una card económica independiente. Los importes siguen derivándose del servicio y de la seña configurada. El aviso V2 dice exactamente «Tu turno se confirma únicamente cuando abonas la seña», mantiene el 80% Light y su superficie Dark. El CTA y las validaciones no cambian.
+El paso final presenta una única card con los siete conceptos: servicio, barbero, fecha, horario, precio total, seña y saldo. Las filas conservan pares `dt`/`dd` y orden de lectura, sin una celda reservada a Duración. No hay títulos visuales «Tu turno» ni «Pago», ni una card económica independiente. Los importes siguen derivándose del servicio y de la seña configurada. El aviso V2 dice exactamente «Tu turno se confirma únicamente cuando abonas la seña», mantiene el 80% Light y su superficie Dark. El CTA y las validaciones no cambian.
 
 Las máscaras de iconos de servicios Dark no seleccionados usan `var(--gold)` en el componente compartido por V1/V2. Light, iconos seleccionados, textos, precios y superficies no cambian. `/reservar` conserva su estructura, resumen y mensaje originales.
+
+## Campos compactos Mobile
+
+Solo en V2 y hasta 767 px, los inputs de una línea y el selector telefónico pasan de 52 a 48 px, con centros alineados. El texto editable ya era de 16 px y se conserva ese mínimo para evitar el disparador habitual de zoom por fuentes pequeñas en Safari/iOS; no se reduce a 14 px. Placeholders y prefijo se armonizan a 16 px (antes 13 y 12 px respectivamente). Observaciones conserva su área multilínea de 96 px en mobile. Desktop mantiene sus dimensiones y tipografía. La duración del servicio continúa en la lógica de disponibilidad y en el flujo original, pero no se muestra en el resumen final de V2. No se modifica normalización, validaciones, importes ni pago.

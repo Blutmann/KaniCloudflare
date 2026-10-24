@@ -134,11 +134,7 @@ html[data-theme='light'] .booking-v2 .booking-v2-choice-title {
 
 .booking-v2 .booking-v2-unified-summary .summary-details-list {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  column-gap: 16px;
-}
-.booking-v2 .booking-v2-unified-summary .summary-detail-row:nth-child(-n + 3) {
-  grid-column: 1 / -1;
+  grid-template-columns: minmax(0, 1fr);
 }
 .booking-v2 .booking-v2-unified-summary .summary-pricing-card {
   margin-top: 12px;
@@ -169,4 +165,34 @@ html[data-theme='light'] .booking-v2 .booking-v2-choice-title {
 }
 @media (max-width: 767px) {
   .booking-v2 .booking-v2-date-time .calendar-panel { padding-top: 8px; }
+}
+
+/* Single-line mobile contact controls stay comfortably tappable and avoid
+   Safari's sub-16px editable-text focus zoom. Multiline notes keep their space. */
+@media (max-width: 767px) {
+  main.booking-page.booking-v2.booking-v2-final .booking-contact-form input {
+    height: 48px !important;
+    min-height: 48px !important;
+    max-height: 48px !important;
+    padding-block: 0 !important;
+    line-height: 24px !important;
+    font-size: 16px;
+  }
+  .booking-v2-final .booking-contact-form :is(.phone-country-picker, .phone-input-row .field-control, .phone-country-trigger) {
+    height: 48px;
+    min-height: 48px;
+    max-height: 48px;
+  }
+  .booking-v2-final .booking-contact-form .phone-country-trigger {
+    font-size: 16px;
+    line-height: 24px;
+    letter-spacing: normal;
+    padding-inline: 8px;
+  }
+  main.booking-page.booking-v2.booking-v2-final .booking-contact-form textarea {
+    font-size: 16px;
+  }
+  main.booking-page.booking-v2.booking-v2-final .booking-contact-form :is(input, textarea)::placeholder {
+    font-size: 16px;
+  }
 }
