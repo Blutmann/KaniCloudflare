@@ -68,3 +68,9 @@
   }
   .booking-v2 .booking-v2-date-time { max-width: 640px; }
 }
+
+.booking-v2 .booking-v2-step-mobile { display: none; }
+@media (max-width: 767px) {
+  .booking-v2 .booking-v2-step-mobile { display: inline; white-space: nowrap; }
+  .booking-v2 .booking-v2-step-desktop { display: none; }
+}

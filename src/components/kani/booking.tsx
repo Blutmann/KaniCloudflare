@@ -618,7 +618,11 @@ export function Booking({ combinedDateTime = false }: { combinedDateTime?: boole
             className={i === visibleStep ? 'current' : i < visibleStep ? 'complete' : ''}
           >
             <span>{i < visibleStep ? <Check size={13} /> : String(i + 1).padStart(2, '0')}</span>
-            <small>{name}</small>
+            <small>{combinedDateTime && i === 2 ? <>
+              <span className="sr-only">{name}</span>
+              <span className="booking-v2-step-mobile" aria-hidden="true">Fecha/Hora</span>
+              <span className="booking-v2-step-desktop" aria-hidden="true">{name}</span>
+            </> : name}</small>
           </Button>
         ))}
       </div>
