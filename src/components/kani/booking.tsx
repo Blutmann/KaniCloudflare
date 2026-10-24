@@ -635,7 +635,7 @@ export function Booking({ combinedDateTime = false }: { combinedDateTime?: boole
         <div className="booking-layout">
           <section className="min-w-0">
             <div className={`booking-title-row ${step === 0 ? 'booking-service-heading' : ''} ${step === 1 ? 'booking-barber-heading' : ''} ${step === 2 ? 'booking-date-heading' : ''} ${step === 3 ? 'booking-time-heading' : ''} ${step === 4 ? 'booking-contact-heading' : ''} ${step === 5 ? 'booking-summary-heading' : ''}`}>
-              <h1 className="section-title">{combinedDateTime && step === 2 ? 'Elegí una fecha y horario' : titles[step]}</h1>
+              <h1 className="section-title">{combinedDateTime && step === 2 ? 'Elegir una fecha' : titles[step]}</h1>
               {step === 3 && date && (
                 <span className="booking-time-heading-date">
                   <CalendarDays size={16} />{dateLabel(date)}
@@ -750,6 +750,7 @@ export function Booking({ combinedDateTime = false }: { combinedDateTime?: boole
 
             {(step === 3 || combinedDateTime && step === 2 && date) && (
               <div ref={timeSectionRef} className={combinedDateTime ? 'booking-v2-times' : undefined} aria-busy={combinedDateTime ? availabilityLoading : undefined}>
+                {combinedDateTime && <h2 className="booking-v2-choice-title">Elegir un horario</h2>}
                 <div className="booking-time-grid grid grid-cols-3 gap-2 sm:grid-cols-4" role={combinedDateTime ? "group" : undefined} aria-label={combinedDateTime ? "Horarios disponibles" : undefined}>
                   {timeSlots.map(slot => (
                     <Button

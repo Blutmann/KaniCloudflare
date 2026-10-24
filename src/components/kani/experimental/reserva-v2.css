@@ -6,13 +6,14 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   align-items: start;
-  gap: 16px;
+  gap: 12px;
 }
 .booking-v2 .booking-v2-date-time > div { min-width: 0; }
 .booking-v2 .booking-v2-choice-title {
   margin: 0 0 14px;
   font-family: var(--font-display);
   font-size: 20px;
+  font-weight: 400;
   line-height: 1.3;
 }
 .booking-v2 .booking-v2-times {
@@ -109,12 +110,9 @@ html[data-theme='light'] main.booking-page.booking-v2 .booking-time-slot:not(.se
   padding-top: 0;
   margin-top: 12px;
 }
-.booking-v2 .barber-choice-inline .booking-v2-choice-title {
-  font-weight: 400;
-}
 .booking-v2 .calendar-header {
   min-height: 44px;
-  margin-bottom: 4px !important;
+  margin-bottom: 2px !important;
   padding-block: 0;
 }
 .booking-v2 .calendar-header button {
@@ -130,7 +128,7 @@ html[data-theme='light'] main.booking-page.booking-v2 .barber-choice-list > butt
   background: color-mix(in srgb, var(--primary) 5%, var(--kani-surface-critical)) !important;
 }
 /* Keep the retained heading readable when the compact layout crosses ink. */
-html[data-theme='light'] .booking-v2 .barber-choice-inline .booking-v2-choice-title {
+html[data-theme='light'] .booking-v2 .booking-v2-choice-title {
   text-shadow: 0 0 2px #ffffff, 0 0 4px #ffffff;
 }
 
@@ -151,3 +149,24 @@ html[data-theme='light'] .booking-v2 .barber-choice-inline .booking-v2-choice-ti
 .booking-v2 .booking-v2-unified-summary dd { overflow-wrap: anywhere; }
 /* The parent gap provides the only separation from the status notice. */
 .booking-v2-final .booking-summary-cards > * { margin-block: 0; }
+
+/* Compact only the calendar's upper area; keep date cells and tap targets. */
+.booking-v2 .booking-v2-date-time .calendar-panel { padding-top: 10px; }
+.booking-v2 .calendar-header {
+  height: 44px;
+  align-items: center;
+}
+.booking-v2 .calendar-header h2 {
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  line-height: 1.2;
+}
+.booking-v2 .calendar-header > div {
+  align-items: center;
+  margin-block: 0;
+  padding-block: 0;
+}
+@media (max-width: 767px) {
+  .booking-v2 .booking-v2-date-time .calendar-panel { padding-top: 8px; }
+}
