@@ -179,6 +179,8 @@ html[data-theme="light"] {
   --surface: rgb(255 255 255 / 85%);
   --kani-surface: #ffffff29;
   --kani-surface-inset: #ffffff29;
+  --kani-surface-control: #ffffff8c;
+  --kani-surface-strong: #ffffff99;
   --kani-surface-border: #b9b5b2;
   --kani-control-border: #8d8883;
   --kani-surface-shadow: 0 2px 8px rgb(0 0 0 / 5%);
@@ -3907,4 +3909,17 @@ html[data-theme='light'] .booking-page :is(
 @media (prefers-reduced-motion: reduce) {
   .header-control-button,
   .booking-page :is(.booking-option, .booking-defer-option, input, .notes-input, .booking-time-slot) { transition: none; }
+}
+
+/* Small booking controls need more isolation from the light wallpaper than
+   large cards. Keep these levels local to public booking and preserve states. */
+html[data-theme='light'] .booking-page .booking-time-slot:not(.selected):not(:disabled):not(.time-unavailable),
+html[data-theme='light'] .booking-page :is(.booking-deposit-notice[role="note"], .summary-pending-notice) {
+  background: var(--kani-surface-strong) !important;
+}
+html[data-theme='light'] .booking-page .booking-time-slot:not(.selected):not(:disabled):not(.time-unavailable):hover {
+  background: color-mix(in srgb, var(--primary) 5%, var(--kani-surface-strong)) !important;
+}
+html[data-theme='light'] .booking-page .booking-contact-form :is(.field-label input, .phone-input-row, .phone-country-trigger, .notes-input) {
+  background: var(--kani-surface-control) !important;
 }
