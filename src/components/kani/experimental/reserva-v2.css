@@ -7,6 +7,7 @@
   grid-template-columns: minmax(0, 1fr);
   align-items: start;
   gap: 12px;
+  --booking-v2-caption-space: 2px;
 }
 .booking-v2 .booking-v2-date-time > div { min-width: 0; }
 .booking-v2 .booking-v2-choice-title {
@@ -25,15 +26,17 @@
 @media (max-width: 767px) {
   .booking-page.booking-v2 .booking-progress > button {
     min-width: 0;
-    min-height: 58px;
+    min-height: 54px;
     padding-inline: 1px;
     flex-direction: column;
-    gap: 5px;
+    gap: 3px;
+    padding-block: 0 4px;
   }
   .booking-page.booking-v2 .booking-progress small {
-    font-size: 11px;
-    min-height: 26px;
-    line-height: 1.15;
+    font-size: 12px;
+    min-height: 16px;
+    line-height: 16px;
+    white-space: nowrap;
   }
 
 }
@@ -49,7 +52,7 @@
   max-width: 440px;
 }
 .booking-v2 .booking-v2-times .booking-time-grid {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 8px;
 }
 .booking-v2 .booking-v2-times .booking-time-slot {
@@ -112,7 +115,7 @@ html[data-theme='light'] main.booking-page.booking-v2 .booking-time-slot:not(.se
 }
 .booking-v2 .calendar-header {
   min-height: 44px;
-  margin-bottom: 2px !important;
+  margin-bottom: var(--booking-v2-caption-space) !important;
   padding-block: 0;
 }
 .booking-v2 .calendar-header button {
@@ -147,7 +150,7 @@ html[data-theme='light'] .booking-v2 .booking-v2-choice-title {
 .booking-v2-final .booking-summary-cards > * { margin-block: 0; }
 
 /* Compact only the calendar's upper area; keep date cells and tap targets. */
-.booking-v2 .booking-v2-date-time .calendar-panel { padding-top: 10px; }
+.booking-v2 .booking-v2-date-time .calendar-panel { padding-top: var(--booking-v2-caption-space); }
 .booking-v2 .calendar-header {
   height: 44px;
   align-items: center;
@@ -162,9 +165,6 @@ html[data-theme='light'] .booking-v2 .booking-v2-choice-title {
   align-items: center;
   margin-block: 0;
   padding-block: 0;
-}
-@media (max-width: 767px) {
-  .booking-v2 .booking-v2-date-time .calendar-panel { padding-top: 8px; }
 }
 
 /* Single-line mobile contact controls stay comfortably tappable and avoid
@@ -194,5 +194,16 @@ html[data-theme='light'] .booking-v2 .booking-v2-choice-title {
   }
   main.booking-page.booking-v2.booking-v2-final .booking-contact-form :is(input, textarea)::placeholder {
     font-size: 16px;
+  }
+}
+
+@media (max-width: 767px) {
+  .booking-v2 .booking-v2-times .booking-time-grid { column-gap: 6px; }
+  .booking-v2 .booking-v2-times .booking-time-slot { font-size: 12px; }
+  /* Match the selected date's 14px type, without the heavy dark 700 weight. */
+  html[data-theme] main.booking-page.booking-v2 .booking-v2-times .booking-time-slot.selected {
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 500;
   }
 }

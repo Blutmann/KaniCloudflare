@@ -35,15 +35,15 @@ Destino autorizado exclusivamente Preview/Test: `https://kanibarberstudio-cloudf
 
 ## Ajuste de contraste y ancho
 
-En Light, las cápsulas neutrales y los avisos importantes de V2 usan `--kani-surface-critical: #ffffffcc` (80%). Hover conserva el tinte existente; seleccionado, foco y deshabilitado mantienen sus tratamientos. No se cambia el token compartido ni `/reservar`, los importes o las cards generales. Las superficies Dark y los fondos se conservan. Desde 1024 px, calendario y horarios ocupan el mismo ancho útil del stepper; los siete días se distribuyen en todo el ancho sin aumentar su altura. En mobile se mantiene el ancho y cuatro horarios por fila; desktop conserva cinco. La línea de fecha/cantidad de horarios ya no existe en el render ni tiene contenedor o estilos residuales; cada fecha conserva su nombre accesible y selección, y la sección de horarios conserva `aria-busy`.
+En Light, las cápsulas neutrales y los avisos importantes de V2 usan `--kani-surface-critical: #ffffffcc` (80%). Hover conserva el tinte existente; seleccionado, foco y deshabilitado mantienen sus tratamientos. No se cambia el token compartido ni `/reservar`, los importes o las cards generales. Las superficies Dark y los fondos se conservan. Desde 1024 px, calendario y horarios ocupan el mismo ancho útil del stepper; los siete días se distribuyen en todo el ancho sin aumentar su altura. En mobile se mantiene el ancho y cinco horarios por fila, también en desktop. La línea de fecha/cantidad de horarios ya no existe en el render ni tiene contenedor o estilos residuales; cada fecha conserva su nombre accesible y selección, y la sección de horarios conserva `aria-busy`.
 
 ## Compactación y ancho consistente
 
 El título principal del contenido es «Elegir una fecha» y el subtítulo delante de las cápsulas es «Elegir un horario»; el grupo conserva el nombre accesible «Horarios disponibles». El stepper mantiene Fecha/Hora y no se separa el paso funcional. «¿Quién te va a atender?» reutiliza exactamente la tipografía anterior de ese título: 20 px, peso 400, interlineado 26 px y márgenes 0/0/14 px. Se elimina el borde superior y padding del bloque de barberos. Los barberos diferidos neutrales Light usan el token crítico al 80%, con tinte de hover y estados seleccionados preservados; Dark conserva sus superficies.
 
-El calendario usa padding superior de 8 px en mobile y 10 px desde 768 px, con 2 px entre encabezado y grilla. El mes y la navegación comparten una fila centrada, con targets de 44 × 44 px. Se conserva el tamaño de texto y de las fechas. Frente a la versión anterior, la card del calendario recupera 6 px en mobile y 16 px en desktop; esto mide la compactación del calendario, no el nuevo subtítulo de horarios.
+El calendario comparte una variable de 2 px para padding superior y separación entre encabezado y grilla, centrando el caption entre el borde interior y la fila de días. El mes y la navegación comparten una fila centrada, con targets de 44 × 44 px. Se conserva el tamaño de texto y de las fechas. Frente a la versión anterior, la card del calendario recupera 6 px en mobile y 8 px en desktop; esto mide la compactación del calendario, no el nuevo subtítulo de horarios.
 
-Se eliminan los límites particulares de 1080 px de Fecha/Hora y Datos: los cuatro pasos heredan el contenedor original de Servicio/Barbero (`min(1184px, calc(100% - 80px))` en desktop y los gutters mobile existentes). Medidos los cuatro pasos y stepper con 328 px a 360 y 1184 px a 1440, sin saltos. Se mantienen cuatro horarios por fila en mobile, cinco en desktop y calendario completo de siete columnas. Validado en los ocho anchos solicitados, Light/Dark; `/reservar` sin diferencias de píxeles en 360/1440, ambos temas.
+Se eliminan los límites particulares de 1080 px de Fecha/Hora y Datos: los cuatro pasos heredan el contenedor original de Servicio/Barbero (`min(1184px, calc(100% - 80px))` en desktop y los gutters mobile existentes). Medidos los cuatro pasos y stepper con 328 px a 360 y 1184 px a 1440, sin saltos. Se mantienen cinco horarios por fila en mobile y desktop y calendario completo de siete columnas. Validado en los ocho anchos solicitados, Light/Dark; `/reservar` sin diferencias de píxeles en 360/1440, ambos temas.
 
 ## Resumen único en Datos
 
@@ -54,3 +54,11 @@ Las máscaras de iconos de servicios Dark no seleccionados usan `var(--gold)` en
 ## Campos compactos Mobile
 
 Solo en V2 y hasta 767 px, los inputs de una línea y el selector telefónico pasan de 52 a 48 px, con centros alineados. El texto editable ya era de 16 px y se conserva ese mínimo para evitar el disparador habitual de zoom por fuentes pequeñas en Safari/iOS; no se reduce a 14 px. Placeholders y prefijo se armonizan a 16 px (antes 13 y 12 px respectivamente). Observaciones conserva su área multilínea de 96 px en mobile. Desktop mantiene sus dimensiones y tipografía. La duración del servicio continúa en la lógica de disponibilidad y en el flujo original, pero no se muestra en el resumen final de V2. No se modifica normalización, validaciones, importes ni pago.
+
+## Stepper y cinco horarios Mobile
+
+El stepper mobile pasa de 72 a 54 px, con labels de 11 a 12 px y 4 px entre su caja y la línea inferior (antes 10 px). Se conservan indicadores, cuatro etapas, nombre accesible y navegación. Se elimina la reserva de 26 px para labels de una sola línea; ahora usan interlineado y altura mínima de 16 px.
+
+La grilla utiliza cinco columnas, con gap horizontal de 6 px en mobile, cápsulas de al menos 48 px de alto y 60 px de ancho en 360. El horario seleccionado mobile usa la misma familia y tamaño de 14 px de la fecha seleccionada, con peso 500; conserva las paletas de selección existentes. Light neutral sigue al 80%; Dark conserva sus superficies.
+
+El espacio superior del calendario y el inferior de su header usan el mismo token de 2 px. El centro del mes/flechas coincide con el punto medio entre el borde interior superior y el inicio de la fila de días. No se usan transformaciones, márgenes negativos ni offsets por viewport; los controles conservan 44 × 44 px.
