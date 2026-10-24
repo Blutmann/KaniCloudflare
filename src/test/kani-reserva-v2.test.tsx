@@ -59,6 +59,8 @@ describe('isolated four-stage booking presentation', () => {
     expect(screen.getByLabelText('Paso 3 de 4: Fecha y horario')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Elegí una fecha y horario' })).toBeInTheDocument();
     expect(screen.queryByText('Atendemos de lunes a sábado de 10 a 20 hs.')).not.toBeInTheDocument();
+    expect(document.querySelector('.booking-v2-selected-date')).toBeNull();
+    expect(screen.queryByText(/horarios disponibles/)).not.toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Elegí un horario' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Continuar' })).toBeDisabled();
     chooseTime();

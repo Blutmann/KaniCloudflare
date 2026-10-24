@@ -32,3 +32,7 @@ No se creó una reserva ni un cobro real para validar esta modificación. La pru
 ## Publicación
 
 Destino autorizado exclusivamente Preview/Test: `https://kanibarberstudio-cloudflare.kanibarber.workers.dev/reserva-v2`. No desplegar a Production ni reutilizar Supabase PROD para pruebas.
+
+## Ajuste de contraste y ancho
+
+En Light, las cápsulas neutrales y los avisos importantes de V2 usan `--kani-surface-critical: #ffffffcc` (80%). Hover conserva el tinte existente; seleccionado, foco y deshabilitado mantienen sus tratamientos. No se cambia el token compartido ni `/reservar`, los importes o las cards generales. Las superficies Dark y los fondos se conservan. Desde 1024 px, calendario y horarios ocupan el mismo ancho útil del stepper; los siete días se distribuyen en todo el ancho sin aumentar su altura. En mobile se mantiene el ancho y cuatro horarios por fila; desktop conserva cinco. La línea de fecha/cantidad de horarios ya no existe en el render ni tiene contenedor o estilos residuales; cada fecha conserva su nombre accesible y selección, y la sección de horarios conserva `aria-busy`.
