@@ -750,10 +750,7 @@ export function Booking({ combinedDateTime = false }: { combinedDateTime?: boole
 
             {(step === 3 || combinedDateTime && step === 2 && date) && (
               <div ref={timeSectionRef} className={combinedDateTime ? 'booking-v2-times' : undefined} aria-busy={combinedDateTime ? availabilityLoading : undefined}>
-                {combinedDateTime && <>
-                  <h2 id="booking-v2-times-title" className="booking-v2-choice-title">Elegí un horario</h2>
-                </>}
-                <div className="booking-time-grid grid grid-cols-3 gap-2 sm:grid-cols-4" role={combinedDateTime ? "group" : undefined} aria-labelledby={combinedDateTime ? "booking-v2-times-title" : undefined}>
+                <div className="booking-time-grid grid grid-cols-3 gap-2 sm:grid-cols-4" role={combinedDateTime ? "group" : undefined} aria-label={combinedDateTime ? "Horarios disponibles" : undefined}>
                   {timeSlots.map(slot => (
                     <Button
                       key={slot.time}
@@ -769,7 +766,7 @@ export function Booking({ combinedDateTime = false }: { combinedDateTime?: boole
                 </div>
                 {barberDeferred && time && (
                   <div className="barber-choice-inline">
-                    <h2>¿Quién te va a atender?</h2>
+                    <h2 className={combinedDateTime ? "booking-v2-choice-title" : undefined}>¿Quién te va a atender?</h2>
                     <div className="barber-choice-list">
                       {candidateBarbers.map(candidate => (
                         <Button

@@ -36,3 +36,11 @@ Destino autorizado exclusivamente Preview/Test: `https://kanibarberstudio-cloudf
 ## Ajuste de contraste y ancho
 
 En Light, las cápsulas neutrales y los avisos importantes de V2 usan `--kani-surface-critical: #ffffffcc` (80%). Hover conserva el tinte existente; seleccionado, foco y deshabilitado mantienen sus tratamientos. No se cambia el token compartido ni `/reservar`, los importes o las cards generales. Las superficies Dark y los fondos se conservan. Desde 1024 px, calendario y horarios ocupan el mismo ancho útil del stepper; los siete días se distribuyen en todo el ancho sin aumentar su altura. En mobile se mantiene el ancho y cuatro horarios por fila; desktop conserva cinco. La línea de fecha/cantidad de horarios ya no existe en el render ni tiene contenedor o estilos residuales; cada fecha conserva su nombre accesible y selección, y la sección de horarios conserva `aria-busy`.
+
+## Compactación y ancho consistente
+
+Se elimina el título visual «Elegí un horario»; el grupo de cápsulas conserva el nombre accesible «Horarios disponibles». «¿Quién te va a atender?» reutiliza exactamente la tipografía anterior de ese título: 20 px, peso 400, interlineado 26 px y márgenes 0/0/14 px. Se elimina el borde superior y padding del bloque de barberos. Los barberos diferidos neutrales Light usan el token crítico al 80%, con tinte de hover y estados seleccionados preservados; Dark conserva sus superficies.
+
+El encabezado del calendario reduce su margen inferior a 4 px y conserva navegación con targets de 44 × 44 px. No cambia el tamaño del texto del mes. Medición con disponibilidad simulada: unos 43 px menos a 360 × 800 y 59 px menos en desktop, incluyendo la sección de barbero diferido.
+
+Se eliminan los límites particulares de 1080 px de Fecha/Hora y Datos: los cuatro pasos heredan el contenedor original de Servicio/Barbero (`min(1184px, calc(100% - 80px))` en desktop y los gutters mobile existentes). Medidos los cuatro pasos y stepper con 328 px a 360 y 1184 px a 1440, sin saltos. Se mantienen cuatro horarios por fila en mobile, cinco en desktop y calendario completo de siete columnas. Validado en los ocho anchos solicitados, Light/Dark; `/reservar` sin diferencias de píxeles en 360/1440, ambos temas.

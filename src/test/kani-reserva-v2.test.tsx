@@ -61,7 +61,8 @@ describe('isolated four-stage booking presentation', () => {
     expect(screen.queryByText('Atendemos de lunes a sábado de 10 a 20 hs.')).not.toBeInTheDocument();
     expect(document.querySelector('.booking-v2-selected-date')).toBeNull();
     expect(screen.queryByText(/horarios disponibles/)).not.toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Elegí un horario' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Elegí un horario' })).not.toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Horarios disponibles' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Continuar' })).toBeDisabled();
     chooseTime();
     fireEvent.click(screen.getByRole('button', { name: dateLabel('2026-10-27') }));
@@ -100,6 +101,7 @@ describe('isolated four-stage booking presentation', () => {
     api.read.mockResolvedValue([]);
     await selectServiceAndBarber();
     expect(screen.queryByRole('heading', { name: 'Elegí un horario' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: 'Horarios disponibles' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Continuar' })).toBeDisabled();
   });
 
