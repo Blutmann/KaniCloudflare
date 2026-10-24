@@ -627,7 +627,7 @@ export function Booking({ combinedDateTime = false }: { combinedDateTime?: boole
         <div className="booking-layout">
           <section className="min-w-0">
             <div className={`booking-title-row ${step === 0 ? 'booking-service-heading' : ''} ${step === 1 ? 'booking-barber-heading' : ''} ${step === 2 ? 'booking-date-heading' : ''} ${step === 3 ? 'booking-time-heading' : ''} ${step === 4 ? 'booking-contact-heading' : ''} ${step === 5 ? 'booking-summary-heading' : ''}`}>
-              <h1 className="section-title">{combinedDateTime && step === 2 ? 'Fecha y horario' : titles[step]}</h1>
+              <h1 className="section-title">{combinedDateTime && step === 2 ? 'Elegí una fecha y horario' : titles[step]}</h1>
               {step === 3 && date && (
                 <span className="booking-time-heading-date">
                   <CalendarDays size={16} />{dateLabel(date)}
@@ -702,7 +702,6 @@ export function Booking({ combinedDateTime = false }: { combinedDateTime?: boole
             <ExperimentalLayout enabled={combinedDateTime && step === 2} className="booking-v2-date-time">
             {step === 2 && (
               <ExperimentalLayout enabled={combinedDateTime}>
-              {combinedDateTime && <h2 className="booking-v2-choice-title">Elegí una fecha</h2>}
               <div className="calendar-panel">
                 <div className="calendar-header mb-7 flex items-center justify-between">
                   <h2 className="capitalize">{month.toLocaleDateString('es-AR', { month: 'long' }).replace(/^./, letter => letter.toUpperCase()) + ' ' + month.getFullYear()}</h2>
@@ -734,9 +733,9 @@ export function Booking({ combinedDateTime = false }: { combinedDateTime?: boole
                   })}
                 </div>
                 {availabilityError && <p role="alert" className="mt-5 text-destructive">{availabilityError}</p>}
-                <p className="calendar-note mt-6 flex items-center gap-2 text-xs text-muted-foreground">
+                {!combinedDateTime && <p className="calendar-note mt-6 flex items-center gap-2 text-xs text-muted-foreground">
                   <span className="h-1 w-1 rounded-full bg-gold" /> Atendemos de lunes a sábado de 10 a 20 hs.
-                </p>
+                </p>}
               </div>
               </ExperimentalLayout>
             )}

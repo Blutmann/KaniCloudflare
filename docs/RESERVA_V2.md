@@ -4,7 +4,7 @@ Ruta experimental: `/reserva-v2`. `/` y `/reservar` continúan usando el flujo o
 
 La variante opt-in `combinedDateTime` reutiliza el estado, consultas, calendario, reglas de disponibilidad, formulario, resumen y operaciones de reserva/pago de `Booking`. Mantiene separados fecha y horario en el payload. Las etapas internas originales se conservan; solo se agrupan las pantallas y se adapta la navegación. Los estilos nuevos están limitados a `.booking-v2`.
 
-En mobile, el calendario aparece sobre una grilla de cápsulas de 48 px de alto mínimo. Al elegir una fecha se revela la sección de horarios cuando queda fuera del área visible, conservando parte del contexto del calendario y sin mover el foco. Se respeta `prefers-reduced-motion`. Desde 1024 px, las dos secciones usan columnas. El stepper conserva la presentación restaurada en `main`, adaptada a cinco pasos. `cc5805fb` no está disponible como objeto local ni como referencia remota; no se pudo verificar esa referencia específica.
+En mobile, el calendario aparece sobre una grilla de cápsulas de 48 px de alto mínimo. Al elegir una fecha se revela la sección de horarios cuando queda fuera del área visible, conservando parte del contexto del calendario y sin mover el foco. Se respeta `prefers-reduced-motion`. El calendario se mantiene encima de los horarios en todos los tamaños. La grilla usa cuatro columnas hasta 1023 px y cinco desde 1024 px; las cápsulas conservan al menos 48 px de alto. El paso muestra únicamente «Elegí una fecha y horario» como título principal y omite el aviso de horarios comerciales, sin cambiar disponibilidad. El stepper conserva la presentación restaurada en `main`, adaptada a cinco pasos. `cc5805fb` no está disponible como objeto local ni como referencia remota; no se pudo verificar esa referencia específica.
 
 La fecha elegida se anuncia junto a los horarios. Las cápsulas mantienen `aria-pressed`, foco visible y navegación por teclado. Cambiar de fecha limpia horario y, cuando corresponde, barbero diferido; volver desde Datos conserva las selecciones válidas. Continuar requiere fecha, horario y barbero válidos, incluyendo la selección diferida. Los errores de disponibilidad al enviar vuelven al paso combinado.
 
@@ -24,3 +24,7 @@ Los resultados, scripts locales de navegador y capturas se conservaron en `.vali
 No se creó una reserva real ni se acreditó una seña ni se verificó el envío real de emails: faltan los bindings de Supabase DEV y credenciales de prueba correspondientes. No usar producción para esta validación.
 
 No se desplegó a Cloudflare: Wrangler no está autenticado y falta identificar el Worker Preview/Test de destino. La configuración generada toma por defecto el nombre del repositorio, que no debe asumirse como un destino de prueba. La URL exacta de Preview/Test se podrá informar después de un despliegue autenticado al Worker correcto; agregar `/reserva-v2` a ese origen. No se ejecutó ningún despliegue a Production.
+
+## Ajuste compacto de Fecha/Horario
+
+Validado en Chromium a 360, 375, 390, 430, 768, 1024, 1280, 1440 y 1920 px (alto 800), Light y Dark: título único, sin aviso comercial, calendario encima, cuatro/cinco columnas, cápsulas de 48 px y sin overflow horizontal. Las pruebas usan disponibilidad simulada; no crean reservas ni pagos reales. Build correcto; suite: 304 aprobadas y los dos fallos previos.

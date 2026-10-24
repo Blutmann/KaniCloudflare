@@ -58,7 +58,8 @@ describe('isolated five-stage booking presentation', () => {
   it('combines date/time, resets a changed date, and preserves a valid selection when returning from contact', async () => {
     await selectServiceAndBarber();
     expect(screen.getByLabelText('Paso 3 de 5: Fecha y horario')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Elegí una fecha' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Elegí una fecha y horario' })).toBeInTheDocument();
+    expect(screen.queryByText('Atendemos de lunes a sábado de 10 a 20 hs.')).not.toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Elegí un horario' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Continuar' })).toBeDisabled();
     chooseTime();
