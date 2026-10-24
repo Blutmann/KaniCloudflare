@@ -1,0 +1,55 @@
+/* Presentation changes apply only to the opt-in reservation experiment. */
+.booking-page.booking-v2 .booking-progress {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+.booking-v2 .booking-v2-date-time {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: 28px;
+}
+.booking-v2 .booking-v2-date-time > div { min-width: 0; }
+.booking-v2 .booking-v2-choice-title {
+  margin: 0 0 14px;
+  font-family: var(--font-display);
+  font-size: 20px;
+  line-height: 1.3;
+}
+.booking-v2 .booking-v2-selected-date {
+  margin: -4px 0 16px;
+  color: var(--muted-foreground);
+  font-size: 13px;
+  text-transform: capitalize;
+}
+.booking-v2 .booking-v2-times {
+  scroll-margin-top: 24px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+}
+.booking-v2 .booking-v2-times .booking-time-slot { min-height: 48px; }
+.booking-v2 .booking-progress small { white-space: normal; }
+@media (max-width: 767px) {
+  .booking-page.booking-v2 .booking-progress > button {
+    min-width: 0;
+    min-height: 58px;
+    padding-inline: 1px;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .booking-page.booking-v2 .booking-progress small {
+    font-size: 11px;
+    min-height: 26px;
+    line-height: 1.15;
+  }
+  .booking-v2 .booking-v2-date-time { gap: 24px; }
+}
+@media (min-width: 1024px) {
+  .booking-page.booking-v2-datetime { max-width: 1080px; }
+  .booking-v2-datetime .booking-layout { max-width: none; }
+  .booking-v2 .booking-v2-date-time {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 36px;
+  }
+}

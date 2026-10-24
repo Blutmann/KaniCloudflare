@@ -22,7 +22,7 @@ export function MobileMenuAction() {
   const { setMobileMenuOpen } = useKani();
   const returnToBooking = () => {
     setMobileMenuOpen(false);
-    if (path !== '/reservar') void navigate({ to: '/reservar' });
+    if (path !== '/reservar' && path !== '/reserva-v2') void navigate({ to: '/reservar' });
   };
   return <div className="booking-cta mobile-menu-cta"><div className="booking-cta-inner flex items-center"><Button className="action-positive booking-menu-return h-12" onClick={returnToBooking}>Volver a la solicitud <ArrowUpRight /></Button></div></div>;
 }
@@ -126,7 +126,7 @@ export function SiteHeader() {
 
   const closeMenu = () => onMenuOpenChange(false);
   const continueBooking = (event: MouseEvent<HTMLAnchorElement>) => {
-    if (path === '/reservar') {
+    if (path === '/reservar' || path === '/reserva-v2') {
       event.preventDefault();
       closeMenu();
     }

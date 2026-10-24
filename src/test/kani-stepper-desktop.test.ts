@@ -35,8 +35,8 @@ describe('Kani Barber Studio - Ajuste de estados visuales del stepper en desktop
   it('3. Mantiene intacta la lógica de navegación y stepper en el componente booking', () => {
     // El botón conserva la capacidad de hacer clic hacia pasos anteriores completados
     expect(bookingCode).toContain('booking-progress');
-    expect(bookingCode).toContain('disabled={i > step}');
-    expect(bookingCode).toContain('onClick={() => move(i)}');
+    expect(bookingCode).toContain('disabled={i > visibleStep}');
+    expect(bookingCode).toContain('onClick={() => move(stageOrder[i] ?? 0)}');
     expect(bookingCode).toContain('variant="ghost"');
   });
 

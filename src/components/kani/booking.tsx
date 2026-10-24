@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { Check, Clock3, CalendarDays, UserRound, ChevronLeft, ChevronRight, ArrowLeft, CircleAlert, MapPin, Instagram } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,7 +35,14 @@ function fieldMessage(field: ContactField) {
   if (field === 'email') return 'Ingresá un email válido, por ejemplo nombre@email.com.';
   return '';
 }
-export function Booking() {
+function ExperimentalLayout({ enabled, className, children }: { enabled: boolean; className?: string; children: ReactNode }) {
+  return enabled ? <div className={className}>{children}</div> : <>{children}</>;
+}
+
+export function Booking({ combinedDateTime = false }: { combinedDateTime?: boolean } = {}) {
+  // Keep V1's internal stages and all booking operations; V2 only groups their presentation.
+  const stageOrder = combinedDateTime ? [0, 1, 2, 4, 5] : [0, 1, 2, 3, 4, 5];
+  const visibleSteps = combinedDateTime ? ['Servicio', 'Barbero', 'Fecha y horario', 'Datos', 'Resumen'] : steps;
   const { mobileMenuOpen, setMobileMenuOpen } = useKani();
   const [step, setStep] = useState(0);
   const [service, setService] = useState<ServiceId | null>(null);
@@ -43,6 +50,7 @@ export function Booking() {
   const [barberDeferred, setBarberDeferred] = useState(false);
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
+  const [dateSelection, setDateSelection] = useState(0);
   const [businessToday, setBusinessToday] = useState(() => businessDateToday());
   const [month, setMonth] = useState(() => parseDate(businessDateToday()));
   const [contact, setContact] = useState({ name: '', email: '', phone: '', notes: '' });
@@ -84,6 +92,26 @@ export function Booking() {
   const progressRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const prevStepRef = useRef(step);
+  const timeSectionRef = useRef<HTMLDivElement>(null);
+  const revealTimesRef = useRef(false);
+  const visibleStep = combinedDateTime && step > 2 ? step - 1 : step;
+
+  useEffect(() => {
+    if (!combinedDateTime || step !== 2 || !revealTimesRef.current) return;
+    revealTimesRef.current = false;
+    const container = scrollContainerRef.current;
+    const section = timeSectionRef.current;
+    if (!container || !section || window.matchMedia('(min-width: 1024px)').matches) return;
+    const viewport = container.getBoundingClientRect();
+    const heading = section.getBoundingClientRect();
+    // Reveal the heading and first row, retaining some calendar context. Never move focus.
+    if (heading.top + 112 > viewport.bottom) {
+      container.scrollTo({
+        top: container.scrollTop + heading.top - viewport.top - Math.min(120, viewport.height / 3),
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
+      });
+    }
+  }, [combinedDateTime, date, dateSelection, step]);
 
   useEffect(() => {
     document.documentElement.classList.add('booking-flow-active');
@@ -123,11 +151,11 @@ export function Booking() {
     if (!progress) return;
     const updateProgress = () => {
       const buttons = Array.from(progress.querySelectorAll<HTMLButtonElement>(':scope > button'));
-      const active = buttons[step];
+      const active = buttons[visibleStep];
       if (!active) return;
       const progressRect = progress.getBoundingClientRect();
       const activeRect = active.getBoundingClientRect();
-      const next = buttons[step + 1];
+      const next = buttons[visibleStep + 1];
       const start = 0;
       const endpoint = next
         ? (activeRect.right + next.getBoundingClientRect().left) / 2 - progressRect.left
@@ -140,7 +168,7 @@ export function Booking() {
     observer?.observe(progress);
     window.addEventListener('resize', updateProgress);
     return () => { observer?.disconnect(); window.removeEventListener('resize', updateProgress); };
-  }, [step]);
+  }, [step, visibleStep]);
 
   useEffect(() => {
     let cancelled = false;
@@ -268,7 +296,7 @@ export function Booking() {
       }
     }
   }, [availabilityLoading, availableDates, barberDeferred, date, service, todayValue]);
-  function move(next: number) { setStep(next); setError(''); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+  function move(next: number) { setStep(combinedDateTime && next === 3 ? 2 : next); setError(''); window.scrollTo({ top: 0, behavior: combinedDateTime && window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' }); }
   const statusFor = (field: ContactField) => fieldStatus(field, contact, phoneCountry, touched[field]);
   const markTouched = (field: ContactField) => setTouched(current => ({ ...current, [field]: true }));
   const feedbackFor = (field: ContactField) => {
@@ -294,7 +322,7 @@ export function Booking() {
   }
   function next() {
     if (step === 1 && !barber && !barberDeferred) { setError('Elegí un barbero o seleccioná “Elegir más adelante”.'); return; }
-    if (step === 3 && (!date || !time || !barber)) { setError('Elegí una fecha, un horario y un barbero para continuar.'); return; }
+    if ((step === 3 || combinedDateTime && step === 2) && (!date || !time || !barber || combinedDateTime && (!availableDatesSet.has(date) || !slots.includes(time)))) { setError('Elegí una fecha, un horario y un barbero para continuar.'); return; }
     if (step === 4) {
       setTouched({ name: true, phone: true, email: true, notes: true });
       if (!formRef.current?.reportValidity()) return;
@@ -302,7 +330,7 @@ export function Booking() {
       if (!normalized) { setError('Ingresá un número de teléfono válido para el país seleccionado.'); return; }
       setContact(current => ({ ...current, phone: normalized.display }));
     }
-    move(step + 1);
+    move(combinedDateTime && step === 2 ? 4 : step + 1);
   }
   async function submit() {
     if (!service || !barber || !date || !time || submitting) return;
@@ -415,7 +443,7 @@ export function Booking() {
         <p className="mt-2 text-sm text-muted-foreground">San Isidro Labrador 7 · Martínez, Provincia de Buenos Aires</p>
         <div className="confirmation-actions">
           <Button asChild className="confirmation-home action-brand" aria-label="Volver a reservar">
-            <a href="/reservar">Volver al inicio</a>
+            <a href={combinedDateTime ? "/reserva-v2" : "/reservar"}>Volver al inicio</a>
           </Button>
           <Button asChild variant="outline" className="confirmation-secondary">
             <a href="https://www.google.com/maps/place/KANI+BARBER+STUDIO/data=!4m2!3m1!1s0x0:0x48bcfe7b2ea7ba60" target="_blank" rel="noreferrer"><MapPin size={16} /> Ver ubicación</a>
@@ -467,7 +495,7 @@ export function Booking() {
           Actualizar estado
         </Button>
         <Button asChild variant="outline" className="h-11 px-6">
-          <a href="/reservar">Volver al inicio</a>
+          <a href={combinedDateTime ? "/reserva-v2" : "/reservar"}>Volver al inicio</a>
         </Button>
       </div>
     </main>
@@ -482,7 +510,7 @@ export function Booking() {
       </p>
       <div className="mt-8 flex justify-center">
         <Button asChild className="action-brand h-11 px-6">
-          <a href="/reservar">Reservar nuevamente</a>
+          <a href={combinedDateTime ? "/reserva-v2" : "/reservar"}>Reservar nuevamente</a>
         </Button>
       </div>
     </main>
@@ -545,7 +573,7 @@ export function Booking() {
         <p className="mt-2 text-sm text-muted-foreground">San Isidro Labrador 7 · Martínez, Provincia de Buenos Aires</p>
         <div className="confirmation-actions">
           <Button asChild className="confirmation-home action-brand" aria-label="Volver a reservar">
-            <a href="/reservar">Volver al inicio</a>
+            <a href={combinedDateTime ? "/reserva-v2" : "/reservar"}>Volver al inicio</a>
           </Button>
           <Button asChild variant="outline" className="confirmation-secondary">
             <a href="https://www.google.com/maps/place/KANI+BARBER+STUDIO/data=!4m2!3m1!1s0x0:0x48bcfe7b2ea7ba60" target="_blank" rel="noreferrer"><MapPin size={16} /> Ver ubicación</a>
@@ -562,7 +590,9 @@ export function Booking() {
   const contactReady = contact.name.trim().length >= 3
     && Boolean(normalizePhone(contact.phone, phoneCountry))
     && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact.email.trim());
-  const canNext = [Boolean(service), Boolean(barber || barberDeferred), Boolean(date), Boolean(time && barber), contactReady, true][step];
+  const canNext = combinedDateTime && step === 2
+    ? Boolean(date && availableDatesSet.has(date) && time && slots.includes(time) && barber && (!barberDeferred || eligibleBarbersForAvailabilityStart(availabilityStartsByDate.get(date) ?? [], date, time, serviceName, clock).includes(barber))) && !availabilityLoading
+    : [Boolean(service), Boolean(barber || barberDeferred), Boolean(date), Boolean(time && barber), contactReady, true][step];
   const today = parseDate(todayValue);
   const lastBookingDay = parseDate(bookingEndValue);
   const candidateBarbers = service && date && time && barberDeferred ? eligibleBarbersForAvailabilityStart(availabilityStartsByDate.get(date) ?? [], date, time, serviceName, clock) : [];
@@ -570,23 +600,24 @@ export function Booking() {
   const daysInMonth = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
   const offset = (new Date(month.getFullYear(), month.getMonth(), 1).getDay() + 6) % 7;
   return (
-    <main className={`site-container booking-page ${step === 5 ? 'booking-summary-page' : ''}`}>
+    <main className={`site-container booking-page ${combinedDateTime ? 'booking-v2' : ''} ${combinedDateTime && step === 2 ? 'booking-v2-datetime' : ''} ${step === 5 ? 'booking-summary-page' : ''}`}>
       <div
         ref={progressRef}
         className="booking-progress"
+        role={combinedDateTime ? "group" : undefined}
         style={{ '--progress-start': `${progressStart}px`, '--progress-width': `${progressWidth}px` } as CSSProperties}
-        aria-label={`Paso ${step + 1} de 6: ${steps[step]}`}
+        aria-label={`Paso ${visibleStep + 1} de ${visibleSteps.length}: ${visibleSteps[visibleStep]}`}
       >
-        {steps.map((name, i) => (
+        {visibleSteps.map((name, i) => (
           <Button
             key={name}
             variant="ghost"
-            disabled={i > step}
-            aria-current={i === step ? 'step' : undefined}
-            onClick={() => move(i)}
-            className={i === step ? 'current' : i < step ? 'complete' : ''}
+            disabled={i > visibleStep}
+            aria-current={i === visibleStep ? 'step' : undefined}
+            onClick={() => move(stageOrder[i] ?? 0)}
+            className={i === visibleStep ? 'current' : i < visibleStep ? 'complete' : ''}
           >
-            <span>{i < step ? <Check size={13} /> : String(i + 1).padStart(2, '0')}</span>
+            <span>{i < visibleStep ? <Check size={13} /> : String(i + 1).padStart(2, '0')}</span>
             <small>{name}</small>
           </Button>
         ))}
@@ -596,7 +627,7 @@ export function Booking() {
         <div className="booking-layout">
           <section className="min-w-0">
             <div className={`booking-title-row ${step === 0 ? 'booking-service-heading' : ''} ${step === 1 ? 'booking-barber-heading' : ''} ${step === 2 ? 'booking-date-heading' : ''} ${step === 3 ? 'booking-time-heading' : ''} ${step === 4 ? 'booking-contact-heading' : ''} ${step === 5 ? 'booking-summary-heading' : ''}`}>
-              <h1 className="section-title">{titles[step]}</h1>
+              <h1 className="section-title">{combinedDateTime && step === 2 ? 'Fecha y horario' : titles[step]}</h1>
               {step === 3 && date && (
                 <span className="booking-time-heading-date">
                   <CalendarDays size={16} />{dateLabel(date)}
@@ -668,7 +699,10 @@ export function Booking() {
               </div>
             )}
 
+            <ExperimentalLayout enabled={combinedDateTime && step === 2} className="booking-v2-date-time">
             {step === 2 && (
+              <ExperimentalLayout enabled={combinedDateTime}>
+              {combinedDateTime && <h2 className="booking-v2-choice-title">Elegí una fecha</h2>}
               <div className="calendar-panel">
                 <div className="calendar-header mb-7 flex items-center justify-between">
                   <h2 className="capitalize">{month.toLocaleDateString('es-AR', { month: 'long' }).replace(/^./, letter => letter.toUpperCase()) + ' ' + month.getFullYear()}</h2>
@@ -692,7 +726,7 @@ export function Booking() {
                         disabled={disabled}
                         aria-label={dateLabel(value)}
                         aria-pressed={date === value}
-                        onClick={() => { if (date !== value) { setDate(value); setTime(''); if (barberDeferred) setBarber(null); } }}
+                        onClick={() => { if (combinedDateTime) { revealTimesRef.current = true; setDateSelection(current => current + 1); } if (date !== value) { setDate(value); setTime(''); if (barberDeferred) setBarber(null); } }}
                       >
                         {i + 1}
                       </Button>
@@ -704,11 +738,16 @@ export function Booking() {
                   <span className="h-1 w-1 rounded-full bg-gold" /> Atendemos de lunes a sábado de 10 a 20 hs.
                 </p>
               </div>
+              </ExperimentalLayout>
             )}
 
-            {step === 3 && (
-              <div>
-                <div className="booking-time-grid grid grid-cols-3 gap-2 sm:grid-cols-4">
+            {(step === 3 || combinedDateTime && step === 2 && date) && (
+              <div ref={timeSectionRef} className={combinedDateTime ? 'booking-v2-times' : undefined} aria-busy={combinedDateTime ? availabilityLoading : undefined}>
+                {combinedDateTime && <>
+                  <h2 id="booking-v2-times-title" className="booking-v2-choice-title">Elegí un horario</h2>
+                  <p className="booking-v2-selected-date" role="status" aria-live="polite">{dateLabel(date)}{availabilityLoading ? ' · Cargando horarios…' : ` · ${timeSlots.length} horarios disponibles`}</p>
+                </>}
+                <div className="booking-time-grid grid grid-cols-3 gap-2 sm:grid-cols-4" role={combinedDateTime ? "group" : undefined} aria-labelledby={combinedDateTime ? "booking-v2-times-title" : undefined}>
                   {timeSlots.map(slot => (
                     <Button
                       key={slot.time}
@@ -747,6 +786,8 @@ export function Booking() {
               </div>
             )}
 
+            </ExperimentalLayout>
+
             {step === 4 && (
               <form ref={formRef} className="booking-contact-form space-y-3" onSubmit={e => { e.preventDefault(); next(); }}>
                 <label className="field-label">
@@ -772,10 +813,11 @@ export function Booking() {
                     </span>
                   )}
                 </label>
-                <label className="field-label">
+                <label className="field-label" htmlFor={combinedDateTime ? "booking-v2-phone" : undefined}>
                   Celular
                   <Suspense fallback={<div className="h-12 w-full animate-pulse rounded-md bg-muted" />}>
                     <PhoneInput
+                      id={combinedDateTime ? "booking-v2-phone" : undefined}
                       name="phone"
                       required
                       value={contact.phone}
@@ -931,7 +973,7 @@ export function Booking() {
 
       <div ref={ctaRef} className="booking-cta" aria-hidden={mobileMenuOpen || undefined} inert={mobileMenuOpen} style={mobileMenuOpen ? { visibility: 'hidden' } : undefined}>
           <div className="booking-cta-inner flex items-center">
-            <Button variant="outline" className="booking-back-button" onClick={() => move(step - 1)} disabled={step === 0 || submitting}>
+            <Button variant="outline" className="booking-back-button" onClick={() => move(combinedDateTime && step === 4 ? 2 : step - 1)} disabled={step === 0 || submitting}>
               <ArrowLeft size={14} aria-hidden="true" /> Volver
             </Button>
             <Button disabled={!canNext || submitting} className="action-positive booking-next-button h-12 px-6" onClick={step === 5 ? submit : next}>
