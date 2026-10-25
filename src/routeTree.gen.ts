@@ -31,6 +31,9 @@ import { Route as AdminMantenimientoRouteImport } from './routes/admin.mantenimi
 import { Route as AdminMovilRouteImport } from './routes/admin.movil'
 import { Route as AdminPagosRouteImport } from './routes/admin.pagos'
 import { Route as AdminTurnosRouteImport } from './routes/admin.turnos'
+import { Route as PagoErrorRouteImport } from './routes/pago.error'
+import { Route as PagoExitoRouteImport } from './routes/pago.exito'
+import { Route as PagoPendienteRouteImport } from './routes/pago.pendiente'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -142,6 +145,21 @@ const AdminTurnosRoute = AdminTurnosRouteImport.update({
   path: '/turnos',
   getParentRoute: () => AdminRoute,
 } as any)
+const PagoErrorRoute = PagoErrorRouteImport.update({
+  id: '/pago/error',
+  path: '/pago/error',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PagoExitoRoute = PagoExitoRouteImport.update({
+  id: '/pago/exito',
+  path: '/pago/exito',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PagoPendienteRoute = PagoPendienteRouteImport.update({
+  id: '/pago/pendiente',
+  path: '/pago/pendiente',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -164,6 +182,9 @@ export interface FileRoutesByFullPath {
   '/admin/movil': typeof AdminMovilRoute
   '/admin/pagos': typeof AdminPagosRoute
   '/admin/turnos': typeof AdminTurnosRoute
+  '/pago/error': typeof PagoErrorRoute
+  '/pago/exito': typeof PagoExitoRoute
+  '/pago/pendiente': typeof PagoPendienteRoute
   '/admin-v2/': typeof AdminV2IndexRoute
   '/admin/': typeof AdminIndexRoute
 }
@@ -186,6 +207,9 @@ export interface FileRoutesByTo {
   '/admin/movil': typeof AdminMovilRoute
   '/admin/pagos': typeof AdminPagosRoute
   '/admin/turnos': typeof AdminTurnosRoute
+  '/pago/error': typeof PagoErrorRoute
+  '/pago/exito': typeof PagoExitoRoute
+  '/pago/pendiente': typeof PagoPendienteRoute
   '/admin-v2': typeof AdminV2IndexRoute
   '/admin': typeof AdminIndexRoute
 }
@@ -211,6 +235,9 @@ export interface FileRoutesById {
   '/admin/movil': typeof AdminMovilRoute
   '/admin/pagos': typeof AdminPagosRoute
   '/admin/turnos': typeof AdminTurnosRoute
+  '/pago/error': typeof PagoErrorRoute
+  '/pago/exito': typeof PagoExitoRoute
+  '/pago/pendiente': typeof PagoPendienteRoute
   '/admin-v2/': typeof AdminV2IndexRoute
   '/admin/': typeof AdminIndexRoute
 }
@@ -237,6 +264,9 @@ export interface FileRouteTypes {
     | '/admin/movil'
     | '/admin/pagos'
     | '/admin/turnos'
+    | '/pago/error'
+    | '/pago/exito'
+    | '/pago/pendiente'
     | '/admin-v2/'
     | '/admin/'
   fileRoutesByTo: FileRoutesByTo
@@ -259,6 +289,9 @@ export interface FileRouteTypes {
     | '/admin/movil'
     | '/admin/pagos'
     | '/admin/turnos'
+    | '/pago/error'
+    | '/pago/exito'
+    | '/pago/pendiente'
     | '/admin-v2'
     | '/admin'
   id:
@@ -283,6 +316,9 @@ export interface FileRouteTypes {
     | '/admin/movil'
     | '/admin/pagos'
     | '/admin/turnos'
+    | '/pago/error'
+    | '/pago/exito'
+    | '/pago/pendiente'
     | '/admin-v2/'
     | '/admin/'
   fileRoutesById: FileRoutesById
@@ -295,6 +331,9 @@ export interface RootRouteChildren {
   EstudioRoute: typeof EstudioRoute
   ReservaV2Route: typeof ReservaV2Route
   ReservarRoute: typeof ReservarRoute
+  PagoErrorRoute: typeof PagoErrorRoute
+  PagoExitoRoute: typeof PagoExitoRoute
+  PagoPendienteRoute: typeof PagoPendienteRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -453,6 +492,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminTurnosRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/pago/error': {
+      id: '/pago/error'
+      path: '/pago/error'
+      fullPath: '/pago/error'
+      preLoaderRoute: typeof PagoErrorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pago/exito': {
+      id: '/pago/exito'
+      path: '/pago/exito'
+      fullPath: '/pago/exito'
+      preLoaderRoute: typeof PagoExitoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pago/pendiente': {
+      id: '/pago/pendiente'
+      path: '/pago/pendiente'
+      fullPath: '/pago/pendiente'
+      preLoaderRoute: typeof PagoPendienteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -511,6 +571,9 @@ const rootRouteChildren: RootRouteChildren = {
   EstudioRoute: EstudioRoute,
   ReservaV2Route: ReservaV2Route,
   ReservarRoute: ReservarRoute,
+  PagoErrorRoute: PagoErrorRoute,
+  PagoExitoRoute: PagoExitoRoute,
+  PagoPendienteRoute: PagoPendienteRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

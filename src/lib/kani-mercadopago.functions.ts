@@ -1,5 +1,4 @@
 import { createServerFn } from "@tanstack/react-start";
-import { createMercadoPagoOrder, getDynamicDownPayment } from "./kani-mercadopago";
 
 export type CreateBookingOrderInput = {
   appointmentId: string;
@@ -20,19 +19,31 @@ export type CreateBookingOrderResult = {
   error?: string;
 };
 
-export function getRuntimeEnv(name: string): string | undefined {
-  const globalObj = globalThis as typeof globalThis & {
-    __env__?: Record<string, unknown>;
-    __KANI_RUNTIME_ENV?: Record<string, string>;
+export type AppointmentPaymentStatusInput = {
+  appointmentId: string;
+  orderId?: string;
+  paymentId?: string;
+};
+
+export type AppointmentPaymentStatusResult = {
+  success: boolean;
+  appointmentStatus?: string;
+  isConfirmed: boolean;
+  appointment?: {
+    id: string;
+    requestNumber?: number;
+    serviceName?: string;
+    barberName?: string;
+    date?: string;
+    time?: string;
+    clientName?: string;
+    clientPhone?: string;
+    clientEmail?: string;
+    depositAmountArs?: number;
   };
-  const runtimeValue =
-    globalObj.__env__?.[name] ??
-    globalObj.__KANI_RUNTIME_ENV?.[name] ??
-    (typeof process !== "undefined" ? process.env[name] : undefined);
-  return typeof runtimeValue === "string" && runtimeValue.trim()
-    ? runtimeValue.trim()
-    : undefined;
-}
+  error?: string;
+  message?: string;
+};
 
 export const createBookingOrderFn = createServerFn({ method: "POST" })
   .validator((data: CreateBookingOrderInput) => {
@@ -42,106 +53,18 @@ export const createBookingOrderFn = createServerFn({ method: "POST" })
     return data;
   })
   .handler(async ({ data }): Promise<CreateBookingOrderResult> => {
-    try {
-      const accessToken = getRuntimeEnv("MERCADOPAGO_ACCESS_TOKEN");
-      const notificationUrl =
-        getRuntimeEnv("MERCADOPAGO_NOTIFICATION_URL") ??
-        "https://kanibarberstudio-cloudflare.kanibarber.workers.dev/api/webhook/mercadopago";
+    const { handleCreateBookingOrder } = await import("./kani-mercadopago.server");
+    return handleCreateBookingOrder(data);
+  });
 
-      const appBaseUrl =
-        getRuntimeEnv("KANI_APP_URL") ??
-        "https://kanibarberstudio-cloudflare.kanibarber.workers.dev";
-      const returnUrl = `${appBaseUrl.replace(/\/$/, "")}/reservar?status=return&appointment_id=${encodeURIComponent(data.appointmentId)}`;
-
-      const tokenType = accessToken
-        ? accessToken.startsWith("TEST-")
-          ? "SANDBOX"
-          : accessToken.startsWith("APP_USR-")
-            ? "PRODUCTION"
-            : "CUSTOM"
-        : "MISSING";
-
-      const envSource = (globalThis as any).__env__?.MERCADOPAGO_ACCESS_TOKEN
-        ? "__env__"
-        : (globalThis as any).__KANI_RUNTIME_ENV?.MERCADOPAGO_ACCESS_TOKEN
-          ? "__KANI_RUNTIME_ENV"
-          : typeof process !== "undefined" && process.env?.MERCADOPAGO_ACCESS_TOKEN
-            ? "process.env"
-            : "none";
-
-      console.log("[Mercado Pago Order Init Diagnostics]", {
-        hasAccessToken: Boolean(accessToken),
-        tokenType,
-        tokenLength: accessToken ? accessToken.length : 0,
-        envSource,
-        hasNotificationUrl: Boolean(notificationUrl),
-        appointmentId: data.appointmentId,
-        serviceName: data.serviceName,
-        barberName: data.barberName,
-      });
-
-      if (!accessToken) {
-        console.error(
-          "[Mercado Pago Order Error] MERCADOPAGO_ACCESS_TOKEN no configurado en variables de entorno (revisado: __env__, __KANI_RUNTIME_ENV, process.env).",
-        );
-        return {
-          success: false,
-          error: "MERCADOPAGO_NOT_CONFIGURED",
-        };
-      }
-
-      // Obtener el monto de la seña dinámica de forma no hardcodeada
-      const dynamicDeposit = await getDynamicDownPayment(data.barberName);
-      const depositAmount = data.servicePrice > 0
-        ? Math.min(dynamicDeposit, data.servicePrice)
-        : dynamicDeposit;
-
-      const orderResult = await createMercadoPagoOrder({
-        input: {
-          externalReference: data.appointmentId,
-          title: `Seña - ${data.serviceName} (${data.barberName})`,
-          description: `Seña para reserva en Kani Barber Studio - ${data.serviceName} con ${data.barberName}`,
-          amount: depositAmount,
-          currencyId: "ARS",
-          payer: {
-            email: data.clientEmail.trim(),
-            name: data.clientName.trim(),
-            phone: data.clientPhone.trim(),
-          },
-          notificationUrl,
-          returnUrl,
-          expirationMinutes: 10,
-        },
-        accessToken,
-        idempotencyKey: data.appointmentId,
-      });
-
-      if (!orderResult.success) {
-        console.error("[Mercado Pago Order Failed]", {
-          appointmentId: data.appointmentId,
-          error: orderResult.error ?? "ORDER_CREATION_FAILED",
-        });
-        return {
-          success: false,
-          error: orderResult.error ?? "ORDER_CREATION_FAILED",
-        };
-      }
-
-      const checkoutUrl = orderResult.checkoutUrl || orderResult.initPoint;
-
-      return {
-        success: true,
-        orderId: orderResult.orderId,
-        initPoint: checkoutUrl,
-        checkoutUrl,
-        depositAmount,
-      };
-    } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : String(error);
-      console.error("[Mercado Pago] Error en createBookingOrderFn:", errorMsg);
-      return {
-        success: false,
-        error: errorMsg,
-      };
+export const getAppointmentPaymentStatusFn = createServerFn({ method: "POST" })
+  .validator((data: AppointmentPaymentStatusInput) => {
+    if (!data?.appointmentId || typeof data.appointmentId !== "string") {
+      throw new Error("APPOINTMENT_ID_REQUIRED");
     }
+    return data;
+  })
+  .handler(async ({ data }): Promise<AppointmentPaymentStatusResult> => {
+    const { handleGetAppointmentPaymentStatus } = await import("./kani-mercadopago.server");
+    return handleGetAppointmentPaymentStatus(data);
   });

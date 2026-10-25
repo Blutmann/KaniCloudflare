@@ -111,6 +111,7 @@ export default {
               }).__KANI_RUNTIME_ENV?.MERCADOPAGO_ACCESS_TOKEN;
 
             if (dataId && accessToken) {
+              const { confirmAppointmentPayment, getMercadoPagoPayment } = await import("./lib/kani-mercadopago");
               const orderResult = await getMercadoPagoOrder({
                 orderId: dataId,
                 accessToken,
@@ -122,13 +123,36 @@ export default {
 
                 if (appointmentId && isOrderFullyApproved(order)) {
                   console.log(`[Mercado Pago Webhook] Orden ${order.id} aprobada para turno ${appointmentId}. Confirmando...`);
-                  const { confirmAppointmentPayment } = await import("./lib/kani-mercadopago");
                   const confirmation = await confirmAppointmentPayment({
                     appointmentId,
                     orderId: String(order.id),
                     totalAmount: order.total_amount ? Number(order.total_amount) : undefined,
                   });
                   console.log(`[Mercado Pago Webhook] Resultado de confirmación para ${appointmentId}:`, confirmation.resultCode);
+                }
+              } else {
+                // Si la orden no existió con ese ID, verificar si dataId corresponde a un pago directo
+                const paymentResult = await getMercadoPagoPayment({
+                  paymentId: dataId,
+                  accessToken,
+                });
+
+                if (paymentResult.success && paymentResult.payment) {
+                  const payment = paymentResult.payment;
+                  const appointmentId = payment.external_reference;
+                  if (
+                    appointmentId &&
+                    payment.status === "approved" &&
+                    (!payment.currency_id || payment.currency_id.toUpperCase() === "ARS")
+                  ) {
+                    console.log(`[Mercado Pago Webhook] Pago ${payment.id} aprobado para turno ${appointmentId}. Confirmando...`);
+                    const confirmation = await confirmAppointmentPayment({
+                      appointmentId,
+                      orderId: payment.order?.id ? String(payment.order.id) : String(payment.id),
+                      totalAmount: payment.transaction_amount ? Number(payment.transaction_amount) : undefined,
+                    });
+                    console.log(`[Mercado Pago Webhook] Resultado de confirmación para ${appointmentId}:`, confirmation.resultCode);
+                  }
                 }
               }
             }

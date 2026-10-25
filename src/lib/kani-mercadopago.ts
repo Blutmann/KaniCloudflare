@@ -26,6 +26,11 @@ export type CreateMercadoPagoOrderInput = {
   notificationUrl?: string;
   expirationMinutes?: number;
   returnUrl?: string;
+  returnUrls?: {
+    successUrl: string;
+    failureUrl: string;
+    pendingUrl: string;
+  };
 };
 
 export type MercadoPagoOrderResponse = {
@@ -211,13 +216,21 @@ export async function createMercadoPagoOrder({
     ],
   };
 
-  if (input.returnUrl) {
+  if (input.notificationUrl) {
+    bodyPayload.notification_url = input.notificationUrl;
+  }
+
+  const successUrl = input.returnUrls?.successUrl ?? input.returnUrl;
+  const failureUrl = input.returnUrls?.failureUrl ?? input.returnUrl;
+  const pendingUrl = input.returnUrls?.pendingUrl ?? input.returnUrl;
+
+  if (successUrl || failureUrl || pendingUrl) {
     bodyPayload.config = {
       online: {
-        success_url: input.returnUrl,
-        failure_url: input.returnUrl,
-        pending_url: input.returnUrl,
-        auto_return: "approved",
+        success_url: successUrl ?? pendingUrl ?? failureUrl,
+        failure_url: failureUrl ?? successUrl ?? pendingUrl,
+        pending_url: pendingUrl ?? successUrl ?? failureUrl,
+        auto_return: "all",
       },
     };
   }
@@ -229,7 +242,9 @@ export async function createMercadoPagoOrder({
     externalReference: input.externalReference,
     totalAmount: bodyPayload.total_amount,
     idempotencyKey: validIdempotencyKey,
-    hasReturnUrl: Boolean(input.returnUrl),
+    hasNotificationUrl: Boolean(input.notificationUrl),
+    hasReturnUrl: Boolean(successUrl || failureUrl || pendingUrl),
+    autoReturn: (bodyPayload.config as any)?.online?.auto_return,
   });
 
   try {
@@ -358,6 +373,76 @@ export async function getMercadoPagoOrder({
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);
     console.error("[Mercado Pago Get Order Exception]:", errorMsg);
+    return {
+      success: false,
+      error: errorMsg,
+    };
+  }
+}
+
+export type MercadoPagoPaymentDetails = {
+  id: string | number;
+  status: string;
+  status_detail?: string;
+  transaction_amount?: number;
+  currency_id?: string;
+  external_reference?: string;
+  order?: { id?: string | number; type?: string };
+  date_approved?: string;
+};
+
+export type GetPaymentResult = {
+  success: boolean;
+  payment?: MercadoPagoPaymentDetails;
+  error?: string;
+};
+
+/**
+ * Consulta un pago individual en Mercado Pago (GET /v1/payments/{id}).
+ * Útil para notificaciones de tipo 'payment' o verificación cruzada.
+ */
+export async function getMercadoPagoPayment({
+  paymentId,
+  accessToken,
+  apiBaseUrl = "https://api.mercadopago.com",
+}: {
+  paymentId: string;
+  accessToken: string | undefined;
+  apiBaseUrl?: string;
+}): Promise<GetPaymentResult> {
+  if (!accessToken || !accessToken.trim()) {
+    return {
+      success: false,
+      error: "MERCADOPAGO_ACCESS_TOKEN_NOT_CONFIGURED",
+    };
+  }
+
+  try {
+    const response = await fetch(`${apiBaseUrl}/v1/payments/${encodeURIComponent(paymentId)}`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${accessToken.trim()}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`[Mercado Pago Get Payment Error] (${response.status}):`, errorText);
+      return {
+        success: false,
+        error: `HTTP ${response.status}: ${errorText}`,
+      };
+    }
+
+    const data = (await response.json()) as MercadoPagoPaymentDetails;
+    return {
+      success: true,
+      payment: data,
+    };
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    console.error("[Mercado Pago Get Payment Exception]:", errorMsg);
     return {
       success: false,
       error: errorMsg,

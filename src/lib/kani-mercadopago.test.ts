@@ -4,6 +4,7 @@ import {
   verifyMercadoPagoWebhookSignature,
   createMercadoPagoOrder,
   getMercadoPagoOrder,
+  getMercadoPagoPayment,
   isOrderFullyApproved,
   getDynamicDownPayment,
   confirmAppointmentPayment,
@@ -439,7 +440,7 @@ describe("Mercado Pago Integration Unit Tests", () => {
       const [, options] = mockFetch.mock.calls[0];
       const body = JSON.parse(options.body);
       expect(body.config.online.success_url).toBe("https://example.com/reservar?status=return");
-      expect(body.config.online.auto_return).toBe("approved");
+      expect(body.config.online.auto_return).toBe("all");
     });
 
     it("extracts error cause descriptions from Mercado Pago error response", async () => {
@@ -531,7 +532,7 @@ describe("Mercado Pago Integration Unit Tests", () => {
 
   describe("Runtime Environment Resolution (getRuntimeEnv)", () => {
     it("resolves variables stored in globalThis.__env__", async () => {
-      const { getRuntimeEnv } = await import("./kani-mercadopago.functions");
+      const { getRuntimeEnv } = await import("./kani-mercadopago.server");
       const globalObj = globalThis as typeof globalThis & { __env__?: Record<string, string> };
       globalObj.__env__ = {
         MERCADOPAGO_ACCESS_TOKEN: "TEST-from-nitro-env-12345",
@@ -540,6 +541,100 @@ describe("Mercado Pago Integration Unit Tests", () => {
       expect(getRuntimeEnv("MERCADOPAGO_ACCESS_TOKEN")).toBe("TEST-from-nitro-env-12345");
 
       delete globalObj.__env__;
+    });
+  });
+  describe("getMercadoPagoPayment", () => {
+    it("returns payment details on successful GET", async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          id: 99887766,
+          status: "approved",
+          transaction_amount: 5000,
+          currency_id: "ARS",
+          external_reference: "apt_uuid_123",
+          order: { id: 123456 },
+        }),
+      });
+      global.fetch = mockFetch;
+
+      const res = await getMercadoPagoPayment({
+        paymentId: "99887766",
+        accessToken: "TEST-TOKEN",
+      });
+
+      expect(res.success).toBe(true);
+      expect(res.payment?.id).toBe(99887766);
+      expect(res.payment?.status).toBe("approved");
+      expect(res.payment?.external_reference).toBe("apt_uuid_123");
+    });
+
+    it("handles 404 or error gracefully without throwing", async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 404,
+        text: async () => "Not Found",
+      });
+      global.fetch = mockFetch;
+
+      const res = await getMercadoPagoPayment({
+        paymentId: "non_existent_payment",
+        accessToken: "TEST-TOKEN",
+      });
+
+      expect(res.success).toBe(false);
+      expect(res.error).toContain("404");
+    });
+  });
+
+  describe("Orders API Return URLs and auto_return: all", () => {
+    it("configures success_url, failure_url, pending_url and auto_return 'all' in config.online", async () => {
+      let capturedBody: any = null;
+      const mockFetch = vi.fn().mockImplementation(async (_url, opts) => {
+        capturedBody = JSON.parse(opts.body);
+        return {
+          ok: true,
+          json: async () => ({
+            id: "order_test_return_urls",
+            checkout_url: "https://www.mercadopago.com.ar/checkout/v1/redirect?order_id=order_test_return_urls",
+          }),
+        };
+      });
+      global.fetch = mockFetch;
+
+      const input: CreateMercadoPagoOrderInput = {
+        externalReference: "apt_test_urls",
+        title: "Seña - Corte (Lautaro)",
+        description: "Seña para reserva en Kani Barber Studio",
+        amount: 5000,
+        payer: { email: "cliente@kani.com" },
+        notificationUrl: "https://kanibarberstudio-cloudflare.kanibarber.workers.dev/api/webhook/mercadopago",
+        returnUrls: {
+          successUrl: "https://kanibarberstudio-cloudflare.kanibarber.workers.dev/pago/exito?appointment_id=apt_test_urls",
+          failureUrl: "https://kanibarberstudio-cloudflare.kanibarber.workers.dev/pago/error?appointment_id=apt_test_urls",
+          pendingUrl: "https://kanibarberstudio-cloudflare.kanibarber.workers.dev/pago/pendiente?appointment_id=apt_test_urls",
+        },
+      };
+
+      const result = await createMercadoPagoOrder({
+        input,
+        accessToken: "TEST-TOKEN",
+        idempotencyKey: "apt_test_urls",
+      });
+
+      expect(result.success).toBe(true);
+      expect(capturedBody).toBeDefined();
+      expect(capturedBody.notification_url).toBe("https://kanibarberstudio-cloudflare.kanibarber.workers.dev/api/webhook/mercadopago");
+      expect(capturedBody.config?.online?.success_url).toBe(
+        "https://kanibarberstudio-cloudflare.kanibarber.workers.dev/pago/exito?appointment_id=apt_test_urls"
+      );
+      expect(capturedBody.config?.online?.failure_url).toBe(
+        "https://kanibarberstudio-cloudflare.kanibarber.workers.dev/pago/error?appointment_id=apt_test_urls"
+      );
+      expect(capturedBody.config?.online?.pending_url).toBe(
+        "https://kanibarberstudio-cloudflare.kanibarber.workers.dev/pago/pendiente?appointment_id=apt_test_urls"
+      );
+      expect(capturedBody.config?.online?.auto_return).toBe("all");
     });
   });
 });
