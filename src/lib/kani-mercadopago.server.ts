@@ -306,3 +306,33 @@ export async function verifyAndConfirmAppointmentPayment(data: AppointmentPaymen
   )) return { success: false, resultCode: "ID_MISMATCH" };
   return confirmAppointmentPayment({ appointmentId: data.appointmentId, orderId: intent.order_id, totalAmount: 5000 });
 }
+
+
+export async function handleGetConfirmedPaymentOrders() {
+  try {
+    const { createPaymentSupabaseClient } = await import("./kani-payment-db.server");
+    const db = await createPaymentSupabaseClient();
+    const { data, error } = await db
+      .from("appointment_payment_orders")
+      .select("appointment_id, order_id, expected_amount_ars, paid_amount_ars, reconciliation_status, created_at")
+      .eq("reconciliation_status", "CONFIRMED")
+      .order("created_at", { ascending: false });
+
+    if (error || !data) {
+      console.warn("[handleGetConfirmedPaymentOrders] Error al consultar appointment_payment_orders:", error);
+      return [];
+    }
+
+    return data.map((r) => ({
+      appointmentId: r.appointment_id,
+      orderId: r.order_id,
+      expectedAmountArs: r.expected_amount_ars,
+      paidAmountArs: r.paid_amount_ars,
+      reconciliationStatus: r.reconciliation_status,
+      createdAt: r.created_at,
+    }));
+  } catch (err) {
+    console.error("[handleGetConfirmedPaymentOrders Error]:", err);
+    return [];
+  }
+}

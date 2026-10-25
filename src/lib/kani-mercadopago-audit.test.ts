@@ -389,8 +389,8 @@ describe("Email flow policy: Eliminate 'Abona la sena' email and preserve confir
     expect(mocks.notify).toHaveBeenCalledTimes(1);
   });
 
-  it("5. refresh, webhook duplicado o reconciliación repetida no vuelven a enviar el email", async () => {
-    await verifyAndConfirmAppointmentPayment({ appointmentId, orderId });
+  it("5. webhook duplicado no duplica email", async () => {
+    await handleMercadoPagoWebhook(webhook());
     expect(mocks.notify).toHaveBeenCalledTimes(1);
 
     mocks.rpc.mockResolvedValue({
@@ -399,9 +399,20 @@ describe("Email flow policy: Eliminate 'Abona la sena' email and preserve confir
     });
 
     await handleMercadoPagoWebhook(webhook());
-    await handleGetAppointmentPaymentStatus({ appointmentId, orderId });
-    await verifyAndConfirmAppointmentPayment({ appointmentId, orderId });
+    expect(mocks.notify).toHaveBeenCalledTimes(1);
+  });
 
+  it("6. refresh de /pago/exito no duplica email", async () => {
+    await verifyAndConfirmAppointmentPayment({ appointmentId, orderId });
+    expect(mocks.notify).toHaveBeenCalledTimes(1);
+
+    mocks.rpc.mockResolvedValue({
+      data: [{ result_code: "ALREADY_CONFIRMED", appointment_status: "CONFIRMED" }],
+      error: null,
+    });
+
+    await verifyAndConfirmAppointmentPayment({ appointmentId, orderId });
+    await handleGetAppointmentPaymentStatus({ appointmentId, orderId });
     expect(mocks.notify).toHaveBeenCalledTimes(1);
   });
 });

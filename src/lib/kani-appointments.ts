@@ -348,6 +348,9 @@ async function executeReadRealAppointments(options?: { bypassCache?: boolean; ba
     appointmentIds.length
       ? supabase.from('appointment_no_show_exceptions').select('appointment_id, decision, deposit_amount_ars, refund_amount_ars, reason, created_by_display_name, created_at').in('appointment_id', appointmentIds)
       : Promise.resolve({ data: [] }),
+    appointmentIds.length
+      ? (supabase as any).from('appointment_payment_orders').select('appointment_id, reconciliation_status, paid_amount_ars').in('appointment_id', appointmentIds).eq('reconciliation_status', 'CONFIRMED').then((res: any) => res).catch(() => ({ data: [] }))
+      : Promise.resolve({ data: [] }),
   ]);
 
   if (clientsError || barbersResult.error || servicesResult.error) {
@@ -371,6 +374,7 @@ async function executeReadRealAppointments(options?: { bypassCache?: boolean; ba
   const barberById = new Map((barbers ?? []).map(barber => [barber.id, barber]));
   const serviceById = new Map((services ?? []).map(service => [service.id, service]));
   const exceptionByApt = new Map(((exceptionsData as any[]) ?? []).map(e => [e.appointment_id, e]));
+  const orderByApt = new Map((((ordersResult as any)?.data as any[]) ?? []).map((o: any) => [o.appointment_id, o]));
 
   return appointments.flatMap(row => {
     const client = clientById.get(row.client_id);
@@ -405,8 +409,8 @@ async function executeReadRealAppointments(options?: { bypassCache?: boolean; ba
       createdByDisplayName: (row as any).created_by_display_name ?? null,
       recurringRuleId: (row as any).recurring_rule_id ?? null,
       depositRequired: (row as any).deposit_required ?? true,
-      depositPaid: (row as any).deposit_paid ?? false,
-      depositAmountArs: (row as any).deposit_amount_ars ?? undefined,
+      depositPaid: Boolean(orderByApt.get(row.id) || (row as any).deposit_paid),
+      depositAmountArs: orderByApt.get(row.id)?.paid_amount_ars ?? (row as any).deposit_amount_ars ?? (orderByApt.has(row.id) || (row as any).deposit_paid ? 5000 : undefined),
       balancePaid: (row as any).balance_paid ?? false,
       noShowDecision: (exc?.decision ?? (row as any).no_show_decision ?? null) as NoShowDecision | null,
       noShowRefundAmountArs: exc?.refund_amount_ars ?? (row as any).no_show_refund_amount_ars ?? 0,

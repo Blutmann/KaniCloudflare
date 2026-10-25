@@ -68,3 +68,18 @@ export const getAppointmentPaymentStatusFn = createServerFn({ method: "POST" })
     const { handleGetAppointmentPaymentStatus } = await import("./kani-mercadopago.server");
     return handleGetAppointmentPaymentStatus(data);
   });
+
+export type ConfirmedPaymentOrderInfo = {
+  appointmentId: string;
+  orderId: string;
+  expectedAmountArs: number;
+  paidAmountArs: number;
+  reconciliationStatus: string;
+  createdAt: string;
+};
+
+export const getConfirmedPaymentOrdersFn = createServerFn({ method: "GET" })
+  .handler(async (): Promise<ConfirmedPaymentOrderInfo[]> => {
+    const { handleGetConfirmedPaymentOrders } = await import("./kani-mercadopago.server");
+    return handleGetConfirmedPaymentOrders();
+  });

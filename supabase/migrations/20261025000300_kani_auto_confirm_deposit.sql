@@ -1,8 +1,43 @@
 -- Migration: 20261025000300_kani_auto_confirm_deposit.sql
--- 1. Asegura que confirm_appointment_from_payment actualice de forma atómica:
+-- 1. Asegura columnas de seña en appointments y permisos de lectura para staff
+alter table public.appointments
+  add column if not exists deposit_paid boolean not null default false,
+  add column if not exists deposit_amount_ars integer;
+
+-- Sincronizar turnos existentes con seña acreditada en appointment_payment_orders (p. ej. Turno #57)
+update public.appointments a
+set deposit_paid = true,
+    deposit_amount_ars = coalesce(o.paid_amount_ars, 5000),
+    updated_at = now()
+from public.appointment_payment_orders o
+where o.appointment_id = a.id
+  and o.reconciliation_status = 'CONFIRMED'
+  and a.deposit_paid is not true;
+
+-- Permitir a authenticated leer órdenes de pago para el panel administrativo
+grant select on public.appointment_payment_orders to authenticated;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public'
+      and tablename = 'appointment_payment_orders'
+      and policyname = 'authenticated_staff_read_payment_orders'
+  ) then
+    create policy "authenticated_staff_read_payment_orders"
+      on public.appointment_payment_orders
+      for select
+      to authenticated
+      using (true);
+  end if;
+end;
+$$;
+
+-- 2. Asegura que confirm_appointment_from_payment actualice de forma atómica:
 --    status = 'CONFIRMED', deposit_paid = true, deposit_amount_ars = 5000
 --    Preserva idempotencia y guardas de conflicto/tardío (PAID_LATE_REVIEW, PAID_CANCELLED_REVIEW).
--- 2. Elimina la creación de eventos 'NEW_REQUEST' en request_appointment:
+-- 3. Elimina la creación de eventos 'NEW_REQUEST' en request_appointment:
 --    En el nuevo flujo de Mercado Pago, la solicitud PENDING no envía email de seña al cliente.
 --    El único email automático es el de CONFIRMED al acreditar el pago.
 

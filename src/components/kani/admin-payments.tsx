@@ -43,6 +43,7 @@ import {
   type UpdateServicePaymentInput,
 } from "@/lib/kani-payments";
 import { businessDateToday } from "@/lib/kani-mobile-appointments";
+import { getConfirmedPaymentOrdersFn, type ConfirmedPaymentOrderInfo } from "@/lib/kani-mercadopago.functions";
 import { money } from "@/lib/kani-model";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -53,6 +54,7 @@ export function AdminPayments() {
 
   // Almacén de turnos y registros
   const [appointments, setAppointments] = useState<RealAppointment[]>([]);
+  const [confirmedOrders, setConfirmedOrders] = useState<ConfirmedPaymentOrderInfo[]>([]);
   const [payments, setPayments] = useState<ServicePayment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -161,6 +163,23 @@ export function AdminPayments() {
   }, [payments]);
 
   // Turnos disponibles para vinculación (excluyendo los que ya tienen cobro registrado, salvo el turno en edición)
+  const onlineDeposits = useMemo(() => {
+    return appointments
+      .filter((apt) => apt.depositPaid)
+      .map((apt) => {
+        const isChargedLocally = alreadyPaidAppointmentIds.has(apt.id);
+        return {
+          apt,
+          isChargedLocally,
+          depositAmount: apt.depositAmountArs || 5000,
+        };
+      })
+      .sort((a, b) => {
+        if (a.apt.date !== b.apt.date) return a.apt.date.localeCompare(b.apt.date);
+        return a.apt.time.localeCompare(b.apt.time);
+      });
+  }, [appointments, alreadyPaidAppointmentIds]);
+
   const availableAppointments = useMemo(() => {
     return appointments
       .filter((apt) => {
@@ -1004,6 +1023,87 @@ export function AdminPayments() {
             </div>
           </form>
         </section>
+
+        {/* Señas online acreditadas (Mercado Pago) */}
+        {onlineDeposits.length > 0 && (
+          <section
+            className="p-3.5 sm:p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5 shadow-xs mb-6"
+            aria-label="Señas online acreditadas vía Mercado Pago"
+          >
+            <div className="flex items-center justify-between gap-3 mb-3 pb-2 border-b border-emerald-500/20">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <h2 className="text-sm font-semibold text-foreground">
+                  Señas online acreditadas vía Mercado Pago ({onlineDeposits.length})
+                </h2>
+              </div>
+              <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                {money(onlineDeposits.reduce((acc, d) => acc + d.depositAmount, 0))} acreditados
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+              {onlineDeposits.map(({ apt, isChargedLocally, depositAmount }) => (
+                <div
+                  key={apt.id}
+                  className={`p-2.5 rounded-lg border text-xs flex flex-col justify-between gap-2 transition-all ${
+                    isChargedLocally
+                      ? "border-border/60 bg-background/40 opacity-75"
+                      : "border-emerald-500/30 bg-background shadow-xs hover:border-emerald-500/50"
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-center justify-between gap-1.5 mb-1">
+                      <span className="font-semibold text-foreground flex items-center gap-1">
+                        Turno #{apt.requestNumber}
+                      </span>
+                      <span
+                        className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                          isChargedLocally
+                            ? "bg-muted text-muted-foreground"
+                            : "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-semibold"
+                        }`}
+                      >
+                        {isChargedLocally ? "Cobrado en local ✓" : "Pendiente en local"}
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-muted-foreground">
+                      {apt.date} · {apt.time} hs · {apt.barber}
+                    </div>
+                    <div className="font-medium text-foreground mt-0.5">
+                      {apt.name} ({apt.serviceName})
+                    </div>
+                  </div>
+
+                  <div className="pt-2 border-t border-border/40 flex items-center justify-between gap-2">
+                    <div>
+                      <span className="text-[10px] text-muted-foreground block">Seña Mercado Pago</span>
+                      <span className="font-bold text-emerald-600 dark:text-emerald-400 text-xs">
+                        {money(depositAmount)}
+                      </span>
+                    </div>
+
+                    {!isChargedLocally && (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setFormOrigin("appointment");
+                          handleSelectAppointment(apt);
+                          window.scrollTo({ top: 0, behavior: "smooth" });
+                        }}
+                        className="h-7 px-2 text-[11px] font-medium border-emerald-500/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/10"
+                      >
+                        Cobrar saldo ({money((apt.servicePrice || 25000) - depositAmount)})
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* 2. Filtros de historial persistido */}
         <section
