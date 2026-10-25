@@ -41,8 +41,8 @@
     justify-content: flex-start;
     align-items: center;
     gap: 4px;
-    padding-top: 6px;
-    padding-bottom: 8px;
+    padding-top: 0;
+    padding-bottom: 16px;
     box-sizing: border-box;
   }
   .booking-page.booking-v2 .booking-progress > button > span {

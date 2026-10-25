@@ -57,7 +57,7 @@ Solo en V2 y hasta 767 px, los inputs de una línea y el selector telefónico co
 
 ## Stepper y cinco horarios Mobile
 
-El stepper mobile se ajusta a 66 px de alto (equilibrio entre los 72 px originales y los 54 px anteriores), con labels a 13 px legibles y `Fecha/Hora` en una sola línea sin wrapping. La distribución vertical equilibra 8 px superiores, indicadores de 28 px, gap de 5 px, label de 18 px y 7 px de distancia controlada entre labels y la línea inferior de progreso. Se conservan indicadores, cuatro etapas, nombre accesible y navegación táctil.
+El stepper mobile se ajusta a 66 px de alto (equilibrio entre los 72 px originales y los 54 px anteriores), con labels a 13 px legibles y `Fecha/Hora` en una sola línea sin wrapping. La distribución vertical interna aprovecha el espacio superior moviendo el bloque de círculo + label hacia arriba (`padding-top: 0`, `padding-bottom: 16px`), reduciendo la separación hacia el header a 8 px y ampliando el aire entre los labels y la línea horizontal inferior a 16 px (antes 10 px), sin alterar la posición vertical de la línea ancla inferior ni la distancia al encabezado del paso. Se conservan indicadores, cuatro etapas, nombre accesible y navegación táctil.
 
 La grilla utiliza cinco columnas, con gap horizontal de 6 px en mobile, cápsulas de al menos 48 px de alto y 60 px de ancho en 360. El horario seleccionado mobile usa la misma familia y tamaño de 14 px de la fecha seleccionada, con peso 500; conserva las paletas de selección existentes. Light neutral sigue al 80%; Dark conserva sus superficies.
 

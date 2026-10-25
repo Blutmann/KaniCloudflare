@@ -201,11 +201,13 @@ describe('isolated four-stage booking presentation', () => {
     expect(api.create).not.toHaveBeenCalled();
   });
 
-  it('applies 66px stepper height with 13px labels and Fecha/Hora single line in mobile', () => {
+  it('applies 66px stepper height with 13px labels, Fecha/Hora single line, and upward redistributed spacing in mobile', () => {
     const css = fs.readFileSync('src/components/kani/experimental/reserva-v2.css', 'utf8');
     expect(css).toMatch(/\.booking-page\.booking-v2\s*\.booking-progress\s*\{[^}]*height:\s*66px/);
     expect(css).toMatch(/\.booking-page\.booking-v2\s*\.booking-progress\s*>\s*button\s*\{[^}]*height:\s*66px/);
     expect(css).toMatch(/\.booking-page\.booking-v2\s*\.booking-progress\s*>\s*button\s*\{[^}]*min-height:\s*66px/);
+    expect(css).toMatch(/\.booking-page\.booking-v2\s*\.booking-progress\s*>\s*button\s*\{[^}]*padding-top:\s*0/);
+    expect(css).toMatch(/\.booking-page\.booking-v2\s*\.booking-progress\s*>\s*button\s*\{[^}]*padding-bottom:\s*16px/);
     expect(css).toMatch(/\.booking-page\.booking-v2\s*\.booking-progress\s*small\s*\{[^}]*font-size:\s*13px/);
     expect(css).toMatch(/\.booking-page\.booking-v2\s*\.booking-progress\s*small\s*\{[^}]*white-space:\s*nowrap/);
   });
