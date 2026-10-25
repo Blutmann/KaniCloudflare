@@ -53,7 +53,7 @@ Las máscaras de iconos de servicios Dark no seleccionados usan `var(--gold)` en
 
 ## Campos compactos Mobile
 
-Solo en V2 y hasta 767 px, los inputs de una línea y el selector telefónico conservan una altura de 48 px con alineación vertical centrada. El texto ingresado (`input value`) se reduce a 12 px CSS, acompañado por placeholders a 12 px para evitar saltos al tipear y protección de autofill contra fuentes ampliadas. El prefijo telefónico y el número comparten la escala de 12 px con alineación centrada dentro de sus 48 px. Observaciones conserva su área multilínea con tipografía a 12 px. Desktop mantiene sus dimensiones y tipografía. La duración del servicio continúa en la lógica de disponibilidad y en el flujo original, pero no se muestra en el resumen final de V2. No se modifica normalización, validaciones, importes ni pago.
+Solo en V2 y hasta 767 px, los inputs de una línea y el selector telefónico conservan una altura de 48 px con alineación vertical centrada. El texto ingresado (`input value`, `focus`, `active`, `autofill`) dentro de Nombre y apellido, prefijo selector `ARG (+54)` (trigger y texto), Celular, Email y Observaciones se fija a 12 px CSS computado, acompañado por placeholders a 12 px para evitar saltos al tipear y protección de autofill contra fuentes ampliadas. El prefijo telefónico y el número comparten la escala de 12 px con alineación centrada dentro de sus 48 px. Observaciones conserva su área multilínea con tipografía a 12 px. Desktop (≥768 px) mantiene intacta su escala estándar de 14 px. La duración del servicio continúa en la lógica de disponibilidad y en el flujo original, pero no se muestra en el resumen final de V2. No se modifica normalización, validaciones, importes ni pago.
 
 ## Stepper y cinco horarios Mobile
 

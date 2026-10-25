@@ -190,12 +190,16 @@ html[data-theme='light'] .booking-v2 .booking-v2-choice-title {
 }
 
 /* Mobile contact fields: 48px height with 12px CSS font size for entered text,
-   placeholders, and autofill, with vertical alignment centered. */
+   placeholders, focus, autofill, country trigger, and notes. */
 @media (max-width: 767px) {
-  main.booking-page.booking-v2.booking-v2-final .booking-contact-form input,
-  main.booking-page.booking-v2.booking-v2-final .booking-contact-form input[name="name"],
-  main.booking-page.booking-v2.booking-v2-final .booking-contact-form input[name="phone"],
-  main.booking-page.booking-v2.booking-v2-final .booking-contact-form input[name="email"] {
+  .booking-v2 .booking-contact-form :is(input, textarea),
+  .booking-v2 .booking-contact-form input,
+  .booking-v2 .booking-contact-form input[name="name"],
+  .booking-v2 .booking-contact-form input[name="phone"],
+  .booking-v2 .booking-contact-form input[name="email"],
+  .booking-v2 .booking-contact-form .phone-input-row input,
+  .booking-v2 .booking-contact-form .field-control input,
+  .booking-v2 .booking-contact-form .field-label input {
     height: 48px !important;
     min-height: 48px !important;
     max-height: 48px !important;
@@ -205,23 +209,17 @@ html[data-theme='light'] .booking-v2 .booking-v2-choice-title {
     font-size: 12px !important;
     box-sizing: border-box !important;
   }
-  main.booking-page.booking-v2.booking-v2-final .booking-contact-form input:-webkit-autofill,
-  main.booking-page.booking-v2.booking-v2-final .booking-contact-form input:-webkit-autofill:hover,
-  main.booking-page.booking-v2.booking-v2-final .booking-contact-form input:-webkit-autofill:focus {
+
+  .booking-v2 .booking-contact-form textarea,
+  .booking-v2 .booking-contact-form textarea[name="notes"],
+  .booking-v2 .booking-contact-form .notes-input,
+  .booking-v2 .booking-contact-form .field-label textarea {
     font-size: 12px !important;
-    -webkit-text-size-adjust: none !important;
+    line-height: 1.45 !important;
+    padding: 10px 12px !important;
   }
-  .booking-v2-final .booking-contact-form .phone-input-row {
-    align-items: center !important;
-  }
-  .booking-v2-final .booking-contact-form :is(.phone-country-picker, .phone-input-row .field-control) {
-    height: 48px !important;
-    min-height: 48px !important;
-    max-height: 48px !important;
-    display: flex !important;
-    align-items: center !important;
-  }
-  .booking-v2-final .booking-contact-form .phone-country-trigger {
+
+  .booking-v2 .booking-contact-form .phone-country-trigger {
     height: 48px !important;
     min-height: 48px !important;
     max-height: 48px !important;
@@ -233,26 +231,47 @@ html[data-theme='light'] .booking-v2 .booking-v2-choice-title {
     align-items: center !important;
     box-sizing: border-box !important;
   }
-  .booking-v2-final .booking-contact-form .phone-input-row input {
+
+  .booking-v2 .booking-contact-form .phone-country-trigger span,
+  .booking-v2 .booking-contact-form .phone-country-trigger :is(span, svg) {
+    font-size: 12px !important;
+    line-height: normal !important;
+    letter-spacing: normal !important;
+  }
+
+  .booking-v2 .booking-contact-form :is(.phone-country-picker, .phone-input-row .field-control) {
     height: 48px !important;
     min-height: 48px !important;
     max-height: 48px !important;
-    margin: 0 !important;
-    margin-top: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+  }
+
+  .booking-v2 .booking-contact-form .phone-input-row {
+    align-items: center !important;
+  }
+
+  .booking-v2 .booking-contact-form :is(input, textarea):is(:focus, :focus-visible, :active),
+  .booking-v2 .booking-contact-form input[name="name"]:is(:focus, :focus-visible, :active),
+  .booking-v2 .booking-contact-form input[name="phone"]:is(:focus, :focus-visible, :active),
+  .booking-v2 .booking-contact-form input[name="email"]:is(:focus, :focus-visible, :active),
+  .booking-v2 .booking-contact-form textarea[name="notes"]:is(:focus, :focus-visible, :active),
+  .booking-v2 .booking-contact-form .phone-country-trigger:is(:focus, :focus-visible, :active) {
+    font-size: 12px !important;
+  }
+
+  .booking-v2 .booking-contact-form input:-webkit-autofill,
+  .booking-v2 .booking-contact-form input:-webkit-autofill:hover,
+  .booking-v2 .booking-contact-form input:-webkit-autofill:focus,
+  .booking-v2 .booking-contact-form input:-webkit-autofill:active {
+    font-size: 12px !important;
+    -webkit-text-size-adjust: none !important;
+  }
+
+  .booking-v2 .booking-contact-form :is(input, textarea)::placeholder,
+  .booking-v2 .booking-contact-form .field-label :is(input, textarea)::placeholder {
     font-size: 12px !important;
     line-height: normal !important;
-    padding-block: 0 !important;
-    padding-inline: 12px !important;
-    box-sizing: border-box !important;
-    align-self: center !important;
-  }
-  main.booking-page.booking-v2.booking-v2-final .booking-contact-form textarea {
-    font-size: 12px !important;
-    line-height: 1.45 !important;
-    padding: 10px 12px !important;
-  }
-  main.booking-page.booking-v2.booking-v2-final .booking-contact-form :is(input, textarea)::placeholder {
-    font-size: 12px !important;
   }
 }
 

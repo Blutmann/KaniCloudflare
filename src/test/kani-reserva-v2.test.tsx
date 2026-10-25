@@ -212,12 +212,13 @@ describe('isolated four-stage booking presentation', () => {
 
   it('applies 48px height and 12px font-size to mobile contact inputs, placeholders, and phone trigger', () => {
     const css = fs.readFileSync('src/components/kani/experimental/reserva-v2.css', 'utf8');
-    expect(css).toMatch(/main\.booking-page\.booking-v2\.booking-v2-final\s*\.booking-contact-form\s*input[^{]*\{[^}]*font-size:\s*12px\s*!important/);
-    expect(css).toMatch(/main\.booking-page\.booking-v2\.booking-v2-final\s*\.booking-contact-form\s*input[^{]*\{[^}]*height:\s*48px\s*!important/);
-    expect(css).toMatch(/\.booking-v2-final\s*\.booking-contact-form\s*\.phone-country-trigger\s*\{[^}]*height:\s*48px\s*!important/);
-    expect(css).toMatch(/\.booking-v2-final\s*\.booking-contact-form\s*\.phone-country-trigger\s*\{[^}]*font-size:\s*12px\s*!important/);
-    expect(css).toMatch(/main\.booking-page\.booking-v2\.booking-v2-final\s*\.booking-contact-form\s*:is\(input,\s*textarea\)::placeholder\s*\{[^}]*font-size:\s*12px\s*!important/);
-    expect(css).toMatch(/main\.booking-page\.booking-v2\.booking-v2-final\s*\.booking-contact-form\s*input:-webkit-autofill[^{]*\{[^}]*font-size:\s*12px\s*!important/);
+    expect(css).toMatch(/\.booking-v2\s*\.booking-contact-form\s*input[^{]*\{[^}]*font-size:\s*12px\s*!important/);
+    expect(css).toMatch(/\.booking-v2\s*\.booking-contact-form\s*input[^{]*\{[^}]*height:\s*48px\s*!important/);
+    expect(css).toMatch(/\.booking-v2\s*\.booking-contact-form\s*\.phone-country-trigger\s*\{[^}]*height:\s*48px\s*!important/);
+    expect(css).toMatch(/\.booking-v2\s*\.booking-contact-form\s*\.phone-country-trigger\s*\{[^}]*font-size:\s*12px\s*!important/);
+    expect(css).toMatch(/\.booking-v2\s*\.booking-contact-form\s*textarea[^{]*\{[^}]*font-size:\s*12px\s*!important/);
+    expect(css).toMatch(/::placeholder[^{]*\{[^}]*font-size:\s*12px\s*!important/);
+    expect(css).toMatch(/\.booking-v2\s*\.booking-contact-form\s*input:-webkit-autofill[^{]*\{[^}]*font-size:\s*12px\s*!important/);
   });
 
   it('reduces choice titles by 2px in mobile (18px) while desktop preserves 20px', () => {
