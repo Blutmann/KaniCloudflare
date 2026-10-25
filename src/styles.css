@@ -255,31 +255,60 @@ html[data-theme="light"] {
     background: var(--page-background);
   }
 
+  /* Original artwork is retained at full resolution. Smaller lossless variants
+     are selected only by viewport/density; all crops still use cover. */
+  @supports (background-image: image-set(url('/kani-fondo-oscuro-mobile.webp') 1x)) {
+    html[data-theme="light"] {
+      --kani-wallpaper-image: image-set(url('/kani-fondo-claro-mobile-blanco-720.webp') 1x, url('/kani-fondo-claro-mobile-blanco-1080.webp') 2x, url('/kani-fondo-claro-mobile-blanco.webp') 3x);
+    }
+    html[data-theme="dark"] {
+      --kani-wallpaper-image: image-set(url('/kani-fondo-oscuro-mobile-720.webp') 1x, url('/kani-fondo-oscuro-mobile-1080.webp') 2x, url('/kani-fondo-oscuro-mobile.webp') 3x);
+    }
+    @media (min-width: 768px) {
+      html[data-theme="light"] {
+        --kani-wallpaper-image: image-set(url('/kani-fondo-claro-desktop-blanco-1920.webp') 1x, url('/kani-fondo-claro-desktop-blanco.webp') 2x);
+      }
+      html[data-theme="dark"] {
+        --kani-wallpaper-image: image-set(url('/kani-fondo-oscuro-desktop-1920.webp') 1x, url('/kani-fondo-oscuro-desktop.webp') 2x);
+      }
+    }
+    @media (min-width: 1921px), (min-width: 768px) and (min-height: 1081px) {
+      html[data-theme="light"] { --kani-wallpaper-image: url('/kani-fondo-claro-desktop-blanco.webp'); }
+      html[data-theme="dark"] { --kani-wallpaper-image: url('/kani-fondo-oscuro-desktop.webp'); }
+    }
+  }
+
   html[data-theme="light"] body::before {
     background: var(--page-background) url('/kani-fondo-claro-mobile-blanco.webp') center center / cover no-repeat;
+    background-image: var(--kani-wallpaper-image, url('/kani-fondo-claro-mobile-blanco.webp'));
   }
 
   html[data-theme="dark"] body::before {
     background: var(--page-background) url('/kani-fondo-oscuro-mobile.webp') center center / cover no-repeat;
+    background-image: var(--kani-wallpaper-image, url('/kani-fondo-oscuro-mobile.webp'));
   }
 
   @media (min-width: 768px) {
     html[data-theme="light"] body::before {
       background-image: url('/kani-fondo-claro-desktop-blanco.webp');
+      background-image: var(--kani-wallpaper-image, url('/kani-fondo-claro-desktop-blanco.webp'));
     }
 
     html[data-theme="dark"] body::before {
       background-image: url('/kani-fondo-oscuro-desktop.webp');
+      background-image: var(--kani-wallpaper-image, url('/kani-fondo-oscuro-desktop.webp'));
     }
   }
 
   @media (min-width: 1024px) {
     html[data-theme="light"] body::before {
       background-image: url('/kani-fondo-claro-desktop-blanco.webp');
+      background-image: var(--kani-wallpaper-image, url('/kani-fondo-claro-desktop-blanco.webp'));
     }
 
     html[data-theme="dark"] body::before {
       background-image: url('/kani-fondo-oscuro-desktop.webp');
+      background-image: var(--kani-wallpaper-image, url('/kani-fondo-oscuro-desktop.webp'));
     }
   }
 }
@@ -298,7 +327,7 @@ html[data-theme="light"] {
 .site-footer-link-row a { white-space: nowrap; }
 .site-footer-copyright { white-space: nowrap; }
 .site-header > div { width: min(1184px, calc(100% - 80px)); }
-.wordmark-img { display: block; width: auto; height: 54px; filter: drop-shadow(0 1px 8px rgb(0 0 0 / 0.35)); }
+.wordmark-img { display: block; position: relative; top: 6px; width: auto; height: 66px; filter: drop-shadow(0 1px 8px rgb(0 0 0 / 0.35)); }
 .eyebrow { font-size: 10px; font-weight: 600; letter-spacing: 2px; color: var(--gold); }
 .home-hero { position: relative; height: 622px; overflow: hidden; }
 .hero-image { position: absolute; width: 100%; height: 100%; object-fit: cover; object-position: center 58%; }
@@ -641,7 +670,7 @@ nav.mobile-menu {
   touch-action: pan-y !important;
   padding: calc(98px + 14px) max(20px, calc((100vw - 1184px) / 2)) 40px !important;
   background-color: var(--chrome) !important;
-  background-image: url('/kani-menu-oscuro-desktop.webp') !important;
+  background-image: var(--kani-wallpaper-image, url('/kani-fondo-oscuro-desktop.webp')) !important;
   background-position: center top !important;
   background-repeat: no-repeat !important;
   background-size: cover !important;
@@ -650,7 +679,7 @@ nav.mobile-menu {
 html[data-theme="light"] .mobile-menu,
 html[data-theme="light"] nav.mobile-menu {
   background-color: var(--chrome) !important;
-  background-image: url('/kani-menu-claro-desktop-blanco.webp') !important;
+  background-image: var(--kani-wallpaper-image, url('/kani-fondo-claro-desktop-blanco.webp')) !important;
 }
 .mobile-menu a { display: flex; align-items: center; gap: 12px; min-height: 60px; padding: 0 8px; border-bottom: 1px solid color-mix(in oklch, var(--gold) 28%, var(--border)); color: var(--foreground); font-size: 15px; }
 .mobile-menu a:hover, .mobile-menu a:focus-visible { background: color-mix(in oklch, var(--gold) 12%, transparent); color: var(--gold); outline: none; }
@@ -1299,12 +1328,12 @@ html[data-theme='dark'] .studio-map-card {
  html[data-theme="light"] .mobile-menu,
  html[data-theme="light"] nav.mobile-menu {
    background-color: var(--chrome) !important;
-   background-image: url('/kani-menu-claro-mobile-blanco.webp') !important;
+   background-image: var(--kani-wallpaper-image, url('/kani-fondo-claro-mobile-blanco.webp')) !important;
  }
  html[data-theme="dark"] .mobile-menu,
  html[data-theme="dark"] nav.mobile-menu {
    background-color: var(--chrome) !important;
-   background-image: url('/kani-menu-oscuro-mobile.webp') !important;
+   background-image: var(--kani-wallpaper-image, url('/kani-fondo-oscuro-mobile.webp')) !important;
  }
  .mobile-menu a { display: flex; align-items: center; gap: 12px; min-height: 60px; padding: 0 8px; border-bottom: 1px solid color-mix(in oklch, var(--gold) 28%, var(--border)); color: var(--foreground); font-size: 15px; }
  .mobile-menu a:hover, .mobile-menu a:focus-visible { background: color-mix(in oklch, var(--gold) 12%, transparent); color: var(--gold); outline: none; }
@@ -1315,7 +1344,7 @@ html[data-theme='dark'] .studio-map-card {
  .mobile-menu { overscroll-behavior: contain; touch-action: pan-y; }
  .mobile-menu-footer { position: fixed; left: 0; right: 0; bottom: 0; z-index: 50; display: flex; align-items: center; justify-content: center; min-height: 88px; padding: 12px 20px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid color-mix(in oklch, var(--gold) 28%, var(--border)); background: var(--chrome); }
  .mobile-menu-continue { width: min(100%, 360px); min-height: 50px; }
- .wordmark-img { height: 38px; }
+ .wordmark-img { height: 46px; top: 4px; }
  .home-hero { height: 620px; }
  .hero-image { object-position: 61% center; }
  .hero-shade { background: linear-gradient(90deg,color-mix(in oklch,var(--overlay) 85%,transparent),color-mix(in oklch,var(--overlay) 25%,transparent)),linear-gradient(0deg,var(--overlay),transparent 40%); }

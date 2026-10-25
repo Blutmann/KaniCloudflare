@@ -3,7 +3,8 @@ import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { signInWithPassword } from '@/lib/kani-auth';
-import kaniSymbol from '@/assets/kani-symbol.png';
+import kaniSymbol from '@/assets/kani-symbol.webp';
+import kaniSymbolRetina from '@/assets/kani-symbol-2x.webp';
 
 export function AdminAccess({ onAuthenticated }: { onAuthenticated: () => void }) {
   const [error, setError] = useState('');
@@ -31,7 +32,7 @@ export function AdminAccess({ onAuthenticated }: { onAuthenticated: () => void }
   return (
     <main className="site-container admin-page admin-login-page">
       <div className="admin-login-shell mx-auto max-w-sm">
-        <img src={kaniSymbol} alt="Kani Barber Studio" width={336} height={341} decoding="async" className="admin-login-symbol" />
+        <img src={kaniSymbol} srcSet={`${kaniSymbol} 431w, ${kaniSymbolRetina} 862w`} sizes="(max-width: 767px) 68px, 112px" alt="Kani Barber Studio" width={431} height={438} decoding="async" className="admin-login-symbol" />
         <h1 className="eyebrow admin-login-title text-center">ADMINISTRACIÓN</h1>
         <form className="admin-login-form space-y-5" onSubmit={submit}>
           <label className="field-label">
