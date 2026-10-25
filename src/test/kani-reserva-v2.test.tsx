@@ -263,4 +263,28 @@ describe('isolated four-stage booking presentation', () => {
     expect(css).toMatch(/transition:\s*background-color 5000000s ease-in-out 0s\s*!important/);
     expect(css).toMatch(/color-scheme:\s*dark/);
   });
+
+  it('centers country trigger content horizontally and vertically as a unified block in mobile', () => {
+    const css = fs.readFileSync('src/components/kani/experimental/reserva-v2.css', 'utf8');
+    expect(css).toMatch(/\.booking-v2\s*\.booking-contact-form\s*\.phone-country-trigger\s*\{[^}]*justify-content:\s*center\s*!important/);
+    expect(css).toMatch(/\.booking-v2\s*\.booking-contact-form\s*\.phone-country-trigger\s*\{[^}]*text-align:\s*center\s*!important/);
+    expect(css).toMatch(/\.booking-v2\s*\.booking-contact-form\s*\.phone-country-trigger\s*:is\(span,\s*svg\)\s*\{[^}]*text-align:\s*center\s*!important/);
+  });
+
+  it('centers phone number text with symmetric padding and reserves space for checkmark without layout shift', () => {
+    const css = fs.readFileSync('src/components/kani/experimental/reserva-v2.css', 'utf8');
+    expect(css).toMatch(/\.booking-v2\s*\.booking-contact-form\s*\.phone-input-row\s*input[^{]*\{[^}]*text-align:\s*center\s*!important/);
+    expect(css).toMatch(/\.booking-v2\s*\.booking-contact-form\s*\.phone-input-row\s*input[^{]*\{[^}]*padding-inline:\s*28px\s*!important/);
+    expect(css).toMatch(/\.booking-v2\s*\.booking-contact-form\s*\.phone-input-row\s*\.field-validation-icon\s*\{[^}]*position:\s*absolute\s*!important/);
+    expect(css).toMatch(/\.booking-v2\s*\.booking-contact-form\s*\.phone-input-row\s*\.field-validation-icon\s*\{[^}]*right:\s*7px\s*!important/);
+  });
+
+  it('centers Observaciones placeholder vertically when empty while preserving left alignment and multiline scroll', () => {
+    const css = fs.readFileSync('src/components/kani/experimental/reserva-v2.css', 'utf8');
+    expect(css).toMatch(/\.booking-v2\s*\.booking-contact-form\s*textarea:placeholder-shown[^{]*\{[^}]*padding-top:\s*15px\s*!important/);
+    expect(css).toMatch(/\.booking-v2\s*\.booking-contact-form\s*textarea:placeholder-shown[^{]*\{[^}]*padding-bottom:\s*15px\s*!important/);
+    expect(css).toMatch(/\.booking-v2\s*\.booking-contact-form\s*textarea:placeholder-shown[^{]*\{[^}]*text-align:\s*left\s*!important/);
+    expect(css).toMatch(/\.booking-v2\s*\.booking-contact-form\s*textarea[^{]*\{[^}]*padding:\s*8px 12px\s*!important/);
+    expect(css).toMatch(/\.booking-v2\s*\.booking-contact-form\s*textarea[^{]*\{[^}]*overflow-y:\s*auto\s*!important/);
+  });
 });

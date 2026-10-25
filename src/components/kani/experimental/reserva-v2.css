@@ -223,6 +223,29 @@ html[data-theme='light'] .booking-v2 .booking-v2-choice-title {
     overflow-y: auto !important;
     resize: none !important;
     box-sizing: border-box !important;
+    text-align: left !important;
+    transition: padding 0.15s ease-out !important;
+  }
+
+  /* Observaciones: placeholder centrado verticalmente en estado inicial/vacío */
+  .booking-v2 .booking-contact-form textarea:placeholder-shown,
+  .booking-v2 .booking-contact-form textarea[name="notes"]:placeholder-shown,
+  .booking-v2 .booking-contact-form .notes-input:placeholder-shown,
+  .booking-v2 .booking-contact-form .field-label textarea:placeholder-shown {
+    padding-top: 15px !important;
+    padding-bottom: 15px !important;
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+    line-height: 1.35 !important;
+    text-align: left !important;
+  }
+
+  .booking-v2 .booking-contact-form textarea::placeholder,
+  .booking-v2 .booking-contact-form textarea[name="notes"]::placeholder,
+  .booking-v2 .booking-contact-form .notes-input::placeholder {
+    font-size: 12px !important;
+    line-height: 1.35 !important;
+    text-align: left !important;
   }
 
   .booking-v2 .booking-contact-form .phone-country-trigger {
@@ -238,6 +261,8 @@ html[data-theme='light'] .booking-v2 .booking-v2-choice-title {
     gap: 5px !important;
     display: flex !important;
     align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
     box-sizing: border-box !important;
     overflow: hidden !important;
     white-space: nowrap !important;
@@ -249,6 +274,7 @@ html[data-theme='light'] .booking-v2 .booking-v2-choice-title {
     line-height: normal !important;
     letter-spacing: normal !important;
     white-space: nowrap !important;
+    text-align: center !important;
   }
 
   .booking-v2 .booking-contact-form :is(.phone-country-picker, .phone-input-row .field-control) {
@@ -268,6 +294,35 @@ html[data-theme='light'] .booking-v2 .booking-v2-choice-title {
     align-items: center !important;
     width: 100% !important;
     box-sizing: border-box !important;
+  }
+
+  /* Celular: número centrado horizontal y verticalmente con padding simétrico (28px)
+     para preservar centro óptico estable antes y después de validarse (sin saltos al mostrar checkmark) */
+  .booking-v2 .booking-contact-form .phone-input-row input,
+  .booking-v2 .booking-contact-form input[name="phone"],
+  .booking-page.booking-v2 .booking-contact-form .field-label .phone-input-row input {
+    text-align: center !important;
+    padding-left: 28px !important;
+    padding-right: 28px !important;
+    padding-inline: 28px !important;
+    padding-block: 0 !important;
+  }
+
+  .booking-v2 .booking-contact-form .phone-input-row input::placeholder,
+  .booking-v2 .booking-contact-form input[name="phone"]::placeholder {
+    text-align: center !important;
+  }
+
+  /* Checkmark de validación en celular: posicionado en zona reservada sin desplazar el número centrado */
+  .booking-v2 .booking-contact-form .phone-input-row .field-validation-icon {
+    position: absolute !important;
+    top: 50% !important;
+    right: 7px !important;
+    transform: translateY(-50%) !important;
+    width: 18px !important;
+    height: 18px !important;
+    pointer-events: none !important;
+    z-index: 2 !important;
   }
 
   .booking-v2 .booking-contact-form :is(input, textarea):is(:focus, :focus-visible, :active),
