@@ -226,4 +226,11 @@ describe('isolated four-stage booking presentation', () => {
     expect(css).toMatch(/@media\s*\(max-width:\s*767px\)[\s\S]*?\.booking-v2\s*:is\(\.booking-v2-choice-title,\s*\.barber-choice-inline\s*h2\)\s*\{[^}]*font-size:\s*18px/);
   });
 
+  it('restores standard translucent surface for neutral time slots and deferred barbers while preserving notice contrast', () => {
+    const css = fs.readFileSync('src/components/kani/experimental/reserva-v2.css', 'utf8');
+    expect(css).toMatch(/html\[data-theme='light'\] main\.booking-page\.booking-v2\s*\.booking-time-slot:not\(\.selected\):not\(:disabled\):not\(\.time-unavailable\)\s*\{[^}]*background:\s*var\(--kani-surface\)\s*!important/);
+    expect(css).toMatch(/html\[data-theme='light'\] main\.booking-page\.booking-v2\s*\.barber-choice-list > button:not\(\.selected\):not\(:disabled\)\s*\{[^}]*background:\s*var\(--kani-surface\)\s*!important/);
+    expect(css).toMatch(/html\[data-theme='light'\] main\.booking-page\.booking-v2\s*:is\(\.booking-deposit-notice,\s*\.summary-pending-notice\)\s*\{[^}]*background:\s*var\(--kani-surface-critical\)\s*!important/);
+  });
+
 });

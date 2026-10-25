@@ -108,16 +108,18 @@ html[data-theme='light'] main.booking-page.booking-v2-final .booking-v2-unified-
   background: var(--kani-surface-strong) !important;
 }
 
-/* Reinforced small surfaces belong only to the V2 light experiment. */
+/* Retain critical reinforcement for deposit notices and review alerts */
 html[data-theme='light'] main.booking-page.booking-v2 {
   --kani-surface-critical: #ffffffcc;
 }
-html[data-theme='light'] main.booking-page.booking-v2 .booking-time-slot:not(.selected):not(:disabled):not(.time-unavailable),
 html[data-theme='light'] main.booking-page.booking-v2 :is(.booking-deposit-notice, .summary-pending-notice) {
   background: var(--kani-surface-critical) !important;
 }
+html[data-theme='light'] main.booking-page.booking-v2 .booking-time-slot:not(.selected):not(:disabled):not(.time-unavailable) {
+  background: var(--kani-surface) !important;
+}
 html[data-theme='light'] main.booking-page.booking-v2 .booking-time-slot:not(.selected):not(:disabled):not(.time-unavailable):hover {
-  background: color-mix(in srgb, var(--primary) 5%, var(--kani-surface-critical)) !important;
+  background: color-mix(in srgb, var(--primary) 5%, var(--kani-surface)) !important;
 }
 @media (min-width: 1024px) {
   .booking-v2 .booking-v2-date-time,
@@ -145,10 +147,10 @@ html[data-theme='light'] main.booking-page.booking-v2 .booking-time-slot:not(.se
   min-height: 44px;
 }
 html[data-theme='light'] main.booking-page.booking-v2 .barber-choice-list > button:not(.selected):not(:disabled) {
-  background: var(--kani-surface-critical) !important;
+  background: var(--kani-surface) !important;
 }
 html[data-theme='light'] main.booking-page.booking-v2 .barber-choice-list > button:not(.selected):not(:disabled):hover {
-  background: color-mix(in srgb, var(--primary) 5%, var(--kani-surface-critical)) !important;
+  background: color-mix(in srgb, var(--primary) 5%, var(--kani-surface)) !important;
 }
 /* Keep the retained heading readable when the compact layout crosses ink. */
 html[data-theme='light'] .booking-v2 .booking-v2-choice-title {
