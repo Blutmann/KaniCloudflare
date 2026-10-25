@@ -9,6 +9,7 @@ import {
   otherPhoneCountries,
   type PhoneCountry,
   type PhoneCountryOption,
+  countryDisplayName,
 } from '@/lib/kani-phone';
 import { cn } from '@/lib/utils';
 
@@ -141,16 +142,16 @@ export function PhoneInput({
           )}
           aria-haspopup="listbox"
           aria-expanded={open}
-          aria-label={`País: ${selectedCountry?.name}, ${selectedCountry?.shortCode}, ${selectedCountry?.dialCode}`}
+          aria-label={`País: ${selectedCountry?.name}, ${selectedCountry?.dialCode}`}
           disabled={disabled}
           onClick={() => {
             setOpen(prev => !prev);
             setQuery('');
           }}
         >
-          <span aria-hidden="true">{selectedCountry?.flag}</span>
-          <span aria-hidden="true" className="whitespace-nowrap">
-            {selectedCountry?.shortCode} ({selectedCountry?.dialCode})
+          <span aria-hidden="true" className="phone-country-flag shrink-0">{selectedCountry?.flag}</span>
+          <span aria-hidden="true" className="phone-country-label whitespace-nowrap truncate">
+            {countryDisplayName(selectedCountry)} {selectedCountry?.dialCode}
           </span>
         </button>
 
@@ -178,8 +179,8 @@ export function PhoneInput({
                     key={c.code}
                     onClick={() => handleSelectCountry(c.code)}
                   >
-                    <span>{c.flag} {c.name}</span>
-                    <span>{c.shortCode} · {c.dialCode}</span>
+                    <span className="truncate">{c.flag} {c.name}</span>
+                    <span className="shrink-0 text-muted-foreground">{c.dialCode}</span>
                   </button>
                 ))}
               </div>
@@ -197,8 +198,8 @@ export function PhoneInput({
                     key={c.code}
                     onClick={() => handleSelectCountry(c.code)}
                   >
-                    <span>{c.flag} {c.name}</span>
-                    <span>{c.shortCode} · {c.dialCode}</span>
+                    <span className="truncate">{c.flag} {c.name}</span>
+                    <span className="shrink-0 text-muted-foreground">{c.dialCode}</span>
                   </button>
                 ))}
               </div>

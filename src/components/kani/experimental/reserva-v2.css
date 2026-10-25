@@ -215,24 +215,32 @@ html[data-theme='light'] .booking-v2 .booking-v2-choice-title {
   .booking-v2 .booking-contact-form .notes-input,
   .booking-v2 .booking-contact-form .field-label textarea {
     font-size: 12px !important;
-    line-height: 1.45 !important;
-    padding: 10px 12px !important;
-    min-height: 96px !important;
-    max-height: none !important;
-    height: auto !important;
+    line-height: 1.35 !important;
+    padding: 8px 12px !important;
+    min-height: 50px !important;
+    height: 50px !important;
+    max-height: 50px !important;
+    overflow-y: auto !important;
+    resize: none !important;
+    box-sizing: border-box !important;
   }
 
   .booking-v2 .booking-contact-form .phone-country-trigger {
+    width: 100% !important;
+    min-width: 0 !important;
     height: 48px !important;
     min-height: 48px !important;
     max-height: 48px !important;
     font-size: 12px !important;
     line-height: normal !important;
     letter-spacing: normal !important;
-    padding-inline: 10px !important;
+    padding-inline: 8px !important;
+    gap: 5px !important;
     display: flex !important;
     align-items: center !important;
     box-sizing: border-box !important;
+    overflow: hidden !important;
+    white-space: nowrap !important;
   }
 
   .booking-v2 .booking-contact-form .phone-country-trigger span,
@@ -240,9 +248,12 @@ html[data-theme='light'] .booking-v2 .booking-v2-choice-title {
     font-size: 12px !important;
     line-height: normal !important;
     letter-spacing: normal !important;
+    white-space: nowrap !important;
   }
 
   .booking-v2 .booking-contact-form :is(.phone-country-picker, .phone-input-row .field-control) {
+    width: 100% !important;
+    min-width: 0 !important;
     height: 48px !important;
     min-height: 48px !important;
     max-height: 48px !important;
@@ -251,7 +262,12 @@ html[data-theme='light'] .booking-v2 .booking-v2-choice-title {
   }
 
   .booking-v2 .booking-contact-form .phone-input-row {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+    gap: 8px !important;
     align-items: center !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
   }
 
   .booking-v2 .booking-contact-form :is(input, textarea):is(:focus, :focus-visible, :active),

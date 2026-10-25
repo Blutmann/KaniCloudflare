@@ -11,10 +11,58 @@ export type PhoneCountryOption = {
   code: CountryCode;
   dialCode: string;
   name: string;
+  displayName: string;
   flag: string;
   isoCode: CountryCode;
   shortCode: string;
 };
+
+export const countryShortDisplayNames: Partial<Record<CountryCode, string>> = {
+  AG: 'Antigua',
+  BA: 'Bosnia',
+  CD: 'RDC Congo',
+  CF: 'Centroáfrica',
+  DO: 'R. Dominicana',
+  AE: 'Emiratos Árabes',
+  KN: 'San Cristóbal',
+  ST: 'Santo Tomé',
+  TT: 'Trinidad',
+  VC: 'San Vicente',
+  VG: 'Vírgenes (RU)',
+  VI: 'Vírgenes (EEUU)',
+  IO: 'Océano Índico',
+  MP: 'Marianas Norte',
+  TC: 'Turcas y Caicos',
+  PM: 'San Pedro',
+  SJ: 'Svalbard',
+  MK: 'Macedonia',
+  VA: 'Vaticano',
+  MM: 'Myanmar',
+  PF: 'Polinesia Fr.',
+  PG: 'Papúa N. Guinea',
+  GQ: 'Guinea Ecuat.',
+  GF: 'Guayana Fr.',
+  AS: 'Samoa Americana',
+  NC: 'Nueva Caledonia',
+  WF: 'Wallis y Futuna',
+  PS: 'Palestina',
+  HK: 'Hong Kong',
+  MO: 'Macao',
+  BQ: 'Caribe Neerl.',
+  CX: 'Isla de Navidad',
+  CC: 'Islas Cocos',
+  FK: 'Islas Malvinas',
+  MH: 'Islas Marshall',
+  SB: 'Islas Salomón',
+  BL: 'San Bartolomé',
+  MF: 'San Martín',
+  SX: 'Sint Maarten',
+};
+
+export function countryDisplayName(country?: PhoneCountryOption | null): string {
+  if (!country) return '';
+  return country.displayName || countryShortDisplayNames[country.code] || country.name;
+}
 
 const countryShortCodes: Record<string, string> = { AR: 'ARG', US: 'USA', BR: 'BRA', UY: 'URY', CL: 'CHL', PY: 'PRY', BO: 'BOL', VE: 'VEN', PE: 'PER', CO: 'COL', EC: 'ECU', MX: 'MEX', ES: 'ESP', IT: 'ITA' };
 const primaryCountryCodes: PhoneCountry[] = ['AR', 'CL', 'BR', 'UY', 'PY', 'VE', 'PE', 'CO', 'EC', 'MX', 'ES', 'US'];
@@ -272,14 +320,18 @@ const displayNames =
     ? new Intl.DisplayNames(["es"], { type: "region" })
     : null;
 
-export const phoneCountries: PhoneCountryOption[] = getCountries().map((country) => ({
-  code: country,
-  dialCode: `+${getCountryCallingCode(country)}`,
-  name: displayNames?.of(country) ?? country,
-  flag: countryToFlag(country),
-  isoCode: country,
-  shortCode: countryShortCodes[country] ?? country,
-}));
+export const phoneCountries: PhoneCountryOption[] = getCountries().map((country) => {
+  const name = displayNames?.of(country) ?? country;
+  return {
+    code: country,
+    dialCode: `+${getCountryCallingCode(country)}`,
+    name,
+    displayName: countryShortDisplayNames[country] ?? name,
+    flag: countryToFlag(country),
+    isoCode: country,
+    shortCode: countryShortCodes[country] ?? country,
+  };
+});
 
 export function normalizeCountrySearch(value: string) {
   return value

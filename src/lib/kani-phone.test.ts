@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatPhoneDisplay, formatPhoneInput, formatPhoneWithCountryAndWhatsApp, getWhatsAppUrl, normalizeCountrySearch, normalizePhone, otherPhoneCountries, phoneCountries, phonePlaceholder, primaryPhoneCountries } from "./kani-phone";
+import { countryDisplayName, formatPhoneDisplay, formatPhoneInput, formatPhoneWithCountryAndWhatsApp, getWhatsAppUrl, normalizeCountrySearch, normalizePhone, otherPhoneCountries, phoneCountries, phonePlaceholder, primaryPhoneCountries } from "./kani-phone";
 
 describe("phone normalization", () => {
   it("generates direct WhatsApp wa.me links correctly", () => {
@@ -111,5 +111,27 @@ describe("phone placeholders", () => {
 
   it("provides a country-specific example for every selectable country", () => {
     expect(phoneCountries.every(country => phonePlaceholder(country.code) !== "Número de celular")).toBe(true);
+  });
+});
+
+describe("country display names", () => {
+  it("displays full country names in Spanish for primary and standard countries", () => {
+    const ar = phoneCountries.find(c => c.code === "AR");
+    const br = phoneCountries.find(c => c.code === "BR");
+    const uy = phoneCountries.find(c => c.code === "UY");
+    const cl = phoneCountries.find(c => c.code === "CL");
+    expect(countryDisplayName(ar)).toBe("Argentina");
+    expect(countryDisplayName(br)).toBe("Brasil");
+    expect(countryDisplayName(uy)).toBe("Uruguay");
+    expect(countryDisplayName(cl)).toBe("Chile");
+  });
+
+  it("uses clean short friendly display names for countries with excessively long names", () => {
+    const ag = phoneCountries.find(c => c.code === "AG");
+    const ba = phoneCountries.find(c => c.code === "BA");
+    const doCountry = phoneCountries.find(c => c.code === "DO");
+    expect(countryDisplayName(ag)).toBe("Antigua");
+    expect(countryDisplayName(ba)).toBe("Bosnia");
+    expect(countryDisplayName(doCountry)).toBe("R. Dominicana");
   });
 });

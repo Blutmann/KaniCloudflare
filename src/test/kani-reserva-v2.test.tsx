@@ -234,4 +234,20 @@ describe('isolated four-stage booking presentation', () => {
     expect(css).toMatch(/html\[data-theme='light'\] main\.booking-page\.booking-v2\s*:is\(\.booking-deposit-notice,\s*\.summary-pending-notice\)\s*\{[^}]*background:\s*var\(--kani-surface-critical\)\s*!important/);
   });
 
+
+  it('applies 50% height to notes textarea (~50px) with multiline scroll and 12px font size', () => {
+    const css = fs.readFileSync('src/components/kani/experimental/reserva-v2.css', 'utf8');
+    expect(css).toMatch(/\.booking-v2\s*\.booking-contact-form\s*textarea[^{]*\{[^}]*height:\s*50px\s*!important/);
+    expect(css).toMatch(/\.booking-v2\s*\.booking-contact-form\s*textarea[^{]*\{[^}]*min-height:\s*50px\s*!important/);
+    expect(css).toMatch(/\.booking-v2\s*\.booking-contact-form\s*textarea[^{]*\{[^}]*overflow-y:\s*auto\s*!important/);
+    expect(css).toMatch(/\.booking-v2\s*\.booking-contact-form\s*textarea[^{]*\{[^}]*resize:\s*none\s*!important/);
+    expect(css).toMatch(/\.booking-v2\s*\.booking-contact-form\s*textarea[^{]*\{[^}]*font-size:\s*12px\s*!important/);
+  });
+
+  it('configures 50/50 mobile distribution for phone row with 12px country selector', () => {
+    const css = fs.readFileSync('src/components/kani/experimental/reserva-v2.css', 'utf8');
+    expect(css).toMatch(/\.booking-v2\s*\.booking-contact-form\s*\.phone-input-row\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)\s*minmax\(0,\s*1fr\)\s*!important/);
+    expect(css).toMatch(/\.booking-v2\s*\.booking-contact-form\s*\.phone-country-trigger\s*\{[^}]*font-size:\s*12px\s*!important/);
+    expect(css).toMatch(/\.booking-v2\s*\.booking-contact-form\s*\.phone-country-trigger\s*\{[^}]*white-space:\s*nowrap\s*!important/);
+  });
 });
