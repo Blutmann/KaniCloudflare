@@ -283,13 +283,15 @@ export async function verifyAndConfirmAppointmentPayment(data: AppointmentPaymen
     await import("./kani-mercadopago");
   const accessToken = getRuntimeEnv("MERCADOPAGO_ACCESS_TOKEN");
   if (data.orderId && data.orderId !== intent.order_id) return { success: false, resultCode: "ID_MISMATCH" };
+  let verifiedPaymentId: string | undefined;
   if (data.paymentId) {
     const { payment } = await getMercadoPagoPayment({ paymentId: data.paymentId, accessToken });
     if (!payment || String(payment.id) !== data.paymentId || payment.external_reference !== data.appointmentId ||
-        String(payment.order?.id ?? "") !== intent.order_id || payment.status !== "approved" ||
+        payment.status !== "approved" ||
         payment.currency_id !== "ARS" || payment.transaction_amount !== 5000) {
       return { success: false, resultCode: "PAYMENT_NOT_APPROVED" };
     }
+    verifiedPaymentId = String(payment.id);
   }
   const { order, success } = await getMercadoPagoOrder({ orderId: intent.order_id, accessToken });
   if (!success) return { success: false, resultCode: "FAILED" };
@@ -297,5 +299,10 @@ export async function verifyAndConfirmAppointmentPayment(data: AppointmentPaymen
       !isOrderFullyApproved(order, intent.expected_amount_ars)) {
     return { success: false, resultCode: "ORDER_NOT_APPROVED" };
   }
+  // Legacy /v1/payments.order.id identifies a Merchant Order, not a /v1/orders ID.
+  // The actual Checkout Pro association is the Orders transaction's reference_id.
+  if (verifiedPaymentId && !order.transactions?.payments?.some(payment =>
+    payment.reference_id === verifiedPaymentId && payment.status === "processed" && payment.status_detail === "accredited"
+  )) return { success: false, resultCode: "ID_MISMATCH" };
   return confirmAppointmentPayment({ appointmentId: data.appointmentId, orderId: intent.order_id, totalAmount: 5000 });
 }

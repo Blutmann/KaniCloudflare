@@ -1,5 +1,6 @@
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import { createHmac } from "node:crypto";
+import realCheckoutFixture from "../test/fixtures/mercadopago-checkout-orders-approved.json";
 import { isOrderFullyApproved, verifyMercadoPagoWebhookSignature } from "./kani-mercadopago";
 import { verifyAndConfirmAppointmentPayment, handleGetAppointmentPaymentStatus } from "./kani-mercadopago.server";
 import { handleMercadoPagoWebhook } from "./kani-mercadopago-webhook.server";
@@ -120,5 +121,56 @@ describe("Payment security audit (mocked provider, not MP sandbox)", () => {
     const ts = "1700000000";
     const v1 = createHmac("sha256", "test").update(`id:x;request-id:y;ts:${ts};`).digest("hex");
     expect(verifyMercadoPagoWebhookSignature({ dataId: "x", xRequestId: "y", secret: "test", xSignature: `ts=${ts},v1=${v1}`, toleranceSeconds: 300 })).toBe(false);
+  });
+});
+
+// Shape captured from the first official TEST Checkout Pro payment on 2026-10-25.
+// Identifiers are synthetic; payer, credentials and client_token are omitted.
+describe("real Checkout Pro Orders response regression", () => {
+  function useCheckoutResponse() {
+    const fixture = JSON.parse(JSON.stringify(realCheckoutFixture)) as typeof realCheckoutFixture;
+    fetchMock.mockImplementation(async (url: string) => new Response(JSON.stringify(
+      url.includes("/v1/payments/") ? fixture.payment : fixture.order,
+    ), { status: 200 }));
+    return fixture;
+  }
+
+  it.each([true, false])("links legacy Payment via Orders reference_id, not merchant order ID (order query supplied: %s)", async withOrderId => {
+    const fixture = useCheckoutResponse();
+    expect(isOrderFullyApproved(fixture.order)).toBe(true);
+    expect(fixture.payment.order.id).not.toBe(fixture.order.id);
+    const result = await verifyAndConfirmAppointmentPayment({
+      appointmentId, ...(withOrderId ? { orderId } : {}), paymentId: String(fixture.payment.id),
+    });
+    expect(result.success).toBe(true);
+    expect(mocks.rpc).toHaveBeenCalledWith("confirm_appointment_from_payment", {
+      p_appointment_id: appointmentId, p_order_id: orderId, p_paid_amount: 5000,
+    });
+    expect(mocks.notify).toHaveBeenCalledTimes(1);
+    for (const call of fetchMock.mock.calls) expect(call[1].method).toBe("GET");
+  });
+
+  it.each(["missing_reference", "crossed_reference", "wrong_appointment", "wrong_currency", "underpaid", "pending", "rejected"])("refuses %s even when the Order total is correct", async scenario => {
+    const fixture = useCheckoutResponse();
+    if (scenario === "missing_reference") delete (fixture.order.transactions.payments[0] as { reference_id?: string }).reference_id;
+    if (scenario === "crossed_reference") fixture.order.transactions.payments[0].reference_id = "999999999999";
+    if (scenario === "wrong_appointment") fixture.payment.external_reference = "another-appointment";
+    if (scenario === "wrong_currency") fixture.payment.currency_id = "USD";
+    if (scenario === "underpaid") fixture.payment.transaction_amount = 1;
+    if (scenario === "pending") fixture.payment.status = "pending";
+    if (scenario === "rejected") fixture.payment.status = "rejected";
+    expect((await verifyAndConfirmAppointmentPayment({ appointmentId, orderId, paymentId: String(fixture.payment.id) })).success).toBe(false);
+    expect(mocks.rpc).not.toHaveBeenCalled();
+    expect(mocks.notify).not.toHaveBeenCalled();
+  });
+
+  it("reprocessing and refreshing the same linked payment never create a new charge or resend confirmation", async () => {
+    const fixture = useCheckoutResponse();
+    const input = { appointmentId, orderId, paymentId: String(fixture.payment.id) };
+    expect((await verifyAndConfirmAppointmentPayment(input)).success).toBe(true);
+    mocks.rpc.mockResolvedValue({ data: [{ result_code: "ALREADY_CONFIRMED", appointment_status: "CONFIRMED" }] });
+    expect((await verifyAndConfirmAppointmentPayment(input)).success).toBe(true);
+    expect(mocks.notify).toHaveBeenCalledTimes(1);
+    for (const call of fetchMock.mock.calls) expect(call[1].method).toBe("GET");
   });
 });

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { CheckCircle2, Clock, MapPin, Calendar, User, Scissors, AlertCircle, ArrowRight } from 'lucide-react';
 import { getAppointmentPaymentStatusFn, type AppointmentPaymentStatusResult } from '@/lib/kani-mercadopago.functions';
 import { pageHead } from '@/lib/kani-head';
+import { checkoutReturnIdentifiers } from '@/lib/kani-payment-return';
 import { Button } from '@/components/ui/button';
 
 export const Route = createFileRoute('/pago/exito')({
@@ -16,10 +17,9 @@ export const Route = createFileRoute('/pago/exito')({
 });
 
 function PagoExitoPage() {
-  const searchParams = Route.useSearch() as Record<string, string | undefined>;
-  const appointmentId = searchParams.appointment_id || searchParams.external_reference;
-  const orderId = searchParams.order_id || searchParams.merchant_order_id;
-  const paymentId = searchParams.payment_id || searchParams.collection_id;
+  const { appointmentId, orderId, paymentId } = checkoutReturnIdentifiers(
+    Route.useSearch() as Record<string, unknown>,
+  );
 
   const [loading, setLoading] = useState(true);
   const [retryCount, setRetryCount] = useState(0);

@@ -66,7 +66,7 @@ export type MercadoPagoOrderDetails = {
   total_paid_amount?: number | string;
   currency?: string;
   status_detail?: string;
-  transactions?: { payments?: Array<{ id?: string; status?: string; status_detail?: string; amount?: string; paid_amount?: string; refunded_amount?: string }> };
+  transactions?: { payments?: Array<{ id?: string; reference_id?: string; status?: string; status_detail?: string; amount?: string; paid_amount?: string; refunded_amount?: string }> };
   currency_id?: string;
   external_reference?: string;
   payments?: MercadoPagoPaymentSummary[];
