@@ -14,7 +14,11 @@ vi.mock('@/integrations/supabase/client', () => ({
   },
 }));
 
-vi.mock('@/lib/kani-down-payment', () => ({
+vi.mock('@/lib/kani-payment-db.server', () => ({
+  createPaymentSupabaseClient: async () => ({ rpc: (...args: unknown[]) => mockRpc(...args), from: (...args: unknown[]) => mockFrom(...args) }),
+}));
+
+vi.mock('@/lib/kani-down-payment' , () => ({
   getDynamicDownPayment: async () => 5000,
 }));
 
@@ -150,9 +154,17 @@ describe('Mercado Pago Checkout Pro Return Flow & Status Resolution', () => {
     const globalObj = globalThis as typeof globalThis & { __env__?: Record<string, string> };
     globalObj.__env__ = {
       MERCADOPAGO_ACCESS_TOKEN: 'TEST-TOKEN-123456',
+      MERCADOPAGO_WEBHOOK_SECRET: 'FAKE-SECRET',
       KANI_APP_URL: 'https://kanibarberstudio-cloudflare.kanibarber.workers.dev',
     };
 
+    mockRpc.mockResolvedValue({ data: [{ appointment_status: 'PENDING', barber_name: 'Lautaro', service_name: 'Corte', service_price_ars: 15000, client_name: 'Martin', client_email: 'martin@test.com', client_phone: '+5491112345678' }], error: null });
+    let bound = false;
+    mockFrom.mockImplementation(() => ({
+      upsert: async () => ({ error: null }),
+      select: () => ({ eq: () => ({ single: async () => ({ data: { idempotency_key: '123e4567-e89b-12d3-a456-426614174000', order_id: bound ? 'order_mp_888999' : null } }) }) }),
+      update: () => ({ eq: () => ({ is: async () => { bound = true; return { error: null }; } }) }),
+    }));
     let capturedPayload: any = null;
     global.fetch = vi.fn().mockImplementation(async (url: string, init?: RequestInit) => {
       if (url.includes('/v1/orders')) {
@@ -172,7 +184,7 @@ describe('Mercado Pago Checkout Pro Return Flow & Status Resolution', () => {
       appointmentId: 'apt_order_urls_test',
       serviceName: 'Corte',
       barberName: 'Lautaro',
-      servicePrice: 15000,
+      servicePrice: 1, // Untrusted caller cannot lower the server-side $5000 deposit.
       clientName: 'Martin',
       clientEmail: 'martin@test.com',
       clientPhone: '+5491112345678',
@@ -180,6 +192,10 @@ describe('Mercado Pago Checkout Pro Return Flow & Status Resolution', () => {
 
     expect(res.success).toBe(true);
     expect(capturedPayload).toBeDefined();
+    expect(capturedPayload.total_amount).toBe('5000.00');
+    expect(capturedPayload.processing_mode).toBe('manual');
+    expect(capturedPayload.currency).toBe('ARS');
+    expect(capturedPayload.expiration_time).toBe('PT10M');
     expect(capturedPayload.config?.online?.auto_return).toBe('all');
     expect(capturedPayload.config?.online?.success_url).toBe(
       'https://kanibarberstudio-cloudflare.kanibarber.workers.dev/pago/exito?appointment_id=apt_order_urls_test'

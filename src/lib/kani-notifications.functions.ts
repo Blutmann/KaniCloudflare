@@ -1,4 +1,4 @@
-import { createServerFn } from "@tanstack/react-start";
+import { createServerFn, createServerOnlyFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { notificationSubject } from './kani-email-environment';
 
@@ -57,7 +57,10 @@ export const sendAppointmentNotification = createServerFn({ method: "POST" })
     if (!data?.appointmentId || !data?.claimToken) throw new Error("NOTIFICATION_INPUT_INVALID");
     return data;
   })
-  .handler(async ({ data }): Promise<DispatchResult> => {
+  .handler(async ({ data }): Promise<DispatchResult> => dispatchAppointmentNotification(data));
+
+// Plain server dispatcher also works from the raw Worker webhook (no TanStack request context).
+export const dispatchAppointmentNotification = createServerOnlyFn(async (data: { appointmentId: string; claimToken: string; clientPhone?: string | null }): Promise<DispatchResult> => {
     let notificationId: string | undefined;
     try {
       const supabase = await createRequestSupabaseClient();
@@ -245,7 +248,7 @@ export const sendAppointmentNotification = createServerFn({ method: "POST" })
       // Client-side fallback persists a generic cause if this server function cannot write it.
       return { sent: false, status: "FAILED", errorCode: safeMessage };
     }
-  });
+});
 
 function getRuntimeEnv(name: string): string | undefined {
   // src/server.ts reads the Worker's runtime bindings before TanStack dispatches
@@ -274,10 +277,9 @@ function getRuntimeEnv(name: string): string | undefined {
 }
 
 async function createRequestSupabaseClient() {
-  const [{ createClient }, request] = await Promise.all([
-    import("@supabase/supabase-js"),
-    Promise.resolve(getRequest()),
-  ]);
+  const { createClient } = await import("@supabase/supabase-js");
+  let request: Request | undefined;
+  try { request = getRequest(); } catch { /* Raw Worker webhook has no TanStack request. */ }
   const supabaseUrl = getRuntimeEnv("SUPABASE_URL") ?? getRuntimeEnv("VITE_SUPABASE_URL");
   const supabaseKey =
     getRuntimeEnv("SUPABASE_ANON_KEY") ??

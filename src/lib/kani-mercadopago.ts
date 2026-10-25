@@ -62,7 +62,11 @@ export type MercadoPagoOrderDetails = {
   id: string;
   status: string;
   type?: string;
-  total_amount?: number;
+  total_amount?: number | string;
+  total_paid_amount?: number | string;
+  currency?: string;
+  status_detail?: string;
+  transactions?: { payments?: Array<{ id?: string; status?: string; status_detail?: string; amount?: string; paid_amount?: string; refunded_amount?: string }> };
   currency_id?: string;
   external_reference?: string;
   payments?: MercadoPagoPaymentSummary[];
@@ -99,11 +103,13 @@ export function verifyMercadoPagoWebhookSignature({
   xRequestId,
   dataId,
   secret,
+  toleranceSeconds,
 }: {
   xSignature: string | null | undefined;
   xRequestId: string | null | undefined;
   dataId: string | null | undefined;
   secret: string | null | undefined;
+  toleranceSeconds?: number;
 }): boolean {
   if (!xSignature || !xRequestId || !dataId || !secret) {
     return false;
@@ -122,9 +128,11 @@ export function verifyMercadoPagoWebhookSignature({
     if (trimmedKey === "v1") v1 = val;
   }
 
-  if (!ts || !v1) {
+  if (!ts || !/^\d+$/.test(ts) || !v1 || !/^[0-9a-f]{64}$/i.test(v1)) {
     return false;
   }
+
+  if (toleranceSeconds !== undefined && Math.abs(Date.now() / 1000 - Number(ts)) > toleranceSeconds) return false;
 
   // Construir el manifest exactamente según la especificación: id:{data.id};request-id:{x-request-id};ts:{ts};
   const manifest = `id:${dataId};request-id:${xRequestId};ts:${ts};`;
@@ -193,15 +201,15 @@ export async function createMercadoPagoOrder({
   const sanitizedAmount = Number(input.amount.toFixed(2));
   const amountStr = sanitizedAmount.toFixed(2);
 
-  // Vencimiento en minutos (por defecto 10 min)
+  // Orders uses ISO 8601 durations, not Preferences expiration_date_to.
   const expirationMinutes = input.expirationMinutes ?? 10;
-  const now = new Date();
-  const expirationTo = new Date(now.getTime() + expirationMinutes * 60 * 1000).toISOString();
 
   const bodyPayload: Record<string, unknown> = {
     type: "online",
     processing_mode: "manual",
     total_amount: amountStr,
+    currency: input.currencyId ?? "ARS",
+    expiration_time: `PT${expirationMinutes}M`,
     external_reference: input.externalReference,
     payer: {
       email: input.payer.email,
@@ -216,10 +224,6 @@ export async function createMercadoPagoOrder({
     ],
   };
 
-  if (input.notificationUrl) {
-    bodyPayload.notification_url = input.notificationUrl;
-  }
-
   const successUrl = input.returnUrls?.successUrl ?? input.returnUrl;
   const failureUrl = input.returnUrls?.failureUrl ?? input.returnUrl;
   const pendingUrl = input.returnUrls?.pendingUrl ?? input.returnUrl;
@@ -227,6 +231,7 @@ export async function createMercadoPagoOrder({
   if (successUrl || failureUrl || pendingUrl) {
     bodyPayload.config = {
       online: {
+        callback_url: input.notificationUrl,
         success_url: successUrl ?? pendingUrl ?? failureUrl,
         failure_url: failureUrl ?? successUrl ?? pendingUrl,
         pending_url: pendingUrl ?? successUrl ?? failureUrl,
@@ -295,7 +300,7 @@ export async function createMercadoPagoOrder({
       (typeof data.init_point === "string" && data.init_point) ||
       (typeof data.sandbox_init_point === "string" && data.sandbox_init_point) ||
       (typeof data.redirect_url === "string" && data.redirect_url) ||
-      (orderId ? `https://www.mercadopago.com.ar/checkout/v1/redirect?order_id=${orderId}` : undefined);
+      undefined;
 
     if (!checkoutUrl) {
       console.error("[Mercado Pago] No se obtuvo checkout_url ni init_point en la respuesta:", data);
@@ -453,47 +458,30 @@ export async function getMercadoPagoPayment({
 /**
  * Evalúa si una orden de Mercado Pago se encuentra efectivamente aprobada y pagada en su totalidad.
  */
-export function isOrderFullyApproved(order: MercadoPagoOrderDetails, expectedAmount?: number): boolean {
-  if (!order) return false;
-
-  // Validar moneda: debe ser ARS si está presente
-  if (order.currency_id && order.currency_id.toUpperCase() !== "ARS") {
-    console.warn(`[Mercado Pago Order] Moneda no admitida: ${order.currency_id}. Se espera ARS.`);
-    return false;
+export function isOrderFullyApproved(order: MercadoPagoOrderDetails, expectedAmount = 5000): boolean {
+  // Match the current Orders representation. Missing/NaN evidence fails closed.
+  if (!order || order.type !== "online" || order.status !== "processed" ||
+      order.status_detail !== "accredited" || order.currency !== "ARS") return false;
+  const cents = (value: unknown) => {
+    if (typeof value !== "string" && typeof value !== "number") return NaN;
+    if (typeof value === "string" && !/^\d+(?:\.\d{1,2})?$/.test(value)) return NaN;
+    const number = Number(value);
+    return Number.isFinite(number) ? Math.round(number * 100) : NaN;
+  };
+  const expected = cents(expectedAmount);
+  if (expected <= 0 || !Number.isFinite(expected) || cents(order.total_amount) !== expected ||
+      cents(order.total_paid_amount) !== expected) return false;
+  const payments = order.transactions?.payments;
+  if (!payments?.length) return false;
+  let paid = 0;
+  for (const payment of payments) {
+    if (payment.status !== "processed" || payment.status_detail !== "accredited") continue;
+    const amount = cents(payment.paid_amount);
+    const refunded = payment.refunded_amount === undefined ? 0 : cents(payment.refunded_amount);
+    if (!Number.isFinite(amount) || amount <= 0 || refunded !== 0) return false;
+    paid += amount;
   }
-
-  // Si la orden general tiene status 'processed' o 'paid'
-  const isOrderStatusPaid = order.status === "processed" || order.status === "paid" || order.status === "closed";
-
-  // Verificar pagos individuales en caso de estar presentes
-  const payments = order.payments ?? [];
-  const approvedPayment = payments.find((p) => p.status === "approved");
-
-  if (!isOrderStatusPaid && !approvedPayment) {
-    return false;
-  }
-
-  // Si el pago individual tiene moneda especificada, verificar que sea ARS
-  if (approvedPayment?.currency_id && approvedPayment.currency_id.toUpperCase() !== "ARS") {
-    console.warn(`[Mercado Pago Order] Moneda del pago no admitida: ${approvedPayment.currency_id}. Se espera ARS.`);
-    return false;
-  }
-
-  // Si se especificó el importe esperado, validar que coincida
-  if (expectedAmount !== undefined && expectedAmount > 0) {
-    const orderTotal = Number(order.total_amount ?? 0);
-    const paymentAmount = approvedPayment?.transaction_amount !== undefined
-      ? Number(approvedPayment.transaction_amount)
-      : orderTotal;
-
-    // Tolerancia para centavos
-    if (Math.abs(paymentAmount - expectedAmount) > 0.01 && Math.abs(orderTotal - expectedAmount) > 0.01) {
-      console.warn(`[Mercado Pago Order] Importe no coincide. Esperado: ${expectedAmount}, Obtenido: ${paymentAmount} / ${orderTotal}`);
-      return false;
-    }
-  }
-
-  return true;
+  return paid === expected;
 }
 
 export { getDynamicDownPayment } from "./kani-down-payment";
@@ -528,12 +516,13 @@ export async function confirmAppointmentPayment({
   totalAmount,
 }: ConfirmAppointmentPaymentInput): Promise<ConfirmAppointmentPaymentResult> {
   try {
-    const { supabase } = await import("@/integrations/supabase/client");
+    const { createPaymentSupabaseClient } = await import("./kani-payment-db.server");
+    const supabase = await createPaymentSupabaseClient();
 
     const { data, error } = await supabase.rpc("confirm_appointment_from_payment", {
       p_appointment_id: appointmentId,
       p_order_id: orderId,
-      p_paid_amount: totalAmount ? Math.round(totalAmount) : null,
+      p_paid_amount: totalAmount === 5000 ? totalAmount : null,
     });
 
     if (error) {
@@ -554,7 +543,7 @@ export async function confirmAppointmentPayment({
       };
     }
 
-    const resultCode = (row.result_code || "CONFIRMED") as ConfirmAppointmentPaymentResult["resultCode"];
+    const resultCode = (row.result_code || "FAILED") as ConfirmAppointmentPaymentResult["resultCode"];
     const appointmentStatus = row.appointment_status ?? undefined;
 
     // Idempotencia: si ya estaba confirmada, no duplicamos notificaciones
@@ -585,13 +574,8 @@ export async function confirmAppointmentPayment({
       console.log(`[Mercado Pago] Turno ${appointmentId} confirmado exitosamente tras pago.`);
       if (row.notification_claim_token) {
         try {
-          const { sendAppointmentNotification } = await import("./kani-notifications.functions");
-          await sendAppointmentNotification({
-            data: {
-              appointmentId,
-              claimToken: row.notification_claim_token,
-            },
-          });
+          const { dispatchAppointmentNotification } = await import("./kani-notifications.functions");
+          await dispatchAppointmentNotification({ appointmentId, claimToken: row.notification_claim_token });
           console.log(`[Mercado Pago] Notificación de confirmación despachada para turno ${appointmentId}.`);
         } catch (notifErr) {
           console.error(

@@ -62,108 +62,8 @@ export default {
 
       const url = new URL(request.url);
       if (url.pathname === "/api/webhook/mercadopago") {
-        if (request.method === "POST") {
-          try {
-            const { verifyMercadoPagoWebhookSignature, getMercadoPagoOrder, isOrderFullyApproved } =
-              await import("./lib/kani-mercadopago");
-            const webhookSecret =
-              (globalThis as typeof globalThis & { __env__?: Record<string, string> }).__env__?.MERCADOPAGO_WEBHOOK_SECRET ??
-              process.env.MERCADOPAGO_WEBHOOK_SECRET ??
-              (globalThis as typeof globalThis & {
-                __KANI_RUNTIME_ENV?: Record<string, string>;
-              }).__KANI_RUNTIME_ENV?.MERCADOPAGO_WEBHOOK_SECRET;
-
-            const xSignature = request.headers.get("x-signature");
-            const xRequestId = request.headers.get("x-request-id");
-            let dataId = url.searchParams.get("data.id") ?? url.searchParams.get("id");
-
-            if (!dataId) {
-              try {
-                const bodyJson = (await request.clone().json()) as { data?: { id?: string }; id?: string } | null;
-                dataId = bodyJson?.data?.id ?? bodyJson?.id ?? null;
-              } catch {
-                // Non-JSON body
-              }
-            }
-
-            // Si está configurado el secreto, verificar firma HMAC-SHA256 obligatoriamente
-            if (webhookSecret && webhookSecret.trim()) {
-              const isValidSignature = verifyMercadoPagoWebhookSignature({
-                xSignature,
-                xRequestId,
-                dataId,
-                secret: webhookSecret,
-              });
-              if (!isValidSignature) {
-                console.warn("[Mercado Pago Webhook] Firma inválida rechazada");
-                return new Response("Invalid signature", { status: 401 });
-              }
-            } else {
-              console.warn("[Mercado Pago Webhook] MERCADOPAGO_WEBHOOK_SECRET no configurado, omitiendo validación de firma");
-            }
-
-            // Consultar el estado real de la orden en la API si dataId existe
-            const accessToken =
-              (globalThis as typeof globalThis & { __env__?: Record<string, string> }).__env__?.MERCADOPAGO_ACCESS_TOKEN ??
-              process.env.MERCADOPAGO_ACCESS_TOKEN ??
-              (globalThis as typeof globalThis & {
-                __KANI_RUNTIME_ENV?: Record<string, string>;
-              }).__KANI_RUNTIME_ENV?.MERCADOPAGO_ACCESS_TOKEN;
-
-            if (dataId && accessToken) {
-              const { confirmAppointmentPayment, getMercadoPagoPayment } = await import("./lib/kani-mercadopago");
-              const orderResult = await getMercadoPagoOrder({
-                orderId: dataId,
-                accessToken,
-              });
-
-              if (orderResult.success && orderResult.order) {
-                const order = orderResult.order;
-                const appointmentId = order.external_reference;
-
-                if (appointmentId && isOrderFullyApproved(order)) {
-                  console.log(`[Mercado Pago Webhook] Orden ${order.id} aprobada para turno ${appointmentId}. Confirmando...`);
-                  const confirmation = await confirmAppointmentPayment({
-                    appointmentId,
-                    orderId: String(order.id),
-                    totalAmount: order.total_amount ? Number(order.total_amount) : undefined,
-                  });
-                  console.log(`[Mercado Pago Webhook] Resultado de confirmación para ${appointmentId}:`, confirmation.resultCode);
-                }
-              } else {
-                // Si la orden no existió con ese ID, verificar si dataId corresponde a un pago directo
-                const paymentResult = await getMercadoPagoPayment({
-                  paymentId: dataId,
-                  accessToken,
-                });
-
-                if (paymentResult.success && paymentResult.payment) {
-                  const payment = paymentResult.payment;
-                  const appointmentId = payment.external_reference;
-                  if (
-                    appointmentId &&
-                    payment.status === "approved" &&
-                    (!payment.currency_id || payment.currency_id.toUpperCase() === "ARS")
-                  ) {
-                    console.log(`[Mercado Pago Webhook] Pago ${payment.id} aprobado para turno ${appointmentId}. Confirmando...`);
-                    const confirmation = await confirmAppointmentPayment({
-                      appointmentId,
-                      orderId: payment.order?.id ? String(payment.order.id) : String(payment.id),
-                      totalAmount: payment.transaction_amount ? Number(payment.transaction_amount) : undefined,
-                    });
-                    console.log(`[Mercado Pago Webhook] Resultado de confirmación para ${appointmentId}:`, confirmation.resultCode);
-                  }
-                }
-              }
-            }
-
-            return new Response("OK", { status: 200 });
-          } catch (err) {
-            console.error("[Mercado Pago Webhook Error]:", err);
-            return new Response("Internal Server Error", { status: 500 });
-          }
-        }
-        return new Response("Method Not Allowed", { status: 405 });
+        const { handleMercadoPagoWebhook } = await import("./lib/kani-mercadopago-webhook.server");
+        return await handleMercadoPagoWebhook(request);
       }
 
       if (url.pathname === "/api/webhook/whatsapp") {
@@ -331,6 +231,7 @@ function mirrorRuntimeBindings(bindings: unknown): void {
   const values = bindings as Record<string, unknown>;
   const names = [
     "SUPABASE_URL",
+    "SUPABASE_SERVICE_ROLE_KEY",
     "SUPABASE_ANON_KEY",
     "SUPABASE_PUBLISHABLE_KEY",
     "VITE_SUPABASE_URL",

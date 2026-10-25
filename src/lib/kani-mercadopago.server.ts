@@ -76,24 +76,44 @@ export async function handleCreateBookingOrder(data: CreateBookingOrderInput): P
       };
     }
 
+    if (!getRuntimeEnv("MERCADOPAGO_WEBHOOK_SECRET")) return { success: false, error: "PAYMENT_WEBHOOK_NOT_CONFIGURED" };
+
+    // Resolve all commercial data from the saved appointment, never caller prices/names.
+    const { createPaymentSupabaseClient } = await import("./kani-payment-db.server");
+    const db = await createPaymentSupabaseClient();
+    const { data: saved, error: savedError } = await db.rpc("get_appointment_payment_details", { p_appointment_id: data.appointmentId });
+    const appointment = saved?.[0];
+    if (savedError || !appointment || appointment.appointment_status !== "PENDING") {
+      return { success: false, error: "APPOINTMENT_NOT_PAYABLE" };
+    }
+    // Persist before calling MP: simultaneous requests/retries reuse the same operation.
+    const { error: intentError } = await db.from("appointment_payment_orders").upsert({
+      appointment_id: data.appointmentId, expected_amount_ars: 5000,
+    }, { onConflict: "appointment_id", ignoreDuplicates: true });
+    if (intentError) return { success: false, error: "PAYMENT_REGISTRY_NOT_READY" };
+    const { data: intent, error: intentReadError } = await db.from("appointment_payment_orders")
+      .select("idempotency_key, order_id").eq("appointment_id", data.appointmentId).single();
+    if (intentReadError || !intent) return { success: false, error: "PAYMENT_REGISTRY_NOT_READY" };
+
     // Obtener el monto de la seña dinámica de forma no hardcodeada (fuente de verdad: RPC o default 5000)
-    const dynamicDeposit = await getDynamicDownPayment(data.barberName);
-    const depositAmount = data.servicePrice > 0
-      ? Math.min(dynamicDeposit, data.servicePrice)
-      : dynamicDeposit;
+    const dynamicDeposit = await getDynamicDownPayment(appointment.barber_name);
+    if (dynamicDeposit !== 5000 || Number(appointment.service_price_ars) < 5000) {
+      return { success: false, error: "DEPOSIT_CONFIGURATION_MISMATCH" };
+    }
+    const depositAmount = 5000;
 
     const { createMercadoPagoOrder } = await import("./kani-mercadopago");
     const orderResult = await createMercadoPagoOrder({
       input: {
         externalReference: data.appointmentId,
-        title: `Seña - ${data.serviceName} (${data.barberName})`,
-        description: `Seña para reserva en Kani Barber Studio - ${data.serviceName} con ${data.barberName}`,
+        title: `Seña - ${appointment.service_name} (${appointment.barber_name})`,
+        description: `Seña para reserva en Kani Barber Studio - ${appointment.service_name} con ${appointment.barber_name}`,
         amount: depositAmount,
         currencyId: "ARS",
         payer: {
-          email: data.clientEmail.trim(),
-          name: data.clientName.trim(),
-          phone: data.clientPhone.trim(),
+          email: appointment.client_email.trim(),
+          name: appointment.client_name.trim(),
+          phone: appointment.client_phone.trim(),
         },
         notificationUrl,
         returnUrls: {
@@ -105,7 +125,7 @@ export async function handleCreateBookingOrder(data: CreateBookingOrderInput): P
         expirationMinutes: 10,
       },
       accessToken,
-      idempotencyKey: data.appointmentId,
+      idempotencyKey: intent.idempotency_key,
     });
 
     if (!orderResult.success) {
@@ -119,6 +139,14 @@ export async function handleCreateBookingOrder(data: CreateBookingOrderInput): P
       };
     }
 
+    if (!orderResult.orderId) return { success: false, error: "ORDER_ID_MISSING" };
+    if (intent.order_id && intent.order_id !== orderResult.orderId) return { success: false, error: "ORDER_BINDING_MISMATCH" };
+    const { error: bindError } = await db.from("appointment_payment_orders")
+      .update({ order_id: orderResult.orderId }).eq("appointment_id", data.appointmentId).is("order_id", null);
+    if (bindError) return { success: false, error: "ORDER_BINDING_FAILED" };
+    const { data: bound } = await db.from("appointment_payment_orders").select("order_id")
+      .eq("appointment_id", data.appointmentId).single();
+    if (bound?.order_id !== orderResult.orderId) return { success: false, error: "ORDER_BINDING_MISMATCH" };
     const checkoutUrl = orderResult.checkoutUrl || orderResult.initPoint;
 
     return {
@@ -145,7 +173,8 @@ export async function handleCreateBookingOrder(data: CreateBookingOrderInput): P
  */
 export async function handleGetAppointmentPaymentStatus(data: AppointmentPaymentStatusInput): Promise<AppointmentPaymentStatusResult> {
   try {
-    const { supabase } = await import("@/integrations/supabase/client");
+    const { createPaymentSupabaseClient } = await import("./kani-payment-db.server");
+    const supabase = await createPaymentSupabaseClient();
 
     // Consultar el turno en Supabase
     const { data: appt, error: apptError } = await supabase
@@ -174,10 +203,9 @@ export async function handleGetAppointmentPaymentStatus(data: AppointmentPayment
     }
 
     // Cargar información descriptiva del turno para la UI
-    const [barberRes, serviceRes, clientRes] = await Promise.all([
+    const [barberRes, serviceRes] = await Promise.all([
       supabase.from("barbers").select("name").eq("id", appt.barber_id).maybeSingle(),
       supabase.from("services").select("name, price_ars").eq("id", appt.service_id).maybeSingle(),
-      supabase.from("clients").select("name, phone, email").eq("id", appt.client_id).maybeSingle(),
     ]);
 
     const appointmentDetails = {
@@ -187,9 +215,6 @@ export async function handleGetAppointmentPaymentStatus(data: AppointmentPayment
       barberName: barberRes.data?.name ?? "Barbero Kani",
       date: appt.booking_date,
       time: appt.start_time,
-      clientName: clientRes.data?.name ?? "",
-      clientPhone: clientRes.data?.phone ?? "",
-      clientEmail: clientRes.data?.email ?? "",
       depositAmountArs: 5000,
     };
 
@@ -221,69 +246,10 @@ export async function handleGetAppointmentPaymentStatus(data: AppointmentPayment
     const paymentIdToVerify = data.paymentId?.trim();
 
     if (accessToken && (orderIdToVerify || paymentIdToVerify)) {
-      const { getMercadoPagoOrder, isOrderFullyApproved, getMercadoPagoPayment, confirmAppointmentPayment } =
-        await import("./kani-mercadopago");
-
-      let isApproved = false;
-      let verifiedOrderId = orderIdToVerify;
-      let totalAmount: number | undefined;
-
-      // Intentar verificar la orden
-      if (orderIdToVerify) {
-        try {
-          const orderRes = await getMercadoPagoOrder({ orderId: orderIdToVerify, accessToken });
-          if (orderRes.success && orderRes.order) {
-            const order = orderRes.order;
-            // Verificar que external_reference corresponda al turno
-            if (order.external_reference === data.appointmentId && isOrderFullyApproved(order)) {
-              isApproved = true;
-              totalAmount = order.total_amount ? Number(order.total_amount) : undefined;
-            }
-          }
-        } catch (e) {
-          console.warn(`[handleGetAppointmentPaymentStatus] Error consultando orden ${orderIdToVerify}:`, e);
-        }
-      }
-
-      // Si no se confirmó por orden y hay paymentId, verificar por pago
-      if (!isApproved && paymentIdToVerify) {
-        try {
-          const payRes = await getMercadoPagoPayment({ paymentId: paymentIdToVerify, accessToken });
-          if (payRes.success && payRes.payment) {
-            const payment = payRes.payment;
-            if (
-              payment.external_reference === data.appointmentId &&
-              payment.status === "approved" &&
-              (!payment.currency_id || payment.currency_id.toUpperCase() === "ARS")
-            ) {
-              isApproved = true;
-              verifiedOrderId = payment.order?.id ? String(payment.order.id) : (orderIdToVerify || String(payment.id));
-              totalAmount = payment.transaction_amount ? Number(payment.transaction_amount) : undefined;
-            }
-          }
-        } catch (e) {
-          console.warn(`[handleGetAppointmentPaymentStatus] Error consultando pago ${paymentIdToVerify}:`, e);
-        }
-      }
-
-      // Si Mercado Pago certifica que está aprobado, confirmar atómicamente
-      if (isApproved && verifiedOrderId) {
-        console.log(`[handleGetAppointmentPaymentStatus] Orden/Pago aprobado certificado por MP para ${data.appointmentId}. Confirmando atómicamente...`);
-        const confirmRes = await confirmAppointmentPayment({
-          appointmentId: data.appointmentId,
-          orderId: verifiedOrderId,
-          totalAmount,
-        });
-
-        if (confirmRes.success && confirmRes.appointmentStatus === "CONFIRMED") {
-          return {
-            success: true,
-            isConfirmed: true,
-            appointmentStatus: "CONFIRMED",
-            appointment: appointmentDetails,
-          };
-        }
-      }
+      const confirmation = await verifyAndConfirmAppointmentPayment(data);
+      if (confirmation.success) return {
+        success: true, isConfirmed: true, appointmentStatus: "CONFIRMED", appointment: appointmentDetails,
+      };
     }
 
     // Si aún no está confirmado, retornar PENDING con datos del turno
@@ -302,4 +268,34 @@ export async function handleGetAppointmentPaymentStatus(data: AppointmentPayment
       error: errorMsg,
     };
   }
+}
+
+/** Shared trust boundary for return routes and Webhooks. Query/payload statuses are ignored. */
+export async function verifyAndConfirmAppointmentPayment(data: AppointmentPaymentStatusInput) {
+  const { createPaymentSupabaseClient } = await import("./kani-payment-db.server");
+  const db = await createPaymentSupabaseClient();
+  const { data: intent, error } = await db.from("appointment_payment_orders")
+    .select("order_id, expected_amount_ars").eq("appointment_id", data.appointmentId).single();
+  if (error || !intent?.order_id || intent.expected_amount_ars !== 5000) {
+    return { success: false, resultCode: "FAILED" };
+  }
+  const { getMercadoPagoOrder, getMercadoPagoPayment, isOrderFullyApproved, confirmAppointmentPayment } =
+    await import("./kani-mercadopago");
+  const accessToken = getRuntimeEnv("MERCADOPAGO_ACCESS_TOKEN");
+  if (data.orderId && data.orderId !== intent.order_id) return { success: false, resultCode: "ID_MISMATCH" };
+  if (data.paymentId) {
+    const { payment } = await getMercadoPagoPayment({ paymentId: data.paymentId, accessToken });
+    if (!payment || String(payment.id) !== data.paymentId || payment.external_reference !== data.appointmentId ||
+        String(payment.order?.id ?? "") !== intent.order_id || payment.status !== "approved" ||
+        payment.currency_id !== "ARS" || payment.transaction_amount !== 5000) {
+      return { success: false, resultCode: "PAYMENT_NOT_APPROVED" };
+    }
+  }
+  const { order, success } = await getMercadoPagoOrder({ orderId: intent.order_id, accessToken });
+  if (!success) return { success: false, resultCode: "FAILED" };
+  if (!order || String(order.id) !== intent.order_id || order.external_reference !== data.appointmentId ||
+      !isOrderFullyApproved(order, intent.expected_amount_ars)) {
+    return { success: false, resultCode: "ORDER_NOT_APPROVED" };
+  }
+  return confirmAppointmentPayment({ appointmentId: data.appointmentId, orderId: intent.order_id, totalAmount: 5000 });
 }

@@ -21,6 +21,10 @@ vi.mock("@/integrations/supabase/client", () => ({
   },
 }));
 
+vi.mock("./kani-payment-db.server", () => ({
+  createPaymentSupabaseClient: async () => ({ rpc: (...args: unknown[]) => mockRpc(...args) }),
+}));
+
 describe("Mercado Pago Integration Unit Tests", () => {
   describe("verifyMercadoPagoWebhookSignature", () => {
     const secret = "test_webhook_secret_key_12345";
@@ -190,9 +194,9 @@ describe("Mercado Pago Integration Unit Tests", () => {
 
     it("correctly identifies fully approved orders", () => {
       const approvedOrder: MercadoPagoOrderDetails = {
-        id: "order_100",
-        status: "processed",
-        total_amount: 10000,
+        id: "order_100", type: "online", status: "processed", status_detail: "accredited",
+        total_amount: "10000.00", total_paid_amount: "10000.00", currency: "ARS",
+        transactions: { payments: [{ id: "PAY1", status: "processed", status_detail: "accredited", paid_amount: "10000.00" }] },
         payments: [
           {
             id: 123456,
@@ -291,7 +295,7 @@ describe("Mercado Pago Integration Unit Tests", () => {
     it("confirms appointment successfully and dispatches notification on valid approved payment", async () => {
       const notifModule = await import("./kani-notifications.functions");
       const sendNotifSpy = vi
-        .spyOn(notifModule, "sendAppointmentNotification")
+        .spyOn(notifModule, "dispatchAppointmentNotification")
         .mockResolvedValueOnce({ sent: true, status: "SENT" });
 
       mockRpc.mockResolvedValueOnce({
@@ -314,19 +318,14 @@ describe("Mercado Pago Integration Unit Tests", () => {
       expect(result.success).toBe(true);
       expect(result.resultCode).toBe("CONFIRMED");
       expect(result.appointmentStatus).toBe("CONFIRMED");
-      expect(sendNotifSpy).toHaveBeenCalledWith({
-        data: {
-          appointmentId: "apt_111",
-          claimToken: "test_token_abc123",
-        },
-      });
+      expect(sendNotifSpy).toHaveBeenCalledWith({ appointmentId: "apt_111", claimToken: "test_token_abc123" });
 
       sendNotifSpy.mockRestore();
     });
 
     it("handles idempotent webhook retries safely without duplicating notifications", async () => {
       const notifModule = await import("./kani-notifications.functions");
-      const sendNotifSpy = vi.spyOn(notifModule, "sendAppointmentNotification");
+      const sendNotifSpy = vi.spyOn(notifModule, "dispatchAppointmentNotification");
 
       mockRpc.mockResolvedValueOnce({
         data: [
@@ -466,7 +465,7 @@ describe("Mercado Pago Integration Unit Tests", () => {
       expect(result.error).toBe("payer.email is invalid");
     });
 
-    it("falls back to standard redirect URL with order_id if neither checkout_url nor init_point is present", async () => {
+    it("refuses to invent a checkout URL when the provider did not return one", async () => {
       const mockFetch = vi.fn().mockResolvedValue({
         ok: true,
         json: async () => ({
@@ -482,8 +481,8 @@ describe("Mercado Pago Integration Unit Tests", () => {
         idempotencyKey: input.externalReference,
       });
 
-      expect(result.success).toBe(true);
-      expect(result.checkoutUrl).toBe("https://www.mercadopago.com.ar/checkout/v1/redirect?order_id=9988776655");
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("NO_CHECKOUT_URL");
     });
 
     it("extracts error details from modern Orders API errors array", async () => {
@@ -624,7 +623,8 @@ describe("Mercado Pago Integration Unit Tests", () => {
 
       expect(result.success).toBe(true);
       expect(capturedBody).toBeDefined();
-      expect(capturedBody.notification_url).toBe("https://kanibarberstudio-cloudflare.kanibarber.workers.dev/api/webhook/mercadopago");
+      expect(capturedBody.config.online.callback_url).toBe("https://kanibarberstudio-cloudflare.kanibarber.workers.dev/api/webhook/mercadopago");
+      expect(capturedBody.notification_url).toBeUndefined();
       expect(capturedBody.config?.online?.success_url).toBe(
         "https://kanibarberstudio-cloudflare.kanibarber.workers.dev/pago/exito?appointment_id=apt_test_urls"
       );
