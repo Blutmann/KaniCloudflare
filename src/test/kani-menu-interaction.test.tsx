@@ -57,7 +57,7 @@ describe("mobile navigation scroll and closing", () => {
       fireEvent.click(screen.getByRole("button", { name: "Abrir menú" }));
       expect(document.body.style.position).toBe("fixed");
       expect(document.body.style.top).toBe("-240px");
-      expect(screen.getByAltText("Kani Barber Studio")).toBeTruthy();
+      expect(screen.getAllByAltText("Kani Barber Studio")[0]).toBeTruthy();
       expect(screen.getByRole("navigation", { name: "Menú principal" })).toBeTruthy();
       expect(screen.getByRole("button", { name: "Volver a la solicitud" })).toBeTruthy();
       fireEvent.keyDown(window, { key: "Escape" });

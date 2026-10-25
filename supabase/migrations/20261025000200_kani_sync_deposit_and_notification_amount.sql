@@ -56,27 +56,26 @@ begin
     raise exception using errcode = 'P0001', message = 'APPOINTMENT_NOT_FOUND';
   end if;
 
-  begin
-    insert into public.appointment_notification_events (
-      appointment_id, notification_type, recipient_email, recipient_phone, client_name, barber_name,
-      service_name, booking_date, start_time, end_time, client_notes,
-      service_price_ars, service_duration_minutes, down_payment_ars,
-      transfer_alias, transfer_cuit, transfer_holder_name, claim_token_digest
-    ) values (
-      p_appointment_id, p_notification_type, v_recipient_email, v_recipient_phone, v_client_name,
-      v_barber_name, v_service_name, v_booking_date, v_start_time, v_end_time,
-      v_client_notes, v_service_price_ars, v_service_duration_minutes,
-      coalesce(v_down_payment_ars, 5000), v_transfer_alias, v_transfer_cuit, v_transfer_holder_name,
-      encode(digest(v_token, 'sha256'), 'hex')
-    ) on conflict (appointment_id, notification_type) do nothing;
+  insert into public.appointment_notification_events (
+    appointment_id, notification_type, recipient_email, recipient_phone, client_name, barber_name,
+    service_name, booking_date, start_time, end_time, client_notes,
+    service_price_ars, service_duration_minutes, down_payment_ars,
+    transfer_alias, transfer_cuit, transfer_holder_name, claim_token_digest
+  ) values (
+    p_appointment_id, p_notification_type, v_recipient_email, v_recipient_phone, v_client_name,
+    v_barber_name, v_service_name, v_booking_date, v_start_time, v_end_time,
+    v_client_notes, v_service_price_ars, v_service_duration_minutes,
+    coalesce(v_down_payment_ars, 5000), v_transfer_alias, v_transfer_cuit, v_transfer_holder_name,
+    encode(digest(v_token, 'sha256'), 'hex')
+  ) on conflict (appointment_id, notification_type) do nothing;
 
-    if found then
-      return v_token;
-    end if;
-  exception when others then
-    -- La creación del turno nunca debe abortarse si la inserción de eventos de notificación falla
-    return null;
-  end;
+  if found then
+    return v_token;
+  end if;
   return null;
 end;
 $$;
+
+revoke all on function public.create_appointment_notification_event(uuid, public.notification_type) from public, anon, authenticated;
+grant execute on function public.create_appointment_notification_event(uuid, public.notification_type) to service_role;
+
