@@ -110,7 +110,17 @@ const statusToUi: Record<RealAppointmentStatus, Status> = {
 };
 
 export function appointmentErrorMessage(error: unknown) {
-  const message = error instanceof Error ? error.message : String(error);
+  let message = '';
+  if (typeof error === 'string') {
+    message = error;
+  } else if (error instanceof Error) {
+    message = error.message;
+  } else if (typeof error === 'object' && error !== null) {
+    message = error.message || error.error || error.details || '';
+  }
+  if (!message) {
+    return 'No se pudo guardar la solicitud. Revisá los datos e intentá nuevamente.';
+  }
   if (message.includes('correo electrónico') || message.includes('email')) {
     return 'El correo electrónico del cliente es obligatorio y debe tener un formato válido.';
   }

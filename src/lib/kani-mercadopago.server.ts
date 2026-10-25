@@ -157,7 +157,7 @@ export async function handleCreateBookingOrder(data: CreateBookingOrderInput): P
       depositAmount,
     };
   } catch (error) {
-    const errorMsg = error instanceof Error ? error.message : String(error);
+    const errorMsg = error instanceof Error ? error.message : (typeof error === 'object' && error !== null && 'message' in error && typeof error.message === 'string') ? error.message : String(error);
     console.error("[Mercado Pago] Error en handleCreateBookingOrder:", errorMsg);
     return {
       success: false,

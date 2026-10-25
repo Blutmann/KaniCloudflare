@@ -451,12 +451,23 @@ export function Booking({ combinedDateTime = false }: { combinedDateTime?: boole
       // Conservar el identificador y el estado pendiente para reintentar sin duplicar la reserva
       const errorMsg = orderRes?.error || 'ORDER_CREATION_FAILED';
       console.error('[Mercado Pago] No se pudo inicializar la orden:', errorMsg);
-      setError(`No pudimos iniciar el pago (${errorMsg}). Tus datos no se perdieron. Podés volver a intentarlo.`);
+      setError('No pudimos iniciar el pago. Tus datos no se perdieron. Podés volver a intentarlo.');
       setSubmitting(false);
     } catch (cause) {
-      const causeMsg = cause instanceof Error ? cause.message : String(cause);
-      console.error('[Mercado Pago] Error durante el proceso de reserva/pago:', causeMsg);
-      setError(`No pudimos iniciar el pago (${causeMsg}). Tus datos no se perdieron. Podés volver a intentarlo.`);
+      console.error('[Mercado Pago] Error durante el proceso de reserva/pago:', cause);
+      const friendlyMsg = appointmentErrorMessage(cause);
+      const isKnownAvailabilityMessage =
+        friendlyMsg === 'Ese horario ya no está disponible. Elegí otro para continuar.' ||
+        friendlyMsg === 'Ese horario acaba de dejar de estar disponible o ya tiene un turno reservado.' ||
+        friendlyMsg === 'La fecha seleccionada ya no está disponible.' ||
+        friendlyMsg === 'El estudio permanece cerrado los domingos.' ||
+        friendlyMsg === 'El correo electrónico del cliente es obligatorio y debe tener un formato válido.';
+
+      if (isKnownAvailabilityMessage) {
+        setError(friendlyMsg);
+      } else {
+        setError('No pudimos iniciar el pago. Tus datos no se perdieron. Podés volver a intentarlo.');
+      }
       setSubmitting(false);
     }
   }

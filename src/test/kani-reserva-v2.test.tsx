@@ -288,4 +288,42 @@ describe('isolated four-stage booking presentation', () => {
     expect(css).toMatch(/\.booking-v2\s*\.booking-contact-form\s*textarea[^{]*\{[^}]*padding:\s*8px 12px\s*!important/);
     expect(css).toMatch(/\.booking-v2\s*\.booking-contact-form\s*textarea[^{]*\{[^}]*overflow-y:\s*auto\s*!important/);
   });
+
+  it('never displays [object Object] when createRealAppointment throws a Supabase PostgREST error object', async () => {
+    api.read.mockResolvedValue(fixtures);
+    api.create.mockRejectedValue({
+      code: '42703',
+      message: 'column "recipient_phone" of relation "appointment_notification_events" does not exist',
+    });
+
+    await selectServiceAndBarber();
+    chooseTime();
+    next();
+    await fillContact();
+
+    const payButton = screen.getByRole('button', { name: 'Pagar seña' });
+    fireEvent.click(payButton);
+
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).not.toContain('[object Object]');
+    expect(alert.textContent).toBe('No pudimos iniciar el pago. Tus datos no se perdieron. Podés volver a intentarlo.');
+  });
+
+  it('never displays [object Object] when createBookingOrderFn returns an error', async () => {
+    api.read.mockResolvedValue(fixtures);
+    api.create.mockResolvedValue({ appointment_id: 'apt_123', request_number: 100 });
+    api.order.mockResolvedValue({ success: false, error: 'ORDER_CREATION_FAILED' });
+
+    await selectServiceAndBarber();
+    chooseTime();
+    next();
+    await fillContact();
+
+    const payButton = screen.getByRole('button', { name: 'Pagar seña' });
+    fireEvent.click(payButton);
+
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).not.toContain('[object Object]');
+    expect(alert.textContent).toBe('No pudimos iniciar el pago. Tus datos no se perdieron. Podés volver a intentarlo.');
+  });
 });
