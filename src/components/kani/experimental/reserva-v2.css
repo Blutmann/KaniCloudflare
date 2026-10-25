@@ -192,11 +192,11 @@ html[data-theme='light'] .booking-v2 .booking-v2-choice-title {
 /* Mobile contact fields: 48px height with 12px CSS font size for entered text,
    placeholders, focus, autofill, country trigger, and notes. */
 @media (max-width: 767px) {
-  .booking-v2 .booking-contact-form :is(input, textarea),
   .booking-v2 .booking-contact-form input,
   .booking-v2 .booking-contact-form input[name="name"],
   .booking-v2 .booking-contact-form input[name="phone"],
   .booking-v2 .booking-contact-form input[name="email"],
+  .booking-page.booking-v2 .booking-contact-form .field-label .phone-input-row input,
   .booking-v2 .booking-contact-form .phone-input-row input,
   .booking-v2 .booking-contact-form .field-control input,
   .booking-v2 .booking-contact-form .field-label input {
@@ -217,6 +217,9 @@ html[data-theme='light'] .booking-v2 .booking-v2-choice-title {
     font-size: 12px !important;
     line-height: 1.45 !important;
     padding: 10px 12px !important;
+    min-height: 96px !important;
+    max-height: none !important;
+    height: auto !important;
   }
 
   .booking-v2 .booking-contact-form .phone-country-trigger {
