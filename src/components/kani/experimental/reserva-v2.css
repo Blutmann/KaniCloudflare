@@ -19,26 +19,41 @@
 }
 .booking-v2 .booking-v2-times {
   scroll-margin-top: 24px;
-
 }
 .booking-v2 .booking-v2-times .booking-time-slot { min-height: 48px; }
 .booking-v2 .booking-progress small { white-space: normal; }
 @media (max-width: 767px) {
+  .booking-page.booking-v2 .booking-progress {
+    height: 66px;
+  }
   .booking-page.booking-v2 .booking-progress > button {
     min-width: 0;
-    min-height: 54px;
+    height: 66px;
+    min-height: 66px;
+    max-height: 66px;
     padding-inline: 1px;
     flex-direction: column;
-    gap: 3px;
-    padding-block: 0 4px;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 4px;
+    padding-top: 6px;
+    padding-bottom: 8px;
+    box-sizing: border-box;
+  }
+  .booking-page.booking-v2 .booking-progress > button > span {
+    width: 28px;
+    height: 28px;
+    font-size: 9px;
+    flex-shrink: 0;
   }
   .booking-page.booking-v2 .booking-progress small {
-    font-size: 12px;
-    min-height: 16px;
-    line-height: 16px;
+    font-size: 13px;
+    min-height: 18px;
+    line-height: 18px;
     white-space: nowrap;
+    text-align: center;
+    letter-spacing: -0.015em;
   }
-
 }
 @media (min-width: 1024px) {
   .booking-v2-datetime .booking-layout { max-width: none; }
@@ -167,33 +182,70 @@ html[data-theme='light'] .booking-v2 .booking-v2-choice-title {
   padding-block: 0;
 }
 
-/* Single-line mobile contact controls stay comfortably tappable and avoid
-   Safari's sub-16px editable-text focus zoom. Multiline notes keep their space. */
+/* Mobile contact fields: 48px height with 12px CSS font size for entered text,
+   placeholders, and autofill, with vertical alignment centered. */
 @media (max-width: 767px) {
-  main.booking-page.booking-v2.booking-v2-final .booking-contact-form input {
+  main.booking-page.booking-v2.booking-v2-final .booking-contact-form input,
+  main.booking-page.booking-v2.booking-v2-final .booking-contact-form input[name="name"],
+  main.booking-page.booking-v2.booking-v2-final .booking-contact-form input[name="phone"],
+  main.booking-page.booking-v2.booking-v2-final .booking-contact-form input[name="email"] {
     height: 48px !important;
     min-height: 48px !important;
     max-height: 48px !important;
     padding-block: 0 !important;
-    line-height: 24px !important;
-    font-size: 16px;
+    padding-inline: 12px !important;
+    line-height: normal !important;
+    font-size: 12px !important;
+    box-sizing: border-box !important;
   }
-  .booking-v2-final .booking-contact-form :is(.phone-country-picker, .phone-input-row .field-control, .phone-country-trigger) {
-    height: 48px;
-    min-height: 48px;
-    max-height: 48px;
+  main.booking-page.booking-v2.booking-v2-final .booking-contact-form input:-webkit-autofill,
+  main.booking-page.booking-v2.booking-v2-final .booking-contact-form input:-webkit-autofill:hover,
+  main.booking-page.booking-v2.booking-v2-final .booking-contact-form input:-webkit-autofill:focus {
+    font-size: 12px !important;
+    -webkit-text-size-adjust: none !important;
+  }
+  .booking-v2-final .booking-contact-form .phone-input-row {
+    align-items: center !important;
+  }
+  .booking-v2-final .booking-contact-form :is(.phone-country-picker, .phone-input-row .field-control) {
+    height: 48px !important;
+    min-height: 48px !important;
+    max-height: 48px !important;
+    display: flex !important;
+    align-items: center !important;
   }
   .booking-v2-final .booking-contact-form .phone-country-trigger {
-    font-size: 16px;
-    line-height: 24px;
-    letter-spacing: normal;
-    padding-inline: 8px;
+    height: 48px !important;
+    min-height: 48px !important;
+    max-height: 48px !important;
+    font-size: 12px !important;
+    line-height: normal !important;
+    letter-spacing: normal !important;
+    padding-inline: 10px !important;
+    display: flex !important;
+    align-items: center !important;
+    box-sizing: border-box !important;
+  }
+  .booking-v2-final .booking-contact-form .phone-input-row input {
+    height: 48px !important;
+    min-height: 48px !important;
+    max-height: 48px !important;
+    margin: 0 !important;
+    margin-top: 0 !important;
+    font-size: 12px !important;
+    line-height: normal !important;
+    padding-block: 0 !important;
+    padding-inline: 12px !important;
+    box-sizing: border-box !important;
+    align-self: center !important;
   }
   main.booking-page.booking-v2.booking-v2-final .booking-contact-form textarea {
-    font-size: 16px;
+    font-size: 12px !important;
+    line-height: 1.45 !important;
+    padding: 10px 12px !important;
   }
   main.booking-page.booking-v2.booking-v2-final .booking-contact-form :is(input, textarea)::placeholder {
-    font-size: 16px;
+    font-size: 12px !important;
   }
 }
 

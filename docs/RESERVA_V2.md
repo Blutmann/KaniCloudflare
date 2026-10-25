@@ -53,11 +53,11 @@ Las máscaras de iconos de servicios Dark no seleccionados usan `var(--gold)` en
 
 ## Campos compactos Mobile
 
-Solo en V2 y hasta 767 px, los inputs de una línea y el selector telefónico pasan de 52 a 48 px, con centros alineados. El texto editable ya era de 16 px y se conserva ese mínimo para evitar el disparador habitual de zoom por fuentes pequeñas en Safari/iOS; no se reduce a 14 px. Placeholders y prefijo se armonizan a 16 px (antes 13 y 12 px respectivamente). Observaciones conserva su área multilínea de 96 px en mobile. Desktop mantiene sus dimensiones y tipografía. La duración del servicio continúa en la lógica de disponibilidad y en el flujo original, pero no se muestra en el resumen final de V2. No se modifica normalización, validaciones, importes ni pago.
+Solo en V2 y hasta 767 px, los inputs de una línea y el selector telefónico conservan una altura de 48 px con alineación vertical centrada. El texto ingresado (`input value`) se reduce a 12 px CSS, acompañado por placeholders a 12 px para evitar saltos al tipear y protección de autofill contra fuentes ampliadas. El prefijo telefónico y el número comparten la escala de 12 px con alineación centrada dentro de sus 48 px. Observaciones conserva su área multilínea con tipografía a 12 px. Desktop mantiene sus dimensiones y tipografía. La duración del servicio continúa en la lógica de disponibilidad y en el flujo original, pero no se muestra en el resumen final de V2. No se modifica normalización, validaciones, importes ni pago.
 
 ## Stepper y cinco horarios Mobile
 
-El stepper mobile pasa de 72 a 54 px, con labels de 11 a 12 px y 4 px entre su caja y la línea inferior (antes 10 px). Se conservan indicadores, cuatro etapas, nombre accesible y navegación. Se elimina la reserva de 26 px para labels de una sola línea; ahora usan interlineado y altura mínima de 16 px.
+El stepper mobile se ajusta a 66 px de alto (equilibrio entre los 72 px originales y los 54 px anteriores), con labels a 13 px legibles y `Fecha/Hora` en una sola línea sin wrapping. La distribución vertical equilibra 8 px superiores, indicadores de 28 px, gap de 5 px, label de 18 px y 7 px de distancia controlada entre labels y la línea inferior de progreso. Se conservan indicadores, cuatro etapas, nombre accesible y navegación táctil.
 
 La grilla utiliza cinco columnas, con gap horizontal de 6 px en mobile, cápsulas de al menos 48 px de alto y 60 px de ancho en 360. El horario seleccionado mobile usa la misma familia y tamaño de 14 px de la fecha seleccionada, con peso 500; conserva las paletas de selección existentes. Light neutral sigue al 80%; Dark conserva sus superficies.
 

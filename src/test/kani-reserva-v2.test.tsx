@@ -1,5 +1,6 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import fs from 'node:fs';
 import { dateLabel } from '@/lib/kani-model';
 
 const api = vi.hoisted(() => ({
@@ -198,6 +199,25 @@ describe('isolated four-stage booking presentation', () => {
     const expected = field === 'service' ? 'Barba' : field === 'barber' ? 'Gonzalo' : dateLabel('2026-10-27');
     expect(screen.getByText(expected, { selector: 'dd' })).toBeInTheDocument();
     expect(api.create).not.toHaveBeenCalled();
+  });
+
+  it('applies 66px stepper height with 13px labels and Fecha/Hora single line in mobile', () => {
+    const css = fs.readFileSync('src/components/kani/experimental/reserva-v2.css', 'utf8');
+    expect(css).toMatch(/\.booking-page\.booking-v2\s*\.booking-progress\s*\{[^}]*height:\s*66px/);
+    expect(css).toMatch(/\.booking-page\.booking-v2\s*\.booking-progress\s*>\s*button\s*\{[^}]*height:\s*66px/);
+    expect(css).toMatch(/\.booking-page\.booking-v2\s*\.booking-progress\s*>\s*button\s*\{[^}]*min-height:\s*66px/);
+    expect(css).toMatch(/\.booking-page\.booking-v2\s*\.booking-progress\s*small\s*\{[^}]*font-size:\s*13px/);
+    expect(css).toMatch(/\.booking-page\.booking-v2\s*\.booking-progress\s*small\s*\{[^}]*white-space:\s*nowrap/);
+  });
+
+  it('applies 48px height and 12px font-size to mobile contact inputs, placeholders, and phone trigger', () => {
+    const css = fs.readFileSync('src/components/kani/experimental/reserva-v2.css', 'utf8');
+    expect(css).toMatch(/main\.booking-page\.booking-v2\.booking-v2-final\s*\.booking-contact-form\s*input[^{]*\{[^}]*font-size:\s*12px\s*!important/);
+    expect(css).toMatch(/main\.booking-page\.booking-v2\.booking-v2-final\s*\.booking-contact-form\s*input[^{]*\{[^}]*height:\s*48px\s*!important/);
+    expect(css).toMatch(/\.booking-v2-final\s*\.booking-contact-form\s*\.phone-country-trigger\s*\{[^}]*height:\s*48px\s*!important/);
+    expect(css).toMatch(/\.booking-v2-final\s*\.booking-contact-form\s*\.phone-country-trigger\s*\{[^}]*font-size:\s*12px\s*!important/);
+    expect(css).toMatch(/main\.booking-page\.booking-v2\.booking-v2-final\s*\.booking-contact-form\s*:is\(input,\s*textarea\)::placeholder\s*\{[^}]*font-size:\s*12px\s*!important/);
+    expect(css).toMatch(/main\.booking-page\.booking-v2\.booking-v2-final\s*\.booking-contact-form\s*input:-webkit-autofill[^{]*\{[^}]*font-size:\s*12px\s*!important/);
   });
 
 });
