@@ -77,6 +77,10 @@ export const dispatchAppointmentNotification = createServerOnlyFn(async (data: {
       const event = claimed?.[0] as NotificationClaim | undefined;
       if (!event) return { sent: false, status: "SKIPPED" };
       notificationId = event.notification_id;
+      if (event.notification_type === "NEW_REQUEST") {
+        console.log(`[KANI notification] Omitiendo email NEW_REQUEST para turno ${data.appointmentId} (flujo Mercado Pago).`);
+        return { sent: false, status: "SKIPPED" };
+      }
       if (event.dispatch_status === "ALREADY_SENT") return { sent: true, status: "ALREADY_SENT" };
       if (event.dispatch_status === "IN_PROGRESS") return { sent: false, status: "IN_PROGRESS" };
       if (!event.recipient_email) throw new Error("NOTIFICATION_RECIPIENT_MISSING");

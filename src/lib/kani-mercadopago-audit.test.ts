@@ -20,7 +20,7 @@ let fetchMock: ReturnType<typeof vi.fn>;
 const runtime = globalThis as typeof globalThis & { __env__?: Record<string, string> };
 beforeEach(() => {
   vi.clearAllMocks();
-  runtime.__env__ = { MERCADOPAGO_ACCESS_TOKEN: "TEST-FAKE", MERCADOPAGO_WEBHOOK_SECRET: "fake-audit-secret" };
+  runtime.__env__ = { MERCADOPAGO_ACCESS_TOKEN: "TEST-FAKE", MERCADOPAGO_WEBHOOK_SECRET: "fake-audit-secret", SUPABASE_URL: "https://preview.supabase.test", SUPABASE_ANON_KEY: "fake-anon-key" };
   resource = approved();
   fetchMock = vi.fn(async () => new Response(JSON.stringify(resource), { status: 200 }));
   vi.stubGlobal("fetch", fetchMock);
@@ -280,5 +280,128 @@ describe("Kani Auto-Confirm Requirements (Section 5)", () => {
     expect(res.success).toBe(false);
     expect(res.resultCode).toBe("SLOT_COLLISION_LATE_PAYMENT");
     expect(mocks.notify).not.toHaveBeenCalled();
+  });
+});
+
+describe("Email flow policy: Eliminate 'Abona la sena' email and preserve confirmation email", () => {
+  it("1. crear un appointment PENDING no envía email de 'Aboná la seña'", async () => {
+    process.env.SUPABASE_URL = "https://preview.supabase.test";
+    process.env.SUPABASE_ANON_KEY = "fake-anon-key";
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify([{
+      appointment_id: appointmentId,
+      notification_claim_token: null,
+      client_name: "Cliente Test",
+    }]), { status: 200, headers: { "content-type": "application/json" } }));
+
+    const { createRealAppointment } = await import("./kani-appointments");
+    const result = await createRealAppointment({
+      barber: "Lautaro" as any,
+      serviceName: "Corte",
+      date: "2026-10-30",
+      time: "15:00",
+      name: "Cliente Test",
+      phone: "+5491111111111",
+      email: "cliente@ejemplo.com",
+    });
+
+    expect(result.appointment_id).toBe(appointmentId);
+    expect(result.notification_claim_token).toBeNull();
+    expect(mocks.notify).not.toHaveBeenCalled();
+  });
+
+  it("2. iniciar Checkout no envía ese email", async () => {
+    const { handleCreateBookingOrder } = await import("./kani-mercadopago.server");
+    mocks.rpc.mockResolvedValueOnce({
+      data: [{
+        appointment_id: appointmentId,
+        appointment_status: "PENDING",
+        barber_name: "Barbero",
+        service_name: "Corte",
+        service_price_ars: 25000,
+        down_payment_ars: 5000,
+        client_name: "Cliente Test",
+        client_email: "cliente@ejemplo.com",
+        client_phone: "1122334455",
+      }],
+      error: null,
+    });
+    mocks.from.mockImplementation(() => ({
+      upsert: async () => ({ error: null }),
+      update: () => ({
+        eq: () => ({
+          is: async () => ({ error: null }),
+        }),
+      }),
+      select: () => ({
+        eq: () => ({
+          single: async () => ({
+            data: {
+              idempotency_key: "123e4567-e89b-12d3-a456-426614174000",
+              order_id: "ORD_INIT_CHECKOUT",
+            },
+            error: null,
+          }),
+        }),
+      }),
+    }));
+
+    fetchMock.mockImplementation(async (input: any) => {
+      const url = String(input);
+      if (url.includes("/v1/orders")) {
+        return new Response(JSON.stringify({
+          id: "ORD_INIT_CHECKOUT",
+          init_point: "https://mercadopago.com/checkout/123",
+          status: "created",
+        }), { status: 201, headers: { "content-type": "application/json" } });
+      }
+      return new Response(JSON.stringify(5000), { status: 200, headers: { "content-type": "application/json" } });
+    });
+
+    const res = await handleCreateBookingOrder({
+      appointmentId,
+      payerEmail: "cliente@ejemplo.com",
+      serviceName: "Corte",
+      barberName: "Barbero",
+    });
+
+    expect(res.success).toBe(true);
+    expect(mocks.notify).not.toHaveBeenCalled();
+  });
+
+  it("3. pago pendiente no envía confirmación", async () => {
+    resource.status = "pending";
+    resource.status_detail = "pending_waiting_transfer";
+
+    const res = await verifyAndConfirmAppointmentPayment({ appointmentId, orderId });
+    expect(res.success).toBe(false);
+    expect(mocks.rpc).not.toHaveBeenCalled();
+    expect(mocks.notify).not.toHaveBeenCalled();
+  });
+
+  it("4. pago acreditado + transición real a CONFIRMED envía exactamente un email de confirmación", async () => {
+    const res = await verifyAndConfirmAppointmentPayment({ appointmentId, orderId });
+    expect(res.success).toBe(true);
+    expect(mocks.rpc).toHaveBeenCalledWith("confirm_appointment_from_payment", {
+      p_appointment_id: appointmentId,
+      p_order_id: orderId,
+      p_paid_amount: 5000,
+    });
+    expect(mocks.notify).toHaveBeenCalledTimes(1);
+  });
+
+  it("5. refresh, webhook duplicado o reconciliación repetida no vuelven a enviar el email", async () => {
+    await verifyAndConfirmAppointmentPayment({ appointmentId, orderId });
+    expect(mocks.notify).toHaveBeenCalledTimes(1);
+
+    mocks.rpc.mockResolvedValue({
+      data: [{ result_code: "ALREADY_CONFIRMED", appointment_status: "CONFIRMED" }],
+      error: null,
+    });
+
+    await handleMercadoPagoWebhook(webhook());
+    await handleGetAppointmentPaymentStatus({ appointmentId, orderId });
+    await verifyAndConfirmAppointmentPayment({ appointmentId, orderId });
+
+    expect(mocks.notify).toHaveBeenCalledTimes(1);
   });
 });

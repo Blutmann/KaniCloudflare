@@ -229,11 +229,8 @@ export async function createRealAppointment(input: CreateAppointmentInput) {
   if (error) throw error;
   const row = data?.[0];
   if (!row) throw new Error('La reserva no devolvió un resultado válido.');
-  if (row.notification_claim_token) {
-    // Await dispatch so the browser keeps the server-function request alive.
-    // A notification failure must never invalidate the appointment request.
-    await dispatchAppointmentNotification(row.appointment_id, row.notification_claim_token, input.phone);
-  }
+  // En el nuevo flujo de Mercado Pago, la solicitud PENDING no envía email de seña al cliente.
+  // El único email automático es el de confirmación tras validar el pago acreditado.
   return row;
 }
 
