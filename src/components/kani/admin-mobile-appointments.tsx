@@ -185,7 +185,7 @@ export function AdminMobileAppointments() {
     setLoading(true);
     setIsRefreshing(true);
     try {
-      setAppointments(await readRealAppointments());
+      setAppointments(await readRealAppointments({ bypassCache: true }));
       setError('');
     } catch (cause) {
       setError(appointmentErrorMessage(cause));
@@ -196,6 +196,13 @@ export function AdminMobileAppointments() {
   }
 
   useEffect(() => { void reload(); }, []);
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') void reload();
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, []);
   useEffect(() => {
     if (refreshCount > 0) void reload();
   }, [refreshCount]);

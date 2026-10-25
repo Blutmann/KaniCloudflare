@@ -174,3 +174,111 @@ describe("real Checkout Pro Orders response regression", () => {
     for (const call of fetchMock.mock.calls) expect(call[1].method).toBe("GET");
   });
 });
+
+describe("Kani Auto-Confirm Requirements (Section 5)", () => {
+  it("1. webhook de orden acreditada transiciona PENDING -> CONFIRMED", async () => {
+    const res = await handleMercadoPagoWebhook(webhook());
+    expect(res.status).toBe(200);
+    expect(mocks.rpc).toHaveBeenCalledWith("confirm_appointment_from_payment", {
+      p_appointment_id: appointmentId,
+      p_order_id: orderId,
+      p_paid_amount: 5000,
+    });
+    expect(mocks.notify).toHaveBeenCalledTimes(1);
+  });
+
+  it("2. retorno a /pago/exito transiciona PENDING -> CONFIRMED si el webhook aún no procesó la confirmación", async () => {
+    const res = await handleGetAppointmentPaymentStatus({ appointmentId, orderId });
+    expect(res.success).toBe(true);
+    expect(res.isConfirmed).toBe(true);
+    expect(res.appointmentStatus).toBe("CONFIRMED");
+    expect(mocks.rpc).toHaveBeenCalledWith("confirm_appointment_from_payment", {
+      p_appointment_id: appointmentId,
+      p_order_id: orderId,
+      p_paid_amount: 5000,
+    });
+    expect(mocks.notify).toHaveBeenCalledTimes(1);
+  });
+
+  it("3. webhook duplicado sobre turno ya CONFIRMED es idempotente", async () => {
+    const first = await handleMercadoPagoWebhook(webhook());
+    expect(first.status).toBe(200);
+
+    mocks.rpc.mockResolvedValue({
+      data: [{ result_code: "ALREADY_CONFIRMED", appointment_status: "CONFIRMED" }],
+      error: null,
+    });
+
+    const second = await handleMercadoPagoWebhook(webhook());
+    expect(second.status).toBe(200);
+    expect(mocks.notify).toHaveBeenCalledTimes(1); // Not duplicated
+  });
+
+  it("4. refresco de /pago/exito sobre turno ya CONFIRMED es idempotente", async () => {
+    // Turno ya CONFIRMED en appointments DB
+    mocks.from.mockImplementation((table: string) => ({
+      select: () => ({
+        eq: () => ({
+          single: async () => ({ data: { order_id: orderId, expected_amount_ars: 5000 }, error: null }),
+          maybeSingle: async () => ({
+            data: table === "appointments" ? { id: appointmentId, status: "CONFIRMED" } : { name: "Fixture" },
+            error: null,
+          }),
+        }),
+      }),
+    }));
+
+    const res = await handleGetAppointmentPaymentStatus({ appointmentId, orderId });
+    expect(res.success).toBe(true);
+    expect(res.isConfirmed).toBe(true);
+    expect(res.appointmentStatus).toBe("CONFIRMED");
+    expect(fetchMock).not.toHaveBeenCalled(); // Fast-path directly returns CONFIRMED
+    expect(mocks.notify).not.toHaveBeenCalled();
+  });
+
+  it("5. no se emiten emails duplicados al confirmar un turno ya confirmado", async () => {
+    await verifyAndConfirmAppointmentPayment({ appointmentId, orderId });
+    expect(mocks.notify).toHaveBeenCalledTimes(1);
+
+    mocks.rpc.mockResolvedValue({
+      data: [{ result_code: "ALREADY_CONFIRMED", appointment_status: "CONFIRMED" }],
+      error: null,
+    });
+
+    await verifyAndConfirmAppointmentPayment({ appointmentId, orderId });
+    expect(mocks.notify).toHaveBeenCalledTimes(1); // Guaranteed 1 dispatch
+  });
+
+  it("6. orden con monto distinto a 5.000 ARS no confirma el turno", async () => {
+    resource.total_amount = "4000.00";
+    resource.total_paid_amount = "4000.00";
+    resource.transactions.payments[0].paid_amount = "4000.00";
+
+    const res = await verifyAndConfirmAppointmentPayment({ appointmentId, orderId });
+    expect(res.success).toBe(false);
+    expect(mocks.rpc).not.toHaveBeenCalled();
+    expect(mocks.notify).not.toHaveBeenCalled();
+  });
+
+  it("7. orden no aprobada o rechazada no confirma el turno", async () => {
+    resource.status = "rejected";
+    resource.status_detail = "cc_rejected_other_reason";
+
+    const res = await verifyAndConfirmAppointmentPayment({ appointmentId, orderId });
+    expect(res.success).toBe(false);
+    expect(mocks.rpc).not.toHaveBeenCalled();
+    expect(mocks.notify).not.toHaveBeenCalled();
+  });
+
+  it("8. pago tardío con horario ocupado no transiciona a CONFIRMED y marca PAID_LATE_REVIEW", async () => {
+    mocks.rpc.mockResolvedValue({
+      data: [{ result_code: "SLOT_COLLISION_LATE_PAYMENT", appointment_status: "PENDING" }],
+      error: null,
+    });
+
+    const res = await verifyAndConfirmAppointmentPayment({ appointmentId, orderId });
+    expect(res.success).toBe(false);
+    expect(res.resultCode).toBe("SLOT_COLLISION_LATE_PAYMENT");
+    expect(mocks.notify).not.toHaveBeenCalled();
+  });
+});
