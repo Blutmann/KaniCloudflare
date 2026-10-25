@@ -328,6 +328,12 @@ html[data-theme="light"] {
 .site-footer-copyright { white-space: nowrap; }
 .site-header > div { width: min(1184px, calc(100% - 80px)); }
 .wordmark-img { display: block; position: relative; top: 6px; width: auto; height: 66px; filter: drop-shadow(0 1px 8px rgb(0 0 0 / 0.35)); }
+.wordmark-img.wordmark-dark { display: none; }
+.wordmark-img.wordmark-light { display: block; }
+html[data-theme='light'] .wordmark-img.wordmark-dark { display: none !important; }
+html[data-theme='light'] .wordmark-img.wordmark-light { display: block !important; }
+html[data-theme='dark'] .wordmark-img.wordmark-light { display: none !important; }
+html[data-theme='dark'] .wordmark-img.wordmark-dark { display: block !important; }
 .eyebrow { font-size: 10px; font-weight: 600; letter-spacing: 2px; color: var(--gold); }
 .home-hero { position: relative; height: 622px; overflow: hidden; }
 .hero-image { position: absolute; width: 100%; height: 100%; object-fit: cover; object-position: center 58%; }

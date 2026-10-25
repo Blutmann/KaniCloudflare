@@ -3,8 +3,8 @@ import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState, type Mous
 import { createPortal } from 'react-dom';
 import { ArrowUpRight, Building2, CalendarClock, Instagram, LogIn, LogOut, MapPin, Menu, Moon, Sun, Wrench, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import kaniLogo from '@/assets/kani-logo-transparent.webp';
-import kaniLogoRetina from '@/assets/kani-logo-transparent-2x.webp';
+import kaniLogoLight from '@/assets/kani-logo-light.webp';
+import kaniLogoDark from '@/assets/kani-logo-dark.webp';
 import { getAuthenticatedStaff, signOut, type AuthenticatedStaff } from '@/lib/kani-auth';
 import { supabase } from '@/integrations/supabase/client';
 import { useKani } from '@/components/kani/store';
@@ -14,7 +14,24 @@ const AdminActivityPopover = lazy(() =>
 );
 
 export function Wordmark() {
-  return <img src={kaniLogo} srcSet={`${kaniLogo} 384w, ${kaniLogoRetina} 768w`} sizes="(max-width: 767px) 88px, 126px" alt="Kani Barber Studio" width={384} height={202} className="wordmark-img" />;
+  return (
+    <>
+      <img
+        src={kaniLogoLight}
+        alt="Kani Barber Studio"
+        width={1024}
+        height={492}
+        className="wordmark-img wordmark-light"
+      />
+      <img
+        src={kaniLogoDark}
+        alt="Kani Barber Studio"
+        width={1024}
+        height={492}
+        className="wordmark-img wordmark-dark"
+      />
+    </>
+  );
 }
 
 export function MobileMenuAction() {
