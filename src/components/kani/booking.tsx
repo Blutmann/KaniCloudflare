@@ -93,11 +93,13 @@ export function Booking({ combinedDateTime = false }: { combinedDateTime?: boole
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const prevStepRef = useRef(step);
   const timeSectionRef = useRef<HTMLDivElement>(null);
+  const barberSectionRef = useRef<HTMLDivElement>(null);
   const revealTimesRef = useRef(false);
+  const scrollAfterTimeSelectRef = useRef(false);
   const visibleStep = combinedDateTime && step > 2 ? step - 1 : step;
 
   useEffect(() => {
-    if (!combinedDateTime || step !== 2 || !revealTimesRef.current) return;
+    if (!combinedDateTime || step !== 2 || !revealTimesRef.current || barberDeferred) return;
     revealTimesRef.current = false;
     const container = scrollContainerRef.current;
     const section = timeSectionRef.current;
@@ -111,7 +113,49 @@ export function Booking({ combinedDateTime = false }: { combinedDateTime?: boole
         behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
       });
     }
-  }, [combinedDateTime, date, dateSelection, step]);
+  }, [combinedDateTime, date, dateSelection, step, barberDeferred]);
+
+  useEffect(() => {
+    if (!scrollAfterTimeSelectRef.current) return;
+    scrollAfterTimeSelectRef.current = false;
+
+    if (!combinedDateTime || step !== 2 || !barberDeferred || !time) return;
+    if (typeof window !== 'undefined' && window.matchMedia('(min-width: 768px)').matches) return;
+
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    requestAnimationFrame(() => {
+      const section = barberSectionRef.current;
+      if (!section) return;
+
+      const viewport = container.getBoundingClientRect();
+      const bRect = section.getBoundingClientRect();
+      const bottomTarget = viewport.bottom - 16;
+      const neededDelta = bRect.bottom - bottomTarget;
+
+      if (neededDelta > 0) {
+        const selectedSlot = container.querySelector('.booking-time-slot.selected');
+        let allowedDelta = neededDelta;
+        if (selectedSlot) {
+          const sRect = selectedSlot.getBoundingClientRect();
+          const maxAllowedDelta = sRect.top - (viewport.top + 16);
+          if (maxAllowedDelta > 0) {
+            allowedDelta = Math.min(neededDelta, maxAllowedDelta);
+          }
+        }
+        const maxScroll = container.scrollHeight - container.clientHeight;
+        const targetScroll = Math.min(maxScroll, Math.max(0, container.scrollTop + allowedDelta));
+
+        if (targetScroll > container.scrollTop) {
+          container.scrollTo({
+            top: targetScroll,
+            behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
+          });
+        }
+      }
+    });
+  }, [combinedDateTime, step, barberDeferred, time]);
 
   useEffect(() => {
     document.documentElement.classList.add('booking-flow-active');
@@ -759,14 +803,14 @@ export function Booking({ combinedDateTime = false }: { combinedDateTime?: boole
                       className={`booking-time-slot h-12 ${time === slot.time ? 'selected' : ''}`}
                       aria-pressed={time === slot.time}
                       aria-label={slot.time}
-                      onClick={() => { setTime(slot.time); if (barberDeferred) setBarber(null); }}
+                      onClick={() => { setTime(slot.time); if (barberDeferred) { setBarber(null); scrollAfterTimeSelectRef.current = true; } }}
                     >
                       {slot.time}
                     </Button>
                   ))}
                 </div>
                 {barberDeferred && time && (
-                  <div className="barber-choice-inline">
+                  <div ref={barberSectionRef} className="barber-choice-inline">
                     <h2 className={combinedDateTime ? "booking-v2-choice-title" : undefined}>¿Quién te va a atender?</h2>
                     <div className="barber-choice-list">
                       {candidateBarbers.map(candidate => (

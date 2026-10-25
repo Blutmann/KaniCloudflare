@@ -292,6 +292,40 @@ html[data-theme='light'] .booking-v2 .booking-v2-choice-title {
     font-size: 12px !important;
     line-height: normal !important;
   }
+
+  /* Dark Mode: Ensure typed values in Name and Email inputs match accessible foreground */
+  html[data-theme='dark'] .booking-v2 .booking-contact-form input[name="name"],
+  html[data-theme='dark'] .booking-v2 .booking-contact-form input[name="email"],
+  html[data-theme='dark'] .booking-page.booking-v2 .booking-contact-form .field-label :is(input[name="name"], input[name="email"]) {
+    color: var(--foreground) !important;
+    -webkit-text-fill-color: var(--foreground) !important;
+    caret-color: var(--foreground) !important;
+  }
+
+  html[data-theme='dark'] .booking-v2 .booking-contact-form :is(input[name="name"], input[name="email"]):is(:focus, :focus-visible, :active, :hover) {
+    color: var(--foreground) !important;
+    -webkit-text-fill-color: var(--foreground) !important;
+  }
+
+  html[data-theme='dark'] .booking-v2 .booking-contact-form :is(input[name="name"], input[name="email"]):-webkit-autofill,
+  html[data-theme='dark'] .booking-v2 .booking-contact-form :is(input[name="name"], input[name="email"]):-webkit-autofill:hover,
+  html[data-theme='dark'] .booking-v2 .booking-contact-form :is(input[name="name"], input[name="email"]):-webkit-autofill:focus,
+  html[data-theme='dark'] .booking-v2 .booking-contact-form :is(input[name="name"], input[name="email"]):-webkit-autofill:active {
+    -webkit-text-fill-color: var(--foreground) !important;
+    color: var(--foreground) !important;
+    caret-color: var(--foreground) !important;
+  }
+
+  html[data-theme='dark'] .booking-v2 .booking-contact-form :is(input[name="name"], input[name="email"])::placeholder {
+    color: var(--muted-foreground) !important;
+    -webkit-text-fill-color: var(--muted-foreground) !important;
+    opacity: 0.85;
+  }
+
+  html[data-theme='dark'] .booking-v2 .booking-contact-form .field-control:is(.valid, .invalid) > :is(input[name="name"], input[name="email"]) {
+    color: var(--foreground) !important;
+    -webkit-text-fill-color: var(--foreground) !important;
+  }
 }
 
 @media (max-width: 767px) {

@@ -252,4 +252,13 @@ describe('isolated four-stage booking presentation', () => {
     expect(css).toMatch(/\.booking-v2\s*\.booking-contact-form\s*\.phone-country-trigger\s*\{[^}]*font-size:\s*12px\s*!important/);
     expect(css).toMatch(/\.booking-v2\s*\.booking-contact-form\s*\.phone-country-trigger\s*\{[^}]*white-space:\s*nowrap\s*!important/);
   });
+
+  it('guarantees accessible foreground color in Dark Mode for name and email inputs across all states', () => {
+    const css = fs.readFileSync('src/components/kani/experimental/reserva-v2.css', 'utf8');
+    expect(css).toMatch(/html\[data-theme='dark'\]\s*\.booking-v2\s*\.booking-contact-form\s*input\[name="name"\][^{]*\{[^}]*color:\s*var\(--foreground\)\s*!important/);
+    expect(css).toMatch(/html\[data-theme='dark'\]\s*\.booking-v2\s*\.booking-contact-form\s*input\[name="email"\][^{]*\{[^}]*color:\s*var\(--foreground\)\s*!important/);
+    expect(css).toMatch(/html\[data-theme='dark'\]\s*\.booking-v2\s*\.booking-contact-form\s*input\[name="name"\][^{]*\{[^}]*-webkit-text-fill-color:\s*var\(--foreground\)\s*!important/);
+    expect(css).toMatch(/html\[data-theme='dark'\]\s*\.booking-v2\s*\.booking-contact-form\s*input\[name="email"\][^{]*\{[^}]*-webkit-text-fill-color:\s*var\(--foreground\)\s*!important/);
+    expect(css).toMatch(/html\[data-theme='dark'\]\s*\.booking-v2\s*\.booking-contact-form\s*:is\(input\[name="name"\],\s*input\[name="email"\]\):-webkit-autofill[^{]*\{[^}]*-webkit-text-fill-color:\s*var\(--foreground\)\s*!important/);
+  });
 });
