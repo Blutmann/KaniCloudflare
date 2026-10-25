@@ -220,4 +220,10 @@ describe('isolated four-stage booking presentation', () => {
     expect(css).toMatch(/main\.booking-page\.booking-v2\.booking-v2-final\s*\.booking-contact-form\s*input:-webkit-autofill[^{]*\{[^}]*font-size:\s*12px\s*!important/);
   });
 
+  it('reduces choice titles by 2px in mobile (18px) while desktop preserves 20px', () => {
+    const css = fs.readFileSync('src/components/kani/experimental/reserva-v2.css', 'utf8');
+    expect(css).toMatch(/\.booking-v2\s*\.booking-v2-choice-title\s*\{[^}]*font-size:\s*20px/);
+    expect(css).toMatch(/@media\s*\(max-width:\s*767px\)[\s\S]*?\.booking-v2\s*:is\(\.booking-v2-choice-title,\s*\.barber-choice-inline\s*h2\)\s*\{[^}]*font-size:\s*18px/);
+  });
+
 });

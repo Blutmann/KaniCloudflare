@@ -23,6 +23,11 @@
 .booking-v2 .booking-v2-times .booking-time-slot { min-height: 48px; }
 .booking-v2 .booking-progress small { white-space: normal; }
 @media (max-width: 767px) {
+  .booking-v2 :is(.booking-v2-choice-title, .barber-choice-inline h2) {
+    font-size: 18px;
+    line-height: 1.3;
+    margin: 0 0 10px;
+  }
   .booking-page.booking-v2 .booking-progress {
     height: 66px;
   }
