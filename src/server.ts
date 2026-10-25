@@ -101,7 +101,7 @@ export default {
 
           const { data: appointments, error: apptErr } = await client
             .from("appointments")
-            .select("id, client_name, client_phone, service_name, status, deposit_paid, deposit_amount_ars, created_at, updated_at, booking_date, start_time")
+            .select("*")
             .order("created_at", { ascending: false })
             .limit(10);
 
