@@ -179,6 +179,36 @@ export const sendAppointmentNotification = createServerFn({ method: "POST" })
         }
       }
 
+      // Despacho de WhatsApp vía Pontiun (exclusivo para turnos CONFIRMED)
+      if (payload.notificationType === "CONFIRMED") {
+        try {
+          const { sendPontiunAppointmentConfirmation } = await import("./kani-pontiun");
+          const pontiunResult = await sendPontiunAppointmentConfirmation({
+            appointmentId: data.appointmentId,
+            clientName: payload.clientName,
+            clientPhone: payload.recipientPhone,
+            barberName: payload.barberName,
+            serviceName: payload.serviceName,
+            bookingDate: payload.bookingDate,
+            startTime: payload.startTime,
+          });
+
+          if (pontiunResult.success) {
+            console.log(
+              `[Pontiun WhatsApp] Confirmación enviada/aceptada para turno ${data.appointmentId} (id: ${pontiunResult.messageId})`,
+            );
+          } else if (pontiunResult.skipped) {
+            // Secret no configurado aún en Cloudflare Workers
+          } else {
+            console.warn(
+              `[Pontiun WhatsApp] No se pudo enviar confirmación para turno ${data.appointmentId}: ${pontiunResult.error}`,
+            );
+          }
+        } catch (pontiunErr) {
+          console.warn("[Pontiun WhatsApp] Error durante el despacho:", pontiunErr);
+        }
+      }
+
       const { error: completeError } = await supabase.rpc("complete_appointment_notification", {
         p_notification_id: event.notification_id,
         p_claim_token: data.claimToken,

@@ -165,6 +165,11 @@ export default {
         }
       }
 
+      if (url.pathname === "/api/webhook/pontiun") {
+        const { handlePontiunWebhookRequest } = await import("./lib/kani-pontiun");
+        return await handlePontiunWebhookRequest(request);
+      }
+
       if (url.pathname === "/api/admin/status-audit") {
         try {
           const { createClient } = await import("@supabase/supabase-js");
@@ -319,6 +324,14 @@ function mirrorRuntimeBindings(bindings: unknown): void {
     "MERCADOPAGO_WEBHOOK_SECRET",
     "MERCADOPAGO_NOTIFICATION_URL",
     "KANI_APP_URL",
+    "PONTIUN_API_KEY",
+    "PONTIUN_WHATSAPP_PHONE_NUMBER_ID",
+    "PONTIUN_PHONE_NUMBER_ID",
+    "PONTIUN_PAGE_ID",
+    "PONTIUN_WHATSAPP_CONFIRMATION_TEMPLATE",
+    "PONTIUN_WHATSAPP_TEMPLATE_LANGUAGE",
+    "PONTIUN_WEBHOOK_SECRET",
+    "PONTIUN_API_BASE_URL",
   ];
   const runtimeValues = (globalThis as typeof globalThis & {
     __KANI_RUNTIME_ENV?: Record<string, string>;
