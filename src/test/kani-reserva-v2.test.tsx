@@ -14,6 +14,7 @@ vi.mock('@/lib/kani-availability', async importOriginal => ({
 }));
 vi.mock('@/lib/kani-appointments', () => ({ createRealAppointment: (...args: unknown[]) => api.create(...args), appointmentErrorMessage: String }));
 vi.mock('@/lib/kani-mercadopago', () => ({ getDynamicDownPayment: async () => 5000 }));
+vi.mock('@/lib/kani-down-payment', () => ({ getDynamicDownPayment: async () => 5000 }));
 vi.mock('@/lib/kani-mercadopago.functions', () => ({ createBookingOrderFn: (...args: unknown[]) => api.order(...args) }));
 import { Booking } from '@/components/kani/booking';
 

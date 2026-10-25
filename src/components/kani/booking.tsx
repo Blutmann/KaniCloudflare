@@ -6,7 +6,7 @@ import { services, barbers, serviceFor, money, bookingEndDateFor, parseDate, iso
 import { availabilityStartTimesForServiceDate, eligibleBarbersForAvailabilityStart, readConfiguredServices, readPublicAvailabilityStarts, type ConfiguredService, type PublicAvailabilityStart } from '@/lib/kani-availability';
 import { businessDateToday } from '@/lib/kani-mobile-appointments';
 import { appointmentErrorMessage, createRealAppointment } from '@/lib/kani-appointments';
-import { getDynamicDownPayment } from '@/lib/kani-mercadopago';
+import { getDynamicDownPayment } from '@/lib/kani-down-payment';
 import { createBookingOrderFn } from '@/lib/kani-mercadopago.functions';
 import { normalizePhone, type PhoneCountry } from '@/lib/kani-phone';
 const PhoneInput = lazy(() => import('@/components/kani/phone-input').then(m => ({ default: m.PhoneInput })));
