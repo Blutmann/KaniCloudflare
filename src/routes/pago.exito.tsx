@@ -5,6 +5,11 @@ import { getAppointmentPaymentStatusFn, type AppointmentPaymentStatusResult } fr
 import { pageHead } from '@/lib/kani-head';
 import { checkoutReturnIdentifiers } from '@/lib/kani-payment-return';
 import { Button } from '@/components/ui/button';
+import {
+  KANI_STUDIO_ADDRESS,
+  KANI_MAPS_URL,
+  formatAppointmentDateTime,
+} from '@/lib/kani-constants';
 
 export const Route = createFileRoute('/pago/exito')({
   head: () =>
@@ -132,7 +137,7 @@ function PagoExitoPage() {
               <h1 className="text-3xl font-serif font-bold text-foreground tracking-tight">¡Turno confirmado!</h1>
             </div>
             <p className="text-xs sm:text-sm text-muted-foreground">
-              Tu seña de <strong className="text-foreground font-semibold">$5.000 ARS</strong> fue acreditada correctamente. Te esperamos en el estudio.
+              Tu seña de <strong className="text-foreground font-semibold">$5.000 ARS</strong> fue acreditada correctamente.
             </p>
           </div>
 
@@ -164,23 +169,23 @@ function PagoExitoPage() {
                 <Calendar className="w-4 h-4 text-primary shrink-0" />
                 <div className="flex-1 flex justify-between">
                   <span className="text-muted-foreground">Fecha y hora:</span>
-                  <strong className="text-foreground font-medium">{appt.date} · {appt.time} hs</strong>
+                  <strong className="text-foreground font-medium">{formatAppointmentDateTime(appt.date, appt.time)}</strong>
                 </div>
               </div>
 
               <div className="flex items-center gap-3 pt-1 border-t border-border/60">
                 <MapPin className="w-4 h-4 text-primary shrink-0" />
                 <div className="flex-1 flex justify-between">
-                  <span className="text-muted-foreground">Estudio:</span>
-                  <span className="text-foreground font-medium">Av. Maipú 2841, Olivos</span>
+                  <span className="text-muted-foreground">Dirección:</span>
+                  <span className="text-foreground font-medium">{KANI_STUDIO_ADDRESS}</span>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Aviso de notificaciones */}
-          <div className="rounded-xl bg-primary/10 border border-primary/20 p-3.5 text-center text-xs text-foreground/90">
-            💬 Te enviamos el detalle y recordatorio por WhatsApp y correo electrónico.
+          {/* Aviso de correo electrónico */}
+          <div className="rounded-xl bg-primary/10 border border-primary/20 p-3.5 text-center text-xs text-foreground/90 leading-relaxed">
+            Te enviamos el resumen de tu turno por correo electrónico. Si no lo encontrás, revisá Spam o Correo no deseado.
           </div>
 
           {/* Acciones */}
@@ -190,7 +195,7 @@ function PagoExitoPage() {
             </Button>
             <Button asChild variant="outline" className="w-full h-11 border-border/80 text-foreground font-medium rounded-xl">
               <a
-                href="https://maps.google.com/?q=Av.+Maip%C3%BA+2841,+Olivos,+Provincia+de+Buenos+Aires"
+                href={KANI_MAPS_URL}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center justify-center gap-2"
@@ -216,7 +221,7 @@ function PagoExitoPage() {
           <span className="text-xs uppercase tracking-widest text-amber-500 font-semibold">Procesamiento en curso</span>
           <h1 className="text-2xl font-serif font-bold text-foreground tracking-tight">Pago en acreditación</h1>
           <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-            Mercado Pago está procesando tu operación. En cuanto se confirme la acreditación, tu turno quedará confirmado automáticamente y te notificaremos por WhatsApp.
+            Mercado Pago está procesando tu operación. En cuanto se confirme la acreditación, tu turno quedará confirmado automáticamente y te notificaremos por correo electrónico.
           </p>
         </div>
 
@@ -227,8 +232,8 @@ function PagoExitoPage() {
               <strong className="text-foreground">{result.appointment.serviceName} con {result.appointment.barberName}</strong>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Fecha:</span>
-              <strong className="text-foreground">{result.appointment.date} · {result.appointment.time} hs</strong>
+              <span className="text-muted-foreground">Fecha y hora:</span>
+              <strong className="text-foreground">{formatAppointmentDateTime(result.appointment.date, result.appointment.time)}</strong>
             </div>
           </div>
         )}

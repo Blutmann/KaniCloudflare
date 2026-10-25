@@ -4,6 +4,10 @@ import { Clock, Scissors, User, Calendar, MapPin, AlertCircle } from 'lucide-rea
 import { getAppointmentPaymentStatusFn, type AppointmentPaymentStatusResult } from '@/lib/kani-mercadopago.functions';
 import { pageHead } from '@/lib/kani-head';
 import { Button } from '@/components/ui/button';
+import {
+  KANI_STUDIO_ADDRESS,
+  formatAppointmentDateTime,
+} from '@/lib/kani-constants';
 
 export const Route = createFileRoute('/pago/pendiente')({
   head: () =>
@@ -73,7 +77,7 @@ function PagoPendientePage() {
             <span>¿Qué sucede ahora?</span>
           </div>
           <p>
-            En cuanto Mercado Pago confirme la acreditación del pago, nuestro sistema <strong>confirmará tu turno automáticamente</strong> y te enviaremos el comprobante oficial por WhatsApp y correo electrónico.
+            En cuanto Mercado Pago confirme la acreditación del pago, nuestro sistema <strong>confirmará tu turno automáticamente</strong> y te enviaremos el comprobante oficial por correo electrónico.
           </p>
         </div>
 
@@ -93,12 +97,12 @@ function PagoPendientePage() {
               <strong className="text-foreground">{result.appointment.barberName}</strong>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-muted-foreground flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5 text-primary" /> Fecha/Hora:</span>
-              <strong className="text-foreground">{result.appointment.date} · {result.appointment.time} hs</strong>
+              <span className="text-muted-foreground flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5 text-primary" /> Fecha y hora:</span>
+              <strong className="text-foreground">{formatAppointmentDateTime(result.appointment.date, result.appointment.time)}</strong>
             </div>
             <div className="flex items-center justify-between pt-1 border-t border-border/60">
-              <span className="text-muted-foreground flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-primary" /> Estudio:</span>
-              <span className="text-foreground">Av. Maipú 2841, Olivos</span>
+              <span className="text-muted-foreground flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-primary" /> Dirección:</span>
+              <span className="text-foreground">{KANI_STUDIO_ADDRESS}</span>
             </div>
           </div>
         )}

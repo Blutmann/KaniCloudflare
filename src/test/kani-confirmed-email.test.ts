@@ -3,6 +3,7 @@ import {
   buildConfirmedEmail,
   formatSpanishDateNatural,
 } from '../lib/kani-notifications.functions';
+import { KANI_MAPS_URL } from '../lib/kani-constants';
 
 describe('Email transaccional de confirmación de turno (Kani Barber Studio)', () => {
   const basePayload = {
@@ -66,7 +67,7 @@ describe('Email transaccional de confirmación de turno (Kani Barber Studio)', (
     expect(remaining).toBe(20000);
   });
 
-  it('5. Cálculo dinámico con otro servicio (Corte y barba $30.000 con seña $10.000)', () => {
+  it('5. Cálculo dinámico con otro servicio (Corte y barba $30.000 con seña unificada $5.000, normalizando valores antiguos)', () => {
     const customPayload = {
       ...basePayload,
       serviceName: 'Corte y barba',
@@ -74,13 +75,15 @@ describe('Email transaccional de confirmación de turno (Kani Barber Studio)', (
       bookingDate: '2026-10-24',
       startTime: '11:00:00',
       servicePriceArs: 30000,
-      downPaymentArs: 10000,
+      downPaymentArs: 10000, // Simula valor antiguo de la base, que debe normalizarse a 5.000
     };
 
     const email = buildConfirmedEmail(customPayload);
     expect(email.text).toContain('Importe: $30.000');
-    expect(email.text).toContain('Seña abonada: $10.000');
-    expect(email.text).toContain('Saldo a pagar en el local: $20.000');
+    expect(email.text).toContain('Seña abonada: $5.000');
+    expect(email.text).not.toContain('Seña abonada: $10.000');
+    expect(email.text).not.toContain('$10.000');
+    expect(email.text).toContain('Saldo a pagar en el local: $25.000');
     expect(email.text).toContain(
       'Se confirmó tu turno el día sábado 24 de octubre de 2026 a las 11:00 hs, para un servicio de Corte y barba con Gonzalo.'
     );
@@ -101,7 +104,7 @@ describe('Email transaccional de confirmación de turno (Kani Barber Studio)', (
 
   it('7. Ubicación: Dirección exacta y enlace a Google Maps', () => {
     const email = buildConfirmedEmail(basePayload);
-    const mapsExactUrl = 'https://maps.app.goo.gl/pS9iomLQhNKRFkXp7?g_st=ic';
+    const mapsExactUrl = KANI_MAPS_URL;
 
     expect(email.text).toContain('¿CÓMO LLEGO?');
     expect(email.text).toContain('San Isidro Labrador 7');
