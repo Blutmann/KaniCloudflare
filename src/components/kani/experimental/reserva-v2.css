@@ -293,27 +293,48 @@ html[data-theme='light'] .booking-v2 .booking-v2-choice-title {
     line-height: normal !important;
   }
 
-  /* Dark Mode: Ensure typed values in Name and Email inputs match accessible foreground */
+  /* Dark Mode: Name and Email inputs - dark container preservation and white text */
   html[data-theme='dark'] .booking-v2 .booking-contact-form input[name="name"],
   html[data-theme='dark'] .booking-v2 .booking-contact-form input[name="email"],
   html[data-theme='dark'] .booking-page.booking-v2 .booking-contact-form .field-label :is(input[name="name"], input[name="email"]) {
     color: var(--foreground) !important;
     -webkit-text-fill-color: var(--foreground) !important;
     caret-color: var(--foreground) !important;
+    background: var(--kani-surface-inset) !important;
+    color-scheme: dark;
   }
 
   html[data-theme='dark'] .booking-v2 .booking-contact-form :is(input[name="name"], input[name="email"]):is(:focus, :focus-visible, :active, :hover) {
     color: var(--foreground) !important;
     -webkit-text-fill-color: var(--foreground) !important;
+    background: var(--kani-surface-inset) !important;
   }
 
-  html[data-theme='dark'] .booking-v2 .booking-contact-form :is(input[name="name"], input[name="email"]):-webkit-autofill,
-  html[data-theme='dark'] .booking-v2 .booking-contact-form :is(input[name="name"], input[name="email"]):-webkit-autofill:hover,
-  html[data-theme='dark'] .booking-v2 .booking-contact-form :is(input[name="name"], input[name="email"]):-webkit-autofill:focus,
-  html[data-theme='dark'] .booking-v2 .booking-contact-form :is(input[name="name"], input[name="email"]):-webkit-autofill:active {
+  /* Browser autofill / autocomplete protection in Dark Mode:
+     Prevents WebKit/Blink from forcing a white/light background (#e8f0fe or #fff)
+     over dark inputs, keeping the original dark surface and white text across all states. */
+  html[data-theme='dark'] .booking-v2 .booking-contact-form input[name="name"]:-webkit-autofill,
+  html[data-theme='dark'] .booking-v2 .booking-contact-form input[name="name"]:-webkit-autofill:hover,
+  html[data-theme='dark'] .booking-v2 .booking-contact-form input[name="name"]:-webkit-autofill:focus,
+  html[data-theme='dark'] .booking-v2 .booking-contact-form input[name="name"]:-webkit-autofill:active,
+  html[data-theme='dark'] .booking-v2 .booking-contact-form input[name="name"]:autofill,
+  html[data-theme='dark'] .booking-v2 .booking-contact-form input[name="email"]:-webkit-autofill,
+  html[data-theme='dark'] .booking-v2 .booking-contact-form input[name="email"]:-webkit-autofill:hover,
+  html[data-theme='dark'] .booking-v2 .booking-contact-form input[name="email"]:-webkit-autofill:focus,
+  html[data-theme='dark'] .booking-v2 .booking-contact-form input[name="email"]:-webkit-autofill:active,
+  html[data-theme='dark'] .booking-v2 .booking-contact-form input[name="email"]:autofill,
+  html[data-theme='dark'] .booking-page.booking-v2 .booking-contact-form .field-label :is(input[name="name"], input[name="email"]):-webkit-autofill,
+  html[data-theme='dark'] .booking-page.booking-v2 .booking-contact-form .field-label :is(input[name="name"], input[name="email"]):-webkit-autofill:hover,
+  html[data-theme='dark'] .booking-page.booking-v2 .booking-contact-form .field-label :is(input[name="name"], input[name="email"]):-webkit-autofill:focus,
+  html[data-theme='dark'] .booking-page.booking-v2 .booking-contact-form .field-label :is(input[name="name"], input[name="email"]):-webkit-autofill:active,
+  html[data-theme='dark'] .booking-page.booking-v2 .booking-contact-form .field-label :is(input[name="name"], input[name="email"]):autofill {
     -webkit-text-fill-color: var(--foreground) !important;
     color: var(--foreground) !important;
     caret-color: var(--foreground) !important;
+    -webkit-box-shadow: 0 0 0 1000px #181818 inset !important;
+    box-shadow: 0 0 0 1000px #181818 inset !important;
+    transition: background-color 5000000s ease-in-out 0s !important;
+    border-color: var(--kani-control-border) !important;
   }
 
   html[data-theme='dark'] .booking-v2 .booking-contact-form :is(input[name="name"], input[name="email"])::placeholder {
@@ -325,6 +346,7 @@ html[data-theme='light'] .booking-v2 .booking-v2-choice-title {
   html[data-theme='dark'] .booking-v2 .booking-contact-form .field-control:is(.valid, .invalid) > :is(input[name="name"], input[name="email"]) {
     color: var(--foreground) !important;
     -webkit-text-fill-color: var(--foreground) !important;
+    background: var(--kani-surface-inset) !important;
   }
 }
 

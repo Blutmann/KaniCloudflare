@@ -259,6 +259,8 @@ describe('isolated four-stage booking presentation', () => {
     expect(css).toMatch(/html\[data-theme='dark'\]\s*\.booking-v2\s*\.booking-contact-form\s*input\[name="email"\][^{]*\{[^}]*color:\s*var\(--foreground\)\s*!important/);
     expect(css).toMatch(/html\[data-theme='dark'\]\s*\.booking-v2\s*\.booking-contact-form\s*input\[name="name"\][^{]*\{[^}]*-webkit-text-fill-color:\s*var\(--foreground\)\s*!important/);
     expect(css).toMatch(/html\[data-theme='dark'\]\s*\.booking-v2\s*\.booking-contact-form\s*input\[name="email"\][^{]*\{[^}]*-webkit-text-fill-color:\s*var\(--foreground\)\s*!important/);
-    expect(css).toMatch(/html\[data-theme='dark'\]\s*\.booking-v2\s*\.booking-contact-form\s*:is\(input\[name="name"\],\s*input\[name="email"\]\):-webkit-autofill[^{]*\{[^}]*-webkit-text-fill-color:\s*var\(--foreground\)\s*!important/);
+    expect(css).toMatch(/box-shadow:\s*0 0 0 1000px #181818 inset\s*!important/);
+    expect(css).toMatch(/transition:\s*background-color 5000000s ease-in-out 0s\s*!important/);
+    expect(css).toMatch(/color-scheme:\s*dark/);
   });
 });
