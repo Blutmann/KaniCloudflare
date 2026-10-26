@@ -35,6 +35,17 @@ function fieldMessage(field: ContactField) {
   if (field === 'email') return 'Ingresá un email válido, por ejemplo nombre@email.com.';
   return '';
 }
+
+function formatShortBookingDate(iso: string): string {
+  if (!iso) return '';
+  const d = parseDate(iso);
+  const weekday = d.toLocaleDateString('es-AR', { weekday: 'long' });
+  const capitalizedWeekday = weekday.charAt(0).toUpperCase() + weekday.slice(1);
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  return `${capitalizedWeekday} ${day}/${month}`;
+}
+
 function ExperimentalLayout({ enabled, className, children }: { enabled: boolean; className?: string; children: ReactNode }) {
   return enabled ? <div className={className}>{children}</div> : <>{children}</>;
 }
@@ -736,7 +747,7 @@ export function Booking({
               <h1 className="section-title">{isV2 && step === 2 ? 'Elegir una fecha' : titles[step]}</h1>
               {step === 3 && date && (
                 <span className="booking-time-heading-date">
-                  <CalendarDays size={16} />{dateLabel(date)}
+                  <CalendarDays size={16} />{isV3 ? formatShortBookingDate(date) : dateLabel(date)}
                 </span>
               )}
             </div>
@@ -849,20 +860,6 @@ export function Booking({
             {(step === 3 || isV2 && step === 2 && date) && (
               <div ref={timeSectionRef} className={isV2 ? 'booking-v2-times' : isV3 ? 'booking-v3-times' : undefined} aria-busy={isV2 ? availabilityLoading : undefined}>
                 {isV2 && <h2 className="booking-v2-choice-title">Elegir un horario</h2>}
-                {isV3 && date && (
-                  <div className="booking-v3-date-pill">
-                    <CalendarDays size={15} className="text-gold" />
-                    <span className="capitalize">{dateLabel(date)}</span>
-                    <button
-                      type="button"
-                      className="booking-v3-change-date-btn"
-                      onClick={() => move(2)}
-                      aria-label="Cambiar fecha seleccionada"
-                    >
-                      Cambiar
-                    </button>
-                  </div>
-                )}
                 <div className="booking-time-grid grid grid-cols-3 gap-2 sm:grid-cols-4" role={isV2 || isV3 ? "group" : undefined} aria-label={isV2 || isV3 ? "Horarios disponibles" : undefined}>
                   {timeSlots.map(slot => (
                     <Button
@@ -1034,7 +1031,7 @@ export function Booking({
                     </div>
                     <div className="summary-detail-row flex justify-between items-baseline gap-3 sm:gap-4">
                       <dt className="summary-detail-label text-muted-foreground">Fecha</dt>
-                      <dd className="summary-detail-value font-medium text-foreground text-right capitalize">{dateLabel(date)}</dd>
+                      <dd className="summary-detail-value font-medium text-foreground text-right capitalize">{isV3 ? formatShortBookingDate(date) : dateLabel(date)}</dd>
                     </div>
                     <div className="summary-detail-row flex justify-between items-baseline gap-3 sm:gap-4">
                       <dt className="summary-detail-label text-muted-foreground">Horario</dt>

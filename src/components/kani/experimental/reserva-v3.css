@@ -1,6 +1,7 @@
 /* ==========================================================================
    Kani Barber Studio — Reserva V3 (5-step booking flow variant)
    Coexists alongside Reserva V2 (4 steps) and Reserva V1 (6 steps).
+   Scoped strictly to .booking-v3 to avoid altering any other flow.
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
@@ -17,57 +18,79 @@
 
 @media (max-width: 767px) {
   .booking-page.booking-v3 .booking-progress {
-    height: 66px;
+    height: 58px !important;
+    padding-inline: 0 !important;
   }
 
   .booking-page.booking-v3 .booking-progress > button {
-    min-width: 0;
-    height: 66px;
-    min-height: 66px;
-    max-height: 66px;
-    padding-inline: 1px;
-    flex-direction: column;
-    justify-content: flex-start;
-    align-items: center;
-    gap: 4px;
-    padding-top: 0;
-    padding-bottom: 16px;
-    box-sizing: border-box;
+    min-width: 0 !important;
+    height: 58px !important;
+    min-height: 58px !important;
+    max-height: 58px !important;
+    padding-inline: 1px !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    flex-direction: column !important;
+    justify-content: flex-start !important;
+    align-items: center !important;
+    gap: 4px !important;
+    box-sizing: border-box !important;
   }
 
+  /* Círculos de paso: ligeramente reducidos con alineación óptica estable */
   .booking-page.booking-v3 .booking-progress > button > span {
-    width: 26px;
-    height: 26px;
-    font-size: 9px;
-    flex-shrink: 0;
+    width: 23px !important;
+    height: 23px !important;
+    min-width: 23px !important;
+    min-height: 23px !important;
+    border-radius: 50% !important;
+    font-size: 8.5px !important;
+    font-weight: 600 !important;
+    line-height: 21px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-shrink: 0 !important;
   }
 
+  .booking-page.booking-v3 .booking-progress > button > span svg {
+    width: 11px !important;
+    height: 11px !important;
+  }
+
+  /* Etiquetas de paso: alineadas sobre la misma línea base visual */
   .booking-page.booking-v3 .booking-progress small {
-    font-size: 11.5px;
-    min-height: 16px;
-    line-height: 16px;
-    white-space: nowrap;
-    text-align: center;
-    letter-spacing: -0.025em;
+    font-size: 11px !important;
+    min-height: 14px !important;
+    height: 14px !important;
+    line-height: 14px !important;
+    white-space: nowrap !important;
+    text-align: center !important;
+    letter-spacing: -0.025em !important;
+    display: block !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
 }
 
 /* --------------------------------------------------------------------------
    2. Paso 3 — Fecha ("Elegí una fecha")
-   Spacious, uncompressed calendar optimized for 360 × 800 px mobile & desktop.
+   Desktop: aprovecha todo el ancho disponible del contenedor del flujo.
+   Mobile: optimizado para 360 × 800 px sin overflow horizontal.
    -------------------------------------------------------------------------- */
 .booking-v3-date .calendar-panel {
   width: 100%;
-  max-width: 520px;
-  margin-inline: auto;
-  padding: 24px;
+  max-width: 100%;
+  margin-inline: 0;
+  padding: 30px 32px;
   border-radius: var(--radius-card, 1rem);
   box-sizing: border-box;
 }
 
 .booking-v3-date .calendar-header {
-  min-height: 48px;
-  margin-bottom: 20px !important;
+  min-height: 52px;
+  margin-bottom: 24px !important;
   padding-block: 0;
   display: flex;
   align-items: center;
@@ -75,7 +98,7 @@
 }
 
 .booking-v3-date .calendar-header h2 {
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 600;
   line-height: 1.25;
   margin: 0;
@@ -92,42 +115,42 @@
 .booking-v3-date .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 6px;
+  gap: 12px;
 }
 
 .booking-v3-date .calendar-weekday {
   text-align: center;
   color: var(--muted-foreground);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
 }
 
 .booking-v3-date .calendar-day {
-  height: 48px;
-  min-height: 44px;
+  height: 54px;
+  min-height: 50px;
   width: 100%;
   padding: 0;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 500;
-  border-radius: 8px;
+  border-radius: 10px;
   box-sizing: border-box;
   transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
 }
 
 .booking-v3-date .calendar-day:not(:disabled):hover {
-  transform: scale(1.04);
+  transform: scale(1.03);
 }
 
 .booking-v3-date .calendar-note {
-  margin-top: 20px !important;
+  margin-top: 24px !important;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.35;
   color: var(--muted-foreground);
   text-align: center;
@@ -136,7 +159,7 @@
 @media (max-width: 767px) {
   .booking-v3-date .calendar-panel {
     padding: 16px 12px !important;
-    max-width: 100%;
+    max-width: 100% !important;
   }
 
   .booking-v3-date .calendar-header {
@@ -180,44 +203,41 @@
 
 /* --------------------------------------------------------------------------
    3. Paso 4 — Horario ("Elegí un horario")
-   Dedicated, high-visibility time capsules with optional date pill.
+   Desktop: grilla que aprovecha todo el ancho del contenedor.
+   Mobile: 3 columnas optimizadas.
+   Encabezado con referencia única de fecha (ej.: Miércoles 28/10).
    -------------------------------------------------------------------------- */
-.booking-v3-times {
-  width: 100%;
-  max-width: 600px;
-  margin-inline: auto;
+.booking-v3 .booking-time-heading {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  margin-bottom: 24px;
 }
 
-.booking-v3-date-pill {
+.booking-v3 .booking-time-heading .section-title {
+  margin-bottom: 0;
+}
+
+.booking-v3 .booking-time-heading-date {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--muted-foreground);
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 14px;
-  border-radius: 9999px;
-  background: var(--surface);
-  border: 1px solid color-mix(in oklch, var(--gold) 25%, var(--border));
-  font-size: 13px;
-  font-weight: 500;
-  margin-bottom: 18px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  gap: 7px;
 }
 
-.booking-v3-change-date-btn {
-  font-size: 11.5px;
+.booking-v3 .booking-time-heading-date svg {
   color: var(--gold);
-  font-weight: 600;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  cursor: pointer;
-  background: transparent;
-  border: none;
-  padding: 0;
-  margin-left: 4px;
-  transition: opacity 0.15s ease;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
 }
 
-.booking-v3-change-date-btn:hover {
-  opacity: 0.8;
+.booking-v3-times {
+  width: 100%;
+  max-width: 100%;
 }
 
 .booking-v3-times .booking-time-grid {
@@ -236,15 +256,15 @@
 @media (min-width: 1024px) {
   .booking-v3-times .booking-time-grid {
     grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 12px;
+    gap: 14px;
   }
 }
 
 .booking-v3-times .booking-time-slot {
-  min-height: 48px;
-  height: 50px;
-  padding-inline: 8px;
-  font-size: 14.5px;
+  min-height: 52px;
+  height: 52px;
+  padding-inline: 12px;
+  font-size: 15px;
   font-weight: 500;
   border-radius: 8px;
   box-sizing: border-box;
@@ -275,15 +295,105 @@ html[data-theme='light'] main.booking-page.booking-v3 .booking-time-slot:not(.se
 }
 
 /* --------------------------------------------------------------------------
-   4. Paso 5 — Datos ("Completá tus datos")
-   Inherits .booking-v2-final and .booking-v2-unified-summary from reserva-v2.css
+   4. Paso 5 — Datos ("Completá tus datos") y Resumen
    -------------------------------------------------------------------------- */
 .booking-v3-final .booking-summary-cards {
   min-width: 0;
 }
 
+/* Separación clara y consistente entre Formulario (Observaciones) y Resumen */
+.booking-v3 .booking-v2-final-layout {
+  display: grid;
+  gap: 28px;
+}
+
 @media (min-width: 1024px) {
-  .booking-v3-final .booking-layout {
-    max-width: none;
+  .booking-v3 .booking-v2-final-layout {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+    gap: 36px;
   }
+}
+
+/* Textarea Observaciones: altura proporcionada en mobile (~52px) y desktop (~72px) */
+.booking-v3 .booking-contact-form textarea,
+.booking-v3 .booking-contact-form textarea[name="notes"],
+.booking-v3 .booking-contact-form .notes-input {
+  min-height: 72px;
+  height: 72px;
+  max-height: 120px;
+  padding: 10px 12px;
+  font-size: 13px;
+  line-height: 1.4;
+  box-sizing: border-box;
+  resize: vertical;
+}
+
+@media (max-width: 767px) {
+  .booking-v3 .booking-contact-form textarea,
+  .booking-v3 .booking-contact-form textarea[name="notes"],
+  .booking-v3 .booking-contact-form .notes-input {
+    min-height: 52px !important;
+    height: 52px !important;
+    max-height: 52px !important;
+    padding: 8px 12px !important;
+    font-size: 12px !important;
+    line-height: 1.35 !important;
+    resize: none !important;
+    overflow-y: auto !important;
+    box-sizing: border-box !important;
+  }
+}
+
+/* Card unificada de resumen: padding y jerarquía */
+.booking-v3 .booking-v2-unified-summary {
+  padding: 22px 24px;
+  box-sizing: border-box;
+}
+
+@media (max-width: 767px) {
+  .booking-v3 .booking-v2-unified-summary {
+    padding: 18px 16px;
+  }
+}
+
+/* Información del turno: separación vertical consistente de 12px entre filas */
+.booking-v3 .summary-details-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.booking-v3 .summary-detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  min-width: 0;
+}
+
+/* Separación visual clara entre Información del turno e Información económica */
+.booking-v3 .summary-pricing-card {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid color-mix(in oklch, var(--gold) 22%, var(--border));
+}
+
+/* Información económica: separación vertical consistente de 12px entre filas */
+.booking-v3 .summary-pricing-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.booking-v3 .summary-pricing-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  min-width: 0;
+}
+
+/* Aviso de confirmación de turno pendiente */
+.booking-v3-final .summary-pending-notice {
+  margin-top: 16px;
+  padding: 12px 14px;
 }

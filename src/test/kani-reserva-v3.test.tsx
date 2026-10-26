@@ -139,8 +139,12 @@ describe('Reserva V3 — 5-step booking flow', () => {
     expect(screen.getByRole('group', { name: 'Horarios disponibles' })).toBeInTheDocument();
     // Monthly calendar MUST NOT be rendered in Step 4
     expect(document.querySelector('.calendar-panel')).toBeNull();
-    // Date pill must be rendered with change option
-    expect(screen.getByRole('button', { name: 'Cambiar fecha seleccionada' })).toBeInTheDocument();
+
+    // Single date reference under Elegí un horario: formatted as "Lunes 26/10"
+    expect(screen.getByText('Lunes 26/10')).toBeInTheDocument();
+    // NO duplicate date pill and NO Cambiar button
+    expect(screen.queryByRole('button', { name: /Cambiar/ })).not.toBeInTheDocument();
+    expect(document.querySelector('.booking-v3-date-pill')).toBeNull();
 
     // Continuar is disabled until slot is picked
     expect(screen.getByRole('button', { name: 'Continuar' })).toBeDisabled();
@@ -152,6 +156,8 @@ describe('Reserva V3 — 5-step booking flow', () => {
     expect(screen.getByLabelText('Paso 5 de 5: Datos')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Completá tus datos' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Pagar seña' })).toBeInTheDocument();
+    // Summary card displays "Lunes 26/10"
+    expect(screen.getByText('Lunes 26/10')).toBeInTheDocument();
   });
 
   it('resets selected time when changing date in Step 3 and preserves navigation history', async () => {
@@ -184,6 +190,7 @@ describe('Reserva V3 — 5-step booking flow', () => {
 
     // In Step 4: Previous time 10:00 is reset / not preselected
     expect(screen.getByRole('heading', { name: 'Elegí un horario' })).toBeInTheDocument();
+    expect(screen.getByText('Martes 27/10')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '10:00' })).toHaveAttribute('aria-pressed', 'false');
     expect(screen.getByRole('button', { name: 'Continuar' })).toBeDisabled();
 
@@ -195,6 +202,7 @@ describe('Reserva V3 — 5-step booking flow', () => {
     expect(screen.getByRole('heading', { name: 'Completá tus datos' })).toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: /^Nombre/ })).toHaveValue('Cliente Reserva V3');
     expect(screen.getByRole('textbox', { name: /^Email/ })).toHaveValue('cliente.v3@example.test');
+    expect(screen.getByText('Martes 27/10')).toBeInTheDocument();
   });
 
   it('handles deferred barber choice during Step 4 (Horario)', async () => {
@@ -262,29 +270,47 @@ describe('Reserva V3 — 5-step booking flow', () => {
     });
   });
 
-  it('clicking "Cambiar" in the date pill in Step 4 returns to Step 3', async () => {
+  it('allows returning from Step 4 (Horario) to Step 3 (Fecha) via Volver button without duplicate Cambiar link', async () => {
     await selectServiceAndBarberV3();
     fireEvent.click(screen.getByRole('button', { name: dateLabel('2026-10-26') }));
     next();
 
     expect(screen.getByRole('heading', { name: 'Elegí un horario' })).toBeInTheDocument();
-    const changeDateBtn = screen.getByRole('button', { name: 'Cambiar fecha seleccionada' });
-    fireEvent.click(changeDateBtn);
+    expect(screen.queryByRole('button', { name: /Cambiar/ })).not.toBeInTheDocument();
+
+    const backBtn = screen.getByRole('button', { name: 'Volver' });
+    fireEvent.click(backBtn);
 
     expect(screen.getByRole('heading', { name: 'Elegí una fecha' })).toBeInTheDocument();
   });
 
-  it('verifies that Reserva V3 CSS rules are present and properly configured', () => {
+  it('verifies that Reserva V3 CSS rules meet visual and desktop width requirements', () => {
     const cssPath = 'src/components/kani/experimental/reserva-v3.css';
     const css = fs.readFileSync(cssPath, 'utf8');
 
-    // Stepper 5 columns
-    expect(css).toMatch(/\.booking-page\.booking-v3\s+\.booking-progress\s*\{[^}]*grid-template-columns:\s*repeat\(5,\s*minmax\(0,\s*1fr\)\)/);
-    // Touch target for calendar days min 44px
-    expect(css).toMatch(/\.booking-v3-date\s+\.calendar-day\s*\{[^}]*min-height:\s*44px/);
-    // Grid in mobile for time capsules: 3 columns
+    // Stepper 5 columns and 23px mobile circles
+    expect(css).toMatch(/grid-template-columns:\s*repeat\(5,\s*minmax\(0,\s*1fr\)\)/);
+    expect(css).toMatch(/width:\s*23px\s*!important/);
+
+    // Desktop calendar full content width (100%)
+    expect(css).toMatch(/\.booking-v3-date\s+\.calendar-panel\s*\{[^}]*width:\s*100%;\s*max-width:\s*100%;/);
+
+    // Desktop time grid full content width (100%)
+    expect(css).toMatch(/\.booking-v3-times\s*\{[^}]*width:\s*100%;\s*max-width:\s*100%;/);
+
+    // Time grid 3 columns in mobile
     expect(css).toMatch(/\.booking-v3-times\s+\.booking-time-grid\s*\{[^}]*grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\)/);
-    // Time capsules touch height min 48px
-    expect(css).toMatch(/\.booking-v3-times\s+\.booking-time-slot\s*\{[^}]*min-height:\s*48px/);
+
+    // Time grid 5 columns on desktop
+    expect(css).toMatch(/grid-template-columns:\s*repeat\(5,\s*minmax\(0,\s*1fr\)\)/);
+
+    // Observaciones textarea reduced height in mobile (~52px)
+    expect(css).toMatch(/min-height:\s*52px\s*!important/);
+
+    // Clear separation between form and summary
+    expect(css).toMatch(/\.booking-v3\s+\.booking-v2-final-layout\s*\{[^}]*gap:\s*28px/);
+
+    // Separation between appointment details and financial details
+    expect(css).toMatch(/\.booking-v3\s+\.summary-pricing-card\s*\{[^}]*border-top:\s*1px\s*solid/);
   });
 });
