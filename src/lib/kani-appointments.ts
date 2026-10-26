@@ -337,6 +337,7 @@ async function executeReadRealAppointments(options?: { bypassCache?: boolean; ba
     barbersResult,
     servicesResult,
     { data: exceptionsData },
+    ordersResult,
   ] = await Promise.all([
     clientIds.length ? supabase.from('clients').select('id, name, phone, email').in('id', clientIds) : Promise.resolve({ data: [], error: null }),
     needBarbers && barberIds.length
