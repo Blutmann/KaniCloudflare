@@ -4,13 +4,29 @@ import type { AvailabilitySlot } from "./kani-availability";
 import { minutes } from "./kani-model";
 
 export const PREVIEW_PROJECT = "iockpxtkflyjfagkvgnr";
-export function isV2Preview(url: string, hostname: string) {
+
+// Cloudflare Workers Preview/Test deployments for Kani Barber Studio:
+// Matches:
+// - kanibarberstudio-cloudflare.kanibarber.workers.dev
+// - <deployment-id>-kanibarberstudio-cloudflare.kanibarber.workers.dev
+// - kanibarberstudio-cloudflare.tomasblutmannliriumprive.workers.dev
+// - <deployment-id>-kanibarberstudio-cloudflare.tomasblutmannliriumprive.workers.dev
+const CLOUDFLARE_PREVIEW_HOSTNAME_PATTERN =
+  /^(?:[a-zA-Z0-9_-]+-)?kanibarberstudio-cloudflare\.(?:kanibarber|tomasblutmannliriumprive)\.workers\.dev$/i;
+
+export function isV2PreviewHost(hostname: string): boolean {
+  if (!hostname) return false;
+  const cleanHost = hostname.trim().toLowerCase();
+  if (cleanHost === "localhost" || cleanHost === "127.0.0.1") return true;
+  return CLOUDFLARE_PREVIEW_HOSTNAME_PATTERN.test(cleanHost);
+}
+
+export function isV2Preview(url: string, hostname: string): boolean {
   try {
+    if (!url || !hostname) return false;
     return (
       new URL(url).hostname === `${PREVIEW_PROJECT}.supabase.co` &&
-      ["localhost", "127.0.0.1", "kanibarberstudio-cloudflare.kanibarber.workers.dev"].includes(
-        hostname,
-      )
+      isV2PreviewHost(hostname)
     );
   } catch {
     return false;

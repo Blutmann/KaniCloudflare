@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
   isV2Preview,
+  isV2PreviewHost,
   scopeV2,
   paymentSummary,
   clientHistory,
   changePercent,
   slotReserved,
+  PREVIEW_PROJECT,
 } from "./kani-v2";
 import type { RealAppointment } from "./kani-appointments";
 import type { ServicePayment } from "./kani-payments";
@@ -29,21 +31,80 @@ const payment = {
 } as ServicePayment;
 
 describe("V2 preview isolation and role scope", () => {
-  it("permits only the test project on approved hosts", () => {
+  it("permits only the test project on approved hosts (main preview and versioned deployments)", () => {
+    // 1. Preview/Test principal
     expect(
       isV2Preview(
         "https://iockpxtkflyjfagkvgnr.supabase.co",
         "kanibarberstudio-cloudflare.kanibarber.workers.dev",
       ),
     ).toBe(true);
+
+    // 2. Deployment/versionado Preview/Test autorizado (e.g. 311e359c)
+    expect(
+      isV2Preview(
+        "https://iockpxtkflyjfagkvgnr.supabase.co",
+        "311e359c-kanibarberstudio-cloudflare.kanibarber.workers.dev",
+      ),
+    ).toBe(true);
+
+    // 3. Otro hash o branch deployment legítimo del worker
+    expect(
+      isV2Preview(
+        "https://iockpxtkflyjfagkvgnr.supabase.co",
+        "feat-preview-123-kanibarberstudio-cloudflare.kanibarber.workers.dev",
+      ),
+    ).toBe(true);
+    expect(
+      isV2Preview(
+        "https://iockpxtkflyjfagkvgnr.supabase.co",
+        "311e359c-kanibarberstudio-cloudflare.tomasblutmannliriumprive.workers.dev",
+      ),
+    ).toBe(true);
+
+    // 4. Localhost
     expect(isV2Preview("https://iockpxtkflyjfagkvgnr.supabase.co", "localhost")).toBe(true);
-    expect(isV2Preview("https://production.supabase.co", "localhost")).toBe(false);
+    expect(isV2Preview("https://iockpxtkflyjfagkvgnr.supabase.co", "127.0.0.1")).toBe(true);
+
+    // 5. Producción bloqueada estrictamente
     expect(isV2Preview("https://iockpxtkflyjfagkvgnr.supabase.co", "kanibarber.com")).toBe(false);
+    expect(isV2Preview("https://iockpxtkflyjfagkvgnr.supabase.co", "www.kanibarber.com")).toBe(false);
+
+    // 6. Proyectos Supabase no autorizados bloqueados
+    expect(
+      isV2Preview(
+        "https://vmhxwxxidgfbczxtkqge.supabase.co",
+        "kanibarberstudio-cloudflare.kanibarber.workers.dev",
+      ),
+    ).toBe(false); // producción
+    expect(
+      isV2Preview(
+        "https://vnwchtryclueemftkoun.supabase.co",
+        "kanibarberstudio-cloudflare.kanibarber.workers.dev",
+      ),
+    ).toBe(false); // legacy
+    expect(isV2Preview("https://production.supabase.co", "localhost")).toBe(false);
+
+    // 7. Hosts maliciosos o no autorizados bloqueados
+    expect(
+      isV2Preview(
+        "https://iockpxtkflyjfagkvgnr.supabase.co",
+        "attacker-worker.workers.dev",
+      ),
+    ).toBe(false);
+    expect(
+      isV2Preview(
+        "https://iockpxtkflyjfagkvgnr.supabase.co",
+        "malicious-kanibarberstudio-cloudflare.otheraccount.workers.dev",
+      ),
+    ).toBe(false);
     expect(isV2Preview("https://iockpxtkflyjfagkvgnr.supabase.co.attacker.test", "localhost")).toBe(
       false,
     );
     expect(isV2Preview("", "localhost")).toBe(false);
+    expect(isV2Preview("https://iockpxtkflyjfagkvgnr.supabase.co", "")).toBe(false);
   });
+
   it("fails closed for a barber without ownership or a manipulated filter", () => {
     const rows = [{ barberId: "b1" }, { barberId: "b2" }];
     expect(scopeV2(rows, "BARBER", "b1")).toEqual([rows[0]]);

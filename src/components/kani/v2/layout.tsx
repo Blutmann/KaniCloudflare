@@ -34,10 +34,11 @@ export function V2Layout() {
   }>({ loading: true, staff: null, error: "" });
   const [allowed, setAllowed] = useState(false);
   useEffect(() => {
-    const preview = isV2Preview(
-      import.meta.env["VITE_SUPABASE_URL"] ?? "",
-      window.location.hostname,
-    );
+    const supabaseUrl =
+      import.meta.env["VITE_SUPABASE_URL"] ||
+      (supabase as any)?.supabaseUrl ||
+      "";
+    const preview = isV2Preview(supabaseUrl, window.location.hostname);
     setAllowed(preview);
     if (!preview) {
       setState({
