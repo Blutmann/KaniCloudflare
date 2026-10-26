@@ -1,6 +1,7 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PAYWAY_MESSAGES } from '@/lib/kani-payway';
+import { dateLabel } from '@/lib/kani-model';
 
 const mocks = vi.hoisted(() => ({ prepare: vi.fn(), pay: vi.fn(), tokenize: vi.fn(), mp: vi.fn(), create: vi.fn() }));
 vi.mock('@/components/kani/store', () => ({ useKani: () => ({ mobileMenuOpen: false, setMobileMenuOpen: vi.fn() }) }));
@@ -24,6 +25,7 @@ async function reachData() {
   render(<PaywayBooking />);
   fireEvent.click(screen.getByRole('button', { name: /^Corte 45/ })); next();
   fireEvent.click(screen.getByRole('button', { name: /Lautaro/ })); next();
+  fireEvent.click(await screen.findByRole('button', { name: dateLabel('2026-10-27') })); next();
   await screen.findByRole('button', { name: '10:00' });
   fireEvent.click(screen.getByRole('button', { name: '10:00' })); next();
   await screen.findByRole('textbox', { name: /^Nombre/ });
@@ -50,11 +52,11 @@ beforeEach(() => {
 });
 afterEach(() => { cleanup(); vi.useRealTimers(); });
 
-describe('independent Payway four-step reservation', () => {
+describe('independent Payway reservation matching the current V3 five steps', () => {
   it('preserves the compact review and blocks unavailable payment without creating an appointment', async () => {
     mocks.prepare.mockResolvedValue({ ready: false, message: PAYWAY_MESSAGES.unavailable });
     await reachData();
-    expect(screen.getByLabelText('Paso 4 de 4: Datos')).toBeInTheDocument();
+    expect(screen.getByLabelText('Paso 5 de 5: Datos')).toBeInTheDocument();
     expect(screen.getByText('Precio total del servicio')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Pagar seña' }));
     expect(await screen.findByRole('alert')).toHaveTextContent(PAYWAY_MESSAGES.unavailable);

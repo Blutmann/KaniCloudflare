@@ -9,7 +9,7 @@ export type PaywayConfig = {
 
 export function readPaywayConfig(env: EnvironmentReader): PaywayConfig | null {
   // This laboratory deliberately has no production mode or arbitrary destination.
-  if (env('PAYWAY_ENVIRONMENT') !== 'sandbox' || env('SUPABASE_URL') !== 'https://iockpxtkflyjfagkvgnr.supabase.co') return null;
+  if (env('PAYWAY_SANDBOX_ENABLED') !== 'true' || env('PAYWAY_ENVIRONMENT') !== 'sandbox' || env('SUPABASE_URL') !== 'https://iockpxtkflyjfagkvgnr.supabase.co') return null;
   const apiBaseUrl = env('PAYWAY_API_BASE_URL')?.replace(/\/$/, '') ?? '';
   const publicKey = env('PAYWAY_PUBLIC_API_KEY');
   const privateKey = env('PAYWAY_PRIVATE_API_KEY');
@@ -51,7 +51,7 @@ export interface PaywayStore {
   claim(input: Pick<PaywayPaymentInput, 'appointmentId' | 'attemptId' | 'accessToken'>): Promise<{
     acquired: boolean; appointment: PaywayAppointment; attempt: PaywayAttempt;
   }>;
-  settle(attemptId: string, state: 'approved' | 'rejected' | 'unknown', providerId?: string): Promise<void>;
+  settle(attemptId: string, state: 'approved' | 'rejected' | 'unknown', providerId?: string, providerStatus?: string, providerCode?: string): Promise<void>;
   confirm(appointmentId: string, attemptId: string, providerId: string, amount: number): Promise<boolean>;
 }
 
@@ -67,7 +67,11 @@ export function createPaywayService({ config, store, fetcher = fetch }: {
         return { ready: true, checkout: { appointmentId: prepared.appointmentId, attemptId: prepared.attemptId,
           accessToken: prepared.accessToken, depositArs: prepared.depositArs,
           publicKey: config.publicKey, apiBaseUrl: config.apiBaseUrl, methods: config.methods } };
-      } catch { return { ready: false, message: PAYWAY_MESSAGES.unavailable }; }
+      } catch (cause) {
+        return cause instanceof Error && cause.message === 'PAYMENT_REVIEW_REQUIRED'
+          ? { ready: false, state: 'unknown', message: PAYWAY_MESSAGES.unknown }
+          : { ready: false, message: PAYWAY_MESSAGES.unavailable };
+      }
     },
     async pay(raw: unknown): Promise<PaywayResult> {
       if (!config || !store || !isPaywaySandboxBase(config.apiBaseUrl)) return { state: 'unavailable', message: PAYWAY_MESSAGES.unavailable };
@@ -114,7 +118,7 @@ export function createPaywayService({ config, store, fetcher = fetch }: {
           payment.site_id === config.siteId;
         if (!matches) throw new Error('PAYWAY_EVIDENCE_MISMATCH');
         if (response.ok && payment.status === 'approved') {
-          await store.settle(attempt.id, 'approved', providerId);
+          await store.settle(attempt.id, 'approved', providerId, 'approved');
           approvalSaved = true;
           const confirmed = await store.confirm(appointment.id, attempt.id, providerId, amount);
           return confirmed
@@ -123,7 +127,7 @@ export function createPaywayService({ config, store, fetcher = fetch }: {
         }
         // Exact literal only; reject envelopes must be certified with the merchant's sandbox.
         if (payment.status === 'rejected') {
-          await store.settle(attempt.id, 'rejected', providerId);
+          await store.settle(attempt.id, 'rejected', providerId, 'rejected');
           return { state: 'rejected', message: PAYWAY_MESSAGES.rejected };
         }
         throw new Error('PAYWAY_RESULT_UNCERTAIN');
@@ -139,7 +143,11 @@ export function createPaywayService({ config, store, fetcher = fetch }: {
 
 export async function runtimePaywayService() {
   const { getRuntimeEnv } = await import('./kani-mercadopago.server');
-  // The current table is MP-only, one row per appointment. A Payway adapter requires
-  // the separately approved attempts migration. No runtime flag can enable memory-only charges.
-  return createPaywayService({ config: readPaywayConfig(getRuntimeEnv), store: null });
+  const config = readPaywayConfig(getRuntimeEnv);
+  const secret = getRuntimeEnv('PAYWAY_CHECKOUT_SECRET');
+  if (!config || !secret || secret.length < 32) return createPaywayService({ config: null, store: null });
+  const { createPaymentSupabaseClient } = await import('./kani-payment-db.server');
+  const { createPaywayStore } = await import('./kani-payway-store.server');
+  const { paywaySessionAccess } = await import('./kani-payway-session.server');
+  return createPaywayService({ config, store: createPaywayStore(await createPaymentSupabaseClient(), config.siteId, paywaySessionAccess(secret)) });
 }

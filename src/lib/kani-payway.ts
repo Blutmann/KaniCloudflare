@@ -12,14 +12,14 @@ export type PaywayCheckout = {
 };
 export type PaywayPreparation =
   | { ready: true; checkout: PaywayCheckout }
-  | { ready: false; message: string };
+  | { ready: false; message: string; state?: 'unknown' };
 export type PaywayPaymentInput = {
   appointmentId: string; attemptId: string; accessToken: string;
   token: string; bin: string; paymentMethodId: number;
 };
 
 export const PAYWAY_MESSAGES = {
-  unavailable: 'El pago con Payway todavía no está habilitado. No se realizó ningún cobro ni se guardó un turno.',
+  unavailable: 'Pago de prueba todavía no disponible. No se realizó ningún cobro ni se guardó un turno.',
   unknown: 'No pudimos verificar el resultado del pago. No vuelvas a pagar hasta que el estudio compruebe su estado.',
   approved: 'Seña aprobada. Tu turno está confirmado.',
   rejected: 'El pago fue rechazado. No se confirmó el turno. Podés intentar con otra tarjeta.',

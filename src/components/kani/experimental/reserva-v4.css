@@ -7,6 +7,3 @@
 .payway-card-form select:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
 .payway-card-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
 .payway-result { line-height: 1.5; overflow-wrap: anywhere; }
-@media (max-width: 767px) {
-  .payway-reservation .booking-v2 .booking-time-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-}

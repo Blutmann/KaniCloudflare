@@ -1,0 +1,12 @@
+{
+  // This repository deploys ONLY the existing Preview/Test Worker.
+  // Nitro supplies main/assets in its generated deployment configuration.
+  "name": "kanibarberstudio-cloudflare",
+  "keep_vars": true,
+  "vars": {
+    "PAYWAY_SANDBOX_ENABLED": "false",
+    "PAYWAY_ENVIRONMENT": "sandbox",
+    "PAYWAY_API_BASE_URL": "https://developers-ventasonline.payway.com.ar/api/v2",
+    "PAYWAY_PAYMENT_METHODS": "[]"
+  }
+}

@@ -25,7 +25,7 @@ export function PaywayBooking() {
     try {
       const response = await preparePaywayCheckoutFn({ data: draft });
       if (response.ready) setCheckout(response.checkout);
-      else setResult({ state: 'unavailable', message: response.message });
+      else setResult({ state: response.state ?? 'unavailable', message: response.message });
     } catch { setResult({ state: 'unavailable', message: PAYWAY_MESSAGES.unavailable }); }
     finally { opening.current = false; setPreparing(false); }
   }
@@ -57,7 +57,7 @@ export function PaywayBooking() {
   }
 
   return <div className="payway-reservation">
-    <Booking combinedDateTime onPaymentRequest={begin} />
+    <Booking variant="v3" onPaymentRequest={begin} />
     <Dialog open={open} onOpenChange={value => { if (!paying.current && !opening.current) setOpen(value); }}>
       <DialogContent className="payway-checkout" onEscapeKeyDown={e => { if (paying.current) e.preventDefault(); }} onPointerDownOutside={e => { if (paying.current) e.preventDefault(); }}>
         <DialogTitle>Pagar seña con Payway</DialogTitle>

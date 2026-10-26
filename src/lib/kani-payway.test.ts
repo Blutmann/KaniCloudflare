@@ -46,7 +46,7 @@ describe('Payway laboratory, synthetic responses only', () => {
     expect(request.headers.apikey).toBe(config.privateKey);
     expect(JSON.parse(request.body)).toEqual({ site_transaction_id: paywayTransactionId(attemptId), token: input.token,
       payment_method_id: 1, bin: input.bin, amount: 500000, currency: 'ARS', installments: 1, payment_type: 'single', sub_payments: [] });
-    expect(s.store.settle).toHaveBeenCalledWith(attemptId, 'approved', '42');
+    expect(s.store.settle).toHaveBeenCalledWith(attemptId, 'approved', '42', 'approved');
     expect(s.store.confirm).toHaveBeenCalledWith(appointmentId, attemptId, '42', 500000);
     expect(s.store.settle.mock.invocationCallOrder[0]!).toBeLessThan(s.store.confirm.mock.invocationCallOrder[0]!);
     expect(log).not.toHaveBeenCalled(); expect(error).not.toHaveBeenCalled();
@@ -77,7 +77,7 @@ describe('Payway laboratory, synthetic responses only', () => {
   it('preserves saved approval evidence if appointment confirmation fails', async () => {
     const s = setup(); s.store.confirm.mockRejectedValue(new Error('database fixture'));
     expect((await s.service.pay(input)).state).toBe('unknown');
-    expect(s.store.settle).toHaveBeenCalledExactlyOnceWith(attemptId, 'approved', '42');
+    expect(s.store.settle).toHaveBeenCalledExactlyOnceWith(attemptId, 'approved', '42', 'approved');
   });
   it('cannot charge an expired/cancelled/already-paid or nonmatching appointment', async () => {
     for (const patch of [{ status: 'CANCELLED' }, { depositPaid: true }, { origin: 'MANUAL' }, { id: 'other' }, { servicePriceArs: 100 }]) {
@@ -104,11 +104,11 @@ describe('Payway laboratory, synthetic responses only', () => {
     expect((await (await runtimePaywayService()).prepare(draft)).ready).toBe(false); expect(fetcher).not.toHaveBeenCalled();
   });
   it('configuration accepts only test DB and explicitly selected sandbox hosts', () => {
-    const env: Record<string, string> = { PAYWAY_ENVIRONMENT: 'sandbox', PAYWAY_API_BASE_URL: config.apiBaseUrl,
+    const env: Record<string, string> = { PAYWAY_SANDBOX_ENABLED: 'true', PAYWAY_ENVIRONMENT: 'sandbox', PAYWAY_API_BASE_URL: config.apiBaseUrl,
       PAYWAY_PUBLIC_API_KEY: config.publicKey, PAYWAY_PRIVATE_API_KEY: config.privateKey, PAYWAY_SITE_ID: config.siteId,
       PAYWAY_PAYMENT_METHODS: JSON.stringify(config.methods), SUPABASE_URL: 'https://iockpxtkflyjfagkvgnr.supabase.co' };
     expect(readPaywayConfig(key => env[key])).toEqual(config);
-    for (const patch of [{ PAYWAY_ENVIRONMENT: 'production' }, { PAYWAY_API_BASE_URL: 'https://ventasonline.payway.com.ar/api/v2' },
+    for (const patch of [{ PAYWAY_SANDBOX_ENABLED: 'false' }, { PAYWAY_SANDBOX_ENABLED: '' }, { PAYWAY_ENVIRONMENT: 'production' }, { PAYWAY_API_BASE_URL: 'https://ventasonline.payway.com.ar/api/v2' },
       { SUPABASE_URL: 'https://production.supabase.co' }, { PAYWAY_PAYMENT_METHODS: '[]' }, { PAYWAY_PRIVATE_API_KEY: '' }]) {
       const altered: Record<string, string> = { ...env, ...patch }; expect(readPaywayConfig(key => altered[key])).toBeNull();
     }
