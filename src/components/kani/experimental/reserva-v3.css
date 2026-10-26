@@ -205,27 +205,37 @@
    3. Paso 4 — Horario ("Elegí un horario")
    Desktop: grilla que aprovecha todo el ancho del contenedor.
    Mobile: 3 columnas optimizadas.
-   Encabezado con referencia única de fecha (ej.: Miércoles 28/10).
+   Encabezado en un solo renglón:
+   - Izquierda: "Elegí un horario"
+   - Derecha: fecha (ej. "Jueves 29/10") alineada a la derecha y centrada verticalmente
    -------------------------------------------------------------------------- */
 .booking-v3 .booking-time-heading {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 6px;
+  display: flex !important;
+  flex-direction: row !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  gap: 16px;
   margin-bottom: 24px;
+  width: 100%;
 }
 
 .booking-v3 .booking-time-heading .section-title {
-  margin-bottom: 0;
+  margin-bottom: 0 !important;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .booking-v3 .booking-time-heading-date {
+  margin-left: auto;
   font-size: 15px;
   font-weight: 500;
   color: var(--muted-foreground);
   display: inline-flex;
   align-items: center;
   gap: 7px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  line-height: 1;
 }
 
 .booking-v3 .booking-time-heading-date svg {
@@ -233,6 +243,41 @@
   width: 16px;
   height: 16px;
   flex-shrink: 0;
+}
+
+@media (max-width: 767px) {
+  .booking-v3 .booking-time-heading {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin-bottom: 18px !important;
+    width: 100% !important;
+  }
+
+  .booking-v3 .booking-time-heading .section-title {
+    font-size: 20px !important;
+    line-height: 1.2 !important;
+    margin: 0 !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+  }
+
+  .booking-v3 .booking-time-heading-date {
+    margin-left: auto !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    gap: 5px !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+    line-height: 1 !important;
+  }
+
+  .booking-v3 .booking-time-heading-date svg {
+    width: 13px !important;
+    height: 13px !important;
+  }
 }
 
 .booking-v3-times {

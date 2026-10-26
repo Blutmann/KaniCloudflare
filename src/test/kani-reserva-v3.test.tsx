@@ -312,5 +312,11 @@ describe('Reserva V3 — 5-step booking flow', () => {
 
     // Separation between appointment details and financial details
     expect(css).toMatch(/\.booking-v3\s+\.summary-pricing-card\s*\{[^}]*border-top:\s*1px\s*solid/);
+
+    // Step 4 heading and date in the same row (flex-direction: row, space-between, align-items: center)
+    expect(css).toMatch(/\.booking-v3\s+\.booking-time-heading\s*\{[^}]*flex-direction:\s*row\s*!important/);
+    expect(css).toMatch(/\.booking-v3\s+\.booking-time-heading\s*\{[^}]*justify-content:\s*space-between\s*!important/);
+    expect(css).toMatch(/\.booking-v3\s+\.booking-time-heading\s*\{[^}]*align-items:\s*center\s*!important/);
+    expect(css).toMatch(/\.booking-v3\s+\.booking-time-heading-date\s*\{[^}]*margin-left:\s*auto/);
   });
 });
