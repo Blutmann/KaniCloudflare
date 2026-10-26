@@ -304,8 +304,8 @@ describe('Reserva V3 — 5-step booking flow', () => {
     // Time grid 5 columns on desktop
     expect(css).toMatch(/grid-template-columns:\s*repeat\(5,\s*minmax\(0,\s*1fr\)\)/);
 
-    // Observaciones textarea reduced height in mobile (~52px)
-    expect(css).toMatch(/min-height:\s*52px\s*!important/);
+    // Observaciones textarea reduced height in mobile (~44px)
+    expect(css).toMatch(/min-height:\s*44px\s*!important/);
 
     // Clear separation between form and summary
     expect(css).toMatch(/\.booking-v3\s+\.booking-v2-final-layout\s*\{[^}]*gap:\s*28px/);
@@ -318,5 +318,17 @@ describe('Reserva V3 — 5-step booking flow', () => {
     expect(css).toMatch(/\.booking-v3\s+\.booking-time-heading\s*\{[^}]*justify-content:\s*space-between\s*!important/);
     expect(css).toMatch(/\.booking-v3\s+\.booking-time-heading\s*\{[^}]*align-items:\s*center\s*!important/);
     expect(css).toMatch(/\.booking-v3\s+\.booking-time-heading-date\s*\{[^}]*margin-left:\s*auto/);
+
+    // Step 5: Mobile font-size 13px for form inputs, country trigger, and placeholders
+    expect(css).toMatch(/font-size:\s*13px\s*!important/);
+
+    // Step 5: Phone input 50% / 50% distribution in mobile
+    expect(css).toMatch(/\.booking-v3\s+\.phone-input-row\s*\{[^}]*grid-template-columns:\s*1fr\s+1fr\s*!important/);
+
+    // Step 5: High contrast text in dark mode for inputs and autofill
+    expect(css).toMatch(/color:\s*#F7F4EF\s*!important/);
+    expect(css).toMatch(/-webkit-text-fill-color:\s*#F7F4EF\s*!important/);
+    expect(css).toMatch(/color:\s*#111111\s*!important/);
+    expect(css).toMatch(/-webkit-text-fill-color:\s*#111111\s*!important/);
   });
 });

@@ -346,6 +346,121 @@ html[data-theme='light'] main.booking-page.booking-v3 .booking-time-slot:not(.se
   min-width: 0;
 }
 
+/* Contraste y legibilidad de texto en Modo Oscuro (TODOS los campos de usuario) */
+.booking-v3 .booking-contact-form input,
+.booking-v3 .booking-contact-form textarea,
+.booking-v3 .phone-country-trigger,
+.booking-v3 .phone-input-row input,
+html[data-theme='dark'] .booking-v3 .booking-contact-form input,
+html[data-theme='dark'] .booking-v3 .booking-contact-form textarea,
+html[data-theme='dark'] .booking-v3 .phone-country-trigger,
+html[data-theme='dark'] .booking-v3 .phone-input-row input {
+  color: #F7F4EF !important;
+  caret-color: #F7F4EF !important;
+  color-scheme: dark;
+}
+
+/* Modo claro: texto oscuro con contraste óptimo */
+html[data-theme='light'] .booking-v3 .booking-contact-form input,
+html[data-theme='light'] .booking-v3 .booking-contact-form textarea,
+html[data-theme='light'] .booking-v3 .phone-country-trigger,
+html[data-theme='light'] .booking-v3 .phone-input-row input {
+  color: #111111 !important;
+  caret-color: #111111 !important;
+  color-scheme: light;
+}
+
+/* Placeholders coherentes y legibles */
+.booking-v3 .booking-contact-form input::placeholder,
+.booking-v3 .booking-contact-form textarea::placeholder,
+.booking-v3 .phone-input-row input::placeholder,
+html[data-theme='dark'] .booking-v3 .booking-contact-form input::placeholder,
+html[data-theme='dark'] .booking-v3 .booking-contact-form textarea::placeholder,
+html[data-theme='dark'] .booking-v3 .phone-input-row input::placeholder {
+  color: #ABABAB !important;
+  opacity: 0.85 !important;
+}
+
+html[data-theme='light'] .booking-v3 .booking-contact-form input::placeholder,
+html[data-theme='light'] .booking-v3 .booking-contact-form textarea::placeholder,
+html[data-theme='light'] .booking-v3 .phone-input-row input::placeholder {
+  color: #5d5a54 !important;
+  opacity: 0.85 !important;
+}
+
+/* Estados: focus, validado e invalidado conservan contraste y legibilidad */
+.booking-v3 .booking-contact-form input:focus,
+.booking-v3 .booking-contact-form textarea:focus,
+.booking-v3 .phone-country-trigger:focus,
+.booking-v3 .phone-input-row input:focus,
+.booking-v3 .field-control.valid > input,
+.booking-v3 .field-control.valid > textarea,
+.booking-v3 .field-control.invalid > input,
+.booking-v3 .field-control.invalid > textarea {
+  color: #F7F4EF !important;
+}
+
+html[data-theme='light'] .booking-v3 .booking-contact-form input:focus,
+html[data-theme='light'] .booking-v3 .booking-contact-form textarea:focus,
+html[data-theme='light'] .booking-v3 .phone-country-trigger:focus,
+html[data-theme='light'] .booking-v3 .phone-input-row input:focus,
+html[data-theme='light'] .booking-v3 .field-control.valid > input,
+html[data-theme='light'] .booking-v3 .field-control.valid > textarea,
+html[data-theme='light'] .booking-v3 .field-control.invalid > input,
+html[data-theme='light'] .booking-v3 .field-control.invalid > textarea {
+  color: #111111 !important;
+}
+
+/* Autofill del navegador (Chrome / Safari / Edge) */
+.booking-v3 input:-webkit-autofill,
+.booking-v3 input:-webkit-autofill:hover,
+.booking-v3 input:-webkit-autofill:focus,
+.booking-v3 input:-webkit-autofill:active,
+.booking-v3 textarea:-webkit-autofill,
+.booking-v3 textarea:-webkit-autofill:hover,
+.booking-v3 textarea:-webkit-autofill:focus,
+.booking-v3 textarea:-webkit-autofill:active,
+html[data-theme='dark'] .booking-v3 input:-webkit-autofill,
+html[data-theme='dark'] .booking-v3 input:-webkit-autofill:hover,
+html[data-theme='dark'] .booking-v3 input:-webkit-autofill:focus,
+html[data-theme='dark'] .booking-v3 input:-webkit-autofill:active,
+html[data-theme='dark'] .booking-v3 textarea:-webkit-autofill,
+html[data-theme='dark'] .booking-v3 textarea:-webkit-autofill:hover,
+html[data-theme='dark'] .booking-v3 textarea:-webkit-autofill:focus,
+html[data-theme='dark'] .booking-v3 textarea:-webkit-autofill:active {
+  -webkit-text-fill-color: #F7F4EF !important;
+  -webkit-box-shadow: 0 0 0 1000px #181818 inset !important;
+  box-shadow: 0 0 0 1000px #181818 inset !important;
+  caret-color: #F7F4EF !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+html[data-theme='light'] .booking-v3 input:-webkit-autofill,
+html[data-theme='light'] .booking-v3 input:-webkit-autofill:hover,
+html[data-theme='light'] .booking-v3 input:-webkit-autofill:focus,
+html[data-theme='light'] .booking-v3 input:-webkit-autofill:active,
+html[data-theme='light'] .booking-v3 textarea:-webkit-autofill,
+html[data-theme='light'] .booking-v3 textarea:-webkit-autofill:hover,
+html[data-theme='light'] .booking-v3 textarea:-webkit-autofill:focus,
+html[data-theme='light'] .booking-v3 textarea:-webkit-autofill:active {
+  -webkit-text-fill-color: #111111 !important;
+  -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
+  box-shadow: 0 0 0 1000px #ffffff inset !important;
+  caret-color: #111111 !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Dropdown del selector de países */
+.booking-v3 .phone-country-search,
+.booking-v3 .phone-country-option {
+  color: #F7F4EF !important;
+}
+
+html[data-theme='light'] .booking-v3 .phone-country-search,
+html[data-theme='light'] .booking-v3 .phone-country-option {
+  color: #111111 !important;
+}
+
 /* Separación clara y consistente entre Formulario (Observaciones) y Resumen */
 .booking-v3 .booking-v2-final-layout {
   display: grid;
@@ -360,7 +475,7 @@ html[data-theme='light'] main.booking-page.booking-v3 .booking-time-slot:not(.se
   }
 }
 
-/* Textarea Observaciones: altura proporcionada en mobile (~52px) y desktop (~72px) */
+/* Textarea Observaciones en desktop (~72px) */
 .booking-v3 .booking-contact-form textarea,
 .booking-v3 .booking-contact-form textarea[name="notes"],
 .booking-v3 .booking-contact-form .notes-input {
@@ -375,18 +490,102 @@ html[data-theme='light'] main.booking-page.booking-v3 .booking-time-slot:not(.se
 }
 
 @media (max-width: 767px) {
+  /* 1. Tipografía de contenido a 13px en mobile para todos los campos */
+  .booking-v3 .booking-contact-form input,
+  .booking-v3 .booking-contact-form textarea,
+  .booking-v3 .booking-contact-form .notes-input,
+  .booking-v3 .phone-country-trigger,
+  .booking-v3 .phone-country-label,
+  .booking-v3 .phone-input-row input {
+    font-size: 13px !important;
+  }
+
+  .booking-v3 .booking-contact-form input::placeholder,
+  .booking-v3 .booking-contact-form textarea::placeholder,
+  .booking-v3 .booking-contact-form .notes-input::placeholder,
+  .booking-v3 .phone-input-row input::placeholder {
+    font-size: 13px !important;
+  }
+
+  /* 2. Celular: distribución exactamente 50% / 50% */
+  .booking-v3 .phone-input-row {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    align-items: center !important;
+    margin-top: 6px !important;
+  }
+
+  .booking-v3 .phone-country-picker {
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 44px !important;
+  }
+
+  .booking-v3 .phone-country-trigger {
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 44px !important;
+    padding-inline: 10px !important;
+    border-radius: var(--radius-control, 0.65rem) !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    align-items: center !important;
+  }
+
+  .booking-v3 .phone-input-row .field-control {
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 44px !important;
+    box-sizing: border-box !important;
+  }
+
+  .booking-v3 .phone-input-row input {
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 44px !important;
+    line-height: 44px !important;
+    border-radius: var(--radius-control, 0.65rem) !important;
+    box-sizing: border-box !important;
+  }
+
+  /* 3. Altura compacta moderada (44px) para inputs en mobile */
+  .booking-v3 .booking-contact-form .field-label input,
+  .booking-v3 .booking-contact-form input:not([type="checkbox"]):not([type="radio"]),
+  .booking-v3 .booking-contact-form .field-control:not(:has(textarea)) {
+    height: 44px !important;
+    min-height: 44px !important;
+    max-height: 44px !important;
+    box-sizing: border-box !important;
+  }
+
+  .booking-v3 .booking-contact-form .field-label input {
+    margin-top: 6px !important;
+    padding-block: 0 !important;
+    line-height: 44px !important;
+  }
+
+  /* 4. Observaciones: centrado vertical de placeholder y texto en mobile */
   .booking-v3 .booking-contact-form textarea,
   .booking-v3 .booking-contact-form textarea[name="notes"],
   .booking-v3 .booking-contact-form .notes-input {
-    min-height: 52px !important;
-    height: 52px !important;
-    max-height: 52px !important;
-    padding: 8px 12px !important;
-    font-size: 12px !important;
-    line-height: 1.35 !important;
+    height: 44px !important;
+    min-height: 44px !important;
+    max-height: 44px !important;
+    padding: 12px 12px !important;
+    font-size: 13px !important;
+    line-height: 20px !important;
     resize: none !important;
-    overflow-y: auto !important;
+    overflow-y: hidden !important;
     box-sizing: border-box !important;
+    margin-top: 6px !important;
+  }
+
+  .booking-v3 .field-control:has(> .notes-input) .field-validation-icon {
+    top: 50% !important;
+    transform: translateY(-50%) !important;
   }
 }
 
