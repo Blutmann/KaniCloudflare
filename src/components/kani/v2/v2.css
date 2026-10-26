@@ -23,6 +23,19 @@ html[data-theme="dark"] :is(.v2-shell, .v2-dialog) {
   position: static;
   margin-top: auto;
 }
+/* V2 uses document scrolling. Keep its mobile header in that same flow so
+   neither a viewport-height wrapper nor a second scroll area is needed. */
+@media (max-width: 767px) {
+  .site-shell:has(.v2-shell) > .site-header-slot {
+    position: sticky;
+    top: 0;
+    z-index: 120;
+    background: var(--chrome);
+  }
+  .site-shell:has(.v2-shell) > .site-header-slot:has(.site-header.menu-open) {
+    z-index: 140;
+  }
+}
 .v2-shell {
   margin: 0 auto;
   padding: 10px 0 32px;
