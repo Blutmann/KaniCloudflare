@@ -630,6 +630,7 @@ input[type=time]::-webkit-calendar-picker-indicator {
 .field-control:has(> .notes-input) .field-validation-icon { top: 16px; transform: none; }
 .field-validation-message { display: block; margin-top: 6px; color: color-mix(in oklch, var(--destructive) 88%, white); font-family: var(--font-sans); font-size: 11px; line-height: 1.35; }
 .header-controls { display: flex; flex: 0 0 auto; align-items: center; gap: 12px; }
+.header-controls .notification-trigger { margin: 0 !important; margin-inline-end: 0 !important; }
 .header-control-button { width: 44px; height: 44px; flex: 0 0 44px; padding: 0; border-radius: var(--radius-control, 0.65rem); display: inline-flex; align-items: center; justify-content: center; }
 .header-control-button svg { width: 17px; height: 17px; }
 .mobile-menu-trigger { display: inline-flex; }
@@ -1293,7 +1294,8 @@ html[data-theme='dark'] .studio-map-card {
  .site-footer > .site-container { width: calc(100% - 40px); padding-inline: 0; }
  .site-header { height: 72px; position: relative; }
  .site-header > div { gap: 10px; }
- .header-controls { margin-left: auto; }
+ .header-controls { margin-left: auto; gap: 8px; }
+ .header-controls .notification-trigger { margin: 0 !important; margin-inline-end: 0 !important; }
  .desktop-primary-nav, .admin-public-cta { display: none !important; }
  .site-header.menu-open {
    position: fixed !important;
@@ -2521,7 +2523,7 @@ html[data-theme="light"] .admin-section-nav-link.is-active:active {
 .admin-mobile-filters input:focus-visible,
 .admin-mobile-filter-readonly:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
 .admin-mobile-scroll-top { right: max(1rem, env(safe-area-inset-right)); bottom: calc(1rem + env(safe-area-inset-bottom)); }
-.notification-trigger { overflow: visible; margin-inline-end: .3rem; }
+.notification-trigger { overflow: visible; margin-inline-end: 0; }
 .notification-count { top: -4px; right: -4px; min-width: 1.25rem; height: 1.25rem; padding-inline: .25rem; font-size: .64rem; }
 .calendar-panel, .calendar-grid { min-width: 0; }
 .admin-schedule-filters { grid-template-columns: repeat(3, minmax(0, 1fr)); }

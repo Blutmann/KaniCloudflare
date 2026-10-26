@@ -159,7 +159,7 @@ export function AdminActivityPopover({ role = 'ADMIN' }: { role?: 'ADMIN' | 'BAR
     <>
       <Popover>
         <PopoverTrigger asChild>
-          <Button variant="outline" size="icon" className="notification-trigger" aria-label={unreadNotifications.length ? `${unreadNotifications.length} notificaciones sin leer` : 'Notificaciones'}>
+          <Button variant="outline" size="icon" className="notification-trigger header-control-button" aria-label={unreadNotifications.length ? `${unreadNotifications.length} notificaciones sin leer` : 'Notificaciones'}>
             <Bell />
             {unreadNotifications.length > 0 && <span className="notification-count" aria-label={`${unreadNotifications.length} sin leer`}>{unreadNotifications.length}</span>}
           </Button>

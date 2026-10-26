@@ -330,5 +330,15 @@ describe('Reserva V3 — 5-step booking flow', () => {
     expect(css).toMatch(/-webkit-text-fill-color:\s*#F7F4EF\s*!important/);
     expect(css).toMatch(/color:\s*#111111\s*!important/);
     expect(css).toMatch(/-webkit-text-fill-color:\s*#111111\s*!important/);
+
+    // Stepper labels vertically centered between circle and bottom border line
+    expect(css).toMatch(/margin-top:\s*auto\s*!important/);
+    expect(css).toMatch(/margin-bottom:\s*auto\s*!important/);
+
+    // Header controls equalized gap and notification trigger without extra margin
+    const stylesPath = 'src/styles.css';
+    const stylesCss = fs.readFileSync(stylesPath, 'utf8');
+    expect(stylesCss).toMatch(/\.header-controls\s+\.notification-trigger\s*\{[^}]*margin:\s*0\s*!important/);
+    expect(stylesCss).toMatch(/\.notification-trigger\s*\{[^}]*margin-inline-end:\s*0/);
   });
 });
