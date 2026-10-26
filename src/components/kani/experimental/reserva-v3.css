@@ -1,0 +1,289 @@
+/* ==========================================================================
+   Kani Barber Studio — Reserva V3 (5-step booking flow variant)
+   Coexists alongside Reserva V2 (4 steps) and Reserva V1 (6 steps).
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. Stepper / Progress Bar (5 Steps: Servicio, Barbero, Fecha, Horario, Datos)
+   -------------------------------------------------------------------------- */
+.booking-page.booking-v3 .booking-progress {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.booking-page.booking-v3 .booking-progress small {
+  white-space: nowrap;
+  letter-spacing: -0.015em;
+}
+
+@media (max-width: 767px) {
+  .booking-page.booking-v3 .booking-progress {
+    height: 66px;
+  }
+
+  .booking-page.booking-v3 .booking-progress > button {
+    min-width: 0;
+    height: 66px;
+    min-height: 66px;
+    max-height: 66px;
+    padding-inline: 1px;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 4px;
+    padding-top: 0;
+    padding-bottom: 16px;
+    box-sizing: border-box;
+  }
+
+  .booking-page.booking-v3 .booking-progress > button > span {
+    width: 26px;
+    height: 26px;
+    font-size: 9px;
+    flex-shrink: 0;
+  }
+
+  .booking-page.booking-v3 .booking-progress small {
+    font-size: 11.5px;
+    min-height: 16px;
+    line-height: 16px;
+    white-space: nowrap;
+    text-align: center;
+    letter-spacing: -0.025em;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   2. Paso 3 — Fecha ("Elegí una fecha")
+   Spacious, uncompressed calendar optimized for 360 × 800 px mobile & desktop.
+   -------------------------------------------------------------------------- */
+.booking-v3-date .calendar-panel {
+  width: 100%;
+  max-width: 520px;
+  margin-inline: auto;
+  padding: 24px;
+  border-radius: var(--radius-card, 1rem);
+  box-sizing: border-box;
+}
+
+.booking-v3-date .calendar-header {
+  min-height: 48px;
+  margin-bottom: 20px !important;
+  padding-block: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.booking-v3-date .calendar-header h2 {
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.25;
+  margin: 0;
+}
+
+.booking-v3-date .calendar-header button {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: 8px;
+}
+
+.booking-v3-date .calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.booking-v3-date .calendar-weekday {
+  text-align: center;
+  color: var(--muted-foreground);
+  font-size: 11px;
+  font-weight: 600;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.booking-v3-date .calendar-day {
+  height: 48px;
+  min-height: 44px;
+  width: 100%;
+  padding: 0;
+  font-size: 15px;
+  font-weight: 500;
+  border-radius: 8px;
+  box-sizing: border-box;
+  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+}
+
+.booking-v3-date .calendar-day:not(:disabled):hover {
+  transform: scale(1.04);
+}
+
+.booking-v3-date .calendar-note {
+  margin-top: 20px !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--muted-foreground);
+  text-align: center;
+}
+
+@media (max-width: 767px) {
+  .booking-v3-date .calendar-panel {
+    padding: 16px 12px !important;
+    max-width: 100%;
+  }
+
+  .booking-v3-date .calendar-header {
+    min-height: 44px;
+    margin-bottom: 16px !important;
+  }
+
+  .booking-v3-date .calendar-header h2 {
+    font-size: 17px;
+  }
+
+  .booking-v3-date .calendar-header button {
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+    min-height: 42px;
+  }
+
+  .booking-v3-date .calendar-grid {
+    gap: 4px !important;
+  }
+
+  .booking-v3-date .calendar-weekday {
+    margin-bottom: 6px;
+    font-size: 10.5px;
+  }
+
+  .booking-v3-date .calendar-day {
+    height: 44px !important;
+    min-height: 44px !important;
+    max-height: 46px !important;
+    font-size: 13.5px;
+    border-radius: 6px;
+  }
+
+  .booking-v3-date .calendar-note {
+    margin-top: 16px !important;
+    font-size: 11px;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   3. Paso 4 — Horario ("Elegí un horario")
+   Dedicated, high-visibility time capsules with optional date pill.
+   -------------------------------------------------------------------------- */
+.booking-v3-times {
+  width: 100%;
+  max-width: 600px;
+  margin-inline: auto;
+}
+
+.booking-v3-date-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  background: var(--surface);
+  border: 1px solid color-mix(in oklch, var(--gold) 25%, var(--border));
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 18px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.booking-v3-change-date-btn {
+  font-size: 11.5px;
+  color: var(--gold);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin-left: 4px;
+  transition: opacity 0.15s ease;
+}
+
+.booking-v3-change-date-btn:hover {
+  opacity: 0.8;
+}
+
+.booking-v3-times .booking-time-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+@media (min-width: 640px) {
+  .booking-v3-times .booking-time-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .booking-v3-times .booking-time-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 12px;
+  }
+}
+
+.booking-v3-times .booking-time-slot {
+  min-height: 48px;
+  height: 50px;
+  padding-inline: 8px;
+  font-size: 14.5px;
+  font-weight: 500;
+  border-radius: 8px;
+  box-sizing: border-box;
+  transition: all 0.15s ease;
+}
+
+@media (max-width: 767px) {
+  .booking-v3-times .booking-time-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .booking-v3-times .booking-time-slot {
+    min-height: 48px;
+    height: 48px;
+    font-size: 13.5px;
+    padding-inline: 4px;
+  }
+}
+
+/* Light / Dark Mode support for time slots in V3 */
+html[data-theme='light'] main.booking-page.booking-v3 .booking-time-slot:not(.selected):not(:disabled) {
+  background: var(--kani-surface) !important;
+}
+
+html[data-theme='light'] main.booking-page.booking-v3 .booking-time-slot:not(.selected):not(:disabled):hover {
+  background: color-mix(in srgb, var(--primary) 5%, var(--kani-surface)) !important;
+}
+
+/* --------------------------------------------------------------------------
+   4. Paso 5 — Datos ("Completá tus datos")
+   Inherits .booking-v2-final and .booking-v2-unified-summary from reserva-v2.css
+   -------------------------------------------------------------------------- */
+.booking-v3-final .booking-summary-cards {
+  min-width: 0;
+}
+
+@media (min-width: 1024px) {
+  .booking-v3-final .booking-layout {
+    max-width: none;
+  }
+}

@@ -13,7 +13,7 @@ describe("V2 parallel routing", () => {
       expect(matches.some((m) => m.routeId === "/admin-v2")).toBe(true);
     });
   }
-  for (const path of ["/admin", "/admin/horarios", "/admin/pagos", "/admin/datos", "/reservar"]) {
+  for (const path of ["/admin", "/admin/horarios", "/admin/pagos", "/admin/datos", "/reservar", "/reserva-v2", "/reserva-v3"]) {
     it(`preserves ${path} independently`, () => {
       const router = createRouter({ routeTree, context: { queryClient: new QueryClient() } });
       expect(router.matchRoutes(path).some((m) => m.routeId === "/admin-v2")).toBe(false);

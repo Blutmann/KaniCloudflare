@@ -15,6 +15,7 @@ import { Route as AdminV2RouteImport } from './routes/admin-v2'
 import { Route as CaseStudyRouteImport } from './routes/case-study'
 import { Route as EstudioRouteImport } from './routes/estudio'
 import { Route as ReservaV2RouteImport } from './routes/reserva-v2'
+import { Route as ReservaV3RouteImport } from './routes/reserva-v3'
 import { Route as ReservarRouteImport } from './routes/reservar'
 import { Route as AdminV2IndexRouteImport } from './routes/admin-v2.index'
 import { Route as AdminV2ClientesRouteImport } from './routes/admin-v2.clientes'
@@ -63,6 +64,11 @@ const EstudioRoute = EstudioRouteImport.update({
 const ReservaV2Route = ReservaV2RouteImport.update({
   id: '/reserva-v2',
   path: '/reserva-v2',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReservaV3Route = ReservaV3RouteImport.update({
+  id: '/reserva-v3',
+  path: '/reserva-v3',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ReservarRoute = ReservarRouteImport.update({
@@ -168,6 +174,7 @@ export interface FileRoutesByFullPath {
   '/case-study': typeof CaseStudyRoute
   '/estudio': typeof EstudioRoute
   '/reserva-v2': typeof ReservaV2Route
+  '/reserva-v3': typeof ReservaV3Route
   '/reservar': typeof ReservarRoute
   '/admin-v2/clientes': typeof AdminV2ClientesRoute
   '/admin-v2/datos': typeof AdminV2DatosRoute
@@ -193,6 +200,7 @@ export interface FileRoutesByTo {
   '/case-study': typeof CaseStudyRoute
   '/estudio': typeof EstudioRoute
   '/reserva-v2': typeof ReservaV2Route
+  '/reserva-v3': typeof ReservaV3Route
   '/reservar': typeof ReservarRoute
   '/admin-v2/clientes': typeof AdminV2ClientesRoute
   '/admin-v2/datos': typeof AdminV2DatosRoute
@@ -221,6 +229,7 @@ export interface FileRoutesById {
   '/case-study': typeof CaseStudyRoute
   '/estudio': typeof EstudioRoute
   '/reserva-v2': typeof ReservaV2Route
+  '/reserva-v3': typeof ReservaV3Route
   '/reservar': typeof ReservarRoute
   '/admin-v2/clientes': typeof AdminV2ClientesRoute
   '/admin-v2/datos': typeof AdminV2DatosRoute
@@ -250,6 +259,7 @@ export interface FileRouteTypes {
     | '/case-study'
     | '/estudio'
     | '/reserva-v2'
+    | '/reserva-v3'
     | '/reservar'
     | '/admin-v2/clientes'
     | '/admin-v2/datos'
@@ -275,6 +285,7 @@ export interface FileRouteTypes {
     | '/case-study'
     | '/estudio'
     | '/reserva-v2'
+    | '/reserva-v3'
     | '/reservar'
     | '/admin-v2/clientes'
     | '/admin-v2/datos'
@@ -302,6 +313,7 @@ export interface FileRouteTypes {
     | '/case-study'
     | '/estudio'
     | '/reserva-v2'
+    | '/reserva-v3'
     | '/reservar'
     | '/admin-v2/clientes'
     | '/admin-v2/datos'
@@ -330,6 +342,7 @@ export interface RootRouteChildren {
   CaseStudyRoute: typeof CaseStudyRoute
   EstudioRoute: typeof EstudioRoute
   ReservaV2Route: typeof ReservaV2Route
+  ReservaV3Route: typeof ReservaV3Route
   ReservarRoute: typeof ReservarRoute
   PagoErrorRoute: typeof PagoErrorRoute
   PagoExitoRoute: typeof PagoExitoRoute
@@ -378,6 +391,13 @@ declare module '@tanstack/react-router' {
       path: '/reserva-v2'
       fullPath: '/reserva-v2'
       preLoaderRoute: typeof ReservaV2RouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reserva-v3': {
+      id: '/reserva-v3'
+      path: '/reserva-v3'
+      fullPath: '/reserva-v3'
+      preLoaderRoute: typeof ReservaV3RouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reservar': {
@@ -570,6 +590,7 @@ const rootRouteChildren: RootRouteChildren = {
   CaseStudyRoute: CaseStudyRoute,
   EstudioRoute: EstudioRoute,
   ReservaV2Route: ReservaV2Route,
+  ReservaV3Route: ReservaV3Route,
   ReservarRoute: ReservarRoute,
   PagoErrorRoute: PagoErrorRoute,
   PagoExitoRoute: PagoExitoRoute,
