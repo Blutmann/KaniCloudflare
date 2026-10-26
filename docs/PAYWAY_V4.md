@@ -104,6 +104,8 @@ Las cuatro variables no secretas se guardaron en el Worker Test y su base de
 previews. `wrangler.jsonc` fija ese destino y replica los defaults bloqueados;
 `keep_vars=true` conserva otras variables remotas al desplegar. Las claves
 permanecen pendientes. Ningún secret se incorpora al archivo.
+El mismo archivo fija SUPABASE_URL a Test también en runtime, sin depender de
+que las variables de build del panel se propaguen como bindings del Worker.
 
 ## Validación y pendientes
 
