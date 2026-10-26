@@ -1,0 +1,12 @@
+.payway-reservation { display: contents; }
+.payway-checkout { z-index: 140; width: calc(100% - 32px); max-height: calc(100dvh - 32px); overflow-y: auto; border-radius: var(--radius-control, .65rem); }
+.payway-card-form fieldset { display: grid; gap: 12px; min-width: 0; }
+.payway-card-form label { display: grid; gap: 5px; min-width: 0; font-size: 14px; }
+.payway-card-form input, .payway-card-form select { width: 100%; min-width: 0; min-height: 44px; }
+.payway-card-form select { border: 1px solid var(--input); border-radius: var(--radius-control, .65rem); background: var(--surface); color: var(--foreground); padding: 8px; }
+.payway-card-form select:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.payway-card-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.payway-result { line-height: 1.5; overflow-wrap: anywhere; }
+@media (max-width: 767px) {
+  .payway-reservation .booking-v2 .booking-time-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}

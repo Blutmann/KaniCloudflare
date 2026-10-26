@@ -19,6 +19,10 @@ const serviceIconById: Record<ServiceId, { light: string; dark: string }> = {
 };
 type ContactField = 'name' | 'phone' | 'email' | 'notes';
 type ContactValues = { name: string; email: string; phone: string; notes: string };
+export type BookingPaymentDraft = {
+  barber: Barber; serviceName: string; date: string; time: string;
+  name: string; email: string; phone: string; notes: string;
+};
 type FieldStatus = 'idle' | 'valid' | 'invalid';
 
 function fieldStatus(field: ContactField, values: ContactValues, country: PhoneCountry, touched: boolean): FieldStatus {
@@ -53,9 +57,11 @@ function ExperimentalLayout({ enabled, className, children }: { enabled: boolean
 export function Booking({
   combinedDateTime = false,
   variant: propVariant,
+  onPaymentRequest,
 }: {
   combinedDateTime?: boolean;
   variant?: 'v1' | 'v2' | 'v3';
+  onPaymentRequest?: (draft: BookingPaymentDraft) => Promise<void>;
 } = {}) {
   const isV3 = propVariant === 'v3';
   const isV2 = propVariant === 'v2' || (!propVariant && combinedDateTime);
@@ -269,7 +275,7 @@ export function Booking({
   }, [barber]);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (onPaymentRequest || typeof window === 'undefined') return;
     const params = new URLSearchParams(window.location.search);
     const appointmentId = params.get('appointment_id') || params.get('external_reference');
     if (appointmentId && /^[0-9a-f-]{36}$/i.test(appointmentId)) {
@@ -441,6 +447,20 @@ export function Booking({
     }
     setSubmitting(true);
     setError('');
+
+    // An opt-in provider owns its checkout; existing routes retain their original path.
+    if (onPaymentRequest) {
+      try {
+        await onPaymentRequest({ barber, serviceName: selected?.name ?? serviceFor(service).name,
+          date, time, name: contact.name.trim(), phone: normalizedPhone.e164,
+          email: contact.email.trim(), notes: contact.notes });
+      } catch {
+        setError('No pudimos iniciar el pago. Tus datos no se perdieron.');
+      } finally {
+        setSubmitting(false);
+      }
+      return;
+    }
 
     try {
       let appointmentId: string;
