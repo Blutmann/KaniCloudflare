@@ -3960,3 +3960,13 @@ html[data-theme='light'] .booking-page .booking-time-slot:not(.selected):not(:di
 html[data-theme='light'] .booking-page .booking-contact-form :is(.field-label input, .phone-input-row, .phone-country-trigger, .notes-input) {
   background: var(--kani-surface-control) !important;
 }
+
+/* Original lossless mobile artwork, shared by the page and mobile navigation. */
+@media (max-width: 767px) {
+  html[data-theme="light"] {
+    --kani-wallpaper-image: url('/kani-fondo-claro-mobile-master.webp');
+  }
+  html[data-theme="dark"] {
+    --kani-wallpaper-image: url('/kani-fondo-oscuro-mobile-master.webp');
+  }
+}
