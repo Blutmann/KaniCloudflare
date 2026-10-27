@@ -3964,7 +3964,7 @@ html[data-theme='light'] .booking-page .booking-contact-form :is(.field-label in
 /* Original lossless mobile artwork, shared by the page and mobile navigation. */
 @media (max-width: 767px) {
   html[data-theme="light"] {
-    --kani-wallpaper-image: url('/kani-fondo-claro-mobile-master.webp');
+    --kani-wallpaper-image: url('/kani-fondo-claro-mobile-relieve-lossless.webp');
   }
   html[data-theme="dark"] {
     --kani-wallpaper-image: url('/kani-fondo-oscuro-mobile-master.webp');
