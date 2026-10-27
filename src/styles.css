@@ -3971,8 +3971,11 @@ html[data-theme='light'] .booking-page .booking-contact-form :is(.field-label in
   }
 }
 
-/* Desktop dark artwork applies across public pages and administration. */
+/* Desktop artwork applies across public pages and administration. */
 @media (min-width: 768px) {
+  html[data-theme="light"] {
+    --kani-wallpaper-image: url('/kani-fondo-claro-desktop-relieve-lossless.webp');
+  }
   html[data-theme="dark"] {
     --kani-wallpaper-image: url('/kani-fondo-oscuro-desktop-lossless.webp');
   }
