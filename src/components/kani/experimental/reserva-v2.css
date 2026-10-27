@@ -98,8 +98,18 @@
   .booking-v2-final .booking-layout { max-width: none; }
   .booking-v2 .booking-v2-final-layout {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    align-items: start;
+    align-items: stretch;
     gap: 24px;
+  }
+  .booking-v2-final .booking-summary-cards {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+    margin-top: 0;
+  }
+  .booking-v2-final .summary-pending-notice {
+    margin-top: auto !important;
   }
 }
 

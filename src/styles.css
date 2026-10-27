@@ -1727,6 +1727,15 @@ html[data-theme='dark'] .studio-map-card {
   margin-top: 6px;
 }
 
+@media (min-width: 768px) {
+  .booking-page .booking-contact-form .phone-input-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    width: 100%;
+  }
+}
+
 /* Teléfono mobile & desktop: alineación vertical perfecta entre trigger de prefijo y número */
 .phone-input-row {
   align-items: center;
