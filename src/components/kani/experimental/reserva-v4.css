@@ -60,3 +60,22 @@
     padding-block: 0 11px !important;
   }
 }
+
+/* Only the usable mobile V4 back action gets an opaque theme surface. */
+@media (max-width: 767px) {
+  html[data-theme="light"] .payway-reservation .booking-page .booking-back-button:not(:disabled) {
+    background: #fff !important;
+    color: #000 !important;
+    opacity: 1;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+  html[data-theme="dark"] .payway-reservation .booking-page .booking-back-button:not(:disabled) {
+    background: #000 !important;
+    color: #fff !important;
+    opacity: 1;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+  .payway-reservation .booking-page .booking-back-button:not(:disabled) svg { color: inherit; }
+}
