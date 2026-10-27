@@ -61,8 +61,65 @@
   }
 }
 
-/* Only the usable mobile V4 back action gets an opaque theme surface. */
+/* Reserva V4 Mobile: Shared footer button geometry between Light Mode and Dark Mode */
 @media (max-width: 767px) {
+  .payway-reservation .booking-page .booking-cta-inner {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+  }
+
+  /* Shared dimensional foundation between Light and Dark mode across all states */
+  html[data-theme] .payway-reservation .booking-page .booking-cta-inner .booking-back-button,
+  html[data-theme] .payway-reservation .booking-page .booking-cta-inner .booking-next-button,
+  .payway-reservation .booking-page .booking-cta-inner .booking-back-button,
+  .payway-reservation .booking-page .booking-cta-inner .booking-next-button {
+    height: 48px !important;
+    min-height: 48px !important;
+    max-height: 48px !important;
+    box-sizing: border-box !important;
+    border-width: 1px !important;
+    border-style: solid !important;
+    border-radius: var(--radius-control, 0.65rem) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    vertical-align: middle !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    line-height: normal !important;
+  }
+
+  html[data-theme] .payway-reservation .booking-page .booking-cta-inner .booking-back-button,
+  .payway-reservation .booking-page .booking-cta-inner .booking-back-button {
+    flex: 0 0 30% !important;
+    width: 30% !important;
+    max-width: 30% !important;
+    min-width: 0 !important;
+    padding-inline: 13px !important;
+    padding-block: 8px !important;
+    margin: 0 !important;
+    gap: 8px !important;
+  }
+
+  html[data-theme] .payway-reservation .booking-page .booking-cta-inner .booking-next-button,
+  .payway-reservation .booking-page .booking-cta-inner .booking-next-button {
+    flex: 1 1 70% !important;
+    width: auto !important;
+    min-width: 0 !important;
+    padding-inline: 24px !important;
+    padding-block: 8px !important;
+    margin: 0 !important;
+    margin-left: 0 !important;
+    gap: 8px !important;
+  }
+
+  .payway-reservation .booking-page .booking-cta-inner .booking-back-button svg {
+    color: inherit !important;
+    flex-shrink: 0 !important;
+  }
+
+  /* Only the usable mobile V4 back action gets an opaque theme surface. */
   html[data-theme="light"] .payway-reservation .booking-page .booking-back-button:not(:disabled) {
     background: #fff !important;
     color: #000 !important;
