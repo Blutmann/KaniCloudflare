@@ -1637,11 +1637,21 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
 .v2-appointments-page .v2-whatsapp:focus-visible { outline: 2px solid var(--ring); outline-offset: 3px; }
 .v2-whatsapp-icon { width: 16px; height: 16px; flex: 0 0 16px; fill: currentColor; }
 @media (max-width: 767px) {
-  .v2-appointments-page .v2-appointment { grid-template-columns: 55px minmax(0, 1fr); gap: 8px 10px; }
+  .v2-appointments-page .v2-appointment { grid-template-columns: 55px minmax(0, 1fr); gap: 6px 10px; padding-block: 10px; }
   .v2-appointments-page .v2-appointment-heading { gap: 4px 8px; }
-  .v2-appointments-page .v2-appointment .v2-contact { display: grid; gap: 2px; margin-top: 6px; }
-  .v2-appointments-page .v2-appointment .v2-contact a { min-height: 0; padding-block: 4px; line-height: 1.5; }
-  .v2-appointments-page .v2-appointment-actions { display: flex; flex-wrap: wrap; max-width: none; width: 100%; gap: 8px; padding-top: 10px; }
-  .v2-appointments-page .v2-appointment-actions > * { flex: 1 1 120px; padding: 9px 12px; white-space: nowrap; }
-  .v2-appointments-page .v2-appointment-actions > .v2-whatsapp { flex-basis: 100%; }
+  .v2-appointments-page .v2-appointment .v2-contact { display: grid; gap: 0; margin-top: 2px; }
+  .v2-appointments-page .v2-appointment .v2-contact a { min-height: 0; padding-block: 2px; line-height: 1.5; }
+  .v2-appointments-page .v2-appointment-actions { display: flex; flex-wrap: wrap; max-width: none; width: 100%; gap: 6px 8px; padding-top: 4px; border-top: 0; justify-content: flex-start; }
+  .v2-appointments-page .v2-appointment-actions > * { flex: 0 0 auto; min-height: 44px; padding: 8px 10px; white-space: nowrap; }
+  .v2-appointments-page .v2-appointment-actions > .v2-whatsapp { flex-basis: auto; }
+}
+
+@media (max-width: 767px) {
+  .v2-nav.admin-section-nav { gap: 2px; padding-inline: 3px; }
+  .v2-nav .admin-section-nav-refresh-btn { width: 36px; min-width: 36px; height: 44px; padding-inline: 0; }
+  .v2-nav .admin-section-nav-divider { margin-inline: 0; }
+  .v2-nav .admin-section-nav-items { width: auto; flex: 1 1 0; }
+}
+@media (max-width: 767px) {
+  .v2-appointments-page .v2-appointment-actions > a:not(.v2-whatsapp) { order: 1; }
 }

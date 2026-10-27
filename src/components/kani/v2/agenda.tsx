@@ -256,7 +256,7 @@ export function V2Appointments() {
                       : "No abonada"
                     : "Sin dato verificable"}
                 </span>
-                <span>Catálogo actual: {money(a.servicePrice ?? 0)}</span>
+                <span>Importe: {money(a.servicePrice ?? 0)}</span>
               </div>
               {a.notes && <p className="v2-note">{a.notes}</p>}
               <div className="v2-contact">
