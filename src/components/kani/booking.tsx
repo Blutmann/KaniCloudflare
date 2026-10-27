@@ -50,6 +50,14 @@ function formatShortBookingDate(iso: string): string {
   return `${capitalizedWeekday} ${day}/${month}`;
 }
 
+function formatV4BookingDate(iso: string): string {
+  const d = parseDate(iso);
+  const weekday = d.toLocaleDateString('es-AR', { weekday: 'long' });
+  const month = d.toLocaleDateString('es-AR', { month: 'short' }).replace(/\.$/, '');
+  const capitalize = (value: string) => value.charAt(0).toUpperCase() + value.slice(1);
+  return `${capitalize(weekday)} ${d.getDate()} ${capitalize(month)}.`;
+}
+
 function ExperimentalLayout({ enabled, className, children }: { enabled: boolean; className?: string; children: ReactNode }) {
   return enabled ? <div className={className}>{children}</div> : <>{children}</>;
 }
@@ -767,7 +775,7 @@ export function Booking({
               <h1 className="section-title">{isV2 && step === 2 ? 'Elegir una fecha' : titles[step]}</h1>
               {step === 3 && date && (
                 <span className="booking-time-heading-date">
-                  <CalendarDays size={16} />{isV3 ? formatShortBookingDate(date) : dateLabel(date)}
+                  <CalendarDays size={16} />{onPaymentRequest ? formatV4BookingDate(date) : isV3 ? formatShortBookingDate(date) : dateLabel(date)}
                 </span>
               )}
             </div>
@@ -871,7 +879,7 @@ export function Booking({
                 </div>
                 {availabilityError && <p role="alert" className="mt-5 text-destructive">{availabilityError}</p>}
                 {!isV2 && <p className="calendar-note mt-6 flex items-center gap-2 text-xs text-muted-foreground">
-                  <span className="h-1 w-1 rounded-full bg-gold" /> Atendemos de lunes a sábado de 10 a 20 hs.
+                  <span className="h-1 w-1 rounded-full bg-gold" /> Atendemos de lunes a {onPaymentRequest ? 'sábados' : 'sábado'} de 10 a 20 hs.
                 </p>}
               </div>
               </ExperimentalLayout>

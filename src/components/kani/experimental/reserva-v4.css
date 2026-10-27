@@ -7,3 +7,19 @@
 .payway-card-form select:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
 .payway-card-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
 .payway-result { line-height: 1.5; overflow-wrap: anywhere; }
+
+/* V4 calendar: a balanced header band and a more readable footer. */
+.payway-reservation .booking-v3-date .calendar-panel { padding: 0 32px 32px; }
+.payway-reservation .booking-v3-date .calendar-header { min-height: 104px; margin: 0 !important; }
+.payway-reservation .booking-v3-date .calendar-header h2 { font-size: 20px; }
+.payway-reservation .booking-v3-date .calendar-header button { width: 44px; height: 44px; min-width: 44px; min-height: 44px; }
+.payway-reservation .booking-v3-date .calendar-note { justify-content: flex-start; text-align: left; margin-top: 32px !important; font-size: 14px; line-height: 1.5; }
+@media (max-width: 767px) {
+  .payway-reservation .booking-v3-date .calendar-panel { padding: 0 12px 24px !important; }
+  .payway-reservation .booking-v3-date .calendar-header { min-height: 76px; }
+  .payway-reservation .booking-v3-date .calendar-header h2 { font-size: 16px; }
+  .payway-reservation .booking-v3-date .calendar-note { margin-top: 24px !important; font-size: 13px; }
+  .payway-reservation .booking-v3 .booking-time-heading { flex-wrap: wrap; justify-content: flex-start !important; margin-bottom: 16px !important; }
+  .payway-reservation .booking-v3 .booking-time-heading .section-title { font-size: 22px !important; line-height: 1.2 !important; }
+  .payway-reservation .booking-v3 .booking-time-heading-date { margin-left: auto !important; }
+}
