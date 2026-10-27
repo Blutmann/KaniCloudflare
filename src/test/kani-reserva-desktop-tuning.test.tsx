@@ -13,27 +13,24 @@ describe('Reserva Desktop - Fecha & Datos visual tuning', () => {
   const cssV2 = fs.readFileSync(reservaV2CssPath, 'utf8');
   const cssStyles = fs.readFileSync(stylesCssPath, 'utf8');
 
-  it('1. FECHA: Calendar is moderately compacted in desktop to finish at the height of Step 1 (barber)', () => {
-    // V3 desktop calendar panel padding reduced to 16px 24px
-    expect(cssV3).toMatch(/\.booking-v3-date\s+\.calendar-panel\s*\{[^}]*padding:\s*16px\s+24px;/);
+  it('1. FECHA: Calendar uses balanced intermediate height in desktop (+15-20% useful height recovery)', () => {
+    // V3 desktop calendar panel padding balanced to 22px 28px
+    expect(cssV3).toMatch(/\.booking-v3-date\s+\.calendar-panel\s*\{[^}]*padding:\s*22px\s+28px;/);
 
-    // V3 header min-height 38px and 10px margin-bottom
-    expect(cssV3).toMatch(/\.booking-v3-date\s+\.calendar-header\s*\{[^}]*min-height:\s*38px;/);
-    expect(cssV3).toMatch(/\.booking-v3-date\s+\.calendar-header\s*\{[^}]*margin-bottom:\s*10px\s*!important;/);
+    // V3 header min-height 40px and 16px margin-bottom
+    expect(cssV3).toMatch(/\.booking-v3-date\s+\.calendar-header\s*\{[^}]*min-height:\s*40px;/);
+    expect(cssV3).toMatch(/\.booking-v3-date\s+\.calendar-header\s*\{[^}]*margin-bottom:\s*16px\s*!important;/);
 
-    // V3 grid day cells 38px height (compact yet fully clickable)
-    expect(cssV3).toMatch(/\.booking-v3-date\s+\.calendar-day\s*\{[^}]*height:\s*38px;/);
-    expect(cssV3).toMatch(/\.booking-v3-date\s+\.calendar-day\s*\{[^}]*min-height:\s*38px;/);
+    // V3 grid day cells 44px height (comfortable touch target)
+    expect(cssV3).toMatch(/\.booking-v3-date\s+\.calendar-day\s*\{[^}]*height:\s*44px;/);
+    expect(cssV3).toMatch(/\.booking-v3-date\s+\.calendar-day\s*\{[^}]*min-height:\s*44px;/);
 
-    // V3 grid row-gap 5px
-    expect(cssV3).toMatch(/\.booking-v3-date\s+\.calendar-grid\s*\{[^}]*row-gap:\s*5px;/);
+    // V3 grid row-gap 8px
+    expect(cssV3).toMatch(/\.booking-v3-date\s+\.calendar-grid\s*\{[^}]*row-gap:\s*8px;/);
 
-    // V3 note compact margin 12px
-    expect(cssV3).toMatch(/\.booking-v3-date\s+\.calendar-note\s*\{[^}]*margin-top:\s*12px\s*!important;/);
-
-    // V4 calendar also uses compact desktop dimensions
-    expect(cssV4).toMatch(/\.payway-reservation\s+\.booking-v3-date\s+\.calendar-panel\s*\{[^}]*padding:\s*16px\s+24px;/);
-    expect(cssV4).toMatch(/\.payway-reservation\s+\.booking-v3-date\s+\.calendar-header\s*\{[^}]*min-height:\s*38px;/);
+    // V4 calendar also uses balanced intermediate dimensions
+    expect(cssV4).toMatch(/\.payway-reservation\s+\.booking-v3-date\s+\.calendar-panel\s*\{[^}]*padding:\s*22px\s+28px;/);
+    expect(cssV4).toMatch(/\.payway-reservation\s+\.booking-v3-date\s+\.calendar-header\s*\{[^}]*min-height:\s*40px;/);
   });
 
   it('2. DATOS: Columns start top-aligned and right column notice aligns to the bottom edge of Observaciones', () => {

@@ -80,22 +80,21 @@
 
 /* --------------------------------------------------------------------------
    2. Paso 3 — Fecha ("Elegí una fecha")
-   Desktop: aprovecha todo el ancho disponible del contenedor del flujo con
-   altura vertical compacta moderada calibrada con "Elegí un barbero".
+   Desktop: punto intermedio con aire y respiración recuperados (+15–20% altura útil).
    Mobile: optimizado para 360 × 800 px sin overflow horizontal.
    -------------------------------------------------------------------------- */
 .booking-v3-date .calendar-panel {
   width: 100%;
   max-width: 100%;
   margin-inline: 0;
-  padding: 16px 24px;
+  padding: 22px 28px;
   border-radius: var(--radius-card, 1rem);
   box-sizing: border-box;
 }
 
 .booking-v3-date .calendar-header {
-  min-height: 38px;
-  margin-bottom: 10px !important;
+  min-height: 40px;
+  margin-bottom: 16px !important;
   padding-block: 0;
   display: flex;
   align-items: center;
@@ -103,43 +102,43 @@
 }
 
 .booking-v3-date .calendar-header h2 {
-  font-size: 18px;
+  font-size: 19px;
   font-weight: 600;
   line-height: 1.25;
   margin: 0;
 }
 
 .booking-v3-date .calendar-header button {
-  width: 34px;
-  height: 34px;
-  min-width: 34px;
-  min-height: 34px;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
   border-radius: 8px;
 }
 
 .booking-v3-date .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  row-gap: 5px;
+  row-gap: 8px;
   column-gap: 8px;
 }
 
 .booking-v3-date .calendar-weekday {
   text-align: center;
   color: var(--muted-foreground);
-  font-size: 11px;
+  font-size: 11.5px;
   font-weight: 600;
-  margin-bottom: 4px;
+  margin-bottom: 8px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
 .booking-v3-date .calendar-day {
-  height: 38px;
-  min-height: 38px;
+  height: 44px;
+  min-height: 44px;
   width: 100%;
   padding: 0;
-  font-size: 14.5px;
+  font-size: 15px;
   font-weight: 500;
   border-radius: 8px;
   box-sizing: border-box;
@@ -151,12 +150,12 @@
 }
 
 .booking-v3-date .calendar-note {
-  margin-top: 12px !important;
+  margin-top: 14px !important;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  font-size: 12px;
+  font-size: 12.5px;
   line-height: 1.35;
   color: var(--muted-foreground);
   text-align: center;

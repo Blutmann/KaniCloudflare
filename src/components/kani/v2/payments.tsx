@@ -1,6 +1,6 @@
 import { useRef, useState, type FormEvent } from "react";
 import { useSearch } from "@tanstack/react-router";
-import { CheckCircle2, Plus } from "lucide-react";
+import { CheckCircle2, Tag, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminStaff } from "@/lib/kani-admin-context";
 import { businessDateToday, addCalendarDays } from "@/lib/kani-mobile-appointments";
@@ -233,32 +233,16 @@ export function V2Payments() {
                     )}
                   </div>
                   {serviceName === "Otro" && (
-                    <div className="v2-form-row">
-                      <label className="v2-field">
-                        Nombre del servicio
-                        <input
-                          type="text"
-                          required
-                          placeholder="Ej. Tintura de color"
-                          value={customServiceName}
-                          onChange={(e) => setCustomServiceName(e.target.value)}
-                        />
-                      </label>
-                      <label className="v2-field">
-                        Importe ($ ARS)
-                        <input
-                          type="number"
-                          min={1}
-                          step={1}
-                          required
-                          placeholder="Ej. 35000"
-                          value={priceOverride ?? ""}
-                          onChange={(e) =>
-                            setPriceOverride(e.target.value === "" ? null : Number(e.target.value))
-                          }
-                        />
-                      </label>
-                    </div>
+                    <label className="v2-field">
+                      Nombre del servicio
+                      <input
+                        type="text"
+                        required
+                        placeholder="Ej. Tintura de color"
+                        value={customServiceName}
+                        onChange={(e) => setCustomServiceName(e.target.value)}
+                      />
+                    </label>
                   )}
                 </>
               )}
@@ -269,119 +253,139 @@ export function V2Payments() {
                   <option>Transferencia</option>
                 </select>
               </label>
-              <div className="v2-price">
-                <span>Importe</span>
-                <strong>{money(price)}</strong>
-              </div>
-              {serviceName !== "Otro" && (
-                <details className="v2-details">
-                  <summary>Editar importe</summary>
-                  <label className="v2-field">
-                    Importe en pesos
-                    <input
-                      type="number"
-                      min={1}
-                      step={1}
-                      value={price}
-                      onChange={(e) => setPriceOverride(Number(e.target.value))}
-                      required
-                    />
-                  </label>
-                  <p>
-                    {appointment
-                      ? "Podés ajustar el importe si corresponde."
-                      : "El turno no conserva un precio histórico. Verificá el importe sugerido por el catálogo actual."}
-                  </p>
-                </details>
-              )}
-              {origin === "walk_in" && (
-                <>
+              <label className="v2-field">
+                Importe ($ ARS)
+                <input
+                  type="number"
+                  min={1}
+                  step={1}
+                  required
+                  placeholder={serviceName === "Otro" ? "Ej. 35000" : "0"}
+                  value={price || ""}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setPriceOverride(val === "" ? null : Number(val));
+                  }}
+                />
+              </label>
+
+              <div className="v2-payment-actions-row">
+                {origin === "walk_in" && (
                   <button
-                    className="v2-text-link"
+                    className={`v2-secondary ${showClient ? "v2-active" : ""}`}
                     type="button"
                     aria-expanded={showClient}
                     onClick={() => setShowClient(!showClient)}
                   >
-                    <Plus size={16} />
-                    Asociar cliente
+                    <User size={14} />
+                    <span>{showClient ? "Ocultar cliente" : "Asociar cliente"}</span>
                   </button>
-                  {showClient && (
-                    <div className="v2-inset">
+                )}
+                <button
+                  className={`v2-secondary ${showDiscount ? "v2-active" : ""}`}
+                  type="button"
+                  aria-expanded={showDiscount}
+                  onClick={() => {
+                    const next = !showDiscount;
+                    setShowDiscount(next);
+                    if (!next) setDiscount(0);
+                  }}
+                >
+                  <Tag size={14} />
+                  <span>{showDiscount ? "Quitar descuento" : "Agregar descuento"}</span>
+                </button>
+              </div>
+
+              {origin === "walk_in" && showClient && (
+                <div className="v2-payment-collapsible">
+                  <label className="v2-field">
+                    Cliente existente
+                    <select value={clientId} onChange={(e) => setClientId(e.target.value)}>
+                      <option value="">Cargar nombre y contacto</option>
+                      {data.clients
+                        .filter((c) => !c.draft && !c.archived)
+                        .map((c) => (
+                          <option value={c.id} key={c.id}>
+                            {c.name} · {c.phone}
+                          </option>
+                        ))}
+                    </select>
+                  </label>
+                  {!clientId && (
+                    <div className="v2-form-row">
                       <label className="v2-field">
-                        Cliente existente
-                        <select value={clientId} onChange={(e) => setClientId(e.target.value)}>
-                          <option value="">Cargar nombre y contacto</option>
-                          {data.clients
-                            .filter((c) => !c.draft && !c.archived)
-                            .map((c) => (
-                              <option value={c.id} key={c.id}>
-                                {c.name} · {c.phone}
-                              </option>
-                            ))}
-                        </select>
+                        Nombre
+                        <input
+                          value={clientName}
+                          placeholder="Nombre del cliente"
+                          onChange={(e) => setClientName(e.target.value)}
+                        />
                       </label>
-                      {!clientId && (
-                        <div className="v2-form-row">
-                          <label className="v2-field">
-                            Nombre
-                            <input
-                              value={clientName}
-                              onChange={(e) => setClientName(e.target.value)}
-                            />
-                          </label>
-                          <label className="v2-field">
-                            Celular
-                            <input
-                              type="tel"
-                              value={clientPhone}
-                              onChange={(e) => setClientPhone(e.target.value)}
-                            />
-                          </label>
-                        </div>
-                      )}
-                      <p>
-                        Se guardan nombre y contacto en el cobro. La vinculación permanente con la
-                        ficha se incorporará en la próxima etapa.
-                      </p>
+                      <label className="v2-field">
+                        Celular
+                        <input
+                          type="tel"
+                          placeholder="Ej. 11 1234-5678"
+                          value={clientPhone}
+                          onChange={(e) => setClientPhone(e.target.value)}
+                        />
+                      </label>
                     </div>
                   )}
-                </>
-              )}
-              <button
-                className="v2-text-link"
-                type="button"
-                aria-expanded={showDiscount}
-                onClick={() => {
-                  setShowDiscount(!showDiscount);
-                  setDiscount(0);
-                }}
-              >
-                <Plus size={16} />
-                Agregar descuento
-              </button>
-              {showDiscount && (
-                <label className="v2-field">
-                  Descuento en pesos
-                  <input
-                    type="number"
-                    value={discount}
-                    min={0}
-                    max={Math.max(0, price - deposit)}
-                    step={1}
-                    onChange={(e) => setDiscount(Number(e.target.value))}
-                  />
-                </label>
-              )}
-              {appointment && (
-                <div className="v2-price">
-                  <span>Seña abonada</span>
-                  <strong>{data.depositSupported ? money(deposit) : "Sin dato"}</strong>
+                  <p>
+                    Se guardan nombre y contacto en el cobro. La vinculación permanente con la
+                    ficha se incorporará en la próxima etapa.
+                  </p>
                 </div>
               )}
-              <div className="v2-total">
-                <span>A cobrar ahora</span>
-                <strong>{money(total)}</strong>
+
+              {showDiscount && (
+                <div className="v2-payment-collapsible">
+                  <label className="v2-field">
+                    Descuento en pesos
+                    <input
+                      type="number"
+                      value={discount || ""}
+                      min={0}
+                      max={Math.max(0, price - deposit)}
+                      step={1}
+                      placeholder="0"
+                      onChange={(e) => setDiscount(Number(e.target.value))}
+                    />
+                  </label>
+                </div>
+              )}
+
+              <div className="v2-payment-summary-block">
+                <div className="v2-summary-line">
+                  <span className="v2-summary-label">Importe</span>
+                  <span className="v2-summary-value">{money(price)}</span>
+                </div>
+                {discount > 0 && (
+                  <div className="v2-summary-line v2-summary-discount">
+                    <span className="v2-summary-label">Descuento</span>
+                    <span className="v2-summary-value">- {money(discount)}</span>
+                  </div>
+                )}
+                {appointment && (
+                  <div className="v2-summary-line v2-summary-deposit">
+                    <span className="v2-summary-label">Seña abonada</span>
+                    <span className="v2-summary-value">
+                      {!data.depositSupported
+                        ? "Sin dato"
+                        : deposit > 0
+                          ? `- ${money(deposit)}`
+                          : "$0"}
+                    </span>
+                  </div>
+                )}
+                <div className="v2-summary-divider" />
+                <div className="v2-summary-total">
+                  <span className="v2-total-label">A cobrar ahora</span>
+                  <strong className="v2-total-amount">{money(total)}</strong>
+                </div>
               </div>
+
               <button
                 className="v2-primary v2-full"
                 type="submit"
@@ -394,9 +398,6 @@ export function V2Payments() {
                 <CheckCircle2 size={18} />
                 {busy ? "Registrando…" : "Registrar cobro"}
               </button>
-              <p className="v2-footnote">
-                Fecha y hora actuales de Buenos Aires. La seña se descuenta una sola vez.
-              </p>
             </fieldset>
           </form>
           {message && (
