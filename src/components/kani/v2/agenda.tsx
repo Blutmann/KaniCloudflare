@@ -3,9 +3,9 @@ import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { ArrowRight, CalendarDays, Clock3, Mail, Phone, Plus } from "lucide-react";
 import { useAdminStaff } from "@/lib/kani-admin-context";
-import { businessDateToday, addCalendarDays } from "@/lib/kani-mobile-appointments";
+import { businessDateToday, addCalendarDays, startOfBusinessWeek } from "@/lib/kani-mobile-appointments";
 import { businessTimeNow } from "@/lib/kani-payments";
-import { money, dateLabel } from "@/lib/kani-model";
+import { money, dateLabel, formatRangeLabel } from "@/lib/kani-model";
 import { paymentSummary, scopeV2 } from "@/lib/kani-v2";
 import {
   appointmentErrorMessage,
@@ -154,13 +154,18 @@ export function V2Home() {
   );
 }
 
+export type AgendaPeriodPreset = "TODAY" | "THIS_WEEK" | "NEXT_10_DAYS" | "CUSTOM";
+export type AgendaPeriodFilter = AgendaPeriodPreset | "DATE";
+
 export function V2Appointments() {
   const data = useV2();
   const staff = useAdminStaff();
   const today = businessDateToday();
   const [date, setDate] = useState(today);
   const [status, setStatus] = useState("ALL");
-  const [period, setPeriod] = useState("DAY");
+  const [period, setPeriod] = useState<AgendaPeriodFilter>("TODAY");
+  const [customStartDate, setCustomStartDate] = useState(today);
+  const [customEndDate, setCustomEndDate] = useState(today);
   const [action, setAction] = useState<{
     appointment: RealAppointment;
     status: "CANCELLED";
@@ -172,17 +177,78 @@ export function V2Appointments() {
   }>({ open: false, mode: "CREATE", appointment: null });
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
-  const rows = scopeV2(
-    data.appointments,
-    staff.profile.role,
-    staff.profile.barber_id,
-    data.barberId,
-  ).filter(
-    (a) =>
-      a.date >= date &&
-      a.date <= (period === "WEEK" ? addCalendarDays(date, 6) : date) &&
-      (status === "ALL" || a.statusCode === status),
-  );
+
+  const isInvalidRange = period === "CUSTOM" && customStartDate > customEndDate;
+
+  let startDate = today;
+  let endDate = today;
+  let headerLabel = "";
+
+  if (period === "TODAY") {
+    startDate = today;
+    endDate = today;
+    headerLabel = dateLabel(today);
+  } else if (period === "DATE") {
+    startDate = date;
+    endDate = date;
+    headerLabel = dateLabel(date);
+  } else if (period === "THIS_WEEK") {
+    const weekStart = startOfBusinessWeek(today);
+    const weekEnd = addCalendarDays(weekStart, 6);
+    startDate = weekStart;
+    endDate = weekEnd;
+    headerLabel = formatRangeLabel(weekStart, weekEnd);
+  } else if (period === "NEXT_10_DAYS") {
+    const tenDaysEnd = addCalendarDays(today, 9);
+    startDate = today;
+    endDate = tenDaysEnd;
+    headerLabel = formatRangeLabel(today, tenDaysEnd);
+  } else if (period === "CUSTOM") {
+    if (isInvalidRange) {
+      headerLabel = "Rango no válido";
+    } else {
+      startDate = customStartDate;
+      endDate = customEndDate;
+      headerLabel = formatRangeLabel(customStartDate, customEndDate, true);
+    }
+  }
+
+  const isMultiDay =
+    period === "THIS_WEEK" ||
+    period === "NEXT_10_DAYS" ||
+    (period === "CUSTOM" && !isInvalidRange && customStartDate !== customEndDate);
+
+  const rows = isInvalidRange
+    ? []
+    : scopeV2(
+        data.appointments,
+        staff.profile.role,
+        staff.profile.barber_id,
+        data.barberId,
+      ).filter(
+        (a) =>
+          a.date >= startDate &&
+          a.date <= endDate &&
+          (status === "ALL" || a.statusCode === status),
+      );
+
+  function handlePeriodChange(next: AgendaPeriodPreset) {
+    setPeriod(next);
+    if (next === "TODAY") {
+      setDate(today);
+    }
+  }
+
+  function handleDateChange(nextDate: string) {
+    const chosen = nextDate || today;
+    setDate(chosen);
+    if (chosen === today) {
+      setPeriod("TODAY");
+    } else {
+      setPeriod("DATE");
+    }
+  }
+
   async function cancelAppointment() {
     if (!action || busy) return;
     setBusy(true);
@@ -203,14 +269,20 @@ export function V2Appointments() {
       <div className="v2-filters">
         <label className="v2-field">
           Período
-          <select value={period} onChange={(e) => setPeriod(e.target.value)}>
-            <option value="DAY">Un día</option>
-            <option value="WEEK">Próximos 7 días</option>
+          <select
+            value={period}
+            onChange={(e) => handlePeriodChange(e.target.value as AgendaPeriodPreset)}
+          >
+            {period === "DATE" && <option value="DATE" hidden>Día seleccionado</option>}
+            <option value="TODAY">Hoy</option>
+            <option value="THIS_WEEK">Esta semana</option>
+            <option value="NEXT_10_DAYS">Próximos 10 días</option>
+            <option value="CUSTOM">Personalizado</option>
           </select>
         </label>
         <label className="v2-field">
           Fecha
-          <input type="date" value={date} onChange={(e) => setDate(e.target.value || today)} />
+          <input type="date" value={date} onChange={(e) => handleDateChange(e.target.value)} />
         </label>
         <BarberFilter />
         <label className="v2-field">
@@ -224,11 +296,38 @@ export function V2Appointments() {
             ))}
           </select>
         </label>
+        {period === "CUSTOM" && (
+          <div className="v2-custom-range-row">
+            <label className="v2-field">
+              Desde
+              <input
+                type="date"
+                value={customStartDate}
+                onChange={(e) => setCustomStartDate(e.target.value)}
+              />
+            </label>
+            <label className="v2-field">
+              Hasta
+              <input
+                type="date"
+                value={customEndDate}
+                onChange={(e) => setCustomEndDate(e.target.value)}
+              />
+            </label>
+            {isInvalidRange && (
+              <p className="v2-range-warning" role="alert">
+                La fecha 'Desde' debe ser anterior o igual a 'Hasta'.
+              </p>
+            )}
+          </div>
+        )}
       </div>
       <div className="v2-section-title v2-appointments-header">
-        <div>
-          <h2>{dateLabel(date)}</h2>
-          <span>{rows.length} turnos</span>
+        <div className="v2-appointments-title-group">
+          <h2>{headerLabel}</h2>
+          <span>
+            {rows.length} {rows.length === 1 ? "turno" : "turnos"}
+          </span>
         </div>
         <button
           type="button"
@@ -245,7 +344,11 @@ export function V2Appointments() {
       )}
       <div className="v2-agenda">
         {!rows.length && (
-          <Empty>No hay turnos para esta selección. Podés consultar otro día.</Empty>
+          <Empty>
+            {isInvalidRange
+              ? "Revisá el rango seleccionado: la fecha 'Desde' debe ser anterior o igual a 'Hasta'."
+              : "No hay turnos para esta selección. Podés consultar otro día."}
+          </Empty>
         )}
         {rows.map((a) => (
           <article className="v2-appointment" key={a.id}>
@@ -264,7 +367,7 @@ export function V2Appointments() {
               <p>
                 {a.serviceName} <span>· {a.barber}</span>
               </p>
-              {period === "WEEK" && <p>{dateLabel(a.date)}</p>}
+              {isMultiDay && <p className="v2-appointment-date">{dateLabel(a.date)}</p>}
               <div className="v2-appointment-details">
                 <span>
                   Seña:{" "}
@@ -336,7 +439,13 @@ export function V2Appointments() {
         open={manualDialog.open}
         mode={manualDialog.mode}
         appointment={manualDialog.appointment}
-        initialDate={date}
+        initialDate={
+          period === "TODAY" || period === "DATE"
+            ? date
+            : period === "CUSTOM"
+              ? customStartDate
+              : today
+        }
         onClose={() => setManualDialog((prev) => ({ ...prev, open: false }))}
         onSuccess={(msg) => setMessage(msg)}
       />

@@ -19,6 +19,32 @@ export const timeFor = (value: number) => `${Math.floor(value / 60).toString().p
 export const bookingStartTimes = Array.from({ length: 13 }, (_, index) => timeFor(10 * 60 + index * 45)) as string[];
 export const parseDate = (date: string) => new Date(date + 'T12:00:00');
 export const dateLabel = (date: string) => parseDate(date).toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
+export function formatRangeLabel(startIso: string, endIso: string, includeYearAlways = false): string {
+  if (startIso === endIso) {
+    return dateLabel(startIso);
+  }
+  const start = parseDate(startIso);
+  const end = parseDate(endIso);
+  const startDay = start.getDate();
+  const endDay = end.getDate();
+  const cleanMonth = (d: Date) =>
+    d.toLocaleDateString('es-AR', { month: 'short' }).replace(/\./g, '') + '.';
+  const startMonth = cleanMonth(start);
+  const endMonth = cleanMonth(end);
+  const startYear = start.getFullYear();
+  const endYear = end.getFullYear();
+
+  if (startYear === endYear) {
+    if (includeYearAlways) {
+      return `${startDay} ${startMonth} – ${endDay} ${endMonth} ${startYear}`;
+    }
+    if (startMonth === endMonth) {
+      return `${startDay} – ${endDay} ${startMonth}`;
+    }
+    return `${startDay} ${startMonth} – ${endDay} ${endMonth}`;
+  }
+  return `${startDay} ${startMonth} ${startYear} – ${endDay} ${endMonth} ${endYear}`;
+}
 export const isoDate = (date: Date) => `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
 export const demoToday = isoDate(new Date());
 export const bookingEndDateFor = (today: string) => isoDate(new Date(parseDate(today).getTime() + 21 * 24 * 60 * 60 * 1000));
