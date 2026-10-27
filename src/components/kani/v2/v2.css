@@ -1623,3 +1623,25 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
   .v2-schedule .admin-schedule-list > section { gap: 12px; }
   .v2-schedule .admin-schedule-list > section > .schedule-results-heading { margin-bottom: 4px; }
 }
+
+/* Appointment cards: readable contacts and an unmistakable WhatsApp action. */
+.v2-appointments-page .v2-appointment-heading h3 { overflow-wrap: anywhere; min-width: 0; }
+.v2-appointments-page .v2-contact a { align-items: flex-start; }
+.v2-appointments-page .v2-contact a > svg { flex: 0 0 14px; margin-top: 2px; }
+.v2-appointments-page .v2-whatsapp {
+  background: #107a40; border-color: #107a40; color: #fff;
+  white-space: nowrap; gap: 7px; flex-basis: 170px;
+}
+.v2-appointments-page .v2-whatsapp:hover:not(:disabled) { background: #0c6334; border-color: #0c6334; color: #fff; }
+.v2-appointments-page .v2-whatsapp:active:not(:disabled) { background: #09512b; border-color: #09512b; }
+.v2-appointments-page .v2-whatsapp:focus-visible { outline: 2px solid var(--ring); outline-offset: 3px; }
+.v2-whatsapp-icon { width: 16px; height: 16px; flex: 0 0 16px; fill: currentColor; }
+@media (max-width: 767px) {
+  .v2-appointments-page .v2-appointment { grid-template-columns: 55px minmax(0, 1fr); gap: 8px 10px; }
+  .v2-appointments-page .v2-appointment-heading { gap: 4px 8px; }
+  .v2-appointments-page .v2-appointment .v2-contact { display: grid; gap: 2px; margin-top: 6px; }
+  .v2-appointments-page .v2-appointment .v2-contact a { min-height: 0; padding-block: 4px; line-height: 1.5; }
+  .v2-appointments-page .v2-appointment-actions { display: flex; flex-wrap: wrap; max-width: none; width: 100%; gap: 8px; padding-top: 10px; }
+  .v2-appointments-page .v2-appointment-actions > * { flex: 1 1 120px; padding: 9px 12px; white-space: nowrap; }
+  .v2-appointments-page .v2-appointment-actions > .v2-whatsapp { flex-basis: 100%; }
+}
