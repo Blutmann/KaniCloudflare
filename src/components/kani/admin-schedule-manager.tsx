@@ -463,9 +463,9 @@ export function AdminScheduleManager() {
           {!loading &&
             groupedSlots.map(([date, dateSlots]) => (
               <section key={date} className="space-y-3 mb-6">
-                <div className="flex items-center justify-between pb-2 border-b border-border">
+                <div className="schedule-results-heading flex items-center justify-between pb-2 border-b border-border">
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold tracking-wider uppercase text-muted-foreground px-1.5 py-0.5 rounded bg-muted">Fecha</span>
+                    <span className="schedule-results-date-label text-[10px] font-bold tracking-wider uppercase text-muted-foreground px-1.5 py-0.5 rounded bg-muted">Fecha</span>
                     <h2 className="text-sm font-semibold text-foreground capitalize">{dateLabel(date)}</h2>
                   </div>
                   <span className="text-xs text-muted-foreground">

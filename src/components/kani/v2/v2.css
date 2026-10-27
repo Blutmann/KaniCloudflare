@@ -1558,3 +1558,68 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
     gap: 12px;
   }
 }
+
+/* Shared workspace and matching appointment/schedule filter geometry. */
+.v2-workspace > .v2-page { width: 100%; }
+.v2-schedule > .admin-schedule-page.site-container {
+  width: 100%; max-width: none; min-height: 0; margin: 0; padding: 0;
+  overflow: visible;
+}
+.v2-schedule .admin-schedule-shell > section[aria-label="Filtros de horarios"] {
+  margin: 0 0 20px; padding: 14px 16px;
+  border: 1px solid var(--border); border-radius: var(--radius-card);
+  background: var(--v2-reading-surface); box-shadow: var(--v2-shadow);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+}
+.v2-schedule .admin-schedule-filter-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px; align-items: end;
+}
+.v2-schedule .admin-schedule-filter-grid > div { display: flex; flex-direction: column; gap: 7px; }
+.v2-schedule .admin-schedule-filter-grid label {
+  margin: 0; font-size: 11px; font-weight: 400; line-height: 1.6; color: var(--muted-foreground);
+}
+.v2-schedule .admin-schedule-filter-grid :is(input, select, output) {
+  width: 100%; min-width: 0; max-width: 100%; height: 44px; min-height: 44px;
+  padding: 9px 11px; border: 1px solid var(--border); border-radius: var(--radius-control);
+  font-size: 12px; line-height: 1.7; color: var(--foreground); background: var(--v2-inset);
+}
+.v2-schedule .schedule-results-heading {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; padding: 0; border: 0; margin-bottom: 12px;
+}
+.v2-schedule .schedule-results-heading > div { display: contents; }
+.v2-schedule .schedule-results-date-label { display: none; }
+.v2-schedule .schedule-results-heading h2 {
+  font-size: 15px; font-weight: 500; line-height: 1.6; text-transform: none;
+}
+.v2-schedule .schedule-results-heading > span { font-size: 11px; color: var(--muted-foreground); line-height: 1.7; }
+@media (max-width: 767px) {
+  .v2-schedule .admin-schedule-shell > section[aria-label="Filtros de horarios"] { padding: 10px; margin-bottom: 12px; }
+  .v2-schedule .admin-schedule-filter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 10px; }
+  .v2-schedule .admin-schedule-filter-grid > div { gap: 4px; }
+}
+.v2-schedule .admin-schedule-filter-grid :is(input, select, output) {
+  height: 44px !important; min-height: 44px !important; max-height: 44px !important;
+}
+@media (max-width: 767px) {
+  .v2-schedule .admin-schedule-filter-grid {
+    grid-template-areas: "periodo fecha" "barbero estado";
+  }
+}
+.v2-shell .v2-schedule .admin-schedule-page section[aria-label="Filtros de horarios"] .admin-schedule-filter-grid :is(input, select, output) {
+  height: 44px !important; min-height: 44px !important; max-height: 44px !important;
+  padding: 9px 11px !important; line-height: 1.7 !important;
+}
+.v2-schedule .schedule-results-heading { margin-bottom: 20px; }
+@media (max-width: 767px) {
+  .v2-schedule .schedule-results-heading { margin-bottom: 4px; }
+}
+/* Match the grid rhythm used by the appointments page without collapsing margins. */
+.v2-schedule .admin-schedule-list > section { display: grid; gap: 20px; }
+.v2-schedule .admin-schedule-list > section > .schedule-results-heading { margin: 0 0 12px; }
+.v2-schedule .admin-schedule-list > section > .schedule-results-heading + div { margin: 0 !important; }
+@media (max-width: 767px) {
+  .v2-schedule .admin-schedule-list > section { gap: 12px; }
+  .v2-schedule .admin-schedule-list > section > .schedule-results-heading { margin-bottom: 4px; }
+}
