@@ -2229,7 +2229,20 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
   color: var(--foreground);
 }
 
-/* Time section & Capsules */
+.v2-readonly-input {
+  background: var(--v2-inset) !important;
+  color: var(--muted-foreground) !important;
+  cursor: default !important;
+  user-select: none;
+  font-weight: 500;
+  border-color: var(--border) !important;
+}
+.v2-readonly-input:focus {
+  border-color: var(--border) !important;
+  outline: none !important;
+}
+
+/* Time section */
 .v2-manual-time-section {
   display: flex;
   flex-direction: column;
@@ -2246,116 +2259,6 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
   justify-content: space-between;
   gap: 8px;
   flex-wrap: wrap;
-}
-
-.v2-selected-time-badge {
-  font-size: 12px;
-  color: var(--gold);
-}
-
-.v2-selected-time-badge strong {
-  font-weight: 600;
-}
-
-.v2-period-pills {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-
-.v2-period-pill {
-  font-size: 10.5px;
-  padding: 4px 8px;
-  border-radius: 9999px;
-  border: 1px solid var(--border);
-  background: var(--v2-inset);
-  color: var(--muted-foreground);
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.v2-period-pill:hover:not(:disabled) {
-  border-color: var(--gold);
-  color: var(--foreground);
-}
-
-.v2-period-pill.active {
-  background: color-mix(in srgb, var(--gold) 15%, var(--v2-inset));
-  border-color: var(--gold);
-  color: var(--gold);
-  font-weight: 600;
-}
-
-.v2-capsules-container {
-  overflow: visible;
-  padding-right: 0;
-}
-
-.v2-capsules-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
-  gap: 5px;
-}
-
-.v2-capsule-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 36px;
-  padding: 3px 4px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background: var(--v2-reading-surface);
-  color: var(--foreground);
-  cursor: pointer;
-  transition: all 0.15s ease;
-  position: relative;
-}
-
-.v2-capsule-time {
-  font-size: 12px;
-  font-weight: 500;
-  line-height: 1.2;
-}
-
-.v2-capsule-icon {
-  margin-top: 1px;
-  color: var(--gold);
-}
-
-.v2-capsule-busy-label {
-  font-size: 8.5px;
-  color: var(--muted-foreground);
-  line-height: 1;
-  margin-top: 1px;
-}
-
-.v2-capsule-btn.available:hover:not(:disabled) {
-  border-color: var(--gold);
-  background: color-mix(in srgb, var(--gold) 8%, var(--v2-reading-surface));
-}
-
-.v2-capsule-btn.selected {
-  border-color: var(--gold);
-  background: color-mix(in srgb, var(--gold) 18%, var(--v2-reading-surface));
-  color: var(--gold);
-  font-weight: 600;
-  box-shadow: 0 0 0 1px var(--gold);
-}
-
-.v2-capsule-btn.unavailable {
-  opacity: 0.38;
-  background: var(--v2-inset);
-  text-decoration: line-through;
-  cursor: not-allowed;
-}
-
-.v2-no-slots {
-  font-size: 12px;
-  color: var(--muted-foreground);
-  text-align: center;
-  padding: 12px 0;
 }
 
 /* Client details & Quick search */
@@ -2384,30 +2287,66 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
 .v2-client-quick-search {
   position: relative;
   width: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.v2-client-quick-search svg {
+  position: absolute;
+  left: 12px;
+  color: var(--muted-foreground);
+  width: 15px;
+  height: 15px;
+  pointer-events: none;
 }
 
 .v2-client-quick-search input {
   width: 100%;
-  font-size: 12px;
-  padding: 6px 10px;
-  min-height: 34px;
+  min-height: 40px;
+  padding: 8px 12px 8px 36px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--v2-inset);
+  color: var(--foreground);
+  font-size: 13px;
+  line-height: 1.6;
+  transition:
+    border-color 0.18s,
+    background-color 0.18s;
+}
+
+.v2-client-quick-search input::placeholder {
+  color: var(--muted-foreground);
+  font-size: 12.5px;
+}
+
+.v2-client-quick-search input:hover:not(:disabled) {
+  border-color: var(--input);
+}
+
+.v2-client-quick-search input:focus {
+  border-color: var(--gold);
+  outline: none;
+  background: color-mix(in srgb, var(--gold) 4%, var(--v2-surface));
 }
 
 .v2-client-suggestions-list {
   position: absolute;
-  top: 100%;
+  top: calc(100% + 4px);
   left: 0;
   right: 0;
-  margin: 4px 0 0;
+  margin: 0;
   padding: 4px 0;
   list-style: none;
-  background: var(--popover);
+  background: var(--v2-surface);
   border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  box-shadow: 0 4px 12px rgb(0 0 0 / 15%);
+  border-radius: var(--radius-sub);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 25%);
   z-index: 50;
-  max-height: 180px;
+  max-height: 200px;
   overflow-y: auto;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 .v2-client-suggestions-list li button {
@@ -2415,21 +2354,23 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  padding: 6px 12px;
+  padding: 8px 12px;
   border: 0;
   background: transparent;
   text-align: left;
   cursor: pointer;
   color: var(--foreground);
+  transition: background-color 0.15s;
 }
 
 .v2-client-suggestions-list li button:hover {
-  background: var(--v2-inset);
+  background: color-mix(in srgb, var(--gold) 10%, var(--v2-surface));
 }
 
 .v2-client-suggestions-list li button strong {
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 500;
+  color: var(--foreground);
 }
 
 .v2-client-suggestions-list li button small {
@@ -2590,45 +2531,10 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
     box-sizing: border-box !important;
   }
 
-  /* Time pills and grid */
-  .v2-period-pills {
-    display: flex !important;
-    flex-wrap: wrap !important;
+  /* Time section mobile density */
+  .v2-manual-time-section {
+    padding: 8px 10px !important;
     gap: 6px !important;
-    width: 100% !important;
-  }
-
-  .v2-period-pill {
-    padding: 5px 8px;
-    font-size: 11px;
-    white-space: nowrap;
-  }
-
-  .v2-capsules-container {
-    max-height: none !important;
-    overflow: visible !important;
-    padding-right: 0 !important;
-    width: 100% !important;
-  }
-
-  .v2-capsules-grid {
-    display: grid !important;
-    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-    gap: 5px !important;
-    width: 100% !important;
-    box-sizing: border-box !important;
-  }
-
-  .v2-capsule-btn {
-    min-height: 38px;
-    padding: 3px 2px;
-    width: 100% !important;
-    box-sizing: border-box !important;
-  }
-
-  .v2-capsule-time {
-    font-size: 11px;
-    font-weight: 500;
   }
 
   /* Bottom actions: completely accessible with bottom safe-area */

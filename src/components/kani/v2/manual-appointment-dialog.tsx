@@ -8,19 +8,15 @@ import {
 import { useAdminStaff } from "@/lib/kani-admin-context";
 import {
   appointmentErrorMessage,
-  computeAvailableManualSlots,
   createManualAppointment,
-  filterSlotsByPeriod,
   isIntervalOverlapping,
   minutesToTime,
-  PERIOD_LABELS,
   timeToMinutes,
   updateManualAppointment,
-  type PeriodFilter,
   type RealAppointment,
 } from "@/lib/kani-appointments";
 import { useV2, type V2Client } from "./data";
-import { Check, X } from "lucide-react";
+import { Search, X } from "lucide-react";
 
 export type ManualAppointmentDialogProps = {
   open: boolean;
@@ -71,15 +67,13 @@ export function ManualAppointmentDialog({
   const [customServiceName, setCustomServiceName] = useState<string>("");
   const [customPrice, setCustomPrice] = useState<number | "">("");
   const [servicePrice, setServicePrice] = useState<number>(25000);
-  const [customStartTime, setCustomStartTime] = useState<string>("10:00");
+  const [startTime, setStartTime] = useState<string>("10:00");
   const [customEndTime, setCustomEndTime] = useState<string>("11:00");
   const [date, setDate] = useState<string>(initialDate);
-  const [selectedTime, setSelectedTime] = useState<string>("");
   const [clientName, setClientName] = useState<string>("");
   const [clientPhone, setClientPhone] = useState<string>("");
   const [clientEmail, setClientEmail] = useState<string>("");
 
-  const [periodFilter, setPeriodFilter] = useState<PeriodFilter>("COMERCIAL");
   const [clientSearch, setClientSearch] = useState<string>("");
   const [showClientSuggestions, setShowClientSuggestions] = useState<boolean>(false);
   const [isBusy, setIsBusy] = useState<boolean>(false);
@@ -98,14 +92,73 @@ export function ManualAppointmentDialog({
   }, [servicesList, serviceId, isOtro]);
 
   // Duration in minutes (internal only, not shown as text)
+  const serviceDurationMinutes = useMemo(() => {
+    if (mode === "EDIT" && appointment?.serviceDuration) {
+      return appointment.serviceDuration;
+    }
+    return activeService?.duration || 45;
+  }, [mode, appointment?.serviceDuration, activeService?.duration]);
+
   const customDurationMinutes = useMemo(() => {
-    if (!isOtro) return activeService?.duration || 45;
-    const startM = timeToMinutes(customStartTime);
+    if (!isOtro) return serviceDurationMinutes;
+    const startM = timeToMinutes(startTime);
     const endM = timeToMinutes(customEndTime);
     return Math.max(0, endM - startM);
-  }, [isOtro, customStartTime, customEndTime, activeService?.duration]);
+  }, [isOtro, startTime, customEndTime, serviceDurationMinutes]);
 
-  const durationMinutes = isOtro ? customDurationMinutes : (activeService?.duration || 45);
+  const durationMinutes = isOtro ? customDurationMinutes : serviceDurationMinutes;
+
+  // Selected time end calculation for standard services (internal & display)
+  const computedEndTime = useMemo(() => {
+    if (isOtro) return customEndTime;
+    if (!startTime) return "";
+    const startM = timeToMinutes(startTime);
+    const endM = startM + serviceDurationMinutes;
+    return minutesToTime(endM);
+  }, [isOtro, customEndTime, startTime, serviceDurationMinutes]);
+
+  // Overlap and boundary conflict detection for both standard services and "Otro"
+  const overlapConflict = useMemo(() => {
+    if (!date || !barberId || !startTime) return null;
+    const startM = timeToMinutes(startTime);
+    const endM = isOtro ? timeToMinutes(customEndTime) : startM + serviceDurationMinutes;
+
+    if (isOtro && endM <= startM) {
+      return "La hora de finalización debe ser posterior a la de inicio.";
+    }
+    if (endM > 24 * 60) {
+      return "El turno no puede finalizar después de la medianoche (23:59). Elegí un horario de inicio previo.";
+    }
+
+    const conflict = appointmentsList.find((apt) => {
+      if (apt.statusCode === "CANCELLED") return false;
+      if (apt.barberId !== barberId || apt.date !== date) return false;
+      if (mode === "EDIT" && appointment?.id && apt.id === appointment.id) return false;
+      const aptStartM = timeToMinutes(apt.time);
+      const aptEndM = apt.endTime
+        ? timeToMinutes(apt.endTime)
+        : aptStartM + (apt.serviceDuration || 45);
+      return isIntervalOverlapping(startM, endM, aptStartM, aptEndM);
+    });
+
+    if (conflict) {
+      const conflictEnd =
+        conflict.endTime ||
+        minutesToTime(timeToMinutes(conflict.time) + (conflict.serviceDuration || 45));
+      return `Horario ocupado por otro turno (${conflict.serviceName}: ${conflict.time} a ${conflictEnd} hs).`;
+    }
+    return null;
+  }, [
+    isOtro,
+    date,
+    barberId,
+    startTime,
+    customEndTime,
+    serviceDurationMinutes,
+    appointmentsList,
+    mode,
+    appointment?.id,
+  ]);
 
   // Initialize or reset form when dialog opens or changes mode
   useEffect(() => {
@@ -124,7 +177,7 @@ export function ManualAppointmentDialog({
         setServiceId("OTRO");
         setCustomServiceName(appointment.customServiceName || appointment.serviceName || "");
         setCustomPrice(appointment.servicePrice ?? "");
-        setCustomStartTime(appointment.time);
+        setStartTime(appointment.time);
         setCustomEndTime(
           appointment.endTime ||
             minutesToTime(timeToMinutes(appointment.time) + (appointment.serviceDuration || 45))
@@ -134,9 +187,13 @@ export function ManualAppointmentDialog({
         setCustomServiceName("");
         setCustomPrice("");
         setServicePrice(appointment.servicePrice ?? 25000);
+        setStartTime(appointment.time);
+        setCustomEndTime(
+          appointment.endTime ||
+            minutesToTime(timeToMinutes(appointment.time) + (appointment.serviceDuration || 45))
+        );
       }
       setDate(appointment.date);
-      setSelectedTime(appointment.time);
       setClientName(appointment.name);
       setClientPhone(appointment.phone || "");
       setClientEmail(
@@ -160,65 +217,15 @@ export function ManualAppointmentDialog({
       setCustomServiceName("");
       setCustomPrice("");
       setServicePrice(servicesList[0]?.price || 25000);
-      setCustomStartTime("10:00");
+      setStartTime("10:00");
       setCustomEndTime("11:00");
 
       setDate(initialDate);
-      setSelectedTime("");
       setClientName("");
       setClientPhone("");
       setClientEmail("");
     }
   }, [open, mode, appointment?.id, initialDate]);
-
-  // Compute available 15-minute slot capsules for standard services
-  const allSlots = useMemo(() => {
-    if (isOtro || !barberId || !date) return [];
-    return computeAvailableManualSlots({
-      appointments: appointmentsList,
-      barberId,
-      date,
-      durationMinutes,
-      excludeAppointmentId: mode === "EDIT" ? appointment?.id : undefined,
-    });
-  }, [isOtro, appointmentsList, barberId, date, durationMinutes, mode, appointment?.id]);
-
-  // Filter slots for the chosen period
-  const visibleSlots = useMemo(() => {
-    return filterSlotsByPeriod(allSlots, periodFilter);
-  }, [allSlots, periodFilter]);
-
-  // Selected time end calculation for standard services (internal)
-  const computedEndTime = useMemo(() => {
-    if (isOtro) return customEndTime;
-    if (!selectedTime) return "";
-    const startM = timeToMinutes(selectedTime);
-    return minutesToTime(startM + durationMinutes);
-  }, [isOtro, customEndTime, selectedTime, durationMinutes]);
-
-  // Overlap detection for custom service "Otro"
-  const customOverlapConflict = useMemo(() => {
-    if (!isOtro || !date || !barberId) return null;
-    const startM = timeToMinutes(customStartTime);
-    const endM = timeToMinutes(customEndTime);
-    if (endM <= startM) {
-      return "La hora de finalización debe ser posterior a la de inicio.";
-    }
-    const conflict = appointmentsList.find((apt) => {
-      if (apt.statusCode === "CANCELLED") return false;
-      if (apt.barberId !== barberId || apt.date !== date) return false;
-      if (mode === "EDIT" && appointment?.id && apt.id === appointment.id) return false;
-      const aptStartM = timeToMinutes(apt.time);
-      const aptEndM = apt.endTime
-        ? timeToMinutes(apt.endTime)
-        : aptStartM + (apt.serviceDuration || 45);
-      return isIntervalOverlapping(startM, endM, aptStartM, aptEndM);
-    });
-    if (conflict) {
-      return `Horario ocupado por otro turno (${conflict.serviceName}: ${conflict.time} a ${conflict.endTime || minutesToTime(timeToMinutes(conflict.time) + (conflict.serviceDuration || 45))}).`;
-    }
-    return null;
-  }, [isOtro, date, barberId, customStartTime, customEndTime, appointmentsList, mode, appointment?.id]);
 
   // Filtered client suggestions
   const suggestedClients = useMemo(() => {
@@ -282,20 +289,16 @@ export function ManualAppointmentDialog({
         setFormError("El importe del servicio es obligatorio.");
         return;
       }
-      if (customOverlapConflict) {
-        setFormError(customOverlapConflict);
-        return;
-      }
     } else {
-      if (!selectedTime) {
+      if (!startTime) {
         setFormError("Tenés que seleccionar un horario para el turno.");
         return;
       }
-      const chosenSlot = allSlots.find((s) => s.time === selectedTime);
-      if (chosenSlot && !chosenSlot.available) {
-        setFormError("Ese horario acaba de ocuparse. Elegí otro horario disponible.");
-        return;
-      }
+    }
+
+    if (overlapConflict) {
+      setFormError(overlapConflict);
+      return;
     }
 
     const cleanName = clientName.trim();
@@ -309,7 +312,6 @@ export function ManualAppointmentDialog({
       return;
     }
 
-    const startTime = isOtro ? customStartTime : selectedTime;
     const endTime = isOtro ? customEndTime : computedEndTime;
     const duration = isOtro ? customDurationMinutes : durationMinutes;
     const targetServiceUuid = isOtro ? null : (activeService?.dbId || serviceId);
@@ -406,10 +408,7 @@ export function ManualAppointmentDialog({
                 <select
                   value={barberId}
                   disabled={isBusy || (mode === "EDIT" && !isAdmin)}
-                  onChange={(e) => {
-                    setBarberId(e.target.value);
-                    setSelectedTime("");
-                  }}
+                  onChange={(e) => setBarberId(e.target.value)}
                 >
                   {availableBarbers.map((b) => (
                     <option key={b.id} value={b.id}>
@@ -427,7 +426,6 @@ export function ManualAppointmentDialog({
                   onChange={(e) => {
                     const newServiceId = e.target.value;
                     setServiceId(newServiceId);
-                    setSelectedTime("");
                     if (newServiceId !== "OTRO") {
                       const svc = servicesList.find(
                         (s) => (s.dbId && s.dbId === newServiceId) || s.id === newServiceId
@@ -461,7 +459,6 @@ export function ManualAppointmentDialog({
                   onChange={(e) => {
                     const newServiceId = e.target.value;
                     setServiceId(newServiceId);
-                    setSelectedTime("");
                     if (newServiceId !== "OTRO") {
                       const svc = servicesList.find(
                         (s) => (s.dbId && s.dbId === newServiceId) || s.id === newServiceId
@@ -525,150 +522,98 @@ export function ManualAppointmentDialog({
                   />
                 </label>
               </div>
-
-              {/* Time Configuration for "Otro": side by side Inicio | Fin */}
-              <div className="v2-manual-time-section">
-                <div className="v2-manual-time-header">
-                  <span className="v2-field-label">Horario personalizado (intervalos de 15 min)</span>
-                </div>
-
-                <div className="v2-manual-row">
-                  <label className="v2-field">
-                    Hora de inicio *
-                    <select
-                      value={customStartTime}
-                      disabled={isBusy}
-                      onChange={(e) => setCustomStartTime(e.target.value)}
-                    >
-                      {TIME_15_OPTIONS.map((t) => (
-                        <option key={`start-${t}`} value={t}>
-                          {t} hs
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-
-                  <label className="v2-field">
-                    Hora de finalización *
-                    <select
-                      value={customEndTime}
-                      disabled={isBusy}
-                      onChange={(e) => setCustomEndTime(e.target.value)}
-                    >
-                      {TIME_15_OPTIONS.map((t) => (
-                        <option key={`end-${t}`} value={t}>
-                          {t} hs
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                </div>
-
-                {customOverlapConflict && (
-                  <p className="v2-alert" role="alert" style={{ marginTop: "4px" }}>
-                    {customOverlapConflict}
-                  </p>
-                )}
-              </div>
             </>
           ) : (
-            <>
-              {/* Row 2: Fecha | Importe */}
-              <div className="v2-manual-row">
-                <label className="v2-field">
-                  Fecha
-                  <input
-                    type="date"
-                    value={date}
-                    disabled={isBusy}
-                    onChange={(e) => {
-                      setDate(e.target.value);
-                      setSelectedTime("");
-                    }}
-                  />
-                </label>
+            <div className="v2-manual-row">
+              <label className="v2-field">
+                Fecha
+                <input
+                  type="date"
+                  value={date}
+                  disabled={isBusy}
+                  onChange={(e) => setDate(e.target.value)}
+                />
+              </label>
 
-                <label className="v2-field">
-                  Importe ($ ARS) *
-                  <input
-                    type="number"
-                    min={0}
-                    step={1}
-                    required
-                    placeholder="Ej. 25000"
-                    value={servicePrice}
-                    disabled={isBusy}
-                    onChange={(e) => setServicePrice(Number(e.target.value))}
-                  />
-                </label>
-              </div>
-
-              {/* Standard Time Capsules */}
-              <div className="v2-manual-time-section">
-                <div className="v2-manual-time-header">
-                  <span className="v2-field-label">Horario</span>
-                  {selectedTime && (
-                    <span className="v2-selected-time-badge">
-                      Seleccionado: <strong>{selectedTime} hs</strong>
-                    </span>
-                  )}
-                </div>
-
-                {/* Period Pills Filter */}
-                <div className="v2-period-pills" role="tablist" aria-label="Filtrar horarios por período">
-                  {(Object.keys(PERIOD_LABELS) as PeriodFilter[]).map((pKey) => (
-                    <button
-                      key={pKey}
-                      type="button"
-                      role="tab"
-                      aria-selected={periodFilter === pKey}
-                      className={`v2-period-pill ${periodFilter === pKey ? "active" : ""}`}
-                      onClick={() => setPeriodFilter(pKey)}
-                    >
-                      {PERIOD_LABELS[pKey]}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Capsules Grid */}
-                <div className="v2-capsules-container">
-                  {visibleSlots.length === 0 ? (
-                    <p className="v2-no-slots">
-                      No hay horarios disponibles en este rango.
-                    </p>
-                  ) : (
-                    <div className="v2-capsules-grid">
-                      {visibleSlots.map((slot) => {
-                        const isSelected = selectedTime === slot.time;
-                        return (
-                          <button
-                            key={slot.time}
-                            type="button"
-                            disabled={!slot.available || isBusy}
-                            className={`v2-capsule-btn ${
-                              isSelected ? "selected" : slot.available ? "available" : "unavailable"
-                            }`}
-                            title={slot.available ? `Disponible: ${slot.time}` : "Horario ocupado"}
-                            onClick={() => setSelectedTime(slot.time)}
-                          >
-                            <span className="v2-capsule-time">{slot.time}</span>
-                            {slot.available && isSelected ? (
-                              <Check size={11} className="v2-capsule-icon" />
-                            ) : null}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </>
+              <label className="v2-field">
+                Importe ($ ARS) *
+                <input
+                  type="number"
+                  min={0}
+                  step={1}
+                  required
+                  placeholder="Ej. 25000"
+                  value={servicePrice}
+                  disabled={isBusy}
+                  onChange={(e) => setServicePrice(Number(e.target.value))}
+                />
+              </label>
+            </div>
           )}
+
+          {/* Unified Compact Horario Section */}
+          <div className="v2-manual-time-section">
+            <div className="v2-manual-time-header">
+              <span className="v2-field-label">Horario</span>
+            </div>
+
+            <div className="v2-manual-row">
+              <label className="v2-field">
+                Hora de inicio *
+                <select
+                  value={startTime}
+                  disabled={isBusy}
+                  onChange={(e) => setStartTime(e.target.value)}
+                >
+                  {TIME_15_OPTIONS.map((t) => (
+                    <option key={`start-${t}`} value={t}>
+                      {t} hs
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              {isOtro ? (
+                <label className="v2-field">
+                  Hora de finalización *
+                  <select
+                    value={customEndTime}
+                    disabled={isBusy}
+                    onChange={(e) => setCustomEndTime(e.target.value)}
+                  >
+                    {TIME_15_OPTIONS.map((t) => (
+                      <option key={`end-${t}`} value={t}>
+                        {t} hs
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : (
+                <label className="v2-field">
+                  Hora de finalización
+                  <input
+                    type="text"
+                    readOnly
+                    value={computedEndTime ? `${computedEndTime} hs` : "—"}
+                    className="v2-readonly-input"
+                    tabIndex={-1}
+                  />
+                </label>
+              )}
+            </div>
+
+            {overlapConflict && (
+              <p className="v2-alert" role="alert" style={{ marginTop: "4px" }}>
+                {overlapConflict}
+              </p>
+            )}
+          </div>
 
           {/* Client Details Section */}
           <div className="v2-manual-client-section">
             {/* Quick Search for Existing Clients */}
-            <div className="v2-client-quick-search">
+            <div className="v2-client-quick-search v2-search">
+              <Search size={15} />
               <input
                 type="text"
                 placeholder="Buscar cliente existente..."
@@ -753,8 +698,9 @@ export function ManualAppointmentDialog({
               disabled={
                 isBusy ||
                 (isOtro
-                  ? !customServiceName.trim() || customPrice === "" || !!customOverlapConflict
-                  : !selectedTime) ||
+                  ? !customServiceName.trim() || customPrice === ""
+                  : !startTime) ||
+                !!overlapConflict ||
                 !clientName.trim() ||
                 !clientPhone.trim()
               }

@@ -104,7 +104,7 @@ describe('ManualAppointmentDialog Fullscreen & UX Mobile Redesign', () => {
     expect(screen.getByLabelText(/Email \(opcional\)/i)).toBeInTheDocument();
   });
 
-  it('uses exact new range labels for time slots without words Comercial, Antes, Después, Todos', () => {
+  it('eliminates capsules grid and period range tabs in favor of compact Hora de inicio | Hora de finalización', () => {
     render(
       <ManualAppointmentDialog
         open={true}
@@ -115,7 +115,7 @@ describe('ManualAppointmentDialog Fullscreen & UX Mobile Redesign', () => {
       />
     );
 
-    // Verify PERIOD_LABELS mapping
+    // Verify PERIOD_LABELS mapping is preserved for other public components
     expect(PERIOD_LABELS).toEqual({
       COMERCIAL: '10:00 a 19:00 hs',
       ANTES: '00:00 a 09:45 hs',
@@ -123,18 +123,50 @@ describe('ManualAppointmentDialog Fullscreen & UX Mobile Redesign', () => {
       TODOS: '00:00 a 23:59 hs',
     });
 
-    // Check visible buttons on screen
-    expect(screen.getByRole('tab', { name: '10:00 a 19:00 hs' })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: '00:00 a 09:45 hs' })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: '19:15 a 23:45 hs' })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: '00:00 a 23:59 hs' })).toBeInTheDocument();
+    // Period range tabs must NOT exist in the dialog
+    expect(screen.queryByRole('tab', { name: '10:00 a 19:00 hs' })).toBeNull();
+    expect(screen.queryByRole('tab', { name: '00:00 a 09:45 hs' })).toBeNull();
+    expect(screen.queryByRole('tab', { name: '19:15 a 23:45 hs' })).toBeNull();
+    expect(screen.queryByRole('tab', { name: '00:00 a 23:59 hs' })).toBeNull();
 
-    // Verify old labels do not exist
-    expect(screen.queryByText(/Comercial \(10:00 - 19:00\)/i)).toBeNull();
-    expect(screen.queryByText(/Todos \(00:00 - 23:45\)/i)).toBeNull();
+    // New compact selectors: Hora de inicio * and read-only Hora de finalización
+    const startSelect = screen.getByRole('combobox', { name: /Hora de inicio \*/i });
+    expect(startSelect).toBeInTheDocument();
+    expect(startSelect).toHaveValue('10:00');
+
+    // Default service is Corte (45 min) -> Fin calculated is 10:45 hs
+    const endInput = screen.getByLabelText(/Hora de finalización/i) as HTMLInputElement;
+    expect(endInput).toBeInTheDocument();
+    expect(endInput.value).toBe('10:45 hs');
+    expect(endInput.readOnly).toBe(true);
+
+    // Changing Hora de inicio from 10:00 to 10:15 immediately recalculates Fin to 11:00 hs
+    fireEvent.change(startSelect, { target: { value: '10:15' } });
+    expect(endInput.value).toBe('11:00 hs');
   });
 
-  it('CSS validates mobile fullscreen rules, hidden site-header and single scroll', () => {
+  it('renders Buscar cliente existente as a real input with search icon', () => {
+    render(
+      <ManualAppointmentDialog
+        open={true}
+        mode="CREATE"
+        initialDate={businessDateToday()}
+        onClose={vi.fn()}
+        onSuccess={vi.fn()}
+      />
+    );
+
+    const searchInput = screen.getByPlaceholderText('Buscar cliente existente...');
+    expect(searchInput).toBeInTheDocument();
+    expect(searchInput.parentElement).toHaveClass('v2-client-quick-search');
+    expect(searchInput.parentElement).toHaveClass('v2-search');
+
+    // Search autocomplete works
+    fireEvent.change(searchInput, { target: { value: 'Lucas' } });
+    expect(screen.getByText('Lucas Gómez')).toBeInTheDocument();
+  });
+
+  it('CSS validates mobile fullscreen rules, hidden site-header and 2-column manual row', () => {
     const cssPath = path.resolve(__dirname, '../components/kani/v2/v2.css');
     const css = fs.readFileSync(cssPath, 'utf-8');
 
@@ -158,13 +190,10 @@ describe('ManualAppointmentDialog Fullscreen & UX Mobile Redesign', () => {
     // 4. Desktop preserves centered modal with transform translate(-50%, -50%)
     expect(css).toMatch(/@media\s*\(min-width:\s*768px\)\s*\{[^}]*\.v2-dialog\.v2-manual-dialog\s*\{[^}]*transform:\s*translate\(-50%,\s*-50%\)\s*!important/);
 
-    // 5. No internal scrollbar in capsules container
-    expect(css).toMatch(/\.v2-capsules-container\s*\{[^}]*overflow:\s*visible/);
+    // 5. 2-column mobile layout preserved at 360px
+    expect(css).toMatch(/grid-template-columns:\s*minmax\(0,\s*1fr\)\s*minmax\(0,\s*1fr\)\s*!important/);
 
-    // 6. Capsules in 4 columns
-    expect(css).toMatch(/grid-template-columns:\s*repeat\(4,\s*minmax\(0,\s*1fr\)\)\s*!important/);
-
-    // 7. Safe area in actions
+    // 6. Safe area in actions
     expect(css).toMatch(/padding-bottom:\s*calc\([^)]*safe-area-inset-bottom/);
   });
 });
