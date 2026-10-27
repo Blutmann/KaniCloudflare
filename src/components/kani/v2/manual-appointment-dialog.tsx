@@ -20,7 +20,7 @@ import {
   type RealAppointment,
 } from "@/lib/kani-appointments";
 import { useV2, type V2Client } from "./data";
-import { Check } from "lucide-react";
+import { Check, X } from "lucide-react";
 
 export type ManualAppointmentDialogProps = {
   open: boolean;
@@ -78,7 +78,6 @@ export function ManualAppointmentDialog({
   const [clientName, setClientName] = useState<string>("");
   const [clientPhone, setClientPhone] = useState<string>("");
   const [clientEmail, setClientEmail] = useState<string>("");
-  const [notes, setNotes] = useState<string>("");
 
   const [periodFilter, setPeriodFilter] = useState<PeriodFilter>("COMERCIAL");
   const [clientSearch, setClientSearch] = useState<string>("");
@@ -145,7 +144,6 @@ export function ManualAppointmentDialog({
           ? ""
           : appointment.email || ""
       );
-      setNotes(appointment.notes || "");
     } else {
       // Default barber for CREATE
       const defaultBarber = isAdmin
@@ -170,7 +168,6 @@ export function ManualAppointmentDialog({
       setClientName("");
       setClientPhone("");
       setClientEmail("");
-      setNotes("");
     }
   }, [open, mode, appointment?.id, initialDate]);
 
@@ -332,7 +329,7 @@ export function ManualAppointmentDialog({
           name: cleanName,
           phone: cleanPhone,
           email: clientEmail.trim() || undefined,
-          notes: notes.trim() || undefined,
+          notes: mode === "EDIT" ? appointment?.notes || undefined : undefined,
           durationMinutes: duration,
         });
         await data.refresh();
@@ -350,7 +347,7 @@ export function ManualAppointmentDialog({
           name: cleanName,
           phone: cleanPhone,
           email: clientEmail.trim() || undefined,
-          notes: notes.trim() || undefined,
+          notes: undefined,
           durationMinutes: duration,
         });
         await data.refresh();
@@ -378,14 +375,17 @@ export function ManualAppointmentDialog({
         aria-describedby={descId}
       >
         <div className="v2-manual-dialog-header">
-          <div className="v2-manual-dialog-title-wrap">
-            <DialogTitle id={titleId}>
-              {mode === "CREATE" ? "Generar turno" : "Editar turno manual"}
-            </DialogTitle>
-            {!isAdmin && (
-              <span className="v2-barber-tag">Barbero: {selectedBarberName}</span>
-            )}
-          </div>
+          <DialogTitle id={titleId} className="v2-manual-dialog-title">
+            {mode === "CREATE" ? "Generar turno manual" : "Editar turno manual"}
+          </DialogTitle>
+          <button
+            type="button"
+            className="header-control-button v2-manual-close-btn"
+            aria-label="Cerrar"
+            onClick={onClose}
+          >
+            <X size={17} />
+          </button>
           <DialogDescription id={descId} className="sr-only">
             {mode === "CREATE" ? "Generar turno manual" : "Editar turno manual"}
           </DialogDescription>
@@ -398,7 +398,7 @@ export function ManualAppointmentDialog({
         )}
 
         <form onSubmit={handleSubmit} className="v2-manual-form">
-          {/* Row 1: Barber Selection (only for ADMIN) + Service */}
+          {/* Row 1: Barber Selection + Service */}
           {isAdmin ? (
             <div className="v2-manual-row">
               <label className="v2-field">
@@ -446,7 +446,13 @@ export function ManualAppointmentDialog({
               </label>
             </div>
           ) : (
-            <div className="v2-manual-row-single">
+            <div className="v2-manual-row">
+              <label className="v2-field">
+                Barbero
+                <div className="v2-readonly-box">
+                  <span>Barbero: {selectedBarberName}</span>
+                </div>
+              </label>
               <label className="v2-field">
                 Servicio
                 <select
@@ -717,7 +723,7 @@ export function ManualAppointmentDialog({
               </label>
             </div>
 
-            <div className="v2-manual-row">
+            <div className="v2-manual-row-single">
               <label className="v2-field">
                 Email (opcional)
                 <input
@@ -726,17 +732,6 @@ export function ManualAppointmentDialog({
                   value={clientEmail}
                   disabled={isBusy}
                   onChange={(e) => setClientEmail(e.target.value)}
-                />
-              </label>
-
-              <label className="v2-field">
-                Notas (opcional)
-                <input
-                  type="text"
-                  placeholder="Ej. Corte clásico"
-                  value={notes}
-                  disabled={isBusy}
-                  onChange={(e) => setNotes(e.target.value)}
                 />
               </label>
             </div>

@@ -9,10 +9,10 @@ export type TimeCapsule = {
 export type PeriodFilter = 'COMERCIAL' | 'ANTES' | 'DESPUES' | 'TODOS';
 
 export const PERIOD_LABELS: Record<PeriodFilter, string> = {
-  COMERCIAL: 'Comercial (10:00 - 19:00)',
-  ANTES: 'Antes (00:00 - 09:45)',
-  DESPUES: 'Después (19:15 - 23:45)',
-  TODOS: 'Todos (00:00 - 23:45)',
+  COMERCIAL: '10:00 a 19:00 hs',
+  ANTES: '00:00 a 09:45 hs',
+  DESPUES: '19:15 a 23:45 hs',
+  TODOS: '00:00 a 23:59 hs',
 };
 
 export function formatDuration(minutes: number): string {

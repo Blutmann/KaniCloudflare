@@ -1753,19 +1753,51 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
   width: 100%;
 }
 
+.v2-manual-dialog > button.absolute,
+.v2-manual-dialog > button:has(> .sr-only) {
+  display: none !important;
+}
+
 .v2-manual-dialog-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 2px;
+  gap: 12px;
+  margin-bottom: 4px;
 }
 
-.v2-manual-dialog-title-wrap {
-  display: flex;
+.v2-manual-dialog-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--foreground);
+  line-height: 1.3;
+  margin: 0;
+}
+
+.v2-manual-close-btn {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  padding: 0;
+  border-radius: var(--radius-control, 0.65rem);
+  display: inline-flex;
   align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
+  justify-content: center;
+  border: 1px solid var(--border);
+  background: var(--v2-reading-surface);
+  color: var(--foreground);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.v2-manual-close-btn:hover:not(:disabled) {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+.v2-manual-close-btn svg {
+  width: 17px;
+  height: 17px;
 }
 
 .v2-barber-tag {
@@ -1874,9 +1906,8 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
 }
 
 .v2-capsules-container {
-  max-height: 135px;
-  overflow-y: auto;
-  padding-right: 4px;
+  overflow: visible;
+  padding-right: 0;
 }
 
 .v2-capsules-grid {
@@ -2074,4 +2105,140 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
 .v2-manual-actions {
   justify-content: flex-end;
   margin-top: 6px;
+}
+
+/* ==========================================================================
+   Admin V2 — Manual Appointment Fullscreen on Mobile
+   ========================================================================== */
+@media (max-width: 767px) {
+  /* Hide the general site-header while manual appointment dialog is open */
+  body:has(.v2-manual-dialog) .site-header {
+    display: none !important;
+  }
+
+  /* Fullscreen dialog covering 100% of viewport */
+  .v2-dialog.v2-manual-dialog {
+    position: fixed !important;
+    inset: 0 !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100vw !important;
+    width: 100dvw !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    max-width: 100vw !important;
+    max-height: 100dvh !important;
+    transform: none !important;
+    margin: 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    z-index: 200 !important;
+    background: var(--background) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+
+  /* Fullscreen header with Generar turno manual + X */
+  .v2-manual-dialog-header {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    height: calc(72px + env(safe-area-inset-top, 0px));
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-left: 16px;
+    padding-right: 16px;
+    margin: 0;
+    background: var(--background);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+
+  .v2-manual-dialog-title {
+    font-size: 16.5px;
+    font-weight: 600;
+    color: var(--foreground);
+    letter-spacing: -0.01em;
+  }
+
+  .v2-manual-close-btn {
+    width: 44px;
+    height: 44px;
+    flex: 0 0 44px;
+    border-radius: var(--radius-control, 0.65rem);
+  }
+
+  /* Single vertical scrolling form */
+  .v2-manual-form {
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex: 1 0 auto;
+    margin-top: 0;
+  }
+
+  /* 2-column mobile layout preserved at 360px */
+  .v2-manual-row {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+    gap: 8px !important;
+  }
+
+  /* Time pills and grid */
+  .v2-period-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .v2-period-pill {
+    padding: 5px 8px;
+    font-size: 11px;
+  }
+
+  .v2-capsules-container {
+    max-height: none !important;
+    overflow: visible !important;
+    padding-right: 0 !important;
+  }
+
+  .v2-capsules-grid {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+  }
+
+  .v2-capsule-btn {
+    min-height: 38px;
+    padding: 3px 2px;
+  }
+
+  .v2-capsule-time {
+    font-size: 11px;
+    font-weight: 500;
+  }
+
+  /* Bottom actions: completely accessible with bottom safe-area */
+  .v2-manual-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 16px;
+    padding-bottom: calc(32px + env(safe-area-inset-bottom, 16px));
+  }
+
+  .v2-manual-actions button {
+    flex: 1;
+    min-height: 44px;
+  }
 }
