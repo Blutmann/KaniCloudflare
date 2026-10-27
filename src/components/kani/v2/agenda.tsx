@@ -1,7 +1,7 @@
 import { getWhatsAppUrl } from "@/lib/kani-phone";
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { ArrowRight, CalendarDays, Clock3, Mail, Phone } from "lucide-react";
+import { ArrowRight, CalendarDays, Clock3, Mail, Phone, Plus } from "lucide-react";
 import { useAdminStaff } from "@/lib/kani-admin-context";
 import { businessDateToday, addCalendarDays } from "@/lib/kani-mobile-appointments";
 import { businessTimeNow } from "@/lib/kani-payments";
@@ -15,6 +15,7 @@ import {
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { useV2 } from "./data";
 import { BarberFilter, Empty, Metric, Status, statusLabels } from "./shared";
+import { ManualAppointmentDialog } from "./manual-appointment-dialog";
 
 export function V2Home() {
   const data = useV2();
@@ -164,6 +165,11 @@ export function V2Appointments() {
     appointment: RealAppointment;
     status: "CANCELLED";
   } | null>(null);
+  const [manualDialog, setManualDialog] = useState<{
+    open: boolean;
+    mode: "CREATE" | "EDIT";
+    appointment?: RealAppointment | null;
+  }>({ open: false, mode: "CREATE", appointment: null });
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const rows = scopeV2(
@@ -219,9 +225,18 @@ export function V2Appointments() {
           </select>
         </label>
       </div>
-      <div className="v2-section-title">
-        <h2>{dateLabel(date)}</h2>
-        <span>{rows.length} turnos</span>
+      <div className="v2-section-title v2-appointments-header">
+        <div>
+          <h2>{dateLabel(date)}</h2>
+          <span>{rows.length} turnos</span>
+        </div>
+        <button
+          type="button"
+          className="v2-primary v2-add-manual-btn"
+          onClick={() => setManualDialog({ open: true, mode: "CREATE", appointment: null })}
+        >
+          <Plus size={16} /> Agregar turno
+        </button>
       </div>
       {message && (
         <p className="v2-alert" role="status">
@@ -240,7 +255,10 @@ export function V2Appointments() {
             </div>
             <div className="v2-appointment-body">
               <div className="v2-appointment-heading">
-                <h3>{a.name}</h3>
+                <div className="v2-appointment-title-wrap">
+                  <h3>{a.name}</h3>
+                  {a.isManual && <span className="v2-manual-badge">Manual</span>}
+                </div>
                 <Status code={a.statusCode} />
               </div>
               <p>
@@ -275,15 +293,30 @@ export function V2Appointments() {
               </div>
             </div>
             <div className="v2-appointment-actions">
-              {["PENDING", "CONFIRMED"].includes(a.statusCode) && (
-                <button
-                  className="v2-secondary action-reject"
-                  disabled={busy}
-                  onClick={() => setAction({ appointment: a, status: "CANCELLED" })}
-                >
-                  Cancelar turno
-                </button>
-              )}
+              {a.isManual &&
+                ["PENDING", "CONFIRMED"].includes(a.statusCode) &&
+                (staff.profile.role === "ADMIN" || a.barberId === staff.profile.barber_id) && (
+                  <button
+                    type="button"
+                    className="v2-secondary"
+                    disabled={busy}
+                    onClick={() =>
+                      setManualDialog({ open: true, mode: "EDIT", appointment: a })
+                    }
+                  >
+                    Editar
+                  </button>
+                )}
+              {["PENDING", "CONFIRMED"].includes(a.statusCode) &&
+                (!a.isManual || staff.profile.role === "ADMIN") && (
+                  <button
+                    className="v2-secondary action-reject"
+                    disabled={busy}
+                    onClick={() => setAction({ appointment: a, status: "CANCELLED" })}
+                  >
+                    Cancelar turno
+                  </button>
+                )}
               {a.statusCode === "CONFIRMED" && (
                 <Link className="v2-secondary" to="/admin-v2/pagos" search={{ turno: a.id }}>
                   Cobrar
@@ -299,6 +332,14 @@ export function V2Appointments() {
       <p className="v2-footnote">
         Los turnos pendientes se confirman al acreditarse la seña. Cancelar un turno no devuelve automáticamente la seña.
       </p>
+      <ManualAppointmentDialog
+        open={manualDialog.open}
+        mode={manualDialog.mode}
+        appointment={manualDialog.appointment}
+        initialDate={date}
+        onClose={() => setManualDialog((prev) => ({ ...prev, open: false }))}
+        onSuccess={(msg) => setMessage(msg)}
+      />
       <Dialog
         open={!!action}
         onOpenChange={(open) => {

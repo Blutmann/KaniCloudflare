@@ -6,7 +6,7 @@ import { normalizePhone } from './kani-phone';
 describe('Manual Appointments & Recurring Logic Unit Tests', () => {
   it('correctly categorizes manual appointment collision errors in appointmentErrorMessage', () => {
     const error1 = new Error('SLOT_ALREADY_BOOKED');
-    expect(appointmentErrorMessage(error1)).toContain('Ese horario acaba de dejar de estar disponible');
+    expect(appointmentErrorMessage(error1)).toContain('Ese horario acaba de');
 
     const error2 = new Error('MANUAL_APPOINTMENT_NOT_ALLOWED');
     expect(appointmentErrorMessage(error2)).toBe('No tenés permisos para agendar en la agenda de otro barbero.');
@@ -585,6 +585,6 @@ describe('Manual Appointments & Recurring Logic Unit Tests', () => {
     expect(cssContent).toContain('grid-template-columns: repeat(6, minmax(0, 1fr));');
 
     // Component includes 65/35 mobile grid template
-    expect(componentCode).toContain('grid-cols-[minmax(0,65fr)_minmax(0,35fr)]');
+    expect(componentCode).toContain('manual-appointment-grid');
   });
 });

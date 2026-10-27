@@ -1655,3 +1655,346 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
 @media (max-width: 767px) {
   .v2-appointments-page .v2-appointment-actions > a:not(.v2-whatsapp) { order: 1; }
 }
+
+/* ==========================================================================
+   Admin V2 — Manual Appointments (Crear turno manual / Editar)
+   ========================================================================== */
+
+.v2-appointments-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.v2-add-manual-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 8px 14px;
+  min-height: 40px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.v2-appointment-title-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.v2-manual-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 7px;
+  border-radius: 9999px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  background: color-mix(in srgb, var(--gold) 14%, transparent);
+  color: var(--gold);
+  border: 1px solid color-mix(in srgb, var(--gold) 35%, transparent);
+}
+
+.v2-manual-dialog {
+  max-width: 580px;
+  width: 100%;
+}
+
+.v2-manual-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 14px;
+}
+
+.v2-manual-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 600px) {
+  .v2-manual-row {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+}
+
+.v2-readonly-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--v2-inset);
+  border: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--foreground);
+}
+
+/* Time section & Capsules */
+.v2-manual-time-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border-radius: var(--radius-card);
+  background: color-mix(in srgb, var(--v2-inset) 60%, transparent);
+  border: 1px solid var(--border);
+}
+
+.v2-manual-time-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.v2-selected-time-badge {
+  font-size: 12px;
+  color: var(--gold);
+}
+
+.v2-selected-time-badge strong {
+  font-weight: 600;
+}
+
+.v2-period-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.v2-period-pill {
+  font-size: 11px;
+  padding: 5px 10px;
+  border-radius: 9999px;
+  border: 1px solid var(--border);
+  background: var(--v2-inset);
+  color: var(--muted-foreground);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.v2-period-pill:hover:not(:disabled) {
+  border-color: var(--gold);
+  color: var(--foreground);
+}
+
+.v2-period-pill.active {
+  background: color-mix(in srgb, var(--gold) 15%, var(--v2-inset));
+  border-color: var(--gold);
+  color: var(--gold);
+  font-weight: 600;
+}
+
+.v2-capsules-container {
+  max-height: 200px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.v2-capsules-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(75px, 1fr));
+  gap: 6px;
+}
+
+.v2-capsule-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 4px 6px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--v2-reading-surface);
+  color: var(--foreground);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  position: relative;
+}
+
+.v2-capsule-time {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.v2-capsule-icon {
+  margin-top: 2px;
+  color: var(--gold);
+}
+
+.v2-capsule-busy-label {
+  font-size: 9px;
+  color: var(--muted-foreground);
+  line-height: 1;
+  margin-top: 2px;
+}
+
+.v2-capsule-btn.available:hover:not(:disabled) {
+  border-color: var(--gold);
+  background: color-mix(in srgb, var(--gold) 8%, var(--v2-reading-surface));
+}
+
+.v2-capsule-btn.selected {
+  border-color: var(--gold);
+  background: color-mix(in srgb, var(--gold) 18%, var(--v2-reading-surface));
+  color: var(--gold);
+  font-weight: 600;
+  box-shadow: 0 0 0 1px var(--gold);
+}
+
+.v2-capsule-btn.unavailable {
+  opacity: 0.38;
+  background: var(--v2-inset);
+  text-decoration: line-through;
+  cursor: not-allowed;
+}
+
+.v2-no-slots {
+  font-size: 12px;
+  color: var(--muted-foreground);
+  text-align: center;
+  padding: 16px 0;
+}
+
+/* Client details & Quick search */
+.v2-manual-client-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.v2-manual-client-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.v2-section-subtitle {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted-foreground);
+}
+
+.v2-client-quick-search {
+  position: relative;
+  flex: 1 1 240px;
+  max-width: 320px;
+}
+
+.v2-client-quick-search input {
+  width: 100%;
+  font-size: 12px;
+  padding: 6px 10px;
+  min-height: 34px;
+}
+
+.v2-client-suggestions-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin: 4px 0 0;
+  padding: 4px 0;
+  list-style: none;
+  background: var(--popover);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 15%);
+  z-index: 50;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.v2-client-suggestions-list li button {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 6px 12px;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  color: var(--foreground);
+}
+
+.v2-client-suggestions-list li button:hover {
+  background: var(--v2-inset);
+}
+
+.v2-client-suggestions-list li button strong {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.v2-client-suggestions-list li button small {
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+
+/* Summary Card */
+.v2-manual-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--radius-card);
+  background: var(--v2-inset);
+  border: 1px solid color-mix(in srgb, var(--gold) 25%, var(--border));
+}
+
+.v2-summary-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--gold);
+  font-size: 12px;
+}
+
+.v2-summary-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 12px;
+  font-size: 12px;
+}
+
+@media (max-width: 500px) {
+  .v2-summary-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.v2-summary-label {
+  color: var(--muted-foreground);
+  font-weight: 500;
+}
+
+.v2-manual-notice {
+  font-size: 11px;
+  color: var(--muted-foreground);
+  line-height: 1.4;
+  margin: 0;
+  padding-top: 4px;
+  border-top: 1px solid var(--border);
+}
+
+.v2-manual-actions {
+  justify-content: flex-end;
+  margin-top: 8px;
+}

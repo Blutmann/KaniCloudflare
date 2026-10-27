@@ -4,6 +4,18 @@ import type { AuthenticatedStaff } from '@/lib/kani-auth';
 import type { Appointment, Barber, ServiceId, Status } from '@/lib/kani-model';
 import { sendAppointmentNotification } from '@/lib/kani-notifications.functions';
 
+export {
+  computeAvailableManualSlots,
+  filterSlotsByPeriod,
+  isIntervalOverlapping,
+  minutesToTime,
+  timeToMinutes,
+  PERIOD_LABELS,
+  type ComputeSlotsInput,
+  type PeriodFilter,
+  type TimeCapsule,
+} from './kani-manual-intervals';
+
 export type RealAppointmentStatus = Tables<'appointments'>['status'];
 export type NoShowDecision = 'RETAIN' | 'WAIVE' | 'REFUND';
 
@@ -82,12 +94,24 @@ export type CreateManualAppointmentInput = {
   time: string;
   name: string;
   phone: string;
-  email: string;
+  email?: string;
   notes?: string;
   isRecurring?: boolean;
   frequency?: ManualFrequency;
   durationMinutes?: number;
   depositRequired?: boolean;
+};
+
+export type UpdateManualAppointmentInput = {
+  appointmentId: string;
+  barberId: string;
+  serviceId: string;
+  date: string;
+  time: string;
+  name: string;
+  phone: string;
+  email?: string;
+  notes?: string;
 };
 
 type CreateAppointmentInput = {
@@ -124,10 +148,12 @@ export function appointmentErrorMessage(error: unknown) {
   if (message.includes('correo electrónico') || message.includes('email')) {
     return 'El correo electrónico del cliente es obligatorio y debe tener un formato válido.';
   }
-  if (message.includes('SLOT_ALREADY_BOOKED')) return 'Ese horario acaba de dejar de estar disponible o ya tiene un turno reservado.';
+  if (message.includes('SLOT_ALREADY_BOOKED')) return 'Ese horario acaba de ocuparse. Elegí otro horario disponible.';
   if (message.includes('SLOT_UNAVAILABLE')) return 'Ese horario ya no está disponible. Elegí otro para continuar.';
   if (message.includes('BOOKING_DATE_OUT_OF_RANGE')) return 'La fecha seleccionada ya no está disponible.';
   if (message.includes('SUNDAY_CLOSED')) return 'El estudio permanece cerrado los domingos.';
+  if (message.includes('BARBER_CANNOT_CANCEL_MANUAL_APPOINTMENT')) return 'No tenés permisos para cancelar turnos manuales.';
+  if (message.includes('BARBER_CANNOT_REASSIGN_APPOINTMENT')) return 'No podés reasignar un turno a otro barbero.';
   if (message.includes('MANUAL_APPOINTMENT_NOT_ALLOWED')) return 'No tenés permisos para agendar en la agenda de otro barbero.';
   if (message.includes('AUTH_REQUIRED')) return 'Tenés que iniciar sesión para realizar esta acción.';
   if (message.includes('create_manual_appointment') || message.includes('PGRST202')) {
@@ -170,9 +196,13 @@ export async function createManualAppointment(input: CreateManualAppointmentInpu
   if (!phone || phone.length < 6) {
     throw new Error('El celular del cliente es obligatorio y debe ser válido.');
   }
-  const email = input.email?.trim();
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    throw new Error('El correo electrónico del cliente es obligatorio y debe tener un formato válido.');
+  let email: string | null = null;
+  if (input.email !== undefined) {
+    const trimmed = input.email.trim();
+    if (!trimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      throw new Error('El correo electrónico del cliente es obligatorio y debe tener un formato válido.');
+    }
+    email = trimmed;
   }
 
   const { data, error } = await supabase.rpc('create_manual_appointment', {
@@ -191,6 +221,52 @@ export async function createManualAppointment(input: CreateManualAppointmentInpu
   if (error) throw error;
   const row = data?.[0];
   if (!row) throw new Error('No se pudo crear el turno manual.');
+  return row;
+}
+
+export async function updateManualAppointment(input: UpdateManualAppointmentInput) {
+  if (!input.appointmentId) {
+    throw new Error('El identificador del turno es obligatorio.');
+  }
+  if (!input.barberId) {
+    throw new Error('El barbero es obligatorio.');
+  }
+  if (!input.serviceId) {
+    throw new Error('El servicio es obligatorio.');
+  }
+  if (!input.date) {
+    throw new Error('La fecha es obligatoria.');
+  }
+  if (!input.time) {
+    throw new Error('El horario es obligatorio.');
+  }
+  const name = input.name?.trim();
+  if (!name || name.length < 3) {
+    throw new Error('El nombre del cliente es obligatorio y debe tener al menos 3 caracteres.');
+  }
+  const phone = input.phone?.trim();
+  if (!phone || phone.length < 6) {
+    throw new Error('El celular del cliente es obligatorio y debe ser válido.');
+  }
+  const email = input.email?.trim() || null;
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    throw new Error('El correo electrónico del cliente debe tener un formato válido.');
+  }
+
+  const { data, error } = await supabase.rpc('update_manual_appointment', {
+    p_appointment_id: input.appointmentId,
+    p_barber_id: input.barberId,
+    p_service_id: input.serviceId,
+    p_booking_date: input.date,
+    p_start_time: input.time.length === 5 ? `${input.time}:00` : input.time,
+    p_client_name: name,
+    p_client_phone: phone,
+    p_client_email: email,
+    p_notes: input.notes?.trim() || null,
+  });
+  if (error) throw error;
+  const row = data?.[0];
+  if (!row) throw new Error('No se pudo actualizar el turno manual.');
   return row;
 }
 

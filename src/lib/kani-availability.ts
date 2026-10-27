@@ -9,6 +9,7 @@ export type PublicAvailabilitySlot = Omit<Tables<'available_barber_slots'>, 'sta
   barber_name: Barber;
 };
 export type ConfiguredService = Omit<(typeof services)[number], 'price' | 'duration'> & {
+  dbId?: string;
   price: number;
   duration: number;
 };
@@ -64,7 +65,7 @@ export async function readConfiguredServices(options: { bypassCache?: boolean } 
   }
   const { data, error } = await supabase
     .from('services')
-    .select('name, duration_minutes, price_ars')
+    .select('id, name, duration_minutes, price_ars')
     .eq('active', true)
     .order('name', { ascending: true });
   if (error) throw error;
@@ -72,7 +73,7 @@ export async function readConfiguredServices(options: { bypassCache?: boolean } 
   const result = services.flatMap(service => {
     const configured = byName.get(service.name)
       ?? (service.id === 'corte-barba' ? (byName.get('Corte + barba') ?? byName.get('Corte y barba')) : undefined);
-    return configured ? [{ ...service, price: configured.price_ars, duration: configured.duration_minutes }] : [];
+    return configured ? [{ ...service, dbId: configured.id, price: configured.price_ars, duration: configured.duration_minutes }] : [];
   });
   cachedServices = { data: result, timestamp: now };
   return result;
