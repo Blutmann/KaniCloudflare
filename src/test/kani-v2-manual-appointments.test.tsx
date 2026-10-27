@@ -380,7 +380,7 @@ describe("Admin V2 — UI de Turnos y Permisos", () => {
     expect(screen.queryByRole("button", { name: "Cancelar turno" })).toBeNull();
   });
 
-  it("ManualAppointmentDialog locks barber selection for BARBER and shows explicit notice", () => {
+  it("ManualAppointmentDialog locks barber selection for BARBER and shows discreet badge", () => {
     mockStaff.profile.role = "BARBER";
     mockStaff.profile.barber_id = "barber-lautaro";
 
@@ -394,16 +394,37 @@ describe("Admin V2 — UI de Turnos y Permisos", () => {
       />
     );
 
-    // Shows static/readonly barber box for BARBER role
-    expect(screen.getAllByText("Lautaro").length).toBeGreaterThanOrEqual(1);
+    // Shows discreet badge for BARBER role and no combobox
+    expect(screen.getByText("Barbero: Lautaro")).toBeInTheDocument();
     expect(screen.queryByRole("combobox", { name: /Barbero/i })).toBeNull();
 
-    // Explains no-deposit policy
+    // Eliminated redundant introductory and footer notices
     expect(
-      screen.getByText(
-        "Este turno se incorpora directamente a la agenda sin cobro de seña."
-      )
-    ).toBeInTheDocument();
+      screen.queryByText(/Cargá directamente el turno en la agenda/i)
+    ).toBeNull();
+    expect(
+      screen.queryByText(/sin cobro de seña/i)
+    ).toBeNull();
+  });
+
+  it("Servicio normal: does not show duration in options or computed duration boxes", () => {
+    render(
+      <ManualAppointmentDialog
+        open={true}
+        mode="CREATE"
+        initialDate={businessDateToday()}
+        onClose={vi.fn()}
+        onSuccess={vi.fn()}
+      />
+    );
+
+    // Service options only have names, no (45 min)
+    expect(screen.getByRole("option", { name: "Corte" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Barba" })).toBeInTheDocument();
+    expect(screen.queryByRole("option", { name: /45 min/i })).toBeNull();
+
+    // No redundant computed duration box
+    expect(screen.queryByText(/Duración calculada/i)).toBeNull();
   });
 
   it("ManualAppointmentDialog allows ADMIN to select any active barber", () => {
@@ -428,7 +449,7 @@ describe("Admin V2 — UI de Turnos y Permisos", () => {
     expect(screen.getByRole("option", { name: "Valentín" })).toBeInTheDocument();
   });
 
-  it("Servicio 'Otro': renders custom inputs, 15m intervals and computed duration", () => {
+  it("Servicio 'Otro': renders custom inputs and 15m intervals without visual duration redundancy", () => {
     render(
       <ManualAppointmentDialog
         open={true}
@@ -449,13 +470,9 @@ describe("Admin V2 — UI de Turnos y Permisos", () => {
     expect(screen.getByRole("combobox", { name: /Hora de inicio/i })).toBeInTheDocument();
     expect(screen.getByRole("combobox", { name: /Hora de finalización/i })).toBeInTheDocument();
 
-    // Default duration for 10:00 to 11:00 is 1 hour
-    expect(screen.getAllByText(/1 hora \(60 min\)/i).length).toBeGreaterThan(0);
-
-    // Change times to 10:00 - 11:30 -> 90 min (1 h 30 min)
-    const endSelect = screen.getByRole("combobox", { name: /Hora de finalización/i });
-    fireEvent.change(endSelect, { target: { value: "11:30" } });
-    expect(screen.getAllByText(/1 h 30 min \(90 min\)/i).length).toBeGreaterThan(0);
+    // No visual duration text
+    expect(screen.queryByText(/60 min/i)).toBeNull();
+    expect(screen.queryByText(/90 min/i)).toBeNull();
   });
 
   it("Servicio 'Otro': detects anti-overlap conflict against existing appointments", () => {

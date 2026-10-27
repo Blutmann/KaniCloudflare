@@ -11,7 +11,6 @@ import {
   computeAvailableManualSlots,
   createManualAppointment,
   filterSlotsByPeriod,
-  formatDuration,
   isIntervalOverlapping,
   minutesToTime,
   PERIOD_LABELS,
@@ -20,9 +19,8 @@ import {
   type PeriodFilter,
   type RealAppointment,
 } from "@/lib/kani-appointments";
-import { dateLabel, money } from "@/lib/kani-model";
 import { useV2, type V2Client } from "./data";
-import { Check, Clock3, Sparkles } from "lucide-react";
+import { Check } from "lucide-react";
 
 export type ManualAppointmentDialogProps = {
   open: boolean;
@@ -100,7 +98,7 @@ export function ManualAppointmentDialog({
     );
   }, [servicesList, serviceId, isOtro]);
 
-  // Duration in minutes
+  // Duration in minutes (internal only, not shown as text)
   const customDurationMinutes = useMemo(() => {
     if (!isOtro) return activeService?.duration || 45;
     const startM = timeToMinutes(customStartTime);
@@ -193,7 +191,7 @@ export function ManualAppointmentDialog({
     return filterSlotsByPeriod(allSlots, periodFilter);
   }, [allSlots, periodFilter]);
 
-  // Selected time end calculation for standard services
+  // Selected time end calculation for standard services (internal)
   const computedEndTime = useMemo(() => {
     if (isOtro) return customEndTime;
     if (!selectedTime) return "";
@@ -249,12 +247,12 @@ export function ManualAppointmentDialog({
     setShowClientSuggestions(false);
   }
 
-  // Selected barber name for summary
+  // Selected barber name for display
   const selectedBarberName = useMemo(() => {
     return availableBarbers.find((b) => b.id === barberId)?.name || "Barbero";
   }, [availableBarbers, barberId]);
 
-  // Active price for summary and submission
+  // Active price for submission
   const resolvedPrice = useMemo(() => {
     if (isOtro) return typeof customPrice === "number" ? customPrice : 0;
     return servicePrice || activeService?.price || 0;
@@ -379,14 +377,19 @@ export function ManualAppointmentDialog({
         aria-labelledby={titleId}
         aria-describedby={descId}
       >
-        <DialogTitle id={titleId}>
-          {mode === "CREATE" ? "Generar turno" : "Editar turno manual"}
-        </DialogTitle>
-        <DialogDescription id={descId}>
-          {mode === "CREATE"
-            ? "Cargá directamente el turno en la agenda sin pasar por pasarelas de pago ni requerir seña."
-            : "Modificá los datos del turno manual respetando la agenda del barbero."}
-        </DialogDescription>
+        <div className="v2-manual-dialog-header">
+          <div className="v2-manual-dialog-title-wrap">
+            <DialogTitle id={titleId}>
+              {mode === "CREATE" ? "Generar turno" : "Editar turno manual"}
+            </DialogTitle>
+            {!isAdmin && (
+              <span className="v2-barber-tag">Barbero: {selectedBarberName}</span>
+            )}
+          </div>
+          <DialogDescription id={descId} className="sr-only">
+            {mode === "CREATE" ? "Generar turno manual" : "Editar turno manual"}
+          </DialogDescription>
+        </div>
 
         {formError && (
           <p className="v2-alert" role="alert">
@@ -395,9 +398,9 @@ export function ManualAppointmentDialog({
         )}
 
         <form onSubmit={handleSubmit} className="v2-manual-form">
-          {/* Barber Selection: only selectable by ADMIN */}
-          <div className="v2-manual-row">
-            {isAdmin ? (
+          {/* Row 1: Barber Selection (only for ADMIN) + Service */}
+          {isAdmin ? (
+            <div className="v2-manual-row">
               <label className="v2-field">
                 Barbero
                 <select
@@ -415,252 +418,277 @@ export function ManualAppointmentDialog({
                   ))}
                 </select>
               </label>
-            ) : (
-              <div className="v2-field">
-                <span className="v2-field-label">Barbero</span>
-                <div className="v2-readonly-box">
-                  <strong>{selectedBarberName}</strong>
-                </div>
-              </div>
-            )}
 
-            {/* Service Selection */}
-            <label className="v2-field">
-              Servicio
-              <select
-                value={serviceId}
-                disabled={isBusy}
-                onChange={(e) => {
-                  const newServiceId = e.target.value;
-                  setServiceId(newServiceId);
-                  setSelectedTime("");
-                  if (newServiceId !== "OTRO") {
-                    const svc = servicesList.find(
-                      (s) => (s.dbId && s.dbId === newServiceId) || s.id === newServiceId
-                    );
-                    if (svc) setServicePrice(svc.price);
-                  }
-                }}
-              >
-                {servicesList.map((s) => (
-                  <option key={s.dbId || s.id} value={s.dbId || s.id}>
-                    {s.name} ({s.duration} min)
-                  </option>
-                ))}
-                <option value="OTRO">Otro</option>
-              </select>
-            </label>
-          </div>
-
-          {/* Conditional inputs when Servicio "Otro" is chosen */}
-          {isOtro && (
-            <div className="v2-manual-row">
               <label className="v2-field">
-                Nombre del servicio *
-                <input
-                  type="text"
-                  required
-                  placeholder="Ej. Tintura de color"
-                  value={customServiceName}
+                Servicio
+                <select
+                  value={serviceId}
                   disabled={isBusy}
-                  onChange={(e) => setCustomServiceName(e.target.value)}
-                />
+                  onChange={(e) => {
+                    const newServiceId = e.target.value;
+                    setServiceId(newServiceId);
+                    setSelectedTime("");
+                    if (newServiceId !== "OTRO") {
+                      const svc = servicesList.find(
+                        (s) => (s.dbId && s.dbId === newServiceId) || s.id === newServiceId
+                      );
+                      if (svc) setServicePrice(svc.price);
+                    }
+                  }}
+                >
+                  {servicesList.map((s) => (
+                    <option key={s.dbId || s.id} value={s.dbId || s.id}>
+                      {s.name}
+                    </option>
+                  ))}
+                  <option value="OTRO">Otro</option>
+                </select>
               </label>
-
+            </div>
+          ) : (
+            <div className="v2-manual-row-single">
               <label className="v2-field">
-                Importe ($ ARS) *
-                <input
-                  type="number"
-                  min={0}
-                  step={1}
-                  required
-                  placeholder="Ej. 35000"
-                  value={customPrice}
+                Servicio
+                <select
+                  value={serviceId}
                   disabled={isBusy}
-                  onChange={(e) =>
-                    setCustomPrice(e.target.value === "" ? "" : Number(e.target.value))
-                  }
-                />
+                  onChange={(e) => {
+                    const newServiceId = e.target.value;
+                    setServiceId(newServiceId);
+                    setSelectedTime("");
+                    if (newServiceId !== "OTRO") {
+                      const svc = servicesList.find(
+                        (s) => (s.dbId && s.dbId === newServiceId) || s.id === newServiceId
+                      );
+                      if (svc) setServicePrice(svc.price);
+                    }
+                  }}
+                >
+                  {servicesList.map((s) => (
+                    <option key={s.dbId || s.id} value={s.dbId || s.id}>
+                      {s.name}
+                    </option>
+                  ))}
+                  <option value="OTRO">Otro</option>
+                </select>
               </label>
             </div>
           )}
 
-          {/* Date Picker & Duration */}
-          <div className="v2-manual-row">
-            <label className="v2-field">
-              Fecha
-              <input
-                type="date"
-                value={date}
-                disabled={isBusy}
-                onChange={(e) => {
-                  setDate(e.target.value);
-                  setSelectedTime("");
-                }}
-              />
-            </label>
-
-            <div className="v2-field">
-              <span className="v2-field-label">Duración calculada</span>
-              <div className="v2-readonly-box">
-                <Clock3 size={15} />
-                <span>{formatDuration(durationMinutes)}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Time Configuration: Custom 15m intervals for "Otro" vs Capsules for Standard */}
+          {/* Conditional inputs for Servicio "Otro" vs Standard */}
           {isOtro ? (
-            <div className="v2-manual-time-section">
-              <div className="v2-manual-time-header">
-                <span className="v2-field-label">Horario personalizado (intervalos de 15 min)</span>
-                <span className="v2-selected-time-badge">
-                  {customStartTime} → {customEndTime} ({formatDuration(customDurationMinutes)})
-                </span>
-              </div>
-
+            <>
               <div className="v2-manual-row">
                 <label className="v2-field">
-                  Hora de inicio *
-                  <select
-                    value={customStartTime}
+                  Nombre del servicio *
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ej. Tintura de color"
+                    value={customServiceName}
                     disabled={isBusy}
-                    onChange={(e) => setCustomStartTime(e.target.value)}
-                  >
-                    {TIME_15_OPTIONS.map((t) => (
-                      <option key={`start-${t}`} value={t}>
-                        {t} hs
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(e) => setCustomServiceName(e.target.value)}
+                  />
                 </label>
 
                 <label className="v2-field">
-                  Hora de finalización *
-                  <select
-                    value={customEndTime}
+                  Importe ($ ARS) *
+                  <input
+                    type="number"
+                    min={0}
+                    step={1}
+                    required
+                    placeholder="Ej. 35000"
+                    value={customPrice}
                     disabled={isBusy}
-                    onChange={(e) => setCustomEndTime(e.target.value)}
-                  >
-                    {TIME_15_OPTIONS.map((t) => (
-                      <option key={`end-${t}`} value={t}>
-                        {t} hs
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(e) =>
+                      setCustomPrice(e.target.value === "" ? "" : Number(e.target.value))
+                    }
+                  />
                 </label>
               </div>
 
-              {customOverlapConflict && (
-                <p className="v2-alert" role="alert" style={{ marginTop: "6px" }}>
-                  {customOverlapConflict}
-                </p>
-              )}
-            </div>
-          ) : (
-            <div className="v2-manual-time-section">
-              <div className="v2-manual-time-header">
-                <span className="v2-field-label">
-                  Horario disponible ({durationMinutes} min)
-                </span>
-                {selectedTime && (
-                  <span className="v2-selected-time-badge">
-                    Seleccionado: <strong>{selectedTime} → {computedEndTime}</strong>
-                  </span>
-                )}
+              <div className="v2-manual-row-single">
+                <label className="v2-field">
+                  Fecha
+                  <input
+                    type="date"
+                    value={date}
+                    disabled={isBusy}
+                    onChange={(e) => setDate(e.target.value)}
+                  />
+                </label>
               </div>
 
-              {/* Period Pills Filter */}
-              <div className="v2-period-pills" role="tablist" aria-label="Filtrar horarios por período">
-                {(Object.keys(PERIOD_LABELS) as PeriodFilter[]).map((pKey) => (
-                  <button
-                    key={pKey}
-                    type="button"
-                    role="tab"
-                    aria-selected={periodFilter === pKey}
-                    className={`v2-period-pill ${periodFilter === pKey ? "active" : ""}`}
-                    onClick={() => setPeriodFilter(pKey)}
-                  >
-                    {PERIOD_LABELS[pKey]}
-                  </button>
-                ))}
-              </div>
+              {/* Time Configuration for "Otro": side by side Inicio | Fin */}
+              <div className="v2-manual-time-section">
+                <div className="v2-manual-time-header">
+                  <span className="v2-field-label">Horario personalizado (intervalos de 15 min)</span>
+                </div>
 
-              {/* Capsules Grid */}
-              <div className="v2-capsules-container">
-                {visibleSlots.length === 0 ? (
-                  <p className="v2-no-slots">
-                    No hay horarios disponibles en este rango.
+                <div className="v2-manual-row">
+                  <label className="v2-field">
+                    Hora de inicio *
+                    <select
+                      value={customStartTime}
+                      disabled={isBusy}
+                      onChange={(e) => setCustomStartTime(e.target.value)}
+                    >
+                      {TIME_15_OPTIONS.map((t) => (
+                        <option key={`start-${t}`} value={t}>
+                          {t} hs
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="v2-field">
+                    Hora de finalización *
+                    <select
+                      value={customEndTime}
+                      disabled={isBusy}
+                      onChange={(e) => setCustomEndTime(e.target.value)}
+                    >
+                      {TIME_15_OPTIONS.map((t) => (
+                        <option key={`end-${t}`} value={t}>
+                          {t} hs
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+
+                {customOverlapConflict && (
+                  <p className="v2-alert" role="alert" style={{ marginTop: "4px" }}>
+                    {customOverlapConflict}
                   </p>
-                ) : (
-                  <div className="v2-capsules-grid">
-                    {visibleSlots.map((slot) => {
-                      const isSelected = selectedTime === slot.time;
-                      return (
-                        <button
-                          key={slot.time}
-                          type="button"
-                          disabled={!slot.available || isBusy}
-                          className={`v2-capsule-btn ${
-                            isSelected ? "selected" : slot.available ? "available" : "unavailable"
-                          }`}
-                          title={
-                            slot.available
-                              ? `Disponible: ${slot.time} a ${slot.endTime}`
-                              : `Ocupado por otro turno`
-                          }
-                          onClick={() => setSelectedTime(slot.time)}
-                        >
-                          <span className="v2-capsule-time">{slot.time}</span>
-                          {slot.available ? (
-                            isSelected ? (
-                              <Check size={12} className="v2-capsule-icon" />
-                            ) : null
-                          ) : (
-                            <span className="v2-capsule-busy-label">Ocupado</span>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
                 )}
               </div>
-            </div>
+            </>
+          ) : (
+            <>
+              {/* Row 2: Fecha | Importe */}
+              <div className="v2-manual-row">
+                <label className="v2-field">
+                  Fecha
+                  <input
+                    type="date"
+                    value={date}
+                    disabled={isBusy}
+                    onChange={(e) => {
+                      setDate(e.target.value);
+                      setSelectedTime("");
+                    }}
+                  />
+                </label>
+
+                <label className="v2-field">
+                  Importe ($ ARS) *
+                  <input
+                    type="number"
+                    min={0}
+                    step={1}
+                    required
+                    placeholder="Ej. 25000"
+                    value={servicePrice}
+                    disabled={isBusy}
+                    onChange={(e) => setServicePrice(Number(e.target.value))}
+                  />
+                </label>
+              </div>
+
+              {/* Standard Time Capsules */}
+              <div className="v2-manual-time-section">
+                <div className="v2-manual-time-header">
+                  <span className="v2-field-label">Horario</span>
+                  {selectedTime && (
+                    <span className="v2-selected-time-badge">
+                      Seleccionado: <strong>{selectedTime} hs</strong>
+                    </span>
+                  )}
+                </div>
+
+                {/* Period Pills Filter */}
+                <div className="v2-period-pills" role="tablist" aria-label="Filtrar horarios por período">
+                  {(Object.keys(PERIOD_LABELS) as PeriodFilter[]).map((pKey) => (
+                    <button
+                      key={pKey}
+                      type="button"
+                      role="tab"
+                      aria-selected={periodFilter === pKey}
+                      className={`v2-period-pill ${periodFilter === pKey ? "active" : ""}`}
+                      onClick={() => setPeriodFilter(pKey)}
+                    >
+                      {PERIOD_LABELS[pKey]}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Capsules Grid */}
+                <div className="v2-capsules-container">
+                  {visibleSlots.length === 0 ? (
+                    <p className="v2-no-slots">
+                      No hay horarios disponibles en este rango.
+                    </p>
+                  ) : (
+                    <div className="v2-capsules-grid">
+                      {visibleSlots.map((slot) => {
+                        const isSelected = selectedTime === slot.time;
+                        return (
+                          <button
+                            key={slot.time}
+                            type="button"
+                            disabled={!slot.available || isBusy}
+                            className={`v2-capsule-btn ${
+                              isSelected ? "selected" : slot.available ? "available" : "unavailable"
+                            }`}
+                            title={slot.available ? `Disponible: ${slot.time}` : "Horario ocupado"}
+                            onClick={() => setSelectedTime(slot.time)}
+                          >
+                            <span className="v2-capsule-time">{slot.time}</span>
+                            {slot.available && isSelected ? (
+                              <Check size={11} className="v2-capsule-icon" />
+                            ) : null}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
           )}
 
           {/* Client Details Section */}
           <div className="v2-manual-client-section">
-            <div className="v2-manual-client-header">
-              <span className="v2-section-subtitle">Datos del cliente</span>
-              {/* Quick Search for Existing Clients */}
-              <div className="v2-client-quick-search">
-                <input
-                  type="text"
-                  placeholder="Buscar cliente existente..."
-                  value={clientSearch}
-                  disabled={isBusy}
-                  onChange={(e) => {
-                    setClientSearch(e.target.value);
-                    setShowClientSuggestions(true);
-                  }}
-                  onFocus={() => setShowClientSuggestions(true)}
-                />
-                {showClientSuggestions && suggestedClients.length > 0 && (
-                  <ul className="v2-client-suggestions-list">
-                    {suggestedClients.map((c) => (
-                      <li key={c.id}>
-                        <button
-                          type="button"
-                          onClick={() => handleSelectClient(c)}
-                        >
-                          <strong>{c.name}</strong>
-                          <small>{c.phone} {c.email ? `· ${c.email}` : ""}</small>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
+            {/* Quick Search for Existing Clients */}
+            <div className="v2-client-quick-search">
+              <input
+                type="text"
+                placeholder="Buscar cliente existente..."
+                value={clientSearch}
+                disabled={isBusy}
+                onChange={(e) => {
+                  setClientSearch(e.target.value);
+                  setShowClientSuggestions(true);
+                }}
+                onFocus={() => setShowClientSuggestions(true)}
+              />
+              {showClientSuggestions && suggestedClients.length > 0 && (
+                <ul className="v2-client-suggestions-list">
+                  {suggestedClients.map((c) => (
+                    <li key={c.id}>
+                      <button
+                        type="button"
+                        onClick={() => handleSelectClient(c)}
+                      >
+                        <strong>{c.name}</strong>
+                        <small>{c.phone} {c.email ? `· ${c.email}` : ""}</small>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
 
             <div className="v2-manual-row">
@@ -702,59 +730,16 @@ export function ManualAppointmentDialog({
               </label>
 
               <label className="v2-field">
-                Notas / Observación (opcional)
+                Notas (opcional)
                 <input
                   type="text"
-                  placeholder="Ej. Cliente de WhatsApp, corte clásico"
+                  placeholder="Ej. Corte clásico"
                   value={notes}
                   disabled={isBusy}
                   onChange={(e) => setNotes(e.target.value)}
                 />
               </label>
             </div>
-          </div>
-
-          {/* Summary Box */}
-          <div className="v2-manual-summary">
-            <div className="v2-summary-header">
-              <Sparkles size={16} />
-              <strong>Resumen del turno</strong>
-            </div>
-            <div className="v2-summary-grid">
-              <div>
-                <span className="v2-summary-label">Cliente:</span>{" "}
-                <span>{clientName || "—"} {clientPhone ? `(${clientPhone})` : ""}</span>
-              </div>
-              <div>
-                <span className="v2-summary-label">Servicio:</span>{" "}
-                <span>
-                  {isOtro ? (customServiceName.trim() || "Otro") : (activeService?.name || "—")}{" "}
-                  ({formatDuration(durationMinutes)})
-                </span>
-              </div>
-              <div>
-                <span className="v2-summary-label">Barbero:</span>{" "}
-                <span>{selectedBarberName}</span>
-              </div>
-              <div>
-                <span className="v2-summary-label">Importe:</span>{" "}
-                <span>{money(resolvedPrice)}</span>
-              </div>
-              <div>
-                <span className="v2-summary-label">Fecha y hora:</span>{" "}
-                <span>
-                  {dateLabel(date)} ·{" "}
-                  {isOtro
-                    ? `${customStartTime} a ${customEndTime} hs`
-                    : selectedTime
-                    ? `${selectedTime} a ${computedEndTime} hs`
-                    : "Sin horario"}
-                </span>
-              </div>
-            </div>
-            <p className="v2-manual-notice">
-              Este turno se incorpora directamente a la agenda sin cobro de seña.
-            </p>
           </div>
 
           {/* Action CTAs */}

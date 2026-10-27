@@ -1701,27 +1701,57 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
 }
 
 .v2-manual-dialog {
-  max-width: 580px;
+  max-width: 520px;
   width: 100%;
+}
+
+.v2-manual-dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+
+.v2-manual-dialog-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.v2-barber-tag {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--gold) 15%, var(--v2-inset));
+  border: 1px solid color-mix(in srgb, var(--gold) 35%, transparent);
+  color: var(--gold);
 }
 
 .v2-manual-form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  margin-top: 14px;
+  gap: 10px;
+  margin-top: 6px;
 }
 
 .v2-manual-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
 }
 
-@media (max-width: 600px) {
+.v2-manual-row-single {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+}
+
+@media (max-width: 480px) {
   .v2-manual-row {
-    grid-template-columns: 1fr;
-    gap: 10px;
+    gap: 8px;
   }
 }
 
@@ -1729,12 +1759,12 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
   display: flex;
   align-items: center;
   gap: 8px;
-  min-height: 42px;
-  padding: 8px 12px;
+  min-height: 38px;
+  padding: 6px 10px;
   border-radius: var(--radius-sm);
   background: var(--v2-inset);
   border: 1px solid var(--border);
-  font-size: 13px;
+  font-size: 12px;
   color: var(--foreground);
 }
 
@@ -1742,10 +1772,10 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
 .v2-manual-time-section {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 14px;
+  gap: 8px;
+  padding: 10px 12px;
   border-radius: var(--radius-card);
-  background: color-mix(in srgb, var(--v2-inset) 60%, transparent);
+  background: color-mix(in srgb, var(--v2-inset) 50%, transparent);
   border: 1px solid var(--border);
 }
 
@@ -1769,12 +1799,12 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
 .v2-period-pills {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 4px;
 }
 
 .v2-period-pill {
-  font-size: 11px;
-  padding: 5px 10px;
+  font-size: 10.5px;
+  padding: 4px 8px;
   border-radius: 9999px;
   border: 1px solid var(--border);
   background: var(--v2-inset);
@@ -1796,15 +1826,15 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
 }
 
 .v2-capsules-container {
-  max-height: 200px;
+  max-height: 135px;
   overflow-y: auto;
   padding-right: 4px;
 }
 
 .v2-capsules-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(75px, 1fr));
-  gap: 6px;
+  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+  gap: 5px;
 }
 
 .v2-capsule-btn {
@@ -1812,8 +1842,8 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 42px;
-  padding: 4px 6px;
+  min-height: 36px;
+  padding: 3px 4px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
   background: var(--v2-reading-surface);
@@ -1824,21 +1854,21 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
 }
 
 .v2-capsule-time {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
   line-height: 1.2;
 }
 
 .v2-capsule-icon {
-  margin-top: 2px;
+  margin-top: 1px;
   color: var(--gold);
 }
 
 .v2-capsule-busy-label {
-  font-size: 9px;
+  font-size: 8.5px;
   color: var(--muted-foreground);
   line-height: 1;
-  margin-top: 2px;
+  margin-top: 1px;
 }
 
 .v2-capsule-btn.available:hover:not(:disabled) {
@@ -1865,26 +1895,26 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
   font-size: 12px;
   color: var(--muted-foreground);
   text-align: center;
-  padding: 16px 0;
+  padding: 12px 0;
 }
 
 /* Client details & Quick search */
 .v2-manual-client-section {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
 
 .v2-manual-client-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 8px;
   flex-wrap: wrap;
 }
 
 .v2-section-subtitle {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -1893,8 +1923,7 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
 
 .v2-client-quick-search {
   position: relative;
-  flex: 1 1 240px;
-  max-width: 320px;
+  width: 100%;
 }
 
 .v2-client-quick-search input {
@@ -1952,8 +1981,8 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
 .v2-manual-summary {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 12px 14px;
+  gap: 8px;
+  padding: 10px 12px;
   border-radius: var(--radius-card);
   background: var(--v2-inset);
   border: 1px solid color-mix(in srgb, var(--gold) 25%, var(--border));
@@ -1970,8 +1999,8 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
 .v2-summary-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 6px 12px;
-  font-size: 12px;
+  gap: 4px 10px;
+  font-size: 11.5px;
 }
 
 @media (max-width: 500px) {
@@ -1996,5 +2025,5 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
 
 .v2-manual-actions {
   justify-content: flex-end;
-  margin-top: 8px;
+  margin-top: 6px;
 }
