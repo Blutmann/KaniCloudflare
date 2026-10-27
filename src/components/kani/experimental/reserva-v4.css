@@ -23,3 +23,34 @@
   .payway-reservation .booking-v3 .booking-time-heading .section-title { font-size: 22px !important; line-height: 1.2 !important; }
   .payway-reservation .booking-v3 .booking-time-heading-date { margin-left: auto !important; }
 }
+
+.booking-v4-date-desktop { display: none; }
+@media (min-width: 768px) {
+  .payway-reservation .booking-page .booking-title-row {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    margin-top: 0;
+    margin-bottom: 24px;
+  }
+  .payway-reservation .booking-page .booking-title-row .section-title { margin: 0 !important; }
+  .booking-v4-date-mobile { display: none; }
+  .booking-v4-date-desktop { display: inline; }
+}
+
+/* Keep each mobile step's indicator and label together above the progress line. */
+@media (max-width: 767px) {
+  .payway-reservation .booking-page.booking-v3 .booking-progress > button {
+    justify-content: center !important;
+    gap: 3px !important;
+    padding-block: 0 3px !important;
+  }
+  .payway-reservation .booking-page.booking-v3 .booking-progress small {
+    font-size: 13px !important;
+    line-height: 16px !important;
+    height: 16px !important;
+    min-height: 16px !important;
+    margin: 0 !important;
+    white-space: nowrap !important;
+  }
+}

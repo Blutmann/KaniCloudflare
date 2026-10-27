@@ -50,12 +50,12 @@ function formatShortBookingDate(iso: string): string {
   return `${capitalizedWeekday} ${day}/${month}`;
 }
 
-function formatV4BookingDate(iso: string): string {
+function formatV4BookingDate(iso: string, full = false): string {
   const d = parseDate(iso);
   const weekday = d.toLocaleDateString('es-AR', { weekday: 'long' });
-  const month = d.toLocaleDateString('es-AR', { month: 'short' }).replace(/\.$/, '');
+  const month = d.toLocaleDateString('es-AR', { month: full ? 'long' : 'short' }).replace(/\.$/, '');
   const capitalize = (value: string) => value.charAt(0).toUpperCase() + value.slice(1);
-  return `${capitalize(weekday)} ${d.getDate()} ${capitalize(month)}.`;
+  return full ? `${capitalize(weekday)} ${d.getDate()} de ${capitalize(month)}` : `${capitalize(weekday)} ${d.getDate()} ${capitalize(month)}.`;
 }
 
 function ExperimentalLayout({ enabled, className, children }: { enabled: boolean; className?: string; children: ReactNode }) {
@@ -775,7 +775,7 @@ export function Booking({
               <h1 className="section-title">{isV2 && step === 2 ? 'Elegir una fecha' : titles[step]}</h1>
               {step === 3 && date && (
                 <span className="booking-time-heading-date">
-                  <CalendarDays size={16} />{onPaymentRequest ? formatV4BookingDate(date) : isV3 ? formatShortBookingDate(date) : dateLabel(date)}
+                  <CalendarDays size={16} />{onPaymentRequest ? <><span className="booking-v4-date-mobile">{formatV4BookingDate(date)}</span><span className="booking-v4-date-desktop">{formatV4BookingDate(date, true)}</span></> : isV3 ? formatShortBookingDate(date) : dateLabel(date)}
                 </span>
               )}
             </div>
