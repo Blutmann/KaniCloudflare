@@ -370,7 +370,7 @@ export function ManualAppointmentDialog({
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && !isBusy && onClose()}>
       <DialogContent
-        className="v2-dialog v2-manual-dialog"
+        className="v2-dialog v2-manual-dialog inset-0 md:inset-auto top-0 md:top-[50%] left-0 md:left-[50%] right-0 md:right-auto bottom-0 md:bottom-auto translate-x-0 translate-y-0 md:translate-x-0 md:translate-y-0 max-w-none md:max-w-lg p-0 md:p-6 gap-0 md:gap-4 border-0 md:border rounded-none md:rounded-lg"
         aria-labelledby={titleId}
         aria-describedby={descId}
       >

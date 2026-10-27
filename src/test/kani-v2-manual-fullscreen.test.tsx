@@ -142,24 +142,29 @@ describe('ManualAppointmentDialog Fullscreen & UX Mobile Redesign', () => {
     expect(css).toContain('body:has(.v2-manual-dialog) .site-header');
     expect(css).toMatch(/display:\s*none\s*!important/);
 
-    // 2. Fullscreen covering 100% of viewport with 100dvh
+    // 2. Fullscreen covering 100% of viewport with 100dvh and translate: none
     expect(css).toMatch(/\.v2-dialog\.v2-manual-dialog\s*\{[^}]*position:\s*fixed\s*!important/);
-    expect(css).toMatch(/width:\s*100(vw|dvw)\s*!important/);
+    expect(css).toMatch(/width:\s*100%\s*!important/);
+    expect(css).toMatch(/translate:\s*none\s*!important/);
+    expect(css).toMatch(/transform:\s*none\s*!important/);
     expect(css).toMatch(/height:\s*100(vh|dvh)\s*!important/);
-    expect(css).toMatch(/max-height:\s*100dvh\s*!important/);
+    expect(css).toMatch(/max-height:\s*none\s*!important/);
     expect(css).toMatch(/z-index:\s*200\s*!important/);
 
     // 3. No rounded corners or external borders on mobile
     expect(css).toMatch(/border-radius:\s*0\s*!important/);
     expect(css).toMatch(/border:\s*none\s*!important/);
 
-    // 4. No internal scrollbar in capsules container
+    // 4. Desktop preserves centered modal with transform translate(-50%, -50%)
+    expect(css).toMatch(/@media\s*\(min-width:\s*768px\)\s*\{[^}]*\.v2-dialog\.v2-manual-dialog\s*\{[^}]*transform:\s*translate\(-50%,\s*-50%\)\s*!important/);
+
+    // 5. No internal scrollbar in capsules container
     expect(css).toMatch(/\.v2-capsules-container\s*\{[^}]*overflow:\s*visible/);
 
-    // 5. Capsules in 4 columns
+    // 6. Capsules in 4 columns
     expect(css).toMatch(/grid-template-columns:\s*repeat\(4,\s*minmax\(0,\s*1fr\)\)\s*!important/);
 
-    // 6. Safe area in actions
+    // 7. Safe area in actions
     expect(css).toMatch(/padding-bottom:\s*calc\([^)]*safe-area-inset-bottom/);
   });
 });
