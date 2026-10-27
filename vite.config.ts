@@ -7,6 +7,7 @@
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
 export default defineConfig({
+  nitro: { plugins: ["./server/plugins/payment-maintenance.ts"] },
   vite: {
     // The sender address is non-secret and must be available to the server-function bundle
     // as a build-time fallback when Cloudflare runtime bindings are not propagated.

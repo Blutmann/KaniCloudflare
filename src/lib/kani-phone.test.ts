@@ -135,3 +135,15 @@ describe("country display names", () => {
     expect(countryDisplayName(doCountry)).toBe("R. Dominicana");
   });
 });
+
+describe('invalid WhatsApp destinations', () => {
+  it('does not invent links for arbitrary digits or letters', () => {
+    for (const phone of ['12345678', '0000000000', 'abc1128436014', '+999123456789', '123']) {
+      expect(getWhatsAppUrl(phone)).toBeNull();
+    }
+  });
+  it('preserves a formatted international destination without duplicating its prefix', () => {
+    expect(getWhatsAppUrl('+54 (9) 11 2843-6014')).toBe('https://wa.me/5491128436014');
+    expect(getWhatsAppUrl('5491128436014')).toBe('https://wa.me/5491128436014');
+  });
+});

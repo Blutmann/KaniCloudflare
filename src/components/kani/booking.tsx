@@ -1100,7 +1100,7 @@ export function Booking({
                 {/* 4. Aviso de solicitud pendiente en container propio */}
                 <div className="booking-summary-card summary-pending-notice summary-card-notice flex items-center gap-2.5 text-xs sm:text-sm" role="note">
                   <Clock3 size={15} className="shrink-0" aria-hidden="true" />
-                  <p className="m-0 leading-normal">{isV2 || isV3 ? 'Tu turno se confirma únicamente cuando abonas la seña' : 'Tu solicitud está pendiente hasta que abones la seña.'}</p>
+                  <p className="m-0 leading-normal">{isV2 || isV3 ? 'Tu turno se confirma cuando se acredita la seña.' : 'Tu solicitud está pendiente hasta que abones la seña.'}</p>
                 </div>
               </div>
             )}

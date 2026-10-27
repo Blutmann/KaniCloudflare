@@ -1,3 +1,4 @@
+import { getWhatsAppUrl } from "@/lib/kani-phone";
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { ArrowRight, CalendarDays, Clock3, Mail, Phone } from "lucide-react";
@@ -9,7 +10,6 @@ import { paymentSummary, scopeV2 } from "@/lib/kani-v2";
 import {
   appointmentErrorMessage,
   updateRealAppointmentStatus,
-  retryRealAppointmentNotification,
   type RealAppointment,
 } from "@/lib/kani-appointments";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
@@ -89,7 +89,7 @@ export function V2Home() {
               value={daily.filter((a) => a.statusCode === "COMPLETED").length}
             />
             <Metric
-              label="Por confirmar"
+              label="Pendientes de pago"
               value={daily.filter((a) => a.statusCode === "PENDING").length}
             />
             <Metric
@@ -162,7 +162,7 @@ export function V2Appointments() {
   const [period, setPeriod] = useState("DAY");
   const [action, setAction] = useState<{
     appointment: RealAppointment;
-    status: "CONFIRMED" | "CANCELLED";
+    status: "CANCELLED";
   } | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -177,7 +177,7 @@ export function V2Appointments() {
       a.date <= (period === "WEEK" ? addCalendarDays(date, 6) : date) &&
       (status === "ALL" || a.statusCode === status),
   );
-  async function confirmAction() {
+  async function cancelAppointment() {
     if (!action || busy) return;
     setBusy(true);
     setMessage("");
@@ -186,18 +186,6 @@ export function V2Appointments() {
       setAction(null);
       await data.refresh();
       setMessage("Turno actualizado.");
-    } catch (e) {
-      setMessage(appointmentErrorMessage(e));
-    } finally {
-      setBusy(false);
-    }
-  }
-  async function notify(id: string) {
-    setBusy(true);
-    setMessage("");
-    try {
-      await retryRealAppointmentNotification(id);
-      setMessage("Solicitud de notificación procesada.");
     } catch (e) {
       setMessage(appointmentErrorMessage(e));
     } finally {
@@ -287,22 +275,13 @@ export function V2Appointments() {
               </div>
             </div>
             <div className="v2-appointment-actions">
-              {a.statusCode === "PENDING" && (
-                <button
-                  className="v2-primary action-confirm"
-                  disabled={busy}
-                  onClick={() => setAction({ appointment: a, status: "CONFIRMED" })}
-                >
-                  Confirmar
-                </button>
-              )}
               {["PENDING", "CONFIRMED"].includes(a.statusCode) && (
                 <button
                   className="v2-secondary action-reject"
                   disabled={busy}
                   onClick={() => setAction({ appointment: a, status: "CANCELLED" })}
                 >
-                  {a.statusCode === "PENDING" ? "Rechazar" : "Cancelar"}
+                  Cancelar turno
                 </button>
               )}
               {a.statusCode === "CONFIRMED" && (
@@ -310,20 +289,15 @@ export function V2Appointments() {
                   Cobrar
                 </Link>
               )}
-              <button
-                className="v2-quiet action-mail"
-                disabled={busy || !a.email}
-                onClick={() => void notify(a.id)}
-              >
-                Enviar correo
-              </button>
+              {getWhatsAppUrl(a.phone) ? (
+                <a className="v2-secondary" href={getWhatsAppUrl(a.phone)!} target="_blank" rel="noreferrer">Enviar WhatsApp</a>
+              ) : <button className="v2-secondary" disabled title="El cliente no tiene un teléfono válido">Enviar WhatsApp</button>}
             </div>
           </article>
         ))}
       </div>
       <p className="v2-footnote">
-        Los estados visibles provienen del historial. La gestión de inasistencias y el motivo de
-        cancelación se evaluarán en la siguiente etapa.
+        Los turnos pendientes se confirman al acreditarse la seña. Cancelar un turno no devuelve automáticamente la seña.
       </p>
       <Dialog
         open={!!action}
@@ -333,14 +307,14 @@ export function V2Appointments() {
       >
         <DialogContent className="v2-dialog">
           <DialogTitle>
-            {action?.status === "CONFIRMED" ? "Confirmar turno" : "Cancelar turno"}
+            ¿Cancelar este turno?
           </DialogTitle>
           <DialogDescription>
             {action?.appointment.name} · {action?.appointment.time}. Esta acción actualiza el turno
             y utiliza las notificaciones existentes.
           </DialogDescription>
-          <button className="v2-primary" disabled={busy} onClick={() => void confirmAction()}>
-            {busy ? "Guardando…" : "Confirmar acción"}
+          <button className="v2-secondary action-reject" disabled={busy} onClick={() => void cancelAppointment()}>
+            {busy ? "Guardando…" : "Cancelar turno"}
           </button>
         </DialogContent>
       </Dialog>

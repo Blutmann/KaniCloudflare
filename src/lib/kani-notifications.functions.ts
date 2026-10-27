@@ -544,24 +544,18 @@ function buildEmail(payload: NotificationPayload) {
   const isNewRequest = payload.notificationType === "NEW_REQUEST";
   if (isNewRequest) return buildNewRequestEmail(payload, date, time);
 
-  const safe = {
-    clientName: escapeHtml(payload.clientName),
-    barberName: escapeHtml(payload.barberName),
-    serviceName: escapeHtml(payload.serviceName),
-    date: escapeHtml(date),
-    time: escapeHtml(time),
+  const baseUrl = getRuntimeEnv('KANI_APP_URL')?.replace(/\/$/, '') || new URL(getRequest().url).origin;
+  return buildCancelledEmail(payload, `${baseUrl}/reservar`);
+}
+
+export function buildCancelledEmail(payload: NotificationPayload, bookingUrl: string) {
+  const date = new Date(`${payload.bookingDate}T12:00:00Z`).toLocaleDateString('es-AR', { day: 'numeric', month: 'long' });
+  const sentence = `Se canceló tu turno con ${payload.barberName} el día ${date} a las ${payload.startTime.slice(0, 5)} hs.`;
+  return {
+    subject: 'Se canceló tu turno en Kani Barber Studio',
+    text: `${sentence}\n\nSolicitá un nuevo turno: ${bookingUrl}`,
+    html: `<html lang="es"><body style="font-family:Arial,sans-serif;padding:24px"><p>${escapeHtml(sentence)}</p><a href="${escapeHtml(bookingUrl)}" style="display:inline-block;padding:12px 18px;background:#702B3A;color:#fff;border-radius:8px;text-decoration:none">Solicitá un nuevo turno</a></body></html>`,
   };
-  const copy = {
-    subject: "Actualización de tu turno en Kani Barber Studio",
-    title: "Tu turno fue cancelado",
-    intro: `${payload.barberName} canceló tu turno. Si querés, podés solicitar uno nuevo desde nuestra web.`,
-    status: "CANCELADO",
-  };
-  const mapsUrl = KANI_MAPS_URL;
-  const subject = copy.subject;
-  const html = `<!doctype html><html lang="es"><body style="margin:0;background:#f4f1eb;color:#1c1c1c;font-family:Arial,sans-serif"><div style="max-width:560px;margin:0 auto;padding:36px 20px"><div style="background:#161616;padding:22px 24px;color:#f4f1eb;letter-spacing:.18em;font-weight:700;font-size:18px">Kani Barber Studio</div><main style="background:#fff;padding:34px 24px"><p style="margin:0 0 12px;color:#a37b43;font-size:11px;letter-spacing:.16em;font-weight:700">${copy.status}</p><h1 style="margin:0;font-size:28px;line-height:1.1">${copy.title}</h1><p style="color:#6d6d6d;line-height:1.6;margin:18px 0 28px">Hola ${safe.clientName},<br>${escapeHtml(copy.intro)}</p><div style="border-top:1px solid #e5e0d8;border-bottom:1px solid #e5e0d8;padding:18px 0"><p style="margin:0 0 10px"><strong>Servicio:</strong> ${safe.serviceName}</p><p style="margin:0 0 10px"><strong>Barbero:</strong> ${safe.barberName}</p><p style="margin:0 0 10px"><strong>Fecha:</strong> ${safe.date}</p><p style="margin:0"><strong>Horario:</strong> ${safe.time}</p></div><p style="color:#6d6d6d;line-height:1.6;margin:26px 0 8px">San Isidro Labrador 7<br>Martínez, Provincia de Buenos Aires</p><p style="margin:0"><a href="${mapsUrl}" style="color:#9f173b;font-weight:700;text-decoration:underline">Ver ubicación en Google Maps</a></p></main><p style="color:#8b8b8b;font-size:12px;line-height:1.5;text-align:center;margin:18px 8px">Este mensaje fue enviado automáticamente por Kani Barber Studio.</p></div></body></html>`;
-  const text = `${copy.title}\n\nHola ${payload.clientName},\n${copy.intro}\n\nServicio: ${payload.serviceName}\nBarbero: ${payload.barberName}\nFecha: ${date}\nHorario: ${time}\n\nKani Barber Studio\nSan Isidro Labrador 7, Martínez, Provincia de Buenos Aires\nVer ubicación en Google Maps: ${mapsUrl}`;
-  return { subject, html, text };
 }
 
 export function buildNewRequestEmail(payload: NotificationPayload, date: string, time: string) {

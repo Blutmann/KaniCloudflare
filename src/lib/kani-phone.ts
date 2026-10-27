@@ -413,7 +413,7 @@ export function formatPhoneWithCountryAndWhatsApp(rawPhone?: string | null): {
     }
   }
 
-  if (parsed && (parsed.isValid() || parsed.isPossible()) && parsed.country) {
+  if (parsed && (parsed.isValid()) && parsed.country) {
     const country = parsed.country;
     const flag = country ? countryToFlag(country) : '';
     let intl = parsed.formatInternational ? parsed.formatInternational() : trimmed;
@@ -454,7 +454,7 @@ export function formatPhoneWithCountryAndWhatsApp(rawPhone?: string | null): {
 export function getWhatsAppUrl(rawPhone?: string | null): string | null {
   if (!rawPhone || typeof rawPhone !== 'string') return null;
   const trimmed = rawPhone.trim();
-  if (!trimmed) return null;
+  if (!trimmed || /[A-Za-z]/.test(trimmed)) return null;
 
   let parsed = parsePhoneNumberFromString(trimmed);
   if (!parsed || !parsed.isValid()) {
@@ -472,7 +472,7 @@ export function getWhatsAppUrl(rawPhone?: string | null): string | null {
     }
   }
 
-  if (parsed && (parsed.isValid() || parsed.isPossible())) {
+  if (parsed && (parsed.isValid())) {
     let num = parsed.number;
     if (parsed.country === 'AR') {
       if (num.startsWith('+54') && !num.startsWith('+549')) {
@@ -485,19 +485,6 @@ export function getWhatsAppUrl(rawPhone?: string | null): string | null {
     }
   }
 
-  // Fallback seguro si no se pudo parsear formalmente pero tiene dígitos suficientes
-  const digitsOnly = trimmed.replace(/\D/g, '');
-  if (digitsOnly.length >= 8) {
-    let cleanDigits = digitsOnly;
-    if (cleanDigits.startsWith('549')) {
-      // ya tiene formato 549...
-    } else if (cleanDigits.startsWith('54')) {
-      cleanDigits = `549${cleanDigits.slice(2)}`;
-    } else if (cleanDigits.length === 10) {
-      cleanDigits = `549${cleanDigits}`;
-    }
-    return `https://wa.me/${cleanDigits}`;
-  }
 
   return null;
 }

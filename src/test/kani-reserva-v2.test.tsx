@@ -156,7 +156,7 @@ describe('isolated four-stage booking presentation', () => {
     expect(screen.queryByRole('heading', { name: 'Tu turno' })).not.toBeInTheDocument();
     expect(document.querySelectorAll('.booking-v2-unified-summary')).toHaveLength(1);
     expect(document.querySelector('.booking-v2-unified-summary .booking-summary-card')).toBeNull();
-    expect(screen.getByText('Tu turno se confirma únicamente cuando abonas la seña')).toBeInTheDocument();
+    expect(screen.getByText('Tu turno se confirma cuando se acredita la seña.')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Volver' }));
     fireEvent.click(screen.getByRole('button', { name: '11:30', exact: true })); next();
     expect(screen.getByRole('textbox', { name: /^Nombre/ })).toHaveValue('Cliente de prueba');

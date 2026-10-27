@@ -3,6 +3,7 @@
   // Nitro supplies main/assets in its generated deployment configuration.
   "name": "kanibarberstudio-cloudflare",
   "keep_vars": true,
+  "triggers": { "crons": ["* * * * *"] },
   "vars": {
     "SUPABASE_URL": "https://iockpxtkflyjfagkvgnr.supabase.co",
     "PAYWAY_SANDBOX_ENABLED": "false",
