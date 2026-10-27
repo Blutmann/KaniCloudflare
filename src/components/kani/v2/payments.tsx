@@ -20,7 +20,8 @@ export function V2Payments() {
   );
   const [appointmentId, setAppointmentId] = useState(search.turno ?? "");
   const [barberId, setBarberId] = useState(staff.profile.barber_id ?? staff.barbers[0]?.id ?? "");
-  const [serviceName, setServiceName] = useState<ServicePaymentType>("Corte");
+  const [serviceName, setServiceName] = useState<string>("Corte");
+  const [customServiceName, setCustomServiceName] = useState<string>("");
   const [priceOverride, setPriceOverride] = useState<number | null>(null);
   const [method, setMethod] = useState<PaymentMethod>("Efectivo");
   const [discount, setDiscount] = useState(0);
@@ -66,6 +67,10 @@ export function V2Payments() {
       setMessage("Seleccioná un turno con información de seña verificable.");
       return;
     }
+    if (origin === "walk_in" && serviceName === "Otro" && !customServiceName.trim()) {
+      setMessage("Ingresá el nombre del servicio personalizado.");
+      return;
+    }
     if (
       !Number.isInteger(price) ||
       price <= 0 ||
@@ -80,10 +85,18 @@ export function V2Payments() {
     setBusy(true);
     try {
       const selected = data.clients.find((c) => c.id === clientId);
+      const finalServiceName = appointment
+        ? (appointment.serviceName || "Servicio")
+        : (serviceName === "Otro" ? (customServiceName.trim() || "Otro") : serviceName);
+      const finalOtherDetail = appointment
+        ? (appointment.customServiceName || null)
+        : (serviceName === "Otro" ? customServiceName.trim() : null);
+
       // Use only the existing transactional RPC: no direct-insert fallback after errors.
       const { data: result, error } = await supabase.rpc("record_service_payment", {
         p_barber_id: appointment?.barberId ?? barberId,
-        p_service_name: appointment?.serviceName ?? serviceName,
+        p_service_name: finalServiceName,
+        p_service_other_detail: finalOtherDetail,
         p_service_price_ars: price,
         p_discount_ars: discount,
         p_payment_method: method,
@@ -104,6 +117,7 @@ export function V2Payments() {
       setAppointmentId("");
       setDiscount(0);
       setPriceOverride(null);
+      setCustomServiceName("");
       setShowClient(false);
       setClientId("");
       setClientName("");
@@ -187,7 +201,7 @@ export function V2Payments() {
                       <select
                         value={serviceName}
                         onChange={(e) => {
-                          setServiceName(e.target.value as ServicePaymentType);
+                          setServiceName(e.target.value);
                           setPriceOverride(null);
                           setDiscount(0);
                         }}
@@ -198,6 +212,7 @@ export function V2Payments() {
                             {s.name}
                           </option>
                         ))}
+                        <option value="Otro">Otro</option>
                       </select>
                     </label>
                     {staff.profile.role === "ADMIN" && (
@@ -217,6 +232,34 @@ export function V2Payments() {
                       </label>
                     )}
                   </div>
+                  {serviceName === "Otro" && (
+                    <div className="v2-form-row">
+                      <label className="v2-field">
+                        Nombre del servicio
+                        <input
+                          type="text"
+                          required
+                          placeholder="Ej. Tintura de color"
+                          value={customServiceName}
+                          onChange={(e) => setCustomServiceName(e.target.value)}
+                        />
+                      </label>
+                      <label className="v2-field">
+                        Importe ($ ARS)
+                        <input
+                          type="number"
+                          min={1}
+                          step={1}
+                          required
+                          placeholder="Ej. 35000"
+                          value={priceOverride ?? ""}
+                          onChange={(e) =>
+                            setPriceOverride(e.target.value === "" ? null : Number(e.target.value))
+                          }
+                        />
+                      </label>
+                    </div>
+                  )}
                 </>
               )}
               <label className="v2-field">
@@ -230,24 +273,27 @@ export function V2Payments() {
                 <span>Importe</span>
                 <strong>{money(price)}</strong>
               </div>
-              <details className="v2-details">
-                <summary>Editar importe</summary>
-                <label className="v2-field">
-                  Importe en pesos
-                  <input
-                    type="number"
-                    min={1}
-                    step={1}
-                    value={price}
-                    onChange={(e) => setPriceOverride(Number(e.target.value))}
-                    required
-                  />
-                </label>
-                <p>
-                  El turno no conserva un precio histórico. Verificá el importe sugerido por el
-                  catálogo actual.
-                </p>
-              </details>
+              {serviceName !== "Otro" && (
+                <details className="v2-details">
+                  <summary>Editar importe</summary>
+                  <label className="v2-field">
+                    Importe en pesos
+                    <input
+                      type="number"
+                      min={1}
+                      step={1}
+                      value={price}
+                      onChange={(e) => setPriceOverride(Number(e.target.value))}
+                      required
+                    />
+                  </label>
+                  <p>
+                    {appointment
+                      ? "Podés ajustar el importe si corresponde."
+                      : "El turno no conserva un precio histórico. Verificá el importe sugerido por el catálogo actual."}
+                  </p>
+                </details>
+              )}
               {origin === "walk_in" && (
                 <>
                   <button
@@ -390,7 +436,7 @@ export function V2Payments() {
         {history.map((p) => (
           <article className="v2-history-row" key={p.id}>
             <div>
-              <h3>{p.serviceName}</h3>
+              <h3>{p.serviceOtherDetail || p.serviceName}</h3>
               <p>
                 {p.clientName || "Sin cliente asociado"} · {p.barberName}
               </p>

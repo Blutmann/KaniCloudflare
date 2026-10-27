@@ -11,6 +11,8 @@ import {
   computeAvailableManualSlots,
   createManualAppointment,
   filterSlotsByPeriod,
+  formatDuration,
+  isIntervalOverlapping,
   minutesToTime,
   PERIOD_LABELS,
   timeToMinutes,
@@ -18,7 +20,7 @@ import {
   type PeriodFilter,
   type RealAppointment,
 } from "@/lib/kani-appointments";
-import { dateLabel } from "@/lib/kani-model";
+import { dateLabel, money } from "@/lib/kani-model";
 import { useV2, type V2Client } from "./data";
 import { Check, Clock3, Sparkles } from "lucide-react";
 
@@ -30,6 +32,12 @@ export type ManualAppointmentDialogProps = {
   onClose: () => void;
   onSuccess: (message: string) => void;
 };
+
+const TIME_15_OPTIONS = Array.from({ length: 96 }, (_, i) => {
+  const h = Math.floor((i * 15) / 60);
+  const m = (i * 15) % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+});
 
 export function ManualAppointmentDialog({
   open,
@@ -62,6 +70,11 @@ export function ManualAppointmentDialog({
   // Form states
   const [barberId, setBarberId] = useState<string>("");
   const [serviceId, setServiceId] = useState<string>("");
+  const [customServiceName, setCustomServiceName] = useState<string>("");
+  const [customPrice, setCustomPrice] = useState<number | "">("");
+  const [servicePrice, setServicePrice] = useState<number>(25000);
+  const [customStartTime, setCustomStartTime] = useState<string>("10:00");
+  const [customEndTime, setCustomEndTime] = useState<string>("11:00");
   const [date, setDate] = useState<string>(initialDate);
   const [selectedTime, setSelectedTime] = useState<string>("");
   const [clientName, setClientName] = useState<string>("");
@@ -75,6 +88,28 @@ export function ManualAppointmentDialog({
   const [isBusy, setIsBusy] = useState<boolean>(false);
   const [formError, setFormError] = useState<string>("");
 
+  const isOtro = serviceId === "OTRO";
+
+  // Resolve current catalog service
+  const activeService = useMemo(() => {
+    if (isOtro) return null;
+    return (
+      servicesList.find(
+        (s) => (s.dbId && s.dbId === serviceId) || s.id === serviceId
+      ) || servicesList[0] || null
+    );
+  }, [servicesList, serviceId, isOtro]);
+
+  // Duration in minutes
+  const customDurationMinutes = useMemo(() => {
+    if (!isOtro) return activeService?.duration || 45;
+    const startM = timeToMinutes(customStartTime);
+    const endM = timeToMinutes(customEndTime);
+    return Math.max(0, endM - startM);
+  }, [isOtro, customStartTime, customEndTime, activeService?.duration]);
+
+  const durationMinutes = isOtro ? customDurationMinutes : (activeService?.duration || 45);
+
   // Initialize or reset form when dialog opens or changes mode
   useEffect(() => {
     if (!open) {
@@ -87,7 +122,22 @@ export function ManualAppointmentDialog({
 
     if (mode === "EDIT" && appointment) {
       setBarberId(appointment.barberId);
-      setServiceId(appointment.serviceId);
+      const isAptOtro = !appointment.serviceId || Boolean(appointment.customServiceName);
+      if (isAptOtro) {
+        setServiceId("OTRO");
+        setCustomServiceName(appointment.customServiceName || appointment.serviceName || "");
+        setCustomPrice(appointment.servicePrice ?? "");
+        setCustomStartTime(appointment.time);
+        setCustomEndTime(
+          appointment.endTime ||
+            minutesToTime(timeToMinutes(appointment.time) + (appointment.serviceDuration || 45))
+        );
+      } else {
+        setServiceId(appointment.serviceId || "");
+        setCustomServiceName("");
+        setCustomPrice("");
+        setServicePrice(appointment.servicePrice ?? 25000);
+      }
       setDate(appointment.date);
       setSelectedTime(appointment.time);
       setClientName(appointment.name);
@@ -111,6 +161,11 @@ export function ManualAppointmentDialog({
       const defaultService =
         servicesList[0]?.dbId || servicesList[0]?.id || "";
       setServiceId(defaultService);
+      setCustomServiceName("");
+      setCustomPrice("");
+      setServicePrice(servicesList[0]?.price || 25000);
+      setCustomStartTime("10:00");
+      setCustomEndTime("11:00");
 
       setDate(initialDate);
       setSelectedTime("");
@@ -119,22 +174,11 @@ export function ManualAppointmentDialog({
       setClientEmail("");
       setNotes("");
     }
-  }, [open, mode, appointment, initialDate, isAdmin, data?.barberId, availableBarbers, staff?.profile?.barber_id, servicesList]);
+  }, [open, mode, appointment?.id, initialDate]);
 
-  // Resolve current service duration
-  const activeService = useMemo(() => {
-    return (
-      servicesList.find(
-        (s) => (s.dbId && s.dbId === serviceId) || s.id === serviceId
-      ) || servicesList[0]
-    );
-  }, [servicesList, serviceId]);
-
-  const durationMinutes = activeService?.duration || 45;
-
-  // Compute available 15-minute slot capsules
+  // Compute available 15-minute slot capsules for standard services
   const allSlots = useMemo(() => {
-    if (!barberId || !date) return [];
+    if (isOtro || !barberId || !date) return [];
     return computeAvailableManualSlots({
       appointments: appointmentsList,
       barberId,
@@ -142,19 +186,44 @@ export function ManualAppointmentDialog({
       durationMinutes,
       excludeAppointmentId: mode === "EDIT" ? appointment?.id : undefined,
     });
-  }, [appointmentsList, barberId, date, durationMinutes, mode, appointment?.id]);
+  }, [isOtro, appointmentsList, barberId, date, durationMinutes, mode, appointment?.id]);
 
   // Filter slots for the chosen period
   const visibleSlots = useMemo(() => {
     return filterSlotsByPeriod(allSlots, periodFilter);
   }, [allSlots, periodFilter]);
 
-  // Selected time end calculation
+  // Selected time end calculation for standard services
   const computedEndTime = useMemo(() => {
+    if (isOtro) return customEndTime;
     if (!selectedTime) return "";
     const startM = timeToMinutes(selectedTime);
     return minutesToTime(startM + durationMinutes);
-  }, [selectedTime, durationMinutes]);
+  }, [isOtro, customEndTime, selectedTime, durationMinutes]);
+
+  // Overlap detection for custom service "Otro"
+  const customOverlapConflict = useMemo(() => {
+    if (!isOtro || !date || !barberId) return null;
+    const startM = timeToMinutes(customStartTime);
+    const endM = timeToMinutes(customEndTime);
+    if (endM <= startM) {
+      return "La hora de finalización debe ser posterior a la de inicio.";
+    }
+    const conflict = appointmentsList.find((apt) => {
+      if (apt.statusCode === "CANCELLED") return false;
+      if (apt.barberId !== barberId || apt.date !== date) return false;
+      if (mode === "EDIT" && appointment?.id && apt.id === appointment.id) return false;
+      const aptStartM = timeToMinutes(apt.time);
+      const aptEndM = apt.endTime
+        ? timeToMinutes(apt.endTime)
+        : aptStartM + (apt.serviceDuration || 45);
+      return isIntervalOverlapping(startM, endM, aptStartM, aptEndM);
+    });
+    if (conflict) {
+      return `Horario ocupado por otro turno (${conflict.serviceName}: ${conflict.time} a ${conflict.endTime || minutesToTime(timeToMinutes(conflict.time) + (conflict.serviceDuration || 45))}).`;
+    }
+    return null;
+  }, [isOtro, date, barberId, customStartTime, customEndTime, appointmentsList, mode, appointment?.id]);
 
   // Filtered client suggestions
   const suggestedClients = useMemo(() => {
@@ -185,6 +254,12 @@ export function ManualAppointmentDialog({
     return availableBarbers.find((b) => b.id === barberId)?.name || "Barbero";
   }, [availableBarbers, barberId]);
 
+  // Active price for summary and submission
+  const resolvedPrice = useMemo(() => {
+    if (isOtro) return typeof customPrice === "number" ? customPrice : 0;
+    return servicePrice || activeService?.price || 0;
+  }, [isOtro, customPrice, servicePrice, activeService?.price]);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setFormError("");
@@ -201,10 +276,33 @@ export function ManualAppointmentDialog({
       setFormError("Tenés que indicar una fecha.");
       return;
     }
-    if (!selectedTime) {
-      setFormError("Tenés que seleccionar un horario para el turno.");
-      return;
+
+    if (isOtro) {
+      const cleanCustomName = customServiceName.trim();
+      if (!cleanCustomName) {
+        setFormError("El nombre del servicio es obligatorio.");
+        return;
+      }
+      if (customPrice === "" || Number(customPrice) < 0) {
+        setFormError("El importe del servicio es obligatorio.");
+        return;
+      }
+      if (customOverlapConflict) {
+        setFormError(customOverlapConflict);
+        return;
+      }
+    } else {
+      if (!selectedTime) {
+        setFormError("Tenés que seleccionar un horario para el turno.");
+        return;
+      }
+      const chosenSlot = allSlots.find((s) => s.time === selectedTime);
+      if (chosenSlot && !chosenSlot.available) {
+        setFormError("Ese horario acaba de ocuparse. Elegí otro horario disponible.");
+        return;
+      }
     }
+
     const cleanName = clientName.trim();
     if (!cleanName || cleanName.length < 3) {
       setFormError("El nombre del cliente debe tener al menos 3 caracteres.");
@@ -216,15 +314,10 @@ export function ManualAppointmentDialog({
       return;
     }
 
-    // Verify chosen slot is not occupied in current local list
-    const chosenSlot = allSlots.find((s) => s.time === selectedTime);
-    if (chosenSlot && !chosenSlot.available) {
-      setFormError("Ese horario acaba de ocuparse. Elegí otro horario disponible.");
-      return;
-    }
-
-    // Resolve service DB UUID
-    const targetServiceUuid = activeService?.dbId || serviceId;
+    const startTime = isOtro ? customStartTime : selectedTime;
+    const endTime = isOtro ? customEndTime : computedEndTime;
+    const duration = isOtro ? customDurationMinutes : durationMinutes;
+    const targetServiceUuid = isOtro ? null : (activeService?.dbId || serviceId);
 
     setIsBusy(true);
     try {
@@ -233,12 +326,16 @@ export function ManualAppointmentDialog({
           appointmentId: appointment.id,
           barberId,
           serviceId: targetServiceUuid,
+          customServiceName: isOtro ? customServiceName.trim() : null,
+          servicePriceArs: resolvedPrice,
           date,
-          time: selectedTime,
+          time: startTime,
+          endTime,
           name: cleanName,
           phone: cleanPhone,
           email: clientEmail.trim() || undefined,
           notes: notes.trim() || undefined,
+          durationMinutes: duration,
         });
         await data.refresh();
         onSuccess("Turno manual actualizado exitosamente.");
@@ -247,13 +344,16 @@ export function ManualAppointmentDialog({
         await createManualAppointment({
           barberId,
           serviceId: targetServiceUuid,
+          customServiceName: isOtro ? customServiceName.trim() : null,
+          servicePriceArs: resolvedPrice,
           date,
-          time: selectedTime,
+          time: startTime,
+          endTime,
           name: cleanName,
           phone: cleanPhone,
           email: clientEmail.trim() || undefined,
           notes: notes.trim() || undefined,
-          durationMinutes,
+          durationMinutes: duration,
         });
         await data.refresh();
         onSuccess("Turno manual creado exitosamente.");
@@ -263,7 +363,6 @@ export function ManualAppointmentDialog({
       const msg = err instanceof Error ? err.message : String(err);
       if (msg.includes("SLOT_ALREADY_BOOKED") || msg.includes("Ese horario acaba de ocuparse")) {
         setFormError("Ese horario acaba de ocuparse. Elegí otro horario disponible.");
-        // Refresh background slots immediately on race condition
         void data.refresh();
       } else {
         setFormError(appointmentErrorMessage(err));
@@ -281,7 +380,7 @@ export function ManualAppointmentDialog({
         aria-describedby={descId}
       >
         <DialogTitle id={titleId}>
-          {mode === "CREATE" ? "Agregar turno manual" : "Editar turno manual"}
+          {mode === "CREATE" ? "Generar turno" : "Editar turno manual"}
         </DialogTitle>
         <DialogDescription id={descId}>
           {mode === "CREATE"
@@ -332,8 +431,15 @@ export function ManualAppointmentDialog({
                 value={serviceId}
                 disabled={isBusy}
                 onChange={(e) => {
-                  setServiceId(e.target.value);
+                  const newServiceId = e.target.value;
+                  setServiceId(newServiceId);
                   setSelectedTime("");
+                  if (newServiceId !== "OTRO") {
+                    const svc = servicesList.find(
+                      (s) => (s.dbId && s.dbId === newServiceId) || s.id === newServiceId
+                    );
+                    if (svc) setServicePrice(svc.price);
+                  }
                 }}
               >
                 {servicesList.map((s) => (
@@ -341,11 +447,45 @@ export function ManualAppointmentDialog({
                     {s.name} ({s.duration} min)
                   </option>
                 ))}
+                <option value="OTRO">Otro</option>
               </select>
             </label>
           </div>
 
-          {/* Date Picker */}
+          {/* Conditional inputs when Servicio "Otro" is chosen */}
+          {isOtro && (
+            <div className="v2-manual-row">
+              <label className="v2-field">
+                Nombre del servicio *
+                <input
+                  type="text"
+                  required
+                  placeholder="Ej. Tintura de color"
+                  value={customServiceName}
+                  disabled={isBusy}
+                  onChange={(e) => setCustomServiceName(e.target.value)}
+                />
+              </label>
+
+              <label className="v2-field">
+                Importe ($ ARS) *
+                <input
+                  type="number"
+                  min={0}
+                  step={1}
+                  required
+                  placeholder="Ej. 35000"
+                  value={customPrice}
+                  disabled={isBusy}
+                  onChange={(e) =>
+                    setCustomPrice(e.target.value === "" ? "" : Number(e.target.value))
+                  }
+                />
+              </label>
+            </div>
+          )}
+
+          {/* Date Picker & Duration */}
           <div className="v2-manual-row">
             <label className="v2-field">
               Fecha
@@ -361,83 +501,132 @@ export function ManualAppointmentDialog({
             </label>
 
             <div className="v2-field">
-              <span className="v2-field-label">Duración estimada</span>
+              <span className="v2-field-label">Duración calculada</span>
               <div className="v2-readonly-box">
                 <Clock3 size={15} />
-                <span>{durationMinutes} minutos</span>
+                <span>{formatDuration(durationMinutes)}</span>
               </div>
             </div>
           </div>
 
-          {/* Time Capsules Section */}
-          <div className="v2-manual-time-section">
-            <div className="v2-manual-time-header">
-              <span className="v2-field-label">
-                Horario disponible ({durationMinutes} min)
-              </span>
-              {selectedTime && (
+          {/* Time Configuration: Custom 15m intervals for "Otro" vs Capsules for Standard */}
+          {isOtro ? (
+            <div className="v2-manual-time-section">
+              <div className="v2-manual-time-header">
+                <span className="v2-field-label">Horario personalizado (intervalos de 15 min)</span>
                 <span className="v2-selected-time-badge">
-                  Seleccionado: <strong>{selectedTime} → {computedEndTime}</strong>
+                  {customStartTime} → {customEndTime} ({formatDuration(customDurationMinutes)})
                 </span>
-              )}
-            </div>
+              </div>
 
-            {/* Period Pills Filter */}
-            <div className="v2-period-pills" role="tablist" aria-label="Filtrar horarios por período">
-              {(Object.keys(PERIOD_LABELS) as PeriodFilter[]).map((pKey) => (
-                <button
-                  key={pKey}
-                  type="button"
-                  role="tab"
-                  aria-selected={periodFilter === pKey}
-                  className={`v2-period-pill ${periodFilter === pKey ? "active" : ""}`}
-                  onClick={() => setPeriodFilter(pKey)}
-                >
-                  {PERIOD_LABELS[pKey]}
-                </button>
-              ))}
-            </div>
+              <div className="v2-manual-row">
+                <label className="v2-field">
+                  Hora de inicio *
+                  <select
+                    value={customStartTime}
+                    disabled={isBusy}
+                    onChange={(e) => setCustomStartTime(e.target.value)}
+                  >
+                    {TIME_15_OPTIONS.map((t) => (
+                      <option key={`start-${t}`} value={t}>
+                        {t} hs
+                      </option>
+                    ))}
+                  </select>
+                </label>
 
-            {/* Capsules Grid */}
-            <div className="v2-capsules-container">
-              {visibleSlots.length === 0 ? (
-                <p className="v2-no-slots">
-                  No hay horarios generados en este rango.
+                <label className="v2-field">
+                  Hora de finalización *
+                  <select
+                    value={customEndTime}
+                    disabled={isBusy}
+                    onChange={(e) => setCustomEndTime(e.target.value)}
+                  >
+                    {TIME_15_OPTIONS.map((t) => (
+                      <option key={`end-${t}`} value={t}>
+                        {t} hs
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+
+              {customOverlapConflict && (
+                <p className="v2-alert" role="alert" style={{ marginTop: "6px" }}>
+                  {customOverlapConflict}
                 </p>
-              ) : (
-                <div className="v2-capsules-grid">
-                  {visibleSlots.map((slot) => {
-                    const isSelected = selectedTime === slot.time;
-                    return (
-                      <button
-                        key={slot.time}
-                        type="button"
-                        disabled={!slot.available || isBusy}
-                        className={`v2-capsule-btn ${
-                          isSelected ? "selected" : slot.available ? "available" : "unavailable"
-                        }`}
-                        title={
-                          slot.available
-                            ? `Disponible: ${slot.time} a ${slot.endTime}`
-                            : `Ocupado por otro turno`
-                        }
-                        onClick={() => setSelectedTime(slot.time)}
-                      >
-                        <span className="v2-capsule-time">{slot.time}</span>
-                        {slot.available ? (
-                          isSelected ? (
-                            <Check size={12} className="v2-capsule-icon" />
-                          ) : null
-                        ) : (
-                          <span className="v2-capsule-busy-label">Ocupado</span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
               )}
             </div>
-          </div>
+          ) : (
+            <div className="v2-manual-time-section">
+              <div className="v2-manual-time-header">
+                <span className="v2-field-label">
+                  Horario disponible ({durationMinutes} min)
+                </span>
+                {selectedTime && (
+                  <span className="v2-selected-time-badge">
+                    Seleccionado: <strong>{selectedTime} → {computedEndTime}</strong>
+                  </span>
+                )}
+              </div>
+
+              {/* Period Pills Filter */}
+              <div className="v2-period-pills" role="tablist" aria-label="Filtrar horarios por período">
+                {(Object.keys(PERIOD_LABELS) as PeriodFilter[]).map((pKey) => (
+                  <button
+                    key={pKey}
+                    type="button"
+                    role="tab"
+                    aria-selected={periodFilter === pKey}
+                    className={`v2-period-pill ${periodFilter === pKey ? "active" : ""}`}
+                    onClick={() => setPeriodFilter(pKey)}
+                  >
+                    {PERIOD_LABELS[pKey]}
+                  </button>
+                ))}
+              </div>
+
+              {/* Capsules Grid */}
+              <div className="v2-capsules-container">
+                {visibleSlots.length === 0 ? (
+                  <p className="v2-no-slots">
+                    No hay horarios disponibles en este rango.
+                  </p>
+                ) : (
+                  <div className="v2-capsules-grid">
+                    {visibleSlots.map((slot) => {
+                      const isSelected = selectedTime === slot.time;
+                      return (
+                        <button
+                          key={slot.time}
+                          type="button"
+                          disabled={!slot.available || isBusy}
+                          className={`v2-capsule-btn ${
+                            isSelected ? "selected" : slot.available ? "available" : "unavailable"
+                          }`}
+                          title={
+                            slot.available
+                              ? `Disponible: ${slot.time} a ${slot.endTime}`
+                              : `Ocupado por otro turno`
+                          }
+                          onClick={() => setSelectedTime(slot.time)}
+                        >
+                          <span className="v2-capsule-time">{slot.time}</span>
+                          {slot.available ? (
+                            isSelected ? (
+                              <Check size={12} className="v2-capsule-icon" />
+                            ) : null
+                          ) : (
+                            <span className="v2-capsule-busy-label">Ocupado</span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Client Details Section */}
           <div className="v2-manual-client-section">
@@ -538,16 +727,28 @@ export function ManualAppointmentDialog({
               </div>
               <div>
                 <span className="v2-summary-label">Servicio:</span>{" "}
-                <span>{activeService?.name || "—"} ({durationMinutes} min)</span>
+                <span>
+                  {isOtro ? (customServiceName.trim() || "Otro") : (activeService?.name || "—")}{" "}
+                  ({formatDuration(durationMinutes)})
+                </span>
               </div>
               <div>
                 <span className="v2-summary-label">Barbero:</span>{" "}
                 <span>{selectedBarberName}</span>
               </div>
               <div>
+                <span className="v2-summary-label">Importe:</span>{" "}
+                <span>{money(resolvedPrice)}</span>
+              </div>
+              <div>
                 <span className="v2-summary-label">Fecha y hora:</span>{" "}
                 <span>
-                  {dateLabel(date)} · {selectedTime ? `${selectedTime} a ${computedEndTime} hs` : "Sin horario"}
+                  {dateLabel(date)} ·{" "}
+                  {isOtro
+                    ? `${customStartTime} a ${customEndTime} hs`
+                    : selectedTime
+                    ? `${selectedTime} a ${computedEndTime} hs`
+                    : "Sin horario"}
                 </span>
               </div>
             </div>
@@ -569,12 +770,19 @@ export function ManualAppointmentDialog({
             <button
               type="submit"
               className="v2-primary"
-              disabled={isBusy || !selectedTime || !clientName.trim() || !clientPhone.trim()}
+              disabled={
+                isBusy ||
+                (isOtro
+                  ? !customServiceName.trim() || customPrice === "" || !!customOverlapConflict
+                  : !selectedTime) ||
+                !clientName.trim() ||
+                !clientPhone.trim()
+              }
             >
               {isBusy
                 ? "Guardando…"
                 : mode === "CREATE"
-                ? "Crear turno"
+                ? "Generar turno"
                 : "Guardar cambios"}
             </button>
           </div>

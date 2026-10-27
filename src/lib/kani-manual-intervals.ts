@@ -6,15 +6,23 @@ export type TimeCapsule = {
   conflictReason?: string;
 };
 
-export type PeriodFilter = 'COMERCIAL' | 'MANANA' | 'NOCHE' | 'MADRUGADA' | 'TODOS';
+export type PeriodFilter = 'COMERCIAL' | 'ANTES' | 'DESPUES' | 'TODOS';
 
 export const PERIOD_LABELS: Record<PeriodFilter, string> = {
-  COMERCIAL: 'Comercial (09:00 - 20:00)',
-  MANANA: 'Mañana (06:00 - 08:45)',
-  NOCHE: 'Noche (20:15 - 23:45)',
-  MADRUGADA: 'Madrugada (00:00 - 05:45)',
+  COMERCIAL: 'Comercial (10:00 - 19:00)',
+  ANTES: 'Antes (00:00 - 09:45)',
+  DESPUES: 'Después (19:15 - 23:45)',
   TODOS: 'Todos (00:00 - 23:45)',
 };
+
+export function formatDuration(minutes: number): string {
+  if (!minutes || minutes <= 0) return '0 min';
+  const hours = Math.floor(minutes / 60);
+  const remainingMins = minutes % 60;
+  if (hours === 0) return `${remainingMins} min`;
+  if (remainingMins === 0) return hours === 1 ? '1 hora (60 min)' : `${hours} horas (${minutes} min)`;
+  return `${hours} h ${remainingMins} min (${minutes} min)`;
+}
 
 export function timeToMinutes(time: string): number {
   if (!time) return 0;
@@ -112,17 +120,14 @@ export function computeAvailableManualSlots({
 export function filterSlotsByPeriod(slots: TimeCapsule[], period: PeriodFilter): TimeCapsule[] {
   switch (period) {
     case 'COMERCIAL':
-      // 09:00 (540 min) to 20:00 (1200 min)
-      return slots.filter((s) => s.minutes >= 540 && s.minutes <= 1200);
-    case 'MANANA':
-      // 06:00 (360 min) to 08:45 (525 min)
-      return slots.filter((s) => s.minutes >= 360 && s.minutes < 540);
-    case 'NOCHE':
-      // 20:15 (1215 min) to 23:45 (1425 min)
-      return slots.filter((s) => s.minutes > 1200);
-    case 'MADRUGADA':
-      // 00:00 (0 min) to 05:45 (345 min)
-      return slots.filter((s) => s.minutes < 360);
+      // 10:00 (600 min) to 19:00 (1140 min)
+      return slots.filter((s) => s.minutes >= 600 && s.minutes <= 1140);
+    case 'ANTES':
+      // 00:00 (0 min) to 09:45 (585 min)
+      return slots.filter((s) => s.minutes < 600);
+    case 'DESPUES':
+      // 19:15 (1155 min) to 23:45 (1425 min)
+      return slots.filter((s) => s.minutes > 1140);
     case 'TODOS':
     default:
       return slots;

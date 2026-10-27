@@ -235,7 +235,7 @@ export function V2Appointments() {
           className="v2-primary v2-add-manual-btn"
           onClick={() => setManualDialog({ open: true, mode: "CREATE", appointment: null })}
         >
-          <Plus size={16} /> Agregar turno
+          <Plus size={16} /> Generar turno
         </button>
       </div>
       {message && (

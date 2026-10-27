@@ -3,10 +3,12 @@ import type { Tables } from '@/integrations/supabase/types';
 import type { AuthenticatedStaff } from '@/lib/kani-auth';
 import type { Appointment, Barber, ServiceId, Status } from '@/lib/kani-model';
 import { sendAppointmentNotification } from '@/lib/kani-notifications.functions';
+import { timeToMinutes } from './kani-manual-intervals';
 
 export {
   computeAvailableManualSlots,
   filterSlotsByPeriod,
+  formatDuration,
   isIntervalOverlapping,
   minutesToTime,
   timeToMinutes,
@@ -23,7 +25,8 @@ export type RealAppointment = Appointment & {
   notes: string;
   statusCode: RealAppointmentStatus;
   barberId: string;
-  serviceId: string;
+  serviceId?: string | null;
+  customServiceName?: string | null;
   requestNumber: number;
   endTime?: string;
   serviceName?: string;
@@ -89,29 +92,36 @@ export function shortenFrequencyText(text: string): string {
 
 export type CreateManualAppointmentInput = {
   barberId: string;
-  serviceId: string;
+  serviceId?: string | null;
+  customServiceName?: string | null;
+  servicePriceArs?: number | null;
   date: string;
   time: string;
+  endTime?: string | null;
   name: string;
   phone: string;
-  email?: string;
-  notes?: string;
+  email?: string | null;
+  notes?: string | null;
   isRecurring?: boolean;
   frequency?: ManualFrequency;
-  durationMinutes?: number;
+  durationMinutes?: number | null;
   depositRequired?: boolean;
 };
 
 export type UpdateManualAppointmentInput = {
   appointmentId: string;
   barberId: string;
-  serviceId: string;
+  serviceId?: string | null;
+  customServiceName?: string | null;
+  servicePriceArs?: number | null;
   date: string;
   time: string;
+  endTime?: string | null;
   name: string;
   phone: string;
-  email?: string;
-  notes?: string;
+  email?: string | null;
+  notes?: string | null;
+  durationMinutes?: number | null;
 };
 
 type CreateAppointmentInput = {
@@ -179,7 +189,7 @@ export async function createManualAppointment(input: CreateManualAppointmentInpu
   if (!input.barberId) {
     throw new Error('El barbero es obligatorio.');
   }
-  if (!input.serviceId) {
+  if (!input.serviceId && !input.customServiceName?.trim()) {
     throw new Error('El servicio es obligatorio.');
   }
   if (!input.date) {
@@ -196,20 +206,26 @@ export async function createManualAppointment(input: CreateManualAppointmentInpu
   if (!phone || phone.length < 6) {
     throw new Error('El celular del cliente es obligatorio y debe ser válido.');
   }
+
   let email: string | null = null;
-  if (input.email !== undefined) {
+  if (input.email !== undefined && input.email !== null) {
     const trimmed = input.email.trim();
-    if (!trimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
-      throw new Error('El correo electrónico del cliente es obligatorio y debe tener un formato válido.');
+    if (trimmed.length > 0) {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+        throw new Error('El correo electrónico del cliente es obligatorio y debe tener un formato válido.');
+      }
+      email = trimmed;
     }
-    email = trimmed;
   }
 
   const { data, error } = await supabase.rpc('create_manual_appointment', {
     p_barber_id: input.barberId,
-    p_service_id: input.serviceId,
+    p_service_id: input.serviceId || null,
+    p_custom_service_name: input.customServiceName?.trim() || null,
+    p_service_price_ars: input.servicePriceArs ?? null,
     p_booking_date: input.date,
     p_start_time: input.time.length === 5 ? `${input.time}:00` : input.time,
+    p_end_time: input.endTime ? (input.endTime.length === 5 ? `${input.endTime}:00` : input.endTime) : null,
     p_client_name: name,
     p_client_phone: phone,
     p_client_email: email,
@@ -231,7 +247,7 @@ export async function updateManualAppointment(input: UpdateManualAppointmentInpu
   if (!input.barberId) {
     throw new Error('El barbero es obligatorio.');
   }
-  if (!input.serviceId) {
+  if (!input.serviceId && !input.customServiceName?.trim()) {
     throw new Error('El servicio es obligatorio.');
   }
   if (!input.date) {
@@ -248,21 +264,32 @@ export async function updateManualAppointment(input: UpdateManualAppointmentInpu
   if (!phone || phone.length < 6) {
     throw new Error('El celular del cliente es obligatorio y debe ser válido.');
   }
-  const email = input.email?.trim() || null;
-  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    throw new Error('El correo electrónico del cliente debe tener un formato válido.');
+
+  let email: string | null = null;
+  if (input.email !== undefined && input.email !== null) {
+    const trimmed = input.email.trim();
+    if (trimmed.length > 0) {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+        throw new Error('El correo electrónico del cliente debe tener un formato válido.');
+      }
+      email = trimmed;
+    }
   }
 
   const { data, error } = await supabase.rpc('update_manual_appointment', {
     p_appointment_id: input.appointmentId,
     p_barber_id: input.barberId,
-    p_service_id: input.serviceId,
+    p_service_id: input.serviceId || null,
+    p_custom_service_name: input.customServiceName?.trim() || null,
+    p_service_price_ars: input.servicePriceArs ?? null,
     p_booking_date: input.date,
     p_start_time: input.time.length === 5 ? `${input.time}:00` : input.time,
+    p_end_time: input.endTime ? (input.endTime.length === 5 ? `${input.endTime}:00` : input.endTime) : null,
     p_client_name: name,
     p_client_phone: phone,
     p_client_email: email,
     p_notes: input.notes?.trim() || null,
+    p_duration_minutes: input.durationMinutes ?? null,
   });
   if (error) throw error;
   const row = data?.[0];
@@ -367,7 +394,7 @@ export function clearAppointmentsReferenceCache() {
 }
 
 async function executeReadRealAppointments(options?: { bypassCache?: boolean; barberId?: string }): Promise<RealAppointment[]> {
-  const fullColumns = 'id, request_number, client_id, barber_id, service_id, booking_date, start_time, end_time, status, notes, created_at, updated_at, is_manual, origin, created_by_user_id, created_by_display_name, recurring_rule_id, deposit_required, deposit_paid, deposit_amount_ars, balance_paid, no_show_decision, no_show_refund_amount_ars';
+  const fullColumns = 'id, request_number, client_id, barber_id, service_id, custom_service_name, service_price_ars, booking_date, start_time, end_time, status, notes, created_at, updated_at, is_manual, origin, created_by_user_id, created_by_display_name, recurring_rule_id, deposit_required, deposit_paid, deposit_amount_ars, balance_paid, no_show_decision, no_show_refund_amount_ars';
   const baseColumns = 'id, request_number, client_id, barber_id, service_id, booking_date, start_time, end_time, status, notes, created_at, updated_at';
 
   let rows: AppointmentRow[] | null = null;
@@ -456,28 +483,46 @@ async function executeReadRealAppointments(options?: { bypassCache?: boolean; ba
   return appointments.flatMap(row => {
     const client = clientById.get(row.client_id);
     const barber = barberById.get(row.barber_id);
-    const service = serviceById.get(row.service_id);
-    if (!client || !barber || !service) return [];
+    if (!client || !barber) return [];
+    const service = row.service_id ? serviceById.get(row.service_id) : undefined;
+    const customName = (row as any).custom_service_name;
+    const customPrice = (row as any).service_price_ars;
+    if (!service && !customName) return [];
+
     const exc = exceptionByApt.get(row.id);
+    const startM = timeToMinutes(row.start_time.slice(0, 5));
+    const endM = timeToMinutes(row.end_time.slice(0, 5));
+    const derivedDuration = Math.max(15, endM - startM);
+
+    const displayName = customName
+      ? customName
+      : (service?.name === 'Corte + barba' || service?.name === 'Corte + Barba')
+      ? 'Corte y barba'
+      : service?.name || 'Otro';
+
+    const displayPrice = customPrice ?? service?.price_ars ?? 0;
+    const displayDuration = service?.duration_minutes ?? derivedDuration;
+
     return [{
       id: row.id,
       requestNumber: row.request_number,
-      service: serviceIdForName(service.name),
+      service: service ? serviceIdForName(service.name) : 'corte',
       barber: barber.name as Barber,
       date: row.booking_date,
       time: row.start_time.slice(0, 5),
       endTime: row.end_time.slice(0, 5),
       name: client.name,
-      email: client.email,
+      email: client.email || '',
       phone: client.phone,
       status: statusToUi[row.status] || 'Confirmado',
       notes: row.notes ?? '',
       statusCode: row.status,
       barberId: row.barber_id,
       serviceId: row.service_id,
-      serviceName: (service.name === 'Corte + barba' || service.name === 'Corte + Barba') ? 'Corte y barba' : service.name,
-      serviceDuration: service.duration_minutes,
-      servicePrice: service.price_ars,
+      customServiceName: customName || null,
+      serviceName: displayName,
+      serviceDuration: displayDuration,
+      servicePrice: displayPrice,
       clientId: row.client_id,
       createdAt: row.created_at,
       isManual: Boolean((row as any).is_manual),

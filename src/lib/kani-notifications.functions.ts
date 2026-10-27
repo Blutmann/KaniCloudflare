@@ -83,7 +83,10 @@ export const dispatchAppointmentNotification = createServerOnlyFn(async (data: {
       }
       if (event.dispatch_status === "ALREADY_SENT") return { sent: true, status: "ALREADY_SENT" };
       if (event.dispatch_status === "IN_PROGRESS") return { sent: false, status: "IN_PROGRESS" };
-      if (!event.recipient_email) throw new Error("NOTIFICATION_RECIPIENT_MISSING");
+      if (!event.recipient_email || !event.recipient_email.trim()) {
+        console.log(`[KANI notification] Omitiendo email para turno ${data.appointmentId} porque el cliente no tiene email registrado.`);
+        return { sent: false, status: "SKIPPED" };
+      }
 
       // These values must be Worker runtime bindings, not VITE_* build variables.
       // Trim whitespace so an accidentally blank dashboard value is reported as missing.

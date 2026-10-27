@@ -58,6 +58,7 @@ vi.mock("@/components/kani/v2/data", () => ({
     depositSupported: true,
     refresh: vi.fn(),
     appointments: mockAppointments,
+    payments: [],
     services: [
       { id: "corte", dbId: "svc-corte-id", name: "Corte", duration: 45, price: 25000 },
       { id: "barba", dbId: "svc-barba-id", name: "Barba", duration: 30, price: 15000 },
@@ -81,10 +82,14 @@ vi.mock("@/lib/kani-appointments", async (importOriginal) => {
 
 vi.mock("@tanstack/react-router", () => ({
   Link: ({ children, ...props }: any) => <a {...props}>{children}</a>,
+  useSearch: () => ({ turno: undefined }),
 }));
 
 import { V2Appointments } from "@/components/kani/v2/agenda";
 import { ManualAppointmentDialog } from "@/components/kani/v2/manual-appointment-dialog";
+import { V2Payments } from "@/components/kani/v2/payments";
+import { createManualAppointment } from "@/lib/kani-appointments";
+import { formatDuration } from "@/lib/kani-manual-intervals";
 
 afterEach(() => {
   cleanup();
@@ -296,7 +301,7 @@ describe("Admin V2 — Manual Appointments (Anti-solapamiento e Intervalos)", ()
     expect(slots.find((s) => s.time === "11:00")?.available).toBe(false);
   });
 
-  it("Filtros por período: agrupa correctamente cápsulas en COMERCIAL, MANANA, NOCHE, MADRUGADA", () => {
+  it("Filtros por período: agrupa correctamente cápsulas en COMERCIAL, ANTES, DESPUES, TODOS", () => {
     const slots = computeAvailableManualSlots({
       appointments: [],
       barberId: "barber-1",
@@ -306,16 +311,13 @@ describe("Admin V2 — Manual Appointments (Anti-solapamiento e Intervalos)", ()
 
     const comercial = filterSlotsByPeriod(slots, "COMERCIAL");
     expect(comercial.length).toBeGreaterThan(0);
-    expect(comercial.every((s) => s.minutes >= 540 && s.minutes <= 1200)).toBe(true);
+    expect(comercial.every((s) => s.minutes >= 600 && s.minutes <= 1140)).toBe(true);
 
-    const manana = filterSlotsByPeriod(slots, "MANANA");
-    expect(manana.every((s) => s.minutes >= 360 && s.minutes < 540)).toBe(true);
+    const antes = filterSlotsByPeriod(slots, "ANTES");
+    expect(antes.every((s) => s.minutes < 600)).toBe(true);
 
-    const noche = filterSlotsByPeriod(slots, "NOCHE");
-    expect(noche.every((s) => s.minutes > 1200)).toBe(true);
-
-    const madrugada = filterSlotsByPeriod(slots, "MADRUGADA");
-    expect(madrugada.every((s) => s.minutes < 360)).toBe(true);
+    const despues = filterSlotsByPeriod(slots, "DESPUES");
+    expect(despues.every((s) => s.minutes > 1140)).toBe(true);
 
     const todos = filterSlotsByPeriod(slots, "TODOS");
     expect(todos.length).toBe(slots.length);
@@ -347,9 +349,9 @@ describe("Admin V2 — Manual Appointments (Anti-solapamiento e Intervalos)", ()
 });
 
 describe("Admin V2 — UI de Turnos y Permisos", () => {
-  it("renders 'Agregar turno' action button in V2Appointments header", () => {
+  it("renders 'Generar turno' action button in V2Appointments header", () => {
     render(<V2Appointments />);
-    expect(screen.getByRole("button", { name: /Agregar turno/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Generar turno/i })).toBeInTheDocument();
   });
 
   it("displays 'Manual' badge on manual appointment", () => {
@@ -424,5 +426,169 @@ describe("Admin V2 — UI de Turnos y Permisos", () => {
     expect(screen.getByRole("option", { name: "Lautaro" })).toBeInTheDocument();
     expect(screen.getByRole("option", { name: "Gonzalo" })).toBeInTheDocument();
     expect(screen.getByRole("option", { name: "Valentín" })).toBeInTheDocument();
+  });
+
+  it("Servicio 'Otro': renders custom inputs, 15m intervals and computed duration", () => {
+    render(
+      <ManualAppointmentDialog
+        open={true}
+        mode="CREATE"
+        initialDate={businessDateToday()}
+        onClose={vi.fn()}
+        onSuccess={vi.fn()}
+      />
+    );
+
+    // Select "Otro" in service dropdown
+    const serviceSelect = screen.getByRole("combobox", { name: /Servicio/i });
+    fireEvent.change(serviceSelect, { target: { value: "OTRO" } });
+
+    // Custom fields must be visible
+    expect(screen.getByPlaceholderText("Ej. Tintura de color")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Ej. 35000")).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: /Hora de inicio/i })).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: /Hora de finalización/i })).toBeInTheDocument();
+
+    // Default duration for 10:00 to 11:00 is 1 hour
+    expect(screen.getAllByText(/1 hora \(60 min\)/i).length).toBeGreaterThan(0);
+
+    // Change times to 10:00 - 11:30 -> 90 min (1 h 30 min)
+    const endSelect = screen.getByRole("combobox", { name: /Hora de finalización/i });
+    fireEvent.change(endSelect, { target: { value: "11:30" } });
+    expect(screen.getAllByText(/1 h 30 min \(90 min\)/i).length).toBeGreaterThan(0);
+  });
+
+  it("Servicio 'Otro': detects anti-overlap conflict against existing appointments", () => {
+    render(
+      <ManualAppointmentDialog
+        open={true}
+        mode="CREATE"
+        initialDate={businessDateToday()}
+        onClose={vi.fn()}
+        onSuccess={vi.fn()}
+      />
+    );
+
+    const serviceSelect = screen.getByRole("combobox", { name: /Servicio/i });
+    fireEvent.change(serviceSelect, { target: { value: "OTRO" } });
+
+    // mockAppointment is Lautaro 10:00-10:45 on businessDateToday()
+    // Select barber Lautaro
+    const barberSelect = screen.getByRole("combobox", { name: /Barbero/i });
+    fireEvent.change(barberSelect, { target: { value: "barber-lautaro" } });
+
+    // Set custom start 10:15 and end 11:15 (overlaps 10:00-10:45)
+    const startSelect = screen.getByRole("combobox", { name: /Hora de inicio/i });
+    fireEvent.change(startSelect, { target: { value: "10:15" } });
+    const endSelect = screen.getByRole("combobox", { name: /Hora de finalización/i });
+    fireEvent.change(endSelect, { target: { value: "11:15" } });
+
+    // Conflict error should appear
+    expect(
+      screen.getByText(/Horario ocupado por otro turno/i)
+    ).toBeInTheDocument();
+  });
+
+  it("Servicio 'Otro': submits with serviceId null, customServiceName, manual price and optional email null", async () => {
+    const onSuccess = vi.fn();
+    render(
+      <ManualAppointmentDialog
+        open={true}
+        mode="CREATE"
+        initialDate={businessDateToday()}
+        onClose={vi.fn()}
+        onSuccess={onSuccess}
+      />
+    );
+
+    // Select "Otro"
+    fireEvent.change(screen.getByRole("combobox", { name: /Servicio/i }), {
+      target: { value: "OTRO" },
+    });
+
+    // Fill custom name
+    fireEvent.change(screen.getByPlaceholderText("Ej. Tintura de color"), {
+      target: { value: "Tintura fantasía" },
+    });
+
+    // Fill manual price
+    fireEvent.change(screen.getByPlaceholderText("Ej. 35000"), {
+      target: { value: "32000" },
+    });
+
+    // Choose non-overlapping time 14:00 - 15:30
+    fireEvent.change(screen.getByRole("combobox", { name: /Hora de inicio/i }), {
+      target: { value: "14:00" },
+    });
+    fireEvent.change(screen.getByRole("combobox", { name: /Hora de finalización/i }), {
+      target: { value: "15:30" },
+    });
+
+    // Client details (email intentionally left empty)
+    fireEvent.change(screen.getByPlaceholderText("Ej. Lucas Fernández"), {
+      target: { value: "Martín Palermo" },
+    });
+    fireEvent.change(screen.getByPlaceholderText("Ej. 11 2345 6789"), {
+      target: { value: "11 9999 8888" },
+    });
+
+    // Click submit button
+    const submitBtn = screen.getByRole("button", { name: /Generar turno/i });
+    fireEvent.click(submitBtn);
+
+    expect(createManualAppointment).toHaveBeenCalledWith(
+      expect.objectContaining({
+        serviceId: null,
+        customServiceName: "Tintura fantasía",
+        servicePriceArs: 32000,
+        time: "14:00",
+        endTime: "15:30",
+        durationMinutes: 90,
+        name: "Martín Palermo",
+        phone: "11 9999 8888",
+        email: undefined, // truly optional / no synthetic email!
+      })
+    );
+  });
+
+  it("Rule 40 & 41: Manual appointment blocks availability interval without creating public slots", () => {
+    // Lautaro has manual appointment 09:45-10:30
+    const appointments = [
+      {
+        id: "apt-lautaro-special",
+        barberId: "barber-lautaro",
+        date: "2026-10-28",
+        time: "09:45",
+        endTime: "10:30",
+        serviceDuration: 45,
+        statusCode: "CONFIRMED",
+      },
+    ];
+
+    // Compute availability for a 45-min service
+    const slots = computeAvailableManualSlots({
+      appointments,
+      barberId: "barber-lautaro",
+      date: "2026-10-28",
+      durationMinutes: 45,
+    });
+
+    // 09:30-10:15 overlaps 09:45-10:30 -> unavailable
+    expect(slots.find((s) => s.time === "09:30")?.available).toBe(false);
+    // 10:00-10:45 overlaps 09:45-10:30 -> unavailable
+    expect(slots.find((s) => s.time === "10:00")?.available).toBe(false);
+    // 10:30-11:15 is adjacent, not overlapping -> available
+    expect(slots.find((s) => s.time === "10:30")?.available).toBe(true);
+  });
+
+  it("V2Payments: supports 'Otro' for walk-in payments", () => {
+    render(<V2Payments />);
+
+    // In 'Sin turno', change service to 'Otro'
+    const serviceSelect = screen.getByRole("combobox", { name: /Servicio/i });
+    fireEvent.change(serviceSelect, { target: { value: "Otro" } });
+
+    // Custom service name input should appear
+    expect(screen.getByPlaceholderText("Ej. Tintura de color")).toBeInTheDocument();
   });
 });
