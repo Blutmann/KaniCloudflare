@@ -352,24 +352,38 @@ export function V2Appointments() {
         )}
         {rows.map((a) => (
           <article className="v2-appointment" key={a.id}>
-            <div className="v2-time">
-              <strong>{a.time}</strong>
-              <small>{a.endTime ?? ""}</small>
-            </div>
-            <div className="v2-appointment-body">
-              <div className="v2-appointment-heading">
-                <div className="v2-appointment-title-wrap">
-                  <h3>{a.name}</h3>
-                  {a.isManual && <span className="v2-manual-badge">Manual</span>}
-                </div>
+            <div className="v2-appointment-main">
+              {/* Fila 1: 10:00 | Matias Zarate | Estado */}
+              <div className="v2-app-row-1">
+                <strong className="v2-app-time">{a.time}</strong>
+                <span className="v2-app-sep">|</span>
+                <h3 className="v2-app-name">{a.name}</h3>
+                {a.isManual && <span className="v2-manual-badge">Manual</span>}
                 <Status code={a.statusCode} />
               </div>
-              <p>
-                {a.serviceName} <span>· {a.barber}</span>
-              </p>
-              {isMultiDay && <p className="v2-appointment-date">{dateLabel(a.date)}</p>}
-              <div className="v2-appointment-details">
-                <span>
+
+              {/* Fila 2: 10:45 · Corte · Lautaro (· Fecha si isMultiDay) */}
+              <div className="v2-app-row-2">
+                {a.endTime && (
+                  <>
+                    <span className="v2-app-endtime">{a.endTime}</span>
+                    <span className="v2-app-dot">·</span>
+                  </>
+                )}
+                <span className="v2-app-service">{a.serviceName}</span>
+                <span className="v2-app-dot">·</span>
+                <span className="v2-app-barber">{a.barber}</span>
+                {isMultiDay && (
+                  <>
+                    <span className="v2-app-dot">·</span>
+                    <span className="v2-app-date">{dateLabel(a.date)}</span>
+                  </>
+                )}
+              </div>
+
+              {/* Fila 3: Seña: No abonada · Importe: $25.000 */}
+              <div className="v2-app-row-3">
+                <span className="v2-app-deposit">
                   Seña:{" "}
                   {data.depositSupported
                     ? a.depositPaid
@@ -377,57 +391,76 @@ export function V2Appointments() {
                       : "No abonada"
                     : "Sin dato verificable"}
                 </span>
-                <span>Importe: {money(a.servicePrice ?? 0)}</span>
+                <span className="v2-app-dot">·</span>
+                <span className="v2-app-price">Importe: {money(a.servicePrice ?? 0)}</span>
               </div>
+
               {a.notes && <p className="v2-note">{a.notes}</p>}
-              <div className="v2-contact">
-                {a.phone && (
-                  <a href={`tel:${a.phone.replace(/[^+\d]/g, "")}`}>
-                    <Phone size={14} />
-                    <span>{a.phone}</span>
-                  </a>
-                )}
-                {a.email && (
-                  <a href={`mailto:${a.email}`}>
-                    <Mail size={14} />
-                    <span>{a.email}</span>
-                  </a>
+            </div>
+
+            <div className="v2-appointment-actions">
+              <div className="v2-op-buttons">
+                {a.isManual &&
+                  ["PENDING", "CONFIRMED"].includes(a.statusCode) &&
+                  (staff.profile.role === "ADMIN" || a.barberId === staff.profile.barber_id) && (
+                    <button
+                      type="button"
+                      className="v2-secondary v2-action-btn"
+                      disabled={busy}
+                      onClick={() =>
+                        setManualDialog({ open: true, mode: "EDIT", appointment: a })
+                      }
+                    >
+                      Editar
+                    </button>
+                  )}
+                {["PENDING", "CONFIRMED"].includes(a.statusCode) &&
+                  (!a.isManual || staff.profile.role === "ADMIN") && (
+                    <button
+                      type="button"
+                      className="v2-secondary action-reject v2-action-btn"
+                      disabled={busy}
+                      onClick={() => setAction({ appointment: a, status: "CANCELLED" })}
+                    >
+                      Cancelar turno
+                    </button>
+                  )}
+                {a.statusCode === "CONFIRMED" && (
+                  <Link className="v2-secondary v2-action-btn" to="/admin-v2/pagos" search={{ turno: a.id }}>
+                    Cobrar
+                  </Link>
                 )}
               </div>
-            </div>
-            <div className="v2-appointment-actions">
-              {a.isManual &&
-                ["PENDING", "CONFIRMED"].includes(a.statusCode) &&
-                (staff.profile.role === "ADMIN" || a.barberId === staff.profile.barber_id) && (
+              <div className="v2-contact-buttons">
+                {getWhatsAppUrl(a.phone) ? (
+                  <a
+                    className="v2-secondary v2-whatsapp v2-action-btn"
+                    href={getWhatsAppUrl(a.phone)!}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <WhatsAppLabel />
+                  </a>
+                ) : (
                   <button
                     type="button"
-                    className="v2-secondary"
-                    disabled={busy}
-                    onClick={() =>
-                      setManualDialog({ open: true, mode: "EDIT", appointment: a })
-                    }
+                    className="v2-secondary v2-whatsapp v2-action-btn"
+                    disabled
+                    title="El cliente no tiene un teléfono válido"
                   >
-                    Editar
+                    <WhatsAppLabel />
                   </button>
                 )}
-              {["PENDING", "CONFIRMED"].includes(a.statusCode) &&
-                (!a.isManual || staff.profile.role === "ADMIN") && (
-                  <button
-                    className="v2-secondary action-reject"
-                    disabled={busy}
-                    onClick={() => setAction({ appointment: a, status: "CANCELLED" })}
+                {a.email ? (
+                  <a
+                    className="v2-secondary v2-mail-btn v2-action-btn"
+                    href={`mailto:${a.email}`}
                   >
-                    Cancelar turno
-                  </button>
-                )}
-              {a.statusCode === "CONFIRMED" && (
-                <Link className="v2-secondary" to="/admin-v2/pagos" search={{ turno: a.id }}>
-                  Cobrar
-                </Link>
-              )}
-              {getWhatsAppUrl(a.phone) ? (
-                <a className="v2-secondary v2-whatsapp" href={getWhatsAppUrl(a.phone)!} target="_blank" rel="noreferrer"><WhatsAppLabel /></a>
-              ) : <button className="v2-secondary v2-whatsapp" disabled title="El cliente no tiene un teléfono válido"><WhatsAppLabel /></button>}
+                    <Mail size={14} />
+                    <span>Enviar mail</span>
+                  </a>
+                ) : null}
+              </div>
             </div>
           </article>
         ))}
