@@ -3970,3 +3970,10 @@ html[data-theme='light'] .booking-page .booking-contact-form :is(.field-label in
     --kani-wallpaper-image: url('/kani-fondo-oscuro-mobile-master.webp');
   }
 }
+
+/* Desktop dark artwork applies across public pages and administration. */
+@media (min-width: 768px) {
+  html[data-theme="dark"] {
+    --kani-wallpaper-image: url('/kani-fondo-oscuro-desktop-master.webp');
+  }
+}
