@@ -6,9 +6,9 @@
   "triggers": { "crons": ["* * * * *"] },
   "vars": {
     "SUPABASE_URL": "https://iockpxtkflyjfagkvgnr.supabase.co",
-    "PAYWAY_SANDBOX_ENABLED": "false",
+    "PAYWAY_SANDBOX_ENABLED": "true",
     "PAYWAY_ENVIRONMENT": "sandbox",
     "PAYWAY_API_BASE_URL": "https://developers-ventasonline.payway.com.ar/api/v2",
-    "PAYWAY_PAYMENT_METHODS": "[]"
+    "PAYWAY_PAYMENT_METHODS": "[{\"id\":1,\"label\":\"Visa\"},{\"id\":104,\"label\":\"Mastercard\"},{\"id\":63,\"label\":\"Cabal\"}]"
   }
 }

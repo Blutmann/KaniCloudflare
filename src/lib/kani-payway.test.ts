@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { arsToPaywayAmount, PAYWAY_MESSAGES, validatePaywayPayment, validatePaywayDraft } from './kani-payway';
 import { createPaywayService, newPaywayAttemptId, paywayTransactionId, readPaywayConfig, runtimePaywayService,
-  type PaywayConfig, type PaywayStore } from './kani-payway.server';
+  queryPaywayPayment, type PaywayConfig, type PaywayStore } from './kani-payway.server';
 
 const appointmentId = '123e4567-e89b-42d3-a456-426614174000';
 const attemptId = 'a'.repeat(32);
@@ -108,9 +108,50 @@ describe('Payway laboratory, synthetic responses only', () => {
       PAYWAY_PUBLIC_API_KEY: config.publicKey, PAYWAY_PRIVATE_API_KEY: config.privateKey, PAYWAY_SITE_ID: config.siteId,
       PAYWAY_PAYMENT_METHODS: JSON.stringify(config.methods), SUPABASE_URL: 'https://iockpxtkflyjfagkvgnr.supabase.co' };
     expect(readPaywayConfig(key => env[key])).toEqual(config);
+    // Auto-normalizes without trailing /api/v2
+    expect(readPaywayConfig(key => key === 'PAYWAY_API_BASE_URL' ? 'https://developers-ventasonline.payway.com.ar' : env[key])).toEqual(config);
     for (const patch of [{ PAYWAY_SANDBOX_ENABLED: 'false' }, { PAYWAY_SANDBOX_ENABLED: '' }, { PAYWAY_ENVIRONMENT: 'production' }, { PAYWAY_API_BASE_URL: 'https://ventasonline.payway.com.ar/api/v2' },
       { SUPABASE_URL: 'https://production.supabase.co' }, { PAYWAY_PAYMENT_METHODS: '[]' }, { PAYWAY_PRIVATE_API_KEY: '' }]) {
       const altered: Record<string, string> = { ...env, ...patch }; expect(readPaywayConfig(key => altered[key])).toBeNull();
     }
+  });
+
+  it('accepts string provider ID and omitted site_id from Payway gateway responses', async () => {
+    const s = setup();
+    s.payment.id = '971344';
+    delete (s.payment as any).site_id;
+    s.payment.amount = 5000; // in pesos (5000.00)
+    s.fetcher.mockResolvedValue(new Response(JSON.stringify(s.payment), { status: 201 }));
+    const result = await s.service.pay(input);
+    expect(result).toEqual({ state: 'approved', message: PAYWAY_MESSAGES.approved, appointmentConfirmed: true });
+    expect(s.store.settle).toHaveBeenCalledWith(attemptId, 'approved', '971344', 'approved');
+  });
+
+  it('queries Payway by siteOperationId for reconciliation', async () => {
+    const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      results: [
+        { id: 888123, site_transaction_id: 'KANItest123', status: 'approved', amount: 500000, currency: 'ARS' }
+      ]
+    }), { status: 200 }));
+    const res = await queryPaywayPayment(config, 'KANItest123', fetcher);
+    expect(res).toEqual({ matches: true, providerId: '888123', status: 'approved' });
+    expect(fetcher).toHaveBeenCalledWith(
+      `${config.apiBaseUrl}/payments?siteOperationId=KANItest123`,
+      expect.objectContaining({ method: 'GET', headers: expect.objectContaining({ apikey: config.privateKey }) })
+    );
+
+    // Rejected query
+    fetcher.mockResolvedValueOnce(new Response(JSON.stringify({
+      results: [
+        { id: 888124, site_transaction_id: 'KANItest124', status: 'rejected', amount: 500000, currency: 'ARS' }
+      ]
+    }), { status: 200 }));
+    const resRej = await queryPaywayPayment(config, 'KANItest124', fetcher);
+    expect(resRej).toEqual({ matches: true, providerId: '888124', status: 'rejected' });
+
+    // Not found query
+    fetcher.mockResolvedValueOnce(new Response(JSON.stringify({ results: [] }), { status: 200 }));
+    const resEmpty = await queryPaywayPayment(config, 'KANItest999', fetcher);
+    expect(resEmpty).toBeNull();
   });
 });

@@ -33,6 +33,51 @@ export async function reconcilePendingPayments() {
       }
     } catch { console.error('[Kani maintenance] payment requires reconciliation'); }
   }
+
+  // Payway reconciliation for stranded UNKNOWN or PROCESSING attempts
+  try {
+    const { readPaywayConfig, queryPaywayPayment } = await import('./kani-payway.server');
+    const paywayConfig = readPaywayConfig(getRuntimeEnv);
+    if (paywayConfig) {
+      const { data: attempts } = await db.from('payment_attempts')
+        .select('id, appointment_id, site_transaction_id, amount_minor_units')
+        .eq('provider', 'PAYWAY')
+        .in('state', ['UNKNOWN', 'PROCESSING'])
+        .lt('created_at', new Date(Date.now() - 5 * 60_000).toISOString())
+        .limit(20);
+      for (const att of attempts ?? []) {
+        const query = await queryPaywayPayment(paywayConfig, att.site_transaction_id);
+        if (query?.matches && query.providerId) {
+          if (query.status === 'approved') {
+            await db.rpc('settle_payway_attempt', {
+              p_attempt_id: att.id,
+              p_state: 'APPROVED',
+              p_provider_id: query.providerId,
+              p_provider_status: 'approved',
+              p_provider_code: null,
+            });
+            await db.rpc('confirm_payway_attempt', {
+              p_appointment_id: att.appointment_id,
+              p_attempt_id: att.id,
+              p_provider_id: query.providerId,
+              p_amount_minor: att.amount_minor_units,
+            });
+          } else if (query.status === 'rejected') {
+            await db.rpc('settle_payway_attempt', {
+              p_attempt_id: att.id,
+              p_state: 'REJECTED',
+              p_provider_id: query.providerId,
+              p_provider_status: 'rejected',
+              p_provider_code: null,
+            });
+          }
+        }
+      }
+    }
+  } catch {
+    /* Payway maintenance continues silently to expiration RPC */
+  }
+
   const expired = await db.rpc('expire_unpaid_appointments');
   if (expired.error) throw new Error('PAYMENT_EXPIRATION_FAILED');
 }

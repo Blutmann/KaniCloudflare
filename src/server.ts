@@ -203,6 +203,14 @@ function mirrorRuntimeBindings(bindings: unknown): void {
     "PONTIUN_WHATSAPP_TEMPLATE_LANGUAGE",
     "PONTIUN_WEBHOOK_SECRET",
     "PONTIUN_API_BASE_URL",
+    "PAYWAY_SANDBOX_ENABLED",
+    "PAYWAY_ENVIRONMENT",
+    "PAYWAY_API_BASE_URL",
+    "PAYWAY_PUBLIC_API_KEY",
+    "PAYWAY_PRIVATE_API_KEY",
+    "PAYWAY_SITE_ID",
+    "PAYWAY_CHECKOUT_SECRET",
+    "PAYWAY_PAYMENT_METHODS",
   ];
   const runtimeValues = (globalThis as typeof globalThis & {
     __KANI_RUNTIME_ENV?: Record<string, string>;

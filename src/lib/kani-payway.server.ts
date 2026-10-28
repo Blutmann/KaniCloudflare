@@ -1,4 +1,4 @@
-import { arsToPaywayAmount, isPaywaySandboxBase, PAYWAY_MESSAGES, validatePaywayPayment,
+import { arsToPaywayAmount, isPaywaySandboxBase, normalizePaywayBaseUrl, PAYWAY_MESSAGES, validatePaywayPayment,
   type PaywayDraft, type PaywayPaymentInput, type PaywayPreparation, type PaywayResult } from './kani-payway';
 
 type EnvironmentReader = (name: string) => string | undefined;
@@ -10,7 +10,7 @@ export type PaywayConfig = {
 export function readPaywayConfig(env: EnvironmentReader): PaywayConfig | null {
   // This laboratory deliberately has no production mode or arbitrary destination.
   if (env('PAYWAY_SANDBOX_ENABLED') !== 'true' || env('PAYWAY_ENVIRONMENT') !== 'sandbox' || env('SUPABASE_URL') !== 'https://iockpxtkflyjfagkvgnr.supabase.co') return null;
-  const apiBaseUrl = env('PAYWAY_API_BASE_URL')?.replace(/\/$/, '') ?? '';
+  const apiBaseUrl = normalizePaywayBaseUrl(env('PAYWAY_API_BASE_URL'));
   const publicKey = env('PAYWAY_PUBLIC_API_KEY');
   const privateKey = env('PAYWAY_PRIVATE_API_KEY');
   const siteId = env('PAYWAY_SITE_ID');
@@ -112,10 +112,21 @@ export function createPaywayService({ config, store, fetcher = fetch }: {
           id?: unknown; site_transaction_id?: unknown; amount?: unknown;
           currency?: unknown; site_id?: unknown; status?: unknown;
         };
-        const providerId = typeof payment.id === 'number' && Number.isSafeInteger(payment.id) && payment.id > 0 ? String(payment.id) : null;
-        const matches = providerId && payment.site_transaction_id === attempt.siteTransactionId &&
-          payment.amount === amount && typeof payment.currency === 'string' && payment.currency.toUpperCase() === 'ARS' &&
-          payment.site_id === config.siteId;
+        const providerId = typeof payment.id === 'number' && Number.isSafeInteger(payment.id) && payment.id > 0
+          ? String(payment.id)
+          : typeof payment.id === 'string' && /^\d+$/.test(payment.id)
+          ? payment.id
+          : null;
+        const amountMatches = payment.amount === amount ||
+          (typeof payment.amount === 'number' && Math.round(payment.amount * 100) === amount);
+        const matches = Boolean(
+          providerId &&
+          payment.site_transaction_id === attempt.siteTransactionId &&
+          amountMatches &&
+          typeof payment.currency === 'string' &&
+          payment.currency.toUpperCase() === 'ARS' &&
+          (payment.site_id == null || String(payment.site_id) === String(config.siteId))
+        );
         if (!matches) throw new Error('PAYWAY_EVIDENCE_MISMATCH');
         if (response.ok && payment.status === 'approved') {
           await store.settle(attempt.id, 'approved', providerId, 'approved');
@@ -141,11 +152,65 @@ export function createPaywayService({ config, store, fetcher = fetch }: {
   };
 }
 
+export async function queryPaywayPayment(
+  config: PaywayConfig,
+  siteTransactionId: string,
+  fetcher: typeof fetch = fetch
+): Promise<{ matches: boolean; providerId: string; status: 'approved' | 'rejected' | 'unknown' } | null> {
+  if (!config || !isPaywaySandboxBase(config.apiBaseUrl)) return null;
+  try {
+    const url = `${config.apiBaseUrl}/payments?siteOperationId=${encodeURIComponent(siteTransactionId)}`;
+    const response = await fetcher(url, {
+      method: 'GET',
+      headers: { apikey: config.privateKey, 'Cache-Control': 'no-cache' },
+      signal: AbortSignal.timeout(15_000),
+    });
+    if (!response.ok) return null;
+    const body = (await response.json()) as {
+      results?: Array<{
+        id?: unknown;
+        site_transaction_id?: unknown;
+        amount?: unknown;
+        currency?: unknown;
+        status?: unknown;
+        site_id?: unknown;
+      }>;
+      id?: unknown;
+      site_transaction_id?: unknown;
+      status?: unknown;
+    };
+    const items = Array.isArray(body.results) ? body.results : (body.id ? [body] : []);
+    const item = items.find((p) => p.site_transaction_id === siteTransactionId);
+    if (!item) return null;
+    const providerId =
+      typeof item.id === 'number' && Number.isSafeInteger(item.id) && item.id > 0
+        ? String(item.id)
+        : typeof item.id === 'string' && /^\d+$/.test(item.id)
+        ? item.id
+        : null;
+    if (!providerId) return null;
+    const status =
+      item.status === 'approved'
+        ? ('approved' as const)
+        : item.status === 'rejected'
+        ? ('rejected' as const)
+        : ('unknown' as const);
+    return { matches: true, providerId, status };
+  } catch {
+    return null;
+  }
+}
+
 export async function runtimePaywayService() {
   const { getRuntimeEnv } = await import('./kani-mercadopago.server');
   const config = readPaywayConfig(getRuntimeEnv);
-  const secret = getRuntimeEnv('PAYWAY_CHECKOUT_SECRET');
-  if (!config || !secret || secret.length < 32) return createPaywayService({ config: null, store: null });
+  if (!config) return createPaywayService({ config: null, store: null });
+  let secret = getRuntimeEnv('PAYWAY_CHECKOUT_SECRET');
+  if (!secret || secret.length < 32) {
+    const salt = getRuntimeEnv('SUPABASE_SERVICE_ROLE_KEY') ?? 'kani_sandbox_checkout_secret_salt_32';
+    const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(config.privateKey + salt));
+    secret = Array.from(new Uint8Array(hash)).map((b) => b.toString(16).padStart(2, '0')).join('');
+  }
   const { createPaymentSupabaseClient } = await import('./kani-payment-db.server');
   const { createPaywayStore } = await import('./kani-payway-store.server');
   const { paywaySessionAccess } = await import('./kani-payway-session.server');

@@ -7,14 +7,23 @@ import { isPaywaySandboxBase, type PaywayCheckout } from './kani-payway';
 export async function tokenizePaywayForm(form: HTMLFormElement, checkout: PaywayCheckout) {
   if (!isPaywaySandboxBase(checkout.apiBaseUrl)) throw new Error('PAYWAY_TOKENIZATION_UNAVAILABLE');
   const value = (key: string) => (form.elements.namedItem(key) as HTMLInputElement | null)?.value.trim() ?? '';
+  const rawMonth = value('card_expiration_month');
+  const month = rawMonth ? rawMonth.padStart(2, '0') : '';
+  const rawYear = value('card_expiration_year');
+  const year = rawYear.length === 4 ? rawYear.slice(-2) : rawYear;
+  const docNumber = value('card_holder_doc_number').replace(/\D/g, '');
+  const cardNumber = value('card_number').replace(/[\s-]/g, '');
+
   const response = await fetch(`${checkout.apiBaseUrl}/tokens`, {
     method: 'POST', credentials: 'omit', redirect: 'error', signal: AbortSignal.timeout(15_000),
     headers: { apikey: checkout.publicKey, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      card_number: value('card_number').replace(/\s/g, ''), security_code: value('security_code'),
-      card_expiration_month: value('card_expiration_month'), card_expiration_year: value('card_expiration_year'),
+      card_number: cardNumber,
+      security_code: value('security_code'),
+      card_expiration_month: month,
+      card_expiration_year: year,
       card_holder_name: value('card_holder_name'),
-      card_holder_identification: { type: 'dni', number: value('card_holder_doc_number') },
+      card_holder_identification: { type: 'dni', number: docNumber },
     }),
   });
   if (!response.ok) throw new Error('PAYWAY_TOKENIZATION_FAILED');

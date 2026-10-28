@@ -31,8 +31,18 @@ export const PAYWAY_SANDBOX_BASES = [
   'https://developers.decidir.com/api/v2',
 ] as const;
 
+export function normalizePaywayBaseUrl(value: string | undefined): string {
+  if (!value) return '';
+  const trimmed = value.trim().replace(/\/+$/, '');
+  if (trimmed === 'https://developers-ventasonline.payway.com.ar' || trimmed === 'https://developers.decidir.com') {
+    return `${trimmed}/api/v2`;
+  }
+  return trimmed;
+}
+
 export function isPaywaySandboxBase(value: string): boolean {
-  return (PAYWAY_SANDBOX_BASES as readonly string[]).includes(value);
+  const normalized = normalizePaywayBaseUrl(value);
+  return (PAYWAY_SANDBOX_BASES as readonly string[]).includes(normalized);
 }
 
 export function arsToPaywayAmount(ars: number): number {
