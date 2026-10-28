@@ -110,7 +110,7 @@ export function createPaywayService({ config, store, fetcher = fetch }: {
       let approvalSaved = false;
       try {
         const response = await fetcher(`${config.apiBaseUrl}/payments`, {
-          method: 'POST', redirect: 'error', signal: AbortSignal.timeout(35_000),
+          method: 'POST', redirect: 'manual', signal: AbortSignal.timeout(35_000),
           headers: { apikey: config.privateKey, 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' },
           body: JSON.stringify({
             site_transaction_id: attempt.siteTransactionId,
@@ -183,7 +183,7 @@ export function createPaywayService({ config, store, fetcher = fetch }: {
         });
         if (!approvalSaved) {
           try {
-            await store.settle(attempt.id, 'unknown', undefined, 'unknown', errorDetail);
+            await store.settle(attempt.id, 'unknown', undefined, 'unknown', errorDetail.slice(0, 40));
           } catch { /* Still fail closed if persistence is unavailable. */ }
         }
         return { state: 'unknown', message: PAYWAY_MESSAGES.unknown };
