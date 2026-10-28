@@ -134,6 +134,12 @@ export default {
             .order("created_at", { ascending: false })
             .limit(10);
 
+          const { data: attempts, error: attemptsErr } = await client
+            .from("payment_attempts")
+            .select("id, appointment_id, site_transaction_id, provider_transaction_id, amount_ars, state, provider_status, provider_code, created_at, updated_at")
+            .order("created_at", { ascending: false })
+            .limit(10);
+
           const rows = appointments || [];
           const completedCount = rows.filter((a) => a.status === "COMPLETED").length;
           const confirmedCount = rows.filter((a) => a.status === "CONFIRMED").length;
@@ -152,9 +158,30 @@ export default {
               appointments,
               orders: orders || [],
               events: events || [],
+              attempts: attempts || [],
               ordersError: ordersErr?.message,
               eventsError: eventsErr?.message,
+              attemptsError: attemptsErr?.message,
             }),
+            {
+              status: 200,
+              headers: { "content-type": "application/json" },
+            }
+          );
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          return new Response(JSON.stringify({ error: message }), {
+            status: 500,
+            headers: { "content-type": "application/json" },
+          });
+        }
+      }
+
+      if (url.pathname === "/api/admin/payway-diagnostics") {
+        try {
+          const { getRecentPaywayDiagnostics } = await import("./lib/kani-payway.server");
+          return new Response(
+            JSON.stringify({ diagnostics: getRecentPaywayDiagnostics() }),
             {
               status: 200,
               headers: { "content-type": "application/json" },

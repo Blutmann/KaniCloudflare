@@ -92,7 +92,7 @@ describe('Payway laboratory, synthetic responses only', () => {
     const s = setup(); s.fetcher.mockRejectedValue(new DOMException('timeout', 'TimeoutError'));
     const result = await s.service.pay(input);
     expect(result).toEqual({ state: 'unknown', message: PAYWAY_MESSAGES.unknown });
-    expect(s.store.settle).toHaveBeenCalledWith(attemptId, 'unknown'); expect(s.store.confirm).not.toHaveBeenCalled(); expect(s.fetcher).toHaveBeenCalledTimes(1);
+    expect(s.store.settle).toHaveBeenCalledWith(attemptId, 'unknown', undefined, 'unknown', expect.any(String)); expect(s.store.confirm).not.toHaveBeenCalled(); expect(s.fetcher).toHaveBeenCalledTimes(1);
   });
   it('does not turn an approved payment into a confirmed appointment when DB refuses a late payment', async () => {
     const s = setup(); s.store.confirm.mockResolvedValue(false);
@@ -200,7 +200,7 @@ describe('Payway laboratory, synthetic responses only', () => {
     const res = await s.service.pay(input);
     expect(res.state).toBe('rejected');
     expect(res.message).toBe(PAYWAY_MESSAGES.technical_error);
-    expect(s.store.settle).toHaveBeenCalledWith(attemptId, 'rejected', undefined, 'rejected', 'validation_error');
+    expect(s.store.settle).toHaveBeenCalledWith(attemptId, 'rejected', undefined, 'rejected', 'missing');
     expect(s.store.confirm).not.toHaveBeenCalled();
   });
 
@@ -211,7 +211,7 @@ describe('Payway laboratory, synthetic responses only', () => {
     const resTimeout = await sTimeout.service.pay(input);
     expect(resTimeout.state).toBe('unknown');
     expect(resTimeout.message).toBe(PAYWAY_MESSAGES.unknown);
-    expect(sTimeout.store.settle).toHaveBeenCalledWith(attemptId, 'unknown');
+    expect(sTimeout.store.settle).toHaveBeenCalledWith(attemptId, 'unknown', undefined, 'unknown', expect.any(String));
     expect(sTimeout.store.confirm).not.toHaveBeenCalled();
 
     // 2. HTTP 500, 502, 503, 504 Gateway errors
@@ -221,7 +221,7 @@ describe('Payway laboratory, synthetic responses only', () => {
       const resGate = await sGate.service.pay(input);
       expect(resGate.state).toBe('unknown');
       expect(resGate.message).toBe(PAYWAY_MESSAGES.unknown);
-      expect(sGate.store.settle).toHaveBeenCalledWith(attemptId, 'unknown');
+      expect(sGate.store.settle).toHaveBeenCalledWith(attemptId, 'unknown', undefined, 'unknown', `HTTP_${status}_GATEWAY_ERROR`);
       expect(sGate.store.confirm).not.toHaveBeenCalled();
     }
   });
@@ -291,7 +291,7 @@ describe('Payway laboratory, synthetic responses only', () => {
         const res = await s.service.pay(input);
         expect(res.state).toBe('rejected');
         expect(res.message).toBe(PAYWAY_MESSAGES.technical_error);
-        expect(s.store.settle).toHaveBeenCalledWith(attemptId, 'rejected', undefined, 'rejected', 'validation_error');
+        expect(s.store.settle).toHaveBeenCalledWith(attemptId, 'rejected', undefined, 'rejected', 'param_invalid');
         expect(s.store.confirm).not.toHaveBeenCalled();
       }
     });
@@ -345,6 +345,32 @@ describe('Payway laboratory, synthetic responses only', () => {
       }), { status: 200 }));
       expect((await sSite.service.pay(input)).state).toBe('unknown');
       expect(sSite.store.confirm).not.toHaveBeenCalled();
+    });
+
+    it('5. Status review o error técnico -> clasificado con observabilidad en provider_code', async () => {
+      // 5a. Status: 'review'
+      const sRev = setup();
+      sRev.fetcher.mockResolvedValue(new Response(JSON.stringify({
+        id: 971507,
+        site_transaction_id: paywayTransactionId(attemptId),
+        status: 'review',
+        amount: 500000,
+        currency: 'ARS',
+      }), { status: 200 }));
+      const resRev = await sRev.service.pay(input);
+      expect(resRev.state).toBe('unknown');
+      expect(sRev.store.settle).toHaveBeenCalledWith(attemptId, 'unknown', '971507', 'unknown', 'PAYWAY_STATUS_REVIEW');
+      expect(sRev.store.confirm).not.toHaveBeenCalled();
+
+      // 5b. HTTP 400 sin providerId -> technical recoverable rejection
+      const sErr = setup();
+      sErr.fetcher.mockResolvedValue(new Response(JSON.stringify({
+        error: 'card_declined',
+      }), { status: 400 }));
+      const resErr = await sErr.service.pay(input);
+      expect(resErr.state).toBe('rejected');
+      expect(sErr.store.settle).toHaveBeenCalledWith(attemptId, 'rejected', undefined, 'rejected', 'card_declined');
+      expect(sErr.store.confirm).not.toHaveBeenCalled();
     });
   });
 });

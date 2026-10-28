@@ -167,22 +167,23 @@ export function createPaywayService({ config, store, fetcher = fetch }: {
         }
 
         if (classification.kind === 'TECHNICAL_ERROR') {
-          await store.settle(attempt.id, 'rejected', undefined, 'rejected', 'validation_error');
+          await store.settle(attempt.id, 'rejected', undefined, 'rejected', classification.code ?? 'validation_error');
           return { state: 'rejected', message: PAYWAY_MESSAGES.technical_error };
         }
 
         // UNKNOWN branch
-        await store.settle(attempt.id, 'unknown');
+        await store.settle(attempt.id, 'unknown', classification.providerId ?? undefined, 'unknown', classification.reason);
         return { state: 'unknown', message: PAYWAY_MESSAGES.unknown };
       } catch (err) {
+        const errorDetail = err instanceof Error ? `${err.name}: ${err.message}` : 'UNKNOWN_EXCEPTION';
         logPaywayDiagnostic({
           httpStatus: 0,
           classification: 'UNKNOWN',
-          detail: err instanceof Error ? err.name : 'UNKNOWN_EXCEPTION',
+          detail: errorDetail,
         });
         if (!approvalSaved) {
           try {
-            await store.settle(attempt.id, 'unknown');
+            await store.settle(attempt.id, 'unknown', undefined, 'unknown', errorDetail);
           } catch { /* Still fail closed if persistence is unavailable. */ }
         }
         return { state: 'unknown', message: PAYWAY_MESSAGES.unknown };
@@ -305,7 +306,7 @@ export type PaywayClassification =
   | { kind: 'APPROVED'; providerId: string; status: 'approved' }
   | { kind: 'REJECTED'; providerId?: string; status: 'rejected'; code?: string }
   | { kind: 'TECHNICAL_ERROR'; code?: string }
-  | { kind: 'UNKNOWN'; reason: string };
+  | { kind: 'UNKNOWN'; reason: string; providerId?: string };
 
 export function classifyPaywayResponse({
   responseStatus,
@@ -352,7 +353,14 @@ export function classifyPaywayResponse({
   // If status is 'approved' but fails any strict evidence check:
   // Never confirm, never settle as rejected -> UNKNOWN
   if (normalized.status === 'approved') {
-    return { kind: 'UNKNOWN', reason: 'APPROVED_EVIDENCE_MISMATCH' };
+    let reason = 'APPROVED_EVIDENCE_MISMATCH';
+    if (!ok) reason = `APPROVED_HTTP_STATUS_${responseStatus}`;
+    else if (!providerId) reason = 'APPROVED_MISSING_PROVIDER_ID';
+    else if (normalized.siteTransactionId !== expectedSiteTransactionId) reason = 'APPROVED_MISMATCH_SITE_TRANSACTION_ID';
+    else if (!amountMatches) reason = `APPROVED_MISMATCH_AMOUNT_${normalized.amount}_VS_${expectedAmount}`;
+    else if (normalized.currency !== 'ARS') reason = `APPROVED_MISMATCH_CURRENCY_${normalized.currency}`;
+    else if (normalized.siteId != null && normalized.siteId !== expectedSiteId) reason = `APPROVED_MISMATCH_SITE_ID_${normalized.siteId}_VS_${expectedSiteId}`;
+    return { kind: 'UNKNOWN', reason };
   }
 
   // 3. Explicit REJECTED check:
@@ -383,12 +391,7 @@ export function classifyPaywayResponse({
   const isTechnicalValidation =
     !ok &&
     (responseStatus === 400 || responseStatus === 422) &&
-    providerId == null &&
-    (
-      normalized.errorType === 'invalid_request_error' ||
-      (Array.isArray(normalized.validationErrors) && normalized.validationErrors.length > 0) ||
-      (normalized.message != null && normalized.status == null)
-    );
+    providerId == null;
 
   if (isTechnicalValidation) {
     return {
@@ -397,8 +400,31 @@ export function classifyPaywayResponse({
     };
   }
 
-  // 5. Any ambiguous, unknown status
-  return { kind: 'UNKNOWN', reason: `AMBIGUOUS_RESPONSE_HTTP_${responseStatus}` };
+  // 5. Explicit REVIEW check:
+  if (normalized.status === 'review') {
+    return { kind: 'UNKNOWN', reason: 'PAYWAY_STATUS_REVIEW', providerId: providerId ?? undefined };
+  }
+
+  // 6. Any ambiguous, unknown status
+  return { kind: 'UNKNOWN', reason: `AMBIGUOUS_RESPONSE_HTTP_${responseStatus}`, providerId: providerId ?? undefined };
+}
+
+export type PaywayDiagnosticEntry = {
+  timestamp: string;
+  httpStatus: number;
+  paywayStatus?: string;
+  errorType?: string;
+  errorCode?: string;
+  providerId?: string;
+  siteTransactionId?: string;
+  classification: string;
+  detail?: string;
+};
+
+const recentPaywayDiagnostics: PaywayDiagnosticEntry[] = [];
+
+export function getRecentPaywayDiagnostics(): readonly PaywayDiagnosticEntry[] {
+  return recentPaywayDiagnostics;
 }
 
 function logPaywayDiagnostic(info: {
@@ -412,18 +438,22 @@ function logPaywayDiagnostic(info: {
   detail?: string;
 }): void {
   // Safe diagnostic log: Strictly NO PAN, CVV, token, API keys, Authorization, DNI, or cardholder names.
+  const entry: PaywayDiagnosticEntry = {
+    httpStatus: info.httpStatus,
+    paywayStatus: info.paywayStatus ?? undefined,
+    errorType: info.errorType ?? undefined,
+    errorCode: info.errorCode ?? undefined,
+    providerId: info.providerId ?? undefined,
+    siteTransactionId: info.siteTransactionId ?? undefined,
+    classification: info.classification,
+    detail: info.detail ?? undefined,
+    timestamp: new Date().toISOString(),
+  };
+  recentPaywayDiagnostics.unshift(entry);
+  if (recentPaywayDiagnostics.length > 20) recentPaywayDiagnostics.pop();
+
   try {
-    console.warn('[Payway Gateway Diagnostic]', JSON.stringify({
-      httpStatus: info.httpStatus,
-      paywayStatus: info.paywayStatus ?? undefined,
-      errorType: info.errorType ?? undefined,
-      errorCode: info.errorCode ?? undefined,
-      providerId: info.providerId ?? undefined,
-      siteTransactionId: info.siteTransactionId ?? undefined,
-      classification: info.classification,
-      detail: info.detail ?? undefined,
-      timestamp: new Date().toISOString(),
-    }));
+    console.warn('[Payway Gateway Diagnostic]', JSON.stringify(entry));
   } catch {
     /* Logging never throws */
   }
