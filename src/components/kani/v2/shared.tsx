@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Plus } from "lucide-react";
 import { useAdminStaff } from "@/lib/kani-admin-context";
 import { useV2 } from "./data";
 export function PageTitle({
@@ -74,5 +75,75 @@ export const statusLabels: Record<string, string> = {
 export function Status({ code }: { code: string }) {
   return (
     <span className={`v2-badge v2-status-${code.toLowerCase()}`}>{statusLabels[code] ?? code}</span>
+  );
+}
+
+export function AdminV2FiltersPanel({
+  ariaLabel,
+  children,
+  customRange,
+  className,
+}: {
+  ariaLabel: string;
+  children: ReactNode;
+  customRange?: ReactNode;
+  className?: string;
+}) {
+  return (
+    <section className={`v2-filters v2-admin-filter-card ${className ?? ""}`.trim()} aria-label={ariaLabel}>
+      <div className="v2-filters-grid">{children}</div>
+      {customRange}
+    </section>
+  );
+}
+
+export function AdminV2FilterField({
+  label,
+  htmlFor,
+  children,
+  className,
+}: {
+  label: string;
+  htmlFor?: string;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={`v2-field ${className ?? ""}`.trim()}>
+      <label htmlFor={htmlFor} className="v2-field-label">
+        {label}
+      </label>
+      {children}
+    </div>
+  );
+}
+
+export function AdminV2SectionToolbar({
+  dateLabel,
+  actionLabel,
+  onAction,
+  actionAriaLabel,
+  className,
+}: {
+  dateLabel: string;
+  actionLabel: string;
+  onAction: () => void;
+  actionAriaLabel?: string;
+  className?: string;
+}) {
+  const cleanLabel = actionLabel.replace(/^\+\s*/, "");
+  return (
+    <div className={`v2-section-toolbar ${className ?? ""}`.trim()}>
+      <h2 className="v2-toolbar-date">{dateLabel}</h2>
+      <button
+        type="button"
+        className="v2-primary v2-toolbar-action v2-add-manual-btn"
+        onClick={onAction}
+        aria-label={actionAriaLabel ?? actionLabel}
+      >
+        <Plus size={14} strokeWidth={2.2} aria-hidden="true" />
+        <span>{cleanLabel}</span>
+      </button>
+    </div>
   );
 }

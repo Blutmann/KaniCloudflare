@@ -5,7 +5,7 @@ import { ArrowRight, CalendarDays, Clock3, Mail, Phone, Plus } from "lucide-reac
 import { useAdminStaff } from "@/lib/kani-admin-context";
 import { businessDateToday, addCalendarDays, startOfBusinessWeek } from "@/lib/kani-mobile-appointments";
 import { businessTimeNow } from "@/lib/kani-payments";
-import { money, dateLabel, formatRangeLabel } from "@/lib/kani-model";
+import { money, dateLabel, formatRangeLabel, formatAdminV2Date, formatAdminV2Range } from "@/lib/kani-model";
 import { paymentSummary, scopeV2 } from "@/lib/kani-v2";
 import {
   appointmentErrorMessage,
@@ -14,7 +14,16 @@ import {
 } from "@/lib/kani-appointments";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { useV2 } from "./data";
-import { BarberFilter, Empty, Metric, Status, statusLabels } from "./shared";
+import {
+  AdminV2FiltersPanel,
+  AdminV2FilterField,
+  AdminV2SectionToolbar,
+  BarberFilter,
+  Empty,
+  Metric,
+  Status,
+  statusLabels,
+} from "./shared";
 import { ManualAppointmentDialog } from "./manual-appointment-dialog";
 
 export function V2Home() {
@@ -187,29 +196,29 @@ export function V2Appointments() {
   if (period === "TODAY") {
     startDate = today;
     endDate = today;
-    headerLabel = dateLabel(today);
+    headerLabel = formatAdminV2Date(today);
   } else if (period === "DATE") {
     startDate = date;
     endDate = date;
-    headerLabel = dateLabel(date);
+    headerLabel = formatAdminV2Date(date);
   } else if (period === "THIS_WEEK") {
     const weekStart = startOfBusinessWeek(today);
     const weekEnd = addCalendarDays(weekStart, 6);
     startDate = weekStart;
     endDate = weekEnd;
-    headerLabel = formatRangeLabel(weekStart, weekEnd);
+    headerLabel = formatAdminV2Range(weekStart, weekEnd);
   } else if (period === "NEXT_10_DAYS") {
     const tenDaysEnd = addCalendarDays(today, 9);
     startDate = today;
     endDate = tenDaysEnd;
-    headerLabel = formatRangeLabel(today, tenDaysEnd);
+    headerLabel = formatAdminV2Range(today, tenDaysEnd);
   } else if (period === "CUSTOM") {
     if (isInvalidRange) {
       headerLabel = "Rango no válido";
     } else {
       startDate = customStartDate;
       endDate = customEndDate;
-      headerLabel = formatRangeLabel(customStartDate, customEndDate, true);
+      headerLabel = formatAdminV2Range(customStartDate, customEndDate);
     }
   }
 
@@ -266,79 +275,92 @@ export function V2Appointments() {
   }
   return (
     <main className="v2-page v2-appointments-page">
-      <section className="v2-filters v2-admin-filter-card" aria-label="Filtros de turnos">
-        <div className="v2-filters-grid">
-          <label className="v2-field">
-            Período
-            <select
-              value={period}
-              onChange={(e) => handlePeriodChange(e.target.value as AgendaPeriodPreset)}
-            >
-              {period === "DATE" && <option value="DATE" hidden>Día seleccionado</option>}
-              <option value="TODAY">Hoy</option>
-              <option value="THIS_WEEK">Esta semana</option>
-              <option value="NEXT_10_DAYS">Próximos 10 días</option>
-              <option value="CUSTOM">Personalizado</option>
-            </select>
-          </label>
-          <label className="v2-field">
-            Fecha
-            <input type="date" value={date} onChange={(e) => handleDateChange(e.target.value)} />
-          </label>
-          <BarberFilter />
-          <label className="v2-field">
-            Estado
-            <select value={status} onChange={(e) => setStatus(e.target.value)}>
-              <option value="ALL">Todos</option>
-              {Object.entries(statusLabels).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-        {period === "CUSTOM" && (
-          <div className="v2-custom-range-row">
-            <label className="v2-field">
-              Desde
-              <input
-                type="date"
-                value={customStartDate}
-                onChange={(e) => setCustomStartDate(e.target.value)}
-              />
-            </label>
-            <label className="v2-field">
-              Hasta
-              <input
-                type="date"
-                value={customEndDate}
-                onChange={(e) => setCustomEndDate(e.target.value)}
-              />
-            </label>
-            {isInvalidRange && (
-              <p className="v2-range-warning" role="alert">
-                La fecha 'Desde' debe ser anterior o igual a 'Hasta'.
-              </p>
-            )}
-          </div>
-        )}
-      </section>
-      <div className="v2-appointments-header">
-        <div className="v2-appointments-title-group v2-results-heading schedule-results-heading">
-          <h2>{headerLabel}</h2>
-          <span>
-            {rows.length} {rows.length === 1 ? "turno" : "turnos"}
-          </span>
-        </div>
-        <button
-          type="button"
-          className="v2-primary v2-add-manual-btn"
-          onClick={() => setManualDialog({ open: true, mode: "CREATE", appointment: null })}
-        >
-          <Plus size={16} /> Generar turno
-        </button>
-      </div>
+      <AdminV2FiltersPanel
+        ariaLabel="Filtros de turnos"
+        customRange={
+          period === "CUSTOM" && (
+            <div className="v2-custom-range-row">
+              <AdminV2FilterField label="Desde" htmlFor="v2-appointments-custom-start">
+                <input
+                  id="v2-appointments-custom-start"
+                  type="date"
+                  value={customStartDate}
+                  onChange={(e) => setCustomStartDate(e.target.value)}
+                />
+              </AdminV2FilterField>
+              <AdminV2FilterField label="Hasta" htmlFor="v2-appointments-custom-end">
+                <input
+                  id="v2-appointments-custom-end"
+                  type="date"
+                  value={customEndDate}
+                  onChange={(e) => setCustomEndDate(e.target.value)}
+                />
+              </AdminV2FilterField>
+              {isInvalidRange && (
+                <p className="v2-range-warning" role="alert">
+                  La fecha 'Desde' debe ser anterior o igual a 'Hasta'.
+                </p>
+              )}
+            </div>
+          )
+        }
+      >
+        <AdminV2FilterField label="Período" htmlFor="v2-appointments-period">
+          <select
+            id="v2-appointments-period"
+            value={period}
+            onChange={(e) => handlePeriodChange(e.target.value as AgendaPeriodPreset)}
+          >
+            {period === "DATE" && <option value="DATE" hidden>Día seleccionado</option>}
+            <option value="TODAY">Hoy</option>
+            <option value="THIS_WEEK">Esta semana</option>
+            <option value="NEXT_10_DAYS">Próximos 10 días</option>
+            <option value="CUSTOM">Personalizado</option>
+          </select>
+        </AdminV2FilterField>
+        <AdminV2FilterField label="Fecha" htmlFor="v2-appointments-date">
+          <input
+            id="v2-appointments-date"
+            type="date"
+            value={date}
+            onChange={(e) => handleDateChange(e.target.value)}
+          />
+        </AdminV2FilterField>
+        <AdminV2FilterField label="Barbero" htmlFor="v2-appointments-barber">
+          <select
+            id="v2-appointments-barber"
+            value={staff.profile.role === "ADMIN" ? data.barberId : (staff.profile.barber_id ?? "")}
+            onChange={(e) => data.setBarberId(e.target.value)}
+            disabled={staff.profile.role !== "ADMIN"}
+          >
+            {staff.profile.role === "ADMIN" && <option value="ALL">Todo Kani</option>}
+            {staff.barbers.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.name}
+              </option>
+            ))}
+          </select>
+        </AdminV2FilterField>
+        <AdminV2FilterField label="Estado" htmlFor="v2-appointments-status">
+          <select
+            id="v2-appointments-status"
+            value={status}
+            onChange={(e) => setStatus(e.target.value)}
+          >
+            <option value="ALL">Todos</option>
+            {Object.entries(statusLabels).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </AdminV2FilterField>
+      </AdminV2FiltersPanel>
+      <AdminV2SectionToolbar
+        dateLabel={headerLabel}
+        actionLabel="+ Agregar turno"
+        onAction={() => setManualDialog({ open: true, mode: "CREATE", appointment: null })}
+      />
       {message && (
         <p className="v2-alert" role="status">
           {message}

@@ -20,7 +20,12 @@ import {
   schedulePresets,
   type ScheduleDatePreset,
 } from "@/lib/kani-mobile-appointments";
-import { dateLabel, minutes, type Barber } from "@/lib/kani-model";
+import { dateLabel, minutes, formatAdminV2Date, type Barber } from "@/lib/kani-model";
+import {
+  AdminV2FiltersPanel,
+  AdminV2FilterField,
+  AdminV2SectionToolbar,
+} from "@/components/kani/v2/shared";
 import {
   createAvailabilitySlots,
   FIXED_BOOKING_START_TIMES,
@@ -314,86 +319,68 @@ export function AdminScheduleManager() {
     <main className="site-container admin-schedule-page">
       <div className="admin-schedule-shell">
         {/* 1. Card unificada de Filtros y Estados de horarios */}
-        <section className="v2-admin-filter-card" aria-label="Filtros de horarios">
-          <div className="admin-schedule-filter-grid v2-filters-grid">
-            {/* 1. Período */}
-            <div className="schedule-filter-periodo min-w-0">
-              <label htmlFor="schedule-date-preset" className="block text-xs font-medium text-muted-foreground mb-1.5">
-                Período
-              </label>
+        <AdminV2FiltersPanel ariaLabel="Filtros de horarios">
+          {/* 1. Período */}
+          <AdminV2FilterField label="Período" htmlFor="schedule-date-preset">
+            <select
+              id="schedule-date-preset"
+              value={datePreset}
+              onChange={(event) => selectPreset(event.target.value as ScheduleDatePreset)}
+            >
+              {datePresets.map((preset) => (
+                <option key={preset} value={preset}>
+                  {schedulePresetLabels[preset]}
+                </option>
+              ))}
+            </select>
+          </AdminV2FilterField>
+
+          {/* 2. Fecha */}
+          <AdminV2FilterField label="Fecha" htmlFor="schedule-specific-date">
+            <input
+              id="schedule-specific-date"
+              type="date"
+              min={businessToday}
+              value={specificDate}
+              onChange={(event) => selectSpecificDate(event.target.value)}
+            />
+          </AdminV2FilterField>
+
+          {/* 3. Barbero */}
+          <AdminV2FilterField label="Barbero" htmlFor="schedule-barber-filter">
+            {profile.role === "ADMIN" ? (
               <select
-                id="schedule-date-preset"
-                value={datePreset}
-                onChange={(event) => selectPreset(event.target.value as ScheduleDatePreset)}
-                className="select-control w-full h-9 px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20 min-w-0 max-w-full"
+                id="schedule-barber-filter"
+                value={barberFilter}
+                onChange={(event) => setBarberFilter(event.target.value)}
               >
-                {datePresets.map((preset) => (
-                  <option key={preset} value={preset}>
-                    {schedulePresetLabels[preset]}
+                {permittedBarbers.map((barber) => (
+                  <option key={barber} value={barber}>
+                    {barber}
                   </option>
                 ))}
               </select>
-            </div>
+            ) : (
+              <output id="schedule-barber-filter">
+                {permittedBarbers[0] ?? "Tu agenda"}
+              </output>
+            )}
+          </AdminV2FilterField>
 
-            {/* 2. Fecha */}
-            <div className="schedule-filter-fecha min-w-0">
-              <label htmlFor="schedule-specific-date" className="block text-xs font-medium text-muted-foreground mb-1.5">
-                Fecha
-              </label>
-              <input
-                id="schedule-specific-date"
-                type="date"
-                min={businessToday}
-                value={specificDate}
-                onChange={(event) => selectSpecificDate(event.target.value)}
-                className="select-control w-full h-9 px-2 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20 leading-normal text-left min-w-0 max-w-full"
-              />
-            </div>
-
-            {/* 3. Barbero */}
-            <div className="schedule-filter-barbero min-w-0">
-              <label htmlFor="schedule-barber-filter" className="block text-xs font-medium text-muted-foreground mb-1.5">
-                Barbero
-              </label>
-              {profile.role === "ADMIN" ? (
-                <select
-                  id="schedule-barber-filter"
-                  value={barberFilter}
-                  onChange={(event) => setBarberFilter(event.target.value)}
-                  className="select-control w-full h-9 px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20"
-                >
-                  {permittedBarbers.map((barber) => (
-                    <option key={barber} value={barber}>
-                      {barber}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <output className="select-control w-full h-9 px-3 text-xs bg-muted/40 border border-border rounded-lg text-muted-foreground flex items-center cursor-not-allowed">
-                  {permittedBarbers[0] ?? "Tu agenda"}
-                </output>
-              )}
-            </div>
-
-            {/* 4. Estado (Fila 2 Col 2 en Mobile / Fila 1 Col 4 en Desktop) */}
-            <div className="schedule-filter-estado min-w-0">
-              <label htmlFor="schedule-status-filter" className="block text-xs font-medium text-muted-foreground mb-1.5">
-                Estado
-              </label>
-              <select
-                id="schedule-status-filter"
-                value={statusFilter}
-                onChange={(event) => setStatusFilter(event.target.value as ScheduleStatusFilter)}
-                className="select-control w-full h-9 px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20 min-w-0 max-w-full"
-              >
-                <option value="ALL">Todos</option>
-                <option value="AVAILABLE">Disponible</option>
-                <option value="UNAVAILABLE">No disponible</option>
-                <option value="RESERVED">Reservado</option>
-              </select>
-            </div>
-          </div>
-        </section>
+          {/* 4. Estado (Fila 2 Col 2 en Mobile / Fila 1 Col 4 en Desktop) */}
+          <AdminV2FilterField label="Estado" htmlFor="schedule-status-filter">
+            <select
+              id="schedule-status-filter"
+              value={statusFilter}
+              onChange={(event) => setStatusFilter(event.target.value as ScheduleStatusFilter)}
+            >
+              <option value="ALL">Todos</option>
+              <option value="AVAILABLE">Disponible</option>
+              <option value="UNAVAILABLE">No disponible</option>
+              <option value="RESERVED">Reservado</option>
+            </select>
+          </AdminV2FilterField>
+        </AdminV2FiltersPanel>
 
         {/* 3. Avisos contextuales */}
         {notice && (
@@ -441,6 +428,11 @@ export function AdminScheduleManager() {
           )}
           {!loading && groupedSlots.length === 0 && (
             <>
+              <AdminV2SectionToolbar
+                dateLabel={formatAdminV2Date(specificDate)}
+                actionLabel="+ Agregar horario"
+                onAction={() => openManualDialog(specificDate, selectedRows[0]?.id)}
+              />
               <div className="p-8 text-center border border-dashed border-border rounded-xl bg-surface/50 my-6">
                 <SlidersHorizontal size={32} className="mx-auto text-muted-foreground/60 mb-2" />
                 <h2 className="text-sm font-semibold text-foreground">No hay horarios para estos filtros</h2>
@@ -462,16 +454,12 @@ export function AdminScheduleManager() {
           )}
           {!loading &&
             groupedSlots.map(([date, dateSlots]) => (
-              <section key={date} className="space-y-3 mb-6">
-                <div className="schedule-results-heading flex items-center justify-between pb-2 border-b border-border">
-                  <div className="flex items-center gap-2">
-                    <span className="schedule-results-date-label text-[10px] font-bold tracking-wider uppercase text-muted-foreground px-1.5 py-0.5 rounded bg-muted">Fecha</span>
-                    <h2 className="text-sm font-semibold text-foreground capitalize">{dateLabel(date)}</h2>
-                  </div>
-                  <span className="text-xs text-muted-foreground">
-                    {dateSlots.length} {dateSlots.length === 1 ? "horario" : "horarios"}
-                  </span>
-                </div>
+              <section key={date} className="admin-schedule-date-group space-y-3 mb-6">
+                <AdminV2SectionToolbar
+                  dateLabel={formatAdminV2Date(date)}
+                  actionLabel="+ Agregar horario"
+                  onAction={() => openManualDialog(date, dateSlots[0]?.barber_id)}
+                />
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                   {dateSlots.map((slot) => {
                     const available = slot.status === "AVAILABLE";

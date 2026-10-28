@@ -1,7 +1,7 @@
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { businessDateToday, addCalendarDays, startOfBusinessWeek } from '@/lib/kani-mobile-appointments';
-import { formatRangeLabel, dateLabel } from '@/lib/kani-model';
+import { formatRangeLabel, dateLabel, formatAdminV2Date, formatAdminV2Range } from '@/lib/kani-model';
 
 const today = businessDateToday();
 const mondayOfWeek = startOfBusinessWeek(today);
@@ -124,10 +124,9 @@ describe('V2Appointments periods and historical queries', () => {
   it('renders default Hoy view with title group and exact period options', () => {
     const { container } = render(<V2Appointments />);
 
-    // Header has title group class for vertical spacing
-    const titleGroup = container.querySelector('.v2-appointments-title-group');
-    expect(titleGroup).toBeInTheDocument();
-    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent(dateLabel(today));
+    const toolbar = container.querySelector('.v2-section-toolbar');
+    expect(toolbar).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent(formatAdminV2Date(today));
 
     // Selector Período has exact options in exact order
     const periodSelect = screen.getByLabelText('Período') as HTMLSelectElement;
@@ -152,7 +151,7 @@ describe('V2Appointments periods and historical queries', () => {
     fireEvent.change(periodSelect, { target: { value: 'THIS_WEEK' } });
 
     // Expect week header
-    const expectedHeader = formatRangeLabel(mondayOfWeek, sundayOfWeek);
+    const expectedHeader = formatAdminV2Range(mondayOfWeek, sundayOfWeek);
     expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent(expectedHeader);
 
     // Cliente Esta Semana should be present
@@ -165,7 +164,7 @@ describe('V2Appointments periods and historical queries', () => {
     fireEvent.change(periodSelect, { target: { value: 'NEXT_10_DAYS' } });
 
     // Expect 10-day header
-    const expectedHeader = formatRangeLabel(today, tenDaysEnd);
+    const expectedHeader = formatAdminV2Range(today, tenDaysEnd);
     expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent(expectedHeader);
 
     // Should include appointment on the 10th day
@@ -189,7 +188,7 @@ describe('V2Appointments periods and historical queries', () => {
 
     // Header updates to historical range with year
     expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent(
-      formatRangeLabel(pastDateAugustStart, pastDateAugustEnd, true),
+      formatAdminV2Range(pastDateAugustStart, pastDateAugustEnd),
     );
 
     // Historical appointment in August is shown
@@ -215,7 +214,6 @@ describe('V2Appointments periods and historical queries', () => {
       screen.getByText("Revisá el rango seleccionado: la fecha 'Desde' debe ser anterior o igual a 'Hasta'."),
     ).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('Rango no válido');
-    expect(screen.getByText('0 turnos')).toBeInTheDocument();
   });
 
   it('allows querying a concrete historical day via Fecha selector', () => {
@@ -226,7 +224,7 @@ describe('V2Appointments periods and historical queries', () => {
     fireEvent.change(fechaInput, { target: { value: pastDate } });
 
     // Header reflects concrete date
-    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent(dateLabel(pastDate));
+    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent(formatAdminV2Date(pastDate));
 
     // Shows appointment for that date
     expect(screen.getByText('Cliente Pasado Histórico')).toBeInTheDocument();
@@ -235,7 +233,7 @@ describe('V2Appointments periods and historical queries', () => {
     const periodSelect = screen.getByLabelText('Período');
     fireEvent.change(periodSelect, { target: { value: 'TODAY' } });
 
-    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent(dateLabel(today));
+    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent(formatAdminV2Date(today));
     expect((screen.getByLabelText('Fecha') as HTMLInputElement).value).toBe(today);
   });
 });

@@ -145,19 +145,21 @@ describe('Admin V2 — Turnos Structural Responsive Verification', () => {
     expect(contactButtons?.querySelectorAll('.v2-action-btn')).toHaveLength(2);
   });
 
-  it('renders unified header block with title, count, and Generar turno action', () => {
+  it('renders unified section toolbar with formatted date, no counter, and Agregar turno action', () => {
     const { container } = render(<V2Appointments />);
 
-    const header = container.querySelector('.v2-appointments-header');
-    expect(header).toBeInTheDocument();
+    const toolbar = container.querySelector('.v2-section-toolbar');
+    expect(toolbar).toBeInTheDocument();
 
-    const titleGroup = header?.querySelector('.v2-appointments-title-group');
-    expect(titleGroup).toBeInTheDocument();
-    expect(titleGroup?.querySelector('h2')).toBeInTheDocument();
-    expect(titleGroup?.querySelector('span')).toHaveTextContent(/turnos?/i);
+    const dateHeading = toolbar?.querySelector('h2');
+    expect(dateHeading).toBeInTheDocument();
+    expect(dateHeading?.textContent).toMatch(/^[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+,\s+\d+\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+\.$/);
 
-    const generateBtn = header?.querySelector('.v2-add-manual-btn');
-    expect(generateBtn).toBeInTheDocument();
-    expect(generateBtn).toHaveTextContent('Generar turno');
+    // Counter completely eliminated
+    expect(toolbar?.textContent).not.toMatch(/\d+\s+turnos?/i);
+
+    const addBtn = toolbar?.querySelector('.v2-toolbar-action');
+    expect(addBtn).toBeInTheDocument();
+    expect(addBtn).toHaveTextContent('Agregar turno');
   });
 });

@@ -164,17 +164,18 @@ describe('Admin V2 — Turnos Density & Contact Actions Optimization', () => {
     expect(screen.getByRole('button', { name: 'Editar' })).toBeInTheDocument();
   });
 
-  it('header renders Generar turno in the same horizontal block as the title and count', () => {
+  it('header renders Agregar turno in the same horizontal block as the title', () => {
     const { container } = render(<V2Appointments />);
 
-    const header = container.querySelector('.v2-appointments-header');
-    expect(header).toBeInTheDocument();
+    const toolbar = container.querySelector('.v2-section-toolbar');
+    expect(toolbar).toBeInTheDocument();
 
-    const titleGroup = header?.querySelector('.v2-appointments-title-group');
-    expect(titleGroup).toBeInTheDocument();
+    const heading = toolbar?.querySelector('h2');
+    expect(heading).toBeInTheDocument();
+    expect(heading?.textContent).toMatch(/^[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+,\s+\d+\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+\.$/);
 
-    const btn = header?.querySelector('.v2-add-manual-btn');
+    const btn = toolbar?.querySelector('.v2-toolbar-action');
     expect(btn).toBeInTheDocument();
-    expect(btn).toHaveTextContent('Generar turno');
+    expect(btn).toHaveTextContent('Agregar turno');
   });
 });

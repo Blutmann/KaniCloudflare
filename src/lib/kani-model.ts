@@ -45,6 +45,34 @@ export function formatRangeLabel(startIso: string, endIso: string, includeYearAl
   }
   return `${startDay} ${startMonth} ${startYear} – ${endDay} ${endMonth} ${endYear}`;
 }
+export function formatAdminV2Date(dateIso: string): string {
+  const d = parseDate(dateIso);
+  const weekday = d.toLocaleDateString('es-AR', { weekday: 'long' });
+  const capW = weekday.charAt(0).toUpperCase() + weekday.slice(1);
+  const rawMonth = d.toLocaleDateString('es-AR', { month: 'short' }).replace(/\./g, '').trim();
+  const capM = rawMonth.charAt(0).toUpperCase() + rawMonth.slice(1);
+  return `${capW}, ${d.getDate()} ${capM}.`;
+}
+export function formatAdminV2Range(startIso: string, endIso: string): string {
+  if (startIso === endIso) {
+    return formatAdminV2Date(startIso);
+  }
+  const start = parseDate(startIso);
+  const end = parseDate(endIso);
+  const formatMonth = (dt: Date) => {
+    const raw = dt.toLocaleDateString('es-AR', { month: 'short' }).replace(/\./g, '').trim();
+    return raw.charAt(0).toUpperCase() + raw.slice(1) + '.';
+  };
+  const startDay = start.getDate();
+  const endDay = end.getDate();
+  const startMonth = formatMonth(start);
+  const endMonth = formatMonth(end);
+
+  if (startMonth === endMonth) {
+    return `${startDay} — ${endDay} ${startMonth}`;
+  }
+  return `${startDay} ${startMonth} — ${endDay} ${endMonth}`;
+}
 export const isoDate = (date: Date) => `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
 export const demoToday = isoDate(new Date());
 export const bookingEndDateFor = (today: string) => isoDate(new Date(parseDate(today).getTime() + 21 * 24 * 60 * 60 * 1000));

@@ -109,27 +109,23 @@ describe('Unificación Admin V2 & Ajustes Reserva V4', () => {
     vi.clearAllMocks();
   });
 
-  it('Admin V2 Turnos: renders unified header with date on left and count on right', () => {
+  it('Admin V2 Turnos: renders unified toolbar with date on left and action on right', () => {
     const { container } = render(<V2Appointments />);
 
-    const header = container.querySelector('.v2-appointments-header');
-    expect(header).toBeInTheDocument();
+    const toolbar = container.querySelector('.v2-section-toolbar');
+    expect(toolbar).toBeInTheDocument();
 
-    const titleGroup = header?.querySelector('.v2-appointments-title-group');
-    expect(titleGroup).toBeInTheDocument();
-    expect(titleGroup).toHaveClass('schedule-results-heading');
-
-    // Title and count inside titleGroup
-    const headingH2 = titleGroup?.querySelector('h2');
-    const countSpan = titleGroup?.querySelector('span');
+    const headingH2 = toolbar?.querySelector('h2');
     expect(headingH2).toBeInTheDocument();
-    expect(countSpan).toBeInTheDocument();
-    expect(countSpan?.textContent).toMatch(/turno/);
+    expect(headingH2?.textContent).toMatch(/^[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+,\s+\d+\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+\.$/);
 
-    // Generar turno button present inside header directly below titleGroup
-    const addBtn = header?.querySelector('.v2-add-manual-btn');
+    // Counter completely eliminated
+    expect(toolbar?.textContent).not.toMatch(/\d+\s+turnos?/i);
+
+    // Agregar turno button present inside toolbar
+    const addBtn = toolbar?.querySelector('.v2-toolbar-action');
     expect(addBtn).toBeInTheDocument();
-    expect(addBtn).toHaveTextContent('Generar turno');
+    expect(addBtn).toHaveTextContent('Agregar turno');
   });
 
   it('Admin V2 Turnos: filters card uses unified v2-admin-filter-card and v2-filters-grid', () => {
