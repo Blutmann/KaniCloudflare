@@ -359,7 +359,7 @@ export function V2Appointments() {
               <div className="v2-app-row-1">
                 <strong className="v2-app-time">{a.time}</strong>
                 <span className="v2-app-sep">|</span>
-                <h3 className="v2-app-name">{a.name}</h3>
+                <h3 className="v2-app-name" title={a.name}>{a.name}</h3>
                 {a.isManual && <span className="v2-manual-badge">Manual</span>}
                 <Status code={a.statusCode} />
               </div>
