@@ -176,7 +176,7 @@ describe('Payway laboratory, synthetic responses only', () => {
     // Not found query
     fetcher.mockResolvedValueOnce(new Response(JSON.stringify({ results: [] }), { status: 200 }));
     const resEmpty = await queryPaywayPayment(config, 'KANItest999', fetcher);
-    expect(resEmpty).toBeNull();
+    expect(resEmpty).toEqual({ matches: false, providerId: null, status: 'not_found' });
   });
 
   it('rejects attempt safely before provider call if appointment email is missing or invalid', async () => {
@@ -214,13 +214,137 @@ describe('Payway laboratory, synthetic responses only', () => {
     expect(sTimeout.store.settle).toHaveBeenCalledWith(attemptId, 'unknown');
     expect(sTimeout.store.confirm).not.toHaveBeenCalled();
 
-    // 2. HTTP 500 Gateway internal error
-    const s500 = setup();
-    s500.fetcher.mockResolvedValue(new Response('Internal Server Error', { status: 500 }));
-    const res500 = await s500.service.pay(input);
-    expect(res500.state).toBe('unknown');
-    expect(res500.message).toBe(PAYWAY_MESSAGES.unknown);
-    expect(s500.store.settle).toHaveBeenCalledWith(attemptId, 'unknown');
-    expect(s500.store.confirm).not.toHaveBeenCalled();
+    // 2. HTTP 500, 502, 503, 504 Gateway errors
+    for (const status of [500, 502, 503, 504]) {
+      const sGate = setup();
+      sGate.fetcher.mockResolvedValue(new Response(`Gateway Error ${status}`, { status }));
+      const resGate = await sGate.service.pay(input);
+      expect(resGate.state).toBe('unknown');
+      expect(resGate.message).toBe(PAYWAY_MESSAGES.unknown);
+      expect(sGate.store.settle).toHaveBeenCalledWith(attemptId, 'unknown');
+      expect(sGate.store.confirm).not.toHaveBeenCalled();
+    }
+  });
+
+  describe('Payway explicit state classification and security guarantees', () => {
+    it('1. Approved válido -> APPROVED, appointment CONFIRMED, depositPaid true', async () => {
+      const s = setup();
+      s.payment.status = 'approved';
+      s.payment.id = 971500;
+      s.payment.amount = 500000;
+      s.payment.currency = 'ARS';
+      s.payment.site_id = config.siteId;
+      s.fetcher.mockResolvedValue(new Response(JSON.stringify(s.payment), { status: 200 }));
+
+      const res = await s.service.pay(input);
+      expect(res.state).toBe('approved');
+      expect(res.appointmentConfirmed).toBe(true);
+      expect(s.store.settle).toHaveBeenCalledWith(attemptId, 'approved', '971500', 'approved');
+      expect(s.store.confirm).toHaveBeenCalledWith(appointmentId, attemptId, '971500', 500000);
+    });
+
+    it('2. Rejected explícito -> REJECTED, appointment PENDING, NO UNKNOWN', async () => {
+      // 2a. Direct status: 'rejected'
+      const sDirect = setup();
+      sDirect.fetcher.mockResolvedValue(new Response(JSON.stringify({
+        id: 971501,
+        site_transaction_id: paywayTransactionId(attemptId),
+        status: 'rejected',
+        amount: 500000,
+        currency: 'ARS',
+        status_details: { error: { type: 'card_declined', reason: { id: 10, description: 'Fondos insuficientes' } } }
+      }), { status: 400 }));
+
+      const resDirect = await sDirect.service.pay(input);
+      expect(resDirect.state).toBe('rejected');
+      expect(resDirect.message).toBe(PAYWAY_MESSAGES.rejected);
+      expect(sDirect.store.settle).toHaveBeenCalledWith(attemptId, 'rejected', '971501', 'rejected', '10');
+      expect(sDirect.store.confirm).not.toHaveBeenCalled();
+
+      // 2b. Wrapped inside data_response
+      const sWrapped = setup();
+      sWrapped.fetcher.mockResolvedValue(new Response(JSON.stringify({
+        data_response: {
+          id: 971502,
+          site_transaction_id: paywayTransactionId(attemptId),
+          status: 'rejected',
+          amount: 500000,
+          currency: 'ARS',
+        }
+      }), { status: 200 }));
+
+      const resWrapped = await sWrapped.service.pay(input);
+      expect(resWrapped.state).toBe('rejected');
+      expect(resWrapped.message).toBe(PAYWAY_MESSAGES.rejected);
+      expect(sWrapped.store.settle).toHaveBeenCalledWith(attemptId, 'rejected', '971502', 'rejected', undefined);
+      expect(sWrapped.store.confirm).not.toHaveBeenCalled();
+    });
+
+    it('3. 400/422 validation error -> technical recoverable rejection, NO UNKNOWN', async () => {
+      for (const status of [400, 422]) {
+        const s = setup();
+        s.fetcher.mockResolvedValue(new Response(JSON.stringify({
+          error_type: 'invalid_request_error',
+          validation_errors: [{ code: 'param_invalid', param: 'bin' }]
+        }), { status }));
+
+        const res = await s.service.pay(input);
+        expect(res.state).toBe('rejected');
+        expect(res.message).toBe(PAYWAY_MESSAGES.technical_error);
+        expect(s.store.settle).toHaveBeenCalledWith(attemptId, 'rejected', undefined, 'rejected', 'validation_error');
+        expect(s.store.confirm).not.toHaveBeenCalled();
+      }
+    });
+
+    it('4. Evidence mismatch en supuesto APPROVED -> jamás confirmar, settles as UNKNOWN', async () => {
+      // Currency mismatch
+      const sCurr = setup();
+      sCurr.fetcher.mockResolvedValue(new Response(JSON.stringify({
+        id: 971503,
+        site_transaction_id: paywayTransactionId(attemptId),
+        status: 'approved',
+        amount: 500000,
+        currency: 'USD',
+      }), { status: 200 }));
+      expect((await sCurr.service.pay(input)).state).toBe('unknown');
+      expect(sCurr.store.confirm).not.toHaveBeenCalled();
+
+      // Amount mismatch
+      const sAmt = setup();
+      sAmt.fetcher.mockResolvedValue(new Response(JSON.stringify({
+        id: 971504,
+        site_transaction_id: paywayTransactionId(attemptId),
+        status: 'approved',
+        amount: 100000, // Should be 500000
+        currency: 'ARS',
+      }), { status: 200 }));
+      expect((await sAmt.service.pay(input)).state).toBe('unknown');
+      expect(sAmt.store.confirm).not.toHaveBeenCalled();
+
+      // Site transaction mismatch
+      const sTx = setup();
+      sTx.fetcher.mockResolvedValue(new Response(JSON.stringify({
+        id: 971505,
+        site_transaction_id: 'KANI_WRONG_TRANSACTION',
+        status: 'approved',
+        amount: 500000,
+        currency: 'ARS',
+      }), { status: 200 }));
+      expect((await sTx.service.pay(input)).state).toBe('unknown');
+      expect(sTx.store.confirm).not.toHaveBeenCalled();
+
+      // Site ID mismatch
+      const sSite = setup();
+      sSite.fetcher.mockResolvedValue(new Response(JSON.stringify({
+        id: 971506,
+        site_transaction_id: paywayTransactionId(attemptId),
+        status: 'approved',
+        amount: 500000,
+        currency: 'ARS',
+        site_id: '99999999',
+      }), { status: 200 }));
+      expect((await sSite.service.pay(input)).state).toBe('unknown');
+      expect(sSite.store.confirm).not.toHaveBeenCalled();
+    });
   });
 });

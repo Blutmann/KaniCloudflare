@@ -1,8 +1,18 @@
-import { env as cloudflareEnv } from "cloudflare:workers";
 import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
+
+async function getCloudflareEnv(): Promise<unknown> {
+  try {
+    // cloudflare:workers is a Cloudflare Workers runtime built-in
+    const specifier = "cloudflare:workers";
+    const mod = (await import(/* @vite-ignore */ specifier)) as { env?: unknown };
+    return mod.env;
+  } catch {
+    return undefined;
+  }
+}
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -58,7 +68,7 @@ export default {
       mirrorRuntimeBindings(env);
       mirrorRuntimeBindings((globalThis as typeof globalThis & { __env__?: unknown }).__env__);
       mirrorRuntimeBindings((request as typeof request & { runtime?: { cloudflare?: { env?: unknown } } })?.runtime?.cloudflare?.env);
-      mirrorRuntimeBindings(cloudflareEnv);
+      mirrorRuntimeBindings(await getCloudflareEnv());
 
       const url = new URL(request.url);
       if (url.pathname === "/api/webhook/mercadopago") {
@@ -159,6 +169,26 @@ export default {
         }
       }
 
+      if (url.pathname === "/api/admin/trigger-maintenance") {
+        try {
+          const { reconcilePendingPayments } = await import("./lib/kani-payment-maintenance.server");
+          await reconcilePendingPayments();
+          return new Response(
+            JSON.stringify({ success: true, executed_at: new Date().toISOString() }),
+            {
+              status: 200,
+              headers: { "content-type": "application/json" },
+            }
+          );
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          return new Response(JSON.stringify({ error: message }), {
+            status: 500,
+            headers: { "content-type": "application/json" },
+          });
+        }
+      }
+
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
       return await normalizeCatastrophicSsrResponse(response);
@@ -169,6 +199,26 @@ export default {
         headers: { "content-type": "text/html; charset=utf-8" },
       });
     }
+  },
+  async scheduled(event: unknown, env: unknown, ctx: unknown) {
+    mirrorRuntimeBindings(env);
+    mirrorRuntimeBindings((globalThis as typeof globalThis & { __env__?: unknown }).__env__);
+    mirrorRuntimeBindings(await getCloudflareEnv());
+
+    const run = async () => {
+      try {
+        const { reconcilePendingPayments } = await import("./lib/kani-payment-maintenance.server");
+        await reconcilePendingPayments();
+      } catch (err) {
+        console.error("[Cron Scheduled Maintenance Error]:", err);
+      }
+    };
+
+    const task = run();
+    if (ctx && typeof (ctx as { waitUntil?: (p: Promise<unknown>) => void }).waitUntil === "function") {
+      (ctx as { waitUntil: (p: Promise<unknown>) => void }).waitUntil(task);
+    }
+    await task;
   },
 };
 

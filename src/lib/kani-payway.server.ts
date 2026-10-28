@@ -129,59 +129,61 @@ export function createPaywayService({ config, store, fetcher = fetch }: {
             },
           }),
         });
-        // No automatic retries, provider logs, raw errors or raw responses to the browser.
-        const payment = (await response.json().catch(() => ({}))) as {
-          id?: unknown; site_transaction_id?: unknown; amount?: unknown;
-          currency?: unknown; site_id?: unknown; status?: unknown;
-          error_type?: unknown; validation_errors?: unknown; message?: unknown;
-        };
-        const providerId = typeof payment.id === 'number' && Number.isSafeInteger(payment.id) && payment.id > 0
-          ? String(payment.id)
-          : typeof payment.id === 'string' && /^\d+$/.test(payment.id)
-          ? payment.id
-          : null;
+        const rawJson = await response.json().catch(() => ({}));
+        const normalized = normalizePaywayResponse(rawJson);
 
-        // Explicit technical rejection before financial operation creation:
-        // HTTP 400 or 422 with validation_errors or invalid_request_error and no providerId.
-        const isTechnicalValidationError =
-          !response.ok &&
-          (response.status === 400 || response.status === 422) &&
-          providerId == null &&
-          (payment.error_type === 'invalid_request_error' || Array.isArray(payment.validation_errors));
+        const classification = classifyPaywayResponse({
+          responseStatus: response.status,
+          ok: response.ok,
+          normalized,
+          expectedSiteTransactionId: attempt.siteTransactionId,
+          expectedAmount: amount,
+          expectedSiteId: config.siteId,
+        });
 
-        if (isTechnicalValidationError) {
-          await store.settle(attempt.id, 'rejected', undefined, 'rejected', 'validation_error');
-          return { state: 'rejected', message: PAYWAY_MESSAGES.technical_error };
-        }
+        logPaywayDiagnostic({
+          httpStatus: response.status,
+          paywayStatus: normalized.status,
+          errorType: normalized.errorType,
+          errorCode: normalized.errorCode,
+          providerId: normalized.id,
+          siteTransactionId: normalized.siteTransactionId,
+          classification: classification.kind,
+          detail: 'code' in classification ? classification.code : ('reason' in classification ? classification.reason : undefined),
+        });
 
-        const amountMatches = payment.amount === amount ||
-          (typeof payment.amount === 'number' && Math.round(payment.amount * 100) === amount);
-        const matches = Boolean(
-          providerId &&
-          payment.site_transaction_id === attempt.siteTransactionId &&
-          amountMatches &&
-          typeof payment.currency === 'string' &&
-          payment.currency.toUpperCase() === 'ARS' &&
-          (payment.site_id == null || String(payment.site_id) === String(config.siteId))
-        );
-        if (!matches) throw new Error('PAYWAY_EVIDENCE_MISMATCH');
-        if (response.ok && payment.status === 'approved') {
-          await store.settle(attempt.id, 'approved', providerId, 'approved');
+        if (classification.kind === 'APPROVED') {
+          await store.settle(attempt.id, 'approved', classification.providerId, 'approved');
           approvalSaved = true;
-          const confirmed = await store.confirm(appointment.id, attempt.id, providerId, amount);
+          const confirmed = await store.confirm(appointment.id, attempt.id, classification.providerId, amount);
           return confirmed
             ? { state: 'approved', message: PAYWAY_MESSAGES.approved, appointmentConfirmed: true }
             : { state: 'unknown', message: PAYWAY_MESSAGES.unknown };
         }
-        // Exact literal only; reject envelopes must be certified with the merchant's sandbox.
-        if (payment.status === 'rejected') {
-          await store.settle(attempt.id, 'rejected', providerId ?? undefined, 'rejected');
+
+        if (classification.kind === 'REJECTED') {
+          await store.settle(attempt.id, 'rejected', classification.providerId, 'rejected', classification.code);
           return { state: 'rejected', message: PAYWAY_MESSAGES.rejected };
         }
-        throw new Error('PAYWAY_RESULT_UNCERTAIN');
-      } catch {
+
+        if (classification.kind === 'TECHNICAL_ERROR') {
+          await store.settle(attempt.id, 'rejected', undefined, 'rejected', 'validation_error');
+          return { state: 'rejected', message: PAYWAY_MESSAGES.technical_error };
+        }
+
+        // UNKNOWN branch
+        await store.settle(attempt.id, 'unknown');
+        return { state: 'unknown', message: PAYWAY_MESSAGES.unknown };
+      } catch (err) {
+        logPaywayDiagnostic({
+          httpStatus: 0,
+          classification: 'UNKNOWN',
+          detail: err instanceof Error ? err.name : 'UNKNOWN_EXCEPTION',
+        });
         if (!approvalSaved) {
-          try { await store.settle(attempt.id, 'unknown'); } catch { /* Still fail closed if persistence is unavailable. */ }
+          try {
+            await store.settle(attempt.id, 'unknown');
+          } catch { /* Still fail closed if persistence is unavailable. */ }
         }
         return { state: 'unknown', message: PAYWAY_MESSAGES.unknown };
       }
@@ -189,11 +191,249 @@ export function createPaywayService({ config, store, fetcher = fetch }: {
   };
 }
 
+export type NormalizedPaywayResponse = {
+  id: string | null;
+  siteTransactionId: string | null;
+  amount: number | null;
+  currency: string | null;
+  siteId: string | null;
+  status: string | null;
+  errorType: string | null;
+  errorCode: string | null;
+  validationErrors: unknown[] | null;
+  message: string | null;
+};
+
+export function normalizePaywayResponse(raw: unknown): NormalizedPaywayResponse {
+  if (typeof raw !== 'object' || raw === null) {
+    return {
+      id: null,
+      siteTransactionId: null,
+      amount: null,
+      currency: null,
+      siteId: null,
+      status: null,
+      errorType: null,
+      errorCode: null,
+      validationErrors: null,
+      message: null,
+    };
+  }
+
+  const rawObj = raw as Record<string, unknown>;
+  const target: Record<string, unknown> =
+    'data_response' in rawObj && typeof rawObj.data_response === 'object' && rawObj.data_response !== null
+      ? (rawObj.data_response as Record<string, unknown>)
+      : rawObj;
+
+  const rawId = target.id ?? rawObj.id;
+  const id =
+    typeof rawId === 'number' && Number.isSafeInteger(rawId) && rawId > 0
+      ? String(rawId)
+      : typeof rawId === 'string' && /^\d+$/.test(rawId)
+      ? rawId
+      : null;
+
+  const rawSiteTx = target.site_transaction_id ?? rawObj.site_transaction_id;
+  const siteTransactionId = typeof rawSiteTx === 'string' && rawSiteTx.trim() ? rawSiteTx.trim() : null;
+
+  const rawAmount = target.amount ?? rawObj.amount;
+  const amount = typeof rawAmount === 'number' && Number.isFinite(rawAmount) ? rawAmount : null;
+
+  const rawCurrency = target.currency ?? rawObj.currency;
+  const currency = typeof rawCurrency === 'string' && rawCurrency.trim() ? rawCurrency.trim().toUpperCase() : null;
+
+  const rawSiteId = target.site_id ?? rawObj.site_id;
+  const siteId = rawSiteId != null ? String(rawSiteId).trim() : null;
+
+  const rawStatus = target.status ?? rawObj.status;
+  const status = typeof rawStatus === 'string' ? rawStatus.trim().toLowerCase() : null;
+
+  const rawErrorType =
+    target.error_type ??
+    rawObj.error_type ??
+    (typeof target.error === 'object' && target.error !== null && 'type' in (target.error as Record<string, unknown>)
+      ? ((target.error as Record<string, unknown>).type as unknown)
+      : null);
+  const errorType = typeof rawErrorType === 'string' && rawErrorType.trim() ? rawErrorType.trim() : null;
+
+  const rawValidation = target.validation_errors ?? rawObj.validation_errors;
+  const validationErrors = Array.isArray(rawValidation) ? rawValidation : null;
+
+  let errorCode: string | null = null;
+  const statusDetails = target.status_details ?? rawObj.status_details;
+  if (typeof statusDetails === 'object' && statusDetails !== null) {
+    const errorObj = (statusDetails as Record<string, unknown>).error;
+    if (typeof errorObj === 'object' && errorObj !== null) {
+      const reasonObj = (errorObj as Record<string, unknown>).reason;
+      if (typeof reasonObj === 'object' && reasonObj !== null && (reasonObj as Record<string, unknown>).id != null) {
+        errorCode = String((reasonObj as Record<string, unknown>).id);
+      } else if (typeof (errorObj as Record<string, unknown>).type === 'string') {
+        errorCode = String((errorObj as Record<string, unknown>).type);
+      }
+    }
+  }
+  if (!errorCode && validationErrors && validationErrors.length > 0) {
+    const first = validationErrors[0];
+    if (typeof first === 'object' && first !== null) {
+      const code = (first as Record<string, unknown>).code ?? (first as Record<string, unknown>).param;
+      if (code) errorCode = String(code);
+    }
+  }
+  if (!errorCode && typeof target.error === 'string') {
+    errorCode = target.error;
+  }
+
+  const rawMsg = target.message ?? rawObj.message;
+  const message = typeof rawMsg === 'string' ? rawMsg : null;
+
+  return {
+    id,
+    siteTransactionId,
+    amount,
+    currency,
+    siteId,
+    status,
+    errorType,
+    errorCode,
+    validationErrors,
+    message,
+  };
+}
+
+export type PaywayClassification =
+  | { kind: 'APPROVED'; providerId: string; status: 'approved' }
+  | { kind: 'REJECTED'; providerId?: string; status: 'rejected'; code?: string }
+  | { kind: 'TECHNICAL_ERROR'; code?: string }
+  | { kind: 'UNKNOWN'; reason: string };
+
+export function classifyPaywayResponse({
+  responseStatus,
+  ok,
+  normalized,
+  expectedSiteTransactionId,
+  expectedAmount,
+  expectedSiteId,
+}: {
+  responseStatus: number;
+  ok: boolean;
+  normalized: NormalizedPaywayResponse;
+  expectedSiteTransactionId: string;
+  expectedAmount: number;
+  expectedSiteId: string;
+}): PaywayClassification {
+  const providerId = normalized.id;
+
+  // 1. HTTP 5xx or server/gateway error: cannot rule out processing -> UNKNOWN
+  if (responseStatus >= 500) {
+    return { kind: 'UNKNOWN', reason: `HTTP_${responseStatus}_GATEWAY_ERROR` };
+  }
+
+  const amountMatches =
+    normalized.amount === expectedAmount ||
+    (typeof normalized.amount === 'number' && Math.round(normalized.amount * 100) === expectedAmount);
+
+  // 2. Strict evidence check for APPROVED:
+  // Must satisfy all positive evidence conditions:
+  const hasStrictApprovedEvidence = Boolean(
+    ok &&
+    normalized.status === 'approved' &&
+    providerId &&
+    normalized.siteTransactionId === expectedSiteTransactionId &&
+    amountMatches &&
+    normalized.currency === 'ARS' &&
+    (normalized.siteId == null || normalized.siteId === expectedSiteId)
+  );
+
+  if (hasStrictApprovedEvidence) {
+    return { kind: 'APPROVED', providerId: providerId!, status: 'approved' };
+  }
+
+  // If status is 'approved' but fails any strict evidence check:
+  // Never confirm, never settle as rejected -> UNKNOWN
+  if (normalized.status === 'approved') {
+    return { kind: 'UNKNOWN', reason: 'APPROVED_EVIDENCE_MISMATCH' };
+  }
+
+  // 3. Explicit REJECTED check:
+  if (normalized.status === 'rejected') {
+    // Validate available evidence does not contradict current attempt:
+    if (normalized.siteTransactionId != null && normalized.siteTransactionId !== expectedSiteTransactionId) {
+      return { kind: 'UNKNOWN', reason: 'REJECTED_CONTRADICTORY_SITE_TRANSACTION_ID' };
+    }
+    if (normalized.currency != null && normalized.currency !== 'ARS') {
+      return { kind: 'UNKNOWN', reason: 'REJECTED_CONTRADICTORY_CURRENCY' };
+    }
+    if (normalized.siteId != null && normalized.siteId !== expectedSiteId) {
+      return { kind: 'UNKNOWN', reason: 'REJECTED_CONTRADICTORY_SITE_ID' };
+    }
+    if (normalized.amount != null && !amountMatches) {
+      return { kind: 'UNKNOWN', reason: 'REJECTED_CONTRADICTORY_AMOUNT' };
+    }
+
+    return {
+      kind: 'REJECTED',
+      providerId: providerId ?? undefined,
+      status: 'rejected',
+      code: normalized.errorCode ?? normalized.errorType ?? undefined,
+    };
+  }
+
+  // 4. Known Technical / Validation error on HTTP 400 or 422:
+  const isTechnicalValidation =
+    !ok &&
+    (responseStatus === 400 || responseStatus === 422) &&
+    providerId == null &&
+    (
+      normalized.errorType === 'invalid_request_error' ||
+      (Array.isArray(normalized.validationErrors) && normalized.validationErrors.length > 0) ||
+      (normalized.message != null && normalized.status == null)
+    );
+
+  if (isTechnicalValidation) {
+    return {
+      kind: 'TECHNICAL_ERROR',
+      code: normalized.errorCode ?? normalized.errorType ?? 'validation_error',
+    };
+  }
+
+  // 5. Any ambiguous, unknown status
+  return { kind: 'UNKNOWN', reason: `AMBIGUOUS_RESPONSE_HTTP_${responseStatus}` };
+}
+
+function logPaywayDiagnostic(info: {
+  httpStatus: number;
+  paywayStatus?: string | null;
+  errorType?: string | null;
+  errorCode?: string | null;
+  providerId?: string | null;
+  siteTransactionId?: string | null;
+  classification: string;
+  detail?: string;
+}): void {
+  // Safe diagnostic log: Strictly NO PAN, CVV, token, API keys, Authorization, DNI, or cardholder names.
+  try {
+    console.warn('[Payway Gateway Diagnostic]', JSON.stringify({
+      httpStatus: info.httpStatus,
+      paywayStatus: info.paywayStatus ?? undefined,
+      errorType: info.errorType ?? undefined,
+      errorCode: info.errorCode ?? undefined,
+      providerId: info.providerId ?? undefined,
+      siteTransactionId: info.siteTransactionId ?? undefined,
+      classification: info.classification,
+      detail: info.detail ?? undefined,
+      timestamp: new Date().toISOString(),
+    }));
+  } catch {
+    /* Logging never throws */
+  }
+}
+
 export async function queryPaywayPayment(
   config: PaywayConfig,
   siteTransactionId: string,
   fetcher: typeof fetch = fetch
-): Promise<{ matches: boolean; providerId: string; status: 'approved' | 'rejected' | 'unknown' } | null> {
+): Promise<{ matches: boolean; providerId: string | null; status: 'approved' | 'rejected' | 'unknown' | 'not_found' } | null> {
   if (!config || !isPaywaySandboxBase(config.apiBaseUrl)) return null;
   try {
     const url = `${config.apiBaseUrl}/payments?siteOperationId=${encodeURIComponent(siteTransactionId)}`;
@@ -203,36 +443,43 @@ export async function queryPaywayPayment(
       signal: AbortSignal.timeout(15_000),
     });
     if (!response.ok) return null;
-    const body = (await response.json()) as {
-      results?: Array<{
-        id?: unknown;
-        site_transaction_id?: unknown;
-        amount?: unknown;
-        currency?: unknown;
-        status?: unknown;
-        site_id?: unknown;
-      }>;
-      id?: unknown;
-      site_transaction_id?: unknown;
-      status?: unknown;
-    };
-    const items = Array.isArray(body.results) ? body.results : (body.id ? [body] : []);
-    const item = items.find((p) => p.site_transaction_id === siteTransactionId);
-    if (!item) return null;
-    const providerId =
-      typeof item.id === 'number' && Number.isSafeInteger(item.id) && item.id > 0
-        ? String(item.id)
-        : typeof item.id === 'string' && /^\d+$/.test(item.id)
-        ? item.id
-        : null;
-    if (!providerId) return null;
-    const status =
-      item.status === 'approved'
-        ? ('approved' as const)
-        : item.status === 'rejected'
-        ? ('rejected' as const)
-        : ('unknown' as const);
-    return { matches: true, providerId, status };
+    const body = (await response.json().catch(() => ({}))) as Record<string, unknown>;
+    const rawResults = body.results ?? (body.data_response ? [body.data_response] : body.id ? [body] : []);
+    const items = Array.isArray(rawResults) ? rawResults : [];
+    if (items.length === 0) {
+      return { matches: false, providerId: null, status: 'not_found' };
+    }
+    const rawItem = items.find((p: any) => p && typeof p === 'object' && p.site_transaction_id === siteTransactionId);
+    if (!rawItem) {
+      return { matches: false, providerId: null, status: 'not_found' };
+    }
+    const normalized = normalizePaywayResponse(rawItem);
+    const providerId = normalized.id;
+
+    if (normalized.status === 'approved') {
+      const isApprovedEvidenceValid = Boolean(
+        providerId &&
+        normalized.siteTransactionId === siteTransactionId &&
+        normalized.currency === 'ARS' &&
+        (normalized.siteId == null || normalized.siteId === config.siteId)
+      );
+      return isApprovedEvidenceValid
+        ? { matches: true, providerId, status: 'approved' }
+        : { matches: false, providerId, status: 'unknown' };
+    }
+
+    if (normalized.status === 'rejected') {
+      const isContradictory = Boolean(
+        (normalized.siteTransactionId != null && normalized.siteTransactionId !== siteTransactionId) ||
+        (normalized.currency != null && normalized.currency !== 'ARS') ||
+        (normalized.siteId != null && normalized.siteId !== config.siteId)
+      );
+      return isContradictory
+        ? { matches: false, providerId, status: 'unknown' }
+        : { matches: true, providerId, status: 'rejected' };
+    }
+
+    return { matches: false, providerId, status: 'unknown' };
   } catch {
     return null;
   }
