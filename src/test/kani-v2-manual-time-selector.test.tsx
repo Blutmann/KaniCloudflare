@@ -256,4 +256,34 @@ describe('ManualAppointmentDialog - Selector Horario Simplificado y Buscar Clien
     expect(screen.getByPlaceholderText('Ej. 11 2345 6789')).toHaveValue('+5491122334455');
     expect(screen.getByPlaceholderText('cliente@ejemplo.com')).toHaveValue('nico@test.com');
   });
+
+  it('7. Elimina container y título Horario: los campos de inicio y fin son una fila estándar sin card ni título', () => {
+    const { container } = render(
+      <ManualAppointmentDialog
+        open={true}
+        mode="CREATE"
+        initialDate={businessDateToday()}
+        onClose={vi.fn()}
+        onSuccess={vi.fn()}
+      />
+    );
+
+    // Title "Horario" must NOT be rendered as a section header
+    expect(container.querySelector('.v2-manual-time-section')).toBeNull();
+    expect(container.querySelector('.v2-manual-time-header')).toBeNull();
+    const headers = Array.from(container.querySelectorAll('span.v2-field-label, h2, h3, h4'));
+    const horarioHeader = headers.find((el) => el.textContent?.trim() === 'Horario');
+    expect(horarioHeader).toBeUndefined();
+
+    // Fields Hora de inicio and Hora de finalización must exist in a standard .v2-manual-row
+    const startField = screen.getByRole('combobox', { name: /Hora de inicio \*/i });
+    const endField = screen.getByLabelText(/Hora de finalización/i);
+
+    expect(startField).toBeInTheDocument();
+    expect(endField).toBeInTheDocument();
+
+    const row = startField.closest('.v2-manual-row');
+    expect(row).toBeInTheDocument();
+    expect(row?.contains(endField)).toBe(true);
+  });
 });

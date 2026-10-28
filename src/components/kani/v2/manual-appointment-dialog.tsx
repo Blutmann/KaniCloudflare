@@ -551,63 +551,57 @@ export function ManualAppointmentDialog({
             </div>
           )}
 
-          {/* Unified Compact Horario Section */}
-          <div className="v2-manual-time-section">
-            <div className="v2-manual-time-header">
-              <span className="v2-field-label">Horario</span>
-            </div>
+          {/* Time row: Inicio & Finalización as natural form fields */}
+          <div className="v2-manual-row">
+            <label className="v2-field">
+              Hora de inicio *
+              <select
+                value={startTime}
+                disabled={isBusy}
+                onChange={(e) => setStartTime(e.target.value)}
+              >
+                {TIME_15_OPTIONS.map((t) => (
+                  <option key={`start-${t}`} value={t}>
+                    {t} hs
+                  </option>
+                ))}
+              </select>
+            </label>
 
-            <div className="v2-manual-row">
+            {isOtro ? (
               <label className="v2-field">
-                Hora de inicio *
+                Hora de finalización *
                 <select
-                  value={startTime}
+                  value={customEndTime}
                   disabled={isBusy}
-                  onChange={(e) => setStartTime(e.target.value)}
+                  onChange={(e) => setCustomEndTime(e.target.value)}
                 >
                   {TIME_15_OPTIONS.map((t) => (
-                    <option key={`start-${t}`} value={t}>
+                    <option key={`end-${t}`} value={t}>
                       {t} hs
                     </option>
                   ))}
                 </select>
               </label>
-
-              {isOtro ? (
-                <label className="v2-field">
-                  Hora de finalización *
-                  <select
-                    value={customEndTime}
-                    disabled={isBusy}
-                    onChange={(e) => setCustomEndTime(e.target.value)}
-                  >
-                    {TIME_15_OPTIONS.map((t) => (
-                      <option key={`end-${t}`} value={t}>
-                        {t} hs
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              ) : (
-                <label className="v2-field">
-                  Hora de finalización
-                  <input
-                    type="text"
-                    readOnly
-                    value={computedEndTime ? `${computedEndTime} hs` : "—"}
-                    className="v2-readonly-input"
-                    tabIndex={-1}
-                  />
-                </label>
-              )}
-            </div>
-
-            {overlapConflict && (
-              <p className="v2-alert" role="alert" style={{ marginTop: "4px" }}>
-                {overlapConflict}
-              </p>
+            ) : (
+              <label className="v2-field">
+                Hora de finalización
+                <input
+                  type="text"
+                  readOnly
+                  value={computedEndTime ? `${computedEndTime} hs` : "—"}
+                  className="v2-readonly-input"
+                  tabIndex={-1}
+                />
+              </label>
             )}
           </div>
+
+          {overlapConflict && (
+            <p className="v2-alert" role="alert" style={{ marginTop: "4px" }}>
+              {overlapConflict}
+            </p>
+          )}
 
           {/* Client Details Section */}
           <div className="v2-manual-client-section">

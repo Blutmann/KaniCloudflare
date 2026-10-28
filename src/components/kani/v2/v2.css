@@ -1834,7 +1834,13 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
    ========================================================================== */
 
 .v2-appointments-page {
-  gap: 14px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0 !important;
+}
+
+.v2-appointments-page > .v2-page-title {
+  margin-bottom: 14px !important;
 }
 
 /* Header: Unified date + count heading and action */
@@ -1846,7 +1852,7 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
   margin: 0 0 10px 0 !important;
 }
 
-.v2-appointments-title-group {
+.v2-appointments-header .v2-appointments-title-group {
   display: flex !important;
   flex-direction: row !important;
   align-items: center !important;
@@ -1891,6 +1897,7 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
   .v2-appointments-header {
     flex-direction: column !important;
     gap: 8px !important;
+    margin: 0 0 10px 0 !important;
   }
   .v2-add-manual-btn {
     width: auto !important;
@@ -1903,8 +1910,8 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
 
 /* Agenda container */
 .v2-appointments-page .v2-agenda {
-  display: grid;
-  gap: 10px;
+  display: grid !important;
+  gap: 10px !important;
 }
 
 /* Balanced Compact Appointment Card (Desktop) */
@@ -1912,8 +1919,8 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
-  gap: 16px !important;
-  padding: 11px 18px !important;
+  gap: 14px !important;
+  padding: 10px 16px !important;
   min-height: auto !important;
   border-radius: var(--radius-card) !important;
   border: 1px solid var(--border) !important;
@@ -2085,10 +2092,11 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
   .v2-appointments-header {
     flex-direction: column !important;
     align-items: stretch !important;
-    gap: 8px !important;
+    gap: 6px !important;
     margin: 0 0 8px 0 !important;
   }
 
+  .v2-appointments-header .v2-appointments-title-group,
   .v2-appointments-title-group {
     display: flex !important;
     flex-direction: row !important;
@@ -2123,11 +2131,15 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
     font-size: 13px !important;
   }
 
+  .v2-appointments-page .v2-agenda {
+    gap: 8px !important;
+  }
+
   .v2-appointments-page .v2-appointment {
     flex-direction: column !important;
     align-items: stretch !important;
-    padding: 10px 13px !important;
-    gap: 7px !important;
+    padding: 9px 12px !important;
+    gap: 6px !important;
     height: auto !important;
     min-height: 0 !important;
     justify-content: flex-start !important;
