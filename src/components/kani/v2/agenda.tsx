@@ -266,36 +266,38 @@ export function V2Appointments() {
   }
   return (
     <main className="v2-page v2-appointments-page">
-      <div className="v2-filters">
-        <label className="v2-field">
-          Período
-          <select
-            value={period}
-            onChange={(e) => handlePeriodChange(e.target.value as AgendaPeriodPreset)}
-          >
-            {period === "DATE" && <option value="DATE" hidden>Día seleccionado</option>}
-            <option value="TODAY">Hoy</option>
-            <option value="THIS_WEEK">Esta semana</option>
-            <option value="NEXT_10_DAYS">Próximos 10 días</option>
-            <option value="CUSTOM">Personalizado</option>
-          </select>
-        </label>
-        <label className="v2-field">
-          Fecha
-          <input type="date" value={date} onChange={(e) => handleDateChange(e.target.value)} />
-        </label>
-        <BarberFilter />
-        <label className="v2-field">
-          Estado
-          <select value={status} onChange={(e) => setStatus(e.target.value)}>
-            <option value="ALL">Todos</option>
-            {Object.entries(statusLabels).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </label>
+      <section className="v2-filters v2-admin-filter-card" aria-label="Filtros de turnos">
+        <div className="v2-filters-grid">
+          <label className="v2-field">
+            Período
+            <select
+              value={period}
+              onChange={(e) => handlePeriodChange(e.target.value as AgendaPeriodPreset)}
+            >
+              {period === "DATE" && <option value="DATE" hidden>Día seleccionado</option>}
+              <option value="TODAY">Hoy</option>
+              <option value="THIS_WEEK">Esta semana</option>
+              <option value="NEXT_10_DAYS">Próximos 10 días</option>
+              <option value="CUSTOM">Personalizado</option>
+            </select>
+          </label>
+          <label className="v2-field">
+            Fecha
+            <input type="date" value={date} onChange={(e) => handleDateChange(e.target.value)} />
+          </label>
+          <BarberFilter />
+          <label className="v2-field">
+            Estado
+            <select value={status} onChange={(e) => setStatus(e.target.value)}>
+              <option value="ALL">Todos</option>
+              {Object.entries(statusLabels).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
         {period === "CUSTOM" && (
           <div className="v2-custom-range-row">
             <label className="v2-field">
@@ -321,9 +323,9 @@ export function V2Appointments() {
             )}
           </div>
         )}
-      </div>
-      <div className="v2-section-title v2-appointments-header">
-        <div className="v2-appointments-title-group">
+      </section>
+      <div className="v2-appointments-header">
+        <div className="v2-appointments-title-group v2-results-heading schedule-results-heading">
           <h2>{headerLabel}</h2>
           <span>
             {rows.length} {rows.length === 1 ? "turno" : "turnos"}

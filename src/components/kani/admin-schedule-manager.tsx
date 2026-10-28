@@ -314,8 +314,8 @@ export function AdminScheduleManager() {
     <main className="site-container admin-schedule-page">
       <div className="admin-schedule-shell">
         {/* 1. Card unificada de Filtros y Estados de horarios */}
-        <section className="p-3.5 sm:p-4 rounded-xl border border-border bg-surface shadow-xs mb-6" aria-label="Filtros de horarios">
-          <div className="admin-schedule-filter-grid">
+        <section className="v2-admin-filter-card" aria-label="Filtros de horarios">
+          <div className="admin-schedule-filter-grid v2-filters-grid">
             {/* 1. Período */}
             <div className="schedule-filter-periodo min-w-0">
               <label htmlFor="schedule-date-preset" className="block text-xs font-medium text-muted-foreground mb-1.5">

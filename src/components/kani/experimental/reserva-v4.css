@@ -19,9 +19,54 @@
   .payway-reservation .booking-v3-date .calendar-header { min-height: 76px; }
   .payway-reservation .booking-v3-date .calendar-header h2 { font-size: 16px; }
   .payway-reservation .booking-v3-date .calendar-note { margin-top: 24px !important; font-size: 13px; }
-  .payway-reservation .booking-v3 .booking-time-heading { flex-wrap: wrap; justify-content: flex-start !important; margin-bottom: 16px !important; }
-  .payway-reservation .booking-v3 .booking-time-heading .section-title { font-size: 22px !important; line-height: 1.2 !important; }
-  .payway-reservation .booking-v3 .booking-time-heading-date { margin-left: auto !important; }
+}
+
+/* Reserva V4 — Step "Elegí un horario": Optical vertical center alignment */
+.payway-reservation .booking-page .booking-title-row.booking-time-heading {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  min-height: 44px !important;
+  margin-top: 0 !important;
+  margin-bottom: 20px !important;
+  padding: 0 !important;
+}
+
+.payway-reservation .booking-page .booking-title-row.booking-time-heading .section-title {
+  margin: 0 !important;
+  padding: 0 !important;
+  font-size: 20px !important;
+  line-height: 1.2 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+}
+
+.payway-reservation .booking-page .booking-title-row.booking-time-heading .booking-time-heading-date {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 0 !important;
+  margin-left: auto !important;
+  padding: 0 !important;
+  gap: 6px !important;
+  font-size: 13.5px !important;
+  font-weight: 500 !important;
+  line-height: 1.2 !important;
+  color: var(--muted-foreground) !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+}
+
+.payway-reservation .booking-page .booking-title-row.booking-time-heading .booking-time-heading-date svg {
+  display: block !important;
+  width: 15px !important;
+  height: 15px !important;
+  color: var(--gold) !important;
+  flex-shrink: 0 !important;
+  margin: 0 !important;
 }
 
 .booking-v4-date-desktop { display: none; }
@@ -34,8 +79,49 @@
     margin-bottom: 24px;
   }
   .payway-reservation .booking-page .booking-title-row .section-title { margin: 0 !important; }
+  .payway-reservation .booking-page .booking-title-row.booking-time-heading .section-title {
+    font-size: 28px !important;
+  }
+  .payway-reservation .booking-page .booking-title-row.booking-time-heading .booking-time-heading-date {
+    font-size: 15px !important;
+    gap: 8px !important;
+  }
+  .payway-reservation .booking-page .booking-title-row.booking-time-heading .booking-time-heading-date svg {
+    width: 16px !important;
+    height: 16px !important;
+  }
   .booking-v4-date-mobile { display: none; }
   .booking-v4-date-desktop { display: inline; }
+}
+
+/* Reserva V4 — Step "Completá tus datos": Compact economic summary */
+.payway-reservation .booking-v3 .summary-pricing-card {
+  margin-top: 13px !important;
+  padding-top: 9px !important;
+  border-top: 1px solid color-mix(in oklch, var(--gold) 22%, var(--border)) !important;
+}
+
+.payway-reservation .booking-v3 .summary-pricing-list {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 7px !important;
+}
+
+.payway-reservation .booking-v3 .summary-pricing-row {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: baseline !important;
+  min-width: 0 !important;
+}
+
+@media (min-width: 768px) {
+  .payway-reservation .booking-v3 .summary-pricing-card {
+    margin-top: 15px !important;
+    padding-top: 11px !important;
+  }
+  .payway-reservation .booking-v3 .summary-pricing-list {
+    gap: 8px !important;
+  }
 }
 
 /* Keep each mobile step's indicator and label together above the progress line. */

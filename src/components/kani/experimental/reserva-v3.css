@@ -669,16 +669,16 @@ html[data-theme='light'] .booking-v3 .phone-country-option {
 
 /* Separación visual clara entre Información del turno e Información económica */
 .booking-v3 .summary-pricing-card {
-  margin-top: 18px;
-  padding-top: 16px;
+  margin-top: 14px;
+  padding-top: 10px;
   border-top: 1px solid color-mix(in oklch, var(--gold) 22%, var(--border));
 }
 
-/* Información económica: separación vertical consistente de 12px entre filas */
+/* Información económica: separación vertical consistente y compacta entre filas */
 .booking-v3 .summary-pricing-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
 
 .booking-v3 .summary-pricing-row {

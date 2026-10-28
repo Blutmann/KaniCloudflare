@@ -1676,53 +1676,143 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
   background: var(--v2-reading-surface); box-shadow: var(--v2-shadow);
   backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
 }
+.v2-admin-filter-card,
+.v2-schedule .admin-schedule-shell > section[aria-label="Filtros de horarios"],
+.v2-appointments-page .v2-filters {
+  display: block !important;
+  width: 100% !important;
+  padding: 10px 14px !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius-card) !important;
+  background: var(--v2-surface) !important;
+  box-shadow: var(--v2-shadow) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  margin-bottom: 12px !important;
+  box-sizing: border-box !important;
+}
+
+@media (max-width: 767px) {
+  .v2-admin-filter-card,
+  .v2-schedule .admin-schedule-shell > section[aria-label="Filtros de horarios"],
+  .v2-appointments-page .v2-filters {
+    padding: 8px 10px !important;
+    margin-bottom: 10px !important;
+  }
+}
+
+.v2-filters-grid,
 .v2-schedule .admin-schedule-filter-grid {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px; align-items: end;
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  align-items: end !important;
+  gap: 10px !important;
+  width: 100% !important;
 }
-.v2-schedule .admin-schedule-filter-grid > div { display: flex; flex-direction: column; gap: 7px; }
-.v2-schedule .admin-schedule-filter-grid label {
-  margin: 0; font-size: 11px; font-weight: 400; line-height: 1.6; color: var(--muted-foreground);
-}
-.v2-schedule .admin-schedule-filter-grid :is(input, select, output) {
-  width: 100%; min-width: 0; max-width: 100%; height: 44px; min-height: 44px;
-  padding: 9px 11px; border: 1px solid var(--border); border-radius: var(--radius-control);
-  font-size: 12px; line-height: 1.7; color: var(--foreground); background: var(--v2-inset);
-}
-.v2-schedule .schedule-results-heading {
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 12px; padding: 0; border: 0; margin-bottom: 12px;
-}
-.v2-schedule .schedule-results-heading > div { display: contents; }
-.v2-schedule .schedule-results-date-label { display: none; }
-.v2-schedule .schedule-results-heading h2 {
-  font-size: 15px; font-weight: 500; line-height: 1.6; text-transform: none;
-}
-.v2-schedule .schedule-results-heading > span { font-size: 11px; color: var(--muted-foreground); line-height: 1.7; }
+
 @media (max-width: 767px) {
-  .v2-schedule .admin-schedule-shell > section[aria-label="Filtros de horarios"] { padding: 10px; margin-bottom: 12px; }
-  .v2-schedule .admin-schedule-filter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 10px; }
-  .v2-schedule .admin-schedule-filter-grid > div { gap: 4px; }
-}
-.v2-schedule .admin-schedule-filter-grid :is(input, select, output) {
-  height: 44px !important; min-height: 44px !important; max-height: 44px !important;
-}
-@media (max-width: 767px) {
+  .v2-filters-grid,
   .v2-schedule .admin-schedule-filter-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 6px 8px !important;
     grid-template-areas: "periodo fecha" "barbero estado";
   }
 }
-.v2-shell .v2-schedule .admin-schedule-page section[aria-label="Filtros de horarios"] .admin-schedule-filter-grid :is(input, select, output) {
-  height: 44px !important; min-height: 44px !important; max-height: 44px !important;
-  padding: 9px 11px !important; line-height: 1.7 !important;
+
+.v2-field,
+.v2-schedule .admin-schedule-filter-grid > div {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 3px !important;
+  min-width: 0 !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  line-height: 1.4 !important;
+  color: var(--muted-foreground) !important;
 }
-.v2-schedule .schedule-results-heading { margin-bottom: 20px; }
-@media (max-width: 767px) {
-  .v2-schedule .schedule-results-heading { margin-bottom: 4px; }
+
+.v2-field label,
+.v2-schedule .admin-schedule-filter-grid label,
+.schedule-filter-periodo label,
+.schedule-filter-fecha label,
+.schedule-filter-barbero label,
+.schedule-filter-estado label {
+  margin: 0 !important;
+  padding: 0 !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  line-height: 1.4 !important;
+  color: var(--muted-foreground) !important;
 }
+
+.v2-admin-filter-card :is(input, select, output),
+.v2-filters-grid :is(input, select, output),
+.admin-schedule-filter-grid :is(input, select, output),
+.v2-appointments-page .v2-filters :is(input, select, output),
+.v2-schedule .admin-schedule-filter-grid :is(input, select, output) {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  height: 38px !important;
+  min-height: 38px !important;
+  max-height: 38px !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius-control) !important;
+  padding: 6px 9px !important;
+  font-size: 12px !important;
+  line-height: 1.5 !important;
+  color: var(--foreground) !important;
+  background: var(--v2-inset) !important;
+  box-sizing: border-box !important;
+  transition: border-color 0.18s, background-color 0.18s !important;
+}
+
+.v2-admin-filter-card :is(input, select, output):focus,
+.v2-filters-grid :is(input, select, output):focus,
+.admin-schedule-filter-grid :is(input, select, output):focus,
+.v2-appointments-page .v2-filters :is(input, select, output):focus,
+.v2-schedule .admin-schedule-filter-grid :is(input, select, output):focus {
+  border-color: var(--gold) !important;
+  outline: none !important;
+}
+
+.v2-schedule .schedule-results-heading,
+.v2-results-heading {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  margin: 0 0 10px 0 !important;
+  width: 100% !important;
+}
+
+.v2-schedule .schedule-results-heading > div { display: contents; }
+.v2-schedule .schedule-results-date-label { display: none; }
+
+.v2-schedule .schedule-results-heading h2,
+.v2-results-heading h2 {
+  font-size: 15px !important;
+  font-weight: 500 !important;
+  line-height: 1.6 !important;
+  text-transform: none !important;
+  margin: 0 !important;
+  color: var(--foreground) !important;
+}
+
+.v2-schedule .schedule-results-heading > span,
+.v2-results-heading > span {
+  font-size: 11px !important;
+  color: var(--muted-foreground) !important;
+  line-height: 1.7 !important;
+  white-space: nowrap !important;
+}
+
 /* Match the grid rhythm used by the appointments page without collapsing margins. */
 .v2-schedule .admin-schedule-list > section { display: grid; gap: 20px; }
-.v2-schedule .admin-schedule-list > section > .schedule-results-heading { margin: 0 0 12px; }
+.v2-schedule .admin-schedule-list > section > .schedule-results-heading { margin: 0 0 10px; }
 .v2-schedule .admin-schedule-list > section > .schedule-results-heading + div { margin: 0 !important; }
 @media (max-width: 767px) {
   .v2-schedule .admin-schedule-list > section { gap: 12px; }
@@ -1747,47 +1837,68 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
   gap: 14px !important;
 }
 
-/* Header: Generar turno compact horizontal or mobile stacked layout */
+/* Header: Unified date + count heading and action */
 .v2-appointments-header {
   display: flex !important;
-  align-items: flex-start !important;
-  justify-content: space-between !important;
-  gap: 12px !important;
-  margin: 0 !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  gap: 8px !important;
+  margin: 0 0 10px 0 !important;
 }
 
 .v2-appointments-title-group {
   display: flex !important;
-  flex-direction: column !important;
-  gap: 3px !important;
-  min-width: 0 !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
 .v2-appointments-title-group h2 {
-  font-size: clamp(17px, 1.8vw, 22px) !important;
-  font-weight: 600 !important;
+  font-size: 15px !important;
+  font-weight: 500 !important;
   margin: 0 !important;
-  line-height: 1.25 !important;
+  line-height: 1.6 !important;
   color: var(--foreground) !important;
+  text-transform: none !important;
 }
 
 .v2-appointments-title-group span {
-  font-size: 12.5px !important;
+  font-size: 11px !important;
   color: var(--muted-foreground) !important;
-  line-height: 1.3 !important;
+  line-height: 1.7 !important;
+  white-space: nowrap !important;
 }
 
 .v2-add-manual-btn {
   display: inline-flex !important;
   align-items: center !important;
+  justify-content: center !important;
   gap: 6px !important;
   font-size: 13px !important;
   font-weight: 500 !important;
-  padding: 8px 14px !important;
+  padding: 7px 14px !important;
   min-height: 38px !important;
   cursor: pointer !important;
   white-space: nowrap !important;
-  flex-shrink: 0 !important;
+  width: 100% !important;
+}
+
+@media (min-width: 768px) {
+  .v2-appointments-header {
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+  .v2-add-manual-btn {
+    width: auto !important;
+    align-self: flex-start !important;
+    min-height: 36px !important;
+    padding: 6px 14px !important;
+    font-size: 12.5px !important;
+  }
 }
 
 /* Agenda container */
@@ -1802,7 +1913,7 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
   align-items: center !important;
   justify-content: space-between !important;
   gap: 16px !important;
-  padding: 14px 20px !important;
+  padding: 11px 18px !important;
   min-height: auto !important;
   border-radius: var(--radius-card) !important;
   border: 1px solid var(--border) !important;
@@ -1812,7 +1923,7 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
 .v2-appointment-main {
   display: flex !important;
   flex-direction: column !important;
-  gap: 5px !important;
+  gap: 4px !important;
   min-width: 0 !important;
   flex: 1 1 auto !important;
 }
@@ -1975,34 +2086,48 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
     flex-direction: column !important;
     align-items: stretch !important;
     gap: 8px !important;
+    margin: 0 0 8px 0 !important;
   }
 
   .v2-appointments-title-group {
     display: flex !important;
-    flex-direction: column !important;
-    gap: 2px !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 12px !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
 
   .v2-appointments-title-group h2 {
-    font-size: 19px !important;
+    font-size: 15px !important;
+    font-weight: 500 !important;
+    line-height: 1.6 !important;
+    margin: 0 !important;
+    color: var(--foreground) !important;
+    text-transform: none !important;
   }
 
   .v2-appointments-title-group span {
-    font-size: 12.5px !important;
+    font-size: 11px !important;
+    color: var(--muted-foreground) !important;
+    line-height: 1.7 !important;
+    white-space: nowrap !important;
   }
 
   .v2-add-manual-btn {
     width: 100% !important;
     justify-content: center !important;
     min-height: 38px !important;
-    font-size: 13.5px !important;
+    font-size: 13px !important;
   }
 
   .v2-appointments-page .v2-appointment {
     flex-direction: column !important;
     align-items: stretch !important;
-    padding: 12px 14px !important;
-    gap: 8px !important;
+    padding: 10px 13px !important;
+    gap: 7px !important;
     height: auto !important;
     min-height: 0 !important;
     justify-content: flex-start !important;
@@ -2029,10 +2154,10 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
     align-items: stretch !important;
     max-width: none !important;
     width: 100% !important;
-    margin-top: 4px !important;
-    padding-top: 8px !important;
-    border-top: 1px solid var(--v2-line) !important;
-    gap: 8px !important;
+    margin-top: 3px !important;
+    padding-top: 0 !important;
+    border-top: none !important;
+    gap: 6px !important;
   }
 
   .v2-appointments-page .v2-appointment-actions > * {
@@ -2048,7 +2173,7 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
 
   .v2-op-buttons > * {
     flex: 1 1 0 !important;
-    min-height: 40px !important;
+    min-height: 38px !important;
   }
 
   .v2-contact-buttons {
@@ -2059,7 +2184,7 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
 
   .v2-contact-buttons > * {
     flex: 1 1 0 !important;
-    min-height: 40px !important;
+    min-height: 38px !important;
     width: auto !important;
     font-size: 13px !important;
   }
