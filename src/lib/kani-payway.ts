@@ -24,6 +24,7 @@ export const PAYWAY_MESSAGES = {
   approved: 'Seña aprobada. Tu turno está confirmado.',
   rejected: 'El pago fue rechazado. No se confirmó el turno. Podés intentar con otra tarjeta.',
   recoverable: 'No pudimos iniciar el pago. Revisá los datos y volvé a intentar.',
+  technical_error: 'No pudimos procesar el pago. Revisá los datos e intentá nuevamente.',
 } as const;
 
 export const PAYWAY_SANDBOX_BASES = [

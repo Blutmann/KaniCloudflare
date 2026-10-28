@@ -9,7 +9,17 @@ const input = { appointmentId, attemptId, accessToken: 'x'.repeat(43), token: 'f
 const draft = { barber: 'Lautaro', serviceName: 'Corte', date: '2026-10-27', time: '10:00', name: 'Prueba Test', email: 'prueba@example.test', phone: '+5491128436014', notes: '' };
 const config: PaywayConfig = { apiBaseUrl: 'https://developers-ventasonline.payway.com.ar/api/v2', publicKey: 'public-fixture', privateKey: 'private-fixture-not-real', siteId: '12345678', methods: [{ id: 1, label: 'Visa' }] };
 function setup(patch = {}) {
-  const appointment = { id: appointmentId, status: 'PENDING', depositArs: 5000, servicePriceArs: 25000, depositPaid: false, origin: 'PUBLIC_WEB', ...patch };
+  const appointment = {
+    id: appointmentId,
+    status: 'PENDING',
+    depositArs: 5000,
+    servicePriceArs: 25000,
+    depositPaid: false,
+    origin: 'PUBLIC_WEB',
+    clientId: '55eb8b8c-c803-41eb-a464-7f503d89a3cc',
+    clientEmail: 'prueba@example.test',
+    ...patch
+  };
   const attempt = { id: attemptId, appointmentId, siteTransactionId: paywayTransactionId(attemptId), amount: 500000, state: 'processing' as const };
   const store = {
     prepare: vi.fn().mockResolvedValue({ appointmentId, attemptId, accessToken: input.accessToken, depositArs: 5000 }),
@@ -44,8 +54,22 @@ describe('Payway laboratory, synthetic responses only', () => {
     const [url, request] = s.fetcher.mock.calls[0];
     expect(url).toBe(`${config.apiBaseUrl}/payments`);
     expect(request.headers.apikey).toBe(config.privateKey);
-    expect(JSON.parse(request.body)).toEqual({ site_transaction_id: paywayTransactionId(attemptId), token: input.token,
-      payment_method_id: 1, bin: input.bin, amount: 500000, currency: 'ARS', installments: 1, payment_type: 'single', sub_payments: [] });
+    expect(JSON.parse(request.body)).toEqual({
+      site_transaction_id: paywayTransactionId(attemptId),
+      token: input.token,
+      payment_method_id: 1,
+      bin: input.bin,
+      amount: 500000,
+      currency: 'ARS',
+      installments: 1,
+      description: 'Seña turno Kani Barber Studio',
+      payment_type: 'single',
+      sub_payments: [],
+      customer: {
+        id: '55eb8b8cc80341eba4647f503d89a3cc',
+        email: 'prueba@example.test',
+      },
+    });
     expect(s.store.settle).toHaveBeenCalledWith(attemptId, 'approved', '42', 'approved');
     expect(s.store.confirm).toHaveBeenCalledWith(appointmentId, attemptId, '42', 500000);
     expect(s.store.settle.mock.invocationCallOrder[0]!).toBeLessThan(s.store.confirm.mock.invocationCallOrder[0]!);
@@ -153,5 +177,50 @@ describe('Payway laboratory, synthetic responses only', () => {
     fetcher.mockResolvedValueOnce(new Response(JSON.stringify({ results: [] }), { status: 200 }));
     const resEmpty = await queryPaywayPayment(config, 'KANItest999', fetcher);
     expect(resEmpty).toBeNull();
+  });
+
+  it('rejects attempt safely before provider call if appointment email is missing or invalid', async () => {
+    for (const invalidEmail of ['', '   ', 'not-an-email', undefined]) {
+      const s = setup({ clientEmail: invalidEmail });
+      const res = await s.service.pay(input);
+      expect(res.state).toBe('recoverable');
+      expect(res.message).toContain('email');
+      expect(s.fetcher).not.toHaveBeenCalled();
+      expect(s.store.confirm).not.toHaveBeenCalled();
+    }
+  });
+
+  it('classifies explicit HTTP 400 validation error without payment ID as technical rejection, not UNKNOWN', async () => {
+    const s = setup();
+    s.fetcher.mockResolvedValue(new Response(JSON.stringify({
+      error_type: 'invalid_request_error',
+      validation_errors: [{ code: 'missing', param: 'customer' }]
+    }), { status: 400 }));
+
+    const res = await s.service.pay(input);
+    expect(res.state).toBe('rejected');
+    expect(res.message).toBe(PAYWAY_MESSAGES.technical_error);
+    expect(s.store.settle).toHaveBeenCalledWith(attemptId, 'rejected', undefined, 'rejected', 'validation_error');
+    expect(s.store.confirm).not.toHaveBeenCalled();
+  });
+
+  it('retains UNKNOWN fail-closed handling for true network or server uncertainty', async () => {
+    // 1. Timeout
+    const sTimeout = setup();
+    sTimeout.fetcher.mockRejectedValue(new DOMException('The operation timed out', 'TimeoutError'));
+    const resTimeout = await sTimeout.service.pay(input);
+    expect(resTimeout.state).toBe('unknown');
+    expect(resTimeout.message).toBe(PAYWAY_MESSAGES.unknown);
+    expect(sTimeout.store.settle).toHaveBeenCalledWith(attemptId, 'unknown');
+    expect(sTimeout.store.confirm).not.toHaveBeenCalled();
+
+    // 2. HTTP 500 Gateway internal error
+    const s500 = setup();
+    s500.fetcher.mockResolvedValue(new Response('Internal Server Error', { status: 500 }));
+    const res500 = await s500.service.pay(input);
+    expect(res500.state).toBe('unknown');
+    expect(res500.message).toBe(PAYWAY_MESSAGES.unknown);
+    expect(s500.store.settle).toHaveBeenCalledWith(attemptId, 'unknown');
+    expect(s500.store.confirm).not.toHaveBeenCalled();
   });
 });

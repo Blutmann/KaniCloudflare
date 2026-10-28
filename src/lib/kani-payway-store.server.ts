@@ -44,8 +44,29 @@ export function createPaywayStore(db:Db,siteId:string,session:SessionAccess):Pay
       let result:PaywayResult|undefined;
       if(row.state==='APPROVED'&&['CONFIRMED','ALREADY_CONFIRMED'].includes(row.confirmation_status))result={state:'approved',message:PAYWAY_MESSAGES.approved,appointmentConfirmed:true};
       else if(row.state==='REJECTED')result={state:'rejected',message:PAYWAY_MESSAGES.rejected};
+
+      let clientId: string | undefined;
+      let clientEmail: string | undefined;
+      if (typeof db.from === 'function') {
+        try {
+          const { data: apptWithClient } = await db
+            .from('appointments')
+            .select('client_id, clients(id, email)')
+            .eq('id', input.appointmentId)
+            .maybeSingle();
+          if (apptWithClient) {
+            clientId = apptWithClient.client_id;
+            const c = Array.isArray(apptWithClient.clients) ? apptWithClient.clients[0] : apptWithClient.clients;
+            clientEmail = c?.email ? String(c.email).trim().toLowerCase() : undefined;
+          }
+        } catch {
+          /* Fall back cleanly if client query is unavailable */
+        }
+      }
+
       return {acquired:data.acquired===true,appointment:{id:data.appointment.id,status:data.appointment.status,
-        depositArs:Number(data.appointment.deposit_ars),servicePriceArs:Number(data.appointment.service_price_ars),depositPaid:data.appointment.deposit_paid,origin:'PUBLIC_WEB'},
+        depositArs:Number(data.appointment.deposit_ars),servicePriceArs:Number(data.appointment.service_price_ars),depositPaid:data.appointment.deposit_paid,origin:'PUBLIC_WEB',
+        clientId,clientEmail},
         attempt:{id:row.id.replaceAll('-',''),appointmentId:row.appointment_id,siteTransactionId:row.site_transaction_id,amount:Number(row.amount_minor_units),state:stateMap[row.state]??'unknown',...(result?{result}:{})}};
     },
     async settle(attemptId,state,providerId,providerStatus,providerCode) {

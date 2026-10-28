@@ -32,6 +32,8 @@ export function paywayTransactionId(attemptId: string): string {
 export type PaywayAppointment = {
   id: string; status: string; depositArs: number; servicePriceArs: number;
   depositPaid: boolean; origin: string;
+  clientId?: string;
+  clientEmail?: string;
 };
 export type PaywayAttempt = {
   id: string; appointmentId: string; siteTransactionId: string; amount: number;
@@ -98,25 +100,60 @@ export function createPaywayService({ config, store, fetcher = fetch }: {
         appointment.origin !== 'PUBLIC_WEB' || !Number.isFinite(appointment.servicePriceArs) || appointment.depositArs > appointment.servicePriceArs) {
         return { state: 'unknown', message: PAYWAY_MESSAGES.unknown };
       }
+
+      const clientEmail = appointment.clientEmail?.trim().toLowerCase();
+      if (!clientEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clientEmail)) {
+        return { state: 'recoverable', message: 'No pudimos verificar el email de la reserva. Revisá tus datos e intentá nuevamente.' };
+      }
+      const customerId = (appointment.clientId || appointment.id).replace(/[^a-zA-Z0-9]/g, '').slice(0, 32);
+
       let approvalSaved = false;
       try {
         const response = await fetcher(`${config.apiBaseUrl}/payments`, {
           method: 'POST', redirect: 'error', signal: AbortSignal.timeout(35_000),
           headers: { apikey: config.privateKey, 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' },
-          body: JSON.stringify({ site_transaction_id: attempt.siteTransactionId, token: input.token,
-            payment_method_id: input.paymentMethodId, bin: input.bin, amount, currency: 'ARS',
-            installments: 1, payment_type: 'single', sub_payments: [] }),
+          body: JSON.stringify({
+            site_transaction_id: attempt.siteTransactionId,
+            token: input.token,
+            payment_method_id: input.paymentMethodId,
+            bin: input.bin,
+            amount,
+            currency: 'ARS',
+            installments: 1,
+            description: 'Seña turno Kani Barber Studio',
+            payment_type: 'single',
+            sub_payments: [],
+            customer: {
+              id: customerId,
+              email: clientEmail,
+            },
+          }),
         });
         // No automatic retries, provider logs, raw errors or raw responses to the browser.
-        const payment = await response.json() as {
+        const payment = (await response.json().catch(() => ({}))) as {
           id?: unknown; site_transaction_id?: unknown; amount?: unknown;
           currency?: unknown; site_id?: unknown; status?: unknown;
+          error_type?: unknown; validation_errors?: unknown; message?: unknown;
         };
         const providerId = typeof payment.id === 'number' && Number.isSafeInteger(payment.id) && payment.id > 0
           ? String(payment.id)
           : typeof payment.id === 'string' && /^\d+$/.test(payment.id)
           ? payment.id
           : null;
+
+        // Explicit technical rejection before financial operation creation:
+        // HTTP 400 or 422 with validation_errors or invalid_request_error and no providerId.
+        const isTechnicalValidationError =
+          !response.ok &&
+          (response.status === 400 || response.status === 422) &&
+          providerId == null &&
+          (payment.error_type === 'invalid_request_error' || Array.isArray(payment.validation_errors));
+
+        if (isTechnicalValidationError) {
+          await store.settle(attempt.id, 'rejected', undefined, 'rejected', 'validation_error');
+          return { state: 'rejected', message: PAYWAY_MESSAGES.technical_error };
+        }
+
         const amountMatches = payment.amount === amount ||
           (typeof payment.amount === 'number' && Math.round(payment.amount * 100) === amount);
         const matches = Boolean(
@@ -138,7 +175,7 @@ export function createPaywayService({ config, store, fetcher = fetch }: {
         }
         // Exact literal only; reject envelopes must be certified with the merchant's sandbox.
         if (payment.status === 'rejected') {
-          await store.settle(attempt.id, 'rejected', providerId, 'rejected');
+          await store.settle(attempt.id, 'rejected', providerId ?? undefined, 'rejected');
           return { state: 'rejected', message: PAYWAY_MESSAGES.rejected };
         }
         throw new Error('PAYWAY_RESULT_UNCERTAIN');
