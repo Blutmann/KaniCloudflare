@@ -238,4 +238,33 @@ describe('Reserva V5 — Clonación funcional, aislamiento y claridad visual', (
     expect(cssContent).toContain('--v5-surface');
     expect(cssContent).toContain('--v5-text-gold');
   });
+
+  it('8. Accesibilidad visual y contraste en estados seleccionados: previene regresión de texto blanco en modo claro', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+    const cssContent = fs.readFileSync(path.resolve(__dirname, '../components/kani/experimental/reserva-v5.css'), 'utf-8');
+
+    // 1. Modo claro: duración y textos secundarios deben ser oscuros y legibles (#524F4A), NO blancos
+    expect(cssContent).toContain("html[data-theme='light'] .booking-page.booking-v5 .booking-option.selected .text-muted-foreground");
+    expect(cssContent).toContain("color: #524F4A !important;");
+
+    // 2. Modo claro: precio debe ser dorado/oscuro (#8A6729), NO blanco
+    expect(cssContent).toContain("html[data-theme='light'] .booking-page.booking-v5 .booking-option.selected .booking-option-price");
+    expect(cssContent).toContain("color: #8A6729 !important;");
+
+    // 3. Modo claro: círculo de selección debe ser bordó #702B3A con check blanco #FFFFFF (referencia V4)
+    expect(cssContent).toContain("html[data-theme='light'] .booking-page.booking-v5 .booking-option.selected .selection-circle");
+    expect(cssContent).toContain("background-color: #702B3A !important;");
+    expect(cssContent).toContain("color: #FFFFFF !important;");
+
+    // 4. Modo claro: borde de la tarjeta seleccionada debe ser bordó
+    expect(cssContent).toContain("--v5-selected-card-border: #702B3A;");
+
+    // 5. Modo oscuro: textos claros sobre fondo oscuro
+    expect(cssContent).toContain("html[data-theme='dark'] .booking-page.booking-v5 .booking-option.selected .booking-option-duration");
+    expect(cssContent).toContain("color: #BDB7AB !important;");
+    expect(cssContent).toContain("html[data-theme='dark'] .booking-page.booking-v5 .booking-option.selected .selection-circle");
+    expect(cssContent).toContain("background-color: #D4AF37 !important;");
+    expect(cssContent).toContain("color: #191919 !important;");
+  });
 });

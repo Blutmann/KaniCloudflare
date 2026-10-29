@@ -88,6 +88,11 @@ html[data-theme='light'] .reserva-v5 {
   --v5-text-primary: #252323;
   --v5-text-muted: #524F4A;
   --v5-text-gold: #8A6729;
+  --v5-selected-card-bg: color-mix(in srgb, #702B3A 8%, rgba(255, 255, 255, 0.96));
+  --v5-selected-card-border: #702B3A;
+  --v5-selected-circle-bg: #702B3A;
+  --v5-selected-circle-border: #702B3A;
+  --v5-selected-circle-color: #FFFFFF;
   --v5-selected-bg: #702B3A;
   --v5-selected-border: #551D2A;
   --v5-selected-text: #FAF7F2;
@@ -106,6 +111,11 @@ html[data-theme='dark'] .reserva-v5 {
   --v5-text-primary: #FAF7F2;
   --v5-text-muted: #BDB7AB;
   --v5-text-gold: #D4AF37;
+  --v5-selected-card-bg: color-mix(in srgb, #D4AF37 8%, rgba(26, 25, 25, 0.94));
+  --v5-selected-card-border: #D4AF37;
+  --v5-selected-circle-bg: #D4AF37;
+  --v5-selected-circle-border: #D4AF37;
+  --v5-selected-circle-color: #191919;
   --v5-selected-bg: #702B3A;
   --v5-selected-border: rgba(185, 154, 91, 0.65);
   --v5-selected-text: #FAF7F2;
@@ -245,17 +255,10 @@ html[data-theme='dark'] .reserva-v5 {
   transform: translateY(-1px);
 }
 
-.booking-v5 .booking-time-slot.selected {
-  background-color: var(--v5-selected-bg) !important;
-  border-color: var(--v5-selected-border) !important;
-  color: var(--v5-selected-text) !important;
-  font-weight: 600;
-}
-
 /* Candidate barber choices in step 4 (deferred barber flow) */
 .booking-v5 .booking-candidate-barber-btn {
-  min-height: 42px;
-  height: 42px;
+  min-height: 44px;
+  height: 44px;
   padding: 0 16px;
   border-radius: var(--radius-control, 0.65rem);
   border: 1px solid var(--v5-border);
@@ -268,53 +271,209 @@ html[data-theme='dark'] .reserva-v5 {
 
 .booking-v5 .booking-candidate-barber-btn:not(:disabled):hover {
   border-color: var(--v5-border-hover);
+  background-color: var(--v5-surface-subtle);
   transform: translateY(-1px);
 }
 
-.booking-v5 .booking-candidate-barber-btn.selected {
-  background-color: var(--v5-selected-bg) !important;
-  border-color: var(--v5-selected-border) !important;
-  color: var(--v5-selected-text) !important;
+html[data-theme='light'] .booking-v5 .booking-candidate-barber-btn.selected {
+  background-color: color-mix(in srgb, #702B3A 8%, rgba(255, 255, 255, 0.96)) !important;
+  border: 2px solid #702B3A !important;
+  color: #252323 !important;
+  font-weight: 600;
+}
+
+html[data-theme='dark'] .booking-v5 .booking-candidate-barber-btn.selected {
+  background-color: color-mix(in srgb, #D4AF37 8%, rgba(26, 25, 25, 0.94)) !important;
+  border: 2px solid #D4AF37 !important;
+  color: #FAF7F2 !important;
   font-weight: 600;
 }
 
 /* Interactive Service & Barber Option Cards */
 .booking-page.booking-v5 .booking-option,
 .booking-page.booking-v5 .booking-defer-option {
-  min-height: 56px;
+  min-height: 58px;
   border-radius: var(--radius-control, 0.65rem);
   padding: 12px 16px;
   transition: all 0.15s ease;
   cursor: pointer;
+  background-color: var(--v5-surface) !important;
+  border: 1px solid var(--v5-border) !important;
+  color: var(--v5-text-primary) !important;
 }
 
 .booking-page.booking-v5 .booking-option:not(:disabled):hover,
 .booking-page.booking-v5 .booking-defer-option:not(:disabled):hover {
   border-color: var(--v5-border-hover) !important;
+  background-color: var(--v5-surface-subtle) !important;
   transform: translateY(-1px);
 }
 
-.booking-page.booking-v5 .booking-option.selected,
-.booking-page.booking-v5 .booking-defer-option.selected {
-  background-color: var(--v5-selected-bg) !important;
-  border-color: var(--v5-selected-border) !important;
-  color: var(--v5-selected-text) !important;
+/* Light Mode: Unselected Service and Barber Cards */
+html[data-theme='light'] .booking-page.booking-v5 .booking-option:not(.selected),
+html[data-theme='light'] .booking-page.booking-v5 .booking-defer-option:not(.selected) {
+  background-color: var(--v5-surface) !important;
+  border: 1px solid var(--v5-border) !important;
+  color: #252323 !important;
 }
 
-.booking-page.booking-v5 .booking-option.selected .text-muted-foreground,
-.booking-page.booking-v5 .booking-defer-option.selected .text-muted-foreground {
-  color: rgba(250, 247, 242, 0.82) !important;
+html[data-theme='light'] .booking-page.booking-v5 .booking-option:not(.selected) .booking-option-name,
+html[data-theme='light'] .booking-page.booking-v5 .booking-option:not(.selected) .booking-barber-name,
+html[data-theme='light'] .booking-page.booking-v5 .booking-defer-option:not(.selected) .booking-option-copy > span:first-child {
+  color: #252323 !important;
 }
 
-.booking-page.booking-v5 .booking-option.selected .booking-option-price {
+html[data-theme='light'] .booking-page.booking-v5 .booking-option:not(.selected) .booking-option-duration,
+html[data-theme='light'] .booking-page.booking-v5 .booking-option:not(.selected) .booking-barber-handle,
+html[data-theme='light'] .booking-page.booking-v5 .booking-option:not(.selected) .text-muted-foreground,
+html[data-theme='light'] .booking-page.booking-v5 .booking-defer-option:not(.selected) .text-muted-foreground {
+  color: #524F4A !important;
+}
+
+html[data-theme='light'] .booking-page.booking-v5 .booking-option:not(.selected) .booking-option-price {
+  color: #8A6729 !important;
+  font-weight: 600 !important;
+}
+
+html[data-theme='light'] .booking-page.booking-v5 .booking-option:not(.selected) .selection-circle,
+html[data-theme='light'] .booking-page.booking-v5 .booking-defer-option:not(.selected) .selection-circle {
+  border-color: rgba(114, 85, 38, 0.35) !important;
+  background-color: transparent !important;
+}
+
+/* Dark Mode: Unselected Service and Barber Cards */
+html[data-theme='dark'] .booking-page.booking-v5 .booking-option:not(.selected),
+html[data-theme='dark'] .booking-page.booking-v5 .booking-defer-option:not(.selected) {
+  background-color: var(--v5-surface) !important;
+  border: 1px solid var(--v5-border) !important;
   color: #FAF7F2 !important;
 }
 
-.booking-page.booking-v5 .booking-option.selected .selection-circle,
-.booking-page.booking-v5 .booking-defer-option.selected .selection-circle {
-  border-color: #FAF7F2 !important;
-  background-color: #FAF7F2 !important;
+html[data-theme='dark'] .booking-page.booking-v5 .booking-option:not(.selected) .booking-option-name,
+html[data-theme='dark'] .booking-page.booking-v5 .booking-option:not(.selected) .booking-barber-name,
+html[data-theme='dark'] .booking-page.booking-v5 .booking-defer-option:not(.selected) .booking-option-copy > span:first-child {
+  color: #FAF7F2 !important;
+}
+
+html[data-theme='dark'] .booking-page.booking-v5 .booking-option:not(.selected) .booking-option-duration,
+html[data-theme='dark'] .booking-page.booking-v5 .booking-option:not(.selected) .booking-barber-handle,
+html[data-theme='dark'] .booking-page.booking-v5 .booking-option:not(.selected) .text-muted-foreground,
+html[data-theme='dark'] .booking-page.booking-v5 .booking-defer-option:not(.selected) .text-muted-foreground {
+  color: #BDB7AB !important;
+}
+
+html[data-theme='dark'] .booking-page.booking-v5 .booking-option:not(.selected) .booking-option-price {
+  color: #D4AF37 !important;
+  font-weight: 600 !important;
+}
+
+html[data-theme='dark'] .booking-page.booking-v5 .booking-option:not(.selected) .selection-circle,
+html[data-theme='dark'] .booking-page.booking-v5 .booking-defer-option:not(.selected) .selection-circle {
+  border-color: rgba(185, 154, 91, 0.35) !important;
+  background-color: transparent !important;
+}
+
+/* Light Mode: Selected Service and Barber Cards (V4 Reference Contrast) */
+html[data-theme='light'] .booking-page.booking-v5 .booking-option.selected,
+html[data-theme='light'] .booking-page.booking-v5 .booking-defer-option.selected {
+  background-color: var(--v5-selected-card-bg) !important;
+  border: 2px solid var(--v5-selected-card-border) !important;
+  color: #252323 !important;
+  box-shadow: 0 4px 16px rgba(112, 43, 58, 0.12) !important;
+}
+
+html[data-theme='light'] .booking-page.booking-v5 .booking-option.selected .booking-option-name,
+html[data-theme='light'] .booking-page.booking-v5 .booking-option.selected .booking-barber-name,
+html[data-theme='light'] .booking-page.booking-v5 .booking-defer-option.selected .booking-option-copy > span:first-child {
+  color: #252323 !important;
+  font-weight: 600 !important;
+}
+
+html[data-theme='light'] .booking-page.booking-v5 .booking-option.selected .booking-option-duration,
+html[data-theme='light'] .booking-page.booking-v5 .booking-option.selected .booking-barber-handle,
+html[data-theme='light'] .booking-page.booking-v5 .booking-option.selected .text-muted-foreground,
+html[data-theme='light'] .booking-page.booking-v5 .booking-defer-option.selected .text-muted-foreground {
+  color: #524F4A !important;
+  font-weight: 500 !important;
+}
+
+html[data-theme='light'] .booking-page.booking-v5 .booking-option.selected .booking-option-price {
+  color: #8A6729 !important;
+  font-weight: 700 !important;
+}
+
+html[data-theme='light'] .booking-page.booking-v5 .booking-option.selected .selection-circle,
+html[data-theme='light'] .booking-page.booking-v5 .booking-defer-option.selected .selection-circle {
+  border-color: #702B3A !important;
+  background-color: #702B3A !important;
+  color: #FFFFFF !important;
+}
+
+html[data-theme='light'] .booking-page.booking-v5 .booking-option.selected .option-icon,
+html[data-theme='light'] .booking-page.booking-v5 .booking-option.selected .barber-avatar,
+html[data-theme='light'] .booking-page.booking-v5 .booking-defer-option.selected .barber-defer-mark {
+  border-color: #702B3A !important;
   color: #702B3A !important;
+  background-color: transparent !important;
+}
+
+/* Dark Mode: Selected Service and Barber Cards */
+html[data-theme='dark'] .booking-page.booking-v5 .booking-option.selected,
+html[data-theme='dark'] .booking-page.booking-v5 .booking-defer-option.selected {
+  background-color: var(--v5-selected-card-bg) !important;
+  border: 2px solid var(--v5-selected-card-border) !important;
+  color: #FAF7F2 !important;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45) !important;
+}
+
+html[data-theme='dark'] .booking-page.booking-v5 .booking-option.selected .booking-option-name,
+html[data-theme='dark'] .booking-page.booking-v5 .booking-option.selected .booking-barber-name,
+html[data-theme='dark'] .booking-page.booking-v5 .booking-defer-option.selected .booking-option-copy > span:first-child {
+  color: #FAF7F2 !important;
+  font-weight: 600 !important;
+}
+
+html[data-theme='dark'] .booking-page.booking-v5 .booking-option.selected .booking-option-duration,
+html[data-theme='dark'] .booking-page.booking-v5 .booking-option.selected .booking-barber-handle,
+html[data-theme='dark'] .booking-page.booking-v5 .booking-option.selected .text-muted-foreground,
+html[data-theme='dark'] .booking-page.booking-v5 .booking-defer-option.selected .text-muted-foreground {
+  color: #BDB7AB !important;
+  font-weight: 500 !important;
+}
+
+html[data-theme='dark'] .booking-page.booking-v5 .booking-option.selected .booking-option-price {
+  color: #D4AF37 !important;
+  font-weight: 700 !important;
+}
+
+html[data-theme='dark'] .booking-page.booking-v5 .booking-option.selected .selection-circle,
+html[data-theme='dark'] .booking-page.booking-v5 .booking-defer-option.selected .selection-circle {
+  border-color: #D4AF37 !important;
+  background-color: #D4AF37 !important;
+  color: #191919 !important;
+}
+
+html[data-theme='dark'] .booking-page.booking-v5 .booking-option.selected .option-icon,
+html[data-theme='dark'] .booking-page.booking-v5 .booking-option.selected .barber-avatar,
+html[data-theme='dark'] .booking-page.booking-v5 .booking-defer-option.selected .barber-defer-mark {
+  border-color: #D4AF37 !important;
+  color: #D4AF37 !important;
+  background-color: transparent !important;
+}
+
+/* Time Slot Selection in Light / Dark */
+html[data-theme='light'] .booking-v5 .booking-time-slot.selected {
+  background-color: #702B3A !important;
+  border-color: #702B3A !important;
+  color: #FFFFFF !important;
+  font-weight: 600;
+}
+
+html[data-theme='dark'] .booking-v5 .booking-time-slot.selected {
+  background-color: #D4AF37 !important;
+  border-color: #D4AF37 !important;
+  color: #191919 !important;
+  font-weight: 700;
 }
 
 /* Typography & Subtitles */
