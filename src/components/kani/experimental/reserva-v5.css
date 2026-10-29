@@ -77,26 +77,34 @@
 }
 
 /* --------------------------------------------------------------------------
-   2. Light Mode: Surface Opacity & Background Illustration Neutralization
+   2. Light Mode: Monochromatic System (Blanco + Negro Carbón + Grises Neutros)
    -------------------------------------------------------------------------- */
 html[data-theme='light'] .booking-page.booking-v5,
-html[data-theme='light'] .reserva-v5 {
+html[data-theme='light'] .reserva-v5,
+html[data-theme='light'] .payway-checkout-v5 {
   --v5-surface: rgba(255, 255, 255, 0.96);
-  --v5-surface-subtle: rgba(248, 247, 244, 0.96);
-  --v5-border: rgba(114, 85, 38, 0.22);
-  --v5-border-hover: rgba(185, 154, 91, 0.65);
-  --v5-text-primary: #252323;
-  --v5-text-muted: #524F4A;
-  --v5-text-gold: #8A6729;
-  --v5-selected-card-bg: color-mix(in srgb, #702B3A 8%, rgba(255, 255, 255, 0.96));
-  --v5-selected-card-border: #702B3A;
-  --v5-selected-circle-bg: #702B3A;
-  --v5-selected-circle-border: #702B3A;
+  --v5-surface-subtle: #F2F2F2;
+  --v5-border: #B8B8B8;
+  --v5-border-hover: #181818;
+  --v5-text-primary: #181818;
+  --v5-text-muted: #595959;
+  --v5-text-gold: #181818;
+  --v5-selected-card-bg: #F2F2F2;
+  --v5-selected-card-border: #181818;
+  --v5-selected-circle-bg: #181818;
+  --v5-selected-circle-border: #181818;
   --v5-selected-circle-color: #FFFFFF;
-  --v5-selected-bg: #702B3A;
-  --v5-selected-border: #551D2A;
-  --v5-selected-text: #FAF7F2;
-  --v5-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  --v5-selected-bg: #181818;
+  --v5-selected-border: #181818;
+  --v5-selected-text: #FFFFFF;
+  --v5-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+/* Neutralize .text-gold in Light Mode for Reserva V5 */
+html[data-theme='light'] .booking-page.booking-v5 .text-gold,
+html[data-theme='light'] .reserva-v5 .text-gold,
+html[data-theme='light'] .payway-checkout-v5 .text-gold {
+  color: #181818 !important;
 }
 
 /* --------------------------------------------------------------------------
@@ -276,9 +284,9 @@ html[data-theme='dark'] .reserva-v5 {
 }
 
 html[data-theme='light'] .booking-v5 .booking-candidate-barber-btn.selected {
-  background-color: color-mix(in srgb, #702B3A 8%, rgba(255, 255, 255, 0.96)) !important;
-  border: 2px solid #702B3A !important;
-  color: #252323 !important;
+  background-color: #F2F2F2 !important;
+  border: 2px solid #181818 !important;
+  color: #181818 !important;
   font-weight: 600;
 }
 
@@ -309,35 +317,43 @@ html[data-theme='dark'] .booking-v5 .booking-candidate-barber-btn.selected {
   transform: translateY(-1px);
 }
 
-/* Light Mode: Unselected Service and Barber Cards */
+/* Light Mode: Unselected Service and Barber Cards (Monochromatic) */
 html[data-theme='light'] .booking-page.booking-v5 .booking-option:not(.selected),
 html[data-theme='light'] .booking-page.booking-v5 .booking-defer-option:not(.selected) {
   background-color: var(--v5-surface) !important;
-  border: 1px solid var(--v5-border) !important;
-  color: #252323 !important;
+  border: 1px solid #B8B8B8 !important;
+  color: #181818 !important;
 }
 
 html[data-theme='light'] .booking-page.booking-v5 .booking-option:not(.selected) .booking-option-name,
 html[data-theme='light'] .booking-page.booking-v5 .booking-option:not(.selected) .booking-barber-name,
 html[data-theme='light'] .booking-page.booking-v5 .booking-defer-option:not(.selected) .booking-option-copy > span:first-child {
-  color: #252323 !important;
+  color: #181818 !important;
 }
 
 html[data-theme='light'] .booking-page.booking-v5 .booking-option:not(.selected) .booking-option-duration,
 html[data-theme='light'] .booking-page.booking-v5 .booking-option:not(.selected) .booking-barber-handle,
 html[data-theme='light'] .booking-page.booking-v5 .booking-option:not(.selected) .text-muted-foreground,
 html[data-theme='light'] .booking-page.booking-v5 .booking-defer-option:not(.selected) .text-muted-foreground {
-  color: #524F4A !important;
+  color: #595959 !important;
 }
 
 html[data-theme='light'] .booking-page.booking-v5 .booking-option:not(.selected) .booking-option-price {
-  color: #8A6729 !important;
-  font-weight: 600 !important;
+  color: #181818 !important;
+  font-weight: 700 !important;
 }
 
 html[data-theme='light'] .booking-page.booking-v5 .booking-option:not(.selected) .selection-circle,
 html[data-theme='light'] .booking-page.booking-v5 .booking-defer-option:not(.selected) .selection-circle {
-  border-color: rgba(114, 85, 38, 0.35) !important;
+  border: 1px solid #B8B8B8 !important;
+  background-color: transparent !important;
+}
+
+html[data-theme='light'] .booking-page.booking-v5 .booking-option:not(.selected) .option-icon,
+html[data-theme='light'] .booking-page.booking-v5 .booking-option:not(.selected) .barber-avatar,
+html[data-theme='light'] .booking-page.booking-v5 .booking-defer-option:not(.selected) .barber-defer-mark {
+  border-color: #B8B8B8 !important;
+  color: #181818 !important;
   background-color: transparent !important;
 }
 
@@ -373,19 +389,19 @@ html[data-theme='dark'] .booking-page.booking-v5 .booking-defer-option:not(.sele
   background-color: transparent !important;
 }
 
-/* Light Mode: Selected Service and Barber Cards (V4 Reference Contrast) */
+/* Light Mode: Selected Service and Barber Cards (Monochromatic) */
 html[data-theme='light'] .booking-page.booking-v5 .booking-option.selected,
 html[data-theme='light'] .booking-page.booking-v5 .booking-defer-option.selected {
-  background-color: var(--v5-selected-card-bg) !important;
-  border: 2px solid var(--v5-selected-card-border) !important;
-  color: #252323 !important;
-  box-shadow: 0 4px 16px rgba(112, 43, 58, 0.12) !important;
+  background-color: #F2F2F2 !important;
+  border: 2px solid #181818 !important;
+  color: #181818 !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08) !important;
 }
 
 html[data-theme='light'] .booking-page.booking-v5 .booking-option.selected .booking-option-name,
 html[data-theme='light'] .booking-page.booking-v5 .booking-option.selected .booking-barber-name,
 html[data-theme='light'] .booking-page.booking-v5 .booking-defer-option.selected .booking-option-copy > span:first-child {
-  color: #252323 !important;
+  color: #181818 !important;
   font-weight: 600 !important;
 }
 
@@ -393,27 +409,27 @@ html[data-theme='light'] .booking-page.booking-v5 .booking-option.selected .book
 html[data-theme='light'] .booking-page.booking-v5 .booking-option.selected .booking-barber-handle,
 html[data-theme='light'] .booking-page.booking-v5 .booking-option.selected .text-muted-foreground,
 html[data-theme='light'] .booking-page.booking-v5 .booking-defer-option.selected .text-muted-foreground {
-  color: #524F4A !important;
+  color: #595959 !important;
   font-weight: 500 !important;
 }
 
 html[data-theme='light'] .booking-page.booking-v5 .booking-option.selected .booking-option-price {
-  color: #8A6729 !important;
+  color: #181818 !important;
   font-weight: 700 !important;
 }
 
 html[data-theme='light'] .booking-page.booking-v5 .booking-option.selected .selection-circle,
 html[data-theme='light'] .booking-page.booking-v5 .booking-defer-option.selected .selection-circle {
-  border-color: #702B3A !important;
-  background-color: #702B3A !important;
+  border-color: #181818 !important;
+  background-color: #181818 !important;
   color: #FFFFFF !important;
 }
 
 html[data-theme='light'] .booking-page.booking-v5 .booking-option.selected .option-icon,
 html[data-theme='light'] .booking-page.booking-v5 .booking-option.selected .barber-avatar,
 html[data-theme='light'] .booking-page.booking-v5 .booking-defer-option.selected .barber-defer-mark {
-  border-color: #702B3A !important;
-  color: #702B3A !important;
+  border-color: #181818 !important;
+  color: #181818 !important;
   background-color: transparent !important;
 }
 
@@ -463,8 +479,8 @@ html[data-theme='dark'] .booking-page.booking-v5 .booking-defer-option.selected 
 
 /* Time Slot Selection in Light / Dark */
 html[data-theme='light'] .booking-v5 .booking-time-slot.selected {
-  background-color: #702B3A !important;
-  border-color: #702B3A !important;
+  background-color: #181818 !important;
+  border-color: #181818 !important;
   color: #FFFFFF !important;
   font-weight: 600;
 }
@@ -592,13 +608,22 @@ html[data-theme='dark'] .booking-page.booking-v5 textarea::placeholder {
   width: 58px;
   height: 58px;
   margin: 0 auto 12px;
-  background-color: #702B3A !important;
-  color: #FAF7F2 !important;
-  border: 1px solid rgba(185, 154, 91, 0.45);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+html[data-theme='light'] .reserva-v5 .confirmation-mark {
+  background-color: #181818 !important;
+  color: #FFFFFF !important;
+  border: 1px solid #181818 !important;
+}
+
+html[data-theme='dark'] .reserva-v5 .confirmation-mark {
+  background-color: #702B3A !important;
+  color: #FAF7F2 !important;
+  border: 1px solid rgba(185, 154, 91, 0.45) !important;
 }
 
 .reserva-v5 .confirmation h1 {
@@ -977,4 +1002,340 @@ html[data-theme='dark'] .booking-page.booking-v5 textarea::placeholder {
 /* Payway Checkout Modal V5 */
 .payway-checkout-v5 {
   border-radius: var(--radius-control, 0.65rem);
+}
+
+/* --------------------------------------------------------------------------
+   7. Monochromatic Design System for Light Mode (Reserva V5)
+   Blanco (#FFFFFF) + Negro Carbón (#181818) + Grises Neutros (#595959, #B8B8B8, #F2F2F2)
+   -------------------------------------------------------------------------- */
+
+/* Stepper en Modo Claro */
+html[data-theme='light'] .booking-page.booking-v5 .booking-progress {
+  border-bottom: 2px solid #B8B8B8 !important;
+}
+
+html[data-theme='light'] .booking-page.booking-v5 .booking-progress::before {
+  background: #B8B8B8 !important;
+}
+
+html[data-theme='light'] .booking-page.booking-v5 .booking-progress::after {
+  background: #181818 !important;
+}
+
+html[data-theme='light'] .booking-page.booking-v5 .booking-progress > button {
+  color: #595959 !important;
+}
+
+html[data-theme='light'] .booking-page.booking-v5 .booking-progress > button > span {
+  border-color: #B8B8B8 !important;
+  background-color: transparent !important;
+  color: #595959 !important;
+}
+
+html[data-theme='light'] .booking-page.booking-v5 .booking-progress .current {
+  color: #181818 !important;
+  border-bottom-color: #181818 !important;
+  font-weight: 600 !important;
+}
+
+html[data-theme='light'] .booking-page.booking-v5 .booking-progress .current > span {
+  border: 2px solid #181818 !important;
+  background-color: transparent !important;
+  color: #181818 !important;
+  font-weight: 700 !important;
+}
+
+html[data-theme='light'] .booking-page.booking-v5 .booking-progress .complete {
+  color: #181818 !important;
+}
+
+html[data-theme='light'] .booking-page.booking-v5 .booking-progress .complete > span {
+  border-color: #181818 !important;
+  background-color: #181818 !important;
+  color: #FFFFFF !important;
+}
+
+/* Botones Principales (CTA): Continuar, Pagar seña, Volver al inicio */
+html[data-theme='light'] .booking-page.booking-v5 .booking-next-button:not(:disabled),
+html[data-theme='light'] .reserva-v5 .confirmation-home,
+html[data-theme='light'] .payway-checkout-v5 .payway-pay-btn:not(:disabled) {
+  background-color: #181818 !important;
+  border: 1px solid #181818 !important;
+  color: #FFFFFF !important;
+  transition: all 0.15s ease;
+}
+
+html[data-theme='light'] .booking-page.booking-v5 .booking-next-button:not(:disabled):hover,
+html[data-theme='light'] .reserva-v5 .confirmation-home:hover,
+html[data-theme='light'] .payway-checkout-v5 .payway-pay-btn:not(:disabled):hover {
+  background-color: #333333 !important;
+  border-color: #333333 !important;
+  color: #FFFFFF !important;
+}
+
+html[data-theme='light'] .booking-page.booking-v5 .booking-next-button:focus-visible,
+html[data-theme='light'] .reserva-v5 .confirmation-home:focus-visible,
+html[data-theme='light'] .payway-checkout-v5 .payway-pay-btn:focus-visible {
+  outline: 2px solid #181818 !important;
+  outline-offset: 2px !important;
+}
+
+html[data-theme='light'] .booking-page.booking-v5 .booking-next-button:disabled,
+html[data-theme='light'] .payway-checkout-v5 .payway-pay-btn:disabled {
+  background-color: #F2F2F2 !important;
+  border: 1px solid #B8B8B8 !important;
+  color: #8C8C8C !important;
+  opacity: 0.65 !important;
+  cursor: not-allowed !important;
+}
+
+/* Botones Secundarios: Volver, Cómo llegar, Instagram */
+html[data-theme='light'] .booking-page.booking-v5 .booking-back-button,
+html[data-theme='light'] .reserva-v5 .confirmation-secondary {
+  background-color: rgba(255, 255, 255, 0.96) !important;
+  border: 1px solid #B8B8B8 !important;
+  color: #181818 !important;
+  transition: all 0.15s ease;
+}
+
+html[data-theme='light'] .booking-page.booking-v5 .booking-back-button:hover:not(:disabled),
+html[data-theme='light'] .reserva-v5 .confirmation-secondary:hover {
+  background-color: #F2F2F2 !important;
+  border-color: #181818 !important;
+  color: #181818 !important;
+}
+
+html[data-theme='light'] .booking-page.booking-v5 .booking-back-button:focus-visible,
+html[data-theme='light'] .reserva-v5 .confirmation-secondary:focus-visible {
+  outline: 2px solid #181818 !important;
+  outline-offset: 2px !important;
+}
+
+html[data-theme='light'] .booking-page.booking-v5 .booking-back-button svg,
+html[data-theme='light'] .reserva-v5 .confirmation-secondary svg {
+  color: #181818 !important;
+}
+
+/* Iconos de servicio en Negro Carbón */
+html[data-theme='light'] .booking-page.booking-v5 .service-icon-mask {
+  background-color: #181818 !important;
+}
+
+html[data-theme='light'] .booking-page.booking-v5 .option-icon img {
+  filter: brightness(0) saturate(100%) !important;
+}
+
+/* Calendario en Modo Claro */
+html[data-theme='light'] .booking-v5-date .calendar-header h2 {
+  color: #181818 !important;
+}
+
+html[data-theme='light'] .booking-v5-date .calendar-weekday {
+  color: #595959 !important;
+}
+
+html[data-theme='light'] .booking-v5-date .calendar-day {
+  color: #181818 !important;
+}
+
+html[data-theme='light'] .booking-v5-date .calendar-day:not(:disabled):hover {
+  background-color: #F2F2F2 !important;
+  border-color: #181818 !important;
+}
+
+html[data-theme='light'] .booking-v5-date .calendar-day.selected {
+  background-color: #181818 !important;
+  border-color: #181818 !important;
+  color: #FFFFFF !important;
+  font-weight: 600 !important;
+}
+
+html[data-theme='light'] .booking-v5-date .calendar-day.today:not(.selected)::after {
+  background-color: #181818 !important;
+}
+
+html[data-theme='light'] .booking-v5-date .legend-indicator.today-indicator {
+  background-color: #181818 !important;
+}
+
+html[data-theme='light'] .booking-v5-date .legend-indicator.selected-indicator {
+  background-color: #181818 !important;
+}
+
+html[data-theme='light'] .booking-v5-date .calendar-legend {
+  color: #595959 !important;
+}
+
+/* Horarios en Modo Claro */
+html[data-theme='light'] .booking-v5 .booking-time-heading-date {
+  color: #181818 !important;
+}
+
+html[data-theme='light'] .booking-v5 .booking-time-slot {
+  background-color: rgba(255, 255, 255, 0.96) !important;
+  border: 1px solid #B8B8B8 !important;
+  color: #181818 !important;
+}
+
+html[data-theme='light'] .booking-v5 .booking-time-slot:not(:disabled):hover {
+  border-color: #181818 !important;
+  background-color: #F2F2F2 !important;
+}
+
+html[data-theme='light'] .booking-v5 .booking-time-slot.selected {
+  background-color: #181818 !important;
+  border-color: #181818 !important;
+  color: #FFFFFF !important;
+  font-weight: 600 !important;
+}
+
+html[data-theme='light'] .booking-v5 .booking-candidate-barber-btn {
+  background-color: rgba(255, 255, 255, 0.96) !important;
+  border: 1px solid #B8B8B8 !important;
+  color: #181818 !important;
+}
+
+html[data-theme='light'] .booking-v5 .booking-candidate-barber-btn:not(:disabled):hover {
+  border-color: #181818 !important;
+  background-color: #F2F2F2 !important;
+}
+
+/* Formulario y Resumen en Modo Claro */
+html[data-theme='light'] .booking-page.booking-v5 .field-label {
+  color: #181818 !important;
+}
+
+html[data-theme='light'] .booking-page.booking-v5 .field-required {
+  color: #181818 !important;
+}
+
+html[data-theme='light'] .booking-page.booking-v5 .field-control input,
+html[data-theme='light'] .booking-page.booking-v5 .notes-input {
+  background-color: rgba(255, 255, 255, 0.96) !important;
+  border-color: #B8B8B8 !important;
+  color: #181818 !important;
+}
+
+html[data-theme='light'] .booking-page.booking-v5 .field-control input:focus,
+html[data-theme='light'] .booking-page.booking-v5 .notes-input:focus {
+  border-color: #181818 !important;
+  box-shadow: 0 0 0 1px #181818 !important;
+}
+
+html[data-theme='light'] .booking-page.booking-v5 input::placeholder,
+html[data-theme='light'] .booking-page.booking-v5 textarea::placeholder {
+  color: #595959 !important;
+  opacity: 1 !important;
+}
+
+html[data-theme='light'] .booking-page.booking-v5 .booking-summary-card,
+html[data-theme='light'] .booking-page.booking-v5 .summary-appointment-card,
+html[data-theme='light'] .booking-page.booking-v5 .summary-pricing-card {
+  background-color: rgba(255, 255, 255, 0.96) !important;
+  border: 1px solid #B8B8B8 !important;
+}
+
+html[data-theme='light'] .booking-page.booking-v5 .summary-list dt {
+  color: #595959 !important;
+}
+
+html[data-theme='light'] .booking-page.booking-v5 .summary-list dd {
+  color: #181818 !important;
+}
+
+html[data-theme='light'] .booking-page.booking-v5 .summary-deposit-box,
+html[data-theme='light'] .booking-page.booking-v5 .summary-pending-notice {
+  background-color: #F2F2F2 !important;
+  border: 1px solid #B8B8B8 !important;
+  color: #181818 !important;
+}
+
+html[data-theme='light'] .booking-page.booking-v5 .booking-deposit-notice {
+  background-color: rgba(255, 255, 255, 0.96) !important;
+  border: 1px solid #B8B8B8 !important;
+  color: #181818 !important;
+}
+
+html[data-theme='light'] .booking-page.booking-v5 .booking-deposit-notice svg {
+  color: #181818 !important;
+}
+
+/* Modal Payway Checkout en Modo Claro */
+html[data-theme='light'] .payway-checkout-v5 {
+  background-color: rgba(255, 255, 255, 0.98) !important;
+  border: 1px solid #B8B8B8 !important;
+  color: #181818 !important;
+}
+
+html[data-theme='light'] .payway-checkout-v5 .payway-checkout-title {
+  color: #181818 !important;
+}
+
+html[data-theme='light'] .payway-checkout-v5 .payway-checkout-subtitle {
+  color: #595959 !important;
+}
+
+html[data-theme='light'] .payway-checkout-v5 label {
+  color: #181818 !important;
+}
+
+html[data-theme='light'] .payway-checkout-v5 input,
+html[data-theme='light'] .payway-checkout-v5 select {
+  background-color: rgba(255, 255, 255, 0.96) !important;
+  border-color: #B8B8B8 !important;
+  color: #181818 !important;
+}
+
+html[data-theme='light'] .payway-checkout-v5 input:focus,
+html[data-theme='light'] .payway-checkout-v5 select:focus {
+  border-color: #181818 !important;
+  box-shadow: 0 0 0 1px #181818 !important;
+}
+
+html[data-theme='light'] .payway-checkout-v5 input::placeholder {
+  color: #595959 !important;
+}
+
+html[data-theme='light'] .payway-checkout-v5 .payway-preparing {
+  color: #595959 !important;
+}
+
+html[data-theme='light'] .payway-checkout-v5 .payway-unknown-status {
+  background-color: #F2F2F2 !important;
+  border-color: #B8B8B8 !important;
+  color: #181818 !important;
+}
+
+/* Pantalla Final de Confirmación en Modo Claro */
+html[data-theme='light'] .reserva-v5 .confirmation h1 {
+  color: #181818 !important;
+}
+
+html[data-theme='light'] .reserva-v5 .confirmation-subtitle {
+  color: #595959 !important;
+}
+
+html[data-theme='light'] .reserva-v5 .confirmation-details {
+  background-color: rgba(255, 255, 255, 0.96) !important;
+  border: 1px solid #B8B8B8 !important;
+}
+
+html[data-theme='light'] .reserva-v5 .confirmation-details dt {
+  color: #595959 !important;
+}
+
+html[data-theme='light'] .reserva-v5 .confirmation-details dd {
+  color: #181818 !important;
+}
+
+html[data-theme='light'] .reserva-v5 .confirmation-place-title {
+  color: #181818 !important;
+}
+
+html[data-theme='light'] .reserva-v5 .confirmation-place-address {
+  color: #595959 !important;
+}
+
+html[data-theme='light'] .reserva-v5 .confirmation-map-wrap {
+  border: 1px solid #B8B8B8 !important;
 }
