@@ -1,0 +1,458 @@
+/* ==========================================================================
+   Kani Barber Studio — Reserva V5 (5-step booking flow variant)
+   Coexists alongside Reserva V4, V3, V2 and V1.
+   Scoped strictly to .booking-v5, .reserva-v5, and .payway-checkout-v5.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. Stepper / Progress Bar (5 Steps: Servicio, Barbero, Fecha, Horario, Datos)
+   -------------------------------------------------------------------------- */
+.booking-page.booking-v5 .booking-progress {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.booking-page.booking-v5 .booking-progress small {
+  white-space: nowrap;
+  letter-spacing: -0.015em;
+}
+
+@media (max-width: 767px) {
+  .booking-page.booking-v5 .booking-progress {
+    height: 58px !important;
+    padding-inline: 0 !important;
+  }
+
+  .booking-page.booking-v5 .booking-progress > button {
+    min-width: 0 !important;
+    height: 58px !important;
+    min-height: 58px !important;
+    max-height: 58px !important;
+    padding-inline: 1px !important;
+    padding-top: 3px !important;
+    padding-bottom: 0 !important;
+    flex-direction: column !important;
+    justify-content: flex-start !important;
+    align-items: center !important;
+    gap: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .booking-page.booking-v5 .booking-progress > button > span {
+    width: 23px !important;
+    height: 23px !important;
+    min-width: 23px !important;
+    min-height: 23px !important;
+    border-radius: 50% !important;
+    font-size: 8.5px !important;
+    font-weight: 600 !important;
+    line-height: 21px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-shrink: 0 !important;
+    margin: 0 !important;
+  }
+
+  .booking-page.booking-v5 .booking-progress > button > span svg {
+    width: 11px !important;
+    height: 11px !important;
+  }
+
+  .booking-page.booking-v5 .booking-progress small {
+    font-size: 11px !important;
+    min-height: 14px !important;
+    height: 14px !important;
+    line-height: 14px !important;
+    white-space: nowrap !important;
+    text-align: center !important;
+    letter-spacing: -0.025em !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+    margin-top: auto !important;
+    margin-bottom: auto !important;
+    padding: 0 !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   2. Light Mode: Surface Opacity & Background Illustration Neutralization
+   -------------------------------------------------------------------------- */
+html[data-theme='light'] .booking-page.booking-v5,
+html[data-theme='light'] .reserva-v5 {
+  --v5-surface: rgba(255, 255, 255, 0.96);
+  --v5-surface-subtle: rgba(248, 247, 244, 0.96);
+  --v5-border: rgba(114, 85, 38, 0.22);
+  --v5-border-hover: rgba(185, 154, 91, 0.65);
+  --v5-text-primary: #252323;
+  --v5-text-muted: #524F4A;
+  --v5-text-gold: #8A6729;
+  --v5-selected-bg: #702B3A;
+  --v5-selected-border: #551D2A;
+  --v5-selected-text: #FAF7F2;
+  --v5-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+
+/* --------------------------------------------------------------------------
+   3. Dark Mode: Surface Contrast & Elevation from #121212 Canvas
+   -------------------------------------------------------------------------- */
+html[data-theme='dark'] .booking-page.booking-v5,
+html[data-theme='dark'] .reserva-v5 {
+  --v5-surface: rgba(26, 25, 25, 0.94);
+  --v5-surface-subtle: rgba(33, 31, 31, 0.94);
+  --v5-border: rgba(185, 154, 91, 0.28);
+  --v5-border-hover: rgba(212, 175, 55, 0.6);
+  --v5-text-primary: #FAF7F2;
+  --v5-text-muted: #BDB7AB;
+  --v5-text-gold: #D4AF37;
+  --v5-selected-bg: #702B3A;
+  --v5-selected-border: rgba(185, 154, 91, 0.65);
+  --v5-selected-text: #FAF7F2;
+  --v5-shadow: 0 6px 20px rgba(0, 0, 0, 0.38);
+}
+
+/* --------------------------------------------------------------------------
+   4. Neutralizing Background Illustration Bleed-through on Surfaces
+   -------------------------------------------------------------------------- */
+.booking-page.booking-v5 .booking-option,
+.booking-page.booking-v5 .booking-defer-option,
+.booking-page.booking-v5 .calendar-panel,
+.booking-page.booking-v5 .booking-time-slot,
+.booking-page.booking-v5 .booking-summary-card,
+.booking-page.booking-v5 .booking-v2-unified-summary,
+.booking-page.booking-v5 .summary-appointment-card,
+.booking-page.booking-v5 .summary-pricing-card,
+.booking-page.booking-v5 .summary-pending-notice,
+.reserva-v5 .confirmation-details,
+.reserva-v5 .confirmation-place,
+.reserva-v5 .confirmation-map-wrap,
+.payway-checkout-v5 {
+  background-color: var(--v5-surface) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  border: 1px solid var(--v5-border) !important;
+  box-shadow: var(--v5-shadow) !important;
+  color: var(--v5-text-primary) !important;
+}
+
+/* Step 2 Calendar Panel Layout & Contrast */
+.booking-v5-date .calendar-panel {
+  max-width: 440px;
+  margin-inline: auto;
+  border-radius: var(--radius-control, 0.65rem);
+  padding: 18px 20px 16px;
+}
+
+.booking-v5-date .calendar-header h2 {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--v5-text-primary);
+}
+
+.booking-v5-date .calendar-weekday {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--v5-text-muted);
+}
+
+.booking-v5-date .calendar-day {
+  min-height: 44px;
+  height: 44px;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--v5-text-primary);
+  transition: all 0.15s ease;
+}
+
+.booking-v5-date .calendar-day:not(:disabled):hover {
+  background-color: var(--v5-surface-subtle);
+  border-color: var(--v5-border-hover);
+  transform: translateY(-1px);
+}
+
+.booking-v5-date .calendar-day.selected {
+  background-color: var(--v5-selected-bg) !important;
+  border-color: var(--v5-selected-border) !important;
+  color: var(--v5-selected-text) !important;
+  font-weight: 600;
+}
+
+/* Step 3 Time Header & Slots */
+.booking-v5 .booking-time-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.booking-v5 .booking-time-heading-date {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--v5-text-gold);
+}
+
+.booking-v5 .booking-time-slot {
+  min-height: 46px;
+  height: 46px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  border-radius: 8px;
+  transition: all 0.15s ease;
+}
+
+.booking-v5 .booking-time-slot:not(:disabled):hover {
+  border-color: var(--v5-border-hover);
+  transform: translateY(-1px);
+}
+
+.booking-v5 .booking-time-slot.selected {
+  background-color: var(--v5-selected-bg) !important;
+  border-color: var(--v5-selected-border) !important;
+  color: var(--v5-selected-text) !important;
+  font-weight: 600;
+}
+
+/* Interactive Service & Barber Option Cards */
+.booking-page.booking-v5 .booking-option,
+.booking-page.booking-v5 .booking-defer-option {
+  min-height: 56px;
+  border-radius: var(--radius-control, 0.65rem);
+  padding: 12px 16px;
+  transition: all 0.15s ease;
+  cursor: pointer;
+}
+
+.booking-page.booking-v5 .booking-option:not(:disabled):hover,
+.booking-page.booking-v5 .booking-defer-option:not(:disabled):hover {
+  border-color: var(--v5-border-hover) !important;
+  transform: translateY(-1px);
+}
+
+.booking-page.booking-v5 .booking-option.selected,
+.booking-page.booking-v5 .booking-defer-option.selected {
+  background-color: var(--v5-selected-bg) !important;
+  border-color: var(--v5-selected-border) !important;
+  color: var(--v5-selected-text) !important;
+}
+
+.booking-page.booking-v5 .booking-option.selected .text-muted-foreground,
+.booking-page.booking-v5 .booking-defer-option.selected .text-muted-foreground {
+  color: rgba(250, 247, 242, 0.82) !important;
+}
+
+.booking-page.booking-v5 .booking-option.selected .booking-option-price {
+  color: #FAF7F2 !important;
+}
+
+.booking-page.booking-v5 .booking-option.selected .selection-circle,
+.booking-page.booking-v5 .booking-defer-option.selected .selection-circle {
+  border-color: #FAF7F2 !important;
+  background-color: #FAF7F2 !important;
+  color: #702B3A !important;
+}
+
+/* Typography & Subtitles */
+.booking-page.booking-v5 .booking-option-name,
+.booking-page.booking-v5 .booking-barber-name {
+  color: inherit;
+  font-weight: 600;
+}
+
+.booking-page.booking-v5 .booking-option-price {
+  font-weight: 600;
+  color: var(--v5-text-gold);
+}
+
+.booking-page.booking-v5 .text-muted-foreground {
+  color: var(--v5-text-muted) !important;
+}
+
+/* Touch Targets & Keyboard Accessibility Focus Rings */
+.booking-page.booking-v5 button:focus-visible,
+.booking-page.booking-v5 input:focus-visible,
+.booking-page.booking-v5 select:focus-visible,
+.booking-page.booking-v5 textarea:focus-visible,
+.reserva-v5 button:focus-visible,
+.payway-checkout-v5 button:focus-visible,
+.payway-checkout-v5 input:focus-visible,
+.payway-checkout-v5 select:focus-visible {
+  outline: 2px solid var(--v5-text-gold) !important;
+  outline-offset: 2px !important;
+}
+
+.booking-page.booking-v5 button,
+.reserva-v5 button {
+  min-height: 44px;
+}
+
+/* Disabled State */
+.booking-page.booking-v5 button:disabled,
+.reserva-v5 button:disabled {
+  opacity: 0.42 !important;
+  cursor: not-allowed !important;
+  pointer-events: none;
+}
+
+/* --------------------------------------------------------------------------
+   5. Step 5 / Final Screen: "Turno confirmado" UI/UX Alignment
+   -------------------------------------------------------------------------- */
+.reserva-v5 .confirmation {
+  max-width: 1060px;
+  margin-inline: auto;
+  padding-top: 14px;
+  padding-bottom: 32px;
+}
+
+.reserva-v5 .confirmation-mark {
+  background-color: #702B3A !important;
+  color: #FAF7F2 !important;
+  border: 1px solid rgba(185, 154, 91, 0.45);
+}
+
+.reserva-v5 .confirmation h1 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--v5-text-primary);
+}
+
+.reserva-v5 .confirmation-subtitle {
+  color: var(--v5-text-muted);
+}
+
+/* Desktop layout (>= 860px): 50 / 50 */
+@media (min-width: 860px) {
+  .reserva-v5 .confirmation-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 24px;
+    row-gap: 12px;
+    align-items: start;
+    margin-top: 18px;
+  }
+
+  .reserva-v5 .confirmation-details {
+    grid-column: 1 / 2;
+    grid-row: 1 / 4;
+    padding: 18px 22px !important;
+    border-radius: var(--radius-control, 0.65rem);
+  }
+
+  .reserva-v5 .confirmation-place {
+    grid-column: 2 / 3;
+    grid-row: 1 / 2;
+    text-align: left;
+    margin: 0 !important;
+    padding: 14px 18px !important;
+    border-radius: var(--radius-control, 0.65rem);
+  }
+
+  .reserva-v5 .confirmation-map-wrap {
+    grid-column: 2 / 3;
+    grid-row: 2 / 3;
+    height: 220px;
+    border-radius: var(--radius-control, 0.65rem);
+    overflow: hidden;
+  }
+
+  .reserva-v5 .confirmation-actions {
+    grid-column: 2 / 3;
+    grid-row: 3 / 4;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin: 0 !important;
+  }
+
+  .reserva-v5 .confirmation-actions .confirmation-home {
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+    height: 46px !important;
+  }
+}
+
+/* Mobile & Tablet (< 860px): Compact for 360x800 */
+@media (max-width: 859px) {
+  .reserva-v5 .confirmation {
+    max-width: 520px;
+    padding-top: 8px;
+    padding-bottom: 12px;
+    padding-inline: 16px;
+  }
+
+  .reserva-v5 .confirmation .confirmation-mark {
+    width: 44px;
+    height: 44px;
+    margin: 0 auto 6px;
+  }
+
+  .reserva-v5 .confirmation h1 {
+    font-size: 24px;
+    line-height: 1.15;
+    margin-block: 2px 2px;
+  }
+
+  .reserva-v5 .confirmation-subtitle {
+    margin-top: 0;
+    margin-bottom: 8px;
+    font-size: 13px;
+    line-height: 1.3;
+  }
+
+  .reserva-v5 .confirmation-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .reserva-v5 .confirmation-details {
+    padding: 10px 14px !important;
+    border-radius: var(--radius-control, 0.65rem);
+  }
+
+  .reserva-v5 .confirmation-place {
+    text-align: center;
+    margin: 0 !important;
+    padding: 10px 14px !important;
+    border-radius: var(--radius-control, 0.65rem);
+  }
+
+  .reserva-v5 .confirmation-map-wrap {
+    height: 155px;
+    margin: 0 !important;
+    border-radius: var(--radius-control, 0.65rem);
+    overflow: hidden;
+  }
+
+  .reserva-v5 .confirmation-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+    margin-top: 6px !important;
+  }
+
+  .reserva-v5 .confirmation-actions .confirmation-home {
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+    min-height: 44px !important;
+    height: 44px !important;
+  }
+}
+
+.reserva-v5 .confirmation-map-iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+}
+
+/* Payway Checkout Modal V5 */
+.payway-checkout-v5 {
+  border-radius: var(--radius-control, 0.65rem);
+}

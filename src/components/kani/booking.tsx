@@ -68,16 +68,18 @@ export function Booking({
   onPaymentRequest,
 }: {
   combinedDateTime?: boolean;
-  variant?: 'v1' | 'v2' | 'v3';
+  variant?: 'v1' | 'v2' | 'v3' | 'v5';
   onPaymentRequest?: (draft: BookingPaymentDraft) => Promise<void>;
 } = {}) {
+  const isV5 = propVariant === 'v5';
   const isV3 = propVariant === 'v3';
+  const isFiveSteps = isV3 || isV5;
   const isV2 = propVariant === 'v2' || (!propVariant && combinedDateTime);
-  const isV1 = !isV2 && !isV3;
+  const isV1 = !isV2 && !isV3 && !isV5;
 
-  // Keep V1's internal stages and all booking operations; V2 groups presentation to 4 steps; V3 separates date and time to 5 steps.
-  const stageOrder = isV3 ? [0, 1, 2, 3, 4] : isV2 ? [0, 1, 2, 4] : [0, 1, 2, 3, 4, 5];
-  const visibleSteps = isV3
+  // Keep V1's internal stages and all booking operations; V2 groups presentation to 4 steps; V3 & V5 separate date and time to 5 steps.
+  const stageOrder = isFiveSteps ? [0, 1, 2, 3, 4] : isV2 ? [0, 1, 2, 4] : [0, 1, 2, 3, 4, 5];
+  const visibleSteps = isFiveSteps
     ? ['Servicio', 'Barbero', 'Fecha', 'Horario', 'Datos']
     : isV2
     ? ['Servicio', 'Barbero', 'Fecha y horario', 'Datos']
@@ -379,12 +381,14 @@ export function Booking({
       }
     }
   }, [availabilityLoading, availableDates, barberDeferred, date, service, todayValue]);
+  const homeLink = isV5 ? "/reserva-v5" : isV3 ? "/reserva-v3" : isV2 ? "/reserva-v2" : "/reservar";
+
   function move(next: number) {
-    setStep(isV3 ? next : isV2 ? next === 3 ? 2 : next === 5 ? 4 : next : next);
+    setStep(isFiveSteps ? next : isV2 ? next === 3 ? 2 : next === 5 ? 4 : next : next);
     setError('');
     window.scrollTo({
       top: 0,
-      behavior: (isV2 || isV3) && window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
+      behavior: (isV2 || isFiveSteps) && window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
     });
   }
   const statusFor = (field: ContactField) => fieldStatus(field, contact, phoneCountry, touched[field]);
@@ -412,7 +416,7 @@ export function Booking({
   }
   function next() {
     if (step === 1 && !barber && !barberDeferred) { setError('Elegí un barbero o seleccioná “Elegir más adelante”.'); return; }
-    if (isV3) {
+    if (isFiveSteps) {
       if (step === 2 && (!date || !availableDatesSet.has(date))) {
         setError('Elegí una fecha para continuar.');
         return;
@@ -438,7 +442,7 @@ export function Booking({
   }
   async function submit() {
     if (!service || !barber || !date || !time || submitting) return;
-    if (isV2 || isV3) {
+    if (isV2 || isFiveSteps) {
       setTouched({ name: true, phone: true, email: true, notes: true });
       if (!formRef.current?.reportValidity()) return;
     }
@@ -448,7 +452,7 @@ export function Booking({
       setError('Ingresá un número de teléfono válido para el país seleccionado.');
       return;
     }
-    if (!pendingAppointment && (!slots.includes(time) || (isV2 || isV3) && (!availableDatesSet.has(date) || barberDeferred && !eligibleBarbersForAvailabilityStart(availabilityStartsByDate.get(date) ?? [], date, time, serviceName, clock).includes(barber)))) {
+    if (!pendingAppointment && (!slots.includes(time) || (isV2 || isFiveSteps) && (!availableDatesSet.has(date) || barberDeferred && !eligibleBarbersForAvailabilityStart(availabilityStartsByDate.get(date) ?? [], date, time, serviceName, clock).includes(barber)))) {
       move(3);
       setError('Ese horario ya no está disponible. Elegí otro para continuar.');
       return;
@@ -576,7 +580,7 @@ export function Booking({
         <p className="mt-2 text-sm text-muted-foreground">San Isidro Labrador 7 · Martínez, Provincia de Buenos Aires</p>
         <div className="confirmation-actions">
           <Button asChild className="confirmation-home action-brand" aria-label="Volver a reservar">
-            <a href={isV3 ? "/reserva-v3" : isV2 ? "/reserva-v2" : "/reservar"}>Volver al inicio</a>
+            <a href={homeLink}>Volver al inicio</a>
           </Button>
           <Button asChild variant="outline" className="confirmation-secondary">
             <a href="https://www.google.com/maps/place/KANI+BARBER+STUDIO/data=!4m2!3m1!1s0x0:0x48bcfe7b2ea7ba60" target="_blank" rel="noreferrer"><MapPin size={16} /> Ver ubicación</a>
@@ -628,7 +632,7 @@ export function Booking({
           Actualizar estado
         </Button>
         <Button asChild variant="outline" className="h-11 px-6">
-          <a href={isV3 ? "/reserva-v3" : isV2 ? "/reserva-v2" : "/reservar"}>Volver al inicio</a>
+          <a href={homeLink}>Volver al inicio</a>
         </Button>
       </div>
     </main>
@@ -643,7 +647,7 @@ export function Booking({
       </p>
       <div className="mt-8 flex justify-center">
         <Button asChild className="action-brand h-11 px-6">
-          <a href={isV3 ? "/reserva-v3" : isV2 ? "/reserva-v2" : "/reservar"}>Reservar nuevamente</a>
+          <a href={homeLink}>Reservar nuevamente</a>
         </Button>
       </div>
     </main>
@@ -706,7 +710,7 @@ export function Booking({
         <p className="mt-2 text-sm text-muted-foreground">San Isidro Labrador 7 · Martínez, Provincia de Buenos Aires</p>
         <div className="confirmation-actions">
           <Button asChild className="confirmation-home action-brand" aria-label="Volver a reservar">
-            <a href={isV3 ? "/reserva-v3" : isV2 ? "/reserva-v2" : "/reservar"}>Volver al inicio</a>
+            <a href={homeLink}>Volver al inicio</a>
           </Button>
           <Button asChild variant="outline" className="confirmation-secondary">
             <a href="https://www.google.com/maps/place/KANI+BARBER+STUDIO/data=!4m2!3m1!1s0x0:0x48bcfe7b2ea7ba60" target="_blank" rel="noreferrer"><MapPin size={16} /> Ver ubicación</a>
@@ -725,7 +729,7 @@ export function Booking({
     && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact.email.trim());
   const canNext = isV2 && step === 2
     ? Boolean(date && availableDatesSet.has(date) && time && slots.includes(time) && barber && (!barberDeferred || eligibleBarbersForAvailabilityStart(availabilityStartsByDate.get(date) ?? [], date, time, serviceName, clock).includes(barber))) && !availabilityLoading
-    : isV3
+    : isFiveSteps
     ? [
         Boolean(service),
         Boolean(barber || barberDeferred),
@@ -741,11 +745,11 @@ export function Booking({
   const daysInMonth = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
   const offset = (new Date(month.getFullYear(), month.getMonth(), 1).getDay() + 6) % 7;
   return (
-    <main className={`site-container booking-page ${isV2 ? 'booking-v2' : ''} ${isV3 ? 'booking-v3' : ''} ${isV2 && step === 2 ? 'booking-v2-datetime' : ''} ${isV3 && step === 2 ? 'booking-v3-date' : ''} ${isV3 && step === 3 ? 'booking-v3-time' : ''} ${(isV2 || isV3) && step === 4 ? 'booking-v2-final booking-v3-final' : ''} ${step === 5 ? 'booking-summary-page' : ''}`}>
+    <main className={`site-container booking-page ${isV2 ? 'booking-v2' : ''} ${isV3 ? 'booking-v3' : ''} ${isV5 ? 'booking-v5' : ''} ${isV2 && step === 2 ? 'booking-v2-datetime' : ''} ${isFiveSteps && step === 2 ? `booking-${isV5 ? 'v5' : 'v3'}-date` : ''} ${isFiveSteps && step === 3 ? `booking-${isV5 ? 'v5' : 'v3'}-time` : ''} ${(isV2 || isFiveSteps) && step === 4 ? `booking-v2-final booking-${isV5 ? 'v5' : 'v3'}-final` : ''} ${step === 5 ? 'booking-summary-page' : ''}`}>
       <div
         ref={progressRef}
         className="booking-progress"
-        role={isV2 || isV3 ? "group" : undefined}
+        role={isV2 || isFiveSteps ? "group" : undefined}
         style={{ '--progress-start': `${progressStart}px`, '--progress-width': `${progressWidth}px` } as CSSProperties}
         aria-label={`Paso ${visibleStep + 1} de ${visibleSteps.length}: ${visibleSteps[visibleStep]}`}
       >
@@ -775,7 +779,7 @@ export function Booking({
               <h1 className="section-title">{isV2 && step === 2 ? 'Elegir una fecha' : titles[step]}</h1>
               {step === 3 && date && (
                 <span className="booking-time-heading-date">
-                  <CalendarDays size={16} />{onPaymentRequest ? <><span className="booking-v4-date-mobile">{formatV4BookingDate(date)}</span><span className="booking-v4-date-desktop">{formatV4BookingDate(date, true)}</span></> : isV3 ? formatShortBookingDate(date) : dateLabel(date)}
+                  <CalendarDays size={16} />{onPaymentRequest ? <><span className="booking-v4-date-mobile">{formatV4BookingDate(date)}</span><span className="booking-v4-date-desktop">{formatV4BookingDate(date, true)}</span></> : isFiveSteps ? formatShortBookingDate(date) : dateLabel(date)}
                 </span>
               )}
             </div>
@@ -887,9 +891,9 @@ export function Booking({
             )}
 
             {(step === 3 || isV2 && step === 2 && date) && (
-              <div ref={timeSectionRef} className={isV2 ? 'booking-v2-times' : isV3 ? 'booking-v3-times' : undefined} aria-busy={isV2 ? availabilityLoading : undefined}>
+              <div ref={timeSectionRef} className={isV2 ? 'booking-v2-times' : isFiveSteps ? `booking-${isV5 ? 'v5' : 'v3'}-times` : undefined} aria-busy={isV2 ? availabilityLoading : undefined}>
                 {isV2 && <h2 className="booking-v2-choice-title">Elegir un horario</h2>}
-                <div className="booking-time-grid grid grid-cols-3 gap-2 sm:grid-cols-4" role={isV2 || isV3 ? "group" : undefined} aria-label={isV2 || isV3 ? "Horarios disponibles" : undefined}>
+                <div className="booking-time-grid grid grid-cols-3 gap-2 sm:grid-cols-4" role={isV2 || isFiveSteps ? "group" : undefined} aria-label={isV2 || isFiveSteps ? "Horarios disponibles" : undefined}>
                   {timeSlots.map(slot => (
                     <Button
                       key={slot.time}
@@ -930,7 +934,7 @@ export function Booking({
 
             </ExperimentalLayout>
 
-            <ExperimentalLayout enabled={(isV2 || isV3) && step === 4} className="booking-v2-final-layout">
+            <ExperimentalLayout enabled={(isV2 || isFiveSteps) && step === 4} className="booking-v2-final-layout">
             {step === 4 && (
               <form ref={formRef} className="booking-contact-form space-y-3" onSubmit={e => { e.preventDefault(); if (isV1) next(); }}>
                 <label className="field-label">
@@ -956,11 +960,11 @@ export function Booking({
                     </span>
                   )}
                 </label>
-                <label className="field-label" htmlFor={isV2 || isV3 ? "booking-v2-phone" : undefined}>
+                <label className="field-label" htmlFor={isV2 || isFiveSteps ? "booking-v2-phone" : undefined}>
                   Celular
                   <Suspense fallback={<div className="h-12 w-full animate-pulse rounded-md bg-muted" />}>
                     <PhoneInput
-                      id={isV2 || isV3 ? "booking-v2-phone" : undefined}
+                      id={isV2 || isFiveSteps ? "booking-v2-phone" : undefined}
                       name="phone"
                       required
                       value={contact.phone}
@@ -1023,7 +1027,7 @@ export function Booking({
               </form>
             )}
 
-            {(step === 5 || (isV2 || isV3) && step === 4) && (
+            {(step === 5 || (isV2 || isFiveSteps) && step === 4) && (
               <div className="booking-summary-cards space-y-2 sm:space-y-3.5">
                 {/* Card 1: Datos personales compactada */}
                 {isV1 && <section className="booking-summary-card summary-client-card" aria-label="Datos personales">
@@ -1046,9 +1050,9 @@ export function Booking({
                   </div>
                 </section>}
 
-                <ExperimentalLayout enabled={isV2 || isV3} className="booking-summary-card booking-v2-unified-summary">
+                <ExperimentalLayout enabled={isV2 || isFiveSteps} className="booking-summary-card booking-v2-unified-summary">
                 {/* Card 2: Datos del turno compactada */}
-                <section className={`${isV2 || isV3 ? '' : 'booking-summary-card '}summary-appointment-card`} aria-label="Datos del turno">
+                <section className={`${isV2 || isFiveSteps ? '' : 'booking-summary-card '}summary-appointment-card`} aria-label="Datos del turno">
                   <dl className="summary-details-list flex flex-col gap-1.5 sm:gap-2.5 text-xs sm:text-sm">
                     <div className="summary-detail-row flex justify-between items-baseline gap-3 sm:gap-4">
                       <dt className="summary-detail-label text-muted-foreground">Servicio</dt>
@@ -1060,11 +1064,11 @@ export function Booking({
                     </div>
                     <div className="summary-detail-row flex justify-between items-baseline gap-3 sm:gap-4">
                       <dt className="summary-detail-label text-muted-foreground">Fecha</dt>
-                      <dd className="summary-detail-value font-medium text-foreground text-right capitalize">{isV3 ? formatShortBookingDate(date) : dateLabel(date)}</dd>
+                      <dd className="summary-detail-value font-medium text-foreground text-right capitalize">{isFiveSteps ? formatShortBookingDate(date) : dateLabel(date)}</dd>
                     </div>
                     <div className="summary-detail-row flex justify-between items-baseline gap-3 sm:gap-4">
                       <dt className="summary-detail-label text-muted-foreground">Horario</dt>
-                      <dd className="summary-detail-value font-medium text-foreground text-right">{isV2 || isV3 ? time : <>{time} · {selected?.duration} min</>}</dd>
+                      <dd className="summary-detail-value font-medium text-foreground text-right">{isV2 || isFiveSteps ? time : <>{time} · {selected?.duration} min</>}</dd>
                     </div>
                     {isV1 && contact.notes.trim() && (
                       <div className="summary-detail-row flex justify-between items-baseline gap-3 sm:gap-4">
@@ -1076,7 +1080,7 @@ export function Booking({
                 </section>
 
                 {/* Card 3: Card de importes compactada */}
-                <section className={`${isV2 || isV3 ? '' : 'booking-summary-card '}summary-pricing-card`} aria-label="Importes">
+                <section className={`${isV2 || isFiveSteps ? '' : 'booking-summary-card '}summary-pricing-card`} aria-label="Importes">
                   <dl className="summary-pricing-list flex flex-col gap-1.5 sm:gap-2.5 text-xs sm:text-sm">
                     <div className="summary-pricing-row flex justify-between items-baseline gap-3 sm:gap-4">
                       <dt className="summary-pricing-label text-muted-foreground">Precio total del servicio</dt>
@@ -1101,7 +1105,7 @@ export function Booking({
                 {/* 4. Aviso de solicitud pendiente en container propio */}
                 <div className="booking-summary-card summary-pending-notice summary-card-notice flex items-center gap-2.5 text-xs sm:text-sm" role="note">
                   <Clock3 size={15} className="shrink-0" aria-hidden="true" />
-                  <p className="m-0 leading-normal">{isV2 || isV3 ? 'Tu turno se confirma cuando se acredita la seña.' : 'Tu solicitud está pendiente hasta que abones la seña.'}</p>
+                  <p className="m-0 leading-normal">{isV2 || isFiveSteps ? 'Tu turno se confirma cuando se acredita la seña.' : 'Tu solicitud está pendiente hasta que abones la seña.'}</p>
                 </div>
               </div>
             )}
@@ -1124,8 +1128,8 @@ export function Booking({
             <Button variant="outline" className="booking-back-button" onClick={() => move(isV2 && step === 4 ? 2 : step - 1)} disabled={step === 0 || submitting}>
               <ArrowLeft size={14} aria-hidden="true" /> Volver
             </Button>
-            <Button disabled={!canNext || submitting} className="action-positive booking-next-button h-12 px-6" onClick={step === 5 || (isV2 || isV3) && step === 4 ? submit : next}>
-              {step === 5 || (isV2 || isV3) && step === 4 ? (submitting ? 'Preparando pago seguro…' : 'Pagar seña') : 'Continuar'}
+            <Button disabled={!canNext || submitting} className="action-positive booking-next-button h-12 px-6" onClick={step === 5 || (isV2 || isFiveSteps) && step === 4 ? submit : next}>
+              {step === 5 || (isV2 || isFiveSteps) && step === 4 ? (submitting ? 'Preparando pago seguro…' : 'Pagar seña') : 'Continuar'}
             </Button>
           </div>
         </div>
