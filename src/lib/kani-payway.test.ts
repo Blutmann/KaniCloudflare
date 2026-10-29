@@ -65,6 +65,9 @@ describe('Payway laboratory, synthetic responses only', () => {
       description: 'Seña turno Kani Barber Studio',
       payment_type: 'single',
       sub_payments: [],
+      fraud_detection: {
+        send_to_cs: false,
+      },
       customer: {
         id: '55eb8b8cc80341eba4647f503d89a3cc',
         email: 'prueba@example.test',
@@ -74,6 +77,13 @@ describe('Payway laboratory, synthetic responses only', () => {
     expect(s.store.confirm).toHaveBeenCalledWith(appointmentId, attemptId, '42', 500000);
     expect(s.store.settle.mock.invocationCallOrder[0]!).toBeLessThan(s.store.confirm.mock.invocationCallOrder[0]!);
     expect(log).not.toHaveBeenCalled(); expect(error).not.toHaveBeenCalled();
+  });
+  it('explicitly sends fraud_detection with send_to_cs: false to bypass CyberSource screening', async () => {
+    const s = setup();
+    await s.service.pay(input);
+    const [, request] = s.fetcher.mock.calls[0];
+    const parsed = JSON.parse(request.body);
+    expect(parsed.fraud_detection).toEqual({ send_to_cs: false });
   });
   it.each(['pending', 'pre_approved', 'accredited', 'AUTHORIZED', '', undefined])('does not confirm unrecognized status %s', async status => {
     const s = setup(); s.fetcher.mockResolvedValue(new Response(JSON.stringify({ ...s.payment, status }), { status: 201 }));

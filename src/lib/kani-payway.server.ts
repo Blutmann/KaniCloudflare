@@ -123,6 +123,9 @@ export function createPaywayService({ config, store, fetcher = fetch }: {
             description: 'Seña turno Kani Barber Studio',
             payment_type: 'single',
             sub_payments: [],
+            fraud_detection: {
+              send_to_cs: false,
+            },
             customer: {
               id: customerId,
               email: clientEmail,
