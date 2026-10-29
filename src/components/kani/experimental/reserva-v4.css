@@ -257,13 +257,13 @@ html[data-theme='dark'] :is(body:has(.payway-checkout), body[data-payway-modal-o
 /* V4 calendar: balanced breathing room calibrated with desktop flow (+15–20% height recovery). */
 .payway-reservation .booking-v3-date .calendar-panel { padding: 22px 28px; }
 .payway-reservation .booking-v3-date .calendar-header { min-height: 40px; margin: 0 0 16px 0 !important; }
-.payway-reservation .booking-v3-date .calendar-header h2 { font-size: 19px; }
+.payway-reservation .booking-v3-date .calendar-header h2 { font-size: 19px; font-weight: 400 !important; }
 .payway-reservation .booking-v3-date .calendar-header button { width: 36px; height: 36px; min-width: 36px; min-height: 36px; }
 .payway-reservation .booking-v3-date .calendar-note { justify-content: flex-start; text-align: left; margin-top: 14px !important; font-size: 12.5px; line-height: 1.35; }
 @media (max-width: 767px) {
   .payway-reservation .booking-v3-date .calendar-panel { padding: 0 12px 24px !important; }
   .payway-reservation .booking-v3-date .calendar-header { min-height: 76px; }
-  .payway-reservation .booking-v3-date .calendar-header h2 { font-size: 16px; }
+  .payway-reservation .booking-v3-date .calendar-header h2 { font-size: 16px; font-weight: 400 !important; }
   .payway-reservation .booking-v3-date .calendar-note { margin-top: 24px !important; font-size: 13px; }
 }
 
@@ -273,6 +273,9 @@ html[data-theme='dark'] :is(body:has(.payway-checkout), body[data-payway-modal-o
   flex-direction: row !important;
   align-items: center !important;
   justify-content: space-between !important;
+  flex-wrap: wrap !important;
+  row-gap: 6px !important;
+  column-gap: 8px !important;
   min-height: 44px !important;
   margin-top: 0 !important;
   margin-bottom: 20px !important;
@@ -282,8 +285,11 @@ html[data-theme='dark'] :is(body:has(.payway-checkout), body[data-payway-modal-o
 .payway-reservation .booking-page .booking-title-row.booking-time-heading .section-title {
   margin: 0 !important;
   padding: 0 !important;
-  font-size: 20px !important;
+  font-family: var(--font-display) !important;
+  font-size: 22px !important;
+  font-weight: 500 !important;
   line-height: 1.2 !important;
+  letter-spacing: 0.01em !important;
   display: inline-flex !important;
   align-items: center !important;
   white-space: nowrap !important;
@@ -338,6 +344,39 @@ html[data-theme='dark'] :is(body:has(.payway-checkout), body[data-payway-modal-o
   }
   .booking-v4-date-mobile { display: none; }
   .booking-v4-date-desktop { display: inline; }
+}
+
+/* Reserva V4 — Step "Elegí un horario": Selección de barbero vertical spacing */
+.payway-reservation:not(.reserva-v5) .barber-choice-inline {
+  margin-top: 24px !important;
+  padding-top: 20px !important;
+  border-top: 1px solid color-mix(in oklch, var(--gold) 20%, var(--border)) !important;
+}
+
+.payway-reservation:not(.reserva-v5) .barber-choice-inline h2 {
+  font-family: var(--font-display) !important;
+  font-size: 16px !important;
+  font-weight: 500 !important;
+  line-height: 1.3 !important;
+  margin-bottom: 14px !important;
+}
+
+.payway-reservation:not(.reserva-v5) .barber-choice-list {
+  gap: 10px !important;
+}
+
+@media (min-width: 768px) {
+  .payway-reservation:not(.reserva-v5) .barber-choice-inline {
+    margin-top: 28px !important;
+    padding-top: 24px !important;
+  }
+  .payway-reservation:not(.reserva-v5) .barber-choice-inline h2 {
+    font-size: 18px !important;
+    margin-bottom: 16px !important;
+  }
+  .payway-reservation:not(.reserva-v5) .barber-choice-list {
+    gap: 12px !important;
+  }
 }
 
 /* Reserva V4 — Step "Completá tus datos": Compact economic summary */
