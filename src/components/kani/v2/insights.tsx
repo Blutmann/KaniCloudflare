@@ -17,7 +17,8 @@ export type InsightsPeriodKey =
   | "ULTIMOS_14"
   | "ULTIMOS_30"
   | "MES_ANTERIOR"
-  | "ANIO_ANTERIOR";
+  | "ANIO_ANTERIOR"
+  | "CUSTOM";
 
 const MONTH_NAMES = [
   "Enero",
@@ -54,6 +55,10 @@ export function V2Insights() {
   const staff = useAdminStaff();
   const today = businessDateToday(); // "YYYY-MM-DD" in America/Argentina/Buenos_Aires
   const [period, setPeriod] = useState<InsightsPeriodKey>("ULTIMOS_7");
+  const [customStartDate, setCustomStartDate] = useState(today);
+  const [customEndDate, setCustomEndDate] = useState(today);
+
+  const isInvalidRange = period === "CUSTOM" && customStartDate > customEndDate;
 
   const [currentYear, currentMonth, currentDay] = useMemo(
     () => today.split("-").map(Number),
@@ -137,6 +142,18 @@ export function V2Insights() {
     const anioAnteriorEnd = `${anioAnteriorYear}-12-31`;
     const anioAnteriorPrevStart = `${anioAnteriorYear - 1}-01-01`;
     const anioAnteriorPrevEnd = `${anioAnteriorYear - 1}-12-31`;
+
+    // 11. Fecha específica (personalizada)
+    const customStart = customStartDate || today;
+    const customEnd = customEndDate || today;
+    const customStartDateObj = new Date(customStart);
+    const customEndDateObj = new Date(customEnd);
+    const customDiffDays = Math.max(
+      1,
+      Math.round((customEndDateObj.getTime() - customStartDateObj.getTime()) / (1000 * 60 * 60 * 24)) + 1,
+    );
+    const customPrevEnd = addCalendarDays(customStart, -1);
+    const customPrevStart = addCalendarDays(customPrevEnd, -(customDiffDays - 1));
 
     return {
       HOY: {
@@ -231,8 +248,17 @@ export function V2Insights() {
         isYearly: true,
         year: anioAnteriorYear,
       },
+      CUSTOM: {
+        label: "Fecha específica",
+        start: customStart,
+        end: customEnd,
+        prevStart: customPrevStart,
+        prevEnd: customPrevEnd,
+        prevLabel: "el período anterior",
+        isYearly: false,
+      },
     };
-  }, [today, currentYear, currentMonth, currentDay]);
+  }, [today, currentYear, currentMonth, currentDay, customStartDate, customEndDate]);
 
   const activeRange = periodConfig[period];
   const start = activeRange.start;
@@ -242,21 +268,24 @@ export function V2Insights() {
 
   // Filter payments and appointments consistently across all metrics
   const allPayments = scopeV2(data.payments, staff.profile.role, staff.profile.barber_id, data.barberId);
-  const payments = allPayments.filter((p) => p.paymentDate >= start && p.paymentDate <= end);
-  const previous = allPayments.filter((p) => p.paymentDate >= previousStart && p.paymentDate <= previousEnd);
+  const payments = isInvalidRange ? [] : allPayments.filter((p) => p.paymentDate >= start && p.paymentDate <= end);
+  const previous = isInvalidRange ? [] : allPayments.filter((p) => p.paymentDate >= previousStart && p.paymentDate <= previousEnd);
 
-  const appointments = scopeV2(
-    data.appointments,
-    staff.profile.role,
-    staff.profile.barber_id,
-    data.barberId,
-  ).filter((a) => a.date >= start && a.date <= end);
+  const appointments = isInvalidRange
+    ? []
+    : scopeV2(
+        data.appointments,
+        staff.profile.role,
+        staff.profile.barber_id,
+        data.barberId,
+      ).filter((a) => a.date >= start && a.date <= end);
 
   const summary = paymentSummary(payments);
   const comparison = changePercent(summary.count, previous.length);
 
   // Generate chart points (daily for ranges up to 31 days; monthly for yearly views)
   const points = useMemo(() => {
+    if (isInvalidRange) return [];
     if (activeRange.isYearly && activeRange.year) {
       const targetY = activeRange.year;
       return Array.from({ length: 12 }, (_, m) => {
@@ -280,7 +309,7 @@ export function V2Insights() {
         count: payments.filter((p) => p.paymentDate === d).length,
       };
     });
-  }, [activeRange, start, end, payments, today]);
+  }, [activeRange, start, end, payments, today, isInvalidRange]);
 
   const maxCount = Math.max(1, ...points.map((p) => p.count));
 
@@ -318,10 +347,37 @@ export function V2Insights() {
             <option value="ULTIMOS_30">{periodConfig.ULTIMOS_30.label}</option>
             <option value="MES_ANTERIOR">{periodConfig.MES_ANTERIOR.label}</option>
             <option value="ANIO_ANTERIOR">{periodConfig.ANIO_ANTERIOR.label}</option>
+            <option value="CUSTOM">Fecha específica</option>
           </select>
         </label>
+        {period === "CUSTOM" && (
+          <>
+            <label className="v2-field">
+              Fecha desde
+              <input
+                type="date"
+                value={customStartDate}
+                onChange={(e) => setCustomStartDate(e.target.value || today)}
+              />
+            </label>
+            <label className="v2-field">
+              Fecha hasta
+              <input
+                type="date"
+                value={customEndDate}
+                onChange={(e) => setCustomEndDate(e.target.value || today)}
+              />
+            </label>
+          </>
+        )}
         <BarberFilter />
       </div>
+
+      {isInvalidRange && (
+        <p className="v2-notice" style={{ color: "var(--destructive, #ef4444)", margin: "8px 0" }}>
+          Rango no válido: Fecha desde debe ser menor o igual a Fecha hasta.
+        </p>
+      )}
 
       <p className="v2-footnote">
         {start} al {end} · Métricas consolidadas en tiempo real (zona horaria America/Argentina/Buenos_Aires).

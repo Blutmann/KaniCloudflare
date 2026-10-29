@@ -49,13 +49,12 @@ const SCHEDULE_TIME_OPTIONS = Array.from({ length: 96 }, (_, index) => {
   return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
 });
 
-function defaultSlotEndTime(startTime: string): string {
+export function defaultSlotEndTime(startTime: string): string {
   const [hours, minutes] = startTime.split(':').map(Number);
-  if (hours >= 23) {
-    return '23:59';
-  }
-  const nextHour = hours + 1;
-  return `${String(nextHour).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+  const totalMinutes = (hours * 60 + minutes + 45) % (24 * 60);
+  const endHours = Math.floor(totalMinutes / 60);
+  const endMinutes = totalMinutes % 60;
+  return `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}`;
 }
 
 function errorMessage(cause: unknown) {
@@ -105,7 +104,10 @@ function overlaps(slot: AvailabilitySlot, appointment: RealAppointment) {
       ? minutes(slot.end_time.slice(0, 5)) + 24 * 60
       : minutes(slot.end_time.slice(0, 5));
   const appointmentStart = minutes(appointment.time);
-  const appointmentEnd = appointment.endTime ? minutes(appointment.endTime) : appointmentStart;
+  let appointmentEnd = appointment.endTime ? minutes(appointment.endTime) : appointmentStart;
+  if (appointment.endTime && appointmentEnd <= appointmentStart) {
+    appointmentEnd += 24 * 60;
+  }
   return slotStart < appointmentEnd && appointmentStart < slotEnd;
 }
 

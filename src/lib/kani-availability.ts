@@ -319,7 +319,8 @@ export function validateAvailabilityRange(startTime: string, endTime?: string | 
       throw new Error('La hora de fin debe ser válida entre 00:00 y 23:59.');
     }
     normalizedEnd = `${String(end.hours).padStart(2, '0')}:${String(end.minutesValue).padStart(2, '0')}:00`;
-    if (normalizedEnd <= `${normalizedStart}:00`) {
+    const isMidnightCrossing = normalizedEnd === '00:00:00' && normalizedStart !== '00:00';
+    if (normalizedEnd <= `${normalizedStart}:00` && !isMidnightCrossing) {
       throw new Error('La hora de fin debe ser posterior a la hora de inicio.');
     }
   }
