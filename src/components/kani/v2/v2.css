@@ -1232,8 +1232,6 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
 .v2-today,
 .v2-appointment,
 .v2-client-card,
-.v2-insights,
-.v2-filters,
 .v2-callout,
 .v2-metrics-four {
   background: var(--v2-reading-surface);
@@ -1750,10 +1748,13 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
   padding: 0 !important;
 }
 
-/* 1. Shared Filters Card */
+/* 1. Shared Filters Panel / Card */
+.v2-admin-filter-panel,
 .v2-admin-filter-card {
   display: block !important;
   width: 100% !important;
+  max-width: 100% !important;
+  min-height: 0 !important;
   padding: 10px 14px !important;
   border: 1px solid var(--border) !important;
   border-radius: var(--radius-card) !important;
@@ -1766,13 +1767,15 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
 }
 
 @media (max-width: 767px) {
+  .v2-admin-filter-panel,
   .v2-admin-filter-card {
     padding: 8px 10px !important;
     margin: 0 0 10px 0 !important;
   }
 }
 
-/* 2. Shared Filters Grid: 4 columns Desktop, 2x2 Mobile */
+/* 2. Shared Filters Grid: ALWAYS 4 columns Desktop, 2x2 Mobile */
+.v2-admin-filter-grid,
 .v2-filters-grid {
   display: grid !important;
   grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
@@ -1781,41 +1784,73 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
   width: 100% !important;
   margin: 0 !important;
   padding: 0 !important;
-}
-
-.v2-filters-grid:has(> :nth-child(2):last-child) {
-  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  box-sizing: border-box !important;
 }
 
 @media (max-width: 767px) {
+  .v2-admin-filter-grid,
   .v2-filters-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     gap: 6px 8px !important;
   }
 }
 
-/* 3. Shared Field Wrapper & Label */
+/* 3. Shared Filter Cell & Wrapper */
+.v2-admin-filter-cell,
 .v2-field {
   display: flex !important;
   flex-direction: column !important;
   gap: 3px !important;
   min-width: 0 !important;
+  width: 100% !important;
   margin: 0 !important;
   padding: 0 !important;
+  box-sizing: border-box !important;
 }
 
+/* Empty Cell: Holds exact column slot in Desktop & Mobile without shifting layout */
+.v2-admin-filter-cell-empty {
+  min-height: 59px !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+@media (max-width: 767px) {
+  .v2-admin-filter-cell-empty {
+    min-height: 54px !important;
+  }
+}
+
+/* Shared Filter Label */
+.v2-admin-filter-label,
 .v2-field-label,
 .v2-field > label {
   display: block !important;
-  margin: 0 !important;
+  margin: 0 0 3px 0 !important;
   padding: 0 !important;
+  font-family: inherit !important;
   font-size: 11px !important;
   font-weight: 500 !important;
   line-height: 1.4 !important;
   color: var(--muted-foreground) !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
 }
 
-/* 4. Controls inside Filters Card */
+/* Shared Filter Control Wrapper */
+.v2-admin-filter-control {
+  display: flex !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+}
+
+/* 4. Controls inside Filters Panel */
+.v2-admin-filter-panel :is(input, select, output),
+.v2-admin-filter-control :is(input, select, output),
 .v2-admin-filter-card :is(input, select, output) {
   display: flex !important;
   align-items: center !important;
@@ -1828,7 +1863,9 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
   border: 1px solid var(--border) !important;
   border-radius: var(--radius-control) !important;
   padding: 6px 9px !important;
+  font-family: inherit !important;
   font-size: 12px !important;
+  font-weight: 400 !important;
   line-height: 1.5 !important;
   color: var(--foreground) !important;
   background: var(--v2-inset) !important;
@@ -1836,9 +1873,22 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
   transition: border-color 0.18s, background-color 0.18s !important;
 }
 
+.v2-admin-filter-panel :is(input, select, output):focus,
+.v2-admin-filter-control :is(input, select, output):focus,
 .v2-admin-filter-card :is(input, select, output):focus {
   border-color: var(--gold) !important;
   outline: none !important;
+}
+
+@media (max-width: 767px) {
+  .v2-admin-filter-panel :is(input, select, output),
+  .v2-admin-filter-control :is(input, select, output),
+  .v2-admin-filter-card :is(input, select, output) {
+    height: 36px !important;
+    min-height: 36px !important;
+    max-height: 36px !important;
+    padding: 5px 8px !important;
+  }
 }
 
 /* 5. Custom Range Sub-row */

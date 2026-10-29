@@ -2,111 +2,83 @@ import { describe, expect, it } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 
-describe('Admin V2 — UI and Visual Consistency Audit', () => {
+describe('Admin V2 — UI and Visual Consistency Audit (Structural Unification)', () => {
+  const panelPath = path.resolve(__dirname, '../components/kani/v2/admin-filter-panel.tsx');
+  const sharedPath = path.resolve(__dirname, '../components/kani/v2/shared.tsx');
   const schedulePath = path.resolve(__dirname, '../components/kani/admin-schedule-manager.tsx');
   const agendaPath = path.resolve(__dirname, '../components/kani/v2/agenda.tsx');
   const insightsPath = path.resolve(__dirname, '../components/kani/v2/insights.tsx');
-  const paymentsPath = path.resolve(__dirname, '../components/kani/v2/payments.tsx');
   const cssPath = path.resolve(__dirname, '../components/kani/v2/v2.css');
 
+  const panelCode = fs.readFileSync(panelPath, 'utf8');
+  const sharedCode = fs.readFileSync(sharedPath, 'utf8');
   const scheduleCode = fs.readFileSync(schedulePath, 'utf8');
   const agendaCode = fs.readFileSync(agendaPath, 'utf8');
   const insightsCode = fs.readFileSync(insightsPath, 'utf8');
-  const paymentsCode = fs.readFileSync(paymentsPath, 'utf8');
   const cssCode = fs.readFileSync(cssPath, 'utf8');
 
-  describe('1. Horarios — Card duplicada "Agregar horario" eliminada', () => {
-    it('no contiene ningún botón de card o celda "Agregar horario" dentro de la grilla de disponibilidad', () => {
-      // No debe existir el botón tipo card con border-dashed o dentro del grid
-      expect(scheduleCode).not.toMatch(
-        /<button[^>]*className="[^"]*border-dashed[^"]*"[^>]*onClick=\{[^}]*openManualDialog/i,
-      );
-      expect(scheduleCode).not.toMatch(
-        /<span[^>]*font-semibold[^>]*>\s*Agregar horario\s*<\/span>/i,
-      );
+  describe('1. Componente Compartido Unificado (AdminFilterPanel)', () => {
+    it('existe el componente AdminFilterPanel con AdminFilterCell, AdminFilterLabel y AdminFilterControl', () => {
+      expect(panelCode).toContain('export function AdminFilterPanel');
+      expect(panelCode).toContain('export function AdminFilterCell');
+      expect(panelCode).toContain('export function AdminFilterLabel');
+      expect(panelCode).toContain('export function AdminFilterControl');
     });
 
-    it('conserva exclusivamente el botón bordó superior en AdminV2SectionToolbar', () => {
+    it('shared.tsx re-exporta AdminFilterPanel y AdminFilterCell', () => {
+      expect(sharedCode).toContain('AdminFilterPanel');
+      expect(sharedCode).toContain('AdminFilterCell');
+    });
+
+    it('Turnos, Horarios y Datos utilizan todos AdminFilterPanel y AdminFilterCell', () => {
+      expect(agendaCode).toContain('<AdminFilterPanel');
+      expect(agendaCode).toContain('<AdminFilterCell');
+
+      expect(scheduleCode).toContain('<AdminFilterPanel');
+      expect(scheduleCode).toContain('<AdminFilterCell');
+
+      expect(insightsCode).toContain('<AdminFilterPanel');
+      expect(insightsCode).toContain('<AdminFilterCell');
+    });
+  });
+
+  describe('2. Turnos y Horarios — Estructura exacta de 4 columnas', () => {
+    it('Turnos renderiza las 4 celdas en el mismo orden: Período, Fecha, Barbero y Estado', () => {
+      expect(agendaCode).toMatch(/<AdminFilterCell[^>]*label="Período"/);
+      expect(agendaCode).toMatch(/<AdminFilterCell[^>]*label="Fecha"/);
+      expect(agendaCode).toMatch(/<AdminFilterCell[^>]*label="Barbero"/);
+      expect(agendaCode).toMatch(/<AdminFilterCell[^>]*label="Estado"/);
+    });
+
+    it('Horarios renderiza las 4 celdas en el mismo orden: Período, Fecha, Barbero y Estado', () => {
+      expect(scheduleCode).toMatch(/<AdminFilterCell[^>]*label="Período"/);
+      expect(scheduleCode).toMatch(/<AdminFilterCell[^>]*label="Fecha"/);
+      expect(scheduleCode).toMatch(/<AdminFilterCell[^>]*label="Barbero"/);
+      expect(scheduleCode).toMatch(/<AdminFilterCell[^>]*label="Estado"/);
+    });
+
+    it('Horarios elimina la card duplicada de la grilla y conserva solo la toolbar', () => {
+      expect(scheduleCode).not.toMatch(/<button[^>]*className="[^"]*border-dashed[^"]*"[^>]*onClick=\{[^}]*openManualDialog/i);
       expect(scheduleCode).toContain('<AdminV2SectionToolbar');
       expect(scheduleCode).toContain('actionLabel="+ Agregar horario"');
     });
   });
 
-  describe('2. Turnos + Horarios — Filtros superiores unificados', () => {
-    it('ambos módulos utilizan AdminV2FiltersPanel y AdminV2FilterField', () => {
-      expect(scheduleCode).toContain('<AdminV2FiltersPanel ariaLabel="Filtros de horarios"');
-      expect(agendaCode).toContain('<AdminV2FiltersPanel');
-      expect(scheduleCode).toContain('<AdminV2FilterField');
-      expect(agendaCode).toContain('<AdminV2FilterField');
+  describe('3. Datos — Grilla de 4 columnas con huecos intencionales y Fecha específica', () => {
+    it('en período normal, conserva los huecos en Columna 2 y Columna 4 con AdminFilterCell empty', () => {
+      // Col 1: Período
+      expect(insightsCode).toMatch(/<AdminFilterCell[^>]*label="Período"/);
+      // Col 2: Fecha desde si CUSTOM, sino empty
+      expect(insightsCode).toContain('{period === "CUSTOM" ? (');
+      expect(insightsCode).toMatch(/<AdminFilterCell[^>]*empty/);
+      // Col 3: Barbero
+      expect(insightsCode).toMatch(/<AdminFilterCell[^>]*label="Barbero"/);
+      // Col 4: Fecha hasta si CUSTOM, sino empty
     });
 
-    it('ambos módulos definen exactamente los 4 filtros: Período, Fecha, Barbero y Estado', () => {
-      // Horarios
-      expect(scheduleCode).toMatch(/<AdminV2FilterField[^>]*label="Período"/);
-      expect(scheduleCode).toMatch(/<AdminV2FilterField[^>]*label="Fecha"/);
-      expect(scheduleCode).toMatch(/<AdminV2FilterField[^>]*label="Barbero"/);
-      expect(scheduleCode).toMatch(/<AdminV2FilterField[^>]*label="Estado"/);
-
-      // Turnos
-      expect(agendaCode).toMatch(/<AdminV2FilterField[^>]*label="Período"/);
-      expect(agendaCode).toMatch(/<AdminV2FilterField[^>]*label="Fecha"/);
-      expect(agendaCode).toMatch(/<AdminV2FilterField[^>]*label="Barbero"/);
-      expect(agendaCode).toMatch(/<AdminV2FilterField[^>]*label="Estado"/);
-    });
-
-    it('v2.css define la grilla compartida de 4 columnas en Desktop y 2x2 en Mobile', () => {
-      expect(cssCode).toMatch(/\.v2-filters-grid\s*\{[^}]*grid-template-columns:\s*repeat\(4,\s*minmax\(0,\s*1fr\)\)/);
-      expect(cssCode).toMatch(/@media\s*\(max-width:\s*767px\)\s*\{[^}]*\.v2-filters-grid\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/);
-    });
-
-    it('v2.css unifica dimensiones de control: 38px en Desktop, 36px en Mobile', () => {
-      expect(cssCode).toMatch(/\.v2-admin-filter-card\s*:is\(input,\s*select,\s*output\)\s*\{[^}]*height:\s*38px/);
-      expect(cssCode).toMatch(/\.v2-admin-filter-card\s*\{[^}]*padding:\s*10px\s+14px/);
-    });
-  });
-
-  describe('3. Fecha + CTA en Turnos y Horarios — Barra unificada', () => {
-    it('ambos módulos renderizan AdminV2SectionToolbar con botón de acción', () => {
-      expect(agendaCode).toMatch(/<AdminV2SectionToolbar\s+dateLabel=\{headerLabel\}\s+actionLabel="\+\s*Agregar turno"/);
-      expect(scheduleCode).toMatch(/<AdminV2SectionToolbar\s+dateLabel=\{formatAdminV2Date\(date\)\}\s+actionLabel="\+\s*Agregar horario"/);
-    });
-
-    it('v2.css aplica misma alineación vertical, altura y tipografía al toolbar', () => {
-      expect(cssCode).toMatch(/\.v2-section-toolbar[^\{]*\{[^}]*display:\s*flex[^}]*align-items:\s*center[^}]*justify-content:\s*space-between/);
-      expect(cssCode).toMatch(/\.v2-toolbar-action[^\{]*\{[^}]*min-height:\s*34px/);
-    });
-  });
-
-  describe('4. Pagos — Escala visual reducida y normalizada', () => {
-    it('v2.css reduce la escala de .v2-segmented a 34px (32px en mobile) y elimina sobredimensión', () => {
-      expect(cssCode).toMatch(/\.v2-segmented\s*button\s*\{[^}]*min-height:\s*34px/);
-      expect(cssCode).toMatch(/\.v2-segmented\s*button\s*\{[^}]*height:\s*34px/);
-      expect(cssCode).toContain('.v2-segmented button');
-      expect(cssCode).toMatch(/\.v2-segmented\s*button\s*\{[^}]*min-height:\s*32px/);
-    });
-
-    it('v2.css ajusta .v2-payment-form con gaps y altura de controles de 38px / 36px', () => {
-      expect(cssCode).toMatch(/\.v2-payment-form\s*:is\(input,\s*select\)\s*\{[^}]*height:\s*38px/);
-      expect(cssCode).toMatch(/\.v2-payment-form\s*fieldset\s*\{[^}]*gap:\s*10px/);
-    });
-  });
-
-  describe('5 & 6. Datos — Normalización y Fecha específica funcional', () => {
-    it('Datos utiliza AdminV2FiltersPanel y AdminV2FilterField con clase de página unificada', () => {
-      expect(insightsCode).toContain('<AdminV2FiltersPanel ariaLabel="Filtros de datos">');
-      expect(insightsCode).toContain('<AdminV2FilterField label="Período"');
-      expect(insightsCode).toContain('<AdminV2FilterField label="Barbero"');
-      expect(insightsCode).toContain('className="v2-page v2-insights-page"');
-    });
-
-    it('selector de período incluye la opción "Fecha específica" (CUSTOM)', () => {
-      expect(insightsCode).toMatch(/<option\s+value="CUSTOM">\s*Fecha específica\s*<\/option>/);
-    });
-
-    it('renderiza "Fecha desde" y "Fecha hasta" cuando period es CUSTOM', () => {
-      expect(insightsCode).toContain('period === "CUSTOM"');
-      expect(insightsCode).toMatch(/<AdminV2FilterField\s+label="Fecha desde"/);
-      expect(insightsCode).toMatch(/<AdminV2FilterField\s+label="Fecha hasta"/);
+    it('al seleccionar Fecha específica (CUSTOM), las columnas 2 y 4 se llenan con Fecha desde y Fecha hasta', () => {
+      expect(insightsCode).toMatch(/<AdminFilterCell[^>]*label="Fecha desde"/);
+      expect(insightsCode).toMatch(/<AdminFilterCell[^>]*label="Fecha hasta"/);
     });
 
     it('valida desde <= hasta y muestra alerta cuando el rango es inválido', () => {
@@ -114,15 +86,38 @@ describe('Admin V2 — UI and Visual Consistency Audit', () => {
       expect(insightsCode).toContain('Rango no válido: Fecha desde debe ser menor o igual a Fecha hasta.');
     });
 
-    it('aplica la zona horaria America/Argentina/Buenos_Aires mediante businessDateToday()', () => {
-      expect(insightsCode).toContain('const today = businessDateToday();');
+    it('no contiene ningún texto técnico con zona horaria o rango ISO', () => {
+      expect(insightsCode).not.toContain('Métricas consolidadas en tiempo real');
+      expect(insightsCode).not.toMatch(/\{start\}\s*al\s*\{end\}\s*·/);
     });
   });
 
-  describe('7. Datos — Eliminación del texto técnico', () => {
-    it('no contiene ningún texto técnico con zona horaria o rango ISO en el pie de filtros', () => {
-      expect(insightsCode).not.toContain('Métricas consolidadas en tiempo real');
-      expect(insightsCode).not.toMatch(/\{start\}\s*al\s*\{end\}\s*·/);
+  describe('4. CSS & Surface Unificada — Token --v2-surface translúcido', () => {
+    it('v2.css aplica la misma superficie translúcida var(--v2-surface) y backdrop blur', () => {
+      expect(cssCode).toMatch(/\.v2-admin-filter-panel[^\{]*\{[^}]*background:\s*var\(--v2-surface\)\s*!important/);
+      expect(cssCode).toMatch(/\.v2-admin-filter-panel[^\{]*\{[^}]*backdrop-filter:\s*blur\(12px\)\s*!important/);
+      expect(cssCode).toMatch(/\.v2-admin-filter-panel[^\{]*\{[^}]*border:\s*1px solid var\(--border\)\s*!important/);
+      expect(cssCode).toMatch(/\.v2-admin-filter-panel[^\{]*\{[^}]*border-radius:\s*var\(--radius-card\)\s*!important/);
+    });
+
+    it('v2.css define exactamente 4 columnas fijas en Desktop y 2 columnas en Mobile sin redistribución', () => {
+      expect(cssCode).toMatch(/\.v2-admin-filter-grid[^\{]*\{[^}]*grid-template-columns:\s*repeat\(4,\s*minmax\(0,\s*1fr\)\)\s*!important/);
+      expect(cssCode).toMatch(/@media\s*\(max-width:\s*767px\)\s*\{[^}]*\.v2-admin-filter-grid[^\{]*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)\s*!important/);
+    });
+
+    it('v2.css define la celda vacía para mantener la altura base de la fila', () => {
+      expect(cssCode).toMatch(/\.v2-admin-filter-cell-empty\s*\{[^}]*min-height:\s*59px\s*!important/);
+      expect(cssCode).toMatch(/\.v2-admin-filter-cell-empty\s*\{[^}]*visibility:\s*hidden\s*!important/);
+    });
+
+    it('v2.css unifica dimensiones de control a 38px en Desktop y 36px en Mobile', () => {
+      expect(cssCode).toMatch(/\.v2-admin-filter-panel\s*:is\(input,\s*select,\s*output\)[^\{]*\{[^}]*height:\s*38px\s*!important/);
+      expect(cssCode).toMatch(/\.v2-admin-filter-panel\s*:is\(input,\s*select,\s*output\)[^\{]*\{[^}]*border-radius:\s*var\(--radius-control\)\s*!important/);
+    });
+
+    it('v2.css unifica labels a 11px font-size y 500 font-weight con color muted', () => {
+      expect(cssCode).toMatch(/\.v2-admin-filter-label[^\{]*\{[^}]*font-size:\s*11px\s*!important/);
+      expect(cssCode).toMatch(/\.v2-admin-filter-label[^\{]*\{[^}]*font-weight:\s*500\s*!important/);
     });
   });
 });

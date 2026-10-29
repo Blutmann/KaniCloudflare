@@ -4,7 +4,15 @@ import { useAdminStaff } from "@/lib/kani-admin-context";
 import { scopeV2, paymentSummary, changePercent } from "@/lib/kani-v2";
 import { businessDateToday, addCalendarDays } from "@/lib/kani-mobile-appointments";
 import { money } from "@/lib/kani-model";
-import { AdminV2FiltersPanel, AdminV2FilterField, Empty, Metric, statusLabels } from "./shared";
+import {
+  AdminFilterPanel,
+  AdminFilterCell,
+  AdminV2FiltersPanel,
+  AdminV2FilterField,
+  Empty,
+  Metric,
+  statusLabels,
+} from "./shared";
 import { useV2 } from "./data";
 
 export type InsightsPeriodKey =
@@ -330,8 +338,18 @@ export function V2Insights() {
 
   return (
     <main className="v2-page v2-insights-page">
-      <AdminV2FiltersPanel ariaLabel="Filtros de datos">
-        <AdminV2FilterField label="Período" htmlFor="v2-insights-period">
+      <AdminFilterPanel
+        ariaLabel="Filtros de datos"
+        footer={
+          isInvalidRange ? (
+            <p className="v2-range-warning" role="alert" style={{ marginTop: "8px", color: "var(--destructive, #ef4444)" }}>
+              Rango no válido: Fecha desde debe ser menor o igual a Fecha hasta.
+            </p>
+          ) : null
+        }
+      >
+        {/* Columna 1 / Fila 1 Col 1: Período */}
+        <AdminFilterCell label="Período" htmlFor="v2-insights-period">
           <select
             id="v2-insights-period"
             value={period}
@@ -349,28 +367,24 @@ export function V2Insights() {
             <option value="ANIO_ANTERIOR">{periodConfig.ANIO_ANTERIOR.label}</option>
             <option value="CUSTOM">Fecha específica</option>
           </select>
-        </AdminV2FilterField>
-        {period === "CUSTOM" && (
-          <>
-            <AdminV2FilterField label="Fecha desde" htmlFor="v2-insights-custom-start">
-              <input
-                id="v2-insights-custom-start"
-                type="date"
-                value={customStartDate}
-                onChange={(e) => setCustomStartDate(e.target.value || today)}
-              />
-            </AdminV2FilterField>
-            <AdminV2FilterField label="Fecha hasta" htmlFor="v2-insights-custom-end">
-              <input
-                id="v2-insights-custom-end"
-                type="date"
-                value={customEndDate}
-                onChange={(e) => setCustomEndDate(e.target.value || today)}
-              />
-            </AdminV2FilterField>
-          </>
+        </AdminFilterCell>
+
+        {/* Columna 2 / Fila 1 Col 2: Fecha desde si CUSTOM, sino celda vacía para preservar la grilla */}
+        {period === "CUSTOM" ? (
+          <AdminFilterCell label="Fecha desde" htmlFor="v2-insights-custom-start">
+            <input
+              id="v2-insights-custom-start"
+              type="date"
+              value={customStartDate}
+              onChange={(e) => setCustomStartDate(e.target.value || today)}
+            />
+          </AdminFilterCell>
+        ) : (
+          <AdminFilterCell empty />
         )}
-        <AdminV2FilterField label="Barbero" htmlFor="v2-insights-barber">
+
+        {/* Columna 3 / Fila 2 Col 1: Barbero */}
+        <AdminFilterCell label="Barbero" htmlFor="v2-insights-barber">
           <select
             id="v2-insights-barber"
             value={staff.profile.role === "ADMIN" ? data.barberId : (staff.profile.barber_id ?? "")}
@@ -384,14 +398,22 @@ export function V2Insights() {
               </option>
             ))}
           </select>
-        </AdminV2FilterField>
-      </AdminV2FiltersPanel>
+        </AdminFilterCell>
 
-      {isInvalidRange && (
-        <p className="v2-range-warning" role="alert" style={{ margin: "-4px 0 12px 2px", color: "var(--destructive, #ef4444)" }}>
-          Rango no válido: Fecha desde debe ser menor o igual a Fecha hasta.
-        </p>
-      )}
+        {/* Columna 4 / Fila 2 Col 2: Fecha hasta si CUSTOM, sino celda vacía para preservar la grilla */}
+        {period === "CUSTOM" ? (
+          <AdminFilterCell label="Fecha hasta" htmlFor="v2-insights-custom-end">
+            <input
+              id="v2-insights-custom-end"
+              type="date"
+              value={customEndDate}
+              onChange={(e) => setCustomEndDate(e.target.value || today)}
+            />
+          </AdminFilterCell>
+        ) : (
+          <AdminFilterCell empty />
+        )}
+      </AdminFilterPanel>
 
       <div className="v2-metrics v2-metrics-four">
         <Metric

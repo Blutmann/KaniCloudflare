@@ -78,6 +78,19 @@ export function Status({ code }: { code: string }) {
   );
 }
 
+export {
+  AdminFilterPanel,
+  AdminFilterCell,
+  AdminFilterLabel,
+  AdminFilterControl,
+  type AdminFilterPanelProps,
+  type AdminFilterCellProps,
+  type AdminFilterLabelProps,
+  type AdminFilterControlProps,
+} from "./admin-filter-panel";
+
+import { AdminFilterPanel, AdminFilterCell } from "./admin-filter-panel";
+
 export function AdminV2FiltersPanel({
   ariaLabel,
   children,
@@ -90,10 +103,9 @@ export function AdminV2FiltersPanel({
   className?: string;
 }) {
   return (
-    <section className={`v2-filters v2-admin-filter-card ${className ?? ""}`.trim()} aria-label={ariaLabel}>
-      <div className="v2-filters-grid">{children}</div>
-      {customRange}
-    </section>
+    <AdminFilterPanel ariaLabel={ariaLabel} className={className} footer={customRange}>
+      {children}
+    </AdminFilterPanel>
   );
 }
 
@@ -109,12 +121,9 @@ export function AdminV2FilterField({
   className?: string;
 }) {
   return (
-    <div className={`v2-field ${className ?? ""}`.trim()}>
-      <label htmlFor={htmlFor} className="v2-field-label">
-        {label}
-      </label>
+    <AdminFilterCell label={label} htmlFor={htmlFor} className={className}>
       {children}
-    </div>
+    </AdminFilterCell>
   );
 }
 

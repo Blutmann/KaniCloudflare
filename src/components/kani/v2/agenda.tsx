@@ -15,6 +15,8 @@ import {
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { useV2 } from "./data";
 import {
+  AdminFilterPanel,
+  AdminFilterCell,
   AdminV2FiltersPanel,
   AdminV2FilterField,
   AdminV2SectionToolbar,
@@ -275,27 +277,27 @@ export function V2Appointments() {
   }
   return (
     <main className="v2-page v2-appointments-page">
-      <AdminV2FiltersPanel
+      <AdminFilterPanel
         ariaLabel="Filtros de turnos"
-        customRange={
+        footer={
           period === "CUSTOM" && (
             <div className="v2-custom-range-row">
-              <AdminV2FilterField label="Desde" htmlFor="v2-appointments-custom-start">
+              <AdminFilterCell label="Desde" htmlFor="v2-appointments-custom-start">
                 <input
                   id="v2-appointments-custom-start"
                   type="date"
                   value={customStartDate}
                   onChange={(e) => setCustomStartDate(e.target.value)}
                 />
-              </AdminV2FilterField>
-              <AdminV2FilterField label="Hasta" htmlFor="v2-appointments-custom-end">
+              </AdminFilterCell>
+              <AdminFilterCell label="Hasta" htmlFor="v2-appointments-custom-end">
                 <input
                   id="v2-appointments-custom-end"
                   type="date"
                   value={customEndDate}
                   onChange={(e) => setCustomEndDate(e.target.value)}
                 />
-              </AdminV2FilterField>
+              </AdminFilterCell>
               {isInvalidRange && (
                 <p className="v2-range-warning" role="alert">
                   La fecha 'Desde' debe ser anterior o igual a 'Hasta'.
@@ -305,7 +307,7 @@ export function V2Appointments() {
           )
         }
       >
-        <AdminV2FilterField label="Período" htmlFor="v2-appointments-period">
+        <AdminFilterCell label="Período" htmlFor="v2-appointments-period">
           <select
             id="v2-appointments-period"
             value={period}
@@ -317,16 +319,16 @@ export function V2Appointments() {
             <option value="NEXT_10_DAYS">Próximos 10 días</option>
             <option value="CUSTOM">Personalizado</option>
           </select>
-        </AdminV2FilterField>
-        <AdminV2FilterField label="Fecha" htmlFor="v2-appointments-date">
+        </AdminFilterCell>
+        <AdminFilterCell label="Fecha" htmlFor="v2-appointments-date">
           <input
             id="v2-appointments-date"
             type="date"
             value={date}
             onChange={(e) => handleDateChange(e.target.value)}
           />
-        </AdminV2FilterField>
-        <AdminV2FilterField label="Barbero" htmlFor="v2-appointments-barber">
+        </AdminFilterCell>
+        <AdminFilterCell label="Barbero" htmlFor="v2-appointments-barber">
           <select
             id="v2-appointments-barber"
             value={staff.profile.role === "ADMIN" ? data.barberId : (staff.profile.barber_id ?? "")}
@@ -340,8 +342,8 @@ export function V2Appointments() {
               </option>
             ))}
           </select>
-        </AdminV2FilterField>
-        <AdminV2FilterField label="Estado" htmlFor="v2-appointments-status">
+        </AdminFilterCell>
+        <AdminFilterCell label="Estado" htmlFor="v2-appointments-status">
           <select
             id="v2-appointments-status"
             value={status}
@@ -354,8 +356,8 @@ export function V2Appointments() {
               </option>
             ))}
           </select>
-        </AdminV2FilterField>
-      </AdminV2FiltersPanel>
+        </AdminFilterCell>
+      </AdminFilterPanel>
       <AdminV2SectionToolbar
         dateLabel={headerLabel}
         actionLabel="+ Agregar turno"

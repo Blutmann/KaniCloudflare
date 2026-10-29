@@ -22,6 +22,8 @@ import {
 } from "@/lib/kani-mobile-appointments";
 import { dateLabel, minutes, formatAdminV2Date, type Barber } from "@/lib/kani-model";
 import {
+  AdminFilterPanel,
+  AdminFilterCell,
   AdminV2FiltersPanel,
   AdminV2FilterField,
   AdminV2SectionToolbar,
@@ -321,71 +323,70 @@ export function AdminScheduleManager() {
   }, [filteredSlots]);
 
   return (
-    <div className="admin-schedule-page">
-      <div className="admin-schedule-shell">
-        {/* 1. Card unificada de Filtros y Estados de horarios */}
-        <AdminV2FiltersPanel ariaLabel="Filtros de horarios">
-          {/* 1. Período */}
-          <AdminV2FilterField label="Período" htmlFor="schedule-date-preset">
+    <>
+      {/* 1. Card unificada de Filtros y Estados de horarios */}
+      <AdminFilterPanel ariaLabel="Filtros de horarios">
+        {/* 1. Período */}
+        <AdminFilterCell label="Período" htmlFor="schedule-date-preset">
+          <select
+            id="schedule-date-preset"
+            value={datePreset}
+            onChange={(event) => selectPreset(event.target.value as ScheduleDatePreset)}
+          >
+            {datePresets.map((preset) => (
+              <option key={preset} value={preset}>
+                {schedulePresetLabels[preset]}
+              </option>
+            ))}
+          </select>
+        </AdminFilterCell>
+
+        {/* 2. Fecha */}
+        <AdminFilterCell label="Fecha" htmlFor="schedule-specific-date">
+          <input
+            id="schedule-specific-date"
+            type="date"
+            min={businessToday}
+            value={specificDate}
+            onChange={(event) => selectSpecificDate(event.target.value)}
+          />
+        </AdminFilterCell>
+
+        {/* 3. Barbero */}
+        <AdminFilterCell label="Barbero" htmlFor="schedule-barber-filter">
+          {profile.role === "ADMIN" ? (
             <select
-              id="schedule-date-preset"
-              value={datePreset}
-              onChange={(event) => selectPreset(event.target.value as ScheduleDatePreset)}
+              id="schedule-barber-filter"
+              value={barberFilter}
+              onChange={(event) => setBarberFilter(event.target.value)}
             >
-              {datePresets.map((preset) => (
-                <option key={preset} value={preset}>
-                  {schedulePresetLabels[preset]}
+              {permittedBarbers.map((barber) => (
+                <option key={barber} value={barber}>
+                  {barber}
                 </option>
               ))}
             </select>
-          </AdminV2FilterField>
+          ) : (
+            <output id="schedule-barber-filter">
+              {permittedBarbers[0] ?? "Tu agenda"}
+            </output>
+          )}
+        </AdminFilterCell>
 
-          {/* 2. Fecha */}
-          <AdminV2FilterField label="Fecha" htmlFor="schedule-specific-date">
-            <input
-              id="schedule-specific-date"
-              type="date"
-              min={businessToday}
-              value={specificDate}
-              onChange={(event) => selectSpecificDate(event.target.value)}
-            />
-          </AdminV2FilterField>
-
-          {/* 3. Barbero */}
-          <AdminV2FilterField label="Barbero" htmlFor="schedule-barber-filter">
-            {profile.role === "ADMIN" ? (
-              <select
-                id="schedule-barber-filter"
-                value={barberFilter}
-                onChange={(event) => setBarberFilter(event.target.value)}
-              >
-                {permittedBarbers.map((barber) => (
-                  <option key={barber} value={barber}>
-                    {barber}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <output id="schedule-barber-filter">
-                {permittedBarbers[0] ?? "Tu agenda"}
-              </output>
-            )}
-          </AdminV2FilterField>
-
-          {/* 4. Estado (Fila 2 Col 2 en Mobile / Fila 1 Col 4 en Desktop) */}
-          <AdminV2FilterField label="Estado" htmlFor="schedule-status-filter">
-            <select
-              id="schedule-status-filter"
-              value={statusFilter}
-              onChange={(event) => setStatusFilter(event.target.value as ScheduleStatusFilter)}
-            >
-              <option value="ALL">Todos</option>
-              <option value="AVAILABLE">Disponible</option>
-              <option value="UNAVAILABLE">No disponible</option>
-              <option value="RESERVED">Reservado</option>
-            </select>
-          </AdminV2FilterField>
-        </AdminV2FiltersPanel>
+        {/* 4. Estado (Fila 2 Col 2 en Mobile / Fila 1 Col 4 en Desktop) */}
+        <AdminFilterCell label="Estado" htmlFor="schedule-status-filter">
+          <select
+            id="schedule-status-filter"
+            value={statusFilter}
+            onChange={(event) => setStatusFilter(event.target.value as ScheduleStatusFilter)}
+          >
+            <option value="ALL">Todos</option>
+            <option value="AVAILABLE">Disponible</option>
+            <option value="UNAVAILABLE">No disponible</option>
+            <option value="RESERVED">Reservado</option>
+          </select>
+        </AdminFilterCell>
+      </AdminFilterPanel>
 
         {/* 3. Avisos contextuales */}
         {notice && (
@@ -511,7 +512,6 @@ export function AdminScheduleManager() {
               </section>
             ))}
         </section>
-      </div>
 
       <Dialog
         open={manualOpen}
@@ -590,6 +590,6 @@ export function AdminScheduleManager() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 }
