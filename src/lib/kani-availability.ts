@@ -35,7 +35,7 @@ export function isAllowedPublicBookingStart(slotDate: string, startTime: string,
   if (!isException) return false;
   if (parseDate(slotDate).getDay() === 0) return true;
   const startMinutes = minutes(startTime.slice(0, 5));
-  return startMinutes < 10 * 60 || startMinutes >= 19 * 60 + 45;
+  return startMinutes < 10 * 60 || startMinutes > 19 * 60;
 }
 
 const EFFECTIVE_SERVICE_DURATION_SECONDS: Record<number, number> = {
@@ -215,8 +215,12 @@ export function availableTimesForServiceDate(
   duration: number,
   now: Date,
   barber?: Barber | null,
-) {
+): string[] {
   if (duration <= 0 || duration % AVAILABILITY_STEP_MINUTES !== 0) return [];
+  if (!barber) {
+    const barbersInSlots = [...new Set(slots.filter(s => s.slot_date === date).map(s => s.barber_name))];
+    return [...new Set(barbersInSlots.flatMap(b => availableTimesForServiceDate(slots, date, duration, now, b)))].sort();
+  }
   const segmentStarts = availableSegmentStarts(slots, date, barber);
   const isSunday = parseDate(date).getDay() === 0;
   const extraordinaryStarts = slots

@@ -4,7 +4,7 @@ const weekdayDate = parseDate(demoToday).getDay() === 0 ? isoDate(new Date(parse
 describe('KANI mock availability', () => {
  it('uses the official service durations', () => {
   expect(serviceFor('corte').duration).toBe(45);
-  expect(serviceFor('corte-barba').duration).toBe(45);
+  expect(serviceFor('corte-barba').duration).toBe(60);
   expect(serviceFor('barba').duration).toBe(30);
  });
  it('respects closing time for all service lengths', () => {

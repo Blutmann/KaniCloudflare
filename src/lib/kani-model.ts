@@ -1,6 +1,6 @@
 export const services = [
   { id: 'corte', name: 'Corte', price: 25000, duration: 45, description: 'Tu estilo, con precisión.', number: '01' },
-  { id: 'corte-barba', name: 'Corte y barba', price: 30000, duration: 45, description: 'Una experiencia completa.', number: '02' },
+  { id: 'corte-barba', name: 'Corte y barba', price: 30000, duration: 60, description: 'Una experiencia completa.', number: '02' },
   { id: 'barba', name: 'Barba', price: 15000, duration: 30, description: 'Los detalles hacen la diferencia.', number: '03' },
 ] as const;
 export const barbers = ['Lautaro', 'Gonzalo', 'Valentín'] as const;

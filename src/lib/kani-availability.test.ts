@@ -39,7 +39,8 @@ function slot({
 }
 
 describe("public booking availability helpers", () => {
-  it("mantiene las duraciones comerciales exactas y tramos de 45 minutos", () => {
+  it("mantiene las duraciones comerciales exactas (Barba 30m, Corte 45m, Corte + barba 60m) y tramos de 45 minutos", () => {
+    expect(effectiveServiceDurationSeconds(60)).toBe(60 * 60);
     expect(effectiveServiceDurationSeconds(45)).toBe(45 * 60);
     expect(effectiveServiceDurationSeconds(30)).toBe(30 * 60);
     expect(defaultSlotEndTime("10:00")).toBe("10:45");
@@ -110,8 +111,8 @@ describe("public booking availability helpers", () => {
     expect(eligibleBarbersForAvailabilityStart(starts, "2026-10-08", "12:15", "Barba", now)).toEqual(["Lautaro"]);
   });
 
-  it("Caso A, B y D: horario extraordinario 08:15->09:00 habilita Barba (30m) y Corte (45m), pero rechaza 60m o cuando se bloquea", () => {
-    const extraordinarySlot = [
+  it("Caso obligatorio de regresión 08:15->09:00 vs >=60m: Barba (30m) y Corte (45m) reservables en 08:15->09:00, Corte + barba (60m) NO reservable salvo cobertura continua >=60m", () => {
+    const extraordinarySlot45m = [
       slot({
         id: "lautaro-extra-0815",
         barber_name: "Lautaro",
@@ -120,15 +121,50 @@ describe("public booking availability helpers", () => {
       }),
     ];
 
-    // Caso A + D: Barba (30m) y Corte (45m) entran en 08:15 -> 09:00
-    expect(availableTimesForServiceDate(extraordinarySlot, "2026-10-08", 30, now, "Lautaro")).toContain("08:15");
-    expect(availableTimesForServiceDate(extraordinarySlot, "2026-10-08", 45, now, "Lautaro")).toEqual(["08:15"]);
-    // Servicio de 60m no entra en 45m disponibles
-    expect(availableTimesForServiceDate(extraordinarySlot, "2026-10-08", 60, now, "Lautaro")).toEqual([]);
+    // 1. Disponibilidad extraordinaria únicamente 08:15 -> 09:00:
+    // - Barba (30m) SÍ puede reservarse a las 08:15
+    expect(availableTimesForServiceDate(extraordinarySlot45m, "2026-10-08", 30, now, "Lautaro")).toEqual(["08:15"]);
+    // - Corte (45m) SÍ puede reservarse a las 08:15
+    expect(availableTimesForServiceDate(extraordinarySlot45m, "2026-10-08", 45, now, "Lautaro")).toEqual(["08:15"]);
+    // - Corte + barba (60m) NO puede reservarse a las 08:15
+    expect(availableTimesForServiceDate(extraordinarySlot45m, "2026-10-08", 60, now, "Lautaro")).toEqual([]);
+    expect(availableTimesForServiceDate(extraordinarySlot45m, "2026-10-08", 60, now)).toEqual([]);
 
-    // Caso B: cuando 08:15 se ocupa / bloquea, deja de aparecer disponible
+    // 2A. Cobertura continua suficiente mediante un bloque 08:15 -> 09:15:
+    // - Corte + barba (60m) SÍ puede reservarse a las 08:15
+    const extraordinarySlot60m = [
+      slot({
+        id: "lautaro-extra-0815-0915",
+        barber_name: "Lautaro",
+        start_time: "08:15:00",
+        end_time: "09:15:00",
+      }),
+    ];
+    expect(availableTimesForServiceDate(extraordinarySlot60m, "2026-10-08", 60, now, "Lautaro")).toEqual(["08:15"]);
+    expect(availableTimesForServiceDate(extraordinarySlot60m, "2026-10-08", 60, now)).toEqual(["08:15"]);
+
+    // 2B. Cobertura continua suficiente mediante segmentos consecutivos 08:15 -> 09:00 + 09:00 -> 09:45:
+    // - Corte + barba (60m) SÍ puede reservarse a las 08:15
+    const consecutiveExtraordinarySlots = [
+      slot({
+        id: "lautaro-extra-1",
+        barber_name: "Lautaro",
+        start_time: "08:15:00",
+        end_time: "09:00:00",
+      }),
+      slot({
+        id: "lautaro-extra-2",
+        barber_name: "Lautaro",
+        start_time: "09:00:00",
+        end_time: "09:45:00",
+      }),
+    ];
+    expect(availableTimesForServiceDate(consecutiveExtraordinarySlots, "2026-10-08", 60, now, "Lautaro")).toContain("08:15");
+    expect(availableTimesForServiceDate(consecutiveExtraordinarySlots, "2026-10-08", 60, now)).toContain("08:15");
+
+    // 3. Cuando 08:15 se ocupa / bloquea, deja de aparecer disponible
     const blockedExtraordinary = [
-      ...extraordinarySlot,
+      ...extraordinarySlot45m,
       slot({
         id: "lautaro-extra-blocked",
         barber_name: "Lautaro",
