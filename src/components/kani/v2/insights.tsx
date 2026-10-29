@@ -4,7 +4,7 @@ import { useAdminStaff } from "@/lib/kani-admin-context";
 import { scopeV2, paymentSummary, changePercent } from "@/lib/kani-v2";
 import { businessDateToday, addCalendarDays } from "@/lib/kani-mobile-appointments";
 import { money } from "@/lib/kani-model";
-import { BarberFilter, Empty, Metric, statusLabels } from "./shared";
+import { AdminV2FiltersPanel, AdminV2FilterField, Empty, Metric, statusLabels } from "./shared";
 import { useV2 } from "./data";
 
 export type InsightsPeriodKey =
@@ -329,11 +329,11 @@ export function V2Insights() {
   }, [payments]);
 
   return (
-    <main className="v2-page">
-      <div className="v2-filters">
-        <label className="v2-field">
-          Período
+    <main className="v2-page v2-insights-page">
+      <AdminV2FiltersPanel ariaLabel="Filtros de datos">
+        <AdminV2FilterField label="Período" htmlFor="v2-insights-period">
           <select
+            id="v2-insights-period"
             value={period}
             onChange={(e) => setPeriod(e.target.value as InsightsPeriodKey)}
           >
@@ -349,39 +349,49 @@ export function V2Insights() {
             <option value="ANIO_ANTERIOR">{periodConfig.ANIO_ANTERIOR.label}</option>
             <option value="CUSTOM">Fecha específica</option>
           </select>
-        </label>
+        </AdminV2FilterField>
         {period === "CUSTOM" && (
           <>
-            <label className="v2-field">
-              Fecha desde
+            <AdminV2FilterField label="Fecha desde" htmlFor="v2-insights-custom-start">
               <input
+                id="v2-insights-custom-start"
                 type="date"
                 value={customStartDate}
                 onChange={(e) => setCustomStartDate(e.target.value || today)}
               />
-            </label>
-            <label className="v2-field">
-              Fecha hasta
+            </AdminV2FilterField>
+            <AdminV2FilterField label="Fecha hasta" htmlFor="v2-insights-custom-end">
               <input
+                id="v2-insights-custom-end"
                 type="date"
                 value={customEndDate}
                 onChange={(e) => setCustomEndDate(e.target.value || today)}
               />
-            </label>
+            </AdminV2FilterField>
           </>
         )}
-        <BarberFilter />
-      </div>
+        <AdminV2FilterField label="Barbero" htmlFor="v2-insights-barber">
+          <select
+            id="v2-insights-barber"
+            value={staff.profile.role === "ADMIN" ? data.barberId : (staff.profile.barber_id ?? "")}
+            onChange={(e) => data.setBarberId(e.target.value)}
+            disabled={staff.profile.role !== "ADMIN"}
+          >
+            {staff.profile.role === "ADMIN" && <option value="ALL">Todo Kani</option>}
+            {staff.barbers.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.name}
+              </option>
+            ))}
+          </select>
+        </AdminV2FilterField>
+      </AdminV2FiltersPanel>
 
       {isInvalidRange && (
-        <p className="v2-notice" style={{ color: "var(--destructive, #ef4444)", margin: "8px 0" }}>
+        <p className="v2-range-warning" role="alert" style={{ margin: "-4px 0 12px 2px", color: "var(--destructive, #ef4444)" }}>
           Rango no válido: Fecha desde debe ser menor o igual a Fecha hasta.
         </p>
       )}
-
-      <p className="v2-footnote">
-        {start} al {end} · Métricas consolidadas en tiempo real (zona horaria America/Argentina/Buenos_Aires).
-      </p>
 
       <div className="v2-metrics v2-metrics-four">
         <Metric

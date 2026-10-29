@@ -709,28 +709,49 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
   gap: 20px;
 }
 .v2-payment-form {
-  padding: 18px;
+  padding: 14px 16px;
 }
 .v2-payment-form fieldset {
   display: grid;
-  gap: 14px;
+  gap: 10px;
   min-width: 0;
+}
+.v2-payment-form .v2-field {
+  gap: 3px;
+}
+.v2-payment-form .v2-field-label,
+.v2-payment-form .v2-field > label {
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--muted-foreground);
+}
+.v2-payment-form :is(input, select) {
+  height: 38px;
+  min-height: 38px;
+  max-height: 38px;
+  padding: 6px 9px;
+  font-size: 12px;
+  line-height: 1.5;
+  border-radius: var(--radius-control);
 }
 .v2-segmented {
   display: flex;
-  gap: 4px;
-  padding: 4px;
+  gap: 3px;
+  padding: 3px;
   border: 1px solid var(--border);
-  border-radius: var(--radius-capsule);
+  border-radius: var(--radius-control);
   background: var(--v2-inset);
-  margin-bottom: 18px;
+  margin-bottom: 12px;
 }
 .v2-segmented button {
   flex: 1;
-  min-height: 44px;
-  border-radius: var(--radius-control);
+  min-height: 34px;
+  height: 34px;
+  border-radius: calc(var(--radius-control) - 2px);
   font-size: 12px;
-  padding: 8px;
+  font-weight: 500;
+  padding: 5px 12px;
   color: var(--muted-foreground);
   transition:
     background-color 0.18s,
@@ -936,6 +957,23 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
   box-shadow: none;
   background: transparent;
   backdrop-filter: none;
+}
+.v2-panel > .v2-filters :is(input, select) {
+  height: 38px !important;
+  min-height: 38px !important;
+  max-height: 38px !important;
+  padding: 6px 9px !important;
+  font-size: 12px !important;
+  line-height: 1.5 !important;
+  border-radius: var(--radius-control) !important;
+}
+@media (max-width: 767px) {
+  .v2-panel > .v2-filters :is(input, select) {
+    height: 36px !important;
+    min-height: 36px !important;
+    max-height: 36px !important;
+    padding: 5px 8px !important;
+  }
 }
 .v2-history-row {
   display: flex;
@@ -1621,7 +1659,7 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
     grid-column: auto;
   }
   .v2-payment-form {
-    padding: 12px;
+    padding: 10px 12px;
   }
   .v2-segmented {
     padding: 2px;
@@ -1629,15 +1667,24 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
     gap: 2px;
   }
   .v2-segmented button {
-    padding: 6px;
-    min-height: 44px;
+    padding: 4px 8px;
+    min-height: 32px;
+    height: 32px;
+    font-size: 11.5px;
   }
   .v2-payment-form fieldset {
-    gap: 10px;
+    gap: 8px;
     grid-template-columns: 1fr;
   }
   .v2-payment-form fieldset > * {
     grid-column: 1 / -1;
+  }
+  .v2-payment-form :is(input, select) {
+    height: 36px;
+    min-height: 36px;
+    max-height: 36px;
+    padding: 5px 8px;
+    font-size: 12px;
   }
   .v2-payment-actions-row {
     gap: 8px;
@@ -1666,19 +1713,25 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
 
 /* Shared workspace and matching appointment/schedule filter geometry. */
 .v2-workspace > .v2-page { width: 100%; }
-.v2-schedule > .admin-schedule-page.site-container {
+.v2-schedule > .admin-schedule-page.site-container,
+.v2-schedule > .admin-schedule-page {
   width: 100%; max-width: none; min-height: 0; margin: 0; padding: 0;
   overflow: visible;
 }
 /* ==========================================================================
-   Admin V2 — Shared Layout & Filters & Toolbar (Turnos & Horarios)
+   Admin V2 — Shared Layout & Filters & Toolbar (Turnos, Horarios, Pagos & Datos)
    ========================================================================== */
 
 .v2-appointments-page,
-.v2-schedule {
+.v2-schedule,
+.v2-insights-page {
   display: flex !important;
   flex-direction: column !important;
   gap: 0 !important;
+}
+
+.v2-insights-page .v2-metrics-four {
+  margin-bottom: 16px !important;
 }
 
 .v2-schedule .admin-schedule-shell {
@@ -1728,6 +1781,10 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
   width: 100% !important;
   margin: 0 !important;
   padding: 0 !important;
+}
+
+.v2-filters-grid:has(> :nth-child(2):last-child) {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
 }
 
 @media (max-width: 767px) {

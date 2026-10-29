@@ -321,7 +321,7 @@ export function AdminScheduleManager() {
   }, [filteredSlots]);
 
   return (
-    <main className="site-container admin-schedule-page">
+    <div className="admin-schedule-page">
       <div className="admin-schedule-shell">
         {/* 1. Card unificada de Filtros y Estados de horarios */}
         <AdminV2FiltersPanel ariaLabel="Filtros de horarios">
@@ -443,18 +443,6 @@ export function AdminScheduleManager() {
                 <h2 className="text-sm font-semibold text-foreground">No hay horarios para estos filtros</h2>
                 <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">Podés agregar una disponibilidad en cualquier fecha futura de atención.</p>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                <button
-                  type="button"
-                  className="min-h-[4.75rem] p-3 rounded-xl border border-dashed border-border bg-surface/50 hover:border-primary hover:bg-surface text-foreground font-medium text-xs flex items-center justify-center transition-all cursor-pointer shadow-xs"
-                  aria-label="Agregar horario"
-                  onClick={() => openManualDialog(specificDate, selectedRows[0]?.id)}
-                >
-                  <span className="font-semibold text-xs sm:text-sm">
-                    Agregar horario
-                  </span>
-                </button>
-              </div>
             </>
           )}
           {!loading &&
@@ -519,16 +507,6 @@ export function AdminScheduleManager() {
                       </button>
                     );
                   })}
-                  <button
-                    type="button"
-                    className="min-h-[4.75rem] p-3 rounded-xl border border-dashed border-border bg-surface/50 hover:border-primary hover:bg-surface text-foreground font-medium text-xs flex items-center justify-center transition-all cursor-pointer shadow-xs"
-                    aria-label={`Agregar horario para ${date}`}
-                    onClick={() => openManualDialog(date, dateSlots[0]?.barber_id)}
-                  >
-                    <span className="font-semibold text-xs sm:text-sm">
-                      Agregar horario
-                    </span>
-                  </button>
                 </div>
               </section>
             ))}
@@ -612,6 +590,6 @@ export function AdminScheduleManager() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </main>
+    </div>
   );
 }
