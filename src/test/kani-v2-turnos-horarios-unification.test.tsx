@@ -115,14 +115,14 @@ describe('Admin V2 — Turnos & Horarios Upper Layout Unification', () => {
     const { container } = render(<V2Appointments />);
 
     // 1. Filter card
-    const filterCard = container.querySelector('section.v2-admin-filter-card');
+    const filterCard = container.querySelector('section.v2-admin-filter-panel, section.v2-admin-filter-card');
     expect(filterCard).toBeInTheDocument();
     expect(filterCard).toHaveAttribute('aria-label', 'Filtros de turnos');
 
-    const grid = filterCard?.querySelector('.v2-filters-grid');
+    const grid = filterCard?.querySelector('.v2-admin-filter-grid, .v2-filters-grid');
     expect(grid).toBeInTheDocument();
 
-    const fields = grid?.querySelectorAll('.v2-field');
+    const fields = grid?.querySelectorAll('.v2-admin-filter-cell, .v2-field');
     expect(fields).toHaveLength(4);
 
     // 2. Toolbar
@@ -146,14 +146,14 @@ describe('Admin V2 — Turnos & Horarios Upper Layout Unification', () => {
     const { container } = render(<AdminScheduleManager />);
 
     // 1. Filter card
-    const filterCard = container.querySelector('section.v2-admin-filter-card');
+    const filterCard = container.querySelector('section.v2-admin-filter-panel, section.v2-admin-filter-card');
     expect(filterCard).toBeInTheDocument();
     expect(filterCard).toHaveAttribute('aria-label', 'Filtros de horarios');
 
-    const grid = filterCard?.querySelector('.v2-filters-grid');
+    const grid = filterCard?.querySelector('.v2-admin-filter-grid, .v2-filters-grid');
     expect(grid).toBeInTheDocument();
 
-    const fields = grid?.querySelectorAll('.v2-field');
+    const fields = grid?.querySelectorAll('.v2-admin-filter-cell, .v2-field');
     expect(fields).toHaveLength(4);
 
     // 2. Toolbar exists with formatted date and action button

@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { Check, CheckCircle2, Clock3, SlidersHorizontal, X, XCircle } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { AlertTriangle, Check, CheckCircle2, Clock3, SlidersHorizontal, X, XCircle } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import {
@@ -59,7 +59,7 @@ export function defaultSlotEndTime(startTime: string): string {
   return `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}`;
 }
 
-function errorMessage(cause: unknown) {
+function errorMessage(cause: unknown, mode: "add" | "modify" = "modify") {
   const error = cause as { code?: unknown; message?: unknown; details?: unknown } | null;
   const message = [
     cause instanceof Error ? cause.message : "",
@@ -70,9 +70,13 @@ function errorMessage(cause: unknown) {
   if (message.includes("AVAILABILITY_APPOINTMENT_CONFLICT")) {
     const match = message.match(/AVAILABILITY_APPOINTMENT_CONFLICT:([^:]+):(\d{2}:\d{2}):(\d{2}:\d{2})/);
     if (match) {
-      return `No se puede modificar esta franja porque ${match[1]} tiene un turno reservado de ${match[2]} a ${match[3]}.`;
+      return mode === "add"
+        ? `No se puede agregar esta franja porque ${match[1]} tiene un turno reservado de ${match[2]} a ${match[3]}.`
+        : `No se puede modificar esta franja porque ${match[1]} tiene un turno reservado de ${match[2]} a ${match[3]}.`;
     }
-    return "No se puede modificar esta franja porque tiene un turno reservado asociado.";
+    return mode === "add"
+      ? "No se puede agregar esta franja porque tiene un turno reservado asociado."
+      : "No se puede modificar esta franja porque tiene un turno reservado asociado.";
   }
   if (message.includes("AVAILABILITY_OVERLAP") || message.includes("AVAILABILITY_BLOCKED_START"))
     return "Ese inicio está dentro de un bloqueo existente.";
@@ -106,7 +110,11 @@ function overlaps(slot: AvailabilitySlot, appointment: RealAppointment) {
       ? minutes(slot.end_time.slice(0, 5)) + 24 * 60
       : minutes(slot.end_time.slice(0, 5));
   const appointmentStart = minutes(appointment.time);
-  let appointmentEnd = appointment.endTime ? minutes(appointment.endTime) : appointmentStart;
+  let appointmentEnd = appointment.endTime
+    ? minutes(appointment.endTime)
+    : appointment.serviceDuration
+      ? appointmentStart + appointment.serviceDuration
+      : appointmentStart + 45;
   if (appointment.endTime && appointmentEnd <= appointmentStart) {
     appointmentEnd += 24 * 60;
   }
@@ -141,6 +149,78 @@ export function AdminScheduleManager() {
     () => ownBarberId ?? permittedRows[0]?.id ?? "",
   );
   const [manualTime, setManualTime] = useState("10:00");
+  const [manualError, setManualError] = useState("");
+  const [manualChecking, setManualChecking] = useState(false);
+  const [checkingNotice, setCheckingNotice] = useState(false);
+  const validationIdRef = useRef(0);
+
+  useEffect(() => {
+    if (!manualOpen) {
+      setManualError("");
+      setManualChecking(false);
+      setCheckingNotice(false);
+      return;
+    }
+
+    if (!manualBarberId || !manualDate || !manualTime) {
+      setManualError("");
+      setManualChecking(false);
+      setCheckingNotice(false);
+      return;
+    }
+
+    const currentReqId = ++validationIdRef.current;
+    setManualChecking(true);
+    setManualError("");
+
+    const timer = window.setTimeout(() => {
+      if (validationIdRef.current === currentReqId) {
+        setCheckingNotice(true);
+      }
+    }, 150);
+
+    const endTime = defaultSlotEndTime(manualTime);
+    const candidateSlot: AvailabilitySlot = {
+      id: "manual-candidate",
+      barber_id: manualBarberId,
+      slot_date: manualDate,
+      start_time: `${manualTime}:00`,
+      end_time: `${endTime}:00`,
+      status: "AVAILABLE",
+      is_manual: true,
+    };
+
+    readRealAppointments()
+      .then((appointments) => {
+        if (validationIdRef.current !== currentReqId) return;
+        const conflict = appointments.find((apt) => overlaps(candidateSlot, apt));
+        if (conflict) {
+          const barberName = barberById.get(manualBarberId)?.name ?? conflict.barber ?? "El barbero";
+          const conflictStart = conflict.time;
+          const conflictEnd = conflict.endTime || defaultSlotEndTime(conflict.time);
+          setManualError(
+            `No se puede agregar esta franja porque ${barberName} tiene un turno reservado de ${conflictStart} a ${conflictEnd}.`
+          );
+        } else {
+          setManualError("");
+        }
+      })
+      .catch((cause) => {
+        if (validationIdRef.current !== currentReqId) return;
+        console.warn("Error en prevalidación de disponibilidad:", cause);
+      })
+      .finally(() => {
+        if (validationIdRef.current === currentReqId) {
+          window.clearTimeout(timer);
+          setCheckingNotice(false);
+          setManualChecking(false);
+        }
+      });
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [manualOpen, manualBarberId, manualDate, manualTime, barberById]);
 
   useEffect(() => {
     if (profile.role === "BARBER") {
@@ -271,8 +351,9 @@ export function AdminScheduleManager() {
 
   async function saveManualSlot() {
     if (!manualBarberId || !manualDate || !manualTime) return;
+    if (manualChecking || manualError) return;
     setSavingId("manual");
-    setError("");
+    setManualError("");
     setNotice("");
     try {
       const endTime = defaultSlotEndTime(manualTime);
@@ -291,13 +372,17 @@ export function AdminScheduleManager() {
           : "Ese intervalo ya estaba cubierto; no se creó un duplicado.",
       );
     } catch (cause) {
-      setError(errorMessage(cause));
+      setManualError(errorMessage(cause, "add"));
     } finally {
       setSavingId(null);
     }
   }
 
   function openManualDialog(date: string, barberId?: string) {
+    validationIdRef.current += 1;
+    setManualError("");
+    setManualChecking(false);
+    setCheckingNotice(false);
     setManualDate(date || specificDate || businessToday);
     setManualTime("10:00");
     const contextualBarberId = barberId ?? selectedRows[0]?.id;
@@ -516,7 +601,13 @@ export function AdminScheduleManager() {
       <Dialog
         open={manualOpen}
         onOpenChange={(open) => {
-          if (!open && savingId !== "manual") setManualOpen(false);
+          if (!open && savingId !== "manual") {
+            validationIdRef.current += 1;
+            setManualError("");
+            setManualChecking(false);
+            setCheckingNotice(false);
+            setManualOpen(false);
+          }
         }}
       >
         <DialogContent className="manual-dialog admin-schedule-dialog">
@@ -569,6 +660,21 @@ export function AdminScheduleManager() {
               </select>
             </div>
           </div>
+          {manualError && (
+            <div
+              role="alert"
+              className="p-3 rounded-lg border border-destructive/40 bg-destructive/10 text-destructive text-xs font-medium flex items-start gap-2 leading-relaxed"
+            >
+              <AlertTriangle size={15} className="shrink-0 mt-0.5" />
+              <span>{manualError}</span>
+            </div>
+          )}
+          {checkingNotice && !manualError && (
+            <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+              <Clock3 size={13} className="shrink-0 animate-spin" />
+              <span>Verificando disponibilidad…</span>
+            </p>
+          )}
           <p className="manual-dialog-date text-xs text-muted-foreground">
             Se habilitará el tramo de 45 minutos ({manualTime} a {defaultSlotEndTime(manualTime)} hs). La fecha debe ser igual o posterior a {businessToday}.
           </p>
@@ -576,16 +682,27 @@ export function AdminScheduleManager() {
             <Button
               variant="outline"
               disabled={savingId === "manual"}
-              onClick={() => setManualOpen(false)}
+              onClick={() => {
+                validationIdRef.current += 1;
+                setManualError("");
+                setManualChecking(false);
+                setCheckingNotice(false);
+                setManualOpen(false);
+              }}
             >
               Cancelar
             </Button>
             <Button
               className="action-positive"
-              disabled={savingId === "manual" || !manualBarberId}
+              disabled={
+                savingId === "manual" ||
+                !manualBarberId ||
+                manualChecking ||
+                Boolean(manualError)
+              }
               onClick={() => void saveManualSlot()}
             >
-              Guardar horario
+              {savingId === "manual" ? "Guardando…" : "Guardar horario"}
             </Button>
           </DialogFooter>
         </DialogContent>
