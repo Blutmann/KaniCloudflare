@@ -403,7 +403,7 @@ export function PaywayBooking() {
     return (
       <div className="payway-reservation">
         <main className="site-container confirmation">
-          <div className="confirmation-mark"><Check size={30} /></div>
+          <div className="confirmation-mark"><Check size={28} /></div>
           <h1>Turno confirmado</h1>
           <p className="text-sm text-muted-foreground confirmation-subtitle">Te enviamos la confirmación por mail.</p>
           <div className="confirmation-grid">
@@ -417,21 +417,22 @@ export function PaywayBooking() {
                 <div><dt>Saldo restante del servicio</dt><dd>{money(remainingArs)}</dd></div>
               </dl>
             </div>
+
             <section className="confirmation-place">
               <h2 className="confirmation-place-title">¿Dónde estamos?</h2>
               <p className="confirmation-place-address">San Isidro Labrador 7 · Martínez</p>
-
-              <div className="confirmation-map-wrap">
-                <iframe
-                  src={KANI_MAPS_EMBED_URL}
-                  title="Ubicación de Kani Barber Studio en Google Maps"
-                  className="confirmation-map-iframe"
-                  loading="lazy"
-                  allowFullScreen
-                  referrerPolicy="no-referrer-when-downgrade"
-                />
-              </div>
             </section>
+
+            <div className="confirmation-map-wrap">
+              <iframe
+                src={KANI_MAPS_EMBED_URL}
+                title="Ubicación de Kani Barber Studio en Google Maps"
+                className="confirmation-map-iframe"
+                loading="lazy"
+                allowFullScreen
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+            </div>
 
             <div className="confirmation-actions">
               <Button asChild variant="outline" className="confirmation-secondary confirmation-btn-directions">
