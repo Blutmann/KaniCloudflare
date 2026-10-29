@@ -180,6 +180,42 @@ html[data-theme='dark'] .reserva-v5 {
   font-weight: 600;
 }
 
+.booking-v5-date .calendar-day.today:not(.selected) {
+  position: relative;
+  font-weight: 600;
+}
+
+.booking-v5-date .calendar-day.today:not(.selected)::after {
+  content: '';
+  position: absolute;
+  bottom: 5px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background-color: var(--v5-text-gold);
+}
+
+.booking-v5-date .legend-indicator {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.booking-v5-date .legend-indicator.today-indicator {
+  background-color: var(--v5-text-gold);
+}
+
+.booking-v5-date .legend-indicator.selected-indicator {
+  background-color: var(--v5-selected-bg);
+}
+
+.booking-v5-date .calendar-no-availability {
+  border: 1px dashed var(--v5-border);
+}
+
 /* Step 3 Time Header & Slots */
 .booking-v5 .booking-time-heading {
   display: flex;
@@ -211,6 +247,32 @@ html[data-theme='dark'] .reserva-v5 {
 }
 
 .booking-v5 .booking-time-slot.selected {
+  background-color: var(--v5-selected-bg) !important;
+  border-color: var(--v5-selected-border) !important;
+  color: var(--v5-selected-text) !important;
+  font-weight: 600;
+}
+
+/* Candidate barber choices in step 4 (deferred barber flow) */
+.booking-v5 .booking-candidate-barber-btn {
+  min-height: 42px;
+  height: 42px;
+  padding: 0 16px;
+  border-radius: var(--radius-control, 0.65rem);
+  border: 1px solid var(--v5-border);
+  background-color: var(--v5-surface);
+  color: var(--v5-text-primary);
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+
+.booking-v5 .booking-candidate-barber-btn:not(:disabled):hover {
+  border-color: var(--v5-border-hover);
+  transform: translateY(-1px);
+}
+
+.booking-v5 .booking-candidate-barber-btn.selected {
   background-color: var(--v5-selected-bg) !important;
   border-color: var(--v5-selected-border) !important;
   color: var(--v5-selected-text) !important;
@@ -296,6 +358,64 @@ html[data-theme='dark'] .reserva-v5 {
   opacity: 0.42 !important;
   cursor: not-allowed !important;
   pointer-events: none;
+}
+
+/* Form Controls & Labels in Step 5 */
+.booking-page.booking-v5 .field-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--v5-text-primary);
+  margin-bottom: 2px;
+}
+
+.booking-page.booking-v5 .field-required {
+  margin-left: 3px;
+  font-weight: 600;
+  color: var(--v5-text-gold);
+}
+
+.booking-page.booking-v5 .field-control input,
+.booking-page.booking-v5 .notes-input {
+  background-color: var(--v5-surface) !important;
+  border-color: var(--v5-border) !important;
+  color: var(--v5-text-primary) !important;
+  border-radius: var(--radius-control, 0.65rem);
+  font-size: 0.95rem;
+}
+
+.booking-page.booking-v5 .field-control input:focus,
+.booking-page.booking-v5 .notes-input:focus {
+  border-color: var(--v5-text-gold) !important;
+  box-shadow: 0 0 0 1px var(--v5-text-gold) !important;
+}
+
+.booking-page.booking-v5 .field-validation-message {
+  font-size: 0.775rem;
+  font-weight: 500;
+  color: var(--destructive);
+  margin-top: 4px;
+  display: block;
+}
+
+/* WCAG AA Compliant Placeholder Colors */
+html[data-theme='light'] .booking-page.booking-v5 input::placeholder,
+html[data-theme='light'] .booking-page.booking-v5 textarea::placeholder {
+  color: #6E6A63 !important;
+  opacity: 1;
+}
+
+html[data-theme='dark'] .booking-page.booking-v5 input::placeholder,
+html[data-theme='dark'] .booking-page.booking-v5 textarea::placeholder {
+  color: #A39E95 !important;
+  opacity: 1;
+}
+
+/* Payway Checkout Unknown Status Banner */
+.payway-checkout-v5 .payway-unknown-status {
+  background-color: var(--v5-surface-subtle);
+  border: 1px solid var(--v5-border);
+  color: var(--v5-text-primary);
 }
 
 /* --------------------------------------------------------------------------

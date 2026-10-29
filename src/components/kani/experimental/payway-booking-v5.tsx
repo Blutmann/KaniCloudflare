@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Check, CircleAlert, HelpCircle, Instagram, MapPin } from 'lucide-react';
+import { Check, CircleAlert, Clock3, HelpCircle, Instagram, MapPin } from 'lucide-react';
 import { Booking, type BookingPaymentDraft } from '@/components/kani/booking';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -509,8 +509,17 @@ export function PaywayBookingV5() {
           <DialogDescription className="payway-checkout-subtitle">
             {checkout ? `Seña: ${money(checkout.depositArs)} · Pago seguro` : 'Reserva experimental con Payway'}
           </DialogDescription>
-          {preparing && <p role="status">Preparando pago seguro…</p>}
-          {result && <p role={result.state === 'approved' ? 'status' : 'alert'} className="payway-result">{result.message}</p>}
+          {preparing && (
+            <div className="payway-preparing py-6 text-center text-sm text-muted-foreground flex items-center justify-center gap-2" role="status">
+              <Clock3 size={16} className="animate-spin text-gold" />
+              <span>Preparando pago seguro con Payway…</span>
+            </div>
+          )}
+          {result && result.state !== 'unknown' && (
+            <p role={result.state === 'approved' ? 'status' : 'alert'} className={`payway-result mt-2 text-sm ${result.state === 'approved' ? 'text-success' : 'text-destructive font-medium'}`}>
+              {result.message}
+            </p>
+          )}
           {checkout && !terminal && (
             <form onSubmit={pay} autoComplete="off" noValidate data-private="redact" data-sensitive="true" className="payway-card-form">
               <input type="hidden" name="paymentMethod" value={detected.methodId ?? ''} />
@@ -720,7 +729,10 @@ export function PaywayBookingV5() {
             </form>
           )}
           {result?.state === 'unknown' && (
-            <p className="text-sm">Conservá esta pantalla y contactá al estudio. Tu turno todavía no está confirmado.</p>
+            <div className="payway-unknown-status mt-3 p-3.5 rounded-md bg-muted/80 text-sm space-y-1.5 border border-border" role="alert">
+              <p className="font-semibold text-foreground">El estado del pago está en proceso de verificación.</p>
+              <p className="text-xs text-muted-foreground">Por favor no vuelvas a ingresar la tarjeta para evitar cobros duplicados. Conservá los datos de la operación y comunicate con Kani Barber Studio para verificar tu reserva.</p>
+            </div>
           )}
           {!checkout && stage === 'idle' && !preparing && (
             <Button variant="outline" onClick={() => setOpen(false)}>

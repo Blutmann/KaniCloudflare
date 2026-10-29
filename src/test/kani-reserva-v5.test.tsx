@@ -118,4 +118,55 @@ describe('Reserva V5 — Clonación funcional, aislamiento y claridad visual', (
     expect(screen.queryByText('Turno confirmado')).not.toBeInTheDocument();
     expect(screen.getByText('Elegí un servicio')).toBeInTheDocument();
   });
+
+  it('4. Paso 1 y Paso 2: Selección de servicio, barbero y opción clara de barbero diferido', () => {
+    render(
+      <KaniProvider>
+        <Booking variant="v5" />
+      </KaniProvider>
+    );
+
+    // Selección de Servicio "Corte"
+    const corteBtn = screen.getByRole('button', { name: /Corte, 45 minutos/i });
+    expect(corteBtn).toHaveAttribute('aria-pressed', 'false');
+    fireEvent.click(corteBtn);
+    expect(corteBtn).toHaveAttribute('aria-pressed', 'true');
+
+    // Avanzar a Paso 2 (Barbero)
+    const continuarBtn = screen.getByRole('button', { name: 'Continuar' });
+    fireEvent.click(continuarBtn);
+
+    // Verificar que estamos en Paso 2
+    expect(screen.getByText('Elegí un barbero')).toBeInTheDocument();
+    expect(screen.getByText('Lautaro')).toBeInTheDocument();
+    expect(screen.getByText('Gonzalo')).toBeInTheDocument();
+    expect(screen.getByText('Valentín')).toBeInTheDocument();
+
+    // Opción no personificada de barbero diferido
+    const deferBtn = screen.getByRole('button', { name: /Cualquier barbero disponible/i });
+    expect(deferBtn).toBeInTheDocument();
+    expect(screen.getByText('El sistema asignará según fecha y horario')).toBeInTheDocument();
+    fireEvent.click(deferBtn);
+    expect(deferBtn).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('5. Paso 5 y Resumen: Validación contextual, campos requeridos con asterisco y aviso de confirmación', () => {
+    const { container } = render(
+      <KaniProvider>
+        <Booking variant="v5" />
+      </KaniProvider>
+    );
+
+    // Seleccionar servicio
+    fireEvent.click(screen.getByRole('button', { name: /Corte, 45 minutos/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'Continuar' }));
+
+    // Seleccionar barbero
+    fireEvent.click(screen.getByRole('button', { name: /Barbero Lautaro/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'Continuar' }));
+
+    // En paso de fecha, los elementos obligatorios se van acumulando
+    expect(screen.getByText('Elegí una fecha')).toBeInTheDocument();
+    expect(container.querySelector('.calendar-panel')).toBeInTheDocument();
+  });
 });

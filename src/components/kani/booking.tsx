@@ -1,5 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
-import { Check, Clock3, CalendarDays, UserRound, ChevronLeft, ChevronRight, ArrowLeft, CircleAlert, MapPin, Instagram } from 'lucide-react';
+import { Check, Clock3, CalendarDays, UserRound, Users, ChevronLeft, ChevronRight, ArrowLeft, CircleAlert, MapPin, Instagram } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { services, barbers, serviceFor, money, bookingEndDateFor, parseDate, isoDate, dateLabel, isBookingDate, type ServiceId, type Barber, type Appointment } from '@/lib/kani-model';
@@ -741,6 +741,13 @@ export function Booking({
   const today = parseDate(todayValue);
   const lastBookingDay = parseDate(bookingEndValue);
   const candidateBarbers = service && date && time && barberDeferred ? eligibleBarbersForAvailabilityStart(availabilityStartsByDate.get(date) ?? [], date, time, serviceName, clock) : [];
+
+  useEffect(() => {
+    if (isV5 && barberDeferred && time && candidateBarbers.length === 1 && barber !== candidateBarbers[0]) {
+      setBarber(candidateBarbers[0]);
+    }
+  }, [isV5, barberDeferred, time, candidateBarbers, barber]);
+
   const timeSlots = visibleSlots;
   const daysInMonth = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
   const offset = (new Date(month.getFullYear(), month.getMonth(), 1).getDay() + 6) % 7;
@@ -792,6 +799,7 @@ export function Booking({
                     key={s.id}
                     variant="outline"
                     aria-pressed={service === s.id}
+                    aria-label={`${s.name}, ${s.duration} minutos, ${money(s.price)}${service === s.id ? ', seleccionado' : ''}`}
                     className={`booking-option service-option ${service === s.id ? 'selected' : ''}`}
                     onClick={() => { if (service !== s.id) chooseService(s.id) }}
                   >
@@ -821,13 +829,14 @@ export function Booking({
                     key={b}
                     variant="outline"
                     aria-pressed={barber === b && !barberDeferred}
+                    aria-label={`Barbero ${b}${barber === b && !barberDeferred ? ', seleccionado' : ''}`}
                     className={`booking-option ${barber === b && !barberDeferred ? 'selected' : ''}`}
                     onClick={() => chooseBarber(b)}
                   >
                     <span className={`barber-avatar avatar-${i}`}>{b.charAt(0)}</span>
-                    <span className="booking-option-copy flex-1 text-center">
-                      <span className="booking-barber-name block text-lg">{b}</span>
-                      <span className="booking-barber-handle mt-1 block text-sm text-muted-foreground">{({ Lautaro: '@lautarodejesus_', Gonzalo: '@gonzalopierucci', 'Valentín': '@valentincarrizo_' } as Record<Barber, string>)[b]}</span>
+                    <span className={`booking-option-copy flex-1 ${isV5 ? 'text-left' : 'text-center'}`}>
+                      <span className="booking-barber-name block text-lg font-medium">{b}</span>
+                      <span className="booking-barber-handle mt-0.5 block text-sm text-muted-foreground">{({ Lautaro: '@lautarodejesus_', Gonzalo: '@gonzalopierucci', 'Valentín': '@valentincarrizo_' } as Record<Barber, string>)[b]}</span>
                     </span>
                     <span className="selection-circle">{barber === b && !barberDeferred && <Check size={12} />}</span>
                   </Button>
@@ -835,13 +844,14 @@ export function Booking({
                 <Button
                   variant="outline"
                   aria-pressed={barberDeferred}
+                  aria-label={isV5 ? `Cualquier barbero disponible, el sistema asignará según fecha y horario${barberDeferred ? ', seleccionado' : ''}` : "Elegir más adelante"}
                   className={`booking-defer-option ${barberDeferred ? 'selected' : ''}`}
                   onClick={() => { setBarber(null); setBarberDeferred(true); setPublicSlots([]); setAvailabilityError(''); setDate(''); setTime(''); }}
                 >
-                  <span className="barber-defer-mark">?</span>
-                  <span className="booking-defer-copy booking-option-copy flex-1 text-center">
-                    <span className="block text-base font-medium">Elegir más adelante</span>
-                    <span className="mt-1 block text-xs text-muted-foreground">Elegir según fecha y horario</span>
+                  <span className="barber-defer-mark" aria-hidden="true">{isV5 ? <Users size={18} /> : '?'}</span>
+                  <span className={`booking-defer-copy booking-option-copy flex-1 ${isV5 ? 'text-left' : 'text-center'}`}>
+                    <span className="block text-base font-medium">{isV5 ? 'Cualquier barbero disponible' : 'Elegir más adelante'}</span>
+                    <span className="mt-0.5 block text-xs text-muted-foreground">{isV5 ? 'El sistema asignará según fecha y horario' : 'Elegir según fecha y horario'}</span>
                   </span>
                   <span className="selection-circle">{barberDeferred && <Check size={12} />}</span>
                 </Button>
@@ -853,7 +863,15 @@ export function Booking({
               <ExperimentalLayout enabled={isV2}>
               <div className="calendar-panel">
                 <div className="calendar-header mb-7 flex items-center justify-between">
-                  <h2 className="capitalize">{month.toLocaleDateString('es-AR', { month: 'long' }).replace(/^./, letter => letter.toUpperCase()) + ' ' + month.getFullYear()}</h2>
+                  <div className="flex items-center gap-2.5">
+                    <h2 className="capitalize">{month.toLocaleDateString('es-AR', { month: 'long' }).replace(/^./, letter => letter.toUpperCase()) + ' ' + month.getFullYear()}</h2>
+                    {isV5 && availabilityLoading && (
+                      <span className="calendar-loading-indicator text-xs font-normal text-muted-foreground flex items-center gap-1.5 animate-pulse" aria-live="polite">
+                        <Clock3 size={13} className="animate-spin text-gold" />
+                        <span>Actualizando…</span>
+                      </span>
+                    )}
+                  </div>
                   <div className="flex gap-2">
                     <Button variant="ghost" size="icon" aria-label="Mes anterior" disabled={month.getFullYear() === today.getFullYear() && month.getMonth() === today.getMonth()} onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))}><ChevronLeft /></Button>
                     <Button variant="ghost" size="icon" aria-label="Mes siguiente" disabled={month.getFullYear() === lastBookingDay.getFullYear() && month.getMonth() === lastBookingDay.getMonth()} onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))}><ChevronRight /></Button>
@@ -867,13 +885,17 @@ export function Booking({
                     const value = isoDate(day);
                     const isWithinBookingWindow = value >= todayValue && value <= bookingEndValue;
                     const disabled = availabilityLoading || !service || !availabilityBarber && !barberDeferred || !isWithinBookingWindow || (!isBookingDate(value, todayValue, bookingEndValue) && !availableDatesSet.has(value)) || !availableDatesSet.has(value);
+                    const isToday = value === todayValue;
+                    const ariaLabel = isToday
+                      ? `Hoy, ${dateLabel(value)}${disabled ? ', sin turnos' : ''}${date === value ? ', seleccionado' : ''}`
+                      : `${dateLabel(value)}${disabled ? ', sin turnos' : ''}${date === value ? ', seleccionado' : ''}`;
                     return (
                       <Button
                         key={value}
                         variant="ghost"
-                        className={`calendar-day ${date === value ? 'selected' : ''} ${value === todayValue ? 'today' : ''}`}
+                        className={`calendar-day ${date === value ? 'selected' : ''} ${isToday ? 'today' : ''}`}
                         disabled={disabled}
-                        aria-label={dateLabel(value)}
+                        aria-label={ariaLabel}
                         aria-pressed={date === value}
                         onClick={() => { if (isV2) { revealTimesRef.current = true; setDateSelection(current => current + 1); } if (date !== value) { setDate(value); setTime(''); if (barberDeferred) setBarber(null); } }}
                       >
@@ -883,43 +905,69 @@ export function Booking({
                   })}
                 </div>
                 {availabilityError && <p role="alert" className="mt-5 text-destructive">{availabilityError}</p>}
-                {!isV2 && <p className="calendar-note mt-6 flex items-center gap-2 text-xs text-muted-foreground">
-                  <span className="h-1 w-1 rounded-full bg-gold" /> Atendemos de lunes a {onPaymentRequest ? 'sábados' : 'sábado'} de 10 a 20 hs.
-                </p>}
+                {isV5 && !availabilityLoading && availableDates.length === 0 && (barber || barberDeferred) && (
+                  <p role="status" className="calendar-no-availability mt-4 p-3 rounded-md bg-muted/60 text-center text-xs text-muted-foreground">
+                    No encontramos turnos disponibles para los próximos días con esta combinación. Probá cambiando de barbero o servicio.
+                  </p>
+                )}
+                {!isV2 && (
+                  <div className="calendar-footer-info mt-6 space-y-2">
+                    <p className="calendar-note flex items-center gap-2 text-xs text-muted-foreground">
+                      <span className="h-1 w-1 rounded-full bg-gold" /> Atendemos de lunes a {onPaymentRequest ? 'sábados' : 'sábado'} de 10 a 20 hs.
+                    </p>
+                    {isV5 && (
+                      <div className="calendar-legend flex items-center gap-4 text-xs text-muted-foreground pt-1">
+                        <span className="flex items-center gap-1.5"><span className="legend-indicator today-indicator" aria-hidden="true" /> Hoy</span>
+                        <span className="flex items-center gap-1.5"><span className="legend-indicator selected-indicator" aria-hidden="true" /> Seleccionado</span>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
               </ExperimentalLayout>
             )}
 
             {(step === 3 || isV2 && step === 2 && date) && (
-              <div ref={timeSectionRef} className={isV2 ? 'booking-v2-times' : isFiveSteps ? `booking-${isV5 ? 'v5' : 'v3'}-times` : undefined} aria-busy={isV2 ? availabilityLoading : undefined}>
+              <div ref={timeSectionRef} className={isV2 ? 'booking-v2-times' : isFiveSteps ? `booking-${isV5 ? 'v5' : 'v3'}-times` : undefined} aria-busy={availabilityLoading}>
                 {isV2 && <h2 className="booking-v2-choice-title">Elegir un horario</h2>}
-                <div className="booking-time-grid grid grid-cols-3 gap-2 sm:grid-cols-4" role={isV2 || isFiveSteps ? "group" : undefined} aria-label={isV2 || isFiveSteps ? "Horarios disponibles" : undefined}>
-                  {timeSlots.map(slot => (
-                    <Button
-                      key={slot.time}
-                      variant="outline"
-                      className={`booking-time-slot h-12 ${time === slot.time ? 'selected' : ''}`}
-                      aria-pressed={time === slot.time}
-                      aria-label={slot.time}
-                      onClick={() => { setTime(slot.time); if (barberDeferred) { setBarber(null); scrollAfterTimeSelectRef.current = true; } }}
-                    >
-                      {slot.time}
-                    </Button>
-                  ))}
-                </div>
+                {isV5 && availabilityLoading ? (
+                  <div className="booking-time-loading py-10 text-center text-sm text-muted-foreground flex items-center justify-center gap-2" role="status">
+                    <Clock3 size={18} className="animate-spin text-gold" />
+                    <span>Buscando horarios disponibles…</span>
+                  </div>
+                ) : (
+                  <div className="booking-time-grid grid grid-cols-3 gap-2 sm:grid-cols-4" role={isV2 || isFiveSteps ? "group" : undefined} aria-label={isV2 || isFiveSteps ? "Horarios disponibles" : undefined}>
+                    {timeSlots.map(slot => (
+                      <Button
+                        key={slot.time}
+                        variant="outline"
+                        className={`booking-time-slot h-12 ${time === slot.time ? 'selected' : ''}`}
+                        aria-pressed={time === slot.time}
+                        aria-label={`Horario ${slot.time}${time === slot.time ? ', seleccionado' : ''}`}
+                        onClick={() => { setTime(slot.time); if (barberDeferred) { setBarber(null); scrollAfterTimeSelectRef.current = true; } }}
+                      >
+                        {slot.time}
+                      </Button>
+                    ))}
+                  </div>
+                )}
                 {barberDeferred && time && (
-                  <div ref={barberSectionRef} className="barber-choice-inline">
-                    <h2 className={isV2 ? "booking-v2-choice-title" : undefined}>¿Quién te va a atender?</h2>
-                    <div className="barber-choice-list">
+                  <div ref={barberSectionRef} className="barber-choice-inline mt-4 pt-3 border-t border-border/40">
+                    <h2 className={isV2 ? "booking-v2-choice-title" : "text-sm font-medium mb-2.5 text-foreground"}>
+                      {candidateBarbers.length === 1 ? `Barbero asignado para las ${time} hs:` : `¿Quién te va a atender a las ${time} hs?`}
+                    </h2>
+                    <div className="barber-choice-list flex flex-wrap gap-2">
                       {candidateBarbers.map(candidate => (
                         <Button
                           key={candidate}
                           variant="outline"
                           aria-pressed={barber === candidate}
-                          className={barber === candidate ? 'selected' : ''}
+                          aria-label={`Barbero ${candidate}${barber === candidate ? ', seleccionado' : ''}`}
+                          className={`booking-candidate-barber-btn ${barber === candidate ? 'selected' : ''}`}
                           onClick={() => setBarber(candidate)}
                         >
-                          {candidate}
+                          <span className="candidate-name">{candidate}</span>
+                          {barber === candidate && <Check size={14} className="ml-1.5" />}
                         </Button>
                       ))}
                     </div>
@@ -927,7 +975,10 @@ export function Booking({
                 )}
                 {availabilityError && <p role="alert" className="py-3 text-sm text-destructive">{availabilityError}</p>}
                 {slots.length === 0 && !availabilityLoading && (
-                  <p className="py-6 text-muted-foreground">No hay horarios disponibles. Elegí otra fecha.</p>
+                  <div className="py-8 text-center text-muted-foreground space-y-1">
+                    <p className="text-sm font-medium text-foreground">No hay horarios disponibles para esta fecha.</p>
+                    <p className="text-xs">Podés volver al paso anterior para elegir otro día o cambiar de barbero.</p>
+                  </div>
                 )}
               </div>
             )}
@@ -938,13 +989,15 @@ export function Booking({
             {step === 4 && (
               <form ref={formRef} className="booking-contact-form space-y-3" onSubmit={e => { e.preventDefault(); if (isV1) next(); }}>
                 <label className="field-label">
-                  Nombre y apellido
+                  <span>Nombre y apellido <span className="field-required text-gold" aria-hidden="true">*</span></span>
                   <span className={`field-control ${statusFor('name')}`}>
                     <Input
                       name="name"
                       required
                       minLength={3}
                       autoComplete="name"
+                      autoCapitalize="words"
+                      spellCheck="false"
                       value={contact.name}
                       onBlur={() => markTouched('name')}
                       onChange={e => setContact({ ...contact, name: e.target.value })}
@@ -961,7 +1014,7 @@ export function Booking({
                   )}
                 </label>
                 <label className="field-label" htmlFor={isV2 || isFiveSteps ? "booking-v2-phone" : undefined}>
-                  Celular
+                  <span>Celular <span className="field-required text-gold" aria-hidden="true">*</span></span>
                   <Suspense fallback={<div className="h-12 w-full animate-pulse rounded-md bg-muted" />}>
                     <PhoneInput
                       id={isV2 || isFiveSteps ? "booking-v2-phone" : undefined}
@@ -985,13 +1038,16 @@ export function Booking({
                   )}
                 </label>
                 <label className="field-label">
-                  Email
+                  <span>Email <span className="field-required text-gold" aria-hidden="true">*</span></span>
                   <span className={`field-control ${statusFor('email')}`}>
                     <Input
                       name="email"
                       type="email"
                       required
                       autoComplete="email"
+                      autoCapitalize="none"
+                      spellCheck="false"
+                      inputMode="email"
                       value={contact.email}
                       onBlur={() => markTouched('email')}
                       onChange={e => setContact({ ...contact, email: e.target.value })}
@@ -1008,7 +1064,7 @@ export function Booking({
                   )}
                 </label>
                 <label className="field-label">
-                  Observaciones <span className="text-xs font-normal text-muted-foreground">(opcional)</span>
+                  <span>Observaciones <span className="text-xs font-normal text-muted-foreground">(opcional)</span></span>
                   <span className={`field-control ${statusFor('notes')}`}>
                     <textarea
                       name="notes"
@@ -1129,7 +1185,7 @@ export function Booking({
               <ArrowLeft size={14} aria-hidden="true" /> Volver
             </Button>
             <Button disabled={!canNext || submitting} className="action-positive booking-next-button h-12 px-6" onClick={step === 5 || (isV2 || isFiveSteps) && step === 4 ? submit : next}>
-              {step === 5 || (isV2 || isFiveSteps) && step === 4 ? (submitting ? 'Preparando pago seguro…' : 'Pagar seña') : 'Continuar'}
+              {step === 5 || (isV2 || isFiveSteps) && step === 4 ? (submitting ? 'Preparando pago seguro…' : isV5 ? `Pagar seña ${money(depositArs)}` : 'Pagar seña') : 'Continuar'}
             </Button>
           </div>
         </div>
