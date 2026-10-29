@@ -67,12 +67,21 @@ export async function reconcilePendingPayments() {
             p_provider_status: 'approved',
             p_provider_code: 'reconciled_approved',
           });
-          await db.rpc('confirm_payway_attempt', {
+          const { data: confirmData } = await db.rpc('confirm_payway_attempt', {
             p_appointment_id: att.appointment_id,
             p_attempt_id: att.id,
             p_provider_id: query.providerId,
             p_amount_minor: att.amount_minor_units,
           });
+          const claimToken = confirmData?.[0]?.notification_claim_token;
+          if (claimToken) {
+            try {
+              const { dispatchAppointmentNotification } = await import('./kani-notifications.functions');
+              await dispatchAppointmentNotification({ appointmentId: att.appointment_id, claimToken });
+            } catch (notifyErr) {
+              console.warn('[Payment Maintenance] Error enviando notificacion:', notifyErr);
+            }
+          }
         } else if (query.matches && query.status === 'rejected') {
           await db.rpc('settle_payway_attempt', {
             p_attempt_id: att.id,

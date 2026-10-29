@@ -83,150 +83,144 @@ export const dispatchAppointmentNotification = createServerOnlyFn(async (data: {
       }
       if (event.dispatch_status === "ALREADY_SENT") return { sent: true, status: "ALREADY_SENT" };
       if (event.dispatch_status === "IN_PROGRESS") return { sent: false, status: "IN_PROGRESS" };
-      if (!event.recipient_email || !event.recipient_email.trim()) {
-        console.log(`[KANI notification] Omitiendo email para turno ${data.appointmentId} porque el cliente no tiene email registrado.`);
-        return { sent: false, status: "SKIPPED" };
-      }
+      const recipientPhone = event.recipient_phone ?? data.clientPhone ?? null;
+      let emailSuccess = false;
+      let emailMessageId: string | undefined;
+      let pontiunSuccess = false;
+      let pontiunMessageId: string | undefined;
+      let pontiunError: string | undefined;
 
-      // These values must be Worker runtime bindings, not VITE_* build variables.
-      // Trim whitespace so an accidentally blank dashboard value is reported as missing.
-      const apiKey = getRuntimeEnv("RESEND_API_KEY")?.trim();
-      const fromEmail = getRuntimeEnv("RESEND_FROM_EMAIL")?.trim();
-      if (!apiKey) throw new Error("RESEND_API_KEY_MISSING");
-      if (!fromEmail) throw new Error("RESEND_FROM_EMAIL_MISSING");
-
-      const payload: NotificationPayload = {
-        notificationId: event.notification_id,
-        notificationType: event.notification_type,
-        recipientEmail: event.recipient_email,
-        recipientPhone: event.recipient_phone ?? data.clientPhone ?? null,
-        clientName: event.client_name,
-        barberName: event.barber_name,
-        serviceName: event.service_name,
-        bookingDate: event.booking_date,
-        startTime: event.start_time,
-        endTime: event.end_time,
-        clientNotes: event.client_notes,
-        servicePriceArs: event.service_price_ars,
-        serviceDurationMinutes: event.service_duration_minutes,
-        downPaymentArs: (event.down_payment_ars && event.down_payment_ars !== 10000) ? event.down_payment_ars : KANI_STANDARD_DEPOSIT_ARS,
-        transferAlias: event.transfer_alias,
-        transferCuit: event.transfer_cuit,
-        transferHolderName: event.transfer_holder_name,
-      };
-      const email = buildEmail(payload);
-      const subject = notificationSubject(
-        email.subject,
-        getRuntimeEnv('KANI_ENVIRONMENT'),
-        getRuntimeEnv('SUPABASE_URL') ?? getRuntimeEnv('VITE_SUPABASE_URL'),
-      );
-      const response = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-          "Idempotency-Key": event.notification_id,
-        },
-        body: JSON.stringify({
-          from: fromEmail,
-          to: [event.recipient_email],
-          subject,
-          html: email.html,
-          text: email.text,
-        }),
-      });
-      const result = (await response.json().catch(() => null)) as {
-        id?: string;
-        message?: string;
-      } | null;
-      if (!response.ok) {
-        throw new Error(`RESEND_${response.status}: ${result?.message ?? "SEND_FAILED"}`);
-      }
-
-      // Despacho de WhatsApp si las credenciales y el teléfono están disponibles
-      const whatsappToken = getRuntimeEnv("WHATSAPP_ACCESS_TOKEN")?.trim();
-      const whatsappPhoneId = getRuntimeEnv("WHATSAPP_PHONE_NUMBER_ID")?.trim();
-      const recipientPhone = payload.recipientPhone;
-
-      if (!whatsappToken || !whatsappPhoneId) {
-        console.info(
-          "[KANI notification] WhatsApp no configurado aún en variables de entorno (pendiente Meta); omitiendo envío de WhatsApp de forma segura.",
-        );
-      } else if (!recipientPhone) {
-        console.info(
-          "[KANI notification] No se proveyó teléfono del cliente; omitiendo notificación de WhatsApp.",
-        );
-      } else {
-        try {
-          const { sendWhatsAppNotification } = await import("./kani-whatsapp");
-          const dateFormatted = new Date(`${payload.bookingDate}T12:00:00Z`).toLocaleDateString("es-AR", {
-            timeZone: "America/Argentina/Buenos_Aires",
-            day: "2-digit",
-            month: "2-digit",
-            year: "numeric",
-          });
-          const timeFormatted = `${payload.startTime.slice(0, 5)} hs`;
-          const templateName = getRuntimeEnv("WHATSAPP_TEMPLATE_NAME")?.trim() || "confirmacion_turno_kani";
-
-          const waResult = await sendWhatsAppNotification({
-            payload: {
-              toPhone: recipientPhone,
-              clientName: payload.clientName,
-              serviceName: payload.serviceName,
-              barberName: payload.barberName,
-              bookingDate: dateFormatted,
-              startTime: timeFormatted,
-            },
-            phoneNumberId: whatsappPhoneId,
-            accessToken: whatsappToken,
-            templateName,
-          });
-
-          if (!waResult.success) {
-            console.warn(`[KANI WhatsApp] Aviso de turno no enviado: ${waResult.error}`);
-          }
-        } catch (waError) {
-          console.warn("[KANI WhatsApp] Error durante el despacho:", waError);
-        }
-      }
-
-      // Despacho de WhatsApp vía Pontiun (exclusivo para turnos CONFIRMED)
-      if (payload.notificationType === "CONFIRMED") {
+      // 1. Despacho de WhatsApp vía Pontiun (prioritario para turnos CONFIRMED)
+      if (event.notification_type === "CONFIRMED") {
         try {
           const { sendPontiunAppointmentConfirmation } = await import("./kani-pontiun");
           const pontiunResult = await sendPontiunAppointmentConfirmation({
             appointmentId: data.appointmentId,
-            clientName: payload.clientName,
-            clientPhone: payload.recipientPhone,
-            barberName: payload.barberName,
-            serviceName: payload.serviceName,
-            bookingDate: payload.bookingDate,
-            startTime: payload.startTime,
+            clientName: event.client_name,
+            clientPhone: recipientPhone,
+            barberName: event.barber_name,
+            serviceName: event.service_name,
+            bookingDate: event.booking_date,
+            startTime: event.start_time,
           });
 
           if (pontiunResult.success) {
+            pontiunSuccess = true;
+            pontiunMessageId = pontiunResult.messageId;
             console.log(
               `[Pontiun WhatsApp] Confirmación enviada/aceptada para turno ${data.appointmentId} (id: ${pontiunResult.messageId})`,
             );
           } else if (pontiunResult.skipped) {
-            // Secret no configurado aún en Cloudflare Workers
+            console.info(
+              `[Pontiun WhatsApp] Envío omitido de forma segura para turno ${data.appointmentId}: ${pontiunResult.error}`,
+            );
           } else {
+            pontiunError = pontiunResult.error;
             console.warn(
               `[Pontiun WhatsApp] No se pudo enviar confirmación para turno ${data.appointmentId}: ${pontiunResult.error}`,
             );
           }
         } catch (pontiunErr) {
-          console.warn("[Pontiun WhatsApp] Error durante el despacho:", pontiunErr);
+          pontiunError = pontiunErr instanceof Error ? pontiunErr.message : String(pontiunErr);
+          console.warn("[Pontiun WhatsApp] Error durante el despacho:", pontiunError);
         }
       }
 
-      const { error: completeError } = await supabase.rpc("complete_appointment_notification", {
-        p_notification_id: event.notification_id,
-        p_claim_token: data.claimToken,
-        p_provider_message_id: result?.id ?? "",
-      });
-      if (completeError) throw completeError;
-      return { sent: true, status: "SENT" };
+      // 2. Despacho de Email vía Resend (aislado para no bloquear WhatsApp)
+      if (event.recipient_email && event.recipient_email.trim()) {
+        try {
+          const apiKey = getRuntimeEnv("RESEND_API_KEY")?.trim();
+          const fromEmail = getRuntimeEnv("RESEND_FROM_EMAIL")?.trim();
+          if (apiKey && fromEmail) {
+            const payload: NotificationPayload = {
+              notificationId: event.notification_id,
+              notificationType: event.notification_type,
+              recipientEmail: event.recipient_email,
+              recipientPhone,
+              clientName: event.client_name,
+              barberName: event.barber_name,
+              serviceName: event.service_name,
+              bookingDate: event.booking_date,
+              startTime: event.start_time,
+              endTime: event.end_time,
+              clientNotes: event.client_notes,
+              servicePriceArs: event.service_price_ars,
+              serviceDurationMinutes: event.service_duration_minutes,
+              downPaymentArs:
+                event.down_payment_ars && event.down_payment_ars !== 10000
+                  ? event.down_payment_ars
+                  : KANI_STANDARD_DEPOSIT_ARS,
+              transferAlias: event.transfer_alias,
+              transferCuit: event.transfer_cuit,
+              transferHolderName: event.transfer_holder_name,
+            };
+            const email = buildEmail(payload);
+            const subject = notificationSubject(
+              email.subject,
+              getRuntimeEnv("KANI_ENVIRONMENT"),
+              getRuntimeEnv("SUPABASE_URL") ?? getRuntimeEnv("VITE_SUPABASE_URL"),
+            );
+            const response = await fetch("https://api.resend.com/emails", {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${apiKey}`,
+                "Content-Type": "application/json",
+                "Idempotency-Key": event.notification_id,
+              },
+              body: JSON.stringify({
+                from: fromEmail,
+                to: [event.recipient_email],
+                subject,
+                html: email.html,
+                text: email.text,
+              }),
+            });
+            const result = (await response.json().catch(() => null)) as {
+              id?: string;
+              message?: string;
+            } | null;
+            if (response.ok && result?.id) {
+              emailSuccess = true;
+              emailMessageId = result.id;
+              console.log(`[KANI notification] Email enviado exitosamente para turno ${data.appointmentId} (id: ${result.id})`);
+            } else {
+              console.warn(`[KANI notification] Resend HTTP ${response.status}: ${result?.message ?? "SEND_FAILED"}`);
+            }
+          } else {
+            console.info("[KANI notification] Credenciales de Resend no configuradas; omitiendo email.");
+          }
+        } catch (emailErr) {
+          console.warn("[KANI notification] Error enviando email vía Resend:", emailErr);
+        }
+      } else {
+        console.log(`[KANI notification] Turno ${data.appointmentId} no posee email registrado; email omitido.`);
+      }
+
+      // Si al menos un canal (Pontiun o Resend) tuvo éxito, completar la notificación
+      if (pontiunSuccess || emailSuccess) {
+        const providerMessageId = [
+          pontiunMessageId ? `pontiun:${pontiunMessageId}` : null,
+          emailMessageId ? `resend:${emailMessageId}` : null,
+        ]
+          .filter(Boolean)
+          .join("|");
+
+        const { error: completeError } = await supabase.rpc("complete_appointment_notification", {
+          p_notification_id: event.notification_id,
+          p_claim_token: data.claimToken,
+          p_provider_message_id: providerMessageId || "delivered",
+        });
+        if (completeError) throw completeError;
+        return { sent: true, status: "SENT" };
+      }
+
+      // Si ninguno tuvo éxito y hubo error registrado
+      if (pontiunError) {
+        throw new Error(`NOTIFICATION_DISPATCH_FAILED: ${pontiunError}`);
+      }
+
+      // Si ambos canales fueron omitidos por falta de destinatario o configuración
+      return { sent: false, status: "SKIPPED" };
     } catch (error) {
       const safeMessage = safeErrorMessage(error);
       console.error(`[KANI notification] ${safeMessage}`);

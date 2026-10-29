@@ -16,6 +16,8 @@ export type PontiunSendResult = {
   error?: string;
   skipped?: boolean;
   idempotentReplay?: boolean;
+  retryable?: boolean;
+  attempts?: number;
 };
 
 export type PontiunWebhookVerificationResult = {
@@ -369,22 +371,29 @@ export async function handlePontiunWebhookRequest(request: Request): Promise<Res
  * - Utiliza plantilla aprobada de WhatsApp (bypassa la ventana de 24 horas para nuevos contactos).
  * - Cabecera Idempotency-Key obligatoria: `kani-appointment-${appointmentId}-confirmed`.
  * - Autenticación con API Key opaca del tenant (Bearer pk_live_...).
+ * - template.language es un STRING ("es_MX"), acorde a la especificación OpenAPI 3.1 de Pontiun.
+ * - 5 variables en orden estricto: [1: Cliente, 2: Fecha DD/MM/YYYY, 3: Horario HH:MM, 4: Servicio, 5: Barbero].
+ * - Barbero obligatorio: si falta en la reserva, no inventa nombres y retorna BARBER_MISSING sin reintentar.
  * - Si Pontiun o las credenciales no están configuradas, se omite de forma segura sin romper la confirmación.
- * - Si Pontiun falla (5xx, timeout, template_not_approved), nunca compromete el estado CONFIRMED del turno.
+ * - Si Pontiun falla (5xx, timeout, template_not_approved), NUNCA compromete el estado CONFIRMED del turno.
+ * - Reintento controlado con retroceso exponencial solo ante errores transitorios (red, 408, 429, 5xx).
  */
 export async function sendPontiunAppointmentConfirmation(
   params: PontiunAppointmentPayload,
 ): Promise<PontiunSendResult> {
   const apiKey = getPontiunRuntimeEnv("PONTIUN_API_KEY");
   const phoneNumberId =
-    getPontiunRuntimeEnv("PONTIUN_WHATSAPP_PHONE_NUMBER_ID") ??
     getPontiunRuntimeEnv("PONTIUN_PHONE_NUMBER_ID") ??
+    getPontiunRuntimeEnv("PONTIUN_WHATSAPP_PHONE_NUMBER_ID") ??
     getPontiunRuntimeEnv("PONTIUN_PAGE_ID");
   const templateName =
+    getPontiunRuntimeEnv("PONTIUN_TEMPLATE_NAME") ??
     getPontiunRuntimeEnv("PONTIUN_WHATSAPP_CONFIRMATION_TEMPLATE") ??
     "confirmacion_turno_kani";
   const templateLanguage =
-    getPontiunRuntimeEnv("PONTIUN_WHATSAPP_TEMPLATE_LANGUAGE") ?? "es_AR";
+    getPontiunRuntimeEnv("PONTIUN_TEMPLATE_LANGUAGE") ??
+    getPontiunRuntimeEnv("PONTIUN_WHATSAPP_TEMPLATE_LANGUAGE") ??
+    "es_MX";
   const apiBaseUrl =
     getPontiunRuntimeEnv("PONTIUN_API_BASE_URL") ?? "https://pontiun.com";
 
@@ -396,17 +405,21 @@ export async function sendPontiunAppointmentConfirmation(
       success: false,
       skipped: true,
       error: "PONTIUN_API_KEY_NOT_CONFIGURED",
+      retryable: false,
+      attempts: 0,
     };
   }
 
   if (!phoneNumberId || !phoneNumberId.trim()) {
     console.info(
-      "[Pontiun WhatsApp] PONTIUN_WHATSAPP_PHONE_NUMBER_ID no configurado; omitiendo envío seguro.",
+      "[Pontiun WhatsApp] PONTIUN_PHONE_NUMBER_ID no configurado; omitiendo envío seguro.",
     );
     return {
       success: false,
       skipped: true,
       error: "PONTIUN_PHONE_NUMBER_ID_NOT_CONFIGURED",
+      retryable: false,
+      attempts: 0,
     };
   }
 
@@ -418,10 +431,29 @@ export async function sendPontiunAppointmentConfirmation(
     return {
       success: false,
       error: "INVALID_PHONE_NUMBER",
+      retryable: false,
+      attempts: 0,
     };
   }
 
-  // Formatear fecha y hora
+  // Barbero es obligatorio en el contrato oficial de Kani Studio. No inventar nombres si no está asignado.
+  const barberName = params.barberName?.trim();
+  if (!barberName) {
+    console.warn(
+      `[Pontiun WhatsApp] Turno ${params.appointmentId} no tiene barbero asignado; no se inventa nombre y se cancela el envío.`,
+    );
+    return {
+      success: false,
+      error: "BARBER_MISSING",
+      retryable: false,
+      attempts: 0,
+    };
+  }
+
+  // 1. Nombre del cliente
+  const clientName = params.clientName?.trim() || "Cliente";
+
+  // 2. Fecha (DD/MM/YYYY)
   let formattedDate = params.bookingDate ?? "";
   if (formattedDate && /^\d{4}-\d{2}-\d{2}$/.test(formattedDate)) {
     try {
@@ -436,14 +468,17 @@ export async function sendPontiunAppointmentConfirmation(
     }
   }
 
+  // 3. Horario (HH:MM estricto según tabla oficial)
   let formattedTime = params.startTime ?? "";
   if (formattedTime) {
-    formattedTime = `${formattedTime.slice(0, 5)} hs`;
+    formattedTime = formattedTime.slice(0, 5);
   }
 
-  const clientName = params.clientName?.trim() || "Cliente";
-  const serviceName = params.serviceName?.trim() || "Servicio Kani";
-  const barberName = params.barberName?.trim() || "Staff Kani";
+  // 4. Servicio (normalizar 'Corte + barba' a 'Corte y barba')
+  let serviceName = params.serviceName?.trim() || "Servicio Kani";
+  if (serviceName.toLowerCase() === "corte + barba" || serviceName.toLowerCase() === "corte +barba") {
+    serviceName = "Corte y barba";
+  }
 
   // Clave de idempotencia única por turno confirmado según ADR Pontiun
   const idempotencyKey = `kani-appointment-${params.appointmentId}-confirmed`;
@@ -453,9 +488,7 @@ export async function sendPontiunAppointmentConfirmation(
     recipientId: recipientPhone,
     template: {
       name: templateName.trim(),
-      language: {
-        code: templateLanguage.trim(),
-      },
+      language: templateLanguage.trim(), // string per Pontiun OpenAPI schema!
       components: [
         {
           type: "body",
@@ -472,70 +505,133 @@ export async function sendPontiunAppointmentConfirmation(
   };
 
   const endpoint = `${apiBaseUrl.replace(/\/$/, "")}/api/meta/whatsapp/templates/send`;
+  const maskedPhone = `***${recipientPhone.slice(-4)}`;
+  const maxAttempts = 3;
+  let lastError = "UNKNOWN_ERROR";
+  let lastRetryable = false;
 
-  try {
-    const maskedPhone = `***${recipientPhone.slice(-4)}`;
-    console.log(
-      `[Pontiun WhatsApp] Enviando confirmación para turno ${params.appointmentId} al destinatario ${maskedPhone} con idempotencyKey ${idempotencyKey}`,
-    );
-
-    const response = await fetch(endpoint, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey.trim()}`,
-        "Content-Type": "application/json",
-        "Idempotency-Key": idempotencyKey,
-      },
-      body: JSON.stringify(requestBody),
-    });
-
-    const responseJson = (await response.json().catch(() => null)) as {
-      message?: { id?: string };
-      id?: string;
-      resender?: { idempotentReplay?: boolean };
-      error?: string;
-      code?: string;
-    } | null;
-
-    if (response.ok) {
-      const isReplay = Boolean(responseJson?.resender?.idempotentReplay);
-      const messageId = responseJson?.message?.id ?? responseJson?.id ?? "sent";
-      if (isReplay) {
-        console.log(`[Pontiun WhatsApp] Reenvío idempotente detectado para turno ${params.appointmentId}`);
-      } else {
-        console.log(`[Pontiun WhatsApp] Confirmación aceptada por Pontiun para turno ${params.appointmentId}`);
-      }
-      return {
-        success: true,
-        messageId,
-        idempotentReplay: isReplay,
-      };
-    }
-
-    if (response.status === 409 && (responseJson?.error === "template_not_approved" || responseJson?.code === "template_not_approved")) {
-      console.warn(
-        `[Pontiun WhatsApp] Plantilla '${templateName}' no aprobada en el catálogo de Pontiun / Meta (HTTP 409).`,
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      console.log(
+        `[Pontiun WhatsApp] Enviando confirmación (intento ${attempt}/${maxAttempts}) para turno ${params.appointmentId} al destinatario ${maskedPhone} con idempotencyKey ${idempotencyKey}`,
       );
-      return {
-        success: false,
-        error: "TEMPLATE_NOT_APPROVED",
-      };
+
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey.trim()}`,
+          "Content-Type": "application/json",
+          "Idempotency-Key": idempotencyKey,
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      const responseJson = (await response.json().catch(() => null)) as {
+        message?: { id?: string };
+        id?: string;
+        resender?: { messageId?: string; status?: string; idempotentReplay?: boolean };
+        meta?: { messages?: Array<{ id: string; message_status?: string }> };
+        error?: string;
+        code?: string;
+      } | null;
+
+      if (response.ok) {
+        if (responseJson?.resender?.status === "failed" || Boolean(responseJson?.error)) {
+          lastError = responseJson?.error ?? "RESENDER_FAILED";
+          lastRetryable = false;
+          console.warn(
+            `[Pontiun WhatsApp] Pontiun devolvió respuesta 200 pero estado de envío fallido: ${lastError}`,
+          );
+          return {
+            success: false,
+            error: lastError,
+            retryable: false,
+            attempts: attempt,
+          };
+        }
+
+        const isReplay = Boolean(responseJson?.resender?.idempotentReplay);
+        const messageId =
+          responseJson?.resender?.messageId ??
+          responseJson?.meta?.messages?.[0]?.id ??
+          responseJson?.message?.id ??
+          responseJson?.id ??
+          "sent";
+
+        if (isReplay) {
+          console.log(
+            `[Pontiun WhatsApp] Reenvío idempotente detectado para turno ${params.appointmentId} (messageId: ${messageId})`,
+          );
+        } else {
+          console.log(
+            `[Pontiun WhatsApp] Confirmación aceptada por Pontiun para turno ${params.appointmentId} (messageId: ${messageId})`,
+          );
+        }
+
+        return {
+          success: true,
+          messageId,
+          idempotentReplay: isReplay,
+          attempts: attempt,
+        };
+      }
+
+      // Errores permanentes Meta / Pontiun
+      if (
+        response.status === 409 &&
+        (responseJson?.error === "template_not_approved" || responseJson?.code === "template_not_approved")
+      ) {
+        console.warn(
+          `[Pontiun WhatsApp] Plantilla '${templateName}' no aprobada en el catálogo de Pontiun / Meta (HTTP 409).`,
+        );
+        return {
+          success: false,
+          error: "TEMPLATE_NOT_APPROVED",
+          retryable: false,
+          attempts: attempt,
+        };
+      }
+
+      if (response.status >= 400 && response.status < 500 && response.status !== 408 && response.status !== 429) {
+        const errorDetails = responseJson?.error ?? responseJson?.code ?? `HTTP_${response.status}`;
+        console.warn(
+          `[Pontiun WhatsApp] Error permanente de cliente (HTTP ${response.status}): ${errorDetails}`,
+        );
+        return {
+          success: false,
+          error: `PONTIUN_${response.status}: ${errorDetails}`,
+          retryable: false,
+          attempts: attempt,
+        };
+      }
+
+      // Error transitorio (HTTP 408, 429, 5xx)
+      const errorDetails = responseJson?.error ?? responseJson?.code ?? `HTTP_${response.status}`;
+      lastError = `PONTIUN_${response.status}: ${errorDetails}`;
+      lastRetryable = true;
+      console.warn(
+        `[Pontiun WhatsApp] Error transitorio en intento ${attempt}/${maxAttempts} (HTTP ${response.status}): ${errorDetails}`,
+      );
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      lastError = errorMsg;
+      lastRetryable = true;
+      console.warn(
+        `[Pontiun WhatsApp Exception en intento ${attempt}/${maxAttempts}]: ${errorMsg}`,
+      );
     }
 
-    const errorDetails = responseJson?.error ?? responseJson?.code ?? `HTTP_${response.status}`;
-    console.warn(
-      `[Pontiun WhatsApp] Error al enviar confirmación (HTTP ${response.status}): ${errorDetails}`,
-    );
-    return {
-      success: false,
-      error: `PONTIUN_${response.status}: ${errorDetails}`,
-    };
-  } catch (error) {
-    const errorMsg = error instanceof Error ? error.message : String(error);
-    console.error("[Pontiun WhatsApp Exception]:", errorMsg);
-    return {
-      success: false,
-      error: errorMsg,
-    };
+    // Si aún quedan intentos y es transitorio, esperar backoff
+    if (attempt < maxAttempts && lastRetryable) {
+      const backoffMs = attempt === 1 ? 500 : 1500;
+      await new Promise((resolve) => setTimeout(resolve, backoffMs));
+    }
   }
+
+  return {
+    success: false,
+    error: lastError,
+    retryable: lastRetryable,
+    attempts: maxAttempts,
+  };
 }

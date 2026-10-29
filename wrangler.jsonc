@@ -9,6 +9,10 @@
     "PAYWAY_SANDBOX_ENABLED": "true",
     "PAYWAY_ENVIRONMENT": "sandbox",
     "PAYWAY_API_BASE_URL": "https://developers-ventasonline.payway.com.ar/api/v2",
-    "PAYWAY_PAYMENT_METHODS": "[{\"id\":1,\"label\":\"Visa\"},{\"id\":104,\"label\":\"Mastercard\"},{\"id\":63,\"label\":\"Cabal\"}]"
+    "PAYWAY_PAYMENT_METHODS": "[{\"id\":1,\"label\":\"Visa\"},{\"id\":104,\"label\":\"Mastercard\"},{\"id\":63,\"label\":\"Cabal\"}]",
+    "PONTIUN_PHONE_NUMBER_ID": "1391432264052937",
+    "PONTIUN_WABA_ID": "1519852186644295",
+    "PONTIUN_TEMPLATE_NAME": "confirmacion_turno_kani",
+    "PONTIUN_TEMPLATE_LANGUAGE": "es_MX"
   }
 }

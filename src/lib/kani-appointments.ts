@@ -258,6 +258,21 @@ export async function createManualAppointment(input: CreateManualAppointmentInpu
   if (error) throw error;
   const row = data?.[0];
   if (!row) throw new Error('No se pudo crear el turno manual.');
+
+  if (row.appointment_id && phone) {
+    try {
+      const { data: claimToken } = await supabase.rpc('create_appointment_notification_event', {
+        p_appointment_id: row.appointment_id,
+        p_notification_type: 'CONFIRMED',
+      });
+      if (claimToken) {
+        await dispatchAppointmentNotification(row.appointment_id, claimToken, phone);
+      }
+    } catch (notifError) {
+      console.warn('[KANI appointments] No se pudo despachar notificación para turno manual:', notifError);
+    }
+  }
+
   return row;
 }
 

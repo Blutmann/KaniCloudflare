@@ -356,9 +356,9 @@ describe("Pontiun WhatsApp Integration Unit Tests", () => {
 
     it("dispatches official Pontiun template request with mandatory Idempotency-Key and correct payload", async () => {
       process.env.PONTIUN_API_KEY = "pk_live_secret_token_123";
-      process.env.PONTIUN_WHATSAPP_PHONE_NUMBER_ID = "109283475610293";
-      process.env.PONTIUN_WHATSAPP_CONFIRMATION_TEMPLATE = "confirmacion_turno_kani";
-      process.env.PONTIUN_WHATSAPP_TEMPLATE_LANGUAGE = "es_AR";
+      process.env.PONTIUN_PHONE_NUMBER_ID = "1391432264052937";
+      process.env.PONTIUN_TEMPLATE_NAME = "confirmacion_turno_kani";
+      process.env.PONTIUN_TEMPLATE_LANGUAGE = "es_MX";
 
       let capturedUrl = "";
       let capturedHeaders: HeadersInit | undefined;
@@ -372,16 +372,19 @@ describe("Pontiun WhatsApp Integration Unit Tests", () => {
           ok: true,
           status: 200,
           json: async () => ({
-            id: "msg_pontiun_9988",
-            message: { id: "wamid.HBgNNTQ5MTE..." },
+            resender: { messageId: "msg_pontiun_9988", status: "sent" },
+            meta: { messages: [{ id: "wamid.HBgNNTQ5MTE..." }] },
           }),
         };
       }) as any;
 
-      const result = await sendPontiunAppointmentConfirmation(validAppointment);
+      const result = await sendPontiunAppointmentConfirmation({
+        ...validAppointment,
+        serviceName: "Corte + barba",
+      });
 
       expect(result.success).toBe(true);
-      expect(result.messageId).toBe("wamid.HBgNNTQ5MTE...");
+      expect(result.messageId).toBe("msg_pontiun_9988");
 
       // Verified official endpoint
       expect(capturedUrl).toBe("https://pontiun.com/api/meta/whatsapp/templates/send");
@@ -393,31 +396,47 @@ describe("Pontiun WhatsApp Integration Unit Tests", () => {
       expect(headers["Idempotency-Key"]).toBe("kani-appointment-apt_uuid_11223344-confirmed");
 
       // Verified body
-      expect(capturedBody.pageId).toBe("109283475610293");
+      expect(capturedBody.pageId).toBe("1391432264052937");
       expect(capturedBody.recipientId).toBe("5491155616438");
       expect(capturedBody.template.name).toBe("confirmacion_turno_kani");
-      expect(capturedBody.template.language.code).toBe("es_AR");
+      // Must be a string per Pontiun OpenAPI 3.1
+      expect(capturedBody.template.language).toBe("es_MX");
 
       const params = capturedBody.template.components[0].parameters;
       expect(params).toHaveLength(5);
       expect(params[0].text).toBe("Gonzalo Ramos");
-      // Date formatted in Argentina
-      expect(params[1].text).toContain("30/10/2026");
-      expect(params[2].text).toBe("16:00 hs");
+      // Date formatted in Argentina DD/MM/YYYY
+      expect(params[1].text).toBe("30/10/2026");
+      // Time formatted HH:MM without 'hs'
+      expect(params[2].text).toBe("16:00");
+      // Service normalized to 'Corte y barba'
       expect(params[3].text).toBe("Corte y barba");
       expect(params[4].text).toBe("Lautaro");
     });
 
+    it("fails closed when barberName is missing without inventing names", async () => {
+      process.env.PONTIUN_API_KEY = "pk_live_secret_token_123";
+      process.env.PONTIUN_PHONE_NUMBER_ID = "1391432264052937";
+
+      const result = await sendPontiunAppointmentConfirmation({
+        ...validAppointment,
+        barberName: null,
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("BARBER_MISSING");
+      expect(result.retryable).toBe(false);
+    });
+
     it("handles Pontiun idempotent replay response gracefully", async () => {
       process.env.PONTIUN_API_KEY = "pk_live_secret_token_123";
-      process.env.PONTIUN_WHATSAPP_PHONE_NUMBER_ID = "109283475610293";
+      process.env.PONTIUN_PHONE_NUMBER_ID = "1391432264052937";
 
       globalThis.fetch = vi.fn().mockResolvedValue({
         ok: true,
         status: 200,
         json: async () => ({
-          id: "msg_original_123",
-          resender: { idempotentReplay: true },
+          resender: { messageId: "msg_original_123", idempotentReplay: true, status: "sent" },
         }),
       } as any);
 
@@ -429,7 +448,7 @@ describe("Pontiun WhatsApp Integration Unit Tests", () => {
 
     it("handles HTTP 409 template_not_approved from Pontiun without throwing", async () => {
       process.env.PONTIUN_API_KEY = "pk_live_secret_token_123";
-      process.env.PONTIUN_WHATSAPP_PHONE_NUMBER_ID = "109283475610293";
+      process.env.PONTIUN_PHONE_NUMBER_ID = "1391432264052937";
 
       globalThis.fetch = vi.fn().mockResolvedValue({
         ok: false,
@@ -443,17 +462,21 @@ describe("Pontiun WhatsApp Integration Unit Tests", () => {
       const result = await sendPontiunAppointmentConfirmation(validAppointment);
       expect(result.success).toBe(false);
       expect(result.error).toBe("TEMPLATE_NOT_APPROVED");
+      expect(result.retryable).toBe(false);
     });
 
-    it("handles network timeouts and 5xx errors from Pontiun without throwing", async () => {
+    it("retries controlled on network timeouts or 5xx and fails safely without throwing", async () => {
       process.env.PONTIUN_API_KEY = "pk_live_secret_token_123";
-      process.env.PONTIUN_WHATSAPP_PHONE_NUMBER_ID = "109283475610293";
+      process.env.PONTIUN_PHONE_NUMBER_ID = "1391432264052937";
 
-      globalThis.fetch = vi.fn().mockRejectedValue(new Error("Connection timeout after 5000ms"));
+      const fetchMock = vi.fn().mockRejectedValue(new Error("Connection timeout after 5000ms"));
+      globalThis.fetch = fetchMock as any;
 
       const result = await sendPontiunAppointmentConfirmation(validAppointment);
       expect(result.success).toBe(false);
       expect(result.error).toContain("timeout");
+      expect(result.attempts).toBe(3);
+      expect(fetchMock).toHaveBeenCalledTimes(3);
     });
   });
 
