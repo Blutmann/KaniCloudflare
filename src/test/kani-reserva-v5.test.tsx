@@ -169,4 +169,73 @@ describe('Reserva V5 — Clonación funcional, aislamiento y claridad visual', (
     expect(screen.getByText('Elegí una fecha')).toBeInTheDocument();
     expect(container.querySelector('.calendar-panel')).toBeInTheDocument();
   });
+
+  it('6. Pantalla final de V5: Estructura 50/50 y acciones unificadas', () => {
+    const testAppointment = {
+      appointmentId: 'test-v5-confirmed',
+      serviceName: 'Corte',
+      barber: 'Lautaro',
+      date: '2026-11-05',
+      time: '14:00',
+      depositArs: 5000,
+      servicePriceArs: 25000,
+      clientName: 'Cliente V5',
+    };
+    sessionStorage.setItem('kani:payway:confirmed-booking:v5', JSON.stringify(testAppointment));
+
+    const { container } = render(
+      <KaniProvider>
+        <PaywayBookingV5 />
+      </KaniProvider>
+    );
+
+    // Encabezados
+    expect(screen.getByRole('heading', { level: 1, name: 'Turno confirmado' })).toBeInTheDocument();
+    expect(screen.getByText('Te enviamos la confirmación por mail.')).toBeInTheDocument();
+
+    // Ubicación y mapa
+    expect(screen.getByText('¿Dónde estamos?')).toBeInTheDocument();
+    expect(screen.getByText('San Isidro Labrador 7 · Martínez')).toBeInTheDocument();
+    const iframe = container.querySelector('iframe.confirmation-map-iframe');
+    expect(iframe).toBeInTheDocument();
+
+    // Botonera de acciones
+    const directionsLink = screen.getByRole('link', { name: /Cómo llegar/i });
+    const instagramLink = screen.getByRole('link', { name: /Instagram/i });
+    const homeBtn = screen.getByRole('button', { name: 'Volver al inicio' });
+    expect(directionsLink).toBeInTheDocument();
+    expect(instagramLink).toBeInTheDocument();
+    expect(homeBtn).toBeInTheDocument();
+
+    // Verificación de orden DOM
+    const actions = container.querySelector('.confirmation-actions');
+    expect(actions).toBeInTheDocument();
+    const actionChildren = actions ? Array.from(actions.children) : [];
+    expect(actionChildren[0]).toContainElement(directionsLink);
+    expect(actionChildren[1]).toContainElement(instagramLink);
+    expect(actionChildren[2]).toBe(homeBtn);
+  });
+
+  it('7. CSS de Reserva V5: Contiene reglas responsive para mobile 360x800 y desktop 50/50', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+    const cssContent = fs.readFileSync(path.resolve(__dirname, '../components/kani/experimental/reserva-v5.css'), 'utf-8');
+
+    // Desktop grid areas
+    expect(cssContent).toContain('grid-template-areas');
+    expect(cssContent).toContain('".       place"');
+    expect(cssContent).toContain('"summary map"');
+    expect(cssContent).toContain('"actions actions"');
+
+    // Mobile 360x800 compact geometry
+    expect(cssContent).toContain('max-width: 859px');
+    expect(cssContent).toContain('max-width: 767px');
+    expect(cssContent).toContain('min-height: 44px');
+
+    // Light and Dark theme custom properties
+    expect(cssContent).toContain("html[data-theme='light'] .booking-page.booking-v5");
+    expect(cssContent).toContain("html[data-theme='dark'] .booking-page.booking-v5");
+    expect(cssContent).toContain('--v5-surface');
+    expect(cssContent).toContain('--v5-text-gold');
+  });
 });

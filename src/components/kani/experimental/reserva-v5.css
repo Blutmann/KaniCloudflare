@@ -125,7 +125,6 @@ html[data-theme='dark'] .reserva-v5 {
 .booking-page.booking-v5 .summary-pricing-card,
 .booking-page.booking-v5 .summary-pending-notice,
 .reserva-v5 .confirmation-details,
-.reserva-v5 .confirmation-place,
 .reserva-v5 .confirmation-map-wrap,
 .payway-checkout-v5 {
   background-color: var(--v5-surface) !important;
@@ -422,76 +421,136 @@ html[data-theme='dark'] .booking-page.booking-v5 textarea::placeholder {
    5. Step 5 / Final Screen: "Turno confirmado" UI/UX Alignment
    -------------------------------------------------------------------------- */
 .reserva-v5 .confirmation {
-  max-width: 1060px;
+  max-width: 980px;
+  width: 100%;
   margin-inline: auto;
-  padding-top: 14px;
-  padding-bottom: 32px;
+  padding-top: 26px;
+  padding-bottom: 64px;
+  box-sizing: border-box;
 }
 
 .reserva-v5 .confirmation-mark {
+  width: 58px;
+  height: 58px;
+  margin: 0 auto 12px;
   background-color: #702B3A !important;
   color: #FAF7F2 !important;
   border: 1px solid rgba(185, 154, 91, 0.45);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .reserva-v5 .confirmation h1 {
   font-family: var(--font-display);
+  font-size: 32px;
   font-weight: 600;
   letter-spacing: 0.01em;
+  margin-block: 6px 6px;
   color: var(--v5-text-primary);
+  text-align: center;
 }
 
 .reserva-v5 .confirmation-subtitle {
+  margin-top: 0;
+  margin-bottom: 28px;
+  line-height: 1.5;
+  font-size: 14px;
   color: var(--v5-text-muted);
+  text-align: center;
 }
 
-/* Desktop layout (>= 860px): 50 / 50 */
+/* Desktop layout (>= 860px): 50 / 50 con alineación superior card ↔ mapa */
 @media (min-width: 860px) {
   .reserva-v5 .confirmation-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas:
+      ".       place"
+      "summary map"
+      "actions actions";
     column-gap: 24px;
     row-gap: 12px;
+    width: 100%;
     align-items: start;
+    box-sizing: border-box;
     margin-top: 18px;
   }
 
   .reserva-v5 .confirmation-details {
-    grid-column: 1 / 2;
-    grid-row: 1 / 4;
-    padding: 18px 22px !important;
+    grid-area: summary;
+    margin: 0 !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    padding: 20px 24px !important;
     border-radius: var(--radius-control, 0.65rem);
   }
 
   .reserva-v5 .confirmation-place {
-    grid-column: 2 / 3;
-    grid-row: 1 / 2;
+    grid-area: place;
+    margin: 0 0 2px 0 !important;
     text-align: left;
-    margin: 0 !important;
-    padding: 14px 18px !important;
-    border-radius: var(--radius-control, 0.65rem);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    width: 100%;
+    box-sizing: border-box;
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+
+  .reserva-v5 .confirmation-place-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--v5-text-primary);
+    margin: 0;
+    line-height: 1.3;
+  }
+
+  .reserva-v5 .confirmation-place-address {
+    font-size: 13.5px;
+    color: var(--v5-text-muted);
+    margin-top: 4px;
+    margin-bottom: 6px;
+    line-height: 1.4;
   }
 
   .reserva-v5 .confirmation-map-wrap {
-    grid-column: 2 / 3;
-    grid-row: 2 / 3;
-    height: 220px;
+    grid-area: map;
+    width: 100%;
+    height: 235px;
+    margin: 0 !important;
     border-radius: var(--radius-control, 0.65rem);
     overflow: hidden;
+    position: relative;
+    box-sizing: border-box;
   }
 
   .reserva-v5 .confirmation-actions {
+    grid-area: actions;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+    gap: 12px 24px !important;
+    width: 100% !important;
+    margin-top: 28px !important;
+    box-sizing: border-box !important;
+  }
+
+  .reserva-v5 .confirmation-actions .confirmation-btn-directions {
+    grid-column: 1 / 2;
+  }
+
+  .reserva-v5 .confirmation-actions .confirmation-btn-instagram {
     grid-column: 2 / 3;
-    grid-row: 3 / 4;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    margin: 0 !important;
   }
 
   .reserva-v5 .confirmation-actions .confirmation-home {
     grid-column: 1 / -1 !important;
     width: 100% !important;
+    min-height: 44px !important;
     height: 46px !important;
   }
 }
@@ -536,11 +595,34 @@ html[data-theme='dark'] .booking-page.booking-v5 textarea::placeholder {
     border-radius: var(--radius-control, 0.65rem);
   }
 
+  .reserva-v5 .confirmation-details .summary-list {
+    gap: 6px !important;
+    font-size: 13px !important;
+    line-height: 1.35 !important;
+  }
+
   .reserva-v5 .confirmation-place {
     text-align: center;
     margin: 0 !important;
-    padding: 10px 14px !important;
-    border-radius: var(--radius-control, 0.65rem);
+    padding-top: 2px;
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .reserva-v5 .confirmation-place-title {
+    font-size: 14px;
+    line-height: 1.2;
+    margin: 0;
+    color: var(--v5-text-primary);
+  }
+
+  .reserva-v5 .confirmation-place-address {
+    margin-top: 2px;
+    margin-bottom: 6px;
+    font-size: 12.5px;
+    line-height: 1.2;
+    color: var(--v5-text-muted);
   }
 
   .reserva-v5 .confirmation-map-wrap {
@@ -557,11 +639,19 @@ html[data-theme='dark'] .booking-page.booking-v5 textarea::placeholder {
     margin-top: 6px !important;
   }
 
+  .reserva-v5 .confirmation-actions .confirmation-btn-directions {
+    grid-column: auto;
+  }
+
+  .reserva-v5 .confirmation-actions .confirmation-btn-instagram {
+    grid-column: auto;
+  }
+
+  .reserva-v5 .confirmation-actions .confirmation-secondary,
   .reserva-v5 .confirmation-actions .confirmation-home {
-    grid-column: 1 / -1 !important;
-    width: 100% !important;
     min-height: 44px !important;
     height: 44px !important;
+    font-size: 13px !important;
   }
 }
 
@@ -570,6 +660,159 @@ html[data-theme='dark'] .booking-page.booking-v5 textarea::placeholder {
   height: 100%;
   border: 0;
   display: block;
+}
+
+/* --------------------------------------------------------------------------
+   6. Responsive Layout Polish for Booking Flow V5
+   -------------------------------------------------------------------------- */
+
+/* Desktop & Large Tablet (>= 768px): Proportional Containers & Grids */
+@media (min-width: 768px) {
+  .booking-page.booking-v5 {
+    max-width: 980px;
+    margin-inline: auto;
+    padding-top: 14px;
+    padding-bottom: 120px;
+  }
+
+  .booking-page.booking-v5 .booking-progress {
+    max-width: 860px;
+    margin-inline: auto;
+    margin-top: 10px;
+    margin-bottom: 24px;
+  }
+
+  .booking-page.booking-v5 .section-title {
+    font-size: 26px;
+    line-height: 1.25;
+  }
+
+  .booking-page.booking-v5 .booking-service-options {
+    max-width: 680px;
+    margin-inline: auto;
+  }
+
+  .booking-page.booking-v5 .booking-deposit-notice {
+    max-width: 680px;
+    margin-inline: auto;
+  }
+
+  .booking-page.booking-v5 .booking-barber-options {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 14px !important;
+    max-width: 760px;
+    margin-inline: auto;
+  }
+
+  .booking-page.booking-v5 .booking-barber-options > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0 !important;
+  }
+
+  .booking-page.booking-v5 .booking-v5-times {
+    max-width: 620px;
+    margin-inline: auto;
+  }
+
+  .booking-page.booking-v5 .booking-time-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+    max-width: 620px;
+    margin-inline: auto;
+  }
+
+  .booking-page.booking-v5 .barber-choice-inline {
+    max-width: 620px;
+    margin-inline: auto;
+  }
+
+  .booking-page.booking-v5 .booking-v2-final-layout {
+    display: grid !important;
+    grid-template-columns: 1.15fr 0.85fr !important;
+    gap: 32px !important;
+    max-width: 980px;
+    margin-inline: auto;
+    align-items: start !important;
+  }
+
+  .booking-page.booking-v5 .booking-cta-inner {
+    width: min(980px, calc(100% - 80px));
+    max-width: 980px;
+    margin-inline: auto;
+    padding-block: 14px;
+  }
+}
+
+/* Mobile Polish (< 768px): Efficient Viewport Spacing (360×800 base) */
+@media (max-width: 767px) {
+  .booking-page.booking-v5 .booking-title-row {
+    margin-top: 2px !important;
+    margin-bottom: 6px !important;
+    padding-top: 0 !important;
+  }
+
+  .booking-page.booking-v5 .section-title {
+    font-size: 21px !important;
+    line-height: 1.2 !important;
+    margin-top: 0 !important;
+    margin-bottom: 2px !important;
+  }
+
+  .booking-page.booking-v5 .text-muted-foreground.mb-8 {
+    margin-top: 2px !important;
+    margin-bottom: 12px !important;
+    font-size: 13px !important;
+    line-height: 1.35 !important;
+  }
+
+  .booking-page.booking-v5 .booking-service-options,
+  .booking-page.booking-v5 .booking-barber-options {
+    gap: 10px !important;
+  }
+
+  .booking-page.booking-v5 .booking-option,
+  .booking-page.booking-v5 .booking-defer-option {
+    min-height: 58px !important;
+    padding: 10px 14px !important;
+  }
+
+  .booking-page.booking-v5 .booking-candidate-barber-btn {
+    min-height: 44px !important;
+    height: 44px !important;
+    padding-inline: 14px !important;
+  }
+
+  .booking-page.booking-v5 .calendar-panel {
+    padding: 14px 12px 12px !important;
+  }
+
+  .booking-page.booking-v5 .calendar-day {
+    height: 42px !important;
+    min-height: 42px !important;
+  }
+
+  .booking-page.booking-v5 .field-control input,
+  .booking-page.booking-v5 .notes-input {
+    min-height: 48px !important;
+    font-size: 16px !important; /* Prevents auto-zoom on mobile keyboards */
+  }
+
+  .booking-page.booking-v5 .booking-scroll-content {
+    padding-bottom: 24px !important;
+  }
+
+  .booking-page.booking-v5 .booking-cta:not(.mobile-menu-cta) {
+    padding-top: 6px !important;
+    padding-bottom: max(10px, env(safe-area-inset-bottom)) !important;
+  }
+
+  .booking-page.booking-v5 .booking-cta-inner .booking-back-button,
+  .booking-page.booking-v5 .booking-cta-inner .booking-next-button {
+    height: 48px !important;
+    min-height: 48px !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+  }
 }
 
 /* Payway Checkout Modal V5 */
