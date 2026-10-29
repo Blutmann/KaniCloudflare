@@ -82,7 +82,9 @@ export function V2DataProvider({ children }: { children: ReactNode }) {
           capabilityQuery,
         ]);
       if (clientResult.error) throw clientResult.error;
-      const loadedClients = (clientResult.data ?? []) as V2Client[];
+      const loadedClients = ((clientResult.data ?? []) as V2Client[]).filter(
+        (c) => !(c as any).deleted_at,
+      );
       setData({
         appointments: scopeV2(appointments, staff.profile.role, staff.profile.barber_id),
         payments: scopeV2(payments, staff.profile.role, staff.profile.barber_id),

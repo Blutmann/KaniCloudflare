@@ -245,6 +245,33 @@ html[data-theme="dark"] :is(.v2-shell, .v2-dialog) {
   color: var(--foreground);
   background: var(--v2-inset);
 }
+.v2-danger,
+.v2-destructive {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 44px;
+  padding: 9px 15px;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  border-radius: var(--radius-control);
+  font-size: 12px !important;
+  font-weight: 600;
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.08);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.v2-danger:hover:not(:disabled),
+.v2-destructive:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.18);
+  border-color: #ef4444;
+}
+.v2-danger:disabled,
+.v2-destructive:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 .v2-text-link {
   display: inline-flex;
   align-items: center;

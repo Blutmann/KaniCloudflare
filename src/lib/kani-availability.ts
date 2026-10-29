@@ -44,8 +44,8 @@ function requiredAvailabilitySegments(duration: number) {
   return Math.ceil(effectiveServiceDurationSeconds(duration) / (AVAILABILITY_STEP_MINUTES * 60));
 }
 
-export function isManageableScheduleDate(slotDate: string, today = businessDateToday()) {
-  return slotDate >= today && parseDate(slotDate).getDay() !== 0;
+export function isManageableScheduleDate(slotDate: string, today = businessDateToday(), allowSunday = false) {
+  return slotDate >= today && (allowSunday || parseDate(slotDate).getDay() !== 0);
 }
 
 const slotFields = 'id, barber_id, slot_date, start_time, end_time, status, internal_note, created_at, updated_at, updated_by';
@@ -348,8 +348,8 @@ export async function createAvailabilitySlots({
   const { normalizedStart, normalizedEnd } = validateAvailabilityRange(startTime, endTime);
 
   const businessToday = businessDateToday();
-  const validDates = dates.filter(slotDate => isManageableScheduleDate(slotDate, businessToday));
-  if (validDates.length !== dates.filter(Boolean).length) throw new Error(`La fecha debe ser un día de atención desde ${businessToday}; los domingos permanecen cerrados.`);
+  const validDates = dates.filter(slotDate => isManageableScheduleDate(slotDate, businessToday, true));
+  if (validDates.length !== dates.filter(Boolean).length) throw new Error(`La fecha debe ser a partir de ${businessToday}.`);
   if (validDates.length === 0) throw new Error('Elegí al menos una fecha.');
   const { data, error } = await supabase.rpc('create_availability_slots', {
     p_barber_id: barberId,

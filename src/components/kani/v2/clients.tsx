@@ -23,6 +23,8 @@ export function V2Clients() {
   const [notice, setNotice] = useState("");
   const [errorNotice, setErrorNotice] = useState("");
   const [saving, setSaving] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState<V2Client | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const selected = data.clients.find((c) => c.id === selectedId);
   const summary = selected ? clientHistory(selected.id, data.appointments, data.payments) : null;
@@ -30,6 +32,7 @@ export function V2Clients() {
     data.clients.filter(
       (c) =>
         !c.archived &&
+        !(c as any).deleted_at &&
         `${c.name} ${c.phone} ${c.email || ""}`.toLowerCase().includes(search.toLowerCase()),
     ),
     order,
@@ -77,6 +80,39 @@ export function V2Clients() {
       setErrorNotice(err instanceof Error ? err.message : "Error al guardar cliente en Supabase.");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleDeleteClient() {
+    if (!confirmDelete) return;
+    setDeleting(true);
+    setErrorNotice("");
+
+    try {
+      const clientId = confirmDelete.id;
+      const { error: rpcError } = await supabase.rpc("delete_client", {
+        p_client_id: clientId,
+      });
+
+      if (rpcError) {
+        // Fallback: intentar actualizar deleted_at directamente
+        const { error: updateError } = await supabase
+          .from("clients")
+          .update({ deleted_at: new Date().toISOString() })
+          .eq("id", clientId);
+        if (updateError) throw updateError;
+      }
+
+      const deletedName = confirmDelete.name;
+      setConfirmDelete(null);
+      setSelectedId(null);
+      setNotice(`Cliente ${deletedName} eliminado correctamente.`);
+      await data.refresh();
+    } catch (err) {
+      console.error("[KANI clients] Error eliminando cliente:", err);
+      setErrorNotice(err instanceof Error ? err.message : "Error al eliminar cliente.");
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -193,7 +229,7 @@ export function V2Clients() {
                     <Status code={a.statusCode} />
                   </div>
                 ))}
-              <div className="v2-dialog-actions">
+              <div className="v2-dialog-actions" style={{ display: "flex", justifyContent: "space-between", gap: "8px" }}>
                 <button
                   className="v2-secondary"
                   onClick={() => {
@@ -203,9 +239,51 @@ export function V2Clients() {
                 >
                   Editar cliente
                 </button>
+                {isAdmin && (
+                  <button
+                    className="v2-destructive"
+                    onClick={() => setConfirmDelete(selected)}
+                  >
+                    Eliminar cliente
+                  </button>
+                )}
               </div>
             </>
           )}
+        </DialogContent>
+      </Dialog>
+      <Dialog
+        open={!!confirmDelete}
+        onOpenChange={(open) => {
+          if (!open && !deleting) setConfirmDelete(null);
+        }}
+      >
+        <DialogContent className="v2-dialog">
+          <DialogTitle>¿Eliminar este cliente?</DialogTitle>
+          <DialogDescription>
+            {confirmDelete?.name} dejará de figurar en la lista de clientes activos. Se preservará todo su historial de turnos y pagos pasados.
+          </DialogDescription>
+          {errorNotice && (
+            <p role="alert" className="v2-alert">
+              {errorNotice}
+            </p>
+          )}
+          <div className="v2-dialog-actions" style={{ display: "flex", justifyContent: "flex-end", gap: "8px", marginTop: "16px" }}>
+            <button
+              className="v2-secondary"
+              disabled={deleting}
+              onClick={() => setConfirmDelete(null)}
+            >
+              Cancelar
+            </button>
+            <button
+              className="v2-destructive"
+              disabled={deleting}
+              onClick={() => void handleDeleteClient()}
+            >
+              {deleting ? "Eliminando…" : "Sí, eliminar"}
+            </button>
+          </div>
         </DialogContent>
       </Dialog>
       <Dialog
