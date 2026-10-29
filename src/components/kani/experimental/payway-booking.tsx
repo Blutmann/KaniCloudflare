@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-import { Check, Instagram, MapPin } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Check, CircleAlert, Instagram, MapPin } from 'lucide-react';
 import { Booking, type BookingPaymentDraft } from '@/components/kani/booking';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,6 +9,19 @@ import { tokenizePaywayForm } from '@/lib/kani-payway.browser';
 import { PAYWAY_MESSAGES, type PaywayCheckout, type PaywayResult } from '@/lib/kani-payway';
 import { readConfiguredServices, type ConfiguredService } from '@/lib/kani-availability';
 import { dateLabel, money, services } from '@/lib/kani-model';
+import {
+  detectCardNetwork,
+  formatCardPan,
+  formatDni,
+  getYearOptions,
+  MONTH_OPTIONS,
+  validateCardholder,
+  validateCvv,
+  validateDni,
+  validateExpiry,
+  validatePan,
+} from '@/lib/kani-card-validation';
+import { CardBrandBadge } from './card-brand-badges';
 
 const CONFIRMED_STORAGE_KEY = 'kani:payway:confirmed-booking';
 const PAID_APPOINTMENTS_STORAGE_KEY = 'kani:payway:paid-appointments';
@@ -104,12 +117,111 @@ export function PaywayBooking() {
   const [confirmed, setConfirmed] = useState<ConfirmedPaywayBooking | null>(() => readConfirmedBooking());
   const [configuredServices, setConfiguredServices] = useState<ConfiguredService[]>(() => services.map(s => ({ ...s })));
   const [stage, setStage] = useState<'idle' | 'tokenizing' | 'paying'>('idle');
+
+  // Modern Payway Form State
+  const [cardNumber, setCardNumber] = useState('');
+  const [month, setMonth] = useState('');
+  const [year, setYear] = useState('');
+  const [cvv, setCvv] = useState('');
+  const [cardHolder, setCardHolder] = useState('');
+  const [dni, setDni] = useState('');
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [submitAttempted, setSubmitAttempted] = useState(false);
+
   const draftRef = useRef<BookingPaymentDraft | null>(null);
   const paidAppointmentsRef = useRef<Set<string>>(readPaidAppointments());
   const opening = useRef(false);
   const paying = useRef(false);
   const isApprovedConfirmed = Boolean(confirmed) || (result?.state === 'approved' && result?.appointmentConfirmed === true);
   const terminal = isApprovedConfirmed || result?.state === 'unknown';
+
+  const now = useMemo(() => new Date(), []);
+  const currentYear = now.getFullYear();
+  const currentYearShort = String(currentYear).slice(-2);
+  const currentMonth = now.getMonth() + 1;
+  const yearOptions = useMemo(() => getYearOptions(now), [now]);
+  const isCurrentYearSelected = Boolean(year && (year === currentYearShort || year === String(currentYear)));
+
+  const detected = useMemo(
+    () => detectCardNetwork(cardNumber, checkout?.methods ?? []),
+    [cardNumber, checkout?.methods]
+  );
+
+  // Field validations
+  const panValidation = useMemo(
+    () => validatePan(cardNumber, detected, checkout?.methods ?? []),
+    [cardNumber, detected, checkout?.methods]
+  );
+  const cleanPanDigits = cardNumber.replace(/\D/g, '');
+  const isPanEmpty = !cleanPanDigits;
+  const showPanInvalid = (touched.cardNumber || submitAttempted) && (isPanEmpty || panValidation.status === 'invalid');
+  const showPanValid = !isPanEmpty && panValidation.status === 'valid';
+  const panStatus = showPanValid ? 'valid' : showPanInvalid ? 'invalid' : 'idle';
+  const panError = showPanInvalid
+    ? (isPanEmpty ? 'Ingresá el número de tarjeta.' : panValidation.errorMessage)
+    : null;
+
+  const expiryValidation = useMemo(() => validateExpiry(month, year, now), [month, year, now]);
+  const isExpiryIncomplete = !month || !year;
+  const showExpiryInvalid = (touched.expiry || submitAttempted) && (isExpiryIncomplete || expiryValidation.status === 'invalid');
+  const showExpiryValid = !isExpiryIncomplete && expiryValidation.status === 'valid';
+  const expiryStatus = showExpiryValid ? 'valid' : showExpiryInvalid ? 'invalid' : 'idle';
+  const expiryError = showExpiryInvalid
+    ? (isExpiryIncomplete ? 'Seleccioná mes y año de vencimiento.' : expiryValidation.errorMessage)
+    : null;
+  const monthInvalid = (touched.expiry || submitAttempted) && (!month || (isCurrentYearSelected && parseInt(month, 10) < currentMonth));
+  const yearInvalid = (touched.expiry || submitAttempted) && !year;
+
+  const cvvValidation = useMemo(() => validateCvv(cvv, detected.codeSize), [cvv, detected.codeSize]);
+  const isCvvEmpty = !cvv.trim();
+  const showCvvInvalid = (touched.cvv || submitAttempted) && (isCvvEmpty || cvvValidation.status === 'invalid');
+  const showCvvValid = !isCvvEmpty && cvvValidation.status === 'valid';
+  const cvvStatus = showCvvValid ? 'valid' : showCvvInvalid ? 'invalid' : 'idle';
+  const cvvError = showCvvInvalid
+    ? (isCvvEmpty ? `Ingresá los ${detected.codeSize} dígitos de seguridad.` : cvvValidation.errorMessage)
+    : null;
+
+  const holderValidation = useMemo(() => validateCardholder(cardHolder), [cardHolder]);
+  const isHolderEmpty = !cardHolder.trim();
+  const showHolderInvalid = (touched.cardHolder || submitAttempted) && (isHolderEmpty || holderValidation.status === 'invalid');
+  const showHolderValid = !isHolderEmpty && holderValidation.status === 'valid';
+  const holderStatus = showHolderValid ? 'valid' : showHolderInvalid ? 'invalid' : 'idle';
+  const holderError = showHolderInvalid
+    ? (isHolderEmpty ? 'Ingresá el nombre como figura en la tarjeta.' : holderValidation.errorMessage)
+    : null;
+
+  const dniValidation = useMemo(() => validateDni(dni), [dni]);
+  const isDniEmpty = !dni.replace(/\D/g, '');
+  const showDniInvalid = (touched.dni || submitAttempted) && (isDniEmpty || dniValidation.status === 'invalid');
+  const showDniValid = !isDniEmpty && dniValidation.status === 'valid';
+  const dniStatus = showDniValid ? 'valid' : showDniInvalid ? 'invalid' : 'idle';
+  const dniError = showDniInvalid
+    ? (isDniEmpty ? 'Ingresá el DNI del titular.' : dniValidation.errorMessage)
+    : null;
+
+  function markTouched(field: string) {
+    setTouched(current => ({ ...current, [field]: true }));
+  }
+
+  function resetFormState() {
+    setCardNumber('');
+    setMonth('');
+    setYear('');
+    setCvv('');
+    setCardHolder('');
+    setDni('');
+    setTouched({});
+    setSubmitAttempted(false);
+  }
+
+  function renderFeedback(status: 'idle' | 'valid' | 'invalid') {
+    if (status === 'idle') return null;
+    return (
+      <span className={`field-validation-icon ${status}`} aria-hidden="true">
+        {status === 'valid' ? <Check size={14} /> : <CircleAlert size={14} />}
+      </span>
+    );
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -141,6 +253,9 @@ export function PaywayBooking() {
     if (isApprovedConfirmed) return;
     if (opening.current || result?.state === 'unknown') { setOpen(true); return; }
     draftRef.current = draft;
+    if (draft.name && !cardHolder) {
+      setCardHolder(draft.name);
+    }
     opening.current = true;
     setOpen(true); setPreparing(true); setResult(null); setCheckout(null);
     try {
@@ -162,14 +277,42 @@ export function PaywayBooking() {
     event.preventDefault();
     if (paying.current || terminal || !checkout || paidAppointmentsRef.current.has(checkout.appointmentId)) return;
     const form = event.currentTarget;
-    if (!form.reportValidity()) return;
+
+    setSubmitAttempted(true);
+
+    const hasPanError = isPanEmpty || panValidation.status === 'invalid';
+    const hasExpiryError = isExpiryIncomplete || expiryValidation.status === 'invalid';
+    const hasCvvError = isCvvEmpty || cvvValidation.status === 'invalid';
+    const hasHolderError = isHolderEmpty || holderValidation.status === 'invalid';
+    const hasDniError = isDniEmpty || dniValidation.status === 'invalid';
+
+    if (hasPanError || hasExpiryError || hasCvvError || hasHolderError || hasDniError) {
+      if (hasPanError) {
+        (form.elements.namedItem('card_number') as HTMLElement | null)?.focus();
+      } else if (hasExpiryError) {
+        if (!month) {
+          (form.elements.namedItem('card_expiration_month') as HTMLElement | null)?.focus();
+        } else {
+          (form.elements.namedItem('card_expiration_year') as HTMLElement | null)?.focus();
+        }
+      } else if (hasCvvError) {
+        (form.elements.namedItem('security_code') as HTMLElement | null)?.focus();
+      } else if (hasHolderError) {
+        (form.elements.namedItem('card_holder_name') as HTMLElement | null)?.focus();
+      } else if (hasDniError) {
+        (form.elements.namedItem('card_holder_doc_number') as HTMLElement | null)?.focus();
+      }
+      return;
+    }
+
     paying.current = true; setStage('tokenizing'); setResult(null);
     let sent = false;
     try {
       const token = await tokenizePaywayForm(form, checkout);
-      // The selected payment-method ID is non-sensitive; the provider validates the BIN.
-      const paymentMethodId = Number((form.elements.namedItem('paymentMethod') as HTMLSelectElement).value);
+      const paymentMethodEl = form.elements.namedItem('paymentMethod') as HTMLInputElement | HTMLSelectElement | null;
+      const paymentMethodId = Number(paymentMethodEl?.value ?? detected.methodId ?? 0);
       form.reset(); // Clear all card values before calling Kani.
+      resetFormState();
       setStage('paying'); sent = true;
       const response = await payPaywayDepositFn({ data: {
         appointmentId: checkout.appointmentId, attemptId: checkout.attemptId,
@@ -204,16 +347,40 @@ export function PaywayBooking() {
     } catch {
       setResult({ state: sent ? 'unknown' : 'recoverable', message: sent ? PAYWAY_MESSAGES.unknown : 'No pudimos validar la tarjeta. Revisá sus datos e intentá nuevamente.' });
       if (sent) setCheckout(null);
-    } finally { form.reset(); paying.current = false; setStage('idle'); }
+    } finally {
+      form.reset();
+      resetFormState();
+      paying.current = false;
+      setStage('idle');
+    }
   }
 
   function startNewReservation() {
     clearConfirmedBookingView();
+    resetFormState();
     draftRef.current = null;
     setConfirmed(null);
     setResult(null);
     setCheckout(null);
     setOpen(false);
+  }
+
+  function handleCardNumberChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const digits = e.target.value.replace(/\D/g, '');
+    const tempDetected = detectCardNetwork(digits, checkout?.methods ?? []);
+    const maxDigits = tempDetected.lengths[tempDetected.lengths.length - 1] ?? 19;
+    const truncated = digits.slice(0, maxDigits);
+    setCardNumber(formatCardPan(truncated, tempDetected.gaps));
+  }
+
+  function handleCvvChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const digits = e.target.value.replace(/\D/g, '').slice(0, detected.codeSize);
+    setCvv(digits);
+  }
+
+  function handleDniChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const digits = e.target.value.replace(/\D/g, '').slice(0, 10);
+    setDni(formatDni(digits));
   }
 
   if (confirmed) {
@@ -255,31 +422,223 @@ export function PaywayBooking() {
     );
   }
 
-  return <div className="payway-reservation">
-    <Booking variant="v3" onPaymentRequest={begin} />
-    <Dialog open={open} onOpenChange={value => { if (!paying.current && !opening.current) setOpen(value); }}>
-      <DialogContent className="payway-checkout" onEscapeKeyDown={e => { if (paying.current) e.preventDefault(); }} onPointerDownOutside={e => { if (paying.current) e.preventDefault(); }}>
-        <DialogTitle>Pagar seña con Payway</DialogTitle>
-        <DialogDescription>{checkout ? `Seña: ${money(checkout.depositArs)} · Pago seguro` : 'Reserva experimental con Payway'}</DialogDescription>
-        {preparing && <p role="status">Preparando pago seguro…</p>}
-        {result && <p role={result.state === 'approved' ? 'status' : 'alert'} className="payway-result">{result.message}</p>}
-        {checkout && !terminal && <form onSubmit={pay} autoComplete="off" data-private="redact" data-sensitive="true" className="payway-card-form">
-          <fieldset disabled={stage !== 'idle'}>
-            <label>Medio de pago<select name="paymentMethod" required aria-label="Medio de pago">{checkout.methods.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}</select></label>
-            <label>Número de tarjeta<Input name="card_number" aria-label="Número de tarjeta" inputMode="numeric" autoComplete="off" maxLength={23} required pattern="[0-9 ]{15,23}" /></label>
-            <div className="payway-card-row">
-              <label>Mes<Input name="card_expiration_month" aria-label="Mes de vencimiento" placeholder="MM" inputMode="numeric" autoComplete="off" required pattern="0[1-9]|1[0-2]" maxLength={2} /></label>
-              <label>Año<Input name="card_expiration_year" aria-label="Año de vencimiento" placeholder="AA" inputMode="numeric" autoComplete="off" required pattern="[0-9]{2}" maxLength={2} /></label>
-              <label>Código<Input name="security_code" aria-label="Código de seguridad" type="password" inputMode="numeric" autoComplete="off" required pattern="[0-9]{3,4}" maxLength={4} /></label>
-            </div>
-            <label>Titular<Input name="card_holder_name" aria-label="Nombre del titular" autoComplete="off" required maxLength={60} /></label>
-            <label>DNI del titular<Input name="card_holder_doc_number" aria-label="DNI del titular" inputMode="numeric" autoComplete="off" required pattern="[0-9]{6,10}" maxLength={10} /></label>
-            <Button type="submit" className="action-positive" disabled={stage !== 'idle'}>{stage === 'tokenizing' ? 'Validando tarjeta…' : stage === 'paying' ? 'Procesando pago…' : 'Pagar seña'}</Button>
-          </fieldset>
-        </form>}
-        {result?.state === 'unknown' && <p className="text-sm">Conservá esta pantalla y contactá al estudio. Tu turno todavía no está confirmado.</p>}
-        {!checkout && stage === 'idle' && !preparing && <Button variant="outline" onClick={() => setOpen(false)}>{terminal ? 'Cerrar' : 'Volver a mis datos'}</Button>}
-      </DialogContent>
-    </Dialog>
-  </div>;
+  return (
+    <div className="payway-reservation">
+      <Booking variant="v3" onPaymentRequest={begin} />
+      <Dialog
+        open={open}
+        onOpenChange={value => {
+          if (!paying.current && !opening.current) {
+            setOpen(value);
+            if (!value) resetFormState();
+          }
+        }}
+      >
+        <DialogContent
+          className="payway-checkout"
+          onEscapeKeyDown={e => { if (paying.current) e.preventDefault(); }}
+          onPointerDownOutside={e => { if (paying.current) e.preventDefault(); }}
+        >
+          <DialogTitle>Pagar seña con Payway</DialogTitle>
+          <DialogDescription>
+            {checkout ? `Seña: ${money(checkout.depositArs)} · Pago seguro` : 'Reserva experimental con Payway'}
+          </DialogDescription>
+          {preparing && <p role="status">Preparando pago seguro…</p>}
+          {result && <p role={result.state === 'approved' ? 'status' : 'alert'} className="payway-result">{result.message}</p>}
+          {checkout && !terminal && (
+            <form onSubmit={pay} autoComplete="off" noValidate data-private="redact" data-sensitive="true" className="payway-card-form">
+              <input type="hidden" name="paymentMethod" value={detected.methodId ?? ''} />
+              <fieldset disabled={stage !== 'idle'}>
+                {/* Card Number with integrated network badge */}
+                <label className="payway-field-label">
+                  <span>Número de tarjeta</span>
+                  <div className={`field-control payway-card-pan-control ${panStatus}`}>
+                    <div className="payway-card-brand-slot">
+                      <CardBrandBadge brand={detected.brand} />
+                    </div>
+                    <Input
+                      name="card_number"
+                      aria-label="Número de tarjeta"
+                      inputMode="numeric"
+                      autoComplete="cc-number"
+                      maxLength={23}
+                      placeholder="0000 0000 0000 0000"
+                      className="payway-card-pan-input"
+                      value={cardNumber}
+                      onChange={handleCardNumberChange}
+                      onBlur={() => markTouched('cardNumber')}
+                      aria-invalid={panStatus === 'invalid'}
+                      aria-describedby={panError ? 'card-number-error' : undefined}
+                      required
+                    />
+                    {renderFeedback(panStatus)}
+                  </div>
+                  {panError && (
+                    <span id="card-number-error" className="field-validation-message" role="alert">
+                      {panError}
+                    </span>
+                  )}
+                </label>
+
+                {/* Expiry Month | Expiry Year | Security Code (CVV) */}
+                <div className="payway-card-row">
+                  <label className="payway-field-label">
+                    <span>Mes</span>
+                    <span className={`payway-select-control ${expiryStatus === 'valid' ? 'valid' : monthInvalid ? 'invalid' : ''}`}>
+                      <select
+                        name="card_expiration_month"
+                        aria-label="Mes de vencimiento"
+                        value={month}
+                        onChange={e => {
+                          setMonth(e.target.value);
+                          markTouched('expiry');
+                        }}
+                        onBlur={() => markTouched('expiry')}
+                        className="payway-select"
+                        required
+                      >
+                        <option value="">Mes</option>
+                        {MONTH_OPTIONS.map(m => (
+                          <option key={m.value} value={m.value} disabled={isCurrentYearSelected && m.num < currentMonth}>
+                            {m.label}
+                          </option>
+                        ))}
+                      </select>
+                    </span>
+                  </label>
+
+                  <label className="payway-field-label">
+                    <span>Año</span>
+                    <span className={`payway-select-control ${expiryStatus === 'valid' ? 'valid' : yearInvalid ? 'invalid' : ''}`}>
+                      <select
+                        name="card_expiration_year"
+                        aria-label="Año de vencimiento"
+                        value={year}
+                        onChange={e => {
+                          setYear(e.target.value);
+                          markTouched('expiry');
+                        }}
+                        onBlur={() => markTouched('expiry')}
+                        className="payway-select"
+                        required
+                      >
+                        <option value="">Año</option>
+                        {yearOptions.map(y => (
+                          <option key={y.value} value={y.value}>
+                            {y.label}
+                          </option>
+                        ))}
+                      </select>
+                      {expiryStatus === 'valid' && (
+                        <span className="field-validation-icon valid" style={{ right: '28px' }} aria-hidden="true">
+                          <Check size={14} />
+                        </span>
+                      )}
+                    </span>
+                  </label>
+
+                  <label className="payway-field-label">
+                    <span>Código</span>
+                    <span className={`field-control ${cvvStatus}`}>
+                      <Input
+                        name="security_code"
+                        aria-label="Código de seguridad"
+                        type="password"
+                        inputMode="numeric"
+                        autoComplete="cc-csc"
+                        maxLength={detected.codeSize}
+                        placeholder={detected.codeSize === 4 ? '1234' : '123'}
+                        value={cvv}
+                        onChange={handleCvvChange}
+                        onBlur={() => markTouched('cvv')}
+                        aria-invalid={cvvStatus === 'invalid'}
+                        aria-describedby={cvvError ? 'cvv-error' : undefined}
+                        required
+                      />
+                      {renderFeedback(cvvStatus)}
+                    </span>
+                  </label>
+                </div>
+                {expiryError && (
+                  <span id="expiry-error" className="field-validation-message" role="alert">
+                    {expiryError}
+                  </span>
+                )}
+                {cvvError && (
+                  <span id="cvv-error" className="field-validation-message" role="alert">
+                    {cvvError}
+                  </span>
+                )}
+
+                {/* Cardholder Name */}
+                <label className="payway-field-label">
+                  <span>Titular</span>
+                  <span className={`field-control ${holderStatus}`}>
+                    <Input
+                      name="card_holder_name"
+                      aria-label="Nombre del titular"
+                      autoComplete="cc-name"
+                      maxLength={60}
+                      placeholder="Como figura en la tarjeta"
+                      value={cardHolder}
+                      onChange={e => setCardHolder(e.target.value)}
+                      onBlur={() => markTouched('cardHolder')}
+                      aria-invalid={holderStatus === 'invalid'}
+                      aria-describedby={holderError ? 'holder-error' : undefined}
+                      required
+                    />
+                    {renderFeedback(holderStatus)}
+                  </span>
+                  {holderError && (
+                    <span id="holder-error" className="field-validation-message" role="alert">
+                      {holderError}
+                    </span>
+                  )}
+                </label>
+
+                {/* DNI of Cardholder */}
+                <label className="payway-field-label">
+                  <span>DNI del titular</span>
+                  <span className={`field-control ${dniStatus}`}>
+                    <Input
+                      name="card_holder_doc_number"
+                      aria-label="DNI del titular"
+                      inputMode="numeric"
+                      autoComplete="off"
+                      maxLength={12}
+                      placeholder="12.345.678"
+                      value={dni}
+                      onChange={handleDniChange}
+                      onBlur={() => markTouched('dni')}
+                      aria-invalid={dniStatus === 'invalid'}
+                      aria-describedby={dniError ? 'dni-error' : undefined}
+                      required
+                    />
+                    {renderFeedback(dniStatus)}
+                  </span>
+                  {dniError && (
+                    <span id="dni-error" className="field-validation-message" role="alert">
+                      {dniError}
+                    </span>
+                  )}
+                </label>
+
+                <Button type="submit" className="action-positive payway-submit-btn" disabled={stage !== 'idle'}>
+                  {stage === 'tokenizing' ? 'Validando tarjeta…' : stage === 'paying' ? 'Procesando pago…' : 'Pagar seña'}
+                </Button>
+              </fieldset>
+            </form>
+          )}
+          {result?.state === 'unknown' && (
+            <p className="text-sm">Conservá esta pantalla y contactá al estudio. Tu turno todavía no está confirmado.</p>
+          )}
+          {!checkout && stage === 'idle' && !preparing && (
+            <Button variant="outline" onClick={() => setOpen(false)}>
+              {terminal ? 'Cerrar' : 'Volver a mis datos'}
+            </Button>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
 }

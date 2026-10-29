@@ -37,8 +37,8 @@ async function openCard() {
   await reachData(); fireEvent.click(screen.getByRole('button', { name: 'Pagar seña' }));
   await screen.findByRole('textbox', { name: 'Número de tarjeta' });
   fireEvent.change(screen.getByRole('textbox', { name: 'Número de tarjeta' }), { target: { value: '4507990000004905' } });
-  fireEvent.change(screen.getByRole('textbox', { name: 'Mes de vencimiento' }), { target: { value: '12' } });
-  fireEvent.change(screen.getByRole('textbox', { name: 'Año de vencimiento' }), { target: { value: '29' } });
+  fireEvent.change(screen.getByLabelText('Mes de vencimiento'), { target: { value: '12' } });
+  fireEvent.change(screen.getByLabelText('Año de vencimiento'), { target: { value: '29' } });
   fireEvent.change(screen.getByLabelText('Código de seguridad'), { target: { value: '123' } });
   fireEvent.change(screen.getByRole('textbox', { name: 'Nombre del titular' }), { target: { value: 'Titular Simulado' } });
   fireEvent.change(screen.getByRole('textbox', { name: 'DNI del titular' }), { target: { value: '12345678' } });
