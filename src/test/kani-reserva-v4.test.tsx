@@ -39,8 +39,8 @@ async function openCard() {
   fireEvent.change(screen.getByRole('textbox', { name: 'Número de tarjeta' }), { target: { value: '4507990000004905' } });
   fireEvent.change(screen.getByLabelText('Mes de vencimiento'), { target: { value: '12' } });
   fireEvent.change(screen.getByLabelText('Año de vencimiento'), { target: { value: '29' } });
-  fireEvent.change(screen.getByLabelText('Código de seguridad'), { target: { value: '123' } });
-  fireEvent.change(screen.getByRole('textbox', { name: 'Nombre del titular' }), { target: { value: 'Titular Simulado' } });
+  fireEvent.change(screen.getByLabelText('Código de seguridad (CVV)'), { target: { value: '123' } });
+  fireEvent.change(screen.getByRole('textbox', { name: /Titular/ }), { target: { value: 'Titular Simulado' } });
   fireEvent.change(screen.getByRole('textbox', { name: 'DNI del titular' }), { target: { value: '12345678' } });
 }
 beforeEach(() => {

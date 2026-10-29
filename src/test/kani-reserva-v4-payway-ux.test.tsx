@@ -221,7 +221,7 @@ describe('Payway V4 Modern Checkout UX/UI', () => {
 
   it('validates CVV according to card brand length and displays checkmark', async () => {
     await reachCardModal();
-    const cvvInput = screen.getByLabelText('Código de seguridad');
+    const cvvInput = screen.getByLabelText(/Código de seguridad/);
 
     // Partial CVV
     fireEvent.change(cvvInput, { target: { value: '12' } });
@@ -234,12 +234,16 @@ describe('Payway V4 Modern Checkout UX/UI', () => {
 
   it('pre-populates cardholder name from booking contact and validates DNI with dot formatting', async () => {
     await reachCardModal();
-    const holderInput = screen.getByLabelText('Nombre del titular');
+    const holderInput = screen.getByLabelText(/Titular de la tarjeta/);
     const dniInput = screen.getByLabelText('DNI del titular');
 
     // Cardholder is prefilled with "Cliente Simulado"
     expect(holderInput).toHaveValue('Cliente Simulado');
     expect(holderInput.closest('.field-control')).toHaveClass('valid');
+
+    // Cardholder remains fully editable
+    fireEvent.change(holderInput, { target: { value: 'Otro Titular Autorizado' } });
+    expect(holderInput).toHaveValue('Otro Titular Autorizado');
 
     // DNI formatted with dots
     fireEvent.change(dniInput, { target: { value: '40123456' } });
@@ -278,8 +282,8 @@ describe('Payway V4 Modern Checkout UX/UI', () => {
     });
     fireEvent.change(screen.getByLabelText('Mes de vencimiento'), { target: { value: '12' } });
     fireEvent.change(screen.getByLabelText('Año de vencimiento'), { target: { value: '29' } });
-    fireEvent.change(screen.getByLabelText('Código de seguridad'), { target: { value: '123' } });
-    fireEvent.change(screen.getByLabelText('Nombre del titular'), { target: { value: 'Titular Simulado' } });
+    fireEvent.change(screen.getByLabelText(/Código de seguridad/), { target: { value: '123' } });
+    fireEvent.change(screen.getByLabelText(/Titular de la tarjeta/), { target: { value: 'Titular Simulado' } });
     fireEvent.change(screen.getByLabelText('DNI del titular'), { target: { value: '12345678' } });
 
     fireEvent.submit(form);
@@ -301,5 +305,52 @@ describe('Payway V4 Modern Checkout UX/UI', () => {
 
     // Check that appointment was confirmed on screen
     expect(await screen.findByRole('heading', { name: 'Turno confirmado' })).toBeInTheDocument();
+  });
+
+  it('renders refined header hierarchy: title, dynamic supporting text, and dynamic CTA button text without extra space', async () => {
+    await reachCardModal();
+
+    // Title and supporting text hierarchy
+    expect(screen.getByRole('heading', { name: 'Pagá la seña a Kani con Payway' })).toBeInTheDocument();
+    expect(screen.getByText('Seña: $5.000 · Pago seguro')).toBeInTheDocument();
+
+    // CTA button text is dynamic and compact ("Pagar seña $5.000" without space after $)
+    const cta = screen.getByRole('button', { name: 'Pagar seña $5.000' });
+    expect(cta).toBeInTheDocument();
+  });
+
+  it('renders Expiry label and independent CVV row with contextual help for standard cards and Amex', async () => {
+    await reachCardModal();
+
+    // General expiration label
+    expect(screen.getByText('Vencimiento de tarjeta')).toBeInTheDocument();
+
+    // CVV label in independent row
+    expect(screen.getByText('Código de seguridad (CVV)')).toBeInTheDocument();
+
+    // Contextual help button exists and is accessible
+    const helpBtn = screen.getByRole('button', { name: 'Ayuda sobre el CVV' });
+    expect(helpBtn).toBeInTheDocument();
+    expect(helpBtn).toHaveAttribute('aria-expanded', 'false');
+
+    // Default card network: 3 digits of reverse
+    fireEvent.click(helpBtn);
+    expect(helpBtn).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByText('3 dígitos del reverso de la tarjeta.')).toBeInTheDocument();
+
+    // Closes on clicking again
+    fireEvent.click(helpBtn);
+    expect(screen.queryByText('3 dígitos del reverso de la tarjeta.')).not.toBeInTheDocument();
+
+    // When card is Amex, help text adapts to 4 digits on front
+    const panInput = screen.getByRole('textbox', { name: 'Número de tarjeta' });
+    fireEvent.change(panInput, { target: { value: '378282246310005' } });
+    fireEvent.click(helpBtn);
+    expect(screen.getByText('4 dígitos del frente de la tarjeta.')).toBeInTheDocument();
+  });
+
+  it('marks data-payway-modal-open on body while modal is open to ensure solid header icon contrast under overlay', async () => {
+    await reachCardModal();
+    expect(document.body).toHaveAttribute('data-payway-modal-open', 'true');
   });
 });
