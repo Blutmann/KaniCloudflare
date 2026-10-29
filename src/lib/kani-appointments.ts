@@ -407,7 +407,7 @@ export function clearAppointmentsReferenceCache() {
 }
 
 async function executeReadRealAppointments(options?: { bypassCache?: boolean; barberId?: string }): Promise<RealAppointment[]> {
-  const fullColumns = 'id, request_number, client_id, barber_id, service_id, custom_service_name, service_price_ars, booking_date, start_time, end_time, status, notes, created_at, updated_at, is_manual, origin, created_by_user_id, created_by_display_name, recurring_rule_id, deposit_required, deposit_paid, deposit_amount_ars, balance_paid, no_show_decision, no_show_refund_amount_ars';
+  const fullColumns = 'id, request_number, client_id, barber_id, service_id, custom_service_name, service_price_ars, booking_date, start_time, end_time, status, notes, created_at, updated_at, is_manual, origin, created_by_user_id, created_by_display_name, recurring_rule_id, deposit_required, deposit_paid, deposit_amount_ars, balance_paid, no_show_decision, no_show_refund_amount_ars, booking_client_name';
   const baseColumns = 'id, request_number, client_id, barber_id, service_id, booking_date, start_time, end_time, status, notes, created_at, updated_at';
 
   let rows: AppointmentRow[] | null = null;
@@ -421,7 +421,7 @@ async function executeReadRealAppointments(options?: { bypassCache?: boolean; ba
 
   if (!fullError && fullRows) {
     rows = fullRows as AppointmentRow[];
-  } else if (fullError && fullError.message && (fullError.message.includes('deposit_amount_ars') || fullError.message.includes('is_manual') || fullError.code === '42703')) {
+  } else if (fullError && fullError.message && (fullError.message.includes('deposit_amount_ars') || fullError.message.includes('is_manual') || fullError.message.includes('booking_client_name') || fullError.code === '42703')) {
     console.warn('[KANI appointments] Columnas extendidas no detectadas en appointments, ejecutando consulta base:', fullError.message);
     let fallbackQuery = supabase
       .from('appointments')
@@ -444,10 +444,10 @@ async function executeReadRealAppointments(options?: { bypassCache?: boolean; ba
 
   const [clientsResult, barbersResult, servicesResult, exceptionsResult, ordersResult] = await Promise.all([
     clientIds.length ? supabase.from('clients').select('id, name, email, phone').in('id', clientIds) : { data: [] },
-    cachedBarbersMap ? { data: Array.from(cachedBarbersMap.data.values()) } : supabase.from('barbers').select('id, name').in('id', barberIds),
-    cachedServicesMap ? { data: Array.from(cachedServicesMap.data.values()) } : supabase.from('services').select('id, name, duration_minutes, price_ars').in('id', serviceIds),
-    (supabase as any).from('appointment_no_show_exceptions').select('appointment_id, decision, refund_amount_ars, reason').in('appointment_id', appointments.map(a => a.id)),
-    (supabase as any).from('mercadopago_orders').select('appointment_id, paid_amount_ars').in('appointment_id', appointments.map(a => a.id)).eq('status', 'CONFIRMED'),
+    cachedBarbersMap ? { data: Array.from(cachedBarbersMap.data.values()) } : (barberIds.length ? supabase.from('barbers').select('id, name').in('id', barberIds) : { data: [] }),
+    cachedServicesMap ? { data: Array.from(cachedServicesMap.data.values()) } : (serviceIds.length ? supabase.from('services').select('id, name, duration_minutes, price_ars').in('id', serviceIds) : { data: [] }),
+    appointments.length ? (supabase as any).from('appointment_no_show_exceptions').select('appointment_id, decision, refund_amount_ars, reason').in('appointment_id', appointments.map(a => a.id)) : { data: [] },
+    appointments.length ? (supabase as any).from('mercadopago_orders').select('appointment_id, paid_amount_ars').in('appointment_id', appointments.map(a => a.id)).eq('status', 'CONFIRMED') : { data: [] },
   ]);
 
   const clients = clientsResult.data;
@@ -474,11 +474,12 @@ async function executeReadRealAppointments(options?: { bypassCache?: boolean; ba
   return appointments.flatMap(row => {
     const client = clientById.get(row.client_id);
     const barber = barberById.get(row.barber_id);
-    if (!client || !barber) return [];
+    const barberName = (barber?.name || 'Barbero') as Barber;
     const service = row.service_id ? serviceById.get(row.service_id) : undefined;
     const customName = (row as any).custom_service_name;
     const customPrice = (row as any).service_price_ars;
-    if (!service && !customName) return [];
+    const snapshotName = (row as any).booking_client_name;
+    const clientName = snapshotName || client?.name || 'Cliente';
 
     const exc = exceptionByApt.get(row.id);
     const startM = timeToMinutes(row.start_time.slice(0, 5));
@@ -498,13 +499,14 @@ async function executeReadRealAppointments(options?: { bypassCache?: boolean; ba
       id: row.id,
       requestNumber: row.request_number,
       service: service ? serviceIdForName(service.name) : 'corte',
-      barber: barber.name as Barber,
+      barber: barberName,
       date: row.booking_date,
       time: row.start_time.slice(0, 5),
       endTime: row.end_time.slice(0, 5),
-      name: client.name,
-      email: client.email || '',
-      phone: client.phone,
+      name: clientName,
+      bookingClientName: snapshotName || client?.name || null,
+      email: client?.email || '',
+      phone: client?.phone || '',
       status: statusToUi[row.status] || 'Confirmado',
       notes: row.notes ?? '',
       statusCode: row.status,

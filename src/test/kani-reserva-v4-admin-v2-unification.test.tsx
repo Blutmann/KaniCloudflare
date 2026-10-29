@@ -1,3 +1,4 @@
+import { businessDateToday } from '@/lib/kani-mobile-appointments';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { V2Appointments } from '@/components/kani/v2/agenda';
@@ -48,7 +49,7 @@ const mockAppointments = [
     servicePrice: 25000,
     barber: 'Lautaro',
     barberId: 'b1',
-    date: '2026-10-28',
+    date: businessDateToday(),
     time: '17:30',
     endTime: '18:15',
     status: 'Cancelado',
@@ -67,7 +68,7 @@ const mockAppointments = [
     servicePrice: 20000,
     barber: 'Gonzalo',
     barberId: 'b2',
-    date: '2026-10-28',
+    date: businessDateToday(),
     time: '18:30',
     endTime: '19:00',
     status: 'Confirmado',

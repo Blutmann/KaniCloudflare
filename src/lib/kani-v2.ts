@@ -59,11 +59,38 @@ export function slotReserved(slot: AvailabilitySlot, appointments: RealAppointme
 }
 
 export function paymentSummary(payments: ServicePayment[]) {
+  const collected = payments.reduce((sum, p) => sum + p.collectedAmountArs, 0);
+
+  const executedAppointmentIds = new Set(
+    payments.filter((p) => !p.isDepositMovement && p.appointmentId).map((p) => p.appointmentId)
+  );
+
+  const depositMovementAptIds = new Set(
+    payments.filter((p) => p.isDepositMovement && p.appointmentId).map((p) => p.appointmentId)
+  );
+
+  const value = payments.reduce((sum, p) => {
+    if (p.isDepositMovement && p.appointmentId && executedAppointmentIds.has(p.appointmentId)) {
+      return sum;
+    }
+    return sum + p.finalAmountArs;
+  }, 0);
+
+  const deposits = payments.reduce((sum, p) => {
+    if (p.isDepositMovement) {
+      return sum + p.collectedAmountArs;
+    }
+    if (p.appointmentId && depositMovementAptIds.has(p.appointmentId)) {
+      return sum;
+    }
+    return sum + (p.onlineDepositAmountArs || 0);
+  }, 0);
+
   return {
     count: payments.length,
-    collected: payments.reduce((sum, p) => sum + p.collectedAmountArs, 0),
-    value: payments.reduce((sum, p) => sum + p.finalAmountArs, 0),
-    deposits: payments.reduce((sum, p) => sum + p.onlineDepositAmountArs, 0),
+    collected,
+    value,
+    deposits,
   };
 }
 

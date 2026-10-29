@@ -9,7 +9,7 @@ describe('Kani Barber Studio — Panel de Administración -> Pagos (Tabla, Permi
 
   const componentCode = fs.readFileSync(paymentsComponentPath, 'utf-8');
   const libCode = fs.readFileSync(paymentsLibPath, 'utf-8');
-  const migrationCode = fs.readFileSync(migrationPath, 'utf-8');
+  const migrationCode = fs.readFileSync(migrationPath, 'utf-8').replace(/\r\n/g, '\n');
 
   it('1. La tabla Desktop cuenta exactamente con las 6 columnas en el nuevo orden con Importe al final', () => {
     // 6 columnas en thead en el orden exacto: Hora | Servicio | Barbero | Cliente | Método de pago | Importe

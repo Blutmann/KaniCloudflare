@@ -184,7 +184,7 @@ export function V2Clients() {
                   <div className="v2-history-row" key={a.id}>
                     <div>
                       <h3>
-                        {a.serviceName} · {a.barber}
+                        {a.name ? `${a.name} · ` : ""}{a.serviceName} · {a.barber}
                       </h3>
                       <p>
                         {a.date} · {a.time}

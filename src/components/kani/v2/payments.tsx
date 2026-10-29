@@ -10,6 +10,9 @@ import {
   deleteServicePayment,
   updateServicePayment,
   updateServicePaymentClient,
+  calculatePaymentPeriodRange,
+  getPaymentPeriodDynamicLabels,
+  type PaymentPeriodFilter,
   type PaymentMethod,
   type ServicePayment,
   type ServicePaymentType,
@@ -39,8 +42,9 @@ export function V2Payments() {
   const [clientId, setClientId] = useState("");
   const [clientName, setClientName] = useState("");
   const [clientPhone, setClientPhone] = useState("");
-  const [date, setDate] = useState(today);
-  const [period, setPeriod] = useState("DAY");
+  const [period, setPeriod] = useState<PaymentPeriodFilter>("TODAY");
+  const [customStartDate, setCustomStartDate] = useState(today);
+  const [customEndDate, setCustomEndDate] = useState(today);
   const [busy, setBusy] = useState(false);
   const inFlight = useRef(false);
   const [message, setMessage] = useState("");
@@ -76,16 +80,22 @@ export function V2Payments() {
     priceOverride ?? (appointment ? (appointment.servicePrice ?? 0) : (service?.price ?? 0));
   const deposit = appointment?.depositPaid ? (appointment.depositAmountArs ?? 5000) : 0;
   const total = Math.max(0, price - discount - deposit);
-  const history = scopeV2(
-    data.payments,
-    staff.profile.role,
-    staff.profile.barber_id,
-    data.barberId,
-  ).filter(
-    (p) =>
-      p.paymentDate <= date &&
-      p.paymentDate >= (period === "WEEK" ? addCalendarDays(date, -6) : date),
-  );
+  const dynamicLabels = getPaymentPeriodDynamicLabels(today);
+  const periodRange = calculatePaymentPeriodRange(period, today, customStartDate, customEndDate);
+  const isInvalidRange = period === "CUSTOM" && Boolean(periodRange.isInvalid);
+
+  const history = isInvalidRange
+    ? []
+    : scopeV2(
+        data.payments,
+        staff.profile.role,
+        staff.profile.barber_id,
+        data.barberId,
+      ).filter(
+        (p) =>
+          p.paymentDate >= periodRange.start &&
+          p.paymentDate <= periodRange.end,
+      );
   const summary = paymentSummary(history);
 
   async function submit(event: FormEvent) {
@@ -508,21 +518,54 @@ export function V2Payments() {
         <div className="v2-filters">
           <label className="v2-field">
             Período
-            <select value={period} onChange={(e) => setPeriod(e.target.value)}>
-              <option value="DAY">Un día</option>
-              <option value="WEEK">Últimos 7 días</option>
+            <select
+              value={period}
+              onChange={(e) => setPeriod(e.target.value as PaymentPeriodFilter)}
+            >
+              <option value="TODAY">Hoy</option>
+              <option value="YESTERDAY">Ayer</option>
+              <option value="THIS_WEEK">Esta semana</option>
+              <option value="THIS_MONTH">{dynamicLabels.THIS_MONTH}</option>
+              <option value="THIS_YEAR">{dynamicLabels.THIS_YEAR}</option>
+              <option value="LAST_7_DAYS">Últimos 7 días</option>
+              <option value="LAST_14_DAYS">Últimos 14 días</option>
+              <option value="LAST_30_DAYS">Últimos 30 días</option>
+              <option value="PREVIOUS_MONTH">{dynamicLabels.PREVIOUS_MONTH}</option>
+              <option value="PREVIOUS_YEAR">{dynamicLabels.PREVIOUS_YEAR}</option>
+              <option value="CUSTOM">Fecha específica</option>
             </select>
           </label>
-          <label className="v2-field">
-            Hasta
-            <input type="date" value={date} onChange={(e) => setDate(e.target.value || today)} />
-          </label>
+          {period === "CUSTOM" && (
+            <>
+              <label className="v2-field">
+                Fecha desde
+                <input
+                  type="date"
+                  value={customStartDate}
+                  onChange={(e) => setCustomStartDate(e.target.value || today)}
+                />
+              </label>
+              <label className="v2-field">
+                Fecha hasta
+                <input
+                  type="date"
+                  value={customEndDate}
+                  onChange={(e) => setCustomEndDate(e.target.value || today)}
+                />
+              </label>
+            </>
+          )}
           <BarberFilter />
         </div>
+        {isInvalidRange && (
+          <p className="v2-notice" style={{ color: "var(--destructive, #ef4444)", margin: "8px 0" }}>
+            Rango no válido: Fecha desde debe ser menor o igual a Fecha hasta.
+          </p>
+        )}
         <div className="v2-history-total">
           <strong>{money(summary.collected)}</strong>
           <span>
-            Cobrado en el local · valor de servicios {money(summary.value)} · señas previas{" "}
+            Total recaudado · valor de servicios {money(summary.value)} · señas online{" "}
             {money(summary.deposits)}
           </span>
         </div>
@@ -535,12 +578,12 @@ export function V2Payments() {
                 {p.clientName || "Sin cliente asociado"} · {p.barberName}
               </p>
               <small>
-                {p.paymentDate} · {p.paymentTime} · {p.paymentMethod}
+                {p.paymentDate} · {p.paymentTime} · {p.paymentMethod}{p.appointmentDate ? ` · Turno: ${p.appointmentDate}` : ""}
               </small>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
               <strong>{money(p.collectedAmountArs)}</strong>
-              {isAdmin ? (
+              {isAdmin && !p.isDepositMovement ? (
                 <div style={{ display: "flex", gap: "6px" }}>
                   <button
                     type="button"
