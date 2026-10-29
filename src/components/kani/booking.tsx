@@ -861,7 +861,8 @@ export function Booking({
                   {Array.from({ length: daysInMonth }, (_, i) => {
                     const day = new Date(month.getFullYear(), month.getMonth(), i + 1);
                     const value = isoDate(day);
-                    const disabled = availabilityLoading || !service || !availabilityBarber && !barberDeferred || !isBookingDate(value, todayValue, bookingEndValue) || !availableDatesSet.has(value);
+                    const isWithinBookingWindow = value >= todayValue && value <= bookingEndValue;
+                    const disabled = availabilityLoading || !service || !availabilityBarber && !barberDeferred || !isWithinBookingWindow || (!isBookingDate(value, todayValue, bookingEndValue) && !availableDatesSet.has(value)) || !availableDatesSet.has(value);
                     return (
                       <Button
                         key={value}

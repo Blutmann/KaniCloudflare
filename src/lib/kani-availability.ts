@@ -30,6 +30,14 @@ export function isFixedBookingStart(value: string) {
   return FIXED_BOOKING_START_TIMES.includes(value.slice(0, 5));
 }
 
+export function isAllowedPublicBookingStart(slotDate: string, startTime: string, isException = false) {
+  if (isFixedBookingStart(startTime)) return true;
+  if (!isException) return false;
+  if (parseDate(slotDate).getDay() === 0) return true;
+  const startMinutes = minutes(startTime.slice(0, 5));
+  return startMinutes < 10 * 60 || startMinutes >= 19 * 60 + 45;
+}
+
 const EFFECTIVE_SERVICE_DURATION_SECONDS: Record<number, number> = {
   30: 30 * 60,
   45: 45 * 60,
@@ -44,8 +52,15 @@ function requiredAvailabilitySegments(duration: number) {
   return Math.ceil(effectiveServiceDurationSeconds(duration) / (AVAILABILITY_STEP_MINUTES * 60));
 }
 
-export function isManageableScheduleDate(slotDate: string, today = businessDateToday(), allowSunday = false) {
+export function isManageableScheduleDate(slotDate: string, today = businessDateToday(), allowSunday = true) {
   return slotDate >= today && (allowSunday || parseDate(slotDate).getDay() !== 0);
+}
+
+export function defaultSlotEndTime(startTime: string) {
+  const [hours = 10, mins = 0] = startTime.split(':').map(Number);
+  const totalMinutes = hours * 60 + mins;
+  const endMinutes = Math.min(23 * 60 + 55, totalMinutes + 45);
+  return `${String(Math.floor(endMinutes / 60)).padStart(2, '0')}:${String(endMinutes % 60).padStart(2, '0')}`;
 }
 
 const slotFields = 'id, barber_id, slot_date, start_time, end_time, status, internal_note, created_at, updated_at, updated_by';
@@ -125,7 +140,7 @@ export function availabilityStartTimesForServiceDate(
   return [...new Set(starts
     .filter(start => start.slot_date === date)
     .filter(start => !barber || start.barber_name === barber)
-    .filter(start => isFixedBookingStart(start.start_time))
+    .filter(start => isAllowedPublicBookingStart(start.slot_date, start.start_time, start.is_exception))
     .filter(start => start.compatible_services.includes(serviceName) || ((serviceName === 'Corte y barba' || serviceName === 'Corte + barba') && (start.compatible_services.includes('Corte + barba') || start.compatible_services.includes('Corte y barba'))))
     .filter(start => slotCanStillBeBooked(start.slot_date, start.start_time, now))
     .map(start => start.start_time.slice(0, 5)))].sort();
@@ -140,7 +155,7 @@ export function eligibleBarbersForAvailabilityStart(
 ) {
   return [...new Set(starts
     .filter(start => start.slot_date === date && start.start_time.slice(0, 5) === time)
-    .filter(start => isFixedBookingStart(start.start_time))
+    .filter(start => isAllowedPublicBookingStart(start.slot_date, start.start_time, start.is_exception))
     .filter(start => start.compatible_services.includes(serviceName) || ((serviceName === 'Corte y barba' || serviceName === 'Corte + barba') && (start.compatible_services.includes('Corte + barba') || start.compatible_services.includes('Corte y barba'))))
     .filter(start => slotCanStillBeBooked(start.slot_date, start.start_time, now))
     .map(start => start.barber_name))];
@@ -203,8 +218,18 @@ export function availableTimesForServiceDate(
 ) {
   if (duration <= 0 || duration % AVAILABILITY_STEP_MINUTES !== 0) return [];
   const segmentStarts = availableSegmentStarts(slots, date, barber);
+  const isSunday = parseDate(date).getDay() === 0;
+  const extraordinaryStarts = slots
+    .filter(slot => slot.slot_date === date && slot.status === 'AVAILABLE')
+    .filter(slot => !barber || slot.barber_name === barber)
+    .map(slot => slot.start_time.slice(0, 5))
+    .filter(startTime => {
+      const m = minutes(startTime);
+      return isSunday || m < 10 * 60 || m > 19 * 60;
+    });
+  const candidateStarts = [...new Set([...FIXED_BOOKING_START_TIMES, ...extraordinaryStarts])].sort();
   const times: string[] = [];
-  for (const startTime of FIXED_BOOKING_START_TIMES) {
+  for (const startTime of candidateStarts) {
     const start = minutes(startTime);
     if (!slotCanStillBeBooked(date, startTime, now)) continue;
     const complete = Array.from(

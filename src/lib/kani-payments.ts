@@ -643,7 +643,22 @@ export async function fetchServicePayments(
     console.warn('[KANI payments] Error al cargar señas online para La cobranza:', err);
   }
 
-  const allMovements = [...inShopPayments, ...onlineDeposits];
+  // Deduplicar señas online por appointmentId (1 único movimiento de seña por reserva)
+  const seenDepositKeys = new Set<string>();
+  for (const p of inShopPayments) {
+    if (p.isDepositMovement || p.serviceOrigin === 'online_deposit') {
+      seenDepositKeys.add(p.appointmentId || p.id);
+    }
+  }
+  const deduplicatedOnlineDeposits: ServicePayment[] = [];
+  for (const dep of onlineDeposits) {
+    const key = dep.appointmentId || dep.id;
+    if (seenDepositKeys.has(key)) continue;
+    seenDepositKeys.add(key);
+    deduplicatedOnlineDeposits.push(dep);
+  }
+
+  const allMovements = [...inShopPayments, ...deduplicatedOnlineDeposits];
   allMovements.sort((a, b) => {
     const cmpDate = b.paymentDate.localeCompare(a.paymentDate);
     if (cmpDate !== 0) return cmpDate;

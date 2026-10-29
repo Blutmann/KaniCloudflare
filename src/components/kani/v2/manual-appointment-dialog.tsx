@@ -215,7 +215,8 @@ export function ManualAppointmentDialog({
       setClientPhone("");
       setClientEmail("");
     }
-  }, [open, mode, appointment, initialDate, isAdmin, data?.barberId, availableBarbers, staff?.profile?.barber_id, servicesList]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, mode, appointment?.id, initialDate]);
 
   // When changing start time, auto-update end time to default duration if not customized
   function handleStartTimeChange(newStart: string) {

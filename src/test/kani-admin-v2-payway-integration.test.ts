@@ -1,4 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, fireEvent } from '@testing-library/react';
+import React from 'react';
 
 vi.mock('@/integrations/supabase/client', () => {
   return {
@@ -16,8 +18,9 @@ import {
   fetchServicePayments,
   type ServicePayment,
 } from '@/lib/kani-payments';
-import { paymentSummary, clientHistory } from '@/lib/kani-v2';
-import { readRealAppointments, type RealAppointment } from '@/lib/kani-appointments';
+import { paymentSummary, clientHistory, deduplicatePaymentMovements } from '@/lib/kani-v2';
+import { availableTimesForServiceDate } from '@/lib/kani-availability';
+import { type RealAppointment } from '@/lib/kani-appointments';
 import { supabase } from '@/integrations/supabase/client';
 import type { AuthenticatedStaff } from '@/lib/kani-auth';
 
@@ -57,7 +60,7 @@ describe('Kani Admin V2 — Integración Payway, Pagos, Turnos e Identidad Hist�
 
     it('la seña de $5.000 aparece como movimiento financiero propio en La cobranza', () => {
       const señaPayway: ServicePayment = {
-        id: 'deposit-att-1',
+        id: 'deposit-apt-1',
         barberId: 'b1',
         barberName: 'Lautaro',
         serviceId: 's1',
@@ -89,6 +92,60 @@ describe('Kani Admin V2 — Integración Payway, Pagos, Turnos e Identidad Hist�
       expect(summary.value).toBe(5000);
       expect(summary.deposits).toBe(5000);
       expect(summary.count).toBe(1);
+    });
+
+    it('Caso G: 3 señas Payway aprobadas de $5.000 suman exactamente $15.000 en Pagos y Datos, nunca $30.000 aunque existan intentos o movimientos duplicados', () => {
+      const makeDeposit = (attId: string, aptId: string, clientName: string): ServicePayment => ({
+        id: `deposit-${attId}`,
+        barberId: 'b1',
+        barberName: 'Lautaro',
+        serviceId: 's1',
+        serviceName: 'Seña — Corte',
+        serviceOtherDetail: null,
+        servicePriceArs: 5000,
+        discountArs: 0,
+        finalAmountArs: 5000,
+        paymentDate: '2026-10-28',
+        paymentTime: '14:30',
+        paymentMethod: 'Tarjeta — Payway',
+        onlineDepositPaid: true,
+        onlineDepositAmountArs: 5000,
+        collectedAmountArs: 5000,
+        clientName,
+        clientContact: '+5491155551111',
+        appointmentId: aptId,
+        appointmentDate: '2026-11-05',
+        appointmentTime: '10:45',
+        serviceOrigin: 'online_deposit',
+        createdByUserId: null,
+        createdByDisplayName: 'Payway',
+        createdAt: '2026-10-28T17:30:00Z',
+        isDepositMovement: true,
+      });
+
+      const d1 = makeDeposit('att-1', 'apt-1', 'Cliente 1');
+      const d2 = makeDeposit('att-2', 'apt-2', 'Cliente 2');
+      const d3 = makeDeposit('att-3', 'apt-3', 'Cliente 3');
+
+      // Incluso si entraran duplicados de los mismos 3 turnos (ej. 6 filas por doble fuente o reintento):
+      const duplicatedMovements = [
+        d1,
+        d2,
+        d3,
+        makeDeposit('att-1-dup', 'apt-1', 'Cliente 1'),
+        makeDeposit('att-2-dup', 'apt-2', 'Cliente 2'),
+        makeDeposit('att-3-dup', 'apt-3', 'Cliente 3'),
+      ];
+
+      const deduplicated = deduplicatePaymentMovements(duplicatedMovements);
+      expect(deduplicated).toHaveLength(3);
+
+      const summary = paymentSummary(duplicatedMovements);
+      expect(summary.count).toBe(3);
+      expect(summary.collected).toBe(15000);
+      expect(summary.value).toBe(15000);
+      expect(summary.deposits).toBe(15000);
+      expect(summary.collected).not.toBe(30000);
     });
 
     it('previene el doble conteo: saldo de $20.000 en local + seña de $5.000 totalizan $25.000 exactos', () => {
@@ -218,7 +275,7 @@ describe('Kani Admin V2 — Integración Payway, Pagos, Turnos e Identidad Hist�
       vi.mocked(supabase.rpc).mockResolvedValueOnce({
         data: [
           {
-            movement_id: 'deposit-att-payway-1',
+            movement_id: 'deposit-apt-pw-1',
             appointment_id: 'apt-pw-1',
             provider: 'PAYWAY',
             amount_ars: 5000,
@@ -450,9 +507,29 @@ describe('Kani Admin V2 — Integración Payway, Pagos, Turnos e Identidad Hist�
   });
 
   // ============================================================================
-  // 3. TURNOS — VISIBILIDAD DE PAYWAY Y ESTADOS
+  // 3. TURNOS — VISIBILIDAD DE PAYWAY Y ESTADOS + CASO C (TURNO MANUAL DIRECTO)
   // ============================================================================
-  describe('3. TURNOS — Reservas Payway visibles y estados reales', () => {
+  describe('3. TURNOS — Reservas Payway visibles, estados reales y turno manual fuera de horario (Caso C)', () => {
+    it('Caso C: turno manual creado directamente a las 08:15 ocupa ese horario y NO abre disponibilidad pública en Reserva V4', () => {
+      // El barbero solo tiene su ventana habitual 10:00 -> 20:00 en barber_availability_slots.
+      // Se crea un turno manual directo para Cliente X a las 08:15 (sin insertar fila AVAILABLE a las 08:15).
+      const slots = [
+        {
+          id: 'slot-1000',
+          barber_id: 'b1',
+          slot_date: '2026-10-30',
+          start_time: '10:00:00',
+          end_time: '10:45:00',
+          status: 'AVAILABLE' as const,
+          barber_name: 'Lautaro',
+        },
+      ];
+      const now = new Date('2026-10-30T07:00:00');
+      const publicTimes = availableTimesForServiceDate(slots, '2026-10-30', 45, now, 'Lautaro');
+      expect(publicTimes).not.toContain('08:15');
+      expect(publicTimes).toEqual(['10:00']);
+    });
+
     it('representa turnos Payway APPROVED con estado CONFIRMED y seña de $5.000', () => {
       const aptApproved: RealAppointment = {
         id: 'apt-pw-approved',
@@ -525,9 +602,6 @@ describe('Kani Admin V2 — Integración Payway, Pagos, Turnos e Identidad Hist�
   // ============================================================================
   describe('4. IDENTIDAD HISTÓRICA — Preservación de nombres independientes para mismo contacto', () => {
     it('conserva el nombre original de cada turno (Juan vs Camilo) aun compartiendo teléfono y email', () => {
-      // Caso solicitado en prompt:
-      // Turno 1: Juan reserva con teléfono X y email Y
-      // Turno 2: Camilo reserva con el mismo teléfono X y email Y
       const sharedClientId = 'client-uuid-shared';
       const sharedPhone = '+5491199887766';
       const sharedEmail = 'amigos@barber.ar';
@@ -540,7 +614,7 @@ describe('Kani Admin V2 — Integración Payway, Pagos, Turnos e Identidad Hist�
         barber: 'Lautaro',
         date: '2026-10-10',
         time: '10:00',
-        name: 'Juan', // Snapshot inmutable de la reserva
+        name: 'Juan',
         bookingClientName: 'Juan',
         clientId: sharedClientId,
         phone: sharedPhone,
@@ -559,7 +633,7 @@ describe('Kani Admin V2 — Integración Payway, Pagos, Turnos e Identidad Hist�
         barber: 'Lautaro',
         date: '2026-10-20',
         time: '11:00',
-        name: 'Camilo', // Snapshot inmutable de la reserva
+        name: 'Camilo',
         bookingClientName: 'Camilo',
         clientId: sharedClientId,
         phone: sharedPhone,
@@ -570,11 +644,9 @@ describe('Kani Admin V2 — Integración Payway, Pagos, Turnos e Identidad Hist�
         barberId: 'b1',
       };
 
-      // 1. En Turnos, cada appointment se muestra con su propio nombre:
       expect(turnoJuan.name).toBe('Juan');
       expect(turnoCamilo.name).toBe('Camilo');
 
-      // 2. En el Historial del cliente, se vinculan al mismo contacto pero cada turno conserva su nombre:
       const appointments = [turnoJuan, turnoCamilo];
       const payments: ServicePayment[] = [];
       const historySummary = clientHistory(sharedClientId, appointments, payments);
@@ -583,8 +655,6 @@ describe('Kani Admin V2 — Integración Payway, Pagos, Turnos e Identidad Hist�
       expect(historySummary.history[0].name).toBe('Juan');
       expect(historySummary.history[1].name).toBe('Camilo');
 
-      // 3. Si posteriormente se cambia el nombre del contacto maestro a "Juan Pérez",
-      // los snapshots de los turnos NO deben alterarse:
       const masterDirectoryClient = {
         id: sharedClientId,
         name: 'Juan Pérez',
@@ -593,7 +663,6 @@ describe('Kani Admin V2 — Integración Payway, Pagos, Turnos e Identidad Hist�
       };
 
       expect(masterDirectoryClient.name).toBe('Juan Pérez');
-      // Los snapshots históricos permanecen intactos
       expect(turnoJuan.bookingClientName).toBe('Juan');
       expect(turnoCamilo.bookingClientName).toBe('Camilo');
     });

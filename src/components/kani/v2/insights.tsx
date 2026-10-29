@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { Lightbulb, TrendingUp } from "lucide-react";
 import { useAdminStaff } from "@/lib/kani-admin-context";
-import { scopeV2, paymentSummary, changePercent } from "@/lib/kani-v2";
+import { scopeV2, paymentSummary, changePercent, deduplicatePaymentMovements } from "@/lib/kani-v2";
 import { businessDateToday, addCalendarDays } from "@/lib/kani-mobile-appointments";
 import { money } from "@/lib/kani-model";
 import {
@@ -274,8 +274,10 @@ export function V2Insights() {
   const previousStart = activeRange.prevStart;
   const previousEnd = activeRange.prevEnd;
 
-  // Filter payments and appointments consistently across all metrics
-  const allPayments = scopeV2(data.payments, staff.profile.role, staff.profile.barber_id, data.barberId);
+  // Filter payments and appointments consistently across all metrics (deduplicating online deposits by appointmentId)
+  const allPayments = deduplicatePaymentMovements(
+    scopeV2(data.payments, staff.profile.role, staff.profile.barber_id, data.barberId),
+  );
   const payments = isInvalidRange ? [] : allPayments.filter((p) => p.paymentDate >= start && p.paymentDate <= end);
   const previous = isInvalidRange ? [] : allPayments.filter((p) => p.paymentDate >= previousStart && p.paymentDate <= previousEnd);
 
@@ -391,7 +393,21 @@ export function V2Insights() {
           <AdminFilterCell empty />
         )}
 
-        {/* Columna 3 / Fila 2 Col 1: Barbero */}
+        {/* Columna 3 / Fila 2 Col 1: Fecha hasta si CUSTOM, sino celda vacía para preservar la grilla */}
+        {period === "CUSTOM" ? (
+          <AdminFilterCell label="Fecha hasta" htmlFor="v2-insights-custom-end">
+            <input
+              id="v2-insights-custom-end"
+              type="date"
+              value={customEndDate}
+              onChange={(e) => setCustomEndDate(e.target.value || today)}
+            />
+          </AdminFilterCell>
+        ) : (
+          <AdminFilterCell empty />
+        )}
+
+        {/* Columna 4 / Fila 2 Col 2: Barbero */}
         <AdminFilterCell label="Barbero" htmlFor="v2-insights-barber">
           <select
             id="v2-insights-barber"
@@ -407,20 +423,6 @@ export function V2Insights() {
             ))}
           </select>
         </AdminFilterCell>
-
-        {/* Columna 4 / Fila 2 Col 2: Fecha hasta si CUSTOM, sino celda vacía para preservar la grilla */}
-        {period === "CUSTOM" ? (
-          <AdminFilterCell label="Fecha hasta" htmlFor="v2-insights-custom-end">
-            <input
-              id="v2-insights-custom-end"
-              type="date"
-              value={customEndDate}
-              onChange={(e) => setCustomEndDate(e.target.value || today)}
-            />
-          </AdminFilterCell>
-        ) : (
-          <AdminFilterCell empty />
-        )}
       </AdminFilterPanel>
 
       <div className="v2-metrics v2-metrics-four">

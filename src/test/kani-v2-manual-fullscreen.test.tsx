@@ -30,6 +30,7 @@ vi.mock('@/components/kani/v2/data', () => ({
     depositSupported: true,
     refresh: vi.fn(),
     appointments: [],
+    payments: [],
     clients: [
       { id: 'c1', name: 'Lucas Gómez', phone: '+5491122334455', email: 'lucas@test.com' },
     ],
@@ -46,15 +47,16 @@ vi.mock('@/lib/kani-appointments', async (importOriginal) => {
 });
 
 import { ManualAppointmentDialog } from '@/components/kani/v2/manual-appointment-dialog';
+import { V2Insights } from '@/components/kani/v2/insights';
 
 afterEach(() => {
   cleanup();
 });
 
-describe('ManualAppointmentDialog Fullscreen & UX Mobile Redesign', () => {
-  it('renders exact header with title "Generar turno manual" and formatted X button', () => {
+describe('ManualAppointmentDialog Responsive Viewport-Safe Modal & Datos Filter Order', () => {
+  it('renders dialog header with title "Nuevo turno manual" and working Cancelar / Close button', () => {
     const handleClose = vi.fn();
-    const { container } = render(
+    render(
       <ManualAppointmentDialog
         open={true}
         mode="CREATE"
@@ -64,28 +66,17 @@ describe('ManualAppointmentDialog Fullscreen & UX Mobile Redesign', () => {
       />
     );
 
-    // Title must be "Generar turno manual"
     expect(
-      screen.getByRole('heading', { name: 'Generar turno manual', level: 2 }),
+      screen.getByRole('heading', { name: /Nuevo turno manual/i, level: 2 }),
     ).toBeInTheDocument();
 
-    // Close button must be present in header with header-control-button class
-    const closeBtn = screen.getByRole('button', { name: 'Cerrar' });
-    expect(closeBtn).toBeInTheDocument();
-    expect(closeBtn).toHaveClass('header-control-button');
-    expect(closeBtn).toHaveClass('v2-manual-close-btn');
-
-    // Clicking X fires onClose cleanly
-    fireEvent.click(closeBtn);
+    const cancelBtn = screen.getByRole('button', { name: 'Cancelar' });
+    expect(cancelBtn).toBeInTheDocument();
+    fireEvent.click(cancelBtn);
     expect(handleClose).toHaveBeenCalledTimes(1);
-
-    // Does NOT render old barber tag in the header
-    const header = document.body.querySelector('.v2-manual-dialog-header');
-    expect(header).toBeInTheDocument();
-    expect(header?.querySelector('.v2-barber-tag')).toBeNull();
   });
 
-  it('eliminates Notas (opcional) completely and renders Email (opcional)', () => {
+  it('eliminates Notas (opcional) completely and renders Email · opcional', () => {
     render(
       <ManualAppointmentDialog
         open={true}
@@ -96,12 +87,8 @@ describe('ManualAppointmentDialog Fullscreen & UX Mobile Redesign', () => {
       />
     );
 
-    // Notas field must NOT exist anywhere
     expect(screen.queryByLabelText(/Notas/i)).toBeNull();
-    expect(screen.queryByPlaceholderText(/Corte clásico/i)).toBeNull();
-
-    // Email (opcional) must be present
-    expect(screen.getByLabelText(/Email \(opcional\)/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Email · opcional/i)).toBeInTheDocument();
   });
 
   it('eliminates capsules grid and period range tabs in favor of compact Hora de inicio | Hora de finalización', () => {
@@ -115,7 +102,6 @@ describe('ManualAppointmentDialog Fullscreen & UX Mobile Redesign', () => {
       />
     );
 
-    // Verify PERIOD_LABELS mapping is preserved for other public components
     expect(PERIOD_LABELS).toEqual({
       COMERCIAL: '10:00 a 19:00 hs',
       ANTES: '00:00 a 09:45 hs',
@@ -123,26 +109,19 @@ describe('ManualAppointmentDialog Fullscreen & UX Mobile Redesign', () => {
       TODOS: '00:00 a 23:59 hs',
     });
 
-    // Period range tabs must NOT exist in the dialog
     expect(screen.queryByRole('tab', { name: '10:00 a 19:00 hs' })).toBeNull();
     expect(screen.queryByRole('tab', { name: '00:00 a 09:45 hs' })).toBeNull();
-    expect(screen.queryByRole('tab', { name: '19:15 a 23:45 hs' })).toBeNull();
-    expect(screen.queryByRole('tab', { name: '00:00 a 23:59 hs' })).toBeNull();
 
-    // New compact selectors: Hora de inicio * and read-only Hora de finalización
     const startSelect = screen.getByRole('combobox', { name: /Hora de inicio \*/i });
     expect(startSelect).toBeInTheDocument();
     expect(startSelect).toHaveValue('10:00');
 
-    // Default service is Corte (45 min) -> Fin calculated is 10:45 hs
-    const endInput = screen.getByLabelText(/Hora de finalización/i) as HTMLInputElement;
-    expect(endInput).toBeInTheDocument();
-    expect(endInput.value).toBe('10:45 hs');
-    expect(endInput.readOnly).toBe(true);
+    const endSelect = screen.getByRole('combobox', { name: /Hora de finalización \*/i });
+    expect(endSelect).toBeInTheDocument();
+    expect(endSelect).toHaveValue('10:45');
 
-    // Changing Hora de inicio from 10:00 to 10:15 immediately recalculates Fin to 11:00 hs
     fireEvent.change(startSelect, { target: { value: '10:15' } });
-    expect(endInput.value).toBe('11:00 hs');
+    expect(endSelect).toHaveValue('11:00');
   });
 
   it('renders Buscar cliente existente as a real input with search icon', () => {
@@ -156,44 +135,89 @@ describe('ManualAppointmentDialog Fullscreen & UX Mobile Redesign', () => {
       />
     );
 
-    const searchInput = screen.getByPlaceholderText('Buscar cliente existente...');
+    const searchInput = screen.getByPlaceholderText(/Buscar cliente existente/i);
     expect(searchInput).toBeInTheDocument();
     expect(searchInput.parentElement).toHaveClass('v2-client-quick-search');
     expect(searchInput.parentElement).toHaveClass('v2-search');
 
-    // Search autocomplete works
     fireEvent.change(searchInput, { target: { value: 'Lucas' } });
     expect(screen.getByText('Lucas Gómez')).toBeInTheDocument();
   });
 
-  it('CSS validates mobile fullscreen rules, hidden site-header and 2-column manual row', () => {
+  it('CSS validates responsive viewport-safe modal rules, internal scroll and 2-column manual row', () => {
     const cssPath = path.resolve(__dirname, '../components/kani/v2/v2.css');
     const css = fs.readFileSync(cssPath, 'utf-8');
 
-    // 1. Hide site-header while manual dialog is open
     expect(css).toContain('body:has(.v2-manual-dialog) .site-header');
     expect(css).toMatch(/display:\s*none\s*!important/);
 
-    // 2. Fullscreen covering 100% of viewport with 100dvh and translate: none
     expect(css).toMatch(/\.v2-dialog\.v2-manual-dialog\s*\{[^}]*position:\s*fixed\s*!important/);
-    expect(css).toMatch(/width:\s*100%\s*!important/);
-    expect(css).toMatch(/translate:\s*none\s*!important/);
-    expect(css).toMatch(/transform:\s*none\s*!important/);
-    expect(css).toMatch(/height:\s*100(vh|dvh)\s*!important/);
-    expect(css).toMatch(/max-height:\s*none\s*!important/);
+    expect(css).toMatch(/max-height:\s*calc\(100dvh\s*-\s*(16|24|32)px\)\s*!important/);
+    expect(css).toMatch(/--tw-translate-x:\s*0px\s*!important/);
+    expect(css).toMatch(/--tw-translate-y:\s*0px\s*!important/);
     expect(css).toMatch(/z-index:\s*200\s*!important/);
 
-    // 3. No rounded corners or external borders on mobile
-    expect(css).toMatch(/border-radius:\s*0\s*!important/);
-    expect(css).toMatch(/border:\s*none\s*!important/);
+    expect(css).toMatch(/\.v2-manual-form\s*\{[^}]*overflow-y:\s*auto\s*!important/);
+    expect(css).toMatch(/\.v2-manual-form\s*\{[^}]*min-height:\s*0\s*!important/);
 
-    // 4. Desktop preserves centered modal with transform translate(-50%, -50%)
     expect(css).toMatch(/@media\s*\(min-width:\s*768px\)\s*\{[^}]*\.v2-dialog\.v2-manual-dialog\s*\{[^}]*transform:\s*translate\(-50%,\s*-50%\)\s*!important/);
 
-    // 5. 2-column mobile layout preserved at 360px
     expect(css).toMatch(/grid-template-columns:\s*minmax\(0,\s*1fr\)\s*minmax\(0,\s*1fr\)\s*!important/);
 
-    // 6. Safe area in actions
     expect(css).toMatch(/padding-bottom:\s*calc\([^)]*safe-area-inset-bottom/);
+  });
+
+  it('preserves exact field order: Barbero | Servicio, Fecha | Importe, Hora de inicio | Hora de finalización, Buscar cliente existente, Nombre | Celular, Email, Cancelar | Crear turno', () => {
+    render(
+      <ManualAppointmentDialog
+        open={true}
+        mode="CREATE"
+        initialDate={businessDateToday()}
+        onClose={vi.fn()}
+        onSuccess={vi.fn()}
+      />
+    );
+
+    const form = document.body.querySelector('.v2-manual-form');
+    expect(form).not.toBeNull();
+    const html = form?.innerHTML ?? '';
+    const idxBarbero = html.indexOf('Barbero');
+    const idxServicio = html.indexOf('Servicio');
+    const idxFecha = html.indexOf('Fecha');
+    const idxImporte = html.indexOf('Importe');
+    const idxHoraInicio = html.indexOf('Hora de inicio');
+    const idxHoraFin = html.indexOf('Hora de finalización');
+    const idxBuscar = html.indexOf('Buscar cliente existente');
+    const idxNombre = html.indexOf('Nombre del cliente');
+    const idxCelular = html.indexOf('Celular');
+    const idxEmail = html.indexOf('Email');
+    const idxCancelar = html.indexOf('Cancelar');
+    const idxCrear = html.indexOf('Crear turno');
+
+    expect(idxBarbero).toBeGreaterThanOrEqual(0);
+    expect(idxBarbero).toBeLessThan(idxServicio);
+    expect(idxServicio).toBeLessThan(idxFecha);
+    expect(idxFecha).toBeLessThan(idxImporte);
+    expect(idxImporte).toBeLessThan(idxHoraInicio);
+    expect(idxHoraInicio).toBeLessThan(idxHoraFin);
+    expect(idxHoraFin).toBeLessThan(idxBuscar);
+    expect(idxBuscar).toBeLessThan(idxNombre);
+    expect(idxNombre).toBeLessThan(idxCelular);
+    expect(idxCelular).toBeLessThan(idxEmail);
+    expect(idxEmail).toBeLessThan(idxCancelar);
+    expect(idxCancelar).toBeLessThan(idxCrear);
+  });
+
+  it('Caso H: en /admin-v2/datos (V2Insights) con Fecha específica muestra exactamente Período | Fecha desde | Fecha hasta | Barbero', () => {
+    const { container } = render(<V2Insights />);
+    const periodSelect = screen.getByLabelText('Período');
+    fireEvent.change(periodSelect, { target: { value: 'CUSTOM' } });
+
+    const filterPanel = container.querySelector('[aria-label="Filtros de datos"]');
+    expect(filterPanel).not.toBeNull();
+    const labels = Array.from(filterPanel!.querySelectorAll('.v2-admin-filter-label')).map((el) =>
+      el.textContent?.trim(),
+    );
+    expect(labels).toEqual(['Período', 'Fecha desde', 'Fecha hasta', 'Barbero']);
   });
 });

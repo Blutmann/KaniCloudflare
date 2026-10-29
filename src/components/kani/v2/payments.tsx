@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAdminStaff } from "@/lib/kani-admin-context";
 import { businessDateToday, addCalendarDays } from "@/lib/kani-mobile-appointments";
 import { money } from "@/lib/kani-model";
-import { paymentSummary, scopeV2 } from "@/lib/kani-v2";
+import { deduplicatePaymentMovements, paymentSummary, scopeV2 } from "@/lib/kani-v2";
 import {
   deleteServicePayment,
   updateServicePayment,
@@ -88,11 +88,13 @@ export function V2Payments() {
 
   const history = isInvalidRange
     ? []
-    : scopeV2(
-        data.payments,
-        staff.profile.role,
-        staff.profile.barber_id,
-        data.barberId,
+    : deduplicatePaymentMovements(
+        scopeV2(
+          data.payments,
+          staff.profile.role,
+          staff.profile.barber_id,
+          data.barberId,
+        ),
       ).filter(
         (p) =>
           p.paymentDate >= periodRange.start &&

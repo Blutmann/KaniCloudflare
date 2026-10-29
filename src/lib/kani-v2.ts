@@ -58,7 +58,23 @@ export function slotReserved(slot: AvailabilitySlot, appointments: RealAppointme
   );
 }
 
-export function paymentSummary(payments: ServicePayment[]) {
+export function deduplicatePaymentMovements(payments: ServicePayment[]): ServicePayment[] {
+  const seen = new Set<string>();
+  const result: ServicePayment[] = [];
+  for (const p of payments) {
+    const isDeposit = Boolean(p.isDepositMovement || p.serviceOrigin === "online_deposit");
+    const key = isDeposit
+      ? `deposit:${p.appointmentId || p.id}`
+      : `payment:${p.id}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(p);
+  }
+  return result;
+}
+
+export function paymentSummary(rawPayments: ServicePayment[]) {
+  const payments = deduplicatePaymentMovements(rawPayments);
   const collected = payments.reduce((sum, p) => sum + p.collectedAmountArs, 0);
 
   const executedAppointmentIds = new Set(

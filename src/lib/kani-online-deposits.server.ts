@@ -29,13 +29,22 @@ export async function readOnlineDepositMovementsServer(
       return [];
     }
 
-    const appointmentIds = [...new Set(attempts.map((a) => a.appointment_id).filter(Boolean))];
+    // Deduplicate approved attempts by appointment_id (keep most recent approved attempt per appointment)
+    const uniqueAttemptsByAppointment = new Map<string, (typeof attempts)[number]>();
+    for (const att of attempts) {
+      if (!att.appointment_id) continue;
+      if (!uniqueAttemptsByAppointment.has(att.appointment_id)) {
+        uniqueAttemptsByAppointment.set(att.appointment_id, att);
+      }
+    }
+    const deduplicatedAttempts = [...uniqueAttemptsByAppointment.values()];
+    const appointmentIds = [...uniqueAttemptsByAppointment.keys()];
     if (appointmentIds.length === 0) return [];
 
     // 2. Fetch corresponding appointments (WITHOUT booking_client_name column to avoid missing-column errors)
     let apptQuery = client
       .from("appointments")
-      .select("id, barber_id, service_id, custom_service_name, deposit_paid, deposit_amount_ars, booking_date, start_time, created_at, client_id")
+      .select("id, barber_id, service_id, custom_service_name, status, deposit_paid, deposit_amount_ars, booking_date, start_time, created_at, client_id")
       .in("id", appointmentIds);
 
     // Apply barber scoping if role is BARBER or filter specifies a barber
@@ -74,11 +83,11 @@ export async function readOnlineDepositMovementsServer(
       });
     }
 
-    // 4. Map approved attempts into ServicePayment movements
-    const movements: ServicePayment[] = attempts
+    // 4. Map approved attempts into ServicePayment movements (at most 1 per appointment_id)
+    const movements: ServicePayment[] = deduplicatedAttempts
       .map((att) => {
-        const apt = apptMap.get(att.appointment_id);
-        if (!apt) return null;
+        const apt = apptMap.get(att.appointment_id) as any;
+        if (!apt || apt.status === "CANCELLED") return null;
 
         const rawTimestamp = att.created_at || apt.created_at;
         const { date: payDate, time: payTime } = timestampToBusinessDateTime(rawTimestamp);
@@ -93,7 +102,7 @@ export async function readOnlineDepositMovementsServer(
               : (att.provider as PaymentMethod);
 
         return {
-          id: `deposit-${att.id}`,
+          id: `deposit-${apt.id}`,
           barberId: apt.barber_id,
           barberName: barberMap.get(apt.barber_id) || "Barbero",
           serviceId: apt.service_id || null,

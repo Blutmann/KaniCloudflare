@@ -77,7 +77,7 @@ function errorMessage(cause: unknown) {
   if (message.includes("AVAILABILITY_OVERLAP") || message.includes("AVAILABILITY_BLOCKED_START"))
     return "Ese inicio está dentro de un bloqueo existente.";
   if (message.includes("AVAILABILITY_DATE_INVALID"))
-    return "Elegí una fecha futura de atención; los domingos permanecen cerrados.";
+    return "Elegí una fecha igual o posterior a hoy para habilitar disponibilidad.";
   if (message.includes("START_TIME_INVALID") || message.includes("START_TIME_NOT_ALLOWED"))
     return "Elegí un horario válido entre las 00:00 y las 23:45 (intervalos de 15 minutos).";
   if (message.includes("END_TIME_INVALID") || message.includes("AVAILABILITY_INTERVAL_INVALID"))
@@ -570,7 +570,7 @@ export function AdminScheduleManager() {
             </div>
           </div>
           <p className="manual-dialog-date text-xs text-muted-foreground">
-            La fecha debe ser igual o posterior a {businessToday}. Los domingos permanecen cerrados.
+            Se habilitará el tramo de 45 minutos ({manualTime} a {defaultSlotEndTime(manualTime)} hs). La fecha debe ser igual o posterior a {businessToday}.
           </p>
           <DialogFooter className="manual-dialog-footer">
             <Button

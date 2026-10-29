@@ -2411,11 +2411,6 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
   width: 100%;
 }
 
-.v2-manual-dialog > button.absolute,
-.v2-manual-dialog > button:has(> .sr-only) {
-  display: none !important;
-}
-
 .v2-manual-dialog-header {
   display: flex;
   align-items: center;
@@ -2707,127 +2702,189 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
 }
 
 /* ==========================================================================
-   Admin V2 — Manual Appointment Fullscreen on Mobile
+   Admin V2 — Manual Appointment Responsive Viewport-Safe Modal (Mobile & Desktop)
    ========================================================================== */
+.v2-dialog.v2-manual-dialog {
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  right: auto !important;
+  bottom: auto !important;
+  --tw-translate-x: 0px !important;
+  --tw-translate-y: 0px !important;
+  transform: translate(-50%, -50%) !important;
+  width: min(calc(100vw - 24px), 520px) !important;
+  max-width: 520px !important;
+  height: auto !important;
+  max-height: calc(100dvh - 24px) !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  gap: 0 !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius-card, 16px) !important;
+  background: var(--background) !important;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.45) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  z-index: 200 !important;
+  box-sizing: border-box !important;
+}
+
+.v2-dialog.v2-manual-dialog > h2 {
+  font-size: 15.5px !important;
+  font-weight: 600 !important;
+  color: var(--foreground) !important;
+  letter-spacing: -0.01em !important;
+  line-height: 1.3 !important;
+  margin: 0 !important;
+  padding: 12px 44px 2px 16px !important;
+  flex-shrink: 0 !important;
+}
+
+.v2-dialog.v2-manual-dialog > p {
+  font-size: 11.5px !important;
+  color: var(--muted-foreground) !important;
+  line-height: 1.35 !important;
+  margin: 0 !important;
+  padding: 0 16px 10px 16px !important;
+  border-bottom: 1px solid var(--border) !important;
+  flex-shrink: 0 !important;
+}
+
+.v2-dialog.v2-manual-dialog > button:has(> .sr-only) {
+  top: 8px !important;
+  right: 8px !important;
+  min-width: 34px !important;
+  min-height: 34px !important;
+  width: 34px !important;
+  height: 34px !important;
+}
+
+.v2-manual-dialog-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  padding: 12px 16px !important;
+  margin: 0 !important;
+  background: var(--background) !important;
+  border-bottom: 1px solid var(--border) !important;
+  flex-shrink: 0 !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.v2-manual-dialog-title {
+  font-size: 15.5px !important;
+  font-weight: 600 !important;
+  color: var(--foreground) !important;
+  letter-spacing: -0.01em !important;
+  line-height: 1.3 !important;
+  margin: 0 !important;
+}
+
+.v2-manual-close-btn {
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  min-height: 36px !important;
+  flex: 0 0 36px !important;
+  border-radius: var(--radius-control, 0.65rem) !important;
+}
+
+.v2-manual-form {
+  padding: 10px 16px 12px 16px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  overscroll-behavior: contain !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+.v2-manual-dialog .v2-field {
+  gap: 3px !important;
+  font-size: 11px !important;
+}
+
+.v2-manual-dialog .v2-field :is(input, select),
+.v2-manual-dialog .v2-client-quick-search input {
+  height: 36px !important;
+  min-height: 36px !important;
+  max-height: 36px !important;
+  padding-top: 5px !important;
+  padding-bottom: 5px !important;
+  font-size: 12px !important;
+}
+
+.v2-manual-dialog .v2-client-quick-search input {
+  padding-left: 34px !important;
+}
+
+.v2-manual-row {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+  gap: 8px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.v2-manual-time-section {
+  padding: 8px 10px !important;
+  gap: 6px !important;
+}
+
+.v2-manual-client-section {
+  gap: 6px !important;
+}
+
+.v2-manual-dialog-actions,
+.v2-manual-actions {
+  position: sticky !important;
+  bottom: -12px !important;
+  background: var(--background) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 10px !important;
+  margin-top: 4px !important;
+  padding-top: 8px !important;
+  padding-bottom: calc(4px + env(safe-area-inset-bottom, 0px)) !important;
+  border-top: 1px solid var(--border) !important;
+  width: 100% !important;
+  flex-shrink: 0 !important;
+  box-sizing: border-box !important;
+  z-index: 5 !important;
+}
+
+.v2-manual-dialog-actions button,
+.v2-manual-actions button {
+  min-height: 38px !important;
+  height: 38px !important;
+  padding: 6px 14px !important;
+}
+
 @media (max-width: 767px) {
-  /* Hide the general site-header while manual appointment dialog is open */
   body:has(.v2-manual-dialog) .site-header {
     display: none !important;
   }
 
-  /* Hide backdrop overlay on mobile so background agenda is never visible */
-  body:has(.v2-manual-dialog) [data-state="open"].fixed.inset-0.bg-overlay\/80,
-  body:has(.v2-manual-dialog) div[data-state="open"][class*="bg-overlay"] {
-    display: none !important;
-  }
-
-  /* Fullscreen dialog covering 100% of viewport without lateral displacement */
   .v2-dialog.v2-manual-dialog {
-    position: fixed !important;
-    inset: 0 !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    width: 100% !important;
-    min-width: 0 !important;
-    max-width: none !important;
-    height: 100% !important;
-    height: 100dvh !important;
-    max-height: none !important;
-    transform: none !important;
-    translate: none !important;
-    margin: 0 !important;
-    border: none !important;
-    border-radius: 0 !important;
-    box-shadow: none !important;
-    padding: 0 !important;
-    z-index: 200 !important;
-    background: var(--background) !important;
-    display: flex !important;
-    flex-direction: column !important;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior: contain;
+    width: calc(100vw - 16px) !important;
+    max-width: 520px !important;
+    max-height: calc(100dvh - 16px) !important;
   }
 
-  /* Fullscreen header with Generar turno manual + X */
-  .v2-manual-dialog-header {
-    position: sticky;
-    top: 0;
-    z-index: 20;
-    height: calc(72px + env(safe-area-inset-top, 0px));
-    padding-top: env(safe-area-inset-top, 0px);
-    padding-left: 16px;
-    padding-right: 16px;
-    margin: 0;
-    background: var(--background);
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-shrink: 0;
-    width: 100%;
-    box-sizing: border-box;
-  }
-
-  .v2-manual-dialog-title {
-    font-size: 16.5px;
-    font-weight: 600;
-    color: var(--foreground);
-    letter-spacing: -0.01em;
-  }
-
-  .v2-manual-close-btn {
-    width: 44px;
-    height: 44px;
-    flex: 0 0 44px;
-    border-radius: var(--radius-control, 0.65rem);
-  }
-
-  /* Single vertical scrolling form */
-  .v2-manual-form {
-    padding: 14px 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    flex: 1 0 auto;
-    margin-top: 0;
-    width: 100%;
-    box-sizing: border-box;
-    overflow-x: hidden;
-  }
-
-  /* 2-column mobile layout preserved at 360px */
-  .v2-manual-row {
-    display: grid !important;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
-    gap: 8px !important;
-    width: 100% !important;
-    box-sizing: border-box !important;
-  }
-
-  /* Time section mobile density */
-  .v2-manual-time-section {
-    padding: 8px 10px !important;
-    gap: 6px !important;
-  }
-
-  /* Bottom actions: completely accessible with bottom safe-area */
-  .v2-manual-actions {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-top: 16px;
-    padding-bottom: calc(32px + env(safe-area-inset-bottom, 16px));
-    width: 100%;
-    box-sizing: border-box;
-  }
-
+  .v2-manual-dialog-actions button,
   .v2-manual-actions button {
-    flex: 1;
-    min-height: 44px;
+    flex: 1 1 0 !important;
   }
 }
 
@@ -2838,32 +2895,12 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
     left: 50% !important;
     right: auto !important;
     bottom: auto !important;
+    --tw-translate-x: 0px !important;
+    --tw-translate-y: 0px !important;
     transform: translate(-50%, -50%) !important;
-    translate: none !important;
-    width: 100% !important;
+    width: min(calc(100vw - 32px), 520px) !important;
     max-width: 520px !important;
-    max-height: 88dvh !important;
-    height: auto !important;
-    margin: 0 !important;
-    border: 1px solid var(--border) !important;
-    border-radius: var(--radius-card, 16px) !important;
-    padding: 20px !important;
-    background: var(--background) !important;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.45) !important;
-    overflow-y: auto !important;
-    z-index: 50 !important;
-  }
-
-  .v2-manual-dialog-header {
-    margin-bottom: 8px;
-    padding: 0;
-    border-bottom: none;
-    background: transparent;
-  }
-
-  .v2-manual-form {
-    padding: 0;
-    gap: 12px;
+    max-height: calc(100dvh - 32px) !important;
   }
 
   .v2-capsules-container {
