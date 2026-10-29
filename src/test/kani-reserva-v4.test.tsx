@@ -44,13 +44,17 @@ async function openCard() {
   fireEvent.change(screen.getByRole('textbox', { name: 'DNI del titular' }), { target: { value: '12345678' } });
 }
 beforeEach(() => {
-  vi.clearAllMocks(); Element.prototype.scrollTo = vi.fn();
+  vi.clearAllMocks();
+  window.sessionStorage.clear();
+  window.history.replaceState(null, '');
+  Element.prototype.scrollTo = vi.fn();
+  window.scrollTo = vi.fn();
   vi.useFakeTimers({ toFake: ['Date'] }); vi.setSystemTime(new Date('2026-10-26T12:00:00Z'));
   mocks.prepare.mockResolvedValue({ ready: true, checkout });
   mocks.tokenize.mockResolvedValue({ token: 'fixture-token', bin: '450799' });
   mocks.pay.mockResolvedValue({ state: 'approved', message: PAYWAY_MESSAGES.approved, appointmentConfirmed: true });
 });
-afterEach(() => { cleanup(); vi.useRealTimers(); });
+afterEach(() => { cleanup(); window.sessionStorage.clear(); vi.useRealTimers(); });
 
 describe('independent Payway reservation matching the current V3 five steps', () => {
   it('preserves the compact review and blocks unavailable payment without creating an appointment', async () => {
@@ -64,7 +68,8 @@ describe('independent Payway reservation matching the current V3 five steps', ()
     expect(screen.queryByRole('textbox', { name: 'Número de tarjeta' })).not.toBeInTheDocument();
     expect(mocks.mp).not.toHaveBeenCalled(); expect(mocks.create).not.toHaveBeenCalled(); expect(mocks.tokenize).not.toHaveBeenCalled();
   });
-  it('blocks a double click and sends only the token, attempt, capability and required metadata to Kani', async () => {
+
+  it('transitions automatically on APPROVED + appointmentConfirmed to Turno confirmado, removes Pagar seña and pre-payment copy, and prevents a second payment', async () => {
     await openCard();
     const form = screen.getByRole('textbox', { name: 'Número de tarjeta' }).closest('form')!;
     let resolve!: (value: { token: string; bin: string }) => void;
@@ -75,24 +80,65 @@ describe('independent Payway reservation matching the current V3 five steps', ()
     await waitFor(() => expect(mocks.pay).toHaveBeenCalledTimes(1));
     expect(mocks.pay).toHaveBeenCalledWith({ data: { appointmentId: checkout.appointmentId, attemptId: checkout.attemptId,
       accessToken: checkout.accessToken, token: 'fixture-token', bin: '450799', paymentMethodId: 1 } });
-    expect(await screen.findByText(PAYWAY_MESSAGES.approved)).toBeInTheDocument();
+
+    // Final confirmation screen appears automatically without intermediate modal
+    expect(await screen.findByRole('heading', { name: 'Turno confirmado' })).toBeInTheDocument();
+    expect(screen.getByText('Tu turno está confirmado.')).toBeInTheDocument();
+    expect(screen.getByText('Te enviamos la confirmación por correo electrónico.')).toBeInTheDocument();
+    expect(screen.getByText('Corte')).toBeInTheDocument();
+    expect(screen.getByText('Lautaro')).toBeInTheDocument();
+    expect(screen.getByText(dateLabel('2026-10-27'))).toBeInTheDocument();
+    expect(screen.getByText('10:00')).toBeInTheDocument();
+    expect(screen.getByText('$5.000')).toBeInTheDocument();
+    expect(screen.getByText('$20.000')).toBeInTheDocument();
+
+    // Form, Pagar seña, and pre-payment notice are completely gone
+    expect(screen.queryByText('Completá tus datos')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Pagar seña' })).not.toBeInTheDocument();
+    expect(screen.queryByText('Tu turno se confirma cuando se acredita la seña.')).not.toBeInTheDocument();
+    expect(screen.queryByRole('textbox', { name: 'Número de tarjeta' })).not.toBeInTheDocument();
     expect(mocks.mp).not.toHaveBeenCalled(); expect(mocks.create).not.toHaveBeenCalled();
+
+    // Pressing Back (popstate) or refreshing/remounting preserves Turno confirmado and never allows a second payment
+    await act(async () => { window.dispatchEvent(new PopStateEvent('popstate')); });
+    expect(screen.getByRole('heading', { name: 'Turno confirmado' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Pagar seña' })).not.toBeInTheDocument();
+
+    cleanup();
+    render(<PaywayBooking />);
+    expect(screen.getByRole('heading', { name: 'Turno confirmado' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Pagar seña' })).not.toBeInTheDocument();
+    expect(mocks.prepare).toHaveBeenCalledTimes(1);
+    expect(mocks.pay).toHaveBeenCalledTimes(1);
   });
+
   it('keeps an indeterminate payment terminal even after closing and reopening the dialog', async () => {
     mocks.pay.mockRejectedValue(new Error('network fixture'));
     await openCard(); fireEvent.submit(screen.getByRole('textbox', { name: 'Número de tarjeta' }).closest('form')!);
     expect(await screen.findByRole('alert')).toHaveTextContent(PAYWAY_MESSAGES.unknown);
+    expect(screen.getByText('Conservá esta pantalla y contactá al estudio. Tu turno todavía no está confirmado.')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Turno confirmado' })).not.toBeInTheDocument();
     expect(screen.queryByRole('textbox', { name: 'Número de tarjeta' })).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: /^Cerrar$/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Pagar seña' }));
     expect(await screen.findByRole('alert')).toHaveTextContent(PAYWAY_MESSAGES.unknown);
     expect(mocks.prepare).toHaveBeenCalledTimes(1); expect(mocks.pay).toHaveBeenCalledTimes(1);
   });
-  it('renders explicit rejection and requires a new preparation instead of replaying a token', async () => {
-    mocks.pay.mockResolvedValue({ state: 'rejected', message: PAYWAY_MESSAGES.rejected });
+
+  it('renders explicit rejection without false success and allows recoverable retry with a new preparation', async () => {
+    mocks.pay.mockResolvedValueOnce({ state: 'rejected', message: PAYWAY_MESSAGES.rejected });
     await openCard(); fireEvent.submit(screen.getByRole('textbox', { name: 'Número de tarjeta' }).closest('form')!);
     expect(await screen.findByRole('alert')).toHaveTextContent(PAYWAY_MESSAGES.rejected);
+    expect(screen.queryByRole('heading', { name: 'Turno confirmado' })).not.toBeInTheDocument();
     expect(screen.queryByRole('textbox', { name: 'Número de tarjeta' })).toBeNull();
     expect(mocks.pay).toHaveBeenCalledTimes(1);
+
+    // Recoverable flow: closing modal and clicking Pagar seña prepares a fresh attempt
+    fireEvent.click(screen.getByRole('button', { name: 'Volver a mis datos' }));
+    const retryCheckout = { ...checkout, attemptId: 'b'.repeat(32) };
+    mocks.prepare.mockResolvedValueOnce({ ready: true, checkout: retryCheckout });
+    fireEvent.click(screen.getByRole('button', { name: 'Pagar seña' }));
+    expect(await screen.findByRole('textbox', { name: 'Número de tarjeta' })).toBeInTheDocument();
+    expect(mocks.prepare).toHaveBeenCalledTimes(2);
   });
 });

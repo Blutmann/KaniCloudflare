@@ -29,5 +29,8 @@ export function paywaySessionAccess(secret: string) {
     write: async (session: PaywaySession) => setCookie(cookieName,await sealPaywaySession(session,secret),{
       httpOnly:true,secure:true,sameSite:'strict',path:'/',maxAge:Math.max(1,Math.floor((session.expiresAt-Date.now())/1000)),
     }),
+    clear: () => setCookie(cookieName,'',{
+      httpOnly:true,secure:true,sameSite:'strict',path:'/',maxAge:0,
+    }),
   };
 }
