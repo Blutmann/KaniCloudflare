@@ -140,6 +140,21 @@ export default {
             .order("created_at", { ascending: false })
             .limit(10);
 
+          const { data: rpcMovements, error: rpcMovementsErr } = await (client as any)
+            .rpc("get_online_deposit_movements", {});
+
+          const { data: apptsWithDeposit, error: apptsWithDepositErr } = await client
+            .from("appointments")
+            .select("id, barber_id, service_id, client_id, booking_client_name, deposit_paid, deposit_amount_ars, booking_date, start_time, created_at, status")
+            .eq("deposit_paid", true)
+            .limit(10);
+
+          const { data: approvedAttempts, error: approvedAttemptsErr } = await client
+            .from("payment_attempts")
+            .select("*")
+            .eq("state", "APPROVED")
+            .limit(10);
+
           const rows = appointments || [];
           const completedCount = rows.filter((a) => a.status === "COMPLETED").length;
           const confirmedCount = rows.filter((a) => a.status === "CONFIRMED").length;
@@ -159,6 +174,12 @@ export default {
               orders: orders || [],
               events: events || [],
               attempts: attempts || [],
+              rpcMovements: rpcMovements || [],
+              rpcMovementsError: rpcMovementsErr ? { message: rpcMovementsErr.message, code: rpcMovementsErr.code } : null,
+              apptsWithDeposit: apptsWithDeposit || [],
+              apptsWithDepositError: apptsWithDepositErr?.message,
+              approvedAttempts: approvedAttempts || [],
+              approvedAttemptsError: approvedAttemptsErr?.message,
               ordersError: ordersErr?.message,
               eventsError: eventsErr?.message,
               attemptsError: attemptsErr?.message,
