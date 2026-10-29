@@ -243,10 +243,89 @@ describe('Kani Admin V2 — Integración Payway, Pagos, Turnos e Identidad Hist�
       const deposit = payments.find((p) => p.isDepositMovement);
       expect(deposit).toBeDefined();
       expect(deposit?.serviceName).toBe('Seña — Corte');
-      expect(deposit?.paymentMethod).toBe('Payway');
+      expect(deposit?.paymentMethod).toBe('Tarjeta — Payway');
       expect(deposit?.collectedAmountArs).toBe(5000);
       expect(deposit?.paymentDate).toBe('2026-10-29');
       expect(deposit?.appointmentDate).toBe('2026-11-04');
+    });
+
+    it('clasifica el método como "Tarjeta — Payway" y previene invención de crédito/débito', () => {
+      const señaPayway: ServicePayment = {
+        id: 'deposit-att-99',
+        barberId: 'b1',
+        barberName: 'Lautaro',
+        serviceId: 's1',
+        serviceName: 'Seña — Corte',
+        serviceOtherDetail: null,
+        servicePriceArs: 5000,
+        discountArs: 0,
+        finalAmountArs: 5000,
+        paymentDate: '2026-10-29',
+        paymentTime: '10:00',
+        paymentMethod: 'Tarjeta — Payway',
+        onlineDepositPaid: true,
+        onlineDepositAmountArs: 5000,
+        collectedAmountArs: 5000,
+        clientName: 'Cliente Prueba',
+        clientContact: '1122334455',
+        appointmentId: 'apt-99',
+        appointmentDate: '2026-11-10',
+        appointmentTime: '11:00',
+        serviceOrigin: 'online_deposit',
+        createdByUserId: null,
+        createdByDisplayName: 'Payway',
+        createdAt: '2026-10-29T13:00:00Z',
+        isDepositMovement: true,
+      };
+
+      const salonCash: ServicePayment = {
+        id: 'sp-99',
+        barberId: 'b1',
+        barberName: 'Lautaro',
+        serviceId: 's2',
+        serviceName: 'Corte',
+        serviceOtherDetail: null,
+        servicePriceArs: 25000,
+        discountArs: 0,
+        finalAmountArs: 25000,
+        paymentDate: '2026-10-29',
+        paymentTime: '12:00',
+        paymentMethod: 'Efectivo',
+        onlineDepositPaid: false,
+        onlineDepositAmountArs: 0,
+        collectedAmountArs: 25000,
+        clientName: 'Cliente Local',
+        clientContact: '1199887766',
+        appointmentId: null,
+        serviceOrigin: 'walk_in',
+        createdByUserId: 'staff-1',
+        createdByDisplayName: 'Admin',
+        createdAt: '2026-10-29T15:00:00Z',
+        isDepositMovement: false,
+      };
+
+      const payments = [señaPayway, salonCash];
+      const canonical = ["Efectivo", "Transferencia", "Tarjeta — Payway"];
+      const present = new Set(
+        payments
+          .map((p) => (p.paymentMethod === "Payway" ? "Tarjeta — Payway" : p.paymentMethod))
+          .filter(Boolean),
+      );
+      const methods = [...new Set([...canonical, ...present])];
+      const byMethod = methods.map((name) => ({
+        name,
+        amount: payments
+          .filter((p) => p.paymentMethod === name || (name === "Tarjeta — Payway" && p.paymentMethod === "Payway"))
+          .reduce((sum, p) => sum + p.collectedAmountArs, 0),
+      }));
+
+      const efectivo = byMethod.find((m) => m.name === 'Efectivo');
+      const transferencia = byMethod.find((m) => m.name === 'Transferencia');
+      const tarjetaPayway = byMethod.find((m) => m.name === 'Tarjeta — Payway');
+
+      expect(efectivo?.amount).toBe(25000);
+      expect(transferencia?.amount).toBe(0);
+      expect(tarjetaPayway?.amount).toBe(5000);
     });
   });
 

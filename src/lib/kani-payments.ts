@@ -5,7 +5,14 @@ import type { RealAppointment } from '@/lib/kani-appointments';
 import { businessDateToday, addCalendarDays, startOfBusinessWeek, BUSINESS_TIME_ZONE } from '@/lib/kani-mobile-appointments';
 import { services as defaultCatalogServices, minutes, money } from '@/lib/kani-model';
 
-export type PaymentMethod = 'Efectivo' | 'Transferencia' | 'Payway' | 'Mercado Pago';
+export type PaymentMethod =
+  | 'Efectivo'
+  | 'Transferencia'
+  | 'Tarjeta — Payway'
+  | 'Tarjeta de crédito'
+  | 'Tarjeta de débito'
+  | 'Payway'
+  | 'Mercado Pago';
 export type ServicePaymentType = 'Corte' | 'Corte y barba' | 'Barba' | 'Otros';
 export type ServicePaymentOrigin = 'appointment' | 'walk_in' | 'legacy' | 'online_deposit';
 
@@ -485,128 +492,151 @@ export async function fetchServicePayments(
   // Consultar señas online (Payway / Mercado Pago) autorizadas
   let onlineDeposits: ServicePayment[] = [];
   try {
-    const targetBarber = staff.profile.role === 'BARBER'
-      ? staff.profile.barber_id
-      : (filters.barberId && filters.barberId !== 'ALL' ? filters.barberId : null);
+    if (typeof window !== 'undefined' && typeof (globalThis as any).vi === 'undefined' && Boolean(window.location?.origin) && typeof window.fetch === 'function') {
+      try {
+        const params = new URLSearchParams();
+        if (filters.barberId) params.set('barberId', filters.barberId);
+        if (filters.date) params.set('date', filters.date);
+        if (filters.startDate) params.set('startDate', filters.startDate);
+        if (filters.endDate) params.set('endDate', filters.endDate);
+        if (filters.serviceName) params.set('serviceName', filters.serviceName);
 
-    const rpcRes = await (supabase as any)?.rpc?.('get_online_deposit_movements', {
-      p_barber_id: targetBarber,
-      p_start_date: filters.date || filters.startDate || null,
-      p_end_date: filters.date || filters.endDate || null,
-    });
-    const depositRows = rpcRes?.data;
-    const depositError = rpcRes?.error;
-
-    if (!depositError && depositRows && Array.isArray(depositRows)) {
-      onlineDeposits = depositRows.map((r: any) => ({
-        id: r.movement_id || `deposit-${r.appointment_id}`,
-        barberId: r.barber_id,
-        barberName: r.barber_name || barberMap.get(r.barber_id) || 'Barbero',
-        serviceId: null,
-        serviceName: r.service_name || 'Seña — Servicio',
-        serviceOtherDetail: null,
-        servicePriceArs: Number(r.amount_ars),
-        discountArs: 0,
-        finalAmountArs: Number(r.amount_ars),
-        paymentDate: r.payment_date,
-        paymentTime: (r.payment_time || '').slice(0, 5),
-        paymentMethod: (r.provider === 'PAYWAY' ? 'Payway' : (r.provider === 'MERCADO_PAGO' ? 'Mercado Pago' : r.provider)) as PaymentMethod,
-        onlineDepositPaid: true,
-        onlineDepositAmountArs: Number(r.amount_ars),
-        collectedAmountArs: Number(r.amount_ars),
-        clientName: r.client_name || null,
-        clientContact: r.client_contact || null,
-        appointmentId: r.appointment_id,
-        appointmentDate: r.appointment_date || null,
-        appointmentTime: r.appointment_time || null,
-        serviceOrigin: 'online_deposit' as ServicePaymentOrigin,
-        createdByUserId: null,
-        createdByDisplayName: r.provider || 'Payway',
-        createdAt: r.payment_timestamp || r.payment_date,
-        isDepositMovement: true,
-      }));
-    } else {
-      // Fallback si la RPC get_online_deposit_movements no está disponible
-      const baseAptQuery = (supabase as any)?.from?.('appointments')?.select?.('id, barber_id, service_id, custom_service_name, deposit_paid, deposit_amount_ars, booking_date, start_time, created_at, booking_client_name, client_id');
-      let aptQuery = typeof baseAptQuery?.eq === 'function' ? baseAptQuery.eq('deposit_paid', true) : baseAptQuery;
-
-      if (staff.profile.role === 'BARBER' && staff.profile.barber_id) {
-        aptQuery = aptQuery.eq('barber_id', staff.profile.barber_id);
-      } else if (filters.barberId && filters.barberId !== 'ALL') {
-        aptQuery = aptQuery.eq('barber_id', filters.barberId);
-      }
-
-      const aptRes = await aptQuery;
-      const apts = aptRes?.data;
-      const aptError = aptRes?.error;
-      if (!aptError && apts && apts.length > 0) {
-        let attemptsByApt = new Map<string, any>();
-        try {
-          const { data: attempts } = await supabase
-            .from('payment_attempts')
-            .select('id, appointment_id, provider, amount_ars, state, created_at')
-            .eq('state', 'APPROVED')
-            .in('appointment_id', apts.map((a: any) => a.id));
-          if (attempts) {
-            attempts.forEach((att: any) => attemptsByApt.set(att.appointment_id, att));
+        const res = await fetch(`${window.location.origin}/api/admin/online-deposits?${params.toString()}`);
+        if (res.ok) {
+          const serverDeposits = await res.json();
+          if (Array.isArray(serverDeposits)) {
+            onlineDeposits = serverDeposits;
           }
-        } catch {
-          // Ignorar fallo de payment_attempts
+        }
+      } catch (err) {
+        console.warn('[KANI payments] Error fetching /api/admin/online-deposits, falling back:', err);
+      }
+    }
+
+    if (onlineDeposits.length === 0) {
+      const targetBarber = staff.profile.role === 'BARBER'
+        ? staff.profile.barber_id
+        : (filters.barberId && filters.barberId !== 'ALL' ? filters.barberId : null);
+
+      const rpcRes = await (supabase as any)?.rpc?.('get_online_deposit_movements', {
+        p_barber_id: targetBarber,
+        p_start_date: filters.date || filters.startDate || null,
+        p_end_date: filters.date || filters.endDate || null,
+      });
+      const depositRows = rpcRes?.data;
+      const depositError = rpcRes?.error;
+
+      if (!depositError && depositRows && Array.isArray(depositRows)) {
+        onlineDeposits = depositRows.map((r: any) => ({
+          id: r.movement_id || `deposit-${r.appointment_id}`,
+          barberId: r.barber_id,
+          barberName: r.barber_name || barberMap.get(r.barber_id) || 'Barbero',
+          serviceId: null,
+          serviceName: r.service_name || 'Seña — Servicio',
+          serviceOtherDetail: null,
+          servicePriceArs: Number(r.amount_ars),
+          discountArs: 0,
+          finalAmountArs: Number(r.amount_ars),
+          paymentDate: r.payment_date,
+          paymentTime: (r.payment_time || '').slice(0, 5),
+          paymentMethod: (r.provider === 'PAYWAY' ? 'Tarjeta — Payway' : (r.provider === 'MERCADO_PAGO' ? 'Mercado Pago' : r.provider)) as PaymentMethod,
+          onlineDepositPaid: true,
+          onlineDepositAmountArs: Number(r.amount_ars),
+          collectedAmountArs: Number(r.amount_ars),
+          clientName: r.client_name || null,
+          clientContact: r.client_contact || null,
+          appointmentId: r.appointment_id,
+          appointmentDate: r.appointment_date || null,
+          appointmentTime: r.appointment_time || null,
+          serviceOrigin: 'online_deposit' as ServicePaymentOrigin,
+          createdByUserId: null,
+          createdByDisplayName: r.provider || 'Payway',
+          createdAt: r.payment_timestamp || r.payment_date,
+          isDepositMovement: true,
+        }));
+      } else {
+        // Fallback si la RPC get_online_deposit_movements no está disponible
+        const baseAptQuery = (supabase as any)?.from?.('appointments')?.select?.('id, barber_id, service_id, custom_service_name, deposit_paid, deposit_amount_ars, booking_date, start_time, created_at, client_id');
+        let aptQuery = typeof baseAptQuery?.eq === 'function' ? baseAptQuery.eq('deposit_paid', true) : baseAptQuery;
+
+        if (staff.profile.role === 'BARBER' && staff.profile.barber_id) {
+          aptQuery = aptQuery.eq('barber_id', staff.profile.barber_id);
+        } else if (filters.barberId && filters.barberId !== 'ALL') {
+          aptQuery = aptQuery.eq('barber_id', filters.barberId);
         }
 
-        const clientIds = [...new Set(apts.map((a: any) => a.client_id).filter(Boolean))];
-        const serviceIds = [...new Set(apts.map((a: any) => a.service_id).filter(Boolean))];
-        const [cRes, sRes] = await Promise.all([
-          clientIds.length ? supabase.from('clients').select('id, name, phone').in('id', clientIds) : { data: [] },
-          serviceIds.length ? supabase.from('services').select('id, name').in('id', serviceIds) : { data: [] },
-        ]);
-        const cData = Array.isArray((cRes as any)?.data) ? (cRes as any).data : [];
-        const sData = Array.isArray((sRes as any)?.data) ? (sRes as any).data : [];
-        const clientMap = new Map(cData.map((c: any) => [c.id, c]));
-        const srvMap = new Map(sData.map((s: any) => [s.id, s.name]));
+        const aptRes = await aptQuery;
+        const apts = aptRes?.data;
+        const aptError = aptRes?.error;
+        if (!aptError && apts && apts.length > 0) {
+          let attemptsByApt = new Map<string, any>();
+          try {
+            const { data: attempts } = await supabase
+              .from('payment_attempts')
+              .select('id, appointment_id, provider, amount_ars, state, created_at')
+              .eq('state', 'APPROVED')
+              .in('appointment_id', apts.map((a: any) => a.id));
+            if (attempts) {
+              attempts.forEach((att: any) => attemptsByApt.set(att.appointment_id, att));
+            }
+          } catch {
+            // Ignorar fallo de payment_attempts
+          }
 
-        onlineDeposits = apts.map((apt: any) => {
-          const attempt = attemptsByApt.get(apt.id);
-          const rawTimestamp = attempt?.created_at || apt.created_at;
-          const { date: payDate, time: payTime } = timestampToBusinessDateTime(rawTimestamp);
-          const client = clientMap.get(apt.client_id) as any;
-          const sName = apt.custom_service_name || srvMap.get(apt.service_id) || 'Servicio';
-          const depositArs = Number(attempt?.amount_ars ?? apt.deposit_amount_ars ?? 5000);
-          const prov = ((attempt?.provider === 'PAYWAY' ? 'Payway' : 'Payway') || 'Payway') as PaymentMethod;
+          const clientIds = [...new Set(apts.map((a: any) => a.client_id).filter(Boolean))];
+          const serviceIds = [...new Set(apts.map((a: any) => a.service_id).filter(Boolean))];
+          const [cRes, sRes] = await Promise.all([
+            clientIds.length ? supabase.from('clients').select('id, name, phone').in('id', clientIds) : { data: [] },
+            serviceIds.length ? supabase.from('services').select('id, name').in('id', serviceIds) : { data: [] },
+          ]);
+          const cData = Array.isArray((cRes as any)?.data) ? (cRes as any).data : [];
+          const sData = Array.isArray((sRes as any)?.data) ? (sRes as any).data : [];
+          const clientMap = new Map(cData.map((c: any) => [c.id, c]));
+          const srvMap = new Map(sData.map((s: any) => [s.id, s.name]));
 
-          return {
-            id: `deposit-${attempt?.id || apt.id}`,
-            barberId: apt.barber_id,
-            barberName: barberMap.get(apt.barber_id) || 'Barbero',
-            serviceId: apt.service_id || null,
-            serviceName: `Seña — ${sName === 'Corte + barba' ? 'Corte y barba' : sName}`,
-            serviceOtherDetail: null,
-            servicePriceArs: depositArs,
-            discountArs: 0,
-            finalAmountArs: depositArs,
-            paymentDate: payDate,
-            paymentTime: payTime,
-            paymentMethod: prov,
-            onlineDepositPaid: true,
-            onlineDepositAmountArs: depositArs,
-            collectedAmountArs: depositArs,
-            clientName: apt.booking_client_name || client?.name || null,
-            clientContact: client?.phone || null,
-            appointmentId: apt.id,
-            appointmentDate: apt.booking_date,
-            appointmentTime: (apt.start_time || '').slice(0, 5),
-            serviceOrigin: 'online_deposit' as ServicePaymentOrigin,
-            createdByUserId: null,
-            createdByDisplayName: prov,
-            createdAt: rawTimestamp,
-            isDepositMovement: true,
-          };
-        }).filter((d: any) => {
-          if (filters.date && d.paymentDate !== filters.date) return false;
-          if (filters.startDate && d.paymentDate < filters.startDate) return false;
-          if (filters.endDate && d.paymentDate > filters.endDate) return false;
-          return true;
-        });
+          onlineDeposits = apts.map((apt: any) => {
+            const attempt = attemptsByApt.get(apt.id);
+            const rawTimestamp = attempt?.created_at || apt.created_at;
+            const { date: payDate, time: payTime } = timestampToBusinessDateTime(rawTimestamp);
+            const client = clientMap.get(apt.client_id) as any;
+            const sName = apt.custom_service_name || srvMap.get(apt.service_id) || 'Servicio';
+            const depositArs = Number(attempt?.amount_ars ?? apt.deposit_amount_ars ?? 5000);
+            const prov: PaymentMethod = (attempt?.provider === 'PAYWAY' ? 'Tarjeta — Payway' : (attempt?.provider === 'MERCADO_PAGO' ? 'Mercado Pago' : 'Tarjeta — Payway'));
+
+            return {
+              id: `deposit-${attempt?.id || apt.id}`,
+              barberId: apt.barber_id,
+              barberName: barberMap.get(apt.barber_id) || 'Barbero',
+              serviceId: apt.service_id || null,
+              serviceName: `Seña — ${sName === 'Corte + barba' ? 'Corte y barba' : sName}` as any,
+              serviceOtherDetail: null,
+              servicePriceArs: depositArs,
+              discountArs: 0,
+              finalAmountArs: depositArs,
+              paymentDate: payDate,
+              paymentTime: payTime,
+              paymentMethod: prov,
+              onlineDepositPaid: true,
+              onlineDepositAmountArs: depositArs,
+              collectedAmountArs: depositArs,
+              clientName: client?.name || null,
+              clientContact: client?.phone || null,
+              appointmentId: apt.id,
+              appointmentDate: apt.booking_date,
+              appointmentTime: (apt.start_time || '').slice(0, 5),
+              serviceOrigin: 'online_deposit' as ServicePaymentOrigin,
+              createdByUserId: null,
+              createdByDisplayName: attempt?.provider || 'Payway',
+              createdAt: rawTimestamp,
+              isDepositMovement: true,
+            };
+          }).filter((d: any) => {
+            if (filters.date && d.paymentDate !== filters.date) return false;
+            if (filters.startDate && d.paymentDate < filters.startDate) return false;
+            if (filters.endDate && d.paymentDate > filters.endDate) return false;
+            return true;
+          });
+        }
       }
     }
   } catch (err) {

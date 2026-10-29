@@ -103,7 +103,7 @@ export function clientHistory(
   const history = appointments.filter((a) => a.clientId === clientId);
   const ids = new Set(history.map((a) => a.id));
   const linked = payments.filter((p) => p.appointmentId && ids.has(p.appointmentId));
-  const paidIds = new Set(linked.map((p) => p.appointmentId));
+  const paidIds = new Set(linked.filter((p) => !p.isDepositMovement).map((p) => p.appointmentId));
   const visits = new Set([
     ...history.filter((a) => a.statusCode === "COMPLETED").map((a) => a.id),
     ...paidIds,

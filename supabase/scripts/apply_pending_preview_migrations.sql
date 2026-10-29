@@ -4578,4 +4578,120 @@ $$;
 REVOKE ALL ON FUNCTION public.read_valid_availability_starts(uuid, date, date) FROM public;
 GRANT EXECUTE ON FUNCTION public.read_valid_availability_starts(uuid, date, date) TO anon, authenticated;
 
+-- ==============================================================================
+-- FILE: supabase/migrations/20261029000200_kani_appointment_identity_snapshot_and_payments.sql
+-- ==============================================================================
+
+-- 1. SNAPSHOT INMUTABLE EN APPOINTMENTS
+ALTER TABLE public.appointments
+  ADD COLUMN IF NOT EXISTS booking_client_name text DEFAULT NULL;
+
+UPDATE public.appointments a
+SET booking_client_name = c.name
+FROM public.clients c
+WHERE a.client_id = c.id
+  AND a.booking_client_name IS NULL;
+
+-- 2. RLS PARA PAYMENT_ATTEMPTS (LECTURA DE STAFF AUTENTICADO)
+ALTER TABLE public.payment_attempts ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS payment_attempts_admin_read ON public.payment_attempts;
+DROP POLICY IF EXISTS payment_attempts_staff_read ON public.payment_attempts;
+
+CREATE POLICY payment_attempts_staff_read
+  ON public.payment_attempts
+  FOR SELECT
+  TO authenticated
+  USING (
+    public.is_admin()
+    OR EXISTS (
+      SELECT 1 FROM public.appointments a
+      WHERE a.id = payment_attempts.appointment_id
+        AND a.barber_id = public.current_staff_barber_id()
+    )
+  );
+
+-- 3. RPC GET_ONLINE_DEPOSIT_MOVEMENTS
+CREATE OR REPLACE FUNCTION public.get_online_deposit_movements(
+  p_barber_id uuid DEFAULT NULL,
+  p_start_date date DEFAULT NULL,
+  p_end_date date DEFAULT NULL
+)
+RETURNS TABLE (
+  movement_id text,
+  appointment_id uuid,
+  provider text,
+  amount_ars numeric,
+  payment_date date,
+  payment_time text,
+  payment_timestamp timestamptz,
+  barber_id uuid,
+  barber_name text,
+  service_name text,
+  client_name text,
+  client_contact text,
+  appointment_date date,
+  appointment_time text
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = pg_catalog, public, extensions
+AS $$
+DECLARE
+  v_is_admin boolean := public.is_admin();
+  v_staff_barber_id uuid := public.current_staff_barber_id();
+  v_filter_barber uuid;
+BEGIN
+  IF (SELECT auth.uid()) IS NULL THEN
+    RAISE EXCEPTION USING errcode = '42501', message = 'AUTH_REQUIRED';
+  END IF;
+
+  IF NOT v_is_admin THEN
+    IF v_staff_barber_id IS NULL THEN
+      RAISE EXCEPTION USING errcode = '42501', message = 'FORBIDDEN_STAFF_REQUIRED';
+    END IF;
+    v_filter_barber := v_staff_barber_id;
+  ELSE
+    v_filter_barber := p_barber_id;
+  END IF;
+
+  RETURN QUERY
+  SELECT
+    ('deposit-' || coalesce(pa.id::text, a.id::text))::text AS movement_id,
+    a.id AS appointment_id,
+    coalesce(pa.provider, 'PAYWAY')::text AS provider,
+    coalesce(pa.amount_ars, a.deposit_amount_ars::numeric, 5000::numeric) AS amount_ars,
+    (timezone('America/Argentina/Buenos_Aires', coalesce(pa.created_at, a.created_at)))::date AS payment_date,
+    to_char(timezone('America/Argentina/Buenos_Aires', coalesce(pa.created_at, a.created_at)), 'HH24:MI') AS payment_time,
+    coalesce(pa.created_at, a.created_at) AS payment_timestamp,
+    a.barber_id,
+    coalesce(b.name, 'Barbero')::text AS barber_name,
+    ('Seña — ' || coalesce(a.custom_service_name, s.name, 'Servicio'))::text AS service_name,
+    coalesce(a.booking_client_name, c.name, 'Cliente')::text AS client_name,
+    coalesce(c.phone, '')::text AS client_contact,
+    a.booking_date AS appointment_date,
+    to_char(a.start_time, 'HH24:MI') AS appointment_time
+  FROM public.appointments a
+  LEFT JOIN public.payment_attempts pa
+    ON pa.appointment_id = a.id
+   AND pa.state = 'APPROVED'
+  JOIN public.barbers b ON b.id = a.barber_id
+  LEFT JOIN public.services s ON s.id = a.service_id
+  LEFT JOIN public.clients c ON c.id = a.client_id
+  WHERE (a.deposit_paid = true OR pa.state = 'APPROVED')
+    AND (v_filter_barber IS NULL OR a.barber_id = v_filter_barber)
+    AND (
+      p_start_date IS NULL
+      OR (timezone('America/Argentina/Buenos_Aires', coalesce(pa.created_at, a.created_at)))::date >= p_start_date
+    )
+    AND (
+      p_end_date IS NULL
+      OR (timezone('America/Argentina/Buenos_Aires', coalesce(pa.created_at, a.created_at)))::date <= p_end_date
+    )
+  ORDER BY coalesce(pa.created_at, a.created_at) DESC;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.get_online_deposit_movements TO authenticated;
+
 NOTIFY pgrst, 'reload schema';

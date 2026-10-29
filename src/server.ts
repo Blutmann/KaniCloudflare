@@ -104,6 +104,35 @@ export default {
         return await handlePontiunWebhookRequest(request);
       }
 
+      if (url.pathname === "/api/admin/online-deposits") {
+        try {
+          const barberId = url.searchParams.get("barberId") || undefined;
+          const date = url.searchParams.get("date") || undefined;
+          const startDate = url.searchParams.get("startDate") || undefined;
+          const endDate = url.searchParams.get("endDate") || undefined;
+          const serviceName = url.searchParams.get("serviceName") || undefined;
+
+          const { readOnlineDepositMovementsServer } = await import("./lib/kani-online-deposits.server");
+          const movements = await readOnlineDepositMovementsServer({
+            barberId,
+            date,
+            startDate,
+            endDate,
+            serviceName,
+          });
+
+          return new Response(JSON.stringify(movements), {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          });
+        } catch (err) {
+          return new Response(JSON.stringify({ error: err instanceof Error ? err.message : "Error" }), {
+            status: 500,
+            headers: { "content-type": "application/json" },
+          });
+        }
+      }
+
       if (url.pathname === "/api/admin/status-audit") {
         try {
           const { createPaymentSupabaseClient } = await import("./lib/kani-payment-db.server");

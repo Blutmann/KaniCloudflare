@@ -328,10 +328,18 @@ export function V2Insights() {
   }, [payments]);
 
   const byMethod = useMemo(() => {
-    return ["Efectivo", "Transferencia"].map((name) => ({
+    const canonical = ["Efectivo", "Transferencia", "Tarjeta — Payway"];
+    const present = new Set(
+      payments
+        .map((p) => (p.paymentMethod === "Payway" ? "Tarjeta — Payway" : p.paymentMethod))
+        .filter(Boolean),
+    );
+    const methods = [...new Set([...canonical, ...present])];
+
+    return methods.map((name) => ({
       name,
       amount: payments
-        .filter((p) => p.paymentMethod === name)
+        .filter((p) => p.paymentMethod === name || (name === "Tarjeta — Payway" && p.paymentMethod === "Payway"))
         .reduce((sum, p) => sum + p.collectedAmountArs, 0),
     }));
   }, [payments]);

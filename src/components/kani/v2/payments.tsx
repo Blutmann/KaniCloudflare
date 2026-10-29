@@ -69,9 +69,11 @@ export function V2Payments() {
   const [deletingPayment, setDeletingPayment] = useState<ServicePayment | null>(null);
   const [actionNotice, setActionNotice] = useState("");
 
-  const paid = new Set(data.payments.map((p) => p.appointmentId));
+  const settled = new Set(
+    data.payments.filter((p) => !p.isDepositMovement && p.appointmentId).map((p) => p.appointmentId),
+  );
   const choices = data.appointments.filter(
-    (a) => ["CONFIRMED", "COMPLETED"].includes(a.statusCode) && !paid.has(a.id) && a.date <= today,
+    (a) => ["CONFIRMED", "COMPLETED"].includes(a.statusCode) && !settled.has(a.id) && a.date <= today,
   );
   const appointment =
     origin === "appointment" ? choices.find((a) => a.id === appointmentId) : undefined;
