@@ -1,3 +1,5 @@
+import fs from 'fs';
+import path from 'path';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PAYWAY_MESSAGES } from '@/lib/kani-payway';
@@ -352,5 +354,44 @@ describe('Payway V4 Modern Checkout UX/UI', () => {
   it('marks data-payway-modal-open on body while modal is open to ensure solid header icon contrast under overlay', async () => {
     await reachCardModal();
     expect(document.body).toHaveAttribute('data-payway-modal-open', 'true');
+  });
+
+  it('unifies typography (font-family, font-size, font-weight, line-height, letter-spacing) across all controls matching Mes/Año reference', async () => {
+    await reachCardModal();
+    
+    // Check presence of all 6 controls
+    const panInput = screen.getByRole('textbox', { name: 'Número de tarjeta' });
+    const monthSelect = screen.getByRole('combobox', { name: 'Mes de vencimiento' });
+    const yearSelect = screen.getByRole('combobox', { name: 'Año de vencimiento' });
+    const cvvInput = screen.getByLabelText('Código de seguridad (CVV)');
+    const holderInput = screen.getByRole('textbox', { name: 'Titular de la tarjeta' });
+    const dniInput = screen.getByRole('textbox', { name: 'DNI del titular' });
+
+    expect(panInput).toBeInTheDocument();
+    expect(monthSelect).toBeInTheDocument();
+    expect(yearSelect).toBeInTheDocument();
+    expect(cvvInput).toBeInTheDocument();
+    expect(holderInput).toBeInTheDocument();
+    expect(dniInput).toBeInTheDocument();
+
+    // Verify CSS file structure guarantees typography unification
+    const cssContent = fs.readFileSync(path.resolve(__dirname, '../components/kani/experimental/reserva-v4.css'), 'utf8');
+
+    // Inputs and selects share identical base font-family, font-size, font-weight, line-height, letter-spacing
+    expect(cssContent).toMatch(/\.payway-card-form\s+input,\s*\.payway-card-form\s+select\s*\{[\s\S]*?font-family:\s*var\(--font-sans\)\s*!important/);
+    expect(cssContent).toMatch(/\.payway-card-form\s+input,\s*\.payway-card-form\s+select\s*\{[\s\S]*?font-size:\s*13px\s*!important/);
+    expect(cssContent).toMatch(/\.payway-card-form\s+input,\s*\.payway-card-form\s+select\s*\{[\s\S]*?font-weight:\s*400\s*!important/);
+    expect(cssContent).toMatch(/\.payway-card-form\s+input,\s*\.payway-card-form\s+select\s*\{[\s\S]*?line-height:\s*1\.4\s*!important/);
+
+    // Card PAN input does not use monospace or distinct 15px font-size
+    expect(cssContent).not.toMatch(/\.payway-card-pan-input\s*\{[^}]*font-family:\s*var\(--font-mono/);
+    expect(cssContent).not.toMatch(/\.payway-card-pan-input\s*\{[^}]*font-size:\s*15px/);
+
+    // Mes and Año select match identical font-size and font-family
+    expect(cssContent).toMatch(/\.payway-select\s*\{[\s\S]*?font-family:\s*var\(--font-sans\)\s*!important/);
+    expect(cssContent).toMatch(/\.payway-select\s*\{[\s\S]*?font-size:\s*13px\s*!important/);
+
+    // 360px responsive rule (max-width: 440px) applies identical 12.5px across all controls
+    expect(cssContent).toMatch(/@media\s*\(max-width:\s*440px\)[\s\S]*?font-size:\s*12\.5px\s*!important/);
   });
 });

@@ -56,12 +56,29 @@
   color: var(--foreground);
 }
 
-.payway-card-form input, .payway-card-form select {
+/* Unified Typography & Sizing across all Payway Form Controls (Reference: Mes / Año) */
+.payway-card-form input,
+.payway-card-form select {
   width: 100%;
   min-width: 0;
   min-height: 42px;
   height: 42px;
-  font-family: var(--font-sans);
+  font-family: var(--font-sans) !important;
+  font-size: 13px !important;
+  font-weight: 400 !important;
+  line-height: 1.4 !important;
+  letter-spacing: normal !important;
+  color: var(--foreground) !important;
+}
+
+.payway-card-form input::placeholder {
+  font-family: var(--font-sans) !important;
+  font-size: 13px !important;
+  font-weight: 400 !important;
+  line-height: 1.4 !important;
+  letter-spacing: normal !important;
+  color: var(--muted-foreground) !important;
+  opacity: 1;
 }
 
 /* Integrated Brand Badge in Card PAN */
@@ -82,9 +99,11 @@
 .payway-card-pan-input {
   padding-left: 54px !important;
   padding-right: 42px !important;
-  font-family: var(--font-mono, monospace);
-  font-size: 15px !important;
-  letter-spacing: 0.04em;
+  font-family: var(--font-sans) !important;
+  font-size: 13px !important;
+  font-weight: 400 !important;
+  line-height: 1.4 !important;
+  letter-spacing: normal !important;
 }
 
 /* Modern Select Styling */
@@ -93,10 +112,13 @@
   border: 1px solid var(--input);
   border-radius: var(--radius-control, .65rem);
   background-color: var(--surface);
-  color: var(--foreground);
+  color: var(--foreground) !important;
   padding: 8px 30px 8px 12px;
-  font-size: 13px;
-  font-family: var(--font-sans);
+  font-size: 13px !important;
+  font-family: var(--font-sans) !important;
+  font-weight: 400 !important;
+  line-height: 1.4 !important;
+  letter-spacing: normal !important;
   cursor: pointer;
   appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
@@ -119,7 +141,14 @@
 .payway-expiry-month-col, .payway-expiry-year-col { min-width: 0; }
 @media (max-width: 440px) {
   .payway-expiry-row { gap: 6px; }
-  .payway-select { padding-left: 8px; padding-right: 22px; font-size: 12.5px; }
+  .payway-card-form input,
+  .payway-card-form select,
+  .payway-card-pan-input,
+  .payway-select,
+  .payway-card-form input::placeholder {
+    font-size: 12.5px !important;
+  }
+  .payway-select { padding-left: 8px; padding-right: 22px; }
 }
 
 /* Security Code (CVV) Row & Contextual Help */
