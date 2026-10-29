@@ -9,14 +9,13 @@ import { useAdminStaff } from "@/lib/kani-admin-context";
 import {
   appointmentErrorMessage,
   createManualAppointment,
-  isIntervalOverlapping,
   minutesToTime,
   timeToMinutes,
   updateManualAppointment,
   type RealAppointment,
 } from "@/lib/kani-appointments";
 import { useV2, type V2Client } from "./data";
-import { Search, X } from "lucide-react";
+import { Search } from "lucide-react";
 
 export type ManualAppointmentDialogProps = {
   open: boolean;
@@ -68,8 +67,9 @@ export function ManualAppointmentDialog({
   const [customPrice, setCustomPrice] = useState<number | "">("");
   const [servicePrice, setServicePrice] = useState<number>(25000);
   const [startTime, setStartTime] = useState<string>("10:00");
-  const [customEndTime, setCustomEndTime] = useState<string>("11:00");
+  const [customEndTime, setCustomEndTime] = useState<string>("10:45");
   const [date, setDate] = useState<string>(initialDate);
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [clientName, setClientName] = useState<string>("");
   const [clientPhone, setClientPhone] = useState<string>("");
   const [clientEmail, setClientEmail] = useState<string>("");
@@ -91,70 +91,58 @@ export function ManualAppointmentDialog({
     );
   }, [servicesList, serviceId, isOtro]);
 
-  // Duration in minutes (internal only, not shown as text)
-  const serviceDurationMinutes = useMemo(() => {
-    if (mode === "EDIT" && appointment?.serviceDuration) {
-      return appointment.serviceDuration;
-    }
-    return activeService?.duration || 45;
-  }, [mode, appointment?.serviceDuration, activeService?.duration]);
-
-  const customDurationMinutes = useMemo(() => {
-    if (!isOtro) return serviceDurationMinutes;
+  // Duration in minutes (allowing midnight crossing)
+  const durationMinutes = useMemo(() => {
     const startM = timeToMinutes(startTime);
     const endM = timeToMinutes(customEndTime);
-    return Math.max(0, endM - startM);
-  }, [isOtro, startTime, customEndTime, serviceDurationMinutes]);
+    if (endM <= startM) {
+      return (endM + 1440) - startM;
+    }
+    return endM - startM;
+  }, [startTime, customEndTime]);
 
-  const durationMinutes = isOtro ? customDurationMinutes : serviceDurationMinutes;
-
-  // Selected time end calculation for standard services (internal & display)
-  const computedEndTime = useMemo(() => {
-    if (isOtro) return customEndTime;
-    if (!startTime) return "";
-    const startM = timeToMinutes(startTime);
-    const endM = startM + serviceDurationMinutes;
-    return minutesToTime(endM);
-  }, [isOtro, customEndTime, startTime, serviceDurationMinutes]);
-
-  // Overlap and boundary conflict detection for both standard services and "Otro"
+  // Overlap and boundary conflict detection
   const overlapConflict = useMemo(() => {
-    if (!date || !barberId || !startTime) return null;
-    const startM = timeToMinutes(startTime);
-    const endM = isOtro ? timeToMinutes(customEndTime) : startM + serviceDurationMinutes;
+    if (!date || !barberId || !startTime || !customEndTime) return null;
+    if (customEndTime === startTime) {
+      return "La hora de finalización debe ser distinta a la de inicio.";
+    }
 
-    if (isOtro && endM <= startM) {
-      return "La hora de finalización debe ser posterior a la de inicio.";
-    }
-    if (endM > 24 * 60) {
-      return "El turno no puede finalizar después de la medianoche (23:59). Elegí un horario de inicio previo.";
-    }
+    const startM = timeToMinutes(startTime);
+    const endM = timeToMinutes(customEndTime);
+    const durM = endM <= startM ? (endM + 1440) - startM : endM - startM;
+
+    const candStartTs = new Date(`${date}T${startTime}:00`).getTime();
+    const candEndTs = candStartTs + durM * 60 * 1000;
 
     const conflict = appointmentsList.find((apt) => {
       if (apt.statusCode === "CANCELLED") return false;
-      if (apt.barberId !== barberId || apt.date !== date) return false;
+      if (apt.barberId !== barberId) return false;
       if (mode === "EDIT" && appointment?.id && apt.id === appointment.id) return false;
+
       const aptStartM = timeToMinutes(apt.time);
       const aptEndM = apt.endTime
         ? timeToMinutes(apt.endTime)
         : aptStartM + (apt.serviceDuration || 45);
-      return isIntervalOverlapping(startM, endM, aptStartM, aptEndM);
+      const aptDurM = aptEndM <= aptStartM ? (aptEndM + 1440) - aptStartM : aptEndM - aptStartM;
+      const aptStartTs = new Date(`${apt.date}T${apt.time}:00`).getTime();
+      const aptEndTs = aptStartTs + aptDurM * 60 * 1000;
+
+      return candStartTs < aptEndTs && aptStartTs < candEndTs;
     });
 
     if (conflict) {
       const conflictEnd =
         conflict.endTime ||
         minutesToTime(timeToMinutes(conflict.time) + (conflict.serviceDuration || 45));
-      return `Horario ocupado por otro turno (${conflict.serviceName}: ${conflict.time} a ${conflictEnd} hs).`;
+      return `El barbero ya tiene un turno reservado entre las ${conflict.time} y las ${conflictEnd}.`;
     }
     return null;
   }, [
-    isOtro,
     date,
     barberId,
     startTime,
     customEndTime,
-    serviceDurationMinutes,
     appointmentsList,
     mode,
     appointment?.id,
@@ -167,6 +155,7 @@ export function ManualAppointmentDialog({
       setIsBusy(false);
       setClientSearch("");
       setShowClientSuggestions(false);
+      setSelectedClientId(null);
       return;
     }
 
@@ -180,7 +169,7 @@ export function ManualAppointmentDialog({
         setStartTime(appointment.time);
         setCustomEndTime(
           appointment.endTime ||
-            minutesToTime(timeToMinutes(appointment.time) + (appointment.serviceDuration || 45))
+            minutesToTime((timeToMinutes(appointment.time) + (appointment.serviceDuration || 45)) % 1440)
         );
       } else {
         setServiceId(appointment.serviceId || "");
@@ -190,10 +179,11 @@ export function ManualAppointmentDialog({
         setStartTime(appointment.time);
         setCustomEndTime(
           appointment.endTime ||
-            minutesToTime(timeToMinutes(appointment.time) + (appointment.serviceDuration || 45))
+            minutesToTime((timeToMinutes(appointment.time) + (appointment.serviceDuration || 45)) % 1440)
         );
       }
       setDate(appointment.date);
+      setSelectedClientId(appointment.clientId || null);
       setClientName(appointment.name);
       setClientPhone(appointment.phone || "");
       setClientEmail(
@@ -218,14 +208,40 @@ export function ManualAppointmentDialog({
       setCustomPrice("");
       setServicePrice(servicesList[0]?.price || 25000);
       setStartTime("10:00");
-      setCustomEndTime("11:00");
-
+      setCustomEndTime("10:45");
       setDate(initialDate);
+      setSelectedClientId(null);
       setClientName("");
       setClientPhone("");
       setClientEmail("");
     }
-  }, [open, mode, appointment?.id, initialDate]);
+  }, [open, mode, appointment, initialDate, isAdmin, data?.barberId, availableBarbers, staff?.profile?.barber_id, servicesList]);
+
+  // When changing start time, auto-update end time to default duration if not customized
+  function handleStartTimeChange(newStart: string) {
+    setStartTime(newStart);
+    const startM = timeToMinutes(newStart);
+    const dur = activeService?.duration || 45;
+    const endM = (startM + dur) % 1440;
+    setCustomEndTime(minutesToTime(endM));
+  }
+
+  // When changing service, auto-adjust price and end time
+  function handleServiceChange(newServiceId: string) {
+    setServiceId(newServiceId);
+    if (newServiceId === "OTRO") {
+      setCustomServiceName("");
+      setCustomPrice("");
+    } else {
+      const s = servicesList.find((srv) => (srv.dbId && srv.dbId === newServiceId) || srv.id === newServiceId);
+      if (s) {
+        setServicePrice(s.price);
+        const startM = timeToMinutes(startTime);
+        const endM = (startM + (s.duration || 45)) % 1440;
+        setCustomEndTime(minutesToTime(endM));
+      }
+    }
+  }
 
   // Filtered client suggestions
   const suggestedClients = useMemo(() => {
@@ -242,6 +258,7 @@ export function ManualAppointmentDialog({
   }, [clientSearch, clientsList]);
 
   function handleSelectClient(c: V2Client) {
+    setSelectedClientId(c.id);
     setClientName(c.name || "");
     setClientPhone(c.phone || "");
     setClientEmail(
@@ -250,11 +267,6 @@ export function ManualAppointmentDialog({
     setClientSearch("");
     setShowClientSuggestions(false);
   }
-
-  // Selected barber name for display
-  const selectedBarberName = useMemo(() => {
-    return availableBarbers.find((b) => b.id === barberId)?.name || "Barbero";
-  }, [availableBarbers, barberId]);
 
   // Active price for submission
   const resolvedPrice = useMemo(() => {
@@ -302,18 +314,16 @@ export function ManualAppointmentDialog({
     }
 
     const cleanName = clientName.trim();
-    if (!cleanName || cleanName.length < 3) {
-      setFormError("El nombre del cliente debe tener al menos 3 caracteres.");
+    if (!cleanName || cleanName.length < 2) {
+      setFormError("El nombre del cliente debe tener al menos 2 caracteres.");
       return;
     }
     const cleanPhone = clientPhone.trim();
-    if (!cleanPhone || cleanPhone.length < 6) {
-      setFormError("El celular del cliente debe ser válido.");
+    if (!cleanPhone || cleanPhone.replace(/\D/g, "").length < 6) {
+      setFormError("El celular del cliente debe tener al menos 6 dígitos.");
       return;
     }
 
-    const endTime = isOtro ? customEndTime : computedEndTime;
-    const duration = isOtro ? customDurationMinutes : durationMinutes;
     const targetServiceUuid = isOtro ? null : (activeService?.dbId || serviceId);
 
     setIsBusy(true);
@@ -327,12 +337,12 @@ export function ManualAppointmentDialog({
           servicePriceArs: resolvedPrice,
           date,
           time: startTime,
-          endTime,
+          endTime: customEndTime,
           name: cleanName,
           phone: cleanPhone,
           email: clientEmail.trim() || undefined,
-          notes: mode === "EDIT" ? appointment?.notes || undefined : undefined,
-          durationMinutes: duration,
+          notes: appointment?.notes || undefined,
+          durationMinutes,
         });
         await data.refresh();
         onSuccess("Turno manual actualizado exitosamente.");
@@ -345,69 +355,57 @@ export function ManualAppointmentDialog({
           servicePriceArs: resolvedPrice,
           date,
           time: startTime,
-          endTime,
+          endTime: customEndTime,
           name: cleanName,
           phone: cleanPhone,
           email: clientEmail.trim() || undefined,
           notes: undefined,
-          durationMinutes: duration,
+          durationMinutes,
+          clientId: selectedClientId,
         });
         await data.refresh();
         onSuccess("Turno manual creado exitosamente.");
         onClose();
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      if (msg.includes("SLOT_ALREADY_BOOKED") || msg.includes("Ese horario acaba de ocuparse")) {
-        setFormError("Ese horario acaba de ocuparse. Elegí otro horario disponible.");
-        void data.refresh();
-      } else {
-        setFormError(appointmentErrorMessage(err));
-      }
+      const msg = appointmentErrorMessage(err);
+      setFormError(msg);
     } finally {
       setIsBusy(false);
     }
   }
 
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && !isBusy && onClose()}>
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
       <DialogContent
-        className="v2-dialog v2-manual-dialog inset-0 md:inset-auto top-0 md:top-[50%] left-0 md:left-[50%] right-0 md:right-auto bottom-0 md:bottom-auto translate-x-0 translate-y-0 md:translate-x-0 md:translate-y-0 max-w-none md:max-w-lg p-0 md:p-6 gap-0 md:gap-4 border-0 md:border rounded-none md:rounded-lg"
+        className="v2-dialog v2-manual-dialog"
         aria-labelledby={titleId}
         aria-describedby={descId}
       >
-        <div className="v2-manual-dialog-header">
-          <DialogTitle id={titleId} className="v2-manual-dialog-title">
-            {mode === "CREATE" ? "Generar turno manual" : "Editar turno manual"}
-          </DialogTitle>
-          <button
-            type="button"
-            className="header-control-button v2-manual-close-btn"
-            aria-label="Cerrar"
-            onClick={onClose}
-          >
-            <X size={17} />
-          </button>
-          <DialogDescription id={descId} className="sr-only">
-            {mode === "CREATE" ? "Generar turno manual" : "Editar turno manual"}
-          </DialogDescription>
-        </div>
+        <DialogTitle id={titleId}>
+          {mode === "CREATE" ? "Nuevo turno manual" : "Editar turno manual"}
+        </DialogTitle>
+        <DialogDescription id={descId}>
+          {mode === "CREATE"
+            ? "Crea un turno operativo directamente confirmado sin limitaciones de horario comercial."
+            : "Modifica los datos del turno manual seleccionado."}
+        </DialogDescription>
 
-        {formError && (
-          <p className="v2-alert" role="alert">
-            {formError}
-          </p>
-        )}
+        <form onSubmit={handleSubmit} className="v2-form v2-manual-form">
+          {formError && (
+            <p className="v2-alert" role="alert">
+              {formError}
+            </p>
+          )}
 
-        <form onSubmit={handleSubmit} className="v2-manual-form">
-          {/* Row 1: Barber Selection + Service */}
-          {isAdmin ? (
-            <div className="v2-manual-row">
+          {/* Barber & Service Selectors */}
+          <div className="v2-manual-row">
+            {isAdmin && (
               <label className="v2-field">
-                Barbero
+                Barbero *
                 <select
                   value={barberId}
-                  disabled={isBusy || (mode === "EDIT" && !isAdmin)}
+                  disabled={isBusy}
                   onChange={(e) => setBarberId(e.target.value)}
                 >
                   {availableBarbers.map((b) => (
@@ -417,66 +415,24 @@ export function ManualAppointmentDialog({
                   ))}
                 </select>
               </label>
+            )}
 
-              <label className="v2-field">
-                Servicio
-                <select
-                  value={serviceId}
-                  disabled={isBusy}
-                  onChange={(e) => {
-                    const newServiceId = e.target.value;
-                    setServiceId(newServiceId);
-                    if (newServiceId !== "OTRO") {
-                      const svc = servicesList.find(
-                        (s) => (s.dbId && s.dbId === newServiceId) || s.id === newServiceId
-                      );
-                      if (svc) setServicePrice(svc.price);
-                    }
-                  }}
-                >
-                  {servicesList.map((s) => (
-                    <option key={s.dbId || s.id} value={s.dbId || s.id}>
-                      {s.name}
-                    </option>
-                  ))}
-                  <option value="OTRO">Otro</option>
-                </select>
-              </label>
-            </div>
-          ) : (
-            <div className="v2-manual-row">
-              <label className="v2-field">
-                Barbero
-                <div className="v2-readonly-box">
-                  <span>Barbero: {selectedBarberName}</span>
-                </div>
-              </label>
-              <label className="v2-field">
-                Servicio
-                <select
-                  value={serviceId}
-                  disabled={isBusy}
-                  onChange={(e) => {
-                    const newServiceId = e.target.value;
-                    setServiceId(newServiceId);
-                    if (newServiceId !== "OTRO") {
-                      const svc = servicesList.find(
-                        (s) => (s.dbId && s.dbId === newServiceId) || s.id === newServiceId
-                      );
-                      if (svc) setServicePrice(svc.price);
-                    }
-                  }}
-                >
-                  {servicesList.map((s) => (
-                    <option key={s.dbId || s.id} value={s.dbId || s.id}>
-                      {s.name}
-                    </option>
-                  ))}
-                  <option value="OTRO">Otro</option>
-                </select>
-              </label>
-            </div>
-          )}
+            <label className="v2-field">
+              Servicio *
+              <select
+                value={serviceId}
+                disabled={isBusy}
+                onChange={(e) => handleServiceChange(e.target.value)}
+              >
+                {servicesList.map((s) => (
+                  <option key={s.dbId || s.id} value={s.dbId || s.id}>
+                    {s.name}
+                  </option>
+                ))}
+                <option value="OTRO">Otro</option>
+              </select>
+            </label>
+          </div>
 
           {/* Conditional inputs for Servicio "Otro" vs Standard */}
           {isOtro ? (
@@ -551,14 +507,14 @@ export function ManualAppointmentDialog({
             </div>
           )}
 
-          {/* Time row: Inicio & Finalización as natural form fields */}
+          {/* Time row: Inicio & Finalización 24h freely customizable */}
           <div className="v2-manual-row">
             <label className="v2-field">
               Hora de inicio *
               <select
                 value={startTime}
                 disabled={isBusy}
-                onChange={(e) => setStartTime(e.target.value)}
+                onChange={(e) => handleStartTimeChange(e.target.value)}
               >
                 {TIME_15_OPTIONS.map((t) => (
                   <option key={`start-${t}`} value={t}>
@@ -568,33 +524,20 @@ export function ManualAppointmentDialog({
               </select>
             </label>
 
-            {isOtro ? (
-              <label className="v2-field">
-                Hora de finalización *
-                <select
-                  value={customEndTime}
-                  disabled={isBusy}
-                  onChange={(e) => setCustomEndTime(e.target.value)}
-                >
-                  {TIME_15_OPTIONS.map((t) => (
-                    <option key={`end-${t}`} value={t}>
-                      {t} hs
-                    </option>
-                  ))}
-                </select>
-              </label>
-            ) : (
-              <label className="v2-field">
-                Hora de finalización
-                <input
-                  type="text"
-                  readOnly
-                  value={computedEndTime ? `${computedEndTime} hs` : "—"}
-                  className="v2-readonly-input"
-                  tabIndex={-1}
-                />
-              </label>
-            )}
+            <label className="v2-field">
+              Hora de finalización *
+              <select
+                value={customEndTime}
+                disabled={isBusy}
+                onChange={(e) => setCustomEndTime(e.target.value)}
+              >
+                {TIME_15_OPTIONS.map((t) => (
+                  <option key={`end-${t}`} value={t}>
+                    {t} hs
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
 
           {overlapConflict && (
@@ -605,12 +548,11 @@ export function ManualAppointmentDialog({
 
           {/* Client Details Section */}
           <div className="v2-manual-client-section">
-            {/* Quick Search for Existing Clients */}
             <div className="v2-client-quick-search v2-search">
               <Search size={15} />
               <input
                 type="text"
-                placeholder="Buscar cliente existente..."
+                placeholder="Buscar cliente existente por nombre, celular o email..."
                 value={clientSearch}
                 disabled={isBusy}
                 onChange={(e) => {
@@ -645,16 +587,19 @@ export function ManualAppointmentDialog({
                   placeholder="Ej. Lucas Fernández"
                   value={clientName}
                   disabled={isBusy}
-                  onChange={(e) => setClientName(e.target.value)}
+                  onChange={(e) => {
+                    setClientName(e.target.value);
+                    setSelectedClientId(null);
+                  }}
                 />
               </label>
 
               <label className="v2-field">
-                Celular / WhatsApp *
+                Celular *
                 <input
                   type="tel"
                   required
-                  placeholder="Ej. 11 2345 6789"
+                  placeholder="Ej. 11 2345-6789"
                   value={clientPhone}
                   disabled={isBusy}
                   onChange={(e) => setClientPhone(e.target.value)}
@@ -664,10 +609,10 @@ export function ManualAppointmentDialog({
 
             <div className="v2-manual-row-single">
               <label className="v2-field">
-                Email (opcional)
+                Email · opcional
                 <input
                   type="email"
-                  placeholder="cliente@ejemplo.com"
+                  placeholder="lucas@ejemplo.com"
                   value={clientEmail}
                   disabled={isBusy}
                   onChange={(e) => setClientEmail(e.target.value)}
@@ -676,33 +621,24 @@ export function ManualAppointmentDialog({
             </div>
           </div>
 
-          {/* Action CTAs */}
-          <div className="v2-dialog-actions v2-manual-actions">
+          <div className="v2-manual-dialog-actions">
             <button
               type="button"
               className="v2-secondary"
-              disabled={isBusy}
               onClick={onClose}
+              disabled={isBusy}
             >
               Cancelar
             </button>
             <button
               type="submit"
               className="v2-primary"
-              disabled={
-                isBusy ||
-                (isOtro
-                  ? !customServiceName.trim() || customPrice === ""
-                  : !startTime) ||
-                !!overlapConflict ||
-                !clientName.trim() ||
-                !clientPhone.trim()
-              }
+              disabled={isBusy || Boolean(overlapConflict)}
             >
               {isBusy
                 ? "Guardando…"
                 : mode === "CREATE"
-                ? "Generar turno"
+                ? "Crear turno"
                 : "Guardar cambios"}
             </button>
           </div>

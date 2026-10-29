@@ -66,14 +66,19 @@ function errorMessage(cause: unknown) {
     typeof error?.details === "string" ? error.details : "",
     typeof error?.code === "string" ? error.code : "",
   ].join(" ");
+  if (message.includes("AVAILABILITY_APPOINTMENT_CONFLICT")) {
+    const match = message.match(/AVAILABILITY_APPOINTMENT_CONFLICT:([^:]+):(\d{2}:\d{2}):(\d{2}:\d{2})/);
+    if (match) {
+      return `No se puede modificar esta franja porque ${match[1]} tiene un turno reservado de ${match[2]} a ${match[3]}.`;
+    }
+    return "No se puede modificar esta franja porque tiene un turno reservado asociado.";
+  }
   if (message.includes("AVAILABILITY_OVERLAP") || message.includes("AVAILABILITY_BLOCKED_START"))
     return "Ese inicio está dentro de un bloqueo existente.";
-  if (message.includes("AVAILABILITY_APPOINTMENT_CONFLICT"))
-    return "Ese horario se superpone con una reserva existente.";
   if (message.includes("AVAILABILITY_DATE_INVALID"))
     return "Elegí una fecha futura de atención; los domingos permanecen cerrados.";
   if (message.includes("START_TIME_INVALID") || message.includes("START_TIME_NOT_ALLOWED"))
-    return "Elegí uno de los inicios comerciales fijos entre las 10:00 y las 19:00.";
+    return "Elegí un horario válido entre las 00:00 y las 23:45 (intervalos de 15 minutos).";
   if (message.includes("END_TIME_INVALID") || message.includes("AVAILABILITY_INTERVAL_INVALID"))
     return "No se pudo calcular una ventana válida para ese inicio.";
   if (message.includes("BARBER_NOT_FOUND"))
@@ -82,8 +87,6 @@ function errorMessage(cause: unknown) {
     return "Elegí al menos una fecha.";
   if (message.includes("AVAILABILITY_NOT_ALLOWED"))
     return "No tenés permiso para modificar esa agenda.";
-  if (message.includes("AVAILABILITY_APPOINTMENT_CONFLICT"))
-    return "Ese inicio coincide con una reserva existente.";
   if (message.includes("INTERNAL_NOTE_TOO_LONG"))
     return "El comentario no puede superar los 500 caracteres.";
   return message || "No se pudo completar la operación.";

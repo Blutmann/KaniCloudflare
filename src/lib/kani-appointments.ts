@@ -106,6 +106,7 @@ export type CreateManualAppointmentInput = {
   frequency?: ManualFrequency;
   durationMinutes?: number | null;
   depositRequired?: boolean;
+  clientId?: string | null;
 };
 
 export type UpdateManualAppointmentInput = {
@@ -150,15 +151,29 @@ export function appointmentErrorMessage(error: unknown) {
   } else if (error instanceof Error) {
     message = error.message;
   } else if (typeof error === 'object' && error !== null) {
-    message = error.message || error.error || error.details || '';
+    message = (error as any).message || (error as any).error || (error as any).details || '';
   }
   if (!message) {
     return 'No se pudo guardar la solicitud. Revisá los datos e intentá nuevamente.';
   }
-  if (message.includes('correo electrónico') || message.includes('email')) {
-    return 'El correo electrónico del cliente es obligatorio y debe tener un formato válido.';
+  if (message.includes('OVERLAP_CONFLICT')) {
+    const match = message.match(/OVERLAP_CONFLICT:(\d{2}:\d{2}):(\d{2}:\d{2})/);
+    if (match) {
+      return `El barbero ya tiene un turno reservado entre las ${match[1]} y las ${match[2]}.`;
+    }
+    return 'El barbero ya tiene un turno reservado en ese horario.';
   }
-  if (message.includes('SLOT_ALREADY_BOOKED')) return 'Ese horario acaba de ocuparse. Elegí otro horario disponible.';
+  if (message.includes('SLOT_ALREADY_BOOKED')) return 'El barbero ya tiene un turno reservado en ese horario.';
+  if (message.includes('CLIENT_NAME_INVALID')) return 'El nombre del cliente debe tener al menos 2 caracteres.';
+  if (message.includes('CLIENT_PHONE_INVALID')) return 'El celular del cliente debe tener al menos 6 dígitos.';
+  if (message.includes('CLIENT_EMAIL_INVALID') || message.includes('correo electrónico') || message.includes('email')) {
+    return 'El correo electrónico del cliente debe tener un formato válido.';
+  }
+  if (message.includes('BARBER_REQUIRED')) return 'Tenés que seleccionar un barbero.';
+  if (message.includes('DATE_REQUIRED')) return 'Tenés que indicar una fecha.';
+  if (message.includes('START_TIME_REQUIRED')) return 'Tenés que seleccionar un horario para el turno.';
+  if (message.includes('CUSTOM_SERVICE_NAME_REQUIRED')) return 'El nombre del servicio personalizado es obligatorio.';
+  if (message.includes('CUSTOM_SERVICE_PRICE_REQUIRED')) return 'El importe del servicio es obligatorio.';
   if (message.includes('SLOT_UNAVAILABLE')) return 'Ese horario ya no está disponible. Elegí otro para continuar.';
   if (message.includes('BOOKING_DATE_OUT_OF_RANGE')) return 'La fecha seleccionada ya no está disponible.';
   if (message.includes('SUNDAY_CLOSED')) return 'El estudio permanece cerrado los domingos.';
@@ -169,7 +184,7 @@ export function appointmentErrorMessage(error: unknown) {
   if (message.includes('create_manual_appointment') || message.includes('PGRST202')) {
     return 'La base de datos aún no tiene aplicada la migración de turnos manuales (create_manual_appointment). Aplicá la migración pendiente en Supabase.';
   }
-  return 'No se pudo guardar la solicitud. Revisá los datos e intentá nuevamente.';
+  return message || 'No se pudo guardar la solicitud. Revisá los datos e intentá nuevamente.';
 }
 
 export const KANI_DEPOSIT_ARS = 5000;
@@ -199,11 +214,11 @@ export async function createManualAppointment(input: CreateManualAppointmentInpu
     throw new Error('El horario es obligatorio.');
   }
   const name = input.name?.trim();
-  if (!name || name.length < 3) {
-    throw new Error('El nombre del cliente es obligatorio y debe tener al menos 3 caracteres.');
+  if (!name || name.length < 2) {
+    throw new Error('El nombre del cliente es obligatorio y debe tener al menos 2 caracteres.');
   }
   const phone = input.phone?.trim();
-  if (!phone || phone.length < 6) {
+  if (!phone || phone.replace(/\D/g, '').length < 6) {
     throw new Error('El celular del cliente es obligatorio y debe ser válido.');
   }
 
@@ -218,7 +233,7 @@ export async function createManualAppointment(input: CreateManualAppointmentInpu
     }
   }
 
-  const { data, error } = await supabase.rpc('create_manual_appointment', {
+  const payload: any = {
     p_barber_id: input.barberId,
     p_service_id: input.serviceId || null,
     p_custom_service_name: input.customServiceName?.trim() || null,
@@ -233,7 +248,13 @@ export async function createManualAppointment(input: CreateManualAppointmentInpu
     p_is_recurring: Boolean(input.isRecurring),
     p_duration_minutes: input.durationMinutes ?? null,
     p_deposit_required: Boolean(input.depositRequired),
-  });
+  };
+
+  if (input.clientId) {
+    payload.p_client_id = input.clientId;
+  }
+
+  const { data, error } = await supabase.rpc('create_manual_appointment', payload);
   if (error) throw error;
   const row = data?.[0];
   if (!row) throw new Error('No se pudo crear el turno manual.');
@@ -257,11 +278,11 @@ export async function updateManualAppointment(input: UpdateManualAppointmentInpu
     throw new Error('El horario es obligatorio.');
   }
   const name = input.name?.trim();
-  if (!name || name.length < 3) {
-    throw new Error('El nombre del cliente es obligatorio y debe tener al menos 3 caracteres.');
+  if (!name || name.length < 2) {
+    throw new Error('El nombre del cliente es obligatorio y debe tener al menos 2 caracteres.');
   }
   const phone = input.phone?.trim();
-  if (!phone || phone.length < 6) {
+  if (!phone || phone.replace(/\D/g, '').length < 6) {
     throw new Error('El celular del cliente es obligatorio y debe ser válido.');
   }
 
@@ -332,8 +353,6 @@ export async function createRealAppointment(input: CreateAppointmentInput) {
   if (error) throw error;
   const row = data?.[0];
   if (!row) throw new Error('La reserva no devolvió un resultado válido.');
-  // En el nuevo flujo de Mercado Pago, la solicitud PENDING no envía email de seña al cliente.
-  // El único email automático es el de confirmación tras validar el pago acreditado.
   return row;
 }
 
@@ -346,7 +365,6 @@ async function recordNotificationDispatchError(appointmentId: string, claimToken
     });
     if (error) console.error('[KANI notification] fallback diagnostic failed', error.message);
   } catch (error) {
-    // Diagnostics must never turn a saved appointment into a failed booking flow.
     console.error('[KANI notification] fallback diagnostic failed', error);
   }
 }
@@ -357,8 +375,6 @@ async function dispatchAppointmentNotification(appointmentId: string, claimToken
       data: { appointmentId, claimToken, clientPhone },
     });
     if (result.status === 'FAILED' || result.status === 'SKIPPED') {
-      // A skipped claim can leave the outbox row PENDING with attempts=0.
-      // Record it so token/claim mismatches are visible instead of silently pending.
       await recordNotificationDispatchError(
         appointmentId,
         claimToken,
@@ -370,7 +386,6 @@ async function dispatchAppointmentNotification(appointmentId: string, claimToken
     }
     return result;
   } catch (error) {
-    // The server function may fail before its handler runs (module/transport error).
     console.error('[KANI notification] dispatch request failed', error);
     await recordNotificationDispatchError(
       appointmentId,
@@ -381,11 +396,9 @@ async function dispatchAppointmentNotification(appointmentId: string, claimToken
   }
 }
 
-
 let cachedBarbersMap: { data: Map<string, { id: string; name: string }>; timestamp: number } | null = null;
 let cachedServicesMap: { data: Map<string, { id: string; name: string; duration_minutes: number; price_ars: number }>; timestamp: number } | null = null;
 let inFlightAppointments: Promise<RealAppointment[]> | null = null;
-const STATIC_CACHE_TTL_MS = 5 * 60 * 1000;
 
 export function clearAppointmentsReferenceCache() {
   cachedBarbersMap = null;
@@ -409,7 +422,6 @@ async function executeReadRealAppointments(options?: { bypassCache?: boolean; ba
   if (!fullError && fullRows) {
     rows = fullRows as AppointmentRow[];
   } else if (fullError && fullError.message && (fullError.message.includes('deposit_amount_ars') || fullError.message.includes('is_manual') || fullError.code === '42703')) {
-    // Schema fallback if migrations have not yet been applied to the target database
     console.warn('[KANI appointments] Columnas extendidas no detectadas en appointments, ejecutando consulta base:', fullError.message);
     let fallbackQuery = supabase
       .from('appointments')
@@ -428,45 +440,24 @@ async function executeReadRealAppointments(options?: { bypassCache?: boolean; ba
   const appointments = (rows ?? []) as AppointmentRow[];
   const clientIds = [...new Set(appointments.map(row => row.client_id))];
   const barberIds = [...new Set(appointments.map(row => row.barber_id))];
-  const serviceIds = [...new Set(appointments.map(row => row.service_id))];
-  const appointmentIds = appointments.map(row => row.id);
+  const serviceIds = [...new Set(appointments.map(row => row.service_id).filter(Boolean))] as string[];
 
-  const now = Date.now();
-  const needBarbers = options?.bypassCache || !cachedBarbersMap || (now - cachedBarbersMap.timestamp >= STATIC_CACHE_TTL_MS) || barberIds.some(id => !cachedBarbersMap!.data.has(id));
-  const needServices = options?.bypassCache || !cachedServicesMap || (now - cachedServicesMap.timestamp >= STATIC_CACHE_TTL_MS) || serviceIds.some(id => !cachedServicesMap!.data.has(id));
-
-  const [
-    { data: clients, error: clientsError },
-    barbersResult,
-    servicesResult,
-    { data: exceptionsData },
-    ordersResult,
-  ] = await Promise.all([
-    clientIds.length ? supabase.from('clients').select('id, name, phone, email').in('id', clientIds) : Promise.resolve({ data: [], error: null }),
-    needBarbers && barberIds.length
-      ? supabase.from('barbers').select('id, name').in('id', barberIds)
-      : Promise.resolve({ data: Array.from(cachedBarbersMap?.data.values() ?? []), error: null }),
-    needServices && serviceIds.length
-      ? supabase.from('services').select('id, name, duration_minutes, price_ars').in('id', serviceIds)
-      : Promise.resolve({ data: Array.from(cachedServicesMap?.data.values() ?? []), error: null }),
-    appointmentIds.length
-      ? supabase.from('appointment_no_show_exceptions').select('appointment_id, decision, deposit_amount_ars, refund_amount_ars, reason, created_by_display_name, created_at').in('appointment_id', appointmentIds)
-      : Promise.resolve({ data: [] }),
-    appointmentIds.length
-      ? (supabase as any).from('appointment_payment_orders').select('appointment_id, reconciliation_status, paid_amount_ars').in('appointment_id', appointmentIds).eq('reconciliation_status', 'CONFIRMED').then((res: any) => res).catch(() => ({ data: [] }))
-      : Promise.resolve({ data: [] }),
+  const [clientsResult, barbersResult, servicesResult, exceptionsResult, ordersResult] = await Promise.all([
+    clientIds.length ? supabase.from('clients').select('id, name, email, phone').in('id', clientIds) : { data: [] },
+    cachedBarbersMap ? { data: Array.from(cachedBarbersMap.data.values()) } : supabase.from('barbers').select('id, name').in('id', barberIds),
+    cachedServicesMap ? { data: Array.from(cachedServicesMap.data.values()) } : supabase.from('services').select('id, name, duration_minutes, price_ars').in('id', serviceIds),
+    (supabase as any).from('appointment_no_show_exceptions').select('appointment_id, decision, refund_amount_ars, reason').in('appointment_id', appointments.map(a => a.id)),
+    (supabase as any).from('mercadopago_orders').select('appointment_id, paid_amount_ars').in('appointment_id', appointments.map(a => a.id)).eq('status', 'CONFIRMED'),
   ]);
 
-  if (clientsError || barbersResult.error || servicesResult.error) {
-    throw clientsError ?? barbersResult.error ?? servicesResult.error;
+  const clients = clientsResult.data;
+  const now = Date.now();
+  if (!cachedBarbersMap && barbersResult.data) {
+    const map = new Map();
+    barbersResult.data.forEach(b => map.set(b.id, b));
+    cachedBarbersMap = { data: map, timestamp: now };
   }
-
-  if (needBarbers && barbersResult.data) {
-    const existing = cachedBarbersMap?.data ?? new Map();
-    barbersResult.data.forEach(b => existing.set(b.id, b));
-    cachedBarbersMap = { data: existing, timestamp: now };
-  }
-  if (needServices && servicesResult.data) {
+  if (!cachedServicesMap && servicesResult.data) {
     const existing = cachedServicesMap?.data ?? new Map();
     servicesResult.data.forEach(s => existing.set(s.id, s));
     cachedServicesMap = { data: existing, timestamp: now };
@@ -477,7 +468,7 @@ async function executeReadRealAppointments(options?: { bypassCache?: boolean; ba
   const clientById = new Map((clients ?? []).map(client => [client.id, client]));
   const barberById = new Map((barbers ?? []).map(barber => [barber.id, barber]));
   const serviceById = new Map((services ?? []).map(service => [service.id, service]));
-  const exceptionByApt = new Map(((exceptionsData as any[]) ?? []).map(e => [e.appointment_id, e]));
+  const exceptionByApt = new Map((((exceptionsResult as any)?.data as any[]) ?? []).map((e: any) => [e.appointment_id, e]));
   const orderByApt = new Map((((ordersResult as any)?.data as any[]) ?? []).map((o: any) => [o.appointment_id, o]));
 
   return appointments.flatMap(row => {
@@ -492,7 +483,7 @@ async function executeReadRealAppointments(options?: { bypassCache?: boolean; ba
     const exc = exceptionByApt.get(row.id);
     const startM = timeToMinutes(row.start_time.slice(0, 5));
     const endM = timeToMinutes(row.end_time.slice(0, 5));
-    const derivedDuration = Math.max(15, endM - startM);
+    const derivedDuration = Math.max(15, endM <= startM ? (endM + 1440) - startM : endM - startM);
 
     const displayName = customName
       ? customName
@@ -560,7 +551,6 @@ export async function updateRealAppointmentStatus(id: string, status: 'CONFIRMED
   if (error) throw error;
   const row = data?.[0];
   if (row?.notification_claim_token) {
-    // Await dispatch so the request isn't abandoned during client navigation.
     await dispatchAppointmentNotification(id, row.notification_claim_token);
   }
   return row?.appointment_status;

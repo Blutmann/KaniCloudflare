@@ -1,18 +1,27 @@
 import { useRef, useState, type FormEvent } from "react";
 import { useSearch } from "@tanstack/react-router";
-import { CheckCircle2, Tag, User } from "lucide-react";
+import { CheckCircle2, Tag, Trash2, Edit2, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminStaff } from "@/lib/kani-admin-context";
 import { businessDateToday, addCalendarDays } from "@/lib/kani-mobile-appointments";
 import { money } from "@/lib/kani-model";
 import { paymentSummary, scopeV2 } from "@/lib/kani-v2";
-import type { PaymentMethod, ServicePaymentType } from "@/lib/kani-payments";
+import {
+  deleteServicePayment,
+  updateServicePayment,
+  updateServicePaymentClient,
+  type PaymentMethod,
+  type ServicePayment,
+  type ServicePaymentType,
+} from "@/lib/kani-payments";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { BarberFilter, Empty } from "./shared";
 import { useV2 } from "./data";
 
 export function V2Payments() {
   const data = useV2();
   const staff = useAdminStaff();
+  const isAdmin = staff.profile.role === "ADMIN";
   const today = businessDateToday();
   const search = useSearch({ from: "/admin-v2/pagos" });
   const [origin, setOrigin] = useState<"appointment" | "walk_in">(
@@ -36,6 +45,26 @@ export function V2Payments() {
   const inFlight = useRef(false);
   const [message, setMessage] = useState("");
   const [success, setSuccess] = useState(false);
+
+  // States for Editing and Deleting payments
+  const [editingPayment, setEditingPayment] = useState<ServicePayment | null>(null);
+  const [editBarberId, setEditBarberId] = useState("");
+  const [editServiceName, setEditServiceName] = useState<ServicePaymentType>("Corte");
+  const [editOtherDetail, setEditOtherDetail] = useState("");
+  const [editPrice, setEditPrice] = useState(25000);
+  const [editDiscount, setEditDiscount] = useState(0);
+  const [editMethod, setEditMethod] = useState<PaymentMethod>("Efectivo");
+  const [editClientName, setEditClientName] = useState("");
+  const [editClientContact, setEditClientContact] = useState("");
+  const [editDate, setEditDate] = useState("");
+  const [editTime, setEditTime] = useState("");
+  const [editError, setEditError] = useState("");
+  const [editBusy, setEditBusy] = useState(false);
+
+  const [editingClientPayment, setEditingClientPayment] = useState<ServicePayment | null>(null);
+  const [deletingPayment, setDeletingPayment] = useState<ServicePayment | null>(null);
+  const [actionNotice, setActionNotice] = useState("");
+
   const paid = new Set(data.payments.map((p) => p.appointmentId));
   const choices = data.appointments.filter(
     (a) => ["CONFIRMED", "COMPLETED"].includes(a.statusCode) && !paid.has(a.id) && a.date <= today,
@@ -58,6 +87,7 @@ export function V2Payments() {
       p.paymentDate >= (period === "WEEK" ? addCalendarDays(date, -6) : date),
   );
   const summary = paymentSummary(history);
+
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (inFlight.current) return;
@@ -92,7 +122,6 @@ export function V2Payments() {
         ? (appointment.customServiceName || null)
         : (serviceName === "Otro" ? customServiceName.trim() : null);
 
-      // Use only the existing transactional RPC: no direct-insert fallback after errors.
       const { data: result, error } = await supabase.rpc("record_service_payment", {
         p_barber_id: appointment?.barberId ?? barberId,
         p_service_name: finalServiceName,
@@ -132,8 +161,105 @@ export function V2Payments() {
       setBusy(false);
     }
   }
+
+  function openEditModal(p: ServicePayment) {
+    setEditingPayment(p);
+    setEditBarberId(p.barberId);
+    setEditServiceName(p.serviceName);
+    setEditOtherDetail(p.serviceOtherDetail || "");
+    setEditPrice(p.servicePriceArs);
+    setEditDiscount(p.discountArs || 0);
+    setEditMethod(p.paymentMethod);
+    setEditClientName(p.clientName || "");
+    setEditClientContact(p.clientContact || "");
+    setEditDate(p.paymentDate);
+    setEditTime(p.paymentTime);
+    setEditError("");
+  }
+
+  function openClientEditModal(p: ServicePayment) {
+    setEditingClientPayment(p);
+    setEditClientName(p.clientName || "");
+    setEditClientContact(p.clientContact || "");
+    setEditError("");
+  }
+
+  async function handleSavePayment(e: FormEvent) {
+    e.preventDefault();
+    if (!editingPayment) return;
+    setEditBusy(true);
+    setEditError("");
+    try {
+      await updateServicePayment(
+        editingPayment.id,
+        {
+          barberId: editBarberId,
+          serviceName: editServiceName,
+          serviceOtherDetail: editServiceName === "Otros" ? editOtherDetail : undefined,
+          servicePriceArs: editPrice,
+          discountArs: editDiscount,
+          paymentMethod: editMethod,
+          clientName: editClientName,
+          clientContact: editClientContact,
+          paymentDate: editDate,
+          paymentTime: editTime,
+        },
+        staff,
+        editingPayment,
+      );
+      setEditingPayment(null);
+      setActionNotice("Cobro actualizado exitosamente.");
+      await data.refresh();
+    } catch (err) {
+      setEditError(err instanceof Error ? err.message : "Error al actualizar el cobro.");
+    } finally {
+      setEditBusy(false);
+    }
+  }
+
+  async function handleSaveClientInfo(e: FormEvent) {
+    e.preventDefault();
+    if (!editingClientPayment) return;
+    setEditBusy(true);
+    setEditError("");
+    try {
+      await updateServicePaymentClient(
+        editingClientPayment.id,
+        editClientName,
+        editClientContact,
+      );
+      setEditingClientPayment(null);
+      setActionNotice("Datos de contacto actualizados correctamente.");
+      await data.refresh();
+    } catch (err) {
+      setEditError(err instanceof Error ? err.message : "Error al actualizar contacto del cliente.");
+    } finally {
+      setEditBusy(false);
+    }
+  }
+
+  async function handleConfirmDelete() {
+    if (!deletingPayment) return;
+    setEditBusy(true);
+    try {
+      await deleteServicePayment(deletingPayment.id, staff);
+      setDeletingPayment(null);
+      setActionNotice("Cobro anulado con registro de trazabilidad.");
+      await data.refresh();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Error al anular el cobro.");
+    } finally {
+      setEditBusy(false);
+    }
+  }
+
   return (
     <main className="v2-page">
+      {actionNotice && (
+        <p role="status" className="v2-success" style={{ marginBottom: "1rem" }}>
+          {actionNotice}
+        </p>
+      )}
       <div className="v2-payment-layout">
         <section className="v2-panel v2-payment-form">
           <div className="v2-segmented" aria-label="Origen del cobro">
@@ -165,138 +291,108 @@ export function V2Payments() {
                         setPriceOverride(null);
                         setDiscount(0);
                       }}
-                      required
                     >
-                      <option value="">Elegí un turno para cobrar</option>
+                      <option value="">Seleccionar turno confirmado</option>
                       {choices.map((a) => (
                         <option value={a.id} key={a.id}>
-                          {a.date} · {a.time} · {a.name} · {a.barber}
+                          {a.name} · {a.serviceName} · {a.time} hs ({a.barber})
                         </option>
                       ))}
                     </select>
                   </label>
                   {appointment && (
-                    <div className="v2-payment-client">
-                      <h2>{appointment.name}</h2>
-                      <p>
-                        {appointment.serviceName} · {appointment.barber}
-                      </p>
-                      <p>
-                        {appointment.date} · {appointment.time}
-                      </p>
-                    </div>
-                  )}
-                  {!data.depositSupported && (
-                    <p className="v2-alert">
-                      No se pueden verificar las señas de estos turnos. El cobro con turno está
-                      bloqueado hasta que esa información esté disponible.
+                    <p className="v2-footnote">
+                      {appointment.name} · {appointment.phone || "Sin celular"} · {appointment.date} · {appointment.time} hs
                     </p>
                   )}
                 </>
               ) : (
                 <>
-                  <div className="v2-form-row">
+                  {isAdmin && (
                     <label className="v2-field">
-                      Servicio
-                      <select
-                        value={serviceName}
-                        onChange={(e) => {
-                          setServiceName(e.target.value);
-                          setPriceOverride(null);
-                          setDiscount(0);
-                        }}
-                        required
-                      >
-                        {data.services.map((s) => (
-                          <option key={s.id} value={s.name}>
-                            {s.name}
+                      Barbero
+                      <select value={barberId} onChange={(e) => setBarberId(e.target.value)}>
+                        {staff.barbers.map((b) => (
+                          <option value={b.id} key={b.id}>
+                            {b.name}
                           </option>
                         ))}
-                        <option value="Otro">Otro</option>
                       </select>
                     </label>
-                    {staff.profile.role === "ADMIN" && (
-                      <label className="v2-field">
-                        Barbero
-                        <select
-                          value={barberId}
-                          onChange={(e) => setBarberId(e.target.value)}
-                          required
-                        >
-                          {staff.barbers.map((b) => (
-                            <option key={b.id} value={b.id}>
-                              {b.name}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    )}
-                  </div>
+                  )}
+                  <label className="v2-field">
+                    Servicio
+                    <select
+                      value={serviceName}
+                      onChange={(e) => {
+                        setServiceName(e.target.value);
+                        setPriceOverride(null);
+                        setDiscount(0);
+                      }}
+                    >
+                      {data.services.map((s) => (
+                        <option value={s.name} key={s.id}>
+                          {s.name}
+                        </option>
+                      ))}
+                      <option value="Otro">Otro</option>
+                    </select>
+                  </label>
                   {serviceName === "Otro" && (
                     <label className="v2-field">
-                      Nombre del servicio
+                      Detalle del servicio
                       <input
-                        type="text"
                         required
-                        placeholder="Ej. Tintura de color"
+                        placeholder="Ej. Corte especial"
                         value={customServiceName}
                         onChange={(e) => setCustomServiceName(e.target.value)}
                       />
                     </label>
                   )}
+                  <label className="v2-field">
+                    Precio ($ ARS)
+                    <input
+                      type="number"
+                      min={1}
+                      step={1}
+                      value={priceOverride ?? (serviceName === "Otro" ? "" : (service?.price ?? ""))}
+                      placeholder={String(service?.price ?? 25000)}
+                      onChange={(e) => setPriceOverride(e.target.value === "" ? null : Number(e.target.value))}
+                    />
+                  </label>
                 </>
               )}
+
               <label className="v2-field">
-                Método de pago
+                Método de cobro
                 <select value={method} onChange={(e) => setMethod(e.target.value as PaymentMethod)}>
-                  <option>Efectivo</option>
-                  <option>Transferencia</option>
+                  <option value="Efectivo">Efectivo</option>
+                  <option value="Transferencia">Transferencia</option>
                 </select>
               </label>
-              <label className="v2-field">
-                Importe ($ ARS)
-                <input
-                  type="number"
-                  min={1}
-                  step={1}
-                  required
-                  placeholder={serviceName === "Otro" ? "Ej. 35000" : "0"}
-                  value={price || ""}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setPriceOverride(val === "" ? null : Number(val));
-                  }}
-                />
-              </label>
 
-              <div className="v2-payment-actions-row">
+              <div className="v2-payment-actions-strip">
+                <button
+                  type="button"
+                  className="v2-quiet"
+                  onClick={() => setShowDiscount(!showDiscount)}
+                >
+                  <Tag size={15} />
+                  {showDiscount ? "Ocultar descuento" : "Agregar descuento"}
+                </button>
                 {origin === "walk_in" && (
                   <button
-                    className={`v2-secondary ${showClient ? "v2-active" : ""}`}
                     type="button"
-                    aria-expanded={showClient}
+                    className="v2-quiet"
                     onClick={() => setShowClient(!showClient)}
                   >
-                    <User size={14} />
-                    <span>{showClient ? "Ocultar cliente" : "Asociar cliente"}</span>
+                    <User size={15} />
+                    {showClient ? "Ocultar cliente" : "Asociar cliente"}
                   </button>
                 )}
-                <button
-                  className={`v2-secondary ${showDiscount ? "v2-active" : ""}`}
-                  type="button"
-                  aria-expanded={showDiscount}
-                  onClick={() => {
-                    const next = !showDiscount;
-                    setShowDiscount(next);
-                    if (!next) setDiscount(0);
-                  }}
-                >
-                  <Tag size={14} />
-                  <span>{showDiscount ? "Quitar descuento" : "Agregar descuento"}</span>
-                </button>
               </div>
 
-              {origin === "walk_in" && showClient && (
+              {showClient && origin === "walk_in" && (
                 <div className="v2-payment-collapsible">
                   <label className="v2-field">
                     Cliente existente
@@ -332,10 +428,6 @@ export function V2Payments() {
                       </label>
                     </div>
                   )}
-                  <p>
-                    Se guardan nombre y contacto en el cobro. La vinculación permanente con la
-                    ficha se incorporará en la próxima etapa.
-                  </p>
                 </div>
               )}
 
@@ -407,6 +499,7 @@ export function V2Payments() {
           )}
         </section>
       </div>
+
       <section className="v2-panel">
         <div className="v2-section-title">
           <h2>La cobranza</h2>
@@ -445,10 +538,263 @@ export function V2Payments() {
                 {p.paymentDate} · {p.paymentTime} · {p.paymentMethod}
               </small>
             </div>
-            <strong>{money(p.collectedAmountArs)}</strong>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              <strong>{money(p.collectedAmountArs)}</strong>
+              {isAdmin ? (
+                <div style={{ display: "flex", gap: "6px" }}>
+                  <button
+                    type="button"
+                    className="v2-secondary"
+                    style={{ fontSize: "11px", padding: "4px 8px" }}
+                    onClick={() => openEditModal(p)}
+                    title="Editar cobro"
+                  >
+                    <Edit2 size={13} style={{ marginRight: "3px" }} />
+                    Editar
+                  </button>
+                  <button
+                    type="button"
+                    className="v2-quiet"
+                    style={{ fontSize: "11px", padding: "4px 8px", color: "var(--destructive, #ef4444)" }}
+                    onClick={() => setDeletingPayment(p)}
+                    title="Anular cobro"
+                  >
+                    <Trash2 size={13} style={{ marginRight: "3px" }} />
+                    Eliminar
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  className="v2-secondary"
+                  style={{ fontSize: "11px", padding: "4px 8px" }}
+                  onClick={() => openClientEditModal(p)}
+                  title="Editar datos de contacto"
+                >
+                  <User size={13} style={{ marginRight: "3px" }} />
+                  Editar cliente
+                </button>
+              )}
+            </div>
           </article>
         ))}
       </section>
+
+      {/* Admin Full Edit Dialog */}
+      <Dialog open={!!editingPayment} onOpenChange={(open) => !open && !editBusy && setEditingPayment(null)}>
+        <DialogContent className="v2-dialog">
+          <DialogTitle>Editar cobro registrado</DialogTitle>
+          <DialogDescription>
+            Modificá los detalles del cobro. Los cambios se registran con trazabilidad.
+          </DialogDescription>
+          {editError && <p className="v2-alert">{editError}</p>}
+          <form onSubmit={handleSavePayment} className="v2-form">
+            <label className="v2-field">
+              Barbero
+              <select value={editBarberId} onChange={(e) => setEditBarberId(e.target.value)} disabled={editBusy}>
+                {staff.barbers.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="v2-field">
+              Servicio
+              <select
+                value={editServiceName}
+                onChange={(e) => setEditServiceName(e.target.value as ServicePaymentType)}
+                disabled={editBusy}
+              >
+                <option value="Corte">Corte</option>
+                <option value="Corte y barba">Corte y barba</option>
+                <option value="Barba">Barba</option>
+                <option value="Otros">Otros</option>
+              </select>
+            </label>
+            {editServiceName === "Otros" && (
+              <label className="v2-field">
+                Detalle servicio
+                <input
+                  required
+                  value={editOtherDetail}
+                  onChange={(e) => setEditOtherDetail(e.target.value)}
+                  disabled={editBusy}
+                />
+              </label>
+            )}
+            <div className="v2-form-row">
+              <label className="v2-field">
+                Precio servicio ($ ARS)
+                <input
+                  type="number"
+                  min={1}
+                  required
+                  value={editPrice}
+                  onChange={(e) => setEditPrice(Number(e.target.value))}
+                  disabled={editBusy}
+                />
+              </label>
+              <label className="v2-field">
+                Descuento ($ ARS)
+                <input
+                  type="number"
+                  min={0}
+                  value={editDiscount}
+                  onChange={(e) => setEditDiscount(Number(e.target.value))}
+                  disabled={editBusy}
+                />
+              </label>
+            </div>
+            <label className="v2-field">
+              Método de pago
+              <select
+                value={editMethod}
+                onChange={(e) => setEditMethod(e.target.value as PaymentMethod)}
+                disabled={editBusy}
+              >
+                <option value="Efectivo">Efectivo</option>
+                <option value="Transferencia">Transferencia</option>
+              </select>
+            </label>
+            <div className="v2-form-row">
+              <label className="v2-field">
+                Nombre del cliente
+                <input
+                  value={editClientName}
+                  onChange={(e) => setEditClientName(e.target.value)}
+                  disabled={editBusy}
+                />
+              </label>
+              <label className="v2-field">
+                Contacto / Celular
+                <input
+                  value={editClientContact}
+                  onChange={(e) => setEditClientContact(e.target.value)}
+                  disabled={editBusy}
+                />
+              </label>
+            </div>
+            <div className="v2-form-row">
+              <label className="v2-field">
+                Fecha
+                <input
+                  type="date"
+                  value={editDate}
+                  onChange={(e) => setEditDate(e.target.value)}
+                  disabled={editBusy}
+                />
+              </label>
+              <label className="v2-field">
+                Hora
+                <input
+                  type="time"
+                  value={editTime}
+                  onChange={(e) => setEditTime(e.target.value)}
+                  disabled={editBusy}
+                />
+              </label>
+            </div>
+            <div className="v2-dialog-actions">
+              <button
+                type="button"
+                className="v2-secondary"
+                onClick={() => setEditingPayment(null)}
+                disabled={editBusy}
+              >
+                Cancelar
+              </button>
+              <button type="submit" className="v2-primary" disabled={editBusy}>
+                {editBusy ? "Guardando…" : "Guardar cambios"}
+              </button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Barber Client Contact Edit Dialog */}
+      <Dialog
+        open={!!editingClientPayment}
+        onOpenChange={(open) => !open && !editBusy && setEditingClientPayment(null)}
+      >
+        <DialogContent className="v2-dialog">
+          <DialogTitle>Editar cliente del cobro</DialogTitle>
+          <DialogDescription>
+            Actualizá los datos de contacto del cliente asociado a este cobro.
+          </DialogDescription>
+          {editError && <p className="v2-alert">{editError}</p>}
+          <form onSubmit={handleSaveClientInfo} className="v2-form">
+            <label className="v2-field">
+              Nombre del cliente
+              <input
+                required
+                minLength={2}
+                value={editClientName}
+                onChange={(e) => setEditClientName(e.target.value)}
+                disabled={editBusy}
+              />
+            </label>
+            <label className="v2-field">
+              Celular / Contacto
+              <input
+                value={editClientContact}
+                onChange={(e) => setEditClientContact(e.target.value)}
+                disabled={editBusy}
+              />
+            </label>
+            <div className="v2-dialog-actions">
+              <button
+                type="button"
+                className="v2-secondary"
+                onClick={() => setEditingClientPayment(null)}
+                disabled={editBusy}
+              >
+                Cancelar
+              </button>
+              <button type="submit" className="v2-primary" disabled={editBusy}>
+                {editBusy ? "Guardando…" : "Guardar cliente"}
+              </button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete / Anular Confirmation Dialog */}
+      <Dialog
+        open={!!deletingPayment}
+        onOpenChange={(open) => !open && !editBusy && setDeletingPayment(null)}
+      >
+        <DialogContent className="v2-dialog">
+          <DialogTitle>Anular cobro</DialogTitle>
+          <DialogDescription>
+            ¿Estás seguro de anular el cobro de{" "}
+            <strong>
+              {deletingPayment?.serviceName} ({money(deletingPayment?.collectedAmountArs || 0)})
+            </strong>
+            ? Esta operación aplicará una baja lógica con trazabilidad y excluirá el cobro de las
+            métricas sin alterar pagos externos ni eliminar turnos agendados.
+          </DialogDescription>
+          <div className="v2-dialog-actions">
+            <button
+              type="button"
+              className="v2-secondary"
+              onClick={() => setDeletingPayment(null)}
+              disabled={editBusy}
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              className="v2-primary"
+              style={{ background: "var(--destructive, #ef4444)" }}
+              onClick={handleConfirmDelete}
+              disabled={editBusy}
+            >
+              {editBusy ? "Anulando…" : "Confirmar anulación"}
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }

@@ -82,15 +82,16 @@ export function V2DataProvider({ children }: { children: ReactNode }) {
           capabilityQuery,
         ]);
       if (clientResult.error) throw clientResult.error;
+      const loadedClients = (clientResult.data ?? []) as V2Client[];
       setData({
         appointments: scopeV2(appointments, staff.profile.role, staff.profile.barber_id),
         payments: scopeV2(payments, staff.profile.role, staff.profile.barber_id),
         starts,
         services,
-        clients: [],
+        clients: loadedClients,
         depositSupported: !capability.error,
       });
-      setClients(clientResult.data ?? []);
+      setClients(loadedClients);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "No pudimos cargar los datos. Reintentá.");
     } finally {

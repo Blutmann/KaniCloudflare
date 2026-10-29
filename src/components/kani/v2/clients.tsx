@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
-import { Archive, ArrowRight, Plus, Search } from "lucide-react";
+import { ArrowRight, Plus, Search } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { useAdminStaff } from "@/lib/kani-admin-context";
 import { sortClients, type ClientOrder } from "./client-order";
 import { clientHistory } from "@/lib/kani-v2";
@@ -20,55 +21,75 @@ export function V2Clients() {
   const [email, setEmail] = useState("");
   const [order, setOrder] = useState<ClientOrder>("newest");
   const [notice, setNotice] = useState("");
+  const [errorNotice, setErrorNotice] = useState("");
+  const [saving, setSaving] = useState(false);
+
   const selected = data.clients.find((c) => c.id === selectedId);
   const summary = selected ? clientHistory(selected.id, data.appointments, data.payments) : null;
   const rows = sortClients(
     data.clients.filter(
       (c) =>
         !c.archived &&
-        `${c.name} ${c.phone} ${c.email}`.toLowerCase().includes(search.toLowerCase()),
+        `${c.name} ${c.phone} ${c.email || ""}`.toLowerCase().includes(search.toLowerCase()),
     ),
     order,
   );
+
   function openEditor(client?: V2Client) {
     setEditing(client ?? "new");
     setName(client?.name ?? "");
     setPhone(client?.phone ?? "");
     setEmail(client?.email ?? "");
+    setErrorNotice("");
   }
-  function save(event: FormEvent) {
+
+  async function save(event: FormEvent) {
     event.preventDefault();
-    if (name.trim().length < 2 || phone.replace(/\D/g, "").length < 6) return;
-    const now = new Date().toISOString();
-    if (editing && editing !== "new")
-      data.setClients((rows) =>
-        rows.map((c) =>
-          c.id === editing.id
-            ? { ...c, name: name.trim(), phone: phone.trim(), email: email.trim() }
-            : c,
-        ),
-      );
-    else
-      data.setClients((rows) => [
-        ...rows,
-        {
-          id: `draft-${crypto.randomUUID()}`,
-          name: name.trim(),
-          phone: phone.trim(),
-          email: email.trim(),
-          created_at: now,
-          updated_at: now,
-          draft: true,
-        },
-      ]);
-    setEditing(null);
-    setNotice("Cambios temporales guardados. Se pierden al recargar.");
+    if (name.trim().length < 2) {
+      setErrorNotice("El nombre del cliente debe tener al menos 2 caracteres.");
+      return;
+    }
+    const phoneDigits = phone.replace(/\D/g, "");
+    if (phoneDigits.length < 6) {
+      setErrorNotice("El celular debe tener al menos 6 dígitos.");
+      return;
+    }
+
+    setSaving(true);
+    setErrorNotice("");
+
+    try {
+      const clientId = editing && editing !== "new" ? editing.id : null;
+      const { error } = await supabase.rpc("save_client", {
+        p_id: clientId,
+        p_name: name.trim(),
+        p_phone: phone.trim(),
+        p_email: email.trim() || null,
+      });
+
+      if (error) throw error;
+
+      setEditing(null);
+      setNotice(clientId ? "Cliente actualizado en Supabase." : "Cliente guardado en Supabase.");
+      await data.refresh();
+    } catch (err) {
+      console.error("[KANI clients] Error guardando cliente:", err);
+      setErrorNotice(err instanceof Error ? err.message : "Error al guardar cliente en Supabase.");
+    } finally {
+      setSaving(false);
+    }
   }
+
   return (
     <main className="v2-page">
       {notice && (
         <p role="status" className="v2-success">
           {notice}
+        </p>
+      )}
+      {errorNotice && (
+        <p role="alert" className="v2-alert">
+          {errorNotice}
         </p>
       )}
       <div className="v2-client-toolbar">
@@ -109,22 +130,14 @@ export function V2Clients() {
               </div>
               <div className="v2-client-meta">
                 <span>{history.visits} visitas verificadas</span>
-                <span>
-                  {c.archived
-                    ? "Archivado temporalmente"
-                    : c.draft
-                      ? "Cliente temporal"
-                      : "Ficha existente"}
-                </span>
+                <span>Ficha existente</span>
               </div>
               <ArrowRight className="v2-client-arrow" size={18} aria-hidden="true" />
             </button>
           );
         })}
       </div>
-      <p className="v2-footnote v2-client-temporary">
-        Los cambios en Clientes son temporales y se pierden al recargar.
-      </p>
+
       <Dialog
         open={!!selected}
         onOpenChange={(open) => {
@@ -134,8 +147,7 @@ export function V2Clients() {
         <DialogContent className="v2-dialog v2-client-dialog">
           <DialogTitle>{selected?.name}</DialogTitle>
           <DialogDescription>
-            Historial disponible {isAdmin ? "en Kani" : "en tu actividad"}. Los datos derivados no
-            se guardan en la ficha.
+            Historial de atenciones registradas {isAdmin ? "en Kani" : "en tu actividad"}.
           </DialogDescription>
           {selected && summary && (
             <>
@@ -153,7 +165,7 @@ export function V2Clients() {
                 {summary.frequency !== null
                   ? `cada ${summary.frequency} días entre visitas registradas`
                   : "historial insuficiente"}
-                . El gasto solo incluye cobros vinculados por ID de turno.
+                .
               </p>
               <div className="v2-contact">
                 <a href={`tel:${selected.phone.replace(/[^+\d]/g, "")}`}>{selected.phone}</a>
@@ -162,8 +174,7 @@ export function V2Clients() {
               <h3>Historial</h3>
               {!summary.history.length && (
                 <Empty>
-                  Sin atenciones vinculadas. Los cobros sin turno todavía no tienen relación con la
-                  ficha.
+                  Sin atenciones vinculadas actualmente.
                 </Empty>
               )}
               {summary.history
@@ -192,23 +203,6 @@ export function V2Clients() {
                 >
                   Editar cliente
                 </button>
-                {isAdmin && (
-                  <button
-                    className="v2-quiet"
-                    onClick={() => {
-                      data.setClients((rows) =>
-                        rows.map((c) =>
-                          c.id === selected.id ? { ...c, archived: !c.archived } : c,
-                        ),
-                      );
-                      setSelectedId(null);
-                      setNotice("Cambio temporal aplicado. El historial se conserva.");
-                    }}
-                  >
-                    <Archive size={16} />
-                    {selected.archived ? "Restaurar" : "Archivar"}
-                  </button>
-                )}
               </div>
             </>
           )}
@@ -217,20 +211,26 @@ export function V2Clients() {
       <Dialog
         open={!!editing}
         onOpenChange={(open) => {
-          if (!open) setEditing(null);
+          if (!open && !saving) setEditing(null);
         }}
       >
         <DialogContent className="v2-dialog">
           <DialogTitle>{editing === "new" ? "Nuevo cliente" : "Editar cliente"}</DialogTitle>
           <DialogDescription>
-            Los cambios son temporales y se pierden al recargar.
+            Los datos se guardan de forma permanente en Supabase.
           </DialogDescription>
+          {errorNotice && (
+            <p role="alert" className="v2-alert">
+              {errorNotice}
+            </p>
+          )}
           <form onSubmit={save} className="v2-form">
             <label className="v2-field">
               Nombre
               <input
                 required
                 minLength={2}
+                disabled={saving}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
               />
@@ -241,15 +241,23 @@ export function V2Clients() {
                 required
                 type="tel"
                 minLength={6}
+                disabled={saving}
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
               />
             </label>
             <label className="v2-field">
               Email · opcional
-              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+              <input
+                type="email"
+                disabled={saving}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
             </label>
-            <button className="v2-primary">Guardar cambios temporales</button>
+            <button className="v2-primary" disabled={saving}>
+              {saving ? "Guardando…" : "Guardar cliente"}
+            </button>
           </form>
         </DialogContent>
       </Dialog>

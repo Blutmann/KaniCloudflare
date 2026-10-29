@@ -275,6 +275,7 @@ export async function fetchServicePayments(
   let query = supabase
     .from('service_payments')
     .select('*')
+    .is('deleted_at', null)
     .order('payment_date', { ascending: false })
     .order('payment_time', { ascending: false })
     .order('created_at', { ascending: false });
@@ -665,6 +666,30 @@ export async function updateServicePayment(
   };
 }
 
+
+export async function updateServicePaymentClient(
+  paymentId: string,
+  clientName: string,
+  clientContact: string,
+): Promise<void> {
+  const { error } = await supabase.rpc('update_service_payment_client', {
+    p_payment_id: paymentId,
+    p_client_name: clientName.trim(),
+    p_client_contact: clientContact.trim(),
+  });
+  if (error) {
+    const { error: directError } = await supabase
+      .from('service_payments')
+      .update({
+        client_name: clientName.trim() || null,
+        client_contact: clientContact.trim() || null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', paymentId);
+    if (directError) throw directError;
+  }
+}
+
 /** Elimina un cobro registrado (exclusivo para Administradores) */
 export async function deleteServicePayment(
   paymentId: string,
@@ -676,15 +701,26 @@ export async function deleteServicePayment(
     throw new Error('Solo los administradores tienen permiso para eliminar registros de cobro.');
   }
 
-  const { error } = await supabase
-    .from('service_payments')
-    .delete()
-    .eq('id', paymentId);
+  const { error: rpcError } = await supabase.rpc('soft_delete_service_payment', {
+    p_payment_id: paymentId,
+  });
 
-  if (error) {
-    console.error('[KANI payments] Error al eliminar cobro en base de datos:', error);
-    throw new Error(error.message || 'No se pudo eliminar el cobro en la base de datos.');
+  if (rpcError) {
+    const { error: updateError } = await supabase
+      .from('service_payments')
+      .update({
+        deleted_at: new Date().toISOString(),
+        deleted_by_user_id: staff.user?.id || null,
+        deleted_by_display_name: staff.profile?.name || 'Admin',
+      })
+      .eq('id', paymentId);
+
+    if (updateError) {
+      console.error('[KANI payments] Error al eliminar cobro en base de datos:', updateError);
+      throw new Error(updateError.message || 'No se pudo eliminar el cobro en la base de datos.');
+    }
   }
+
 }
 
 /**
