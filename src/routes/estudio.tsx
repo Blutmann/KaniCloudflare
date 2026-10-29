@@ -1,11 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, Instagram, MapPin, Clock3 } from "lucide-react";
 import { pageHead } from "@/lib/kani-head";
-import { KANI_MAPS_URL } from "@/lib/kani-constants";
+import { KANI_MAPS_URL, KANI_MAPS_EMBED_URL } from "@/lib/kani-constants";
 
 const mapsUrl = KANI_MAPS_URL;
-const mapsEmbedUrl =
-  "https://maps.google.com/maps?cid=5241343871369591392&hl=es&output=embed";
+const mapsEmbedUrl = KANI_MAPS_EMBED_URL;
 const instagramUrl = "https://www.instagram.com/kanibarberstudio/";
 const whatsAppUrl = "https://wa.me/5491128436014";
 

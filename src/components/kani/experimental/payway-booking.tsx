@@ -21,6 +21,7 @@ import {
   validateExpiry,
   validatePan,
 } from '@/lib/kani-card-validation';
+import { KANI_MAPS_URL, KANI_MAPS_EMBED_URL } from '@/lib/kani-constants';
 import { CardBrandBadge } from './card-brand-badges';
 
 const CONFIRMED_STORAGE_KEY = 'kani:payway:confirmed-booking';
@@ -404,8 +405,7 @@ export function PaywayBooking() {
         <main className="site-container confirmation">
           <div className="confirmation-mark"><Check size={30} /></div>
           <h1>Turno confirmado</h1>
-          <p className="confirmation-lead text-muted-foreground">Tu turno está confirmado.</p>
-          <p className="text-sm text-muted-foreground mt-1">Te enviamos la confirmación por correo electrónico.</p>
+          <p className="text-sm text-muted-foreground confirmation-subtitle">Te enviamos la confirmación por mail.</p>
           <div className="confirmation-details">
             <dl className="summary-list" style={{ marginTop: 0 }}>
               <div><dt>Servicio</dt><dd>{confirmed.serviceName}</dd></div>
@@ -418,16 +418,39 @@ export function PaywayBooking() {
           </div>
           <section className="confirmation-place">
             <h2 className="text-sm font-medium">Kani Barber Studio</h2>
-            <p className="mt-2 text-sm text-muted-foreground">San Isidro Labrador 7 · Martínez, Provincia de Buenos Aires</p>
+            <p className="mt-1 text-sm text-muted-foreground">San Isidro Labrador 7 · Martínez, Provincia de Buenos Aires</p>
+
+            <div className="confirmation-map-wrap">
+              <iframe
+                src={KANI_MAPS_EMBED_URL}
+                title="Ubicación de Kani Barber Studio en Google Maps"
+                className="confirmation-map-iframe"
+                loading="lazy"
+                allowFullScreen
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+            </div>
+
             <div className="confirmation-actions">
-              <Button type="button" className="confirmation-home action-brand" aria-label="Volver a reservar" onClick={startNewReservation}>
+              <div className="confirmation-actions-row">
+                <Button asChild variant="outline" className="confirmation-secondary">
+                  <a href={KANI_MAPS_URL} target="_blank" rel="noreferrer">
+                    <MapPin size={16} /> Ver ubicación
+                  </a>
+                </Button>
+                <Button asChild variant="outline" className="confirmation-secondary">
+                  <a href="https://www.instagram.com/kanibarberstudio/" target="_blank" rel="noreferrer">
+                    <Instagram size={16} /> Instagram
+                  </a>
+                </Button>
+              </div>
+              <Button
+                type="button"
+                className="confirmation-home action-brand"
+                aria-label="Volver al inicio"
+                onClick={startNewReservation}
+              >
                 Volver al inicio
-              </Button>
-              <Button asChild variant="outline" className="confirmation-secondary">
-                <a href="https://www.google.com/maps/place/KANI+BARBER+STUDIO/data=!4m2!3m1!1s0x0:0x48bcfe7b2ea7ba60" target="_blank" rel="noreferrer"><MapPin size={16} /> Ver ubicación</a>
-              </Button>
-              <Button asChild variant="outline" className="confirmation-secondary">
-                <a href="https://www.instagram.com/kanibarberstudio/" target="_blank" rel="noreferrer"><Instagram size={16} /> Instagram</a>
               </Button>
             </div>
           </section>
