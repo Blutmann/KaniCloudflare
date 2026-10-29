@@ -406,54 +406,54 @@ export function PaywayBooking() {
           <div className="confirmation-mark"><Check size={30} /></div>
           <h1>Turno confirmado</h1>
           <p className="text-sm text-muted-foreground confirmation-subtitle">Te enviamos la confirmación por mail.</p>
-          <div className="confirmation-details">
-            <dl className="summary-list" style={{ marginTop: 0 }}>
-              <div><dt>Servicio</dt><dd>{confirmed.serviceName}</dd></div>
-              <div><dt>Barbero</dt><dd>{confirmed.barber}</dd></div>
-              <div><dt>Fecha</dt><dd className="capitalize">{confirmed.date ? dateLabel(confirmed.date) : '-'}</dd></div>
-              <div><dt>Horario</dt><dd>{confirmed.time}</dd></div>
-              <div><dt>Seña abonada</dt><dd>{money(confirmed.depositArs)}</dd></div>
-              <div><dt>Saldo restante del servicio</dt><dd>{money(remainingArs)}</dd></div>
-            </dl>
-          </div>
-          <section className="confirmation-place">
-            <h2 className="text-sm font-medium">Kani Barber Studio</h2>
-            <p className="mt-1 text-sm text-muted-foreground">San Isidro Labrador 7 · Martínez, Provincia de Buenos Aires</p>
-
-            <div className="confirmation-map-wrap">
-              <iframe
-                src={KANI_MAPS_EMBED_URL}
-                title="Ubicación de Kani Barber Studio en Google Maps"
-                className="confirmation-map-iframe"
-                loading="lazy"
-                allowFullScreen
-                referrerPolicy="no-referrer-when-downgrade"
-              />
+          <div className="confirmation-grid">
+            <div className="confirmation-details">
+              <dl className="summary-list" style={{ marginTop: 0 }}>
+                <div><dt>Servicio</dt><dd>{confirmed.serviceName}</dd></div>
+                <div><dt>Barbero</dt><dd>{confirmed.barber}</dd></div>
+                <div><dt>Fecha</dt><dd className="capitalize">{confirmed.date ? dateLabel(confirmed.date) : '-'}</dd></div>
+                <div><dt>Horario</dt><dd>{confirmed.time}</dd></div>
+                <div><dt>Seña abonada</dt><dd>{money(confirmed.depositArs)}</dd></div>
+                <div><dt>Saldo restante del servicio</dt><dd>{money(remainingArs)}</dd></div>
+              </dl>
             </div>
+            <section className="confirmation-place">
+              <h2 className="confirmation-place-title">¿Dónde estamos?</h2>
+              <p className="confirmation-place-address">San Isidro Labrador 7 · Martínez</p>
+
+              <div className="confirmation-map-wrap">
+                <iframe
+                  src={KANI_MAPS_EMBED_URL}
+                  title="Ubicación de Kani Barber Studio en Google Maps"
+                  className="confirmation-map-iframe"
+                  loading="lazy"
+                  allowFullScreen
+                  referrerPolicy="no-referrer-when-downgrade"
+                />
+              </div>
+            </section>
 
             <div className="confirmation-actions">
-              <div className="confirmation-actions-row">
-                <Button asChild variant="outline" className="confirmation-secondary">
-                  <a href={KANI_MAPS_URL} target="_blank" rel="noreferrer">
-                    <MapPin size={16} /> Ver ubicación
-                  </a>
-                </Button>
-                <Button asChild variant="outline" className="confirmation-secondary">
-                  <a href="https://www.instagram.com/kanibarberstudio/" target="_blank" rel="noreferrer">
-                    <Instagram size={16} /> Instagram
-                  </a>
-                </Button>
-              </div>
+              <Button asChild variant="outline" className="confirmation-secondary confirmation-btn-directions">
+                <a href={KANI_MAPS_URL} target="_blank" rel="noreferrer">
+                  <MapPin size={16} /> Cómo llegar
+                </a>
+              </Button>
+              <Button asChild variant="outline" className="confirmation-secondary confirmation-btn-instagram">
+                <a href="https://www.instagram.com/kanibarberstudio/" target="_blank" rel="noreferrer">
+                  <Instagram size={16} /> Instagram
+                </a>
+              </Button>
               <Button
                 type="button"
-                className="confirmation-home action-brand"
+                className="confirmation-home action-brand confirmation-btn-home"
                 aria-label="Volver al inicio"
                 onClick={startNewReservation}
               >
                 Volver al inicio
               </Button>
             </div>
-          </section>
+          </div>
         </main>
       </div>
     );

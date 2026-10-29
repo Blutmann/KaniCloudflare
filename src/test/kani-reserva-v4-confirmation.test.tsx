@@ -65,36 +65,58 @@ describe('Reserva V4 — Pantalla final "Turno confirmado"', () => {
     expect(screen.getByText('$20.000')).toBeInTheDocument();
   });
 
-  it('3. Muestra la información del estudio y el mapa compacto con iframe oficial', () => {
-    render(
-      <KaniProvider>
-        <PaywayBooking />
-      </KaniProvider>
-    );
-
-    expect(screen.getByRole('heading', { name: 'Kani Barber Studio' })).toBeInTheDocument();
-    expect(screen.getByText('San Isidro Labrador 7 · Martínez, Provincia de Buenos Aires')).toBeInTheDocument();
-
-    const mapIframe = screen.getByTitle('Ubicación de Kani Barber Studio en Google Maps');
-    expect(mapIframe).toBeInTheDocument();
-    expect(mapIframe).toHaveAttribute('src', expect.stringContaining('cid=5241343871369591392'));
-    expect(mapIframe).toHaveAttribute('loading', 'lazy');
-  });
-
-  it('4. Verifica el orden estricto de acciones: "Ver ubicación" e "Instagram" primero, y "Volver al inicio" al final', () => {
+  it('3. Muestra "¿Dónde estamos?", dirección abreviada sin provincia y ausencia del encabezado redundante "Kani Barber Studio"', () => {
     const { container } = render(
       <KaniProvider>
         <PaywayBooking />
       </KaniProvider>
     );
 
+    const placeSection = container.querySelector('.confirmation-place');
+    expect(placeSection).toBeInTheDocument();
+
+    // Debe mostrar exactamente '¿Dónde estamos?'
+    expect(screen.getByRole('heading', { name: '¿Dónde estamos?' })).toBeInTheDocument();
+
+    // No debe figurar 'Kani Barber Studio' como heading dentro del bloque de confirmación
+    const confirmationH2s = container.querySelectorAll('.confirmation h2');
+    const h2Texts = Array.from(confirmationH2s).map((h) => h.textContent?.trim());
+    expect(h2Texts).not.toContain('Kani Barber Studio');
+
+    // Dirección abreviada sin 'Provincia de Buenos Aires' en la sección de confirmación
+    expect(placeSection?.textContent).toContain('San Isidro Labrador 7 · Martínez');
+    expect(placeSection?.textContent).not.toContain('Provincia de Buenos Aires');
+
+    // Mapa embebido oficial
+    const mapIframe = screen.getByTitle('Ubicación de Kani Barber Studio en Google Maps');
+    expect(mapIframe).toBeInTheDocument();
+    expect(mapIframe).toHaveAttribute('src', expect.stringContaining('cid=5241343871369591392'));
+    expect(mapIframe).toHaveAttribute('loading', 'lazy');
+  });
+
+  it('4. Verifica el orden estricto de acciones: "Cómo llegar" e "Instagram" primero, y "Volver al inicio" al final compartiendo la misma retícula', () => {
+    const { container } = render(
+      <KaniProvider>
+        <PaywayBooking />
+      </KaniProvider>
+    );
+
+    const gridContainer = container.querySelector('.confirmation-grid');
+    expect(gridContainer).toBeInTheDocument();
+
     const actionsContainer = container.querySelector('.confirmation-actions');
     expect(actionsContainer).toBeInTheDocument();
+    expect(gridContainer?.contains(actionsContainer!)).toBe(true);
 
     const links = actionsContainer?.querySelectorAll('a');
     expect(links).toHaveLength(2);
-    expect(links?.[0]?.textContent).toContain('Ver ubicación');
+    expect(links?.[0]?.textContent).toContain('Cómo llegar');
+    expect(links?.[0]?.getAttribute('href')).toContain('maps');
     expect(links?.[1]?.textContent).toContain('Instagram');
+    expect(links?.[1]?.getAttribute('href')).toContain('instagram.com/kanibarberstudio');
+
+    // No debe existir el texto 'Ver ubicación'
+    expect(actionsContainer?.textContent).not.toContain('Ver ubicación');
 
     // Volver al inicio debe ser el botón final
     const homeBtn = screen.getByRole('button', { name: 'Volver al inicio' });
@@ -102,7 +124,7 @@ describe('Reserva V4 — Pantalla final "Turno confirmado"', () => {
 
     // Comprobar orden en el DOM
     const allInteractive = actionsContainer?.querySelectorAll('a, button');
-    expect(allInteractive?.[0]?.textContent).toContain('Ver ubicación');
+    expect(allInteractive?.[0]?.textContent).toContain('Cómo llegar');
     expect(allInteractive?.[1]?.textContent).toContain('Instagram');
     expect(allInteractive?.[2]?.textContent).toContain('Volver al inicio');
 

@@ -86,7 +86,7 @@ describe('independent Payway reservation matching the current V3 five steps', ()
     expect(screen.queryByText('Tu turno está confirmado.')).not.toBeInTheDocument();
     expect(screen.getByText('Te enviamos la confirmación por mail.')).toBeInTheDocument();
     expect(screen.getByTitle('Ubicación de Kani Barber Studio en Google Maps')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Ver ubicación/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Cómo llegar/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Instagram/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Volver al inicio' })).toBeInTheDocument();
     expect(screen.getByText('Corte')).toBeInTheDocument();
