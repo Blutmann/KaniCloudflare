@@ -67,10 +67,28 @@ export function Booking({
   combinedDateTime = false,
   variant: propVariant,
   onPaymentRequest,
+  paymentActionLabel,
+  paymentNotice,
+  isPaymentChecking = false,
+  initialStep,
+  initialService,
+  initialBarber,
+  initialDate,
+  initialTime,
+  initialContact,
 }: {
   combinedDateTime?: boolean;
   variant?: 'v1' | 'v2' | 'v3' | 'v5';
   onPaymentRequest?: (draft: BookingPaymentDraft) => Promise<void>;
+  paymentActionLabel?: string;
+  paymentNotice?: ReactNode;
+  isPaymentChecking?: boolean;
+  initialStep?: number;
+  initialService?: ServiceId;
+  initialBarber?: Barber;
+  initialDate?: string;
+  initialTime?: string;
+  initialContact?: { name: string; email: string; phone: string; notes: string };
 } = {}) {
   const isV5 = propVariant === 'v5';
   const isV3 = propVariant === 'v3';
@@ -86,16 +104,16 @@ export function Booking({
     ? ['Servicio', 'Barbero', 'Fecha y horario', 'Datos']
     : steps;
   const { mobileMenuOpen, setMobileMenuOpen } = useKani();
-  const [step, setStep] = useState(0);
-  const [service, setService] = useState<ServiceId | null>(null);
-  const [barber, setBarber] = useState<Barber | null>(null);
+  const [step, setStep] = useState(() => initialStep ?? 0);
+  const [service, setService] = useState<ServiceId | null>(() => initialService ?? null);
+  const [barber, setBarber] = useState<Barber | null>(() => initialBarber ?? null);
   const [barberDeferred, setBarberDeferred] = useState(false);
-  const [date, setDate] = useState('');
-  const [time, setTime] = useState('');
+  const [date, setDate] = useState(() => initialDate ?? '');
+  const [time, setTime] = useState(() => initialTime ?? '');
   const [dateSelection, setDateSelection] = useState(0);
   const [businessToday, setBusinessToday] = useState(() => businessDateToday());
-  const [month, setMonth] = useState(() => parseDate(businessDateToday()));
-  const [contact, setContact] = useState({ name: '', email: '', phone: '', notes: '' });
+  const [month, setMonth] = useState(() => parseDate(initialDate ? initialDate : businessDateToday()));
+  const [contact, setContact] = useState(() => initialContact ?? { name: '', email: '', phone: '', notes: '' });
   const [touched, setTouched] = useState<Record<ContactField, boolean>>({ name: false, phone: false, email: false, notes: false });
   const [phoneCountry, setPhoneCountry] = useState<PhoneCountry>('AR');
   const [pendingAppointment, setPendingAppointment] = useState<{ id: string; requestNumber: number; expiresAt: number } | null>(null);
@@ -1179,6 +1197,9 @@ export function Booking({
                 <span>Tu turno requiere abonar una seña. En el resumen verás el importe exacto, el total y el saldo restante.</span>
               </p>
             )}
+            {paymentNotice && (step === 5 || ((isV2 || isFiveSteps) && step === 4)) && (
+              <div className="mt-4">{paymentNotice}</div>
+            )}
             {error && <p role="alert" className="mt-5 text-destructive">{error}</p>}
           </section>
         </div>
@@ -1189,8 +1210,14 @@ export function Booking({
             <Button variant="outline" className="booking-back-button" onClick={() => move(isV2 && step === 4 ? 2 : step - 1)} disabled={step === 0 || submitting}>
               <ArrowLeft size={14} aria-hidden="true" /> Volver
             </Button>
-            <Button disabled={!canNext || submitting} className="action-positive booking-next-button h-12 px-6" onClick={step === 5 || (isV2 || isFiveSteps) && step === 4 ? submit : next}>
-              {step === 5 || (isV2 || isFiveSteps) && step === 4 ? (submitting ? 'Preparando pago seguro…' : isV5 ? `Pagar seña ${money(depositArs)}` : 'Pagar seña') : 'Continuar'}
+            <Button disabled={!canNext || submitting || isPaymentChecking} className="action-positive booking-next-button h-12 px-6" onClick={step === 5 || (isV2 || isFiveSteps) && step === 4 ? submit : next}>
+              {step === 5 || (isV2 || isFiveSteps) && step === 4
+                ? (isPaymentChecking
+                    ? 'Comprobando pago…'
+                    : submitting
+                    ? 'Preparando pago seguro…'
+                    : paymentActionLabel ?? (isV5 ? `Pagar seña ${money(depositArs)}` : 'Pagar seña'))
+                : 'Continuar'}
             </Button>
           </div>
         </div>

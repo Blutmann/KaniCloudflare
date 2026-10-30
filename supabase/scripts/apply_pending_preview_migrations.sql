@@ -5216,12 +5216,32 @@ begin
     return query select v_appt.status,case when v_resolution='PAID_CANCELLED_REVIEW' then 'APPOINTMENT_CANCELLED' else 'SLOT_COLLISION_LATE_PAYMENT' end,null::text; return;
   end if;
 
+  perform set_config('kani.verified_payment_appointment',p_appointment_id::text,true);
   update public.appointments set status='CONFIRMED',deposit_paid=true,deposit_amount_ars=p_paid_amount::integer,
     cancellation_reason=null,cancelled_at=null,cancelled_by=null,updated_at=now() where id=p_appointment_id;
+  perform set_config('kani.verified_payment_appointment','',true);
   if p_provider='MERCADO_PAGO' then update public.appointment_payment_orders set reconciliation_status='CONFIRMED',updated_at=now() where appointment_id=p_appointment_id;
   else update public.payment_attempts set confirmation_status='CONFIRMED' where id=v_attempt.id; end if;
   v_token := public.create_appointment_notification_event(p_appointment_id,'CONFIRMED');
   return query select 'CONFIRMED'::public.appointment_status,'CONFIRMED'::text,v_token;
 end; $$;
+
+-- Reconcile any existing approved PayWay attempts that were stranded due to missing transaction config:
+do $$
+declare
+  r record;
+begin
+  for r in
+    select a.id as appointment_id, pa.id as attempt_id, pa.provider_transaction_id, pa.amount_minor_units
+    from public.payment_attempts pa
+    join public.appointments a on a.id = pa.appointment_id
+    where pa.provider = 'PAYWAY'
+      and pa.state = 'APPROVED'
+      and pa.provider_transaction_id is not null
+      and (a.status = 'PENDING' or a.deposit_paid = false or pa.confirmation_status is distinct from 'CONFIRMED')
+  loop
+    perform public.confirm_payway_attempt(r.appointment_id, r.attempt_id, r.provider_transaction_id, r.amount_minor_units);
+  end loop;
+end $$;
 
 NOTIFY pgrst, 'reload schema';

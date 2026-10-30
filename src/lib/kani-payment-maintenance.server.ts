@@ -109,6 +109,35 @@ export async function reconcilePendingPayments() {
           }
         }
       }
+
+      // Reconcile stranded APPROVED attempts that have not completed confirmation
+      const { data: unconfirmedApproved } = await db.from('payment_attempts')
+        .select('id, appointment_id, site_transaction_id, amount_minor_units, state, provider_transaction_id, confirmation_status, created_at')
+        .eq('provider', 'PAYWAY')
+        .eq('state', 'APPROVED')
+        .is('confirmation_status', null)
+        .lt('created_at', new Date(Date.now() - 30_000).toISOString())
+        .limit(10);
+
+      for (const att of unconfirmedApproved ?? []) {
+        if (HISTORICAL_EXCLUDED_ATTEMPTS.includes(att.id)) continue;
+        if (!att.provider_transaction_id) continue;
+        const { data: confirmData } = await db.rpc('confirm_payway_attempt', {
+          p_appointment_id: att.appointment_id,
+          p_attempt_id: att.id,
+          p_provider_id: att.provider_transaction_id,
+          p_amount_minor: att.amount_minor_units,
+        });
+        const claimToken = confirmData?.[0]?.notification_claim_token;
+        if (claimToken) {
+          try {
+            const { dispatchAppointmentNotification } = await import('./kani-notifications.functions');
+            await dispatchAppointmentNotification({ appointmentId: att.appointment_id, claimToken });
+          } catch (notifyErr) {
+            console.warn('[Payment Maintenance] Error enviando notificacion:', notifyErr);
+          }
+        }
+      }
     }
   } catch {
     /* Payway maintenance continues silently to expiration RPC */

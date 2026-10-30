@@ -39,6 +39,7 @@ export type PaywayAttempt = {
   id: string; appointmentId: string; siteTransactionId: string; amount: number;
   state: 'prepared' | 'processing' | 'approved' | 'rejected' | 'unknown';
   result?: PaywayResult;
+  providerId?: string;
 };
 
 /** Durable adapter contract. No in-memory lock is substituted for cross-Worker atomicity.
@@ -222,6 +223,15 @@ export function createPaywayService({ config, store, fetcher = fetch }: {
       }
 
       if (attempt.state === 'approved') {
+        if (appointment.status !== 'CONFIRMED' || !appointment.depositPaid) {
+          if (attempt.providerId) {
+            const confirmed = await store.confirm(appointment.id, attempt.id, attempt.providerId, attempt.amount);
+            if (confirmed) {
+              return { state: 'approved', message: PAYWAY_MESSAGES.approved, appointmentConfirmed: true };
+            }
+            return { state: 'review', message: PAYWAY_MESSAGES.late_review };
+          }
+        }
         return { state: 'approved', message: PAYWAY_MESSAGES.approved, appointmentConfirmed: true };
       }
       if (attempt.state === 'rejected') {

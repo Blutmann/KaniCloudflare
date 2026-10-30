@@ -14,6 +14,22 @@ export function createPaywayStore(db:Db,siteId:string,session:SessionAccess):Pay
   return {
     async prepare(draft) {
       let previous=await session.read();
+      if (previous?.appointmentId) {
+        try {
+          const { data: inFlight } = await db
+            .from('payment_attempts')
+            .select('id, state')
+            .eq('appointment_id', previous.appointmentId)
+            .eq('provider', 'PAYWAY')
+            .in('state', ['UNKNOWN', 'PROCESSING'])
+            .limit(1);
+          if (inFlight && inFlight.length > 0) {
+            throw new Error('PAYMENT_REVIEW_REQUIRED');
+          }
+        } catch (e) {
+          if (e instanceof Error && e.message === 'PAYMENT_REVIEW_REQUIRED') throw e;
+        }
+      }
       const attemptId=crypto.randomUUID();
       const args={p_attempt_id:attemptId,p_site_id:siteId,p_barber_name:draft.barber,p_service_name:draft.serviceName,
         p_booking_date:draft.date,p_start_time:draft.time,p_client_name:draft.name,p_client_phone:draft.phone,
@@ -136,6 +152,7 @@ export function createPaywayStore(db:Db,siteId:string,session:SessionAccess):Pay
           siteTransactionId: row.site_transaction_id,
           amount: Number(row.amount_minor_units),
           state: stateMap[row.state] ?? 'unknown',
+          providerId: row.provider_transaction_id ?? undefined,
           ...(result ? { result } : {}),
         },
       };

@@ -26,6 +26,48 @@ import { CardBrandBadge } from './card-brand-badges';
 
 const CONFIRMED_STORAGE_KEY = 'kani:payway:confirmed-booking';
 const PAID_APPOINTMENTS_STORAGE_KEY = 'kani:payway:paid-appointments';
+const ACTIVE_ATTEMPT_STORAGE_KEY = 'kani:payway:active-attempt';
+
+type StoredActiveAttempt = {
+  appointmentId: string;
+  attemptId: string;
+  accessToken: string;
+  depositArs: number;
+  barber?: string;
+  serviceName?: string;
+  date?: string;
+  time?: string;
+  clientName?: string;
+};
+
+function readActiveAttempt(): StoredActiveAttempt | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.sessionStorage.getItem(ACTIVE_ATTEMPT_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed.appointmentId === 'string' && typeof parsed.attemptId === 'string' && typeof parsed.accessToken === 'string') {
+      return parsed;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function persistActiveAttempt(data: StoredActiveAttempt) {
+  if (typeof window === 'undefined') return;
+  try {
+    window.sessionStorage.setItem(ACTIVE_ATTEMPT_STORAGE_KEY, JSON.stringify(data));
+  } catch {}
+}
+
+function clearActiveAttempt() {
+  if (typeof window === 'undefined') return;
+  try {
+    window.sessionStorage.removeItem(ACTIVE_ATTEMPT_STORAGE_KEY);
+  } catch {}
+}
 
 type ConfirmedPaywayBooking = {
   appointmentId: string;
@@ -126,6 +168,8 @@ export function PaywayBooking() {
   } | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
   const [pollExhausted, setPollExhausted] = useState(false);
+  const initialAttempt = useMemo(() => readActiveAttempt(), []);
+  const [isPaymentChecking, setIsPaymentChecking] = useState(() => Boolean(initialAttempt));
 
   // Modern Payway Form State
   const [cardNumber, setCardNumber] = useState('');
@@ -155,7 +199,9 @@ export function PaywayBooking() {
   const opening = useRef(false);
   const paying = useRef(false);
   const isApprovedConfirmed = Boolean(confirmed) || (result?.state === 'approved' && result?.appointmentConfirmed === true);
-  const terminal = isApprovedConfirmed || result?.state === 'unknown' || isVerifying || pollExhausted;
+  const hasPendingPayment = Boolean(pendingCheck) && !isApprovedConfirmed && result?.state !== 'rejected';
+  const hasReviewNotice = result?.state === 'review';
+  const terminal = isApprovedConfirmed || result?.state === 'unknown' || isVerifying || pollExhausted || hasPendingPayment;
 
   useEffect(() => {
     if (!pendingCheck || !isVerifying) return;
@@ -230,6 +276,136 @@ export function PaywayBooking() {
       clearInterval(intervalId);
     };
   }, [pendingCheck, isVerifying, configuredServices]);
+
+  // Restore active payment verification on reload / reopening page
+  useEffect(() => {
+    const stored = readActiveAttempt();
+    if (!stored) {
+      setIsPaymentChecking(false);
+      return;
+    }
+    setPendingCheck({
+      appointmentId: stored.appointmentId,
+      attemptId: stored.attemptId,
+      accessToken: stored.accessToken,
+      depositArs: stored.depositArs,
+    });
+    draftRef.current = {
+      barber: stored.barber ?? 'Lautaro',
+      serviceName: stored.serviceName ?? 'Corte',
+      date: stored.date ?? '',
+      time: stored.time ?? '',
+      name: stored.clientName ?? '',
+      email: '',
+      phone: '',
+      notes: '',
+    };
+    checkPaywayPaymentStatusFn({
+      data: {
+        appointmentId: stored.appointmentId,
+        attemptId: stored.attemptId,
+        accessToken: stored.accessToken,
+      },
+    })
+      .then((statusRes) => {
+        setIsPaymentChecking(false);
+        if (statusRes.state === 'approved' && statusRes.appointmentConfirmed) {
+          clearActiveAttempt();
+          const confirmedBooking: ConfirmedPaywayBooking = {
+            appointmentId: stored.appointmentId,
+            attemptId: stored.attemptId,
+            serviceName: stored.serviceName ?? 'Corte',
+            barber: stored.barber ?? 'Lautaro',
+            date: stored.date ?? '',
+            time: stored.time ?? '',
+            clientName: stored.clientName ?? '',
+            depositArs: stored.depositArs,
+            servicePriceArs: resolveServicePrice(stored.serviceName ?? 'Corte', configuredServices),
+          };
+          paidAppointmentsRef.current.add(stored.appointmentId);
+          persistConfirmedBooking(confirmedBooking);
+          setResult(statusRes);
+          setConfirmed(confirmedBooking);
+          setOpen(false);
+        } else if (statusRes.state === 'rejected') {
+          clearActiveAttempt();
+          setPendingCheck(null);
+          setResult(statusRes);
+        } else if (statusRes.state === 'review') {
+          clearActiveAttempt();
+          setPendingCheck(null);
+          setResult(statusRes);
+        } else {
+          setResult(statusRes);
+          setIsVerifying(true);
+        }
+      })
+      .catch(() => {
+        setIsPaymentChecking(false);
+        setIsVerifying(true);
+      });
+  }, [configuredServices]);
+
+  // Slower background poll when modal is closed or fast poll exhausted
+  useEffect(() => {
+    if (!pendingCheck || isVerifying || isApprovedConfirmed || result?.state === 'rejected' || result?.state === 'review') {
+      return;
+    }
+    let active = true;
+    const bgIntervalId = setInterval(async () => {
+      if (!active) return;
+      try {
+        const statusRes = await checkPaywayPaymentStatusFn({
+          data: {
+            appointmentId: pendingCheck.appointmentId,
+            attemptId: pendingCheck.attemptId,
+            accessToken: pendingCheck.accessToken,
+          },
+        });
+        if (!active) return;
+        if (statusRes.state === 'approved' && statusRes.appointmentConfirmed) {
+          clearInterval(bgIntervalId);
+          clearActiveAttempt();
+          const activeDraft = draftRef.current;
+          const confirmedBooking: ConfirmedPaywayBooking = {
+            appointmentId: pendingCheck.appointmentId,
+            attemptId: pendingCheck.attemptId,
+            serviceName: activeDraft?.serviceName ?? 'Corte',
+            barber: activeDraft?.barber ?? 'Lautaro',
+            date: activeDraft?.date ?? '',
+            time: activeDraft?.time ?? '',
+            clientName: activeDraft?.name ?? '',
+            depositArs: pendingCheck.depositArs,
+            servicePriceArs: resolveServicePrice(activeDraft?.serviceName ?? 'Corte', configuredServices),
+          };
+          paidAppointmentsRef.current.add(pendingCheck.appointmentId);
+          persistConfirmedBooking(confirmedBooking);
+          setResult(statusRes);
+          setConfirmed(confirmedBooking);
+          setOpen(false);
+          setPendingCheck(null);
+        } else if (statusRes.state === 'rejected') {
+          clearInterval(bgIntervalId);
+          clearActiveAttempt();
+          setPendingCheck(null);
+          setResult(statusRes);
+          setPollExhausted(false);
+        } else if (statusRes.state === 'review') {
+          clearInterval(bgIntervalId);
+          clearActiveAttempt();
+          setPendingCheck(null);
+          setResult(statusRes);
+        }
+      } catch {
+        /* Background poll transient ignore */
+      }
+    }, 10000);
+
+    return () => {
+      active = false;
+      clearInterval(bgIntervalId);
+    };
+  }, [pendingCheck, isVerifying, isApprovedConfirmed, result, configuredServices]);
 
   const now = useMemo(() => new Date(), []);
   const currentYear = now.getFullYear();
@@ -348,7 +524,7 @@ export function PaywayBooking() {
 
   async function begin(draft: BookingPaymentDraft) {
     if (isApprovedConfirmed) return;
-    if (opening.current || result?.state === 'unknown') { setOpen(true); return; }
+    if (opening.current || hasPendingPayment || result?.state === 'unknown' || result?.state === 'review') { setOpen(true); return; }
     draftRef.current = draft;
     if (draft.name && !cardHolder) {
       setCardHolder(draft.name);
@@ -418,6 +594,7 @@ export function PaywayBooking() {
       // A rejection consumes this attempt; a new server attempt is required, never reuse it.
       if (response.state !== 'recoverable') setCheckout(null);
       if (response.state === 'approved' && response.appointmentConfirmed === true) {
+        clearActiveAttempt();
         const activeDraft = draftRef.current;
         const confirmedBooking: ConfirmedPaywayBooking = {
           appointmentId: checkout.appointmentId,
@@ -440,7 +617,25 @@ export function PaywayBooking() {
         }
         return;
       }
+      if (response.state === 'rejected' || response.state === 'review') {
+        clearActiveAttempt();
+        setPendingCheck(null);
+        setResult(response);
+        return;
+      }
       if (response.state === 'unknown' || response.state === 'verifying') {
+        const activeDraft = draftRef.current;
+        persistActiveAttempt({
+          appointmentId: checkout.appointmentId,
+          attemptId: checkout.attemptId,
+          accessToken: checkout.accessToken,
+          depositArs: checkout.depositArs,
+          barber: activeDraft?.barber,
+          serviceName: activeDraft?.serviceName,
+          date: activeDraft?.date,
+          time: activeDraft?.time,
+          clientName: activeDraft?.name,
+        });
         setPendingCheck({
           appointmentId: checkout.appointmentId,
           attemptId: checkout.attemptId,
@@ -455,6 +650,18 @@ export function PaywayBooking() {
       setResult(response);
     } catch {
       if (sent && checkout) {
+        const activeDraft = draftRef.current;
+        persistActiveAttempt({
+          appointmentId: checkout.appointmentId,
+          attemptId: checkout.attemptId,
+          accessToken: checkout.accessToken,
+          depositArs: checkout.depositArs,
+          barber: activeDraft?.barber,
+          serviceName: activeDraft?.serviceName,
+          date: activeDraft?.date,
+          time: activeDraft?.time,
+          clientName: activeDraft?.name,
+        });
         setPendingCheck({
           appointmentId: checkout.appointmentId,
           attemptId: checkout.attemptId,
@@ -478,6 +685,7 @@ export function PaywayBooking() {
 
   function startNewReservation() {
     clearConfirmedBookingView();
+    clearActiveAttempt();
     resetFormState();
     draftRef.current = null;
     setPendingCheck(null);
@@ -571,7 +779,44 @@ export function PaywayBooking() {
 
   return (
     <div className="payway-reservation">
-      <Booking variant="v3" onPaymentRequest={begin} />
+      <Booking
+        variant="v3"
+        onPaymentRequest={begin}
+        paymentActionLabel={hasReviewNotice ? 'Ver detalle de revisión' : hasPendingPayment ? 'Ver estado del pago' : undefined}
+        paymentNotice={
+          hasReviewNotice ? (
+            <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-3.5 text-sm text-amber-600 dark:text-amber-400" role="alert">
+              <p className="font-semibold">Pago registrado en revisión</p>
+              <p className="mt-1 text-xs opacity-90">{PAYWAY_MESSAGES.late_review}</p>
+            </div>
+          ) : hasPendingPayment ? (
+            <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-3.5 text-sm text-amber-600 dark:text-amber-400" role="alert">
+              <div className="flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse inline-block" />
+                <p className="font-semibold">Pago en verificación</p>
+              </div>
+              <p className="mt-1 text-xs opacity-90">
+                Estamos comprobando tu pago. Podés cerrar o ver el estado en cualquier momento. No vuelvas a pagar mientras la verificación esté pendiente.
+              </p>
+            </div>
+          ) : undefined
+        }
+        isPaymentChecking={isPaymentChecking}
+        initialStep={initialAttempt ? 4 : undefined}
+        initialService={
+          initialAttempt?.serviceName?.toLowerCase().includes('barba') && !initialAttempt?.serviceName?.toLowerCase().includes('corte')
+            ? 'barba'
+            : initialAttempt?.serviceName?.toLowerCase().includes('barba')
+              ? 'corte-barba'
+              : initialAttempt
+                ? 'corte'
+                : undefined
+        }
+        initialBarber={(initialAttempt?.barber as any) ?? undefined}
+        initialDate={initialAttempt?.date}
+        initialTime={initialAttempt?.time}
+        initialContact={initialAttempt?.clientName ? { name: initialAttempt.clientName, email: '', phone: '', notes: '' } : undefined}
+      />
       <Dialog
         open={open}
         onOpenChange={value => {
@@ -852,9 +1097,9 @@ export function PaywayBooking() {
               </p>
             </div>
           )}
-          {!checkout && stage === 'idle' && !preparing && !isVerifying && (
+          {!checkout && stage === 'idle' && !preparing && (
             <Button variant="outline" onClick={() => setOpen(false)}>
-              {terminal ? 'Cerrar' : 'Volver a mis datos'}
+              {terminal || hasPendingPayment || isVerifying ? 'Cerrar' : 'Volver a mis datos'}
             </Button>
           )}
         </DialogContent>

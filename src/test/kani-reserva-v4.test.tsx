@@ -122,8 +122,9 @@ describe('independent Payway reservation matching the current V3 five steps', ()
     expect(await screen.findByText('Estamos verificando tu pago', { exact: true })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Turno confirmado' })).not.toBeInTheDocument();
     expect(screen.queryByRole('textbox', { name: 'Número de tarjeta' })).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: /Close|Cerrar/i }));
-    fireEvent.click(screen.getByRole('button', { name: 'Pagar seña' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Cerrar' }));
+    expect(screen.getByText('Pago en verificación')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Ver estado del pago' }));
     expect(await screen.findByText('Estamos verificando tu pago', { exact: true })).toBeInTheDocument();
     expect(mocks.prepare).toHaveBeenCalledTimes(1); expect(mocks.pay).toHaveBeenCalledTimes(1);
   }, 15000);
