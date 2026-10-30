@@ -60,7 +60,7 @@ describe('Reserva V4 Mobile - Bottom buttons geometry parity (Light vs Dark)', (
     expect(css).toMatch(/html\[data-theme="light"\] \.payway-reservation \.booking-page \.booking-back-button:not\(:disabled\)\s*\{[^}]*color:\s*#000\s*!important/);
 
     // Dark mode Volver habilitado: fondo negro sólido, texto blanco
-    expect(css).toMatch(/html\[data-theme="dark"\] \.payway-reservation \.booking-page \.booking-back-button:not\(:disabled\)\s*\{[^}]*background:\s*#000\s*!important/);
+    expect(css).toMatch(/html\[data-theme="dark"\] \.payway-reservation \.booking-page \.booking-back-button:not\(:disabled\)\s*\{[^}]*background:\s*#242424\s*!important/);
     expect(css).toMatch(/html\[data-theme="dark"\] \.payway-reservation \.booking-page \.booking-back-button:not\(:disabled\)\s*\{[^}]*color:\s*#fff\s*!important/);
   });
 
@@ -92,7 +92,7 @@ describe('Reserva V4 Mobile - Bottom buttons geometry parity (Light vs Dark)', (
         render(<PaywayBooking />);
       });
       await act(async () => {
-        fireEvent.click(screen.getByRole('button', { name: /^Corte 45/ }));
+        fireEvent.click(screen.getByRole('button', { name: /Corte.*45/i }));
       });
 
       const backButton = screen.getByRole('button', { name: /Volver/i });
@@ -107,7 +107,7 @@ describe('Reserva V4 Mobile - Bottom buttons geometry parity (Light vs Dark)', (
         render(<PaywayBooking />);
       });
       await act(async () => {
-        fireEvent.click(screen.getByRole('button', { name: /^Corte 45/ }));
+        fireEvent.click(screen.getByRole('button', { name: /Corte.*45/i }));
       });
       await act(async () => {
         fireEvent.click(screen.getByRole('button', { name: /Continuar/i }));
@@ -125,7 +125,7 @@ describe('Reserva V4 Mobile - Bottom buttons geometry parity (Light vs Dark)', (
         render(<PaywayBooking />);
       });
       await act(async () => {
-        fireEvent.click(screen.getByRole('button', { name: /^Corte 45/ }));
+        fireEvent.click(screen.getByRole('button', { name: /Corte.*45/i }));
       });
       await act(async () => {
         fireEvent.click(screen.getByRole('button', { name: /Continuar/i }));

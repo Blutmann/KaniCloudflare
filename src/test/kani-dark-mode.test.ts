@@ -21,8 +21,10 @@ describe('Kani Barber Studio - Ajuste de transparencias en modo oscuro', () => {
     // Horarios disponibles inactivos
     expect(css).toMatch(/html\[data-theme='dark'\] \.booking-time-slot:not\(\.selected\):not\(:disabled\)\s*\{[^}]*background:\s*var\(--kani-surface\)\s*!important/);
 
-    // Botón Volver
-    expect(css).toMatch(/html\[data-theme='dark'\] \.booking-back-button\s*\{[^}]*background:\s*var\(--kani-surface\)\s*!important/);
+    // Botón Volver en modo oscuro: fondo gris carbón sólido (#242424), opacidad 1 y sin transparencia
+    expect(css).toMatch(/html\[data-theme='dark'\] \.booking-back-button\s*\{[^}]*background:\s*#242424\s*!important/);
+    expect(css).toMatch(/html\[data-theme='dark'\] \.booking-back-button\s*\{[^}]*backdrop-filter:\s*none\s*!important/);
+    expect(css).toMatch(/html\[data-theme='dark'\] \.booking-back-button:disabled\s*\{[^}]*opacity:\s*0\.38\s*!important/);
 
     // Botón de control del header
     expect(css).toMatch(/html\[data-theme='dark'\] \.header-control-button\s*\{[^}]*background:\s*var\(--kani-surface\)\s*!important/);

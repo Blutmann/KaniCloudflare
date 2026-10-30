@@ -3355,19 +3355,54 @@ html[data-theme='dark'] .booking-time-slot:not(.selected):not(:disabled):hover {
   background: color-mix(in srgb, var(--gold) 5%, var(--kani-surface)) !important;
 }
 
+/* Botón Volver en Modo Oscuro — Fondo gris carbón sólido (#242424) sin transparencias */
 html[data-theme='dark'] .booking-back-button {
-  border-color: var(--border) !important;
-  background: var(--kani-surface) !important;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  color: var(--foreground) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  background-color: #242424 !important;
+  background: #242424 !important;
+  color: #ffffff !important;
+  opacity: 1 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  transition: all 0.15s ease;
+}
+
+html[data-theme='dark'] .booking-back-button svg {
+  color: #ffffff !important;
 }
 
 html[data-theme='dark'] .booking-back-button:hover:not(:disabled),
-html[data-theme='dark'] .booking-back-button:focus-visible {
-  border-color: var(--gold) !important;
-  background: color-mix(in srgb, var(--gold) 8%, var(--kani-surface)) !important;
-  color: var(--foreground) !important;
+html[data-theme='dark'] .booking-back-button:focus-visible:not(:disabled) {
+  border-color: rgba(255, 255, 255, 0.28) !important;
+  background-color: #2e2e2e !important;
+  background: #2e2e2e !important;
+  color: #ffffff !important;
+  opacity: 1 !important;
+}
+
+html[data-theme='dark'] .booking-back-button:active:not(:disabled) {
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  background-color: #1a1a1a !important;
+  background: #1a1a1a !important;
+  color: #ffffff !important;
+  opacity: 1 !important;
+}
+
+html[data-theme='dark'] .booking-back-button:disabled {
+  background-color: #242424 !important;
+  background: #242424 !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  color: #ffffff !important;
+  opacity: 0.38 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  cursor: not-allowed !important;
+}
+
+html[data-theme='dark'] .booking-back-button:disabled svg {
+  color: #ffffff !important;
 }
 
 html[data-theme='dark'] .booking-next-button:disabled {

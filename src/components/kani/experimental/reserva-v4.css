@@ -540,13 +540,34 @@ html[data-theme='dark'] :is(body:has(.payway-checkout), body[data-payway-modal-o
     -webkit-backdrop-filter: none;
   }
   html[data-theme="dark"] .payway-reservation .booking-page .booking-back-button:not(:disabled) {
-    background: #000 !important;
+    background: #242424 !important;
     color: #fff !important;
-    opacity: 1;
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
+    border-color: rgba(255, 255, 255, 0.15) !important;
+    opacity: 1 !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
   }
-  .payway-reservation .booking-page .booking-back-button:not(:disabled) svg { color: inherit; }
+  html[data-theme="dark"] .payway-reservation .booking-page .booking-back-button:not(:disabled):hover,
+  html[data-theme="dark"] .payway-reservation .booking-page .booking-back-button:not(:disabled):focus-visible {
+    background: #2e2e2e !important;
+    border-color: rgba(255, 255, 255, 0.28) !important;
+    color: #fff !important;
+  }
+  html[data-theme="dark"] .payway-reservation .booking-page .booking-back-button:not(:disabled):active {
+    background: #1a1a1a !important;
+    border-color: rgba(255, 255, 255, 0.2) !important;
+    color: #fff !important;
+  }
+  html[data-theme="dark"] .payway-reservation .booking-page .booking-back-button:disabled {
+    background: #242424 !important;
+    color: #fff !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+    opacity: 0.38 !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    cursor: not-allowed !important;
+  }
+  .payway-reservation .booking-page .booking-back-button svg { color: inherit !important; }
 }
 
 /* ==============================================================================
