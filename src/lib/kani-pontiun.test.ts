@@ -358,7 +358,7 @@ describe("Pontiun WhatsApp Integration Unit Tests", () => {
       process.env.PONTIUN_API_KEY = "pk_live_secret_token_123";
       process.env.PONTIUN_PHONE_NUMBER_ID = "1391432264052937";
       process.env.PONTIUN_TEMPLATE_NAME = "confirmacion_turno_kani";
-      process.env.PONTIUN_TEMPLATE_LANGUAGE = "es_MX";
+      process.env.PONTIUN_TEMPLATE_LANGUAGE = "es_AR";
 
       let capturedUrl = "";
       let capturedHeaders: HeadersInit | undefined;
@@ -400,7 +400,7 @@ describe("Pontiun WhatsApp Integration Unit Tests", () => {
       expect(capturedBody.recipientId).toBe("5491155616438");
       expect(capturedBody.template.name).toBe("confirmacion_turno_kani");
       // Must be a string per Pontiun OpenAPI 3.1
-      expect(capturedBody.template.language).toBe("es_MX");
+      expect(capturedBody.template.language).toBe("es_AR");
 
       const params = capturedBody.template.components[0].parameters;
       expect(params).toHaveLength(5);

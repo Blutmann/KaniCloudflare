@@ -371,7 +371,7 @@ export async function handlePontiunWebhookRequest(request: Request): Promise<Res
  * - Utiliza plantilla aprobada de WhatsApp (bypassa la ventana de 24 horas para nuevos contactos).
  * - Cabecera Idempotency-Key obligatoria: `kani-appointment-${appointmentId}-confirmed`.
  * - Autenticación con API Key opaca del tenant (Bearer pk_live_...).
- * - template.language es un STRING ("es_MX"), acorde a la especificación OpenAPI 3.1 de Pontiun.
+ * - template.language es un STRING ("es_AR"), acorde a la especificación OpenAPI 3.1 de Pontiun.
  * - 5 variables en orden estricto: [1: Cliente, 2: Fecha DD/MM/YYYY, 3: Horario HH:MM, 4: Servicio, 5: Barbero].
  * - Barbero obligatorio: si falta en la reserva, no inventa nombres y retorna BARBER_MISSING sin reintentar.
  * - Si Pontiun o las credenciales no están configuradas, se omite de forma segura sin romper la confirmación.
@@ -393,7 +393,7 @@ export async function sendPontiunAppointmentConfirmation(
   const templateLanguage =
     getPontiunRuntimeEnv("PONTIUN_TEMPLATE_LANGUAGE") ??
     getPontiunRuntimeEnv("PONTIUN_WHATSAPP_TEMPLATE_LANGUAGE") ??
-    "es_MX";
+    "es_AR";
   const apiBaseUrl =
     getPontiunRuntimeEnv("PONTIUN_API_BASE_URL") ?? "https://pontiun.com";
 
