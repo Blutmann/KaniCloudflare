@@ -266,6 +266,42 @@ export default {
         }
       }
 
+      if (url.pathname === "/api/admin/notification-audit") {
+        try {
+          const { getPontiunRuntimeEnv } = await import("./lib/kani-pontiun");
+          const pontiunKey = getPontiunRuntimeEnv("PONTIUN_API_KEY");
+          const phoneId = getPontiunRuntimeEnv("PONTIUN_PHONE_NUMBER_ID");
+          const tName = getPontiunRuntimeEnv("PONTIUN_TEMPLATE_NAME");
+          const tLang = getPontiunRuntimeEnv("PONTIUN_TEMPLATE_LANGUAGE");
+          const resendKey = process.env.RESEND_API_KEY;
+
+          return new Response(
+            JSON.stringify({
+              pontiun: {
+                hasApiKey: Boolean(pontiunKey),
+                apiKeyPrefix: pontiunKey ? `${pontiunKey.slice(0, 4)}...${pontiunKey.slice(-4)}` : null,
+                phoneNumberId: phoneId || null,
+                templateName: tName || null,
+                templateLanguage: tLang || null,
+              },
+              resend: {
+                hasApiKey: Boolean(resendKey),
+              },
+            }),
+            {
+              status: 200,
+              headers: { "content-type": "application/json" },
+            }
+          );
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          return new Response(JSON.stringify({ error: message }), {
+            status: 500,
+            headers: { "content-type": "application/json" },
+          });
+        }
+      }
+
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
       return await normalizeCatastrophicSsrResponse(response);
