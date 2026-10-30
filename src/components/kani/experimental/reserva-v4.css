@@ -288,7 +288,7 @@ html[data-theme='dark'] :is(body:has(.payway-checkout), body[data-payway-modal-o
 .payway-reservation .booking-page .booking-step-heading-inner {
   display: flex !important;
   flex-direction: row !important;
-  align-items: baseline !important;
+  align-items: center !important;
   justify-content: space-between !important;
   flex-wrap: wrap !important;
   row-gap: 4px !important;
@@ -330,19 +330,20 @@ html[data-theme='dark'] :is(body:has(.payway-checkout), body[data-payway-modal-o
   justify-content: flex-end !important;
   margin: 0 !important;
   padding: 0 !important;
-  gap: 6px !important;
-  font-size: 13.5px !important;
-  font-weight: 500 !important;
+  gap: 5px !important;
+  font-size: 12px !important;
+  font-weight: 400 !important;
   line-height: 1.2 !important;
   color: var(--muted-foreground) !important;
   white-space: nowrap !important;
   flex-shrink: 0 !important;
+  letter-spacing: 0.01em !important;
 }
 
 .payway-reservation .booking-page .booking-time-heading-date svg {
   display: block !important;
-  width: 15px !important;
-  height: 15px !important;
+  width: 12.5px !important;
+  height: 12.5px !important;
   color: var(--gold) !important;
   flex-shrink: 0 !important;
   margin: 0 !important;

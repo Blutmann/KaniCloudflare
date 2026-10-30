@@ -53,12 +53,25 @@ describe('Reserva V4 UI Mobile - Calendar, Horario Title and Barber Spacing', ()
       /\.payway-reservation\s+\.booking-page\s+\.booking-step-heading-inner\s*\{[\s\S]*?column-gap:\s*8px\s*!important;/
     );
 
-    // Fecha secundaria mantiene su tamaño y estilo visual secundario
+    // Alineación vertical centrada con el título en una sola fila
     expect(cssV4).toMatch(
-      /\.payway-reservation\s+\.booking-page\s+\.booking-time-heading-date\s*\{[\s\S]*?font-size:\s*13\.5px\s*!important;/
+      /\.payway-reservation\s+\.booking-page\s+\.booking-step-heading-inner\s*\{[\s\S]*?align-items:\s*center\s*!important;/
+    );
+
+    // Fecha secundaria discreta (12px, font-weight 400) que no compite con el título
+    expect(cssV4).toMatch(
+      /\.payway-reservation\s+\.booking-page\s+\.booking-time-heading-date\s*\{[\s\S]*?font-size:\s*12px\s*!important;/
+    );
+    expect(cssV4).toMatch(
+      /\.payway-reservation\s+\.booking-page\s+\.booking-time-heading-date\s*\{[\s\S]*?font-weight:\s*400\s*!important;/
     );
     expect(cssV4).toMatch(
       /\.payway-reservation\s+\.booking-page\s+\.booking-time-heading-date\s*\{[\s\S]*?color:\s*var\(--muted-foreground\)\s*!important;/
+    );
+
+    // Ícono de calendario reducido proporcionalmente (12.5px)
+    expect(cssV4).toMatch(
+      /\.payway-reservation\s+\.booking-page\s+\.booking-time-heading-date\s+svg\s*\{[\s\S]*?width:\s*12\.5px\s*!important;/
     );
   });
 

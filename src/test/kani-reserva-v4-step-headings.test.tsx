@@ -123,9 +123,9 @@ describe('BookingStepHeading — Unificación estructural de encabezados de Rese
       /\.payway-reservation\s+\.booking-page\s+\.booking-step-heading[^}]*padding-top:\s*4px\s*!important;/
     );
 
-    // Inner container usa baseline alignment y flex-wrap: wrap para soportar 360px sin modificar el H1
+    // Inner container usa alineación vertical centrada y flex-wrap: wrap para soportar 360px sin modificar el H1
     expect(cssV4).toMatch(
-      /\.payway-reservation\s+\.booking-page\s+\.booking-step-heading-inner\s*\{[\s\S]*?align-items:\s*baseline\s*!important;/
+      /\.payway-reservation\s+\.booking-page\s+\.booking-step-heading-inner\s*\{[\s\S]*?align-items:\s*center\s*!important;/
     );
     expect(cssV4).toMatch(
       /\.payway-reservation\s+\.booking-page\s+\.booking-step-heading-inner\s*\{[\s\S]*?flex-wrap:\s*wrap\s*!important;/
