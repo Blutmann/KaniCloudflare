@@ -11,6 +11,7 @@ import { createBookingOrderFn } from '@/lib/kani-mercadopago.functions';
 import { normalizePhone, type PhoneCountry } from '@/lib/kani-phone';
 const PhoneInput = lazy(() => import('@/components/kani/phone-input').then(m => ({ default: m.PhoneInput })));
 import { useKani } from '@/components/kani/store';
+import { BookingStepHeading } from '@/components/kani/booking-step-heading';
 const steps = ['Servicio', 'Barbero', 'Fecha', 'Horario', 'Datos', 'Resumen'];
 const serviceIconById: Record<ServiceId, { light: string; dark: string }> = {
   corte: { light: '/service-corte-light.png', dark: '/service-corte-dark-strokes.png' },
@@ -782,14 +783,18 @@ export function Booking({
       <div ref={scrollContainerRef} className="booking-scroll-content">
         <div className="booking-layout">
           <section className="min-w-0">
-            <div className={`booking-title-row ${step === 0 ? 'booking-service-heading' : ''} ${step === 1 ? 'booking-barber-heading' : ''} ${step === 2 ? 'booking-date-heading' : ''} ${step === 3 ? 'booking-time-heading' : ''} ${step === 4 ? 'booking-contact-heading' : ''} ${step === 5 ? 'booking-summary-heading' : ''}`}>
-              <h1 className="section-title">{isV2 && step === 2 ? 'Elegir una fecha' : titles[step]}</h1>
-              {step === 3 && date && (
-                <span className="booking-time-heading-date">
-                  <CalendarDays size={16} />{onPaymentRequest ? <><span className="booking-v4-date-mobile">{formatV4BookingDate(date)}</span><span className="booking-v4-date-desktop">{formatV4BookingDate(date, true)}</span></> : isFiveSteps ? formatShortBookingDate(date) : dateLabel(date)}
-                </span>
-              )}
-            </div>
+            <BookingStepHeading
+              title={isV2 && step === 2 ? 'Elegir una fecha' : titles[step]}
+              stepIndex={step}
+              className={`${step === 0 ? 'booking-service-heading' : ''} ${step === 1 ? 'booking-barber-heading' : ''} ${step === 2 ? 'booking-date-heading' : ''} ${step === 3 ? 'booking-time-heading' : ''} ${step === 4 ? 'booking-contact-heading' : ''} ${step === 5 ? 'booking-summary-heading' : ''}`.trim()}
+              secondary={
+                step === 3 && date ? (
+                  <span className="booking-time-heading-date">
+                    <CalendarDays size={16} />{onPaymentRequest ? <><span className="booking-v4-date-mobile">{formatV4BookingDate(date)}</span><span className="booking-v4-date-desktop">{formatV4BookingDate(date, true)}</span></> : isFiveSteps ? formatShortBookingDate(date) : dateLabel(date)}
+                  </span>
+                ) : undefined
+              }
+            />
             {subtitles[step] && <p className="mb-8 mt-3 text-muted-foreground">{subtitles[step]}</p>}
 
             {step === 0 && (

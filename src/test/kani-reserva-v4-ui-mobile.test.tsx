@@ -23,42 +23,42 @@ describe('Reserva V4 UI Mobile - Calendar, Horario Title and Barber Spacing', ()
   it('2. HORARIOS: "Elegí un horario" comparte exactamente la misma tipografía y escala de los demás pasos', () => {
     // Mobile: 22px display font con font-weight 500 y line-height 1.2 unificado con el resto de pasos
     expect(cssV4).toMatch(
-      /\.payway-reservation\s+\.booking-page\s+\.booking-title-row\.booking-time-heading\s+\.section-title\s*\{[\s\S]*?font-family:\s*var\(--font-display\)\s*!important;/
+      /\.payway-reservation\s+\.booking-page\s+\.booking-step-heading-title\.section-title[^}]*font-family:\s*var\(--font-display\)\s*!important;/
     );
     expect(cssV4).toMatch(
-      /\.payway-reservation\s+\.booking-page\s+\.booking-title-row\.booking-time-heading\s+\.section-title\s*\{[\s\S]*?font-size:\s*22px\s*!important;/
+      /\.payway-reservation\s+\.booking-page\s+\.booking-step-heading-title\.section-title[^}]*font-size:\s*22px\s*!important;/
     );
     expect(cssV4).toMatch(
-      /\.payway-reservation\s+\.booking-page\s+\.booking-title-row\.booking-time-heading\s+\.section-title\s*\{[\s\S]*?font-weight:\s*500\s*!important;/
+      /\.payway-reservation\s+\.booking-page\s+\.booking-step-heading-title\.section-title[^}]*font-weight:\s*500\s*!important;/
     );
     expect(cssV4).toMatch(
-      /\.payway-reservation\s+\.booking-page\s+\.booking-title-row\.booking-time-heading\s+\.section-title\s*\{[\s\S]*?line-height:\s*1\.2\s*!important;/
+      /\.payway-reservation\s+\.booking-page\s+\.booking-step-heading-title\.section-title[^}]*line-height:\s*1\.2\s*!important;/
     );
 
     // Desktop: 28px
     expect(cssV4).toMatch(
-      /@media\s*\(min-width:\s*768px\)[\s\S]*?\.payway-reservation\s+\.booking-page\s+\.booking-title-row\.booking-time-heading\s+\.section-title\s*\{[^}]*font-size:\s*28px\s*!important;/
+      /@media\s*\(min-width:\s*768px\)[\s\S]*?\.payway-reservation\s+\.booking-page\s+\.booking-step-heading-title\.section-title[^}]*font-size:\s*28px\s*!important;/
     );
   });
 
   it('3. HORARIOS: Distribución responsive en mobile previene overflow y preserva fecha secundaria', () => {
     // Flex-wrap con row-gap y column-gap para acomodación en 360px
     expect(cssV4).toMatch(
-      /\.payway-reservation\s+\.booking-page\s+\.booking-title-row\.booking-time-heading\s*\{[\s\S]*?flex-wrap:\s*wrap\s*!important;/
+      /\.payway-reservation\s+\.booking-page\s+\.booking-step-heading-inner\s*\{[\s\S]*?flex-wrap:\s*wrap\s*!important;/
     );
     expect(cssV4).toMatch(
-      /\.payway-reservation\s+\.booking-page\s+\.booking-title-row\.booking-time-heading\s*\{[\s\S]*?row-gap:\s*6px\s*!important;/
+      /\.payway-reservation\s+\.booking-page\s+\.booking-step-heading-inner\s*\{[\s\S]*?row-gap:\s*4px\s*!important;/
     );
     expect(cssV4).toMatch(
-      /\.payway-reservation\s+\.booking-page\s+\.booking-title-row\.booking-time-heading\s*\{[\s\S]*?column-gap:\s*8px\s*!important;/
+      /\.payway-reservation\s+\.booking-page\s+\.booking-step-heading-inner\s*\{[\s\S]*?column-gap:\s*8px\s*!important;/
     );
 
     // Fecha secundaria mantiene su tamaño y estilo visual secundario
     expect(cssV4).toMatch(
-      /\.payway-reservation\s+\.booking-page\s+\.booking-title-row\.booking-time-heading\s+\.booking-time-heading-date\s*\{[\s\S]*?font-size:\s*13\.5px\s*!important;/
+      /\.payway-reservation\s+\.booking-page\s+\.booking-time-heading-date\s*\{[\s\S]*?font-size:\s*13\.5px\s*!important;/
     );
     expect(cssV4).toMatch(
-      /\.payway-reservation\s+\.booking-page\s+\.booking-title-row\.booking-time-heading\s+\.booking-time-heading-date\s*\{[\s\S]*?color:\s*var\(--muted-foreground\)\s*!important;/
+      /\.payway-reservation\s+\.booking-page\s+\.booking-time-heading-date\s*\{[\s\S]*?color:\s*var\(--muted-foreground\)\s*!important;/
     );
   });
 

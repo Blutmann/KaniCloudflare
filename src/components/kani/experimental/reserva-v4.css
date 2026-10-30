@@ -267,22 +267,41 @@ html[data-theme='dark'] :is(body:has(.payway-checkout), body[data-payway-modal-o
   .payway-reservation .booking-v3-date .calendar-note { margin-top: 24px !important; font-size: 13px; }
 }
 
-/* Reserva V4 — Step "Elegí un horario": Optical vertical center alignment */
-.payway-reservation .booking-page .booking-title-row.booking-time-heading {
-  display: flex !important;
-  flex-direction: row !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  flex-wrap: wrap !important;
-  row-gap: 6px !important;
-  column-gap: 8px !important;
-  min-height: 44px !important;
+/* ==============================================================================
+ * Reserva V4 — Encabezados unificados (BookingStepHeading)
+ * Mismas reglas estructurales, tipográficas y de alineación para TODOS los pasos.
+ * ============================================================================== */
+.payway-reservation .booking-page .booking-step-heading,
+.payway-reservation .booking-page .booking-title-row {
+  display: block !important;
+  width: 100% !important;
+  min-height: auto !important;
   margin-top: 0 !important;
-  margin-bottom: 20px !important;
-  padding: 0 !important;
+  margin-bottom: 16px !important;
+  padding-top: 4px !important;
+  padding-bottom: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  box-sizing: border-box !important;
 }
 
-.payway-reservation .booking-page .booking-title-row.booking-time-heading .section-title {
+.payway-reservation .booking-page .booking-step-heading-inner {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: baseline !important;
+  justify-content: space-between !important;
+  flex-wrap: wrap !important;
+  row-gap: 4px !important;
+  column-gap: 8px !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.payway-reservation .booking-page .booking-step-heading-title.section-title,
+.payway-reservation .booking-page .booking-title-row .section-title,
+.payway-reservation .booking-page .section-title {
   margin: 0 !important;
   padding: 0 !important;
   font-family: var(--font-display) !important;
@@ -290,18 +309,26 @@ html[data-theme='dark'] :is(body:has(.payway-checkout), body[data-payway-modal-o
   font-weight: 500 !important;
   line-height: 1.2 !important;
   letter-spacing: 0.01em !important;
+  color: var(--foreground) !important;
+  display: block !important;
+  flex-shrink: 0 !important;
+  white-space: normal !important;
+}
+
+.payway-reservation .booking-page .booking-step-heading-secondary {
   display: inline-flex !important;
   align-items: center !important;
-  white-space: nowrap !important;
+  margin: 0 !important;
+  margin-left: auto !important;
+  padding: 0 !important;
   flex-shrink: 0 !important;
 }
 
-.payway-reservation .booking-page .booking-title-row.booking-time-heading .booking-time-heading-date {
+.payway-reservation .booking-page .booking-time-heading-date {
   display: inline-flex !important;
   align-items: center !important;
-  justify-content: center !important;
+  justify-content: flex-end !important;
   margin: 0 !important;
-  margin-left: auto !important;
   padding: 0 !important;
   gap: 6px !important;
   font-size: 13.5px !important;
@@ -312,7 +339,7 @@ html[data-theme='dark'] :is(body:has(.payway-checkout), body[data-payway-modal-o
   flex-shrink: 0 !important;
 }
 
-.payway-reservation .booking-page .booking-title-row.booking-time-heading .booking-time-heading-date svg {
+.payway-reservation .booking-page .booking-time-heading-date svg {
   display: block !important;
   width: 15px !important;
   height: 15px !important;
@@ -322,26 +349,39 @@ html[data-theme='dark'] :is(body:has(.payway-checkout), body[data-payway-modal-o
 }
 
 .booking-v4-date-desktop { display: none; }
+
 @media (min-width: 768px) {
+  .payway-reservation .booking-page .booking-step-heading,
   .payway-reservation .booking-page .booking-title-row {
-    display: flex;
-    align-items: center;
-    min-height: 44px;
-    margin-top: 0;
-    margin-bottom: 24px;
+    display: flex !important;
+    align-items: center !important;
+    min-height: 44px !important;
+    margin-top: 0 !important;
+    margin-bottom: 24px !important;
+    padding-top: 0 !important;
   }
-  .payway-reservation .booking-page .booking-title-row .section-title { margin: 0 !important; }
-  .payway-reservation .booking-page .booking-title-row.booking-time-heading .section-title {
+
+  .payway-reservation .booking-page .booking-step-heading-inner {
+    align-items: center !important;
+    gap: 16px !important;
+  }
+
+  .payway-reservation .booking-page .booking-step-heading-title.section-title,
+  .payway-reservation .booking-page .booking-title-row .section-title,
+  .payway-reservation .booking-page .section-title {
     font-size: 28px !important;
   }
-  .payway-reservation .booking-page .booking-title-row.booking-time-heading .booking-time-heading-date {
+
+  .payway-reservation .booking-page .booking-time-heading-date {
     font-size: 15px !important;
     gap: 8px !important;
   }
-  .payway-reservation .booking-page .booking-title-row.booking-time-heading .booking-time-heading-date svg {
+
+  .payway-reservation .booking-page .booking-time-heading-date svg {
     width: 16px !important;
     height: 16px !important;
   }
+
   .booking-v4-date-mobile { display: none; }
   .booking-v4-date-desktop { display: inline; }
 }
