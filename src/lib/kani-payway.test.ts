@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { arsToPaywayAmount, PAYWAY_MESSAGES, validatePaywayPayment, validatePaywayDraft } from './kani-payway';
 import { createPaywayService, newPaywayAttemptId, paywayTransactionId, readPaywayConfig, runtimePaywayService,
-  queryPaywayPayment, type PaywayConfig, type PaywayStore } from './kani-payway.server';
+  queryPaywayPayment, adaptPaywayAmount, type PaywayConfig, type PaywayStore } from './kani-payway.server';
 
 const appointmentId = '123e4567-e89b-42d3-a456-426614174000';
 const attemptId = 'a'.repeat(32);
@@ -154,7 +154,7 @@ describe('Payway laboratory, synthetic responses only', () => {
     const s = setup();
     s.payment.id = '971344';
     delete (s.payment as any).site_id;
-    s.payment.amount = 5000; // in pesos (5000.00)
+    s.payment.amount = 500000; // in minor units / centavos
     s.fetcher.mockResolvedValue(new Response(JSON.stringify(s.payment), { status: 201 }));
     const result = await s.service.pay(input);
     expect(result).toEqual({ state: 'approved', message: PAYWAY_MESSAGES.approved, appointmentConfirmed: true });
@@ -187,6 +187,31 @@ describe('Payway laboratory, synthetic responses only', () => {
     fetcher.mockResolvedValueOnce(new Response(JSON.stringify({ results: [] }), { status: 200 }));
     const resEmpty = await queryPaywayPayment(config, 'KANItest999', fetcher);
     expect(resEmpty).toEqual({ matches: false, providerId: null, status: 'not_found' });
+  });
+
+  it('strict amount check: amount: 5000 does NOT confirm a $5.000 ARS deposit (expects 500000 minor units)', async () => {
+    const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      results: [
+        { id: 888125, site_transaction_id: 'KANItest125', status: 'approved', amount: 5000, currency: 'ARS' }
+      ]
+    }), { status: 200 }));
+
+    // When expecting 500000 ($5.000 in minor units), an ambiguous 5000 MUST be rejected
+    const resMismatched = await queryPaywayPayment(config, 'KANItest125', fetcher, 500000);
+    expect(resMismatched).toEqual({ matches: false, providerId: '888125', status: 'unknown' });
+
+    // When exactly 500000 is returned, it matches approved
+    fetcher.mockResolvedValueOnce(new Response(JSON.stringify({
+      results: [
+        { id: 888125, site_transaction_id: 'KANItest125', status: 'approved', amount: 500000, currency: 'ARS' }
+      ]
+    }), { status: 200 }));
+    const resMatched = await queryPaywayPayment(config, 'KANItest125', fetcher, 500000);
+    expect(resMatched).toEqual({ matches: true, providerId: '888125', status: 'approved' });
+
+    // Explicit adapter converts units unambiguously
+    expect(adaptPaywayAmount('minor_units', 500000)).toBe(500000);
+    expect(adaptPaywayAmount('decimal_pesos', 5000)).toBe(500000);
   });
 
   it('rejects attempt safely before provider call if appointment email is missing or invalid', async () => {

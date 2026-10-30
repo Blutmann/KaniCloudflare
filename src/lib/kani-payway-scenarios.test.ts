@@ -343,4 +343,109 @@ describe('PayWay Flow Scenarios (Official Support Verification)', () => {
     expect(checkResult.appointmentConfirmed).toBeFalsy();
     expect(checkResult.message).toBe(PAYWAY_MESSAGES.late_review);
   });
+
+  it('8. Reserva vencida a los 10m (PAYMENT_EXPIRED) recuperable: si horario sigue libre, confirmación tardía aprueba turno atómicamente', async () => {
+    mockStore.getAttemptStatus.mockResolvedValueOnce({
+      appointment: {
+        id: appointmentId,
+        status: 'CANCELLED',
+        depositArs: 5000,
+        servicePriceArs: 25000,
+        depositPaid: false,
+        origin: 'PUBLIC_WEB',
+      },
+      attempt: {
+        id: attemptId,
+        appointmentId,
+        siteTransactionId: siteTx,
+        amount: 500000,
+        state: 'unknown',
+      },
+    });
+
+    mockFetcher.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          results: [
+            {
+              id: 971108,
+              site_transaction_id: siteTx,
+              amount: 500000,
+              currency: 'ARS',
+              site_id: '93146639',
+              status: 'approved',
+            },
+          ],
+        }),
+        { status: 200 }
+      )
+    );
+
+    // Slot is still free and valid, DB atomically recovers and confirms appointment
+    mockStore.confirm.mockResolvedValueOnce(true);
+
+    const service = createPaywayService({ config, store: mockStore as unknown as PaywayStore, fetcher: mockFetcher as any });
+    const checkResult = await service.checkPaymentStatus({
+      appointmentId,
+      attemptId,
+      accessToken,
+    });
+
+    expect(mockStore.settle).toHaveBeenCalledWith(attemptId, 'approved', '971108', 'approved', 'status_check');
+    expect(mockStore.confirm).toHaveBeenCalledWith(appointmentId, attemptId, '971108', 500000);
+    expect(checkResult.state).toBe('approved');
+    expect(checkResult.appointmentConfirmed).toBe(true);
+    expect(checkResult.message).toBe(PAYWAY_MESSAGES.approved);
+  });
+
+  it('9. Discrepancia de unidad de importe en GET /payments: amount: 5000 NO confirma seña esperada de 500000', async () => {
+    mockStore.getAttemptStatus.mockResolvedValueOnce({
+      appointment: {
+        id: appointmentId,
+        status: 'PENDING',
+        depositArs: 5000,
+        servicePriceArs: 25000,
+        depositPaid: false,
+        origin: 'PUBLIC_WEB',
+      },
+      attempt: {
+        id: attemptId,
+        appointmentId,
+        siteTransactionId: siteTx,
+        amount: 500000,
+        state: 'unknown',
+      },
+    });
+
+    // Payway returns amount 5000 instead of 500000 centavos
+    mockFetcher.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          results: [
+            {
+              id: 971109,
+              site_transaction_id: siteTx,
+              amount: 5000,
+              currency: 'ARS',
+              site_id: '93146639',
+              status: 'approved',
+            },
+          ],
+        }),
+        { status: 200 }
+      )
+    );
+
+    const service = createPaywayService({ config, store: mockStore as unknown as PaywayStore, fetcher: mockFetcher as any });
+    const checkResult = await service.checkPaymentStatus({
+      appointmentId,
+      attemptId,
+      accessToken,
+    });
+
+    // Mismatched amount must NOT confirm and must NOT settle as approved
+    expect(mockStore.confirm).not.toHaveBeenCalled();
+    expect(checkResult.state).toBe('verifying');
+    expect(checkResult.appointmentConfirmed).toBeFalsy();
+  });
 });

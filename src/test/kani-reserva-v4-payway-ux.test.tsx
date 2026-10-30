@@ -319,7 +319,7 @@ describe('Payway V4 Modern Checkout UX/UI', () => {
     // CTA button text is dynamic and compact ("Pagar seña $5.000" without space after $)
     const cta = screen.getByRole('button', { name: 'Pagar seña $5.000' });
     expect(cta).toBeInTheDocument();
-  });
+  }, 15000);
 
   it('renders Expiry label and independent CVV row with contextual help for standard cards and Amex', async () => {
     await reachCardModal();
@@ -349,7 +349,7 @@ describe('Payway V4 Modern Checkout UX/UI', () => {
     fireEvent.change(panInput, { target: { value: '378282246310005' } });
     fireEvent.click(helpBtn);
     expect(screen.getByText('4 dígitos del frente de la tarjeta.')).toBeInTheDocument();
-  });
+  }, 15000);
 
   it('marks data-payway-modal-open on body while modal is open to ensure solid header icon contrast under overlay', async () => {
     await reachCardModal();

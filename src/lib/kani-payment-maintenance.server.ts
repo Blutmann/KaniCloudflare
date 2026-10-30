@@ -40,7 +40,7 @@ export async function reconcilePendingPayments() {
     const paywayConfig = readPaywayConfig(getRuntimeEnv);
     if (paywayConfig) {
       const { data: attempts } = await db.from('payment_attempts')
-        .select('id, appointment_id, site_transaction_id, amount_minor_units, state')
+        .select('id, appointment_id, site_transaction_id, amount_minor_units, state, created_at')
         .eq('provider', 'PAYWAY')
         .in('state', ['UNKNOWN', 'PROCESSING'])
         .lt('created_at', new Date(Date.now() - 30_000).toISOString())
@@ -52,8 +52,15 @@ export async function reconcilePendingPayments() {
         '0d3f50b8-baac-4cf9-b88a-7e5bac2f2313',
       ];
 
+      const cutoff24h = new Date(Date.now() - 24 * 60 * 60_000).toISOString();
+
       for (const att of attempts ?? []) {
         if (HISTORICAL_EXCLUDED_ATTEMPTS.includes(att.id)) {
+          continue;
+        }
+        // At 24h exhaustion: attempt is retained in ledger in its uncertain state (UNKNOWN/PROCESSING)
+        // for administrative review, and excluded from further automated polling.
+        if (att.created_at && att.created_at < cutoff24h) {
           continue;
         }
         const query = await queryPaywayPayment(paywayConfig, att.site_transaction_id, fetch, att.amount_minor_units);

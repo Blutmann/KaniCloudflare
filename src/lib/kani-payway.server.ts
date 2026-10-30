@@ -360,6 +360,14 @@ export function normalizePaywayResponse(raw: unknown): NormalizedPaywayResponse 
   };
 }
 
+export type PaywayAmountUnit = 'minor_units' | 'decimal_pesos';
+
+export function adaptPaywayAmount(sourceUnit: PaywayAmountUnit, amount: number): number {
+  if (sourceUnit === 'minor_units') return Math.round(amount);
+  if (sourceUnit === 'decimal_pesos') return Math.round(amount * 100);
+  throw new Error(`UNSUPPORTED_PAYWAY_AMOUNT_UNIT: ${sourceUnit}`);
+}
+
 export type PaywayClassification =
   | { kind: 'APPROVED'; providerId: string; status: 'approved' }
   | { kind: 'REJECTED'; providerId?: string; status: 'rejected'; code?: string }
@@ -388,9 +396,9 @@ export function classifyPaywayResponse({
     return { kind: 'UNKNOWN', reason: `HTTP_${responseStatus}_GATEWAY_ERROR` };
   }
 
-  const amountMatches =
-    normalized.amount === expectedAmount ||
-    (typeof normalized.amount === 'number' && Math.round(normalized.amount * 100) === expectedAmount);
+  // Strict contract: amount is in minor units (centavos, e.g. 500000 for $5.000 ARS).
+  // Ambiguous dual-unit acceptance is prohibited: 5000 must NOT confirm a $5.000 deposit.
+  const amountMatches = normalized.amount === expectedAmount;
 
   // 2. Strict evidence check for APPROVED:
   // Must satisfy all positive evidence conditions:
@@ -545,11 +553,9 @@ export async function queryPaywayPayment(
     const normalized = normalizePaywayResponse(rawItem);
     const providerId = normalized.id;
 
-    const amountMatches =
-      expectedAmount == null ||
-      normalized.amount === expectedAmount ||
-      (typeof normalized.amount === 'number' && Math.round(normalized.amount * 100) === expectedAmount) ||
-      (typeof normalized.amount === 'number' && Math.round(normalized.amount) === Math.round(expectedAmount / 100));
+    // Strict contract: Payway Decidir v2 GET /payments returns amount in minor units (centavos, e.g. 500000 for $5.000 ARS).
+    // Ambiguous dual-unit acceptance is prohibited: 5000 must NOT confirm a $5.000 deposit.
+    const amountMatches = expectedAmount == null || normalized.amount === expectedAmount;
 
     if (normalized.status === 'approved') {
       const isApprovedEvidenceValid = Boolean(
