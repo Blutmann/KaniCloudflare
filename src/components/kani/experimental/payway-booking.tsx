@@ -724,6 +724,13 @@ export function PaywayBooking() {
           <h1>Turno confirmado</h1>
           <p className="text-sm text-muted-foreground confirmation-subtitle">Te enviamos la confirmación por mail.</p>
           <div className="confirmation-grid">
+            {/* Columna izquierda: Encabezado del Resumen */}
+            <div className="confirmation-header-summary">
+              <h2 className="confirmation-section-title">Resumen de tu turno</h2>
+              <p className="confirmation-section-subtitle">Estos son los detalles de tu reserva.</p>
+            </div>
+
+            {/* Columna izquierda: Card de detalles de la reserva */}
             <div className="confirmation-details">
               <dl className="summary-list" style={{ marginTop: 0 }}>
                 <div><dt>Servicio</dt><dd>{confirmed.serviceName}</dd></div>
@@ -735,11 +742,13 @@ export function PaywayBooking() {
               </dl>
             </div>
 
-            <section className="confirmation-place">
-              <h2 className="confirmation-place-title">¿Dónde estamos?</h2>
-              <p className="confirmation-place-address">San Isidro Labrador 7 · Martínez</p>
+            {/* Columna derecha: Encabezado de Ubicación */}
+            <section className="confirmation-header-place confirmation-place">
+              <h2 className="confirmation-section-title confirmation-place-title">¿Dónde estamos?</h2>
+              <p className="confirmation-section-subtitle confirmation-place-address">San Isidro Labrador 7 · Martínez</p>
             </section>
 
+            {/* Columna derecha: Mapa */}
             <div className="confirmation-map-wrap">
               <iframe
                 src={KANI_MAPS_EMBED_URL}
@@ -751,6 +760,7 @@ export function PaywayBooking() {
               />
             </div>
 
+            {/* Acciones secundarias en 2 columnas: Cómo llegar | Instagram */}
             <div className="confirmation-actions">
               <Button asChild variant="outline" className="confirmation-secondary confirmation-btn-directions">
                 <a href={KANI_MAPS_URL} target="_blank" rel="noreferrer">
@@ -762,17 +772,23 @@ export function PaywayBooking() {
                   <Instagram size={16} /> Instagram
                 </a>
               </Button>
-              <Button
-                type="button"
-                className="confirmation-home action-brand confirmation-btn-home"
-                aria-label="Volver al inicio"
-                onClick={startNewReservation}
-              >
-                Volver al inicio
-              </Button>
             </div>
           </div>
         </main>
+
+        {/* Navegación inferior unificada con Reserva V4 (Volver al inicio en la misma barra CTA) */}
+        <div className="booking-cta confirmation-cta" role="region" aria-label="Navegación de reserva">
+          <div className="booking-cta-inner">
+            <Button
+              type="button"
+              className="action-brand booking-next-button confirmation-btn-home"
+              aria-label="Volver al inicio"
+              onClick={startNewReservation}
+            >
+              Volver al inicio
+            </Button>
+          </div>
+        </div>
       </div>
     );
   }

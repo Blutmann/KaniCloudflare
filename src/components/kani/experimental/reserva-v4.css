@@ -578,66 +578,83 @@ html[data-theme='dark'] :is(body:has(.payway-checkout), body[data-payway-modal-o
   max-width: 980px;
   width: 100%;
   margin-inline: auto;
-  padding-top: 26px;
-  padding-bottom: 64px;
+  padding-top: 28px;
+  padding-bottom: 96px;
   box-sizing: border-box;
 }
 
 .payway-reservation .confirmation .confirmation-mark {
   width: 58px;
   height: 58px;
-  margin: 0 auto 12px;
+  margin: 0 auto 14px;
 }
 
 .payway-reservation .confirmation h1 {
-  font-size: 32px;
-  margin-block: 6px 6px;
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 1.25;
+  margin-block: 6px 8px;
+  letter-spacing: -0.02em;
 }
 
 .payway-reservation .confirmation-subtitle {
   margin-top: 0;
-  margin-bottom: 28px;
+  margin-bottom: 32px;
   line-height: 1.5;
-  font-size: 14px;
+  font-size: 14.5px;
 }
 
-/* Grid principal: 50 / 50 en Desktop con alineación superior card ↔ mapa */
+/* Grid principal: 50 / 50 en Desktop con alineación horizontal estricta */
 .payway-reservation .confirmation-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   grid-template-areas:
-    ".       place"
-    "summary map"
-    "actions actions";
-  column-gap: 24px;
-  row-gap: 12px;
+    "summary-header place-header"
+    "summary-card   place-map"
+    "actions        actions";
+  column-gap: 28px;
+  row-gap: 14px;
   width: 100%;
   align-items: start;
   box-sizing: border-box;
 }
 
-/* Columna izquierda: Resumen */
-.payway-reservation .confirmation-details {
-  grid-area: summary;
-  margin: 0 !important;
-  width: 100% !important;
-  box-sizing: border-box !important;
-}
-
-/* Columna derecha fila 1: Encabezado de Ubicación */
-.payway-reservation .confirmation-place {
-  grid-area: place;
-  margin: 0 0 2px 0 !important;
+/* Fila 1: Encabezados unificados de Resumen y Ubicación */
+.payway-reservation .confirmation-header-summary {
+  grid-area: summary-header;
   text-align: left;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  width: 100%;
-  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
+.payway-reservation .confirmation-header-place {
+  grid-area: place-header;
+  text-align: left;
+  margin: 0;
+  padding: 0;
+}
+
+.payway-reservation .confirmation-section-title {
+  font-family: var(--font-display, inherit);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--foreground);
+  margin: 0;
+  line-height: 1.3;
+}
+
+.payway-reservation .confirmation-section-subtitle {
+  font-size: 13.5px;
+  color: var(--muted-foreground);
+  margin-top: 4px;
+  margin-bottom: 0;
+  line-height: 1.4;
+}
+
+/* Compatibilidad con selectors de place previos */
 .payway-reservation .confirmation-place-title {
-  font-size: 16px;
+  font-family: var(--font-display, inherit);
+  font-size: 18px;
   font-weight: 600;
   color: var(--foreground);
   margin: 0;
@@ -648,15 +665,30 @@ html[data-theme='dark'] :is(body:has(.payway-checkout), body[data-payway-modal-o
   font-size: 13.5px;
   color: var(--muted-foreground);
   margin-top: 4px;
-  margin-bottom: 6px;
+  margin-bottom: 0;
   line-height: 1.4;
 }
 
-/* Columna derecha fila 2: Mapa interactivo (misma fila visual que el card) */
+/* Fila 2 Columna izquierda: Card de detalles de la reserva */
+.payway-reservation .confirmation-details {
+  grid-area: summary-card;
+  margin: 0 !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.payway-reservation .confirmation-details .summary-list {
+  padding: 18px 22px !important;
+  gap: 12px !important;
+  font-size: 14px !important;
+  line-height: 1.4 !important;
+}
+
+/* Fila 2 Columna derecha: Mapa interactivo (misma fila visual que la card) */
 .payway-reservation .confirmation-map-wrap {
-  grid-area: map;
+  grid-area: place-map;
   width: 100%;
-  height: 235px;
+  height: 252px;
   margin: 0 !important;
   border-radius: var(--radius-card, 0.9rem);
   border: 1px solid color-mix(in oklch, var(--gold) 18%, var(--border));
@@ -674,26 +706,31 @@ html[data-theme='dark'] :is(body:has(.payway-checkout), body[data-payway-modal-o
   display: block;
 }
 
-/* Botonera: alineada exactamente con las 2 columnas y el ancho exterior de 980px */
+/* Fila 3: Acciones secundarias alineadas con las 2 columnas */
 .payway-reservation .confirmation-actions {
   grid-area: actions;
   display: grid !important;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
-  gap: 12px 24px !important;
+  column-gap: 28px !important;
+  row-gap: 12px !important;
   width: 100% !important;
-  margin-top: 28px !important;
+  margin-top: 24px !important;
+  margin-bottom: 0 !important;
   box-sizing: border-box !important;
 }
 
 .payway-reservation .confirmation-actions .confirmation-secondary {
   width: 100% !important;
-  min-height: 44px !important;
-  height: 46px !important;
+  min-height: 48px !important;
+  height: 48px !important;
   margin: 0 !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
   gap: 8px !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  border-radius: var(--radius-control, 0.65rem) !important;
   box-sizing: border-box !important;
 }
 
@@ -705,12 +742,47 @@ html[data-theme='dark'] :is(body:has(.payway-checkout), body[data-payway-modal-o
   grid-column: 2 / 3;
 }
 
-.payway-reservation .confirmation-actions .confirmation-home {
-  grid-column: 1 / -1 !important;
-  width: 100% !important;
-  min-height: 44px !important;
-  height: 46px !important;
+/* ==============================================================================
+ * Navegación inferior "Volver al inicio" — Unificada con el sistema de Reserva V4
+ * ============================================================================== */
+.payway-reservation .confirmation-cta {
+  position: fixed;
+  inset-inline: 0;
+  bottom: var(--site-footer-height, 170px);
+  z-index: 30;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0;
+  border-top: 1px solid transparent;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  pointer-events: none;
+}
+
+.payway-reservation .confirmation-cta .booking-cta-inner {
+  width: min(860px, calc(100% - 40px));
+  max-width: 860px;
+  margin-inline: auto;
+  padding-block: 10px;
+  display: flex !important;
+  justify-content: flex-end !important;
+  align-items: center !important;
+  pointer-events: auto;
+  box-sizing: border-box;
+}
+
+.payway-reservation .confirmation-cta .confirmation-btn-home {
+  height: 48px !important;
+  min-height: 48px !important;
+  max-height: 48px !important;
+  min-width: 220px !important;
   margin: 0 !important;
+  margin-left: auto !important;
+  padding-inline: 28px !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  border-radius: var(--radius-control, 0.65rem) !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -718,97 +790,142 @@ html[data-theme='dark'] :is(body:has(.payway-checkout), body[data-payway-modal-o
 }
 
 /* ==============================================================================
- * Mobile & Tablet (< 860px): Estructura vertical compacta para 360×800 sin scroll
+ * Mobile & Tablet (< 860px): Estructura vertical con scroll natural y espaciado
  * ============================================================================== */
 @media (max-width: 859px) {
   .payway-reservation .confirmation {
     max-width: 520px;
-    padding-top: 8px;
-    padding-bottom: 12px;
+    padding-top: 16px;
+    padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)) !important;
     padding-inline: 16px;
   }
 
   .payway-reservation .confirmation .confirmation-mark {
-    width: 44px;
-    height: 44px;
-    margin: 0 auto 6px;
+    width: 52px;
+    height: 52px;
+    margin: 0 auto 12px;
   }
 
   .payway-reservation .confirmation h1 {
-    font-size: 24px;
-    line-height: 1.15;
-    margin-block: 2px 2px;
+    font-size: 26px;
+    line-height: 1.2;
+    margin-block: 4px 6px;
   }
 
   .payway-reservation .confirmation-subtitle {
     margin-top: 0;
-    margin-bottom: 8px;
-    font-size: 13px;
-    line-height: 1.3;
+    margin-bottom: 24px;
+    font-size: 14px;
+    line-height: 1.4;
   }
 
   /* Grid en columna única secuencial */
   .payway-reservation .confirmation-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    width: 100%;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0 !important;
+    width: 100% !important;
   }
 
+  /* 1. Encabezado del Resumen */
+  .payway-reservation .confirmation-header-summary {
+    text-align: left;
+    margin-bottom: 10px;
+  }
+
+  .payway-reservation .confirmation-section-title,
+  .payway-reservation .confirmation-place-title {
+    font-size: 16px;
+    line-height: 1.25;
+  }
+
+  .payway-reservation .confirmation-section-subtitle,
+  .payway-reservation .confirmation-place-address {
+    font-size: 13px;
+    line-height: 1.35;
+    margin-top: 3px;
+  }
+
+  /* 2. Card de Resumen */
   .payway-reservation .confirmation-details {
-    padding: 10px 14px !important;
+    padding: 14px 16px !important;
+    border-radius: var(--radius-card, 0.9rem) !important;
   }
 
   .payway-reservation .confirmation-details .summary-list {
-    gap: 6px !important;
-    font-size: 13px !important;
-    line-height: 1.35 !important;
+    padding: 0 !important;
+    gap: 10px !important;
+    font-size: 13.5px !important;
+    line-height: 1.4 !important;
   }
 
-  .payway-reservation .confirmation-place {
-    text-align: center;
-    margin: 0 !important;
-    padding-top: 2px;
+  /* 3. Encabezado de Ubicación con separación clearly perceptible */
+  .payway-reservation .confirmation-header-place {
+    text-align: left;
+    margin-top: 26px !important;
+    margin-bottom: 10px !important;
   }
 
-  .payway-reservation .confirmation-place-title {
-    font-size: 14px;
-    line-height: 1.2;
-    margin: 0;
-  }
-
-  .payway-reservation .confirmation-place-address {
-    margin-top: 2px;
-    margin-bottom: 6px;
-    font-size: 12.5px;
-    line-height: 1.2;
-  }
-
+  /* 4. Mapa interactivo */
   .payway-reservation .confirmation-map-wrap {
-    height: 155px;
+    height: 200px;
     margin: 0 !important;
+    border-radius: var(--radius-card, 0.9rem) !important;
   }
 
-  /* Botones en mobile: fila 1 (50/50), fila 2 (100%) */
+  /* 5. Acciones secundarias en mobile (50/50) */
   .payway-reservation .confirmation-actions {
+    display: grid !important;
     grid-template-columns: 1fr 1fr !important;
-    gap: 8px !important;
-    margin-top: 6px !important;
+    gap: 12px !important;
+    margin-top: 18px !important;
   }
 
-  .payway-reservation .confirmation-actions .confirmation-btn-directions {
-    grid-column: auto;
-  }
-
+  .payway-reservation .confirmation-actions .confirmation-btn-directions,
   .payway-reservation .confirmation-actions .confirmation-btn-instagram {
-    grid-column: auto;
+    grid-column: auto !important;
   }
 
-  .payway-reservation .confirmation-actions .confirmation-secondary,
-  .payway-reservation .confirmation-actions .confirmation-home {
-    min-height: 44px !important;
-    height: 44px !important;
-    font-size: 13px !important;
+  .payway-reservation .confirmation-actions .confirmation-secondary {
+    min-height: 46px !important;
+    height: 46px !important;
+    font-size: 13.5px !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .payway-reservation .confirmation-cta {
+    position: fixed !important;
+    inset-inline: 0 !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    z-index: 30 !important;
+    padding-top: 6px !important;
+    padding-bottom: max(10px, env(safe-area-inset-bottom)) !important;
+    background: transparent !important;
+    pointer-events: none !important;
+  }
+
+  .payway-reservation .confirmation-cta .booking-cta-inner {
+    width: calc(100% - 32px) !important;
+    max-width: 520px !important;
+    margin-inline: auto !important;
+    padding-block: 0 !important;
+    padding-inline: 0 !important;
+    pointer-events: auto !important;
+  }
+
+  .payway-reservation .confirmation-cta .confirmation-btn-home {
+    width: 100% !important;
+    flex: 1 1 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+    height: 48px !important;
+    min-height: 48px !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    border-radius: var(--radius-control, 0.65rem) !important;
   }
 }
 

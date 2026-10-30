@@ -39,12 +39,20 @@ describe('Reserva V4 — Pantalla final "Turno confirmado"', () => {
     expect(screen.getByText('Te enviamos la confirmación por mail.')).toBeInTheDocument();
   });
 
-  it('2. Conserva todos los datos del resumen del turno con valores y seña/saldo calculados', () => {
-    render(
+  it('2. Muestra el encabezado del resumen ("Resumen de tu turno" y "Estos son los detalles de tu reserva.") y conserva los datos con seña/saldo calculados', () => {
+    const { container } = render(
       <KaniProvider>
         <PaywayBooking />
       </KaniProvider>
     );
+
+    // Nuevo título y subtítulo del resumen
+    expect(screen.getByRole('heading', { name: 'Resumen de tu turno' })).toBeInTheDocument();
+    expect(screen.getByText('Estos son los detalles de tu reserva.')).toBeInTheDocument();
+
+    const summaryHeader = container.querySelector('.confirmation-header-summary');
+    expect(summaryHeader).toBeInTheDocument();
+    expect(summaryHeader?.querySelector('h2')?.textContent).toBe('Resumen de tu turno');
 
     expect(screen.getByText('Servicio')).toBeInTheDocument();
     expect(screen.getByText('Corte')).toBeInTheDocument();
@@ -94,7 +102,7 @@ describe('Reserva V4 — Pantalla final "Turno confirmado"', () => {
     expect(mapIframe).toHaveAttribute('loading', 'lazy');
   });
 
-  it('4. Verifica el orden estricto de acciones: "Cómo llegar" e "Instagram" primero, y "Volver al inicio" al final compartiendo la misma retícula', () => {
+  it('4. Acciones secundarias: "Cómo llegar" e "Instagram" en contenedor de 2 columnas', () => {
     const { container } = render(
       <KaniProvider>
         <PaywayBooking />
@@ -117,16 +125,27 @@ describe('Reserva V4 — Pantalla final "Turno confirmado"', () => {
 
     // No debe existir el texto 'Ver ubicación'
     expect(actionsContainer?.textContent).not.toContain('Ver ubicación');
+  });
 
-    // Volver al inicio debe ser el botón final
+  it('5. Navegación inferior unificada: "Volver al inicio" utiliza el sistema de barra inferior (booking-cta) y reinicia la reserva', () => {
+    const { container } = render(
+      <KaniProvider>
+        <PaywayBooking />
+      </KaniProvider>
+    );
+
+    // Contenedor de navegación inferior reutilizando el sistema de Reserva V4
+    const ctaBar = container.querySelector('.booking-cta.confirmation-cta');
+    expect(ctaBar).toBeInTheDocument();
+
+    const ctaInner = ctaBar?.querySelector('.booking-cta-inner');
+    expect(ctaInner).toBeInTheDocument();
+
+    // Botón Volver al inicio con clase de botón de navegación principal
     const homeBtn = screen.getByRole('button', { name: 'Volver al inicio' });
     expect(homeBtn).toBeInTheDocument();
-
-    // Comprobar orden en el DOM
-    const allInteractive = actionsContainer?.querySelectorAll('a, button');
-    expect(allInteractive?.[0]?.textContent).toContain('Cómo llegar');
-    expect(allInteractive?.[1]?.textContent).toContain('Instagram');
-    expect(allInteractive?.[2]?.textContent).toContain('Volver al inicio');
+    expect(ctaInner?.contains(homeBtn)).toBe(true);
+    expect(homeBtn).toHaveClass('booking-next-button');
 
     // Click en Volver al inicio reinicia la reserva
     fireEvent.click(homeBtn);
