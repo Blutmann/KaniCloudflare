@@ -87,3 +87,11 @@ begin
     perform public.confirm_payway_attempt(r.appointment_id, r.attempt_id, r.provider_transaction_id, r.amount_minor_units);
   end loop;
 end $$;
+
+-- Register migration in Supabase ledger:
+insert into supabase_migrations.schema_migrations (version)
+values ('20261030193000')
+on conflict (version) do nothing;
+
+notify pgrst, 'reload schema';
+
