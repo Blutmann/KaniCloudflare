@@ -74,14 +74,14 @@ function next() {
 
 async function reachCardModal() {
   render(<PaywayBooking />);
-  fireEvent.click(screen.getByRole('button', { name: /^Corte 45/ }));
+  fireEvent.click(screen.getByRole('button', { name: /^Corte, 45/ }));
   next();
   fireEvent.click(screen.getByRole('button', { name: /Lautaro/ }));
   next();
   fireEvent.click(await screen.findByRole('button', { name: dateLabel('2026-10-27') }));
   next();
-  await screen.findByRole('button', { name: '10:00' });
-  fireEvent.click(screen.getByRole('button', { name: '10:00' }));
+  await screen.findByRole('button', { name: /10:00/ });
+  fireEvent.click(screen.getByRole('button', { name: /10:00/ }));
   next();
   await screen.findByRole('textbox', { name: /^Nombre/ });
   fireEvent.change(screen.getByRole('textbox', { name: /^Nombre/ }), { target: { value: 'Cliente Simulado' } });

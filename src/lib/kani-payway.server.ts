@@ -53,6 +53,9 @@ export interface PaywayStore {
   claim(input: Pick<PaywayPaymentInput, 'appointmentId' | 'attemptId' | 'accessToken'>): Promise<{
     acquired: boolean; appointment: PaywayAppointment; attempt: PaywayAttempt;
   }>;
+  getAttemptStatus?(input: Pick<PaywayPaymentInput, 'appointmentId' | 'attemptId' | 'accessToken'>): Promise<{
+    appointment: PaywayAppointment; attempt: PaywayAttempt;
+  }>;
   settle(attemptId: string, state: 'approved' | 'rejected' | 'unknown', providerId?: string, providerStatus?: string, providerCode?: string): Promise<void>;
   confirm(appointmentId: string, attemptId: string, providerId: string, amount: number): Promise<boolean>;
 }
@@ -190,6 +193,58 @@ export function createPaywayService({ config, store, fetcher = fetch }: {
           } catch { /* Still fail closed if persistence is unavailable. */ }
         }
         return { state: 'unknown', message: PAYWAY_MESSAGES.unknown };
+      }
+    },
+    async checkPaymentStatus(raw: unknown): Promise<PaywayResult> {
+      if (!config || !store || !isPaywaySandboxBase(config.apiBaseUrl)) {
+        return { state: 'unavailable', message: PAYWAY_MESSAGES.unavailable };
+      }
+      let input: import('./kani-payway').PaywayStatusInput;
+      try {
+        const { validatePaywayStatusQuery } = await import('./kani-payway');
+        input = validatePaywayStatusQuery(raw);
+      } catch {
+        return { state: 'recoverable', message: PAYWAY_MESSAGES.recoverable };
+      }
+      if (!store.getAttemptStatus) {
+        return { state: 'unknown', message: PAYWAY_MESSAGES.unknown };
+      }
+      let current: Awaited<ReturnType<NonNullable<PaywayStore['getAttemptStatus']>>>;
+      try {
+        current = await store.getAttemptStatus(input);
+      } catch {
+        return { state: 'unknown', message: PAYWAY_MESSAGES.unknown };
+      }
+
+      const { appointment, attempt } = current;
+      if (attempt.result) {
+        return attempt.result;
+      }
+
+      if (attempt.state === 'approved') {
+        return { state: 'approved', message: PAYWAY_MESSAGES.approved, appointmentConfirmed: true };
+      }
+      if (attempt.state === 'rejected') {
+        return { state: 'rejected', message: PAYWAY_MESSAGES.rejected };
+      }
+
+      // Query Payway to reconcile indeterminate UNKNOWN or PROCESSING attempts:
+      try {
+        const verified = await queryPaywayPayment(config, attempt.siteTransactionId, fetcher, attempt.amount);
+        if (verified?.matches && verified.providerId && verified.status === 'approved') {
+          await store.settle(attempt.id, 'approved', verified.providerId, 'approved', 'status_check');
+          const confirmed = await store.confirm(appointment.id, attempt.id, verified.providerId, attempt.amount);
+          return confirmed
+            ? { state: 'approved', message: PAYWAY_MESSAGES.approved, appointmentConfirmed: true }
+            : { state: 'review', message: PAYWAY_MESSAGES.late_review };
+        }
+        if (verified?.matches && verified.status === 'rejected') {
+          await store.settle(attempt.id, 'rejected', verified.providerId ?? undefined, 'rejected', 'status_check');
+          return { state: 'rejected', message: PAYWAY_MESSAGES.rejected };
+        }
+        return { state: 'verifying', message: PAYWAY_MESSAGES.verifying };
+      } catch {
+        return { state: 'verifying', message: PAYWAY_MESSAGES.verifying };
       }
     },
   };
@@ -465,8 +520,9 @@ function logPaywayDiagnostic(info: {
 export async function queryPaywayPayment(
   config: PaywayConfig,
   siteTransactionId: string,
-  fetcher: typeof fetch = fetch
-): Promise<{ matches: boolean; providerId: string | null; status: 'approved' | 'rejected' | 'unknown' | 'not_found' } | null> {
+  fetcher: typeof fetch = fetch,
+  expectedAmount?: number
+): Promise<{ matches: boolean; providerId: string | null; status: 'approved' | 'rejected' | 'unknown' | 'not_found'; code?: string } | null> {
   if (!config || !isPaywaySandboxBase(config.apiBaseUrl)) return null;
   try {
     const url = `${config.apiBaseUrl}/payments?siteOperationId=${encodeURIComponent(siteTransactionId)}`;
@@ -489,11 +545,18 @@ export async function queryPaywayPayment(
     const normalized = normalizePaywayResponse(rawItem);
     const providerId = normalized.id;
 
+    const amountMatches =
+      expectedAmount == null ||
+      normalized.amount === expectedAmount ||
+      (typeof normalized.amount === 'number' && Math.round(normalized.amount * 100) === expectedAmount) ||
+      (typeof normalized.amount === 'number' && Math.round(normalized.amount) === Math.round(expectedAmount / 100));
+
     if (normalized.status === 'approved') {
       const isApprovedEvidenceValid = Boolean(
         providerId &&
         normalized.siteTransactionId === siteTransactionId &&
         normalized.currency === 'ARS' &&
+        amountMatches &&
         (normalized.siteId == null || normalized.siteId === config.siteId)
       );
       return isApprovedEvidenceValid
@@ -505,11 +568,12 @@ export async function queryPaywayPayment(
       const isContradictory = Boolean(
         (normalized.siteTransactionId != null && normalized.siteTransactionId !== siteTransactionId) ||
         (normalized.currency != null && normalized.currency !== 'ARS') ||
-        (normalized.siteId != null && normalized.siteId !== config.siteId)
+        (normalized.siteId != null && normalized.siteId !== config.siteId) ||
+        !amountMatches
       );
       return isContradictory
         ? { matches: false, providerId, status: 'unknown' }
-        : { matches: true, providerId, status: 'rejected' };
+        : { matches: true, providerId, status: 'rejected', code: normalized.errorCode ?? undefined };
     }
 
     return { matches: false, providerId, status: 'unknown' };

@@ -1,5 +1,5 @@
 import { createServerFn } from '@tanstack/react-start';
-import { validatePaywayDraft, validatePaywayPayment } from './kani-payway';
+import { validatePaywayDraft, validatePaywayPayment, validatePaywayStatusQuery } from './kani-payway';
 
 export const preparePaywayCheckoutFn = createServerFn({ method: 'POST' })
   .validator(validatePaywayDraft)
@@ -13,4 +13,11 @@ export const payPaywayDepositFn = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const { runtimePaywayService } = await import('./kani-payway.server');
     return (await runtimePaywayService()).pay(data);
+  });
+
+export const checkPaywayPaymentStatusFn = createServerFn({ method: 'POST' })
+  .validator(validatePaywayStatusQuery)
+  .handler(async ({ data }) => {
+    const { runtimePaywayService } = await import('./kani-payway.server');
+    return (await runtimePaywayService()).checkPaymentStatus(data);
   });

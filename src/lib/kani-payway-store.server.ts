@@ -77,6 +77,69 @@ export function createPaywayStore(db:Db,siteId:string,session:SessionAccess):Pay
         clientId,clientEmail},
         attempt:{id:row.id.replaceAll('-',''),appointmentId:row.appointment_id,siteTransactionId:row.site_transaction_id,amount:Number(row.amount_minor_units),state:stateMap[row.state]??'unknown',...(result?{result}:{})}};
     },
+    async getAttemptStatus(input) {
+      const owner = await session.read();
+      if (!owner || owner.appointmentId !== input.appointmentId || owner.accessToken !== input.accessToken) {
+        throw new Error('PAYWAY_CHECKOUT_NOT_OWNED');
+      }
+      const { data: attemptRow, error: attemptErr } = await db
+        .from('payment_attempts')
+        .select('*')
+        .eq('id', uuid(input.attemptId))
+        .eq('appointment_id', input.appointmentId)
+        .maybeSingle();
+      if (attemptErr || !attemptRow) throw new Error('PAYMENT_ATTEMPT_NOT_FOUND');
+      const row = attemptRow as AttemptRow;
+      if (row.provider_site_id !== siteId) throw new Error('PAYMENT_SITE_MISMATCH');
+
+      const { data: apptRow, error: apptErr } = await db
+        .from('appointments')
+        .select('id, status, deposit_ars, service_price_ars, deposit_paid, client_id, clients(id, email)')
+        .eq('id', input.appointmentId)
+        .maybeSingle();
+      if (apptErr || !apptRow) throw new Error('APPOINTMENT_NOT_FOUND');
+
+      const stateMap: Record<string, PaywayAttempt['state']> = {
+        CREATED: 'prepared',
+        PROCESSING: 'processing',
+        APPROVED: 'approved',
+        REJECTED: 'rejected',
+        UNKNOWN: 'unknown',
+        CANCELLED: 'unknown',
+      };
+      let result: PaywayResult | undefined;
+      if (row.state === 'APPROVED' && ['CONFIRMED', 'ALREADY_CONFIRMED'].includes(row.confirmation_status)) {
+        result = { state: 'approved', message: PAYWAY_MESSAGES.approved, appointmentConfirmed: true };
+      } else if (row.state === 'APPROVED' && ['PAID_LATE_REVIEW', 'PAID_CANCELLED_REVIEW'].includes(row.confirmation_status)) {
+        result = { state: 'review', message: PAYWAY_MESSAGES.late_review };
+      } else if (row.state === 'REJECTED') {
+        result = { state: 'rejected', message: PAYWAY_MESSAGES.rejected };
+      }
+
+      const c = Array.isArray(apptRow.clients) ? apptRow.clients[0] : apptRow.clients;
+      const clientEmail = c?.email ? String(c.email).trim().toLowerCase() : undefined;
+
+      return {
+        appointment: {
+          id: apptRow.id,
+          status: apptRow.status,
+          depositArs: Number(apptRow.deposit_ars ?? 5000),
+          servicePriceArs: Number(apptRow.service_price_ars ?? 25000),
+          depositPaid: Boolean(apptRow.deposit_paid),
+          origin: 'PUBLIC_WEB',
+          clientId: apptRow.client_id,
+          clientEmail,
+        },
+        attempt: {
+          id: row.id.replaceAll('-', ''),
+          appointmentId: row.appointment_id,
+          siteTransactionId: row.site_transaction_id,
+          amount: Number(row.amount_minor_units),
+          state: stateMap[row.state] ?? 'unknown',
+          ...(result ? { result } : {}),
+        },
+      };
+    },
     async settle(attemptId,state,providerId,providerStatus,providerCode) {
       const {error}=await db.rpc('settle_payway_attempt',{p_attempt_id:uuid(attemptId),p_state:state.toUpperCase(),
         p_provider_id:providerId??null,p_provider_status:providerStatus??null,p_provider_code:providerCode??null});

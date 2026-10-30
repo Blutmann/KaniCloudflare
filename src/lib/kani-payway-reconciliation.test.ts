@@ -89,7 +89,9 @@ describe('Payway reconciliation & cron maintenance', () => {
 
     expect(mockQueryPaywayPayment).toHaveBeenCalledWith(
       expect.objectContaining({ siteId: '93146639' }),
-      unknownAttempt.site_transaction_id
+      unknownAttempt.site_transaction_id,
+      expect.anything(),
+      unknownAttempt.amount_minor_units
     );
 
     // Settle approved

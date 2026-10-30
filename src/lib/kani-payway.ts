@@ -1,5 +1,5 @@
 // Public contracts only. No credentials, runtime bindings or provider responses here.
-export type PaywayState = 'approved' | 'rejected' | 'unknown' | 'recoverable' | 'unavailable';
+export type PaywayState = 'approved' | 'rejected' | 'unknown' | 'recoverable' | 'unavailable' | 'verifying' | 'review';
 export type PaywayResult = { state: PaywayState; message: string; appointmentConfirmed?: boolean };
 export type PaywayDraft = {
   barber: string; serviceName: string; date: string; time: string;
@@ -17,10 +17,17 @@ export type PaywayPaymentInput = {
   appointmentId: string; attemptId: string; accessToken: string;
   token: string; bin: string; paymentMethodId: number;
 };
+export type PaywayStatusInput = {
+  appointmentId: string;
+  attemptId: string;
+  accessToken: string;
+};
 
 export const PAYWAY_MESSAGES = {
   unavailable: 'Pago de prueba todavía no disponible. No se realizó ningún cobro ni se guardó un turno.',
   unknown: 'No pudimos verificar el resultado del pago. No vuelvas a pagar hasta que el estudio compruebe su estado.',
+  verifying: 'Estamos verificando tu pago con Payway. Por favor no cierres esta ventana ni intentes pagar nuevamente.',
+  late_review: 'Tu pago fue registrado pero el turno ya no estaba disponible. Nos comunicaremos con vos a la brevedad.',
   approved: 'Seña aprobada. Tu turno está confirmado.',
   rejected: 'El pago fue rechazado. No se confirmó el turno. Podés intentar con otra tarjeta.',
   recoverable: 'No pudimos iniciar el pago. Revisá los datos y volvé a intentar.',
@@ -84,4 +91,22 @@ export function validatePaywayDraft(input: unknown): PaywayDraft {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(String(d.date)) || !/^\d{2}:\d{2}$/.test(String(d.time)) ||
     !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(d.email))) throw new Error('PAYWAY_DRAFT_INVALID');
   return d as PaywayDraft;
+}
+
+export function validatePaywayStatusQuery(input: unknown): PaywayStatusInput {
+  if (!input || typeof input !== 'object') throw new Error('PAYWAY_INPUT_INVALID');
+  const d = input as Partial<PaywayStatusInput> & Record<string, unknown>;
+  if (
+    !/^[a-f0-9-]{36}$/i.test(String(d.appointmentId)) ||
+    !/^[a-f0-9]{32}$/i.test(String(d.attemptId)) ||
+    typeof d.accessToken !== 'string' ||
+    !/^[A-Za-z0-9_-]{32,128}$/.test(d.accessToken)
+  ) {
+    throw new Error('PAYWAY_INPUT_INVALID');
+  }
+  return {
+    appointmentId: String(d.appointmentId),
+    attemptId: String(d.attemptId),
+    accessToken: d.accessToken,
+  };
 }

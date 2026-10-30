@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Check, CircleAlert, HelpCircle, Instagram, MapPin } from 'lucide-react';
+import { Check, CircleAlert, HelpCircle, Instagram, Loader2, MapPin } from 'lucide-react';
 import { Booking, type BookingPaymentDraft } from '@/components/kani/booking';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
-import { preparePaywayCheckoutFn, payPaywayDepositFn } from '@/lib/kani-payway.functions';
+import { preparePaywayCheckoutFn, payPaywayDepositFn, checkPaywayPaymentStatusFn } from '@/lib/kani-payway.functions';
 import { tokenizePaywayForm } from '@/lib/kani-payway.browser';
 import { PAYWAY_MESSAGES, type PaywayCheckout, type PaywayResult } from '@/lib/kani-payway';
 import { readConfiguredServices, type ConfiguredService } from '@/lib/kani-availability';
@@ -118,6 +118,14 @@ export function PaywayBooking() {
   const [confirmed, setConfirmed] = useState<ConfirmedPaywayBooking | null>(() => readConfirmedBooking());
   const [configuredServices, setConfiguredServices] = useState<ConfiguredService[]>(() => services.map(s => ({ ...s })));
   const [stage, setStage] = useState<'idle' | 'tokenizing' | 'paying'>('idle');
+  const [pendingCheck, setPendingCheck] = useState<{
+    appointmentId: string;
+    attemptId: string;
+    accessToken: string;
+    depositArs: number;
+  } | null>(null);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [pollExhausted, setPollExhausted] = useState(false);
 
   // Modern Payway Form State
   const [cardNumber, setCardNumber] = useState('');
@@ -147,7 +155,81 @@ export function PaywayBooking() {
   const opening = useRef(false);
   const paying = useRef(false);
   const isApprovedConfirmed = Boolean(confirmed) || (result?.state === 'approved' && result?.appointmentConfirmed === true);
-  const terminal = isApprovedConfirmed || result?.state === 'unknown';
+  const terminal = isApprovedConfirmed || result?.state === 'unknown' || isVerifying || pollExhausted;
+
+  useEffect(() => {
+    if (!pendingCheck || !isVerifying) return;
+    let active = true;
+    let pollCount = 0;
+    const maxPolls = 15; // 15 * 3s = 45s
+
+    const intervalId = setInterval(async () => {
+      if (!active) return;
+      pollCount++;
+      try {
+        const statusRes = await checkPaywayPaymentStatusFn({
+          data: {
+            appointmentId: pendingCheck.appointmentId,
+            attemptId: pendingCheck.attemptId,
+            accessToken: pendingCheck.accessToken,
+          },
+        });
+        if (!active) return;
+        if (statusRes.state === 'approved' && statusRes.appointmentConfirmed) {
+          clearInterval(intervalId);
+          setIsVerifying(false);
+          const activeDraft = draftRef.current;
+          const confirmedBooking: ConfirmedPaywayBooking = {
+            appointmentId: pendingCheck.appointmentId,
+            attemptId: pendingCheck.attemptId,
+            serviceName: activeDraft?.serviceName ?? 'Corte',
+            barber: activeDraft?.barber ?? 'Lautaro',
+            date: activeDraft?.date ?? '',
+            time: activeDraft?.time ?? '',
+            clientName: activeDraft?.name ?? '',
+            depositArs: pendingCheck.depositArs,
+            servicePriceArs: resolveServicePrice(activeDraft?.serviceName ?? 'Corte', configuredServices),
+          };
+          paidAppointmentsRef.current.add(pendingCheck.appointmentId);
+          persistConfirmedBooking(confirmedBooking);
+          setResult(statusRes);
+          setConfirmed(confirmedBooking);
+          setOpen(false);
+          if (typeof window !== 'undefined' && typeof window.scrollTo === 'function') {
+            window.scrollTo({ top: 0, behavior: 'instant' });
+          }
+          return;
+        }
+        if (statusRes.state === 'rejected') {
+          clearInterval(intervalId);
+          setIsVerifying(false);
+          setPendingCheck(null);
+          setResult(statusRes);
+          return;
+        }
+        if (statusRes.state === 'review') {
+          clearInterval(intervalId);
+          setIsVerifying(false);
+          setResult(statusRes);
+          return;
+        }
+      } catch {
+        // Transient error; continue polling
+      }
+      if (pollCount >= maxPolls) {
+        clearInterval(intervalId);
+        if (active) {
+          setIsVerifying(false);
+          setPollExhausted(true);
+        }
+      }
+    }, 3000);
+
+    return () => {
+      active = false;
+      clearInterval(intervalId);
+    };
+  }, [pendingCheck, isVerifying, configuredServices]);
 
   const now = useMemo(() => new Date(), []);
   const currentYear = now.getFullYear();
@@ -358,10 +440,34 @@ export function PaywayBooking() {
         }
         return;
       }
+      if (response.state === 'unknown' || response.state === 'verifying') {
+        setPendingCheck({
+          appointmentId: checkout.appointmentId,
+          attemptId: checkout.attemptId,
+          accessToken: checkout.accessToken,
+          depositArs: checkout.depositArs,
+        });
+        setIsVerifying(true);
+        setPollExhausted(false);
+        setResult(response);
+        return;
+      }
       setResult(response);
     } catch {
-      setResult({ state: sent ? 'unknown' : 'recoverable', message: sent ? PAYWAY_MESSAGES.unknown : 'No pudimos validar la tarjeta. Revisá sus datos e intentá nuevamente.' });
-      if (sent) setCheckout(null);
+      if (sent && checkout) {
+        setPendingCheck({
+          appointmentId: checkout.appointmentId,
+          attemptId: checkout.attemptId,
+          accessToken: checkout.accessToken,
+          depositArs: checkout.depositArs,
+        });
+        setIsVerifying(true);
+        setPollExhausted(false);
+        setResult({ state: 'unknown', message: PAYWAY_MESSAGES.verifying });
+        setCheckout(null);
+      } else {
+        setResult({ state: 'recoverable', message: 'No pudimos validar la tarjeta. Revisá sus datos e intentá nuevamente.' });
+      }
     } finally {
       form.reset();
       resetFormState();
@@ -374,6 +480,9 @@ export function PaywayBooking() {
     clearConfirmedBookingView();
     resetFormState();
     draftRef.current = null;
+    setPendingCheck(null);
+    setIsVerifying(false);
+    setPollExhausted(false);
     setConfirmed(null);
     setResult(null);
     setCheckout(null);
@@ -482,7 +591,9 @@ export function PaywayBooking() {
             {checkout ? `Seña: ${money(checkout.depositArs)} · Pago seguro` : 'Reserva experimental con Payway'}
           </DialogDescription>
           {preparing && <p role="status">Preparando pago seguro…</p>}
-          {result && <p role={result.state === 'approved' ? 'status' : 'alert'} className="payway-result">{result.message}</p>}
+          {result && !isVerifying && !pollExhausted && result.state !== 'unknown' && result.state !== 'review' && (
+            <p role={result.state === 'approved' ? 'status' : 'alert'} className="payway-result">{result.message}</p>
+          )}
           {checkout && !terminal && (
             <form onSubmit={pay} autoComplete="off" noValidate data-private="redact" data-sensitive="true" className="payway-card-form">
               <input type="hidden" name="paymentMethod" value={detected.methodId ?? ''} />
@@ -704,10 +815,44 @@ export function PaywayBooking() {
               </fieldset>
             </form>
           )}
-          {result?.state === 'unknown' && (
-            <p className="text-sm">Conservá esta pantalla y contactá al estudio. Tu turno todavía no está confirmado.</p>
+          {isVerifying && (
+            <div className="payway-verifying-box space-y-4 py-4 text-center" role="status">
+              <div className="flex justify-center items-center">
+                <Loader2 className="animate-spin text-muted-foreground" size={36} />
+              </div>
+              <div className="space-y-1">
+                <p className="font-semibold text-base">Estamos verificando tu pago</p>
+                <p className="text-sm text-muted-foreground">
+                  Por favor no cierres esta ventana ni intentes pagar nuevamente. Estamos comprobando el resultado con Payway.
+                </p>
+              </div>
+            </div>
           )}
-          {!checkout && stage === 'idle' && !preparing && (
+          {pollExhausted && (
+            <div className="space-y-2 text-center py-2" role="alert">
+              <p className="text-sm font-semibold">Estamos verificando tu pago con Payway</p>
+              <p className="text-xs text-muted-foreground">
+                No vuelvas a pagar mientras comprobamos el resultado para evitar cobros dobles. Si tu tarjeta fue debitada, tu reserva será confirmada automáticamente o nos comunicaremos con vos a la brevedad.
+              </p>
+            </div>
+          )}
+          {result?.state === 'unknown' && !isVerifying && !pollExhausted && (
+            <div className="space-y-2 text-center py-2" role="alert">
+              <p className="text-sm font-semibold">Verificación de pago pendiente</p>
+              <p className="text-xs text-muted-foreground">
+                Estamos verificando tu pago con Payway. No vuelvas a pagar para evitar cobros dobles. Si tu tarjeta fue debitada, tu reserva será confirmada o nos pondremos en contacto con vos.
+              </p>
+            </div>
+          )}
+          {result?.state === 'review' && (
+            <div className="space-y-2 text-center py-2" role="alert">
+              <p className="text-sm font-semibold">Pago registrado en revisión</p>
+              <p className="text-xs text-muted-foreground">
+                Tu pago fue recibido, pero el horario seleccionado ya no está disponible. Nos comunicaremos con vos a la brevedad para coordinar tu turno o reintegro.
+              </p>
+            </div>
+          )}
+          {!checkout && stage === 'idle' && !preparing && !isVerifying && (
             <Button variant="outline" onClick={() => setOpen(false)}>
               {terminal ? 'Cerrar' : 'Volver a mis datos'}
             </Button>

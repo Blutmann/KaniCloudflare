@@ -43,7 +43,7 @@ export async function reconcilePendingPayments() {
         .select('id, appointment_id, site_transaction_id, amount_minor_units, state')
         .eq('provider', 'PAYWAY')
         .in('state', ['UNKNOWN', 'PROCESSING'])
-        .lt('created_at', new Date(Date.now() - 5 * 60_000).toISOString())
+        .lt('created_at', new Date(Date.now() - 30_000).toISOString())
         .limit(20);
 
       // Preserve historical diagnostic test attempts completely untouched
@@ -56,7 +56,7 @@ export async function reconcilePendingPayments() {
         if (HISTORICAL_EXCLUDED_ATTEMPTS.includes(att.id)) {
           continue;
         }
-        const query = await queryPaywayPayment(paywayConfig, att.site_transaction_id);
+        const query = await queryPaywayPayment(paywayConfig, att.site_transaction_id, fetch, att.amount_minor_units);
         if (!query) continue;
 
         if (query.matches && query.providerId && query.status === 'approved') {
@@ -90,14 +90,16 @@ export async function reconcilePendingPayments() {
             p_provider_status: 'rejected',
             p_provider_code: 'reconciled_rejected',
           });
-        } else if (query.status === 'not_found' && att.state === 'PROCESSING') {
-          await db.rpc('settle_payway_attempt', {
-            p_attempt_id: att.id,
-            p_state: 'REJECTED',
-            p_provider_id: null,
-            p_provider_status: 'not_found',
-            p_provider_code: 'reconciled_not_found',
-          });
+        } else if (query.status === 'not_found' || query.status === 'unknown') {
+          // As confirmed by Payway support (ticket REQ000007122053):
+          // Empty query results or network errors must NOT be assumed as rejected,
+          // nor should they allow immediate new charges.
+          // Leave attempt in UNKNOWN/PROCESSING to allow future verification.
+          try {
+            await db.from('payment_attempts').update({ updated_at: new Date().toISOString() }).eq('id', att.id);
+          } catch {
+            /* Non-fatal attempt update */
+          }
         }
       }
     }
