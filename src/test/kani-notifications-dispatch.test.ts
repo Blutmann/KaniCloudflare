@@ -34,6 +34,8 @@ describe("dispatchAppointmentNotification Matrix", () => {
     process.env.RESEND_FROM_EMAIL = "Kani Barber <turnos@kanibarber.com>";
     process.env.PONTIUN_API_KEY = "pk_live_test";
     process.env.PONTIUN_PHONE_NUMBER_ID = "1391432264052937";
+    process.env.PONTIUN_TEMPLATE_NAME = "confirmacion_turno_kani";
+    process.env.PONTIUN_TEMPLATE_LANGUAGE = "es_AR";
 
     mockClaim.mockReset();
     mockComplete.mockReset().mockResolvedValue({ data: true, error: null });
@@ -60,11 +62,17 @@ describe("dispatchAppointmentNotification Matrix", () => {
     attempts: 1,
   };
 
-  it("Full Success: Both Pontiun and Resend succeed -> marks SENT and records both provider message IDs", async () => {
+  it("Full Success: RPC returns recipient_phone (no clientPhone passed in input) -> passes phone to Pontiun with template confirmacion_turno_kani and language es_AR, marks SENT with both provider IDs", async () => {
     mockClaim.mockResolvedValue({ data: [baseEvent], error: null });
 
-    globalThis.fetch = vi.fn().mockImplementation(async (url: string) => {
+    let capturedPontiunBody: any = null;
+    let capturedResendHeaders: any = null;
+    let capturedPontiunHeaders: any = null;
+
+    globalThis.fetch = vi.fn().mockImplementation(async (url: string, init?: RequestInit) => {
       if (url.includes("pontiun.com")) {
+        capturedPontiunBody = JSON.parse(String(init?.body));
+        capturedPontiunHeaders = init?.headers;
         return {
           ok: true,
           status: 200,
@@ -72,6 +80,7 @@ describe("dispatchAppointmentNotification Matrix", () => {
         };
       }
       if (url.includes("resend.com")) {
+        capturedResendHeaders = init?.headers;
         return {
           ok: true,
           status: 200,
@@ -81,14 +90,26 @@ describe("dispatchAppointmentNotification Matrix", () => {
       return { ok: false, status: 404 };
     }) as any;
 
+    // Notice: data.clientPhone is omitted! It MUST come from event.recipient_phone returned by the RPC.
     const result = await dispatchAppointmentNotification({
       appointmentId: baseAppointmentId,
       claimToken: baseClaimToken,
-      clientPhone: "+5491128436014",
     });
 
     expect(result.sent).toBe(true);
     expect(result.status).toBe("SENT");
+
+    // Verify Pontiun contract: template name and language
+    expect(capturedPontiunBody).toBeDefined();
+    expect(capturedPontiunBody.pageId).toBe("1391432264052937");
+    expect(capturedPontiunBody.recipientId).toBe("5491128436014");
+    expect(capturedPontiunBody.template.name).toBe("confirmacion_turno_kani");
+    expect(capturedPontiunBody.template.language).toBe("es_AR");
+
+    // Verify idempotency keys per channel
+    expect(capturedPontiunHeaders["Idempotency-Key"]).toBe(`kani-appointment-${baseAppointmentId}-confirmed`);
+    expect(capturedResendHeaders["Idempotency-Key"]).toBe(baseEvent.notification_id);
+
     expect(mockComplete).toHaveBeenCalledWith({
       p_notification_id: baseEvent.notification_id,
       p_claim_token: baseClaimToken,
@@ -123,7 +144,6 @@ describe("dispatchAppointmentNotification Matrix", () => {
     const result = await dispatchAppointmentNotification({
       appointmentId: baseAppointmentId,
       claimToken: baseClaimToken,
-      clientPhone: "+5491128436014",
     });
 
     expect(result.sent).toBe(false);
@@ -165,7 +185,6 @@ describe("dispatchAppointmentNotification Matrix", () => {
     const result = await dispatchAppointmentNotification({
       appointmentId: baseAppointmentId,
       claimToken: baseClaimToken,
-      clientPhone: "+5491128436014",
     });
 
     expect(result.sent).toBe(false);
@@ -175,6 +194,86 @@ describe("dispatchAppointmentNotification Matrix", () => {
       p_notification_id: baseEvent.notification_id,
       p_claim_token: baseClaimToken,
       p_error: expect.stringContaining("PARTIAL_DISPATCH_FAILURE: WhatsApp enviado (pontiun:msg_pontiun_ok_123) | Email falló (RESEND_401: API key is invalid)"),
+    });
+  });
+
+  it("Structural Failure: RPC fails to return recipient_phone property -> detects structural error and marks FAILED with PARTIAL_DISPATCH_FAILURE, NOT SENT even if Resend succeeds", async () => {
+    // Event WITHOUT recipient_phone key (simulates old broken RPC)
+    const eventWithoutPhoneKey = {
+      notification_id: "1b6004f8-f6c8-4e2f-a136-b49fe692f4ee",
+      notification_type: "CONFIRMED",
+      recipient_email: "tomas.harispe@hotmail.com",
+      client_name: "Payway Pontiun 1",
+      barber_name: "Lautaro",
+      service_name: "Corte",
+      booking_date: "2026-10-30",
+      start_time: "18:15:00",
+      end_time: "19:00:00",
+      dispatch_status: "READY",
+      attempts: 1,
+    };
+    mockClaim.mockResolvedValue({ data: [eventWithoutPhoneKey], error: null });
+
+    globalThis.fetch = vi.fn().mockImplementation(async (url: string) => {
+      if (url.includes("resend.com")) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ id: "01a18e75-13fa-7b72-95e3-4bc7856cc87b" }),
+        };
+      }
+      return { ok: false, status: 404 };
+    }) as any;
+
+    const result = await dispatchAppointmentNotification({
+      appointmentId: baseAppointmentId,
+      claimToken: baseClaimToken,
+      // No clientPhone provided
+    });
+
+    expect(result.sent).toBe(false);
+    expect(result.status).toBe("FAILED");
+    expect(mockComplete).not.toHaveBeenCalled();
+    expect(mockFail).toHaveBeenCalledWith({
+      p_notification_id: baseEvent.notification_id,
+      p_claim_token: baseClaimToken,
+      p_error: expect.stringContaining("RPC_STRUCTURAL_ERROR: la función claim_appointment_notification no devolvió la columna recipient_phone"),
+    });
+  });
+
+  it("Valid Omission: Client has no registered phone (recipient_phone is explicitly null in RPC) -> omits WhatsApp validly and marks SENT when email succeeds", async () => {
+    const eventWithNullPhone = {
+      ...baseEvent,
+      recipient_phone: null,
+    };
+    mockClaim.mockResolvedValue({ data: [eventWithNullPhone], error: null });
+
+    const fetchSpy = vi.fn().mockImplementation(async (url: string) => {
+      if (url.includes("resend.com")) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ id: "01a18e75-13fa-7b72-95e3-4bc7856cc87b" }),
+        };
+      }
+      return { ok: false, status: 404 };
+    });
+    globalThis.fetch = fetchSpy as any;
+
+    const result = await dispatchAppointmentNotification({
+      appointmentId: baseAppointmentId,
+      claimToken: baseClaimToken,
+    });
+
+    expect(result.sent).toBe(true);
+    expect(result.status).toBe("SENT");
+    // Pontiun should never be called
+    expect(fetchSpy).not.toHaveBeenCalledWith(expect.stringContaining("pontiun.com"), expect.anything());
+    // Only resend message id recorded
+    expect(mockComplete).toHaveBeenCalledWith({
+      p_notification_id: baseEvent.notification_id,
+      p_claim_token: baseClaimToken,
+      p_provider_message_id: "resend:01a18e75-13fa-7b72-95e3-4bc7856cc87b",
     });
   });
 
@@ -202,7 +301,6 @@ describe("dispatchAppointmentNotification Matrix", () => {
     const result = await dispatchAppointmentNotification({
       appointmentId: baseAppointmentId,
       claimToken: baseClaimToken,
-      clientPhone: "+5491128436014",
     });
 
     expect(result.sent).toBe(false);

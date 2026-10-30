@@ -93,7 +93,10 @@ export const dispatchAppointmentNotification = createServerOnlyFn(async (data: {
 
       // 1. Despacho de WhatsApp vía Pontiun (prioritario para turnos CONFIRMED)
       if (event.notification_type === "CONFIRMED") {
-        if (recipientPhone && recipientPhone.trim()) {
+        const hasRecipientPhoneKey = "recipient_phone" in event;
+        const clientHasRegisteredPhone = Boolean(recipientPhone && recipientPhone.trim());
+
+        if (clientHasRegisteredPhone) {
           try {
             const { sendPontiunAppointmentConfirmation } = await import("./kani-pontiun");
             const pontiunResult = await sendPontiunAppointmentConfirmation({
@@ -126,9 +129,16 @@ export const dispatchAppointmentNotification = createServerOnlyFn(async (data: {
             pontiunError = pontiunErr instanceof Error ? pontiunErr.message : String(pontiunErr);
             console.warn("[Pontiun WhatsApp] Error durante el despacho:", pontiunError);
           }
+        } else if (!hasRecipientPhoneKey && !data.clientPhone) {
+          // Error estructural: El RPC no proyectó la columna recipient_phone
+          pontiunError = "RPC_STRUCTURAL_ERROR: la función claim_appointment_notification no devolvió la columna recipient_phone";
+          console.error(
+            `[Pontiun WhatsApp] ${pontiunError} para turno ${data.appointmentId}.`,
+          );
         } else {
+          // Omisión válida: El cliente genuinamente no registró teléfono
           console.info(
-            `[Pontiun WhatsApp] Turno ${data.appointmentId} no posee teléfono registrado; WhatsApp omitido.`,
+            `[Pontiun WhatsApp] Turno ${data.appointmentId} no posee teléfono registrado; WhatsApp omitido de forma válida.`,
           );
         }
       }
