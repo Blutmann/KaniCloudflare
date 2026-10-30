@@ -150,7 +150,7 @@ export function AdminV2SectionToolbar({
         onClick={onAction}
         aria-label={actionAriaLabel ?? actionLabel}
       >
-        <Plus size={14} strokeWidth={2.2} aria-hidden="true" />
+        <Plus size={16} strokeWidth={2.2} aria-hidden="true" />
         <span>{cleanLabel}</span>
       </button>
     </div>

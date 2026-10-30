@@ -754,35 +754,42 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
   color: var(--muted-foreground);
 }
 .v2-payment-form :is(input, select) {
-  height: 38px;
-  min-height: 38px;
-  max-height: 38px;
-  padding: 6px 9px;
+  height: 44px;
+  min-height: 44px;
+  max-height: 44px;
+  padding: 9px 11px;
   font-size: 12px;
   line-height: 1.5;
   border-radius: var(--radius-control);
+  box-sizing: border-box;
 }
 .v2-segmented {
-  display: flex;
-  gap: 3px;
-  padding: 3px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  padding: 4px;
   border: 1px solid var(--border);
   border-radius: var(--radius-control);
   background: var(--v2-inset);
   margin-bottom: 12px;
+  box-sizing: border-box;
 }
 .v2-segmented button {
-  flex: 1;
-  min-height: 34px;
-  height: 34px;
+  width: 100%;
+  min-height: 44px;
+  height: 44px;
   border-radius: calc(var(--radius-control) - 2px);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
-  padding: 5px 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 12px;
   color: var(--muted-foreground);
   transition:
     background-color 0.18s,
     color 0.18s;
+  box-sizing: border-box;
 }
 .v2-segmented button:hover {
   color: var(--foreground);
@@ -1687,15 +1694,19 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
     padding: 10px 12px;
   }
   .v2-segmented {
-    padding: 2px;
-    margin-bottom: 8px;
-    gap: 2px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: 3px;
+    margin-bottom: 10px;
+    gap: 3px;
   }
   .v2-segmented button {
-    padding: 4px 8px;
-    min-height: 32px;
-    height: 32px;
-    font-size: 11.5px;
+    padding: 0 8px;
+    min-height: 44px;
+    height: 44px;
+    font-size: 12.5px;
+    width: 100%;
+    box-sizing: border-box;
   }
   .v2-payment-form fieldset {
     gap: 8px;
@@ -1705,11 +1716,12 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
     grid-column: 1 / -1;
   }
   .v2-payment-form :is(input, select) {
-    height: 36px;
-    min-height: 36px;
-    max-height: 36px;
-    padding: 5px 8px;
+    height: 44px;
+    min-height: 44px;
+    max-height: 44px;
+    padding: 9px 11px;
     font-size: 12px;
+    box-sizing: border-box;
   }
   .v2-payment-actions-row {
     gap: 8px;
@@ -1983,16 +1995,16 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  gap: 5px !important;
-  font-size: 12px !important;
+  gap: 6px !important;
+  font-size: 12.5px !important;
   font-weight: 500 !important;
   color: var(--button-primary-text) !important;
   background: var(--button-primary-bg) !important;
   border: 1px solid var(--button-primary-border) !important;
   border-radius: var(--radius-control) !important;
-  padding: 6px 12px !important;
-  min-height: 34px !important;
-  height: 34px !important;
+  padding: 0 16px !important;
+  min-height: 44px !important;
+  height: 44px !important;
   cursor: pointer !important;
   white-space: nowrap !important;
   width: auto !important;
@@ -2016,11 +2028,11 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
 @media (max-width: 767px) {
   .v2-toolbar-action,
   .v2-add-manual-btn {
-    padding: 5px 10px !important;
-    min-height: 32px !important;
-    height: 32px !important;
-    font-size: 11.5px !important;
-    gap: 4px !important;
+    padding: 0 14px !important;
+    min-height: 44px !important;
+    height: 44px !important;
+    font-size: 12px !important;
+    gap: 6px !important;
   }
 }
 
@@ -2038,7 +2050,7 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
 
 @media (max-width: 767px) {
   .v2-nav.admin-section-nav { gap: 2px; padding-inline: 3px; }
-  .v2-nav .admin-section-nav-refresh-btn { width: 36px; min-width: 36px; height: 44px; padding-inline: 0; }
+  .v2-nav .admin-section-nav-refresh-btn { width: 44px; min-width: 44px; height: 44px; padding-inline: 0; }
   .v2-nav .admin-section-nav-divider { margin-inline: 0; }
   .v2-nav .admin-section-nav-items { width: auto; flex: 1 1 0; }
 }
@@ -2070,7 +2082,7 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
 .v2-appointment-main {
   display: flex !important;
   flex-direction: column !important;
-  gap: 4px !important;
+  gap: 6px !important;
   min-width: 0 !important;
 }
 
@@ -2177,7 +2189,7 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
 .v2-note {
   border-left: 2px solid color-mix(in srgb, var(--gold) 50%, transparent) !important;
   padding-left: 9px !important;
-  margin: 4px 0 0 0 !important;
+  margin: 0 !important;
   font-size: 12px !important;
   color: var(--muted-foreground) !important;
   line-height: 1.4 !important;
@@ -2260,7 +2272,7 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
     flex-direction: column !important;
     align-items: stretch !important;
     padding: 12px 14px !important;
-    gap: 10px !important;
+    gap: 12px !important;
     justify-content: flex-start !important;
   }
 
@@ -2291,10 +2303,12 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
   .v2-op-buttons > * {
     width: 100% !important;
     min-height: 44px !important;
+    height: 44px !important;
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
     text-align: center !important;
+    box-sizing: border-box !important;
   }
 
   /* Si únicamente aparece una acción, ocupa el ancho disponible de manera natural */
@@ -2324,11 +2338,13 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
 
   .v2-contact-buttons > * {
     width: 100% !important;
-    min-height: 40px !important;
+    min-height: 44px !important;
+    height: 44px !important;
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
     text-align: center !important;
+    box-sizing: border-box !important;
   }
 }
 
@@ -2385,12 +2401,15 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
   .v2-op-buttons > *,
   .v2-contact-buttons > * {
     width: 100% !important;
-    min-height: 33px !important;
-    padding: 5px 10px !important;
+    min-height: 44px !important;
+    height: 44px !important;
+    padding: 0 10px !important;
     font-size: 12px !important;
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
+    white-space: nowrap !important;
+    box-sizing: border-box !important;
     text-align: center !important;
   }
 }
@@ -2869,16 +2888,16 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
 
 .v2-manual-dialog .v2-field :is(input, select),
 .v2-manual-dialog .v2-client-quick-search input {
-  height: 36px !important;
-  min-height: 36px !important;
-  max-height: 36px !important;
-  padding-top: 5px !important;
-  padding-bottom: 5px !important;
+  height: 44px !important;
+  min-height: 44px !important;
+  max-height: 44px !important;
+  padding: 9px 11px !important;
   font-size: 12px !important;
+  box-sizing: border-box !important;
 }
 
 .v2-manual-dialog .v2-client-quick-search input {
-  padding-left: 34px !important;
+  padding-left: 36px !important;
 }
 
 .v2-manual-row {
@@ -2919,9 +2938,11 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
 
 .v2-manual-dialog-actions button,
 .v2-manual-actions button {
-  min-height: 38px !important;
-  height: 38px !important;
-  padding: 6px 14px !important;
+  min-height: 44px !important;
+  height: 44px !important;
+  padding: 0 16px !important;
+  font-size: 12.5px !important;
+  box-sizing: border-box !important;
 }
 
 @media (max-width: 767px) {
@@ -2979,10 +3000,11 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 7px;
-  min-height: 40px;
-  padding: 8px 12px;
-  font-size: 13px;
+  gap: 6px;
+  min-height: 44px;
+  height: 44px;
+  padding: 0 10px;
+  font-size: 12px;
   font-weight: 500;
   border-radius: var(--radius-control, 0.65rem);
   border: 1px solid var(--border);
@@ -2992,6 +3014,12 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
   transition: all 0.15s ease;
   text-decoration: none;
   box-sizing: border-box;
+  white-space: nowrap;
+}
+.v2-payment-action-btn svg {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
 }
 .v2-payment-action-btn:hover:not(:disabled) {
   background: color-mix(in srgb, var(--gold) 12%, var(--v2-inset));
@@ -3008,10 +3036,15 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
 }
 
 .v2-payment-summary-block.is-compact {
-  padding: 12px 16px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 .v2-payment-summary-block.is-compact .v2-summary-total {
-  padding-top: 0;
+  padding: 2px 0 0 0;
 }
 
 /* Metric Hierarchy & Badges */

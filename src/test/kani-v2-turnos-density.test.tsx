@@ -88,11 +88,11 @@ describe('Admin V2 — Turnos Density & Contact Actions Optimization', () => {
     expect(screen.getByText(/Importe:\s*\$ ?25\.000/i)).toBeInTheDocument();
 
     // 4. Contact action buttons
-    const waLink = screen.getByRole('link', { name: 'Enviar WhatsApp' });
+    const waLink = screen.getByRole('link', { name: 'WhatsApp' });
     expect(waLink).toBeInTheDocument();
     expect(waLink).toHaveAttribute('href', 'https://wa.me/5491127969464');
 
-    const mailLink = screen.getByRole('link', { name: 'Enviar mail' });
+    const mailLink = screen.getByRole('link', { name: 'Mail' });
     expect(mailLink).toBeInTheDocument();
     expect(mailLink).toHaveAttribute('href', 'mailto:matiasdragon01.mz@gmail.com');
 
@@ -101,7 +101,7 @@ describe('Admin V2 — Turnos Density & Contact Actions Optimization', () => {
     expect(screen.getByRole('link', { name: 'Cobrar' })).toBeInTheDocument();
   });
 
-  it('client without email: hides Enviar mail completely, keeps WhatsApp', () => {
+  it('client without email: hides Mail completely, keeps WhatsApp', () => {
     const today = businessDateToday();
     testState.appointments = [
       {
@@ -125,10 +125,10 @@ describe('Admin V2 — Turnos Density & Contact Actions Optimization', () => {
     render(<V2Appointments />);
 
     // WhatsApp exists
-    expect(screen.getByRole('link', { name: 'Enviar WhatsApp' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'WhatsApp' })).toBeInTheDocument();
 
-    // Enviar mail must NOT be rendered
-    expect(screen.queryByRole('link', { name: 'Enviar mail' })).toBeNull();
+    // Mail must NOT be rendered
+    expect(screen.queryByRole('link', { name: 'Mail' })).toBeNull();
 
     // Seña: No abonada
     expect(screen.getByText(/Seña:\s*No abonada/i)).toBeInTheDocument();

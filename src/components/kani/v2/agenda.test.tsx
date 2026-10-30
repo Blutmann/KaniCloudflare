@@ -16,7 +16,7 @@ describe('payment based appointment actions',()=>{
   expect(screen.queryByRole('button',{name:'Confirmar'})).toBeNull();
   expect(screen.queryByRole('button',{name:'Rechazar'})).toBeNull();
   expect(screen.queryByRole('button',{name:'Enviar correo'})).toBeNull();
-  expect(screen.getByRole('link',{name:'Enviar WhatsApp'})).toHaveAttribute('href','https://wa.me/5491128436014');
+  expect(screen.getByRole('link',{name:'WhatsApp'})).toHaveAttribute('href','https://wa.me/5491128436014');
   fireEvent.click(screen.getByRole('button',{name:'Cancelar turno'}));
   expect(screen.getByRole('heading',{name:'¿Cancelar este turno?'})).toBeInTheDocument();
   expect(mocks.cancel).not.toHaveBeenCalled();
@@ -24,6 +24,6 @@ describe('payment based appointment actions',()=>{
  it('does not offer cancellation for terminal states or links for missing phones',()=>{
   mocks.status='CANCELLED';mocks.phone='';render(<V2Appointments/>);
   expect(screen.queryByRole('button',{name:'Cancelar turno'})).toBeNull();
-  expect(screen.getByRole('button',{name:'Enviar WhatsApp'})).toBeDisabled();
+  expect(screen.getByRole('button',{name:'WhatsApp'})).toBeDisabled();
  });
 });

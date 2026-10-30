@@ -392,7 +392,7 @@ export function V2Payments() {
                   onClick={() => setShowDiscount(!showDiscount)}
                   aria-expanded={showDiscount}
                 >
-                  <Tag size={15} />
+                  <Tag size={16} />
                   <span>{showDiscount ? "Quitar descuento" : "Agregar descuento"}</span>
                 </button>
                 {origin === "walk_in" && (
@@ -402,7 +402,7 @@ export function V2Payments() {
                     onClick={() => setShowClient(!showClient)}
                     aria-expanded={showClient}
                   >
-                    <User size={15} />
+                    <User size={16} />
                     <span>{showClient ? "Ocultar cliente" : "Asociar cliente"}</span>
                   </button>
                 )}

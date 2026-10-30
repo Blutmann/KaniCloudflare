@@ -151,16 +151,16 @@ describe('Admin V2 — Optimización UX/UI Mobile', () => {
       expect(css).toMatch(/\.v2-appointments-page \.v2-appointment-actions\s*\{[^}]*margin:\s*0\s+0\s+0\s+auto\s*!important/);
     });
 
-    it('Fila 2: WhatsApp y Mail ocupan el 50% cada uno (grid 2 columnas)', () => {
+    it('Fila 2: WhatsApp y Mail ocupan el 50% cada uno (grid 2 columnas) con altura de 44px', () => {
       expect(css).toMatch(/\.v2-contact-buttons\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)\s*!important/);
-      expect(css).toMatch(/\.v2-contact-buttons > \*\s*\{[^}]*width:\s*100%\s*!important;\s*min-height:\s*40px\s*!important/);
+      expect(css).toMatch(/\.v2-contact-buttons > \*\s*\{[^}]*width:\s*100%\s*!important;\s*min-height:\s*44px\s*!important/);
     });
 
-    it('renderiza Cancelar turno, WhatsApp y Enviar mail con sus respectivas clases e iconos', () => {
+    it('renderiza Cancelar turno, WhatsApp y Mail con sus respectivas clases e iconos', () => {
       render(<V2Appointments />);
       expect(screen.getAllByText('Cancelar turno')[0]).toBeDefined();
-      expect(screen.getAllByText('Enviar WhatsApp')[0]).toBeDefined();
-      expect(screen.getAllByText('Enviar mail')[0]).toBeDefined();
+      expect(screen.getAllByText('WhatsApp')[0]).toBeDefined();
+      expect(screen.getAllByText('Mail')[0]).toBeDefined();
     });
   });
 
@@ -182,7 +182,7 @@ describe('Admin V2 — Optimización UX/UI Mobile', () => {
 
     it('css define .v2-payment-actions-strip con 2 columnas (50% cada una) y estilo coherente', () => {
       expect(css).toMatch(/\.v2-payment-actions-strip\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/);
-      expect(css).toMatch(/\.v2-payment-action-btn\s*\{[^}]*min-height:\s*40px/);
+      expect(css).toMatch(/\.v2-payment-action-btn\s*\{[^}]*min-height:\s*44px/);
       expect(css).toMatch(/\.v2-payment-action-btn\s*\{[^}]*border:\s*1px solid var\(--border\)/);
     });
 
