@@ -11,7 +11,9 @@ import {
   appointmentErrorMessage,
   updateRealAppointmentStatus,
   type RealAppointment,
+  type NotificationChannelDispatch,
 } from "@/lib/kani-appointments";
+import { retryNotificationChannelServerFn } from "@/lib/kani-notifications.functions";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { useV2 } from "./data";
 import {
@@ -274,6 +276,39 @@ export function V2Appointments() {
       setBusy(false);
     }
   }
+
+  async function handleRetryChannel(
+    appointmentId: string,
+    channel: "WHATSAPP" | "EMAIL",
+    errorCode?: string | null,
+  ) {
+    if (channel === "WHATSAPP" && errorCode === "131042") {
+      setMessage(
+        "Meta rechazó el mensaje por un problema de facturación (error 131042: la moneda de la cuenta de WhatsApp Business no está configurada). Debe resolverse la configuración en Meta Business Suite antes de reintentar.",
+      );
+      return;
+    }
+    setBusy(true);
+    setMessage("");
+    try {
+      const res = await retryNotificationChannelServerFn({
+        data: { appointmentId, channel },
+      });
+      if (res.blockedByAdminConfig) {
+        setMessage(res.error || "Reintento bloqueado por configuración administrativa pendiente en Meta.");
+      } else if (res.success) {
+        setMessage(`Notificación por ${channel === "WHATSAPP" ? "WhatsApp" : "Email"} reintentada correctamente.`);
+        await data.refresh();
+      } else {
+        setMessage(`Error al reintentar ${channel}: ${res.error || "Falló el envío"}`);
+        await data.refresh();
+      }
+    } catch (err) {
+      setMessage(`Error al reintentar: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setBusy(false);
+    }
+  }
   return (
     <main className="v2-page v2-appointments-page">
       <AdminFilterPanel
@@ -420,6 +455,52 @@ export function V2Appointments() {
                 <span className="v2-app-price">Importe: {money(a.servicePrice ?? 0)}</span>
               </div>
 
+              {/* Fila 4: Diagnóstico granular de notificaciones */}
+              <div className="v2-app-notifications">
+                <div className="v2-notif-channel">
+                  <span className="v2-notif-icon" aria-hidden="true">💬</span>
+                  <span
+                    className={`v2-notif-pill v2-notif-${(a.dispatches?.whatsapp?.status || "PENDING").toLowerCase()}`}
+                    title={a.dispatches?.whatsapp?.errorDescription || undefined}
+                  >
+                    {formatWhatsAppStatus(a.dispatches?.whatsapp)}
+                  </span>
+                  {a.dispatches?.whatsapp?.status === "FAILED" && (
+                    <button
+                      type="button"
+                      className="v2-notif-retry-btn"
+                      disabled={busy}
+                      onClick={() =>
+                        handleRetryChannel(a.id, "WHATSAPP", a.dispatches?.whatsapp?.errorCode)
+                      }
+                      title="Reintentar notificación WhatsApp"
+                    >
+                      Reintentar
+                    </button>
+                  )}
+                </div>
+                <div className="v2-notif-channel">
+                  <span className="v2-notif-icon" aria-hidden="true">✉️</span>
+                  <span
+                    className={`v2-notif-pill v2-notif-${(a.dispatches?.email?.status || "PENDING").toLowerCase()}`}
+                    title={a.dispatches?.email?.errorDescription || undefined}
+                  >
+                    {formatEmailStatus(a.dispatches?.email)}
+                  </span>
+                  {a.dispatches?.email?.status === "FAILED" && (
+                    <button
+                      type="button"
+                      className="v2-notif-retry-btn"
+                      disabled={busy}
+                      onClick={() => handleRetryChannel(a.id, "EMAIL")}
+                      title="Reintentar notificación Email"
+                    >
+                      Reintentar
+                    </button>
+                  )}
+                </div>
+              </div>
+
               {a.notes && <p className="v2-note">{a.notes}</p>}
             </div>
 
@@ -528,6 +609,46 @@ export function V2Appointments() {
       </Dialog>
     </main>
   );
+}
+
+function formatWhatsAppStatus(dispatch?: NotificationChannelDispatch): string {
+  if (!dispatch) return "WhatsApp: Pendiente";
+  switch (dispatch.status) {
+    case "DELIVERED":
+      return "WhatsApp: Entregado";
+    case "READ":
+      return "WhatsApp: Leído";
+    case "PROVIDER_ACCEPTED":
+      return "WhatsApp: Aceptado por Pontiun (en entrega)";
+    case "SENT":
+      return "WhatsApp: Enviado a Meta";
+    case "FAILED":
+      if (dispatch.errorCode === "131042") {
+        return "WhatsApp: Error 131042 (configuración de facturación/moneda en Meta pendiente)";
+      }
+      if (dispatch.errorCode === "TEMPLATE_NOT_APPROVED") {
+        return "WhatsApp: Plantilla no aprobada en Meta/Pontiun";
+      }
+      return `WhatsApp: Falló (${dispatch.errorCode || dispatch.errorDescription || "Error"})`;
+    case "SKIPPED":
+      return `WhatsApp: Omitido (${dispatch.errorDescription || "sin teléfono"})`;
+    default:
+      return `WhatsApp: ${dispatch.status}`;
+  }
+}
+
+function formatEmailStatus(dispatch?: NotificationChannelDispatch): string {
+  if (!dispatch) return "Email: Pendiente";
+  switch (dispatch.status) {
+    case "SENT":
+      return "Email: Enviado (Resend)";
+    case "FAILED":
+      return `Email: Falló (${dispatch.errorCode || dispatch.errorDescription || "Error"})`;
+    case "SKIPPED":
+      return `Email: Omitido (${dispatch.errorDescription || "sin correo"})`;
+    default:
+      return `Email: ${dispatch.status}`;
+  }
 }
 
 function WhatsAppLabel() {

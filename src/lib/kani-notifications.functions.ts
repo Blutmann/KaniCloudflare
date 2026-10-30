@@ -1,5 +1,4 @@
 import { createServerFn, createServerOnlyFn } from "@tanstack/react-start";
-import { getRequest } from "@tanstack/react-start/server";
 import { notificationSubject } from './kani-email-environment';
 import { KANI_MAPS_URL, KANI_STANDARD_DEPOSIT_ARS } from './kani-constants';
 
@@ -95,6 +94,10 @@ export const dispatchAppointmentNotification = createServerOnlyFn(async (data: {
       if (event.notification_type === "CONFIRMED") {
         const hasRecipientPhoneKey = "recipient_phone" in event;
         const clientHasRegisteredPhone = Boolean(recipientPhone && recipientPhone.trim());
+        let whatsappStatus = "SKIPPED";
+        let whatsappErrorCode: string | null = null;
+        let whatsappErrorDesc: string | null = null;
+        let whatsappIncrement = false;
 
         if (clientHasRegisteredPhone) {
           try {
@@ -112,38 +115,83 @@ export const dispatchAppointmentNotification = createServerOnlyFn(async (data: {
             if (pontiunResult.success) {
               pontiunSuccess = true;
               pontiunMessageId = pontiunResult.messageId;
+              whatsappStatus = "PROVIDER_ACCEPTED";
+              whatsappIncrement = true;
               console.log(
                 `[Pontiun WhatsApp] Confirmación enviada/aceptada para turno ${data.appointmentId} (id: ${pontiunResult.messageId})`,
               );
             } else if (pontiunResult.skipped) {
+              whatsappStatus = "SKIPPED";
+              whatsappErrorDesc = pontiunResult.error ?? "Envío omitido";
               console.info(
                 `[Pontiun WhatsApp] Envío omitido de forma segura para turno ${data.appointmentId}: ${pontiunResult.error}`,
               );
             } else {
               pontiunError = pontiunResult.error;
+              whatsappStatus = "FAILED";
+              whatsappErrorDesc = pontiunResult.error ?? null;
+              whatsappIncrement = true;
+              if (pontiunResult.error?.includes("131042")) {
+                whatsappErrorCode = "131042";
+              } else if (pontiunResult.error?.includes("TEMPLATE_NOT_APPROVED")) {
+                whatsappErrorCode = "TEMPLATE_NOT_APPROVED";
+              } else {
+                whatsappErrorCode = "PONTIUN_ERROR";
+              }
               console.warn(
                 `[Pontiun WhatsApp] No se pudo enviar confirmación para turno ${data.appointmentId}: ${pontiunResult.error}`,
               );
             }
           } catch (pontiunErr) {
             pontiunError = pontiunErr instanceof Error ? pontiunErr.message : String(pontiunErr);
+            whatsappStatus = "FAILED";
+            whatsappErrorCode = "PONTIUN_EXCEPTION";
+            whatsappErrorDesc = pontiunError;
+            whatsappIncrement = true;
             console.warn("[Pontiun WhatsApp] Error durante el despacho:", pontiunError);
           }
         } else if (!hasRecipientPhoneKey && !data.clientPhone) {
           // Error estructural: El RPC no proyectó la columna recipient_phone
           pontiunError = "RPC_STRUCTURAL_ERROR: la función claim_appointment_notification no devolvió la columna recipient_phone";
+          whatsappStatus = "FAILED";
+          whatsappErrorCode = "RPC_STRUCTURAL_ERROR";
+          whatsappErrorDesc = pontiunError;
           console.error(
             `[Pontiun WhatsApp] ${pontiunError} para turno ${data.appointmentId}.`,
           );
         } else {
           // Omisión válida: El cliente genuinamente no registró teléfono
+          whatsappStatus = "SKIPPED";
+          whatsappErrorDesc = "Cliente sin teléfono registrado";
           console.info(
             `[Pontiun WhatsApp] Turno ${data.appointmentId} no posee teléfono registrado; WhatsApp omitido de forma válida.`,
           );
         }
+
+        try {
+          await supabase.rpc("record_channel_dispatch_status", {
+            p_appointment_id: data.appointmentId,
+            p_notification_event_id: event.notification_id,
+            p_channel: "WHATSAPP",
+            p_provider: "PONTIUN",
+            p_recipient: recipientPhone,
+            p_provider_message_id: pontiunMessageId ?? null,
+            p_status: whatsappStatus,
+            p_error_code: whatsappErrorCode,
+            p_error_description: whatsappErrorDesc,
+            p_increment_attempt: whatsappIncrement,
+          });
+        } catch (rpcErr) {
+          console.warn("[KANI notification] Error registrando estado de canal WHATSAPP:", rpcErr);
+        }
       }
 
       // 2. Despacho de Email vía Resend (aislado para no bloquear WhatsApp)
+      let emailStatus = "SKIPPED";
+      let emailErrorCode: string | null = null;
+      let emailErrorDesc: string | null = null;
+      let emailIncrement = false;
+
       if (event.recipient_email && event.recipient_email.trim()) {
         try {
           const apiKey = getRuntimeEnv("RESEND_API_KEY")?.trim();
@@ -199,20 +247,51 @@ export const dispatchAppointmentNotification = createServerOnlyFn(async (data: {
             if (response.ok && result?.id) {
               emailSuccess = true;
               emailMessageId = result.id;
+              emailStatus = "SENT";
+              emailIncrement = true;
               console.log(`[KANI notification] Email enviado exitosamente para turno ${data.appointmentId} (id: ${result.id})`);
             } else {
               emailError = `RESEND_${response.status}: ${result?.message ?? "SEND_FAILED"}`;
+              emailStatus = "FAILED";
+              emailErrorCode = `RESEND_${response.status}`;
+              emailErrorDesc = result?.message ?? "SEND_FAILED";
+              emailIncrement = true;
               console.warn(`[KANI notification] Resend HTTP ${response.status}: ${result?.message ?? "SEND_FAILED"}`);
             }
           } else {
+            emailStatus = "SKIPPED";
+            emailErrorDesc = "Credenciales de Resend no configuradas";
             console.info("[KANI notification] Credenciales de Resend no configuradas; omitiendo email.");
           }
         } catch (emailErr) {
           emailError = emailErr instanceof Error ? emailErr.message : String(emailErr);
+          emailStatus = "FAILED";
+          emailErrorCode = "RESEND_EXCEPTION";
+          emailErrorDesc = emailError;
+          emailIncrement = true;
           console.warn("[KANI notification] Error enviando email vía Resend:", emailErr);
         }
       } else {
+        emailStatus = "SKIPPED";
+        emailErrorDesc = "Cliente sin correo registrado";
         console.log(`[KANI notification] Turno ${data.appointmentId} no posee email registrado; email omitido.`);
+      }
+
+      try {
+        await supabase.rpc("record_channel_dispatch_status", {
+          p_appointment_id: data.appointmentId,
+          p_notification_event_id: event.notification_id,
+          p_channel: "EMAIL",
+          p_provider: "RESEND",
+          p_recipient: event.recipient_email,
+          p_provider_message_id: emailMessageId ?? null,
+          p_status: emailStatus,
+          p_error_code: emailErrorCode,
+          p_error_description: emailErrorDesc,
+          p_increment_attempt: emailIncrement,
+        });
+      } catch (rpcErr) {
+        console.warn("[KANI notification] Error registrando estado de canal EMAIL:", rpcErr);
       }
 
       const hasSuccess = Boolean(pontiunSuccess || emailSuccess);
@@ -308,6 +387,288 @@ export const dispatchAppointmentNotification = createServerOnlyFn(async (data: {
     }
 });
 
+export type ChannelDispatchRecord = {
+  id: string;
+  appointmentId: string;
+  notificationEventId: string | null;
+  channel: "WHATSAPP" | "EMAIL";
+  provider: "PONTIUN" | "RESEND";
+  recipient: string | null;
+  providerMessageId: string | null;
+  status: "PENDING" | "PROCESSING" | "PROVIDER_ACCEPTED" | "SENT" | "DELIVERED" | "READ" | "FAILED" | "SKIPPED" | "UNKNOWN";
+  errorCode: string | null;
+  errorDescription: string | null;
+  attempts: number;
+  requestedAt: string;
+  deliveredAt: string | null;
+  readAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type RetryChannelResult = {
+  success: boolean;
+  channel: "WHATSAPP" | "EMAIL";
+  status: string;
+  error?: string;
+  blockedByAdminConfig?: boolean;
+};
+
+export async function fetchAppointmentNotificationDispatches(
+  appointmentIds: string[],
+): Promise<Record<string, { whatsapp?: ChannelDispatchRecord; email?: ChannelDispatchRecord }>> {
+  if (!appointmentIds || !appointmentIds.length) return {};
+  try {
+    const supabase = await createRequestSupabaseClient();
+    const { data, error } = await (supabase as any)
+      .from("appointment_notification_dispatches")
+      .select("*")
+      .in("appointment_id", appointmentIds);
+    if (error) {
+      console.warn("[KANI notification] Error al consultar dispatches:", error);
+      return {};
+    }
+    const result: Record<string, { whatsapp?: ChannelDispatchRecord; email?: ChannelDispatchRecord }> = {};
+    for (const row of (data ?? [])) {
+      if (!result[row.appointment_id]) {
+        result[row.appointment_id] = {};
+      }
+      const record: ChannelDispatchRecord = {
+        id: row.id,
+        appointmentId: row.appointment_id,
+        notificationEventId: row.notification_event_id,
+        channel: row.channel,
+        provider: row.provider,
+        recipient: row.recipient,
+        providerMessageId: row.provider_message_id,
+        status: row.status,
+        errorCode: row.error_code,
+        errorDescription: row.error_description,
+        attempts: row.attempts,
+        requestedAt: row.requested_at,
+        deliveredAt: row.delivered_at,
+        readAt: row.read_at,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+      };
+      if (row.channel === "WHATSAPP") {
+        result[row.appointment_id].whatsapp = record;
+      } else if (row.channel === "EMAIL") {
+        result[row.appointment_id].email = record;
+      }
+    }
+    return result;
+  } catch (err) {
+    console.warn("[KANI notification] Falló la consulta de dispatches:", err);
+    return {};
+  }
+}
+
+export async function retryNotificationChannel(input: {
+  appointmentId: string;
+  channel: "WHATSAPP" | "EMAIL";
+}): Promise<RetryChannelResult> {
+  const supabase = await createRequestSupabaseClient();
+
+  // 1. Consultar estado previo del despacho
+  const { data: dispatches } = await (supabase as any)
+    .from("appointment_notification_dispatches")
+    .select("*")
+    .eq("appointment_id", input.appointmentId)
+    .eq("channel", input.channel)
+    .maybeSingle();
+
+  // Bloqueo estricto si el error es 131042 (Meta currency billing issue)
+  if (input.channel === "WHATSAPP" && dispatches?.error_code === "131042") {
+    return {
+      success: false,
+      channel: "WHATSAPP",
+      status: "FAILED",
+      blockedByAdminConfig: true,
+      error:
+        "ADMIN_CONFIGURATION_BLOCK: Meta rechazó el mensaje por un problema de facturación (código 131042: la moneda de la cuenta de WhatsApp Business no está configurada). Debe resolverse la configuración en Meta Business Suite antes de reintentar.",
+    };
+  }
+
+  // 2. Obtener datos del turno y cliente
+  const { data: aptData, error: aptError } = await supabase
+    .from("appointments")
+    .select(`
+      id,
+      booking_date,
+      start_time,
+      client_id,
+      barber_id,
+      clients (id, name, phone, email),
+      barbers (id, name),
+      services (id, name)
+    `)
+    .eq("id", input.appointmentId)
+    .maybeSingle();
+
+  if (aptError || !aptData) {
+    return {
+      success: false,
+      channel: input.channel,
+      status: "FAILED",
+      error: "APPOINTMENT_NOT_FOUND",
+    };
+  }
+
+  const client = (aptData as any).clients;
+  const barber = (aptData as any).barbers;
+  const service = (aptData as any).services;
+
+  if (input.channel === "WHATSAPP") {
+    if (!client?.phone || !client.phone.trim()) {
+      return {
+        success: false,
+        channel: "WHATSAPP",
+        status: "SKIPPED",
+        error: "CLIENT_HAS_NO_PHONE",
+      };
+    }
+
+    const { sendPontiunAppointmentConfirmation } = await import("./kani-pontiun");
+    const pontiunResult = await sendPontiunAppointmentConfirmation({
+      appointmentId: input.appointmentId,
+      clientName: client.name || "Cliente",
+      clientPhone: client.phone,
+      barberName: barber?.name || "Lautaro",
+      serviceName: service?.name || "Corte",
+      bookingDate: aptData.booking_date,
+      startTime: aptData.start_time,
+    });
+
+    const newStatus = pontiunResult.success
+      ? "PROVIDER_ACCEPTED"
+      : (pontiunResult.skipped ? "SKIPPED" : "FAILED");
+
+    const errCode = pontiunResult.error?.includes("131042")
+      ? "131042"
+      : (pontiunResult.error ? "PONTIUN_RETRY_ERROR" : null);
+
+    await supabase.rpc("record_channel_dispatch_status", {
+      p_appointment_id: input.appointmentId,
+      p_notification_event_id: dispatches?.notification_event_id ?? null,
+      p_channel: "WHATSAPP",
+      p_provider: "PONTIUN",
+      p_recipient: client.phone,
+      p_provider_message_id: pontiunResult.messageId ?? null,
+      p_status: newStatus,
+      p_error_code: errCode,
+      p_error_description: pontiunResult.error ?? null,
+      p_increment_attempt: true,
+    });
+
+    return {
+      success: pontiunResult.success,
+      channel: "WHATSAPP",
+      status: newStatus,
+      error: pontiunResult.error,
+    };
+  }
+
+  if (input.channel === "EMAIL") {
+    if (!client?.email || !client.email.trim()) {
+      return {
+        success: false,
+        channel: "EMAIL",
+        status: "SKIPPED",
+        error: "CLIENT_HAS_NO_EMAIL",
+      };
+    }
+
+    const apiKey = getRuntimeEnv("RESEND_API_KEY")?.trim();
+    const fromEmail = getRuntimeEnv("RESEND_FROM_EMAIL")?.trim();
+    if (!apiKey || !fromEmail) {
+      return {
+        success: false,
+        channel: "EMAIL",
+        status: "SKIPPED",
+        error: "RESEND_CREDENTIALS_MISSING",
+      };
+    }
+
+    const payload: NotificationPayload = {
+      notificationId: dispatches?.notification_event_id ?? input.appointmentId,
+      notificationType: "CONFIRMED",
+      recipientEmail: client.email,
+      recipientPhone: client.phone,
+      clientName: client.name || "Cliente",
+      barberName: barber?.name || "Lautaro",
+      serviceName: service?.name || "Corte",
+      bookingDate: aptData.booking_date,
+      startTime: aptData.start_time,
+      endTime: aptData.start_time,
+      clientNotes: null,
+      servicePriceArs: null,
+      serviceDurationMinutes: null,
+      downPaymentArs: null,
+      transferAlias: null,
+      transferCuit: null,
+      transferHolderName: null,
+    };
+
+    const email = buildEmail(payload);
+    const subject = notificationSubject(
+      email.subject,
+      getRuntimeEnv("KANI_ENVIRONMENT"),
+      getRuntimeEnv("SUPABASE_URL") ?? getRuntimeEnv("VITE_SUPABASE_URL"),
+    );
+
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+        "Idempotency-Key": `${input.appointmentId}-retry-email-${Date.now()}`,
+      },
+      body: JSON.stringify({
+        from: fromEmail,
+        to: [client.email],
+        subject,
+        html: email.html,
+        text: email.text,
+      }),
+    });
+
+    const result = (await response.json().catch(() => null)) as { id?: string; message?: string } | null;
+    const ok = response.ok && Boolean(result?.id);
+    const newStatus = ok ? "SENT" : "FAILED";
+    const errDesc = ok ? null : (result?.message ?? `RESEND_${response.status}`);
+
+    await supabase.rpc("record_channel_dispatch_status", {
+      p_appointment_id: input.appointmentId,
+      p_notification_event_id: dispatches?.notification_event_id ?? null,
+      p_channel: "EMAIL",
+      p_provider: "RESEND",
+      p_recipient: client.email,
+      p_provider_message_id: result?.id ?? null,
+      p_status: newStatus,
+      p_error_code: ok ? null : `RESEND_${response.status}`,
+      p_error_description: errDesc,
+      p_increment_attempt: true,
+    });
+
+    return {
+      success: ok,
+      channel: "EMAIL",
+      status: newStatus,
+      error: errDesc ?? undefined,
+    };
+  }
+
+  return { success: false, channel: input.channel, status: "FAILED", error: "UNKNOWN_CHANNEL" };
+}
+
+export const retryNotificationChannelServerFn = createServerFn({ method: "POST" })
+  .validator((data: { appointmentId: string; channel: "WHATSAPP" | "EMAIL" }) => {
+    if (!data?.appointmentId || !data?.channel) throw new Error("RETRY_INPUT_INVALID");
+    return data;
+  })
+  .handler(async ({ data }): Promise<RetryChannelResult> => retryNotificationChannel(data));
+
 function getRuntimeEnv(name: string): string | undefined {
   // src/server.ts reads the Worker's runtime bindings before TanStack dispatches
   // the request and stores them in a shared, non-secret-accessible app runtime map.
@@ -337,7 +698,10 @@ function getRuntimeEnv(name: string): string | undefined {
 async function createRequestSupabaseClient() {
   const { createClient } = await import("@supabase/supabase-js");
   let request: Request | undefined;
-  try { request = getRequest(); } catch { /* Raw Worker webhook has no TanStack request. */ }
+  try {
+    const serverModule = await import("@tanstack/react-start/server");
+    request = serverModule.getRequest();
+  } catch { /* Raw Worker webhook has no TanStack request. */ }
   const supabaseUrl = getRuntimeEnv("SUPABASE_URL") ?? getRuntimeEnv("VITE_SUPABASE_URL");
   const supabaseKey =
     getRuntimeEnv("SUPABASE_ANON_KEY") ??
@@ -597,7 +961,7 @@ function buildEmail(payload: NotificationPayload) {
   const isNewRequest = payload.notificationType === "NEW_REQUEST";
   if (isNewRequest) return buildNewRequestEmail(payload, date, time);
 
-  const baseUrl = getRuntimeEnv('KANI_APP_URL')?.replace(/\/$/, '') || new URL(getRequest().url).origin;
+  const baseUrl = getRuntimeEnv('KANI_APP_URL')?.replace(/\/$/, '') || 'https://kanibarber.com';
   return buildCancelledEmail(payload, `${baseUrl}/reservar`);
 }
 

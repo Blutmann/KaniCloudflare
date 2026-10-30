@@ -2186,6 +2186,83 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
   font-variant-numeric: tabular-nums !important;
 }
 
+/* Fila 4: Diagnóstico granular de notificaciones */
+.v2-app-notifications {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+  margin-top: 3px !important;
+  font-size: 11.5px !important;
+}
+
+.v2-notif-channel {
+  display: inline-flex !important;
+  align-items: center !important;
+  flex-wrap: wrap !important;
+  gap: 5px !important;
+}
+
+.v2-notif-icon {
+  font-size: 12px !important;
+  line-height: 1 !important;
+  flex-shrink: 0 !important;
+}
+
+.v2-notif-pill {
+  display: inline-flex !important;
+  align-items: center !important;
+  padding: 2px 7px !important;
+  border-radius: 9999px !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  line-height: 1.3 !important;
+  border: 1px solid transparent !important;
+  word-break: break-word !important;
+}
+
+.v2-notif-delivered,
+.v2-notif-read {
+  background-color: color-mix(in srgb, #10b981 12%, transparent) !important;
+  color: #059669 !important;
+  border-color: color-mix(in srgb, #10b981 30%, transparent) !important;
+}
+
+.v2-notif-provider_accepted,
+.v2-notif-sent {
+  background-color: color-mix(in srgb, #0ea5e9 12%, transparent) !important;
+  color: #0284c7 !important;
+  border-color: color-mix(in srgb, #0ea5e9 30%, transparent) !important;
+}
+
+.v2-notif-failed {
+  background-color: color-mix(in srgb, #ef4444 12%, transparent) !important;
+  color: #dc2626 !important;
+  border-color: color-mix(in srgb, #ef4444 30%, transparent) !important;
+}
+
+.v2-notif-skipped,
+.v2-notif-pending {
+  background-color: color-mix(in srgb, var(--muted) 40%, transparent) !important;
+  color: var(--muted-foreground) !important;
+  border-color: color-mix(in srgb, var(--border) 40%, transparent) !important;
+}
+
+.v2-notif-retry-btn {
+  background: transparent !important;
+  border: 1px solid color-mix(in srgb, #dc2626 40%, transparent) !important;
+  color: #dc2626 !important;
+  border-radius: 4px !important;
+  padding: 1px 6px !important;
+  font-size: 10.5px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+}
+
+.v2-notif-retry-btn:hover {
+  background-color: color-mix(in srgb, #dc2626 15%, transparent) !important;
+}
+
 .v2-note {
   border-left: 2px solid color-mix(in srgb, var(--gold) 50%, transparent) !important;
   padding-left: 9px !important;

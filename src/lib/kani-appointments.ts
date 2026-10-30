@@ -21,6 +21,29 @@ export {
 export type RealAppointmentStatus = Tables<'appointments'>['status'];
 export type NoShowDecision = 'RETAIN' | 'WAIVE' | 'REFUND';
 
+export type NotificationChannelDispatch = {
+  id: string;
+  appointmentId: string;
+  channel: 'WHATSAPP' | 'EMAIL';
+  provider: 'PONTIUN' | 'RESEND';
+  recipient?: string | null;
+  providerMessageId?: string | null;
+  status: 'PENDING' | 'PROCESSING' | 'PROVIDER_ACCEPTED' | 'SENT' | 'DELIVERED' | 'READ' | 'FAILED' | 'SKIPPED' | 'UNKNOWN';
+  errorCode?: string | null;
+  errorDescription?: string | null;
+  attempts: number;
+  requestedAt: string;
+  deliveredAt?: string | null;
+  readAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type AppointmentDispatches = {
+  whatsapp?: NotificationChannelDispatch;
+  email?: NotificationChannelDispatch;
+};
+
 export type RealAppointment = Appointment & {
   notes: string;
   statusCode: RealAppointmentStatus;
@@ -46,6 +69,7 @@ export type RealAppointment = Appointment & {
   noShowDecision?: NoShowDecision | null;
   noShowRefundAmountArs?: number;
   noShowReason?: string | null;
+  dispatches?: AppointmentDispatches;
 };
 
 type AppointmentRow = Tables<'appointments'>;
@@ -457,12 +481,13 @@ async function executeReadRealAppointments(options?: { bypassCache?: boolean; ba
   const barberIds = [...new Set(appointments.map(row => row.barber_id))];
   const serviceIds = [...new Set(appointments.map(row => row.service_id).filter(Boolean))] as string[];
 
-  const [clientsResult, barbersResult, servicesResult, exceptionsResult, ordersResult] = await Promise.all([
+  const [clientsResult, barbersResult, servicesResult, exceptionsResult, ordersResult, dispatchesResult] = await Promise.all([
     clientIds.length ? supabase.from('clients').select('id, name, email, phone').in('id', clientIds) : { data: [] },
     cachedBarbersMap ? { data: Array.from(cachedBarbersMap.data.values()) } : (barberIds.length ? supabase.from('barbers').select('id, name').in('id', barberIds) : { data: [] }),
     cachedServicesMap ? { data: Array.from(cachedServicesMap.data.values()) } : (serviceIds.length ? supabase.from('services').select('id, name, duration_minutes, price_ars').in('id', serviceIds) : { data: [] }),
     appointments.length ? (supabase as any).from('appointment_no_show_exceptions').select('appointment_id, decision, refund_amount_ars, reason').in('appointment_id', appointments.map(a => a.id)) : { data: [] },
     appointments.length ? (supabase as any).from('mercadopago_orders').select('appointment_id, paid_amount_ars').in('appointment_id', appointments.map(a => a.id)).eq('status', 'CONFIRMED') : { data: [] },
+    appointments.length ? (supabase as any).from('appointment_notification_dispatches').select('*').in('appointment_id', appointments.map(a => a.id)) : { data: [] },
   ]);
 
   const clients = clientsResult.data;
@@ -485,6 +510,33 @@ async function executeReadRealAppointments(options?: { bypassCache?: boolean; ba
   const serviceById = new Map((services ?? []).map(service => [service.id, service]));
   const exceptionByApt = new Map((((exceptionsResult as any)?.data as any[]) ?? []).map((e: any) => [e.appointment_id, e]));
   const orderByApt = new Map((((ordersResult as any)?.data as any[]) ?? []).map((o: any) => [o.appointment_id, o]));
+
+  const dispatchesMap = new Map<string, AppointmentDispatches>();
+  if (dispatchesResult && Array.isArray((dispatchesResult as any).data)) {
+    for (const d of (dispatchesResult as any).data) {
+      const current = dispatchesMap.get(d.appointment_id) || {};
+      const record: NotificationChannelDispatch = {
+        id: d.id,
+        appointmentId: d.appointment_id,
+        channel: d.channel,
+        provider: d.provider,
+        recipient: d.recipient,
+        providerMessageId: d.provider_message_id,
+        status: d.status,
+        errorCode: d.error_code,
+        errorDescription: d.error_description,
+        attempts: d.attempts,
+        requestedAt: d.requested_at,
+        deliveredAt: d.delivered_at,
+        readAt: d.read_at,
+        createdAt: d.created_at,
+        updatedAt: d.updated_at,
+      };
+      if (d.channel === 'WHATSAPP') current.whatsapp = record;
+      if (d.channel === 'EMAIL') current.email = record;
+      dispatchesMap.set(d.appointment_id, current);
+    }
+  }
 
   return appointments.flatMap(row => {
     const client = clientById.get(row.client_id);
@@ -545,6 +597,7 @@ async function executeReadRealAppointments(options?: { bypassCache?: boolean; ba
       noShowDecision: (exc?.decision ?? (row as any).no_show_decision ?? null) as NoShowDecision | null,
       noShowRefundAmountArs: exc?.refund_amount_ars ?? (row as any).no_show_refund_amount_ars ?? 0,
       noShowReason: exc?.reason ?? null,
+      dispatches: dispatchesMap.get(row.id),
     } satisfies RealAppointment];
   });
 }

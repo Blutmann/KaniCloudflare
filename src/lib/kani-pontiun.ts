@@ -331,12 +331,136 @@ export async function handlePontiunWebhookRequest(request: Request): Promise<Res
   // Parsear payload de evento de forma segura
   try {
     if (rawBody && rawBody.trim()) {
-      const payload = JSON.parse(rawBody) as {
-        type?: string;
-        page?: { channel?: string; name?: string; id?: string };
-        conversation?: { id?: string; contactId?: string };
-        message?: { id?: string; direction?: string; text?: string };
-      };
+      const payload = JSON.parse(rawBody) as any;
+
+      // Extraer todas las actualizaciones de estado de mensajes
+      const statusUpdates: Array<{
+        providerMessageId?: string;
+        metaMessageId?: string;
+        status: string;
+        errorCode?: string;
+        errorDescription?: string;
+      }> = [];
+
+      // Formato 1: Pontiun resender callback { type: "message.status", message: { id, status, error: { code, message } }, meta: { id } }
+      if (
+        payload.type === "message.status" ||
+        payload.type === "message_status" ||
+        (payload.message && payload.message.status)
+      ) {
+        const msg = payload.message || payload;
+        const err = msg.error || payload.error;
+        statusUpdates.push({
+          providerMessageId: msg.id || payload.id,
+          metaMessageId: payload.meta?.id || payload.meta?.messages?.[0]?.id,
+          status: msg.status || payload.status,
+          errorCode: err
+            ? typeof err === "object"
+              ? String(err.code || err.error_code || "")
+              : String(err)
+            : undefined,
+          errorDescription: err
+            ? typeof err === "object"
+              ? String(err.message || err.description || JSON.stringify(err))
+              : String(err)
+            : undefined,
+        });
+      }
+
+      // Formato 2: Meta Cloud API webhook estándar { entry: [ { changes: [ { value: { statuses: [...] } } ] } ] }
+      if (Array.isArray(payload.entry)) {
+        for (const ent of payload.entry) {
+          for (const ch of ent.changes || []) {
+            if (Array.isArray(ch.value?.statuses)) {
+              for (const st of ch.value.statuses) {
+                const firstErr =
+                  Array.isArray(st.errors) && st.errors[0] ? st.errors[0] : undefined;
+                statusUpdates.push({
+                  providerMessageId: st.id,
+                  metaMessageId: st.id,
+                  status: st.status,
+                  errorCode: firstErr ? String(firstErr.code) : undefined,
+                  errorDescription: firstErr
+                    ? String(firstErr.title || firstErr.message || "")
+                    : undefined,
+                });
+              }
+            }
+          }
+        }
+      }
+
+      // Formato 3: Direct array { statuses: [...] }
+      if (Array.isArray(payload.statuses)) {
+        for (const st of payload.statuses) {
+          const firstErr =
+            Array.isArray(st.errors) && st.errors[0] ? st.errors[0] : undefined;
+          statusUpdates.push({
+            providerMessageId: st.id,
+            metaMessageId: st.id,
+            status: st.status,
+            errorCode: firstErr ? String(firstErr.code) : undefined,
+            errorDescription: firstErr
+              ? String(firstErr.title || firstErr.message || "")
+              : undefined,
+          });
+        }
+      }
+
+      // Procesar actualizaciones de entrega en base de datos si existen
+      if (statusUpdates.length > 0) {
+        try {
+          const { createClient } = await import("@supabase/supabase-js");
+          const supabaseUrl =
+            getPontiunRuntimeEnv("SUPABASE_URL") ?? getPontiunRuntimeEnv("VITE_SUPABASE_URL");
+          const supabaseKey =
+            getPontiunRuntimeEnv("SUPABASE_SERVICE_ROLE_KEY") ??
+            getPontiunRuntimeEnv("SUPABASE_ANON_KEY") ??
+            getPontiunRuntimeEnv("SUPABASE_PUBLISHABLE_KEY") ??
+            getPontiunRuntimeEnv("VITE_SUPABASE_ANON_KEY") ??
+            getPontiunRuntimeEnv("VITE_SUPABASE_PUBLISHABLE_KEY");
+
+          if (supabaseUrl && supabaseKey) {
+            const supabase = createClient(supabaseUrl, supabaseKey, {
+              auth: { persistSession: false, autoRefreshToken: false },
+            });
+
+            for (const update of statusUpdates) {
+              if (update.providerMessageId || update.metaMessageId) {
+                console.log("[Pontiun Webhook] Actualizando estado de entrega:", {
+                  msgId: update.providerMessageId,
+                  metaId: update.metaMessageId,
+                  status: update.status,
+                  errorCode: update.errorCode,
+                });
+
+                const { error: rpcErr } = await supabase.rpc(
+                  "update_pontiun_webhook_message_status",
+                  {
+                    p_provider_message_id: update.providerMessageId ?? null,
+                    p_meta_message_id: update.metaMessageId ?? null,
+                    p_status: update.status,
+                    p_error_code: update.errorCode ?? null,
+                    p_error_description: update.errorDescription ?? null,
+                  },
+                );
+
+                if (rpcErr) {
+                  console.warn(
+                    "[Pontiun Webhook] RPC update_pontiun_webhook_message_status error:",
+                    rpcErr.message,
+                  );
+                }
+              }
+            }
+          }
+        } catch (dbErr) {
+          console.warn(
+            "[Pontiun Webhook] Error al conectar con Supabase para actualizar estado:",
+            dbErr,
+          );
+        }
+      }
 
       // Si es un mensaje entrante de un cliente, registrar diagnóstico mínimo sin exponer PII
       if (payload.type === "message" && payload.message?.direction === "inbound") {
