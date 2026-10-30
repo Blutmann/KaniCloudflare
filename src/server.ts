@@ -288,9 +288,9 @@ export default {
               barber_id: barber?.id,
               service_id: service?.id,
               client_id: clientUser?.id,
-              booking_date: "2026-12-31",
-              start_time: "20:00:00",
-              end_time: "20:45:00",
+              booking_date: "2026-11-10",
+              start_time: "10:00:00",
+              end_time: "10:45:00",
               status: "PENDING",
               notes: "__MIGRATION_AUDIT_PROBE__"
             }).select("id").single();
