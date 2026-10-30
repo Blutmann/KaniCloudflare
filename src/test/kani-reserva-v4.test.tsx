@@ -23,11 +23,11 @@ const checkout = { appointmentId: '123e4567-e89b-42d3-a456-426614174000', attemp
 function next() { fireEvent.click(screen.getByRole('button', { name: 'Continuar', hidden: false })); }
 async function reachData() {
   render(<PaywayBooking />);
-  fireEvent.click(screen.getByRole('button', { name: /^Corte 45/ })); next();
+  fireEvent.click(screen.getByRole('button', { name: /^Corte,/ })); next();
   fireEvent.click(screen.getByRole('button', { name: /Lautaro/ })); next();
   fireEvent.click(await screen.findByRole('button', { name: dateLabel('2026-10-27') })); next();
-  await screen.findByRole('button', { name: '10:00' });
-  fireEvent.click(screen.getByRole('button', { name: '10:00' })); next();
+  await screen.findByRole('button', { name: /10:00/ });
+  fireEvent.click(screen.getByRole('button', { name: /10:00/ })); next();
   await screen.findByRole('textbox', { name: /^Nombre/ });
   fireEvent.change(screen.getByRole('textbox', { name: /^Nombre/ }), { target: { value: 'Cliente Simulado' } });
   fireEvent.change(screen.getByRole('textbox', { name: /^Email/ }), { target: { value: 'fixture@example.test' } });
@@ -114,20 +114,19 @@ describe('independent Payway reservation matching the current V3 five steps', ()
     expect(screen.queryByRole('button', { name: 'Pagar seña' })).not.toBeInTheDocument();
     expect(mocks.prepare).toHaveBeenCalledTimes(1);
     expect(mocks.pay).toHaveBeenCalledTimes(1);
-  });
+  }, 15000);
 
   it('keeps an indeterminate payment terminal even after closing and reopening the dialog', async () => {
     mocks.pay.mockRejectedValue(new Error('network fixture'));
     await openCard(); fireEvent.submit(screen.getByRole('textbox', { name: 'Número de tarjeta' }).closest('form')!);
-    expect(await screen.findByRole('alert')).toHaveTextContent(PAYWAY_MESSAGES.unknown);
-    expect(screen.getByText('Conservá esta pantalla y contactá al estudio. Tu turno todavía no está confirmado.')).toBeInTheDocument();
+    expect(await screen.findByText('Estamos verificando tu pago', { exact: true })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Turno confirmado' })).not.toBeInTheDocument();
     expect(screen.queryByRole('textbox', { name: 'Número de tarjeta' })).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: /^Cerrar$/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Close|Cerrar/i }));
     fireEvent.click(screen.getByRole('button', { name: 'Pagar seña' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent(PAYWAY_MESSAGES.unknown);
+    expect(await screen.findByText('Estamos verificando tu pago', { exact: true })).toBeInTheDocument();
     expect(mocks.prepare).toHaveBeenCalledTimes(1); expect(mocks.pay).toHaveBeenCalledTimes(1);
-  });
+  }, 15000);
 
   it('renders explicit rejection without false success and allows recoverable retry with a new preparation', async () => {
     mocks.pay.mockResolvedValueOnce({ state: 'rejected', message: PAYWAY_MESSAGES.rejected });

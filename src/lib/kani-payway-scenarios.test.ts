@@ -221,7 +221,7 @@ describe('PayWay Flow Scenarios (Official Support Verification)', () => {
 
     // Must return verifying state and NEVER mark attempt as rejected
     expect(checkResult.state).toBe('verifying');
-    expect(checkResult.message).toContain('Estamos verificando tu pago con Payway');
+    expect(checkResult.message).toBe('Estamos verificando tu pago. Podés cerrar esta ventana; seguiremos comprobándolo. No vuelvas a pagar mientras la verificación esté pendiente.');
     expect(mockStore.settle).not.toHaveBeenCalledWith(attemptId, 'rejected', expect.anything(), expect.anything());
     expect(mockStore.confirm).not.toHaveBeenCalled();
   });

@@ -823,16 +823,16 @@ export function PaywayBooking() {
               <div className="space-y-1">
                 <p className="font-semibold text-base">Estamos verificando tu pago</p>
                 <p className="text-sm text-muted-foreground">
-                  Por favor no cierres esta ventana ni intentes pagar nuevamente. Estamos comprobando el resultado con Payway.
+                  Estamos verificando tu pago. Podés cerrar esta ventana; seguiremos comprobándolo. No vuelvas a pagar mientras la verificación esté pendiente.
                 </p>
               </div>
             </div>
           )}
           {pollExhausted && (
             <div className="space-y-2 text-center py-2" role="alert">
-              <p className="text-sm font-semibold">Estamos verificando tu pago con Payway</p>
+              <p className="text-sm font-semibold">Estamos verificando tu pago</p>
               <p className="text-xs text-muted-foreground">
-                No vuelvas a pagar mientras comprobamos el resultado para evitar cobros dobles. Si tu tarjeta fue debitada, tu reserva será confirmada automáticamente o nos comunicaremos con vos a la brevedad.
+                Estamos verificando tu pago. Podés cerrar esta ventana; seguiremos comprobándolo. No vuelvas a pagar mientras la verificación esté pendiente.
               </p>
             </div>
           )}
@@ -840,7 +840,7 @@ export function PaywayBooking() {
             <div className="space-y-2 text-center py-2" role="alert">
               <p className="text-sm font-semibold">Verificación de pago pendiente</p>
               <p className="text-xs text-muted-foreground">
-                Estamos verificando tu pago con Payway. No vuelvas a pagar para evitar cobros dobles. Si tu tarjeta fue debitada, tu reserva será confirmada o nos pondremos en contacto con vos.
+                Estamos verificando tu pago. Podés cerrar esta ventana; seguiremos comprobándolo. No vuelvas a pagar mientras la verificación esté pendiente.
               </p>
             </div>
           )}

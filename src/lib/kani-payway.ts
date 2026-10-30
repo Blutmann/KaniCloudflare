@@ -25,8 +25,8 @@ export type PaywayStatusInput = {
 
 export const PAYWAY_MESSAGES = {
   unavailable: 'Pago de prueba todavía no disponible. No se realizó ningún cobro ni se guardó un turno.',
-  unknown: 'No pudimos verificar el resultado del pago. No vuelvas a pagar hasta que el estudio compruebe su estado.',
-  verifying: 'Estamos verificando tu pago con Payway. Por favor no cierres esta ventana ni intentes pagar nuevamente.',
+  unknown: 'Estamos verificando tu pago. Podés cerrar esta ventana; seguiremos comprobándolo. No vuelvas a pagar mientras la verificación esté pendiente.',
+  verifying: 'Estamos verificando tu pago. Podés cerrar esta ventana; seguiremos comprobándolo. No vuelvas a pagar mientras la verificación esté pendiente.',
   late_review: 'Tu pago fue registrado pero el turno ya no estaba disponible. Nos comunicaremos con vos a la brevedad.',
   approved: 'Seña aprobada. Tu turno está confirmado.',
   rejected: 'El pago fue rechazado. No se confirmó el turno. Podés intentar con otra tarjeta.',

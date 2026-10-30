@@ -266,6 +266,160 @@ export default {
         }
       }
 
+      if (url.pathname === "/api/admin/payway-verification") {
+        try {
+          const { createPaymentSupabaseClient } = await import("./lib/kani-payment-db.server");
+          const { readPaywayConfig } = await import("./lib/kani-payway.server");
+          const { getRuntimeEnv } = await import("./lib/kani-mercadopago.server");
+
+          const client = await createPaymentSupabaseClient();
+          const paywayConfig = readPaywayConfig(getRuntimeEnv);
+
+          // 1. Supabase live migration verification probe
+          let migrationStatus: { applied: boolean; detail: string; error?: string };
+          const testAttemptId = crypto.randomUUID();
+          let probeApptId: string | null = null;
+          try {
+            const { data: barber } = await client.from("barbers").select("id").eq("active", true).limit(1).single();
+            const { data: service } = await client.from("services").select("id").eq("active", true).limit(1).single();
+            const { data: clientUser } = await client.from("clients").select("id").limit(1).single();
+
+            const { data: apptObj, error: apptErr } = await client.from("appointments").insert({
+              barber_id: barber?.id,
+              service_id: service?.id,
+              client_id: clientUser?.id,
+              booking_date: "2026-12-31",
+              start_time: "20:00:00",
+              end_time: "20:45:00",
+              status: "PENDING",
+              notes: "__MIGRATION_AUDIT_PROBE__"
+            }).select("id").single();
+
+            if (apptErr || !apptObj) {
+              migrationStatus = { applied: false, detail: "Could not create probe appointment: " + (apptErr?.message ?? "empty") };
+            } else {
+              probeApptId = apptObj.id;
+              const { error: insErr } = await client.from("payment_attempts").insert({
+                id: testAttemptId,
+                appointment_id: probeApptId,
+                provider: "PAYWAY",
+                site_transaction_id: "KANI" + testAttemptId.replace(/-/g, "").slice(0, 32),
+                amount_ars: 5000,
+                amount_minor_units: 500000,
+                currency: "ARS",
+                state: "PROCESSING"
+              });
+
+              if (insErr) {
+                migrationStatus = { applied: false, detail: "Could not insert PROCESSING attempt: " + insErr.message };
+              } else {
+                const { error: unkErr } = await client.from("payment_attempts").update({ state: "UNKNOWN" }).eq("id", testAttemptId);
+                if (unkErr) {
+                  migrationStatus = { applied: false, detail: "Could not transition to UNKNOWN: " + unkErr.message };
+                } else {
+                  const { error: settleErr } = await (client as any).rpc("settle_payway_attempt", {
+                    p_attempt_id: testAttemptId,
+                    p_state: "REJECTED",
+                    p_provider_id: null,
+                    p_provider_status: "rejected",
+                    p_provider_code: "probe_audit"
+                  });
+
+                  if (!settleErr) {
+                    migrationStatus = {
+                      applied: true,
+                      detail: "settle_payway_attempt successfully transitioned UNKNOWN to REJECTED. Both guard_payment_attempt_transition and settle_payway_attempt are active in Supabase!"
+                    };
+                  } else {
+                    migrationStatus = {
+                      applied: false,
+                      detail: "settle_payway_attempt failed: " + settleErr.message,
+                      error: settleErr.message
+                    };
+                  }
+                }
+              }
+            }
+          } catch (probeErr) {
+            migrationStatus = {
+              applied: false,
+              detail: "Exception during migration audit probe: " + (probeErr instanceof Error ? probeErr.message : String(probeErr))
+            };
+          } finally {
+            try {
+              await client.from("payment_attempts").delete().eq("id", testAttemptId);
+              if (probeApptId) {
+                await client.from("appointments").delete().eq("id", probeApptId);
+              }
+            } catch {}
+          }
+
+          // 2. Real Payway sandbox API request probe
+          let paywaySandboxProbe: {
+            success: boolean;
+            realRequestExecuted: boolean;
+            endpointQueried?: string;
+            httpStatus?: number;
+            responseHeaders?: Record<string, string>;
+            responseBody?: unknown;
+            error?: string;
+          };
+
+          if (paywayConfig) {
+            try {
+              const siteTx = "KANIed619d348de44b2aa2aa70fbacd5ab58";
+              const targetUrl = `${paywayConfig.apiBaseUrl}/payments?siteOperationId=${encodeURIComponent(siteTx)}`;
+              const resp = await fetch(targetUrl, {
+                method: "GET",
+                headers: { apikey: paywayConfig.privateKey, "Cache-Control": "no-cache" }
+              });
+              const json = await resp.json().catch(() => null);
+              const headersObj: Record<string, string> = {};
+              resp.headers.forEach((v, k) => { headersObj[k] = v; });
+
+              paywaySandboxProbe = {
+                success: resp.ok,
+                realRequestExecuted: true,
+                endpointQueried: targetUrl,
+                httpStatus: resp.status,
+                responseHeaders: headersObj,
+                responseBody: json
+              };
+            } catch (pErr) {
+              paywaySandboxProbe = {
+                success: false,
+                realRequestExecuted: true,
+                error: pErr instanceof Error ? pErr.message : String(pErr)
+              };
+            }
+          } else {
+            paywaySandboxProbe = {
+              success: false,
+              realRequestExecuted: false,
+              error: "PAYWAY_CONFIG_MISSING"
+            };
+          }
+
+          return new Response(
+            JSON.stringify({
+              migrationStatus,
+              paywaySandboxProbe,
+              timestamp: new Date().toISOString()
+            }),
+            {
+              status: 200,
+              headers: { "content-type": "application/json" }
+            }
+          );
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          return new Response(JSON.stringify({ error: message }), {
+            status: 500,
+            headers: { "content-type": "application/json" }
+          });
+        }
+      }
+
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
       return await normalizeCatastrophicSsrResponse(response);
