@@ -99,7 +99,8 @@ describe("Admin V2 — Rediseño de Registrar Pago Mobile y Desktop", () => {
     render(<V2Payments />);
     // Initial summary: base price $25.000, total $25.000
     expect(screen.getByText("A cobrar ahora")).toBeDefined();
-    expect(screen.getAllByText("$25.000").length).toBe(2);
+    // Estado A: sin descuento ni seña previa, se muestra únicamente una cifra para "A cobrar ahora"
+    expect(screen.getAllByText("$25.000").length).toBe(1);
 
     // Add discount
     fireEvent.click(screen.getByRole("button", { name: /Agregar descuento/i }));

@@ -364,7 +364,7 @@ export function V2Payments() {
                     </label>
                   )}
                   <label className="v2-field">
-                    Precio ($ ARS)
+                    Importe ($ ARS)
                     <input
                       type="number"
                       min={1}
@@ -388,20 +388,22 @@ export function V2Payments() {
               <div className="v2-payment-actions-strip">
                 <button
                   type="button"
-                  className="v2-quiet"
+                  className={`v2-secondary v2-payment-action-btn ${showDiscount ? "active" : ""}`}
                   onClick={() => setShowDiscount(!showDiscount)}
+                  aria-expanded={showDiscount}
                 >
                   <Tag size={15} />
-                  {showDiscount ? "Ocultar descuento" : "Agregar descuento"}
+                  <span>{showDiscount ? "Quitar descuento" : "Agregar descuento"}</span>
                 </button>
                 {origin === "walk_in" && (
                   <button
                     type="button"
-                    className="v2-quiet"
+                    className={`v2-secondary v2-payment-action-btn ${showClient ? "active" : ""}`}
                     onClick={() => setShowClient(!showClient)}
+                    aria-expanded={showClient}
                   >
                     <User size={15} />
-                    {showClient ? "Ocultar cliente" : "Asociar cliente"}
+                    <span>{showClient ? "Ocultar cliente" : "Asociar cliente"}</span>
                   </button>
                 )}
               </div>
@@ -462,30 +464,29 @@ export function V2Payments() {
                 </div>
               )}
 
-              <div className="v2-payment-summary-block">
-                <div className="v2-summary-line">
-                  <span className="v2-summary-label">Importe</span>
-                  <span className="v2-summary-value">{money(price)}</span>
-                </div>
-                {discount > 0 && (
-                  <div className="v2-summary-line v2-summary-discount">
-                    <span className="v2-summary-label">Descuento</span>
-                    <span className="v2-summary-value">- {money(discount)}</span>
-                  </div>
+              {/* Resumen monetario: compacto cuando no hay ajustes, desglosado si hay descuento o seña previa */}
+              <div className={`v2-payment-summary-block ${(discount > 0 || deposit > 0) ? "has-breakdown" : "is-compact"}`}>
+                {(discount > 0 || deposit > 0) && (
+                  <>
+                    <div className="v2-summary-line">
+                      <span className="v2-summary-label">Precio del servicio</span>
+                      <span className="v2-summary-value">{money(price)}</span>
+                    </div>
+                    {discount > 0 && (
+                      <div className="v2-summary-line v2-summary-discount">
+                        <span className="v2-summary-label">Descuento</span>
+                        <span className="v2-summary-value">- {money(discount)}</span>
+                      </div>
+                    )}
+                    {deposit > 0 && (
+                      <div className="v2-summary-line v2-summary-deposit">
+                        <span className="v2-summary-label">Seña abonada</span>
+                        <span className="v2-summary-value">- {money(deposit)}</span>
+                      </div>
+                    )}
+                    <div className="v2-summary-divider" />
+                  </>
                 )}
-                {appointment && (
-                  <div className="v2-summary-line v2-summary-deposit">
-                    <span className="v2-summary-label">Seña abonada</span>
-                    <span className="v2-summary-value">
-                      {!data.depositSupported
-                        ? "Sin dato"
-                        : deposit > 0
-                          ? `- ${money(deposit)}`
-                          : "$0"}
-                    </span>
-                  </div>
-                )}
-                <div className="v2-summary-divider" />
                 <div className="v2-summary-total">
                   <span className="v2-total-label">A cobrar ahora</span>
                   <strong className="v2-total-amount">{money(total)}</strong>

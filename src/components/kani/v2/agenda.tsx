@@ -101,13 +101,12 @@ export function V2Home() {
               value={daily.filter((a) => a.statusCode === "COMPLETED").length}
             />
             <Metric
-              label="Pendientes de pago"
+              label="Pendientes"
               value={daily.filter((a) => a.statusCode === "PENDING").length}
             />
             <Metric
-              label="Cobrado en el local"
+              label="Cobrado"
               value={money(paymentSummary(payments).collected)}
-              note={`${payments.length} servicios registrados`}
             />
           </div>
           <Link className="v2-text-link" to="/admin-v2/pagos">

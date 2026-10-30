@@ -41,6 +41,7 @@ vi.mock("@/components/kani/v2/data", () => ({
       serviceName: "Corte",
     })),
     payments: ["b1", "b2"].map((barberId, i) => ({
+      id: `p-${i}`,
       barberId,
       paymentDate: "2026-10-22",
       collectedAmountArs: (i + 1) * 10000,

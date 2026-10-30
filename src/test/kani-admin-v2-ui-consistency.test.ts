@@ -64,19 +64,16 @@ describe('Admin V2 — UI and Visual Consistency Audit (Structural Unification)'
     });
   });
 
-  describe('3. Datos — Grilla de 4 columnas con huecos intencionales y Fecha específica', () => {
-    it('en período normal, conserva los huecos en Columna 2 y Columna 4 con AdminFilterCell empty', () => {
-      // Col 1: Período
+  describe('3. Datos — Reorganización de filtros (Fila 1: Período y Barbero; Fila 2: Fechas en CUSTOM sin huecos vacíos)', () => {
+    it('en período normal, muestra Período y Barbero en la primera fila sin celdas vacías', () => {
+      // Fila 1: Período y Barbero
       expect(insightsCode).toMatch(/<AdminFilterCell[^>]*label="Período"/);
-      // Col 2: Fecha desde si CUSTOM, sino empty
-      expect(insightsCode).toContain('{period === "CUSTOM" ? (');
-      expect(insightsCode).toMatch(/<AdminFilterCell[^>]*empty/);
-      // Col 3: Barbero
       expect(insightsCode).toMatch(/<AdminFilterCell[^>]*label="Barbero"/);
-      // Col 4: Fecha hasta si CUSTOM, sino empty
+      // Sin huecos vacíos que desperdicien espacio
+      expect(insightsCode).not.toContain('<AdminFilterCell empty');
     });
 
-    it('al seleccionar Fecha específica (CUSTOM), las columnas 2 y 4 se llenan con Fecha desde y Fecha hasta', () => {
+    it('al seleccionar Fecha específica (CUSTOM), se agregan Fecha desde y Fecha hasta en la segunda fila', () => {
       expect(insightsCode).toMatch(/<AdminFilterCell[^>]*label="Fecha desde"/);
       expect(insightsCode).toMatch(/<AdminFilterCell[^>]*label="Fecha hasta"/);
     });

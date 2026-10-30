@@ -1443,8 +1443,8 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
-    padding-top: 12px;
-    border-top: 1px solid var(--v2-line);
+    padding-top: 8px;
+    border-top: none;
   }
   .v2-appointment-actions .action-mail {
     grid-column: 1/-1;
@@ -2273,24 +2273,37 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
     flex-direction: column !important;
     align-items: stretch !important;
     width: 100% !important;
-    gap: 7px !important;
+    gap: 8px !important;
     margin: 0 !important;
     padding: 0 !important;
+    border-top: none !important;
     max-width: none !important;
   }
 
-  .v2-op-buttons,
-  .v2-contact-buttons {
-    display: grid !important;
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 7px !important;
+  /* Fila 1: Cancelar turno ocupa el 100% del ancho de la tarjeta */
+  .v2-op-buttons {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
     width: 100% !important;
   }
 
-  .v2-op-buttons > *,
+  .v2-op-buttons > * {
+    width: 100% !important;
+    min-height: 40px !important;
+  }
+
+  /* Fila 2: WhatsApp y Mail ocupan el 50% cada uno */
+  .v2-contact-buttons {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+
   .v2-contact-buttons > * {
     width: 100% !important;
-    min-height: 38px !important;
+    min-height: 40px !important;
   }
 }
 
@@ -2906,5 +2919,117 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
   .v2-capsules-container {
     max-height: 220px;
     overflow-y: auto;
+  }
+}
+
+
+/* ==========================================================================
+   Admin V2 — Mobile UX Optimizations (Payments strip, summary & metrics)
+   ========================================================================== */
+.v2-payment-actions-strip {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
+}
+.v2-payment-actions-strip > :only-child {
+  grid-column: 1 / -1;
+}
+.v2-payment-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 40px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: var(--radius-control, 0.65rem);
+  border: 1px solid var(--border);
+  background: var(--v2-inset);
+  color: var(--foreground);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-decoration: none;
+  box-sizing: border-box;
+}
+.v2-payment-action-btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--gold) 12%, var(--v2-inset));
+  border-color: var(--gold);
+}
+.v2-payment-action-btn:active:not(:disabled) {
+  background: var(--v2-inset);
+  border-color: var(--gold);
+}
+.v2-payment-action-btn.active {
+  border-color: var(--gold);
+  background: color-mix(in srgb, var(--gold) 16%, var(--v2-inset));
+  color: var(--foreground);
+}
+
+.v2-payment-summary-block.is-compact {
+  padding: 12px 16px;
+}
+.v2-payment-summary-block.is-compact .v2-summary-total {
+  padding-top: 0;
+}
+
+/* Metric Hierarchy & Badges */
+.v2-metric strong {
+  font-weight: 600 !important;
+}
+.v2-trend-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10.5px;
+  font-weight: 500;
+  padding: 2px 7px;
+  border-radius: var(--radius-capsule);
+  width: fit-content;
+  margin-top: 2px;
+  color: var(--gold);
+  background: color-mix(in srgb, var(--gold) 12%, transparent);
+}
+.v2-trend-badge.positive {
+  color: var(--success);
+  background: color-mix(in srgb, var(--success) 14%, transparent);
+}
+.v2-trend-badge.negative {
+  color: var(--destructive);
+  background: color-mix(in srgb, var(--destructive) 14%, transparent);
+}
+
+@media (max-width: 767px) {
+  .v2-metric {
+    padding: 12px 14px !important;
+  }
+  .v2-metric strong {
+    font-size: 22px !important;
+    font-weight: 600 !important;
+  }
+  .v2-bar-chart {
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    scrollbar-width: thin !important;
+    padding-bottom: 6px !important;
+    gap: 5px !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  .v2-bar-chart > div {
+    min-width: 22px !important;
+  }
+  .v2-bar-chart small {
+    font-size: 10px !important;
+    white-space: nowrap !important;
+  }
+  .v2-bar-chart span {
+    font-size: 10px !important;
+    font-weight: 600 !important;
+  }
+  .v2-bar-chart i {
+    width: 100% !important;
+    max-width: 16px !important;
+    background: var(--gold, #B99A5B) !important;
+    opacity: 0.9 !important;
   }
 }

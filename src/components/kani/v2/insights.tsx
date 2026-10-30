@@ -358,7 +358,7 @@ export function V2Insights() {
           ) : null
         }
       >
-        {/* Columna 1 / Fila 1 Col 1: Período */}
+        {/* Fila 1 Col 1: Período */}
         <AdminFilterCell label="Período" htmlFor="v2-insights-period">
           <select
             id="v2-insights-period"
@@ -379,35 +379,7 @@ export function V2Insights() {
           </select>
         </AdminFilterCell>
 
-        {/* Columna 2 / Fila 1 Col 2: Fecha desde si CUSTOM, sino celda vacía para preservar la grilla */}
-        {period === "CUSTOM" ? (
-          <AdminFilterCell label="Fecha desde" htmlFor="v2-insights-custom-start">
-            <input
-              id="v2-insights-custom-start"
-              type="date"
-              value={customStartDate}
-              onChange={(e) => setCustomStartDate(e.target.value || today)}
-            />
-          </AdminFilterCell>
-        ) : (
-          <AdminFilterCell empty />
-        )}
-
-        {/* Columna 3 / Fila 2 Col 1: Fecha hasta si CUSTOM, sino celda vacía para preservar la grilla */}
-        {period === "CUSTOM" ? (
-          <AdminFilterCell label="Fecha hasta" htmlFor="v2-insights-custom-end">
-            <input
-              id="v2-insights-custom-end"
-              type="date"
-              value={customEndDate}
-              onChange={(e) => setCustomEndDate(e.target.value || today)}
-            />
-          </AdminFilterCell>
-        ) : (
-          <AdminFilterCell empty />
-        )}
-
-        {/* Columna 4 / Fila 2 Col 2: Barbero */}
+        {/* Fila 1 Col 2: Barbero */}
         <AdminFilterCell label="Barbero" htmlFor="v2-insights-barber">
           <select
             id="v2-insights-barber"
@@ -423,32 +395,53 @@ export function V2Insights() {
             ))}
           </select>
         </AdminFilterCell>
+
+        {/* Fila 2 (solo en CUSTOM): Fecha desde y Fecha hasta */}
+        {period === "CUSTOM" && (
+          <>
+            <AdminFilterCell label="Fecha desde" htmlFor="v2-insights-custom-start">
+              <input
+                id="v2-insights-custom-start"
+                type="date"
+                value={customStartDate}
+                onChange={(e) => setCustomStartDate(e.target.value || today)}
+              />
+            </AdminFilterCell>
+            <AdminFilterCell label="Fecha hasta" htmlFor="v2-insights-custom-end">
+              <input
+                id="v2-insights-custom-end"
+                type="date"
+                value={customEndDate}
+                onChange={(e) => setCustomEndDate(e.target.value || today)}
+              />
+            </AdminFilterCell>
+          </>
+        )}
       </AdminFilterPanel>
 
       <div className="v2-metrics v2-metrics-four">
         <Metric
-          label="Servicios registrados"
+          label="Servicios"
           value={summary.count}
           note={
-            comparison === null
-              ? "Sin base anterior para comparar"
-              : `${comparison > 0 ? "+" : ""}${comparison}% frente a ${activeRange.prevLabel}`
+            comparison !== null ? (
+              <span className={`v2-trend-badge ${comparison >= 0 ? "positive" : "negative"}`}>
+                {comparison > 0 ? "+" : ""}{comparison}% vs {activeRange.prevLabel}
+              </span>
+            ) : null
           }
         />
         <Metric
-          label="Cobrado en el local"
+          label="Cobrado"
           value={money(summary.collected)}
-          note="Cobros presenciales efectivos"
         />
         <Metric
-          label="Valor de servicios"
+          label="Valor total"
           value={money(summary.value)}
-          note="Valor nominal de los servicios"
         />
         <Metric
           label="Cancelaciones"
           value={appointments.filter((a) => a.statusCode === "CANCELLED").length}
-          note={`${appointments.length} turnos registrados`}
         />
       </div>
 
