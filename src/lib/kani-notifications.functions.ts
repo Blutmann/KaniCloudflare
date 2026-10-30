@@ -86,43 +86,50 @@ export const dispatchAppointmentNotification = createServerOnlyFn(async (data: {
       const recipientPhone = event.recipient_phone ?? data.clientPhone ?? null;
       let emailSuccess = false;
       let emailMessageId: string | undefined;
+      let emailError: string | undefined;
       let pontiunSuccess = false;
       let pontiunMessageId: string | undefined;
       let pontiunError: string | undefined;
 
       // 1. Despacho de WhatsApp vía Pontiun (prioritario para turnos CONFIRMED)
       if (event.notification_type === "CONFIRMED") {
-        try {
-          const { sendPontiunAppointmentConfirmation } = await import("./kani-pontiun");
-          const pontiunResult = await sendPontiunAppointmentConfirmation({
-            appointmentId: data.appointmentId,
-            clientName: event.client_name,
-            clientPhone: recipientPhone,
-            barberName: event.barber_name,
-            serviceName: event.service_name,
-            bookingDate: event.booking_date,
-            startTime: event.start_time,
-          });
+        if (recipientPhone && recipientPhone.trim()) {
+          try {
+            const { sendPontiunAppointmentConfirmation } = await import("./kani-pontiun");
+            const pontiunResult = await sendPontiunAppointmentConfirmation({
+              appointmentId: data.appointmentId,
+              clientName: event.client_name,
+              clientPhone: recipientPhone,
+              barberName: event.barber_name,
+              serviceName: event.service_name,
+              bookingDate: event.booking_date,
+              startTime: event.start_time,
+            });
 
-          if (pontiunResult.success) {
-            pontiunSuccess = true;
-            pontiunMessageId = pontiunResult.messageId;
-            console.log(
-              `[Pontiun WhatsApp] Confirmación enviada/aceptada para turno ${data.appointmentId} (id: ${pontiunResult.messageId})`,
-            );
-          } else if (pontiunResult.skipped) {
-            console.info(
-              `[Pontiun WhatsApp] Envío omitido de forma segura para turno ${data.appointmentId}: ${pontiunResult.error}`,
-            );
-          } else {
-            pontiunError = pontiunResult.error;
-            console.warn(
-              `[Pontiun WhatsApp] No se pudo enviar confirmación para turno ${data.appointmentId}: ${pontiunResult.error}`,
-            );
+            if (pontiunResult.success) {
+              pontiunSuccess = true;
+              pontiunMessageId = pontiunResult.messageId;
+              console.log(
+                `[Pontiun WhatsApp] Confirmación enviada/aceptada para turno ${data.appointmentId} (id: ${pontiunResult.messageId})`,
+              );
+            } else if (pontiunResult.skipped) {
+              console.info(
+                `[Pontiun WhatsApp] Envío omitido de forma segura para turno ${data.appointmentId}: ${pontiunResult.error}`,
+              );
+            } else {
+              pontiunError = pontiunResult.error;
+              console.warn(
+                `[Pontiun WhatsApp] No se pudo enviar confirmación para turno ${data.appointmentId}: ${pontiunResult.error}`,
+              );
+            }
+          } catch (pontiunErr) {
+            pontiunError = pontiunErr instanceof Error ? pontiunErr.message : String(pontiunErr);
+            console.warn("[Pontiun WhatsApp] Error durante el despacho:", pontiunError);
           }
-        } catch (pontiunErr) {
-          pontiunError = pontiunErr instanceof Error ? pontiunErr.message : String(pontiunErr);
-          console.warn("[Pontiun WhatsApp] Error durante el despacho:", pontiunError);
+        } else {
+          console.info(
+            `[Pontiun WhatsApp] Turno ${data.appointmentId} no posee teléfono registrado; WhatsApp omitido.`,
+          );
         }
       }
 
@@ -184,20 +191,25 @@ export const dispatchAppointmentNotification = createServerOnlyFn(async (data: {
               emailMessageId = result.id;
               console.log(`[KANI notification] Email enviado exitosamente para turno ${data.appointmentId} (id: ${result.id})`);
             } else {
+              emailError = `RESEND_${response.status}: ${result?.message ?? "SEND_FAILED"}`;
               console.warn(`[KANI notification] Resend HTTP ${response.status}: ${result?.message ?? "SEND_FAILED"}`);
             }
           } else {
             console.info("[KANI notification] Credenciales de Resend no configuradas; omitiendo email.");
           }
         } catch (emailErr) {
+          emailError = emailErr instanceof Error ? emailErr.message : String(emailErr);
           console.warn("[KANI notification] Error enviando email vía Resend:", emailErr);
         }
       } else {
         console.log(`[KANI notification] Turno ${data.appointmentId} no posee email registrado; email omitido.`);
       }
 
-      // Si al menos un canal (Pontiun o Resend) tuvo éxito, completar la notificación
-      if (pontiunSuccess || emailSuccess) {
+      const hasSuccess = Boolean(pontiunSuccess || emailSuccess);
+      const hasErrors = Boolean(pontiunError || emailError);
+
+      // Caso 1: Despacho completo exitoso (todos los canales aplicables tuvieron éxito, sin fallas)
+      if (hasSuccess && !hasErrors) {
         const providerMessageId = [
           pontiunMessageId ? `pontiun:${pontiunMessageId}` : null,
           emailMessageId ? `resend:${emailMessageId}` : null,
@@ -214,12 +226,46 @@ export const dispatchAppointmentNotification = createServerOnlyFn(async (data: {
         return { sent: true, status: "SENT" };
       }
 
-      // Si ninguno tuvo éxito y hubo error registrado
-      if (pontiunError) {
-        throw new Error(`NOTIFICATION_DISPATCH_FAILED: ${pontiunError}`);
+      // Caso 2: Falla parcial (un canal tuvo éxito pero otro falló)
+      // Se registra FAILED con detalle explicativo para diagnóstico futuro, sin marcar erróneamente SENT.
+      if (hasSuccess && hasErrors) {
+        const partialParts = [
+          pontiunError ? `WhatsApp falló (${pontiunError})` : (pontiunSuccess ? `WhatsApp enviado (pontiun:${pontiunMessageId})` : null),
+          emailError ? `Email falló (${emailError})` : (emailSuccess ? `Email enviado (resend:${emailMessageId})` : null),
+        ].filter(Boolean).join(" | ");
+
+        const partialError = `PARTIAL_DISPATCH_FAILURE: ${partialParts}`;
+        console.error(`[KANI notification] ${partialError}`);
+
+        const { error: recordError } = await supabase.rpc("fail_appointment_notification", {
+          p_notification_id: event.notification_id,
+          p_claim_token: data.claimToken,
+          p_error: partialError,
+        });
+        if (recordError) throw recordError;
+        return { sent: false, status: "FAILED", errorCode: partialError };
       }
 
-      // Si ambos canales fueron omitidos por falta de destinatario o configuración
+      // Caso 3: Falla total (ningún canal tuvo éxito y se registraron errores)
+      if (hasErrors) {
+        const errorParts = [
+          pontiunError ? `WhatsApp: ${pontiunError}` : null,
+          emailError ? `Email: ${emailError}` : null,
+        ].filter(Boolean).join(" | ");
+
+        const failureMessage = `NOTIFICATION_DISPATCH_FAILED: ${errorParts}`;
+        console.error(`[KANI notification] ${failureMessage}`);
+
+        const { error: recordError } = await supabase.rpc("fail_appointment_notification", {
+          p_notification_id: event.notification_id,
+          p_claim_token: data.claimToken,
+          p_error: failureMessage,
+        });
+        if (recordError) throw recordError;
+        return { sent: false, status: "FAILED", errorCode: failureMessage };
+      }
+
+      // Caso 4: Ambos canales fueron omitidos por falta de destinatario o configuración
       return { sent: false, status: "SKIPPED" };
     } catch (error) {
       const safeMessage = safeErrorMessage(error);

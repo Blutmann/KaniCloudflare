@@ -527,17 +527,18 @@ export async function sendPontiunAppointmentConfirmation(
       });
 
       const responseJson = (await response.json().catch(() => null)) as {
-        message?: { id?: string };
+        message?: string | { id?: string; message?: string };
         id?: string;
         resender?: { messageId?: string; status?: string; idempotentReplay?: boolean };
         meta?: { messages?: Array<{ id: string; message_status?: string }> };
-        error?: string;
+        error?: string | { message?: string; type?: string; code?: number };
         code?: string;
       } | null;
 
       if (response.ok) {
         if (responseJson?.resender?.status === "failed" || Boolean(responseJson?.error)) {
-          lastError = responseJson?.error ?? "RESENDER_FAILED";
+          const rawErr = responseJson?.error ?? "RESENDER_FAILED";
+          lastError = typeof rawErr === "object" && rawErr !== null ? (rawErr.message ?? JSON.stringify(rawErr)) : String(rawErr);
           lastRetryable = false;
           console.warn(
             `[Pontiun WhatsApp] Pontiun devolvió respuesta 200 pero estado de envío fallido: ${lastError}`,
@@ -554,7 +555,7 @@ export async function sendPontiunAppointmentConfirmation(
         const messageId =
           responseJson?.resender?.messageId ??
           responseJson?.meta?.messages?.[0]?.id ??
-          responseJson?.message?.id ??
+          (typeof responseJson?.message === "object" ? responseJson?.message?.id : undefined) ??
           responseJson?.id ??
           "sent";
 
@@ -576,10 +577,16 @@ export async function sendPontiunAppointmentConfirmation(
         };
       }
 
+      const rawDetails = responseJson?.error ?? responseJson?.message ?? responseJson?.code;
+      const errorDetails =
+        typeof rawDetails === "object" && rawDetails !== null
+          ? ((rawDetails as any).message ?? JSON.stringify(rawDetails))
+          : String(rawDetails ?? `HTTP_${response.status}`);
+
       // Errores permanentes Meta / Pontiun
       if (
         response.status === 409 &&
-        (responseJson?.error === "template_not_approved" || responseJson?.code === "template_not_approved")
+        (errorDetails === "template_not_approved" || responseJson?.code === "template_not_approved")
       ) {
         console.warn(
           `[Pontiun WhatsApp] Plantilla '${templateName}' no aprobada en el catálogo de Pontiun / Meta (HTTP 409).`,
@@ -593,7 +600,6 @@ export async function sendPontiunAppointmentConfirmation(
       }
 
       if (response.status >= 400 && response.status < 500 && response.status !== 408 && response.status !== 429) {
-        const errorDetails = responseJson?.error ?? responseJson?.code ?? `HTTP_${response.status}`;
         console.warn(
           `[Pontiun WhatsApp] Error permanente de cliente (HTTP ${response.status}): ${errorDetails}`,
         );
@@ -606,7 +612,6 @@ export async function sendPontiunAppointmentConfirmation(
       }
 
       // Error transitorio (HTTP 408, 429, 5xx)
-      const errorDetails = responseJson?.error ?? responseJson?.code ?? `HTTP_${response.status}`;
       lastError = `PONTIUN_${response.status}: ${errorDetails}`;
       lastRetryable = true;
       console.warn(
