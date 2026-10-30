@@ -278,27 +278,18 @@ export default {
           // 1. Supabase live migration verification probe
           let migrationStatus: { applied: boolean; detail: string; error?: string };
           const testAttemptId = crypto.randomUUID();
-          let probeApptId: string | null = null;
           try {
-            const { data: barber } = await client.from("barbers").select("id").eq("active", true).limit(1).single();
-            const { data: service } = await client.from("services").select("id").eq("active", true).limit(1).single();
-            const { data: clientUser } = await client.from("clients").select("id").limit(1).single();
+            const { data: cancelledAppt, error: apptErr } = await client
+              .from("appointments")
+              .select("id")
+              .eq("status", "CANCELLED")
+              .limit(1)
+              .single();
 
-            const { data: apptObj, error: apptErr } = await client.from("appointments").insert({
-              barber_id: barber?.id,
-              service_id: service?.id,
-              client_id: clientUser?.id,
-              booking_date: "2026-11-10",
-              start_time: "10:00:00",
-              end_time: "10:45:00",
-              status: "PENDING",
-              notes: "__MIGRATION_AUDIT_PROBE__"
-            }).select("id").single();
-
-            if (apptErr || !apptObj) {
-              migrationStatus = { applied: false, detail: "Could not create probe appointment: " + (apptErr?.message ?? "empty") };
+            if (apptErr || !cancelledAppt) {
+              migrationStatus = { applied: false, detail: "Could not find cancelled appointment: " + (apptErr?.message ?? "empty") };
             } else {
-              probeApptId = apptObj.id;
+              const probeApptId = cancelledAppt.id;
               const { error: insErr } = await client.from("payment_attempts").insert({
                 id: testAttemptId,
                 appointment_id: probeApptId,
@@ -348,9 +339,6 @@ export default {
           } finally {
             try {
               await client.from("payment_attempts").delete().eq("id", testAttemptId);
-              if (probeApptId) {
-                await client.from("appointments").delete().eq("id", probeApptId);
-              }
             } catch {}
           }
 
