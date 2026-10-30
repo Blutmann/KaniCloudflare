@@ -2280,17 +2280,30 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
     max-width: none !important;
   }
 
-  /* Fila 1: Cancelar turno ocupa el 100% del ancho de la tarjeta */
+  /* Fila 1: Cancelar turno y Cobrar al 50/50 (dos columnas iguales) */
   .v2-op-buttons {
-    display: flex !important;
-    flex-direction: column !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
     gap: 8px !important;
     width: 100% !important;
   }
 
   .v2-op-buttons > * {
     width: 100% !important;
-    min-height: 40px !important;
+    min-height: 44px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+  }
+
+  /* Si únicamente aparece una acción, ocupa el ancho disponible de manera natural */
+  .v2-op-buttons:has(> :only-child) {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .v2-op-buttons > :only-child {
+    grid-column: 1 / -1 !important;
   }
 
   /* Fila 2: WhatsApp y Mail ocupan el 50% cada uno */
@@ -2301,29 +2314,42 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
     width: 100% !important;
   }
 
+  .v2-contact-buttons:has(> :only-child) {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .v2-contact-buttons > :only-child {
+    grid-column: 1 / -1 !important;
+  }
+
   .v2-contact-buttons > * {
     width: 100% !important;
     min-height: 40px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
   }
 }
 
 /* ==========================================================================
-   DESKTOP BREAKPOINT (>= 768px): Compact Structure, Info + Nearby 2x2 Actions
+   DESKTOP BREAKPOINT (>= 768px): Compact Structure, Info + Far-Right 2x2 Actions
    ========================================================================== */
 @media (min-width: 768px) {
   .v2-appointments-page .v2-appointment {
     display: flex !important;
     flex-direction: row !important;
     align-items: center !important;
-    justify-content: flex-start !important;
-    gap: 28px !important;
+    justify-content: space-between !important;
+    gap: 24px !important;
     padding: 10px 18px !important;
   }
 
   .v2-appointment-main {
-    flex: 0 1 540px !important;
-    min-width: 280px !important;
-    width: 100% !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    max-width: 680px !important;
+    width: auto !important;
   }
 
   .v2-appointments-page .v2-appointment-actions {
@@ -2333,7 +2359,7 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
     flex-direction: column !important;
     gap: 6px !important;
     align-items: stretch !important;
-    margin: 0 !important;
+    margin: 0 0 0 auto !important;
     padding: 0 !important;
     max-width: 280px !important;
   }
@@ -2346,12 +2372,26 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
     width: 100% !important;
   }
 
+  .v2-op-buttons:has(> :only-child),
+  .v2-contact-buttons:has(> :only-child) {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .v2-op-buttons > :only-child,
+  .v2-contact-buttons > :only-child {
+    grid-column: 1 / -1 !important;
+  }
+
   .v2-op-buttons > *,
   .v2-contact-buttons > * {
     width: 100% !important;
     min-height: 33px !important;
     padding: 5px 10px !important;
     font-size: 12px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
   }
 }
 

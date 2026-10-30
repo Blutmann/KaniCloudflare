@@ -139,9 +139,16 @@ describe('Admin V2 — Optimización UX/UI Mobile', () => {
       expect(css).toMatch(/\.v2-appointments-page \.v2-appointment-actions\s*\{[^}]*border-top:\s*none\s*!important/);
     });
 
-    it('Fila 1: Cancelar turno ocupa el 100% del ancho', () => {
-      expect(css).toMatch(/\.v2-op-buttons\s*\{[^}]*display:\s*flex\s*!important;\s*flex-direction:\s*column\s*!important;\s*gap:\s*8px\s*!important;\s*width:\s*100%\s*!important/);
-      expect(css).toMatch(/\.v2-op-buttons > \*\s*\{[^}]*width:\s*100%\s*!important;\s*min-height:\s*40px\s*!important/);
+    it('Fila 1: Cancelar turno y Cobrar al 50/50 en mobile (dos columnas minmax(0, 1fr)) con min-height 44px', () => {
+      expect(css).toMatch(/\.v2-op-buttons\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)\s*minmax\(0,\s*1fr\)\s*!important/);
+      expect(css).toMatch(/\.v2-op-buttons > \*\s*\{[^}]*width:\s*100%\s*!important;\s*min-height:\s*44px\s*!important/);
+      expect(css).toMatch(/\.v2-op-buttons:has\(>\s*:only-child\)\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)\s*!important/);
+      expect(css).toMatch(/\.v2-op-buttons > :only-child\s*\{[^}]*grid-column:\s*1\s*\/\s*-1\s*!important/);
+    });
+
+    it('Desktop: alinea toda la botonera de acciones al extremo derecho de la card', () => {
+      expect(css).toMatch(/\.v2-appointments-page \.v2-appointment\s*\{[^}]*justify-content:\s*space-between\s*!important/);
+      expect(css).toMatch(/\.v2-appointments-page \.v2-appointment-actions\s*\{[^}]*margin:\s*0\s+0\s+0\s+auto\s*!important/);
     });
 
     it('Fila 2: WhatsApp y Mail ocupan el 50% cada uno (grid 2 columnas)', () => {
