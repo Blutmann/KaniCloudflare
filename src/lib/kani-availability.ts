@@ -1,6 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { Tables } from '@/integrations/supabase/types';
-import { bookingStartTimes, minutes, parseDate, services, type Barber } from '@/lib/kani-model';
+import { barbers, bookingStartTimes, minutes, parseDate, services, type Barber } from '@/lib/kani-model';
 import { BUSINESS_TIME_ZONE, businessDateToday } from '@/lib/kani-mobile-appointments';
 
 export type AvailabilitySlot = Tables<'barber_availability_slots'>;
@@ -167,12 +167,14 @@ export function eligibleBarbersForAvailabilityStart(
   serviceName: string,
   now: Date,
 ) {
-  return [...new Set(starts
+  const eligible = new Set(starts
     .filter(start => start.slot_date === date && start.start_time.slice(0, 5) === time)
     .filter(start => isAllowedPublicBookingStart(start.slot_date, start.start_time, start.is_exception, start.barber_name))
     .filter(start => start.compatible_services.includes(serviceName) || ((serviceName === 'Corte y barba' || serviceName === 'Corte + barba') && (start.compatible_services.includes('Corte + barba') || start.compatible_services.includes('Corte y barba'))))
     .filter(start => slotCanStillBeBooked(start.slot_date, start.start_time, now))
-    .map(start => start.barber_name))];
+    .map(start => start.barber_name));
+
+  return (barbers as readonly Barber[]).filter(b => eligible.has(b));
 }
 
 function businessClockMinutes(now: Date) {
