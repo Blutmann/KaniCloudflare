@@ -4089,3 +4089,24 @@ html[data-theme="dark"] .v2-payment-toggle-btn.active svg,
 html[data-theme="dark"] .v2-payment-action-btn.active svg {
   color: #121212 !important;
 }
+
+/* Cabecera de tabla de Pagos en Modo Oscuro: dorado institucional de Kani y texto oscuro regular */
+html[data-theme="dark"] .v2-payments-table-wrap {
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+html[data-theme="dark"] .v2-payments-table th {
+  background: var(--gold) !important;
+  color: #121212 !important;
+  font-weight: 400 !important;
+  border-bottom: 1px solid var(--gold) !important;
+}
+
+html[data-theme="dark"] .v2-payments-table thead tr th:first-child {
+  border-top-left-radius: calc(var(--radius-card) - 1px);
+}
+
+html[data-theme="dark"] .v2-payments-table thead tr th:last-child {
+  border-top-right-radius: calc(var(--radius-card) - 1px);
+}

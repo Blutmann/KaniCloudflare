@@ -20,6 +20,7 @@ import { Route as ReservaV3RouteImport } from './routes/reserva-v3'
 import { Route as ReservaV4RouteImport } from './routes/reserva-v4'
 import { Route as ReservaV5RouteImport } from './routes/reserva-v5'
 import { Route as ReservarRouteImport } from './routes/reservar'
+import { Route as ReservarMercadopagoRouteImport } from './routes/reservar-mercadopago'
 import { Route as ReservarTurnoRouteImport } from './routes/reservar-turno'
 import { Route as ReservarTurnoMercadopagoRouteImport } from './routes/reservar-turno-mercadopago'
 import { Route as AdminV2IndexRouteImport } from './routes/admin-v2.index'
@@ -101,6 +102,11 @@ const ReservaV5Route = ReservaV5RouteImport.update({
 const ReservarRoute = ReservarRouteImport.update({
   id: '/reservar',
   path: '/reservar',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReservarMercadopagoRoute = ReservarMercadopagoRouteImport.update({
+  id: '/reservar-mercadopago',
+  path: '/reservar-mercadopago',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ReservarTurnoRoute = ReservarTurnoRouteImport.update({
@@ -259,6 +265,7 @@ export interface FileRoutesByFullPath {
   '/reserva-v4': typeof ReservaV4Route
   '/reserva-v5': typeof ReservaV5Route
   '/reservar': typeof ReservarRoute
+  '/reservar-mercadopago': typeof ReservarMercadopagoRoute
   '/reservar-turno': typeof ReservarTurnoRoute
   '/reservar-turno-mercadopago': typeof ReservarTurnoMercadopagoRoute
   '/admin-v2/clientes': typeof AdminV2ClientesRoute
@@ -296,6 +303,7 @@ export interface FileRoutesByTo {
   '/reserva-v4': typeof ReservaV4Route
   '/reserva-v5': typeof ReservaV5Route
   '/reservar': typeof ReservarRoute
+  '/reservar-mercadopago': typeof ReservarMercadopagoRoute
   '/reservar-turno': typeof ReservarTurnoRoute
   '/reservar-turno-mercadopago': typeof ReservarTurnoMercadopagoRoute
   '/admin-v2/clientes': typeof AdminV2ClientesRoute
@@ -337,6 +345,7 @@ export interface FileRoutesById {
   '/reserva-v4': typeof ReservaV4Route
   '/reserva-v5': typeof ReservaV5Route
   '/reservar': typeof ReservarRoute
+  '/reservar-mercadopago': typeof ReservarMercadopagoRoute
   '/reservar-turno': typeof ReservarTurnoRoute
   '/reservar-turno-mercadopago': typeof ReservarTurnoMercadopagoRoute
   '/admin-v2/clientes': typeof AdminV2ClientesRoute
@@ -379,6 +388,7 @@ export interface FileRouteTypes {
     | '/reserva-v4'
     | '/reserva-v5'
     | '/reservar'
+    | '/reservar-mercadopago'
     | '/reservar-turno'
     | '/reservar-turno-mercadopago'
     | '/admin-v2/clientes'
@@ -416,6 +426,7 @@ export interface FileRouteTypes {
     | '/reserva-v4'
     | '/reserva-v5'
     | '/reservar'
+    | '/reservar-mercadopago'
     | '/reservar-turno'
     | '/reservar-turno-mercadopago'
     | '/admin-v2/clientes'
@@ -456,6 +467,7 @@ export interface FileRouteTypes {
     | '/reserva-v4'
     | '/reserva-v5'
     | '/reservar'
+    | '/reservar-mercadopago'
     | '/reservar-turno'
     | '/reservar-turno-mercadopago'
     | '/admin-v2/clientes'
@@ -497,6 +509,7 @@ export interface RootRouteChildren {
   ReservaV4Route: typeof ReservaV4Route
   ReservaV5Route: typeof ReservaV5Route
   ReservarRoute: typeof ReservarRoute
+  ReservarMercadopagoRoute: typeof ReservarMercadopagoRoute
   ReservarTurnoRoute: typeof ReservarTurnoRoute
   ReservarTurnoMercadopagoRoute: typeof ReservarTurnoMercadopagoRoute
   PagoErrorRoute: typeof PagoErrorRoute
@@ -581,6 +594,13 @@ declare module '@tanstack/react-router' {
       path: '/reservar'
       fullPath: '/reservar'
       preLoaderRoute: typeof ReservarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reservar-mercadopago': {
+      id: '/reservar-mercadopago'
+      path: '/reservar-mercadopago'
+      fullPath: '/reservar-mercadopago'
+      preLoaderRoute: typeof ReservarMercadopagoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reservar-turno': {
@@ -857,6 +877,7 @@ const rootRouteChildren: RootRouteChildren = {
   ReservaV4Route: ReservaV4Route,
   ReservaV5Route: ReservaV5Route,
   ReservarRoute: ReservarRoute,
+  ReservarMercadopagoRoute: ReservarMercadopagoRoute,
   ReservarTurnoRoute: ReservarTurnoRoute,
   ReservarTurnoMercadopagoRoute: ReservarTurnoMercadopagoRoute,
   PagoErrorRoute: PagoErrorRoute,
