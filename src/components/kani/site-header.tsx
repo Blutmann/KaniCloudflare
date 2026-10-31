@@ -40,7 +40,8 @@ export function MobileMenuAction() {
   const { setMobileMenuOpen } = useKani();
   const returnToBooking = () => {
     setMobileMenuOpen(false);
-    if (path !== '/reservar' && path !== '/reserva-v2') void navigate({ to: '/reservar' });
+    const target = path.includes('mercadopago') ? '/reservar-turno-mercadopago' : '/reservar-turno';
+    if (path !== target) void navigate({ to: target });
   };
   return <div className="booking-cta mobile-menu-cta"><div className="booking-cta-inner flex items-center"><Button className="action-positive booking-menu-return h-12" onClick={returnToBooking}>Volver a la solicitud <ArrowUpRight /></Button></div></div>;
 }
@@ -144,7 +145,7 @@ export function SiteHeader() {
 
   const closeMenu = () => onMenuOpenChange(false);
   const continueBooking = (event: MouseEvent<HTMLAnchorElement>) => {
-    if (path === '/reservar' || path === '/reserva-v2') {
+    if (path === '/reservar-turno' || path === '/reservar-turno-mercadopago' || path === '/reservar' || path === '/reserva-v4' || path === '/reserva-v2') {
       event.preventDefault();
       closeMenu();
     }

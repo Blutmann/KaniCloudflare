@@ -59,7 +59,7 @@ function CaseStudyPage() {
           </div>
         </div>
         <div className="case-study-hero-visual">
-          <div className="case-study-window-bar"><span /><span /><span /><small>kanibarber.com/reservar</small></div>
+          <div className="case-study-window-bar"><span /><span /><span /><small>kanibarber.com/reservar-turno</small></div>
           <img src="/case-study/booking-step-1.png" alt="Captura real del primer paso de solicitud de turno de Kani Barber Studio" loading="lazy" decoding="async" />
           <p>Captura real de Preview · primer paso del flujo de solicitud</p>
         </div>

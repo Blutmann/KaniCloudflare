@@ -1081,7 +1081,7 @@ function buildEmail(payload: NotificationPayload) {
   if (isNewRequest) return buildNewRequestEmail(payload, date, time);
 
   const baseUrl = getRuntimeEnv('KANI_APP_URL')?.replace(/\/$/, '') || 'https://kanibarber.com';
-  return buildCancelledEmail(payload, `${baseUrl}/reservar`);
+  return buildCancelledEmail(payload, `${baseUrl}/reservar-turno`);
 }
 
 export function buildCancelledEmail(payload: NotificationPayload, bookingUrl: string) {

@@ -404,7 +404,7 @@ export function Booking({
       }
     }
   }, [availabilityLoading, availableDates, barberDeferred, date, service, todayValue]);
-  const homeLink = isV5 ? "/reserva-v5" : isV3 ? "/reserva-v3" : isV2 ? "/reserva-v2" : "/reservar";
+  const homeLink = isV5 ? "/reserva-v5" : isV3 ? "/reserva-v3" : isV2 ? "/reserva-v2" : "/reservar-turno";
 
   function move(next: number) {
     setStep(isFiveSteps ? next : isV2 ? next === 3 ? 2 : next === 5 ? 4 : next : next);
