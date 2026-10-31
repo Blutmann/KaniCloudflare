@@ -155,12 +155,23 @@ BEGIN
       AND (p_barber_id IS NULL OR s.barber_id = p_barber_id)
       AND (s.end_time > s.start_time OR s.end_time = time '00:00:00')
   ), available_slots AS (
-    SELECT DISTINCT barber_id, slot_date, start_time, end_time, slot_start_ts, slot_end_ts
-    FROM (
-      SELECT * FROM stored_available_slots
-      UNION ALL
-      SELECT * FROM recurring_base_slots
-    ) combined
+    SELECT
+      s.barber_id,
+      s.slot_date,
+      s.start_time,
+      s.end_time,
+      s.slot_start_ts,
+      s.slot_end_ts
+    FROM stored_available_slots s
+    UNION
+    SELECT
+      r.barber_id,
+      r.slot_date,
+      r.start_time,
+      r.end_time,
+      r.slot_start_ts,
+      r.slot_end_ts
+    FROM recurring_base_slots r
   ), standard_candidates AS (
     SELECT DISTINCT
       s.barber_id,
@@ -230,20 +241,20 @@ BEGIN
       u.candidate_start,
       bool_and(u.is_exception) AS is_exception
     FROM (
-      SELECT * FROM standard_candidates
+      SELECT sc.barber_id, sc.slot_date, sc.candidate_start, sc.is_exception FROM standard_candidates sc
       UNION ALL
-      SELECT * FROM franco_saturday_candidates
+      SELECT fc.barber_id, fc.slot_date, fc.candidate_start, fc.is_exception FROM franco_saturday_candidates fc
       UNION ALL
-      SELECT * FROM extended_candidates
+      SELECT ec.barber_id, ec.slot_date, ec.candidate_start, ec.is_exception FROM extended_candidates ec
       UNION ALL
-      SELECT * FROM closing_candidates
+      SELECT cc.barber_id, cc.slot_date, cc.candidate_start, cc.is_exception FROM closing_candidates cc
     ) u
     GROUP BY u.barber_id, u.slot_date, u.candidate_start
   )
   SELECT
     c.barber_id,
     c.slot_date,
-    c.candidate_start::time,
+    c.candidate_start::time AS start_time,
     c.is_exception,
     compatibility.compatible_services
   FROM all_candidates c
