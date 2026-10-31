@@ -88,10 +88,10 @@ export function AdminFilterPanel({
 }: AdminFilterPanelProps) {
   return (
     <section
-      className={cn("v2-admin-filter-panel", className)}
+      className={cn("v2-admin-filter-panel v2-admin-filter-card", className)}
       aria-label={ariaLabel}
     >
-      <div className="v2-admin-filter-grid">
+      <div className="v2-admin-filter-grid v2-filters-grid">
         {children}
       </div>
       {footer}
