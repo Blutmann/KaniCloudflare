@@ -19,6 +19,8 @@ import { Route as ReservaV3RouteImport } from './routes/reserva-v3'
 import { Route as ReservaV4RouteImport } from './routes/reserva-v4'
 import { Route as ReservaV5RouteImport } from './routes/reserva-v5'
 import { Route as ReservarRouteImport } from './routes/reservar'
+import { Route as ReservarTurnoRouteImport } from './routes/reservar-turno'
+import { Route as ReservarTurnoMercadopagoRouteImport } from './routes/reservar-turno-mercadopago'
 import { Route as AdminV2IndexRouteImport } from './routes/admin-v2.index'
 import { Route as AdminV2ClientesRouteImport } from './routes/admin-v2.clientes'
 import { Route as AdminV2DatosRouteImport } from './routes/admin-v2.datos'
@@ -88,6 +90,17 @@ const ReservarRoute = ReservarRouteImport.update({
   path: '/reservar',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ReservarTurnoRoute = ReservarTurnoRouteImport.update({
+  id: '/reservar-turno',
+  path: '/reservar-turno',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReservarTurnoMercadopagoRoute =
+  ReservarTurnoMercadopagoRouteImport.update({
+    id: '/reservar-turno-mercadopago',
+    path: '/reservar-turno-mercadopago',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AdminV2IndexRoute = AdminV2IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -190,6 +203,8 @@ export interface FileRoutesByFullPath {
   '/reserva-v4': typeof ReservaV4Route
   '/reserva-v5': typeof ReservaV5Route
   '/reservar': typeof ReservarRoute
+  '/reservar-turno': typeof ReservarTurnoRoute
+  '/reservar-turno-mercadopago': typeof ReservarTurnoMercadopagoRoute
   '/admin-v2/clientes': typeof AdminV2ClientesRoute
   '/admin-v2/datos': typeof AdminV2DatosRoute
   '/admin-v2/horarios': typeof AdminV2HorariosRoute
@@ -218,6 +233,8 @@ export interface FileRoutesByTo {
   '/reserva-v4': typeof ReservaV4Route
   '/reserva-v5': typeof ReservaV5Route
   '/reservar': typeof ReservarRoute
+  '/reservar-turno': typeof ReservarTurnoRoute
+  '/reservar-turno-mercadopago': typeof ReservarTurnoMercadopagoRoute
   '/admin-v2/clientes': typeof AdminV2ClientesRoute
   '/admin-v2/datos': typeof AdminV2DatosRoute
   '/admin-v2/horarios': typeof AdminV2HorariosRoute
@@ -249,6 +266,8 @@ export interface FileRoutesById {
   '/reserva-v4': typeof ReservaV4Route
   '/reserva-v5': typeof ReservaV5Route
   '/reservar': typeof ReservarRoute
+  '/reservar-turno': typeof ReservarTurnoRoute
+  '/reservar-turno-mercadopago': typeof ReservarTurnoMercadopagoRoute
   '/admin-v2/clientes': typeof AdminV2ClientesRoute
   '/admin-v2/datos': typeof AdminV2DatosRoute
   '/admin-v2/horarios': typeof AdminV2HorariosRoute
@@ -281,6 +300,8 @@ export interface FileRouteTypes {
     | '/reserva-v4'
     | '/reserva-v5'
     | '/reservar'
+    | '/reservar-turno'
+    | '/reservar-turno-mercadopago'
     | '/admin-v2/clientes'
     | '/admin-v2/datos'
     | '/admin-v2/horarios'
@@ -309,6 +330,8 @@ export interface FileRouteTypes {
     | '/reserva-v4'
     | '/reserva-v5'
     | '/reservar'
+    | '/reservar-turno'
+    | '/reservar-turno-mercadopago'
     | '/admin-v2/clientes'
     | '/admin-v2/datos'
     | '/admin-v2/horarios'
@@ -339,6 +362,8 @@ export interface FileRouteTypes {
     | '/reserva-v4'
     | '/reserva-v5'
     | '/reservar'
+    | '/reservar-turno'
+    | '/reservar-turno-mercadopago'
     | '/admin-v2/clientes'
     | '/admin-v2/datos'
     | '/admin-v2/horarios'
@@ -370,6 +395,8 @@ export interface RootRouteChildren {
   ReservaV4Route: typeof ReservaV4Route
   ReservaV5Route: typeof ReservaV5Route
   ReservarRoute: typeof ReservarRoute
+  ReservarTurnoRoute: typeof ReservarTurnoRoute
+  ReservarTurnoMercadopagoRoute: typeof ReservarTurnoMercadopagoRoute
   PagoErrorRoute: typeof PagoErrorRoute
   PagoExitoRoute: typeof PagoExitoRoute
   PagoPendienteRoute: typeof PagoPendienteRoute
@@ -445,6 +472,20 @@ declare module '@tanstack/react-router' {
       path: '/reservar'
       fullPath: '/reservar'
       preLoaderRoute: typeof ReservarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reservar-turno': {
+      id: '/reservar-turno'
+      path: '/reservar-turno'
+      fullPath: '/reservar-turno'
+      preLoaderRoute: typeof ReservarTurnoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reservar-turno-mercadopago': {
+      id: '/reservar-turno-mercadopago'
+      path: '/reservar-turno-mercadopago'
+      fullPath: '/reservar-turno-mercadopago'
+      preLoaderRoute: typeof ReservarTurnoMercadopagoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin-v2/': {
@@ -634,6 +675,8 @@ const rootRouteChildren: RootRouteChildren = {
   ReservaV4Route: ReservaV4Route,
   ReservaV5Route: ReservaV5Route,
   ReservarRoute: ReservarRoute,
+  ReservarTurnoRoute: ReservarTurnoRoute,
+  ReservarTurnoMercadopagoRoute: ReservarTurnoMercadopagoRoute,
   PagoErrorRoute: PagoErrorRoute,
   PagoExitoRoute: PagoExitoRoute,
   PagoPendienteRoute: PagoPendienteRoute,

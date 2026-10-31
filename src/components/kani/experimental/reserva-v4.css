@@ -1,4 +1,4 @@
-.payway-reservation { display: contents; }
+.payway-reservation, .mercadopago-reservation { display: contents; }
 
 /* Payway Checkout Modal: Typography, Spacing, and Responsive Geometry */
 .payway-checkout {

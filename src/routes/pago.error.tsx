@@ -49,14 +49,14 @@ function PagoErrorPage() {
         {/* Acciones para reintentar */}
         <div className="space-y-2.5 pt-2">
           <Button asChild className="w-full h-11 bg-primary text-primary-foreground font-semibold rounded-xl shadow-lg flex items-center justify-center gap-2">
-            <Link to="/reserva-v2">
+            <Link to="/reservar-turno-mercadopago" search={appointmentId ? { appointment_id: appointmentId } : undefined}>
               <RefreshCcw className="w-4 h-4" />
               <span>Reintentar reserva</span>
             </Link>
           </Button>
 
           <Button asChild variant="outline" className="w-full h-11 border-border/80 text-foreground font-medium rounded-xl flex items-center justify-center gap-2">
-            <Link to="/">
+            <Link to="/reservar-turno-mercadopago">
               <ArrowLeft className="w-4 h-4" />
               <span>Volver al inicio</span>
             </Link>

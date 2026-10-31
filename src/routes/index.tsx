@@ -1,8 +1,11 @@
-import { createFileRoute } from '@tanstack/react-router';
-import { Booking } from '@/components/kani/booking';
-import { pageHead } from '@/lib/kani-head';
+import { createFileRoute, redirect, Navigate } from '@tanstack/react-router';
 
 export const Route = createFileRoute('/')({
-  head: () => pageHead('Elegí tu servicio', 'Reservá en Kani Barber Studio: elegí servicio, barbero, fecha y horario sin crear una cuenta.', 'Kani Barber Studio - Solicitar turno'),
-  component: Booking,
+  beforeLoad: ({ search }) => {
+    throw redirect({
+      to: '/reservar-turno',
+      search: (search as Record<string, unknown>) || {},
+    });
+  },
+  component: () => <Navigate to="/reservar-turno" />,
 });

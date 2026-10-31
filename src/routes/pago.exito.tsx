@@ -1,15 +1,15 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
-import { CheckCircle2, Clock, MapPin, Calendar, User, Scissors, AlertCircle, ArrowRight } from 'lucide-react';
+import { Clock, AlertCircle } from 'lucide-react';
 import { getAppointmentPaymentStatusFn, type AppointmentPaymentStatusResult } from '@/lib/kani-mercadopago.functions';
 import { pageHead } from '@/lib/kani-head';
 import { checkoutReturnIdentifiers } from '@/lib/kani-payment-return';
 import { Button } from '@/components/ui/button';
-import {
-  KANI_STUDIO_ADDRESS,
-  KANI_MAPS_URL,
-  formatAppointmentDateTime,
-} from '@/lib/kani-constants';
+import { BookingConfirmedScreen, type ConfirmedBookingData } from '@/components/kani/booking-confirmed-screen';
+import { KANI_STANDARD_DEPOSIT_ARS } from '@/lib/kani-constants';
+import '@/components/kani/experimental/reserva-v2.css';
+import '@/components/kani/experimental/reserva-v3.css';
+import '@/components/kani/experimental/reserva-v4.css';
 
 export const Route = createFileRoute('/pago/exito')({
   head: () =>
@@ -90,7 +90,7 @@ function PagoExitoPage() {
           </p>
           <div className="pt-2">
             <Button asChild className="w-full h-11 bg-primary text-primary-foreground font-medium rounded-xl">
-              <Link to="/">Volver al inicio</Link>
+              <Link to="/reservar-turno-mercadopago">Volver al inicio</Link>
             </Button>
           </div>
         </div>
@@ -121,88 +121,43 @@ function PagoExitoPage() {
     );
   }
 
-  // Caso 1: Turno confirmado con éxito
-  if (result?.isConfirmed) {
+  // Caso 1: Turno confirmado con éxito — Renderiza la pantalla final idéntica a Reserva V4
+  if (result?.isConfirmed && result.appointment) {
     const appt = result.appointment;
+    const confirmedData: ConfirmedBookingData = {
+      appointmentId: appt.id,
+      serviceName: appt.serviceName ?? 'Servicio Kani',
+      barber: appt.barberName ?? 'Lautaro',
+      date: appt.date ?? '',
+      time: (appt.time ?? '').slice(0, 5),
+      clientName: appt.clientName ?? '',
+      depositArs: appt.depositAmountArs ?? KANI_STANDARD_DEPOSIT_ARS,
+      servicePriceArs: appt.servicePriceArs ?? 25000,
+    };
+
     return (
-      <main className="min-h-[80vh] flex items-center justify-center px-4 py-10 sm:py-16">
-        <div className="max-w-lg w-full space-y-6 bg-card/80 backdrop-blur-md border border-primary/30 rounded-3xl p-6 sm:p-9 shadow-2xl">
-          {/* Header de éxito */}
-          <div className="text-center space-y-3">
-            <div className="mx-auto w-16 h-16 rounded-full bg-emerald-500/10 border-2 border-emerald-500/40 flex items-center justify-center text-emerald-500 shadow-inner">
-              <CheckCircle2 className="w-9 h-9" />
-            </div>
-            <div className="space-y-1">
-              <span className="text-xs uppercase tracking-widest text-primary font-semibold">Pago Recibido</span>
-              <h1 className="text-3xl font-serif font-bold text-foreground tracking-tight">¡Turno confirmado!</h1>
-            </div>
-            <p className="text-xs sm:text-sm text-muted-foreground">
-              Tu seña de <strong className="text-foreground font-semibold">$5.000 ARS</strong> fue acreditada correctamente.
-            </p>
+      <BookingConfirmedScreen
+        confirmed={confirmedData}
+        homeUrl="/reservar-turno-mercadopago"
+      />
+    );
+  }
+
+  // Caso 2: El turno fue cancelado o expiró
+  if (result?.appointmentStatus === 'CANCELLED') {
+    return (
+      <main className="min-h-[75vh] flex items-center justify-center px-4 py-12">
+        <div className="max-w-md w-full text-center space-y-5 bg-card/60 backdrop-blur-md border border-rose-500/30 rounded-2xl p-6 sm:p-8 shadow-xl">
+          <div className="mx-auto w-14 h-14 rounded-full bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-500">
+            <AlertCircle className="w-7 h-7" />
           </div>
-
-          {/* Ficha resumen del turno */}
-          {appt && (
-            <div className="rounded-2xl border border-border/80 bg-background/60 p-4 sm:p-5 space-y-3.5 text-xs sm:text-sm">
-              <div className="flex items-center justify-between pb-3 border-b border-border/60">
-                <span className="text-muted-foreground">Solicitud Nº</span>
-                <span className="font-mono font-bold text-foreground">#{appt.requestNumber || appt.id.slice(0, 8)}</span>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <Scissors className="w-4 h-4 text-primary shrink-0" />
-                <div className="flex-1 flex justify-between">
-                  <span className="text-muted-foreground">Servicio:</span>
-                  <strong className="text-foreground font-medium">{appt.serviceName}</strong>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <User className="w-4 h-4 text-primary shrink-0" />
-                <div className="flex-1 flex justify-between">
-                  <span className="text-muted-foreground">Barbero:</span>
-                  <strong className="text-foreground font-medium">{appt.barberName}</strong>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <Calendar className="w-4 h-4 text-primary shrink-0" />
-                <div className="flex-1 flex justify-between">
-                  <span className="text-muted-foreground">Fecha y hora:</span>
-                  <strong className="text-foreground font-medium">{formatAppointmentDateTime(appt.date, appt.time)}</strong>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3 pt-1 border-t border-border/60">
-                <MapPin className="w-4 h-4 text-primary shrink-0" />
-                <div className="flex-1 flex justify-between">
-                  <span className="text-muted-foreground">Dirección:</span>
-                  <span className="text-foreground font-medium">{KANI_STUDIO_ADDRESS}</span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Aviso de correo electrónico */}
-          <div className="rounded-xl bg-primary/10 border border-primary/20 p-3.5 text-center text-xs text-foreground/90 leading-relaxed">
-            Te enviamos el resumen de tu turno por correo electrónico. Si no lo encontrás, revisá Spam o Correo no deseado.
-          </div>
-
-          {/* Acciones */}
-          <div className="space-y-2.5 pt-2">
-            <Button asChild className="w-full h-11 bg-primary text-primary-foreground font-semibold rounded-xl shadow-lg">
-              <Link to="/">Volver al inicio</Link>
-            </Button>
-            <Button asChild variant="outline" className="w-full h-11 border-border/80 text-foreground font-medium rounded-xl">
-              <a
-                href={KANI_MAPS_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2"
-              >
-                <span>Ver en Google Maps</span>
-                <ArrowRight className="w-4 h-4 text-muted-foreground" />
-              </a>
+          <h1 className="text-2xl font-serif font-bold text-foreground tracking-tight">Turno no disponible</h1>
+          <p className="text-sm text-muted-foreground">
+            El tiempo límite de 10 minutos para abonar la seña expiró o la operación fue cancelada. El horario fue liberado.
+          </p>
+          <div className="pt-2">
+            <Button asChild className="w-full h-11 bg-primary text-primary-foreground font-medium rounded-xl">
+              <Link to="/reservar-turno-mercadopago">Elegir otro horario</Link>
             </Button>
           </div>
         </div>
@@ -210,37 +165,29 @@ function PagoExitoPage() {
     );
   }
 
-  // Caso 2: El pago sigue pendiente tras los reintentos
+  // Caso 3: Estado pendiente persistente
   return (
-    <main className="min-h-[80vh] flex items-center justify-center px-4 py-12">
-      <div className="max-w-md w-full text-center space-y-6 bg-card/70 backdrop-blur-md border border-border/80 rounded-3xl p-6 sm:p-8 shadow-xl">
-        <div className="mx-auto w-16 h-16 rounded-full bg-amber-500/10 border-2 border-amber-500/30 flex items-center justify-center text-amber-500">
-          <Clock className="w-8 h-8" />
+    <main className="min-h-[75vh] flex items-center justify-center px-4 py-12">
+      <div className="max-w-md w-full text-center space-y-5 bg-card/60 backdrop-blur-md border border-amber-500/30 rounded-2xl p-6 sm:p-8 shadow-xl">
+        <div className="mx-auto w-14 h-14 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-500">
+          <Clock className="w-7 h-7" />
         </div>
-        <div className="space-y-2">
-          <span className="text-xs uppercase tracking-widest text-amber-500 font-semibold">Procesamiento en curso</span>
-          <h1 className="text-2xl font-serif font-bold text-foreground tracking-tight">Pago en acreditación</h1>
-          <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-            Mercado Pago está procesando tu operación. En cuanto se confirme la acreditación, tu turno quedará confirmado automáticamente y te notificaremos por correo electrónico.
-          </p>
-        </div>
-
-        {result?.appointment && (
-          <div className="rounded-xl border border-border/60 bg-background/50 p-4 text-left text-xs space-y-2">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Turno:</span>
-              <strong className="text-foreground">{result.appointment.serviceName} con {result.appointment.barberName}</strong>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Fecha y hora:</span>
-              <strong className="text-foreground">{formatAppointmentDateTime(result.appointment.date, result.appointment.time)}</strong>
-            </div>
-          </div>
-        )}
-
-        <div className="pt-2">
-          <Button asChild className="w-full h-11 bg-primary text-primary-foreground font-medium rounded-xl">
-            <Link to="/">Volver al inicio</Link>
+        <h1 className="text-2xl font-serif font-bold text-foreground tracking-tight">Pago en proceso</h1>
+        <p className="text-sm text-muted-foreground">
+          Mercado Pago está procesando la acreditación de tu seña. Tu turno se confirmará automáticamente al completarse.
+        </p>
+        <div className="pt-2 flex flex-col gap-2">
+          <Button
+            className="w-full h-11 bg-primary text-primary-foreground font-medium rounded-xl"
+            onClick={() => {
+              setLoading(true);
+              setRetryCount(0);
+            }}
+          >
+            Comprobar nuevamente
+          </Button>
+          <Button asChild variant="outline" className="w-full h-11 rounded-xl">
+            <Link to="/reservar-turno-mercadopago">Volver al inicio</Link>
           </Button>
         </div>
       </div>

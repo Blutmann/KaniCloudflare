@@ -110,7 +110,7 @@ function PagoPendientePage() {
         {/* Botón de acción */}
         <div className="pt-2">
           <Button asChild className="w-full h-11 bg-primary text-primary-foreground font-semibold rounded-xl shadow-lg">
-            <Link to="/">Volver al inicio</Link>
+            <Link to="/reservar-turno-mercadopago">Volver al inicio</Link>
           </Button>
         </div>
       </div>

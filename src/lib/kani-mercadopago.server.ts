@@ -203,10 +203,13 @@ export async function handleGetAppointmentPaymentStatus(data: AppointmentPayment
     }
 
     // Cargar información descriptiva del turno para la UI
-    const [barberRes, serviceRes] = await Promise.all([
+    const [barberRes, serviceRes, clientRes] = await Promise.all([
       supabase.from("barbers").select("name").eq("id", appt.barber_id).maybeSingle(),
       supabase.from("services").select("name, price_ars").eq("id", appt.service_id).maybeSingle(),
+      appt.client_id ? supabase.from("clients").select("name, email, phone").eq("id", appt.client_id).maybeSingle() : Promise.resolve({ data: null }),
     ]);
+
+    const servicePriceArs = serviceRes.data?.price_ars ? Number(serviceRes.data.price_ars) : 25000;
 
     const appointmentDetails = {
       id: appt.id,
@@ -215,7 +218,11 @@ export async function handleGetAppointmentPaymentStatus(data: AppointmentPayment
       barberName: barberRes.data?.name ?? "Barbero Kani",
       date: appt.booking_date,
       time: appt.start_time,
+      clientName: clientRes.data?.name ?? "",
+      clientEmail: clientRes.data?.email ?? "",
+      clientPhone: clientRes.data?.phone ?? "",
       depositAmountArs: 5000,
+      servicePriceArs,
     };
 
     // 1. Si el turno ya está confirmado o completado en la base de datos

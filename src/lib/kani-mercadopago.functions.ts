@@ -40,6 +40,7 @@ export type AppointmentPaymentStatusResult = {
     clientPhone?: string;
     clientEmail?: string;
     depositAmountArs?: number;
+    servicePriceArs?: number;
   };
   error?: string;
   message?: string;
