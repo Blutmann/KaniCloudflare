@@ -337,21 +337,30 @@ describe('Admin V2 — Optimización de Clientes, Pagos y Turnos', () => {
       expect(css).toMatch(/\.v2-payment-submit-btn\s*\{[^}]*min-height:\s*44px/);
     });
 
-    it('Pagos: Tabla desktop usa table-layout fixed, alinea importes a la derecha y reserva espacio de acciones', () => {
+    it('Pagos: Tabla desktop usa table-layout fixed, alinea importes a la derecha y reserva espacio de acciones estable', () => {
       expect(css).toMatch(/\.v2-payments-table\s*\{[^}]*table-layout:\s*fixed/);
-      expect(css).toMatch(/\.v2-payments-table\s*\.col-datetime\s*\{[^}]*width:\s*115px/);
+      expect(css).toMatch(/\.v2-payments-table\s*\.col-datetime\s*\{[^}]*width:\s*110px/);
+      expect(css).toMatch(/\.v2-payments-table\s*\.col-service\s*\{[^}]*width:\s*18%/);
+      expect(css).toMatch(/\.v2-payments-table\s*\.col-client\s*\{[^}]*width:\s*24%/);
+      expect(css).toMatch(/\.v2-payments-table\s*\.col-method\s*\{[^}]*width:\s*135px/);
       expect(css).toMatch(/\.v2-payments-table\s*\.col-amount[^}]*width:\s*110px/);
-      expect(css).toMatch(/\.v2-payments-table\s*\.col-actions[^}]*width:\s*160px/);
+      expect(css).toMatch(/\.v2-payments-table\s*\.col-actions[^}]*width:\s*165px/);
       expect(css).toMatch(/\.v2-table-amount-cell\s*\{[^}]*text-align:\s*right/);
       expect(css).toMatch(/\.v2-table-amount-cell\s*\{[^}]*font-variant-numeric:\s*tabular-nums/);
+      expect(css).toMatch(/\.v2-action-icon-btn\.client\s*\{[^}]*width:\s*100%/);
+      expect(css).toMatch(/\.v2-action-icon-btn\.edit[^}]*flex:\s*1\s*1\s*0/);
+      expect(css).toMatch(/\.v2-method-badge\s*\{[^}]*white-space:\s*nowrap/);
       expect(css).toMatch(/\.v2-pcm-btn\s*\{[^}]*min-height:\s*44px/);
     });
 
-    it('Turnos: Acciones en grilla dinámica 2x2 para 4 acciones y 1x2 para 2 acciones', () => {
+    it('Turnos: Acciones en grilla dinámica 2x2 para 4 acciones y 1x2 para 2 acciones con integración de borde desktop', () => {
       expect(css).toMatch(/\.v2-appointment-actions-grid\s*\{[^}]*grid-template-columns:\s*1fr 1fr/);
       expect(css).toMatch(/\.v2-appointment-actions-grid\.count-1\s*\{[^}]*grid-template-columns:\s*1fr/);
+      expect(css).toMatch(/\.v2-appointment-actions-grid\.count-2\s*\{[^}]*grid-template-columns:\s*1fr 1fr/);
+      expect(css).toMatch(/\.v2-appointment-actions-grid\.count-4\s*\{[^}]*grid-template-columns:\s*1fr 1fr/);
       expect(css).toMatch(/\.v2-action-btn\s*\{[^}]*min-height:\s*44px/);
       expect(css).toMatch(/\.v2-whatsapp\s*\{[^}]*background:\s*#25D366/);
+      expect(css).toMatch(/\.v2-appointments-page \.v2-appointment-actions\s*\{[^}]*border-left:\s*1px solid/);
     });
   });
 });

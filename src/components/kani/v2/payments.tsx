@@ -21,6 +21,13 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { BarberFilter, Empty } from "./shared";
 import { useV2 } from "./data";
 
+export function formatPaymentMethodLabel(method: string): string {
+  if (!method) return "";
+  return method
+    .replace(/Tarjeta\s*[-—–]{1,3}\s*Payway/i, "Tarjeta - Payway")
+    .replace(/^Payway$/i, "Tarjeta - Payway");
+}
+
 export function V2Payments() {
   const data = useV2();
   const staff = useAdminStaff();
@@ -634,7 +641,7 @@ export function V2Payments() {
                     </td>
                     <td className="col-method">
                       <span className={`v2-method-badge ${p.paymentMethod.toLowerCase()}`}>
-                        {p.paymentMethod}
+                        {formatPaymentMethodLabel(p.paymentMethod)}
                       </span>
                     </td>
                     <td className="col-amount">
@@ -724,7 +731,7 @@ export function V2Payments() {
                     {p.paymentDate} · {p.paymentTime} hs
                   </span>
                   <span className={`v2-method-badge ${p.paymentMethod.toLowerCase()}`}>
-                    {p.paymentMethod}
+                    {formatPaymentMethodLabel(p.paymentMethod)}
                   </span>
                 </div>
 

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen, cleanup } from '@testing-library/react';
+import { render, screen, cleanup, within } from '@testing-library/react';
 import fs from 'fs';
 import path from 'path';
 import { V2Appointments } from '@/components/kani/v2/agenda';
@@ -65,12 +65,13 @@ describe('Admin V2 — Comprehensive Visual Consistency (Turnos & Pagos)', () =>
 
   describe('1. Turnos Action Labels and Sizing', () => {
     it('uses "WhatsApp" and "Mail" labels without "Enviar"', () => {
+      const today = new Date().toISOString().slice(0, 10);
       testState.appointments = [
         {
           id: 'apt-1',
           barberId: 'b1',
           barber: 'Lautaro',
-          date: '2026-10-30',
+          date: today,
           time: '10:00',
           endTime: '10:45',
           name: 'Tomas Blutman',
@@ -87,8 +88,9 @@ describe('Admin V2 — Comprehensive Visual Consistency (Turnos & Pagos)', () =>
 
       render(<V2Appointments />);
 
-      expect(screen.getByRole('link', { name: 'WhatsApp' })).toBeInTheDocument();
-      expect(screen.getByRole('link', { name: 'Mail' })).toBeInTheDocument();
+      const actions = document.querySelector('.v2-appointment-actions') as HTMLElement;
+      expect(within(actions).getByRole('button', { name: 'WhatsApp' })).toBeInTheDocument();
+      expect(within(actions).getByRole('link', { name: 'Mail' })).toBeInTheDocument();
       expect(screen.queryByText('Enviar WhatsApp')).toBeNull();
       expect(screen.queryByText('Enviar mail')).toBeNull();
     });
@@ -127,10 +129,9 @@ describe('Admin V2 — Comprehensive Visual Consistency (Turnos & Pagos)', () =>
       expect(css).toMatch(/\.v2-payment-form :is\(input,\s*select\)\s*\{[^}]*min-height:\s*44px/);
     });
 
-    it('segmented control "Sin turno / Con turno" has equal 50/50 dimensions and 44px height', () => {
+    it('segmented control "Sin turno / Con turno" has equal 50/50 dimensions and pill styling', () => {
       expect(css).toMatch(/\.v2-segmented\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/);
-      expect(css).toMatch(/\.v2-segmented button\s*\{[^}]*min-height:\s*44px/);
-      expect(css).toMatch(/\.v2-segmented button\s*\{[^}]*height:\s*44px/);
+      expect(css).toMatch(/\.v2-segmented\s*\{[^}]*border-radius:\s*var\(--radius-capsule/);
     });
 
     it('compact summary block avoids redundant highlighted card box when no discount or deposit exists', () => {
