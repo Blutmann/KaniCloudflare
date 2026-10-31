@@ -8,6 +8,7 @@ import kaniLogoDark from '@/assets/kani-logo-dark.webp';
 import { getAuthenticatedStaff, signOut, type AuthenticatedStaff } from '@/lib/kani-auth';
 import { supabase } from '@/integrations/supabase/client';
 import { useKani } from '@/components/kani/store';
+import { KANI_PUBLIC_WHATSAPP_URL } from '@/lib/kani-constants';
 
 const AdminActivityPopover = lazy(() =>
   import('@/components/kani/admin-activity-popover').then(m => ({ default: m.AdminActivityPopover }))
@@ -58,7 +59,7 @@ export function HeaderWhatsApp() {
       title="Consultas por WhatsApp"
     >
       <a
-        href="https://wa.me/5491128436014?text=Hola%2C%20quer%C3%ADa%20hacer%20una%20consulta%20sobre%20una%20reserva."
+        href={`${KANI_PUBLIC_WHATSAPP_URL}?text=Hola%2C%20quer%C3%ADa%20hacer%20una%20consulta%20sobre%20una%20reserva.`}
         target="_blank"
         rel="noopener noreferrer"
       >

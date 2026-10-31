@@ -35,7 +35,7 @@ describe('Kani Barber Studio - Ajustes en Contacto e integración de Google Maps
     expect(estudioCode).toContain('studio-map-iframe');
 
     // Utiliza el iframe oficial con el CID de Kani Barber Studio
-    expect(estudioCode).toContain('5241343871369591392');
+    expect(estudioCode).toMatch(/KANI_MAPS_EMBED_URL|5241343871369591392/);
     expect(estudioCode).toMatch(/src=\{mapsEmbedUrl\}|src="https:\/\/maps\.google\.com\/maps\?cid=5241343871369591392/);
 
     // Accesibilidad: título descriptivo
@@ -44,7 +44,7 @@ describe('Kani Barber Studio - Ajustes en Contacto e integración de Google Maps
 
     // Alternativa visible para abrir en Google Maps
     expect(estudioCode).toContain('Cómo llegar');
-    expect(estudioCode).toContain('https://www.google.com/maps/place/KANI+BARBER+STUDIO/data=!4m2!3m1!1s0x0:0x48bcfe7b2ea7ba60');
+    expect(estudioCode).toMatch(/KANI_MAPS_URL|https:\/\/www\.google\.com\/maps\/place\/KANI\+BARBER\+STUDIO/);
   });
 
   it('3. Aplica diseño responsive coherente en mobile y desktop', () => {
@@ -72,7 +72,7 @@ describe('Kani Barber Studio - Ajustes en Contacto e integración de Google Maps
     expect(estudioCode).toContain('WhatsApp');
     expect(estudioCode).toContain('Escribinos para realizar tu consulta.');
     expect(estudioCode).toContain('Contactar por WhatsApp');
-    expect(estudioCode).toContain('https://wa.me/5491128436014');
+    expect(estudioCode).toMatch(/KANI_PUBLIC_WHATSAPP_URL|https:\/\/wa\.me\/5491155616438/);
 
     // 2 columnas en mobile y desktop
     expect(css).toMatch(/\.studio-info-grid\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/);

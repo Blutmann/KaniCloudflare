@@ -30,7 +30,7 @@ describe('Kani Barber Studio - WhatsApp en Header (Mobile & Desktop) y eliminaci
     expect(siteHeaderCode).not.toContain('header-whatsapp-button hidden md:inline-flex');
 
     // Enlace oficial de WhatsApp conservado
-    expect(siteHeaderCode).toContain('https://wa.me/5491128436014');
+    expect(siteHeaderCode).toMatch(/KANI_PUBLIC_WHATSAPP_URL|https:\/\/wa\.me\/5491155616438/);
     expect(siteHeaderCode).toContain('aria-label="Consultas por WhatsApp"');
     expect(siteHeaderCode).toContain('target="_blank"');
     expect(siteHeaderCode).toContain('rel="noopener noreferrer"');

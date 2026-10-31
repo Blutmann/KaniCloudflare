@@ -120,7 +120,7 @@ describe('Email transaccional de confirmación de turno (Kani Barber Studio)', (
 
   it('8. WhatsApp: Acción y enlace exacto con número oficial', () => {
     const email = buildConfirmedEmail(basePayload);
-    const waExactUrl = 'https://wa.me/5491128436014';
+    const waExactUrl = 'https://wa.me/5491155616438';
 
     expect(email.text).toContain('Contactar vía WhatsApp');
     expect(email.text).toContain(waExactUrl);

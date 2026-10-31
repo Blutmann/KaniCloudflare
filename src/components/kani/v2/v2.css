@@ -774,7 +774,7 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
   padding: 3px;
   border: 1px solid var(--v2-line, var(--border));
   border-radius: var(--radius-capsule, 9999px);
-  background: color-mix(in srgb, var(--v2-surface-alt, #fff) 50%, var(--v2-surface));
+  background: var(--v2-inset, #f4f3f0);
   margin-bottom: 16px;
   max-width: 260px;
   width: 100%;
@@ -805,8 +805,8 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
   color: var(--foreground);
 }
 .v2-segmented button[aria-pressed="true"] {
-  color: #111111;
-  background: var(--gold);
+  color: #ffffff;
+  background: #702B3A;
   font-weight: 600;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
 }
@@ -3534,7 +3534,7 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
   box-sizing: border-box;
 }
 .v2-total-box-label {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
   color: var(--muted-foreground);
   line-height: 1;
@@ -3542,18 +3542,18 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
 .v2-total-box-amount-wrap {
   display: flex;
   align-items: baseline;
-  gap: 6px;
+  gap: 4px;
   margin-left: auto;
 }
 .v2-total-box-amount {
-  font-size: 15px;
+  font-size: 13.5px;
   font-weight: 600;
   color: var(--foreground);
   font-variant-numeric: tabular-nums;
   line-height: 1;
 }
 .v2-total-box-breakdown {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--muted-foreground);
   line-height: 1;
 }
@@ -3568,7 +3568,22 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
   font-size: 14px;
   font-weight: 400;
   border-radius: var(--radius-control);
+  white-space: nowrap;
   box-sizing: border-box;
+}
+.v2-submit-btn-text-desktop {
+  display: none;
+}
+.v2-submit-btn-text-mobile {
+  display: inline;
+}
+@media (min-width: 768px) {
+  .v2-submit-btn-text-desktop {
+    display: inline;
+  }
+  .v2-submit-btn-text-mobile {
+    display: none;
+  }
 }
 
 /* Cobros registrados — Desktop table */
@@ -4069,7 +4084,18 @@ html[data-theme="dark"] .admin-schedule-dialog .action-positive:disabled {
   cursor: not-allowed !important;
 }
 
-/* Segmentados y toggles activos en Modo Oscuro: dorado institucional */
+/* Segmentados y toggles en Modo Oscuro: contenedor oscuro y activo dorado institucional */
+html[data-theme="dark"] .v2-segmented {
+  background: var(--v2-inset, #121212) !important;
+  border-color: var(--v2-line, #262626) !important;
+}
+html[data-theme="dark"] .v2-segmented button {
+  color: var(--muted-foreground) !important;
+  background: transparent !important;
+}
+html[data-theme="dark"] .v2-segmented button:hover {
+  color: var(--foreground) !important;
+}
 html[data-theme="dark"] .v2-segmented button[aria-pressed="true"] {
   background: var(--gold) !important;
   border-color: var(--gold) !important;

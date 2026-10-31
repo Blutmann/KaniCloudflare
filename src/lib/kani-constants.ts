@@ -31,6 +31,16 @@ export const KANI_MAPS_EMBED_URL =
  */
 export const KANI_STANDARD_DEPOSIT_ARS = 5000;
 
+/**
+ * WhatsApp oficial de contacto público de Kani Barber Studio.
+ */
+export const KANI_PUBLIC_WHATSAPP_NUMBER = "5491155616438";
+
+/**
+ * URL canónica de WhatsApp para contacto público con Kani Barber Studio.
+ */
+export const KANI_PUBLIC_WHATSAPP_URL = `https://wa.me/${KANI_PUBLIC_WHATSAPP_NUMBER}`;
+
 const SPANISH_MONTHS_TITLE = [
   "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
   "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"

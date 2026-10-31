@@ -1,6 +1,6 @@
 import { createServerFn, createServerOnlyFn } from "@tanstack/react-start";
 import { notificationSubject } from './kani-email-environment';
-import { KANI_MAPS_URL, KANI_STANDARD_DEPOSIT_ARS } from './kani-constants';
+import { KANI_MAPS_URL, KANI_STANDARD_DEPOSIT_ARS, KANI_PUBLIC_WHATSAPP_URL } from './kani-constants';
 
 import type { Database } from "@/integrations/supabase/types";
 
@@ -892,7 +892,7 @@ export function buildConfirmedEmail(payload: NotificationPayload) {
 
   const subject = "Kani - Se confirmó tu turno";
   const mapsUrl = KANI_MAPS_URL;
-  const whatsAppUrl = "https://wa.me/5491128436014";
+  const whatsAppUrl = KANI_PUBLIC_WHATSAPP_URL;
 
   const html = `<!doctype html>
 <html lang="es">

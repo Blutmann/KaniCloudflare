@@ -529,7 +529,14 @@ export function V2Payments() {
                     }
                   >
                     <CheckCircle2 size={18} />
-                    <span>{busy ? "Registrando…" : "Registrar cobro"}</span>
+                    {busy ? (
+                      <span>Registrando…</span>
+                    ) : (
+                      <>
+                        <span className="v2-submit-btn-text-desktop">Registrar cobro</span>
+                        <span className="v2-submit-btn-text-mobile">Cobrar</span>
+                      </>
+                    )}
                   </button>
                 </div>
               </div>
