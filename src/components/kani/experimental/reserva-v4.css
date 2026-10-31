@@ -338,6 +338,12 @@ html[data-theme='dark'] :is(body:has(.payway-checkout), body[data-payway-modal-o
   white-space: nowrap !important;
   flex-shrink: 0 !important;
   letter-spacing: 0.01em !important;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  text-transform: none !important;
+  cursor: default !important;
 }
 
 .payway-reservation .booking-page .booking-time-heading-date svg {
@@ -347,6 +353,11 @@ html[data-theme='dark'] :is(body:has(.payway-checkout), body[data-payway-modal-o
   color: var(--gold) !important;
   flex-shrink: 0 !important;
   margin: 0 !important;
+}
+
+/* Modo claro (mobile + base): Ícono de calendario bordó */
+html[data-theme="light"] .payway-reservation .booking-page .booking-time-heading-date svg {
+  color: var(--primary) !important;
 }
 
 .booking-v4-date-desktop { display: none; }
@@ -374,13 +385,57 @@ html[data-theme='dark'] :is(body:has(.payway-checkout), body[data-payway-modal-o
   }
 
   .payway-reservation .booking-page .booking-time-heading-date {
-    font-size: 15px !important;
+    display: inline-flex !important;
+    align-items: center !important;
     gap: 8px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    margin-left: auto !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    font-size: 15px !important;
+    font-weight: 500 !important;
+    line-height: 1.2 !important;
+    text-transform: none !important;
+    color: var(--foreground) !important;
+    cursor: default !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
   }
 
   .payway-reservation .booking-page .booking-time-heading-date svg {
     width: 16px !important;
     height: 16px !important;
+    display: block !important;
+    flex-shrink: 0 !important;
+    margin: 0 !important;
+    color: var(--gold) !important;
+  }
+
+  /* Modo oscuro: Ícono dorado, texto claro y legible, sin cápsula */
+  html[data-theme="dark"] .payway-reservation .booking-page .booking-time-heading-date,
+  :root:not([data-theme="light"]) .payway-reservation .booking-page .booking-time-heading-date {
+    color: var(--foreground) !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+  html[data-theme="dark"] .payway-reservation .booking-page .booking-time-heading-date svg,
+  :root:not([data-theme="light"]) .payway-reservation .booking-page .booking-time-heading-date svg {
+    color: var(--gold) !important;
+  }
+
+  /* Modo claro: Ícono bordó Kani, texto oscuro y legible, sin cápsula */
+  html[data-theme="light"] .payway-reservation .booking-page .booking-time-heading-date {
+    color: var(--foreground) !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+  html[data-theme="light"] .payway-reservation .booking-page .booking-time-heading-date svg {
+    color: var(--primary) !important;
   }
 
   .booking-v4-date-mobile { display: none; }

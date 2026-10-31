@@ -4,6 +4,7 @@ import React from 'react';
 import fs from 'node:fs';
 import path from 'node:path';
 import { BookingStepHeading } from '@/components/kani/booking-step-heading';
+import { formatV4BookingDate } from '@/components/kani/booking';
 
 describe('BookingStepHeading — Unificación estructural de encabezados de Reserva V4', () => {
   const reservaV4CssPath = path.resolve(__dirname, '../components/kani/experimental/reserva-v4.css');
@@ -134,5 +135,42 @@ describe('BookingStepHeading — Unificación estructural de encabezados de Rese
 
   it('6. Aislamiento: /reserva-v5 permanece intacta', () => {
     expect(cssV5).not.toContain('booking-step-heading');
+  });
+
+  it('7. Formateador formatV4BookingDate escribe la preposición "de" en minúscula para cualquier fecha', () => {
+    expect(formatV4BookingDate('2026-10-31', true)).toBe('Sábado 31 de Octubre');
+    expect(formatV4BookingDate('2026-10-26', true)).toBe('Lunes 26 de Octubre');
+    expect(formatV4BookingDate('2026-05-15', true)).toBe('Viernes 15 de Mayo');
+    expect(formatV4BookingDate('2026-01-08', true)).toBe('Jueves 8 de Enero');
+    expect(formatV4BookingDate('2026-10-31', false)).toBe('Sábado 31 Oct.');
+  });
+
+  it('8. CSS de Reserva V4 elimina cápsula, fondos, bordes y sombras en desktop y define ícono bordó en modo claro', () => {
+    // Desktop sin cápsula: background transparent, border none, padding 0, box-shadow none, text-transform none
+    expect(cssV4).toMatch(
+      /@media\s*\(min-width:\s*768px\)[\s\S]*?\.payway-reservation\s+\.booking-page\s+\.booking-time-heading-date\s*\{[\s\S]*?background:\s*transparent\s*!important;/
+    );
+    expect(cssV4).toMatch(
+      /@media\s*\(min-width:\s*768px\)[\s\S]*?\.payway-reservation\s+\.booking-page\s+\.booking-time-heading-date\s*\{[\s\S]*?border:\s*none\s*!important;/
+    );
+    expect(cssV4).toMatch(
+      /@media\s*\(min-width:\s*768px\)[\s\S]*?\.payway-reservation\s+\.booking-page\s+\.booking-time-heading-date\s*\{[\s\S]*?padding:\s*0\s*!important;/
+    );
+    expect(cssV4).toMatch(
+      /@media\s*\(min-width:\s*768px\)[\s\S]*?\.payway-reservation\s+\.booking-page\s+\.booking-time-heading-date\s*\{[\s\S]*?box-shadow:\s*none\s*!important;/
+    );
+    expect(cssV4).toMatch(
+      /@media\s*\(min-width:\s*768px\)[\s\S]*?\.payway-reservation\s+\.booking-page\s+\.booking-time-heading-date\s*\{[\s\S]*?text-transform:\s*none\s*!important;/
+    );
+
+    // Modo oscuro: ícono dorado
+    expect(cssV4).toMatch(
+      /html\[data-theme="dark"\]\s+\.payway-reservation\s+\.booking-page\s+\.booking-time-heading-date\s+svg[^}]*color:\s*var\(--gold\)\s*!important;/
+    );
+
+    // Modo claro: ícono bordó acorde con la identidad de Kani
+    expect(cssV4).toMatch(
+      /html\[data-theme="light"\]\s+\.payway-reservation\s+\.booking-page\s+\.booking-time-heading-date\s+svg[^}]*color:\s*var\(--primary\)\s*!important;/
+    );
   });
 });

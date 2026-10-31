@@ -51,12 +51,16 @@ function formatShortBookingDate(iso: string): string {
   return `${capitalizedWeekday} ${day}/${month}`;
 }
 
-function formatV4BookingDate(iso: string, full = false): string {
+export function formatV4BookingDate(iso: string, full = false): string {
+  if (!iso) return '';
   const d = parseDate(iso);
   const weekday = d.toLocaleDateString('es-AR', { weekday: 'long' });
   const month = d.toLocaleDateString('es-AR', { month: full ? 'long' : 'short' }).replace(/\.$/, '');
   const capitalize = (value: string) => value.charAt(0).toUpperCase() + value.slice(1);
-  return full ? `${capitalize(weekday)} ${d.getDate()} de ${capitalize(month)}` : `${capitalize(weekday)} ${d.getDate()} ${capitalize(month)}.`;
+  const formatted = full
+    ? `${capitalize(weekday)} ${d.getDate()} de ${capitalize(month)}`
+    : `${capitalize(weekday)} ${d.getDate()} ${capitalize(month)}.`;
+  return formatted.replace(/\bDe\b/g, 'de');
 }
 
 function ExperimentalLayout({ enabled, className, children }: { enabled: boolean; className?: string; children: ReactNode }) {
