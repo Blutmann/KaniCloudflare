@@ -427,7 +427,16 @@ export function V2Payments() {
                     aria-expanded={showDiscount}
                   >
                     <Tag size={16} />
-                    <span>{showDiscount ? "Quitar descuento" : "Agregar descuento"}</span>
+                    <span>
+                      {showDiscount ? (
+                        "Quitar descuento"
+                      ) : (
+                        <>
+                          <span className="v2-discount-text-desktop">Agregar descuento</span>
+                          <span className="v2-discount-text-mobile">Descuento</span>
+                        </>
+                      )}
+                    </span>
                   </button>
 
                   {origin === "walk_in" ? (

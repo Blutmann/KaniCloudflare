@@ -3570,6 +3570,16 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
   font-weight: 500;
   border-radius: var(--radius-control);
   box-sizing: border-box;
+  white-space: nowrap;
+}
+.v2-payment-toggle-btn svg {
+  flex-shrink: 0;
+}
+.v2-discount-text-desktop {
+  display: inline;
+}
+.v2-discount-text-mobile {
+  display: none;
 }
 .v2-payment-toggle-btn.active {
   background: color-mix(in srgb, var(--gold) 15%, var(--v2-surface));
@@ -3835,8 +3845,22 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
   }
 }
 
-/* Cobros registrados — Mobile compact cards */
+/* Cobros registrados & Pagos — Mobile adjustments */
 @media (max-width: 767px) {
+  .v2-discount-text-desktop {
+    display: none !important;
+  }
+  .v2-discount-text-mobile {
+    display: inline !important;
+  }
+  .v2-payment-toggle-btn {
+    min-height: 44px !important;
+    height: 44px !important;
+    white-space: nowrap !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
   .v2-payments-table-wrap {
     display: none !important;
   }
