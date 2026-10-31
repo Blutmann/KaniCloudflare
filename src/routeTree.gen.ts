@@ -28,6 +28,7 @@ import { Route as AdminV2ClientesRouteImport } from './routes/admin-v2.clientes'
 import { Route as AdminV2DatosRouteImport } from './routes/admin-v2.datos'
 import { Route as AdminV2HorariosRouteImport } from './routes/admin-v2.horarios'
 import { Route as AdminV2InicioRouteImport } from './routes/admin-v2.inicio'
+import { Route as AdminV2MantenimientoRouteImport } from './routes/admin-v2.mantenimiento'
 import { Route as AdminV2PagosRouteImport } from './routes/admin-v2.pagos'
 import { Route as AdminV2TurnosRouteImport } from './routes/admin-v2.turnos'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
@@ -46,6 +47,7 @@ import { Route as PanelAdministracionClientesRouteImport } from './routes/panel-
 import { Route as PanelAdministracionDatosRouteImport } from './routes/panel-administracion.datos'
 import { Route as PanelAdministracionHorariosRouteImport } from './routes/panel-administracion.horarios'
 import { Route as PanelAdministracionInicioRouteImport } from './routes/panel-administracion.inicio'
+import { Route as PanelAdministracionMantenimientoRouteImport } from './routes/panel-administracion.mantenimiento'
 import { Route as PanelAdministracionPagosRouteImport } from './routes/panel-administracion.pagos'
 import { Route as PanelAdministracionTurnosRouteImport } from './routes/panel-administracion.turnos'
 
@@ -145,6 +147,11 @@ const AdminV2InicioRoute = AdminV2InicioRouteImport.update({
   path: '/inicio',
   getParentRoute: () => AdminV2Route,
 } as any)
+const AdminV2MantenimientoRoute = AdminV2MantenimientoRouteImport.update({
+  id: '/mantenimiento',
+  path: '/mantenimiento',
+  getParentRoute: () => AdminV2Route,
+} as any)
 const AdminV2PagosRoute = AdminV2PagosRouteImport.update({
   id: '/pagos',
   path: '/pagos',
@@ -240,6 +247,12 @@ const PanelAdministracionInicioRoute =
     path: '/inicio',
     getParentRoute: () => PanelAdministracionRoute,
   } as any)
+const PanelAdministracionMantenimientoRoute =
+  PanelAdministracionMantenimientoRouteImport.update({
+    id: '/mantenimiento',
+    path: '/mantenimiento',
+    getParentRoute: () => PanelAdministracionRoute,
+  } as any)
 const PanelAdministracionPagosRoute =
   PanelAdministracionPagosRouteImport.update({
     id: '/pagos',
@@ -272,6 +285,7 @@ export interface FileRoutesByFullPath {
   '/admin-v2/datos': typeof AdminV2DatosRoute
   '/admin-v2/horarios': typeof AdminV2HorariosRoute
   '/admin-v2/inicio': typeof AdminV2InicioRoute
+  '/admin-v2/mantenimiento': typeof AdminV2MantenimientoRoute
   '/admin-v2/pagos': typeof AdminV2PagosRoute
   '/admin-v2/turnos': typeof AdminV2TurnosRoute
   '/admin/datos': typeof AdminDatosRoute
@@ -288,6 +302,7 @@ export interface FileRoutesByFullPath {
   '/panel-administracion/datos': typeof PanelAdministracionDatosRoute
   '/panel-administracion/horarios': typeof PanelAdministracionHorariosRoute
   '/panel-administracion/inicio': typeof PanelAdministracionInicioRoute
+  '/panel-administracion/mantenimiento': typeof PanelAdministracionMantenimientoRoute
   '/panel-administracion/pagos': typeof PanelAdministracionPagosRoute
   '/panel-administracion/turnos': typeof PanelAdministracionTurnosRoute
   '/admin-v2/': typeof AdminV2IndexRoute
@@ -310,6 +325,7 @@ export interface FileRoutesByTo {
   '/admin-v2/datos': typeof AdminV2DatosRoute
   '/admin-v2/horarios': typeof AdminV2HorariosRoute
   '/admin-v2/inicio': typeof AdminV2InicioRoute
+  '/admin-v2/mantenimiento': typeof AdminV2MantenimientoRoute
   '/admin-v2/pagos': typeof AdminV2PagosRoute
   '/admin-v2/turnos': typeof AdminV2TurnosRoute
   '/admin/datos': typeof AdminDatosRoute
@@ -326,6 +342,7 @@ export interface FileRoutesByTo {
   '/panel-administracion/datos': typeof PanelAdministracionDatosRoute
   '/panel-administracion/horarios': typeof PanelAdministracionHorariosRoute
   '/panel-administracion/inicio': typeof PanelAdministracionInicioRoute
+  '/panel-administracion/mantenimiento': typeof PanelAdministracionMantenimientoRoute
   '/panel-administracion/pagos': typeof PanelAdministracionPagosRoute
   '/panel-administracion/turnos': typeof PanelAdministracionTurnosRoute
   '/admin-v2': typeof AdminV2IndexRoute
@@ -352,6 +369,7 @@ export interface FileRoutesById {
   '/admin-v2/datos': typeof AdminV2DatosRoute
   '/admin-v2/horarios': typeof AdminV2HorariosRoute
   '/admin-v2/inicio': typeof AdminV2InicioRoute
+  '/admin-v2/mantenimiento': typeof AdminV2MantenimientoRoute
   '/admin-v2/pagos': typeof AdminV2PagosRoute
   '/admin-v2/turnos': typeof AdminV2TurnosRoute
   '/admin/datos': typeof AdminDatosRoute
@@ -368,6 +386,7 @@ export interface FileRoutesById {
   '/panel-administracion/datos': typeof PanelAdministracionDatosRoute
   '/panel-administracion/horarios': typeof PanelAdministracionHorariosRoute
   '/panel-administracion/inicio': typeof PanelAdministracionInicioRoute
+  '/panel-administracion/mantenimiento': typeof PanelAdministracionMantenimientoRoute
   '/panel-administracion/pagos': typeof PanelAdministracionPagosRoute
   '/panel-administracion/turnos': typeof PanelAdministracionTurnosRoute
   '/admin-v2/': typeof AdminV2IndexRoute
@@ -395,6 +414,7 @@ export interface FileRouteTypes {
     | '/admin-v2/datos'
     | '/admin-v2/horarios'
     | '/admin-v2/inicio'
+    | '/admin-v2/mantenimiento'
     | '/admin-v2/pagos'
     | '/admin-v2/turnos'
     | '/admin/datos'
@@ -411,6 +431,7 @@ export interface FileRouteTypes {
     | '/panel-administracion/datos'
     | '/panel-administracion/horarios'
     | '/panel-administracion/inicio'
+    | '/panel-administracion/mantenimiento'
     | '/panel-administracion/pagos'
     | '/panel-administracion/turnos'
     | '/admin-v2/'
@@ -433,6 +454,7 @@ export interface FileRouteTypes {
     | '/admin-v2/datos'
     | '/admin-v2/horarios'
     | '/admin-v2/inicio'
+    | '/admin-v2/mantenimiento'
     | '/admin-v2/pagos'
     | '/admin-v2/turnos'
     | '/admin/datos'
@@ -449,6 +471,7 @@ export interface FileRouteTypes {
     | '/panel-administracion/datos'
     | '/panel-administracion/horarios'
     | '/panel-administracion/inicio'
+    | '/panel-administracion/mantenimiento'
     | '/panel-administracion/pagos'
     | '/panel-administracion/turnos'
     | '/admin-v2'
@@ -474,6 +497,7 @@ export interface FileRouteTypes {
     | '/admin-v2/datos'
     | '/admin-v2/horarios'
     | '/admin-v2/inicio'
+    | '/admin-v2/mantenimiento'
     | '/admin-v2/pagos'
     | '/admin-v2/turnos'
     | '/admin/datos'
@@ -490,6 +514,7 @@ export interface FileRouteTypes {
     | '/panel-administracion/datos'
     | '/panel-administracion/horarios'
     | '/panel-administracion/inicio'
+    | '/panel-administracion/mantenimiento'
     | '/panel-administracion/pagos'
     | '/panel-administracion/turnos'
     | '/admin-v2/'
@@ -652,6 +677,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminV2InicioRouteImport
       parentRoute: typeof AdminV2Route
     }
+    '/admin-v2/mantenimiento': {
+      id: '/admin-v2/mantenimiento'
+      path: '/mantenimiento'
+      fullPath: '/admin-v2/mantenimiento'
+      preLoaderRoute: typeof AdminV2MantenimientoRouteImport
+      parentRoute: typeof AdminV2Route
+    }
     '/admin-v2/pagos': {
       id: '/admin-v2/pagos'
       path: '/pagos'
@@ -778,6 +810,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PanelAdministracionInicioRouteImport
       parentRoute: typeof PanelAdministracionRoute
     }
+    '/panel-administracion/mantenimiento': {
+      id: '/panel-administracion/mantenimiento'
+      path: '/mantenimiento'
+      fullPath: '/panel-administracion/mantenimiento'
+      preLoaderRoute: typeof PanelAdministracionMantenimientoRouteImport
+      parentRoute: typeof PanelAdministracionRoute
+    }
     '/panel-administracion/pagos': {
       id: '/panel-administracion/pagos'
       path: '/pagos'
@@ -824,6 +863,7 @@ interface AdminV2RouteChildren {
   AdminV2DatosRoute: typeof AdminV2DatosRoute
   AdminV2HorariosRoute: typeof AdminV2HorariosRoute
   AdminV2InicioRoute: typeof AdminV2InicioRoute
+  AdminV2MantenimientoRoute: typeof AdminV2MantenimientoRoute
   AdminV2PagosRoute: typeof AdminV2PagosRoute
   AdminV2TurnosRoute: typeof AdminV2TurnosRoute
   AdminV2IndexRoute: typeof AdminV2IndexRoute
@@ -834,6 +874,7 @@ const AdminV2RouteChildren: AdminV2RouteChildren = {
   AdminV2DatosRoute: AdminV2DatosRoute,
   AdminV2HorariosRoute: AdminV2HorariosRoute,
   AdminV2InicioRoute: AdminV2InicioRoute,
+  AdminV2MantenimientoRoute: AdminV2MantenimientoRoute,
   AdminV2PagosRoute: AdminV2PagosRoute,
   AdminV2TurnosRoute: AdminV2TurnosRoute,
   AdminV2IndexRoute: AdminV2IndexRoute,
@@ -847,6 +888,7 @@ interface PanelAdministracionRouteChildren {
   PanelAdministracionDatosRoute: typeof PanelAdministracionDatosRoute
   PanelAdministracionHorariosRoute: typeof PanelAdministracionHorariosRoute
   PanelAdministracionInicioRoute: typeof PanelAdministracionInicioRoute
+  PanelAdministracionMantenimientoRoute: typeof PanelAdministracionMantenimientoRoute
   PanelAdministracionPagosRoute: typeof PanelAdministracionPagosRoute
   PanelAdministracionTurnosRoute: typeof PanelAdministracionTurnosRoute
   PanelAdministracionIndexRoute: typeof PanelAdministracionIndexRoute
@@ -857,6 +899,7 @@ const PanelAdministracionRouteChildren: PanelAdministracionRouteChildren = {
   PanelAdministracionDatosRoute: PanelAdministracionDatosRoute,
   PanelAdministracionHorariosRoute: PanelAdministracionHorariosRoute,
   PanelAdministracionInicioRoute: PanelAdministracionInicioRoute,
+  PanelAdministracionMantenimientoRoute: PanelAdministracionMantenimientoRoute,
   PanelAdministracionPagosRoute: PanelAdministracionPagosRoute,
   PanelAdministracionTurnosRoute: PanelAdministracionTurnosRoute,
   PanelAdministracionIndexRoute: PanelAdministracionIndexRoute,
