@@ -268,7 +268,7 @@ describe("Pontiun WhatsApp Integration Unit Tests", () => {
       expect(json.error).toBe("Invalid webhook signature");
     });
 
-    it("accepts POST permissively with 200 OK when PONTIUN_WEBHOOK_SECRET is not yet configured", async () => {
+    it("rejects POST with 500 when PONTIUN_WEBHOOK_SECRET is not yet configured (fail-secure)", async () => {
       // Secret is undefined
       const request = new Request("https://preview.kanibarber.workers.dev/api/webhook/pontiun", {
         method: "POST",
@@ -280,21 +280,30 @@ describe("Pontiun WhatsApp Integration Unit Tests", () => {
       });
 
       const response = await handlePontiunWebhookRequest(request);
-      expect(response.status).toBe(200);
+      expect(response.status).toBe(500);
       const json = await response.json();
-      expect(json.received).toBe(true);
+      expect(json.code).toBe("WEBHOOK_SECRET_MISSING");
     });
 
     it("handles idempotency for repeated webhook events without duplicate work", async () => {
+      const secret = "secret_for_idempotency_test";
+      process.env.PONTIUN_WEBHOOK_SECRET = secret;
       const eventId = "evt_idempotent_event_test_123";
+      const timestamp = String(Math.floor(Date.now() / 1000));
+      const body = JSON.stringify({ type: "message" });
+      const manifest = `${eventId}.${timestamp}.${body}`;
+      const rawSignature = `v1=${createHmac("sha256", secret).update(manifest).digest("hex")}`;
+
       const makeRequest = () =>
         new Request("https://preview.kanibarber.workers.dev/api/webhook/pontiun", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             "resender-event-id": eventId,
+            "resender-timestamp": timestamp,
+            "resender-signature": rawSignature,
           },
-          body: JSON.stringify({ type: "message" }),
+          body,
         });
 
       const res1 = await handlePontiunWebhookRequest(makeRequest());
@@ -308,6 +317,8 @@ describe("Pontiun WhatsApp Integration Unit Tests", () => {
       expect(res2.status).toBe(200);
       const json2 = await res2.json();
       expect(json2.received).toBe(true);
+      expect(json2.idempotentReplay).toBe(true);
+      delete process.env.PONTIUN_WEBHOOK_SECRET;
       expect(json2.idempotentReplay).toBe(true);
     });
   });

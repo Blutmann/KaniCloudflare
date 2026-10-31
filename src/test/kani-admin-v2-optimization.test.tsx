@@ -164,6 +164,30 @@ describe('Admin V2 — Optimización de Clientes, Pagos y Turnos', () => {
       // NUNCA puede eliminar clientes
       expect(screen.queryByLabelText(/eliminar cliente/i)).toBeNull();
     });
+
+    it('1.4 Mobile Cards: Reemplaza flecha aislada por botón «Ver detalles» que abre la ficha del cliente', () => {
+      mockStaff.role = 'ADMIN';
+      render(<V2Clients />);
+
+      // No existe flecha aislada ni selector arrow
+      const detailsButtons = screen.getAllByRole('button', { name: /ver detalles/i });
+      expect(detailsButtons.length).toBe(mockClients.length);
+      expect(detailsButtons[0]).toHaveClass('v2-client-details-btn');
+
+      // Al hacer clic en Ver detalles abre el diálogo de ficha
+      fireEvent.click(detailsButtons[0]);
+      expect(screen.getByText(/historial de atenciones registradas/i)).toBeInTheDocument();
+    });
+
+    it('1.5 Mobile Cards: Botones de editar y eliminar dispuestos horizontalmente en .v2-client-actions', () => {
+      mockStaff.role = 'ADMIN';
+      render(<V2Clients />);
+      const editBtn = screen.getByLabelText('Editar datos de Alejo Test');
+      const deleteBtn = screen.getByLabelText('Eliminar cliente Alejo Test');
+      const actionsContainer = editBtn.closest('.v2-client-actions');
+      expect(actionsContainer).toBeInTheDocument();
+      expect(deleteBtn.closest('.v2-client-actions')).toBe(actionsContainer);
+    });
   });
 
   describe('2. PAGOS (/admin-v2/pagos)', () => {
@@ -249,10 +273,14 @@ describe('Admin V2 — Optimización de Clientes, Pagos y Turnos', () => {
     const path = require('path');
     const css = fs.readFileSync(path.resolve(__dirname, '../components/kani/v2/v2.css'), 'utf8');
 
-    it('Clientes: Buscador a 100% y fila 2 con Ordenar por y Nuevo cliente', () => {
+    it('Clientes: Buscador a 100%, fila 2 con controles y tarjetas mobile con acciones horizontales y boton detalles 44px', () => {
       expect(css).toContain('.v2-client-toolbar-container');
       expect(css).toContain('.v2-client-search-row');
       expect(css).toContain('.v2-client-controls-row');
+      expect(css).toContain('.v2-client-details-btn');
+      expect(css).toMatch(/\.v2-client-actions\s*\{[^}]*flex-direction:\s*row/);
+      expect(css).toMatch(/\.v2-client-action-btn\s*\{[^}]*min-width:\s*44px/);
+      expect(css).toMatch(/\.v2-client-details-btn\s*\{[^}]*min-height:\s*44px/);
     });
 
     it('Pagos: Formulario compacto con 2 columnas (1fr 1fr) de 50/50 en desktop y mobile', () => {

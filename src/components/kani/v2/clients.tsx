@@ -1,5 +1,5 @@
 import { useState, type FormEvent, type MouseEvent } from "react";
-import { ArrowRight, Pencil, Plus, Search, Trash2, X } from "lucide-react";
+import { Pencil, Plus, Search, Trash2, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminStaff } from "@/lib/kani-admin-context";
 import { sortClients, type ClientOrder } from "./client-order";
@@ -190,30 +190,23 @@ export function V2Clients() {
             <div
               className="v2-client-card"
               key={c.id}
-              role="button"
-              tabIndex={0}
               onClick={() => setSelectedId(c.id)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  setSelectedId(c.id);
-                }
-              }}
             >
-              <span className="v2-avatar">{c.name[0]}</span>
-              
-              <div className="v2-client-main-info">
-                <h2 className="v2-client-name">{c.name}</h2>
-                <div className="v2-client-contact">
-                  <span className="v2-client-phone">{c.phone || "Sin celular"}</span>
-                  {c.email && (
-                    <>
-                      <span className="v2-client-dot">·</span>
-                      <span className="v2-client-email v2-truncate" title={c.email}>
-                        {c.email}
-                      </span>
-                    </>
-                  )}
+              <div className="v2-client-identity">
+                <span className="v2-avatar">{c.name[0]}</span>
+                <div className="v2-client-main-info">
+                  <h2 className="v2-client-name">{c.name}</h2>
+                  <div className="v2-client-contact">
+                    <span className="v2-client-phone">{c.phone || "Sin celular"}</span>
+                    {c.email && (
+                      <>
+                        <span className="v2-client-dot">·</span>
+                        <span className="v2-client-email v2-truncate" title={c.email}>
+                          {c.email}
+                        </span>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -221,6 +214,7 @@ export function V2Clients() {
                 <span className="v2-client-visits">
                   {history.visits} {history.visits === 1 ? "visita verificada" : "visitas verificadas"}
                 </span>
+                <span className="v2-client-meta-sep">·</span>
                 <span className="v2-client-tag">Ficha existente</span>
               </div>
 
@@ -247,9 +241,16 @@ export function V2Clients() {
                     <Trash2 size={15} />
                   </button>
                 )}
-                <div className="v2-client-arrow-wrap" aria-hidden="true">
-                  <ArrowRight className="v2-client-arrow" size={16} />
-                </div>
+              </div>
+
+              <div className="v2-client-cta" onClick={(e) => e.stopPropagation()}>
+                <button
+                  type="button"
+                  className="v2-secondary v2-client-details-btn"
+                  onClick={() => setSelectedId(c.id)}
+                >
+                  Ver detalles
+                </button>
               </div>
             </div>
           );
