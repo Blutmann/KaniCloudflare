@@ -470,7 +470,29 @@ export async function retryNotificationChannel(input: {
 }): Promise<RetryChannelResult> {
   const supabase = await createRequestSupabaseClient();
 
-  // 1. Consultar estado previo del despacho
+  // 1. Autorización de servidor: validar identidad del usuario autenticado si existe sesión
+  const { data: { user } } = await supabase.auth.getUser();
+  let staffProfile: { role: string; barber_id: string | null; active: boolean } | null = null;
+
+  if (user) {
+    const { data: profile } = await supabase
+      .from("staff_profiles")
+      .select("role, barber_id, active")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    staffProfile = profile as any;
+
+    if (!staffProfile || !staffProfile.active || (staffProfile.role !== "ADMIN" && staffProfile.role !== "BARBER")) {
+      return {
+        success: false,
+        channel: input.channel,
+        status: "FAILED",
+        error: "ACCESS_DENIED: No posee permisos de staff para reintentar notificaciones.",
+      };
+    }
+  }
+
+  // 2. Consultar estado previo del despacho
   const { data: dispatches } = await (supabase as any)
     .from("appointment_notification_dispatches")
     .select("*")
@@ -478,19 +500,62 @@ export async function retryNotificationChannel(input: {
     .eq("channel", input.channel)
     .maybeSingle();
 
-  // Bloqueo estricto si el error es 131042 (Meta currency billing issue)
-  if (input.channel === "WHATSAPP" && dispatches?.error_code === "131042") {
-    return {
-      success: false,
-      channel: "WHATSAPP",
-      status: "FAILED",
-      blockedByAdminConfig: true,
-      error:
-        "ADMIN_CONFIGURATION_BLOCK: Meta rechazó el mensaje por un problema de facturación (código 131042: la moneda de la cuenta de WhatsApp Business no está configurada). Debe resolverse la configuración en Meta Business Suite antes de reintentar.",
-    };
+  // Validaciones rigurosas de estado para reintento seguro
+  if (dispatches) {
+    // A. El mensaje ya fue entregado o leído
+    if (dispatches.status === "DELIVERED" || dispatches.status === "READ") {
+      return {
+        success: false,
+        channel: input.channel,
+        status: dispatches.status,
+        error: "RETRY_NOT_ALLOWED: La notificación ya fue entregada al cliente.",
+      };
+    }
+
+    // B. Existe una operación en curso
+    if (dispatches.status === "PROCESSING") {
+      return {
+        success: false,
+        channel: input.channel,
+        status: "PROCESSING",
+        error: "RETRY_NOT_ALLOWED: Existe una operación de notificación en curso para este canal.",
+      };
+    }
+
+    // C. Riesgo de duplicar: el mensaje ya fue aceptado por el proveedor y se encuentra en tránsito
+    if (dispatches.status === "PROVIDER_ACCEPTED" || dispatches.status === "SENT") {
+      return {
+        success: false,
+        channel: input.channel,
+        status: dispatches.status,
+        error: "RETRY_NOT_ALLOWED: La notificación ya fue aceptada por el proveedor y se encuentra en tránsito.",
+      };
+    }
+
+    // D. Bloqueo estricto si el error es 131042 (Meta currency billing issue)
+    if (input.channel === "WHATSAPP" && dispatches.error_code === "131042") {
+      return {
+        success: false,
+        channel: "WHATSAPP",
+        status: "FAILED",
+        blockedByAdminConfig: true,
+        error:
+          "ADMIN_CONFIGURATION_BLOCK: Meta rechazó el mensaje por un problema de facturación (código 131042: la moneda de la cuenta de WhatsApp Business no está configurada). Debe resolverse la configuración en Meta Business Suite antes de reintentar.",
+      };
+    }
+
+    // E. La falla debe estar confirmada
+    if (dispatches.status !== "FAILED") {
+      return {
+        success: false,
+        channel: input.channel,
+        status: dispatches.status,
+        error: `RETRY_NOT_ALLOWED: El estado actual (${dispatches.status}) no presenta una falla confirmada elegible para reintento.`,
+      };
+    }
   }
 
-  // 2. Obtener datos del turno y cliente
+  // 3. Obtener datos del turno y cliente
   const { data: aptData, error: aptError } = await supabase
     .from("appointments")
     .select(`
@@ -515,6 +580,16 @@ export async function retryNotificationChannel(input: {
     };
   }
 
+  // Validación de asignación para barberos
+  if (staffProfile && staffProfile.role === "BARBER" && aptData.barber_id !== staffProfile.barber_id) {
+    return {
+      success: false,
+      channel: input.channel,
+      status: "FAILED",
+      error: "ACCESS_DENIED: Solo puede reintentar notificaciones de sus propios turnos asignados.",
+    };
+  }
+
   const client = (aptData as any).clients;
   const barber = (aptData as any).barbers;
   const service = (aptData as any).services;
@@ -527,6 +602,22 @@ export async function retryNotificationChannel(input: {
         status: "SKIPPED",
         error: "CLIENT_HAS_NO_PHONE",
       };
+    }
+
+    // Registrar estado PROCESSING atómicamente antes del envío
+    try {
+      await supabase.rpc("record_channel_dispatch_status", {
+        p_appointment_id: input.appointmentId,
+        p_notification_event_id: dispatches?.notification_event_id ?? null,
+        p_channel: "WHATSAPP",
+        p_provider: "PONTIUN",
+        p_recipient: client.phone,
+        p_provider_message_id: dispatches?.provider_message_id ?? null,
+        p_status: "PROCESSING",
+        p_increment_attempt: true,
+      });
+    } catch (procErr) {
+      console.warn("[KANI notification] Advertencia registrando PROCESSING para WhatsApp:", procErr);
     }
 
     const { sendPontiunAppointmentConfirmation } = await import("./kani-pontiun");
@@ -558,7 +649,7 @@ export async function retryNotificationChannel(input: {
       p_status: newStatus,
       p_error_code: errCode,
       p_error_description: pontiunResult.error ?? null,
-      p_increment_attempt: true,
+      p_increment_attempt: false,
     });
 
     return {
@@ -588,6 +679,22 @@ export async function retryNotificationChannel(input: {
         status: "SKIPPED",
         error: "RESEND_CREDENTIALS_MISSING",
       };
+    }
+
+    // Registrar estado PROCESSING atómicamente antes del envío
+    try {
+      await supabase.rpc("record_channel_dispatch_status", {
+        p_appointment_id: input.appointmentId,
+        p_notification_event_id: dispatches?.notification_event_id ?? null,
+        p_channel: "EMAIL",
+        p_provider: "RESEND",
+        p_recipient: client.email,
+        p_provider_message_id: dispatches?.provider_message_id ?? null,
+        p_status: "PROCESSING",
+        p_increment_attempt: true,
+      });
+    } catch (procErr) {
+      console.warn("[KANI notification] Advertencia registrando PROCESSING para Email:", procErr);
     }
 
     const payload: NotificationPayload = {
@@ -648,7 +755,7 @@ export async function retryNotificationChannel(input: {
       p_status: newStatus,
       p_error_code: ok ? null : `RESEND_${response.status}`,
       p_error_description: errDesc,
-      p_increment_attempt: true,
+      p_increment_attempt: false,
     });
 
     return {
@@ -667,7 +774,19 @@ export const retryNotificationChannelServerFn = createServerFn({ method: "POST" 
     if (!data?.appointmentId || !data?.channel) throw new Error("RETRY_INPUT_INVALID");
     return data;
   })
-  .handler(async ({ data }): Promise<RetryChannelResult> => retryNotificationChannel(data));
+  .handler(async ({ data }): Promise<RetryChannelResult> => {
+    const supabase = await createRequestSupabaseClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return {
+        success: false,
+        channel: data.channel,
+        status: "FAILED",
+        error: "AUTH_REQUIRED: Debe iniciar sesión como personal autorizado para reintentar notificaciones.",
+      };
+    }
+    return retryNotificationChannel(data);
+  });
 
 function getRuntimeEnv(name: string): string | undefined {
   // src/server.ts reads the Worker's runtime bindings before TanStack dispatches

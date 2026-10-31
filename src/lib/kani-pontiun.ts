@@ -279,32 +279,42 @@ export async function handlePontiunWebhookRequest(request: Request): Promise<Res
 
   const webhookSecret = getPontiunRuntimeEnv("PONTIUN_WEBHOOK_SECRET");
 
-  // Si está configurado el secreto de firma en Pontiun, validar estrictamente
-  if (webhookSecret && webhookSecret.trim()) {
-    const verification = verifyPontiunWebhookSignature({
-      rawBody,
-      eventId,
-      timestamp,
-      signature,
-      secret: webhookSecret,
-    });
+  // Validación estricta: los webhooks que actualizan estados DEBEN exigir firma válida
+  if (!webhookSecret || !webhookSecret.trim()) {
+    console.error(
+      "[Pontiun Webhook] PONTIUN_WEBHOOK_SECRET no está configurado en el entorno. No se permiten actualizaciones de estado sin firma verificada.",
+    );
+    return new Response(
+      JSON.stringify({
+        error: "Webhook signature secret is not configured on the server",
+        code: "WEBHOOK_SECRET_MISSING",
+      }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      },
+    );
+  }
 
-    if (!verification.valid) {
-      console.warn("[Pontiun Webhook] Firma rechazada:", verification.reason);
-      return new Response(
-        JSON.stringify({
-          error: "Invalid webhook signature",
-          reason: verification.reason,
-        }),
-        {
-          status: 401,
-          headers: { "Content-Type": "application/json" },
-        },
-      );
-    }
-  } else {
-    console.info(
-      "[Pontiun Webhook] PONTIUN_WEBHOOK_SECRET no configurado en entorno; aceptando evento en modo permisivo.",
+  const verification = verifyPontiunWebhookSignature({
+    rawBody,
+    eventId,
+    timestamp,
+    signature,
+    secret: webhookSecret,
+  });
+
+  if (!verification.valid) {
+    console.warn("[Pontiun Webhook] Firma rechazada:", verification.reason);
+    return new Response(
+      JSON.stringify({
+        error: "Invalid webhook signature",
+        reason: verification.reason,
+      }),
+      {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      },
     );
   }
 

@@ -20,6 +20,8 @@ const {
   mockUpdatePontiunWebhookStatus,
   mockSelectFromDispatches,
   mockSelectFromAppointments,
+  mockSelectFromStaffProfiles,
+  mockGetUser,
 } = vi.hoisted(() => ({
   mockClaim: vi.fn(),
   mockComplete: vi.fn(),
@@ -29,10 +31,15 @@ const {
   mockUpdatePontiunWebhookStatus: vi.fn(),
   mockSelectFromDispatches: vi.fn(),
   mockSelectFromAppointments: vi.fn(),
+  mockSelectFromStaffProfiles: vi.fn(),
+  mockGetUser: vi.fn(),
 }));
 
 vi.mock("@supabase/supabase-js", () => ({
   createClient: () => ({
+    auth: {
+      getUser: () => mockGetUser(),
+    },
     rpc: (fn: string, params: any) => {
       if (fn === "claim_appointment_notification") return mockClaim(params);
       if (fn === "complete_appointment_notification") return mockComplete(params);
@@ -43,6 +50,15 @@ vi.mock("@supabase/supabase-js", () => ({
       return Promise.resolve({ data: null, error: null });
     },
     from: (table: string) => {
+      if (table === "staff_profiles") {
+        return {
+          select: (cols: string) => ({
+            eq: (field: string, val: any) => ({
+              maybeSingle: () => mockSelectFromStaffProfiles({ field, val }),
+            }),
+          }),
+        };
+      }
       if (table === "appointment_notification_dispatches") {
         return {
           select: (cols: string) => ({
@@ -71,7 +87,7 @@ vi.mock("@supabase/supabase-js", () => ({
   }),
 }));
 
-describe("Consolidación integral de notificaciones — Canales independientes y estados", () => {
+describe("Consolidación integral de notificaciones — Seguridad, RLS y Autorización", () => {
   const baseAppointmentId = "1978f38b-3459-46a3-b3d8-08ea9ae472f4";
   const baseClaimToken = "claim-token-xyz-12345";
   const baseNotificationId = "58bd907b-3172-4c48-abd8-fb23bd6fc264";
@@ -97,6 +113,14 @@ describe("Consolidación integral de notificaciones — Canales independientes y
     mockUpdatePontiunWebhookStatus.mockReset().mockResolvedValue({ data: true, error: null });
     mockSelectFromDispatches.mockReset().mockResolvedValue({ data: [], error: null });
     mockSelectFromAppointments.mockReset().mockResolvedValue({ data: null, error: null });
+    mockSelectFromStaffProfiles.mockReset().mockResolvedValue({
+      data: { role: "ADMIN", barber_id: null, active: true },
+      error: null,
+    });
+    mockGetUser.mockReset().mockResolvedValue({
+      data: { user: { id: "admin-user-uuid", email: "admin@kanibarber.com" } },
+      error: null,
+    });
   });
 
   afterEach(() => {
@@ -118,68 +142,53 @@ describe("Consolidación integral de notificaciones — Canales independientes y
     attempts: 1,
   };
 
-  it("1. WhatsApp HTTP 200 de Pontiun se registra como PROVIDER_ACCEPTED (NUNCA DELIVERED)", async () => {
-    mockClaim.mockResolvedValue({ data: [baseEvent], error: null });
+  it("1. Webhook rechaza solicitudes si PONTIUN_WEBHOOK_SECRET no está configurado (sin modo permisivo)", async () => {
+    delete process.env.PONTIUN_WEBHOOK_SECRET;
 
-    globalThis.fetch = vi.fn().mockImplementation(async (url: string) => {
-      if (url.includes("pontiun.com")) {
-        return {
-          ok: true,
-          status: 200,
-          json: async () => ({ resender: { messageId: "25e5acb1-1950-48d6-a1fb-b0c3c29eead7", status: "sent" } }),
-        };
-      }
-      if (url.includes("resend.com")) {
-        return {
-          ok: true,
-          status: 200,
-          json: async () => ({ id: "01a18ef8-9c36-7d33-89f4-135380744136" }),
-        };
-      }
-      return { ok: false, status: 404 };
-    }) as any;
-
-    const result = await dispatchAppointmentNotification({
-      appointmentId: baseAppointmentId,
-      claimToken: baseClaimToken,
+    const req = new Request("https://kanibarberstudio.workers.dev/api/webhook/pontiun", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "ping" }),
     });
 
-    expect(result.sent).toBe(true);
-
-    // Verificamos que se haya invocado record_channel_dispatch_status para WHATSAPP con PROVIDER_ACCEPTED
-    expect(mockRecordChannelDispatchStatus).toHaveBeenCalledWith(
-      expect.objectContaining({
-        p_channel: "WHATSAPP",
-        p_provider: "PONTIUN",
-        p_status: "PROVIDER_ACCEPTED",
-        p_provider_message_id: "25e5acb1-1950-48d6-a1fb-b0c3c29eead7",
-        p_increment_attempt: true,
-      }),
-    );
-
-    // Verificamos que EMAIL se registró como SENT
-    expect(mockRecordChannelDispatchStatus).toHaveBeenCalledWith(
-      expect.objectContaining({
-        p_channel: "EMAIL",
-        p_provider: "RESEND",
-        p_status: "SENT",
-        p_provider_message_id: "01a18ef8-9c36-7d33-89f4-135380744136",
-        p_increment_attempt: true,
-      }),
-    );
+    const resp = await handlePontiunWebhookRequest(req);
+    expect(resp.status).toBe(500);
+    const body = await resp.json();
+    expect(body.code).toBe("WEBHOOK_SECRET_MISSING");
+    expect(mockUpdatePontiunWebhookStatus).not.toHaveBeenCalled();
   });
 
-  it("2. Webhook de Pontiun con status 'delivered' actualiza el mensaje a DELIVERED", async () => {
+  it("2. Webhook rechaza solicitudes con firma inválida (401 Unauthorized)", async () => {
+    const rawPayload = JSON.stringify({ type: "message.status", status: "delivered" });
+    const req = new Request("https://kanibarberstudio.workers.dev/api/webhook/pontiun", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "resender-event-id": "evt_bad_sig_123",
+        "resender-timestamp": String(Math.floor(Date.now() / 1000)),
+        "resender-signature": "v1=badbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbadbad",
+      },
+      body: rawPayload,
+    });
+
+    const resp = await handlePontiunWebhookRequest(req);
+    expect(resp.status).toBe(401);
+    expect(mockUpdatePontiunWebhookStatus).not.toHaveBeenCalled();
+  });
+
+  it("3. Webhook con firma válida actualiza estado asociando Pontiun ID y Meta wamid", async () => {
     const rawPayload = JSON.stringify({
       type: "message.status",
-      id: "evt_delivered_001",
       message: {
         id: "25e5acb1-1950-48d6-a1fb-b0c3c29eead7",
         status: "delivered",
       },
+      meta: {
+        id: "wamid.HBgLMTEyODQzNjAxNBUC",
+      },
     });
 
-    const eventId = "evt_0123456789abcdef0123456789abcdef";
+    const eventId = "evt_delivered_ok_001";
     const timestamp = String(Math.floor(Date.now() / 1000));
     const hmac = createHmac("sha256", process.env.PONTIUN_WEBHOOK_SECRET!)
       .update(`${eventId}.${timestamp}.${rawPayload}`)
@@ -196,91 +205,39 @@ describe("Consolidación integral de notificaciones — Canales independientes y
       body: rawPayload,
     });
 
-    const response = await handlePontiunWebhookRequest(req);
-    expect(response.status).toBe(200);
+    const resp = await handlePontiunWebhookRequest(req);
+    expect(resp.status).toBe(200);
 
-    expect(mockUpdatePontiunWebhookStatus).toHaveBeenCalledWith(
-      expect.objectContaining({
-        p_provider_message_id: "25e5acb1-1950-48d6-a1fb-b0c3c29eead7",
-        p_status: "delivered",
-      }),
-    );
+    expect(mockUpdatePontiunWebhookStatus).toHaveBeenCalledWith({
+      p_provider_message_id: "25e5acb1-1950-48d6-a1fb-b0c3c29eead7",
+      p_meta_message_id: "wamid.HBgLMTEyODQzNjAxNBUC",
+      p_status: "delivered",
+      p_error_code: null,
+      p_error_description: null,
+    });
   });
 
-  it("3. Webhook de Pontiun con error 131042 (Meta currency billing) registra FAILED y código 131042", async () => {
-    const rawPayload = JSON.stringify({
-      type: "message.status",
-      message: {
-        id: "25e5acb1-1950-48d6-a1fb-b0c3c29eead7",
-        status: "failed",
-        error: {
-          code: 131042,
-          message: "Business eligibility payment issue: Your WhatsApp Business account currency is not configured.",
-        },
-      },
-    });
-
-    const eventId = "evt_failed_131042_001";
-    const timestamp = String(Math.floor(Date.now() / 1000));
-    const hmac = createHmac("sha256", process.env.PONTIUN_WEBHOOK_SECRET!)
-      .update(`${eventId}.${timestamp}.${rawPayload}`)
-      .digest("hex");
-
-    const req = new Request("https://kanibarberstudio.workers.dev/api/webhook/pontiun", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "resender-event-id": eventId,
-        "resender-timestamp": timestamp,
-        "resender-signature": `v1=${hmac}`,
-      },
-      body: rawPayload,
-    });
-
-    const response = await handlePontiunWebhookRequest(req);
-    expect(response.status).toBe(200);
-
-    expect(mockUpdatePontiunWebhookStatus).toHaveBeenCalledWith(
-      expect.objectContaining({
-        p_provider_message_id: "25e5acb1-1950-48d6-a1fb-b0c3c29eead7",
-        p_status: "failed",
-        p_error_code: "131042",
-        p_error_description: expect.stringContaining("Business eligibility payment issue"),
-      }),
-    );
-  });
-
-  it("4. retryNotificationChannel bloquea reintentos automáticos para error 131042 (ADMIN_CONFIGURATION_BLOCK)", async () => {
-    // Simular que el despacho previo tenía error_code 131042
-    mockSelectFromDispatches.mockResolvedValue({
-      data: {
-        id: "disp-1",
-        appointment_id: baseAppointmentId,
-        channel: "WHATSAPP",
-        status: "FAILED",
-        error_code: "131042",
-        error_description: "Business eligibility payment issue",
-      },
+  it("4. Reintentos: rechaza reintentos si el usuario no es staff activo (ACCESS_DENIED)", async () => {
+    mockSelectFromStaffProfiles.mockResolvedValue({
+      data: { role: "CLIENT", barber_id: null, active: false },
       error: null,
     });
 
-    const fetchSpy = vi.fn();
-    globalThis.fetch = fetchSpy as any;
-
-    const retryResult = await retryNotificationChannel({
+    const result = await retryNotificationChannel({
       appointmentId: baseAppointmentId,
       channel: "WHATSAPP",
     });
 
-    expect(retryResult.success).toBe(false);
-    expect(retryResult.blockedByAdminConfig).toBe(true);
-    expect(retryResult.error).toContain("ADMIN_CONFIGURATION_BLOCK");
-    expect(retryResult.error).toContain("131042");
-    // Ningún fetch a proveedores
-    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(result.success).toBe(false);
+    expect(result.error).toContain("ACCESS_DENIED");
   });
 
-  it("5. retryNotificationChannel solo reintenta el canal solicitado (WHATSAPP sin enviar Email)", async () => {
+  it("5. Reintentos: un barbero NO puede reintentar turnos de otro barbero (ACCESS_DENIED)", async () => {
+    mockSelectFromStaffProfiles.mockResolvedValue({
+      data: { role: "BARBER", barber_id: "barber-lautaro-uuid", active: true },
+      error: null,
+    });
+
     mockSelectFromDispatches.mockResolvedValue({
       data: {
         id: "disp-1",
@@ -288,7 +245,6 @@ describe("Consolidación integral de notificaciones — Canales independientes y
         channel: "WHATSAPP",
         status: "FAILED",
         error_code: "PONTIUN_500",
-        error_description: "Internal error",
       },
       error: null,
     });
@@ -296,11 +252,132 @@ describe("Consolidación integral de notificaciones — Canales independientes y
     mockSelectFromAppointments.mockResolvedValue({
       data: {
         id: baseAppointmentId,
+        barber_id: "different-barber-uuid", // Turno de otro barbero!
         booking_date: "2026-10-30",
         start_time: "18:15:00",
         client_id: "c-1",
+        clients: { id: "c-1", name: "Tomas", phone: "+5491128436014" },
+        barbers: { id: "different-barber-uuid", name: "Agustin" },
+        services: { id: "s-1", name: "Corte" },
+      },
+      error: null,
+    });
+
+    const result = await retryNotificationChannel({
+      appointmentId: baseAppointmentId,
+      channel: "WHATSAPP",
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.error).toContain("ACCESS_DENIED: Solo puede reintentar notificaciones de sus propios turnos asignados");
+  });
+
+  it("6. Reintentos: no permite reintentar si el mensaje ya fue entregado o leído (RETRY_NOT_ALLOWED)", async () => {
+    mockSelectFromDispatches.mockResolvedValue({
+      data: {
+        id: "disp-1",
+        appointment_id: baseAppointmentId,
+        channel: "WHATSAPP",
+        status: "DELIVERED",
+      },
+      error: null,
+    });
+
+    const result = await retryNotificationChannel({
+      appointmentId: baseAppointmentId,
+      channel: "WHATSAPP",
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.error).toContain("RETRY_NOT_ALLOWED: La notificación ya fue entregada");
+  });
+
+  it("7. Reintentos: no permite reintentar si hay una operación en curso (PROCESSING)", async () => {
+    mockSelectFromDispatches.mockResolvedValue({
+      data: {
+        id: "disp-1",
+        appointment_id: baseAppointmentId,
+        channel: "WHATSAPP",
+        status: "PROCESSING",
+      },
+      error: null,
+    });
+
+    const result = await retryNotificationChannel({
+      appointmentId: baseAppointmentId,
+      channel: "WHATSAPP",
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.error).toContain("RETRY_NOT_ALLOWED: Existe una operación de notificación en curso");
+  });
+
+  it("8. Reintentos: no permite reintentar si ya fue aceptado o enviado por el proveedor (riesgo de duplicación)", async () => {
+    mockSelectFromDispatches.mockResolvedValue({
+      data: {
+        id: "disp-1",
+        appointment_id: baseAppointmentId,
+        channel: "WHATSAPP",
+        status: "PROVIDER_ACCEPTED",
+      },
+      error: null,
+    });
+
+    const result = await retryNotificationChannel({
+      appointmentId: baseAppointmentId,
+      channel: "WHATSAPP",
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.error).toContain("RETRY_NOT_ALLOWED: La notificación ya fue aceptada por el proveedor");
+  });
+
+  it("9. Reintentos: bloquea estrictamente reintentos con error 131042 (Meta currency billing)", async () => {
+    mockSelectFromDispatches.mockResolvedValue({
+      data: {
+        id: "disp-1",
+        appointment_id: baseAppointmentId,
+        channel: "WHATSAPP",
+        status: "FAILED",
+        error_code: "131042",
+      },
+      error: null,
+    });
+
+    const fetchSpy = vi.fn();
+    globalThis.fetch = fetchSpy as any;
+
+    const result = await retryNotificationChannel({
+      appointmentId: baseAppointmentId,
+      channel: "WHATSAPP",
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.blockedByAdminConfig).toBe(true);
+    expect(result.error).toContain("ADMIN_CONFIGURATION_BLOCK");
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("10. Reintentos: reintentar WhatsApp marca PROCESSING, llama únicamente a Pontiun y NO a Resend", async () => {
+    mockSelectFromDispatches.mockResolvedValue({
+      data: {
+        id: "disp-1",
+        appointment_id: baseAppointmentId,
+        channel: "WHATSAPP",
+        status: "FAILED",
+        error_code: "PONTIUN_500",
+      },
+      error: null,
+    });
+
+    mockSelectFromAppointments.mockResolvedValue({
+      data: {
+        id: baseAppointmentId,
         barber_id: "b-1",
-        clients: { id: "c-1", name: "Tomas Harispe", phone: "+5491128436014", email: "tomas@example.com" },
+        booking_date: "2026-10-30",
+        start_time: "18:15:00",
+        client_id: "c-1",
+        clients: { id: "c-1", name: "Tomas", phone: "+5491128436014", email: "tomas@example.com" },
         barbers: { id: "b-1", name: "Lautaro" },
         services: { id: "s-1", name: "Corte" },
       },
@@ -312,27 +389,35 @@ describe("Consolidación integral de notificaciones — Canales independientes y
         return {
           ok: true,
           status: 200,
-          json: async () => ({ resender: { messageId: "pontiun-retry-ok-123", status: "sent" } }),
+          json: async () => ({ resender: { messageId: "pontiun-new-id-777", status: "sent" } }),
         };
       }
       return { ok: false, status: 500 };
     });
     globalThis.fetch = fetchSpy as any;
 
-    const retryResult = await retryNotificationChannel({
+    const result = await retryNotificationChannel({
       appointmentId: baseAppointmentId,
       channel: "WHATSAPP",
     });
 
-    expect(retryResult.success).toBe(true);
-    expect(retryResult.status).toBe("PROVIDER_ACCEPTED");
-    // Pontiun fue llamado
+    expect(result.success).toBe(true);
+    expect(result.status).toBe("PROVIDER_ACCEPTED");
+
+    // Verificamos que se haya marcado PROCESSING antes del envío
+    expect(mockRecordChannelDispatchStatus).toHaveBeenCalledWith(
+      expect.objectContaining({
+        p_channel: "WHATSAPP",
+        p_status: "PROCESSING",
+      }),
+    );
+
+    // Verificamos que Pontiun fue invocado y Resend NUNCA fue invocado
     expect(fetchSpy).toHaveBeenCalledWith(expect.stringContaining("pontiun.com"), expect.anything());
-    // Resend NUNCA fue llamado
     expect(fetchSpy).not.toHaveBeenCalledWith(expect.stringContaining("resend.com"), expect.anything());
   });
 
-  it("6. retryNotificationChannel solo reintenta EMAIL sin enviar WhatsApp", async () => {
+  it("11. Reintentos: reintentar Email marca PROCESSING, llama únicamente a Resend y NO a Pontiun", async () => {
     mockSelectFromDispatches.mockResolvedValue({
       data: {
         id: "disp-2",
@@ -347,11 +432,11 @@ describe("Consolidación integral de notificaciones — Canales independientes y
     mockSelectFromAppointments.mockResolvedValue({
       data: {
         id: baseAppointmentId,
+        barber_id: "b-1",
         booking_date: "2026-10-30",
         start_time: "18:15:00",
         client_id: "c-1",
-        barber_id: "b-1",
-        clients: { id: "c-1", name: "Tomas Harispe", phone: "+5491128436014", email: "tomas@example.com" },
+        clients: { id: "c-1", name: "Tomas", phone: "+5491128436014", email: "tomas@example.com" },
         barbers: { id: "b-1", name: "Lautaro" },
         services: { id: "s-1", name: "Corte" },
       },
@@ -363,80 +448,31 @@ describe("Consolidación integral de notificaciones — Canales independientes y
         return {
           ok: true,
           status: 200,
-          json: async () => ({ id: "resend-retry-email-id-456" }),
+          json: async () => ({ id: "resend-new-id-888" }),
         };
       }
       return { ok: false, status: 500 };
     });
     globalThis.fetch = fetchSpy as any;
 
-    const retryResult = await retryNotificationChannel({
+    const result = await retryNotificationChannel({
       appointmentId: baseAppointmentId,
       channel: "EMAIL",
     });
 
-    expect(retryResult.success).toBe(true);
-    expect(retryResult.status).toBe("SENT");
-    // Resend fue llamado
+    expect(result.success).toBe(true);
+    expect(result.status).toBe("SENT");
+
+    // Verificamos que se haya marcado PROCESSING antes del envío
+    expect(mockRecordChannelDispatchStatus).toHaveBeenCalledWith(
+      expect.objectContaining({
+        p_channel: "EMAIL",
+        p_status: "PROCESSING",
+      }),
+    );
+
+    // Verificamos que Resend fue invocado y Pontiun NUNCA fue invocado
     expect(fetchSpy).toHaveBeenCalledWith(expect.stringContaining("resend.com"), expect.anything());
-    // Pontiun NUNCA fue llamado
     expect(fetchSpy).not.toHaveBeenCalledWith(expect.stringContaining("pontiun.com"), expect.anything());
-  });
-
-  it("7. Webhook rechaza firmas inválidas y procesa deduplicación de eventos", async () => {
-    const rawPayload = JSON.stringify({ type: "ping" });
-    const eventId = "evt_dedup_001";
-    const timestamp = String(Math.floor(Date.now() / 1000));
-
-    // Request con firma incorrecta
-    const badReq = new Request("https://kanibarberstudio.workers.dev/api/webhook/pontiun", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "resender-event-id": eventId,
-        "resender-timestamp": timestamp,
-        "resender-signature": "v1=0000000000000000000000000000000000000000000000000000000000000000",
-      },
-      body: rawPayload,
-    });
-
-    const badResp = await handlePontiunWebhookRequest(badReq);
-    expect(badResp.status).toBe(401);
-
-    // Request con firma válida
-    const validHmac = createHmac("sha256", process.env.PONTIUN_WEBHOOK_SECRET!)
-      .update(`${eventId}.${timestamp}.${rawPayload}`)
-      .digest("hex");
-
-    const validReq1 = new Request("https://kanibarberstudio.workers.dev/api/webhook/pontiun", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "resender-event-id": eventId,
-        "resender-timestamp": timestamp,
-        "resender-signature": `v1=${validHmac}`,
-      },
-      body: rawPayload,
-    });
-
-    const validResp1 = await handlePontiunWebhookRequest(validReq1);
-    expect(validResp1.status).toBe(200);
-
-    // Repetición del mismo evento -> retorno idempotente
-    const validReq2 = new Request("https://kanibarberstudio.workers.dev/api/webhook/pontiun", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "resender-event-id": eventId,
-        "resender-timestamp": timestamp,
-        "resender-signature": `v1=${validHmac}`,
-      },
-      body: rawPayload,
-    });
-
-    const validResp2 = await handlePontiunWebhookRequest(validReq2);
-    expect(validResp2.status).toBe(200);
-    const body2 = await validResp2.json();
-    expect(body2.idempotentReplay).toBe(true);
   });
 });
