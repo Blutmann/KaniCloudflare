@@ -66,17 +66,86 @@ export function createPaywayService({ config, store, fetcher = fetch }: {
 }) {
   return {
     async prepare(draft: PaywayDraft): Promise<PaywayPreparation> {
-      if (!config || !store || !isPaywaySandboxBase(config.apiBaseUrl)) return { ready: false, message: PAYWAY_MESSAGES.unavailable };
+      const correlationId = newPaywayAttemptId().slice(0, 8);
+      if (!config) {
+        console.warn(`[Payway Prepare ${correlationId}] Config is null; checkout unavailable.`);
+        return { ready: false, message: PAYWAY_MESSAGES.unavailable, correlationId, stage: 'config_validation' };
+      }
+      if (!store) {
+        console.warn(`[Payway Prepare ${correlationId}] Store is null; checkout unavailable.`);
+        return { ready: false, message: PAYWAY_MESSAGES.unavailable, correlationId, stage: 'store_init' };
+      }
+      if (!isPaywaySandboxBase(config.apiBaseUrl)) {
+        console.warn(`[Payway Prepare ${correlationId}] Sandbox URL invalid: ${config.apiBaseUrl}`);
+        return { ready: false, message: PAYWAY_MESSAGES.unavailable, correlationId, stage: 'api_url_check' };
+      }
+
       try {
         const prepared = await store.prepare(draft);
         arsToPaywayAmount(prepared.depositArs);
-        return { ready: true, checkout: { appointmentId: prepared.appointmentId, attemptId: prepared.attemptId,
-          accessToken: prepared.accessToken, depositArs: prepared.depositArs,
-          publicKey: config.publicKey, apiBaseUrl: config.apiBaseUrl, methods: config.methods } };
+        return {
+          ready: true,
+          checkout: {
+            appointmentId: prepared.appointmentId,
+            attemptId: prepared.attemptId,
+            accessToken: prepared.accessToken,
+            depositArs: prepared.depositArs,
+            publicKey: config.publicKey,
+            apiBaseUrl: config.apiBaseUrl,
+            methods: config.methods,
+          },
+        };
       } catch (cause) {
-        return cause instanceof Error && cause.message === 'PAYMENT_REVIEW_REQUIRED'
-          ? { ready: false, state: 'unknown', message: PAYWAY_MESSAGES.unknown }
-          : { ready: false, message: PAYWAY_MESSAGES.unavailable };
+        const errorMsg = cause instanceof Error ? cause.message : String(cause);
+        const errorCode = (cause as any)?.code ?? 'PREPARATION_ERROR';
+        const errorStage = (cause as any)?.stage ?? 'preparation';
+        const functionName = (cause as any)?.functionName ?? 'store.prepare';
+
+        console.error(`[Payway Prepare Diagnostic ${correlationId}]`, {
+          stage: errorStage,
+          code: errorCode,
+          function: functionName,
+          error: errorMsg,
+          barber: draft.barber,
+          service: draft.serviceName,
+          date: draft.date,
+          time: draft.time,
+        });
+
+        if (cause instanceof Error && cause.message === 'PAYMENT_REVIEW_REQUIRED') {
+          return { ready: false, state: 'unknown', message: PAYWAY_MESSAGES.unknown, correlationId, stage: errorStage };
+        }
+
+        if (errorMsg.includes('SLOT_UNAVAILABLE') || errorMsg.includes('SLOT_ALREADY_BOOKED')) {
+          return {
+            ready: false,
+            state: 'recoverable',
+            message: 'El horario seleccionado ya no se encuentra disponible. Por favor seleccioná otro horario.',
+            correlationId,
+            stage: errorStage,
+          };
+        }
+
+        if (errorMsg.includes('BOOKING_DATE_OUT_OF_RANGE') || errorMsg.includes('START_TIME_NOT_ALLOWED')) {
+          return {
+            ready: false,
+            state: 'recoverable',
+            message: 'El horario o fecha seleccionados no son válidos para reservas.',
+            correlationId,
+            stage: errorStage,
+          };
+        }
+
+        if (errorMsg.includes('PAYMENT_SERVER_CONFIGURATION_MISSING') || errorMsg.includes('PAYMENT_CONFIGURATION_INVALID')) {
+          return { ready: false, message: PAYWAY_MESSAGES.unavailable, correlationId, stage: errorStage };
+        }
+
+        return {
+          ready: false,
+          message: 'No pudimos procesar la reserva temporalmente. Por favor intentá nuevamente.',
+          correlationId,
+          stage: errorStage,
+        };
       }
     },
     async pay(raw: unknown): Promise<PaywayResult> {

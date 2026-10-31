@@ -12,7 +12,7 @@ export type PaywayCheckout = {
 };
 export type PaywayPreparation =
   | { ready: true; checkout: PaywayCheckout }
-  | { ready: false; message: string; state?: 'unknown' };
+  | { ready: false; message: string; state?: 'unknown' | 'recoverable'; correlationId?: string; stage?: string };
 export type PaywayPaymentInput = {
   appointmentId: string; attemptId: string; accessToken: string;
   token: string; bin: string; paymentMethodId: number;

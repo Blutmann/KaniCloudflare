@@ -50,7 +50,18 @@ export function createPaywayStore(db:Db,siteId:string,session:SessionAccess):Pay
         previous=null;
         response=await prepareWithServiceFallback({...args,p_existing_appointment_id:null});
       }
-      if(response.error||!response.data)throw new Error(response.error?.message.includes('PAYMENT_REVIEW_REQUIRED')?'PAYMENT_REVIEW_REQUIRED':'PAYMENT_PREPARATION_FAILED');
+      if (response.error || !response.data) {
+        const errCode = response.error?.code ?? 'UNKNOWN';
+        const errMsg = response.error?.message ?? 'No data returned from prepare_payway_attempt';
+        const errDetails = response.error?.details ?? '';
+        console.error(`[Payway Store Prepare DB Error] Code: ${errCode} | Message: ${errMsg} | Details: ${errDetails}`);
+        const customErr = new Error(errMsg.includes('PAYMENT_REVIEW_REQUIRED') ? 'PAYMENT_REVIEW_REQUIRED' : errMsg);
+        (customErr as any).code = errCode;
+        (customErr as any).stage = 'prepare_payway_attempt';
+        (customErr as any).functionName = 'prepare_payway_attempt';
+        (customErr as any).details = errDetails;
+        throw customErr;
+      }
       const row=response.data as AttemptRow;
       const accessToken=previous?.accessToken??crypto.randomUUID().replaceAll('-','')+crypto.randomUUID().replaceAll('-','');
       try { await session.write({appointmentId:row.appointment_id,accessToken,expiresAt:new Date(row.expires_at).getTime()}); }
