@@ -11,12 +11,17 @@ vi.mock('@tanstack/react-router',()=>({Link:({children}:any)=><a>{children}</a>}
 import { V2Appointments } from './agenda';
 afterEach(()=>{cleanup();mocks.status='PENDING';mocks.phone='+54 9 11 2843-6014';});
 describe('payment based appointment actions',()=>{
- it('shows cancellation with confirmation and WhatsApp, without manual approval actions',()=>{
+ it('shows cancellation with confirmation and WhatsApp Pontiun trigger, without manual approval actions',()=>{
   render(<V2Appointments/>);
   expect(screen.queryByRole('button',{name:'Confirmar'})).toBeNull();
   expect(screen.queryByRole('button',{name:'Rechazar'})).toBeNull();
   expect(screen.queryByRole('button',{name:'Enviar correo'})).toBeNull();
-  expect(screen.getByRole('link',{name:'WhatsApp'})).toHaveAttribute('href','https://wa.me/5491128436014');
+  const waBtn = screen.getByRole('button',{name:'WhatsApp'});
+  expect(waBtn).toBeInTheDocument();
+  expect(waBtn).not.toBeDisabled();
+  fireEvent.click(waBtn);
+  expect(screen.getByRole('heading',{name:'¿Reenviar confirmación por WhatsApp?'})).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button',{name:'Cancelar'}));
   fireEvent.click(screen.getByRole('button',{name:'Cancelar turno'}));
   expect(screen.getByRole('heading',{name:'¿Cancelar este turno?'})).toBeInTheDocument();
   expect(mocks.cancel).not.toHaveBeenCalled();

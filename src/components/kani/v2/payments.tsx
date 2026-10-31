@@ -292,39 +292,33 @@ export function V2Payments() {
               </button>
             ))}
           </div>
-          <form onSubmit={(e) => void submit(e)}>
-            <fieldset disabled={busy || data.loading}>
-              {origin === "appointment" ? (
-                <>
-                  <label className="v2-field">
-                    Turno
-                    <select
-                      value={appointmentId}
-                      onChange={(e) => {
-                        setAppointmentId(e.target.value);
-                        setPriceOverride(null);
-                        setDiscount(0);
-                      }}
-                    >
-                      <option value="">Seleccionar turno confirmado</option>
-                      {choices.map((a) => (
-                        <option value={a.id} key={a.id}>
-                          {a.name} · {a.serviceName} · {a.time} hs ({a.barber})
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  {appointment && (
-                    <p className="v2-footnote">
-                      {appointment.name} · {appointment.phone || "Sin celular"} · {appointment.date} · {appointment.time} hs
-                    </p>
-                  )}
-                </>
-              ) : (
-                <>
-                  {isAdmin && (
-                    <label className="v2-field">
-                      Barbero
+          <form onSubmit={(e) => void submit(e)} className="v2-payment-compact-form">
+            <fieldset disabled={busy || data.loading} className="v2-payment-form-fieldset">
+              <div className="v2-payment-grid">
+                {/* Fila 1: Barbero (o Turno) | Servicio */}
+                <div className="v2-payment-row">
+                  {origin === "appointment" ? (
+                    <label className="v2-field v2-payment-col">
+                      <span className="v2-field-label">Turno</span>
+                      <select
+                        value={appointmentId}
+                        onChange={(e) => {
+                          setAppointmentId(e.target.value);
+                          setPriceOverride(null);
+                          setDiscount(0);
+                        }}
+                      >
+                        <option value="">Seleccionar turno</option>
+                        {choices.map((a) => (
+                          <option value={a.id} key={a.id}>
+                            {a.name} · {a.time} hs ({a.barber})
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  ) : isAdmin ? (
+                    <label className="v2-field v2-payment-col">
+                      <span className="v2-field-label">Barbero</span>
                       <select value={barberId} onChange={(e) => setBarberId(e.target.value)}>
                         {staff.barbers.map((b) => (
                           <option value={b.id} key={b.id}>
@@ -333,28 +327,49 @@ export function V2Payments() {
                         ))}
                       </select>
                     </label>
+                  ) : (
+                    <label className="v2-field v2-payment-col">
+                      <span className="v2-field-label">Barbero</span>
+                      <input
+                        value={staff.barbers.find((b) => b.id === barberId)?.name || staff.profile.display_name || "Lautaro"}
+                        disabled
+                        readOnly
+                      />
+                    </label>
                   )}
-                  <label className="v2-field">
-                    Servicio
-                    <select
-                      value={serviceName}
-                      onChange={(e) => {
-                        setServiceName(e.target.value);
-                        setPriceOverride(null);
-                        setDiscount(0);
-                      }}
-                    >
-                      {data.services.map((s) => (
-                        <option value={s.name} key={s.id}>
-                          {s.name}
-                        </option>
-                      ))}
-                      <option value="Otro">Otro</option>
-                    </select>
+
+                  <label className="v2-field v2-payment-col">
+                    <span className="v2-field-label">Servicio</span>
+                    {origin === "appointment" ? (
+                      <input
+                        value={appointment?.serviceName || (appointmentId ? "Cargando…" : "Seleccionar turno")}
+                        disabled
+                        readOnly
+                      />
+                    ) : (
+                      <select
+                        value={serviceName}
+                        onChange={(e) => {
+                          setServiceName(e.target.value);
+                          setPriceOverride(null);
+                          setDiscount(0);
+                        }}
+                      >
+                        {data.services.map((s) => (
+                          <option value={s.name} key={s.id}>
+                            {s.name}
+                          </option>
+                        ))}
+                        <option value="Otro">Otro</option>
+                      </select>
+                    )}
                   </label>
-                  {serviceName === "Otro" && (
+                </div>
+
+                {origin === "walk_in" && serviceName === "Otro" && (
+                  <div className="v2-payment-full-row">
                     <label className="v2-field">
-                      Detalle del servicio
+                      <span className="v2-field-label">Detalle del servicio</span>
                       <input
                         required
                         placeholder="Ej. Corte especial"
@@ -362,9 +377,29 @@ export function V2Payments() {
                         onChange={(e) => setCustomServiceName(e.target.value)}
                       />
                     </label>
-                  )}
-                  <label className="v2-field">
-                    Importe ($ ARS)
+                  </div>
+                )}
+
+                {origin === "appointment" && appointment && (
+                  <div className="v2-payment-full-row v2-appointment-selected-note">
+                    <p className="v2-footnote">
+                      {appointment.name} · {appointment.phone || "Sin celular"} · {appointment.date} a las {appointment.time} hs ({appointment.barber})
+                    </p>
+                  </div>
+                )}
+
+                {/* Fila 2: Método de cobro | Importe */}
+                <div className="v2-payment-row">
+                  <label className="v2-field v2-payment-col">
+                    <span className="v2-field-label">Método de cobro</span>
+                    <select value={method} onChange={(e) => setMethod(e.target.value as PaymentMethod)}>
+                      <option value="Efectivo">Efectivo</option>
+                      <option value="Transferencia">Transferencia</option>
+                    </select>
+                  </label>
+
+                  <label className="v2-field v2-payment-col">
+                    <span className="v2-field-label">Importe ($ ARS)</span>
                     <input
                       type="number"
                       min={1}
@@ -374,137 +409,123 @@ export function V2Payments() {
                       onChange={(e) => setPriceOverride(e.target.value === "" ? null : Number(e.target.value))}
                     />
                   </label>
-                </>
-              )}
+                </div>
 
-              <label className="v2-field">
-                Método de cobro
-                <select value={method} onChange={(e) => setMethod(e.target.value as PaymentMethod)}>
-                  <option value="Efectivo">Efectivo</option>
-                  <option value="Transferencia">Transferencia</option>
-                </select>
-              </label>
-
-              <div className="v2-payment-actions-strip">
-                <button
-                  type="button"
-                  className={`v2-secondary v2-payment-action-btn ${showDiscount ? "active" : ""}`}
-                  onClick={() => setShowDiscount(!showDiscount)}
-                  aria-expanded={showDiscount}
-                >
-                  <Tag size={16} />
-                  <span>{showDiscount ? "Quitar descuento" : "Agregar descuento"}</span>
-                </button>
-                {origin === "walk_in" && (
+                {/* Fila 3: Agregar descuento | Asociar cliente */}
+                <div className="v2-payment-row">
                   <button
                     type="button"
-                    className={`v2-secondary v2-payment-action-btn ${showClient ? "active" : ""}`}
-                    onClick={() => setShowClient(!showClient)}
-                    aria-expanded={showClient}
+                    className={`v2-secondary v2-payment-toggle-btn ${showDiscount ? "active" : ""}`}
+                    onClick={() => setShowDiscount(!showDiscount)}
+                    aria-expanded={showDiscount}
                   >
-                    <User size={16} />
-                    <span>{showClient ? "Ocultar cliente" : "Asociar cliente"}</span>
+                    <Tag size={16} />
+                    <span>{showDiscount ? "Quitar descuento" : "Agregar descuento"}</span>
                   </button>
-                )}
-              </div>
 
-              {showClient && origin === "walk_in" && (
-                <div className="v2-payment-collapsible">
-                  <label className="v2-field">
-                    Cliente existente
-                    <select value={clientId} onChange={(e) => setClientId(e.target.value)}>
-                      <option value="">Cargar nombre y contacto</option>
-                      {data.clients
-                        .filter((c) => !c.draft && !c.archived)
-                        .map((c) => (
-                          <option value={c.id} key={c.id}>
-                            {c.name} · {c.phone}
-                          </option>
-                        ))}
-                    </select>
-                  </label>
-                  {!clientId && (
-                    <div className="v2-form-row">
-                      <label className="v2-field">
-                        Nombre
-                        <input
-                          value={clientName}
-                          placeholder="Nombre del cliente"
-                          onChange={(e) => setClientName(e.target.value)}
-                        />
-                      </label>
-                      <label className="v2-field">
-                        Celular
-                        <input
-                          type="tel"
-                          placeholder="Ej. 11 1234-5678"
-                          value={clientPhone}
-                          onChange={(e) => setClientPhone(e.target.value)}
-                        />
-                      </label>
+                  {origin === "walk_in" ? (
+                    <button
+                      type="button"
+                      className={`v2-secondary v2-payment-toggle-btn ${showClient ? "active" : ""}`}
+                      onClick={() => setShowClient(!showClient)}
+                      aria-expanded={showClient}
+                    >
+                      <User size={16} />
+                      <span>{showClient ? "Ocultar cliente" : "Asociar cliente"}</span>
+                    </button>
+                  ) : (
+                    <div className="v2-payment-appointment-client-badge">
+                      <User size={16} />
+                      <span className="v2-truncate">{appointment?.name || "Cliente del turno"}</span>
                     </div>
                   )}
                 </div>
-              )}
 
-              {showDiscount && (
-                <div className="v2-payment-collapsible">
-                  <label className="v2-field">
-                    Descuento en pesos
-                    <input
-                      type="number"
-                      value={discount || ""}
-                      min={0}
-                      max={Math.max(0, price - deposit)}
-                      step={1}
-                      placeholder="0"
-                      onChange={(e) => setDiscount(Number(e.target.value))}
-                    />
-                  </label>
-                </div>
-              )}
-
-              {/* Resumen monetario: compacto cuando no hay ajustes, desglosado si hay descuento o seña previa */}
-              <div className={`v2-payment-summary-block ${(discount > 0 || deposit > 0) ? "has-breakdown" : "is-compact"}`}>
-                {(discount > 0 || deposit > 0) && (
-                  <>
-                    <div className="v2-summary-line">
-                      <span className="v2-summary-label">Precio del servicio</span>
-                      <span className="v2-summary-value">{money(price)}</span>
-                    </div>
-                    {discount > 0 && (
-                      <div className="v2-summary-line v2-summary-discount">
-                        <span className="v2-summary-label">Descuento</span>
-                        <span className="v2-summary-value">- {money(discount)}</span>
-                      </div>
-                    )}
-                    {deposit > 0 && (
-                      <div className="v2-summary-line v2-summary-deposit">
-                        <span className="v2-summary-label">Seña abonada</span>
-                        <span className="v2-summary-value">- {money(deposit)}</span>
-                      </div>
-                    )}
-                    <div className="v2-summary-divider" />
-                  </>
+                {showDiscount && (
+                  <div className="v2-payment-full-row v2-payment-collapsible">
+                    <label className="v2-field">
+                      <span className="v2-field-label">Descuento en pesos ($ ARS)</span>
+                      <input
+                        type="number"
+                        value={discount || ""}
+                        min={0}
+                        max={Math.max(0, price - deposit)}
+                        step={1}
+                        placeholder="0"
+                        onChange={(e) => setDiscount(Number(e.target.value))}
+                      />
+                    </label>
+                  </div>
                 )}
-                <div className="v2-summary-total">
-                  <span className="v2-total-label">A cobrar ahora</span>
-                  <strong className="v2-total-amount">{money(total)}</strong>
+
+                {showClient && origin === "walk_in" && (
+                  <div className="v2-payment-full-row v2-payment-collapsible">
+                    <label className="v2-field">
+                      <span className="v2-field-label">Cliente existente</span>
+                      <select value={clientId} onChange={(e) => setClientId(e.target.value)}>
+                        <option value="">Cargar nombre y contacto</option>
+                        {data.clients
+                          .filter((c) => !c.draft && !c.archived && !(c as any).deleted_at)
+                          .map((c) => (
+                            <option value={c.id} key={c.id}>
+                              {c.name} · {c.phone}
+                            </option>
+                          ))}
+                      </select>
+                    </label>
+                    {!clientId && (
+                      <div className="v2-payment-row" style={{ marginTop: "8px" }}>
+                        <label className="v2-field v2-payment-col">
+                          <span className="v2-field-label">Nombre</span>
+                          <input
+                            value={clientName}
+                            placeholder="Nombre del cliente"
+                            onChange={(e) => setClientName(e.target.value)}
+                          />
+                        </label>
+                        <label className="v2-field v2-payment-col">
+                          <span className="v2-field-label">Celular</span>
+                          <input
+                            type="tel"
+                            placeholder="Ej. 11 1234-5678"
+                            value={clientPhone}
+                            onChange={(e) => setClientPhone(e.target.value)}
+                          />
+                        </label>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Fila 4: A cobrar ahora | Registrar cobro */}
+                <div className="v2-payment-row v2-payment-row-final">
+                  <div className="v2-payment-total-box">
+                    <span className="v2-total-box-label">A cobrar ahora</span>
+                    <div className="v2-total-box-amount-wrap">
+                      <strong className="v2-total-box-amount">{money(total)}</strong>
+                      {(discount > 0 || deposit > 0) && (
+                        <span className="v2-total-box-breakdown">
+                          {deposit > 0 ? `Seña: -${money(deposit)} ` : ""}
+                          {discount > 0 ? `Desc: -${money(discount)}` : ""}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <button
+                    className="v2-primary v2-payment-submit-btn"
+                    type="submit"
+                    disabled={
+                      busy ||
+                      !price ||
+                      (origin === "appointment" && (!appointment || !data.depositSupported))
+                    }
+                  >
+                    <CheckCircle2 size={18} />
+                    <span>{busy ? "Registrando…" : "Registrar cobro"}</span>
+                  </button>
                 </div>
               </div>
-
-              <button
-                className="v2-primary v2-full"
-                type="submit"
-                disabled={
-                  busy ||
-                  !price ||
-                  (origin === "appointment" && (!appointment || !data.depositSupported))
-                }
-              >
-                <CheckCircle2 size={18} />
-                {busy ? "Registrando…" : "Registrar cobro"}
-              </button>
             </fieldset>
           </form>
           {message && (
@@ -515,9 +536,9 @@ export function V2Payments() {
         </section>
       </div>
 
-      <section className="v2-panel">
+      <section className="v2-panel v2-payments-history-panel">
         <div className="v2-section-title">
-          <h2>La cobranza</h2>
+          <h2>Cobros registrados</h2>
           <span>{history.length} servicios</span>
         </div>
         <div className="v2-filters">
@@ -575,57 +596,167 @@ export function V2Payments() {
           </span>
         </div>
         {!history.length && <Empty>No hay cobros registrados en este período.</Empty>}
-        {history.map((p) => (
-          <article className="v2-history-row" key={p.id}>
-            <div>
-              <h3>{p.serviceOtherDetail || p.serviceName}</h3>
-              <p>
-                {p.clientName || "Sin cliente asociado"} · {p.barberName}
-              </p>
-              <small>
-                {p.paymentDate} · {p.paymentTime} · {p.paymentMethod}{p.appointmentDate ? ` · Turno: ${p.appointmentDate}` : ""}
-              </small>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-              <strong>{money(p.collectedAmountArs)}</strong>
-              {isAdmin && !p.isDepositMovement ? (
-                <div style={{ display: "flex", gap: "6px" }}>
-                  <button
-                    type="button"
-                    className="v2-secondary"
-                    style={{ fontSize: "11px", padding: "4px 8px" }}
-                    onClick={() => openEditModal(p)}
-                    title="Editar cobro"
-                  >
-                    <Edit2 size={13} style={{ marginRight: "3px" }} />
-                    Editar
-                  </button>
-                  <button
-                    type="button"
-                    className="v2-quiet"
-                    style={{ fontSize: "11px", padding: "4px 8px", color: "var(--destructive, #ef4444)" }}
-                    onClick={() => setDeletingPayment(p)}
-                    title="Anular cobro"
-                  >
-                    <Trash2 size={13} style={{ marginRight: "3px" }} />
-                    Eliminar
-                  </button>
+
+        {/* Presentación Desktop: Tabla con columnas estables y montos alineados a la derecha */}
+        {history.length > 0 && (
+          <div className="v2-payments-table-wrap">
+            <table className="v2-payments-table">
+              <thead>
+                <tr>
+                  <th className="col-datetime">Fecha y hora</th>
+                  <th className="col-service">Servicio</th>
+                  <th className="col-client">Cliente</th>
+                  <th className="col-method">Método</th>
+                  <th className="col-amount">Importe</th>
+                  <th className="col-actions">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {history.map((p) => (
+                  <tr key={p.id}>
+                    <td className="col-datetime">
+                      <div className="v2-table-datetime">
+                        <span>{p.paymentDate}</span>
+                        <small>{p.paymentTime} hs</small>
+                      </div>
+                    </td>
+                    <td className="col-service">
+                      <strong className="v2-table-service-name">
+                        {p.serviceOtherDetail || p.serviceName}
+                      </strong>
+                      <small className="v2-table-barber-name">{p.barberName}</small>
+                    </td>
+                    <td className="col-client">
+                      <span className="v2-table-client-name">
+                        {p.clientName || "Sin cliente asociado"}
+                      </span>
+                      {p.clientContact && <small className="v2-table-client-contact">{p.clientContact}</small>}
+                    </td>
+                    <td className="col-method">
+                      <span className={`v2-method-badge ${p.paymentMethod.toLowerCase()}`}>
+                        {p.paymentMethod}
+                      </span>
+                    </td>
+                    <td className="col-amount">
+                      <strong className="v2-table-amount-cell">
+                        {money(p.collectedAmountArs)}
+                      </strong>
+                    </td>
+                    <td className="col-actions">
+                      <div className="v2-table-actions-cell">
+                        {isAdmin && !p.isDepositMovement ? (
+                          <>
+                            <button
+                              type="button"
+                              className="v2-secondary v2-action-icon-btn"
+                              onClick={() => openEditModal(p)}
+                              title="Editar cobro"
+                              aria-label="Editar cobro"
+                            >
+                              <Edit2 size={14} />
+                              <span className="v2-btn-text">Editar</span>
+                            </button>
+                            <button
+                              type="button"
+                              className="v2-quiet v2-action-icon-btn v2-destructive-text"
+                              onClick={() => setDeletingPayment(p)}
+                              title="Anular cobro"
+                              aria-label="Anular cobro"
+                            >
+                              <Trash2 size={14} />
+                              <span className="v2-btn-text">Eliminar</span>
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            type="button"
+                            className="v2-secondary v2-action-icon-btn"
+                            onClick={() => openClientEditModal(p)}
+                            title="Editar datos de contacto"
+                            aria-label="Editar datos de cliente"
+                          >
+                            <User size={14} />
+                            <span className="v2-btn-text">Editar cliente</span>
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Presentación Mobile: Tarjetas compactas, sin scroll horizontal, importe destacado a la derecha */}
+        {history.length > 0 && (
+          <div className="v2-payments-mobile-cards">
+            {history.map((p) => (
+              <article className="v2-payment-card-mobile" key={p.id}>
+                <div className="v2-pcm-header">
+                  <div className="v2-pcm-header-left">
+                    <strong className="v2-pcm-service">
+                      {p.serviceOtherDetail || p.serviceName}
+                    </strong>
+                    <span className="v2-pcm-client">
+                      {p.clientName || "Sin cliente"} · {p.barberName}
+                    </span>
+                  </div>
+                  <strong className="v2-pcm-amount">
+                    {money(p.collectedAmountArs)}
+                  </strong>
                 </div>
-              ) : (
-                <button
-                  type="button"
-                  className="v2-secondary"
-                  style={{ fontSize: "11px", padding: "4px 8px" }}
-                  onClick={() => openClientEditModal(p)}
-                  title="Editar datos de contacto"
-                >
-                  <User size={13} style={{ marginRight: "3px" }} />
-                  Editar cliente
-                </button>
-              )}
-            </div>
-          </article>
-        ))}
+
+                <div className="v2-pcm-meta">
+                  <span className="v2-pcm-date">
+                    {p.paymentDate} · {p.paymentTime} hs
+                  </span>
+                  <span className={`v2-method-badge ${p.paymentMethod.toLowerCase()}`}>
+                    {p.paymentMethod}
+                  </span>
+                </div>
+
+                <div className="v2-pcm-actions">
+                  {isAdmin && !p.isDepositMovement ? (
+                    <>
+                      <button
+                        type="button"
+                        className="v2-secondary v2-pcm-btn"
+                        onClick={() => openEditModal(p)}
+                        title="Editar cobro"
+                        aria-label="Editar cobro"
+                      >
+                        <Edit2 size={13} />
+                        <span>Editar</span>
+                      </button>
+                      <button
+                        type="button"
+                        className="v2-quiet v2-pcm-btn v2-destructive-text"
+                        onClick={() => setDeletingPayment(p)}
+                        title="Anular cobro"
+                        aria-label="Anular cobro"
+                      >
+                        <Trash2 size={13} />
+                        <span>Eliminar</span>
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      className="v2-secondary v2-pcm-btn"
+                      onClick={() => openClientEditModal(p)}
+                      title="Editar datos de contacto"
+                      aria-label="Editar datos de cliente"
+                    >
+                      <User size={13} />
+                      <span>Editar cliente</span>
+                    </button>
+                  )}
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* Admin Full Edit Dialog */}

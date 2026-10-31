@@ -3183,3 +3183,597 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
     opacity: 0.9 !important;
   }
 }
+
+/* ==============================================================================
+   OPTIMIZACIONES ESTRUCTURALES — CLIENTES, PAGOS Y TURNOS (ADMIN V2)
+   ============================================================================== */
+
+/* 1. Clientes — Toolbar y Tarjetas */
+.v2-client-toolbar-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+  width: 100%;
+}
+.v2-client-search-row {
+  width: 100%;
+}
+.v2-client-search-row .v2-search {
+  width: 100%;
+}
+.v2-client-search-row .v2-search input {
+  width: 100%;
+  min-height: 44px;
+  height: 44px;
+}
+.v2-client-controls-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px;
+  width: 100%;
+}
+.v2-client-order {
+  width: auto;
+  min-width: 170px;
+  max-width: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 0 !important;
+}
+.v2-client-order select {
+  min-height: 44px;
+  height: 44px;
+  width: 100%;
+}
+.v2-client-add-btn {
+  min-height: 44px;
+  height: 44px;
+  padding: 0 20px;
+  font-weight: 600;
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.v2-client-card {
+  display: grid;
+  grid-template-columns: 44px minmax(200px, 1.8fr) minmax(130px, 1.2fr) auto;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 18px;
+  border-radius: var(--radius-card);
+  border: 1px solid var(--v2-line, var(--border));
+  background: var(--v2-surface);
+  transition: all 0.15s ease;
+  cursor: pointer;
+}
+.v2-client-card:hover {
+  border-color: var(--gold);
+  background: color-mix(in srgb, var(--gold) 4%, var(--v2-surface));
+}
+.v2-client-main-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.v2-client-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--foreground);
+  margin: 0;
+  line-height: 1.2;
+}
+.v2-client-contact {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--muted-foreground);
+  min-width: 0;
+}
+.v2-client-dot {
+  opacity: 0.5;
+}
+.v2-client-email {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.v2-client-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.v2-client-visits {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gold, #d4af37);
+}
+.v2-client-tag {
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+.v2-client-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: flex-end;
+}
+.v2-client-action-btn {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--v2-line, var(--border));
+  background: var(--v2-surface);
+  color: var(--foreground);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.v2-client-action-btn:hover {
+  border-color: var(--gold);
+}
+.v2-client-action-btn.delete:hover {
+  color: var(--destructive, #ef4444);
+  border-color: color-mix(in srgb, var(--destructive, #ef4444) 40%, transparent);
+}
+.v2-client-arrow-wrap {
+  display: flex;
+  align-items: center;
+  color: var(--muted-foreground);
+  margin-left: 4px;
+}
+
+@media (max-width: 767px) {
+  .v2-client-controls-row {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+  }
+  .v2-client-order {
+    flex: 1;
+    min-width: 0;
+    max-width: none;
+  }
+  .v2-client-card {
+    grid-template-columns: 36px minmax(0, 1fr) auto;
+    gap: 8px 12px;
+    padding: 12px 14px;
+  }
+  .v2-client-contact {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1px;
+  }
+  .v2-client-dot {
+    display: none;
+  }
+  .v2-client-meta {
+    grid-column: 2;
+    margin-top: 2px;
+  }
+  .v2-client-actions {
+    grid-column: 3;
+    grid-row: 1 / span 2;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .v2-client-action-btn {
+    min-width: 44px;
+    min-height: 44px;
+    width: 44px;
+    height: 44px;
+  }
+}
+
+/* 2. Pagos — Formulario compacto 50/50 y Cobros registrados */
+.v2-payment-compact-form {
+  margin-top: 14px;
+  width: 100%;
+}
+.v2-payment-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+.v2-payment-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  align-items: end;
+  width: 100%;
+}
+.v2-payment-col {
+  margin-bottom: 0 !important;
+  width: 100%;
+}
+.v2-payment-row .v2-field input,
+.v2-payment-row .v2-field select {
+  min-height: 44px;
+  height: 44px;
+  width: 100%;
+  box-sizing: border-box;
+}
+.v2-payment-toggle-btn {
+  min-height: 44px;
+  height: 44px;
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: var(--radius-interactive);
+  box-sizing: border-box;
+}
+.v2-payment-toggle-btn.active {
+  background: color-mix(in srgb, var(--gold) 15%, var(--v2-surface));
+  border-color: var(--gold);
+  color: var(--foreground);
+}
+.v2-payment-appointment-client-badge {
+  min-height: 44px;
+  height: 44px;
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  border: 1px solid var(--v2-line, var(--border));
+  border-radius: var(--radius-interactive);
+  background: color-mix(in srgb, var(--foreground) 3%, transparent);
+  font-size: 13px;
+  color: var(--muted-foreground);
+  box-sizing: border-box;
+}
+.v2-payment-full-row {
+  width: 100%;
+}
+.v2-appointment-selected-note {
+  margin-top: -4px;
+}
+.v2-payment-total-box {
+  min-height: 44px;
+  height: 44px;
+  padding: 4px 14px;
+  border: 1px solid var(--v2-line, var(--border));
+  border-radius: var(--radius-interactive);
+  background: var(--v2-surface);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  box-sizing: border-box;
+}
+.v2-total-box-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted-foreground);
+  line-height: 1.1;
+}
+.v2-total-box-amount-wrap {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.v2-total-box-amount {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--foreground);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+.v2-total-box-breakdown {
+  font-size: 10px;
+  color: var(--muted-foreground);
+}
+.v2-payment-submit-btn {
+  min-height: 44px;
+  height: 44px;
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: var(--radius-interactive);
+  box-sizing: border-box;
+}
+
+/* Cobros registrados — Desktop table */
+@media (min-width: 768px) {
+  .v2-payments-mobile-cards {
+    display: none !important;
+  }
+  .v2-payments-table-wrap {
+    width: 100%;
+    overflow-x: auto;
+    margin-top: 16px;
+  }
+  .v2-payments-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 13px;
+  }
+  .v2-payments-table th {
+    padding: 10px 14px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted-foreground);
+    border-bottom: 1px solid var(--v2-line, var(--border));
+  }
+  .v2-payments-table td {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--v2-line, var(--border));
+    vertical-align: middle;
+  }
+  .v2-payments-table .col-datetime {
+    width: 140px;
+  }
+  .v2-payments-table .col-service {
+    min-width: 140px;
+  }
+  .v2-payments-table .col-client {
+    min-width: 140px;
+  }
+  .v2-payments-table .col-method {
+    width: 120px;
+  }
+  .v2-payments-table .col-amount,
+  .v2-payments-table th.col-amount {
+    width: 120px;
+    text-align: right;
+  }
+  .v2-payments-table .col-actions,
+  .v2-payments-table th.col-actions {
+    width: 170px;
+    text-align: right;
+  }
+  .v2-table-datetime {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .v2-table-service-name {
+    display: block;
+    font-weight: 600;
+    color: var(--foreground);
+  }
+  .v2-table-barber-name {
+    font-size: 11px;
+    color: var(--muted-foreground);
+  }
+  .v2-table-client-name {
+    display: block;
+    color: var(--foreground);
+  }
+  .v2-table-client-contact {
+    font-size: 11px;
+    color: var(--muted-foreground);
+  }
+  .v2-table-amount-cell {
+    display: block;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--foreground);
+  }
+  .v2-table-actions-cell {
+    display: flex;
+    gap: 6px;
+    justify-content: flex-end;
+    align-items: center;
+  }
+  .v2-action-icon-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 10px;
+    font-size: 12px;
+    min-height: 32px;
+    border-radius: 6px;
+  }
+}
+
+/* Cobros registrados — Mobile compact cards */
+@media (max-width: 767px) {
+  .v2-payments-table-wrap {
+    display: none !important;
+  }
+  .v2-payments-mobile-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 14px;
+    width: 100%;
+  }
+  .v2-payment-card-mobile {
+    border: 1px solid var(--v2-line, var(--border));
+    border-radius: var(--radius-card);
+    background: var(--v2-surface);
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .v2-pcm-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .v2-pcm-header-left {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+  .v2-pcm-service {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--foreground);
+  }
+  .v2-pcm-client {
+    font-size: 12px;
+    color: var(--muted-foreground);
+  }
+  .v2-pcm-amount {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--foreground);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    flex-shrink: 0;
+  }
+  .v2-pcm-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--muted-foreground);
+  }
+  .v2-pcm-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    border-top: 1px solid var(--v2-line, var(--border));
+    padding-top: 8px;
+    margin-top: 2px;
+  }
+  .v2-pcm-btn {
+    min-height: 44px;
+    height: 44px;
+    padding: 0 14px;
+    font-size: 12px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+}
+
+.v2-method-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: var(--radius-capsule);
+  background: color-mix(in srgb, var(--foreground) 6%, transparent);
+  color: var(--foreground);
+}
+.v2-method-badge.efectivo {
+  background: color-mix(in srgb, var(--success) 12%, transparent);
+  color: var(--success);
+}
+.v2-method-badge.transferencia {
+  background: color-mix(in srgb, var(--gold) 12%, transparent);
+  color: var(--gold);
+}
+
+/* 3. Turnos — Notificaciones y Grilla de Acciones */
+.v2-notif-pill {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+  background: none;
+  font-family: inherit;
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: var(--radius-capsule);
+}
+.v2-notif-pill:hover {
+  filter: brightness(1.1);
+}
+.v2-notif-info-icon {
+  opacity: 0.6;
+}
+
+.v2-appointment-actions-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  width: 100%;
+}
+.v2-appointment-actions-grid.count-1 {
+  grid-template-columns: 1fr;
+}
+.v2-appointment-actions-grid.count-2 {
+  grid-template-columns: 1fr 1fr;
+}
+.v2-appointment-actions-grid.count-3 > :last-child {
+  grid-column: span 2;
+}
+.v2-appointment-actions-grid.count-4 {
+  grid-template-columns: 1fr 1fr;
+}
+
+@media (min-width: 768px) {
+  .v2-appointment {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 280px;
+    align-items: center;
+    gap: 20px;
+  }
+  .v2-appointment-actions-grid {
+    width: 280px;
+  }
+}
+
+.v2-action-btn {
+  min-height: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  border-radius: var(--radius-interactive);
+  width: 100%;
+  box-sizing: border-box;
+  text-decoration: none;
+}
+.v2-whatsapp {
+  background: #25D366 !important;
+  color: #ffffff !important;
+  border-color: #25D366 !important;
+}
+.v2-whatsapp:hover {
+  background: #20BA59 !important;
+  border-color: #20BA59 !important;
+}
+.v2-whatsapp:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.v2-mail-btn {
+  background: var(--v2-surface);
+  border: 1px solid var(--v2-line, var(--border));
+  color: var(--foreground);
+}
+.v2-mail-btn:hover {
+  border-color: var(--gold);
+}
+

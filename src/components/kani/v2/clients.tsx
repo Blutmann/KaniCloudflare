@@ -1,5 +1,5 @@
-import { useState, type FormEvent } from "react";
-import { ArrowRight, Plus, Search } from "lucide-react";
+import { useState, type FormEvent, type MouseEvent } from "react";
+import { ArrowRight, Pencil, Plus, Search, Trash2, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminStaff } from "@/lib/kani-admin-context";
 import { sortClients, type ClientOrder } from "./client-order";
@@ -13,6 +13,7 @@ export function V2Clients() {
   const data = useV2();
   const staff = useAdminStaff();
   const isAdmin = staff.profile.role === "ADMIN";
+  const barberId = staff.profile.barber_id;
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [editing, setEditing] = useState<V2Client | "new" | null>(null);
@@ -38,12 +39,33 @@ export function V2Clients() {
     order,
   );
 
-  function openEditor(client?: V2Client) {
+  function canEditClient(client: V2Client): boolean {
+    if (isAdmin) return true;
+    if (!barberId) return false;
+    // Un barbero puede editar exclusivamente clientes con turnos registrados con él
+    return data.appointments.some((a) => a.clientId === client.id && a.barberId === barberId);
+  }
+
+  function openEditor(client?: V2Client, e?: MouseEvent) {
+    if (e) e.stopPropagation();
+    if (client && !canEditClient(client)) {
+      setErrorNotice("Solo podés editar clientes vinculados a tus propios turnos.");
+      return;
+    }
     setEditing(client ?? "new");
     setName(client?.name ?? "");
     setPhone(client?.phone ?? "");
     setEmail(client?.email ?? "");
     setErrorNotice("");
+  }
+
+  function promptDelete(client: V2Client, e: MouseEvent) {
+    e.stopPropagation();
+    if (!isAdmin) {
+      setErrorNotice("Solo los administradores pueden eliminar clientes.");
+      return;
+    }
+    setConfirmDelete(client);
   }
 
   async function save(event: FormEvent) {
@@ -128,48 +150,108 @@ export function V2Clients() {
           {errorNotice}
         </p>
       )}
-      <div className="v2-client-toolbar">
-        <label className="v2-search">
-          <Search size={18} />
-          <input
-            aria-label="Buscar clientes"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Nombre, celular o email"
-          />
-        </label>
-        <label className="v2-field v2-client-order">
-          Ordenar por
-          <select value={order} onChange={(e) => setOrder(e.target.value as ClientOrder)}>
-            <option value="newest">Más recientes</option>
-            <option value="oldest">Más antiguos</option>
-            <option value="name-asc">Nombre A–Z</option>
-            <option value="name-desc">Nombre Z–A</option>
-          </select>
-        </label>
-        <button className="v2-primary" onClick={() => openEditor()}>
-          <Plus size={17} />
-          Nuevo cliente
-        </button>
+
+      {/* Toolbar reorganizada: Fila 1 buscador 100%, Fila 2 Ordenar por (ancho contenido) + Nuevo cliente */}
+      <div className="v2-client-toolbar-container">
+        <div className="v2-client-search-row">
+          <label className="v2-search">
+            <Search size={18} />
+            <input
+              aria-label="Buscar clientes"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Nombre, celular o email"
+            />
+          </label>
+        </div>
+        <div className="v2-client-controls-row">
+          <label className="v2-field v2-client-order">
+            <span className="v2-field-label">Ordenar por</span>
+            <select value={order} onChange={(e) => setOrder(e.target.value as ClientOrder)}>
+              <option value="newest">Más recientes</option>
+              <option value="oldest">Más antiguos</option>
+              <option value="name-asc">Nombre A–Z</option>
+              <option value="name-desc">Nombre Z–A</option>
+            </select>
+          </label>
+          <button className="v2-primary v2-client-add-btn" onClick={() => openEditor()}>
+            <Plus size={17} />
+            Nuevo cliente
+          </button>
+        </div>
       </div>
+
       <div className="v2-client-grid">
         {!rows.length && <Empty>No hay clientes para esta búsqueda.</Empty>}
         {rows.map((c) => {
           const history = clientHistory(c.id, data.appointments, data.payments);
+          const editable = canEditClient(c);
           return (
-            <button className="v2-client-card" key={c.id} onClick={() => setSelectedId(c.id)}>
+            <div
+              className="v2-client-card"
+              key={c.id}
+              role="button"
+              tabIndex={0}
+              onClick={() => setSelectedId(c.id)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  setSelectedId(c.id);
+                }
+              }}
+            >
               <span className="v2-avatar">{c.name[0]}</span>
-              <h2>{c.name}</h2>
-              <div className="v2-client-contact">
-                <p>{c.phone || "Sin celular"}</p>
-                <p className="v2-truncate">{c.email || "Sin email"}</p>
+              
+              <div className="v2-client-main-info">
+                <h2 className="v2-client-name">{c.name}</h2>
+                <div className="v2-client-contact">
+                  <span className="v2-client-phone">{c.phone || "Sin celular"}</span>
+                  {c.email && (
+                    <>
+                      <span className="v2-client-dot">·</span>
+                      <span className="v2-client-email v2-truncate" title={c.email}>
+                        {c.email}
+                      </span>
+                    </>
+                  )}
+                </div>
               </div>
+
               <div className="v2-client-meta">
-                <span>{history.visits} visitas verificadas</span>
-                <span>Ficha existente</span>
+                <span className="v2-client-visits">
+                  {history.visits} {history.visits === 1 ? "visita verificada" : "visitas verificadas"}
+                </span>
+                <span className="v2-client-tag">Ficha existente</span>
               </div>
-              <ArrowRight className="v2-client-arrow" size={18} aria-hidden="true" />
-            </button>
+
+              <div className="v2-client-actions" onClick={(e) => e.stopPropagation()}>
+                {editable && (
+                  <button
+                    type="button"
+                    className="v2-client-action-btn edit"
+                    onClick={(e) => openEditor(c, e)}
+                    title="Editar cliente"
+                    aria-label={`Editar datos de ${c.name}`}
+                  >
+                    <Pencil size={15} />
+                  </button>
+                )}
+                {isAdmin && (
+                  <button
+                    type="button"
+                    className="v2-client-action-btn delete"
+                    onClick={(e) => promptDelete(c, e)}
+                    title="Eliminar cliente"
+                    aria-label={`Eliminar cliente ${c.name}`}
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                )}
+                <div className="v2-client-arrow-wrap" aria-hidden="true">
+                  <ArrowRight className="v2-client-arrow" size={16} />
+                </div>
+              </div>
+            </div>
           );
         })}
       </div>
@@ -230,15 +312,17 @@ export function V2Clients() {
                   </div>
                 ))}
               <div className="v2-dialog-actions" style={{ display: "flex", justifyContent: "space-between", gap: "8px" }}>
-                <button
-                  className="v2-secondary"
-                  onClick={() => {
-                    setSelectedId(null);
-                    openEditor(selected);
-                  }}
-                >
-                  Editar cliente
-                </button>
+                {canEditClient(selected) && (
+                  <button
+                    className="v2-secondary"
+                    onClick={() => {
+                      setSelectedId(null);
+                      openEditor(selected);
+                    }}
+                  >
+                    Editar cliente
+                  </button>
+                )}
                 {isAdmin && (
                   <button
                     className="v2-destructive"

@@ -1,7 +1,7 @@
 import { getWhatsAppUrl } from "@/lib/kani-phone";
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { ArrowRight, CalendarDays, Clock3, Mail, Phone, Plus } from "lucide-react";
+import { ArrowRight, CalendarDays, Clock3, Info, Mail, Phone, Plus } from "lucide-react";
 import { useAdminStaff } from "@/lib/kani-admin-context";
 import { businessDateToday, addCalendarDays, startOfBusinessWeek } from "@/lib/kani-mobile-appointments";
 import { businessTimeNow } from "@/lib/kani-payments";
@@ -189,6 +189,14 @@ export function V2Appointments() {
   }>({ open: false, mode: "CREATE", appointment: null });
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
+  const [whatsAppModal, setWhatsAppModal] = useState<{
+    appointment: RealAppointment;
+    mode: "BLOCKED_131042" | "ALREADY_DELIVERED" | "IN_PROGRESS" | "CONFIRM_RESEND" | "NO_PHONE";
+  } | null>(null);
+  const [selectedNotifDetail, setSelectedNotifDetail] = useState<{
+    channel: "WhatsApp" | "Email";
+    dispatch?: NotificationChannelDispatch;
+  } | null>(null);
 
   const isInvalidRange = period === "CUSTOM" && customStartDate > customEndDate;
 
@@ -259,6 +267,27 @@ export function V2Appointments() {
     } else {
       setPeriod("DATE");
     }
+  }
+
+  function handleWhatsAppAction(a: RealAppointment) {
+    if (!a.phone || !a.phone.trim()) {
+      setWhatsAppModal({ appointment: a, mode: "NO_PHONE" });
+      return;
+    }
+    const wa = a.dispatches?.whatsapp;
+    if (wa?.errorCode === "131042") {
+      setWhatsAppModal({ appointment: a, mode: "BLOCKED_131042" });
+      return;
+    }
+    if (wa?.status === "DELIVERED" || wa?.status === "READ") {
+      setWhatsAppModal({ appointment: a, mode: "ALREADY_DELIVERED" });
+      return;
+    }
+    if (wa?.status === "PROCESSING" || wa?.status === "PROVIDER_ACCEPTED" || wa?.status === "SENT") {
+      setWhatsAppModal({ appointment: a, mode: "IN_PROGRESS" });
+      return;
+    }
+    setWhatsAppModal({ appointment: a, mode: "CONFIRM_RESEND" });
   }
 
   async function cancelAppointment() {
@@ -455,49 +484,43 @@ export function V2Appointments() {
                 <span className="v2-app-price">Importe: {money(a.servicePrice ?? 0)}</span>
               </div>
 
-              {/* Fila 4: Diagnóstico granular de notificaciones */}
+              {/* Fila 4: Diagnóstico compacto y accesible de notificaciones */}
               <div className="v2-app-notifications">
                 <div className="v2-notif-channel">
                   <span className="v2-notif-icon" aria-hidden="true">💬</span>
-                  <span
+                  <button
+                    type="button"
                     className={`v2-notif-pill v2-notif-${(a.dispatches?.whatsapp?.status || "PENDING").toLowerCase()}`}
-                    title={a.dispatches?.whatsapp?.errorDescription || undefined}
+                    onClick={() =>
+                      setSelectedNotifDetail({
+                        channel: "WhatsApp",
+                        dispatch: a.dispatches?.whatsapp,
+                      })
+                    }
+                    title="Ver diagnóstico completo de WhatsApp"
+                    aria-label={`Diagnóstico WhatsApp: ${formatWhatsAppStatus(a.dispatches?.whatsapp)}`}
                   >
-                    {formatWhatsAppStatus(a.dispatches?.whatsapp)}
-                  </span>
-                  {a.dispatches?.whatsapp?.status === "FAILED" && (
-                    <button
-                      type="button"
-                      className="v2-notif-retry-btn"
-                      disabled={busy}
-                      onClick={() =>
-                        handleRetryChannel(a.id, "WHATSAPP", a.dispatches?.whatsapp?.errorCode)
-                      }
-                      title="Reintentar notificación WhatsApp"
-                    >
-                      Reintentar
-                    </button>
-                  )}
+                    <span>{formatWhatsAppStatus(a.dispatches?.whatsapp)}</span>
+                    <Info size={12} className="v2-notif-info-icon" aria-hidden="true" />
+                  </button>
                 </div>
                 <div className="v2-notif-channel">
                   <span className="v2-notif-icon" aria-hidden="true">✉️</span>
-                  <span
+                  <button
+                    type="button"
                     className={`v2-notif-pill v2-notif-${(a.dispatches?.email?.status || "PENDING").toLowerCase()}`}
-                    title={a.dispatches?.email?.errorDescription || undefined}
+                    onClick={() =>
+                      setSelectedNotifDetail({
+                        channel: "Email",
+                        dispatch: a.dispatches?.email,
+                      })
+                    }
+                    title="Ver diagnóstico completo de Email"
+                    aria-label={`Diagnóstico Email: ${formatEmailStatus(a.dispatches?.email)}`}
                   >
-                    {formatEmailStatus(a.dispatches?.email)}
-                  </span>
-                  {a.dispatches?.email?.status === "FAILED" && (
-                    <button
-                      type="button"
-                      className="v2-notif-retry-btn"
-                      disabled={busy}
-                      onClick={() => handleRetryChannel(a.id, "EMAIL")}
-                      title="Reintentar notificación Email"
-                    >
-                      Reintentar
-                    </button>
-                  )}
+                    <span>{formatEmailStatus(a.dispatches?.email)}</span>
+                    <Info size={12} className="v2-notif-info-icon" aria-hidden="true" />
+                  </button>
                 </div>
               </div>
 
@@ -505,11 +528,44 @@ export function V2Appointments() {
             </div>
 
             <div className="v2-appointment-actions">
-              <div className="v2-op-buttons">
-                {a.isManual &&
+              {(() => {
+                const actionNodes: React.ReactNode[] = [];
+                if (
                   ["PENDING", "CONFIRMED"].includes(a.statusCode) &&
-                  (staff.profile.role === "ADMIN" || a.barberId === staff.profile.barber_id) && (
+                  (!a.isManual || staff.profile.role === "ADMIN")
+                ) {
+                  actionNodes.push(
                     <button
+                      key="cancel"
+                      type="button"
+                      className="v2-secondary action-reject v2-action-btn"
+                      disabled={busy}
+                      onClick={() => setAction({ appointment: a, status: "CANCELLED" })}
+                    >
+                      Cancelar turno
+                    </button>,
+                  );
+                }
+                if (a.statusCode === "CONFIRMED") {
+                  actionNodes.push(
+                    <Link
+                      key="cobrar"
+                      className="v2-secondary v2-action-btn"
+                      to="/admin-v2/pagos"
+                      search={{ turno: a.id }}
+                    >
+                      Cobrar
+                    </Link>,
+                  );
+                }
+                if (
+                  a.isManual &&
+                  ["PENDING", "CONFIRMED"].includes(a.statusCode) &&
+                  (staff.profile.role === "ADMIN" || a.barberId === staff.profile.barber_id)
+                ) {
+                  actionNodes.push(
+                    <button
+                      key="edit"
                       type="button"
                       className="v2-secondary v2-action-btn"
                       disabled={busy}
@@ -518,55 +574,44 @@ export function V2Appointments() {
                       }
                     >
                       Editar
-                    </button>
-                  )}
-                {["PENDING", "CONFIRMED"].includes(a.statusCode) &&
-                  (!a.isManual || staff.profile.role === "ADMIN") && (
-                    <button
-                      type="button"
-                      className="v2-secondary action-reject v2-action-btn"
-                      disabled={busy}
-                      onClick={() => setAction({ appointment: a, status: "CANCELLED" })}
-                    >
-                      Cancelar turno
-                    </button>
-                  )}
-                {a.statusCode === "CONFIRMED" && (
-                  <Link className="v2-secondary v2-action-btn" to="/admin-v2/pagos" search={{ turno: a.id }}>
-                    Cobrar
-                  </Link>
-                )}
-              </div>
-              <div className="v2-contact-buttons">
-                {getWhatsAppUrl(a.phone) ? (
-                  <a
-                    className="v2-secondary v2-whatsapp v2-action-btn"
-                    href={getWhatsAppUrl(a.phone)!}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    <WhatsAppLabel />
-                  </a>
-                ) : (
+                    </button>,
+                  );
+                }
+                actionNodes.push(
                   <button
+                    key="whatsapp"
                     type="button"
                     className="v2-secondary v2-whatsapp v2-action-btn"
-                    disabled
-                    title="El cliente no tiene un teléfono válido"
+                    disabled={busy || !a.phone || !a.phone.trim()}
+                    onClick={() => handleWhatsAppAction(a)}
+                    title={
+                      !a.phone || !a.phone.trim()
+                        ? "El cliente no tiene un teléfono válido"
+                        : "Reenviar confirmación por WhatsApp mediante Pontiun"
+                    }
                   >
                     <WhatsAppLabel />
-                  </button>
-                )}
-                {a.email ? (
-                  <a
-                    className="v2-secondary v2-mail-btn v2-action-btn"
-                    href={`mailto:${a.email}`}
-                  >
-                    <Mail size={16} />
-                    <span>Mail</span>
-                  </a>
-                ) : null}
-              </div>
+                  </button>,
+                );
+                if (a.email) {
+                  actionNodes.push(
+                    <a
+                      key="mail"
+                      className="v2-secondary v2-mail-btn v2-action-btn"
+                      href={`mailto:${a.email}`}
+                    >
+                      <Mail size={16} />
+                      <span>Mail</span>
+                    </a>,
+                  );
+                }
+
+                return (
+                  <div className={`v2-appointment-actions-grid count-${actionNodes.length}`}>
+                    {actionNodes}
+                  </div>
+                );
+              })()}
             </div>
           </article>
         ))}
@@ -607,6 +652,134 @@ export function V2Appointments() {
           </button>
         </DialogContent>
       </Dialog>
+      <Dialog
+        open={!!whatsAppModal}
+        onOpenChange={(open) => {
+          if (!open && !busy) setWhatsAppModal(null);
+        }}
+      >
+        <DialogContent className="v2-dialog">
+          {whatsAppModal?.mode === "BLOCKED_131042" && (
+            <>
+              <DialogTitle>Configuración pendiente en Meta (Error 131042)</DialogTitle>
+              <DialogDescription>
+                Meta rechazó el mensaje por un problema de facturación en la cuenta de WhatsApp Business (código 131042: la moneda no está configurada). Debe resolverse la configuración en Meta Business Suite antes de reintentar el despacho.
+              </DialogDescription>
+              <div className="v2-dialog-actions" style={{ display: "flex", justifyContent: "flex-end", marginTop: "16px" }}>
+                <button className="v2-secondary" onClick={() => setWhatsAppModal(null)}>
+                  Entendido
+                </button>
+              </div>
+            </>
+          )}
+          {whatsAppModal?.mode === "ALREADY_DELIVERED" && (
+            <>
+              <DialogTitle>Mensaje ya entregado</DialogTitle>
+              <DialogDescription>
+                La confirmación por WhatsApp ya fue entregada exitosamente al cliente ({whatsAppModal.appointment.name}).
+              </DialogDescription>
+              <div className="v2-dialog-actions" style={{ display: "flex", justifyContent: "flex-end", marginTop: "16px" }}>
+                <button className="v2-secondary" onClick={() => setWhatsAppModal(null)}>
+                  Aceptar
+                </button>
+              </div>
+            </>
+          )}
+          {whatsAppModal?.mode === "IN_PROGRESS" && (
+            <>
+              <DialogTitle>Notificación en tránsito</DialogTitle>
+              <DialogDescription>
+                La notificación de WhatsApp ya fue aceptada por Pontiun y se encuentra en proceso de entrega hacia Meta.
+              </DialogDescription>
+              <div className="v2-dialog-actions" style={{ display: "flex", justifyContent: "flex-end", marginTop: "16px" }}>
+                <button className="v2-secondary" onClick={() => setWhatsAppModal(null)}>
+                  Aceptar
+                </button>
+              </div>
+            </>
+          )}
+          {whatsAppModal?.mode === "NO_PHONE" && (
+            <>
+              <DialogTitle>Sin número de contacto</DialogTitle>
+              <DialogDescription>
+                Este turno no tiene registrado un número de teléfono celular válido para el envío de WhatsApp.
+              </DialogDescription>
+              <div className="v2-dialog-actions" style={{ display: "flex", justifyContent: "flex-end", marginTop: "16px" }}>
+                <button className="v2-secondary" onClick={() => setWhatsAppModal(null)}>
+                  Aceptar
+                </button>
+              </div>
+            </>
+          )}
+          {whatsAppModal?.mode === "CONFIRM_RESEND" && (
+            <>
+              <DialogTitle>¿Reenviar confirmación por WhatsApp?</DialogTitle>
+              <DialogDescription>
+                Se enviará la plantilla oficial confirmacion_turno_kani a {whatsAppModal.appointment.name} ({whatsAppModal.appointment.phone}) mediante Pontiun. No se reenviará correo electrónico por Resend.
+              </DialogDescription>
+              <div className="v2-dialog-actions" style={{ display: "flex", justifyContent: "flex-end", gap: "8px", marginTop: "16px" }}>
+                <button className="v2-secondary" disabled={busy} onClick={() => setWhatsAppModal(null)}>
+                  Cancelar
+                </button>
+                <button
+                  className="v2-primary v2-whatsapp"
+                  disabled={busy}
+                  onClick={async () => {
+                    const apt = whatsAppModal.appointment;
+                    setWhatsAppModal(null);
+                    await handleRetryChannel(apt.id, "WHATSAPP", apt.dispatches?.whatsapp?.errorCode);
+                  }}
+                >
+                  {busy ? "Enviando…" : "Reenviar WhatsApp"}
+                </button>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+      <Dialog
+        open={!!selectedNotifDetail}
+        onOpenChange={(open) => {
+          if (!open) setSelectedNotifDetail(null);
+        }}
+      >
+        <DialogContent className="v2-dialog">
+          <DialogTitle>Diagnóstico de notificación: {selectedNotifDetail?.channel}</DialogTitle>
+          <DialogDescription>
+            Detalle técnico del canal de notificación registrado en Supabase.
+          </DialogDescription>
+          {selectedNotifDetail?.dispatch ? (
+            <div className="v2-diagnostics-box" style={{ marginTop: "12px", display: "flex", flexDirection: "column", gap: "8px", fontSize: "13px" }}>
+              <p><strong>Estado:</strong> {selectedNotifDetail.dispatch.status}</p>
+              <p><strong>Proveedor:</strong> {selectedNotifDetail.dispatch.provider || (selectedNotifDetail.channel === "WhatsApp" ? "PONTIUN" : "RESEND")}</p>
+              {selectedNotifDetail.dispatch.recipient && (
+                <p><strong>Destinatario:</strong> {selectedNotifDetail.dispatch.recipient}</p>
+              )}
+              {selectedNotifDetail.dispatch.errorCode && (
+                <p><strong>Código de error:</strong> <code>{selectedNotifDetail.dispatch.errorCode}</code></p>
+              )}
+              {selectedNotifDetail.dispatch.errorDescription && (
+                <p><strong>Detalle:</strong> {selectedNotifDetail.dispatch.errorDescription}</p>
+              )}
+              {selectedNotifDetail.dispatch.providerMessageId && (
+                <p><strong>ID de mensaje:</strong> <code>{selectedNotifDetail.dispatch.providerMessageId}</code></p>
+              )}
+              {selectedNotifDetail.dispatch.updatedAt && (
+                <p><strong>Última actualización:</strong> {selectedNotifDetail.dispatch.updatedAt.replace("T", " ").slice(0, 19)}</p>
+              )}
+            </div>
+          ) : (
+            <p style={{ marginTop: "12px", color: "var(--muted-foreground)" }}>
+              No hay despacho registrado para este canal.
+            </p>
+          )}
+          <div className="v2-dialog-actions" style={{ display: "flex", justifyContent: "flex-end", marginTop: "16px" }}>
+            <button className="v2-secondary" onClick={() => setSelectedNotifDetail(null)}>
+              Cerrar
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }
@@ -619,19 +792,16 @@ function formatWhatsAppStatus(dispatch?: NotificationChannelDispatch): string {
     case "READ":
       return "WhatsApp: Leído";
     case "PROVIDER_ACCEPTED":
-      return "WhatsApp: Aceptado por Pontiun (en entrega)";
+      return "WhatsApp: Aceptado";
     case "SENT":
-      return "WhatsApp: Enviado a Meta";
+      return "WhatsApp: Enviado";
     case "FAILED":
       if (dispatch.errorCode === "131042") {
-        return "WhatsApp: Error 131042 (configuración de facturación/moneda en Meta pendiente)";
+        return "WhatsApp: Error 131042";
       }
-      if (dispatch.errorCode === "TEMPLATE_NOT_APPROVED") {
-        return "WhatsApp: Plantilla no aprobada en Meta/Pontiun";
-      }
-      return `WhatsApp: Falló (${dispatch.errorCode || dispatch.errorDescription || "Error"})`;
+      return `WhatsApp: Error ${dispatch.errorCode || ""}`.trim();
     case "SKIPPED":
-      return `WhatsApp: Omitido (${dispatch.errorDescription || "sin teléfono"})`;
+      return "WhatsApp: Omitido";
     default:
       return `WhatsApp: ${dispatch.status}`;
   }
@@ -641,11 +811,11 @@ function formatEmailStatus(dispatch?: NotificationChannelDispatch): string {
   if (!dispatch) return "Email: Pendiente";
   switch (dispatch.status) {
     case "SENT":
-      return "Email: Enviado (Resend)";
+      return "Email: Enviado";
     case "FAILED":
-      return `Email: Falló (${dispatch.errorCode || dispatch.errorDescription || "Error"})`;
+      return "Email: Error";
     case "SKIPPED":
-      return `Email: Omitido (${dispatch.errorDescription || "sin correo"})`;
+      return "Email: Omitido";
     default:
       return `Email: ${dispatch.status}`;
   }
