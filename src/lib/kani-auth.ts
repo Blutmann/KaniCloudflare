@@ -65,8 +65,14 @@ async function fetchAuthenticatedStaff(): Promise<AuthenticatedStaff | null> {
     barbersQuery = barbersQuery.eq('id', profile.barber_id);
   }
 
-  const { data: barbers, error: barbersError } = await barbersQuery;
-  if (barbersError || !barbers?.length) return null;
+  const { data: rawBarbers, error: barbersError } = await barbersQuery;
+  if (barbersError || !rawBarbers?.length) return null;
+  const officialOrder = ['Lautaro', 'Gonzalo', 'Valentín', 'Franco'];
+  const barbers = [...rawBarbers].sort((a, b) => {
+    const idxA = officialOrder.indexOf(a.name);
+    const idxB = officialOrder.indexOf(b.name);
+    return (idxA !== -1 ? idxA : 99) - (idxB !== -1 ? idxB : 99);
+  });
   const onlyBarber = barbers[0];
   if (profile.role === 'BARBER' && (barbers.length !== 1 || !onlyBarber || onlyBarber.id !== profile.barber_id)) return null;
 

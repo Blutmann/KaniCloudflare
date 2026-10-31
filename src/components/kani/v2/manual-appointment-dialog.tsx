@@ -206,7 +206,8 @@ export function ManualAppointmentDialog({
       setServiceId(defaultService);
       setCustomServiceName("");
       setCustomPrice("");
-      setServicePrice(servicesList[0]?.price || 25000);
+      const selectedB = barbersList.find((b) => b.id === defaultBarber);
+      setServicePrice(getEffectiveServicePrice(servicesList[0]?.name || "Corte", selectedB?.name));
       setStartTime("10:00");
       setCustomEndTime("10:45");
       setDate(initialDate);
@@ -227,6 +228,14 @@ export function ManualAppointmentDialog({
     setCustomEndTime(minutesToTime(endM));
   }
 
+  function handleBarberChange(newBarberId: string) {
+    setBarberId(newBarberId);
+    if (!isOtro && activeService) {
+      const selectedB = barbersList.find((b) => b.id === newBarberId);
+      setServicePrice(getEffectiveServicePrice(activeService.name, selectedB?.name));
+    }
+  }
+
   // When changing service, auto-adjust price and end time
   function handleServiceChange(newServiceId: string) {
     setServiceId(newServiceId);
@@ -236,7 +245,8 @@ export function ManualAppointmentDialog({
     } else {
       const s = servicesList.find((srv) => (srv.dbId && srv.dbId === newServiceId) || srv.id === newServiceId);
       if (s) {
-        setServicePrice(s.price);
+        const selectedB = barbersList.find((b) => b.id === barberId);
+        setServicePrice(getEffectiveServicePrice(s.name, selectedB?.name));
         const startM = timeToMinutes(startTime);
         const endM = (startM + (s.duration || 45)) % 1440;
         setCustomEndTime(minutesToTime(endM));
@@ -407,7 +417,7 @@ export function ManualAppointmentDialog({
                 <select
                   value={barberId}
                   disabled={isBusy}
-                  onChange={(e) => setBarberId(e.target.value)}
+                  onChange={(e) => handleBarberChange(e.target.value)}
                 >
                   {availableBarbers.map((b) => (
                     <option key={b.id} value={b.id}>

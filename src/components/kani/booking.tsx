@@ -2,7 +2,7 @@ import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRe
 import { Check, Clock3, CalendarDays, UserRound, Users, ChevronLeft, ChevronRight, ArrowLeft, CircleAlert, MapPin, Instagram } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { services, barbers, serviceFor, money, bookingEndDateFor, parseDate, isoDate, dateLabel, isBookingDate, type ServiceId, type Barber, type Appointment } from '@/lib/kani-model';
+import { services, barbers, serviceFor, money, bookingEndDateFor, parseDate, isoDate, dateLabel, isBookingDate, getEffectiveServicePrice, barberInstagramHandles, type ServiceId, type Barber, type Appointment } from '@/lib/kani-model';
 import { availabilityStartTimesForServiceDate, eligibleBarbersForAvailabilityStart, readConfiguredServices, readPublicAvailabilityStarts, type ConfiguredService, type PublicAvailabilityStart } from '@/lib/kani-availability';
 import { businessDateToday } from '@/lib/kani-mobile-appointments';
 import { appointmentErrorMessage, createRealAppointment } from '@/lib/kani-appointments';
@@ -333,7 +333,9 @@ export function Booking({
     }
   }, []);
   const depositArs = 5000;
-  const remainingPaymentArs = selected ? Math.max(0, selected.price - depositArs) : 0;
+  const effectiveServicePrice = selected ? getEffectiveServicePrice(selected.id, barber) : 0;
+  const remainingPaymentArs = selected ? Math.max(0, effectiveServicePrice - depositArs) : 0;
+  const hasSpecialPrice = barber === 'Franco';
   const todayValue = businessToday;
   const bookingEndValue = bookingEndDateFor(todayValue);
   const availabilityBarber = barberDeferred ? null : barber;
@@ -723,7 +725,7 @@ export function Booking({
           <div><dt>Servicio</dt><dd>{serviceFor(result.service).name}</dd></div>
           <div><dt>Barbero</dt><dd>{result.barber}</dd></div>
           <div><dt>Cuándo</dt><dd className="capitalize">{dateLabel(result.date)} · {result.time}</dd></div>
-          <div><dt>Duración · total</dt><dd>{serviceFor(result.service).duration} min · {money(serviceFor(result.service).price)}</dd></div>
+          <div><dt>Duración · total</dt><dd>{serviceFor(result.service).duration} min · {money(getEffectiveServicePrice(result.service, result.barber))}</dd></div>
           <div><dt>A nombre de</dt><dd>{result.name}</dd></div>
           {result.notes?.trim() && <div><dt>Observaciones</dt><dd className="max-w-[65%] whitespace-pre-wrap">{result.notes.trim()}</dd></div>}
         </dl>
@@ -863,7 +865,10 @@ export function Booking({
                     <span className={`barber-avatar avatar-${i}`}>{b.charAt(0)}</span>
                     <span className={`booking-option-copy flex-1 ${isV5 ? 'text-left' : 'text-center'}`}>
                       <span className="booking-barber-name block text-lg font-medium">{b}</span>
-                      <span className="booking-barber-handle mt-0.5 block text-sm text-muted-foreground">{({ Lautaro: '@lautarodejesus_', Gonzalo: '@gonzalopierucci', 'Valentín': '@valentincarrizo_' } as Record<Barber, string>)[b]}</span>
+                      <span className="booking-barber-handle mt-0.5 block text-sm text-muted-foreground">{barberInstagramHandles[b]}</span>
+                      {b === 'Franco' && (
+                        <span className="booking-barber-promo mt-1 block text-xs text-gold font-medium">Precio especial con Franco</span>
+                      )}
                     </span>
                     <span className="selection-circle">{barber === b && !barberDeferred && <Check size={12} />}</span>
                   </Button>
@@ -1166,8 +1171,13 @@ export function Booking({
                 <section className={`${isV2 || isFiveSteps ? '' : 'booking-summary-card '}summary-pricing-card`} aria-label="Importes">
                   <dl className="summary-pricing-list flex flex-col gap-1.5 sm:gap-2.5 text-xs sm:text-sm">
                     <div className="summary-pricing-row flex justify-between items-baseline gap-3 sm:gap-4">
-                      <dt className="summary-pricing-label text-muted-foreground">Precio total del servicio</dt>
-                      <dd className="summary-pricing-value font-semibold text-foreground text-right">{selected && money(selected.price)}</dd>
+                      <dt className="summary-pricing-label text-muted-foreground">
+                        Precio total del servicio
+                        {hasSpecialPrice && (
+                          <span className="block text-[11px] text-gold font-medium">Precio especial con Franco</span>
+                        )}
+                      </dt>
+                      <dd className="summary-pricing-value font-semibold text-foreground text-right">{money(effectiveServicePrice)}</dd>
                     </div>
                     <div className="summary-pricing-row flex justify-between items-baseline gap-3 sm:gap-4">
                       <dt className="summary-pricing-label text-muted-foreground">Importe de la seña</dt>

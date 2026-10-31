@@ -3,8 +3,40 @@ export const services = [
   { id: 'corte-barba', name: 'Corte y barba', price: 30000, duration: 60, description: 'Una experiencia completa.', number: '02' },
   { id: 'barba', name: 'Barba', price: 15000, duration: 30, description: 'Los detalles hacen la diferencia.', number: '03' },
 ] as const;
-export const barbers = ['Lautaro', 'Gonzalo', 'Valentín'] as const;
+export const barbers = ['Lautaro', 'Gonzalo', 'Valentín', 'Franco'] as const;
 export type Barber = typeof barbers[number];
+
+export const barberInstagramHandles: Record<Barber, string> = {
+  Lautaro: '@lautarodejesus_',
+  Gonzalo: '@gonzalopierucci',
+  'Valentín': '@valentincarrizo_',
+  Franco: '@franbarber.24',
+};
+
+export const barberInstagramUrls: Record<Barber, string> = {
+  Lautaro: 'https://www.instagram.com/lautarodejesus_/',
+  Gonzalo: 'https://www.instagram.com/gonzalopierucci/',
+  'Valentín': 'https://www.instagram.com/valentincarrizo_/',
+  Franco: 'https://www.instagram.com/franbarber.24/',
+};
+
+export const FRANCO_SPECIAL_PRICES: Record<string, number> = {
+  corte: 15000,
+  'corte-barba': 20000,
+  barba: 5000,
+  Corte: 15000,
+  'Corte y barba': 20000,
+  'Corte + barba': 20000,
+  Barba: 5000,
+};
+
+export function getEffectiveServicePrice(serviceIdOrName: ServiceId | string, barber?: Barber | string | null): number {
+  const standard = services.find(s => s.id === serviceIdOrName || s.name === serviceIdOrName)?.price ?? 25000;
+  if (barber === 'Franco') {
+    return FRANCO_SPECIAL_PRICES[serviceIdOrName] ?? standard;
+  }
+  return standard;
+}
 export type ServiceId = typeof services[number]['id'];
 export type Status = 'Pendiente' | 'Confirmado' | 'Cancelado' | 'Ejecutado' | 'Inasistencia';
 export type Appointment = { id: string; requestNumber?: number; service: ServiceId; barber: Barber; date: string; time: string; name: string; email: string; phone: string; notes?: string; status: Status };
@@ -80,7 +112,17 @@ export const bookingEndDate = bookingEndDateFor(demoToday);
 export const isBookingDate = (date: string, today = demoToday, endDate = bookingEndDate) => date >= today && date <= endDate && parseDate(date).getDay() !== 0;
 export const slotKey = (barber: Barber, date: string, time: string) => `${barber}|${date}|${time}`;
 export function initialAvailability(): Availability {
-  return Object.fromEntries(barbers.map(b => [b, Array.from({ length: 7 }, (_, day) => ({ enabled: day !== 0, start: '10:00', end: '20:00' }))])) as Availability;
+  return Object.fromEntries(
+    barbers.map(b => [
+      b,
+      Array.from({ length: 7 }, (_, day) => {
+        if (b === 'Franco') {
+          return { enabled: day === 6, start: '15:00', end: '20:00' };
+        }
+        return { enabled: day !== 0, start: '10:00', end: '20:00' };
+      }),
+    ])
+  ) as Availability;
 }
 export function initialSlotOverrides(): SlotOverrides {
   return {
@@ -99,7 +141,10 @@ export function availableSlots(service: ServiceId, barber: Barber, date: string,
   const hours = availability[barber][parseDate(date).getDay()];
   if (!hours || !hours.enabled || date < demoToday) return [];
   const duration = serviceFor(service).duration;
-  return bookingStartTimes.filter(startTime => {
+  const possibleStarts = barber === 'Franco'
+    ? ['15:00', '15:45', '16:30', '17:15', '18:00', '18:45', '19:00', '19:15', '19:30']
+    : bookingStartTimes;
+  return possibleStarts.filter(startTime => {
     const start = minutes(startTime);
     if (start < minutes(hours.start) || start + duration > Math.min(1200, minutes(hours.end))) return false;
     if (overrides[slotKey(barber, date, startTime)]?.available === false) return false;

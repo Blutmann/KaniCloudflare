@@ -26,15 +26,29 @@ const AVAILABILITY_STEP_MINUTES = 5;
 
 export const FIXED_BOOKING_START_TIMES = bookingStartTimes;
 
+export const FRANCO_SATURDAY_START_TIMES = [
+  '15:00', '15:45', '16:30', '17:15', '18:00', '18:45', '19:00', '19:15', '19:30'
+];
+
 export function isFixedBookingStart(value: string) {
   return FIXED_BOOKING_START_TIMES.includes(value.slice(0, 5));
 }
 
-export function isAllowedPublicBookingStart(slotDate: string, startTime: string, isException = false) {
-  if (isFixedBookingStart(startTime)) return true;
+export function isAllowedPublicBookingStart(
+  slotDate: string,
+  startTime: string,
+  isException = false,
+  barber?: Barber | null,
+) {
+  const shortTime = startTime.slice(0, 5);
+  if (isFixedBookingStart(shortTime)) return true;
+  const isSaturday = parseDate(slotDate).getDay() === 6;
+  if ((barber === 'Franco' || !barber) && isSaturday && FRANCO_SATURDAY_START_TIMES.includes(shortTime)) {
+    return true;
+  }
   if (!isException) return false;
   if (parseDate(slotDate).getDay() === 0) return true;
-  const startMinutes = minutes(startTime.slice(0, 5));
+  const startMinutes = minutes(shortTime);
   return startMinutes < 10 * 60 || startMinutes > 19 * 60;
 }
 
@@ -140,7 +154,7 @@ export function availabilityStartTimesForServiceDate(
   return [...new Set(starts
     .filter(start => start.slot_date === date)
     .filter(start => !barber || start.barber_name === barber)
-    .filter(start => isAllowedPublicBookingStart(start.slot_date, start.start_time, start.is_exception))
+    .filter(start => isAllowedPublicBookingStart(start.slot_date, start.start_time, start.is_exception, start.barber_name))
     .filter(start => start.compatible_services.includes(serviceName) || ((serviceName === 'Corte y barba' || serviceName === 'Corte + barba') && (start.compatible_services.includes('Corte + barba') || start.compatible_services.includes('Corte y barba'))))
     .filter(start => slotCanStillBeBooked(start.slot_date, start.start_time, now))
     .map(start => start.start_time.slice(0, 5)))].sort();
@@ -155,7 +169,7 @@ export function eligibleBarbersForAvailabilityStart(
 ) {
   return [...new Set(starts
     .filter(start => start.slot_date === date && start.start_time.slice(0, 5) === time)
-    .filter(start => isAllowedPublicBookingStart(start.slot_date, start.start_time, start.is_exception))
+    .filter(start => isAllowedPublicBookingStart(start.slot_date, start.start_time, start.is_exception, start.barber_name))
     .filter(start => start.compatible_services.includes(serviceName) || ((serviceName === 'Corte y barba' || serviceName === 'Corte + barba') && (start.compatible_services.includes('Corte + barba') || start.compatible_services.includes('Corte y barba'))))
     .filter(start => slotCanStillBeBooked(start.slot_date, start.start_time, now))
     .map(start => start.barber_name))];
@@ -231,7 +245,11 @@ export function availableTimesForServiceDate(
       const m = minutes(startTime);
       return isSunday || m < 10 * 60 || m > 19 * 60;
     });
-  const candidateStarts = [...new Set([...FIXED_BOOKING_START_TIMES, ...extraordinaryStarts])].sort();
+  const isSaturday = parseDate(date).getDay() === 6;
+  const barberStarts = (barber === 'Franco' || (!barber && slots.some(s => s.barber_name === 'Franco'))) && isSaturday
+    ? FRANCO_SATURDAY_START_TIMES
+    : [];
+  const candidateStarts = [...new Set([...FIXED_BOOKING_START_TIMES, ...extraordinaryStarts, ...barberStarts])].sort();
   const times: string[] = [];
   for (const startTime of candidateStarts) {
     const start = minutes(startTime);
