@@ -775,7 +775,7 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
   border: 1px solid var(--v2-line, var(--border));
   border-radius: var(--radius-capsule, 9999px);
   background: color-mix(in srgb, var(--v2-surface-alt, #fff) 50%, var(--v2-surface));
-  margin-bottom: 14px;
+  margin-bottom: 16px;
   max-width: 260px;
   width: 100%;
   box-sizing: border-box;
@@ -3453,13 +3453,13 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
 
 /* 2. Pagos — Formulario compacto 50/50 y Cobros registrados */
 .v2-payment-compact-form {
-  margin-top: 14px;
+  margin-top: 16px;
   width: 100%;
 }
 .v2-payment-grid {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
   width: 100%;
 }
 .v2-payment-row {
@@ -3478,6 +3478,7 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
   min-height: 44px;
   height: 44px;
   width: 100%;
+  border-radius: var(--radius-control);
   box-sizing: border-box;
 }
 .v2-payment-toggle-btn {
@@ -3490,7 +3491,7 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
   gap: 8px;
   font-size: 13px;
   font-weight: 500;
-  border-radius: var(--radius-interactive);
+  border-radius: var(--radius-control);
   box-sizing: border-box;
 }
 .v2-payment-toggle-btn.active {
@@ -3507,7 +3508,7 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
   gap: 8px;
   padding: 0 12px;
   border: 1px solid var(--v2-line, var(--border));
-  border-radius: var(--radius-interactive);
+  border-radius: var(--radius-control);
   background: color-mix(in srgb, var(--foreground) 3%, transparent);
   font-size: 13px;
   color: var(--muted-foreground);
@@ -3522,37 +3523,39 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
 .v2-payment-total-box {
   min-height: 44px;
   height: 44px;
-  padding: 4px 14px;
+  padding: 0 14px;
   border: 1px solid var(--v2-line, var(--border));
-  border-radius: var(--radius-interactive);
+  border-radius: var(--radius-control);
   background: var(--v2-surface);
   display: flex;
-  flex-direction: column;
-  justify-content: center;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
   box-sizing: border-box;
 }
 .v2-total-box-label {
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  font-size: 13px;
+  font-weight: 500;
   color: var(--muted-foreground);
-  line-height: 1.1;
+  line-height: 1;
 }
 .v2-total-box-amount-wrap {
   display: flex;
   align-items: baseline;
   gap: 6px;
+  margin-left: auto;
 }
 .v2-total-box-amount {
-  font-size: 16px;
-  font-weight: 700;
+  font-size: 15px;
+  font-weight: 600;
   color: var(--foreground);
   font-variant-numeric: tabular-nums;
-  line-height: 1.2;
+  line-height: 1;
 }
 .v2-total-box-breakdown {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--muted-foreground);
+  line-height: 1;
 }
 .v2-payment-submit-btn {
   min-height: 44px;
@@ -3563,8 +3566,8 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
   justify-content: center;
   gap: 8px;
   font-size: 14px;
-  font-weight: 600;
-  border-radius: var(--radius-interactive);
+  font-weight: 400;
+  border-radius: var(--radius-control);
   box-sizing: border-box;
 }
 
@@ -3981,7 +3984,7 @@ html[data-theme="dark"] .v2-nav .admin-section-nav-link.is-active:active {
   background: var(--gold) !important;
   border-color: var(--gold) !important;
   color: #121212 !important;
-  font-weight: 600 !important;
+  font-weight: 400 !important;
 }
 
 html[data-theme="dark"] .v2-nav .admin-section-nav-link.is-active svg {
@@ -3996,11 +3999,12 @@ html[data-theme="dark"] :is(.v2-shell, .v2-dialog) .v2-client-add-btn:not(:disab
 html[data-theme="dark"] :is(.v2-shell, .v2-dialog) .v2-payment-submit-btn:not(:disabled),
 html[data-theme="dark"] .v2-shell .v2-cobrar-btn:not(:disabled),
 html[data-theme="dark"] .v2-shell .v2-op-buttons a.v2-action-btn[href*="/admin-v2/pagos"]:not(:disabled),
+html[data-theme="dark"] .v2-shell .v2-op-buttons a.v2-action-btn[href*="/panel-administracion/pagos"]:not(:disabled),
 html[data-theme="dark"] .admin-schedule-dialog .action-positive:not(:disabled) {
   background: var(--gold) !important;
   border-color: var(--gold) !important;
   color: #121212 !important;
-  font-weight: 600 !important;
+  font-weight: 400 !important;
 }
 
 html[data-theme="dark"] :is(.v2-shell, .v2-dialog) .v2-primary:not(:disabled) svg,
@@ -4019,6 +4023,7 @@ html[data-theme="dark"] :is(.v2-shell, .v2-dialog) .v2-client-add-btn:hover:not(
 html[data-theme="dark"] :is(.v2-shell, .v2-dialog) .v2-payment-submit-btn:hover:not(:disabled),
 html[data-theme="dark"] .v2-shell .v2-cobrar-btn:hover:not(:disabled),
 html[data-theme="dark"] .v2-shell .v2-op-buttons a.v2-action-btn[href*="/admin-v2/pagos"]:hover:not(:disabled),
+html[data-theme="dark"] .v2-shell .v2-op-buttons a.v2-action-btn[href*="/panel-administracion/pagos"]:hover:not(:disabled),
 html[data-theme="dark"] .admin-schedule-dialog .action-positive:hover:not(:disabled) {
   background: #cbb075 !important;
   border-color: #cbb075 !important;
@@ -4032,6 +4037,7 @@ html[data-theme="dark"] :is(.v2-shell, .v2-dialog) .v2-client-add-btn:active:not
 html[data-theme="dark"] :is(.v2-shell, .v2-dialog) .v2-payment-submit-btn:active:not(:disabled),
 html[data-theme="dark"] .v2-shell .v2-cobrar-btn:active:not(:disabled),
 html[data-theme="dark"] .v2-shell .v2-op-buttons a.v2-action-btn[href*="/admin-v2/pagos"]:active:not(:disabled),
+html[data-theme="dark"] .v2-shell .v2-op-buttons a.v2-action-btn[href*="/panel-administracion/pagos"]:active:not(:disabled),
 html[data-theme="dark"] .admin-schedule-dialog .action-positive:active:not(:disabled) {
   background: #a88849 !important;
   border-color: #a88849 !important;
@@ -4068,7 +4074,7 @@ html[data-theme="dark"] .v2-segmented button[aria-pressed="true"] {
   background: var(--gold) !important;
   border-color: var(--gold) !important;
   color: #121212 !important;
-  font-weight: 600 !important;
+  font-weight: 400 !important;
 }
 
 html[data-theme="dark"] .v2-payment-toggle-btn.active,
@@ -4076,7 +4082,7 @@ html[data-theme="dark"] .v2-payment-action-btn.active {
   background: var(--gold) !important;
   border-color: var(--gold) !important;
   color: #121212 !important;
-  font-weight: 600 !important;
+  font-weight: 400 !important;
 }
 
 html[data-theme="dark"] .v2-payment-toggle-btn.active svg,

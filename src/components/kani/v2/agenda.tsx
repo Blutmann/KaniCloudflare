@@ -79,7 +79,7 @@ export function V2Home() {
               <p>No hay próximos turnos pendientes o confirmados.</p>
             </>
           )}
-          <Link className="v2-primary" to="/admin-v2/turnos">
+          <Link className="v2-primary" to="/panel-administracion/turnos">
             Ver agenda <ArrowRight size={17} />
           </Link>
         </article>
@@ -90,7 +90,7 @@ export function V2Home() {
             {nextSpace ? dateLabel(nextSpace.slot_date) : "En los próximos 7 días"}
           </p>
           {nextSpace && <p>{staff.barbers.find((b) => b.id === nextSpace.barber_id)?.name}</p>}
-          <Link className="v2-secondary" to="/admin-v2/horarios">
+          <Link className="v2-secondary" to="/panel-administracion/horarios">
             Ver horarios
           </Link>
         </article>
@@ -111,7 +111,7 @@ export function V2Home() {
               value={money(paymentSummary(payments).collected)}
             />
           </div>
-          <Link className="v2-text-link" to="/admin-v2/pagos">
+          <Link className="v2-text-link" to="/panel-administracion/pagos">
             Registrar un cobro <ArrowRight size={16} />
           </Link>
         </div>
@@ -119,7 +119,7 @@ export function V2Home() {
       <section className="v2-panel">
         <div className="v2-section-title">
           <h2>El equipo hoy</h2>
-          <Link to="/admin-v2/horarios">
+          <Link to="/panel-administracion/horarios">
             Organizar horarios <ArrowRight size={16} />
           </Link>
         </div>
@@ -160,7 +160,7 @@ export function V2Home() {
               : "No encontramos próximos espacios habilitados en los siguientes 7 días. Revisá la jornada en Horarios."}
           </p>
         </div>
-        <Link to="/admin-v2/horarios">Ver disponibilidad</Link>
+        <Link to="/panel-administracion/horarios">Ver disponibilidad</Link>
       </div>
     </main>
   );
@@ -551,7 +551,7 @@ export function V2Appointments() {
                     <Link
                       key="cobrar"
                       className="v2-secondary v2-action-btn v2-cobrar-btn"
-                      to="/admin-v2/pagos"
+                      to="/panel-administracion/pagos"
                       search={{ turno: a.id }}
                     >
                       Cobrar

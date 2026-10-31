@@ -3470,7 +3470,7 @@ html[data-theme='dark'] .admin-section-nav-link.is-active:active {
   background: var(--gold) !important;
   border-color: var(--gold) !important;
   color: #121212 !important;
-  font-weight: 600 !important;
+  font-weight: 400 !important;
 }
 
 html[data-theme='dark'] .admin-section-nav-link.is-active svg {

@@ -62,7 +62,7 @@ function StudioPage() {
         {/* 2. Horarios */}
         <Link
           className="studio-info-card studio-info-link"
-          to="/reservar"
+          to="/reservar-turno"
           aria-label="Solicitar un turno en Kani Barber Studio"
         >
           <div className="studio-card-top">

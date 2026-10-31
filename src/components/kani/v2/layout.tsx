@@ -18,12 +18,12 @@ import { V2DataProvider, useV2 } from "./data";
 import "./v2.css";
 
 const sections = [
-  { to: "/admin-v2/inicio", title: "Inicio", icon: Home },
-  { to: "/admin-v2/turnos", title: "Turnos", icon: CalendarDays },
-  { to: "/admin-v2/horarios", title: "Horarios", icon: Clock3 },
-  { to: "/admin-v2/pagos", title: "Pagos", icon: CreditCard },
-  { to: "/admin-v2/clientes", title: "Clientes", icon: Users },
-  { to: "/admin-v2/datos", title: "Datos", icon: ChartNoAxesCombined },
+  { to: "/panel-administracion/inicio", title: "Inicio", icon: Home },
+  { to: "/panel-administracion/turnos", title: "Turnos", icon: CalendarDays },
+  { to: "/panel-administracion/horarios", title: "Horarios", icon: Clock3 },
+  { to: "/panel-administracion/pagos", title: "Pagos", icon: CreditCard },
+  { to: "/panel-administracion/clientes", title: "Clientes", icon: Users },
+  { to: "/panel-administracion/datos", title: "Datos", icon: ChartNoAxesCombined },
 ] as const;
 
 export function V2Layout() {
@@ -88,11 +88,17 @@ export function V2Layout() {
       <main className="v2-access">
         <h1>Administración</h1>
         <p role="alert">{state.error}</p>
-        <a href="/admin">Volver al panel actual</a>
+        <a href="/panel-administracion">Volver al panel actual</a>
       </main>
     );
   if (!allowed || !state.staff)
-    return <AdminAccess onAuthenticated={() => window.location.reload()} />;
+    return (
+      <AdminAccess
+        onAuthenticated={() => {
+          window.location.assign("/panel-administracion");
+        }}
+      />
+    );
   return (
     <AdminStaffProvider key={state.staff.user.id} staff={state.staff}>
       <V2DataProvider>

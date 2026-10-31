@@ -14,6 +14,7 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AdminV2RouteImport } from './routes/admin-v2'
 import { Route as CaseStudyRouteImport } from './routes/case-study'
 import { Route as EstudioRouteImport } from './routes/estudio'
+import { Route as PanelAdministracionRouteImport } from './routes/panel-administracion'
 import { Route as ReservaV2RouteImport } from './routes/reserva-v2'
 import { Route as ReservaV3RouteImport } from './routes/reserva-v3'
 import { Route as ReservaV4RouteImport } from './routes/reserva-v4'
@@ -39,6 +40,13 @@ import { Route as AdminTurnosRouteImport } from './routes/admin.turnos'
 import { Route as PagoErrorRouteImport } from './routes/pago.error'
 import { Route as PagoExitoRouteImport } from './routes/pago.exito'
 import { Route as PagoPendienteRouteImport } from './routes/pago.pendiente'
+import { Route as PanelAdministracionIndexRouteImport } from './routes/panel-administracion.index'
+import { Route as PanelAdministracionClientesRouteImport } from './routes/panel-administracion.clientes'
+import { Route as PanelAdministracionDatosRouteImport } from './routes/panel-administracion.datos'
+import { Route as PanelAdministracionHorariosRouteImport } from './routes/panel-administracion.horarios'
+import { Route as PanelAdministracionInicioRouteImport } from './routes/panel-administracion.inicio'
+import { Route as PanelAdministracionPagosRouteImport } from './routes/panel-administracion.pagos'
+import { Route as PanelAdministracionTurnosRouteImport } from './routes/panel-administracion.turnos'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -63,6 +71,11 @@ const CaseStudyRoute = CaseStudyRouteImport.update({
 const EstudioRoute = EstudioRouteImport.update({
   id: '/estudio',
   path: '/estudio',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PanelAdministracionRoute = PanelAdministracionRouteImport.update({
+  id: '/panel-administracion',
+  path: '/panel-administracion',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ReservaV2Route = ReservaV2RouteImport.update({
@@ -191,6 +204,48 @@ const PagoPendienteRoute = PagoPendienteRouteImport.update({
   path: '/pago/pendiente',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PanelAdministracionIndexRoute =
+  PanelAdministracionIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => PanelAdministracionRoute,
+  } as any)
+const PanelAdministracionClientesRoute =
+  PanelAdministracionClientesRouteImport.update({
+    id: '/clientes',
+    path: '/clientes',
+    getParentRoute: () => PanelAdministracionRoute,
+  } as any)
+const PanelAdministracionDatosRoute =
+  PanelAdministracionDatosRouteImport.update({
+    id: '/datos',
+    path: '/datos',
+    getParentRoute: () => PanelAdministracionRoute,
+  } as any)
+const PanelAdministracionHorariosRoute =
+  PanelAdministracionHorariosRouteImport.update({
+    id: '/horarios',
+    path: '/horarios',
+    getParentRoute: () => PanelAdministracionRoute,
+  } as any)
+const PanelAdministracionInicioRoute =
+  PanelAdministracionInicioRouteImport.update({
+    id: '/inicio',
+    path: '/inicio',
+    getParentRoute: () => PanelAdministracionRoute,
+  } as any)
+const PanelAdministracionPagosRoute =
+  PanelAdministracionPagosRouteImport.update({
+    id: '/pagos',
+    path: '/pagos',
+    getParentRoute: () => PanelAdministracionRoute,
+  } as any)
+const PanelAdministracionTurnosRoute =
+  PanelAdministracionTurnosRouteImport.update({
+    id: '/turnos',
+    path: '/turnos',
+    getParentRoute: () => PanelAdministracionRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -198,6 +253,7 @@ export interface FileRoutesByFullPath {
   '/admin-v2': typeof AdminV2RouteWithChildren
   '/case-study': typeof CaseStudyRoute
   '/estudio': typeof EstudioRoute
+  '/panel-administracion': typeof PanelAdministracionRouteWithChildren
   '/reserva-v2': typeof ReservaV2Route
   '/reserva-v3': typeof ReservaV3Route
   '/reserva-v4': typeof ReservaV4Route
@@ -221,8 +277,15 @@ export interface FileRoutesByFullPath {
   '/pago/error': typeof PagoErrorRoute
   '/pago/exito': typeof PagoExitoRoute
   '/pago/pendiente': typeof PagoPendienteRoute
+  '/panel-administracion/clientes': typeof PanelAdministracionClientesRoute
+  '/panel-administracion/datos': typeof PanelAdministracionDatosRoute
+  '/panel-administracion/horarios': typeof PanelAdministracionHorariosRoute
+  '/panel-administracion/inicio': typeof PanelAdministracionInicioRoute
+  '/panel-administracion/pagos': typeof PanelAdministracionPagosRoute
+  '/panel-administracion/turnos': typeof PanelAdministracionTurnosRoute
   '/admin-v2/': typeof AdminV2IndexRoute
   '/admin/': typeof AdminIndexRoute
+  '/panel-administracion/': typeof PanelAdministracionIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -251,8 +314,15 @@ export interface FileRoutesByTo {
   '/pago/error': typeof PagoErrorRoute
   '/pago/exito': typeof PagoExitoRoute
   '/pago/pendiente': typeof PagoPendienteRoute
+  '/panel-administracion/clientes': typeof PanelAdministracionClientesRoute
+  '/panel-administracion/datos': typeof PanelAdministracionDatosRoute
+  '/panel-administracion/horarios': typeof PanelAdministracionHorariosRoute
+  '/panel-administracion/inicio': typeof PanelAdministracionInicioRoute
+  '/panel-administracion/pagos': typeof PanelAdministracionPagosRoute
+  '/panel-administracion/turnos': typeof PanelAdministracionTurnosRoute
   '/admin-v2': typeof AdminV2IndexRoute
   '/admin': typeof AdminIndexRoute
+  '/panel-administracion': typeof PanelAdministracionIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -261,6 +331,7 @@ export interface FileRoutesById {
   '/admin-v2': typeof AdminV2RouteWithChildren
   '/case-study': typeof CaseStudyRoute
   '/estudio': typeof EstudioRoute
+  '/panel-administracion': typeof PanelAdministracionRouteWithChildren
   '/reserva-v2': typeof ReservaV2Route
   '/reserva-v3': typeof ReservaV3Route
   '/reserva-v4': typeof ReservaV4Route
@@ -284,8 +355,15 @@ export interface FileRoutesById {
   '/pago/error': typeof PagoErrorRoute
   '/pago/exito': typeof PagoExitoRoute
   '/pago/pendiente': typeof PagoPendienteRoute
+  '/panel-administracion/clientes': typeof PanelAdministracionClientesRoute
+  '/panel-administracion/datos': typeof PanelAdministracionDatosRoute
+  '/panel-administracion/horarios': typeof PanelAdministracionHorariosRoute
+  '/panel-administracion/inicio': typeof PanelAdministracionInicioRoute
+  '/panel-administracion/pagos': typeof PanelAdministracionPagosRoute
+  '/panel-administracion/turnos': typeof PanelAdministracionTurnosRoute
   '/admin-v2/': typeof AdminV2IndexRoute
   '/admin/': typeof AdminIndexRoute
+  '/panel-administracion/': typeof PanelAdministracionIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -295,6 +373,7 @@ export interface FileRouteTypes {
     | '/admin-v2'
     | '/case-study'
     | '/estudio'
+    | '/panel-administracion'
     | '/reserva-v2'
     | '/reserva-v3'
     | '/reserva-v4'
@@ -318,8 +397,15 @@ export interface FileRouteTypes {
     | '/pago/error'
     | '/pago/exito'
     | '/pago/pendiente'
+    | '/panel-administracion/clientes'
+    | '/panel-administracion/datos'
+    | '/panel-administracion/horarios'
+    | '/panel-administracion/inicio'
+    | '/panel-administracion/pagos'
+    | '/panel-administracion/turnos'
     | '/admin-v2/'
     | '/admin/'
+    | '/panel-administracion/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -348,8 +434,15 @@ export interface FileRouteTypes {
     | '/pago/error'
     | '/pago/exito'
     | '/pago/pendiente'
+    | '/panel-administracion/clientes'
+    | '/panel-administracion/datos'
+    | '/panel-administracion/horarios'
+    | '/panel-administracion/inicio'
+    | '/panel-administracion/pagos'
+    | '/panel-administracion/turnos'
     | '/admin-v2'
     | '/admin'
+    | '/panel-administracion'
   id:
     | '__root__'
     | '/'
@@ -357,6 +450,7 @@ export interface FileRouteTypes {
     | '/admin-v2'
     | '/case-study'
     | '/estudio'
+    | '/panel-administracion'
     | '/reserva-v2'
     | '/reserva-v3'
     | '/reserva-v4'
@@ -380,8 +474,15 @@ export interface FileRouteTypes {
     | '/pago/error'
     | '/pago/exito'
     | '/pago/pendiente'
+    | '/panel-administracion/clientes'
+    | '/panel-administracion/datos'
+    | '/panel-administracion/horarios'
+    | '/panel-administracion/inicio'
+    | '/panel-administracion/pagos'
+    | '/panel-administracion/turnos'
     | '/admin-v2/'
     | '/admin/'
+    | '/panel-administracion/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -390,6 +491,7 @@ export interface RootRouteChildren {
   AdminV2Route: typeof AdminV2RouteWithChildren
   CaseStudyRoute: typeof CaseStudyRoute
   EstudioRoute: typeof EstudioRoute
+  PanelAdministracionRoute: typeof PanelAdministracionRouteWithChildren
   ReservaV2Route: typeof ReservaV2Route
   ReservaV3Route: typeof ReservaV3Route
   ReservaV4Route: typeof ReservaV4Route
@@ -437,6 +539,13 @@ declare module '@tanstack/react-router' {
       path: '/estudio'
       fullPath: '/estudio'
       preLoaderRoute: typeof EstudioRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/panel-administracion': {
+      id: '/panel-administracion'
+      path: '/panel-administracion'
+      fullPath: '/panel-administracion'
+      preLoaderRoute: typeof PanelAdministracionRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reserva-v2': {
@@ -614,6 +723,55 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PagoPendienteRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/panel-administracion/': {
+      id: '/panel-administracion/'
+      path: '/'
+      fullPath: '/panel-administracion/'
+      preLoaderRoute: typeof PanelAdministracionIndexRouteImport
+      parentRoute: typeof PanelAdministracionRoute
+    }
+    '/panel-administracion/clientes': {
+      id: '/panel-administracion/clientes'
+      path: '/clientes'
+      fullPath: '/panel-administracion/clientes'
+      preLoaderRoute: typeof PanelAdministracionClientesRouteImport
+      parentRoute: typeof PanelAdministracionRoute
+    }
+    '/panel-administracion/datos': {
+      id: '/panel-administracion/datos'
+      path: '/datos'
+      fullPath: '/panel-administracion/datos'
+      preLoaderRoute: typeof PanelAdministracionDatosRouteImport
+      parentRoute: typeof PanelAdministracionRoute
+    }
+    '/panel-administracion/horarios': {
+      id: '/panel-administracion/horarios'
+      path: '/horarios'
+      fullPath: '/panel-administracion/horarios'
+      preLoaderRoute: typeof PanelAdministracionHorariosRouteImport
+      parentRoute: typeof PanelAdministracionRoute
+    }
+    '/panel-administracion/inicio': {
+      id: '/panel-administracion/inicio'
+      path: '/inicio'
+      fullPath: '/panel-administracion/inicio'
+      preLoaderRoute: typeof PanelAdministracionInicioRouteImport
+      parentRoute: typeof PanelAdministracionRoute
+    }
+    '/panel-administracion/pagos': {
+      id: '/panel-administracion/pagos'
+      path: '/pagos'
+      fullPath: '/panel-administracion/pagos'
+      preLoaderRoute: typeof PanelAdministracionPagosRouteImport
+      parentRoute: typeof PanelAdministracionRoute
+    }
+    '/panel-administracion/turnos': {
+      id: '/panel-administracion/turnos'
+      path: '/turnos'
+      fullPath: '/panel-administracion/turnos'
+      preLoaderRoute: typeof PanelAdministracionTurnosRouteImport
+      parentRoute: typeof PanelAdministracionRoute
+    }
   }
 }
 
@@ -664,12 +822,36 @@ const AdminV2RouteChildren: AdminV2RouteChildren = {
 const AdminV2RouteWithChildren =
   AdminV2Route._addFileChildren(AdminV2RouteChildren)
 
+interface PanelAdministracionRouteChildren {
+  PanelAdministracionClientesRoute: typeof PanelAdministracionClientesRoute
+  PanelAdministracionDatosRoute: typeof PanelAdministracionDatosRoute
+  PanelAdministracionHorariosRoute: typeof PanelAdministracionHorariosRoute
+  PanelAdministracionInicioRoute: typeof PanelAdministracionInicioRoute
+  PanelAdministracionPagosRoute: typeof PanelAdministracionPagosRoute
+  PanelAdministracionTurnosRoute: typeof PanelAdministracionTurnosRoute
+  PanelAdministracionIndexRoute: typeof PanelAdministracionIndexRoute
+}
+
+const PanelAdministracionRouteChildren: PanelAdministracionRouteChildren = {
+  PanelAdministracionClientesRoute: PanelAdministracionClientesRoute,
+  PanelAdministracionDatosRoute: PanelAdministracionDatosRoute,
+  PanelAdministracionHorariosRoute: PanelAdministracionHorariosRoute,
+  PanelAdministracionInicioRoute: PanelAdministracionInicioRoute,
+  PanelAdministracionPagosRoute: PanelAdministracionPagosRoute,
+  PanelAdministracionTurnosRoute: PanelAdministracionTurnosRoute,
+  PanelAdministracionIndexRoute: PanelAdministracionIndexRoute,
+}
+
+const PanelAdministracionRouteWithChildren =
+  PanelAdministracionRoute._addFileChildren(PanelAdministracionRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
   AdminV2Route: AdminV2RouteWithChildren,
   CaseStudyRoute: CaseStudyRoute,
   EstudioRoute: EstudioRoute,
+  PanelAdministracionRoute: PanelAdministracionRouteWithChildren,
   ReservaV2Route: ReservaV2Route,
   ReservaV3Route: ReservaV3Route,
   ReservaV4Route: ReservaV4Route,

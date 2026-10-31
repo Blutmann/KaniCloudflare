@@ -1,3 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { V2Clients } from "@/components/kani/v2/clients";
-export const Route = createFileRoute("/admin-v2/clientes")({ component: V2Clients });
+import { createFileRoute, redirect, Navigate } from "@tanstack/react-router";
+
+export const Route = createFileRoute("/admin-v2/clientes")({
+  beforeLoad: ({ search }) => {
+    throw redirect({ to: "/panel-administracion/clientes", search });
+  },
+  component: () => <Navigate to="/panel-administracion/clientes" />,
+});

@@ -95,11 +95,10 @@ describe("Admin V2 — Rediseño de Registrar Pago Mobile y Desktop", () => {
     expect(screen.getByRole("button", { name: /Quitar descuento/i })).toBeDefined();
   });
 
-  it("displays clear economic hierarchy in summary block", () => {
+  it("displays compact horizontal presentation Importe: $25.000", () => {
     render(<V2Payments />);
-    // Initial summary: base price $25.000, total $25.000
-    expect(screen.getByText("A cobrar ahora")).toBeDefined();
-    // Estado A: sin descuento ni seña previa, se muestra únicamente una cifra para "A cobrar ahora"
+    // Compact summary: label "Importe:" and amount $25.000
+    expect(screen.getByText(/Importe:/i)).toBeDefined();
     expect(screen.getAllByText("$25.000").length).toBe(1);
 
     // Add discount
@@ -107,8 +106,8 @@ describe("Admin V2 — Rediseño de Registrar Pago Mobile y Desktop", () => {
     const discountInput = screen.getByLabelText(/Descuento en pesos/i);
     fireEvent.change(discountInput, { target: { value: "3000" } });
 
-    // Now discount row is rendered and total updates
-    expect(screen.getByText("- $3.000")).toBeDefined();
+    // Now discount badge is rendered and total updates
+    expect(screen.getByText(/Desc: -\$3\.000/)).toBeDefined();
     expect(screen.getByText("$22.000")).toBeDefined();
   });
 
@@ -117,9 +116,8 @@ describe("Admin V2 — Rediseño de Registrar Pago Mobile y Desktop", () => {
     fireEvent.click(screen.getByRole("button", { name: "Con turno" }));
     fireEvent.change(screen.getByLabelText("Turno"), { target: { value: "a1" } });
 
-    // Seña is displayed as deducted
-    expect(screen.getByText("Seña abonada")).toBeDefined();
-    expect(screen.getByText("- $5.000")).toBeDefined();
+    // Seña is displayed as compact deduction badge
+    expect(screen.getByText(/Seña: -\$5\.000/)).toBeDefined();
 
     // Total = $25.000 - $5.000 = $20.000
     expect(screen.getByText("$20.000")).toBeDefined();

@@ -78,7 +78,7 @@ export function ThemeToggle() {
 
 export function SiteHeader() {
   const path = useRouterState({ select: s => s.location.pathname });
-  const admin = path.startsWith('/admin');
+  const admin = path.startsWith('/admin') || path.startsWith('/panel-administracion');
   const { mobileMenuOpen: menuOpen, setMobileMenuOpen: onMenuOpenChange } = useKani();
   const [staff, setStaff] = useState<AuthenticatedStaff | null>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
@@ -153,7 +153,7 @@ export function SiteHeader() {
   const mobileMenu = menuOpen ? (
     <nav className="mobile-menu" id="kani-main-menu" aria-label="Menú principal">
       {/* 1. Solicitar turno — Todos */}
-      <Link to="/reservar" onClick={continueBooking}><ArrowUpRight />Solicitar turno</Link>
+      <Link to={path.includes('mercadopago') ? '/reservar-turno-mercadopago' : '/reservar-turno'} onClick={continueBooking}><ArrowUpRight />Solicitar turno</Link>
       {/* 2. Contacto — Todos */}
       <Link to="/estudio" onClick={closeMenu}><Building2 />Contacto</Link>
       {/* 3. Ubicación — Todos */}
@@ -162,7 +162,7 @@ export function SiteHeader() {
       <a href="https://www.instagram.com/kanibarberstudio/" target="_blank" rel="noreferrer" onClick={closeMenu}><Instagram />Instagram</a>
       {/* 5. Panel de administración — ADMIN y Barbero */}
       {staff && (staff.profile.role === 'ADMIN' || staff.profile.role === 'BARBER') && (
-        <Link to="/admin" onClick={closeMenu}><CalendarClock />Panel de administración</Link>
+        <Link to="/panel-administracion" onClick={closeMenu}><CalendarClock />Panel de administración</Link>
       )}
       {/* 6. Panel de mantenimiento — Solo ADMIN */}
       {staff?.profile.role === 'ADMIN' && (
@@ -180,14 +180,18 @@ export function SiteHeader() {
             className="mobile-menu-signout"
             onClick={() => {
               closeMenu();
-              void signOut().then(() => setStaff(null));
+              const isMp = path.includes('mercadopago');
+              void signOut().then(() => {
+                setStaff(null);
+                void navigate({ to: isMp ? '/reservar-turno-mercadopago' : '/reservar-turno' });
+              });
             }}
           >
             <LogOut />Cerrar sesión
           </button>
         </div>
       ) : (
-        <Link to="/admin" onClick={closeMenu}><LogIn />Iniciar sesión</Link>
+        <Link to="/panel-administracion" onClick={closeMenu}><LogIn />Iniciar sesión</Link>
       )}
     </nav>
   ) : null;

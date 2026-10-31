@@ -33,7 +33,7 @@ export function V2Payments() {
   const staff = useAdminStaff();
   const isAdmin = staff.profile.role === "ADMIN";
   const today = businessDateToday();
-  const search = useSearch({ from: "/admin-v2/pagos" });
+  const search = useSearch({ strict: false }) as { turno?: string };
   const [origin, setOrigin] = useState<"appointment" | "walk_in">(
     search.turno ? "appointment" : "walk_in",
   );
@@ -507,7 +507,7 @@ export function V2Payments() {
                 {/* Fila 4: A cobrar ahora | Registrar cobro */}
                 <div className="v2-payment-row v2-payment-row-final">
                   <div className="v2-payment-total-box">
-                    <span className="v2-total-box-label">A cobrar ahora</span>
+                    <span className="v2-total-box-label">Importe:</span>
                     <div className="v2-total-box-amount-wrap">
                       <strong className="v2-total-box-amount">{money(total)}</strong>
                       {(discount > 0 || deposit > 0) && (

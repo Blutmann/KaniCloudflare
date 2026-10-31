@@ -35,7 +35,7 @@ describe('Kani Barber Studio - Menú y Autenticación', () => {
 
     // 1. Solicitar turno — Todos
     expect(code).toContain('Solicitar turno');
-    expect(code).toMatch(/<Link to="\/reservar"[^>]*>[^<]*<ArrowUpRight \/>\s*Solicitar turno\s*<\/Link>/);
+    expect(code).toMatch(/<Link to=\{path\.includes\('mercadopago'\) \? '\/reservar-turno-mercadopago' : '\/reservar-turno'\}[^>]*>[^<]*<ArrowUpRight \/>\s*Solicitar turno\s*<\/Link>|<Link to="\/reservar"[^>]*>[^<]*<ArrowUpRight \/>\s*Solicitar turno\s*<\/Link>/);
 
     // 2. Contacto — Todos
     expect(code).toContain('Contacto');
@@ -49,7 +49,7 @@ describe('Kani Barber Studio - Menú y Autenticación', () => {
 
     // 5. Panel de administración — ADMIN y Barbero
     expect(code).toMatch(/staff && \(staff\.profile\.role === 'ADMIN' \|\| staff\.profile\.role === 'BARBER'\)/);
-    expect(code).toMatch(/<Link to="\/admin"[^>]*>[^<]*<CalendarClock \/>\s*Panel de administración\s*<\/Link>/);
+    expect(code).toMatch(/<Link to="(\/admin|\/panel-administracion)"[^>]*>[^<]*<CalendarClock \/>\s*Panel de administración\s*<\/Link>/);
 
     // 6. Panel de mantenimiento — Solo ADMIN
     expect(code).toMatch(/staff\?\.profile\.role === 'ADMIN' && \(\s*<Link to="\/admin\/mantenimiento"[^>]*>[^<]*<Wrench \/>\s*Panel de mantenimiento\s*<\/Link>\s*\)/);
