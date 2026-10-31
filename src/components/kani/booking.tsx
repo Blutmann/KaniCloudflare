@@ -985,7 +985,7 @@ export function Booking({
                     <h2 className={isV2 ? "booking-v2-choice-title" : "text-sm font-medium mb-2.5 text-foreground"}>
                       {candidateBarbers.length === 1 ? `Barbero asignado para las ${time} hs:` : `¿Quién te va a atender a las ${time} hs?`}
                     </h2>
-                    <div className="barber-choice-list flex flex-wrap gap-2">
+                    <div className="barber-choice-list flex flex-wrap gap-2" data-barbers-count={candidateBarbers.length}>
                       {candidateBarbers.map(candidate => (
                         <Button
                           key={candidate}

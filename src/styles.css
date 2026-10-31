@@ -1282,6 +1282,33 @@ html[data-theme='dark'] .studio-map-card {
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 12px;
   }
+  .barber-choice-list {
+    display: grid !important;
+    grid-auto-flow: column !important;
+    grid-auto-columns: minmax(0, 1fr) !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 12px;
+  }
+  .barber-choice-list[data-barbers-count="1"],
+  .barber-choice-list:has(> :only-child) {
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-auto-flow: row !important;
+  }
+  .barber-choice-list[data-barbers-count="2"],
+  .barber-choice-list:has(> :nth-child(2):last-child) {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    grid-auto-flow: row !important;
+  }
+  .barber-choice-list[data-barbers-count="3"],
+  .barber-choice-list:has(> :nth-child(3):last-child) {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    grid-auto-flow: row !important;
+  }
+  .barber-choice-list[data-barbers-count="4"],
+  .barber-choice-list:has(> :nth-child(4)) {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    grid-auto-flow: row !important;
+  }
 }
 @media(max-width:1023px) {
  .site-container,.site-header > div { width: calc(100% - 48px); }
