@@ -866,9 +866,6 @@ export function Booking({
                     <span className={`booking-option-copy flex-1 ${isV5 ? 'text-left' : 'text-center'}`}>
                       <span className="booking-barber-name block text-lg font-medium">{b}</span>
                       <span className="booking-barber-handle mt-0.5 block text-sm text-muted-foreground">{barberInstagramHandles[b]}</span>
-                      {b === 'Franco' && (
-                        <span className="booking-barber-promo mt-1 block text-xs text-gold font-medium">Precio especial con Franco</span>
-                      )}
                     </span>
                     <span className="selection-circle">{barber === b && !barberDeferred && <Check size={12} />}</span>
                   </Button>

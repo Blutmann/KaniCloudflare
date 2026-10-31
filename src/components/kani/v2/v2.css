@@ -414,7 +414,7 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
 }
 .v2-team {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 18px;
 }
 .v2-team article {
@@ -1302,6 +1302,7 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
     flex: 0 1 auto;
   }
   .v2-team {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 14px;
   }
   .v2-team article > svg {
@@ -4049,6 +4050,12 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
   }
   .v2-appointment-actions-grid {
     width: 100%;
+  }
+  .v2-appointment-actions-grid.count-2 {
+    grid-template-columns: 1fr;
+  }
+  .v2-appointments-page .v2-appointment-actions .v2-appointment-actions-grid.count-2 {
+    grid-template-columns: 1fr !important;
   }
 }
 
