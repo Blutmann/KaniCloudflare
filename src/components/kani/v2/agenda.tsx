@@ -550,7 +550,7 @@ export function V2Appointments() {
                   actionNodes.push(
                     <Link
                       key="cobrar"
-                      className="v2-secondary v2-action-btn"
+                      className="v2-secondary v2-action-btn v2-cobrar-btn"
                       to="/admin-v2/pagos"
                       search={{ turno: a.id }}
                     >

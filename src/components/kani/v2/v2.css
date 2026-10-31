@@ -3970,3 +3970,116 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
   border-color: var(--gold);
 }
 
+
+
+/* ==========================================================================
+   Admin V2 — Dark Mode: Dorado de Kani para navegación activa y CTAs principales
+   ========================================================================== */
+html[data-theme="dark"] .v2-nav .admin-section-nav-link.is-active,
+html[data-theme="dark"] .v2-nav .admin-section-nav-link.is-active:hover,
+html[data-theme="dark"] .v2-nav .admin-section-nav-link.is-active:active {
+  background: var(--gold) !important;
+  border-color: var(--gold) !important;
+  color: #121212 !important;
+  font-weight: 600 !important;
+}
+
+html[data-theme="dark"] .v2-nav .admin-section-nav-link.is-active svg {
+  color: #121212 !important;
+}
+
+/* CTAs principales en Modo Oscuro (Ver agenda, Agregar turno, Agregar horario, Registrar cobro, Nuevo cliente, Cobrar) */
+html[data-theme="dark"] :is(.v2-shell, .v2-dialog) .v2-primary:not(:disabled),
+html[data-theme="dark"] :is(.v2-shell, .v2-dialog) .v2-toolbar-action:not(:disabled),
+html[data-theme="dark"] :is(.v2-shell, .v2-dialog) .v2-add-manual-btn:not(:disabled),
+html[data-theme="dark"] :is(.v2-shell, .v2-dialog) .v2-client-add-btn:not(:disabled),
+html[data-theme="dark"] :is(.v2-shell, .v2-dialog) .v2-payment-submit-btn:not(:disabled),
+html[data-theme="dark"] .v2-shell .v2-cobrar-btn:not(:disabled),
+html[data-theme="dark"] .v2-shell .v2-op-buttons a.v2-action-btn[href*="/admin-v2/pagos"]:not(:disabled),
+html[data-theme="dark"] .admin-schedule-dialog .action-positive:not(:disabled) {
+  background: var(--gold) !important;
+  border-color: var(--gold) !important;
+  color: #121212 !important;
+  font-weight: 600 !important;
+}
+
+html[data-theme="dark"] :is(.v2-shell, .v2-dialog) .v2-primary:not(:disabled) svg,
+html[data-theme="dark"] :is(.v2-shell, .v2-dialog) .v2-toolbar-action:not(:disabled) svg,
+html[data-theme="dark"] :is(.v2-shell, .v2-dialog) .v2-add-manual-btn:not(:disabled) svg,
+html[data-theme="dark"] :is(.v2-shell, .v2-dialog) .v2-client-add-btn:not(:disabled) svg,
+html[data-theme="dark"] :is(.v2-shell, .v2-dialog) .v2-payment-submit-btn:not(:disabled) svg,
+html[data-theme="dark"] .admin-schedule-dialog .action-positive:not(:disabled) svg {
+  color: #121212 !important;
+}
+
+html[data-theme="dark"] :is(.v2-shell, .v2-dialog) .v2-primary:hover:not(:disabled),
+html[data-theme="dark"] :is(.v2-shell, .v2-dialog) .v2-toolbar-action:hover:not(:disabled),
+html[data-theme="dark"] :is(.v2-shell, .v2-dialog) .v2-add-manual-btn:hover:not(:disabled),
+html[data-theme="dark"] :is(.v2-shell, .v2-dialog) .v2-client-add-btn:hover:not(:disabled),
+html[data-theme="dark"] :is(.v2-shell, .v2-dialog) .v2-payment-submit-btn:hover:not(:disabled),
+html[data-theme="dark"] .v2-shell .v2-cobrar-btn:hover:not(:disabled),
+html[data-theme="dark"] .v2-shell .v2-op-buttons a.v2-action-btn[href*="/admin-v2/pagos"]:hover:not(:disabled),
+html[data-theme="dark"] .admin-schedule-dialog .action-positive:hover:not(:disabled) {
+  background: #cbb075 !important;
+  border-color: #cbb075 !important;
+  color: #121212 !important;
+}
+
+html[data-theme="dark"] :is(.v2-shell, .v2-dialog) .v2-primary:active:not(:disabled),
+html[data-theme="dark"] :is(.v2-shell, .v2-dialog) .v2-toolbar-action:active:not(:disabled),
+html[data-theme="dark"] :is(.v2-shell, .v2-dialog) .v2-add-manual-btn:active:not(:disabled),
+html[data-theme="dark"] :is(.v2-shell, .v2-dialog) .v2-client-add-btn:active:not(:disabled),
+html[data-theme="dark"] :is(.v2-shell, .v2-dialog) .v2-payment-submit-btn:active:not(:disabled),
+html[data-theme="dark"] .v2-shell .v2-cobrar-btn:active:not(:disabled),
+html[data-theme="dark"] .v2-shell .v2-op-buttons a.v2-action-btn[href*="/admin-v2/pagos"]:active:not(:disabled),
+html[data-theme="dark"] .admin-schedule-dialog .action-positive:active:not(:disabled) {
+  background: #a88849 !important;
+  border-color: #a88849 !important;
+  color: #121212 !important;
+}
+
+html[data-theme="dark"] :is(.v2-shell, .v2-dialog) .v2-primary:focus-visible,
+html[data-theme="dark"] :is(.v2-shell, .v2-dialog) .v2-toolbar-action:focus-visible,
+html[data-theme="dark"] :is(.v2-shell, .v2-dialog) .v2-add-manual-btn:focus-visible,
+html[data-theme="dark"] :is(.v2-shell, .v2-dialog) .v2-client-add-btn:focus-visible,
+html[data-theme="dark"] :is(.v2-shell, .v2-dialog) .v2-payment-submit-btn:focus-visible,
+html[data-theme="dark"] .v2-shell .v2-cobrar-btn:focus-visible,
+html[data-theme="dark"] .admin-schedule-dialog .action-positive:focus-visible {
+  outline: 2px solid var(--gold) !important;
+  outline-offset: 2px !important;
+}
+
+/* Controles deshabilitados en Modo Oscuro: NUNCA dorados */
+html[data-theme="dark"] :is(.v2-shell, .v2-dialog) .v2-primary:disabled,
+html[data-theme="dark"] :is(.v2-shell, .v2-dialog) .v2-toolbar-action:disabled,
+html[data-theme="dark"] :is(.v2-shell, .v2-dialog) .v2-add-manual-btn:disabled,
+html[data-theme="dark"] :is(.v2-shell, .v2-dialog) .v2-client-add-btn:disabled,
+html[data-theme="dark"] :is(.v2-shell, .v2-dialog) .v2-payment-submit-btn:disabled,
+html[data-theme="dark"] .admin-schedule-dialog .action-positive:disabled {
+  background: var(--button-primary-disabled-bg, #222222) !important;
+  border-color: var(--button-primary-disabled-border, #333333) !important;
+  color: var(--button-primary-disabled-text, #666666) !important;
+  opacity: 0.55 !important;
+  cursor: not-allowed !important;
+}
+
+/* Segmentados y toggles activos en Modo Oscuro: dorado institucional */
+html[data-theme="dark"] .v2-segmented button[aria-pressed="true"] {
+  background: var(--gold) !important;
+  border-color: var(--gold) !important;
+  color: #121212 !important;
+  font-weight: 600 !important;
+}
+
+html[data-theme="dark"] .v2-payment-toggle-btn.active,
+html[data-theme="dark"] .v2-payment-action-btn.active {
+  background: var(--gold) !important;
+  border-color: var(--gold) !important;
+  color: #121212 !important;
+  font-weight: 600 !important;
+}
+
+html[data-theme="dark"] .v2-payment-toggle-btn.active svg,
+html[data-theme="dark"] .v2-payment-action-btn.active svg {
+  color: #121212 !important;
+}

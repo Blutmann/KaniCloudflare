@@ -3463,11 +3463,18 @@ html[data-theme='dark'] .confirmation-details {
 }
 
 
+/* Admin navigation tab activa en modo oscuro: dorado institucional de Kani con texto oscuro */
 html[data-theme='dark'] .admin-section-nav-link.is-active,
 html[data-theme='dark'] .admin-section-nav-link.is-active:hover,
 html[data-theme='dark'] .admin-section-nav-link.is-active:active {
-  background: var(--primary);
-  color: var(--primary-foreground);
+  background: var(--gold) !important;
+  border-color: var(--gold) !important;
+  color: #121212 !important;
+  font-weight: 600 !important;
+}
+
+html[data-theme='dark'] .admin-section-nav-link.is-active svg {
+  color: #121212 !important;
 }
 
 /* Las cards de barberos comparten el mismo eje textual en desktop y mobile. */
