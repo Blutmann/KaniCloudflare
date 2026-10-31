@@ -1,15 +1,22 @@
 -- Migration: 20261031160000_kani_incorporar_franco_cuarto_barbero.sql
 -- KANI BARBER STUDIO — Incorporación definitiva de Franco como cuarto barbero:
 -- 1. Registro de Franco en public.barbers con Instagram (@franbarber.24) y orden oficial (4).
--- 2. Limpieza segura de datos bancarios ficticios para Franco en public.barber_transfer_details.
---    Kani opera exclusivamente con pasarelas digitales (Payway y Mercado Pago); Franco no requiere alias, CUIT ni titular.
+-- 2. Limpieza segura y acotada exclusivamente de datos ficticios en public.barber_transfer_details.
+--    Kani opera exclusivamente con pasarelas digitales (Payway y Mercado Pago). No se eliminan datos bancarios históricos reales.
 -- 3. Tabla public.barber_service_prices y precios promocionales para Franco:
 --    - Corte: $15.000 (general: $25.000)
 --    - Corte y barba / Corte + barba: $20.000 (general: $30.000)
 --    - Barba: $5.000 (general: $15.000)
---    - Seña online: $5.000 unificada. Saldo restante: Corte $10.000, Corte y barba $15.000, Barba $0 (balance_paid = true al confirmar).
--- 4. Disponibilidad inicial para Franco: exclusivamente sábados de 15:00 a 20:00 (inicialización segura, sin borrar citas ni bloqueos UNAVAILABLE).
--- 5. Funciones RPC: get_effective_service_price, read_public_deposit_amount, read_valid_availability_starts, request_appointment, get_appointment_payment_details, confirm_verified_appointment_payment.
+--    - Seña online: $5.000 unificada y centralizada. Saldo restante: Corte $10.000, Corte y barba $15.000, Barba $0 (balance_paid = true al confirmar).
+-- 4. Disponibilidad para Franco: sábados de 15:00 a 20:00 con soporte de horizonte dinámico continuo (sin reejecución periódica requerida)
+--    y preservación absoluta de disponibilidades extraordinarias y bloqueos administrativos manuales (UNAVAILABLE).
+-- 5. Funciones RPC críticas:
+--    - get_effective_service_price
+--    - read_public_deposit_amount (seña unificada a $5.000 sin dependencia de barber_transfer_details)
+--    - read_valid_availability_starts (con horizonte dinámico y soporte de horarios de Franco)
+--    - request_appointment (con snapshot de precios efectivos, seña $5.000 y persistencia atómica de slots)
+--    - get_appointment_payment_details (con auditoría de autorización y protección de datos personales / PII)
+--    - confirm_verified_appointment_payment (con soporte para balance_paid cuando saldo es $0, variable transaccional y conciliación)
 
 -- ==============================================================================
 -- 1. EXTENSIÓN Y REGISTRO EN PUBLIC.BARBERS
@@ -24,7 +31,7 @@ UPDATE public.barbers SET instagram = '@lautarodejesus_', display_order = 1 WHER
 UPDATE public.barbers SET instagram = '@gonzalopierucci', display_order = 2 WHERE name = 'Gonzalo';
 UPDATE public.barbers SET instagram = '@valentincarrizo_', display_order = 3 WHERE name = 'Valentín';
 
--- Incorporar a Franco
+-- Incorporar o actualizar a Franco
 INSERT INTO public.barbers (name, instagram, display_order, active)
 VALUES ('Franco', '@franbarber.24', 4, true)
 ON CONFLICT (name) DO UPDATE
@@ -32,11 +39,15 @@ SET instagram = EXCLUDED.instagram,
     display_order = EXCLUDED.display_order,
     active = true;
 
--- Kani utiliza pasarelas de pago centralizadas (Payway y Mercado Pago).
--- Franco no requiere alias, CUIT ni titular bancario en public.barber_transfer_details.
--- Eliminar de forma segura cualquier dato ficticio previo para Franco en caso de reejecución:
+-- Limpieza acotada exclusivamente de registros bancarios ficticios generados en pruebas previas:
 DELETE FROM public.barber_transfer_details
-WHERE barber_id IN (SELECT id FROM public.barbers WHERE name = 'Franco');
+WHERE barber_id IN (SELECT id FROM public.barbers WHERE name = 'Franco')
+  AND (
+    alias IN ('kanibarber.mp', 'franco.kani', 'kani.barber')
+    OR cuit IN ('20-12345678-9', '20123456789', '00-00000000-0')
+    OR holder_name ILIKE '%ficticio%'
+    OR holder_name ILIKE '%test%'
+  );
 
 -- ==============================================================================
 -- 2. TABLA DE PRECIOS ESPECÍFICOS POR BARBERO Y SERVICIO
@@ -127,32 +138,17 @@ REVOKE ALL ON FUNCTION public.get_effective_service_price(uuid, uuid) FROM publi
 GRANT EXECUTE ON FUNCTION public.get_effective_service_price(uuid, uuid) TO anon, authenticated;
 
 -- Función RPC para leer el monto de seña público unificado ($5.000)
+-- Totalmente desacoplada de barber_transfer_details.
 CREATE OR REPLACE FUNCTION public.read_public_deposit_amount(p_barber_name text DEFAULT NULL)
 RETURNS integer
 LANGUAGE plpgsql
+STABLE
 SECURITY DEFINER
 SET search_path = pg_catalog, public, extensions
 AS $$
-DECLARE
-  v_deposit integer;
 BEGIN
-  IF p_barber_name IS NOT NULL AND length(trim(p_barber_name)) > 0 THEN
-    SELECT td.down_payment_ars INTO v_deposit
-    FROM public.barbers b
-    JOIN public.barber_transfer_details td ON td.barber_id = b.id AND td.active = true
-    WHERE b.name = trim(p_barber_name)
-    LIMIT 1;
-  END IF;
-
-  IF v_deposit IS NULL THEN
-    SELECT td.down_payment_ars INTO v_deposit
-    FROM public.barber_transfer_details td
-    WHERE td.active = true
-    ORDER BY td.updated_at DESC
-    LIMIT 1;
-  END IF;
-
-  RETURN coalesce(v_deposit, 5000);
+  -- Seña pública centralizada de Kani Barber Studio: $5.000 para todos los barberos y servicios
+  RETURN 5000;
 END;
 $$;
 
@@ -160,34 +156,12 @@ REVOKE ALL ON FUNCTION public.read_public_deposit_amount(text) FROM public;
 GRANT EXECUTE ON FUNCTION public.read_public_deposit_amount(text) TO anon, authenticated;
 
 -- ==============================================================================
--- 3. DISPONIBILIDAD INICIAL DE FRANCO (SÁBADOS 15:00 A 20:00)
+-- 3. INICIALIZACIÓN SEGURA DE DISPONIBILIDAD PARA FRANCO (SÁBADOS 15:00 A 20:00)
 -- ==============================================================================
 
--- Limpieza segura de slots fuera del esquema de Franco (sábados 15:00 a 20:00).
--- IMPORTANTE:
--- - NO elimina turnos existentes (pendientes, confirmados o completados).
--- - NO elimina bloqueos administrativos manuales (status = 'UNAVAILABLE').
--- - Solo elimina slots 'AVAILABLE' fuera de los sábados o fuera de 15:00..20:00 sin citas activas.
-DELETE FROM public.barber_availability_slots s
-WHERE s.barber_id IN (SELECT id FROM public.barbers WHERE name = 'Franco')
-  AND s.status = 'AVAILABLE'
-  AND (
-    extract(isodow from s.slot_date) <> 6
-    OR s.start_time < time '15:00:00'
-    OR s.end_time > time '20:00:00'
-  )
-  AND NOT EXISTS (
-    SELECT 1
-    FROM public.appointments a
-    WHERE a.barber_id = s.barber_id
-      AND a.booking_date = s.slot_date
-      AND a.status <> 'CANCELLED'
-      AND a.start_time < s.end_time
-      AND a.end_time > s.start_time
-  );
-
--- Inicialización segura de slots de sábados (15:00 a 20:00) para los próximos 60 días.
--- Utiliza ON CONFLICT DO NOTHING para respetar bloqueos manuales (UNAVAILABLE) y personalizaciones.
+-- Preservación absoluta: NO se eliminan turnos existentes, ni bloqueos administrativos (UNAVAILABLE),
+-- ni disponibilidades manuales o extraordinarias.
+-- Inicialización idempotente de slots de sábados para los próximos 180 días con ON CONFLICT DO NOTHING:
 INSERT INTO public.barber_availability_slots (barber_id, slot_date, start_time, end_time, status)
 SELECT
   b.id,
@@ -198,7 +172,7 @@ SELECT
 FROM public.barbers b
 CROSS JOIN generate_series(
   (timezone('America/Argentina/Buenos_Aires', clock_timestamp()))::date,
-  ((timezone('America/Argentina/Buenos_Aires', clock_timestamp()))::date + 60)::date,
+  ((timezone('America/Argentina/Buenos_Aires', clock_timestamp()))::date + 180)::date,
   interval '1 day'
 ) AS d
 CROSS JOIN (
@@ -216,7 +190,7 @@ WHERE b.name = 'Franco'
 ON CONFLICT (barber_id, slot_date, start_time) DO NOTHING;
 
 -- ==============================================================================
--- 4. READ_VALID_AVAILABILITY_STARTS CON CANDIDATOS SÁBADO TARDE DE FRANCO
+-- 4. READ_VALID_AVAILABILITY_STARTS CON HORIZONTE DINÁMICO Y CANDIDATOS DE FRANCO
 -- ==============================================================================
 
 CREATE OR REPLACE FUNCTION public.read_valid_availability_starts(
@@ -245,7 +219,49 @@ BEGIN
   END IF;
 
   RETURN QUERY
-  WITH available_slots AS (
+  WITH recurring_base_slots AS (
+    -- Horizonte dinámico continuo para Franco (Sábados 15:00 a 20:00)
+    SELECT
+      b.id AS barber_id,
+      d::date AS slot_date,
+      slot_def.start_time,
+      slot_def.end_time,
+      (d::date + slot_def.start_time)::timestamp AS slot_start_ts,
+      ((d::date + CASE WHEN slot_def.end_time <= slot_def.start_time THEN 1 ELSE 0 END) + slot_def.end_time)::timestamp AS slot_end_ts
+    FROM public.barbers b
+    CROSS JOIN generate_series(v_from, v_to, interval '1 day') AS d
+    CROSS JOIN (
+      VALUES
+        (time '15:00:00', time '15:45:00'),
+        (time '15:45:00', time '16:30:00'),
+        (time '16:30:00', time '17:15:00'),
+        (time '17:15:00', time '18:00:00'),
+        (time '18:00:00', time '18:45:00'),
+        (time '18:45:00', time '19:30:00'),
+        (time '19:30:00', time '20:00:00')
+    ) AS slot_def(start_time, end_time)
+    WHERE b.name = 'Franco'
+      AND b.active = true
+      AND extract(isodow from d) = 6
+      AND (p_barber_id IS NULL OR b.id = p_barber_id)
+      AND NOT EXISTS (
+        SELECT 1
+        FROM public.barber_availability_slots blk
+        WHERE blk.barber_id = b.id
+          AND blk.slot_date = d::date
+          AND blk.status = 'UNAVAILABLE'
+          AND tsrange(
+            d::date + slot_def.start_time,
+            (d::date + CASE WHEN slot_def.end_time <= slot_def.start_time THEN 1 ELSE 0 END) + slot_def.end_time,
+            '[)'
+          ) && tsrange(
+            blk.slot_date + blk.start_time,
+            (blk.slot_date + CASE WHEN blk.end_time <= blk.start_time THEN 1 ELSE 0 END) + blk.end_time,
+            '[)'
+          )
+      )
+  ), stored_available_slots AS (
+    -- Slots explícitos almacenados en BD (incluye disponibilidades extraordinarias y manuales de barberos)
     SELECT
       s.barber_id,
       s.slot_date,
@@ -259,6 +275,13 @@ BEGIN
       AND s.slot_date BETWEEN v_from AND v_to
       AND (p_barber_id IS NULL OR s.barber_id = p_barber_id)
       AND (s.end_time > s.start_time OR s.end_time = time '00:00:00')
+  ), available_slots AS (
+    SELECT DISTINCT barber_id, slot_date, start_time, end_time, slot_start_ts, slot_end_ts
+    FROM (
+      SELECT * FROM stored_available_slots
+      UNION ALL
+      SELECT * FROM recurring_base_slots
+    ) combined
   ), standard_candidates AS (
     SELECT DISTINCT
       s.barber_id,
@@ -358,10 +381,9 @@ BEGIN
         ) AS requested(segment_index)
         WHERE NOT EXISTS (
           SELECT 1
-          FROM public.barber_availability_slots available
+          FROM available_slots available
           WHERE available.barber_id = c.barber_id
             AND available.slot_date = c.slot_date
-            AND available.status = 'AVAILABLE'
             AND tsrange(
               c.candidate_start + requested.segment_index * interval '5 minutes',
               c.candidate_start + (requested.segment_index + 1) * interval '5 minutes', '[)'
@@ -409,7 +431,7 @@ REVOKE ALL ON FUNCTION public.read_valid_availability_starts(uuid, date, date) F
 GRANT EXECUTE ON FUNCTION public.read_valid_availability_starts(uuid, date, date) TO anon, authenticated;
 
 -- ==============================================================================
--- 5. REQUEST_APPOINTMENT CON PERSISTENCIA DE PRECIO EFECTIVO
+-- 5. REQUEST_APPOINTMENT CON PERSISTENCIA DE PRECIO EFECTIVO Y DISPONIBILIDAD ATÓMICA
 -- ==============================================================================
 
 CREATE OR REPLACE FUNCTION public.request_appointment(
@@ -489,6 +511,34 @@ BEGIN
 
   PERFORM pg_advisory_xact_lock(hashtextextended(v_barber.id::text || '|' || p_booking_date::text, 0));
 
+  -- Garantizar atómicamente el slot base recurrente en public.barber_availability_slots si no existiera
+  IF v_barber.name = 'Franco' AND extract(isodow from p_booking_date) = 6 THEN
+    INSERT INTO public.barber_availability_slots (barber_id, slot_date, start_time, end_time, status)
+    VALUES
+      (v_barber.id, p_booking_date, time '15:00:00', time '15:45:00', 'AVAILABLE'),
+      (v_barber.id, p_booking_date, time '15:45:00', time '16:30:00', 'AVAILABLE'),
+      (v_barber.id, p_booking_date, time '16:30:00', time '17:15:00', 'AVAILABLE'),
+      (v_barber.id, p_booking_date, time '17:15:00', time '18:00:00', 'AVAILABLE'),
+      (v_barber.id, p_booking_date, time '18:00:00', time '18:45:00', 'AVAILABLE'),
+      (v_barber.id, p_booking_date, time '18:45:00', time '19:30:00', 'AVAILABLE'),
+      (v_barber.id, p_booking_date, time '19:30:00', time '20:00:00', 'AVAILABLE')
+    ON CONFLICT (barber_id, slot_date, start_time) DO NOTHING;
+  ELSIF v_barber.name <> 'Franco' AND extract(isodow from p_booking_date) BETWEEN 1 AND 6 THEN
+    INSERT INTO public.barber_availability_slots (barber_id, slot_date, start_time, end_time, status)
+    SELECT
+      v_barber.id,
+      p_booking_date,
+      gs::time AS start_time,
+      (gs + interval '45 minutes')::time AS end_time,
+      'AVAILABLE'::public.availability_status
+    FROM generate_series(
+      timestamp '2000-01-01 10:00:00',
+      timestamp '2000-01-01 19:00:00',
+      interval '45 minutes'
+    ) AS gs
+    ON CONFLICT (barber_id, slot_date, start_time) DO NOTHING;
+  END IF;
+
   v_last_segment := ceil(extract(epoch from v_duration) / 300)::integer - 1;
 
   IF EXISTS (
@@ -566,7 +616,7 @@ BEGIN
     WHERE id = v_client_id;
   END IF;
 
-  -- Calcular precio efectivo (promocional si existe en barber_service_prices o estándar)
+  -- Calcular precio efectivo (promocional si existe en barber_service_prices o estándar de services)
   SELECT coalesce(
     (SELECT bsp.price_ars FROM public.barber_service_prices bsp WHERE bsp.barber_id = v_barber.id AND bsp.service_id = v_service.id AND bsp.active = true LIMIT 1),
     v_service.price_ars
@@ -622,7 +672,7 @@ REVOKE ALL ON FUNCTION public.request_appointment(text, text, date, time, text, 
 GRANT EXECUTE ON FUNCTION public.request_appointment(text, text, date, time, text, text, text, text) TO anon, authenticated;
 
 -- ==============================================================================
--- 6. GET_APPOINTMENT_PAYMENT_DETAILS CON PRECIO EFECTIVO
+-- 6. GET_APPOINTMENT_PAYMENT_DETAILS CON AUTORIZACIÓN Y PROTECCIÓN DE DATOS PERSONALES
 -- ==============================================================================
 
 CREATE OR REPLACE FUNCTION public.get_appointment_payment_details(p_appointment_id uuid)
@@ -647,7 +697,18 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = pg_catalog, public, extensions
 AS $$
+DECLARE
+  v_is_privileged boolean;
 BEGIN
+  -- Autorización estricta:
+  -- Privilegiado si es service_role (backend de Mercado Pago / Payway), administrador o staff autorizado
+  v_is_privileged := (
+    coalesce((SELECT auth.role()), '') = 'service_role'
+    OR current_user = 'service_role'
+    OR public.is_admin()
+    OR public.current_staff_barber_id() IS NOT NULL
+  );
+
   RETURN QUERY
   SELECT
     a.id AS appointment_id,
@@ -660,23 +721,35 @@ BEGIN
     s.id AS service_id,
     s.name AS service_name,
     coalesce(a.service_price_ars, bsp.price_ars, s.price_ars) AS service_price_ars,
-    coalesce(a.deposit_amount_ars, td.down_payment_ars, 5000) AS down_payment_ars,
+    coalesce(a.deposit_amount_ars, 5000) AS down_payment_ars,
     coalesce(a.booking_client_name, c.name) AS client_name,
-    c.email AS client_email,
-    c.phone AS client_phone,
+    -- Protección de datos personales (PII): anon no recibe email ni teléfono sin enmascarar
+    CASE
+      WHEN v_is_privileged THEN coalesce(c.email, '')
+      ELSE regexp_replace(coalesce(c.email, ''), '^(.)(.*)(@.*)$', '\1***\3')
+    END AS client_email,
+    CASE
+      WHEN v_is_privileged THEN coalesce(c.phone, '')
+      ELSE regexp_replace(coalesce(c.phone, ''), '(\d{2})\d+(\d{2})$', '\1****\2')
+    END AS client_phone,
     a.created_at
   FROM public.appointments a
   JOIN public.barbers b ON b.id = a.barber_id
   JOIN public.services s ON s.id = a.service_id
   LEFT JOIN public.clients c ON c.id = a.client_id
   LEFT JOIN public.barber_service_prices bsp ON bsp.barber_id = a.barber_id AND bsp.service_id = a.service_id AND bsp.active = true
-  LEFT JOIN public.barber_transfer_details td ON td.barber_id = a.barber_id AND td.active = true
-  WHERE a.id = p_appointment_id;
+  WHERE a.id = p_appointment_id
+    -- Si el visitante es anónimo (no privilegiado), solo puede consultar reservas recientes (ventana de pago / confirmación de 48 hs)
+    -- en estado PENDING o CONFIRMED, impidiendo el scraping de turnos históricos
+    AND (
+      v_is_privileged
+      OR (a.created_at >= (now() - interval '48 hours') AND a.status IN ('PENDING', 'CONFIRMED'))
+    );
 END;
 $$;
 
 REVOKE ALL ON FUNCTION public.get_appointment_payment_details(uuid) FROM public;
-GRANT EXECUTE ON FUNCTION public.get_appointment_payment_details(uuid) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.get_appointment_payment_details(uuid) TO anon, authenticated, service_role;
 
 -- ==============================================================================
 -- 7. CONFIRM_VERIFIED_APPOINTMENT_PAYMENT CON SALDO RESTANTE $0 (BALANCE_PAID = TRUE)
