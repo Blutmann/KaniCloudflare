@@ -1,12 +1,15 @@
 -- Migration: 20261031160000_kani_incorporar_franco_cuarto_barbero.sql
--- KANI BARBER STUDIO — Incorporación de Franco como cuarto barbero:
--- 1. Registro de Franco en public.barbers con Instagram y orden oficial.
--- 2. Tabla public.barber_service_prices y precios promocionales para Franco:
+-- KANI BARBER STUDIO — Incorporación definitiva de Franco como cuarto barbero:
+-- 1. Registro de Franco en public.barbers con Instagram (@franbarber.24) y orden oficial (4).
+-- 2. Limpieza segura de datos bancarios ficticios para Franco en public.barber_transfer_details.
+--    Kani opera exclusivamente con pasarelas digitales (Payway y Mercado Pago); Franco no requiere alias, CUIT ni titular.
+-- 3. Tabla public.barber_service_prices y precios promocionales para Franco:
 --    - Corte: $15.000 (general: $25.000)
 --    - Corte y barba / Corte + barba: $20.000 (general: $30.000)
 --    - Barba: $5.000 (general: $15.000)
--- 3. Disponibilidad inicial para Franco: exclusivamente sábados de 15:00 a 20:00.
--- 4. Funciones RPC actualizadas para soportar precios por barbero, seña y balance_paid.
+--    - Seña online: $5.000 unificada. Saldo restante: Corte $10.000, Corte y barba $15.000, Barba $0 (balance_paid = true al confirmar).
+-- 4. Disponibilidad inicial para Franco: exclusivamente sábados de 15:00 a 20:00 (inicialización segura, sin borrar citas ni bloqueos UNAVAILABLE).
+-- 5. Funciones RPC: get_effective_service_price, read_public_deposit_amount, read_valid_availability_starts, request_appointment, get_appointment_payment_details, confirm_verified_appointment_payment.
 
 -- ==============================================================================
 -- 1. EXTENSIÓN Y REGISTRO EN PUBLIC.BARBERS
@@ -29,13 +32,11 @@ SET instagram = EXCLUDED.instagram,
     display_order = EXCLUDED.display_order,
     active = true;
 
--- Configuración de transfer details / seña unificada ($5.000) para Franco
-INSERT INTO public.barber_transfer_details (barber_id, alias, cuit, holder_name, down_payment_ars, active)
-SELECT b.id, 'kanibarber.mp', '20-12345678-9', 'Kani Barber Studio', 5000, true
-FROM public.barbers b
-WHERE b.name = 'Franco'
-ON CONFLICT (barber_id) DO UPDATE
-SET down_payment_ars = 5000, active = true;
+-- Kani utiliza pasarelas de pago centralizadas (Payway y Mercado Pago).
+-- Franco no requiere alias, CUIT ni titular bancario en public.barber_transfer_details.
+-- Eliminar de forma segura cualquier dato ficticio previo para Franco en caso de reejecución:
+DELETE FROM public.barber_transfer_details
+WHERE barber_id IN (SELECT id FROM public.barbers WHERE name = 'Franco');
 
 -- ==============================================================================
 -- 2. TABLA DE PRECIOS ESPECÍFICOS POR BARBERO Y SERVICIO
@@ -69,7 +70,7 @@ CREATE POLICY barber_service_prices_admin_manage
   USING (public.is_admin())
   WITH CHECK (public.is_admin());
 
--- Cargar precios promocionales de Franco (valores definitivos fijos)
+-- Precios promocionales para Franco (valores numéricos fijos, sin cálculo porcentual)
 INSERT INTO public.barber_service_prices (barber_id, service_id, price_ars, active)
 SELECT
   b.id,
@@ -125,21 +126,68 @@ $$;
 REVOKE ALL ON FUNCTION public.get_effective_service_price(uuid, uuid) FROM public;
 GRANT EXECUTE ON FUNCTION public.get_effective_service_price(uuid, uuid) TO anon, authenticated;
 
+-- Función RPC para leer el monto de seña público unificado ($5.000)
+CREATE OR REPLACE FUNCTION public.read_public_deposit_amount(p_barber_name text DEFAULT NULL)
+RETURNS integer
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = pg_catalog, public, extensions
+AS $$
+DECLARE
+  v_deposit integer;
+BEGIN
+  IF p_barber_name IS NOT NULL AND length(trim(p_barber_name)) > 0 THEN
+    SELECT td.down_payment_ars INTO v_deposit
+    FROM public.barbers b
+    JOIN public.barber_transfer_details td ON td.barber_id = b.id AND td.active = true
+    WHERE b.name = trim(p_barber_name)
+    LIMIT 1;
+  END IF;
+
+  IF v_deposit IS NULL THEN
+    SELECT td.down_payment_ars INTO v_deposit
+    FROM public.barber_transfer_details td
+    WHERE td.active = true
+    ORDER BY td.updated_at DESC
+    LIMIT 1;
+  END IF;
+
+  RETURN coalesce(v_deposit, 5000);
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.read_public_deposit_amount(text) FROM public;
+GRANT EXECUTE ON FUNCTION public.read_public_deposit_amount(text) TO anon, authenticated;
+
 -- ==============================================================================
 -- 3. DISPONIBILIDAD INICIAL DE FRANCO (SÁBADOS 15:00 A 20:00)
 -- ==============================================================================
 
--- Eliminar horarios de lunes a viernes o domingos para Franco
-DELETE FROM public.barber_availability_slots
-WHERE barber_id IN (SELECT id FROM public.barbers WHERE name = 'Franco')
-  AND extract(isodow from slot_date) <> 6;
+-- Limpieza segura de slots fuera del esquema de Franco (sábados 15:00 a 20:00).
+-- IMPORTANTE:
+-- - NO elimina turnos existentes (pendientes, confirmados o completados).
+-- - NO elimina bloqueos administrativos manuales (status = 'UNAVAILABLE').
+-- - Solo elimina slots 'AVAILABLE' fuera de los sábados o fuera de 15:00..20:00 sin citas activas.
+DELETE FROM public.barber_availability_slots s
+WHERE s.barber_id IN (SELECT id FROM public.barbers WHERE name = 'Franco')
+  AND s.status = 'AVAILABLE'
+  AND (
+    extract(isodow from s.slot_date) <> 6
+    OR s.start_time < time '15:00:00'
+    OR s.end_time > time '20:00:00'
+  )
+  AND NOT EXISTS (
+    SELECT 1
+    FROM public.appointments a
+    WHERE a.barber_id = s.barber_id
+      AND a.booking_date = s.slot_date
+      AND a.status <> 'CANCELLED'
+      AND a.start_time < s.end_time
+      AND a.end_time > s.start_time
+  );
 
--- Eliminar horarios fuera de 15:00..20:00 para Franco en sábados
-DELETE FROM public.barber_availability_slots
-WHERE barber_id IN (SELECT id FROM public.barbers WHERE name = 'Franco')
-  AND (start_time < time '15:00:00' OR end_time > time '20:00:00');
-
--- Insertar los bloques de sábado 15:00 a 20:00 para los próximos 60 días
+-- Inicialización segura de slots de sábados (15:00 a 20:00) para los próximos 60 días.
+-- Utiliza ON CONFLICT DO NOTHING para respetar bloqueos manuales (UNAVAILABLE) y personalizaciones.
 INSERT INTO public.barber_availability_slots (barber_id, slot_date, start_time, end_time, status)
 SELECT
   b.id,
@@ -149,7 +197,7 @@ SELECT
   'AVAILABLE'::public.availability_status
 FROM public.barbers b
 CROSS JOIN generate_series(
-  date '2026-10-31',
+  (timezone('America/Argentina/Buenos_Aires', clock_timestamp()))::date,
   ((timezone('America/Argentina/Buenos_Aires', clock_timestamp()))::date + 60)::date,
   interval '1 day'
 ) AS d
@@ -165,12 +213,10 @@ CROSS JOIN (
 ) AS slot_def(start_time, end_time)
 WHERE b.name = 'Franco'
   AND extract(isodow from d) = 6
-ON CONFLICT (barber_id, slot_date, start_time) DO UPDATE
-SET end_time = EXCLUDED.end_time,
-    status = 'AVAILABLE';
+ON CONFLICT (barber_id, slot_date, start_time) DO NOTHING;
 
 -- ==============================================================================
--- 4. READ_VALID_AVAILABILITY_STARTS CON SOPORTE DE CANDIDATOS SÁBADO TARDE
+-- 4. READ_VALID_AVAILABILITY_STARTS CON CANDIDATOS SÁBADO TARDE DE FRANCO
 -- ==============================================================================
 
 CREATE OR REPLACE FUNCTION public.read_valid_availability_starts(
@@ -227,6 +273,29 @@ BEGIN
     ) AS gs(candidate_start)
     WHERE gs.candidate_start >= s.slot_start_ts
       AND gs.candidate_start < s.slot_end_ts
+  ), franco_saturday_candidates AS (
+    SELECT DISTINCT
+      s.barber_id,
+      s.slot_date,
+      (s.slot_date + franco_time.t)::timestamp AS candidate_start,
+      false AS is_exception
+    FROM available_slots s
+    JOIN public.barbers b ON b.id = s.barber_id AND b.name = 'Franco'
+    CROSS JOIN (
+      VALUES
+        (time '15:00:00'),
+        (time '15:45:00'),
+        (time '16:30:00'),
+        (time '17:15:00'),
+        (time '18:00:00'),
+        (time '18:45:00'),
+        (time '19:00:00'),
+        (time '19:15:00'),
+        (time '19:30:00')
+    ) AS franco_time(t)
+    WHERE extract(isodow from s.slot_date) = 6
+      AND (s.slot_date + franco_time.t)::timestamp >= s.slot_start_ts
+      AND (s.slot_date + franco_time.t)::timestamp < s.slot_end_ts
   ), extended_candidates AS (
     SELECT DISTINCT
       s.barber_id,
@@ -260,6 +329,8 @@ BEGIN
       bool_and(u.is_exception) AS is_exception
     FROM (
       SELECT * FROM standard_candidates
+      UNION ALL
+      SELECT * FROM franco_saturday_candidates
       UNION ALL
       SELECT * FROM extended_candidates
       UNION ALL
