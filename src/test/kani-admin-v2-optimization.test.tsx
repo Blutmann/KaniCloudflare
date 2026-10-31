@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent, cleanup, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { businessDateToday } from '@/lib/kani-mobile-appointments';
 
@@ -228,6 +228,53 @@ describe('Admin V2 — Optimización de Clientes, Pagos y Turnos', () => {
       expect(amountCell).toBeInTheDocument();
       expect(amountCell?.textContent).toContain('$20.000');
     });
+
+    it('2.5 Desktop table: Columnas equilibradas y acciones estables', () => {
+      render(<V2Payments />);
+      const table = screen.getByRole('table');
+      expect(table.querySelector('th.col-datetime')).toBeInTheDocument();
+      expect(table.querySelector('th.col-service')).toBeInTheDocument();
+      expect(table.querySelector('th.col-client')).toBeInTheDocument();
+      expect(table.querySelector('th.col-method')).toBeInTheDocument();
+      expect(table.querySelector('th.col-amount')).toBeInTheDocument();
+      expect(table.querySelector('th.col-actions')).toBeInTheDocument();
+
+      // Cliente tiene nombre principal y contacto secundario
+      expect(table.querySelector('.v2-table-client-name')).toBeInTheDocument();
+      expect(table.querySelector('.v2-table-client-contact')).toBeInTheDocument();
+
+      // Acciones estables
+      const actionsCell = table.querySelector('.v2-table-actions-cell');
+      expect(actionsCell).toBeInTheDocument();
+      expect(within(table).getByRole('button', { name: 'Editar cobro' })).toBeInTheDocument();
+      expect(within(table).getByRole('button', { name: 'Anular cobro' })).toBeInTheDocument();
+    });
+
+    it('2.6 Mobile cards: Estructura en 4 líneas con acciones compactas de 44px', () => {
+      const { container } = render(<V2Payments />);
+      const card = container.querySelector('.v2-payment-card-mobile');
+      expect(card).toBeInTheDocument();
+
+      // Línea 1: Servicio + Importe
+      expect(card?.querySelector('.v2-pcm-row-top')).toBeInTheDocument();
+      expect(card?.querySelector('.v2-pcm-service')).toBeInTheDocument();
+      expect(card?.querySelector('.v2-pcm-amount')).toBeInTheDocument();
+
+      // Línea 2: Cliente + Contacto
+      expect(card?.querySelector('.v2-pcm-row-client')).toBeInTheDocument();
+      expect(card?.querySelector('.v2-pcm-client-name')).toBeInTheDocument();
+      expect(card?.querySelector('.v2-pcm-client-contact')).toBeInTheDocument();
+
+      // Línea 3: Fecha/Hora + Método
+      expect(card?.querySelector('.v2-pcm-row-meta')).toBeInTheDocument();
+      expect(card?.querySelector('.v2-pcm-datetime')).toBeInTheDocument();
+
+      // Línea 4: Acciones compactas
+      const actions = card?.querySelector('.v2-pcm-actions');
+      expect(actions).toBeInTheDocument();
+      const buttons = actions?.querySelectorAll('.v2-pcm-btn');
+      expect(buttons?.length).toBeGreaterThanOrEqual(1);
+    });
   });
 
   describe('3. TURNOS (/admin-v2/turnos)', () => {
@@ -290,9 +337,14 @@ describe('Admin V2 — Optimización de Clientes, Pagos y Turnos', () => {
       expect(css).toMatch(/\.v2-payment-submit-btn\s*\{[^}]*min-height:\s*44px/);
     });
 
-    it('Pagos: Tabla desktop alinea importes a la derecha con cifras tabulares', () => {
+    it('Pagos: Tabla desktop usa table-layout fixed, alinea importes a la derecha y reserva espacio de acciones', () => {
+      expect(css).toMatch(/\.v2-payments-table\s*\{[^}]*table-layout:\s*fixed/);
+      expect(css).toMatch(/\.v2-payments-table\s*\.col-datetime\s*\{[^}]*width:\s*115px/);
+      expect(css).toMatch(/\.v2-payments-table\s*\.col-amount[^}]*width:\s*110px/);
+      expect(css).toMatch(/\.v2-payments-table\s*\.col-actions[^}]*width:\s*160px/);
       expect(css).toMatch(/\.v2-table-amount-cell\s*\{[^}]*text-align:\s*right/);
       expect(css).toMatch(/\.v2-table-amount-cell\s*\{[^}]*font-variant-numeric:\s*tabular-nums/);
+      expect(css).toMatch(/\.v2-pcm-btn\s*\{[^}]*min-height:\s*44px/);
     });
 
     it('Turnos: Acciones en grilla dinámica 2x2 para 4 acciones y 1x2 para 2 acciones', () => {

@@ -3555,92 +3555,155 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
     width: 100%;
     overflow-x: auto;
     margin-top: 16px;
+    border: 1px solid var(--v2-line, var(--border));
+    border-radius: var(--radius-card);
+    background: var(--v2-surface);
   }
   .v2-payments-table {
     width: 100%;
+    table-layout: fixed;
     border-collapse: collapse;
     text-align: left;
     font-size: 13px;
   }
   .v2-payments-table th {
-    padding: 10px 14px;
+    padding: 10px 12px;
     font-size: 11px;
+    font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: var(--muted-foreground);
+    background: color-mix(in srgb, var(--v2-surface-alt, #fff) 50%, var(--v2-surface));
     border-bottom: 1px solid var(--v2-line, var(--border));
   }
   .v2-payments-table td {
-    padding: 12px 14px;
+    padding: 10px 12px;
     border-bottom: 1px solid var(--v2-line, var(--border));
     vertical-align: middle;
   }
+  .v2-payments-table tbody tr:last-child td {
+    border-bottom: none;
+  }
+  .v2-payments-table tbody tr {
+    transition: background-color 0.15s ease;
+  }
+  .v2-payments-table tbody tr:hover {
+    background: color-mix(in srgb, var(--gold) 3%, var(--v2-surface));
+  }
   .v2-payments-table .col-datetime {
-    width: 140px;
+    width: 115px;
   }
   .v2-payments-table .col-service {
+    width: 25%;
     min-width: 140px;
   }
   .v2-payments-table .col-client {
-    min-width: 140px;
+    width: 23%;
+    min-width: 130px;
   }
   .v2-payments-table .col-method {
-    width: 120px;
+    width: 100px;
   }
   .v2-payments-table .col-amount,
   .v2-payments-table th.col-amount {
-    width: 120px;
+    width: 110px;
     text-align: right;
   }
   .v2-payments-table .col-actions,
   .v2-payments-table th.col-actions {
-    width: 170px;
+    width: 160px;
     text-align: right;
   }
   .v2-table-datetime {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 1px;
+    line-height: 1.3;
+  }
+  .v2-table-datetime span {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--foreground);
+  }
+  .v2-table-datetime small {
+    font-size: 11px;
+    color: var(--muted-foreground);
   }
   .v2-table-service-name {
     display: block;
+    font-size: 13px;
     font-weight: 600;
     color: var(--foreground);
+    line-height: 1.3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .v2-table-barber-name {
+    display: block;
     font-size: 11px;
     color: var(--muted-foreground);
+    line-height: 1.3;
   }
   .v2-table-client-name {
     display: block;
+    font-size: 13px;
+    font-weight: 500;
     color: var(--foreground);
+    line-height: 1.3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .v2-table-client-contact {
+    display: block;
     font-size: 11px;
     color: var(--muted-foreground);
+    line-height: 1.3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .v2-table-amount-cell {
     display: block;
     text-align: right;
     font-variant-numeric: tabular-nums;
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 700;
     color: var(--foreground);
+    letter-spacing: -0.01em;
   }
   .v2-table-actions-cell {
     display: flex;
     gap: 6px;
     justify-content: flex-end;
     align-items: center;
+    width: 100%;
   }
   .v2-action-icon-btn {
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    padding: 6px 10px;
-    font-size: 12px;
-    min-height: 32px;
-    border-radius: 6px;
+    padding: 5px 9px;
+    font-size: 11px;
+    font-weight: 500;
+    min-height: 30px;
+    height: 30px;
+    border-radius: var(--radius-control);
+    white-space: nowrap;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .v2-action-icon-btn.edit:hover {
+    border-color: var(--gold);
+    color: var(--foreground);
+  }
+  .v2-action-icon-btn.delete:hover {
+    color: var(--destructive, #ef4444);
+    border-color: color-mix(in srgb, var(--destructive, #ef4444) 40%, transparent);
+  }
+  .v2-action-icon-btn.client {
+    padding: 5px 11px;
   }
 }
 
@@ -3666,14 +3729,18 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
     gap: 8px;
     width: 100%;
     box-sizing: border-box;
+    transition: border-color 0.15s ease;
   }
-  .v2-pcm-header {
+  .v2-payment-card-mobile:hover {
+    border-color: var(--gold);
+  }
+  .v2-pcm-row-top {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    gap: 10px;
+    gap: 12px;
   }
-  .v2-pcm-header-left {
+  .v2-pcm-service-group {
     display: flex;
     flex-direction: column;
     gap: 2px;
@@ -3683,43 +3750,81 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
     font-size: 14px;
     font-weight: 700;
     color: var(--foreground);
+    line-height: 1.25;
+    overflow-wrap: break-word;
   }
-  .v2-pcm-client {
-    font-size: 12px;
+  .v2-pcm-barber {
+    font-size: 11px;
     color: var(--muted-foreground);
   }
   .v2-pcm-amount {
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 700;
     color: var(--foreground);
     font-variant-numeric: tabular-nums;
     text-align: right;
     flex-shrink: 0;
+    line-height: 1.25;
   }
-  .v2-pcm-meta {
+  .v2-pcm-row-client {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 12px;
+    padding-top: 1px;
+  }
+  .v2-pcm-client-name {
+    font-weight: 600;
+    color: var(--foreground);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .v2-pcm-client-contact {
+    font-size: 11px;
+    color: var(--muted-foreground);
+    flex-shrink: 0;
+  }
+  .v2-pcm-row-meta {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 8px;
+    font-size: 11px;
+    color: var(--muted-foreground);
+    padding-top: 1px;
+  }
+  .v2-pcm-datetime {
     font-size: 11px;
     color: var(--muted-foreground);
   }
   .v2-pcm-actions {
     display: flex;
     gap: 8px;
-    justify-content: flex-end;
+    width: 100%;
     border-top: 1px solid var(--v2-line, var(--border));
-    padding-top: 8px;
+    padding-top: 9px;
     margin-top: 2px;
   }
   .v2-pcm-btn {
     min-height: 44px;
     height: 44px;
-    padding: 0 14px;
+    padding: 0 12px;
     font-size: 12px;
     font-weight: 600;
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 6px;
+    border-radius: var(--radius-control);
+    flex: 1;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .v2-pcm-btn.client {
+    width: 100%;
+    flex: 1 1 100%;
   }
 }
 

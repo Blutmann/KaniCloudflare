@@ -648,34 +648,34 @@ export function V2Payments() {
                           <>
                             <button
                               type="button"
-                              className="v2-secondary v2-action-icon-btn"
+                              className="v2-secondary v2-action-icon-btn edit"
                               onClick={() => openEditModal(p)}
                               title="Editar cobro"
                               aria-label="Editar cobro"
                             >
-                              <Edit2 size={14} />
+                              <Edit2 size={13} />
                               <span className="v2-btn-text">Editar</span>
                             </button>
                             <button
                               type="button"
-                              className="v2-quiet v2-action-icon-btn v2-destructive-text"
+                              className="v2-quiet v2-action-icon-btn delete v2-destructive-text"
                               onClick={() => setDeletingPayment(p)}
                               title="Anular cobro"
                               aria-label="Anular cobro"
                             >
-                              <Trash2 size={14} />
+                              <Trash2 size={13} />
                               <span className="v2-btn-text">Eliminar</span>
                             </button>
                           </>
                         ) : (
                           <button
                             type="button"
-                            className="v2-secondary v2-action-icon-btn"
+                            className="v2-secondary v2-action-icon-btn client"
                             onClick={() => openClientEditModal(p)}
                             title="Editar datos de contacto"
                             aria-label="Editar datos de cliente"
                           >
-                            <User size={14} />
+                            <User size={13} />
                             <span className="v2-btn-text">Editar cliente</span>
                           </button>
                         )}
@@ -688,27 +688,39 @@ export function V2Payments() {
           </div>
         )}
 
-        {/* Presentación Mobile: Tarjetas compactas, sin scroll horizontal, importe destacado a la derecha */}
+        {/* Presentación Mobile: Tarjetas compactas estructuradas en 4 líneas, sin desborde horizontal */}
         {history.length > 0 && (
           <div className="v2-payments-mobile-cards">
             {history.map((p) => (
               <article className="v2-payment-card-mobile" key={p.id}>
-                <div className="v2-pcm-header">
-                  <div className="v2-pcm-header-left">
+                {/* 1. Línea superior: Servicio + Importe */}
+                <div className="v2-pcm-row-top">
+                  <div className="v2-pcm-service-group">
                     <strong className="v2-pcm-service">
                       {p.serviceOtherDetail || p.serviceName}
                     </strong>
-                    <span className="v2-pcm-client">
-                      {p.clientName || "Sin cliente"} · {p.barberName}
-                    </span>
+                    <span className="v2-pcm-barber">{p.barberName}</span>
                   </div>
                   <strong className="v2-pcm-amount">
                     {money(p.collectedAmountArs)}
                   </strong>
                 </div>
 
-                <div className="v2-pcm-meta">
-                  <span className="v2-pcm-date">
+                {/* 2. Línea secundaria: Cliente + Teléfono */}
+                <div className="v2-pcm-row-client">
+                  <span className="v2-pcm-client-name">
+                    {p.clientName || "Sin cliente asociado"}
+                  </span>
+                  {p.clientContact && (
+                    <span className="v2-pcm-client-contact">
+                      {p.clientContact}
+                    </span>
+                  )}
+                </div>
+
+                {/* 3. Línea terciaria: Fecha/Hora + Método */}
+                <div className="v2-pcm-row-meta">
+                  <span className="v2-pcm-datetime">
                     {p.paymentDate} · {p.paymentTime} hs
                   </span>
                   <span className={`v2-method-badge ${p.paymentMethod.toLowerCase()}`}>
@@ -716,12 +728,13 @@ export function V2Payments() {
                   </span>
                 </div>
 
+                {/* 4. Línea inferior: Acciones compactas y estables */}
                 <div className="v2-pcm-actions">
                   {isAdmin && !p.isDepositMovement ? (
                     <>
                       <button
                         type="button"
-                        className="v2-secondary v2-pcm-btn"
+                        className="v2-secondary v2-pcm-btn edit"
                         onClick={() => openEditModal(p)}
                         title="Editar cobro"
                         aria-label="Editar cobro"
@@ -731,7 +744,7 @@ export function V2Payments() {
                       </button>
                       <button
                         type="button"
-                        className="v2-quiet v2-pcm-btn v2-destructive-text"
+                        className="v2-quiet v2-pcm-btn delete v2-destructive-text"
                         onClick={() => setDeletingPayment(p)}
                         title="Anular cobro"
                         aria-label="Anular cobro"
@@ -743,7 +756,7 @@ export function V2Payments() {
                   ) : (
                     <button
                       type="button"
-                      className="v2-secondary v2-pcm-btn"
+                      className="v2-secondary v2-pcm-btn client"
                       onClick={() => openClientEditModal(p)}
                       title="Editar datos de contacto"
                       aria-label="Editar datos de cliente"
