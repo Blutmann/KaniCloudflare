@@ -2,10 +2,11 @@ import { describe, it, expect } from 'vitest';
 import {
   buildConfirmedEmail,
   formatSpanishDateNatural,
+  buildGoogleCalendarUrl,
 } from '../lib/kani-notifications.functions';
-import { KANI_MAPS_URL } from '../lib/kani-constants';
+import { KANI_MAPS_URL, KANI_PUBLIC_WHATSAPP_URL } from '../lib/kani-constants';
 
-describe('Email transaccional de confirmación de turno (Kani Barber Studio)', () => {
+describe('Email transaccional de confirmación de turno (Kani Barber Studio) — Nuevo Diseño Aprobado', () => {
   const basePayload = {
     notificationId: 'notif-123',
     notificationType: 'CONFIRMED' as const,
@@ -25,9 +26,18 @@ describe('Email transaccional de confirmación de turno (Kani Barber Studio)', (
     transferHolderName: null,
   };
 
-  it('1. Asunto: Utiliza exactamente "Kani - Se confirmó tu turno"', () => {
+  it('1. Asunto y preencabezado: Asunto personalizado y preencabezado con detalles clave', () => {
     const email = buildConfirmedEmail(basePayload);
-    expect(email.subject).toBe('Kani - Se confirmó tu turno');
+    expect(email.subject).toBe('Tomas Harispe, tu turno en Kani está confirmado');
+
+    const emailWithoutName = buildConfirmedEmail({
+      ...basePayload,
+      clientName: '',
+    });
+    expect(emailWithoutName.subject).toBe('Tu turno en Kani está confirmado');
+
+    // Preencabezado en HTML
+    expect(email.html).toContain('jueves 22 de octubre de 2026 a las 16:45 hs · Corte con Lautaro');
   });
 
   it('2. Fecha natural en español: Formato día semana + número + mes + año', () => {
@@ -41,13 +51,14 @@ describe('Email transaccional de confirmación de turno (Kani Barber Studio)', (
     const expectedSentence =
       'Se confirmó tu turno el día jueves 22 de octubre de 2026 a las 16:45 hs, para un servicio de Corte con Lautaro.';
     expect(email.text).toContain(expectedSentence);
-    expect(email.html).toContain('jueves 22 de octubre de 2026');
+    expect(email.html).toContain('Jueves 22 de octubre de 2026');
     expect(email.html).toContain('16:45 hs');
     expect(email.html).toContain('Corte');
     expect(email.html).toContain('Lautaro');
+    expect(email.html).toContain('Tomas Harispe');
   });
 
-  it('4. Resumen financiero: Importe, Seña abonada y Saldo a pagar en el local', () => {
+  it('4. Resumen financiero: Importe, Seña abonada y Saldo en el local', () => {
     const email = buildConfirmedEmail(basePayload);
 
     // Importes formateados
@@ -75,7 +86,7 @@ describe('Email transaccional de confirmación de turno (Kani Barber Studio)', (
       bookingDate: '2026-10-24',
       startTime: '11:00:00',
       servicePriceArs: 30000,
-      downPaymentArs: 10000, // Simula valor antiguo de la base, que debe normalizarse a 5.000
+      downPaymentArs: 10000, // Simula valor antiguo de la base, normalizado a 5.000
     };
 
     const email = buildConfirmedEmail(customPayload);
@@ -102,40 +113,59 @@ describe('Email transaccional de confirmación de turno (Kani Barber Studio)', (
     expect(email.text.toLowerCase()).not.toContain('crédito');
   });
 
-  it('7. Ubicación: Dirección exacta y enlace a Google Maps', () => {
+  it('7. Ubicación: Dirección exacta y enlace oficial a Google Maps', () => {
     const email = buildConfirmedEmail(basePayload);
     const mapsExactUrl = KANI_MAPS_URL;
 
-    expect(email.text).toContain('¿CÓMO LLEGO?');
     expect(email.text).toContain('San Isidro Labrador 7');
-    expect(email.text).toContain('Martinez, Provincia de Buenos Aires');
+    expect(email.text).toContain('Martínez, Buenos Aires');
     expect(email.text).toContain(mapsExactUrl);
 
-    expect(email.html).toContain('¿Cómo llego?');
+    expect(email.html).toContain('CÓMO LLEGAR');
     expect(email.html).toContain('San Isidro Labrador 7');
-    expect(email.html).toContain('Martinez, Provincia de Buenos Aires');
+    expect(email.html).toContain('Martínez, Buenos Aires');
     expect(email.html).toContain(mapsExactUrl);
-    expect(email.html).toContain('Ver ubicación');
+    expect(email.html).toContain('Ver en Google Maps');
   });
 
-  it('8. WhatsApp: Acción y enlace exacto con número oficial', () => {
+  it('8. WhatsApp y Redes: Enlaces oficiales con número verificado e Instagram', () => {
     const email = buildConfirmedEmail(basePayload);
-    const waExactUrl = 'https://wa.me/5491155616438';
+    const waExactUrl = KANI_PUBLIC_WHATSAPP_URL;
 
     expect(email.text).toContain('Contactar vía WhatsApp');
     expect(email.text).toContain(waExactUrl);
 
-    expect(email.html).toContain('Contactar vía WhatsApp');
+    expect(email.html).toContain('Contactar por WhatsApp');
     expect(email.html).toContain(waExactUrl);
+    expect(email.html).toContain('https://www.instagram.com/kanibarberstudio/');
   });
 
-  it('9. Estética Kani modo claro y compatibilidad de email (sin iframe, sin script)', () => {
+  it('9. Integración de Google Calendar y Botón de acción', () => {
+    const email = buildConfirmedEmail(basePayload);
+    const calUrl = buildGoogleCalendarUrl({
+      bookingDate: basePayload.bookingDate,
+      startTime: basePayload.startTime,
+      endTime: basePayload.endTime,
+      serviceDurationMinutes: basePayload.serviceDurationMinutes,
+      serviceName: basePayload.serviceName,
+      barberName: basePayload.barberName,
+    });
+
+    expect(calUrl).toContain('calendar.google.com/calendar/render?action=TEMPLATE');
+    expect(calUrl).toContain('Corte%20%E2%80%94%20Kani%20Barber%20Studio');
+    expect(email.html).toContain(calUrl);
+    expect(email.html).toContain('Agregar a mi calendario');
+  });
+
+  it('10. Estética Kani modo claro aprobada y compatibilidad de email (sin iframe, sin script)', () => {
     const email = buildConfirmedEmail(basePayload);
 
-    // Colores Kani modo claro
-    expect(email.html).toContain('#762936'); // Bordó institucional Kani
-    expect(email.html).toContain('#FAF9F6'); // Fondo cálido Kani
-    expect(email.html).toContain('#252323'); // Texto principal grafito Kani
+    // Paleta oficial aprobada
+    expect(email.html).toContain('#F4EFE6'); // Fondo marfil
+    expect(email.html).toContain('#1C1A17'); // Negro cálido
+    expect(email.html).toContain('#C9A24D'); // Dorado
+    expect(email.html).toContain('#9A7A2E'); // Dorado oscuro
+    expect(email.html).toContain('#7A2C3A'); // Bordó
 
     // Compatibilidad estricta
     expect(email.html).not.toContain('<script');

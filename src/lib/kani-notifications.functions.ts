@@ -1,6 +1,6 @@
 import { createServerFn, createServerOnlyFn } from "@tanstack/react-start";
 import { notificationSubject } from './kani-email-environment';
-import { KANI_MAPS_URL, KANI_STANDARD_DEPOSIT_ARS, KANI_PUBLIC_WHATSAPP_URL } from './kani-constants';
+import { KANI_MAPS_URL, KANI_STANDARD_DEPOSIT_ARS, KANI_PUBLIC_WHATSAPP_URL, KANI_STUDIO_FULL_ADDRESS } from './kani-constants';
 
 import type { Database } from "@/integrations/supabase/types";
 
@@ -915,8 +915,53 @@ export function formatSpanishDateNatural(isoDate: string): string {
   return `${weekday} ${day} de ${monthName} de ${year}`;
 }
 
+export function buildGoogleCalendarUrl(payload: {
+  bookingDate: string;
+  startTime: string;
+  endTime?: string | null;
+  serviceDurationMinutes?: number | null;
+  serviceName: string;
+  barberName: string;
+}): string {
+  const dateStr = (payload.bookingDate || '').trim();
+  const startTimeStr = (payload.startTime || '').trim().slice(0, 5);
+  if (!dateStr || !startTimeStr) return 'https://calendar.google.com';
+
+  const [year, month, day] = dateStr.split('-').map((v) => parseInt(v, 10));
+  const [startHour, startMin] = startTimeStr.split(':').map((v) => parseInt(v, 10));
+
+  let endHour: number;
+  let endMin: number;
+  if (payload.endTime && payload.endTime.trim()) {
+    const [eH, eM] = payload.endTime.trim().slice(0, 5).split(':').map((v) => parseInt(v, 10));
+    endHour = eH;
+    endMin = eM;
+  } else {
+    const duration = payload.serviceDurationMinutes || 45;
+    const totalMin = startHour * 60 + startMin + duration;
+    endHour = Math.floor(totalMin / 60) % 24;
+    endMin = totalMin % 60;
+  }
+
+  // Argentina está en UTC-3 sin horario de verano. Hora local + 3 = UTC.
+  const startUtcDate = new Date(Date.UTC(year, month - 1, day, startHour + 3, startMin, 0));
+  const dayOffset = startHour * 60 + startMin + (payload.serviceDurationMinutes || 45) >= 24 * 60 ? 1 : 0;
+  const endUtcDate = new Date(Date.UTC(year, month - 1, day + dayOffset, endHour + 3, endMin, 0));
+
+  const formatUtc = (d: Date) =>
+    d.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+
+  const dates = `${formatUtc(startUtcDate)}/${formatUtc(endUtcDate)}`;
+  const title = `${payload.serviceName} — Kani Barber Studio`;
+  const details = `Turno con ${payload.barberName} para ${payload.serviceName} en Kani Barber Studio.`;
+  const location = KANI_STUDIO_FULL_ADDRESS;
+
+  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${dates}&details=${encodeURIComponent(details)}&location=${encodeURIComponent(location)}`;
+}
+
 export function buildConfirmedEmail(payload: NotificationPayload) {
   const spanishDate = formatSpanishDateNatural(payload.bookingDate);
+  const capitalizedDate = spanishDate ? spanishDate.charAt(0).toUpperCase() + spanishDate.slice(1) : '';
   const cleanTime = (payload.startTime || "").slice(0, 5);
   const servicePrice = payload.servicePriceArs ?? 0;
   const downPayment = (payload.downPaymentArs && payload.downPaymentArs !== 10000) ? payload.downPaymentArs : KANI_STANDARD_DEPOSIT_ARS;
@@ -927,113 +972,396 @@ export function buildConfirmedEmail(payload: NotificationPayload) {
     barberName: escapeHtml(payload.barberName),
     serviceName: escapeHtml(payload.serviceName),
     date: escapeHtml(spanishDate),
+    capitalizedDate: escapeHtml(capitalizedDate),
     time: escapeHtml(cleanTime),
     servicePrice: escapeHtml(`$${servicePrice.toLocaleString("es-AR")}`),
     downPayment: escapeHtml(`$${downPayment.toLocaleString("es-AR")}`),
     remainingPayment: escapeHtml(`$${remainingPayment.toLocaleString("es-AR")}`),
   };
 
-  const subject = "Kani - Se confirmó tu turno";
+  const subject = payload.clientName && payload.clientName.trim()
+    ? `${payload.clientName.trim()}, tu turno en Kani está confirmado`
+    : "Tu turno en Kani está confirmado";
+
+  const preheaderText = `${spanishDate} a las ${cleanTime} hs · ${payload.serviceName} con ${payload.barberName}`;
+
   const mapsUrl = KANI_MAPS_URL;
   const whatsAppUrl = KANI_PUBLIC_WHATSAPP_URL;
+  const instagramUrl = "https://www.instagram.com/kanibarberstudio/";
+
+  const appUrl = (
+    getRuntimeEnv('KANI_APP_URL') ||
+    getRuntimeEnv('APP_URL') ||
+    'https://kanibarberstudio-cloudflare.kanibarber.workers.dev'
+  ).replace(/\/$/, '');
+  const logoUrl = `${appUrl}/kani-email-logo.png`;
+
+  const calendarUrl = buildGoogleCalendarUrl({
+    bookingDate: payload.bookingDate,
+    startTime: payload.startTime,
+    endTime: payload.endTime,
+    serviceDurationMinutes: payload.serviceDurationMinutes,
+    serviceName: payload.serviceName,
+    barberName: payload.barberName,
+  });
 
   const html = `<!doctype html>
-<html lang="es">
+<html lang="es" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>${subject}</title>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="format-detection" content="telephone=no, address=no, email=no, date=no, url=no">
+  <meta name="color-scheme" content="light">
+  <meta name="supported-color-schemes" content="light">
+  <title>${escapeHtml(subject)}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!--[if mso]>
+  <noscript>
+    <xml>
+      <o:OfficeDocumentSettings>
+        <o:PixelsPerInch>96</o:PixelsPerInch>
+      </o:OfficeDocumentSettings>
+    </xml>
+  </noscript>
+  <![endif]-->
+  <style type="text/css">
+    body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+    table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+    img { -ms-interpolation-mode: bicubic; border: 0; outline: none; text-decoration: none; }
+    a[x-apple-data-detectors] {
+      color: inherit !important;
+      text-decoration: none !important;
+      font-size: inherit !important;
+      font-family: inherit !important;
+      font-weight: inherit !important;
+      line-height: inherit !important;
+    }
+    @media only screen and (max-width: 599px) {
+      .outer-wrapper-td {
+        padding: 0 0 32px 0 !important;
+      }
+      .email-container {
+        width: 100% !important;
+        max-width: 100% !important;
+        border-radius: 0px !important;
+        border-left: none !important;
+        border-right: none !important;
+      }
+      .content-padding {
+        padding-left: 20px !important;
+        padding-right: 20px !important;
+      }
+      .title-h1 {
+        font-size: 30px !important;
+        line-height: 1.15 !important;
+      }
+      .dark-card-inner {
+        padding: 20px !important;
+      }
+      .dark-card-block {
+        display: block !important;
+        max-width: 100% !important;
+        width: 100% !important;
+      }
+      .dark-card-block-right {
+        margin-left: 0 !important;
+        margin-top: 0 !important;
+      }
+      .mobile-divider {
+        display: block !important;
+      }
+      .loc-btn-col {
+        display: block !important;
+        width: 100% !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+      }
+      .loc-btn-col-right {
+        margin-top: 10px !important;
+      }
+      .balance-label-td {
+        display: block !important;
+        width: 100% !important;
+        text-align: left !important;
+      }
+      .balance-amount-td {
+        display: block !important;
+        width: 100% !important;
+        text-align: left !important;
+        margin-top: 4px !important;
+      }
+    }
+    @media only screen and (min-width: 600px) {
+      .content-padding {
+        padding-left: 48px !important;
+        padding-right: 48px !important;
+      }
+      .mobile-dark-card {
+        display: none !important;
+        max-height: 0px !important;
+        overflow: hidden !important;
+        mso-hide: all !important;
+      }
+      .desktop-dark-card {
+        display: block !important;
+        max-height: none !important;
+        overflow: visible !important;
+      }
+    }
+  </style>
 </head>
-<body style="margin: 0; padding: 0; background-color: #FAF9F6; color: #252323; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; line-height: 1.5;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #FAF9F6; margin: 0; padding: 0; width: 100%;">
+<body style="margin: 0; padding: 0; background-color: #E9E3D8; color: #3E3A34; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; line-height: 1.5;">
+
+  <!-- Preheader invisible para clientes de correo -->
+  <div style="display: none; font-size: 1px; color: #E9E3D8; line-height: 1px; max-height: 0px; max-width: 0px; opacity: 0; overflow: hidden; mso-hide: all;">
+    ${escapeHtml(preheaderText)}&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;
+  </div>
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #E9E3D8; margin: 0; padding: 0; width: 100%;">
     <tr>
-      <td align="center" style="padding: 32px 16px 48px;">
-        <!-- Card Contenedora Principal -->
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 560px; background-color: #FFFFFF; border: 1px solid #E5E0D8; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
+      <td align="center" class="outer-wrapper-td" style="padding: 24px 12px 48px; background-color: #E9E3D8;">
+        <!--[if (gte mso 9)|(IE)]>
+        <table role="presentation" width="600" align="center" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+        <td>
+        <![endif]-->
+
+        <!-- Contenedor principal de la tarjeta -->
+        <table role="presentation" class="email-container" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; margin: 0 auto; background-color: #F4EFE6; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 16px rgba(28,26,23,0.05); border: 1px solid #E4DCCB;">
           
-          <!-- Header / Marca Kani -->
+          <!-- Logo Oficial Kani Centrado -->
           <tr>
-            <td style="background-color: #FAF9F6; border-bottom: 1px solid #E5E0D8; padding: 20px 28px; text-align: center;">
-              <span style="font-size: 13px; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: #252323;">Kani Barber Studio</span>
+            <td align="center" style="padding: 32px 24px 0;">
+              <img src="${logoUrl}" alt="Kani Barber Studio" width="180" style="display: block; width: 180px; max-width: 100%; height: auto; border: 0; margin: 0 auto; font-family: 'DM Serif Display', Georgia, serif; font-size: 22px; font-weight: 700; color: #1C1A17; text-align: center;" />
             </td>
           </tr>
 
-          <!-- Contenido Principal: Confirmación -->
+          <!-- Filete dorado elegante de 1px -->
           <tr>
-            <td style="padding: 32px 28px 24px;">
-              <h1 style="margin: 0 0 16px; font-size: 22px; font-weight: 700; color: #252323; line-height: 1.25;">
+            <td align="center" style="padding: 16px 24px 0;" class="content-padding">
+              <div style="height: 1px; width: 100%; max-width: 504px; background-color: #C9A24D; line-height: 1px; font-size: 1px; margin: 0 auto;">&nbsp;</div>
+            </td>
+          </tr>
+
+          <!-- Título y Saludo -->
+          <tr>
+            <td class="content-padding" style="padding: 26px 24px 0; text-align: left;">
+              <h1 class="title-h1" style="margin: 0 0 10px; font-family: 'DM Serif Display', Georgia, 'Times New Roman', serif; font-size: 34px; line-height: 1.15; font-weight: 400; color: #1C1A17; letter-spacing: -0.01em;">
                 Se confirmó tu turno
               </h1>
-              <p style="margin: 0; font-size: 15px; line-height: 1.6; color: #252323;">
-                Se confirmó tu turno el día <strong>${safe.date}</strong> a las <strong>${safe.time} hs</strong>, para un servicio de <strong>${safe.serviceName}</strong> con <strong>${safe.barberName}</strong>.
+              <p style="margin: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.5; color: #3E3A34;">
+                Hola <strong style="color: #1C1A17; font-weight: 600;">${safe.clientName}</strong>, te esperamos en Kani.
               </p>
             </td>
           </tr>
 
-          <!-- Divisor -->
+          <!-- Tarjeta Oscura del Turno (#1C1A17) -->
           <tr>
-            <td style="padding: 0 28px;">
-              <div style="height: 1px; background-color: #E5E0D8; line-height: 1px; font-size: 1px;">&nbsp;</div>
-            </td>
-          </tr>
+            <td class="content-padding" style="padding: 24px 24px 0;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#1C1A17" style="background-color: #1C1A17; border-radius: 14px; overflow: hidden; width: 100%; table-layout: fixed;">
+                <tr>
+                  <td class="dark-card-inner" style="padding: 22px;">
+                    
+                    <!-- Tarjeta Modo Móvil (Vertical por defecto) -->
+                    <div class="mobile-dark-card">
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
+                        <tr>
+                          <td style="padding-bottom: 16px;">
+                            <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 600; color: #B8AE9C; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 6px;">
+                              FECHA
+                            </div>
+                            <div style="font-family: 'DM Serif Display', Georgia, 'Times New Roman', serif; font-size: 26px; line-height: 1.2; font-weight: 400; color: #FFFFFF; word-break: break-word;">
+                              ${safe.capitalizedDate}
+                            </div>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td style="padding-bottom: 18px;">
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
+                              <tr>
+                                <td valign="bottom" style="padding: 0;">
+                                  <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 600; color: #B8AE9C; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 6px;">
+                                    HORA
+                                  </div>
+                                  <div style="font-family: 'DM Serif Display', Georgia, 'Times New Roman', serif; font-size: 26px; line-height: 1.2; font-weight: 400; color: #FFFFFF;">
+                                    ${safe.time} hs
+                                  </div>
+                                </td>
+                                <td align="right" valign="bottom" style="padding: 0; text-align: right; line-height: 1; font-family: sans-serif; font-size: 58px; color: #341F20; color: rgba(122, 44, 58, 0.25); user-select: none; pointer-events: none;">
+                                  &#34809;
+                                </td>
+                              </tr>
+                            </table>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td style="padding-bottom: 18px;">
+                            <div style="height: 1px; background-color: #3A362F; line-height: 1px; font-size: 1px;">&nbsp;</div>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td style="padding-bottom: 16px;">
+                            <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 600; color: #B8AE9C; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 6px;">
+                              SERVICIO
+                            </div>
+                            <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.35; font-weight: 500; color: #FFFFFF; word-break: break-word;">
+                              ${safe.serviceName}
+                            </div>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td style="padding-bottom: 20px;">
+                            <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 600; color: #B8AE9C; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 6px;">
+                              BARBERO
+                            </div>
+                            <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.35; font-weight: 500; color: #FFFFFF; word-break: break-word;">
+                              ${safe.barberName}
+                            </div>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td>
+                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
+                              <tr>
+                                <td align="center" bgcolor="#1C1A17" style="border: 1px solid #C9A24D; border-radius: 8px; background-color: #1C1A17;">
+                                  <a href="${calendarUrl}" target="_blank" rel="noopener noreferrer" style="display: block; padding: 12px 18px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 15px; font-weight: 600; color: #C9A24D; text-decoration: none; text-align: center; line-height: 1.2;">
+                                    Agregar a mi calendario
+                                  </a>
+                                </td>
+                              </tr>
+                            </table>
+                          </td>
+                        </tr>
+                      </table>
+                    </div>
 
-          <!-- Resumen del pago -->
-          <tr>
-            <td style="padding: 24px 28px;">
-              <h2 style="margin: 0 0 14px; font-size: 13px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #5D5A54;">
-                Resumen
-              </h2>
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #FAF8F5; border: 1px solid #EBE7DF; border-radius: 8px; padding: 16px 20px;">
-                <tr>
-                  <td style="padding: 7px 0; font-size: 14px; color: #5D5A54;">Importe</td>
-                  <td align="right" style="padding: 7px 0; font-size: 15px; font-weight: 600; color: #252323;">${safe.servicePrice}</td>
-                </tr>
-                <tr>
-                  <td style="padding: 7px 0; border-top: 1px solid #ECE7DE; font-size: 14px; color: #5D5A54;">Seña abonada</td>
-                  <td align="right" style="padding: 7px 0; border-top: 1px solid #ECE7DE; font-size: 15px; font-weight: 600; color: #2F6F43;">−${safe.downPayment}</td>
-                </tr>
-                <tr>
-                  <td style="padding: 12px 0 6px; border-top: 2px solid #D8D3C9; font-size: 15px; font-weight: 700; color: #252323;">Saldo a pagar en el local</td>
-                  <td align="right" style="padding: 12px 0 6px; border-top: 2px solid #D8D3C9; font-size: 18px; font-weight: 700; color: #762936;">${safe.remainingPayment}</td>
-                </tr>
-                <tr>
-                  <td colspan="2" style="padding-top: 10px; font-size: 12px; line-height: 1.45; color: #71717A;">
-                    Podés abonar el saldo en efectivo o por transferencia.
+                    <!-- Tarjeta Modo Escritorio (2 Columnas) -->
+                    <!--[if (gte mso 9)|(IE)]>
+                    <div class="desktop-dark-card" style="display: block !important;">
+                    <![endif]-->
+                    <!--[if !mso]><!-->
+                    <div class="desktop-dark-card" style="display: none; max-height: 0px; overflow: hidden; mso-hide: all;">
+                    <!--<![endif]-->
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
+                        <tr>
+                          <td width="50%" valign="top" style="padding-right: 14px;">
+                            <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 600; color: #B8AE9C; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 6px;">
+                              FECHA
+                            </div>
+                            <div style="font-family: 'DM Serif Display', Georgia, 'Times New Roman', serif; font-size: 26px; line-height: 1.2; font-weight: 400; color: #FFFFFF; margin-bottom: 18px; word-break: break-word;">
+                              ${safe.capitalizedDate}
+                            </div>
+                            <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 600; color: #B8AE9C; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 6px;">
+                              HORA
+                            </div>
+                            <div style="font-family: 'DM Serif Display', Georgia, 'Times New Roman', serif; font-size: 26px; line-height: 1.2; font-weight: 400; color: #FFFFFF;">
+                              ${safe.time} hs
+                            </div>
+                          </td>
+                          <td width="50%" valign="top" style="padding-left: 14px;">
+                            <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 600; color: #B8AE9C; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 6px;">
+                              SERVICIO
+                            </div>
+                            <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.35; font-weight: 500; color: #FFFFFF; margin-bottom: 18px; word-break: break-word;">
+                              ${safe.serviceName}
+                            </div>
+                            <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 600; color: #B8AE9C; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 6px;">
+                              BARBERO
+                            </div>
+                            <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.35; font-weight: 500; color: #FFFFFF; word-break: break-word;">
+                              ${safe.barberName}
+                            </div>
+                            <div style="text-align: right; line-height: 1; margin-top: -16px; margin-bottom: -10px; font-family: sans-serif; font-size: 58px; color: #341F20; color: rgba(122, 44, 58, 0.25); user-select: none; pointer-events: none;">
+                              &#34809;
+                            </div>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td colspan="2" style="padding-top: 20px;">
+                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width: 100%; max-width: 250px;">
+                              <tr>
+                                <td align="center" bgcolor="#1C1A17" style="border: 1px solid #C9A24D; border-radius: 8px; background-color: #1C1A17;">
+                                  <a href="${calendarUrl}" target="_blank" rel="noopener noreferrer" style="display: block; padding: 12px 18px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 15px; font-weight: 600; color: #C9A24D; text-decoration: none; text-align: center; line-height: 1.2;">
+                                    Agregar a mi calendario
+                                  </a>
+                                </td>
+                              </tr>
+                            </table>
+                          </td>
+                        </tr>
+                      </table>
+                    </div>
+
                   </td>
                 </tr>
               </table>
             </td>
           </tr>
 
-          <!-- Divisor -->
+          <!-- Sección RESUMEN -->
           <tr>
-            <td style="padding: 0 28px;">
-              <div style="height: 1px; background-color: #E5E0D8; line-height: 1px; font-size: 1px;">&nbsp;</div>
-            </td>
-          </tr>
-
-          <!-- Sección: ¿Cómo llego? -->
-          <tr>
-            <td style="padding: 24px 28px;">
-              <h2 style="margin: 0 0 14px; font-size: 13px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #5D5A54;">
-                ¿Cómo llego?
-              </h2>
-              <!-- Card de ubicación inspirada en Contacto -->
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #FAF8F5; border: 1px solid #EBE7DF; border-radius: 8px;">
+            <td class="content-padding" style="padding: 28px 24px 0;">
+              <div style="margin-bottom: 10px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 13px; font-weight: 700; color: #9A7A2E; letter-spacing: 0.12em; text-transform: uppercase;">
+                RESUMEN
+              </div>
+              
+              <!-- Tarjeta blanca de Resumen -->
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#FFFFFF" style="background-color: #FFFFFF; border: 1px solid #E4DCCB; border-radius: 14px; overflow: hidden; width: 100%; table-layout: fixed;">
                 <tr>
                   <td style="padding: 20px;">
-                    <p style="margin: 0 0 4px; font-size: 15px; font-weight: 700; color: #252323;">
-                      San Isidro Labrador 7
-                    </p>
-                    <p style="margin: 0 0 16px; font-size: 13px; color: #6B6862;">
-                      Martinez, Provincia de Buenos Aires
-                    </p>
-                    <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width: 100%; table-layout: fixed;">
+                      <!-- Fila Importe -->
                       <tr>
-                        <td align="left">
-                          <a href="${mapsUrl}" target="_blank" rel="noopener noreferrer" style="display: inline-block; background-color: #762936; color: #FFFFFF; font-size: 13px; font-weight: 600; text-decoration: none; padding: 10px 18px; border-radius: 6px; letter-spacing: 0.02em;">
-                            Ver ubicación &rarr;
-                          </a>
+                        <td style="padding: 6px 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 15px; color: #7A746B; width: 55%;">
+                          Importe
+                        </td>
+                        <td align="right" style="padding: 6px 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; font-weight: 500; color: #1C1A17; width: 45%; text-align: right;">
+                          ${safe.servicePrice}
+                        </td>
+                      </tr>
+                      <!-- Fila Seña abonada (Bordó #7A2C3A) -->
+                      <tr>
+                        <td style="padding: 6px 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 15px; color: #7A746B; width: 55%;">
+                          Seña abonada
+                        </td>
+                        <td align="right" style="padding: 6px 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; font-weight: 500; color: #7A2C3A; width: 45%; text-align: right;">
+                          −${safe.downPayment}
+                        </td>
+                      </tr>
+                      <!-- Divisor interno -->
+                      <tr>
+                        <td colspan="2" style="padding: 10px 0 6px;">
+                          <div style="height: 1px; background-color: #E4DCCB; line-height: 1px; font-size: 1px;">&nbsp;</div>
+                        </td>
+                      </tr>
+                      <!-- Fila Saldo en el local -->
+                      <tr>
+                        <td colspan="2" style="padding-top: 6px; padding-bottom: 12px;">
+                          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
+                            <tr>
+                              <td valign="baseline" class="balance-label-td">
+                                <span style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 15px; font-weight: 600; color: #1C1A17;">
+                                  Saldo en el local
+                                </span>
+                              </td>
+                              <td align="right" valign="baseline" class="balance-amount-td">
+                                <span style="font-family: 'DM Serif Display', Georgia, 'Times New Roman', serif; font-size: 28px; line-height: 1.15; font-weight: 400; color: #1C1A17;">
+                                  ${safe.remainingPayment}
+                                </span>
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                      <!-- Aclaración verificada de medios de pago -->
+                      <tr>
+                        <td colspan="2" style="padding-top: 12px; border-top: 1px dashed #E4DCCB;">
+                          <p style="margin: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 13px; line-height: 1.45; color: #8A8378;">
+                            Podés abonar el saldo en efectivo o por transferencia.
+                          </p>
                         </td>
                       </tr>
                     </table>
@@ -1043,32 +1371,111 @@ export function buildConfirmedEmail(payload: NotificationPayload) {
             </td>
           </tr>
 
-          <!-- Contactar vía WhatsApp -->
+          <!-- Sección CÓMO LLEGAR -->
           <tr>
-            <td style="padding: 0 28px 28px;">
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+            <td class="content-padding" style="padding: 28px 24px 0;">
+              <div style="margin-bottom: 10px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 13px; font-weight: 700; color: #9A7A2E; letter-spacing: 0.12em; text-transform: uppercase;">
+                CÓMO LLEGAR
+              </div>
+              
+              <!-- Tarjeta blanca de Ubicación -->
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#FFFFFF" style="background-color: #FFFFFF; border: 1px solid #E4DCCB; border-radius: 14px; overflow: hidden; width: 100%; table-layout: fixed;">
                 <tr>
-                  <td align="center">
-                    <a href="${whatsAppUrl}" target="_blank" rel="noopener noreferrer" style="display: block; width: 100%; box-sizing: border-box; text-align: center; background-color: #FFFFFF; color: #252323; border: 1px solid #D8D3C9; font-size: 13px; font-weight: 600; text-decoration: none; padding: 12px 18px; border-radius: 6px;">
-                      Contactar vía WhatsApp
-                    </a>
+                  <td style="padding: 20px;">
+                    <!-- Dirección con ícono dorado -->
+                    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 18px;">
+                      <tr>
+                        <td valign="top" style="padding-right: 8px; padding-top: 1px;">
+                          <!-- Ícono de ubicación dorado #9A7A2E -->
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9A7A2E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: block;">
+                            <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
+                            <circle cx="12" cy="10" r="3"/>
+                          </svg>
+                        </td>
+                        <td valign="top">
+                          <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; font-weight: 600; color: #1C1A17; line-height: 1.3;">
+                            San Isidro Labrador 7
+                          </div>
+                          <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 14px; color: #7A746B; margin-top: 2px;">
+                            Martínez, Buenos Aires
+                          </div>
+                        </td>
+                      </tr>
+                    </table>
+
+                    <!-- Botones de Acción (2 columnas en escritorio, apiladas en móvil) -->
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <!-- Botón Primario: Ver en Google Maps -->
+                        <td width="50%" valign="top" class="loc-btn-col" style="padding-right: 6px;">
+                          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                            <tr>
+                              <td align="center" bgcolor="#1C1A17" style="border-radius: 10px; background-color: #1C1A17;">
+                                <a href="${mapsUrl}" target="_blank" rel="noopener noreferrer" style="display: block; padding: 14px 16px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 15px; font-weight: 600; color: #F4EFE6; text-decoration: none; text-align: center; line-height: 1.2;">
+                                  Ver en Google Maps
+                                </a>
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+
+                        <!-- Botón Secundario: Contactar por WhatsApp -->
+                        <td width="50%" valign="top" class="loc-btn-col loc-btn-col-right" style="padding-left: 6px;">
+                          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                            <tr>
+                              <td align="center" bgcolor="#FFFFFF" style="border-radius: 10px; border: 1.5px solid #1C1A17; background-color: #FFFFFF;">
+                                <a href="${whatsAppUrl}" target="_blank" rel="noopener noreferrer" style="display: block; padding: 12.5px 16px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 15px; font-weight: 600; color: #1C1A17; text-decoration: none; text-align: center; line-height: 1.2;">
+                                  Contactar por WhatsApp
+                                </a>
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                    </table>
+
                   </td>
                 </tr>
               </table>
             </td>
           </tr>
 
-          <!-- Footer institucional -->
+          <!-- Divisor y Pie de Página Institucional -->
           <tr>
-            <td style="background-color: #FAF9F6; border-top: 1px solid #EBE7DF; padding: 16px 28px; text-align: center;">
-              <p style="margin: 0; font-size: 12px; color: #8D8883; line-height: 1.5;">
-                © 2026 Kani Barber Studio · San Isidro Labrador 7, Martínez<br>
-                Este correo fue enviado automáticamente para confirmar tu turno.
+            <td class="content-padding" style="padding: 32px 24px 36px; text-align: center;">
+              <div style="height: 1px; width: 100%; background-color: #D9D1C1; line-height: 1px; font-size: 1px; margin-bottom: 20px;">&nbsp;</div>
+              
+              <!-- Ícono y enlace de Instagram -->
+              <table role="presentation" align="center" cellpadding="0" cellspacing="0" border="0" style="margin: 0 auto 14px;">
+                <tr>
+                  <td align="center">
+                    <a href="${instagramUrl}" target="_blank" rel="noopener noreferrer" style="display: inline-block; color: #7A746B; text-decoration: none;" aria-label="Instagram de Kani Barber Studio">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7A746B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: block;">
+                        <rect width="20" height="20" x="2" y="2" rx="5" ry="5"/>
+                        <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+                        <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/>
+                      </svg>
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin: 0 0 4px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 13px; line-height: 1.5; color: #8A8378;">
+                © 2026 Kani Barber Studio · San Isidro Labrador 7, Martínez
+              </p>
+              <p style="margin: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 12px; line-height: 1.5; color: #8A8378;">
+                Correo automático de confirmación · turnos@kanibarber.com
               </p>
             </td>
           </tr>
 
         </table>
+
+        <!--[if (gte mso 9)|(IE)]>
+        </td>
+        </tr>
+        </table>
+        <![endif]-->
       </td>
     </tr>
   </table>
@@ -1078,32 +1485,48 @@ export function buildConfirmedEmail(payload: NotificationPayload) {
   const text = `KANI BARBER STUDIO
 Se confirmó tu turno
 
+Hola ${payload.clientName}, te esperamos en Kani.
+
 Se confirmó tu turno el día ${spanishDate} a las ${cleanTime} hs, para un servicio de ${payload.serviceName} con ${payload.barberName}.
 
 --------------------------------------------------
-RESUMEN DEL PAGO
+DETALLE DEL TURNO
+
+Fecha: ${capitalizedDate}
+Hora: ${cleanTime} hs
+Servicio: ${payload.serviceName}
+Barbero: ${payload.barberName}
+
+Agregar a mi calendario:
+${calendarUrl}
+
+--------------------------------------------------
+RESUMEN
 
 Importe: ${safe.servicePrice}
 Seña abonada: ${safe.downPayment}
 Saldo a pagar en el local: ${safe.remainingPayment}
 
 Podés abonar el saldo en efectivo o por transferencia.
+
 --------------------------------------------------
+CÓMO LLEGAR
 
-¿CÓMO LLEGO?
 San Isidro Labrador 7
-Martinez, Provincia de Buenos Aires
+Martínez, Buenos Aires
 
-Ver ubicación:
+Ver en Google Maps:
 ${mapsUrl}
 
---------------------------------------------------
-CONTACTO
 Contactar vía WhatsApp:
 ${whatsAppUrl}
 
-© 2026 Kani Barber Studio
-San Isidro Labrador 7, Martínez, Provincia de Buenos Aires`;
+Instagram:
+${instagramUrl}
+
+--------------------------------------------------
+© 2026 Kani Barber Studio · San Isidro Labrador 7, Martínez
+Correo automático de confirmación · turnos@kanibarber.com`;
 
   return { subject, html, text };
 }
