@@ -366,6 +366,8 @@ export async function processCalendarSyncQueue(
 
 export type ControlledAuditResult = {
   success: boolean;
+  barber?: string;
+  calendarVariable?: string;
   calendarId: string;
   steps: {
     access: boolean;
@@ -373,30 +375,49 @@ export type ControlledAuditResult = {
     read: boolean;
     update: boolean;
     delete: boolean;
+    confirmDeleted?: boolean;
+    operation1_create?: boolean;
+    operation2_read?: boolean;
+    operation3_update?: boolean;
+    operation4_delete?: boolean;
+    operation5_confirmDeleted?: boolean;
   };
   details: {
     createdEventId?: string;
+    createdSummary?: string;
     verifiedSummary?: string;
     updatedSummary?: string;
+    deleteStatus?: string;
     confirmedDeleted?: boolean;
+    emergencyCleanup?: boolean;
+    executedAt?: string;
   };
   error?: string;
 };
 
 /**
- * Prueba controlada de 5 pasos requerida por la Sección 3 del prompt:
- * 1. Acceso al calendario autorizado.
- * 2. Creación de un evento de prueba.
- * 3. Lectura del evento creado.
- * 4. Actualización del evento.
- * 5. Eliminación del evento y verificación de ausencia.
+ * Prueba controlada de 5 pasos requerida para la auditoría de Google Calendar:
+ * 1. Crear un evento ficticio claramente identificado como prueba.
+ * 2. Consultar el evento y comprobar sus datos.
+ * 3. Actualizarlo y verificar el cambio.
+ * 4. Eliminarlo.
+ * 5. Confirmar mediante Google Calendar API que el evento ya no existe.
+ * 
+ * Regla de seguridad: Si alguna operación falla, se ejecuta cleanup de emergencia
+ * para evitar dejar eventos ficticios sin eliminar en el calendario del barbero.
  */
 export async function runGoogleCalendarControlledAudit(
   calendarId: string,
   client: GoogleCalendarClient = new GoogleCalendarClient(),
+  barberName: string = 'Franco',
 ): Promise<ControlledAuditResult> {
+  const normBarber = barberName.trim().toUpperCase();
+  const calendarVariable = `GOOGLE_CALENDAR_${normBarber}_ID`;
+
   const result: ControlledAuditResult = {
     success: false,
+    barber: barberName,
+    calendarVariable,
     calendarId,
     steps: {
       access: false,
@@ -404,18 +425,26 @@ export async function runGoogleCalendarControlledAudit(
       read: false,
       update: false,
       delete: false,
+      confirmDeleted: false,
+      operation1_create: false,
+      operation2_read: false,
+      operation3_update: false,
+      operation4_delete: false,
+      operation5_confirmDeleted: false,
     },
-    details: {},
+    details: {
+      executedAt: new Date().toISOString(),
+    },
   };
 
   try {
-    // 1. Acceso: prueba inicial de getEvent no bloqueante o endpoint
+    // 0. Acceso inicial
     result.steps.access = true;
 
-    // 2. Creación
+    // 1. Crear un evento ficticio claramente identificado como prueba
     const auditPayload: GoogleCalendarEventPayload = {
       summary: '[AUDIT-TEST] Verificación Kani Barber Studio',
-      description: 'Evento temporal de auditoría de integración Kani Barber Studio.',
+      description: `Evento ficticio temporal de auditoría técnica Kani Barber Studio (Barbero: ${barberName}). No corresponde a una reserva real.`,
       start: {
         dateTime: '2026-11-10T16:00:00-03:00',
         timeZone: 'America/Argentina/Buenos_Aires',
@@ -429,17 +458,20 @@ export async function runGoogleCalendarControlledAudit(
 
     const created = await client.createEvent(calendarId, auditPayload);
     result.steps.create = true;
+    result.steps.operation1_create = true;
     result.details.createdEventId = created.id;
+    result.details.createdSummary = created.summary || auditPayload.summary;
 
-    // 3. Lectura
+    // 2. Consultar el evento y comprobar sus datos
     const readBack = await client.getEvent(calendarId, created.id);
-    if (!readBack || readBack.summary !== auditPayload.summary) {
+    if (!readBack || (readBack.summary !== auditPayload.summary && readBack.summary !== created.summary)) {
       throw new Error(`AUDIT_READ_FAILED: El evento leído no coincide con el creado.`);
     }
     result.steps.read = true;
+    result.steps.operation2_read = true;
     result.details.verifiedSummary = readBack.summary;
 
-    // 4. Actualización
+    // 3. Actualizarlo y verificar el cambio
     const updatedPayload = {
       summary: '[AUDIT-TEST-UPDATED] Verificación Kani Barber Studio (Actualizado)',
     };
@@ -448,20 +480,36 @@ export async function runGoogleCalendarControlledAudit(
       throw new Error(`AUDIT_UPDATE_FAILED: La actualización del evento no se reflejó.`);
     }
     result.steps.update = true;
+    result.steps.operation3_update = true;
     result.details.updatedSummary = updated.summary;
 
-    // 5. Eliminación
-    const deleted = await client.deleteEvent(calendarId, created.id);
-    const postDeleteRead = await client.getEvent(calendarId, created.id);
-    if (postDeleteRead !== null) {
-      throw new Error(`AUDIT_DELETE_FAILED: El evento todavía existe tras ser eliminado.`);
-    }
+    // 4. Eliminarlo
+    const deleteRes = await client.deleteEvent(calendarId, created.id);
     result.steps.delete = true;
+    result.steps.operation4_delete = true;
+    result.details.deleteStatus = deleteRes.alreadyDeleted ? 'ALREADY_DELETED' : 'DELETED_204';
+
+    // 5. Confirmar mediante Google Calendar API que el evento ya no existe
+    const postDeleteRead = await client.getEvent(calendarId, created.id);
+    if (postDeleteRead !== null && postDeleteRead.status !== 'cancelled') {
+      throw new Error(`AUDIT_CONFIRM_DELETE_FAILED: El evento todavía existe tras ser eliminado.`);
+    }
+    result.steps.confirmDeleted = true;
+    result.steps.operation5_confirmDeleted = true;
     result.details.confirmedDeleted = true;
 
     result.success = true;
     return result;
   } catch (err: any) {
+    // Si alguna operación falla, evitar dejar eventos ficticios sin eliminar
+    if (result.details.createdEventId && !result.details.confirmedDeleted) {
+      try {
+        await client.deleteEvent(calendarId, result.details.createdEventId);
+        result.details.emergencyCleanup = true;
+      } catch (cleanupErr) {
+        console.warn('[Google Calendar Audit] Falló limpieza de emergencia de evento ficticio:', cleanupErr);
+      }
+    }
     result.error = err?.message || String(err);
     result.success = false;
     return result;

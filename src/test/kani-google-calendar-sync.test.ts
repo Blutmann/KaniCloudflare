@@ -577,6 +577,93 @@ describe('KANI Barber Studio — Integración con Google Calendar (Etapa 1)', ()
       expect(audit.details.verifiedSummary).toBe('[AUDIT-TEST] Verificación Kani Barber Studio');
       expect(audit.details.updatedSummary).toBe('[AUDIT-TEST-UPDATED] Verificación Kani Barber Studio (Actualizado)');
     });
+
+    it('ejecuta la auditoría específica para Franco asociando GOOGLE_CALENDAR_FRANCO_ID', async () => {
+      let eventStore: Record<string, any> = {};
+
+      const mockClient = {
+        createEvent: vi.fn().mockImplementation((calId: string, event: any) => {
+          const id = 'test_franco_event_1';
+          eventStore[id] = { id, ...event };
+          return Promise.resolve(eventStore[id]);
+        }),
+        getEvent: vi.fn().mockImplementation((calId: string, eventId: string) => {
+          return Promise.resolve(eventStore[eventId] || null);
+        }),
+        updateEvent: vi.fn().mockImplementation((calId: string, eventId: string, patch: any) => {
+          eventStore[eventId] = { ...eventStore[eventId], ...patch };
+          return Promise.resolve(eventStore[eventId]);
+        }),
+        deleteEvent: vi.fn().mockImplementation((calId: string, eventId: string) => {
+          delete eventStore[eventId];
+          return Promise.resolve({ success: true, alreadyDeleted: false });
+        }),
+      } as unknown as GoogleCalendarClient;
+
+      const audit = await runGoogleCalendarControlledAudit(
+        'c_franco@group.calendar.google.com',
+        mockClient,
+        'Franco',
+      );
+
+      expect(audit.success).toBe(true);
+      expect(audit.barber).toBe('Franco');
+      expect(audit.calendarVariable).toBe('GOOGLE_CALENDAR_FRANCO_ID');
+      expect(audit.steps.create).toBe(true);
+      expect(audit.steps.read).toBe(true);
+      expect(audit.steps.update).toBe(true);
+      expect(audit.steps.delete).toBe(true);
+      expect(audit.steps.confirmDeleted).toBe(true);
+      expect(audit.details.confirmedDeleted).toBe(true);
+    });
+
+    it('ejecuta cleanup de emergencia si una operación intermedia falla (evita dejar eventos ficticios)', async () => {
+      let createdId: string | null = null;
+      const deleteMock = vi.fn().mockResolvedValue({ success: true, alreadyDeleted: false });
+
+      const failingClient = {
+        createEvent: vi.fn().mockImplementation((calId: string, event: any) => {
+          createdId = 'orphan_candidate_123';
+          return Promise.resolve({ id: createdId, ...event });
+        }),
+        getEvent: vi.fn().mockImplementation(() => Promise.resolve({ summary: '[AUDIT-TEST] Verificación Kani Barber Studio' })),
+        updateEvent: vi.fn().mockRejectedValue(new Error('GOOGLE_API_500: Internal Server Error')),
+        deleteEvent: deleteMock,
+      } as unknown as GoogleCalendarClient;
+
+      const audit = await runGoogleCalendarControlledAudit(
+        'c_franco@group.calendar.google.com',
+        failingClient,
+        'Franco',
+      );
+
+      expect(audit.success).toBe(false);
+      expect(audit.error).toContain('GOOGLE_API_500');
+      // Debe haber invocado deleteEvent para limpiar el evento huérfano
+      expect(deleteMock).toHaveBeenCalledWith('c_franco@group.calendar.google.com', 'orphan_candidate_123');
+      expect(audit.details.emergencyCleanup).toBe(true);
+    });
+
+    it('acepta post-delete read si Google devuelve status cancelled', async () => {
+      const mockClient = {
+        createEvent: vi.fn().mockResolvedValue({ id: 'evt_del_cancelled', summary: '[AUDIT-TEST] Verificación Kani Barber Studio' }),
+        getEvent: vi
+          .fn()
+          .mockResolvedValueOnce({ id: 'evt_del_cancelled', summary: '[AUDIT-TEST] Verificación Kani Barber Studio' })
+          .mockResolvedValueOnce({ id: 'evt_del_cancelled', status: 'cancelled' }),
+        updateEvent: vi.fn().mockResolvedValue({ id: 'evt_del_cancelled', summary: '[AUDIT-TEST-UPDATED] Verificación Kani Barber Studio (Actualizado)' }),
+        deleteEvent: vi.fn().mockResolvedValue({ success: true, alreadyDeleted: false }),
+      } as unknown as GoogleCalendarClient;
+
+      const audit = await runGoogleCalendarControlledAudit(
+        'c_franco@group.calendar.google.com',
+        mockClient,
+        'Franco',
+      );
+
+      expect(audit.success).toBe(true);
+      expect(audit.steps.confirmDeleted).toBe(true);
+    });
   });
 
   describe('4. Estado deshabilitado en Etapa 1', () => {

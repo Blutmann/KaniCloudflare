@@ -357,21 +357,21 @@ export default {
       if (url.pathname === "/api/admin/calendar-sync/audit") {
         try {
           const { runGoogleCalendarControlledAudit, resolveBarberCalendarId } = await import("./lib/kani-google-calendar-sync");
-          const barber = url.searchParams.get("barber");
+          const barber = url.searchParams.get("barber") || "Franco";
           let calendarId = url.searchParams.get("calendarId");
           if (!calendarId && barber) {
             calendarId = await resolveBarberCalendarId(barber);
           }
           if (!calendarId) {
             return new Response(JSON.stringify({
-              error: "CALENDAR_ID_REQUIRED",
-              message: "Proporcione ?calendarId=... o ?barber=Franco (habiendo configurado la variable del barbero en Cloudflare o en la base de datos)."
+              error: "CALENDAR_ID_NOT_CONFIGURED",
+              message: `No se encontró el ID de calendario para el barbero ${barber}. Verifique que la variable GOOGLE_CALENDAR_${barber.toUpperCase()}_ID esté configurada en Cloudflare.`
             }), {
               status: 400,
               headers: { "content-type": "application/json" },
             });
           }
-          const result = await runGoogleCalendarControlledAudit(calendarId);
+          const result = await runGoogleCalendarControlledAudit(calendarId, undefined, barber);
           return new Response(JSON.stringify(result), {
             status: 200,
             headers: { "content-type": "application/json" },

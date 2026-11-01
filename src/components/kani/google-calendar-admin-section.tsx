@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Calendar, Check, ExternalLink, RefreshCw, ShieldCheck, AlertCircle } from 'lucide-react';
+import { Calendar, Check, ExternalLink, RefreshCw, ShieldCheck, AlertCircle, PlayCircle, CheckCircle2, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useAdminStaff } from '@/lib/kani-admin-context';
+import type { ControlledAuditResult } from '@/lib/kani-google-calendar-sync';
 
 export type GoogleCalendarStatusData = {
   configured: boolean;
@@ -30,6 +31,11 @@ export function GoogleCalendarAdminSection() {
   const [connecting, setConnecting] = useState(false);
   const [error, setError] = useState('');
   const [successNotice, setSuccessNotice] = useState(false);
+
+  // Estados para la auditoría en vivo del calendario de Franco
+  const [auditing, setAuditing] = useState(false);
+  const [auditResult, setAuditResult] = useState<ControlledAuditResult | null>(null);
+  const [auditError, setAuditError] = useState('');
 
   // Detectar si venimos de un callback exitoso mediante ?gcal=success
   useEffect(() => {
@@ -112,6 +118,47 @@ export function GoogleCalendarAdminSection() {
     }
   }
 
+  async function handleRunFrancoAudit() {
+    setAuditing(true);
+    setAuditError('');
+    setAuditResult(null);
+
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session?.access_token) {
+        setAuditError('Debe tener una sesión activa de administrador para ejecutar la auditoría.');
+        setAuditing(false);
+        return;
+      }
+
+      const res = await fetch('/api/admin/calendar-sync/audit?barber=Franco', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          Accept: 'application/json',
+        },
+      });
+
+      const data = (await res.json()) as ControlledAuditResult;
+
+      if (!res.ok && !data.steps) {
+        setAuditError((data as any).message || (data as any).error || 'Error al ejecutar la auditoría.');
+      } else {
+        setAuditResult(data);
+        if (!data.success && data.error) {
+          setAuditError(data.error);
+        }
+      }
+    } catch (err: any) {
+      setAuditError(err?.message || 'Fallo de conexión al ejecutar la auditoría de Google Calendar.');
+    } finally {
+      setAuditing(false);
+    }
+  }
+
   if (!isAdmin) return null;
 
   const isConnected = Boolean(status?.authorized);
@@ -187,6 +234,106 @@ export function GoogleCalendarAdminSection() {
           </div>
         )}
       </div>
+
+      {/* Bloque de Auditoría en Vivo (Calendario de Franco) */}
+      {isConnected && (
+        <div className="mt-5 pt-4 border-t border-border">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <ShieldCheck size={16} className="text-gold" />
+                <h3 className="text-sm font-semibold text-foreground">Auditoría Real — Calendario de Franco</h3>
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Ejecuta la secuencia de 5 operaciones en Google Calendar API (<code className="text-gold">GOOGLE_CALENDAR_FRANCO_ID</code>) sin alterar reservas de Supabase y con limpieza automática garantizada.
+              </p>
+            </div>
+            <Button
+              type="button"
+              className="v2-secondary min-h-[40px] shrink-0 text-xs gap-1.5"
+              disabled={auditing || loading}
+              onClick={() => void handleRunFrancoAudit()}
+            >
+              {auditing ? (
+                <>
+                  <RefreshCw size={14} className="animate-spin" />
+                  <span>Ejecutando auditoría…</span>
+                </>
+              ) : (
+                <>
+                  <PlayCircle size={14} className="text-gold" />
+                  <span>Ejecutar auditoría Franco</span>
+                </>
+              )}
+            </Button>
+          </div>
+
+          {auditError && (
+            <div role="alert" className="notice v2-alert-notice mt-3 text-destructive flex items-center gap-2 text-xs">
+              <AlertCircle size={14} className="shrink-0" />
+              <span>{auditError}</span>
+            </div>
+          )}
+
+          {auditResult && (
+            <div className="mt-3 p-3.5 rounded-[var(--radius-control)] bg-black/40 border border-border/80 space-y-2 text-xs">
+              <div className="flex items-center justify-between pb-2 border-b border-border/60">
+                <span className="font-medium text-foreground flex items-center gap-1.5">
+                  {auditResult.success ? (
+                    <CheckCircle2 size={15} className="text-emerald-400" />
+                  ) : (
+                    <XCircle size={15} className="text-destructive" />
+                  )}
+                  Resultado: {auditResult.success ? 'Auditoría aprobada exitosamente' : 'Auditoría incompleta'}
+                </span>
+                <span className="text-[11px] text-muted-foreground">
+                  Variable: <code className="text-gold">{auditResult.calendarVariable || 'GOOGLE_CALENDAR_FRANCO_ID'}</code>
+                </span>
+              </div>
+
+              <div className="space-y-1.5 pt-1">
+                <div className="flex items-center justify-between">
+                  <span>1. Crear evento ficticio de prueba:</span>
+                  <span className={auditResult.steps.create ? 'text-emerald-400 font-medium' : 'text-muted-foreground'}>
+                    {auditResult.steps.create ? '✓ Creado' : '—'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>2. Consultar y verificar datos del evento:</span>
+                  <span className={auditResult.steps.read ? 'text-emerald-400 font-medium' : 'text-muted-foreground'}>
+                    {auditResult.steps.read ? '✓ Verificado' : '—'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>3. Actualizar evento ficticio:</span>
+                  <span className={auditResult.steps.update ? 'text-emerald-400 font-medium' : 'text-muted-foreground'}>
+                    {auditResult.steps.update ? '✓ Actualizado' : '—'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>4. Eliminar evento de Google Calendar:</span>
+                  <span className={auditResult.steps.delete ? 'text-emerald-400 font-medium' : 'text-muted-foreground'}>
+                    {auditResult.steps.delete ? '✓ Eliminado' : '—'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>5. Confirmar ausencia en Google Calendar API:</span>
+                  <span className={auditResult.steps.confirmDeleted || auditResult.details.confirmedDeleted ? 'text-emerald-400 font-medium' : 'text-muted-foreground'}>
+                    {auditResult.steps.confirmDeleted || auditResult.details.confirmedDeleted ? '✓ Confirmada ausencia (404)' : '—'}
+                  </span>
+                </div>
+              </div>
+
+              {auditResult.details.createdEventId && (
+                <div className="pt-2 border-t border-border/40 text-[11px] text-muted-foreground flex justify-between">
+                  <span>ID de evento generado:</span>
+                  <code className="text-foreground">{auditResult.details.createdEventId}</code>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="mt-5 pt-4 border-t border-border flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
         <p className="text-xs text-muted-foreground">

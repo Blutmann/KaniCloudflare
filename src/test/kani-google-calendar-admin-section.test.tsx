@@ -160,4 +160,76 @@ describe('KANI BARBER STUDIO — Google Calendar Admin Section', () => {
     const { container } = render(<GoogleCalendarAdminSection />);
     expect(container.firstChild).toBeNull();
   });
+
+  it('5. Usuario ADMIN ejecuta la auditoría del calendario de Franco y visualiza los 5 pasos', async () => {
+    const fetchMock = vi.fn((url: string, opts?: any) => {
+      if (url.includes('/api/integrations/google-calendar/status')) {
+        return Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              configured: true,
+              authorized: true,
+              strategy: 'OAUTH2',
+              syncEnabled: false,
+              scope: 'https://www.googleapis.com/auth/calendar.events.owned',
+              lastAuthorizedAt: '2026-11-01T15:00:00Z',
+            }),
+        });
+      }
+      if (url.includes('/api/admin/calendar-sync/audit?barber=Franco')) {
+        return Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              success: true,
+              barber: 'Franco',
+              calendarVariable: 'GOOGLE_CALENDAR_FRANCO_ID',
+              calendarId: 'c_franco_12345@group.calendar.google.com',
+              steps: {
+                access: true,
+                create: true,
+                read: true,
+                update: true,
+                delete: true,
+                confirmDeleted: true,
+              },
+              details: {
+                createdEventId: 'evt_test_franco_999',
+                createdSummary: '[AUDIT-TEST] Verificación Kani Barber Studio',
+                verifiedSummary: '[AUDIT-TEST] Verificación Kani Barber Studio',
+                updatedSummary: '[AUDIT-TEST-UPDATED] Verificación Kani Barber Studio (Actualizado)',
+                deleteStatus: 'DELETED_204',
+                confirmedDeleted: true,
+              },
+            }),
+        });
+      }
+      return Promise.resolve({ ok: false });
+    });
+    global.fetch = fetchMock as any;
+
+    render(<GoogleCalendarAdminSection />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Ejecutar auditoría Franco/i })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /Ejecutar auditoría Franco/i }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        '/api/admin/calendar-sync/audit?barber=Franco',
+        expect.objectContaining({
+          method: 'POST',
+          headers: expect.objectContaining({
+            Authorization: 'Bearer mock-admin-access-token-xyz',
+          }),
+        }),
+      );
+      expect(screen.getByText(/Auditoría aprobada exitosamente/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/GOOGLE_CALENDAR_FRANCO_ID/i).length).toBeGreaterThanOrEqual(1);
+      expect(screen.getByText(/evt_test_franco_999/i)).toBeInTheDocument();
+    });
+  });
 });
