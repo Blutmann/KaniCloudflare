@@ -707,8 +707,8 @@ export async function handleGoogleCalendarTestCycle(
 
       if (syncRow?.sync_status === 'SYNCED' && syncRow.google_event_id && syncRow.calendar_id) {
         try {
-          const { getCalendarClient } = await import('./kani-google-calendar-sync');
-          const client = await getCalendarClient();
+          const { GoogleCalendarClient } = await import('./kani-google-calendar-client');
+          const client = new GoogleCalendarClient();
           googleEvent = await client.getEvent(syncRow.calendar_id, syncRow.google_event_id);
         } catch (err) {
           googleError = err instanceof Error ? err.message : String(err);
@@ -811,8 +811,8 @@ export async function handleGoogleCalendarTestCycle(
 
       if (syncRow?.google_event_id && syncRow.calendar_id) {
         try {
-          const { getCalendarClient } = await import('./kani-google-calendar-sync');
-          const client = await getCalendarClient();
+          const { GoogleCalendarClient } = await import('./kani-google-calendar-client');
+          const client = new GoogleCalendarClient();
           const evt = await client.getEvent(syncRow.calendar_id, syncRow.google_event_id);
           // Si no arrojó 404, verificar si status === 'cancelled'
           if (evt && evt.status === 'cancelled') {
