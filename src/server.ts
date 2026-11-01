@@ -356,6 +356,21 @@ export default {
         }
       }
 
+      if (url.pathname === "/api/integrations/google-calendar/authorize") {
+        const { handleGoogleCalendarAuthorize } = await import("./lib/kani-google-calendar-oauth.server");
+        return await handleGoogleCalendarAuthorize(request);
+      }
+
+      if (url.pathname === "/api/integrations/google-calendar/callback") {
+        const { handleGoogleCalendarCallback } = await import("./lib/kani-google-calendar-oauth.server");
+        return await handleGoogleCalendarCallback(request);
+      }
+
+      if (url.pathname === "/api/integrations/google-calendar/status") {
+        const { handleGoogleCalendarIntegrationStatus } = await import("./lib/kani-google-calendar-oauth.server");
+        return await handleGoogleCalendarIntegrationStatus(request);
+      }
+
       if (url.pathname === "/api/admin/notification-audit") {
         try {
           const { getPontiunRuntimeEnv } = await import("./lib/kani-pontiun");
