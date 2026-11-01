@@ -65,7 +65,6 @@ describe('Google Calendar Concurrency & Resilience Tests', () => {
       },
     ];
 
-    // Simular atomic claim en BD (SKIP LOCKED): si el item ya está claimed, no se entrega a otro worker
     const claimedJobIds = new Set<string>();
 
     const createWorkerSupabase = (workerName: string) => ({
@@ -91,10 +90,9 @@ describe('Google Calendar Concurrency & Resilience Tests', () => {
     const mockClient = {
       createEvent: vi.fn().mockResolvedValue({ id: 'g-event-created' }),
       updateEvent: vi.fn().mockResolvedValue({ id: 'g-event-updated' }),
-      deleteEvent: vi.fn().mockResolvedValue({ success: true }),
+      deleteEvent: vi.fn().mockResolvedValue({ success: true, alreadyDeleted: false }),
     } as unknown as GoogleCalendarClient;
 
-    // Worker 1 reclama con límite 1
     const resWorker1 = await processCalendarSyncQueue({
       force: true,
       limit: 1,
@@ -102,7 +100,6 @@ describe('Google Calendar Concurrency & Resilience Tests', () => {
       supabaseClient: createWorkerSupabase('worker-1'),
     });
 
-    // Worker 2 reclama simultáneamente con límite 1
     const resWorker2 = await processCalendarSyncQueue({
       force: true,
       limit: 1,
@@ -114,12 +111,56 @@ describe('Google Calendar Concurrency & Resilience Tests', () => {
     expect(resWorker2.processed).toBe(1);
     expect(resWorker1.items[0].syncId).toBe('sync-1');
     expect(resWorker2.items[0].syncId).toBe('sync-2');
-    // Verificación de exclusión mutua: no hay superposición
     expect(resWorker1.items[0].syncId).not.toBe(resWorker2.items[0].syncId);
   });
 
+  // 1.b Reclamación obligatoria: cola vacía es válida, fallo detiene ciclo sin fallback
+  it('Escenario 1b: Cola vacía se considera SUCCESS sin fallback, y fallo de claim detiene el ciclo', async () => {
+    const mockClient = {} as GoogleCalendarClient;
+
+    // Caso A: Cola vacía es resultado normal y válido
+    const mockEmptyDb = {
+      rpc: vi.fn().mockImplementation((rpcName: string) => {
+        if (rpcName === 'claim_pending_calendar_sync_jobs') {
+          return Promise.resolve({ data: [], error: null });
+        }
+        return Promise.resolve({ data: null, error: null });
+      }),
+    };
+
+    const emptyRes = await processCalendarSyncQueue({
+      force: true,
+      client: mockClient,
+      supabaseClient: mockEmptyDb,
+    });
+
+    expect(emptyRes.status).toBe('SUCCESS');
+    expect(emptyRes.processed).toBe(0);
+    // Verificar que NUNCA se invoca get_pending_calendar_sync_items
+    expect(mockEmptyDb.rpc).not.toHaveBeenCalledWith('get_pending_calendar_sync_items', expect.anything());
+
+    // Caso B: Fallo de RPC nueva detiene el ciclo inmediatamente
+    const mockErrorDb = {
+      rpc: vi.fn().mockImplementation((rpcName: string) => {
+        if (rpcName === 'claim_pending_calendar_sync_jobs') {
+          return Promise.resolve({ data: null, error: { message: 'DB_CONNECTION_TIMEOUT' } });
+        }
+        return Promise.resolve({ data: null, error: null });
+      }),
+    };
+
+    const errRes = await processCalendarSyncQueue({
+      force: true,
+      client: mockClient,
+      supabaseClient: mockErrorDb,
+    });
+
+    expect(errRes.status).toBe('ERROR');
+    expect(errRes.message).toContain('CLAIM_JOBS_FAILED');
+    expect(mockErrorDb.rpc).not.toHaveBeenCalledWith('get_pending_calendar_sync_items', expect.anything());
+  });
+
   // 2. Fallo tras crear el evento en Google pero antes de persistir el ID en BD
-  // (verificar recuperación con ID determinista y 409 Conflict)
   it('Escenario 2: Recuperación con ID determinista y 409 Conflict sin duplicar eventos tras fallo intermedio', async () => {
     const item: CalendarSyncQueueItem = {
       sync_id: 'sync-retry-1',
@@ -127,7 +168,7 @@ describe('Google Calendar Concurrency & Resilience Tests', () => {
       barber_id: 'b-franco',
       barber_name: 'Franco',
       calendar_id: 'cal-franco@group.calendar.google.com',
-      google_event_id: null, // El worker anterior falló antes de guardar el ID
+      google_event_id: null,
       previous_calendar_id: null,
       previous_google_event_id: null,
       sync_action: 'UPSERT',
@@ -148,19 +189,14 @@ describe('Google Calendar Concurrency & Resilience Tests', () => {
 
     const expectedDeterministicId = buildDeterministicGoogleEventId(item.appointment_id);
     expect(expectedDeterministicId).toBe('kani8f94a86d1bf8468f9a74d4b97d19dfb4');
-    // Verificar que solo contiene caracteres permitidos por Google Calendar v3 [0-9a-v]
     expect(/^[0-9a-v]{5,1024}$/.test(expectedDeterministicId)).toBe(true);
 
     let patchCalledWithId: string | null = null;
     let successSavedWithId: string | null = null;
 
-    // Simular cliente Google Calendar que devuelve 409 porque el evento ya fue creado previamente con ese determinista
     const mockClient = {
       createEvent: vi.fn().mockImplementation(async (_calId, payload, deterministicId) => {
-        // Al intentar crearlo con el ID determinista, Google detecta conflicto (409)
-        // y el cliente resuelve recuperando y actualizando el evento existente
         expect(deterministicId).toBe(expectedDeterministicId);
-        // Simular lógica interna de createEvent cuando Google da 409:
         patchCalledWithId = deterministicId;
         return {
           id: deterministicId,
@@ -192,7 +228,59 @@ describe('Google Calendar Concurrency & Resilience Tests', () => {
     expect(successSavedWithId).toBe(expectedDeterministicId);
   });
 
-  // 3. Caída de Google Calendar por varias horas (verificar política de reintentos y backoff exponencial sin saturar)
+  // 2.b Pérdida de lease o conflicto optimista (invalidación por trigger)
+  it('Escenario 2b: Si el lease expiró o la versión cambió (invalidada por trigger), falla sin sobrescribir', async () => {
+    const item: CalendarSyncQueueItem = {
+      sync_id: 'sync-stale-lease',
+      appointment_id: 'app-stale',
+      barber_id: 'b-lautaro',
+      barber_name: 'Lautaro',
+      calendar_id: 'cal-lautaro@group.calendar.google.com',
+      google_event_id: null,
+      previous_calendar_id: null,
+      previous_google_event_id: null,
+      sync_action: 'UPSERT',
+      attempts: 0,
+      payload_checksum: null,
+      booking_date: '2026-11-20',
+      start_time: '14:00:00',
+      end_time: '14:45:00',
+      request_number: 123,
+      client_name: 'Cliente Desfasado',
+      service_name: 'Corte',
+      custom_service_name: null,
+      service_price_ars: 12000,
+      deposit_paid: true,
+      deposit_amount_ars: 5000,
+      sync_version: 1, // Worker tiene versión 1, pero un trigger incrementó a 2
+    };
+
+    const mockClient = {
+      createEvent: vi.fn().mockResolvedValue({ id: 'g-event-stale' }),
+    } as unknown as GoogleCalendarClient;
+
+    const mockSupabase = {
+      rpc: vi.fn().mockImplementation((rpcName: string) => {
+        if (rpcName === 'record_calendar_sync_success_v2') {
+          // Devuelve false porque version != p_version o claimed_by != p_worker_id
+          return Promise.resolve({ data: false, error: null });
+        }
+        if (rpcName === 'record_calendar_sync_failure_v2') {
+          return Promise.resolve({ data: true, error: null });
+        }
+        return Promise.resolve({ data: null, error: null });
+      }),
+    };
+
+    const result = await syncQueueItem(item, mockClient, mockSupabase, 'worker-old');
+
+    expect(result.status).toBe('FAILED');
+    expect(result.error).toContain('CONCURRENCY_LEASE_LOST');
+    // Verificar que NUNCA recurre a la RPC antigua v1 para evitar bypass
+    expect(mockSupabase.rpc).not.toHaveBeenCalledWith('record_calendar_sync_success', expect.anything());
+  });
+
+  // 3. Caída de Google Calendar por varias horas
   it('Escenario 3: Caída de Google Calendar registra fallo y respeta backoff exponencial sin superar max_attempts', async () => {
     const item: CalendarSyncQueueItem = {
       sync_id: 'sync-outage-1',
@@ -204,7 +292,7 @@ describe('Google Calendar Concurrency & Resilience Tests', () => {
       previous_calendar_id: null,
       previous_google_event_id: null,
       sync_action: 'UPSERT',
-      attempts: 4, // Ya falló 4 veces durante el corte
+      attempts: 4,
       payload_checksum: null,
       booking_date: '2026-11-20',
       start_time: '18:00:00',
@@ -239,29 +327,23 @@ describe('Google Calendar Concurrency & Resilience Tests', () => {
     expect(result.status).toBe('FAILED');
     expect(failureErrorRecorded).toContain('GOOGLE_API_503_SERVICE_UNAVAILABLE');
 
-    // Verificar fórmula de backoff exponencial de la migración:
-    // last_attempt_at + (power(2, least(attempts, 6)) * 10 seconds)
-    // Para attempt 4: 2^4 * 10s = 160 segundos de espera
-    // Para attempt 5: 2^5 * 10s = 320 segundos de espera
     const backoffSecondsAttempt4 = Math.pow(2, Math.min(4, 6)) * 10;
     const backoffSecondsAttempt5 = Math.pow(2, Math.min(5, 6)) * 10;
     expect(backoffSecondsAttempt4).toBe(160);
     expect(backoffSecondsAttempt5).toBe(320);
   });
 
-  // 4. Cancelación de una reserva mientras el trabajo está pendiente (verificar detección y omisión)
-  it('Escenario 4: Cancelación previa a sincronización inicial omite creación de eventos (SKIPPED)', async () => {
-    // Si la reserva se canceló antes de que se sincronizara por primera vez en Google,
-    // el reconciliador la marca como SKIPPED para evitar crear y borrar inmediatamente eventos espurios
+  // 4. Cancelación de una reserva mientras el trabajo está pendiente
+  it('Escenario 4: Cancelación previa a sincronización inicial omite creación de eventos (SKIPPED) y preserva reservas legítimas', async () => {
     const mockDb = {
       rpc: vi.fn().mockImplementation((rpcName: string) => {
         if (rpcName === 'reconcile_stale_calendar_sync_items') {
           return Promise.resolve({
             data: {
-              testAppointmentsSkipped: 0,
-              cancelledSkipped: 3, // Detectó 3 turnos cancelados sin evento previo
-              pastAppointmentsSkipped: 0,
-              legitimateFuturePreserved: 12,
+              testAppointmentsSkipped: 1, // Solo turnos con marcador técnico explícito
+              cancelledSkipped: 3,
+              pastAppointmentsSkipped: 2,
+              legitimateFuturePreserved: 15, // Preservados sin descarte ciego de 1 hora
             },
             error: null,
           });
@@ -274,23 +356,23 @@ describe('Google Calendar Concurrency & Resilience Tests', () => {
     const result = await purgeStaleSyncItems(mockDb);
 
     expect(result.skipped).toBe(true);
-    expect(result.staleItemsCount).toBe(3);
+    expect(result.staleItemsCount).toBe(6);
     expect(result.reconciled?.cancelledSkipped).toBe(3);
-    expect(result.reconciled?.legitimateFuturePreserved).toBe(12);
+    expect(result.reconciled?.pastAppointmentsSkipped).toBe(2);
+    expect(result.reconciled?.legitimateFuturePreserved).toBe(15);
   });
 
   // 5. Cambio de barbero con fallo de eliminación del evento en el calendario anterior
-  // (verificar que no bloquee la creación en el nuevo y registre el aviso)
-  it('Escenario 5: Cambio de barbero crea evento en nuevo calendario aun si falla la eliminación en el anterior', async () => {
+  it('Escenario 5: Eliminación fallida del calendario anterior NO se considera exitosa, registra fallo y programa reintento', async () => {
     const item: CalendarSyncQueueItem = {
       sync_id: 'sync-reassign-1',
       appointment_id: 'app-reassign-1',
       barber_id: 'b-valentin',
       barber_name: 'Valentín',
       calendar_id: 'cal-valentin@group.calendar.google.com',
-      google_event_id: null, // Nuevo evento a crear en Valentín
+      google_event_id: null,
       previous_calendar_id: 'cal-lautaro@group.calendar.google.com',
-      previous_google_event_id: 'g-old-lautaro-event-123', // Evento previo en Lautaro
+      previous_google_event_id: 'g-old-lautaro-event-123',
       sync_action: 'UPSERT',
       attempts: 0,
       payload_checksum: null,
@@ -308,19 +390,24 @@ describe('Google Calendar Concurrency & Resilience Tests', () => {
     };
 
     const mockClient = {
-      // La eliminación en el calendario viejo falla (ej: 404 o permiso temporal)
-      deleteEvent: vi.fn().mockRejectedValue(new Error('GOOGLE_DELETE_404: Not Found')),
-      // La creación en el calendario nuevo debe proceder normalmente
+      // La eliminación en el calendario anterior falla por red o Google error (no es 404)
+      deleteEvent: vi.fn().mockRejectedValue(new Error('GOOGLE_DELETE_503: Service Unavailable')),
       createEvent: vi.fn().mockResolvedValue({ id: 'g-new-valentin-event-999' }),
     } as unknown as GoogleCalendarClient;
 
-    let savedCalendarId = '';
-    let savedGoogleEventId = '';
+    let failureRecorded = false;
+    let failureError = '';
+    let successRecorded = false;
+
     const mockSupabase = {
       rpc: vi.fn().mockImplementation((rpcName: string, args: any) => {
+        if (rpcName === 'record_calendar_sync_failure_v2') {
+          failureRecorded = true;
+          failureError = args.p_error;
+          return Promise.resolve({ data: true, error: null });
+        }
         if (rpcName === 'record_calendar_sync_success_v2') {
-          savedCalendarId = args.p_calendar_id;
-          savedGoogleEventId = args.p_google_event_id;
+          successRecorded = true;
           return Promise.resolve({ data: true, error: null });
         }
         return Promise.resolve({ data: null, error: null });
@@ -329,15 +416,18 @@ describe('Google Calendar Concurrency & Resilience Tests', () => {
 
     const result = await syncQueueItem(item, mockClient, mockSupabase, 'worker-reassign');
 
-    expect(result.status).toBe('SYNCED');
+    // 1. Debe haber intentado borrar el evento viejo
     expect(mockClient.deleteEvent).toHaveBeenCalledWith(
       'cal-lautaro@group.calendar.google.com',
       'g-old-lautaro-event-123',
     );
-    expect(mockClient.createEvent).toHaveBeenCalled();
-    expect(result.googleEventId).toBe('g-new-valentin-event-999');
-    expect(savedCalendarId).toBe('cal-valentin@group.calendar.google.com');
-    expect(savedGoogleEventId).toBe('g-new-valentin-event-999');
+    // 2. NO debe considerarse definitivamente exitosa
+    expect(result.status).toBe('FAILED');
+    expect(result.error).toContain('OLD_CALENDAR_DELETE_FAILED');
+    expect(successRecorded).toBe(false);
+    // 3. Debe haberse registrado la falla para reintento conservando previous_calendar_id en BD
+    expect(failureRecorded).toBe(true);
+    expect(failureError).toContain('OLD_CALENDAR_DELETE_FAILED');
   });
 
   // 6. Renovación de token OAuth en medio de un procesamiento (verificar reanudación transparente)
@@ -369,7 +459,6 @@ describe('Google Calendar Concurrency & Resilience Tests', () => {
       }),
     });
 
-    // Crear un evento: la primera llamada da 401 y renueva el token
     const event = await client.createEvent(
       'c_franco@group.calendar.google.com',
       {
@@ -386,8 +475,6 @@ describe('Google Calendar Concurrency & Resilience Tests', () => {
 
   // 7. Protección de ejecución manual en /api/admin/calendar-sync/process
   it('Escenario 7: Rechaza ejecución manual forzada si syncEnabled=false sin confirmación explícita', async () => {
-    // Si GOOGLE_CALENDAR_SYNC_ENABLED=false y se llama sin force o sin confirmación,
-    // processCalendarSyncQueue devuelve DISABLED
     const resDisabled = await processCalendarSyncQueue({
       force: false,
     });

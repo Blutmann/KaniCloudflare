@@ -116,11 +116,22 @@ function createMockSupabase(overrides: Record<string, any> = {}) {
         }
         return Promise.resolve({ error: new Error('BARBER_NOT_FOUND') });
       }
-      if (rpcName === 'record_calendar_sync_success' || rpcName === 'record_calendar_sync_failure') {
-        return Promise.resolve({ error: null });
+      if (rpcName === 'record_calendar_sync_success' || rpcName === 'record_calendar_sync_failure' || rpcName === 'record_calendar_sync_success_v2' || rpcName === 'record_calendar_sync_failure_v2') {
+        return Promise.resolve({ data: true, error: null });
       }
-      if (rpcName === 'get_pending_calendar_sync_items') {
+      if (rpcName === 'get_pending_calendar_sync_items' || rpcName === 'claim_pending_calendar_sync_jobs') {
         return Promise.resolve({ data: overrides.pendingItems || [], error: null });
+      }
+      if (rpcName === 'reconcile_stale_calendar_sync_items') {
+        return Promise.resolve({
+          data: {
+            testAppointmentsSkipped: 1,
+            cancelledSkipped: 0,
+            pastAppointmentsSkipped: 0,
+            legitimateFuturePreserved: 2,
+          },
+          error: null,
+        });
       }
       return Promise.resolve({ data: null, error: null });
     }),

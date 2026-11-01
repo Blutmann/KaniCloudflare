@@ -464,6 +464,7 @@ export async function handleGoogleCalendarIntegrationStatus(
       strategy: config.strategy,
       storageMethod: config.refreshToken ? 'CLOUDFLARE_SECRET' : hasStoredRefreshToken ? 'BACKEND_DATABASE' : 'NONE',
       syncEnabled: config.enabled,
+      version: '20261101-strict-v2',
       scope: storedScope || GOOGLE_CALENDAR_DEFAULT_SCOPE,
       lastAuthorizedAt: storedUpdatedAt,
       redirectUri,

@@ -198,53 +198,53 @@ export async function syncQueueItem(
   const syncVersion = item.sync_version ?? (item as any).version;
 
   const recordSuccess = async (googleEventId: string | null, calendarId: string | null, checksum: string | null) => {
-    let recorded = false;
-    try {
+    // Si el trabajo fue reclamado mediante leases transaccionales (workerId y syncVersion presentes),
+    // exigir de forma estricta record_calendar_sync_success_v2 sin fallbacks que permitan saltarse versiones
+    if (workerId && syncVersion !== undefined) {
       const { data, error } = await supabaseClient.rpc('record_calendar_sync_success_v2', {
         p_sync_id: item.sync_id,
-        p_worker_id: workerId || null,
-        p_version: syncVersion || null,
+        p_worker_id: workerId,
+        p_version: syncVersion,
         p_google_event_id: googleEventId,
         p_calendar_id: calendarId,
         p_checksum: checksum,
       });
-      if (!error && (data === true || data === undefined)) {
-        recorded = true;
+      if (error) {
+        throw new Error(`CONCURRENCY_SUCCESS_RECORD_FAILED: ${error.message}`);
       }
-    } catch {
-      // Fallback a versión anterior
+      if (data === false) {
+        throw new Error('CONCURRENCY_LEASE_LOST: El lease o versión del trabajo cambió mientras se procesaba.');
+      }
+      return;
     }
-    if (!recorded) {
-      await supabaseClient.rpc('record_calendar_sync_success', {
-        p_sync_id: item.sync_id,
-        p_google_event_id: googleEventId,
-        p_calendar_id: calendarId,
-        p_checksum: checksum,
-      });
-    }
+
+    // Solo para ejecuciones directas sin lease (ej: tests unitarios legacy sin worker)
+    await supabaseClient.rpc('record_calendar_sync_success', {
+      p_sync_id: item.sync_id,
+      p_google_event_id: googleEventId,
+      p_calendar_id: calendarId,
+      p_checksum: checksum,
+    });
   };
 
   const recordFailure = async (errorMsg: string) => {
-    let recorded = false;
-    try {
+    if (workerId && syncVersion !== undefined) {
       const { data, error } = await supabaseClient.rpc('record_calendar_sync_failure_v2', {
         p_sync_id: item.sync_id,
-        p_worker_id: workerId || null,
-        p_version: syncVersion || null,
+        p_worker_id: workerId,
+        p_version: syncVersion,
         p_error: errorMsg,
       });
-      if (!error && (data === true || data === undefined)) {
-        recorded = true;
+      if (error) {
+        console.error(`[Kani Calendar Sync] Error al registrar falla en BD:`, error.message);
       }
-    } catch {
-      // Fallback a versión anterior
+      return;
     }
-    if (!recorded) {
-      await supabaseClient.rpc('record_calendar_sync_failure', {
-        p_sync_id: item.sync_id,
-        p_error: errorMsg,
-      });
-    }
+
+    await supabaseClient.rpc('record_calendar_sync_failure', {
+      p_sync_id: item.sync_id,
+      p_error: errorMsg,
+    });
   };
 
   try {
@@ -283,11 +283,16 @@ export async function syncQueueItem(
     const deterministicId = buildDeterministicGoogleEventId(item.appointment_id);
 
     // 2.1 Caso cambio de barbero: Eliminar evento del calendario anterior
+    // Si la eliminación en el calendario viejo falla, NO se considera definitivamente exitoso.
+    // Se lanza error para registrar el fallo y programar el reintento, garantizando que
+    // previous_calendar_id y previous_google_event_id no se pierdan.
     if (item.previous_calendar_id && item.previous_google_event_id) {
       try {
         await client.deleteEvent(item.previous_calendar_id, item.previous_google_event_id);
-      } catch (delError) {
-        console.warn(`[Kani Calendar Sync] Aviso al remover evento previo en cambio de barbero:`, delError);
+      } catch (delError: any) {
+        const delMsg = `OLD_CALENDAR_DELETE_FAILED: No se pudo eliminar el evento previo (${item.previous_google_event_id}) del calendario ${item.previous_calendar_id}: ${delError?.message || delError}`;
+        console.error(`[Kani Calendar Sync] ${delMsg}`);
+        throw new Error(delMsg);
       }
     }
 
@@ -495,33 +500,12 @@ export async function purgeStaleSyncItems(supabaseClient?: any): Promise<{
           reconciled: rpcRes,
         };
       }
+      if (rpcErr) {
+        console.warn('[Calendar Sync] Error al invocar reconcile_stale_calendar_sync_items:', rpcErr.message);
+      }
     }
 
-    // Fallback si la RPC no está disponible (ej: entorno mock o migración previa)
-    const oneHourAgo = new Date(Date.now() - 3600 * 1000).toISOString();
-    const { data: staleRows, error: findErr } = await client
-      .from('appointment_calendar_sync')
-      .select('id')
-      .eq('sync_status', 'PENDING')
-      .lt('created_at', oneHourAgo);
-
-    if (findErr || !staleRows || staleRows.length === 0) {
-      return { staleItemsCount: 0, skipped: true };
-    }
-
-    const { error: updateErr } = await client
-      .from('appointment_calendar_sync')
-      .update({
-        sync_status: 'SKIPPED',
-        last_error: 'STALE_PRE_ACTIVATION_ITEM: Omitido para evitar generación indiscriminada de eventos históricos.',
-        updated_at: new Date().toISOString(),
-      })
-      .eq('sync_status', 'PENDING')
-      .lt('created_at', oneHourAgo);
-
-    if (updateErr) throw updateErr;
-
-    return { staleItemsCount: staleRows.length, skipped: true };
+    return { staleItemsCount: 0, skipped: false };
   } catch (err) {
     console.warn('[Calendar Sync] Fallback/Aviso al conciliar items antiguos:', err);
     return { staleItemsCount: 0, skipped: false };
@@ -642,36 +626,41 @@ export async function processCalendarSyncQueue(
     const supabaseClient = await getSyncSupabaseClient(options.supabaseClient);
     const workerId = `worker_${crypto.randomUUID().slice(0, 8)}_${Date.now()}`;
 
-    let queueItems: CalendarSyncQueueItem[] = [];
+    // Reclamo transaccional obligatorio con SKIP LOCKED y leases
+    // No se permite fallback al mecanismo antiguo. Una cola vacía es un resultado válido.
+    const { data: claimed, error: claimErr } = await supabaseClient.rpc(
+      'claim_pending_calendar_sync_jobs',
+      {
+        p_worker_id: workerId,
+        p_limit: options.limit || 10,
+        p_lease_seconds: 120,
+      },
+    );
 
-    // Intento 1: Reclamo transaccional atómico con SKIP LOCKED y leases (v2)
-    try {
-      const { data: claimed, error: claimErr } = await supabaseClient.rpc(
-        'claim_pending_calendar_sync_jobs',
-        {
-          p_worker_id: workerId,
-          p_limit: options.limit || 10,
-          p_lease_seconds: 120,
-        },
-      );
-      if (!claimErr && Array.isArray(claimed)) {
-        queueItems = claimed as CalendarSyncQueueItem[];
-      } else if (claimErr) {
-        console.warn('[Calendar Sync] Fallback a get_pending_calendar_sync_items:', claimErr.message);
-      }
-    } catch (claimEx) {
-      console.warn('[Calendar Sync] Excepción al invocar claim_pending_calendar_sync_jobs:', claimEx);
+    if (claimErr) {
+      console.error('[Calendar Sync] Falló claim_pending_calendar_sync_jobs:', claimErr.message);
+      return {
+        status: 'ERROR',
+        processed: 0,
+        synced: 0,
+        failed: 0,
+        skipped: 0,
+        items: [],
+        message: `CLAIM_JOBS_FAILED: ${claimErr.message}`,
+      };
     }
 
-    // Fallback: Si no se usó v2 o falló RPC v2, consultar get_pending_calendar_sync_items
+    const queueItems = (claimed || []) as (CalendarSyncQueueItem & { sync_version?: number })[];
+
     if (queueItems.length === 0) {
-      const { data: items, error } = await supabaseClient.rpc('get_pending_calendar_sync_items', {
-        p_limit: options.limit || 10,
-      });
-      if (error && !queueItems.length) {
-        throw new Error(`GET_PENDING_SYNC_ITEMS_FAILED: ${error.message}`);
-      }
-      queueItems = (items || []) as CalendarSyncQueueItem[];
+      return {
+        status: 'SUCCESS',
+        processed: 0,
+        synced: 0,
+        failed: 0,
+        skipped: 0,
+        items: [],
+      };
     }
 
     const results: SyncItemResult[] = [];
