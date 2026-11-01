@@ -394,11 +394,8 @@ export async function handleGoogleCalendarIntegrationStatus(
 
 function renderAdminSuccessHtml(data: {
   scope: string;
-  refreshToken: string;
   redirectUri: string;
 }): string {
-  const maskedToken = `${data.refreshToken.slice(0, 8)}...${data.refreshToken.slice(-6)}`;
-
   return `<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -471,7 +468,7 @@ function renderAdminSuccessHtml(data: {
       color: #f3f4f6;
       font-weight: 500;
     }
-    .secret-box {
+    .info-box {
       background: #1c202a;
       border-left: 3px solid #d4af37;
       padding: 12px 16px;
@@ -479,6 +476,7 @@ function renderAdminSuccessHtml(data: {
       margin-bottom: 24px;
       font-size: 12px;
       color: #cbd5e1;
+      line-height: 1.5;
     }
     .btn {
       display: inline-block;
@@ -502,7 +500,7 @@ function renderAdminSuccessHtml(data: {
   <div class="card">
     <div class="badge">✓ Conexión Exitosa</div>
     <h1>Google Calendar Conectado con Éxito</h1>
-    <p>La cuenta central de Google de Kani Barber Studio fue autorizada correctamente. El token de renovación (refresh token) ha sido guardado de forma segura en el backend para la renovación automática de accesos.</p>
+    <p>La cuenta central de Google de Kani Barber Studio fue autorizada correctamente. El token de renovación (refresh token) ha sido almacenado de manera segura y cifrada en el backend para la renovación automática de accesos.</p>
     
     <div class="details">
       <div class="row">
@@ -515,7 +513,7 @@ function renderAdminSuccessHtml(data: {
       </div>
       <div class="row">
         <span class="label">Almacenamiento:</span>
-        <span class="val">Supabase (service_role protegido)</span>
+        <span class="val">Cifrado AES-GCM en backend (service_role protegido)</span>
       </div>
       <div class="row">
         <span class="label">Sincronización automática:</span>
@@ -523,10 +521,9 @@ function renderAdminSuccessHtml(data: {
       </div>
     </div>
 
-    <div class="secret-box">
-      <strong>Secretos de Cloudflare (Opcional):</strong><br>
-      Si además desea configurar el refresh token como secreto en Cloudflare Workers, puede utilizar:<br>
-      <code>GOOGLE_REFRESH_TOKEN="${maskedToken}"</code>
+    <div class="info-box">
+      <strong>Renovación automática activa:</strong><br>
+      Los tokens de acceso se renovarán automáticamente en segundo plano cuando sea necesario. No se requiere ninguna acción manual adicional ni intervención de los barberos.
     </div>
 
     <a href="/panel-administracion" class="btn">Volver al Panel de Administración</a>

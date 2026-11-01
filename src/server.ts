@@ -334,10 +334,17 @@ export default {
 
       if (url.pathname === "/api/admin/calendar-sync/audit") {
         try {
-          const { runGoogleCalendarControlledAudit } = await import("./lib/kani-google-calendar-sync");
-          const calendarId = url.searchParams.get("calendarId");
+          const { runGoogleCalendarControlledAudit, resolveBarberCalendarId } = await import("./lib/kani-google-calendar-sync");
+          const barber = url.searchParams.get("barber");
+          let calendarId = url.searchParams.get("calendarId");
+          if (!calendarId && barber) {
+            calendarId = await resolveBarberCalendarId(barber);
+          }
           if (!calendarId) {
-            return new Response(JSON.stringify({ error: "CALENDAR_ID_REQUIRED" }), {
+            return new Response(JSON.stringify({
+              error: "CALENDAR_ID_REQUIRED",
+              message: "Proporcione ?calendarId=... o ?barber=Franco (habiendo configurado la variable del barbero en Cloudflare o en la base de datos)."
+            }), {
               status: 400,
               headers: { "content-type": "application/json" },
             });

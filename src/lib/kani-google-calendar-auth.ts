@@ -279,8 +279,60 @@ export async function exchangeOAuthCodeForTokens(params: {
   };
 }
 
+// ==============================================================================
+// ENCRYPT AT REST (AES-GCM PARA REFRESH TOKENS EN BD)
+// ==============================================================================
+
+function getEncryptionSecret(): string {
+  const env = (typeof process !== 'undefined' ? process.env : {}) as Record<string, string | undefined>;
+  const globalEnv = (globalThis as typeof globalThis & { __KANI_RUNTIME_ENV?: Record<string, string> }).__KANI_RUNTIME_ENV || {};
+  return (
+    env['SUPABASE_SERVICE_ROLE_KEY'] ||
+    globalEnv['SUPABASE_SERVICE_ROLE_KEY'] ||
+    env['GOOGLE_CLIENT_SECRET'] ||
+    globalEnv['GOOGLE_CLIENT_SECRET'] ||
+    'kani_gcal_token_aes_secret_fallback_key_32'
+  );
+}
+
+export async function encryptTokenAtRest(plainText: string, secret = getEncryptionSecret()): Promise<string> {
+  if (!plainText) return '';
+  const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(secret));
+  const cryptoKey = await crypto.subtle.importKey('raw', hash, 'AES-GCM', false, ['encrypt']);
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const encrypted = await crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv },
+    cryptoKey,
+    new TextEncoder().encode(plainText),
+  );
+  return `enc:v1:${base64UrlEncode(iv)}.${base64UrlEncode(new Uint8Array(encrypted))}`;
+}
+
+export async function decryptTokenAtRest(cipherText: string, secret = getEncryptionSecret()): Promise<string> {
+  if (!cipherText) return '';
+  if (!cipherText.startsWith('enc:v1:')) {
+    // Si no tiene prefijo enc:v1:, es texto plano compatible
+    return cipherText;
+  }
+  const raw = cipherText.slice(7);
+  const [ivB64, dataB64] = raw.split('.');
+  if (!ivB64 || !dataB64) return cipherText;
+
+  const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(secret));
+  const cryptoKey = await crypto.subtle.importKey('raw', hash, 'AES-GCM', false, ['decrypt']);
+  const iv = Uint8Array.from(base64UrlDecode(ivB64), c => c.charCodeAt(0));
+  const data = Uint8Array.from(base64UrlDecode(dataB64), c => c.charCodeAt(0));
+
+  const decrypted = await crypto.subtle.decrypt(
+    { name: 'AES-GCM', iv },
+    cryptoKey,
+    data,
+  );
+  return new TextDecoder().decode(decrypted);
+}
+
 /**
- * Guarda los tokens OAuth de forma segura en la tabla protegida de Supabase
+ * Guarda los tokens OAuth de forma segura y cifrada en la tabla protegida de Supabase
  */
 export async function saveStoredOAuthTokens(
   tokens: {
@@ -301,10 +353,12 @@ export async function saveStoredOAuthTokens(
     ? new Date(Date.now() + (tokens.expiresIn - 60) * 1000).toISOString()
     : null;
 
+  const encryptedRefreshToken = await encryptTokenAtRest(tokens.refreshToken);
+
   const { error } = await supabase.from('google_calendar_oauth_tokens').upsert(
     {
       id: 'primary',
-      refresh_token: tokens.refreshToken,
+      refresh_token: encryptedRefreshToken,
       access_token: tokens.accessToken || null,
       expires_at: expiresAt,
       scope: tokens.scope || GOOGLE_CALENDAR_DEFAULT_SCOPE,
@@ -328,7 +382,7 @@ export async function saveStoredOAuthTokens(
 }
 
 /**
- * Lee los tokens OAuth almacenados en la tabla protegida de Supabase
+ * Lee y descifra los tokens OAuth almacenados en la tabla protegida de Supabase
  */
 export async function getStoredOAuthTokens(
   customSupabaseClient?: any,
@@ -349,9 +403,11 @@ export async function getStoredOAuthTokens(
     return null;
   }
 
+  const decryptedRefreshToken = await decryptTokenAtRest(data.refresh_token);
+
   return {
     id: data.id,
-    refreshToken: data.refresh_token,
+    refreshToken: decryptedRefreshToken,
     accessToken: data.access_token,
     expiresAt: data.expires_at,
     scope: data.scope,

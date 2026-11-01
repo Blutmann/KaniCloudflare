@@ -112,6 +112,57 @@ export type SyncItemResult = {
   error?: string;
 };
 
+export async function resolveBarberCalendarId(
+  barberName: string,
+  supabaseClient?: any,
+): Promise<string | null> {
+  const norm = barberName.trim().toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const env = (typeof process !== 'undefined' ? process.env : {}) as Record<string, string | undefined>;
+  const globalEnv = (globalThis as typeof globalThis & { __KANI_RUNTIME_ENV?: Record<string, string> }).__KANI_RUNTIME_ENV || {};
+
+  const getVar = (k: string) => env[k] || globalEnv[k];
+
+  // Variables en Cloudflare Workers: ej. GOOGLE_CALENDAR_ID_FRANCO, CALENDAR_ID_FRANCO, etc.
+  const envCalendarId =
+    getVar(`GOOGLE_CALENDAR_ID_${norm}`) ||
+    getVar(`GOOGLE_CALENDAR_${norm}_ID`) ||
+    getVar(`GOOGLE_CALENDAR_${norm}`) ||
+    getVar(`CALENDAR_ID_${norm}`) ||
+    getVar(`GOOGLE_CALENDAR_ID_${barberName.trim().toUpperCase()}`);
+
+  if (envCalendarId && envCalendarId.trim()) {
+    return envCalendarId.trim();
+  }
+
+  // Fallback a base de datos barber_google_calendars
+  try {
+    const supabase = supabaseClient || defaultSupabase;
+    if (supabase && typeof supabase.from === 'function') {
+      const { data: barberRow } = await supabase
+        .from('barbers')
+        .select('id, name')
+        .ilike('name', barberName.trim())
+        .maybeSingle();
+
+      if (barberRow?.id) {
+        const { data: calRow } = await supabase
+          .from('barber_google_calendars')
+          .select('calendar_id')
+          .eq('barber_id', barberRow.id)
+          .maybeSingle();
+
+        if (calRow?.calendar_id) {
+          return calRow.calendar_id;
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('[Calendar Sync] Fallback de búsqueda de calendar_id en BD falló:', err);
+  }
+
+  return null;
+}
+
 /**
  * Sincroniza un elemento individual de la cola Kani -> Google Calendar
  */
@@ -121,15 +172,18 @@ export async function syncQueueItem(
   supabaseClient: any = defaultSupabase,
 ): Promise<SyncItemResult> {
   try {
+    const effectiveCalendarId =
+      item.calendar_id || (await resolveBarberCalendarId(item.barber_name, supabaseClient));
+
     // 1. Manejo de DELETE
     if (item.sync_action === 'DELETE') {
-      if (item.calendar_id && item.google_event_id) {
-        await client.deleteEvent(item.calendar_id, item.google_event_id);
+      if (effectiveCalendarId && item.google_event_id) {
+        await client.deleteEvent(effectiveCalendarId, item.google_event_id);
       }
       await supabaseClient.rpc('record_calendar_sync_success', {
         p_sync_id: item.sync_id,
         p_google_event_id: null,
-        p_calendar_id: item.calendar_id,
+        p_calendar_id: effectiveCalendarId,
         p_checksum: null,
       });
       return {
@@ -141,8 +195,8 @@ export async function syncQueueItem(
     }
 
     // 2. Manejo de UPSERT (Creación o Actualización)
-    if (!item.calendar_id) {
-      const err = `CALENDAR_NOT_CONFIGURED: El barbero ${item.barber_name} no tiene asignado un calendar_id en barber_google_calendars.`;
+    if (!effectiveCalendarId) {
+      const err = `CALENDAR_NOT_CONFIGURED: El barbero ${item.barber_name} no tiene asignado un calendar_id en Cloudflare ni en barber_google_calendars.`;
       await supabaseClient.rpc('record_calendar_sync_failure', {
         p_sync_id: item.sync_id,
         p_error: err,
@@ -177,7 +231,7 @@ export async function syncQueueItem(
         await supabaseClient.rpc('record_calendar_sync_success', {
           p_sync_id: item.sync_id,
           p_google_event_id: item.google_event_id,
-          p_calendar_id: item.calendar_id,
+          p_calendar_id: effectiveCalendarId,
           p_checksum: checksum,
         });
         return {
@@ -189,18 +243,18 @@ export async function syncQueueItem(
         };
       }
 
-      const updated = await client.updateEvent(item.calendar_id, item.google_event_id, payload);
+      const updated = await client.updateEvent(effectiveCalendarId, item.google_event_id, payload);
       resultingEventId = updated.id;
     } else {
       // 2.3 Si no existe, crear nuevo evento (POST)
-      const created = await client.createEvent(item.calendar_id, payload);
+      const created = await client.createEvent(effectiveCalendarId, payload);
       resultingEventId = created.id;
     }
 
     await supabaseClient.rpc('record_calendar_sync_success', {
       p_sync_id: item.sync_id,
       p_google_event_id: resultingEventId,
-      p_calendar_id: item.calendar_id,
+      p_calendar_id: effectiveCalendarId,
       p_checksum: checksum,
     });
 

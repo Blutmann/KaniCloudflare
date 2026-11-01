@@ -239,11 +239,11 @@ describe('KANI Barber Studio — OAuth 2.0 Centralizado para Google Calendar', (
       expect(text).toContain('Google Calendar Conectado con Éxito');
       expect(text).toContain(GOOGLE_CALENDAR_DEFAULT_SCOPE);
 
-      // Verificamos que se guardó en la tabla segura con service_role
+      // Verificamos que se guardó en la tabla segura con service_role y cifrado AES-GCM
       expect(mockUpsert).toHaveBeenCalledWith(
         expect.objectContaining({
           id: 'primary',
-          refresh_token: '1//0g_test_refresh_token',
+          refresh_token: expect.stringMatching(/^enc:v1:/),
           access_token: 'ya29.test_access_token',
           scope: GOOGLE_CALENDAR_DEFAULT_SCOPE,
         }),
