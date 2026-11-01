@@ -467,29 +467,40 @@ export async function fetchAppointmentNotificationDispatches(
 export async function retryNotificationChannel(input: {
   appointmentId: string;
   channel: "WHATSAPP" | "EMAIL";
+  token?: string;
 }): Promise<RetryChannelResult> {
-  const supabase = await createRequestSupabaseClient();
+  const supabase = await createRequestSupabaseClient(input.token);
 
   // 1. Autorización de servidor: validar identidad del usuario autenticado si existe sesión
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user }, error: userError } = await supabase.auth.getUser(input.token);
+  if (userError || !user) {
+    const isExpired = userError?.message?.toLowerCase().includes("expired") || (userError as any)?.status === 401;
+    return {
+      success: false,
+      channel: input.channel,
+      status: "FAILED",
+      error: isExpired
+        ? "SESSION_EXPIRED: Su sesión ha expirado. Por favor, vuelva a iniciar sesión."
+        : "AUTH_REQUIRED: Debe iniciar sesión como personal autorizado para reintentar notificaciones.",
+    };
+  }
+
   let staffProfile: { role: string; barber_id: string | null; active: boolean } | null = null;
 
-  if (user) {
-    const { data: profile } = await supabase
-      .from("staff_profiles")
-      .select("role, barber_id, active")
-      .eq("user_id", user.id)
-      .maybeSingle();
-    staffProfile = profile as any;
+  const { data: profile } = await supabase
+    .from("staff_profiles")
+    .select("role, barber_id, active")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  staffProfile = profile as any;
 
-    if (!staffProfile || !staffProfile.active || (staffProfile.role !== "ADMIN" && staffProfile.role !== "BARBER")) {
-      return {
-        success: false,
-        channel: input.channel,
-        status: "FAILED",
-        error: "ACCESS_DENIED: No posee permisos de staff para reintentar notificaciones.",
-      };
-    }
+  if (!staffProfile || !staffProfile.active || (staffProfile.role !== "ADMIN" && staffProfile.role !== "BARBER")) {
+    return {
+      success: false,
+      channel: input.channel,
+      status: "FAILED",
+      error: "ACCESS_DENIED: No posee permisos de staff para reintentar notificaciones.",
+    };
   }
 
   // 2. Consultar estado previo del despacho
@@ -770,14 +781,24 @@ export async function retryNotificationChannel(input: {
 }
 
 export const retryNotificationChannelServerFn = createServerFn({ method: "POST" })
-  .validator((data: { appointmentId: string; channel: "WHATSAPP" | "EMAIL" }) => {
+  .validator((data: { appointmentId: string; channel: "WHATSAPP" | "EMAIL"; token?: string }) => {
     if (!data?.appointmentId || !data?.channel) throw new Error("RETRY_INPUT_INVALID");
     return data;
   })
   .handler(async ({ data }): Promise<RetryChannelResult> => {
-    const supabase = await createRequestSupabaseClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
+    let token = data.token?.trim();
+    if (!token) {
+      try {
+        const serverModule = await import("@tanstack/react-start/server");
+        const req = serverModule.getRequest();
+        const authHeader = req?.headers.get("authorization") || req?.headers.get("x-supabase-auth");
+        if (authHeader) {
+          token = authHeader.replace(/^Bearer\s+/i, "").trim();
+        }
+      } catch { /* ignored */ }
+    }
+
+    if (!token) {
       return {
         success: false,
         channel: data.channel,
@@ -785,7 +806,21 @@ export const retryNotificationChannelServerFn = createServerFn({ method: "POST" 
         error: "AUTH_REQUIRED: Debe iniciar sesión como personal autorizado para reintentar notificaciones.",
       };
     }
-    return retryNotificationChannel(data);
+
+    const supabase = await createRequestSupabaseClient(token);
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    if (userError || !user) {
+      const isExpired = userError?.message?.toLowerCase().includes("expired") || (userError as any)?.status === 401;
+      return {
+        success: false,
+        channel: data.channel,
+        status: "FAILED",
+        error: isExpired
+          ? "SESSION_EXPIRED: Su sesión ha expirado. Por favor, vuelva a iniciar sesión."
+          : "AUTH_REQUIRED: Debe iniciar sesión como personal autorizado para reintentar notificaciones.",
+      };
+    }
+    return retryNotificationChannel({ appointmentId: data.appointmentId, channel: data.channel, token });
   });
 
 function getRuntimeEnv(name: string): string | undefined {
@@ -814,7 +849,7 @@ function getRuntimeEnv(name: string): string | undefined {
   return typeof value === "string" && value.trim() ? value : undefined;
 }
 
-async function createRequestSupabaseClient() {
+async function createRequestSupabaseClient(explicitAuthToken?: string) {
   const { createClient } = await import("@supabase/supabase-js");
   let request: Request | undefined;
   try {
@@ -835,7 +870,15 @@ async function createRequestSupabaseClient() {
     throw new Error(`SUPABASE_SERVER_CONFIGURATION_MISSING:${missing.join(",")}`);
   }
 
-  const authorization = request?.headers.get("authorization");
+  let token = explicitAuthToken?.trim();
+  if (!token) {
+    const rawHeader = request?.headers.get("authorization") || request?.headers.get("x-supabase-auth");
+    if (rawHeader) {
+      token = rawHeader.replace(/^Bearer\s+/i, "").trim();
+    }
+  }
+
+  const authorization = token ? `Bearer ${token}` : undefined;
   return createClient<Database>(supabaseUrl, supabaseKey, {
     global: {
       fetch: (input, init) => {

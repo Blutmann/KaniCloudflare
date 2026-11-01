@@ -3,6 +3,7 @@ import { createHmac } from "node:crypto";
 import {
   dispatchAppointmentNotification,
   retryNotificationChannel,
+  retryNotificationChannelServerFn,
   fetchAppointmentNotificationDispatches,
 } from "../lib/kani-notifications.functions";
 import {
@@ -38,7 +39,7 @@ const {
 vi.mock("@supabase/supabase-js", () => ({
   createClient: () => ({
     auth: {
-      getUser: () => mockGetUser(),
+      getUser: (jwt?: string) => mockGetUser(jwt),
     },
     rpc: (fn: string, params: any) => {
       if (fn === "claim_appointment_notification") return mockClaim(params);
@@ -474,5 +475,179 @@ describe("Consolidación integral de notificaciones — Seguridad, RLS y Autoriz
     // Verificamos que Resend fue invocado y Pontiun NUNCA fue invocado
     expect(fetchSpy).toHaveBeenCalledWith(expect.stringContaining("resend.com"), expect.anything());
     expect(fetchSpy).not.toHaveBeenCalledWith(expect.stringContaining("pontiun.com"), expect.anything());
+  });
+
+  it("12. Autenticación requerida: reintento sin usuario o anónimo devuelve AUTH_REQUIRED", async () => {
+    mockGetUser.mockResolvedValue({
+      data: { user: null },
+      error: new Error("No session found"),
+    });
+
+    const result = await retryNotificationChannel({
+      appointmentId: baseAppointmentId,
+      channel: "WHATSAPP",
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.error).toContain("AUTH_REQUIRED: Debe iniciar sesión como personal autorizado");
+    expect(mockRecordChannelDispatchStatus).not.toHaveBeenCalled();
+  });
+
+  it("13. Token expirado: devuelve error explícito de sesión expirada (SESSION_EXPIRED)", async () => {
+    mockGetUser.mockResolvedValue({
+      data: { user: null },
+      error: { message: "JWT expired", status: 401 },
+    });
+
+    const result = await retryNotificationChannel({
+      appointmentId: baseAppointmentId,
+      channel: "WHATSAPP",
+      token: "expired.jwt.token",
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.error).toContain("SESSION_EXPIRED: Su sesión ha expirado");
+    expect(mockRecordChannelDispatchStatus).not.toHaveBeenCalled();
+  });
+
+  it("14. Barbero autorizado: puede reintentar notificaciones de sus propios turnos asignados", async () => {
+    const barberId = "barber-lautaro-uuid";
+    mockGetUser.mockResolvedValue({
+      data: { user: { id: "barber-user-uuid", email: "lautaro@kanibarber.com" } },
+      error: null,
+    });
+    mockSelectFromStaffProfiles.mockResolvedValue({
+      data: { role: "BARBER", barber_id: barberId, active: true },
+      error: null,
+    });
+
+    mockSelectFromDispatches.mockResolvedValue({
+      data: {
+        id: "disp-barber",
+        appointment_id: baseAppointmentId,
+        channel: "WHATSAPP",
+        status: "FAILED",
+        error_code: "PONTIUN_500",
+      },
+      error: null,
+    });
+
+    mockSelectFromAppointments.mockResolvedValue({
+      data: {
+        id: baseAppointmentId,
+        barber_id: barberId, // Asignado a sí mismo
+        booking_date: "2026-10-30",
+        start_time: "18:15:00",
+        client_id: "c-1",
+        clients: { id: "c-1", name: "Tomas", phone: "+5491128436014" },
+        barbers: { id: barberId, name: "Lautaro" },
+        services: { id: "s-1", name: "Corte" },
+      },
+      error: null,
+    });
+
+    const fetchSpy = vi.fn().mockImplementation(async (url: string) => {
+      if (url.includes("pontiun.com")) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ resender: { messageId: "pontiun-barber-id-1", status: "sent" } }),
+        };
+      }
+      return { ok: false, status: 500 };
+    });
+    globalThis.fetch = fetchSpy as any;
+
+    const result = await retryNotificationChannel({
+      appointmentId: baseAppointmentId,
+      channel: "WHATSAPP",
+      token: "valid.barber.token",
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.status).toBe("PROVIDER_ACCEPTED");
+    expect(mockRecordChannelDispatchStatus).toHaveBeenCalledWith(
+      expect.objectContaining({
+        p_channel: "WHATSAPP",
+        p_status: "PROCESSING",
+      }),
+    );
+  });
+
+  it("15. Staff inactivo o sin permisos: rechaza reintentos con ACCESS_DENIED", async () => {
+    mockGetUser.mockResolvedValue({
+      data: { user: { id: "inactive-user-uuid", email: "inactive@kanibarber.com" } },
+      error: null,
+    });
+    mockSelectFromStaffProfiles.mockResolvedValue({
+      data: { role: "ADMIN", barber_id: null, active: false },
+      error: null,
+    });
+
+    const result = await retryNotificationChannel({
+      appointmentId: baseAppointmentId,
+      channel: "WHATSAPP",
+      token: "some.token",
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.error).toContain("ACCESS_DENIED: No posee permisos de staff");
+  });
+
+  it("16. ADMIN autorizado con token válido: reintenta exitosamente turnos de cualquier barbero", async () => {
+    mockGetUser.mockResolvedValue({
+      data: { user: { id: "admin-user-uuid", email: "admin@kanibarber.com" } },
+      error: null,
+    });
+    mockSelectFromStaffProfiles.mockResolvedValue({
+      data: { role: "ADMIN", barber_id: null, active: true },
+      error: null,
+    });
+
+    mockSelectFromDispatches.mockResolvedValue({
+      data: {
+        id: "disp-admin",
+        appointment_id: baseAppointmentId,
+        channel: "WHATSAPP",
+        status: "FAILED",
+        error_code: "PONTIUN_500",
+      },
+      error: null,
+    });
+
+    mockSelectFromAppointments.mockResolvedValue({
+      data: {
+        id: baseAppointmentId,
+        barber_id: "any-barber-id",
+        booking_date: "2026-10-30",
+        start_time: "18:15:00",
+        client_id: "c-1",
+        clients: { id: "c-1", name: "Tomas", phone: "+5491128436014" },
+        barbers: { id: "any-barber-id", name: "Franco" },
+        services: { id: "s-1", name: "Corte" },
+      },
+      error: null,
+    });
+
+    const fetchSpy = vi.fn().mockImplementation(async (url: string) => {
+      if (url.includes("pontiun.com")) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ resender: { messageId: "pontiun-admin-id-1", status: "sent" } }),
+        };
+      }
+      return { ok: false, status: 500 };
+    });
+    globalThis.fetch = fetchSpy as any;
+
+    const result = await retryNotificationChannel({
+      appointmentId: baseAppointmentId,
+      channel: "WHATSAPP",
+      token: "valid.admin.jwt",
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.status).toBe("PROVIDER_ACCEPTED");
   });
 });

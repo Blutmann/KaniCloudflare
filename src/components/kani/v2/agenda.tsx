@@ -14,6 +14,7 @@ import {
   type NotificationChannelDispatch,
 } from "@/lib/kani-appointments";
 import { retryNotificationChannelServerFn } from "@/lib/kani-notifications.functions";
+import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { useV2 } from "./data";
 import {
@@ -320,8 +321,17 @@ export function V2Appointments() {
     setBusy(true);
     setMessage("");
     try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) {
+        setMessage("AUTH_REQUIRED: Debe iniciar sesión como personal autorizado para reintentar notificaciones.");
+        return;
+      }
+
       const res = await retryNotificationChannelServerFn({
-        data: { appointmentId, channel },
+        data: { appointmentId, channel, token },
       });
       if (res.blockedByAdminConfig) {
         setMessage(res.error || "Reintento bloqueado por configuración administrativa pendiente en Meta.");
