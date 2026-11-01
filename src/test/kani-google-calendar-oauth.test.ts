@@ -54,6 +54,14 @@ describe('KANI Barber Studio — OAuth 2.0 Centralizado para Google Calendar', (
       expect(verification.error).toBe('STATE_SIGNATURE_MISMATCH');
     });
 
+    it('rechaza un state cuando falta la cookie CSRF obligatoria', async () => {
+      const { state } = await createOAuthState('admin-user-uuid', secretKey);
+
+      const verification = await verifyOAuthState(state, secretKey, null);
+      expect(verification.valid).toBe(false);
+      expect(verification.error).toBe('MISSING_CSRF_COOKIE');
+    });
+
     it('rechaza un state cuando el nonce de la cookie no coincide (ataque CSRF cross-browser)', async () => {
       const { state } = await createOAuthState('admin-user-uuid', secretKey);
       const forgedCookieNonce = 'forged-attacker-nonce-uuid';
@@ -135,8 +143,22 @@ describe('KANI Barber Studio — OAuth 2.0 Centralizado para Google Calendar', (
       expect(text).toContain('AUTH_REQUIRED');
     });
 
-    it('rechaza solicitudes de usuarios BARBER (no admin) con HTTP 403', async () => {
-      const req = new Request('https://kanibarber.com/api/integrations/google-calendar/authorize?token=valid-barber-jwt');
+    it('rechaza tokens de sesión transmitidos por parámetro URL (?token=...) por seguridad', async () => {
+      const req = new Request('https://kanibarber.com/api/integrations/google-calendar/authorize?token=valid-admin-jwt');
+      const res = await handleGoogleCalendarAuthorize(req, createMockSupabaseAdmin('ADMIN'));
+
+      // Debe rechazar ya que los tokens en query param fueron eliminados
+      expect(res.status).toBe(403);
+      const text = await res.text();
+      expect(text).toContain('AUTH_REQUIRED');
+    });
+
+    it('rechaza solicitudes de usuarios BARBER (no admin) con HTTP 403 vía cookie o header', async () => {
+      const req = new Request('https://kanibarber.com/api/integrations/google-calendar/authorize', {
+        headers: {
+          Cookie: 'sb-access-token=valid-barber-jwt',
+        },
+      });
       const res = await handleGoogleCalendarAuthorize(req, createMockSupabaseAdmin('BARBER'));
 
       expect(res.status).toBe(403);
@@ -144,12 +166,18 @@ describe('KANI Barber Studio — OAuth 2.0 Centralizado para Google Calendar', (
       expect(text).toContain('ACCESS_DENIED');
     });
 
-    it('permite a un ADMIN iniciar el flujo, seteando cookie y redirigiendo 302 a Google', async () => {
+    it('permite a un ADMIN autenticado en otra pestaña abrir /authorize vía cookie de sesión sin 403', async () => {
       process.env.GOOGLE_CLIENT_ID = 'kani-google-client-id-123';
       process.env.SUPABASE_SERVICE_ROLE_KEY = secretKey;
 
+      // Simulamos la apertura desde otra pestaña del navegador enviando la cookie sb-access-token
       const req = new Request(
-        'https://kanibarberstudio-cloudflare.kanibarber.workers.dev/api/integrations/google-calendar/authorize?token=valid-admin-jwt',
+        'https://kanibarberstudio-cloudflare.kanibarber.workers.dev/api/integrations/google-calendar/authorize',
+        {
+          headers: {
+            Cookie: 'sb-access-token=valid-admin-jwt',
+          },
+        },
       );
       const res = await handleGoogleCalendarAuthorize(req, createMockSupabaseAdmin('ADMIN'));
 

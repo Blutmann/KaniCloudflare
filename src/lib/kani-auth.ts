@@ -23,14 +23,26 @@ export function clearStaffCache() {
 
 export async function signInWithPassword(email: string, password: string) {
   clearStaffCache();
-  return supabase.auth.signInWithPassword({
+  const res = await supabase.auth.signInWithPassword({
     email: email.trim(),
     password,
   });
+  if (res.data?.session?.access_token && typeof document !== 'undefined') {
+    try {
+      const maxAge = res.data.session.expires_in || 3600;
+      document.cookie = `sb-access-token=${encodeURIComponent(res.data.session.access_token)}; path=/; max-age=${maxAge}; SameSite=Lax; Secure`;
+    } catch {}
+  }
+  return res;
 }
 
 export async function signOut() {
   clearStaffCache();
+  if (typeof document !== 'undefined') {
+    try {
+      document.cookie = `sb-access-token=; path=/; max-age=0; SameSite=Lax; Secure`;
+    } catch {}
+  }
   return supabase.auth.signOut();
 }
 
@@ -39,6 +51,13 @@ async function fetchAuthenticatedStaff(): Promise<AuthenticatedStaff | null> {
     data: { session },
   } = await supabase.auth.getSession();
   if (!session) return null;
+
+  if (session.access_token && typeof document !== 'undefined') {
+    try {
+      const maxAge = session.expires_in || 3600;
+      document.cookie = `sb-access-token=${encodeURIComponent(session.access_token)}; path=/; max-age=${maxAge}; SameSite=Lax; Secure`;
+    } catch {}
+  }
 
   const {
     data: { user },

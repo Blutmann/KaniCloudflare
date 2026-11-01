@@ -193,7 +193,11 @@ export async function verifyOAuthState(
       return { valid: false, error: 'STATE_EXPIRED' };
     }
 
-    if (cookieNonce && cookieNonce !== payload.nonce) {
+    if (!cookieNonce || !cookieNonce.trim()) {
+      return { valid: false, error: 'MISSING_CSRF_COOKIE' };
+    }
+
+    if (cookieNonce !== payload.nonce) {
       return { valid: false, error: 'STATE_NONCE_COOKIE_MISMATCH' };
     }
 

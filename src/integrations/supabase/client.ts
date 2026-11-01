@@ -27,6 +27,19 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
   };
 }
 
+function syncAuthSessionCookie(session: { access_token?: string; expires_in?: number } | null) {
+  if (typeof document === 'undefined') return;
+  try {
+    if (session?.access_token) {
+      const maxAge = session.expires_in || 3600;
+      document.cookie = `sb-access-token=${encodeURIComponent(session.access_token)}; path=/; max-age=${maxAge}; SameSite=Lax; Secure`;
+    } else {
+      document.cookie = `sb-access-token=; path=/; max-age=0; SameSite=Lax; Secure`;
+    }
+  } catch {
+    // ignorar si cookies no están habilitadas
+  }
+}
 
 function createSupabaseClient() {
   // Use import.meta.env for client-side (Vite build-time replacement)
@@ -48,7 +61,7 @@ function createSupabaseClient() {
     throw new Error(message);
   }
 
-  return createClient<Database>(SUPABASE_URL, SUPABASE_PUBLIC_KEY, {
+  const client = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLIC_KEY, {
     global: {
       fetch: createSupabaseFetch(SUPABASE_PUBLIC_KEY),
     },
@@ -59,6 +72,17 @@ function createSupabaseClient() {
       detectSessionInUrl: true,
     },
   });
+
+  if (typeof window !== 'undefined') {
+    client.auth.onAuthStateChange((_event, session) => {
+      syncAuthSessionCookie(session);
+    });
+    client.auth.getSession().then(({ data: { session } }) => {
+      if (session) syncAuthSessionCookie(session);
+    }).catch(() => {});
+  }
+
+  return client;
 }
 
 let _supabase: ReturnType<typeof createSupabaseClient> | undefined;

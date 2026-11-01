@@ -78,8 +78,6 @@ export async function authenticateAdminRequest(
     let token = '';
     if (authHeader && authHeader.startsWith('Bearer ')) {
       token = authHeader.slice(7).trim();
-    } else if (url.searchParams.get('token')) {
-      token = url.searchParams.get('token')!.trim();
     } else if (cookieHeader) {
       // Supabase access token en cookie si existe
       const sbTokenCookie = extractCookie(cookieHeader, 'sb-access-token') ||
@@ -105,8 +103,9 @@ export async function authenticateAdminRequest(
     if (!supabase) {
       const { createClient } = await import('@supabase/supabase-js');
       const supabaseUrl = getRuntimeSecret('SUPABASE_URL') || 'https://iockpxtkflyjfagkvgnr.supabase.co';
-      const anonKey = getRuntimeSecret('VITE_SUPABASE_ANON_KEY') || getRuntimeSecret('SUPABASE_ANON_KEY') || '';
-      supabase = createClient(supabaseUrl, anonKey, {
+      const anonKey = getRuntimeSecret('VITE_SUPABASE_ANON_KEY') || getRuntimeSecret('SUPABASE_ANON_KEY') || 'sb_publishable_jLUHqN-Y_2az8c0Y2yG3mA_gl618304';
+      const serviceRoleKey = getRuntimeSecret('SUPABASE_SERVICE_ROLE_KEY');
+      supabase = createClient(supabaseUrl, serviceRoleKey || anonKey, {
         auth: { persistSession: false, autoRefreshToken: false },
         global: { headers: { Authorization: `Bearer ${token}` } },
       });
@@ -380,6 +379,14 @@ export async function handleGoogleCalendarIntegrationStatus(
       lastAuthorizedAt: storedUpdatedAt,
       redirectUri,
       authorizeUrl: `${new URL(request.url).origin}/api/integrations/google-calendar/authorize`,
+      envDetection: {
+        hasGoogleClientId: Boolean(config.clientId),
+        hasGoogleClientSecret: Boolean(config.clientSecret),
+        hasSupabaseServiceRoleKey: Boolean(
+          getRuntimeSecret('SUPABASE_SERVICE_ROLE_KEY') ||
+          (typeof process !== 'undefined' && process.env.SUPABASE_SERVICE_ROLE_KEY)
+        ),
+      },
     }),
     {
       status: 200,

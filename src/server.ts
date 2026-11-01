@@ -285,6 +285,26 @@ export default {
         }
       }
 
+      if (
+        url.pathname === "/api/admin/calendar-sync/status" ||
+        url.pathname === "/api/admin/calendar-sync/process" ||
+        url.pathname === "/api/admin/calendar-sync/audit"
+      ) {
+        const { authenticateAdminRequest } = await import("./lib/kani-google-calendar-oauth.server");
+        const auth = await authenticateAdminRequest(request);
+        if (!auth.authorized) {
+          return new Response(
+            JSON.stringify({
+              error: auth.error || "AUTH_REQUIRED: Se requieren permisos de Administrador.",
+            }),
+            {
+              status: 403,
+              headers: { "content-type": "application/json" },
+            }
+          );
+        }
+      }
+
       if (url.pathname === "/api/admin/calendar-sync/status") {
         try {
           const { getGoogleCalendarAuthConfig } = await import("./lib/kani-google-calendar-auth");
@@ -296,7 +316,9 @@ export default {
               hasServiceAccountEmail: Boolean(config.serviceAccountEmail),
               hasServiceAccountPrivateKey: Boolean(config.serviceAccountPrivateKey),
               hasOAuthClientId: Boolean(config.clientId),
+              hasOAuthClientSecret: Boolean(config.clientSecret),
               hasOAuthRefreshToken: Boolean(config.refreshToken),
+              hasSupabaseServiceRoleKey: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY),
               environment: "Cloudflare Preview/Test",
             }),
             {
@@ -316,9 +338,9 @@ export default {
       if (url.pathname === "/api/admin/calendar-sync/process") {
         try {
           const { processCalendarSyncQueue } = await import("./lib/kani-google-calendar-sync");
-          const force = url.searchParams.get("force") === "true";
           const limit = Number(url.searchParams.get("limit") || 10);
-          const result = await processCalendarSyncQueue({ force, limit });
+          // La sincronización en endpoints HTTP no permite forzar la desactivación
+          const result = await processCalendarSyncQueue({ force: false, limit });
           return new Response(JSON.stringify(result), {
             status: 200,
             headers: { "content-type": "application/json" },
@@ -491,6 +513,17 @@ function mirrorRuntimeBindings(bindings: unknown): void {
     "PAYWAY_SITE_ID",
     "PAYWAY_CHECKOUT_SECRET",
     "PAYWAY_PAYMENT_METHODS",
+    "GOOGLE_CLIENT_ID",
+    "GOOGLE_CLIENT_SECRET",
+    "GOOGLE_OAUTH_REDIRECT_URI",
+    "GOOGLE_REFRESH_TOKEN",
+    "GOOGLE_CALENDAR_SYNC_ENABLED",
+    "GOOGLE_SERVICE_ACCOUNT_EMAIL",
+    "GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY",
+    "GOOGLE_CALENDAR_ID_LAUTARO",
+    "GOOGLE_CALENDAR_ID_GONZALO",
+    "GOOGLE_CALENDAR_ID_VALENTIN",
+    "GOOGLE_CALENDAR_ID_FRANCO",
   ];
   const runtimeValues = (globalThis as typeof globalThis & {
     __KANI_RUNTIME_ENV?: Record<string, string>;
