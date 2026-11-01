@@ -515,6 +515,10 @@ function mirrorRuntimeBindings(bindings: unknown): void {
     "PAYWAY_PAYMENT_METHODS",
     "GOOGLE_CLIENT_ID",
     "GOOGLE_CLIENT_SECRET",
+    "GOOGLE_OAUTH_CLIENT_ID",
+    "GOOGLE_OAUTH_CLIENT_SECRET",
+    "VITE_GOOGLE_CLIENT_ID",
+    "VITE_GOOGLE_CLIENT_SECRET",
     "GOOGLE_OAUTH_REDIRECT_URI",
     "GOOGLE_REFRESH_TOKEN",
     "GOOGLE_CALENDAR_SYNC_ENABLED",
@@ -524,6 +528,10 @@ function mirrorRuntimeBindings(bindings: unknown): void {
     "GOOGLE_CALENDAR_ID_GONZALO",
     "GOOGLE_CALENDAR_ID_VALENTIN",
     "GOOGLE_CALENDAR_ID_FRANCO",
+    "CALENDAR_ID_LAUTARO",
+    "CALENDAR_ID_GONZALO",
+    "CALENDAR_ID_VALENTIN",
+    "CALENDAR_ID_FRANCO",
   ];
   const runtimeValues = (globalThis as typeof globalThis & {
     __KANI_RUNTIME_ENV?: Record<string, string>;
@@ -539,10 +547,18 @@ function mirrorRuntimeBindings(bindings: unknown): void {
     // If values is not iterable via Object.entries
   }
   for (const name of names) {
-    const value = values[name];
+    const value = values[name] ?? values[name.toLowerCase()];
     if (typeof value === "string" && value.trim()) {
       process.env[name] = value.trim();
       runtimeValues[name] = value.trim();
+      if (name === "GOOGLE_OAUTH_CLIENT_ID" || name === "VITE_GOOGLE_CLIENT_ID") {
+        process.env["GOOGLE_CLIENT_ID"] = value.trim();
+        runtimeValues["GOOGLE_CLIENT_ID"] = value.trim();
+      }
+      if (name === "GOOGLE_OAUTH_CLIENT_SECRET" || name === "VITE_GOOGLE_CLIENT_SECRET") {
+        process.env["GOOGLE_CLIENT_SECRET"] = value.trim();
+        runtimeValues["GOOGLE_CLIENT_SECRET"] = value.trim();
+      }
     }
   }
   (globalThis as typeof globalThis & {

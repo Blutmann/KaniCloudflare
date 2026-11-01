@@ -373,6 +373,27 @@ export async function handleGoogleCalendarIntegrationStatus(
 
   const redirectUri = resolveRedirectUri(request);
 
+  const allAvailableKeys = new Set<string>();
+  const envObj = (typeof process !== 'undefined' ? process.env : {}) as Record<string, unknown>;
+  const globalObj = (globalThis as typeof globalThis & {
+    __env__?: Record<string, unknown>;
+    __KANI_RUNTIME_ENV?: Record<string, string>;
+  });
+
+  for (const k of Object.keys(envObj)) {
+    if (k.startsWith('GOOGLE_') || k.startsWith('SUPABASE_') || k.startsWith('PONTIUN_') || k.startsWith('VITE_GOOGLE')) allAvailableKeys.add(k);
+  }
+  if (globalObj.__KANI_RUNTIME_ENV) {
+    for (const k of Object.keys(globalObj.__KANI_RUNTIME_ENV)) {
+      if (k.startsWith('GOOGLE_') || k.startsWith('SUPABASE_') || k.startsWith('PONTIUN_') || k.startsWith('VITE_GOOGLE')) allAvailableKeys.add(k);
+    }
+  }
+  if (globalObj.__env__) {
+    for (const k of Object.keys(globalObj.__env__)) {
+      if (k.startsWith('GOOGLE_') || k.startsWith('SUPABASE_') || k.startsWith('PONTIUN_') || k.startsWith('VITE_GOOGLE')) allAvailableKeys.add(k);
+    }
+  }
+
   return new Response(
     JSON.stringify({
       configured: Boolean(config.clientId && config.clientSecret),
@@ -391,6 +412,7 @@ export async function handleGoogleCalendarIntegrationStatus(
           getRuntimeSecret('SUPABASE_SERVICE_ROLE_KEY') ||
           (typeof process !== 'undefined' && process.env.SUPABASE_SERVICE_ROLE_KEY)
         ),
+        detectedMatchingKeyNames: Array.from(allAvailableKeys).sort(),
       },
     }),
     {
