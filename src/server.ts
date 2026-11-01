@@ -90,6 +90,16 @@ export default {
       }
 
       const url = new URL(request.url);
+      if (url.pathname === "/googleb98699670c2c80a6.html") {
+        return new Response("google-site-verification: googleb98699670c2c80a6.html", {
+          status: 200,
+          headers: {
+            "content-type": "text/html; charset=utf-8",
+            "cache-control": "public, max-age=3600",
+          },
+        });
+      }
+
       if (url.pathname === "/api/calendar/turno.ics" || url.pathname === "/api/calendar/turno") {
         const { handleTurnoIcsRequest } = await import("./lib/kani-calendar-ics");
         return handleTurnoIcsRequest(request);
