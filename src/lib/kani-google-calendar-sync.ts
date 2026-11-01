@@ -512,69 +512,212 @@ export async function purgeStaleSyncItems(supabaseClient?: any): Promise<{
   }
 }
 
+export type BarberCalendarVerificationResult = {
+  barber: string;
+  calendarId: string | null;
+  accessible: boolean;
+  calendarSummary?: string;
+  error?: string;
+  errorCode?: string;
+  steps?: {
+    create: boolean;
+    read: boolean;
+    delete: boolean;
+    confirmDeleted: boolean;
+  };
+};
+
 /**
- * Verifica acceso y permisos a los 4 calendarios de Google de Kani
+ * Diagnostica con precisión el código de error devuelto por Google Calendar API:
+ * - 401: problema de autenticación / token inválido o expirado.
+ * - 403: permisos OAuth insuficientes o acceso denegado.
+ * - 404: identificador de calendario incorrecto o inexistente.
+ * - 429: límite de cuota temporal excedido.
+ * - Otros errores.
+ */
+export function parseGoogleCalendarError(err: any): {
+  code: 'AUTH_401' | 'FORBIDDEN_403' | 'NOT_FOUND_404' | 'RATE_LIMIT_429' | 'GOOGLE_ERROR';
+  message: string;
+} {
+  const rawMsg = err instanceof Error ? err.message : String(err);
+
+  if (
+    rawMsg.includes('401') ||
+    rawMsg.includes('GOOGLE_AUTH_TOKEN_MISSING') ||
+    rawMsg.includes('Invalid Credentials') ||
+    rawMsg.includes('invalid_grant')
+  ) {
+    return {
+      code: 'AUTH_401',
+      message: 'AUTH_FAILED_401: Sesión OAuth expirada o token inválido. Reautorice Google Calendar desde el panel.',
+    };
+  }
+
+  if (
+    rawMsg.includes('403') ||
+    rawMsg.includes('insufficientPermissions') ||
+    rawMsg.includes('accessDenied') ||
+    rawMsg.includes('FORBIDDEN')
+  ) {
+    return {
+      code: 'FORBIDDEN_403',
+      message: 'PERMISSION_DENIED_403: Permisos OAuth insuficientes o acceso denegado al calendario. Verifique que la cuenta central de Kani tenga permisos de administración sobre este calendario.',
+    };
+  }
+
+  if (rawMsg.includes('404') || rawMsg.includes('notFound')) {
+    return {
+      code: 'NOT_FOUND_404',
+      message: 'CALENDAR_NOT_FOUND_404: Identificador de calendario incorrecto o calendario inexistente en Google Calendar.',
+    };
+  }
+
+  if (rawMsg.includes('429') || rawMsg.includes('rateLimitExceeded')) {
+    return {
+      code: 'RATE_LIMIT_429',
+      message: 'RATE_LIMIT_429: Cuota de peticiones excedida temporalmente en Google Calendar. Reintente en unos instantes.',
+    };
+  }
+
+  return {
+    code: 'GOOGLE_ERROR',
+    message: `GOOGLE_API_ERROR: ${rawMsg}`,
+  };
+}
+
+/**
+ * Ejecuta una verificación controlada de lectura y escritura en un calendario individual mediante la Events API:
+ * 1. Crear un evento temporal claramente identificado como auditoría técnica.
+ * 2. Consultar el evento y verificar datos.
+ * 3. Eliminar el evento temporal.
+ * 4. Confirmar mediante la API que el evento ya no existe.
+ * 
+ * Regla de seguridad: Si falla cualquier operación, se ejecuta cleanup de emergencia para no dejar eventos residuales.
+ */
+export async function verifySingleBarberCalendar(
+  calendarId: string,
+  barberName: string,
+  client: GoogleCalendarClient = new GoogleCalendarClient(),
+): Promise<BarberCalendarVerificationResult> {
+  const result: BarberCalendarVerificationResult = {
+    barber: barberName,
+    calendarId,
+    accessible: false,
+    steps: {
+      create: false,
+      read: false,
+      delete: false,
+      confirmDeleted: false,
+    },
+  };
+
+  let createdEventId: string | null = null;
+
+  try {
+    // 0. Limpieza previa de eventos de auditoría previos
+    try {
+      if (typeof client.cleanupPreviousAuditEvents === 'function') {
+        await client.cleanupPreviousAuditEvents(calendarId);
+      }
+    } catch {
+      // Ignorar fallo de búsqueda previa
+    }
+
+    // 1. Crear evento temporal de verificación
+    const verifyPayload: GoogleCalendarEventPayload = {
+      summary: `[AUDIT-VERIFY] Verificación Kani Barber Studio (${barberName})`,
+      description: `Evento temporal de verificación técnica de lectura y escritura para el calendario de ${barberName}. No corresponde a un turno real.`,
+      start: {
+        dateTime: '2026-11-10T12:00:00-03:00',
+        timeZone: 'America/Argentina/Buenos_Aires',
+      },
+      end: {
+        dateTime: '2026-11-10T12:30:00-03:00',
+        timeZone: 'America/Argentina/Buenos_Aires',
+      },
+      visibility: 'private',
+    };
+
+    const created = await client.createEvent(calendarId, verifyPayload);
+    if (!created?.id) {
+      throw new Error('CREATE_EMPTY_RESPONSE: Google Calendar no devolvió identificador de evento.');
+    }
+    createdEventId = created.id;
+    result.steps!.create = true;
+
+    // 2. Consultar el evento (lectura)
+    const readBack = await client.getEvent(calendarId, created.id);
+    if (!readBack || readBack.status === 'cancelled') {
+      throw new Error('READ_VERIFY_FAILED: El evento creado no pudo ser consultado desde Google Calendar.');
+    }
+    result.steps!.read = true;
+
+    // 3. Eliminar el evento temporal
+    const deleteRes = await client.deleteEvent(calendarId, created.id);
+    if (!deleteRes.success && !deleteRes.alreadyDeleted) {
+      throw new Error('DELETE_VERIFY_FAILED: No se pudo eliminar el evento temporal de prueba.');
+    }
+    result.steps!.delete = true;
+
+    // 4. Confirmar que ya no existe (404 / cancelled)
+    const postDeleteRead = await client.getEvent(calendarId, created.id);
+    if (postDeleteRead !== null && postDeleteRead.status !== 'cancelled') {
+      throw new Error('CONFIRM_DELETE_FAILED: El evento temporal figura todavía activo tras la eliminación.');
+    }
+    result.steps!.confirmDeleted = true;
+
+    result.accessible = true;
+    result.calendarSummary = 'Lectura y escritura verificadas (creación, consulta y eliminación OK)';
+    return result;
+  } catch (err: any) {
+    // Cleanup de emergencia si el evento llegó a crearse
+    if (createdEventId && !result.steps?.confirmDeleted) {
+      try {
+        await client.deleteEvent(calendarId, createdEventId);
+      } catch (cleanupErr) {
+        console.warn(`[Calendar Verify] Error en cleanup de emergencia (${barberName}):`, cleanupErr);
+      }
+    }
+
+    const diag = parseGoogleCalendarError(err);
+    result.error = diag.message;
+    result.errorCode = diag.code;
+    result.accessible = false;
+    return result;
+  }
+}
+
+/**
+ * Verifica acceso y permisos a los 4 calendarios de Google de Kani (Lautaro, Gonzalo, Valentín, Franco)
+ * mediante auditorías controladas de lectura y escritura en la Events API (100% compatible con calendar.events.owned)
  */
 export async function verifyAllBarberCalendars(
   client: GoogleCalendarClient = new GoogleCalendarClient(),
   supabaseClient?: any,
 ): Promise<{
   allAccessible: boolean;
-  calendars: Array<{
-    barber: string;
-    calendarId: string | null;
-    accessible: boolean;
-    calendarSummary?: string;
-    error?: string;
-  }>;
+  calendars: BarberCalendarVerificationResult[];
 }> {
   const sClient = await getSyncSupabaseClient(supabaseClient);
   const barbers = ['Lautaro', 'Gonzalo', 'Valentín', 'Franco'];
-  const results: Array<{
-    barber: string;
-    calendarId: string | null;
-    accessible: boolean;
-    calendarSummary?: string;
-    error?: string;
-  }> = [];
+  const results: BarberCalendarVerificationResult[] = [];
 
   for (const b of barbers) {
     const calendarId = await resolveBarberCalendarId(b, sClient);
     if (!calendarId) {
+      const normVar = b.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
       results.push({
         barber: b,
         calendarId: null,
         accessible: false,
-        error: `CALENDAR_ID_NOT_CONFIGURED`,
+        errorCode: 'NOT_CONFIGURED',
+        error: `CALENDAR_ID_NOT_CONFIGURED: La variable GOOGLE_CALENDAR_${normVar}_ID no está configurada en Cloudflare ni en barber_google_calendars.`,
       });
       continue;
     }
 
-    try {
-      const meta = await client.getCalendar(calendarId);
-      if (meta) {
-        results.push({
-          barber: b,
-          calendarId,
-          accessible: true,
-          calendarSummary: meta.summary,
-        });
-      } else {
-        results.push({
-          barber: b,
-          calendarId,
-          accessible: false,
-          error: `GOOGLE_CALENDAR_NOT_ACCESSIBLE_OR_FORBIDDEN`,
-        });
-      }
-    } catch (err: any) {
-      results.push({
-        barber: b,
-        calendarId,
-        accessible: false,
-        error: err?.message || String(err),
-      });
-    }
+    const singleRes = await verifySingleBarberCalendar(calendarId, b, client);
+    results.push(singleRes);
   }
 
   return {

@@ -516,10 +516,10 @@ export function GoogleCalendarAdminSection() {
                   {verifyAllResult.allAccessible ? '✓ Todos los calendarios secundarios tienen acceso autorizado' : '✗ Se detectaron calendarios con acceso denegado o no configurados'}
                 </div>
                 {verifyAllResult.calendars?.map((c) => (
-                  <div key={c.barber} className="flex justify-between text-[11px]">
-                    <span className="text-muted-foreground">{c.barber}:</span>
-                    <span className={c.accessible ? 'text-emerald-400 font-medium' : 'text-destructive'}>
-                      {c.accessible ? `✓ Accesible (${c.calendarSummary || 'OK'})` : `✗ ${c.error || 'No accesible'}`}
+                  <div key={c.barber} className="flex flex-col sm:flex-row sm:justify-between text-[11px] gap-1 py-1 border-b border-border/20 last:border-0">
+                    <span className="text-muted-foreground font-medium shrink-0">{c.barber}:</span>
+                    <span className={c.accessible ? 'text-emerald-400 font-medium' : 'text-destructive font-medium'}>
+                      {c.accessible ? `✓ ${c.calendarSummary || 'Lectura y escritura OK'}` : `✗ ${c.error || 'No accesible'}`}
                     </span>
                   </div>
                 ))}

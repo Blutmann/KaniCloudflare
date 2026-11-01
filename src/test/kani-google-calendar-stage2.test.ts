@@ -181,7 +181,7 @@ describe('KANI BARBER STUDIO — Segunda Etapa de Google Calendar', () => {
       expect(purge.skipped).toBe(true);
     });
 
-    it('verifica los permisos y existencia de los 4 calendarios mediante la API de Google', async () => {
+    it('verifica los permisos y existencia de los 4 calendarios mediante la API de Google (Events API)', async () => {
       const client = createMockClient();
       const mockDb = createMockSupabase();
 
@@ -189,6 +189,74 @@ describe('KANI BARBER STUDIO — Segunda Etapa de Google Calendar', () => {
       expect(verification.allAccessible).toBe(true);
       expect(verification.calendars).toHaveLength(4);
       expect(verification.calendars.every((c) => c.accessible)).toBe(true);
+      expect(verification.calendars.every((c) => c.steps?.create && c.steps?.read && c.steps?.delete && c.steps?.confirmDeleted)).toBe(true);
+    });
+
+    it('diagnostica con precisión errores 401, 403, 404 y 429 en la verificación individual', async () => {
+      const { verifySingleBarberCalendar } = await import('../lib/kani-google-calendar-sync');
+
+      // 401 Unauthorized
+      const client401 = {
+        createEvent: vi.fn().mockRejectedValue(new Error('GOOGLE_CALENDAR_CREATE_FAILED_401: Invalid Credentials')),
+        cleanupPreviousAuditEvents: vi.fn().mockResolvedValue(0),
+        deleteEvent: vi.fn().mockResolvedValue({ success: true, alreadyDeleted: true }),
+      } as unknown as GoogleCalendarClient;
+      const res401 = await verifySingleBarberCalendar('cal_test', 'Lautaro', client401);
+      expect(res401.accessible).toBe(false);
+      expect(res401.errorCode).toBe('AUTH_401');
+      expect(res401.error).toContain('AUTH_FAILED_401');
+
+      // 403 Forbidden
+      const client403 = {
+        createEvent: vi.fn().mockRejectedValue(new Error('GOOGLE_CALENDAR_CREATE_FAILED_403: insufficientPermissions')),
+        cleanupPreviousAuditEvents: vi.fn().mockResolvedValue(0),
+        deleteEvent: vi.fn().mockResolvedValue({ success: true, alreadyDeleted: true }),
+      } as unknown as GoogleCalendarClient;
+      const res403 = await verifySingleBarberCalendar('cal_test', 'Gonzalo', client403);
+      expect(res403.accessible).toBe(false);
+      expect(res403.errorCode).toBe('FORBIDDEN_403');
+      expect(res403.error).toContain('PERMISSION_DENIED_403');
+
+      // 404 Not Found
+      const client404 = {
+        createEvent: vi.fn().mockRejectedValue(new Error('GOOGLE_CALENDAR_CREATE_FAILED_404: notFound')),
+        cleanupPreviousAuditEvents: vi.fn().mockResolvedValue(0),
+        deleteEvent: vi.fn().mockResolvedValue({ success: true, alreadyDeleted: true }),
+      } as unknown as GoogleCalendarClient;
+      const res404 = await verifySingleBarberCalendar('cal_test', 'Valentín', client404);
+      expect(res404.accessible).toBe(false);
+      expect(res404.errorCode).toBe('NOT_FOUND_404');
+      expect(res404.error).toContain('CALENDAR_NOT_FOUND_404');
+
+      // 429 Rate Limit
+      const client429 = {
+        createEvent: vi.fn().mockRejectedValue(new Error('GOOGLE_CALENDAR_CREATE_FAILED_429: rateLimitExceeded')),
+        cleanupPreviousAuditEvents: vi.fn().mockResolvedValue(0),
+        deleteEvent: vi.fn().mockResolvedValue({ success: true, alreadyDeleted: true }),
+      } as unknown as GoogleCalendarClient;
+      const res429 = await verifySingleBarberCalendar('cal_test', 'Franco', client429);
+      expect(res429.accessible).toBe(false);
+      expect(res429.errorCode).toBe('RATE_LIMIT_429');
+      expect(res429.error).toContain('RATE_LIMIT_429');
+    });
+
+    it('ejecuta limpieza de emergencia si ocurre un error tras haber creado el evento de auditoría', async () => {
+      const { verifySingleBarberCalendar } = await import('../lib/kani-google-calendar-sync');
+
+      let emergencyCleanedEventId: string | null = null;
+      const clientFailOnRead = {
+        createEvent: vi.fn().mockResolvedValue({ id: 'evt_orphan_to_cleanup' }),
+        getEvent: vi.fn().mockRejectedValue(new Error('READ_FAIL_NETWORK')),
+        deleteEvent: vi.fn().mockImplementation((_calId, eventId) => {
+          emergencyCleanedEventId = eventId;
+          return Promise.resolve({ success: true, alreadyDeleted: false });
+        }),
+        cleanupPreviousAuditEvents: vi.fn().mockResolvedValue(0),
+      } as unknown as GoogleCalendarClient;
+
+      const res = await verifySingleBarberCalendar('cal_franco', 'Franco', clientFailOnRead);
+      expect(res.accessible).toBe(false);
+      expect(emergencyCleanedEventId).toBe('evt_orphan_to_cleanup');
     });
   });
 
