@@ -1043,6 +1043,17 @@ html[data-theme='dark'] .studio-map-card {
     margin-bottom: 32px;
   }
 
+  /* Stepper en Desktop: 14px tanto para los números como para los textos */
+  .booking-progress > button > span,
+  .booking-page .booking-progress > button > span {
+    font-size: 14px;
+  }
+
+  .booking-progress small,
+  .booking-page .booking-progress small {
+    font-size: 14px;
+  }
+
   /* Interacción limpia del stepper en desktop: elimina el fondo rectangular en hover/active de los pasos */
   .booking-progress > button:hover,
   .booking-progress > button:active,

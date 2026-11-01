@@ -16,6 +16,16 @@
   letter-spacing: -0.015em;
 }
 
+@media (min-width: 768px) {
+  .booking-page.booking-v3 .booking-progress > button > span {
+    font-size: 14px;
+  }
+
+  .booking-page.booking-v3 .booking-progress small {
+    font-size: 14px;
+  }
+}
+
 @media (max-width: 767px) {
   .booking-page.booking-v3 .booking-progress {
     height: 58px !important;
