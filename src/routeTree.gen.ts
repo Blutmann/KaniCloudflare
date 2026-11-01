@@ -15,6 +15,7 @@ import { Route as AdminV2RouteImport } from './routes/admin-v2'
 import { Route as CaseStudyRouteImport } from './routes/case-study'
 import { Route as EstudioRouteImport } from './routes/estudio'
 import { Route as PanelAdministracionRouteImport } from './routes/panel-administracion'
+import { Route as PoliticaDePrivacidadRouteImport } from './routes/politica-de-privacidad'
 import { Route as ReservaV2RouteImport } from './routes/reserva-v2'
 import { Route as ReservaV3RouteImport } from './routes/reserva-v3'
 import { Route as ReservaV4RouteImport } from './routes/reserva-v4'
@@ -23,6 +24,7 @@ import { Route as ReservarRouteImport } from './routes/reservar'
 import { Route as ReservarMercadopagoRouteImport } from './routes/reservar-mercadopago'
 import { Route as ReservarTurnoRouteImport } from './routes/reservar-turno'
 import { Route as ReservarTurnoMercadopagoRouteImport } from './routes/reservar-turno-mercadopago'
+import { Route as TerminosYCondicionesRouteImport } from './routes/terminos-y-condiciones'
 import { Route as AdminV2IndexRouteImport } from './routes/admin-v2.index'
 import { Route as AdminV2ClientesRouteImport } from './routes/admin-v2.clientes'
 import { Route as AdminV2DatosRouteImport } from './routes/admin-v2.datos'
@@ -81,6 +83,11 @@ const PanelAdministracionRoute = PanelAdministracionRouteImport.update({
   path: '/panel-administracion',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PoliticaDePrivacidadRoute = PoliticaDePrivacidadRouteImport.update({
+  id: '/politica-de-privacidad',
+  path: '/politica-de-privacidad',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ReservaV2Route = ReservaV2RouteImport.update({
   id: '/reserva-v2',
   path: '/reserva-v2',
@@ -122,6 +129,11 @@ const ReservarTurnoMercadopagoRoute =
     path: '/reservar-turno-mercadopago',
     getParentRoute: () => rootRouteImport,
   } as any)
+const TerminosYCondicionesRoute = TerminosYCondicionesRouteImport.update({
+  id: '/terminos-y-condiciones',
+  path: '/terminos-y-condiciones',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminV2IndexRoute = AdminV2IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -273,6 +285,7 @@ export interface FileRoutesByFullPath {
   '/case-study': typeof CaseStudyRoute
   '/estudio': typeof EstudioRoute
   '/panel-administracion': typeof PanelAdministracionRouteWithChildren
+  '/politica-de-privacidad': typeof PoliticaDePrivacidadRoute
   '/reserva-v2': typeof ReservaV2Route
   '/reserva-v3': typeof ReservaV3Route
   '/reserva-v4': typeof ReservaV4Route
@@ -281,6 +294,7 @@ export interface FileRoutesByFullPath {
   '/reservar-mercadopago': typeof ReservarMercadopagoRoute
   '/reservar-turno': typeof ReservarTurnoRoute
   '/reservar-turno-mercadopago': typeof ReservarTurnoMercadopagoRoute
+  '/terminos-y-condiciones': typeof TerminosYCondicionesRoute
   '/admin-v2/clientes': typeof AdminV2ClientesRoute
   '/admin-v2/datos': typeof AdminV2DatosRoute
   '/admin-v2/horarios': typeof AdminV2HorariosRoute
@@ -313,6 +327,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/case-study': typeof CaseStudyRoute
   '/estudio': typeof EstudioRoute
+  '/politica-de-privacidad': typeof PoliticaDePrivacidadRoute
   '/reserva-v2': typeof ReservaV2Route
   '/reserva-v3': typeof ReservaV3Route
   '/reserva-v4': typeof ReservaV4Route
@@ -321,6 +336,7 @@ export interface FileRoutesByTo {
   '/reservar-mercadopago': typeof ReservarMercadopagoRoute
   '/reservar-turno': typeof ReservarTurnoRoute
   '/reservar-turno-mercadopago': typeof ReservarTurnoMercadopagoRoute
+  '/terminos-y-condiciones': typeof TerminosYCondicionesRoute
   '/admin-v2/clientes': typeof AdminV2ClientesRoute
   '/admin-v2/datos': typeof AdminV2DatosRoute
   '/admin-v2/horarios': typeof AdminV2HorariosRoute
@@ -357,6 +373,7 @@ export interface FileRoutesById {
   '/case-study': typeof CaseStudyRoute
   '/estudio': typeof EstudioRoute
   '/panel-administracion': typeof PanelAdministracionRouteWithChildren
+  '/politica-de-privacidad': typeof PoliticaDePrivacidadRoute
   '/reserva-v2': typeof ReservaV2Route
   '/reserva-v3': typeof ReservaV3Route
   '/reserva-v4': typeof ReservaV4Route
@@ -365,6 +382,7 @@ export interface FileRoutesById {
   '/reservar-mercadopago': typeof ReservarMercadopagoRoute
   '/reservar-turno': typeof ReservarTurnoRoute
   '/reservar-turno-mercadopago': typeof ReservarTurnoMercadopagoRoute
+  '/terminos-y-condiciones': typeof TerminosYCondicionesRoute
   '/admin-v2/clientes': typeof AdminV2ClientesRoute
   '/admin-v2/datos': typeof AdminV2DatosRoute
   '/admin-v2/horarios': typeof AdminV2HorariosRoute
@@ -402,6 +420,7 @@ export interface FileRouteTypes {
     | '/case-study'
     | '/estudio'
     | '/panel-administracion'
+    | '/politica-de-privacidad'
     | '/reserva-v2'
     | '/reserva-v3'
     | '/reserva-v4'
@@ -410,6 +429,7 @@ export interface FileRouteTypes {
     | '/reservar-mercadopago'
     | '/reservar-turno'
     | '/reservar-turno-mercadopago'
+    | '/terminos-y-condiciones'
     | '/admin-v2/clientes'
     | '/admin-v2/datos'
     | '/admin-v2/horarios'
@@ -442,6 +462,7 @@ export interface FileRouteTypes {
     | '/'
     | '/case-study'
     | '/estudio'
+    | '/politica-de-privacidad'
     | '/reserva-v2'
     | '/reserva-v3'
     | '/reserva-v4'
@@ -450,6 +471,7 @@ export interface FileRouteTypes {
     | '/reservar-mercadopago'
     | '/reservar-turno'
     | '/reservar-turno-mercadopago'
+    | '/terminos-y-condiciones'
     | '/admin-v2/clientes'
     | '/admin-v2/datos'
     | '/admin-v2/horarios'
@@ -485,6 +507,7 @@ export interface FileRouteTypes {
     | '/case-study'
     | '/estudio'
     | '/panel-administracion'
+    | '/politica-de-privacidad'
     | '/reserva-v2'
     | '/reserva-v3'
     | '/reserva-v4'
@@ -493,6 +516,7 @@ export interface FileRouteTypes {
     | '/reservar-mercadopago'
     | '/reservar-turno'
     | '/reservar-turno-mercadopago'
+    | '/terminos-y-condiciones'
     | '/admin-v2/clientes'
     | '/admin-v2/datos'
     | '/admin-v2/horarios'
@@ -529,6 +553,7 @@ export interface RootRouteChildren {
   CaseStudyRoute: typeof CaseStudyRoute
   EstudioRoute: typeof EstudioRoute
   PanelAdministracionRoute: typeof PanelAdministracionRouteWithChildren
+  PoliticaDePrivacidadRoute: typeof PoliticaDePrivacidadRoute
   ReservaV2Route: typeof ReservaV2Route
   ReservaV3Route: typeof ReservaV3Route
   ReservaV4Route: typeof ReservaV4Route
@@ -537,6 +562,7 @@ export interface RootRouteChildren {
   ReservarMercadopagoRoute: typeof ReservarMercadopagoRoute
   ReservarTurnoRoute: typeof ReservarTurnoRoute
   ReservarTurnoMercadopagoRoute: typeof ReservarTurnoMercadopagoRoute
+  TerminosYCondicionesRoute: typeof TerminosYCondicionesRoute
   PagoErrorRoute: typeof PagoErrorRoute
   PagoExitoRoute: typeof PagoExitoRoute
   PagoPendienteRoute: typeof PagoPendienteRoute
@@ -584,6 +610,13 @@ declare module '@tanstack/react-router' {
       path: '/panel-administracion'
       fullPath: '/panel-administracion'
       preLoaderRoute: typeof PanelAdministracionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/politica-de-privacidad': {
+      id: '/politica-de-privacidad'
+      path: '/politica-de-privacidad'
+      fullPath: '/politica-de-privacidad'
+      preLoaderRoute: typeof PoliticaDePrivacidadRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reserva-v2': {
@@ -640,6 +673,13 @@ declare module '@tanstack/react-router' {
       path: '/reservar-turno-mercadopago'
       fullPath: '/reservar-turno-mercadopago'
       preLoaderRoute: typeof ReservarTurnoMercadopagoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/terminos-y-condiciones': {
+      id: '/terminos-y-condiciones'
+      path: '/terminos-y-condiciones'
+      fullPath: '/terminos-y-condiciones'
+      preLoaderRoute: typeof TerminosYCondicionesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin-v2/': {
@@ -915,6 +955,7 @@ const rootRouteChildren: RootRouteChildren = {
   CaseStudyRoute: CaseStudyRoute,
   EstudioRoute: EstudioRoute,
   PanelAdministracionRoute: PanelAdministracionRouteWithChildren,
+  PoliticaDePrivacidadRoute: PoliticaDePrivacidadRoute,
   ReservaV2Route: ReservaV2Route,
   ReservaV3Route: ReservaV3Route,
   ReservaV4Route: ReservaV4Route,
@@ -923,6 +964,7 @@ const rootRouteChildren: RootRouteChildren = {
   ReservarMercadopagoRoute: ReservarMercadopagoRoute,
   ReservarTurnoRoute: ReservarTurnoRoute,
   ReservarTurnoMercadopagoRoute: ReservarTurnoMercadopagoRoute,
+  TerminosYCondicionesRoute: TerminosYCondicionesRoute,
   PagoErrorRoute: PagoErrorRoute,
   PagoExitoRoute: PagoExitoRoute,
   PagoPendienteRoute: PagoPendienteRoute,

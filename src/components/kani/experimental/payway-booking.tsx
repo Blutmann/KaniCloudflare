@@ -999,6 +999,27 @@ export function PaywayBooking() {
                   )}
                 </label>
 
+                <p className="payway-legal-disclaimer text-xs text-muted-foreground text-center my-3 leading-relaxed">
+                  Al confirmar tu reserva, aceptás nuestros{' '}
+                  <a
+                    href="/terminos-y-condiciones"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline underline-offset-2 hover:text-foreground text-gold transition-colors"
+                  >
+                    Términos y Condiciones
+                  </a>{' '}
+                  y nuestra{' '}
+                  <a
+                    href="/politica-de-privacidad"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline underline-offset-2 hover:text-foreground text-gold transition-colors"
+                  >
+                    Política de Privacidad
+                  </a>.
+                </p>
+
                 <Button type="submit" className="action-positive payway-submit-btn" disabled={stage !== 'idle'}>
                   {stage === 'tokenizing'
                     ? 'Validando tarjeta…'

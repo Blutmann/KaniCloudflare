@@ -1197,6 +1197,28 @@ export function Booking({
                   <Clock3 size={15} className="shrink-0" aria-hidden="true" />
                   <p className="m-0 leading-normal">Tu turno se confirma cuando se acredita la seña.</p>
                 </div>
+
+                {/* Texto legal informativo antes del pago */}
+                <p className="booking-summary-legal-disclaimer text-xs text-muted-foreground mt-3 px-1 text-center sm:text-left leading-relaxed">
+                  Al confirmar tu reserva, aceptás nuestros{' '}
+                  <a
+                    href="/terminos-y-condiciones"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline underline-offset-2 hover:text-foreground text-gold transition-colors"
+                  >
+                    Términos y Condiciones
+                  </a>{' '}
+                  y nuestra{' '}
+                  <a
+                    href="/politica-de-privacidad"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline underline-offset-2 hover:text-foreground text-gold transition-colors"
+                  >
+                    Política de Privacidad
+                  </a>.
+                </p>
               </div>
             )}
 

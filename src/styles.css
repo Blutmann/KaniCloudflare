@@ -1642,7 +1642,51 @@ html[data-theme='dark'] .studio-map-card {
  .summary-card-notice svg {
    flex-shrink: 0;
  }
- .site-footer { display: none; }
+ .site-footer {
+   position: static;
+   display: block;
+   width: 100%;
+   margin-top: auto;
+   padding-block: 20px;
+   background-color: var(--chrome);
+   border-top: 1px solid var(--border);
+ }
+ .site-footer-inner {
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   text-align: center;
+   gap: 14px;
+   padding-inline: 16px;
+ }
+ .site-footer-study {
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   gap: 4px;
+ }
+ .site-footer-study p {
+   white-space: normal;
+   font-size: 11.5px;
+   line-height: 1.4;
+ }
+ .site-footer-links {
+   align-items: center;
+   gap: 10px;
+   width: 100%;
+ }
+ .site-footer-link-row {
+   justify-content: center;
+   gap: 8px 14px;
+ }
+ .site-footer-link-row a {
+   white-space: normal;
+   text-align: center;
+ }
+ .site-footer-copyright {
+   white-space: normal;
+   font-size: 11px;
+ }
  .booking-progress { gap: 4px; margin-top: 10px; margin-bottom: 16px; width: 100%; max-width: 100%; box-sizing: border-box; }
  .booking-progress > button { flex-direction: column; gap: 6px; padding-bottom: 12px; min-width: 0; overflow: hidden; }
  .booking-progress small { font-size: 9.5px; white-space: normal; line-height: 1.1; word-break: break-word; }
