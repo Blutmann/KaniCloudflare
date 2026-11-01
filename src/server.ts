@@ -55,6 +55,20 @@ function isH3SwallowedErrorBody(body: string): boolean {
   }
 }
 
+export function getCanonicalRedirectUrl(rawUrl: string): string | null {
+  try {
+    const url = new URL(rawUrl);
+    if (url.hostname.toLowerCase() === "www.kanibarber.com") {
+      url.hostname = "kanibarber.com";
+      url.protocol = "https:";
+      return url.toString();
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
@@ -69,6 +83,11 @@ export default {
       mirrorRuntimeBindings((globalThis as typeof globalThis & { __env__?: unknown }).__env__);
       mirrorRuntimeBindings((request as typeof request & { runtime?: { cloudflare?: { env?: unknown } } })?.runtime?.cloudflare?.env);
       mirrorRuntimeBindings(await getCloudflareEnv());
+
+      const canonicalRedirect = getCanonicalRedirectUrl(request.url);
+      if (canonicalRedirect) {
+        return Response.redirect(canonicalRedirect, 301);
+      }
 
       const url = new URL(request.url);
       if (url.pathname === "/api/webhook/mercadopago") {
@@ -358,6 +377,8 @@ function mirrorRuntimeBindings(bindings: unknown): void {
     "MERCADOPAGO_WEBHOOK_SECRET",
     "MERCADOPAGO_NOTIFICATION_URL",
     "KANI_APP_URL",
+    "APP_URL",
+    "PUBLIC_URL",
     "PONTIUN_API_KEY",
     "PONTIUN_WHATSAPP_PHONE_NUMBER_ID",
     "PONTIUN_PHONE_NUMBER_ID",

@@ -52,7 +52,7 @@ function CaseStudyPage() {
             Diseñar y construir una experiencia de reservas que conecte las necesidades del cliente con la operación diaria de una barbería real.
           </p>
           <div className="case-study-hero-actions">
-            <a className="case-study-button case-study-button-primary" href="https://www.kanibarber.com" target="_blank" rel="noreferrer">
+            <a className="case-study-button case-study-button-primary" href="https://kanibarber.com" target="_blank" rel="noreferrer">
               Ver producto <ArrowUpRight size={16} />
             </a>
             <a className="case-study-text-link" href="#contexto">Leer el caso <MoveRight size={15} /></a>
@@ -149,7 +149,7 @@ function CaseStudyPage() {
 
       <section className="case-study-closing case-study-container">
         <div><p className="case-study-kicker">Kani Barber Studio</p><h2>Diseñar para que la operación también pueda respirar.</h2></div>
-        <div className="case-study-closing-links"><a href="https://www.kanibarber.com" target="_blank" rel="noreferrer">Producto publicado <ArrowUpRight size={16} /></a><Link to="/">Volver al inicio <MoveRight size={16} /></Link></div>
+        <div className="case-study-closing-links"><a href="https://kanibarber.com" target="_blank" rel="noreferrer">Producto publicado <ArrowUpRight size={16} /></a><Link to="/">Volver al inicio <MoveRight size={16} /></Link></div>
       </section>
 
       <div className="case-study-disclaimer case-study-container"><Menu size={14} /> Caso de estudio profesional independiente · Evidencia revisada en octubre de 2026 · Sin datos personales ni credenciales</div>

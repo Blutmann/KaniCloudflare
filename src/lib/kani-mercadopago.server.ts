@@ -23,14 +23,18 @@ export function getRuntimeEnv(name: string): string | undefined {
 export async function handleCreateBookingOrder(data: CreateBookingOrderInput): Promise<CreateBookingOrderResult> {
   try {
     const accessToken = getRuntimeEnv("MERCADOPAGO_ACCESS_TOKEN");
-    const notificationUrl =
-      getRuntimeEnv("MERCADOPAGO_NOTIFICATION_URL") ??
-      "https://kanibarberstudio-cloudflare.kanibarber.workers.dev/api/webhook/mercadopago";
-
     const appBaseUrl =
       getRuntimeEnv("KANI_APP_URL") ??
+      getRuntimeEnv("APP_URL") ??
+      getRuntimeEnv("PUBLIC_URL") ??
       "https://kanibarberstudio-cloudflare.kanibarber.workers.dev";
     const cleanBaseUrl = appBaseUrl.replace(/\/$/, "");
+
+    const notificationUrl =
+      getRuntimeEnv("MERCADOPAGO_NOTIFICATION_URL") ??
+      (getRuntimeEnv("KANI_APP_URL") || getRuntimeEnv("APP_URL") || getRuntimeEnv("PUBLIC_URL")
+        ? `${cleanBaseUrl}/api/webhook/mercadopago`
+        : "https://kanibarberstudio-cloudflare.kanibarber.workers.dev/api/webhook/mercadopago");
 
     const successUrl = `${cleanBaseUrl}/pago/exito?appointment_id=${encodeURIComponent(data.appointmentId)}`;
     const failureUrl = `${cleanBaseUrl}/pago/error?appointment_id=${encodeURIComponent(data.appointmentId)}`;
