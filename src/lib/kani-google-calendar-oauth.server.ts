@@ -110,10 +110,43 @@ export async function authenticateAdminRequest(
       const supabaseUrl = getRuntimeSecret('SUPABASE_URL') || 'https://iockpxtkflyjfagkvgnr.supabase.co';
       const anonKey = getRuntimeSecret('VITE_SUPABASE_ANON_KEY') || getRuntimeSecret('SUPABASE_ANON_KEY') || 'sb_publishable_jLUHqN-Y_2az8c0Y2yG3mA_gl618304';
       const serviceRoleKey = getRuntimeSecret('SUPABASE_SERVICE_ROLE_KEY');
-      supabase = createClient(supabaseUrl, serviceRoleKey || anonKey, {
+
+      const authClient = createClient(supabaseUrl, anonKey, {
         auth: { persistSession: false, autoRefreshToken: false },
         global: { headers: { Authorization: `Bearer ${token}` } },
       });
+
+      const {
+        data: { user },
+        error: userError,
+      } = await authClient.auth.getUser(token);
+
+      if (userError || !user) {
+        return {
+          authorized: false,
+          error: 'AUTH_INVALID: Token de sesión inválido o expirado.',
+        };
+      }
+
+      // Usar serviceRoleKey si está disponible para evitar restricciones de RLS al verificar rol
+      const dbClient = serviceRoleKey
+        ? createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false, autoRefreshToken: false } })
+        : authClient;
+
+      const { data: profile, error: profileError } = await dbClient
+        .from('staff_profiles')
+        .select('role, active')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (profileError || !profile || !profile.active || profile.role !== 'ADMIN') {
+        return {
+          authorized: false,
+          error: 'ACCESS_DENIED: Se requieren permisos de Administrador para configurar integraciones.',
+        };
+      }
+
+      return { authorized: true, userId: user.id };
     }
 
     const {
@@ -149,16 +182,28 @@ export async function authenticateAdminRequest(
 }
 
 /**
- * 1. GET /api/integrations/google-calendar/authorize
+ * 1. GET / POST /api/integrations/google-calendar/authorize
  */
 export async function handleGoogleCalendarAuthorize(
   request: Request,
   customSupabaseClient?: any,
 ): Promise<Response> {
+  const wantsJson =
+    request.method === 'POST' ||
+    request.headers.get('Accept')?.includes('application/json') ||
+    request.headers.get('Content-Type')?.includes('application/json');
+
   const auth = await authenticateAdminRequest(request, customSupabaseClient);
   if (!auth.authorized || !auth.userId) {
+    const errorMsg = auth.error || 'Se requieren permisos de Administrador.';
+    if (wantsJson) {
+      return new Response(JSON.stringify({ error: errorMsg }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
     return new Response(
-      renderAdminErrorHtml('Acceso Denegado', auth.error || 'Se requieren permisos de Administrador.'),
+      renderAdminErrorHtml('Acceso Denegado', errorMsg),
       {
         status: 403,
         headers: { 'Content-Type': 'text/html; charset=utf-8' },
@@ -168,11 +213,15 @@ export async function handleGoogleCalendarAuthorize(
 
   const clientId = getRuntimeSecret('GOOGLE_CLIENT_ID');
   if (!clientId) {
+    const errorMsg = 'La variable GOOGLE_CLIENT_ID no está configurada en los secretos de Cloudflare Workers.';
+    if (wantsJson) {
+      return new Response(JSON.stringify({ error: errorMsg }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
     return new Response(
-      renderAdminErrorHtml(
-        'Falta Configuración de Google Cloud',
-        'La variable GOOGLE_CLIENT_ID no está configurada en los secretos de Cloudflare Workers.',
-      ),
+      renderAdminErrorHtml('Falta Configuración de Google Cloud', errorMsg),
       {
         status: 400,
         headers: { 'Content-Type': 'text/html; charset=utf-8' },
@@ -192,7 +241,6 @@ export async function handleGoogleCalendarAuthorize(
   });
 
   const responseHeaders = new Headers();
-  responseHeaders.set('Location', authUrl);
 
   // Cookie HttpOnly con el nonce para validación CSRF estricta
   responseHeaders.append(
@@ -200,6 +248,15 @@ export async function handleGoogleCalendarAuthorize(
     `kani_gcal_oauth_state=${nonce}; Path=/api/integrations/google-calendar; HttpOnly; Secure; SameSite=Lax; Max-Age=600`,
   );
 
+  if (wantsJson) {
+    responseHeaders.set('Content-Type', 'application/json');
+    return new Response(JSON.stringify({ url: authUrl, state }), {
+      status: 200,
+      headers: responseHeaders,
+    });
+  }
+
+  responseHeaders.set('Location', authUrl);
   return new Response(null, {
     status: 302,
     headers: responseHeaders,

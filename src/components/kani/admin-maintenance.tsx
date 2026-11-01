@@ -14,6 +14,7 @@ import {
   type MaintenanceResult,
 } from '@/lib/kani-maintenance';
 import { useAdminStaff } from '@/lib/kani-admin-context';
+import { GoogleCalendarAdminSection } from '@/components/kani/google-calendar-admin-section';
 
 export function AdminMaintenance() {
   const staff = useAdminStaff();
@@ -123,9 +124,11 @@ export function AdminMaintenance() {
       </div>
 
       <div className="maintenance-grid">
-        {/* Columna 1: Limpiar registros de prueba */}
-        <section className="maintenance-col maintenance-appointments-col" aria-labelledby="cleanup-appointments-heading">
-          <div className="v2-panel maintenance-card">
+        {/* Columna 1: Google Calendar + Limpiar registros de prueba */}
+        <div className="maintenance-col maintenance-appointments-col space-y-4">
+          <GoogleCalendarAdminSection />
+
+          <section className="v2-panel maintenance-card" aria-labelledby="cleanup-appointments-heading">
             <div className="flex items-start gap-3">
               <ShieldCheck className="mt-0.5 shrink-0 text-gold" size={20} aria-hidden="true" />
               <div className="min-w-0">
@@ -200,8 +203,8 @@ export function AdminMaintenance() {
                 <span>Eliminar registros</span>
               </Button>
             </div>
-          </div>
-        </section>
+          </section>
+        </div>
 
         {/* Columna 2: Historial de disponibilidad + Siempre se conserva */}
         <div className="maintenance-col maintenance-side-col space-y-4">

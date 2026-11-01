@@ -196,6 +196,56 @@ describe('KANI Barber Studio — OAuth 2.0 Centralizado para Google Calendar', (
       expect(setCookie).toContain('Secure');
       expect(setCookie).toContain('SameSite=Lax');
     });
+
+    it('permite a un ADMIN iniciar el flujo desde el frontend mediante POST y Authorization: Bearer, devolviendo { url } y cookie CSRF', async () => {
+      process.env.GOOGLE_CLIENT_ID = 'kani-google-client-id-123';
+      process.env.SUPABASE_SERVICE_ROLE_KEY = secretKey;
+
+      const req = new Request(
+        'https://kanibarberstudio-cloudflare.kanibarber.workers.dev/api/integrations/google-calendar/authorize',
+        {
+          method: 'POST',
+          headers: {
+            Authorization: 'Bearer valid-admin-jwt',
+            Accept: 'application/json',
+          },
+        },
+      );
+      const res = await handleGoogleCalendarAuthorize(req, createMockSupabaseAdmin('ADMIN'));
+
+      expect(res.status).toBe(200);
+      const data = await res.json();
+      expect(data.url).toBeDefined();
+      expect(data.url).toContain('https://accounts.google.com/o/oauth2/v2/auth');
+      expect(data.url).toContain('client_id=kani-google-client-id-123');
+      expect(data.url).toContain('access_type=offline');
+      expect(data.url).toContain('prompt=consent');
+
+      const setCookie = res.headers.get('Set-Cookie');
+      expect(setCookie).toBeDefined();
+      expect(setCookie).toContain('kani_gcal_oauth_state=');
+      expect(setCookie).toContain('HttpOnly');
+      expect(setCookie).toContain('Secure');
+      expect(setCookie).toContain('SameSite=Lax');
+    });
+
+    it('rechaza solicitudes POST de usuarios BARBER devolviendo 403 JSON', async () => {
+      const req = new Request(
+        'https://kanibarberstudio-cloudflare.kanibarber.workers.dev/api/integrations/google-calendar/authorize',
+        {
+          method: 'POST',
+          headers: {
+            Authorization: 'Bearer valid-barber-jwt',
+            Accept: 'application/json',
+          },
+        },
+      );
+      const res = await handleGoogleCalendarAuthorize(req, createMockSupabaseAdmin('BARBER'));
+
+      expect(res.status).toBe(403);
+      const data = await res.json();
+      expect(data.error).toContain('ACCESS_DENIED');
+    });
   });
 
   describe('4. Callback OAuth (/callback) y Almacenamiento Seguro', () => {
