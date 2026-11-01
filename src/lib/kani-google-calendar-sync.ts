@@ -39,7 +39,24 @@ export type CalendarSyncQueueItem = {
   service_price_ars: number | null;
   deposit_paid: boolean;
   deposit_amount_ars: number | null;
+  sync_version?: number;
+  claimed_by?: string | null;
 };
+
+/**
+ * Genera un identificador de evento determinista para Google Calendar.
+ * Especificación de Google Calendar API v3:
+ * - Longitud: 5 a 1024 caracteres.
+ * - Caracteres permitidos: base32hex en minúsculas (dígitos 0-9 y letras a-v).
+ * 
+ * Usar un ID determinista derivado del ID de reserva de Kani garantiza idempotencia
+ * estricta ante caídas de red o reintentos distribuidos, evitando eventos duplicados en Google.
+ */
+export function buildDeterministicGoogleEventId(appointmentId: string): string {
+  const cleanId = appointmentId.toLowerCase().replace(/[^0-9a-v]/g, '');
+  const base = `kani${cleanId}`;
+  return base.padEnd(5, '0').slice(0, 64);
+}
 
 export function buildGoogleCalendarEventPayload(
   item: Pick<
@@ -173,10 +190,63 @@ export async function resolveBarberCalendarId(
  * Sincroniza un elemento individual de la cola Kani -> Google Calendar
  */
 export async function syncQueueItem(
-  item: CalendarSyncQueueItem,
+  item: CalendarSyncQueueItem & { sync_version?: number },
   client: GoogleCalendarClient,
   supabaseClient: any = defaultSupabase,
+  workerId?: string,
 ): Promise<SyncItemResult> {
+  const syncVersion = item.sync_version ?? (item as any).version;
+
+  const recordSuccess = async (googleEventId: string | null, calendarId: string | null, checksum: string | null) => {
+    let recorded = false;
+    try {
+      const { data, error } = await supabaseClient.rpc('record_calendar_sync_success_v2', {
+        p_sync_id: item.sync_id,
+        p_worker_id: workerId || null,
+        p_version: syncVersion || null,
+        p_google_event_id: googleEventId,
+        p_calendar_id: calendarId,
+        p_checksum: checksum,
+      });
+      if (!error && (data === true || data === undefined)) {
+        recorded = true;
+      }
+    } catch {
+      // Fallback a versión anterior
+    }
+    if (!recorded) {
+      await supabaseClient.rpc('record_calendar_sync_success', {
+        p_sync_id: item.sync_id,
+        p_google_event_id: googleEventId,
+        p_calendar_id: calendarId,
+        p_checksum: checksum,
+      });
+    }
+  };
+
+  const recordFailure = async (errorMsg: string) => {
+    let recorded = false;
+    try {
+      const { data, error } = await supabaseClient.rpc('record_calendar_sync_failure_v2', {
+        p_sync_id: item.sync_id,
+        p_worker_id: workerId || null,
+        p_version: syncVersion || null,
+        p_error: errorMsg,
+      });
+      if (!error && (data === true || data === undefined)) {
+        recorded = true;
+      }
+    } catch {
+      // Fallback a versión anterior
+    }
+    if (!recorded) {
+      await supabaseClient.rpc('record_calendar_sync_failure', {
+        p_sync_id: item.sync_id,
+        p_error: errorMsg,
+      });
+    }
+  };
+
   try {
     const effectiveCalendarId =
       item.calendar_id || (await resolveBarberCalendarId(item.barber_name, supabaseClient));
@@ -186,12 +256,7 @@ export async function syncQueueItem(
       if (effectiveCalendarId && item.google_event_id) {
         await client.deleteEvent(effectiveCalendarId, item.google_event_id);
       }
-      await supabaseClient.rpc('record_calendar_sync_success', {
-        p_sync_id: item.sync_id,
-        p_google_event_id: null,
-        p_calendar_id: effectiveCalendarId,
-        p_checksum: null,
-      });
+      await recordSuccess(null, effectiveCalendarId, null);
       return {
         syncId: item.sync_id,
         appointmentId: item.appointment_id,
@@ -203,10 +268,7 @@ export async function syncQueueItem(
     // 2. Manejo de UPSERT (Creación o Actualización)
     if (!effectiveCalendarId) {
       const err = `CALENDAR_NOT_CONFIGURED: El barbero ${item.barber_name} no tiene asignado un calendar_id en Cloudflare ni en barber_google_calendars.`;
-      await supabaseClient.rpc('record_calendar_sync_failure', {
-        p_sync_id: item.sync_id,
-        p_error: err,
-      });
+      await recordFailure(err);
       return {
         syncId: item.sync_id,
         appointmentId: item.appointment_id,
@@ -218,6 +280,7 @@ export async function syncQueueItem(
 
     const payload = buildGoogleCalendarEventPayload(item);
     const checksum = await computeEventChecksum(payload);
+    const deterministicId = buildDeterministicGoogleEventId(item.appointment_id);
 
     // 2.1 Caso cambio de barbero: Eliminar evento del calendario anterior
     if (item.previous_calendar_id && item.previous_google_event_id) {
@@ -234,12 +297,7 @@ export async function syncQueueItem(
     if (item.google_event_id) {
       if (item.payload_checksum === checksum) {
         // Idempotencia: el evento ya está exactamente sincronizado
-        await supabaseClient.rpc('record_calendar_sync_success', {
-          p_sync_id: item.sync_id,
-          p_google_event_id: item.google_event_id,
-          p_calendar_id: effectiveCalendarId,
-          p_checksum: checksum,
-        });
+        await recordSuccess(item.google_event_id, effectiveCalendarId, checksum);
         return {
           syncId: item.sync_id,
           appointmentId: item.appointment_id,
@@ -252,17 +310,12 @@ export async function syncQueueItem(
       const updated = await client.updateEvent(effectiveCalendarId, item.google_event_id, payload);
       resultingEventId = updated.id;
     } else {
-      // 2.3 Si no existe, crear nuevo evento (POST)
-      const created = await client.createEvent(effectiveCalendarId, payload);
+      // 2.3 Si no existe, crear nuevo evento con ID determinista para garantizar idempotencia
+      const created = await client.createEvent(effectiveCalendarId, payload, deterministicId);
       resultingEventId = created.id;
     }
 
-    await supabaseClient.rpc('record_calendar_sync_success', {
-      p_sync_id: item.sync_id,
-      p_google_event_id: resultingEventId,
-      p_calendar_id: effectiveCalendarId,
-      p_checksum: checksum,
-    });
+    await recordSuccess(resultingEventId, effectiveCalendarId, checksum);
 
     return {
       syncId: item.sync_id,
@@ -273,10 +326,7 @@ export async function syncQueueItem(
     };
   } catch (error: any) {
     const errorMsg = error?.message || String(error);
-    await supabaseClient.rpc('record_calendar_sync_failure', {
-      p_sync_id: item.sync_id,
-      p_error: errorMsg,
-    });
+    await recordFailure(errorMsg);
     return {
       syncId: item.sync_id,
       appointmentId: item.appointment_id,
@@ -414,14 +464,40 @@ export async function syncBarberCalendarAssociations(supabaseClient?: any): Prom
 }
 
 /**
- * Pasa a estado SKIPPED trabajos antiguos previos a la activación para no generar eventos inesperados
+ * Concilia de forma inteligente y selectiva los trabajos de sincronización acumulados:
+ * - Descarta reservas de prueba ficticias (SKIPPED).
+ * - Descarta reservas canceladas que nunca se sincronizaron en Google (SKIPPED).
+ * - Descarta reservas obsoletas del pasado sin sincronizar (SKIPPED).
+ * - PRESERVA estrictamente en PENDING las reservas confirmadas legítimas futuras.
  */
 export async function purgeStaleSyncItems(supabaseClient?: any): Promise<{
   staleItemsCount: number;
   skipped: boolean;
+  reconciled?: {
+    testAppointmentsSkipped: number;
+    cancelledSkipped: number;
+    pastAppointmentsSkipped: number;
+    legitimateFuturePreserved: number;
+  };
 }> {
   const client = await getSyncSupabaseClient(supabaseClient);
   try {
+    if (typeof client?.rpc === 'function') {
+      const { data: rpcRes, error: rpcErr } = await client.rpc('reconcile_stale_calendar_sync_items');
+      if (!rpcErr && rpcRes) {
+        const testCount = Number(rpcRes.testAppointmentsSkipped || 0);
+        const cancCount = Number(rpcRes.cancelledSkipped || 0);
+        const pastCount = Number(rpcRes.pastAppointmentsSkipped || 0);
+        const total = testCount + cancCount + pastCount;
+        return {
+          staleItemsCount: total,
+          skipped: true,
+          reconciled: rpcRes,
+        };
+      }
+    }
+
+    // Fallback si la RPC no está disponible (ej: entorno mock o migración previa)
     const oneHourAgo = new Date(Date.now() - 3600 * 1000).toISOString();
     const { data: staleRows, error: findErr } = await client
       .from('appointment_calendar_sync')
@@ -447,7 +523,7 @@ export async function purgeStaleSyncItems(supabaseClient?: any): Promise<{
 
     return { staleItemsCount: staleRows.length, skipped: true };
   } catch (err) {
-    console.warn('[Calendar Sync] Aviso al purgar items antiguos:', err);
+    console.warn('[Calendar Sync] Fallback/Aviso al conciliar items antiguos:', err);
     return { staleItemsCount: 0, skipped: false };
   }
 }
@@ -526,12 +602,15 @@ export async function verifyAllBarberCalendars(
 /**
  * Procesa en lote los elementos pendientes de la cola de sincronización.
  * Si GOOGLE_CALENDAR_SYNC_ENABLED no es true (Etapa 1), omite el procesamiento
- * salvo que se fuerce explícitamente en tests.
+ * salvo que se fuerce explícitamente en tests o mantenimiento.
+ * 
+ * Implementa concurrencia distribuida mediante reclamo transaccional con lease (SKIP LOCKED),
+ * identificador único de worker (`claimed_by`) y recuperación de leases expirados.
  */
 export async function processCalendarSyncQueue(
   options: ProcessQueueOptions = {},
 ): Promise<ProcessQueueResult> {
-  // Prevención de concurrencia in-process (Mutex)
+  // Prevención de concurrencia in-process (Mutex local adicional)
   if (isSyncInProgress && !options.force) {
     return {
       status: 'SKIPPED',
@@ -561,24 +640,47 @@ export async function processCalendarSyncQueue(
   try {
     const client = options.client || new GoogleCalendarClient();
     const supabaseClient = await getSyncSupabaseClient(options.supabaseClient);
+    const workerId = `worker_${crypto.randomUUID().slice(0, 8)}_${Date.now()}`;
 
-    const { data: items, error } = await supabaseClient.rpc('get_pending_calendar_sync_items', {
-      p_limit: options.limit || 10,
-    });
+    let queueItems: CalendarSyncQueueItem[] = [];
 
-    if (error) {
-      throw new Error(`GET_PENDING_SYNC_ITEMS_FAILED: ${error.message}`);
+    // Intento 1: Reclamo transaccional atómico con SKIP LOCKED y leases (v2)
+    try {
+      const { data: claimed, error: claimErr } = await supabaseClient.rpc(
+        'claim_pending_calendar_sync_jobs',
+        {
+          p_worker_id: workerId,
+          p_limit: options.limit || 10,
+          p_lease_seconds: 120,
+        },
+      );
+      if (!claimErr && Array.isArray(claimed)) {
+        queueItems = claimed as CalendarSyncQueueItem[];
+      } else if (claimErr) {
+        console.warn('[Calendar Sync] Fallback a get_pending_calendar_sync_items:', claimErr.message);
+      }
+    } catch (claimEx) {
+      console.warn('[Calendar Sync] Excepción al invocar claim_pending_calendar_sync_jobs:', claimEx);
     }
 
-    const queueItems = (items || []) as CalendarSyncQueueItem[];
-    const results: SyncItemResult[] = [];
+    // Fallback: Si no se usó v2 o falló RPC v2, consultar get_pending_calendar_sync_items
+    if (queueItems.length === 0) {
+      const { data: items, error } = await supabaseClient.rpc('get_pending_calendar_sync_items', {
+        p_limit: options.limit || 10,
+      });
+      if (error && !queueItems.length) {
+        throw new Error(`GET_PENDING_SYNC_ITEMS_FAILED: ${error.message}`);
+      }
+      queueItems = (items || []) as CalendarSyncQueueItem[];
+    }
 
+    const results: SyncItemResult[] = [];
     let synced = 0;
     let failed = 0;
     let skipped = 0;
 
     for (const item of queueItems) {
-      const res = await syncQueueItem(item, client, supabaseClient);
+      const res = await syncQueueItem(item, client, supabaseClient, workerId);
       results.push(res);
       if (res.status === 'SYNCED') synced++;
       else if (res.status === 'FAILED') failed++;

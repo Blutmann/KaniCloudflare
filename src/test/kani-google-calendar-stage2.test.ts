@@ -222,6 +222,7 @@ describe('KANI BARBER STUDIO — Segunda Etapa de Google Calendar', () => {
           summary: 'Corte + Barba — Kani Barber Studio',
           visibility: 'private',
         }),
+        expect.any(String),
       );
     });
 
@@ -262,6 +263,7 @@ describe('KANI BARBER STUDIO — Segunda Etapa de Google Calendar', () => {
         expect.objectContaining({
           summary: 'Corte — Kani Barber Studio',
         }),
+        expect.any(String),
       );
     });
 
@@ -361,6 +363,7 @@ describe('KANI BARBER STUDIO — Segunda Etapa de Google Calendar', () => {
         expect.objectContaining({
           summary: 'Corte — Kani Barber Studio',
         }),
+        expect.any(String),
       );
     });
 

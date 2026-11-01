@@ -89,24 +89,68 @@ export class GoogleCalendarClient {
   }
 
   /**
-   * Crea un nuevo evento en el calendario indicado
+   * Ejecuta peticiones a la API de Google con autenticación y renovación transparente en caso de 401
+   */
+  private async fetchWithAuth(url: string, init: RequestInit = {}): Promise<Response> {
+    const headers = await this.getAuthHeaders();
+    let res = await this.fetchFn(url, {
+      ...init,
+      headers: {
+        ...headers,
+        ...((init.headers as Record<string, string>) || {}),
+      },
+    });
+
+    // Renovación transparente ante 401 Unauthorized
+    if (res.status === 401) {
+      const refreshedHeaders = await this.getAuthHeaders();
+      res = await this.fetchFn(url, {
+        ...init,
+        headers: {
+          ...refreshedHeaders,
+          ...((init.headers as Record<string, string>) || {}),
+        },
+      });
+    }
+
+    return res;
+  }
+
+  /**
+   * Crea un nuevo evento en el calendario indicado.
+   * Si se proporciona `deterministicId`, se garantiza idempotencia distribuida:
+   * en caso de interrupción de red que devuelva 409 (Conflict), recupera y actualiza
+   * automáticamente el evento existente sin generar duplicados.
    */
   async createEvent(
     calendarId: string,
     event: GoogleCalendarEventPayload,
+    deterministicId?: string,
   ): Promise<GoogleCalendarEventResponse> {
     if (!calendarId) throw new Error('CALENDAR_ID_REQUIRED');
-    const headers = await this.getAuthHeaders();
     const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?sendUpdates=none`;
 
-    const res = await this.fetchFn(url, {
+    const payload: Record<string, any> = {
+      ...event,
+      visibility: event.visibility || 'private',
+    };
+    if (deterministicId) {
+      payload.id = deterministicId;
+    }
+
+    const res = await this.fetchWithAuth(url, {
       method: 'POST',
-      headers,
-      body: JSON.stringify({
-        ...event,
-        visibility: event.visibility || 'private',
-      }),
+      body: JSON.stringify(payload),
     });
+
+    // Idempotencia: si el evento ya existe en Google (409 Conflict), recuperarlo
+    if (res.status === 409 && deterministicId) {
+      const existing = await this.getEvent(calendarId, deterministicId);
+      if (existing) {
+        const updated = await this.updateEvent(calendarId, deterministicId, event);
+        return updated;
+      }
+    }
 
     if (!res.ok) {
       const errBody = await res.text();
@@ -126,12 +170,10 @@ export class GoogleCalendarClient {
   ): Promise<GoogleCalendarEventResponse> {
     if (!calendarId) throw new Error('CALENDAR_ID_REQUIRED');
     if (!eventId) throw new Error('EVENT_ID_REQUIRED');
-    const headers = await this.getAuthHeaders();
     const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}?sendUpdates=none`;
 
-    const res = await this.fetchFn(url, {
+    const res = await this.fetchWithAuth(url, {
       method: 'PATCH',
-      headers,
       body: JSON.stringify(event),
     });
 
@@ -153,12 +195,10 @@ export class GoogleCalendarClient {
   ): Promise<{ success: boolean; alreadyDeleted: boolean }> {
     if (!calendarId) throw new Error('CALENDAR_ID_REQUIRED');
     if (!eventId) throw new Error('EVENT_ID_REQUIRED');
-    const headers = await this.getAuthHeaders();
     const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}?sendUpdates=none`;
 
-    const res = await this.fetchFn(url, {
+    const res = await this.fetchWithAuth(url, {
       method: 'DELETE',
-      headers,
     });
 
     if (res.status === 204 || res.status === 200) {
@@ -182,12 +222,10 @@ export class GoogleCalendarClient {
   ): Promise<GoogleCalendarEventResponse | null> {
     if (!calendarId) throw new Error('CALENDAR_ID_REQUIRED');
     if (!eventId) throw new Error('EVENT_ID_REQUIRED');
-    const headers = await this.getAuthHeaders();
     const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}`;
 
-    const res = await this.fetchFn(url, {
+    const res = await this.fetchWithAuth(url, {
       method: 'GET',
-      headers,
     });
 
     if (res.status === 404 || res.status === 410) {
@@ -209,12 +247,10 @@ export class GoogleCalendarClient {
     calendarId: string,
   ): Promise<{ id: string; summary?: string; timeZone?: string } | null> {
     if (!calendarId) return null;
-    const headers = await this.getAuthHeaders();
     const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}`;
 
-    const res = await this.fetchFn(url, {
+    const res = await this.fetchWithAuth(url, {
       method: 'GET',
-      headers,
     });
 
     if (res.status === 404 || res.status === 403) {

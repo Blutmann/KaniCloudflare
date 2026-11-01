@@ -166,6 +166,7 @@ describe('KANI Barber Studio — Integración con Google Calendar (Etapa 1)', ()
           summary: 'Corte — Kani Barber Studio',
           visibility: 'private',
         }),
+        expect.any(String),
       );
 
       expect(mockSupabase.rpc).toHaveBeenCalledWith('record_calendar_sync_success', {
@@ -213,6 +214,7 @@ describe('KANI Barber Studio — Integración con Google Calendar (Etapa 1)', ()
         expect.objectContaining({
           summary: 'Barba — Kani Barber Studio',
         }),
+        expect.any(String),
       );
     });
 
@@ -391,6 +393,7 @@ describe('KANI Barber Studio — Integración con Google Calendar (Etapa 1)', ()
         expect.objectContaining({
           summary: 'Corte — Kani Barber Studio',
         }),
+        expect.any(String),
       );
     });
 

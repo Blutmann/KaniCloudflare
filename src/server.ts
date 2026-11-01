@@ -374,9 +374,31 @@ export default {
       if (url.pathname === "/api/admin/calendar-sync/process") {
         try {
           const { processCalendarSyncQueue } = await import("./lib/kani-google-calendar-sync");
+          const { getGoogleCalendarAuthConfig } = await import("./lib/kani-google-calendar-auth");
+          const config = getGoogleCalendarAuthConfig();
           const limit = Number(url.searchParams.get("limit") || 10);
-          const force = url.searchParams.get("force") === "true";
-          const result = await processCalendarSyncQueue({ force, limit });
+          const requestedForce = url.searchParams.get("force") === "true";
+
+          // Protección de ejecución manual: si la sincronización automática está deshabilitada,
+          // no se permite saltarse la protección con un simple force=true.
+          // Requiere obligatoriamente la cabecera de confirmación explícita del ADMIN.
+          const adminManualConfirm = request.headers.get("x-admin-confirm-manual-sync") === "true";
+          if (!config.enabled && requestedForce && !adminManualConfirm) {
+            return new Response(
+              JSON.stringify({
+                error: "MANUAL_CONFIRMATION_REQUIRED",
+                message:
+                  "La sincronización automática está desactivada (GOOGLE_CALENDAR_SYNC_ENABLED=false). Para ejecutar el procesamiento manual se requiere confirmación explícita del administrador (cabecera x-admin-confirm-manual-sync: true).",
+              }),
+              {
+                status: 403,
+                headers: { "content-type": "application/json" },
+              }
+            );
+          }
+
+          const allowForce = requestedForce && (config.enabled || adminManualConfirm);
+          const result = await processCalendarSyncQueue({ force: allowForce, limit });
           return new Response(JSON.stringify(result), {
             status: 200,
             headers: { "content-type": "application/json" },

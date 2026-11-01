@@ -227,6 +227,13 @@ export function GoogleCalendarAdminSection() {
   }
 
   async function handleProcessQueue() {
+    if (!status?.syncEnabled) {
+      const confirmed = window.confirm(
+        'La sincronización automática está desactivada (GOOGLE_CALENDAR_SYNC_ENABLED=false).\n\n¿Desea confirmar la ejecución manual forzada de la cola de sincronización como administrador?',
+      );
+      if (!confirmed) return;
+    }
+
     setProcessingQueue(true);
     setProcessQueueResult(null);
     try {
@@ -239,10 +246,14 @@ export function GoogleCalendarAdminSection() {
         headers: {
           Authorization: `Bearer ${session.access_token}`,
           Accept: 'application/json',
+          'x-admin-confirm-manual-sync': 'true',
         },
       });
       if (res.ok) {
         setProcessQueueResult(await res.json());
+      } else {
+        const errJson = await res.json().catch(() => ({}));
+        setError(errJson?.message || errJson?.error || `Error ${res.status} procesando cola.`);
       }
     } catch (err: any) {
       setError(err?.message || 'Error procesando cola.');
