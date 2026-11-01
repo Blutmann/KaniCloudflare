@@ -380,23 +380,29 @@ export async function handleGoogleCalendarIntegrationStatus(
     __KANI_RUNTIME_ENV?: Record<string, string>;
   });
 
+  const clientId = getRuntimeSecret('GOOGLE_CLIENT_ID');
+  const clientSecret = getRuntimeSecret('GOOGLE_CLIENT_SECRET');
+  const serviceRoleKey =
+    getRuntimeSecret('SUPABASE_SERVICE_ROLE_KEY') ||
+    (typeof process !== 'undefined' ? process.env.SUPABASE_SERVICE_ROLE_KEY : undefined);
+
   for (const k of Object.keys(envObj)) {
-    if (k.startsWith('GOOGLE_') || k.startsWith('SUPABASE_') || k.startsWith('PONTIUN_') || k.startsWith('VITE_GOOGLE')) allAvailableKeys.add(k);
+    if (k.startsWith('GOOGLE_') || k.startsWith('SUPABASE_') || k.startsWith('PONTIUN_') || k.startsWith('VITE_') || k.includes('CLIENT')) allAvailableKeys.add(k);
   }
   if (globalObj.__KANI_RUNTIME_ENV) {
     for (const k of Object.keys(globalObj.__KANI_RUNTIME_ENV)) {
-      if (k.startsWith('GOOGLE_') || k.startsWith('SUPABASE_') || k.startsWith('PONTIUN_') || k.startsWith('VITE_GOOGLE')) allAvailableKeys.add(k);
+      if (k.startsWith('GOOGLE_') || k.startsWith('SUPABASE_') || k.startsWith('PONTIUN_') || k.startsWith('VITE_') || k.includes('CLIENT')) allAvailableKeys.add(k);
     }
   }
   if (globalObj.__env__) {
     for (const k of Object.keys(globalObj.__env__)) {
-      if (k.startsWith('GOOGLE_') || k.startsWith('SUPABASE_') || k.startsWith('PONTIUN_') || k.startsWith('VITE_GOOGLE')) allAvailableKeys.add(k);
+      if (k.startsWith('GOOGLE_') || k.startsWith('SUPABASE_') || k.startsWith('PONTIUN_') || k.startsWith('VITE_') || k.includes('CLIENT')) allAvailableKeys.add(k);
     }
   }
 
   return new Response(
     JSON.stringify({
-      configured: Boolean(config.clientId && config.clientSecret),
+      configured: Boolean(clientId && clientSecret),
       authorized: Boolean(config.refreshToken || hasStoredRefreshToken),
       strategy: config.strategy,
       storageMethod: config.refreshToken ? 'CLOUDFLARE_SECRET' : hasStoredRefreshToken ? 'BACKEND_DATABASE' : 'NONE',
@@ -406,12 +412,9 @@ export async function handleGoogleCalendarIntegrationStatus(
       redirectUri,
       authorizeUrl: `${new URL(request.url).origin}/api/integrations/google-calendar/authorize`,
       envDetection: {
-        hasGoogleClientId: Boolean(config.clientId),
-        hasGoogleClientSecret: Boolean(config.clientSecret),
-        hasSupabaseServiceRoleKey: Boolean(
-          getRuntimeSecret('SUPABASE_SERVICE_ROLE_KEY') ||
-          (typeof process !== 'undefined' && process.env.SUPABASE_SERVICE_ROLE_KEY)
-        ),
+        hasGoogleClientId: Boolean(clientId),
+        hasGoogleClientSecret: Boolean(clientSecret),
+        hasSupabaseServiceRoleKey: Boolean(serviceRoleKey),
         detectedMatchingKeyNames: Array.from(allAvailableKeys).sort(),
       },
     }),
