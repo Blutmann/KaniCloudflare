@@ -21,9 +21,9 @@ export type AvailabilityMaintenanceResult = {
 };
 
 export const cleanupStatusOptions: Array<{ value: CleanupStatus; label: string; description: string }> = [
-  { value: 'PENDING', label: 'Pendientes', description: 'Reservas que todavía no fueron confirmadas.' },
-  { value: 'CONFIRMED', label: 'Confirmados', description: 'Turnos confirmados por el equipo.' },
-  { value: 'CANCELLED', label: 'Cancelados', description: 'Turnos rechazados o cancelados.' },
+  { value: 'PENDING', label: 'Pendientes', description: 'Reservas pendientes de confirmación de pago.' },
+  { value: 'CONFIRMED', label: 'Confirmados', description: 'Reservas confirmadas con seña abonada.' },
+  { value: 'CANCELLED', label: 'Cancelados', description: 'Reservas canceladas o no concretadas.' },
 ];
 
 export async function reauthenticateAdmin(password: string) {

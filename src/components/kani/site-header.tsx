@@ -168,7 +168,7 @@ export function SiteHeader() {
       )}
       {/* 6. Panel de mantenimiento — Solo ADMIN */}
       {staff?.profile.role === 'ADMIN' && (
-        <Link to="/admin/mantenimiento" onClick={closeMenu}><Wrench />Panel de mantenimiento</Link>
+        <Link to="/panel-administracion/mantenimiento" onClick={closeMenu}><Wrench />Panel de mantenimiento</Link>
       )}
       {/* 7. Autenticación */}
       {staff ? (

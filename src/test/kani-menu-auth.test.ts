@@ -52,7 +52,7 @@ describe('Kani Barber Studio - Menú y Autenticación', () => {
     expect(code).toMatch(/<Link to="(\/admin|\/panel-administracion)"[^>]*>[^<]*<CalendarClock \/>\s*Panel de administración\s*<\/Link>/);
 
     // 6. Panel de mantenimiento — Solo ADMIN
-    expect(code).toMatch(/staff\?\.profile\.role === 'ADMIN' && \(\s*<Link to="\/admin\/mantenimiento"[^>]*>[^<]*<Wrench \/>\s*Panel de mantenimiento\s*<\/Link>\s*\)/);
+    expect(code).toMatch(/staff\?\.profile\.role === 'ADMIN' && \(\s*<Link to="(\/admin|\/panel-administracion)\/mantenimiento"[^>]*>[^<]*<Wrench \/>\s*Panel de mantenimiento\s*<\/Link>\s*\)/);
 
     // 7. Autenticación — Si no hay sesión: "Iniciar sesión". Si hay sesión: usuario + "Cerrar sesión"
     expect(code).toMatch(/<LogIn \/>\s*Iniciar sesión\s*<\/Link>/);

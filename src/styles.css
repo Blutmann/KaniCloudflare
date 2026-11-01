@@ -1826,7 +1826,24 @@ html[data-theme='dark'] .studio-map-card {
   padding-top: 1.25rem;
   padding-bottom: 2.5rem;
   display: grid;
-  gap: 1.25rem;
+  gap: 16px;
+}
+
+.admin-maintenance-page.site-container {
+  width: min(1184px, calc(100% - 80px));
+  margin-inline: auto;
+}
+
+@media (max-width: 1023px) {
+  .admin-maintenance-page.site-container {
+    width: calc(100% - 48px);
+  }
+}
+
+@media (max-width: 767px) {
+  .admin-maintenance-page.site-container {
+    width: calc(100% - 40px);
+  }
 }
 
 .v2-shell .admin-maintenance-page.site-container,
@@ -1835,12 +1852,13 @@ html[data-theme='dark'] .studio-map-card {
   max-width: 100%;
   margin-inline: 0;
   padding-inline: 0;
+  padding-top: 0 !important;
 }
 
 .maintenance-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 1.25rem;
+  gap: 14px;
   width: 100%;
   max-width: 100%;
   min-width: 0;
@@ -1850,7 +1868,7 @@ html[data-theme='dark'] .studio-map-card {
 @media (min-width: 1024px) {
   .maintenance-grid {
     grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
-    gap: 1.5rem;
+    gap: 16px;
     align-items: start;
   }
 }
@@ -1869,7 +1887,7 @@ html[data-theme='dark'] .studio-map-card {
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
-  padding: 1.25rem;
+  padding: 18px;
   border: 1px solid var(--border);
   border-radius: var(--radius-card, 0.9rem);
   background: var(--surface);
@@ -1882,7 +1900,7 @@ html[data-theme='dark'] .studio-map-card {
   .maintenance-card,
   .maintenance-preserve-card,
   .maintenance-availability-card {
-    padding: 1rem;
+    padding: 14px;
   }
 }
 
@@ -1893,6 +1911,17 @@ html[data-theme='dark'] .studio-map-card {
 
 .maintenance-availability-card {
   border-color: color-mix(in srgb, var(--gold) 30%, var(--border));
+}
+
+html[data-theme="dark"] .maintenance-card,
+html[data-theme="dark"] .maintenance-availability-card {
+  background: var(--v2-reading-surface, var(--surface));
+  border-color: var(--border);
+}
+
+html[data-theme="dark"] .maintenance-preserve-card {
+  border-color: color-mix(in srgb, var(--gold) 40%, var(--border));
+  background: color-mix(in srgb, var(--gold) 5%, var(--v2-reading-surface, var(--surface)));
 }
 
 .maintenance-status-grid {

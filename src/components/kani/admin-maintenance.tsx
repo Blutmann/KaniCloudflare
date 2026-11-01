@@ -118,7 +118,7 @@ export function AdminMaintenance() {
         <div>
           <p className="v2-eyebrow eyebrow">MANTENIMIENTO</p>
           <h1 id="maintenance-title">Mantenimiento</h1>
-          <p>Limpieza segura de registros de prueba e historial de disponibilidad en Kani Barber Studio.</p>
+          <p>Limpieza de registros e historial de disponibilidad.</p>
         </div>
       </div>
 
@@ -203,20 +203,8 @@ export function AdminMaintenance() {
           </div>
         </section>
 
-        {/* Columna 2: Siempre se conserva + Historial de disponibilidad */}
-        <div className="maintenance-col maintenance-side-col space-y-5">
-          <section className="v2-panel maintenance-preserve-card" aria-labelledby="preserve-heading">
-            <div className="flex items-start gap-3">
-              <ShieldCheck className="mt-0.5 shrink-0 text-gold" size={20} aria-hidden="true" />
-              <div className="min-w-0">
-                <h3 id="preserve-heading" className="text-sm font-medium">Siempre se conserva</h3>
-                <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
-                  Clientes, usuarios Auth, perfiles, roles, barberos, servicios, precios, horarios y notas internas, datos de transferencia, notificaciones de disponibilidad, configuraciones y la secuencia de reservas.
-                </p>
-              </div>
-            </div>
-          </section>
-
+        {/* Columna 2: Historial de disponibilidad + Siempre se conserva */}
+        <div className="maintenance-col maintenance-side-col space-y-4">
           <section className="v2-panel maintenance-availability-card" aria-labelledby="availability-history-title">
             <span className="v2-eyebrow eyebrow">HISTORIAL</span>
             <h2 id="availability-history-title" className="mt-1 text-base font-medium">Historial de disponibilidad</h2>
@@ -263,6 +251,18 @@ export function AdminMaintenance() {
                 <Trash2 size={16} className="shrink-0" />
                 <span>Eliminar notificaciones</span>
               </Button>
+            </div>
+          </section>
+
+          <section className="v2-panel maintenance-preserve-card" aria-labelledby="preserve-heading">
+            <div className="flex items-start gap-3">
+              <ShieldCheck className="mt-0.5 shrink-0 text-gold" size={20} aria-hidden="true" />
+              <div className="min-w-0">
+                <h3 id="preserve-heading" className="text-sm font-medium">Siempre se conserva</h3>
+                <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
+                  Clientes, usuarios Auth, perfiles, roles, barberos, servicios, precios, horarios y notas internas, datos de transferencia, notificaciones de disponibilidad, configuraciones y la secuencia de reservas.
+                </p>
+              </div>
             </div>
           </section>
         </div>
