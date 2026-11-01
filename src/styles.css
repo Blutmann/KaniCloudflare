@@ -1043,10 +1043,12 @@ html[data-theme='dark'] .studio-map-card {
     margin-bottom: 32px;
   }
 
-  /* Stepper en Desktop: 14px tanto para los números como para los textos */
+  /* Stepper en Desktop: 12px para los números y 14px para los textos */
   .booking-progress > button > span,
   .booking-page .booking-progress > button > span {
-    font-size: 14px;
+    font-size: 12px;
+    display: grid;
+    place-items: center;
   }
 
   .booking-progress small,

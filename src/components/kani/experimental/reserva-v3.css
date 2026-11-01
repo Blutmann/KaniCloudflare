@@ -18,7 +18,9 @@
 
 @media (min-width: 768px) {
   .booking-page.booking-v3 .booking-progress > button > span {
-    font-size: 14px;
+    font-size: 12px;
+    display: grid;
+    place-items: center;
   }
 
   .booking-page.booking-v3 .booking-progress small {
