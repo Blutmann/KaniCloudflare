@@ -619,10 +619,32 @@ export async function handleGoogleCalendarTestCycle(
         .eq('name', 'Corte')
         .single();
 
-      // 2. Insertar turno de prueba confirmado
+      // 2. Obtener o crear cliente ficticio exclusivo para la prueba
+      let { data: testClient } = await sb
+        .from('clients')
+        .select('id')
+        .eq('email', 'audit-test-franco@kanibarber.test')
+        .maybeSingle();
+
+      if (!testClient) {
+        const { data: newClient, error: clientErr } = await sb
+          .from('clients')
+          .insert({
+            name: '[AUDIT-TEST] Cliente Franco',
+            phone: '+5491100000000',
+            email: 'audit-test-franco@kanibarber.test',
+          })
+          .select('id')
+          .single();
+        if (clientErr) throw new Error(`Error al crear cliente de prueba: ${clientErr.message}`);
+        testClient = newClient;
+      }
+
+      // 3. Insertar turno de prueba confirmado
       const { data: appt, error: insertErr } = await sb
         .from('appointments')
         .insert({
+          client_id: testClient.id,
           barber_id: franco.id,
           service_id: service?.id || null,
           booking_date: '2026-11-28',
@@ -831,6 +853,7 @@ export async function handleGoogleCalendarTestCycle(
       if (appt && appt.notes?.includes('[AUDIT-TEST-CRON-LIFECYCLE]')) {
         await sb.from('appointment_calendar_sync').delete().eq('appointment_id', appointmentId);
         await sb.from('appointments').delete().eq('id', appointmentId);
+        await sb.from('clients').delete().eq('email', 'audit-test-franco@kanibarber.test');
         return new Response(
           JSON.stringify({ success: true, cleaned: true, appointmentId }),
           { status: 200, headers: { 'Content-Type': 'application/json' } }
