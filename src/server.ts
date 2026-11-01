@@ -285,11 +285,7 @@ export default {
         }
       }
 
-      if (
-        url.pathname === "/api/admin/calendar-sync/status" ||
-        url.pathname === "/api/admin/calendar-sync/process" ||
-        url.pathname === "/api/admin/calendar-sync/audit"
-      ) {
+      if (url.pathname.startsWith("/api/admin/calendar-sync/")) {
         const { authenticateAdminRequest } = await import("./lib/kani-google-calendar-oauth.server");
         const auth = await authenticateAdminRequest(request);
         if (!auth.authorized) {
@@ -335,12 +331,52 @@ export default {
         }
       }
 
+      if (url.pathname === "/api/admin/calendar-sync/associate") {
+        try {
+          const { syncBarberCalendarAssociations, purgeStaleSyncItems } = await import("./lib/kani-google-calendar-sync");
+          const assocResult = await syncBarberCalendarAssociations();
+          const purgeResult = await purgeStaleSyncItems();
+          return new Response(
+            JSON.stringify({
+              success: assocResult.success,
+              associations: assocResult.associations,
+              errors: assocResult.errors,
+              purgedStaleItems: purgeResult.staleItemsCount,
+            }),
+            { status: 200, headers: { "content-type": "application/json" } }
+          );
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          return new Response(JSON.stringify({ error: message }), {
+            status: 500,
+            headers: { "content-type": "application/json" },
+          });
+        }
+      }
+
+      if (url.pathname === "/api/admin/calendar-sync/verify-all") {
+        try {
+          const { verifyAllBarberCalendars } = await import("./lib/kani-google-calendar-sync");
+          const verifyResult = await verifyAllBarberCalendars();
+          return new Response(JSON.stringify(verifyResult), {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          });
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          return new Response(JSON.stringify({ error: message }), {
+            status: 500,
+            headers: { "content-type": "application/json" },
+          });
+        }
+      }
+
       if (url.pathname === "/api/admin/calendar-sync/process") {
         try {
           const { processCalendarSyncQueue } = await import("./lib/kani-google-calendar-sync");
           const limit = Number(url.searchParams.get("limit") || 10);
-          // La sincronización en endpoints HTTP no permite forzar la desactivación
-          const result = await processCalendarSyncQueue({ force: false, limit });
+          const force = url.searchParams.get("force") === "true";
+          const result = await processCalendarSyncQueue({ force, limit });
           return new Response(JSON.stringify(result), {
             status: 200,
             headers: { "content-type": "application/json" },
@@ -458,6 +494,16 @@ export default {
         await reconcilePendingPayments();
       } catch (err) {
         console.error("[Cron Scheduled Maintenance Error]:", err);
+      }
+
+      try {
+        const { processCalendarSyncQueue } = await import("./lib/kani-google-calendar-sync");
+        const syncResult = await processCalendarSyncQueue();
+        if (syncResult && syncResult.processed > 0) {
+          console.log("[Cron Scheduled Calendar Sync]:", JSON.stringify(syncResult));
+        }
+      } catch (err) {
+        console.error("[Cron Scheduled Calendar Sync Error]:", err);
       }
     };
 

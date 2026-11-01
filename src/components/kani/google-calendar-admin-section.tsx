@@ -37,6 +37,24 @@ export function GoogleCalendarAdminSection() {
   const [auditResult, setAuditResult] = useState<ControlledAuditResult | null>(null);
   const [auditError, setAuditError] = useState('');
 
+  // Estados de Etapa 2: Asociaciones de los 4 calendarios y verificación global
+  const [associating, setAssociating] = useState(false);
+  const [assocResult, setAssocResult] = useState<{
+    success: boolean;
+    associations: Array<{ barber: string; calendarId: string; variable: string; persisted: boolean }>;
+    purgedStaleItems?: number;
+    errors?: string[];
+  } | null>(null);
+
+  const [verifyingAll, setVerifyingAll] = useState(false);
+  const [verifyAllResult, setVerifyAllResult] = useState<{
+    allAccessible: boolean;
+    calendars: Array<{ barber: string; calendarId: string | null; accessible: boolean; calendarSummary?: string; error?: string }>;
+  } | null>(null);
+
+  const [processingQueue, setProcessingQueue] = useState(false);
+  const [processQueueResult, setProcessQueueResult] = useState<any>(null);
+
   // Detectar si venimos de un callback exitoso mediante ?gcal=success
   useEffect(() => {
     if (typeof window === 'undefined' || !window.location?.href) return;
@@ -159,6 +177,80 @@ export function GoogleCalendarAdminSection() {
     }
   }
 
+  async function handleAssociateCalendars() {
+    setAssociating(true);
+    setAssocResult(null);
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session?.access_token) return;
+      const res = await fetch('/api/admin/calendar-sync/associate', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          Accept: 'application/json',
+        },
+      });
+      if (res.ok) {
+        setAssocResult(await res.json());
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Error asociando calendarios.');
+    } finally {
+      setAssociating(false);
+    }
+  }
+
+  async function handleVerifyAll() {
+    setVerifyingAll(true);
+    setVerifyAllResult(null);
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session?.access_token) return;
+      const res = await fetch('/api/admin/calendar-sync/verify-all', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          Accept: 'application/json',
+        },
+      });
+      if (res.ok) {
+        setVerifyAllResult(await res.json());
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Error verificando calendarios.');
+    } finally {
+      setVerifyingAll(false);
+    }
+  }
+
+  async function handleProcessQueue() {
+    setProcessingQueue(true);
+    setProcessQueueResult(null);
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session?.access_token) return;
+      const res = await fetch('/api/admin/calendar-sync/process?force=true', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          Accept: 'application/json',
+        },
+      });
+      if (res.ok) {
+        setProcessQueueResult(await res.json());
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Error procesando cola.');
+    } finally {
+      setProcessingQueue(false);
+    }
+  }
+
   if (!isAdmin) return null;
 
   const isConnected = Boolean(status?.authorized);
@@ -220,7 +312,9 @@ export function GoogleCalendarAdminSection() {
         </div>
         <div className="flex justify-between items-center">
           <span className="text-muted-foreground">Sincronización automática de turnos:</span>
-          <span className="font-semibold text-amber-400/90">En pausa (Etapa 1 controlada)</span>
+          <span className={status?.syncEnabled ? 'font-semibold text-emerald-400' : 'font-semibold text-amber-400/90'}>
+            {status?.syncEnabled ? 'Activa (Etapa 2 — Automática)' : 'En pausa (Etapa 1 controlada)'}
+          </span>
         </div>
         {status?.lastAuthorizedAt && (
           <div className="flex justify-between items-center">
@@ -332,6 +426,139 @@ export function GoogleCalendarAdminSection() {
               )}
             </div>
           )}
+
+          {/* Bloque 2: Asociación de los 4 calendarios en barber_google_calendars */}
+          <div className="mt-5 pt-4 border-t border-border/70">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h3 className="text-sm font-semibold text-foreground">Asociación de Calendarios (4 Barberos)</h3>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Asigna y persiste unívocamente las 4 variables en <code className="text-gold">public.barber_google_calendars</code> (Lautaro, Gonzalo, Valentín y Franco) y purga trabajos históricos antiguos.
+                </p>
+              </div>
+              <Button
+                type="button"
+                className="v2-secondary min-h-[38px] shrink-0 text-xs gap-1.5"
+                disabled={associating || loading}
+                onClick={() => void handleAssociateCalendars()}
+              >
+                {associating ? (
+                  <>
+                    <RefreshCw size={13} className="animate-spin" />
+                    <span>Asociando…</span>
+                  </>
+                ) : (
+                  <span>Asociar 4 Calendarios en BD</span>
+                )}
+              </Button>
+            </div>
+
+            {assocResult && (
+              <div className="mt-3 p-3 rounded-[var(--radius-control)] bg-black/30 border border-border/60 text-xs space-y-1.5">
+                <div className="font-medium text-emerald-400">
+                  ✓ Asociaciones persistidas correctamente en barber_google_calendars
+                </div>
+                {assocResult.associations?.map((a) => (
+                  <div key={a.barber} className="flex justify-between text-[11px] text-muted-foreground">
+                    <span>{a.barber} ({a.variable}):</span>
+                    <span className="text-foreground font-mono">{a.calendarId.slice(0, 15)}…</span>
+                  </div>
+                ))}
+                {typeof assocResult.purgedStaleItems === 'number' && (
+                  <div className="pt-1 text-[11px] text-muted-foreground border-t border-border/40">
+                    Trabajos históricos antiguos purgados: <span className="text-foreground font-medium">{assocResult.purgedStaleItems}</span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Bloque 3: Verificación de Permisos de los 4 Calendarios */}
+          <div className="mt-4 pt-4 border-t border-border/70">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h3 className="text-sm font-semibold text-foreground">Verificación de Permisos (4 Calendarios)</h3>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Comprueba mediante Google Calendar API el acceso y permisos sobre los 4 calendarios secundarios.
+                </p>
+              </div>
+              <Button
+                type="button"
+                className="v2-secondary min-h-[38px] shrink-0 text-xs gap-1.5"
+                disabled={verifyingAll || loading}
+                onClick={() => void handleVerifyAll()}
+              >
+                {verifyingAll ? (
+                  <>
+                    <RefreshCw size={13} className="animate-spin" />
+                    <span>Verificando…</span>
+                  </>
+                ) : (
+                  <span>Verificar 4 Calendarios</span>
+                )}
+              </Button>
+            </div>
+
+            {verifyAllResult && (
+              <div className="mt-3 p-3 rounded-[var(--radius-control)] bg-black/30 border border-border/60 text-xs space-y-1.5">
+                <div className={verifyAllResult.allAccessible ? 'font-medium text-emerald-400' : 'font-medium text-destructive'}>
+                  {verifyAllResult.allAccessible ? '✓ Todos los calendarios secundarios tienen acceso autorizado' : '✗ Se detectaron calendarios con acceso denegado o no configurados'}
+                </div>
+                {verifyAllResult.calendars?.map((c) => (
+                  <div key={c.barber} className="flex justify-between text-[11px]">
+                    <span className="text-muted-foreground">{c.barber}:</span>
+                    <span className={c.accessible ? 'text-emerald-400 font-medium' : 'text-destructive'}>
+                      {c.accessible ? `✓ Accesible (${c.calendarSummary || 'OK'})` : `✗ ${c.error || 'No accesible'}`}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Bloque 4: Procesamiento de Cola y Cron */}
+          <div className="mt-4 pt-4 border-t border-border/70">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h3 className="text-sm font-semibold text-foreground">Procesamiento Automático de Cola (Cron)</h3>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Ejecución automática en Cloudflare (<code className="text-gold">* * * * *</code>, cada 1 min) desacoplada de pagos y con deduplicación por checksum SHA-256.
+                </p>
+              </div>
+              <Button
+                type="button"
+                className="v2-secondary min-h-[38px] shrink-0 text-xs gap-1.5"
+                disabled={processingQueue || loading}
+                onClick={() => void handleProcessQueue()}
+              >
+                {processingQueue ? (
+                  <>
+                    <RefreshCw size={13} className="animate-spin" />
+                    <span>Procesando…</span>
+                  </>
+                ) : (
+                  <span>Procesar Cola Manualmente</span>
+                )}
+              </Button>
+            </div>
+
+            {processQueueResult && (
+              <div className="mt-3 p-3 rounded-[var(--radius-control)] bg-black/30 border border-border/60 text-xs space-y-1">
+                <div className="font-medium text-foreground">
+                  Estado: <span className="text-emerald-400">{processQueueResult.status}</span>
+                </div>
+                <div className="flex justify-between text-[11px] text-muted-foreground">
+                  <span>Procesados: {processQueueResult.processed}</span>
+                  <span>Sincronizados: {processQueueResult.synced}</span>
+                  <span>Omitidos: {processQueueResult.skipped}</span>
+                  <span>Fallidos: {processQueueResult.failed}</span>
+                </div>
+                {processQueueResult.message && (
+                  <p className="text-[11px] text-muted-foreground pt-1">{processQueueResult.message}</p>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       )}
 

@@ -287,6 +287,23 @@ export async function syncQueueItem(
   }
 }
 
+let isSyncInProgress = false;
+
+export function isCalendarSyncInProgress(): boolean {
+  return isSyncInProgress;
+}
+
+export async function getSyncSupabaseClient(custom?: any): Promise<any> {
+  if (custom) return custom;
+  try {
+    const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+    if (supabaseAdmin) return supabaseAdmin;
+  } catch {
+    // fallback en entornos de navegador o sin variables de servidor
+  }
+  return defaultSupabase;
+}
+
 export type ProcessQueueOptions = {
   limit?: number;
   force?: boolean;
@@ -295,7 +312,7 @@ export type ProcessQueueOptions = {
 };
 
 export type ProcessQueueResult = {
-  status: 'SUCCESS' | 'DISABLED' | 'PARTIAL' | 'ERROR';
+  status: 'SUCCESS' | 'DISABLED' | 'PARTIAL' | 'ERROR' | 'SKIPPED';
   processed: number;
   synced: number;
   failed: number;
@@ -305,6 +322,208 @@ export type ProcessQueueResult = {
 };
 
 /**
+ * Asocia los 4 calendarios secundarios de Google a los barberos en barber_google_calendars
+ */
+export async function syncBarberCalendarAssociations(supabaseClient?: any): Promise<{
+  success: boolean;
+  associations: Array<{
+    barber: string;
+    calendarId: string;
+    variable: string;
+    persisted: boolean;
+  }>;
+  errors: string[];
+}> {
+  const client = await getSyncSupabaseClient(supabaseClient);
+  const barbers = [
+    { name: 'Lautaro', varName: 'GOOGLE_CALENDAR_LAUTARO_ID' },
+    { name: 'Gonzalo', varName: 'GOOGLE_CALENDAR_GONZALO_ID' },
+    { name: 'Valentín', varName: 'GOOGLE_CALENDAR_VALENTIN_ID' },
+    { name: 'Franco', varName: 'GOOGLE_CALENDAR_FRANCO_ID' },
+  ];
+
+  const associations: Array<{
+    barber: string;
+    calendarId: string;
+    variable: string;
+    persisted: boolean;
+  }> = [];
+  const errors: string[] = [];
+
+  for (const b of barbers) {
+    const calendarId = await resolveBarberCalendarId(b.name, client);
+    if (!calendarId) {
+      errors.push(`Variable ${b.varName} no encontrada para ${b.name}`);
+      continue;
+    }
+
+    try {
+      let persisted = false;
+      try {
+        const { error: rpcErr } = await client.rpc('set_barber_google_calendar', {
+          p_barber_name: b.name,
+          p_calendar_id: calendarId,
+        });
+        if (!rpcErr) persisted = true;
+      } catch {
+        // Fallback a upsert directo
+      }
+
+      if (!persisted) {
+        const { data: barberRow } = await client
+          .from('barbers')
+          .select('id, name')
+          .ilike('name', b.name)
+          .maybeSingle();
+
+        if (barberRow?.id) {
+          const { error: upsertErr } = await client
+            .from('barber_google_calendars')
+            .upsert(
+              {
+                barber_id: barberRow.id,
+                calendar_id: calendarId,
+                sync_enabled: true,
+                updated_at: new Date().toISOString(),
+              },
+              { onConflict: 'barber_id' },
+            );
+          if (upsertErr) throw upsertErr;
+          persisted = true;
+        } else {
+          throw new Error(`BARBER_NOT_FOUND: ${b.name}`);
+        }
+      }
+
+      associations.push({
+        barber: b.name,
+        calendarId,
+        variable: b.varName,
+        persisted: true,
+      });
+    } catch (err: any) {
+      errors.push(`Error asociando calendario de ${b.name}: ${err?.message || String(err)}`);
+    }
+  }
+
+  return {
+    success: errors.length === 0,
+    associations,
+    errors,
+  };
+}
+
+/**
+ * Pasa a estado SKIPPED trabajos antiguos previos a la activación para no generar eventos inesperados
+ */
+export async function purgeStaleSyncItems(supabaseClient?: any): Promise<{
+  staleItemsCount: number;
+  skipped: boolean;
+}> {
+  const client = await getSyncSupabaseClient(supabaseClient);
+  try {
+    const oneHourAgo = new Date(Date.now() - 3600 * 1000).toISOString();
+    const { data: staleRows, error: findErr } = await client
+      .from('appointment_calendar_sync')
+      .select('id')
+      .eq('sync_status', 'PENDING')
+      .lt('created_at', oneHourAgo);
+
+    if (findErr || !staleRows || staleRows.length === 0) {
+      return { staleItemsCount: 0, skipped: true };
+    }
+
+    const { error: updateErr } = await client
+      .from('appointment_calendar_sync')
+      .update({
+        sync_status: 'SKIPPED',
+        last_error: 'STALE_PRE_ACTIVATION_ITEM: Omitido para evitar generación indiscriminada de eventos históricos.',
+        updated_at: new Date().toISOString(),
+      })
+      .eq('sync_status', 'PENDING')
+      .lt('created_at', oneHourAgo);
+
+    if (updateErr) throw updateErr;
+
+    return { staleItemsCount: staleRows.length, skipped: true };
+  } catch (err) {
+    console.warn('[Calendar Sync] Aviso al purgar items antiguos:', err);
+    return { staleItemsCount: 0, skipped: false };
+  }
+}
+
+/**
+ * Verifica acceso y permisos a los 4 calendarios de Google de Kani
+ */
+export async function verifyAllBarberCalendars(
+  client: GoogleCalendarClient = new GoogleCalendarClient(),
+  supabaseClient?: any,
+): Promise<{
+  allAccessible: boolean;
+  calendars: Array<{
+    barber: string;
+    calendarId: string | null;
+    accessible: boolean;
+    calendarSummary?: string;
+    error?: string;
+  }>;
+}> {
+  const sClient = await getSyncSupabaseClient(supabaseClient);
+  const barbers = ['Lautaro', 'Gonzalo', 'Valentín', 'Franco'];
+  const results: Array<{
+    barber: string;
+    calendarId: string | null;
+    accessible: boolean;
+    calendarSummary?: string;
+    error?: string;
+  }> = [];
+
+  for (const b of barbers) {
+    const calendarId = await resolveBarberCalendarId(b, sClient);
+    if (!calendarId) {
+      results.push({
+        barber: b,
+        calendarId: null,
+        accessible: false,
+        error: `CALENDAR_ID_NOT_CONFIGURED`,
+      });
+      continue;
+    }
+
+    try {
+      const meta = await client.getCalendar(calendarId);
+      if (meta) {
+        results.push({
+          barber: b,
+          calendarId,
+          accessible: true,
+          calendarSummary: meta.summary,
+        });
+      } else {
+        results.push({
+          barber: b,
+          calendarId,
+          accessible: false,
+          error: `GOOGLE_CALENDAR_NOT_ACCESSIBLE_OR_FORBIDDEN`,
+        });
+      }
+    } catch (err: any) {
+      results.push({
+        barber: b,
+        calendarId,
+        accessible: false,
+        error: err?.message || String(err),
+      });
+    }
+  }
+
+  return {
+    allAccessible: results.every(r => r.accessible),
+    calendars: results,
+  };
+}
+
+/**
  * Procesa en lote los elementos pendientes de la cola de sincronización.
  * Si GOOGLE_CALENDAR_SYNC_ENABLED no es true (Etapa 1), omite el procesamiento
  * salvo que se fuerce explícitamente en tests.
@@ -312,6 +531,19 @@ export type ProcessQueueResult = {
 export async function processCalendarSyncQueue(
   options: ProcessQueueOptions = {},
 ): Promise<ProcessQueueResult> {
+  // Prevención de concurrencia in-process (Mutex)
+  if (isSyncInProgress && !options.force) {
+    return {
+      status: 'SKIPPED',
+      processed: 0,
+      synced: 0,
+      failed: 0,
+      skipped: 0,
+      items: [],
+      message: 'Sincronización omitida: otra ejecución ya se encuentra en progreso.',
+    };
+  }
+
   const authConfig = getGoogleCalendarAuthConfig();
   if (!authConfig.enabled && !options.force) {
     return {
@@ -325,43 +557,48 @@ export async function processCalendarSyncQueue(
     };
   }
 
-  const client = options.client || new GoogleCalendarClient();
-  const supabaseClient = options.supabaseClient || defaultSupabase;
+  isSyncInProgress = true;
+  try {
+    const client = options.client || new GoogleCalendarClient();
+    const supabaseClient = await getSyncSupabaseClient(options.supabaseClient);
 
-  const { data: items, error } = await supabaseClient.rpc('get_pending_calendar_sync_items', {
-    p_limit: options.limit || 10,
-  });
+    const { data: items, error } = await supabaseClient.rpc('get_pending_calendar_sync_items', {
+      p_limit: options.limit || 10,
+    });
 
-  if (error) {
-    throw new Error(`GET_PENDING_SYNC_ITEMS_FAILED: ${error.message}`);
+    if (error) {
+      throw new Error(`GET_PENDING_SYNC_ITEMS_FAILED: ${error.message}`);
+    }
+
+    const queueItems = (items || []) as CalendarSyncQueueItem[];
+    const results: SyncItemResult[] = [];
+
+    let synced = 0;
+    let failed = 0;
+    let skipped = 0;
+
+    for (const item of queueItems) {
+      const res = await syncQueueItem(item, client, supabaseClient);
+      results.push(res);
+      if (res.status === 'SYNCED') synced++;
+      else if (res.status === 'FAILED') failed++;
+      else skipped++;
+    }
+
+    const status: ProcessQueueResult['status'] =
+      failed > 0 && synced > 0 ? 'PARTIAL' : failed > 0 ? 'ERROR' : 'SUCCESS';
+
+    return {
+      status,
+      processed: results.length,
+      synced,
+      failed,
+      skipped,
+      items: results,
+    };
+  } finally {
+    isSyncInProgress = false;
   }
-
-  const queueItems = (items || []) as CalendarSyncQueueItem[];
-  const results: SyncItemResult[] = [];
-
-  let synced = 0;
-  let failed = 0;
-  let skipped = 0;
-
-  for (const item of queueItems) {
-    const res = await syncQueueItem(item, client, supabaseClient);
-    results.push(res);
-    if (res.status === 'SYNCED') synced++;
-    else if (res.status === 'FAILED') failed++;
-    else skipped++;
-  }
-
-  const status: ProcessQueueResult['status'] =
-    failed > 0 && synced > 0 ? 'PARTIAL' : failed > 0 ? 'ERROR' : 'SUCCESS';
-
-  return {
-    status,
-    processed: results.length,
-    synced,
-    failed,
-    skipped,
-    items: results,
-  };
 }
 
 export type ControlledAuditResult = {

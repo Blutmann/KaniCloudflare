@@ -201,4 +201,31 @@ export class GoogleCalendarClient {
 
     return (await res.json()) as GoogleCalendarEventResponse;
   }
+
+  /**
+   * Obtiene la metadata del calendario para validar existencia y permisos
+   */
+  async getCalendar(
+    calendarId: string,
+  ): Promise<{ id: string; summary?: string; timeZone?: string } | null> {
+    if (!calendarId) return null;
+    const headers = await this.getAuthHeaders();
+    const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}`;
+
+    const res = await this.fetchFn(url, {
+      method: 'GET',
+      headers,
+    });
+
+    if (res.status === 404 || res.status === 403) {
+      return null;
+    }
+
+    if (!res.ok) {
+      const errBody = await res.text();
+      throw new Error(`GOOGLE_CALENDAR_GET_CALENDAR_FAILED_${res.status}: ${errBody}`);
+    }
+
+    return (await res.json()) as { id: string; summary?: string; timeZone?: string };
+  }
 }
