@@ -9,7 +9,7 @@
  * - Respuestas idempotentes ante borrados repetidos (404/410).
  */
 
-import { getGoogleCalendarAccessToken } from './kani-google-calendar-auth';
+import { getGoogleCalendarAccessToken, resolveFetchFn } from './kani-google-calendar-auth';
 
 export type GoogleCalendarDateTime = {
   dateTime: string; // ISO RFC3339: YYYY-MM-DDTHH:mm:ss-03:00
@@ -42,12 +42,39 @@ export type GoogleCalendarClientOptions = {
 };
 
 export class GoogleCalendarClient {
-  private fetchFn: typeof fetch;
+  private fetchFn: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
   private tokenProvider: () => Promise<string | null>;
 
   constructor(options: GoogleCalendarClientOptions = {}) {
-    this.fetchFn = options.fetchFn || fetch;
-    this.tokenProvider = options.tokenProvider || getGoogleCalendarAccessToken;
+    const rawFetch = resolveFetchFn(options.fetchFn);
+    // Preservar la vinculación y evitar pasar `this` de la clase al native fetch de V8/Cloudflare
+    this.fetchFn = (input, init) => rawFetch(input, init);
+    this.tokenProvider = options.tokenProvider || (() => getGoogleCalendarAccessToken(this.fetchFn));
+  }
+
+  /**
+   * Limpia eventos ficticios de auditoría previos que hayan quedado sin eliminar
+   */
+  async cleanupPreviousAuditEvents(calendarId: string): Promise<number> {
+    if (!calendarId) return 0;
+    try {
+      const headers = await this.getAuthHeaders();
+      const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?q=%5BAUDIT-TEST%5D&maxResults=15&sendUpdates=none`;
+      const res = await this.fetchFn(url, { method: 'GET', headers });
+      if (!res.ok) return 0;
+      const data = (await res.json()) as { items?: Array<{ id: string; summary?: string }> };
+      const items = data.items || [];
+      let cleaned = 0;
+      for (const item of items) {
+        if (item.id && (item.summary?.includes('[AUDIT-TEST]') || item.summary?.includes('Verificación Kani Barber Studio'))) {
+          await this.deleteEvent(calendarId, item.id);
+          cleaned++;
+        }
+      }
+      return cleaned;
+    } catch {
+      return 0;
+    }
   }
 
   private async getAuthHeaders(): Promise<Record<string, string>> {

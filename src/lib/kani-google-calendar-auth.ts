@@ -48,6 +48,27 @@ let cachedToken: GoogleTokenResponse | null = null;
 export const GOOGLE_CALENDAR_DEFAULT_SCOPE =
   'https://www.googleapis.com/auth/calendar.events.owned';
 
+/**
+ * Invocador seguro de fetch que preserva la vinculación a globalThis
+ * para prevenir el error 'Illegal invocation' en Cloudflare Workers / workerd.
+ */
+export const safeWorkerFetch: typeof fetch = (
+  input: RequestInfo | URL,
+  init?: RequestInit,
+): Promise<Response> => {
+  if (typeof globalThis !== 'undefined' && typeof globalThis.fetch === 'function') {
+    return globalThis.fetch.call(globalThis, input, init);
+  }
+  return fetch(input, init);
+};
+
+export function resolveFetchFn(injected?: typeof fetch): typeof fetch {
+  if (injected) {
+    return (input, init) => injected(input, init);
+  }
+  return safeWorkerFetch;
+}
+
 export function getGoogleCalendarAuthConfig(): GoogleAuthConfig {
   const env = (typeof process !== 'undefined' ? process.env : {}) as Record<string, string | undefined>;
   const globalObj = globalThis as typeof globalThis & {
@@ -253,7 +274,7 @@ export async function exchangeOAuthCodeForTokens(params: {
   redirectUri: string;
   fetchFn?: typeof fetch;
 }): Promise<ExchangeCodeResponse> {
-  const fetchFn = params.fetchFn || fetch;
+  const fetchFn = resolveFetchFn(params.fetchFn);
   const body = new URLSearchParams({
     code: params.code,
     client_id: params.clientId,
@@ -470,15 +491,16 @@ export async function createServiceAccountJwt(
 export async function requestServiceAccountAccessToken(
   clientEmail: string,
   privateKeyPem: string,
-  fetchFn: typeof fetch = fetch,
+  fetchFn?: typeof fetch,
 ): Promise<GoogleTokenResponse> {
+  const doFetch = resolveFetchFn(fetchFn);
   const assertion = await createServiceAccountJwt(clientEmail, privateKeyPem);
   const body = new URLSearchParams({
     grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
     assertion,
   });
 
-  const res = await fetchFn('https://oauth2.googleapis.com/token', {
+  const res = await doFetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: body.toString(),
@@ -501,8 +523,9 @@ export async function requestOAuth2AccessToken(
   clientId: string,
   clientSecret: string,
   refreshToken: string,
-  fetchFn: typeof fetch = fetch,
+  fetchFn?: typeof fetch,
 ): Promise<GoogleTokenResponse> {
+  const doFetch = resolveFetchFn(fetchFn);
   const body = new URLSearchParams({
     client_id: clientId,
     client_secret: clientSecret,
@@ -510,7 +533,7 @@ export async function requestOAuth2AccessToken(
     grant_type: 'refresh_token',
   });
 
-  const res = await fetchFn('https://oauth2.googleapis.com/token', {
+  const res = await doFetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: body.toString(),
@@ -541,9 +564,10 @@ export async function requestOAuth2AccessToken(
  *    - Si expiró, renueva automáticamente con el refresh_token almacenado y actualiza la BD.
  */
 export async function getGoogleCalendarAccessToken(
-  fetchFn: typeof fetch = fetch,
+  fetchFn?: typeof fetch,
   customSupabaseClient?: any,
 ): Promise<string | null> {
+  const doFetch = resolveFetchFn(fetchFn);
   const now = Date.now();
   if (cachedToken && cachedToken.expiresAt > now) {
     return cachedToken.accessToken;
@@ -556,7 +580,7 @@ export async function getGoogleCalendarAccessToken(
     cachedToken = await requestServiceAccountAccessToken(
       config.serviceAccountEmail,
       config.serviceAccountPrivateKey,
-      fetchFn,
+      doFetch,
     );
     return cachedToken.accessToken;
   }
@@ -567,7 +591,7 @@ export async function getGoogleCalendarAccessToken(
       config.clientId,
       config.clientSecret,
       config.refreshToken,
-      fetchFn,
+      doFetch,
     );
     return cachedToken.accessToken;
   }
@@ -593,7 +617,7 @@ export async function getGoogleCalendarAccessToken(
           config.clientId,
           config.clientSecret,
           stored.refreshToken,
-          fetchFn,
+          doFetch,
         );
 
         // Guardar nuevo access_token renovado en BD

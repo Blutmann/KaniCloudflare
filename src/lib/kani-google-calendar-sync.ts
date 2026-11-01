@@ -390,6 +390,7 @@ export type ControlledAuditResult = {
     deleteStatus?: string;
     confirmedDeleted?: boolean;
     emergencyCleanup?: boolean;
+    priorEventsCleaned?: number;
     executedAt?: string;
   };
   error?: string;
@@ -438,6 +439,18 @@ export async function runGoogleCalendarControlledAudit(
   };
 
   try {
+    // Limpieza de seguridad previa por si alguna auditoría anterior dejó eventos huérfanos
+    try {
+      if (typeof client.cleanupPreviousAuditEvents === 'function') {
+        const priorCleaned = await client.cleanupPreviousAuditEvents(calendarId);
+        if (priorCleaned > 0) {
+          result.details.priorEventsCleaned = priorCleaned;
+        }
+      }
+    } catch {
+      // Ignorar fallo en búsqueda previa
+    }
+
     // 0. Acceso inicial
     result.steps.access = true;
 
