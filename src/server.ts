@@ -285,6 +285,77 @@ export default {
         }
       }
 
+      if (url.pathname === "/api/admin/calendar-sync/status") {
+        try {
+          const { getGoogleCalendarAuthConfig } = await import("./lib/kani-google-calendar-auth");
+          const config = getGoogleCalendarAuthConfig();
+          return new Response(
+            JSON.stringify({
+              enabled: config.enabled,
+              strategy: config.strategy,
+              hasServiceAccountEmail: Boolean(config.serviceAccountEmail),
+              hasServiceAccountPrivateKey: Boolean(config.serviceAccountPrivateKey),
+              hasOAuthClientId: Boolean(config.clientId),
+              hasOAuthRefreshToken: Boolean(config.refreshToken),
+              environment: "Cloudflare Preview/Test",
+            }),
+            {
+              status: 200,
+              headers: { "content-type": "application/json" },
+            }
+          );
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          return new Response(JSON.stringify({ error: message }), {
+            status: 500,
+            headers: { "content-type": "application/json" },
+          });
+        }
+      }
+
+      if (url.pathname === "/api/admin/calendar-sync/process") {
+        try {
+          const { processCalendarSyncQueue } = await import("./lib/kani-google-calendar-sync");
+          const force = url.searchParams.get("force") === "true";
+          const limit = Number(url.searchParams.get("limit") || 10);
+          const result = await processCalendarSyncQueue({ force, limit });
+          return new Response(JSON.stringify(result), {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          });
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          return new Response(JSON.stringify({ error: message }), {
+            status: 500,
+            headers: { "content-type": "application/json" },
+          });
+        }
+      }
+
+      if (url.pathname === "/api/admin/calendar-sync/audit") {
+        try {
+          const { runGoogleCalendarControlledAudit } = await import("./lib/kani-google-calendar-sync");
+          const calendarId = url.searchParams.get("calendarId");
+          if (!calendarId) {
+            return new Response(JSON.stringify({ error: "CALENDAR_ID_REQUIRED" }), {
+              status: 400,
+              headers: { "content-type": "application/json" },
+            });
+          }
+          const result = await runGoogleCalendarControlledAudit(calendarId);
+          return new Response(JSON.stringify(result), {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          });
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          return new Response(JSON.stringify({ error: message }), {
+            status: 500,
+            headers: { "content-type": "application/json" },
+          });
+        }
+      }
+
       if (url.pathname === "/api/admin/notification-audit") {
         try {
           const { getPontiunRuntimeEnv } = await import("./lib/kani-pontiun");
