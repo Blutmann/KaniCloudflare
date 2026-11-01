@@ -1,6 +1,7 @@
 import { createServerFn, createServerOnlyFn } from "@tanstack/react-start";
 import { notificationSubject } from './kani-email-environment';
 import { KANI_MAPS_URL, KANI_STANDARD_DEPOSIT_ARS, KANI_PUBLIC_WHATSAPP_URL, KANI_STUDIO_FULL_ADDRESS } from './kani-constants';
+import { buildTurnoIcsUrl } from './kani-calendar-ics';
 
 import type { Database } from "@/integrations/supabase/types";
 
@@ -915,6 +916,18 @@ export function formatSpanishDateNatural(isoDate: string): string {
   return `${weekday} ${day} de ${monthName} de ${year}`;
 }
 
+export function formatSpanishDateCompact(isoDate: string): string {
+  if (!isoDate || typeof isoDate !== 'string') return '';
+  const [year, month, day] = isoDate.split('-').map((v) => parseInt(v, 10));
+  if (!year || !month || !day) return isoDate;
+
+  const dateObj = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
+  const weekday = WEEKDAYS[dateObj.getUTCDay()];
+  const capitalizedWeekday = weekday ? weekday.charAt(0).toUpperCase() + weekday.slice(1) : '';
+  const monthName = MONTHS[dateObj.getUTCMonth()];
+  return `${capitalizedWeekday} ${day} de ${monthName}`;
+}
+
 export function buildGoogleCalendarUrl(payload: {
   bookingDate: string;
   startTime: string;
@@ -962,6 +975,7 @@ export function buildGoogleCalendarUrl(payload: {
 export function buildConfirmedEmail(payload: NotificationPayload) {
   const spanishDate = formatSpanishDateNatural(payload.bookingDate);
   const capitalizedDate = spanishDate ? spanishDate.charAt(0).toUpperCase() + spanishDate.slice(1) : '';
+  const compactDate = formatSpanishDateCompact(payload.bookingDate);
   const cleanTime = (payload.startTime || "").slice(0, 5);
   const servicePrice = payload.servicePriceArs ?? 0;
   const downPayment = (payload.downPaymentArs && payload.downPaymentArs !== 10000) ? payload.downPaymentArs : KANI_STANDARD_DEPOSIT_ARS;
@@ -973,6 +987,7 @@ export function buildConfirmedEmail(payload: NotificationPayload) {
     serviceName: escapeHtml(payload.serviceName),
     date: escapeHtml(spanishDate),
     capitalizedDate: escapeHtml(capitalizedDate),
+    compactDate: escapeHtml(compactDate),
     time: escapeHtml(cleanTime),
     servicePrice: escapeHtml(`$${servicePrice.toLocaleString("es-AR")}`),
     downPayment: escapeHtml(`$${downPayment.toLocaleString("es-AR")}`),
@@ -983,7 +998,7 @@ export function buildConfirmedEmail(payload: NotificationPayload) {
     ? `${payload.clientName.trim()}, tu turno en Kani está confirmado`
     : "Tu turno en Kani está confirmado";
 
-  const preheaderText = `${spanishDate} a las ${cleanTime} hs · ${payload.serviceName} con ${payload.barberName}`;
+  const preheaderText = `${compactDate} a las ${cleanTime} hs · ${payload.serviceName} con ${payload.barberName}`;
 
   const mapsUrl = KANI_MAPS_URL;
   const whatsAppUrl = KANI_PUBLIC_WHATSAPP_URL;
@@ -996,14 +1011,15 @@ export function buildConfirmedEmail(payload: NotificationPayload) {
   ).replace(/\/$/, '');
   const logoUrl = `${appUrl}/kani-email-logo.png`;
 
-  const calendarUrl = buildGoogleCalendarUrl({
+  const calendarUrl = buildTurnoIcsUrl({
+    id: payload.notificationId || `${payload.bookingDate}-${cleanTime}`,
     bookingDate: payload.bookingDate,
     startTime: payload.startTime,
     endTime: payload.endTime,
     serviceDurationMinutes: payload.serviceDurationMinutes,
     serviceName: payload.serviceName,
     barberName: payload.barberName,
-  });
+  }, appUrl);
 
   const html = `<!doctype html>
 <html lang="es" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
@@ -1132,17 +1148,23 @@ export function buildConfirmedEmail(payload: NotificationPayload) {
         <!-- Contenedor principal de la tarjeta -->
         <table role="presentation" class="email-container" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; margin: 0 auto; background-color: #F4EFE6; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 16px rgba(28,26,23,0.05); border: 1px solid #E4DCCB;">
           
-          <!-- Logo Oficial Kani Centrado -->
+          <!-- Bloque de Encabezado con Fondo Negro Cálido (#1C1A17) para Máximo Contraste del Logo -->
           <tr>
-            <td align="center" style="padding: 32px 24px 0;">
-              <img src="${logoUrl}" alt="Kani Barber Studio" width="180" style="display: block; width: 180px; max-width: 100%; height: auto; border: 0; margin: 0 auto; font-family: 'DM Serif Display', Georgia, serif; font-size: 22px; font-weight: 700; color: #1C1A17; text-align: center;" />
+            <td align="center" bgcolor="#1C1A17" style="background-color: #1C1A17; padding: 28px 24px 22px; text-align: center;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin: 0 auto;">
+                <tr>
+                  <td align="center">
+                    <img src="${logoUrl}" alt="Kani Barber Studio" width="180" style="display: block; width: 180px; max-width: 100%; height: auto; border: 0; margin: 0 auto; font-family: 'DM Serif Display', Georgia, serif; font-size: 22px; font-weight: 700; color: #C9A24D; text-align: center;" />
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
 
-          <!-- Filete dorado elegante de 1px -->
+          <!-- Filete dorado sutil de 1px entre el encabezado negro y el cuerpo marfil -->
           <tr>
-            <td align="center" style="padding: 16px 24px 0;" class="content-padding">
-              <div style="height: 1px; width: 100%; max-width: 504px; background-color: #C9A24D; line-height: 1px; font-size: 1px; margin: 0 auto;">&nbsp;</div>
+            <td align="center" bgcolor="#C9A24D" style="background-color: #C9A24D; height: 1px; line-height: 1px; font-size: 1px; padding: 0;">
+              <div style="height: 1px; line-height: 1px; font-size: 1px;">&nbsp;</div>
             </td>
           </tr>
 
@@ -1173,8 +1195,8 @@ export function buildConfirmedEmail(payload: NotificationPayload) {
                             <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 600; color: #B8AE9C; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 6px;">
                               FECHA
                             </div>
-                            <div style="font-family: 'DM Serif Display', Georgia, 'Times New Roman', serif; font-size: 26px; line-height: 1.2; font-weight: 400; color: #FFFFFF; word-break: break-word;">
-                              ${safe.capitalizedDate}
+                            <div style="font-family: 'DM Serif Display', Georgia, 'Times New Roman', serif; font-size: 22px; line-height: 28px; font-weight: 400; color: #FFFFFF; word-break: break-word; overflow-wrap: break-word;">
+                              ${safe.compactDate}
                             </div>
                           </td>
                         </tr>
@@ -1186,7 +1208,7 @@ export function buildConfirmedEmail(payload: NotificationPayload) {
                                   <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 600; color: #B8AE9C; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 6px;">
                                     HORA
                                   </div>
-                                  <div style="font-family: 'DM Serif Display', Georgia, 'Times New Roman', serif; font-size: 26px; line-height: 1.2; font-weight: 400; color: #FFFFFF;">
+                                  <div style="font-family: 'DM Serif Display', Georgia, 'Times New Roman', serif; font-size: 22px; line-height: 28px; font-weight: 400; color: #FFFFFF;">
                                     ${safe.time} hs
                                   </div>
                                 </td>
@@ -1251,13 +1273,13 @@ export function buildConfirmedEmail(payload: NotificationPayload) {
                             <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 600; color: #B8AE9C; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 6px;">
                               FECHA
                             </div>
-                            <div style="font-family: 'DM Serif Display', Georgia, 'Times New Roman', serif; font-size: 26px; line-height: 1.2; font-weight: 400; color: #FFFFFF; margin-bottom: 18px; word-break: break-word;">
-                              ${safe.capitalizedDate}
+                            <div style="font-family: 'DM Serif Display', Georgia, 'Times New Roman', serif; font-size: 22px; line-height: 28px; font-weight: 400; color: #FFFFFF; margin-bottom: 18px; word-break: break-word; overflow-wrap: break-word;">
+                              ${safe.compactDate}
                             </div>
                             <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 600; color: #B8AE9C; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 6px;">
                               HORA
                             </div>
-                            <div style="font-family: 'DM Serif Display', Georgia, 'Times New Roman', serif; font-size: 26px; line-height: 1.2; font-weight: 400; color: #FFFFFF;">
+                            <div style="font-family: 'DM Serif Display', Georgia, 'Times New Roman', serif; font-size: 22px; line-height: 28px; font-weight: 400; color: #FFFFFF;">
                               ${safe.time} hs
                             </div>
                           </td>

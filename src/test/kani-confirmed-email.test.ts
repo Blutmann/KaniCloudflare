@@ -2,9 +2,15 @@ import { describe, it, expect } from 'vitest';
 import {
   buildConfirmedEmail,
   formatSpanishDateNatural,
-  buildGoogleCalendarUrl,
+  formatSpanishDateCompact,
 } from '../lib/kani-notifications.functions';
-import { KANI_MAPS_URL, KANI_PUBLIC_WHATSAPP_URL } from '../lib/kani-constants';
+import {
+  buildTurnoIcsUrl,
+  generateTurnoIcsContent,
+  handleTurnoIcsRequest,
+  verifyTurnoIcsSignature,
+} from '../lib/kani-calendar-ics';
+import { KANI_MAPS_URL, KANI_PUBLIC_WHATSAPP_URL, KANI_STUDIO_FULL_ADDRESS } from '../lib/kani-constants';
 
 describe('Email transaccional de confirmación de turno (Kani Barber Studio) — Nuevo Diseño Aprobado', () => {
   const basePayload = {
@@ -36,22 +42,27 @@ describe('Email transaccional de confirmación de turno (Kani Barber Studio) —
     });
     expect(emailWithoutName.subject).toBe('Tu turno en Kani está confirmado');
 
-    // Preencabezado en HTML
-    expect(email.html).toContain('jueves 22 de octubre de 2026 a las 16:45 hs · Corte con Lautaro');
+    // Preencabezado en HTML con fecha compacta
+    expect(email.html).toContain('Jueves 22 de octubre a las 16:45 hs · Corte con Lautaro');
   });
 
-  it('2. Fecha natural en español: Formato día semana + número + mes + año', () => {
+  it('2. Fecha natural en español: Formato natural y formato compacto sin año', () => {
     expect(formatSpanishDateNatural('2026-10-22')).toBe('jueves 22 de octubre de 2026');
     expect(formatSpanishDateNatural('2026-10-21')).toBe('miércoles 21 de octubre de 2026');
     expect(formatSpanishDateNatural('2026-10-24')).toBe('sábado 24 de octubre de 2026');
+
+    // Formato compacto sin año, día de semana en mayúscula inicial y mes en minúscula
+    expect(formatSpanishDateCompact('2026-11-02')).toBe('Lunes 2 de noviembre');
+    expect(formatSpanishDateCompact('2026-10-22')).toBe('Jueves 22 de octubre');
   });
 
-  it('3. Contenido principal dinámico con servicio, barbero, fecha y horario 24h', () => {
+  it('3. Contenido principal dinámico con servicio, barbero, fecha compacta en tarjeta y completa en texto', () => {
     const email = buildConfirmedEmail(basePayload);
     const expectedSentence =
       'Se confirmó tu turno el día jueves 22 de octubre de 2026 a las 16:45 hs, para un servicio de Corte con Lautaro.';
     expect(email.text).toContain(expectedSentence);
-    expect(email.html).toContain('Jueves 22 de octubre de 2026');
+    expect(email.html).toContain('Jueves 22 de octubre');
+    expect(email.html).not.toContain('Jueves 22 de octubre de 2026'); // Año no visible en encabezado
     expect(email.html).toContain('16:45 hs');
     expect(email.html).toContain('Corte');
     expect(email.html).toContain('Lautaro');
@@ -140,9 +151,10 @@ describe('Email transaccional de confirmación de turno (Kani Barber Studio) —
     expect(email.html).toContain('https://www.instagram.com/kanibarberstudio/');
   });
 
-  it('9. Integración de Google Calendar y Botón de acción', () => {
+  it('9. Integración de descarga iCalendar .ics y Botón de acción', () => {
     const email = buildConfirmedEmail(basePayload);
-    const calUrl = buildGoogleCalendarUrl({
+    const icsUrl = buildTurnoIcsUrl({
+      id: basePayload.notificationId,
       bookingDate: basePayload.bookingDate,
       startTime: basePayload.startTime,
       endTime: basePayload.endTime,
@@ -151,14 +163,22 @@ describe('Email transaccional de confirmación de turno (Kani Barber Studio) —
       barberName: basePayload.barberName,
     });
 
-    expect(calUrl).toContain('calendar.google.com/calendar/render?action=TEMPLATE');
-    expect(calUrl).toContain('Corte%20%E2%80%94%20Kani%20Barber%20Studio');
-    expect(email.html).toContain(calUrl);
+    expect(icsUrl).toContain('/api/calendar/turno.ics?');
+    expect(icsUrl).toContain('id=notif-123');
+    expect(icsUrl).toContain('d=2026-10-22');
+    expect(icsUrl).toContain('t=16%3A45');
+    expect(icsUrl).toContain('m=45');
+    expect(icsUrl).toContain('sig=');
     expect(email.html).toContain('Agregar a mi calendario');
+    expect(email.html).toContain(icsUrl);
   });
 
-  it('10. Estética Kani modo claro aprobada y compatibilidad de email (sin iframe, sin script)', () => {
+  it('10. Estética Kani, bloque de logo en negro cálido y tipografía 22px/28px', () => {
     const email = buildConfirmedEmail(basePayload);
+
+    // Contenedor del encabezado del logo con fondo negro cálido para máximo contraste
+    expect(email.html).toContain('bgcolor="#1C1A17"');
+    expect(email.html).toContain('kani-email-logo.png');
 
     // Paleta oficial aprobada
     expect(email.html).toContain('#F4EFE6'); // Fondo marfil
@@ -167,9 +187,61 @@ describe('Email transaccional de confirmación de turno (Kani Barber Studio) —
     expect(email.html).toContain('#9A7A2E'); // Dorado oscuro
     expect(email.html).toContain('#7A2C3A'); // Bordó
 
+    // Tipografía compacta 22px con interlineado 28px y serif
+    expect(email.html).toContain('font-size: 22px; line-height: 28px;');
+
     // Compatibilidad estricta
     expect(email.html).not.toContain('<script');
     expect(email.html).not.toContain('<iframe');
     expect(email.html).toContain('table role="presentation"');
+  });
+
+  it('11. Generación de contenido RFC 5545 para archivo .ics con zona horaria Buenos Aires', () => {
+    const icsContent = generateTurnoIcsContent({
+      id: 'notif-test-456',
+      bookingDate: '2026-11-02',
+      startTime: '15:30',
+      durationMinutes: 45,
+      serviceName: 'Corte',
+      barberName: 'Franco',
+    });
+
+    expect(icsContent).toContain('BEGIN:VCALENDAR');
+    expect(icsContent).toContain('PRODID:-//Kani Barber Studio//Turno//ES');
+    expect(icsContent).toContain('TZID:America/Argentina/Buenos_Aires');
+    expect(icsContent).toContain('SUMMARY:Corte — Kani Barber Studio');
+    expect(icsContent).toContain('DTSTART;TZID=America/Argentina/Buenos_Aires:20261102T153000');
+    expect(icsContent).toContain('DTEND;TZID=America/Argentina/Buenos_Aires:20261102T161500');
+    expect(icsContent).toContain('UID:kani-turno-notif-test-456@kanibarber.com');
+    expect(icsContent).toContain('LOCATION:San Isidro Labrador 7, Martínez, Provincia de Buenos Aires');
+    expect(icsContent).toContain('STATUS:CONFIRMED');
+    expect(icsContent).toContain('END:VCALENDAR');
+    expect(icsContent).toContain('\r\n');
+  });
+
+  it('12. Endpoint /api/calendar/turno.ics: validación de firma y prevención de manipulación', async () => {
+    const validUrl = buildTurnoIcsUrl({
+      id: 'notif-sec-789',
+      bookingDate: '2026-11-02',
+      startTime: '10:00',
+      durationMinutes: 45,
+      serviceName: 'Corte y barba',
+      barberName: 'Gonzalo',
+    });
+
+    // Petición válida
+    const reqValid = new Request(validUrl);
+    const resValid = await handleTurnoIcsRequest(reqValid);
+    expect(resValid.status).toBe(200);
+    expect(resValid.headers.get('Content-Type')).toContain('text/calendar');
+    expect(resValid.headers.get('Content-Disposition')).toContain('attachment; filename="turno-kani.ics"');
+    const bodyText = await resValid.text();
+    expect(bodyText).toContain('BEGIN:VCALENDAR');
+    expect(bodyText).toContain('Gonzalo');
+
+    // Manipulación de id sin firma válida -> 403 Forbidden
+    const tamperedUrl = validUrl.replace('id=notif-sec-789', 'id=notif-sec-hacked');
+    const resTampered = await handleTurnoIcsRequest(new Request(tamperedUrl));
+    expect(resTampered.status).toBe(403);
   });
 });

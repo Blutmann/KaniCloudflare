@@ -90,6 +90,11 @@ export default {
       }
 
       const url = new URL(request.url);
+      if (url.pathname === "/api/calendar/turno.ics" || url.pathname === "/api/calendar/turno") {
+        const { handleTurnoIcsRequest } = await import("./lib/kani-calendar-ics");
+        return handleTurnoIcsRequest(request);
+      }
+
       if (url.pathname === "/api/webhook/mercadopago") {
         const { handleMercadoPagoWebhook } = await import("./lib/kani-mercadopago-webhook.server");
         return await handleMercadoPagoWebhook(request);
