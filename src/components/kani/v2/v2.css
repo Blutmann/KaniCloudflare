@@ -105,7 +105,7 @@ html[data-theme="dark"] :is(.v2-shell, .v2-dialog) {
   background: var(--v2-reading-surface);
 }
 .v2-page {
-  padding: 24px 0 0;
+  padding: 20px 0 0;
   display: grid;
   gap: 20px;
   min-width: 0;
@@ -161,6 +161,9 @@ html[data-theme="dark"] :is(.v2-shell, .v2-dialog) {
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 12px;
+}
+.v2-panel > h2 {
+  margin: 0 0 12px 0;
 }
 .v2-section-title h2,
 .v2-section-title a {
@@ -1571,8 +1574,8 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
     min-height: 44px;
   }
   .v2-page {
-    padding-top: 12px;
-    gap: 12px;
+    padding-top: 16px;
+    gap: 14px;
   }
   .v2-shell {
     padding-bottom: 20px;
@@ -1780,15 +1783,30 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
    ========================================================================== */
 
 .v2-appointments-page,
-.v2-schedule,
-.v2-insights-page {
+.v2-schedule {
   display: flex !important;
   flex-direction: column !important;
   gap: 0 !important;
 }
 
+.v2-insights-page {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 16px !important;
+}
+
+@media (max-width: 767px) {
+  .v2-insights-page {
+    gap: 14px !important;
+  }
+}
+
+.v2-insights-page .v2-admin-filter-panel {
+  margin-bottom: 0 !important;
+}
+
 .v2-insights-page .v2-metrics-four {
-  margin-bottom: 16px !important;
+  margin-bottom: 0 !important;
 }
 
 .v2-schedule .admin-schedule-shell {
@@ -1821,7 +1839,7 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
   box-shadow: var(--v2-shadow) !important;
   backdrop-filter: blur(12px) !important;
   -webkit-backdrop-filter: blur(12px) !important;
-  margin: 0 0 12px 0 !important;
+  margin: 0 0 16px 0 !important;
   box-sizing: border-box !important;
 }
 
@@ -1829,7 +1847,7 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
   .v2-admin-filter-panel,
   .v2-admin-filter-card {
     padding: 8px 10px !important;
-    margin: 0 0 10px 0 !important;
+    margin: 0 0 14px 0 !important;
   }
 }
 
@@ -2047,9 +2065,9 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
   flex-direction: row !important;
   align-items: center !important;
   justify-content: space-between !important;
-  gap: 10px !important;
+  gap: 14px !important;
   width: 100% !important;
-  margin: 0 0 10px 0 !important;
+  margin: 0 0 16px 0 !important;
   padding: 0 !important;
   box-sizing: border-box !important;
 }
@@ -2057,8 +2075,8 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
 @media (max-width: 767px) {
   .v2-section-toolbar,
   .v2-appointments-header {
-    margin: 0 0 8px 0 !important;
-    gap: 8px !important;
+    margin: 0 0 14px 0 !important;
+    gap: 12px !important;
   }
 }
 
@@ -2131,7 +2149,13 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
 }
 
 .v2-schedule .admin-schedule-date-group + .admin-schedule-date-group {
-  margin-top: 18px !important;
+  margin-top: 20px !important;
+}
+
+@media (max-width: 767px) {
+  .v2-schedule .admin-schedule-date-group + .admin-schedule-date-group {
+    margin-top: 18px !important;
+  }
 }
 
 .v2-schedule .admin-schedule-list > section > .schedule-results-heading + div,
