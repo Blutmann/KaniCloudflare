@@ -350,6 +350,27 @@ export function isCalendarSyncInProgress(): boolean {
 
 export async function getSyncSupabaseClient(custom?: any): Promise<any> {
   if (custom) return custom;
+
+  const envObj = (typeof process !== 'undefined' ? process.env : {}) as Record<string, string | undefined>;
+  const globalObj = globalThis as typeof globalThis & {
+    __env__?: Record<string, unknown>;
+    __KANI_RUNTIME_ENV?: Record<string, string>;
+  };
+  const url =
+    envObj['SUPABASE_URL'] ||
+    globalObj.__KANI_RUNTIME_ENV?.['SUPABASE_URL'] ||
+    (globalObj.__env__?.['SUPABASE_URL'] as string) ||
+    'https://iockpxtkflyjfagkvgnr.supabase.co';
+  const key =
+    envObj['SUPABASE_SERVICE_ROLE_KEY'] ||
+    globalObj.__KANI_RUNTIME_ENV?.['SUPABASE_SERVICE_ROLE_KEY'] ||
+    (globalObj.__env__?.['SUPABASE_SERVICE_ROLE_KEY'] as string);
+
+  if (url && key) {
+    const { createClient } = await import('@supabase/supabase-js');
+    return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
+  }
+
   try {
     const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
     if (supabaseAdmin) return supabaseAdmin;
