@@ -85,7 +85,7 @@ function PagoPendientePage() {
         {result?.appointment && (
           <div className="rounded-2xl border border-border/80 bg-background/60 p-4 space-y-2.5 text-xs text-left">
             <div className="flex justify-between border-b border-border/60 pb-2">
-              <span className="text-muted-foreground">Solicitud:</span>
+              <span className="text-muted-foreground">Reserva:</span>
               <span className="font-mono font-bold text-foreground">#{result.appointment.requestNumber || result.appointment.id.slice(0, 8)}</span>
             </div>
             <div className="flex items-center justify-between">

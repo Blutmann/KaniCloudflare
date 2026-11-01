@@ -3255,7 +3255,7 @@ html[data-theme='light'] .booking-page .booking-progress > button {
   border-bottom-color: transparent !important;
 }
 
-/* Misma altura que h-12 del botón Volver a la solicitud del menú. */
+/* Misma altura que h-12 del botón Volver a la reserva del menú. */
 html[data-theme='light'] {
   --booking-action-height: 3rem;
 }
@@ -4070,7 +4070,7 @@ html[data-theme='dark'] .admin-section-nav-link.is-active svg {
 }
 
 
-/* Aviso de solicitud pendiente en container propio — Bordó */
+/* Aviso de reserva pendiente en container propio — Bordó */
 .summary-pending-notice {
   display: flex;
   align-items: center;

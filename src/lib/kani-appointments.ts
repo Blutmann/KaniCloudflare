@@ -178,7 +178,7 @@ export function appointmentErrorMessage(error: unknown) {
     message = (error as any).message || (error as any).error || (error as any).details || '';
   }
   if (!message) {
-    return 'No se pudo guardar la solicitud. Revisá los datos e intentá nuevamente.';
+    return 'No se pudo guardar la reserva. Revisá los datos e intentá nuevamente.';
   }
   if (message.includes('OVERLAP_CONFLICT')) {
     const match = message.match(/OVERLAP_CONFLICT:(\d{2}:\d{2}):(\d{2}:\d{2})/);
@@ -208,7 +208,7 @@ export function appointmentErrorMessage(error: unknown) {
   if (message.includes('create_manual_appointment') || message.includes('PGRST202')) {
     return 'La base de datos aún no tiene aplicada la migración de turnos manuales (create_manual_appointment). Aplicá la migración pendiente en Supabase.';
   }
-  return message || 'No se pudo guardar la solicitud. Revisá los datos e intentá nuevamente.';
+  return message || 'No se pudo guardar la reserva. Revisá los datos e intentá nuevamente.';
 }
 
 export const KANI_DEPOSIT_ARS = 5000;

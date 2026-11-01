@@ -45,7 +45,7 @@ function toAdminNotification(event: AdminActivityEvent): AdminNotification {
     : event.event_type === 'AVAILABILITY_AVAILABLE'
       ? `${actor} liberó el horario del ${date} a las ${time}`
       : event.event_type === 'APPOINTMENT_REQUESTED'
-        ? `${client} solicitó un turno con ${event.barber_name}`
+        ? `${client} reservó un turno con ${event.barber_name}`
         : event.event_type === 'APPOINTMENT_CONFIRMED'
           ? `${actor} confirmó el turno de ${client}`
           : `${actor} rechazó el turno de ${client}`;

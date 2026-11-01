@@ -55,7 +55,7 @@ describe('dashboard de demanda', () => {
     expect(hasComparableMetrics(values, summarizeAppointments([appointment({ statusCode: 'PENDING' })]))).toBe(false);
   });
 
-  it('agrupa solicitudes por lunes a sábado y separa confirmados', () => {
+  it('agrupa reservas por lunes a sábado y separa confirmados', () => {
     const values = buildDailyDemand([
       appointment({ date: '2026-10-05', statusCode: 'PENDING' }),
       appointment({ id: 'appointment-2', date: '2026-10-10', statusCode: 'CONFIRMED' }),

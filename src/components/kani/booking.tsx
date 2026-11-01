@@ -681,8 +681,8 @@ export function Booking({
   if (result) return (
     <main className="site-container confirmation">
       <div className="confirmation-mark"><Check size={30} /></div>
-      <h1>Solicitaste un turno</h1>
-      <p className="confirmation-lead text-muted-foreground">Recibimos tu solicitud correctamente.</p>
+      <h1>Reservá tu turno</h1>
+      <p className="confirmation-lead text-muted-foreground">Completá el pago de la seña para confirmar tu reserva.</p>
 
       <div className="confirmation-deposit-section my-6 p-6 rounded-lg border border-gold/30 bg-surface text-center">
         <p className="confirmation-deposit-title text-xl font-semibold m-0">
@@ -720,7 +720,7 @@ export function Booking({
         Tu turno se confirmará automáticamente en cuanto Mercado Pago acredite la seña.
       </p>
       <div className="confirmation-details">
-        <div className="confirmation-request-number">Solicitud #{result.requestNumber}</div>
+        <div className="confirmation-request-number">Reserva #{result.requestNumber}</div>
         <dl className="summary-list">
           <div><dt>Servicio</dt><dd>{serviceFor(result.service).name}</dd></div>
           <div><dt>Barbero</dt><dd>{result.barber}</dd></div>
@@ -1192,10 +1192,10 @@ export function Booking({
 
                 </ExperimentalLayout>
 
-                {/* 4. Aviso de solicitud pendiente en container propio */}
+                {/* 4. Aviso de reserva pendiente en container propio */}
                 <div className="booking-summary-card summary-pending-notice summary-card-notice flex items-center gap-2.5 text-xs sm:text-sm" role="note">
                   <Clock3 size={15} className="shrink-0" aria-hidden="true" />
-                  <p className="m-0 leading-normal">{isV2 || isFiveSteps ? 'Tu turno se confirma cuando se acredita la seña.' : 'Tu solicitud está pendiente hasta que abones la seña.'}</p>
+                  <p className="m-0 leading-normal">Tu turno se confirma cuando se acredita la seña.</p>
                 </div>
               </div>
             )}

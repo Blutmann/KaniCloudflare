@@ -7,6 +7,6 @@ import '@/components/kani/experimental/reserva-v4.css';
 import '@/components/kani/experimental/reserva-v5.css';
 
 export const Route = createFileRoute('/reserva-v5')({
-  head: () => pageHead('Reservá tu turno · Reserva V5', 'Reserva con claridad visual y Payway en Kani Barber Studio.', 'Kani Barber Studio - Solicitar turno'),
+  head: () => pageHead('Reservá tu turno · Reserva V5', 'Reserva con claridad visual y Payway en Kani Barber Studio.', 'Kani Barber Studio - Reservar turno'),
   component: PaywayBookingV5,
 });

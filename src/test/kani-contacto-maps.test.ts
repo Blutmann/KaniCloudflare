@@ -26,7 +26,7 @@ describe('Kani Barber Studio - Ajustes en Contacto e integración de Google Maps
     expect(estudioCode).toContain('10:00 a 20:00 hs');
     expect(estudioCode).toContain('Instagram');
     expect(estudioCode).toContain('@kanibarberstudio');
-    expect(estudioCode).toContain('Solicitar turno');
+    expect(estudioCode).toContain('Reservar turno');
   });
 
   it('2. Integra Google Maps oficial con el establecimiento Kani Barber Studio', () => {

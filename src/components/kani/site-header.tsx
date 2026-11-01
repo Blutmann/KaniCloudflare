@@ -44,7 +44,7 @@ export function MobileMenuAction() {
     const target = path.includes('mercadopago') ? '/reservar-turno-mercadopago' : '/reservar-turno';
     if (path !== target) void navigate({ to: target });
   };
-  return <div className="booking-cta mobile-menu-cta"><div className="booking-cta-inner flex items-center"><Button className="action-positive booking-menu-return h-12" onClick={returnToBooking}>Volver a la solicitud <ArrowUpRight /></Button></div></div>;
+  return <div className="booking-cta mobile-menu-cta"><div className="booking-cta-inner flex items-center"><Button className="action-positive booking-menu-return h-12" onClick={returnToBooking}>Volver a la reserva <ArrowUpRight /></Button></div></div>;
 }
 
 
@@ -154,8 +154,8 @@ export function SiteHeader() {
   const sessionRole = staff?.profile.role === 'ADMIN' ? 'Administrador' : staff?.profile.role === 'BARBER' ? 'Barbero' : '';
   const mobileMenu = menuOpen ? (
     <nav className="mobile-menu" id="kani-main-menu" aria-label="Menú principal">
-      {/* 1. Solicitar turno — Todos */}
-      <Link to={path.includes('mercadopago') ? '/reservar-turno-mercadopago' : '/reservar-turno'} onClick={continueBooking}><ArrowUpRight />Solicitar turno</Link>
+      {/* 1. Reservar turno — Todos */}
+      <Link to={path.includes('mercadopago') ? '/reservar-turno-mercadopago' : '/reservar-turno'} onClick={continueBooking}><ArrowUpRight />Reservar turno</Link>
       {/* 2. Contacto — Todos */}
       <Link to="/estudio" onClick={closeMenu}><Building2 />Contacto</Link>
       {/* 3. Ubicación — Todos */}

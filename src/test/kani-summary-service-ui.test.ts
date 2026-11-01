@@ -15,9 +15,9 @@ describe('Kani Barber Studio — Ajustes visuales en Resumen y Servicio', () => 
     expect(css).not.toMatch(/\.booking-summary-cards\s*\{[^}]*max-width:\s*860px/);
   });
 
-  it('2. Resumen: el aviso de solicitud pendiente tiene un container propio con clase booking-summary-card', () => {
+  it('2. Resumen: el aviso de reserva pendiente tiene un container propio con clase booking-summary-card', () => {
     expect(bookingCode).toContain('booking-summary-card summary-pending-notice');
-    expect(bookingCode).toContain('Tu solicitud está pendiente hasta que abones la seña.');
+    expect(bookingCode).toContain('Tu turno se confirma cuando se acredita la seña.');
   });
 
   it('3. Resumen: el aviso pendiente utiliza ícono y texto negro en claro y blanco en oscuro', () => {

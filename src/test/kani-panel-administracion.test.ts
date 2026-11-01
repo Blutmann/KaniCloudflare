@@ -61,7 +61,7 @@ describe('Kani Barber Studio — Panel de Administración & Refinamiento de Pago
     // Admin detection
     expect(headerCode).toContain("path.startsWith('/panel-administracion')");
 
-    // Solicitar turno link contextual
+    // Reservar turno link contextual
     expect(headerCode).toContain("path.includes('mercadopago') ? '/reservar-turno-mercadopago' : '/reservar-turno'");
 
     // Panel de administración link

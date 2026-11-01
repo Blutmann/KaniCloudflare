@@ -59,7 +59,7 @@ describe("mobile navigation scroll and closing", () => {
       expect(document.body.style.top).toBe("-240px");
       expect(screen.getAllByAltText("Kani Barber Studio")[0]).toBeTruthy();
       expect(screen.getByRole("navigation", { name: "Menú principal" })).toBeTruthy();
-      expect(screen.getByRole("button", { name: "Volver a la solicitud" })).toBeTruthy();
+      expect(screen.getByRole("button", { name: "Volver a la reserva" })).toBeTruthy();
       fireEvent.keyDown(window, { key: "Escape" });
       await waitFor(() =>
         expect(screen.queryByRole("navigation", { name: "Menú principal" })).toBeNull(),

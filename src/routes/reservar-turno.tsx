@@ -10,7 +10,7 @@ export const Route = createFileRoute('/reservar-turno')({
     pageHead(
       'Reservá tu turno · Payway',
       'Reservá tu turno en Kani Barber Studio con Payway.',
-      'Kani Barber Studio - Solicitar turno',
+      'Kani Barber Studio - Reservar turno',
     ),
   component: PaywayBooking,
 });

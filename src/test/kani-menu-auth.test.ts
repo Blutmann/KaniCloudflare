@@ -33,9 +33,9 @@ describe('Kani Barber Studio - Menú y Autenticación', () => {
   it('2. Menú desplegable define exactamente el orden y permisos requeridos', () => {
     const code = fs.readFileSync(siteHeaderPath, 'utf-8');
 
-    // 1. Solicitar turno — Todos
-    expect(code).toContain('Solicitar turno');
-    expect(code).toMatch(/<Link to=\{path\.includes\('mercadopago'\) \? '\/reservar-turno-mercadopago' : '\/reservar-turno'\}[^>]*>[^<]*<ArrowUpRight \/>\s*Solicitar turno\s*<\/Link>|<Link to="\/reservar"[^>]*>[^<]*<ArrowUpRight \/>\s*Solicitar turno\s*<\/Link>/);
+    // 1. Reservar turno — Todos
+    expect(code).toContain('Reservar turno');
+    expect(code).toMatch(/<Link to=\{path\.includes\('mercadopago'\) \? '\/reservar-turno-mercadopago' : '\/reservar-turno'\}[^>]*>[^<]*<ArrowUpRight \/>\s*Reservar turno\s*<\/Link>|<Link to="\/reservar"[^>]*>[^<]*<ArrowUpRight \/>\s*Reservar turno\s*<\/Link>/);
 
     // 2. Contacto — Todos
     expect(code).toContain('Contacto');

@@ -63,7 +63,7 @@ function StudioPage() {
         <Link
           className="studio-info-card studio-info-link"
           to="/reservar-turno"
-          aria-label="Solicitar un turno en Kani Barber Studio"
+          aria-label="Reservar un turno en Kani Barber Studio"
         >
           <div className="studio-card-top">
             <span className="studio-card-icon-wrap" aria-hidden="true">
@@ -75,7 +75,7 @@ function StudioPage() {
             Lunes a sábados<br />10:00 a 20:00 hs
           </p>
           <span className="studio-card-action">
-            Solicitar turno <ArrowRight size={13} aria-hidden="true" />
+            Reservar turno <ArrowRight size={13} aria-hidden="true" />
           </span>
         </Link>
 

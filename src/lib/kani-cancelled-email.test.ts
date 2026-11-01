@@ -5,5 +5,5 @@ it('builds the brief cancellation message and configured booking CTA with escape
   expect(result.text).toContain('Se canceló tu turno con <Lautaro> el día 2 de noviembre a las 10:45 hs.');
   expect(result.html).toContain('&lt;Lautaro&gt;');
   expect(result.html).toContain('href="https://booking.example/reservar"');
-  expect(result.html).toContain('Solicitá un nuevo turno');
+  expect(result.html).toContain('Reservá un nuevo turno');
 });

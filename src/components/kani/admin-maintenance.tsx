@@ -211,7 +211,7 @@ export function AdminMaintenance() {
               <div className="min-w-0">
                 <h3 id="preserve-heading" className="text-sm font-medium">Siempre se conserva</h3>
                 <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
-                  Clientes, usuarios Auth, perfiles, roles, barberos, servicios, precios, horarios y notas internas, datos de transferencia, notificaciones de disponibilidad, configuraciones y la secuencia de solicitudes.
+                  Clientes, usuarios Auth, perfiles, roles, barberos, servicios, precios, horarios y notas internas, datos de transferencia, notificaciones de disponibilidad, configuraciones y la secuencia de reservas.
                 </p>
               </div>
             </div>
@@ -315,7 +315,7 @@ export function AdminMaintenance() {
         <DialogContent className="max-w-[calc(100vw-32px)] sm:max-w-md p-5 sm:p-6 rounded-[var(--radius-card)]">
           <DialogTitle className="text-lg font-medium">¿Eliminar estos registros?</DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground mt-1.5 leading-relaxed">
-            Esta acción no se puede deshacer. Se eliminarán los estados seleccionados y sus notificaciones y eventos de email relacionados. No se eliminarán clientes, disponibilidad, perfiles ni la secuencia de solicitudes.
+            Esta acción no se puede deshacer. Se eliminarán los estados seleccionados y sus notificaciones y eventos de email relacionados. No se eliminarán clientes, disponibilidad, perfiles ni la secuencia de reservas.
           </DialogDescription>
           <div className="maintenance-confirmation-list mt-4">
             <strong className="block text-sm font-semibold break-words">{selectedLabels.join(', ')}</strong>

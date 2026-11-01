@@ -5,20 +5,20 @@ import path from 'node:path';
 describe('Kani Barber Studio — Actualización global de enlaces de reservas a /reservar-turno', () => {
   const rootDir = path.resolve(__dirname, '..');
 
-  it('1. Contacto: el card de Horarios / Solicitar turno dirige a /reservar-turno', () => {
+  it('1. Contacto: el card de Horarios / Reservar turno dirige a /reservar-turno', () => {
     const estudioCode = fs.readFileSync(path.join(rootDir, 'routes', 'estudio.tsx'), 'utf8');
     expect(estudioCode).toContain('to="/reservar-turno"');
-    expect(estudioCode).toContain('Solicitar turno');
+    expect(estudioCode).toContain('Reservar turno');
     expect(estudioCode).not.toContain('to="/reservar"');
   });
 
-  it('2. Menú desplegable: la opción «Solicitar turno» dirige a /reservar-turno o /reservar-turno-mercadopago', () => {
+  it('2. Menú desplegable: la opción «Reservar turno» dirige a /reservar-turno o /reservar-turno-mercadopago', () => {
     const headerCode = fs.readFileSync(path.join(rootDir, 'components', 'kani', 'site-header.tsx'), 'utf8');
     expect(headerCode).toContain("path.includes('mercadopago') ? '/reservar-turno-mercadopago' : '/reservar-turno'");
-    expect(headerCode).toMatch(/<Link to=\{path\.includes\('mercadopago'\) \? '\/reservar-turno-mercadopago' : '\/reservar-turno'\}[^>]*>[^<]*<ArrowUpRight \/>\s*Solicitar turno\s*<\/Link>/);
+    expect(headerCode).toMatch(/<Link to=\{path\.includes\('mercadopago'\) \? '\/reservar-turno-mercadopago' : '\/reservar-turno'\}[^>]*>[^<]*<ArrowUpRight \/>\s*Reservar turno\s*<\/Link>/);
   });
 
-  it('3. Header / MobileMenuAction: «Volver a la solicitud» dirige a la ruta oficial de reserva', () => {
+  it('3. Header / MobileMenuAction: «Volver a la reserva» dirige a la ruta oficial de reserva', () => {
     const headerCode = fs.readFileSync(path.join(rootDir, 'components', 'kani', 'site-header.tsx'), 'utf8');
     expect(headerCode).toContain("const target = path.includes('mercadopago') ? '/reservar-turno-mercadopago' : '/reservar-turno';");
     expect(headerCode).toContain("if (path !== target) void navigate({ to: target });");
