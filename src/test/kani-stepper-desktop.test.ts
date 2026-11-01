@@ -61,4 +61,16 @@ describe('Kani Barber Studio - Ajuste de estados visuales del stepper en desktop
     expect(v3Css).toMatch(/@media\s*\(max-width:\s*767px\)[\s\S]*?\.booking-page\.booking-v3\s+\.booking-progress\s*>\s*button\s*>\s*span[^{]*\{[^}]*font-size:\s*8\.5px\s*!important/);
     expect(v3Css).toMatch(/@media\s*\(max-width:\s*767px\)[\s\S]*?\.booking-page\.booking-v3\s+\.booking-progress\s+small[^{]*\{[^}]*font-size:\s*11px\s*!important/);
   });
+
+  it('7. Configura font-size de 14px en desktop para el aviso de seña y preserva 12px en mobile', () => {
+    expect(css).toMatch(/@media\s*\(min-width:\s*768px\)[\s\S]*?\.booking-deposit-notice[^{]*\{[^}]*font-size:\s*14px/);
+    expect(css).toMatch(/\.booking-deposit-notice\s*\{[^}]*font-size:\s*12px/);
+  });
+
+  it('8. Configura font-size de 18px en desktop para el encabezado de fecha en Horarios y preserva mobile', () => {
+    expect(css).toMatch(/@media\s*\(min-width:\s*768px\)[\s\S]*?\.booking-time-heading-date\s*\{[^}]*font-size:\s*18px/);
+    const v4Css = fs.readFileSync(path.resolve(__dirname, '../components/kani/experimental/reserva-v4.css'), 'utf-8');
+    expect(v4Css).toMatch(/@media\s*\(min-width:\s*768px\)[\s\S]*?\.payway-reservation\s+\.booking-page\s+\.booking-time-heading-date\s*\{[^}]*font-size:\s*18px\s*!important/);
+    expect(v4Css).toMatch(/\.payway-reservation\s+\.booking-page\s+\.booking-time-heading-date\s*\{[^}]*font-size:\s*12px\s*!important/);
+  });
 });

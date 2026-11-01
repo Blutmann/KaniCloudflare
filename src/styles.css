@@ -1054,6 +1054,12 @@ html[data-theme='dark'] .studio-map-card {
     font-size: 14px;
   }
 
+  /* Aviso de seña en Desktop: 14px */
+  .booking-deposit-notice,
+  .booking-page .booking-deposit-notice {
+    font-size: 14px;
+  }
+
   /* Interacción limpia del stepper en desktop: elimina el fondo rectangular en hover/active de los pasos */
   .booking-progress > button:hover,
   .booking-progress > button:active,
@@ -1130,7 +1136,7 @@ html[data-theme='dark'] .studio-map-card {
     background: color-mix(in oklch, var(--gold) 8%, var(--surface));
     border-radius: 9999px;
     color: var(--gold);
-    font-size: 13px;
+    font-size: 18px;
     font-weight: 500;
     line-height: 1.2;
     text-transform: capitalize;

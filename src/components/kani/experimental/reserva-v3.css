@@ -24,6 +24,15 @@
   .booking-page.booking-v3 .booking-progress small {
     font-size: 14px;
   }
+
+  .booking-page.booking-v3 .booking-deposit-notice {
+    font-size: 14px;
+  }
+
+  .booking-v3 .booking-time-heading-date,
+  .booking-page.booking-v3 .booking-time-heading-date {
+    font-size: 18px;
+  }
 }
 
 @media (max-width: 767px) {
