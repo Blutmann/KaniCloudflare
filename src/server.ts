@@ -458,6 +458,11 @@ export default {
         return await handleGoogleCalendarIntegrationStatus(request);
       }
 
+      if (url.pathname === "/api/integrations/google-calendar/test-cycle") {
+        const { handleGoogleCalendarTestCycle } = await import("./lib/kani-google-calendar-oauth.server");
+        return await handleGoogleCalendarTestCycle(request);
+      }
+
       if (url.pathname === "/api/admin/notification-audit") {
         try {
           const { getPontiunRuntimeEnv } = await import("./lib/kani-pontiun");

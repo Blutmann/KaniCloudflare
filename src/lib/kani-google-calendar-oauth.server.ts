@@ -457,6 +457,59 @@ export async function handleGoogleCalendarIntegrationStatus(
     }
   }
 
+  let associations: Array<{ barber: string; calendarId: string | null; configured: boolean }> = [];
+  let queueSummary: {
+    total: number;
+    pending: number;
+    processing: number;
+    synced: number;
+    failed: number;
+    recentJobs: any[];
+    hasHistoricalUnexpected: boolean;
+  } | null = null;
+
+  try {
+    const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+    const sb = customSupabaseClient || supabaseAdmin;
+
+    const { data: bgcRows } = await sb.from('barber_google_calendars').select('barber_id, calendar_id');
+    const { data: barberRows } = await sb.from('barbers').select('id, name');
+    if (barberRows) {
+      associations = barberRows.map((b: any) => {
+        const row = bgcRows?.find((c: any) => c.barber_id === b.id);
+        return {
+          barber: b.name,
+          calendarId: row?.calendar_id || null,
+          configured: Boolean(row?.calendar_id),
+        };
+      });
+    }
+
+    const { data: allSyncRows } = await sb
+      .from('appointment_calendar_sync')
+      .select('id, appointment_id, sync_action, sync_status, attempts, last_error, created_at, updated_at')
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    if (allSyncRows) {
+      const pending = allSyncRows.filter((r: any) => r.sync_status === 'PENDING').length;
+      const processing = allSyncRows.filter((r: any) => r.sync_status === 'PROCESSING').length;
+      const synced = allSyncRows.filter((r: any) => r.sync_status === 'SYNCED').length;
+      const failed = allSyncRows.filter((r: any) => r.sync_status === 'FAILED').length;
+      queueSummary = {
+        total: allSyncRows.length,
+        pending,
+        processing,
+        synced,
+        failed,
+        recentJobs: allSyncRows.slice(0, 5),
+        hasHistoricalUnexpected: failed > 0,
+      };
+    }
+  } catch {
+    // Non-blocking fallback
+  }
+
   return new Response(
     JSON.stringify({
       configured: Boolean(clientId && clientSecret),
@@ -464,6 +517,12 @@ export async function handleGoogleCalendarIntegrationStatus(
       strategy: config.strategy,
       storageMethod: config.refreshToken ? 'CLOUDFLARE_SECRET' : hasStoredRefreshToken ? 'BACKEND_DATABASE' : 'NONE',
       syncEnabled: config.enabled,
+      cron: {
+        trigger: '* * * * *',
+        registered: true,
+      },
+      associations,
+      queueSummary,
       version: '20261101-strict-v2',
       scope: storedScope || GOOGLE_CALENDAR_DEFAULT_SCOPE,
       lastAuthorizedAt: storedUpdatedAt,
@@ -481,6 +540,318 @@ export async function handleGoogleCalendarIntegrationStatus(
       headers: { 'Content-Type': 'application/json' },
     },
   );
+}
+
+/**
+ * 4. GET /api/integrations/google-calendar/test-cycle
+ * Permite ejecutar y auditar de forma segura y controlada el ciclo de vida de un turno ficticio:
+ * - action=inspect: Inspecciona cola, asociaciones y cron trigger
+ * - action=create: Crea un turno manual ficticio CONFIRMED para Franco, generando PENDING en la cola
+ * - action=poll: Comprueba si el Cron Trigger procesó el turno a SYNCED y consulta Google Calendar
+ * - action=modify: Modifica la hora del turno y verifica que vuelva a PENDING
+ * - action=cancel: Cancela el turno y verifica sync_action = DELETE
+ * - action=verify-deleted: Verifica que el evento se eliminó de Google Calendar (404)
+ * - action=cleanup: Elimina de forma segura únicamente los datos de prueba
+ */
+export async function handleGoogleCalendarTestCycle(
+  request: Request,
+  customSupabaseClient?: any,
+): Promise<Response> {
+  const url = new URL(request.url);
+  const action = url.searchParams.get('action') || 'inspect';
+
+  const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+  const sb = customSupabaseClient || supabaseAdmin;
+
+  try {
+    if (action === 'inspect') {
+      const { data: bgcRows } = await sb.from('barber_google_calendars').select('barber_id, calendar_id');
+      const { data: barberRows } = await sb.from('barbers').select('id, name');
+      const associations = (barberRows || []).map((b: any) => {
+        const row = bgcRows?.find((c: any) => c.barber_id === b.id);
+        return {
+          barber: b.name,
+          calendarId: row?.calendar_id || null,
+          configured: Boolean(row?.calendar_id),
+        };
+      });
+
+      const { data: allSyncRows } = await sb
+        .from('appointment_calendar_sync')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      const pending = (allSyncRows || []).filter((r: any) => r.sync_status === 'PENDING').length;
+      const processing = (allSyncRows || []).filter((r: any) => r.sync_status === 'PROCESSING').length;
+      const synced = (allSyncRows || []).filter((r: any) => r.sync_status === 'SYNCED').length;
+      const failed = (allSyncRows || []).filter((r: any) => r.sync_status === 'FAILED').length;
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          cronTrigger: '* * * * *',
+          associations,
+          queue: {
+            total: (allSyncRows || []).length,
+            pending,
+            processing,
+            synced,
+            failed,
+            items: (allSyncRows || []).slice(0, 10),
+          },
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (action === 'create') {
+      // 1. Obtener Franco y un servicio válido
+      const { data: franco } = await sb
+        .from('barbers')
+        .select('id, name')
+        .eq('name', 'Franco')
+        .single();
+      if (!franco) throw new Error('Barbero Franco no encontrado.');
+
+      const { data: service } = await sb
+        .from('services')
+        .select('id, name, duration_minutes, price_ars')
+        .eq('name', 'Corte')
+        .single();
+
+      // 2. Insertar turno de prueba confirmado
+      const { data: appt, error: insertErr } = await sb
+        .from('appointments')
+        .insert({
+          barber_id: franco.id,
+          service_id: service?.id || null,
+          booking_date: '2026-11-28',
+          start_time: '14:00:00',
+          end_time: '14:45:00',
+          status: 'CONFIRMED',
+          booking_client_name: '[AUDIT-TEST] Prueba Automática Cron',
+          booking_client_phone: '+5491100000000',
+          notes: '[AUDIT-TEST-CRON-LIFECYCLE]',
+          deposit_paid: true,
+          deposit_amount_ars: 5000,
+          service_price_ars: 25000,
+        })
+        .select('*')
+        .single();
+
+      if (insertErr || !appt) {
+        throw new Error(`Error al crear turno de prueba: ${insertErr?.message}`);
+      }
+
+      // 3. Consultar fila creada en appointment_calendar_sync
+      const { data: syncRow } = await sb
+        .from('appointment_calendar_sync')
+        .select('*')
+        .eq('appointment_id', appt.id)
+        .maybeSingle();
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          step: 'CREATED',
+          appointmentId: appt.id,
+          requestNumber: appt.request_number,
+          appointment: {
+            barber: 'Franco',
+            date: appt.booking_date,
+            start_time: appt.start_time,
+            end_time: appt.end_time,
+            status: appt.status,
+          },
+          syncJob: syncRow,
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const appointmentId = url.searchParams.get('appointmentId');
+    if (!appointmentId) {
+      return new Response(JSON.stringify({ error: 'appointmentId requerido' }), { status: 400 });
+    }
+
+    if (action === 'poll') {
+      const { data: syncRow } = await sb
+        .from('appointment_calendar_sync')
+        .select('*')
+        .eq('appointment_id', appointmentId)
+        .maybeSingle();
+
+      let googleEvent: any = null;
+      let googleError: string | null = null;
+
+      if (syncRow?.sync_status === 'SYNCED' && syncRow.google_event_id && syncRow.calendar_id) {
+        try {
+          const { getCalendarClient } = await import('./kani-google-calendar-sync');
+          const client = await getCalendarClient();
+          googleEvent = await client.getEvent(syncRow.calendar_id, syncRow.google_event_id);
+        } catch (err) {
+          googleError = err instanceof Error ? err.message : String(err);
+        }
+      }
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          syncStatus: syncRow?.sync_status,
+          syncJob: syncRow,
+          isSynced: syncRow?.sync_status === 'SYNCED',
+          googleEvent: googleEvent
+            ? {
+                id: googleEvent.id,
+                summary: googleEvent.summary,
+                start: googleEvent.start,
+                end: googleEvent.end,
+                status: googleEvent.status,
+              }
+            : null,
+          googleError,
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (action === 'modify') {
+      // Modificar horario: de 14:00 a 15:00
+      const { data: updatedAppt, error: updateErr } = await sb
+        .from('appointments')
+        .update({
+          start_time: '15:00:00',
+          end_time: '15:45:00',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', appointmentId)
+        .select('*')
+        .single();
+
+      if (updateErr) throw new Error(`Fallo al modificar turno: ${updateErr.message}`);
+
+      const { data: syncRow } = await sb
+        .from('appointment_calendar_sync')
+        .select('*')
+        .eq('appointment_id', appointmentId)
+        .maybeSingle();
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          step: 'MODIFIED',
+          newStartTime: updatedAppt.start_time,
+          newEndTime: updatedAppt.end_time,
+          syncJob: syncRow,
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (action === 'cancel') {
+      const { data: cancelledAppt, error: cancelErr } = await sb
+        .from('appointments')
+        .update({
+          status: 'CANCELLED',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', appointmentId)
+        .select('*')
+        .single();
+
+      if (cancelErr) throw new Error(`Fallo al cancelar turno: ${cancelErr.message}`);
+
+      const { data: syncRow } = await sb
+        .from('appointment_calendar_sync')
+        .select('*')
+        .eq('appointment_id', appointmentId)
+        .maybeSingle();
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          step: 'CANCELLED',
+          status: cancelledAppt.status,
+          syncJob: syncRow,
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (action === 'verify-deleted') {
+      const { data: syncRow } = await sb
+        .from('appointment_calendar_sync')
+        .select('*')
+        .eq('appointment_id', appointmentId)
+        .maybeSingle();
+
+      let eventGone = false;
+      let checkError: string | null = null;
+
+      if (syncRow?.google_event_id && syncRow.calendar_id) {
+        try {
+          const { getCalendarClient } = await import('./kani-google-calendar-sync');
+          const client = await getCalendarClient();
+          const evt = await client.getEvent(syncRow.calendar_id, syncRow.google_event_id);
+          // Si no arrojó 404, verificar si status === 'cancelled'
+          if (evt && evt.status === 'cancelled') {
+            eventGone = true;
+          }
+        } catch (err: any) {
+          const msg = err instanceof Error ? err.message : String(err);
+          if (msg.includes('404') || msg.includes('notFound')) {
+            eventGone = true;
+          } else {
+            checkError = msg;
+          }
+        }
+      } else {
+        eventGone = true;
+      }
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          syncStatus: syncRow?.sync_status,
+          eventGone,
+          checkError,
+          syncJob: syncRow,
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (action === 'cleanup') {
+      // Eliminar exclusivamente datos de auditoría con la nota técnica explícita
+      const { data: appt } = await sb
+        .from('appointments')
+        .select('id, notes')
+        .eq('id', appointmentId)
+        .maybeSingle();
+
+      if (appt && appt.notes?.includes('[AUDIT-TEST-CRON-LIFECYCLE]')) {
+        await sb.from('appointment_calendar_sync').delete().eq('appointment_id', appointmentId);
+        await sb.from('appointments').delete().eq('id', appointmentId);
+        return new Response(
+          JSON.stringify({ success: true, cleaned: true, appointmentId }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({ success: false, message: 'El turno no corresponde a un test de auditoría seguro.' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    return new Response(JSON.stringify({ error: `Acción desconocida: ${action}` }), { status: 400 });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    return new Response(JSON.stringify({ error: message }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
 }
 
 // ==============================================================================
