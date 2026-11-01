@@ -14,7 +14,7 @@
 --   - 'r.barber_id', 'r.slot_date', 'r.start_time', etc.
 --   - 'u.barber_id', 'u.slot_date', etc.
 --   - 'c.candidate_start::time AS start_time'
--- Se mantiene idéntica la lógica de negocio, disponibilidad de Franco los sábados 15:00-20:00,
+-- Se mantiene idéntica la lógica de negocio, disponibilidad de Franco de lunes a sábados 16:00-20:00,
 -- horizonte dinámico continuo, compatibilidad de servicios y bloqueos administrativos.
 
 CREATE OR REPLACE FUNCTION public.read_valid_availability_starts(
@@ -44,7 +44,7 @@ BEGIN
 
   RETURN QUERY
   WITH recurring_base_slots AS (
-    -- Horizonte dinámico continuo para Franco (Sábados 15:00 a 20:00)
+    -- Horizonte dinámico continuo para Franco (Lunes a Sábados 16:00 a 20:00)
     SELECT
       b.id AS barber_id,
       d::date AS slot_date,
@@ -56,17 +56,16 @@ BEGIN
     CROSS JOIN generate_series(v_from, v_to, interval '1 day') AS d
     CROSS JOIN (
       VALUES
-        (time '15:00:00', time '15:45:00'),
-        (time '15:45:00', time '16:30:00'),
-        (time '16:30:00', time '17:15:00'),
-        (time '17:15:00', time '18:00:00'),
-        (time '18:00:00', time '18:45:00'),
-        (time '18:45:00', time '19:30:00'),
+        (time '16:00:00', time '16:45:00'),
+        (time '16:45:00', time '17:30:00'),
+        (time '17:30:00', time '18:15:00'),
+        (time '18:15:00', time '19:00:00'),
+        (time '19:00:00', time '19:45:00'),
         (time '19:30:00', time '20:00:00')
     ) AS slot_def(start_time, end_time)
     WHERE b.name = 'Franco'
       AND b.active = true
-      AND extract(isodow from d) = 6
+      AND extract(isodow from d) BETWEEN 1 AND 6
       AND (p_barber_id IS NULL OR b.id = p_barber_id)
       AND NOT EXISTS (
         SELECT 1
@@ -131,7 +130,7 @@ BEGIN
     ) AS gs(candidate_start)
     WHERE gs.candidate_start >= s.slot_start_ts
       AND gs.candidate_start < s.slot_end_ts
-  ), franco_saturday_candidates AS (
+  ), franco_candidates AS (
     SELECT DISTINCT
       s.barber_id,
       s.slot_date,
@@ -141,17 +140,15 @@ BEGIN
     JOIN public.barbers b ON b.id = s.barber_id AND b.name = 'Franco'
     CROSS JOIN (
       VALUES
-        (time '15:00:00'),
-        (time '15:45:00'),
-        (time '16:30:00'),
-        (time '17:15:00'),
-        (time '18:00:00'),
-        (time '18:45:00'),
+        (time '16:00:00'),
+        (time '16:45:00'),
+        (time '17:30:00'),
+        (time '18:15:00'),
         (time '19:00:00'),
         (time '19:15:00'),
         (time '19:30:00')
     ) AS franco_time(t)
-    WHERE extract(isodow from s.slot_date) = 6
+    WHERE extract(isodow from s.slot_date) BETWEEN 1 AND 6
       AND (s.slot_date + franco_time.t)::timestamp >= s.slot_start_ts
       AND (s.slot_date + franco_time.t)::timestamp < s.slot_end_ts
   ), extended_candidates AS (
@@ -188,7 +185,7 @@ BEGIN
     FROM (
       SELECT sc.barber_id, sc.slot_date, sc.candidate_start, sc.is_exception FROM standard_candidates sc
       UNION ALL
-      SELECT fc.barber_id, fc.slot_date, fc.candidate_start, fc.is_exception FROM franco_saturday_candidates fc
+      SELECT fc.barber_id, fc.slot_date, fc.candidate_start, fc.is_exception FROM franco_candidates fc
       UNION ALL
       SELECT ec.barber_id, ec.slot_date, ec.candidate_start, ec.is_exception FROM extended_candidates ec
       UNION ALL
@@ -221,10 +218,12 @@ BEGIN
             AND available.slot_date = c.slot_date
             AND tsrange(
               c.candidate_start + requested.segment_index * interval '5 minutes',
-              c.candidate_start + (requested.segment_index + 1) * interval '5 minutes', '[)'
+              c.candidate_start + (requested.segment_index + 1) * interval '5 minutes',
+              '[)'
             ) <@ tsrange(
-              available.slot_date + available.start_time,
-              (available.slot_date + CASE WHEN available.end_time <= available.start_time THEN 1 ELSE 0 END) + available.end_time, '[)'
+              available.slot_start_ts,
+              available.slot_end_ts,
+              '[)'
             )
             AND NOT EXISTS (
               SELECT 1
@@ -234,31 +233,35 @@ BEGIN
                 AND blocked.status = 'UNAVAILABLE'
                 AND tsrange(
                   c.candidate_start + requested.segment_index * interval '5 minutes',
-                  c.candidate_start + (requested.segment_index + 1) * interval '5 minutes', '[)'
+                  c.candidate_start + (requested.segment_index + 1) * interval '5 minutes',
+                  '[)'
                 ) && tsrange(
-                  blocked.slot_date + blocked.start_time,
-                  (blocked.slot_date + CASE WHEN blocked.end_time <= blocked.start_time THEN 1 ELSE 0 END) + blocked.end_time, '[)'
-                )
-            )
-            AND NOT EXISTS (
-              SELECT 1
-              FROM public.appointments a
-              WHERE a.barber_id = c.barber_id
-                AND a.booking_date = c.slot_date
-                AND a.status <> 'CANCELLED'
-                AND tsrange(
-                  c.candidate_start + requested.segment_index * interval '5 minutes',
-                  c.candidate_start + (requested.segment_index + 1) * interval '5 minutes', '[)'
-                ) && tsrange(
-                  a.booking_date + a.start_time,
-                  (a.booking_date + CASE WHEN a.end_time <= a.start_time THEN 1 ELSE 0 END) + a.end_time, '[)'
+                  (blocked.slot_date + blocked.start_time)::timestamp,
+                  ((blocked.slot_date + CASE WHEN blocked.end_time <= blocked.start_time THEN 1 ELSE 0 END) + blocked.end_time)::timestamp,
+                  '[)'
                 )
             )
         )
       )
+      AND NOT EXISTS (
+        SELECT 1
+        FROM public.appointments appt
+        WHERE appt.barber_id = c.barber_id
+          AND appt.booking_date = c.slot_date
+          AND appt.status <> 'CANCELLED'
+          AND tsrange(
+            (appt.booking_date + appt.start_time)::timestamp,
+            ((appt.booking_date + CASE WHEN appt.end_time <= appt.start_time THEN 1 ELSE 0 END) + appt.end_time)::timestamp,
+            '[)'
+          ) && tsrange(
+            c.candidate_start,
+            c.candidate_start + svc.duration_minutes * interval '1 minute',
+            '[)'
+          )
+      )
   ) compatibility
   WHERE cardinality(compatibility.compatible_services) > 0
-  ORDER BY c.barber_id, c.slot_date, c.candidate_start;
+  ORDER BY c.slot_date ASC, c.candidate_start ASC, c.barber_id ASC;
 END;
 $$;
 

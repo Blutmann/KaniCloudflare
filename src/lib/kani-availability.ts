@@ -26,9 +26,11 @@ const AVAILABILITY_STEP_MINUTES = 5;
 
 export const FIXED_BOOKING_START_TIMES = bookingStartTimes;
 
-export const FRANCO_SATURDAY_START_TIMES = [
-  '15:00', '15:45', '16:30', '17:15', '18:00', '18:45', '19:00', '19:15', '19:30'
+export const FRANCO_ALLOWED_START_TIMES = [
+  '16:00', '16:45', '17:30', '18:15', '19:00', '19:15', '19:30'
 ];
+
+export const FRANCO_SATURDAY_START_TIMES = FRANCO_ALLOWED_START_TIMES;
 
 export function isFixedBookingStart(value: string) {
   return FIXED_BOOKING_START_TIMES.includes(value.slice(0, 5));
@@ -42,8 +44,8 @@ export function isAllowedPublicBookingStart(
 ) {
   const shortTime = startTime.slice(0, 5);
   if (isFixedBookingStart(shortTime)) return true;
-  const isSaturday = parseDate(slotDate).getDay() === 6;
-  if ((barber === 'Franco' || !barber) && isSaturday && FRANCO_SATURDAY_START_TIMES.includes(shortTime)) {
+  const isWorkingDay = parseDate(slotDate).getDay() >= 1 && parseDate(slotDate).getDay() <= 6;
+  if ((barber === 'Franco' || !barber) && isWorkingDay && FRANCO_ALLOWED_START_TIMES.includes(shortTime)) {
     return true;
   }
   if (!isException) return false;
@@ -247,9 +249,9 @@ export function availableTimesForServiceDate(
       const m = minutes(startTime);
       return isSunday || m < 10 * 60 || m > 19 * 60;
     });
-  const isSaturday = parseDate(date).getDay() === 6;
-  const barberStarts = (barber === 'Franco' || (!barber && slots.some(s => s.barber_name === 'Franco'))) && isSaturday
-    ? FRANCO_SATURDAY_START_TIMES
+  const isFrancoWorkingDay = parseDate(date).getDay() >= 1 && parseDate(date).getDay() <= 6;
+  const barberStarts = (barber === 'Franco' || (!barber && slots.some(s => s.barber_name === 'Franco'))) && isFrancoWorkingDay
+    ? FRANCO_ALLOWED_START_TIMES
     : [];
   const candidateStarts = [...new Set([...FIXED_BOOKING_START_TIMES, ...extraordinaryStarts, ...barberStarts])].sort();
   const times: string[] = [];

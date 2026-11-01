@@ -117,7 +117,7 @@ export function initialAvailability(): Availability {
       b,
       Array.from({ length: 7 }, (_, day) => {
         if (b === 'Franco') {
-          return { enabled: day === 6, start: '15:00', end: '20:00' };
+          return { enabled: day >= 1 && day <= 6, start: '16:00', end: '20:00' };
         }
         return { enabled: day !== 0, start: '10:00', end: '20:00' };
       }),
@@ -142,7 +142,7 @@ export function availableSlots(service: ServiceId, barber: Barber, date: string,
   if (!hours || !hours.enabled || date < demoToday) return [];
   const duration = serviceFor(service).duration;
   const possibleStarts = barber === 'Franco'
-    ? ['15:00', '15:45', '16:30', '17:15', '18:00', '18:45', '19:00', '19:15', '19:30']
+    ? ['16:00', '16:45', '17:30', '18:15', '19:00', '19:15', '19:30']
     : bookingStartTimes;
   return possibleStarts.filter(startTime => {
     const start = minutes(startTime);

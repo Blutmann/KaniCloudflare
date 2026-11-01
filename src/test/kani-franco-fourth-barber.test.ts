@@ -89,17 +89,17 @@ describe('KANI Barber Studio — Incorporación de Franco como cuarto barbero', 
     });
   });
 
-  describe('3. Disponibilidad inicial de Franco (exclusivamente sábados 15:00 a 20:00)', () => {
+  describe('3. Disponibilidad inicial de Franco (lunes a sábados 16:00 a 20:00)', () => {
     const availability = initialAvailability();
 
-    it('Franco solo tiene disponibilidad habilitada los sábados (día 6)', () => {
-      // 0 = Domingo, 1 = Lunes, 2 = Martes, 3 = Miércoles, 4 = Jueves, 5 = Viernes, 6 = Sábado
-      for (let day = 0; day <= 5; day++) {
-        expect(availability.Franco[day].enabled).toBe(false);
+    it('Franco tiene disponibilidad habilitada de lunes a sábado (días 1 a 6) de 16:00 a 20:00', () => {
+      // 0 = Domingo cerrado
+      expect(availability.Franco[0].enabled).toBe(false);
+      for (let day = 1; day <= 6; day++) {
+        expect(availability.Franco[day].enabled).toBe(true);
+        expect(availability.Franco[day].start).toBe('16:00');
+        expect(availability.Franco[day].end).toBe('20:00');
       }
-      expect(availability.Franco[6].enabled).toBe(true);
-      expect(availability.Franco[6].start).toBe('15:00');
-      expect(availability.Franco[6].end).toBe('20:00');
     });
 
     it('los demás barberos conservan su disponibilidad habitual (lunes a sábado 10:00 a 20:00)', () => {
@@ -114,18 +114,20 @@ describe('KANI Barber Studio — Incorporación de Franco como cuarto barbero', 
       }
     });
 
-    it('permite turnos en sábado a partir de las 15:00 y no antes', () => {
+    it('permite turnos de lunes a sábado a partir de las 16:00 y no antes', () => {
       const saturdayDate = '2099-11-07'; // Sábado
       expect(parseDate(saturdayDate).getDay()).toBe(6);
 
-      const slotsCorte = availableSlots('corte', 'Franco', saturdayDate, [], availability);
-      expect(slotsCorte).toContain('15:00');
-      expect(slotsCorte.some(s => s < '15:00')).toBe(false);
+      const slotsCorteSat = availableSlots('corte', 'Franco', saturdayDate, [], availability);
+      expect(slotsCorteSat).toContain('16:00');
+      expect(slotsCorteSat.some(s => s < '16:00')).toBe(false);
 
-      // En días de semana (ej. lunes 2099-11-02), no debe haber turnos para Franco
+      // En lunes también debe haber turnos a partir de las 16:00
       const mondayDate = '2099-11-02';
       expect(parseDate(mondayDate).getDay()).toBe(1);
-      expect(availableSlots('corte', 'Franco', mondayDate, [], availability)).toEqual([]);
+      const slotsCorteMon = availableSlots('corte', 'Franco', mondayDate, [], availability);
+      expect(slotsCorteMon).toContain('16:00');
+      expect(slotsCorteMon.some(s => s < '16:00')).toBe(false);
 
       // En domingos (ej. domingo 2099-11-08), no debe haber turnos para Franco
       const sundayDate = '2099-11-08';
@@ -151,10 +153,13 @@ describe('KANI Barber Studio — Incorporación de Franco como cuarto barbero', 
       expect(barbaSlots).toContain('19:30');
     });
 
-    it('isAllowedPublicBookingStart valida los inicios de Franco los sábados', () => {
+    it('isAllowedPublicBookingStart valida los inicios de Franco de lunes a sábados', () => {
       const saturdayDate = '2026-11-07';
-      expect(isAllowedPublicBookingStart(saturdayDate, '15:00:00', false, 'Franco')).toBe(true);
+      const mondayDate = '2026-11-02';
+      expect(isAllowedPublicBookingStart(saturdayDate, '16:00:00', false, 'Franco')).toBe(true);
+      expect(isAllowedPublicBookingStart(mondayDate, '16:00:00', false, 'Franco')).toBe(true);
       expect(isAllowedPublicBookingStart(saturdayDate, '19:15:00', false, 'Franco')).toBe(true);
+      expect(isAllowedPublicBookingStart(saturdayDate, '15:00:00', false, 'Franco')).toBe(false);
       expect(isAllowedPublicBookingStart(saturdayDate, '14:20:00', false, 'Franco')).toBe(false);
     });
 
@@ -167,7 +172,7 @@ describe('KANI Barber Studio — Incorporación de Franco como cuarto barbero', 
           barber_id: 'franco-id',
           barber_name: 'Franco',
           slot_date: saturdayDate,
-          start_time: '15:00:00',
+          start_time: '16:00:00',
           is_exception: false,
           compatible_services: ['Corte', 'Corte y barba', 'Corte + barba', 'Barba'],
         },
@@ -191,11 +196,11 @@ describe('KANI Barber Studio — Incorporación de Franco como cuarto barbero', 
 
       // Para Corte (45m): 15:00, 19:00 y 19:15 disponibles
       const corteStarts = availabilityStartTimesForServiceDate(starts, saturdayDate, 'Corte', now, 'Franco');
-      expect(corteStarts).toEqual(['15:00', '19:00', '19:15']);
+      expect(corteStarts).toEqual(['16:00', '19:00', '19:15']);
 
       // Para Corte y barba (60m): 15:00 y 19:00 disponibles; 19:15 NO disponible
       const cbStarts = availabilityStartTimesForServiceDate(starts, saturdayDate, 'Corte y barba', now, 'Franco');
-      expect(cbStarts).toEqual(['15:00', '19:00']);
+      expect(cbStarts).toEqual(['16:00', '19:00']);
     });
   });
 });

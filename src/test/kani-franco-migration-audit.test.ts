@@ -14,22 +14,21 @@ import {
 describe('KANI Barber Studio — Auditoría y Verificación de Migración de Franco', () => {
   const referenceNow = new Date('2026-10-31T12:00:00Z');
 
-  describe('1. Disponibilidad de Franco: sábados 15:00 a 20:00 y ausencia en otros días', () => {
-    it('muestra a Franco disponible exclusivamente los sábados de 15:00 a 20:00', () => {
-      // Sábado 2026-11-07
+  describe('1. Disponibilidad de Franco: lunes a sábados 16:00 a 20:00 y ausencia los domingos', () => {
+    it('muestra a Franco disponible de lunes a sábados de 16:00 a 20:00', () => {
+      // Sábado 2026-11-07 y Lunes 2026-11-02
       const starts: PublicAvailabilityStart[] = [
-        { barber_id: 'franco-id', barber_name: 'Franco', slot_date: '2026-11-07', start_time: '15:00:00', is_exception: false, compatible_services: ['Corte', 'Barba', 'Corte + barba'] },
-        { barber_id: 'franco-id', barber_name: 'Franco', slot_date: '2026-11-07', start_time: '15:45:00', is_exception: false, compatible_services: ['Corte', 'Barba', 'Corte + barba'] },
-        { barber_id: 'franco-id', barber_name: 'Franco', slot_date: '2026-11-07', start_time: '16:30:00', is_exception: false, compatible_services: ['Corte', 'Barba', 'Corte + barba'] },
-        { barber_id: 'franco-id', barber_name: 'Franco', slot_date: '2026-11-07', start_time: '17:15:00', is_exception: false, compatible_services: ['Corte', 'Barba', 'Corte + barba'] },
-        { barber_id: 'franco-id', barber_name: 'Franco', slot_date: '2026-11-07', start_time: '18:00:00', is_exception: false, compatible_services: ['Corte', 'Barba', 'Corte + barba'] },
-        { barber_id: 'franco-id', barber_name: 'Franco', slot_date: '2026-11-07', start_time: '18:45:00', is_exception: false, compatible_services: ['Corte', 'Barba', 'Corte + barba'] },
+        { barber_id: 'franco-id', barber_name: 'Franco', slot_date: '2026-11-07', start_time: '16:00:00', is_exception: false, compatible_services: ['Corte', 'Barba', 'Corte + barba'] },
+        { barber_id: 'franco-id', barber_name: 'Franco', slot_date: '2026-11-07', start_time: '16:45:00', is_exception: false, compatible_services: ['Corte', 'Barba', 'Corte + barba'] },
+        { barber_id: 'franco-id', barber_name: 'Franco', slot_date: '2026-11-07', start_time: '17:30:00', is_exception: false, compatible_services: ['Corte', 'Barba', 'Corte + barba'] },
+        { barber_id: 'franco-id', barber_name: 'Franco', slot_date: '2026-11-07', start_time: '18:15:00', is_exception: false, compatible_services: ['Corte', 'Barba', 'Corte + barba'] },
+        { barber_id: 'franco-id', barber_name: 'Franco', slot_date: '2026-11-07', start_time: '19:00:00', is_exception: false, compatible_services: ['Corte', 'Barba', 'Corte + barba'] },
         { barber_id: 'franco-id', barber_name: 'Franco', slot_date: '2026-11-07', start_time: '19:30:00', is_exception: false, compatible_services: ['Barba'] },
       ];
 
       const corteTimes = availabilityStartTimesForServiceDate(starts, '2026-11-07', 'Corte', referenceNow, 'Franco');
-      expect(corteTimes).toContain('15:00');
-      expect(corteTimes).toContain('18:45');
+      expect(corteTimes).toContain('16:00');
+      expect(corteTimes).toContain('19:00');
       // 19:30 only accommodates Barba (30m), not Corte (45m) since closing is 20:00
       expect(corteTimes).not.toContain('19:30');
 
@@ -37,26 +36,26 @@ describe('KANI Barber Studio — Auditoría y Verificación de Migración de Fra
       expect(barbaTimes).toContain('19:30');
     });
 
-    it('no tiene disponibilidad habitual en días de semana ni domingos', () => {
-      // Días de semana (lunes 2026-11-02 a viernes 2026-11-06)
+    it('no tiene disponibilidad habitual los domingos', () => {
+      // Domingo 2026-11-08
       const emptyStarts: PublicAvailabilityStart[] = [];
-      const mondayTimes = availabilityStartTimesForServiceDate(emptyStarts, '2026-11-02', 'Corte', referenceNow, 'Franco');
-      expect(mondayTimes).toEqual([]);
+      const sundayTimes = availabilityStartTimesForServiceDate(emptyStarts, '2026-11-08', 'Corte', referenceNow, 'Franco');
+      expect(sundayTimes).toEqual([]);
     });
   });
 
   describe('2. Preservación de bloqueos (UNAVAILABLE) y excepciones', () => {
     it('excluye horarios bloqueados administrativamente', () => {
-      // Simulación de respuesta de RPC donde el turno de 16:30 está bloqueado por UNAVAILABLE
+      // Simulación de respuesta de RPC donde el turno de 16:45 está bloqueado por UNAVAILABLE
       const filteredStarts: PublicAvailabilityStart[] = [
-        { barber_id: 'franco-id', barber_name: 'Franco', slot_date: '2026-11-07', start_time: '15:00:00', is_exception: false, compatible_services: ['Corte', 'Barba'] },
-        // 16:30 bloqueado administrativamente -> no aparece en valid starts
-        { barber_id: 'franco-id', barber_name: 'Franco', slot_date: '2026-11-07', start_time: '17:15:00', is_exception: false, compatible_services: ['Corte', 'Barba'] },
+        { barber_id: 'franco-id', barber_name: 'Franco', slot_date: '2026-11-07', start_time: '16:00:00', is_exception: false, compatible_services: ['Corte', 'Barba'] },
+        // 16:45 bloqueado administrativamente -> no aparece en valid starts
+        { barber_id: 'franco-id', barber_name: 'Franco', slot_date: '2026-11-07', start_time: '17:30:00', is_exception: false, compatible_services: ['Corte', 'Barba'] },
       ];
 
       const times = availabilityStartTimesForServiceDate(filteredStarts, '2026-11-07', 'Corte', referenceNow, 'Franco');
-      expect(times).toEqual(['15:00', '17:15']);
-      expect(times).not.toContain('16:30');
+      expect(times).toEqual(['16:00', '17:30']);
+      expect(times).not.toContain('16:45');
     });
   });
 
