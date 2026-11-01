@@ -481,4 +481,135 @@ describe('Google Calendar Concurrency & Resilience Tests', () => {
     expect(resDisabled.status).toBe('DISABLED');
     expect(resDisabled.message).toContain('deshabilitada');
   });
+
+  // 8. Regresión SQLSTATE 42804: contrato de tipos y request_number BIGINT
+  describe('Escenario 8: Regresión SQLSTATE 42804 y compatibilidad de tipos', () => {
+    it('la migración de corrección declara request_number bigint y recrea la función con DROP previo', async () => {
+      const fs = await import('node:fs');
+      const path = await import('node:path');
+      const migrationPath = path.resolve(
+        __dirname,
+        '../../supabase/migrations/20261101200000_kani_fix_claim_calendar_sync_jobs_request_number_bigint.sql'
+      );
+      expect(fs.existsSync(migrationPath)).toBe(true);
+
+      const content = fs.readFileSync(migrationPath, 'utf8');
+
+      // Verifica DROP previo obligatorio para evitar "cannot change return type of existing function"
+      expect(content).toContain('DROP FUNCTION IF EXISTS public.claim_pending_calendar_sync_jobs');
+
+      // Verifica request_number bigint en RETURNS TABLE
+      expect(content).toMatch(/request_number\s+bigint/i);
+
+      // Verifica que no se use request_number integer en el código SQL (ignorando comentarios)
+      const sqlWithoutComments = content.replace(/--.*$/gm, '');
+      expect(sqlWithoutComments).toMatch(/request_number\s+bigint/i);
+      expect(sqlWithoutComments).not.toMatch(/request_number\s+integer/i);
+
+      // Verifica SKIP LOCKED y version lease
+      expect(content).toContain('FOR UPDATE SKIP LOCKED');
+      expect(content).toContain('sync_version integer');
+
+      // Verifica permisos exclusivos para service_role
+      expect(content).toContain('REVOKE EXECUTE ON FUNCTION public.claim_pending_calendar_sync_jobs');
+      expect(content).toContain('GRANT EXECUTE ON FUNCTION public.claim_pending_calendar_sync_jobs(text, integer, integer) TO service_role');
+    });
+
+    it('procesa adecuadamente filas con request_number como número entero o serializado de PostgreSQL (bigint)', async () => {
+      const mockClient = {
+        createEvent: vi.fn().mockResolvedValue({ id: 'g-event-bigint-test' }),
+        updateEvent: vi.fn(),
+        deleteEvent: vi.fn(),
+      } as unknown as GoogleCalendarClient;
+
+      const mockDb = {
+        rpc: vi.fn().mockImplementation((rpcName: string) => {
+          if (rpcName === 'claim_pending_calendar_sync_jobs') {
+            return Promise.resolve({
+              data: [
+                {
+                  sync_id: 'sync-bigint-1',
+                  appointment_id: 'app-bigint-1',
+                  barber_id: 'b-1',
+                  barber_name: 'Lautaro',
+                  calendar_id: 'cal-lautaro@group.calendar.google.com',
+                  google_event_id: null,
+                  previous_calendar_id: null,
+                  previous_google_event_id: null,
+                  sync_action: 'UPSERT',
+                  attempts: 0,
+                  payload_checksum: null,
+                  booking_date: '2026-11-20',
+                  start_time: '14:00:00',
+                  end_time: '14:45:00',
+                  request_number: 100245, // bigint parsed by PostgREST as number
+                  client_name: 'Cliente BigInt',
+                  service_name: 'Corte',
+                  custom_service_name: null,
+                  service_price_ars: 25000,
+                  deposit_paid: true,
+                  deposit_amount_ars: 5000,
+                  sync_version: 1,
+                  claimed_by: 'worker-bigint',
+                },
+              ],
+              error: null,
+            });
+          }
+          if (rpcName === 'record_calendar_sync_success_v2') {
+            return Promise.resolve({ data: true, error: null });
+          }
+          return Promise.resolve({ data: null, error: null });
+        }),
+      };
+
+      const res = await processCalendarSyncQueue({
+        force: true,
+        limit: 1,
+        client: mockClient,
+        supabaseClient: mockDb,
+      });
+
+      expect(res.status).toBe('SUCCESS');
+      expect(res.processed).toBe(1);
+      expect(res.synced).toBe(1);
+      expect(mockClient.createEvent).toHaveBeenCalledWith(
+        'cal-lautaro@group.calendar.google.com',
+        expect.objectContaining({
+          description: expect.stringContaining('#100245'),
+        }),
+        expect.any(String),
+      );
+    });
+
+    it('captura y diagnostica el error SQLSTATE 42804 sin provocar fallos no controlados', async () => {
+      const mockClient = {} as GoogleCalendarClient;
+      const mockDbStructureMismatch = {
+        rpc: vi.fn().mockImplementation((rpcName: string) => {
+          if (rpcName === 'claim_pending_calendar_sync_jobs') {
+            return Promise.resolve({
+              data: null,
+              error: {
+                code: '42804',
+                message: 'structure of query does not match function result type',
+                details: 'Returned type bigint does not match expected type integer in column 15.',
+              },
+            });
+          }
+          return Promise.resolve({ data: null, error: null });
+        }),
+      };
+
+      const res = await processCalendarSyncQueue({
+        force: true,
+        client: mockClient,
+        supabaseClient: mockDbStructureMismatch,
+      });
+
+      expect(res.status).toBe('ERROR');
+      expect(res.message).toContain('CLAIM_JOBS_FAILED: structure of query does not match function result type');
+      expect(res.processed).toBe(0);
+      expect(res.synced).toBe(0);
+    });
+  });
 });

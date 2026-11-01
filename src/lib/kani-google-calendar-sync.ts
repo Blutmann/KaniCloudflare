@@ -32,7 +32,7 @@ export type CalendarSyncQueueItem = {
   booking_date: string;
   start_time: string;
   end_time: string;
-  request_number: number | null;
+  request_number: number | string | null;
   client_name: string;
   service_name: string;
   custom_service_name: string | null;
