@@ -32,11 +32,16 @@ import {
 
 function getRuntimeSecret(name: string): string | undefined {
   const env = (typeof process !== 'undefined' ? process.env : {}) as Record<string, string | undefined>;
-  const globalEnv = (globalThis as typeof globalThis & {
+  const globalObj = globalThis as typeof globalThis & {
+    __env__?: Record<string, unknown>;
     __KANI_RUNTIME_ENV?: Record<string, string>;
-  }).__KANI_RUNTIME_ENV || {};
+  };
 
-  return env[name] || globalEnv[name];
+  const val =
+    env[name] ??
+    globalObj.__KANI_RUNTIME_ENV?.[name] ??
+    globalObj.__env__?.[name];
+  return typeof val === 'string' && val.trim() ? val.trim() : undefined;
 }
 
 function resolveRedirectUri(request: Request): string {

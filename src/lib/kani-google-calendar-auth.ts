@@ -50,11 +50,18 @@ export const GOOGLE_CALENDAR_DEFAULT_SCOPE =
 
 export function getGoogleCalendarAuthConfig(): GoogleAuthConfig {
   const env = (typeof process !== 'undefined' ? process.env : {}) as Record<string, string | undefined>;
-  const globalEnv = (globalThis as typeof globalThis & {
+  const globalObj = globalThis as typeof globalThis & {
+    __env__?: Record<string, unknown>;
     __KANI_RUNTIME_ENV?: Record<string, string>;
-  }).__KANI_RUNTIME_ENV || {};
+  };
 
-  const getVar = (key: string): string | undefined => env[key] || globalEnv[key];
+  const getVar = (key: string): string | undefined => {
+    const val =
+      env[key] ??
+      globalObj.__KANI_RUNTIME_ENV?.[key] ??
+      globalObj.__env__?.[key];
+    return typeof val === 'string' && val.trim() ? val.trim() : undefined;
+  };
 
   const enabled = getVar('GOOGLE_CALENDAR_SYNC_ENABLED') === 'true';
   const saEmail = getVar('GOOGLE_SERVICE_ACCOUNT_EMAIL');

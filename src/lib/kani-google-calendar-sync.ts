@@ -118,9 +118,15 @@ export async function resolveBarberCalendarId(
 ): Promise<string | null> {
   const norm = barberName.trim().toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   const env = (typeof process !== 'undefined' ? process.env : {}) as Record<string, string | undefined>;
-  const globalEnv = (globalThis as typeof globalThis & { __KANI_RUNTIME_ENV?: Record<string, string> }).__KANI_RUNTIME_ENV || {};
+  const globalObj = globalThis as typeof globalThis & {
+    __env__?: Record<string, unknown>;
+    __KANI_RUNTIME_ENV?: Record<string, string>;
+  };
 
-  const getVar = (k: string) => env[k] || globalEnv[k];
+  const getVar = (k: string) => {
+    const val = env[k] ?? globalObj.__KANI_RUNTIME_ENV?.[k] ?? globalObj.__env__?.[k];
+    return typeof val === 'string' && val.trim() ? val.trim() : undefined;
+  };
 
   // Variables en Cloudflare Workers: ej. GOOGLE_CALENDAR_ID_FRANCO, CALENDAR_ID_FRANCO, etc.
   const envCalendarId =
