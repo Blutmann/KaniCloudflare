@@ -32,7 +32,7 @@ vi.mock("@/components/kani/v2/data", () => ({
       },
     ],
     payments: [],
-    services: [{ id: "corte", name: "Corte", price: 25000 }],
+    services: [{ id: "corte", name: "Corte de cabello", price: 25000 }],
     clients: [],
     barberId: "ALL",
     setBarberId: vi.fn(),
@@ -53,7 +53,7 @@ describe("V2 quick collection", () => {
   it("registers an anonymous walk-in using the authenticated barber and server clock", async () => {
     mocks.rpc.mockResolvedValue({ data: [{ payment_id: "p1" }], error: null });
     render(<V2Payments />);
-    fireEvent.click(screen.getByRole("button", { name: "Registrar cobro" }));
+    fireEvent.click(screen.getByRole("button", { name: /Registrar cobro|Cobrar/i }));
     await waitFor(() => expect(mocks.rpc).toHaveBeenCalledTimes(1));
     expect(mocks.rpc.mock.calls[0]?.[1]).toMatchObject({
       p_barber_id: "b1",
@@ -67,7 +67,7 @@ describe("V2 quick collection", () => {
   it("preserves the form and exposes a failure without trying another insert", async () => {
     mocks.rpc.mockResolvedValue({ data: null, error: { message: "FORBIDDEN_BARBER_SCOPE" } });
     render(<V2Payments />);
-    fireEvent.click(screen.getByRole("button", { name: "Registrar cobro" }));
+    fireEvent.click(screen.getByRole("button", { name: /Registrar cobro|Cobrar/i }));
     expect(await screen.findByText(/No se confirmó el cobro/)).toBeTruthy();
     expect(mocks.rpc).toHaveBeenCalledTimes(1);
     expect(mocks.refresh).not.toHaveBeenCalled();
@@ -77,7 +77,7 @@ describe("V2 quick collection", () => {
     render(<V2Payments />);
     fireEvent.click(screen.getByRole("button", { name: "Con turno" }));
     fireEvent.change(screen.getByLabelText("Turno"), { target: { value: "a1" } });
-    expect(screen.getByRole("button", { name: "Registrar cobro" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /Registrar cobro|Cobrar/i })).toBeDisabled();
     expect(mocks.rpc).not.toHaveBeenCalled();
   });
 });

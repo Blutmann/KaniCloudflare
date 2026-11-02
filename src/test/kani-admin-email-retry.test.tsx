@@ -186,7 +186,7 @@ describe("Kani — Reintentos de notificaciones de email desde panel administrat
 
     const fetchBody = JSON.parse(fetchSpy.mock.calls[0][1].body);
     expect(fetchBody.subject).toContain("canceló tu turno");
-    expect(fetchBody.text).toContain("Se canceló tu turno");
+    expect(fetchBody.text).toContain("se canceló tu turno");
   });
 
   it("3. Validación: Notificación fallida permite reintentar y actualiza el diagnóstico", async () => {

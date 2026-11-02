@@ -140,7 +140,7 @@ describe("Admin V2 appointments and Mercado Pago orders resilience", () => {
     const apt = apts[0];
     expect(apt.id).toBe("b37fa85f-4f34-4d64-b67b-705f30697df7");
     expect(apt.name).toBe("Martin Gomez");
-    expect(apt.serviceName).toBe("Corte");
+    expect(apt.serviceName).toBe("Corte de cabello");
   });
 
   it("4. calculates balance to collect at shop correctly without duplicating deposit deduction", () => {

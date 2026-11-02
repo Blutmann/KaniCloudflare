@@ -38,7 +38,7 @@ vi.mock("@/components/kani/v2/data", () => ({
     ],
     payments: [],
     services: [
-      { id: "corte", name: "Corte", price: 25000 },
+      { id: "corte", name: "Corte de cabello", price: 25000 },
       { id: "barba", name: "Barba", price: 15000 },
     ],
     clients: [

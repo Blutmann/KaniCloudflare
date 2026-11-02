@@ -156,7 +156,61 @@ export default {
           return new Response(JSON.stringify({ error: "METHOD_NOT_ALLOWED" }), { status: 405 });
         }
         try {
-          const body = (await request.json().catch(() => null)) as any;
+          const rawBody = await request.text();
+          const svixId = request.headers.get("svix-id");
+          const svixTimestamp = request.headers.get("svix-timestamp");
+          const svixSignature = request.headers.get("svix-signature");
+
+          const webhookSecret =
+            process.env.RESEND_WEBHOOK_SECRET ??
+            (globalThis as typeof globalThis & {
+              __KANI_RUNTIME_ENV?: Record<string, string>;
+            }).__KANI_RUNTIME_ENV?.RESEND_WEBHOOK_SECRET;
+
+          if (!webhookSecret || !webhookSecret.trim()) {
+            console.error("[Resend Webhook] Rechazado: RESEND_WEBHOOK_SECRET no configurado en el servidor.");
+            return new Response(
+              JSON.stringify({
+                error: "WEBHOOK_SECRET_MISSING",
+                message: "Webhook secret is not configured on the server",
+              }),
+              { status: 500, headers: { "content-type": "application/json" } }
+            );
+          }
+
+          const { verifyResendWebhookSignature, isResendEventDuplicate } = await import(
+            "./lib/kani-resend-webhook"
+          );
+
+          const verification = verifyResendWebhookSignature({
+            rawBody,
+            svixId,
+            svixTimestamp,
+            svixSignature,
+            secret: webhookSecret,
+          });
+
+          if (!verification.valid) {
+            console.warn("[Resend Webhook] Firma rechazada:", verification.reason);
+            return new Response(
+              JSON.stringify({
+                error: "INVALID_SIGNATURE",
+                reason: verification.reason,
+              }),
+              { status: 401, headers: { "content-type": "application/json" } }
+            );
+          }
+
+          // Idempotencia: si ya procesamos este evento, responder 200 sin repetir mutaciones
+          if (svixId && isResendEventDuplicate(svixId)) {
+            console.log(`[Resend Webhook] Evento duplicado ignorado (idempotente): ${svixId}`);
+            return new Response(
+              JSON.stringify({ received: true, svixId, idempotentReplay: true }),
+              { status: 200, headers: { "content-type": "application/json" } }
+            );
+          }
+
+          const body = JSON.parse(rawBody) as any;
           const eventType = body?.type;
           const emailId = body?.data?.email_id || body?.data?.id;
 
@@ -201,7 +255,8 @@ export default {
             headers: { "content-type": "application/json" },
           });
         } catch (webhookErr) {
-          return new Response(JSON.stringify({ error: "BAD_REQUEST" }), { status: 400 });
+          const msg = webhookErr instanceof Error ? webhookErr.message : "BAD_REQUEST";
+          return new Response(JSON.stringify({ error: msg }), { status: 400 });
         }
       }
 
@@ -330,17 +385,36 @@ export default {
             );
           }
 
-          // 2. Validación estricta de autorización en el servidor (solo rol ADMIN)
+          // 2. Validación estricta de autorización en el servidor (solo rol ADMIN mediante encabezado Bearer o Cookie)
           const authHeader = request.headers.get("authorization") || request.headers.get("Authorization");
-          const bearerToken = authHeader?.startsWith("Bearer ") ? authHeader.slice(7).trim() : null;
-          const queryToken = url.searchParams.get("token")?.trim() || null;
-          const token = bearerToken || queryToken;
+          const cookieHeader = request.headers.get("cookie") || request.headers.get("Cookie");
+
+          let token: string | null = null;
+          if (authHeader?.startsWith("Bearer ")) {
+            token = authHeader.slice(7).trim();
+          } else if (cookieHeader) {
+            const extractCookie = (c: string, name: string) => {
+              const match = c.match(new RegExp(`(?:^|;\\s*)${name}=([^;]*)`));
+              return match ? decodeURIComponent(match[1]) : null;
+            };
+            const sbTokenCookie =
+              extractCookie(cookieHeader, "sb-access-token") ||
+              extractCookie(cookieHeader, "sb-iockpxtkflyjfagkvgnr-auth-token");
+            if (sbTokenCookie) {
+              try {
+                const parsed = JSON.parse(sbTokenCookie);
+                token = Array.isArray(parsed) ? parsed[0] : parsed?.access_token || sbTokenCookie;
+              } catch {
+                token = sbTokenCookie;
+              }
+            }
+          }
 
           if (!token) {
             return new Response(
               JSON.stringify({
                 error: "AUTH_REQUIRED",
-                message: "Debe iniciar sesión como administrador para recuperar notificaciones.",
+                message: "Debe iniciar sesión como administrador para recuperar notificaciones. No se permiten tokens en la URL.",
               }),
               { status: 401, headers: { "content-type": "application/json" } }
             );
@@ -808,6 +882,7 @@ function mirrorRuntimeBindings(bindings: unknown): void {
     "VITE_SUPABASE_PUBLISHABLE_KEY",
     "RESEND_API_KEY",
     "RESEND_FROM_EMAIL",
+    "RESEND_WEBHOOK_SECRET",
     "KANI_ENVIRONMENT",
     "WHATSAPP_PHONE_NUMBER_ID",
     "WHATSAPP_ACCESS_TOKEN",

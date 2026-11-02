@@ -53,15 +53,15 @@ describe('Statistics Module Unit Tests', () => {
     });
     expect(dateRangeForStatisticsPreset('THIS_WEEK', today)).toEqual({
       start: '2026-10-12', // Monday
-      end: '2026-10-18',   // Sunday
+      end: '2026-10-17',   // Today (no incluir días futuros)
     });
     expect(dateRangeForStatisticsPreset('THIS_MONTH', today)).toEqual({
       start: '2026-10-01',
-      end: '2026-10-31',
+      end: '2026-10-17',   // Today (no incluir días futuros)
     });
     expect(dateRangeForStatisticsPreset('THIS_YEAR', today)).toEqual({
       start: '2026-01-01',
-      end: '2026-12-31',
+      end: '2026-10-17',   // Today (no incluir días futuros)
     });
     expect(dateRangeForStatisticsPreset('PREVIOUS_MONTH', today)).toEqual({
       start: '2026-09-01',
@@ -84,11 +84,11 @@ describe('Statistics Module Unit Tests', () => {
       end: '2026-10-17',
     });
     expect(dateRangeForStatisticsPreset('LAST_90_DAYS', today)).toEqual({
-      start: '2026-07-20',
+      start: '2026-08-01', // Mes actual (octubre) + 2 meses anteriores (septiembre, agosto) desde el día 1
       end: '2026-10-17',
     });
     expect(dateRangeForStatisticsPreset('LAST_180_DAYS', today)).toEqual({
-      start: '2026-04-21',
+      start: '2026-05-01', // Mes actual + 5 meses anteriores (mayo) desde el día 1
       end: '2026-10-17',
     });
     expect(dateRangeForStatisticsPreset('LAST_365_DAYS', today)).toEqual({
