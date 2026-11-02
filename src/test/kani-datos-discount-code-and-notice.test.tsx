@@ -22,7 +22,7 @@ describe('Kani — Texto de seña en Servicio y Código de descuento en Datos', 
       const mobileSpan = depositNotice?.querySelector('.sm\\:hidden');
       const desktopSpan = depositNotice?.querySelector('.hidden.sm\\:inline');
 
-      expect(mobileSpan).toHaveTextContent('Para reservar tu turno se requiere abonar una seña.');
+      expect(mobileSpan).toHaveTextContent('La reserva de tu turno requiere abonar una seña.');
       expect(desktopSpan).toHaveTextContent(
         'Tu turno requiere abonar una seña. En el resumen verás el importe exacto, el total y el saldo restante.'
       );

@@ -1532,7 +1532,7 @@ export function Booking({
               <p className="booking-deposit-notice" role="note">
                 <Clock3 size={16} aria-hidden="true" />
                 <span className="hidden sm:inline">Tu turno requiere abonar una seña. En el resumen verás el importe exacto, el total y el saldo restante.</span>
-                <span className="sm:hidden">Para reservar tu turno se requiere abonar una seña.</span>
+                <span className="sm:hidden">La reserva de tu turno requiere abonar una seña.</span>
               </p>
             )}
             {paymentNotice && (step === 5 || ((isV2 || isFiveSteps) && step === 4)) && (
