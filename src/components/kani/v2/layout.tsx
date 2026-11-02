@@ -110,6 +110,15 @@ export function V2Layout() {
 
 function V2Shell() {
   const { loading, error, refresh } = useV2();
+
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      document.body.dataset.adminInternal = 'true';
+      return () => {
+        delete document.body.dataset.adminInternal;
+      };
+    }
+  }, []);
   return (
     <div className="site-container v2-shell">
       <header className="v2-navigation">

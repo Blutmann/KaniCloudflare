@@ -316,7 +316,7 @@ export function filterStatisticsAppointments(
       const srvName = (appointment.serviceName || appointment.service || '').toLowerCase();
       if (options.serviceFilter === 'Corte y barba') {
         if (!srvName.includes('barba') || !srvName.includes('corte')) return false;
-      } else if (options.serviceFilter === 'Corte') {
+      } else if (options.serviceFilter === 'Corte' || options.serviceFilter === 'Corte de cabello') {
         if (srvName.includes('barba') || !srvName.includes('corte')) return false;
       } else if (options.serviceFilter === 'Barba') {
         if (srvName.includes('corte') || !srvName.includes('barba')) return false;

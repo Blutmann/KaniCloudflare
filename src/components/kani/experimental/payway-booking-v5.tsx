@@ -365,13 +365,13 @@ export function PaywayBookingV5() {
         const confirmedBooking: ConfirmedPaywayBooking = {
           appointmentId: checkout.appointmentId,
           attemptId: checkout.attemptId,
-          serviceName: activeDraft?.serviceName ?? 'Corte',
+          serviceName: activeDraft?.serviceName ?? 'Corte de cabello',
           barber: activeDraft?.barber ?? 'Lautaro',
           date: activeDraft?.date ?? '',
           time: activeDraft?.time ?? '',
           clientName: activeDraft?.name ?? '',
           depositArs: checkout.depositArs,
-          servicePriceArs: resolveServicePrice(activeDraft?.serviceName ?? 'Corte', configuredServices),
+          servicePriceArs: resolveServicePrice(activeDraft?.serviceName ?? 'Corte de cabello', configuredServices),
         };
         paidAppointmentsRef.current.add(checkout.appointmentId);
         persistConfirmedBooking(confirmedBooking);

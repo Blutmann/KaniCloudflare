@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAdminStaff } from "@/lib/kani-admin-context";
 import { sortClients, type ClientOrder } from "./client-order";
 import { clientHistory } from "@/lib/kani-v2";
-import { money } from "@/lib/kani-model";
+import { money, formatServiceName } from "@/lib/kani-model";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { useV2, type V2Client } from "./data";
 import { Empty, Metric, Status } from "./shared";
@@ -303,7 +303,7 @@ export function V2Clients() {
                   <div className="v2-history-row" key={a.id}>
                     <div>
                       <h3>
-                        {a.name ? `${a.name} · ` : ""}{a.serviceName} · {a.barber}
+                        {a.name ? `${a.name} · ` : ""}{formatServiceName(a.serviceName)} · {a.barber}
                       </h3>
                       <p>
                         {a.date} · {a.time}

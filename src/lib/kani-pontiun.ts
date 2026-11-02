@@ -612,6 +612,8 @@ export async function sendPontiunAppointmentConfirmation(
   let serviceName = params.serviceName?.trim() || "Servicio Kani";
   if (serviceName.toLowerCase() === "corte + barba" || serviceName.toLowerCase() === "corte +barba") {
     serviceName = "Corte y barba";
+  } else if (serviceName.toLowerCase() === "corte") {
+    serviceName = "Corte de cabello";
   }
 
   // Clave de idempotencia única por turno confirmado según ADR Pontiun

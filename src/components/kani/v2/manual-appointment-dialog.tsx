@@ -207,7 +207,7 @@ export function ManualAppointmentDialog({
       setCustomServiceName("");
       setCustomPrice("");
       const selectedB = barbersList.find((b) => b.id === defaultBarber);
-      setServicePrice(getEffectiveServicePrice(servicesList[0]?.name || "Corte", selectedB?.name));
+      setServicePrice(getEffectiveServicePrice(servicesList[0]?.name || "Corte de cabello", selectedB?.name));
       setStartTime("10:00");
       setCustomEndTime("10:45");
       setDate(initialDate);

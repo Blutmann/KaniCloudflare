@@ -39,7 +39,7 @@ export function V2Payments() {
   );
   const [appointmentId, setAppointmentId] = useState(search.turno ?? "");
   const [barberId, setBarberId] = useState(staff.profile.barber_id ?? staff.barbers[0]?.id ?? "");
-  const [serviceName, setServiceName] = useState<string>("Corte");
+  const [serviceName, setServiceName] = useState<string>("Corte de cabello");
   const [customServiceName, setCustomServiceName] = useState<string>("");
   const [priceOverride, setPriceOverride] = useState<number | null>(null);
   const [method, setMethod] = useState<PaymentMethod>("Efectivo");
@@ -60,7 +60,7 @@ export function V2Payments() {
   // States for Editing and Deleting payments
   const [editingPayment, setEditingPayment] = useState<ServicePayment | null>(null);
   const [editBarberId, setEditBarberId] = useState("");
-  const [editServiceName, setEditServiceName] = useState<ServicePaymentType>("Corte");
+  const [editServiceName, setEditServiceName] = useState<ServicePaymentType>("Corte de cabello");
   const [editOtherDetail, setEditOtherDetail] = useState("");
   const [editPrice, setEditPrice] = useState(25000);
   const [editDiscount, setEditDiscount] = useState(0);
@@ -822,7 +822,7 @@ export function V2Payments() {
                 onChange={(e) => setEditServiceName(e.target.value as ServicePaymentType)}
                 disabled={editBusy}
               >
-                <option value="Corte">Corte</option>
+                <option value="Corte de cabello">Corte de cabello</option>
                 <option value="Corte y barba">Corte y barba</option>
                 <option value="Barba">Barba</option>
                 <option value="Otros">Otros</option>

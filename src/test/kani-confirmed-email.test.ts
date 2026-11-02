@@ -44,7 +44,7 @@ describe('Email transaccional de confirmación de turno (Kani Barber Studio) —
     expect(emailWithoutName.subject).toBe('[KANI] Tu turno está confirmado');
 
     // Preencabezado en HTML con fecha compacta
-    expect(email.html).toContain('Jueves 22 de octubre a las 16:45 hs · Corte con Lautaro');
+    expect(email.html).toContain('Jueves 22 de octubre a las 16:45 hs · Corte de cabello con Lautaro');
   });
 
   it('2. Fecha natural en español: Formato natural y formato compacto sin año', () => {
@@ -60,12 +60,12 @@ describe('Email transaccional de confirmación de turno (Kani Barber Studio) —
   it('3. Contenido principal dinámico con servicio, barbero, fecha compacta en tarjeta y completa en texto', () => {
     const email = buildConfirmedEmail(basePayload);
     const expectedSentence =
-      'Se confirmó tu turno el día jueves 22 de octubre de 2026 a las 16:45 hs, para un servicio de Corte con Lautaro.';
+      'Se confirmó tu turno el día jueves 22 de octubre de 2026 a las 16:45 hs, para un servicio de Corte de cabello con Lautaro.';
     expect(email.text).toContain(expectedSentence);
     expect(email.html).toContain('Jueves 22 de octubre');
     expect(email.html).not.toContain('Jueves 22 de octubre de 2026'); // Año no visible en encabezado
     expect(email.html).toContain('16:45 hs');
-    expect(email.html).toContain('Corte');
+    expect(email.html).toContain('Corte de cabello');
     expect(email.html).toContain('Lautaro');
     expect(email.html).toContain('Tomas Harispe');
   });

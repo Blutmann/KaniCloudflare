@@ -13,7 +13,7 @@ export type PaymentMethod =
   | 'Tarjeta de débito'
   | 'Payway'
   | 'Mercado Pago';
-export type ServicePaymentType = 'Corte' | 'Corte y barba' | 'Barba' | 'Otros';
+export type ServicePaymentType = 'Corte' | 'Corte de cabello' | 'Corte y barba' | 'Barba' | 'Otros';
 export type ServicePaymentOrigin = 'appointment' | 'walk_in' | 'legacy' | 'online_deposit';
 
 export type ServicePayment = {
@@ -91,6 +91,7 @@ export type CandidateAppointmentMatch = {
 
 export const STANDARD_SERVICE_PRICES: Record<Exclude<ServicePaymentType, 'Otros'>, number> = {
   Corte: 25000,
+  'Corte de cabello': 25000,
   'Corte y barba': 30000,
   Barba: 15000,
 };
@@ -468,7 +469,7 @@ export async function fetchServicePayments(
     barberId: row.barber_id,
     barberName: barberMap.get(row.barber_id) || 'Barbero',
     serviceId: row.service_id,
-    serviceName: row.service_name === 'Corte + barba' ? 'Corte y barba' : (row.service_name as ServicePaymentType),
+    serviceName: row.service_name === 'Corte + barba' ? 'Corte y barba' : (row.service_name === 'Corte' ? 'Corte de cabello' : (row.service_name as ServicePaymentType)),
     serviceOtherDetail: row.service_other_detail,
     servicePriceArs: row.service_price_ars,
     discountArs: row.discount_ars,
@@ -839,7 +840,7 @@ export async function recordServicePayment(
       barberId: insertedRow.barber_id,
       barberName,
       serviceId: insertedRow.service_id,
-      serviceName: insertedRow.service_name === 'Corte + barba' ? 'Corte y barba' : (insertedRow.service_name as ServicePaymentType),
+      serviceName: insertedRow.service_name === 'Corte + barba' ? 'Corte y barba' : (insertedRow.service_name === 'Corte' ? 'Corte de cabello' : (insertedRow.service_name as ServicePaymentType)),
       serviceOtherDetail: insertedRow.service_other_detail,
       servicePriceArs: insertedRow.service_price_ars,
       discountArs: insertedRow.discount_ars,
@@ -958,7 +959,7 @@ export async function updateServicePayment(
     barberId: updatedRow.barber_id,
     barberName,
     serviceId: updatedRow.service_id,
-    serviceName: updatedRow.service_name === 'Corte + barba' ? 'Corte y barba' : (updatedRow.service_name as ServicePaymentType),
+    serviceName: updatedRow.service_name === 'Corte + barba' ? 'Corte y barba' : (updatedRow.service_name === 'Corte' ? 'Corte de cabello' : (updatedRow.service_name as ServicePaymentType)),
     serviceOtherDetail: updatedRow.service_other_detail,
     servicePriceArs: updatedRow.service_price_ars,
     discountArs: updatedRow.discount_ars,
@@ -1107,7 +1108,11 @@ export function filterServicePayments(
           return false;
         }
       } else {
-        if (payment.serviceName !== options.serviceFilter) {
+        if (options.serviceFilter === 'Corte' || options.serviceFilter === 'Corte de cabello') {
+          if (payment.serviceName !== 'Corte de cabello' && (payment.serviceName as string) !== 'Corte') {
+            return false;
+          }
+        } else if (payment.serviceName !== options.serviceFilter) {
           return false;
         }
       }

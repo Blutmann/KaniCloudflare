@@ -103,7 +103,8 @@ export async function readConfiguredServices(options: { bypassCache?: boolean } 
   const byName = new Map((data ?? []).map(row => [row.name, row]));
   const result = services.flatMap(service => {
     const configured = byName.get(service.name)
-      ?? (service.id === 'corte-barba' ? (byName.get('Corte + barba') ?? byName.get('Corte y barba')) : undefined);
+      ?? (service.id === 'corte-barba' ? (byName.get('Corte + barba') ?? byName.get('Corte y barba')) : undefined)
+      ?? (service.id === 'corte' ? (byName.get('Corte') ?? byName.get('Corte de cabello')) : undefined);
     return configured ? [{ ...service, dbId: configured.id, price: configured.price_ars, duration: configured.duration_minutes }] : [];
   });
   cachedServices = { data: result, timestamp: now };
@@ -157,7 +158,7 @@ export function availabilityStartTimesForServiceDate(
     .filter(start => start.slot_date === date)
     .filter(start => !barber || start.barber_name === barber)
     .filter(start => isAllowedPublicBookingStart(start.slot_date, start.start_time, start.is_exception, start.barber_name))
-    .filter(start => start.compatible_services.includes(serviceName) || ((serviceName === 'Corte y barba' || serviceName === 'Corte + barba') && (start.compatible_services.includes('Corte + barba') || start.compatible_services.includes('Corte y barba'))))
+    .filter(start => start.compatible_services.includes(serviceName) || ((serviceName === 'Corte y barba' || serviceName === 'Corte + barba') && (start.compatible_services.includes('Corte + barba') || start.compatible_services.includes('Corte y barba'))) || ((serviceName === 'Corte de cabello' || serviceName === 'Corte') && (start.compatible_services.includes('Corte de cabello') || start.compatible_services.includes('Corte'))))
     .filter(start => slotCanStillBeBooked(start.slot_date, start.start_time, now))
     .map(start => start.start_time.slice(0, 5)))].sort();
 }
@@ -172,7 +173,7 @@ export function eligibleBarbersForAvailabilityStart(
   const eligible = new Set(starts
     .filter(start => start.slot_date === date && start.start_time.slice(0, 5) === time)
     .filter(start => isAllowedPublicBookingStart(start.slot_date, start.start_time, start.is_exception, start.barber_name))
-    .filter(start => start.compatible_services.includes(serviceName) || ((serviceName === 'Corte y barba' || serviceName === 'Corte + barba') && (start.compatible_services.includes('Corte + barba') || start.compatible_services.includes('Corte y barba'))))
+    .filter(start => start.compatible_services.includes(serviceName) || ((serviceName === 'Corte y barba' || serviceName === 'Corte + barba') && (start.compatible_services.includes('Corte + barba') || start.compatible_services.includes('Corte y barba'))) || ((serviceName === 'Corte de cabello' || serviceName === 'Corte') && (start.compatible_services.includes('Corte de cabello') || start.compatible_services.includes('Corte'))))
     .filter(start => slotCanStillBeBooked(start.slot_date, start.start_time, now))
     .map(start => start.barber_name));
 

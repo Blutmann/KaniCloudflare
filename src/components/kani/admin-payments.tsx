@@ -98,9 +98,9 @@ export function AdminPayments() {
   const [formBarberId, setFormBarberId] = useState<string>(defaultBarberId);
   const [formDate, setFormDate] = useState<string>(todayStr);
   const [formTime, setFormTime] = useState<string>(businessTimeNow());
-  const [formServiceName, setFormServiceName] = useState<ServicePaymentType>("Corte");
+  const [formServiceName, setFormServiceName] = useState<ServicePaymentType>("Corte de cabello");
   const [formOtherDetail, setFormOtherDetail] = useState<string>("");
-  const [formPriceArs, setFormPriceArs] = useState<number>(STANDARD_SERVICE_PRICES["Corte"]);
+  const [formPriceArs, setFormPriceArs] = useState<number>(STANDARD_SERVICE_PRICES["Corte de cabello"]);
   const [formDiscountArs, setFormDiscountArs] = useState<number | string>(0);
   const [formClientName, setFormClientName] = useState<string>("");
   const [formClientContact, setFormClientContact] = useState<string>("");
@@ -324,8 +324,8 @@ export function AdminPayments() {
       setFormServiceName("Barba");
       setFormPriceArs(STANDARD_SERVICE_PRICES["Barba"]);
     } else {
-      setFormServiceName("Corte");
-      setFormPriceArs(STANDARD_SERVICE_PRICES["Corte"]);
+      setFormServiceName("Corte de cabello");
+      setFormPriceArs(STANDARD_SERVICE_PRICES["Corte de cabello"]);
     }
 
     setFormOnlineDepositPaid(Boolean(apt.depositPaid));
@@ -416,8 +416,8 @@ export function AdminPayments() {
     setFormBarberId(defaultBarberId);
     setFormDate(businessDateToday());
     setFormTime(businessTimeNow());
-    setFormServiceName("Corte");
-    setFormPriceArs(STANDARD_SERVICE_PRICES["Corte"]);
+    setFormServiceName("Corte de cabello");
+    setFormPriceArs(STANDARD_SERVICE_PRICES["Corte de cabello"]);
     setFormOtherDetail("");
     setFormDiscountArs(0);
     setFormClientName("");
@@ -742,7 +742,7 @@ export function AdminPayments() {
                       : "border border-border focus:ring-1 focus:ring-foreground/20 text-foreground"
                   }`}
                 >
-                  <option value="Corte">Corte</option>
+                  <option value="Corte de cabello">Corte de cabello</option>
                   <option value="Corte y barba">Corte y barba</option>
                   <option value="Barba">Barba</option>
                   <option value="Otros">Otros</option>
@@ -1189,7 +1189,7 @@ export function AdminPayments() {
                 className="select-control w-full h-9 px-2.5 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20"
               >
                 <option value="ALL">Todos</option>
-                <option value="Corte">Corte</option>
+                <option value="Corte de cabello">Corte de cabello</option>
                 <option value="Corte y barba">Corte y barba</option>
                 <option value="Barba">Barba</option>
                 <option value="Otros">Otros</option>

@@ -2,6 +2,7 @@ import { supabase } from '@/integrations/supabase/client';
 import type { Tables } from '@/integrations/supabase/types';
 import type { AuthenticatedStaff } from '@/lib/kani-auth';
 import type { Appointment, Barber, ServiceId, Status } from '@/lib/kani-model';
+import { formatServiceName } from '@/lib/kani-model';
 import { timeToMinutes } from './kani-manual-intervals';
 
 export {
@@ -561,11 +562,12 @@ async function executeReadRealAppointments(options?: { bypassCache?: boolean; ba
     const endM = timeToMinutes(row.end_time.slice(0, 5));
     const derivedDuration = Math.max(15, endM <= startM ? (endM + 1440) - startM : endM - startM);
 
-    const displayName = customName
+    const rawDisplayName = customName
       ? customName
       : (service?.name === 'Corte + barba' || service?.name === 'Corte + Barba')
       ? 'Corte y barba'
       : service?.name || 'Otro';
+    const displayName = formatServiceName(rawDisplayName);
 
     const displayPrice = customPrice ?? service?.price_ars ?? 0;
     const displayDuration = service?.duration_minutes ?? derivedDuration;

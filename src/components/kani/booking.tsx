@@ -445,7 +445,7 @@ export function Booking({
       const quote = await validateBenefitCodeQuoteFn({
         data: {
           code: raw,
-          serviceName: selected?.name ?? (service ? serviceFor(service).name : 'Corte'),
+          serviceName: selected?.name ?? (service ? serviceFor(service).name : 'Corte de cabello'),
           barber: barber ?? undefined,
         },
       });
@@ -486,7 +486,7 @@ export function Booking({
     if (!appliedBenefit?.code) return;
     let cancelled = false;
     const currentCode = appliedBenefit.code;
-    const currentServiceName = selected?.name ?? (service ? serviceFor(service).name : 'Corte');
+    const currentServiceName = selected?.name ?? (service ? serviceFor(service).name : 'Corte de cabello');
 
     validateBenefitCodeQuoteFn({
       data: {

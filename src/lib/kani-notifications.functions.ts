@@ -4,6 +4,7 @@ import { KANI_MAPS_URL, KANI_STANDARD_DEPOSIT_ARS, KANI_PUBLIC_WHATSAPP_URL, KAN
 import { buildTurnoIcsUrl } from './kani-calendar-ics';
 import { buildCancellationUrl } from './kani-cancellation-token';
 import { isAppointmentPast } from './kani-mobile-appointments';
+import { formatServiceName } from './kani-model';
 
 import type { Database } from "@/integrations/supabase/types";
 
@@ -764,7 +765,7 @@ export async function retryNotificationChannel(input: {
         clientName: client.name || "Cliente",
         clientPhone: client.phone,
         barberName: barber?.name || "Lautaro",
-        serviceName: (aptData as any).custom_service_name || service?.name || "Corte",
+        serviceName: formatServiceName((aptData as any).custom_service_name || service?.name || "Corte de cabello"),
         bookingDate: aptData.booking_date,
         startTime: aptData.start_time,
       });
@@ -839,7 +840,7 @@ export async function retryNotificationChannel(input: {
         console.warn("[KANI notification] Advertencia registrando PROCESSING para Email:", procErr);
       }
 
-      const serviceName = (aptData as any).custom_service_name || service?.name || "Corte";
+      const serviceName = formatServiceName((aptData as any).custom_service_name || service?.name || "Corte de cabello");
       const servicePriceArs = (aptData as any).service_price_ars ?? service?.price_ars ?? 0;
       const serviceDurationMinutes = service?.duration_minutes ?? 45;
       const downPaymentArs = (aptData as any).deposit_amount_ars ?? KANI_STANDARD_DEPOSIT_ARS;
@@ -1104,8 +1105,9 @@ export function buildGoogleCalendarUrl(payload: {
     d.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
 
   const dates = `${formatUtc(startUtcDate)}/${formatUtc(endUtcDate)}`;
-  const title = `${payload.serviceName} — Kani Barber Studio`;
-  const details = `Turno con ${payload.barberName} para ${payload.serviceName} en Kani Barber Studio.`;
+  const formattedServiceName = formatServiceName(payload.serviceName);
+  const title = `${formattedServiceName} — Kani Barber Studio`;
+  const details = `Turno con ${payload.barberName} para ${formattedServiceName} en Kani Barber Studio.`;
   const location = KANI_STUDIO_FULL_ADDRESS;
 
   return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${dates}&details=${encodeURIComponent(details)}&location=${encodeURIComponent(location)}`;
@@ -1130,10 +1132,12 @@ export function buildConfirmedEmail(payload: NotificationPayload) {
     : (payload.benefitOnlineDepositArs ?? ((payload.downPaymentArs && payload.downPaymentArs !== 10000) ? payload.downPaymentArs : KANI_STANDARD_DEPOSIT_ARS));
   const remainingPayment = payload.benefitInPersonBalanceArs ?? (isFreeService ? 0 : Math.max(0, finalPrice - downPayment));
 
+  const formattedServiceName = formatServiceName(payload.serviceName);
+
   const safe = {
     clientName: escapeHtml(payload.clientName),
     barberName: escapeHtml(payload.barberName),
-    serviceName: escapeHtml(payload.serviceName),
+    serviceName: escapeHtml(formattedServiceName),
     date: escapeHtml(spanishDate),
     capitalizedDate: escapeHtml(capitalizedDate),
     compactDate: escapeHtml(compactDate),
@@ -1150,7 +1154,7 @@ export function buildConfirmedEmail(payload: NotificationPayload) {
     ? `[KANI] ${payload.clientName.trim()}, tu turno está confirmado`
     : "[KANI] Tu turno está confirmado";
 
-  const preheaderText = `${compactDate} a las ${cleanTime} hs · ${payload.serviceName} con ${payload.barberName}`;
+  const preheaderText = `${compactDate} a las ${cleanTime} hs · ${formattedServiceName} con ${payload.barberName}`;
 
   const mapsUrl = KANI_MAPS_URL;
   const whatsAppUrl = KANI_PUBLIC_WHATSAPP_URL;
@@ -1782,14 +1786,14 @@ Se confirmó tu turno
 
 Hola ${payload.clientName}, te esperamos en Kani.
 
-Se confirmó tu turno el día ${spanishDate} a las ${cleanTime} hs, para un servicio de ${payload.serviceName} con ${payload.barberName}.
+Se confirmó tu turno el día ${spanishDate} a las ${cleanTime} hs, para un servicio de ${formattedServiceName} con ${payload.barberName}.
 
 --------------------------------------------------
 DETALLE DEL TURNO
 
 Fecha: ${capitalizedDate}
 Hora: ${cleanTime} hs
-Servicio: ${payload.serviceName}
+Servicio: ${formattedServiceName}
 Barbero: ${payload.barberName}
 
 Agregar al calendario:
@@ -1890,10 +1894,12 @@ export function buildCancelledEmail(payload: NotificationPayload, bookingUrl?: s
   const hasRecordedDeposit = !isNoDeposit && !isFreeService && Boolean(payload.downPaymentArs && payload.downPaymentArs > 0);
   const depositPaidFormatted = hasRecordedDeposit ? '$' + Number(payload.downPaymentArs).toLocaleString("es-AR") : null;
 
+  const formattedServiceName = formatServiceName(payload.serviceName || '');
+
   const safe = {
     clientName: escapeHtml(payload.clientName || 'Cliente'),
     barberName: escapeHtml(payload.barberName || ''),
-    serviceName: escapeHtml(payload.serviceName || ''),
+    serviceName: escapeHtml(formattedServiceName),
     date: escapeHtml(spanishDate),
     compactDate: escapeHtml(compactDate),
     time: escapeHtml(cleanTime),
@@ -2301,7 +2307,7 @@ Hola ${payload.clientName || 'Cliente'}, se canceló tu turno con ${payload.barb
 ESTADO: CANCELADO
 Fecha: ${compactDate}
 Hora: ${cleanTime} hs
-Servicio: ${payload.serviceName}
+Servicio: ${formattedServiceName}
 Barbero: ${payload.barberName}
 ${depositText}${benefitText}
 ACCIONES:
@@ -2331,10 +2337,11 @@ export function buildNewRequestEmail(payload: NotificationPayload, date: string,
   }
 
   const remainingPayment = Math.max(0, payload.servicePriceArs - payload.downPaymentArs);
+  const formattedServiceName = formatServiceName(payload.serviceName);
   const safe = {
     clientName: escapeHtml(payload.clientName),
     barberName: escapeHtml(payload.barberName),
-    serviceName: escapeHtml(payload.serviceName),
+    serviceName: escapeHtml(formattedServiceName),
     date: escapeHtml(date),
     time: escapeHtml(time),
     servicePrice: escapeHtml(formatArs(payload.servicePriceArs)),
@@ -2348,7 +2355,7 @@ export function buildNewRequestEmail(payload: NotificationPayload, date: string,
   const subject = "Aboná la seña para confirmar tu turno en Kani Barber Studio";
   const title = "Aboná la seña para confirmar tu turno";
   const html = `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;background:#f3efe8;color:#1c1c1c;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.55"><div style="width:100%;padding:24px 12px;box-sizing:border-box"><div style="max-width:600px;margin:0 auto"><header style="background:#161616;padding:22px 24px;color:#f4f1eb;letter-spacing:.14em;font-size:16px;font-weight:700">Kani Barber Studio</header><main style="background:#fff;padding:30px 24px"><h1 style="margin:0;color:#161616;font-size:28px;line-height:1.15;font-weight:700">${title}</h1><p style="margin:18px 0 24px;color:#555;line-height:1.65">Hola ${safe.clientName}:<br><br>Para confirmar tu turno, transferí la seña con los siguientes datos.</p><section style="margin:0 0 26px;padding:18px 20px;background:#f3e7d3;border-left:4px solid #a37b43"><p style="margin:0 0 4px;color:#765529;font-size:12px;letter-spacing:.08em;text-transform:uppercase;font-weight:700">Seña a transferir</p><p style="margin:0;color:#161616;font-size:32px;line-height:1.1;font-weight:700">${safe.downPayment}</p></section><section style="margin:0 0 26px;padding:20px;background:#faf9f6;border:1px solid #e5e0d8"><h2 style="margin:0 0 16px;color:#161616;font-size:18px;line-height:1.25">Datos para la transferencia</h2><div style="border-top:1px solid #e5e0d8"><p style="margin:0;padding:10px 0;border-bottom:1px solid #e5e0d8"><strong style="display:inline-block;width:86px;color:#6d6d6d;font-size:12px">Titular</strong><span style="overflow-wrap:anywhere">${safe.transferHolderName}</span></p><p style="margin:0;padding:10px 0;border-bottom:1px solid #e5e0d8"><strong style="display:inline-block;width:86px;color:#6d6d6d;font-size:12px">Alias</strong><span style="overflow-wrap:anywhere;font-weight:700">${safe.transferAlias}</span></p><p style="margin:0;padding:10px 0 0"><strong style="display:inline-block;width:86px;color:#6d6d6d;font-size:12px">CUIT</strong><span style="overflow-wrap:anywhere">${safe.transferCuit}</span></p></div></section><section style="margin:0 0 26px;padding:0 0 22px;border-bottom:1px solid #e5e0d8"><h2 style="margin:0 0 16px;color:#161616;font-size:18px;line-height:1.25">Datos de tu turno</h2><p style="margin:0 0 9px"><strong style="color:#6d6d6d;font-size:12px">Servicio</strong><br>${safe.serviceName} · ${payload.serviceDurationMinutes} min</p><p style="margin:0 0 9px"><strong style="color:#6d6d6d;font-size:12px">Barbero</strong><br>${safe.barberName}</p><p style="margin:0 0 9px"><strong style="color:#6d6d6d;font-size:12px">Fecha</strong><br>${safe.date}</p><p style="margin:0 0 16px"><strong style="color:#6d6d6d;font-size:12px">Horario</strong><br>${safe.time}</p><p style="margin:0 0 7px"><strong>Precio total del servicio:</strong> ${safe.servicePrice}</p><p style="margin:0"><strong>Importe restante en el local:</strong> ${safe.remainingPayment}</p></section><section style="margin:0 0 24px"><p style="margin:0 0 10px"><strong>Kani Barber Studio</strong> · San Isidro Labrador 7, Martínez</p><a href="${mapsUrl}" style="display:inline-block;color:#9f173b;font-weight:700;text-decoration:underline;text-underline-offset:3px">Ver ubicación en Google Maps</a></section><section style="margin:0;padding:16px 18px;background:#f8f5ef;color:#555;border-left:3px solid #c9b28b"><strong style="color:#333">Importante:</strong> tu turno todavía no está confirmado. Una vez verificado el pago de la seña, tu turno se confirmará automáticamente. Te enviaremos un email de confirmación.</section><p style="margin:24px 0 0;color:#555">¡Gracias por elegir Kani Barber Studio!</p></main><footer style="color:#8b8b8b;font-size:12px;line-height:1.5;text-align:center;padding:16px 8px">Mensaje automático de Kani Barber Studio.</footer></div></div></body></html>`;
-  const text = `${title}\n\nHola ${payload.clientName}:\n\nPara confirmar tu turno, transferí la seña con los siguientes datos.\n\nSEÑA A TRANSFERIR\n${formatArs(payload.downPaymentArs)}\n\nDATOS PARA LA TRANSFERENCIA\nTitular: ${payload.transferHolderName}\nAlias: ${payload.transferAlias}\nCUIT: ${payload.transferCuit}\n\nDATOS DE TU TURNO\nServicio: ${payload.serviceName} · ${payload.serviceDurationMinutes} min\nBarbero: ${payload.barberName}\nFecha: ${date}\nHorario: ${time}\nPrecio total del servicio: ${formatArs(payload.servicePriceArs)}\nImporte restante en el local: ${formatArs(remainingPayment)}\n\nKani Barber Studio · San Isidro Labrador 7, Martínez\nVer ubicación en Google Maps: ${mapsUrl}\n\nImportante: tu turno todavía no está confirmado. Una vez verificado el pago de la seña, tu turno se confirmará automáticamente. Te enviaremos un email de confirmación.\n\n¡Gracias por elegir Kani Barber Studio!\n\nMensaje automático de Kani Barber Studio.`;
+  const text = `${title}\n\nHola ${payload.clientName}:\n\nPara confirmar tu turno, transferí la seña con los siguientes datos.\n\nSEÑA A TRANSFERIR\n${formatArs(payload.downPaymentArs)}\n\nDATOS PARA LA TRANSFERENCIA\nTitular: ${payload.transferHolderName}\nAlias: ${payload.transferAlias}\nCUIT: ${payload.transferCuit}\n\nDATOS DE TU TURNO\nServicio: ${formattedServiceName} · ${payload.serviceDurationMinutes} min\nBarbero: ${payload.barberName}\nFecha: ${date}\nHorario: ${time}\nPrecio total del servicio: ${formatArs(payload.servicePriceArs)}\nImporte restante en el local: ${formatArs(remainingPayment)}\n\nKani Barber Studio · San Isidro Labrador 7, Martínez\nVer ubicación en Google Maps: ${mapsUrl}\n\nImportante: tu turno todavía no está confirmado. Una vez verificado el pago de la seña, tu turno se confirmará automáticamente. Te enviaremos un email de confirmación.\n\n¡Gracias por elegir Kani Barber Studio!\n\nMensaje automático de Kani Barber Studio.`;
   return { subject, html, text };
 }
 

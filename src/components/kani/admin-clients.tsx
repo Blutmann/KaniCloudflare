@@ -32,7 +32,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { formatPhoneDisplay } from '@/lib/kani-phone';
-import { dateLabel } from '@/lib/kani-model';
+import { dateLabel, formatServiceName } from '@/lib/kani-model';
 import { updateRealAppointmentStatus } from '@/lib/kani-appointments';
 import { extractErrorMessage } from '@/lib/kani-admin-activity';
 import {
@@ -746,7 +746,7 @@ export function AdminClients({
                           <div className="flex items-center gap-1.5 text-muted-foreground">
                             <Scissors size={13} className="shrink-0 text-muted-foreground/80" />
                             <span>Servicio:</span>
-                            <span className="font-medium text-foreground">{apt.serviceName}</span>
+                            <span className="font-medium text-foreground">{formatServiceName(apt.serviceName)}</span>
                           </div>
                           <div className="flex items-center gap-1.5 text-muted-foreground">
                             <User size={13} className="shrink-0 text-muted-foreground/80" />

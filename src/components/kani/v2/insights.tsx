@@ -3,7 +3,7 @@ import { Lightbulb, TrendingUp } from "lucide-react";
 import { useAdminStaff } from "@/lib/kani-admin-context";
 import { scopeV2, paymentSummary, changePercent, deduplicatePaymentMovements } from "@/lib/kani-v2";
 import { businessDateToday, addCalendarDays } from "@/lib/kani-mobile-appointments";
-import { money } from "@/lib/kani-model";
+import { money, formatServiceName } from "@/lib/kani-model";
 import {
   AdminFilterPanel,
   AdminFilterCell,
@@ -324,8 +324,8 @@ export function V2Insights() {
   const maxCount = Math.max(1, ...points.map((p) => p.count));
 
   const byService = useMemo(() => {
-    return [...new Set(payments.map((p) => p.serviceName))]
-      .map((name) => ({ name, count: payments.filter((p) => p.serviceName === name).length }))
+    return [...new Set(payments.map((p) => formatServiceName(p.serviceName)))]
+      .map((name) => ({ name, count: payments.filter((p) => formatServiceName(p.serviceName) === name).length }))
       .sort((a, b) => b.count - a.count);
   }, [payments]);
 

@@ -346,7 +346,7 @@ export function AdminStatistics() {
               className="select-control w-full h-9 px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20 font-medium"
             >
               <option value="Todos">Todos los servicios</option>
-              <option value="Corte">Corte</option>
+              <option value="Corte de cabello">Corte de cabello</option>
               <option value="Corte y barba">Corte y barba</option>
               <option value="Barba">Barba</option>
               <option value="Otros">Otros</option>

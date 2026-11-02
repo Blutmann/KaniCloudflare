@@ -352,6 +352,59 @@ export default {
         }
       }
 
+      if (url.pathname === "/api/admin/corte-migration") {
+        try {
+          const { createPaymentSupabaseClient } = await import("./lib/kani-payment-db.server");
+          const db = await createPaymentSupabaseClient();
+
+          // 1. Obtener servicios antes de la actualización
+          const { data: beforeServices } = await db.from('services').select('*').order('name');
+
+          // 2. Actualizar 'Corte' -> 'Corte de cabello' en services
+          const { data: updatedService, error: updateErr } = await db
+            .from('services')
+            .update({ name: 'Corte de cabello' })
+            .eq('name', 'Corte')
+            .select();
+
+          // 3. Obtener servicios después de la actualización
+          const { data: afterServices } = await db.from('services').select('*').order('name');
+
+          // 4. Actualizar barber_availability_slots que tengan 'Corte' en compatible_services
+          const { data: rawSlots } = await db
+            .from('barber_availability_slots')
+            .select('id, compatible_services')
+            .contains('compatible_services', ['Corte'])
+            .limit(2000);
+
+          let updatedSlotsCount = 0;
+          if (rawSlots && rawSlots.length > 0) {
+            for (const s of rawSlots) {
+              const updatedCompat = (s.compatible_services || []).map((cs: string) => cs === 'Corte' ? 'Corte de cabello' : cs);
+              await db.from('barber_availability_slots').update({ compatible_services: updatedCompat }).eq('id', s.id);
+              updatedSlotsCount++;
+            }
+          }
+
+          return new Response(JSON.stringify({
+            success: true,
+            beforeServices,
+            updatedService,
+            updateErr: updateErr ? (updateErr as any).message : null,
+            afterServices,
+            updatedSlotsCount,
+          }, null, 2), {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          });
+        } catch (err: any) {
+          return new Response(JSON.stringify({ error: err.message }), {
+            status: 500,
+            headers: { "content-type": "application/json" },
+          });
+        }
+      }
+
       if (url.pathname === "/api/admin/franco-schedule-audit") {
         try {
           const { createPaymentSupabaseClient } = await import("./lib/kani-payment-db.server");

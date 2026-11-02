@@ -21,6 +21,15 @@ export function AdminMaintenance() {
   const staff = useAdminStaff();
   const isAdmin = staff.profile.role === 'ADMIN';
 
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      document.body.dataset.adminInternal = 'true';
+      return () => {
+        delete document.body.dataset.adminInternal;
+      };
+    }
+  }, []);
+
   const [selectedStatuses, setSelectedStatuses] = useState<CleanupStatus[]>([]);
   const [password, setPassword] = useState('');
   const [reauthOpen, setReauthOpen] = useState(false);

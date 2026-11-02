@@ -5,7 +5,7 @@ import { ArrowRight, CalendarDays, Clock3, Info, Mail, Phone, Plus } from "lucid
 import { useAdminStaff } from "@/lib/kani-admin-context";
 import { businessDateToday, addCalendarDays, startOfBusinessWeek, isAppointmentPast } from "@/lib/kani-mobile-appointments";
 import { businessTimeNow } from "@/lib/kani-payments";
-import { money, dateLabel, formatRangeLabel, formatAdminV2Date, formatAdminV2Range } from "@/lib/kani-model";
+import { money, dateLabel, formatRangeLabel, formatAdminV2Date, formatAdminV2Range, formatServiceName } from "@/lib/kani-model";
 import { paymentSummary, scopeV2 } from "@/lib/kani-v2";
 import {
   appointmentErrorMessage,
@@ -559,7 +559,7 @@ export function V2Appointments() {
                     <span className="v2-app-dot">·</span>
                   </>
                 )}
-                <span className="v2-app-service">{a.serviceName}</span>
+                <span className="v2-app-service">{formatServiceName(a.serviceName)}</span>
                 <span className="v2-app-dot">·</span>
                 <span className="v2-app-barber">{a.barber}</span>
                 {isMultiDay && (
