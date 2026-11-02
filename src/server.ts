@@ -361,6 +361,26 @@ export default {
             .select('*')
             .order('created_at', { ascending: false });
 
+          // Specific appointment diagnosis if requested or latest consumed
+          const targetApptId = url.searchParams.get("appointmentId") || codes?.[0]?.consumed_appointment_id;
+          let apptRecord = null;
+          let notifRecords = null;
+          let calendarRecords = null;
+          let channelRecords = null;
+
+          if (targetApptId) {
+            const { data: appt } = await db.from('appointments').select('*').eq('id', targetApptId).maybeSingle();
+            apptRecord = appt;
+            const { data: notifs } = await db.from('appointment_notifications').select('*').eq('appointment_id', targetApptId);
+            notifRecords = notifs;
+            const { data: cal } = await db.from('appointment_calendar_sync').select('*').eq('appointment_id', targetApptId);
+            calendarRecords = cal;
+            try {
+              const { data: channels } = await db.from('appointment_notification_channel_dispatches').select('*').eq('appointment_id', targetApptId);
+              channelRecords = channels;
+            } catch { /* table may vary */ }
+          }
+
           // Also check for orphaned locks tied to cancelled/expired payment attempts
           const { data: cancelledAttempts } = await db
             .from('payment_attempts')
@@ -373,6 +393,10 @@ export default {
             JSON.stringify({
               success: !codesErr,
               codes: codes || [],
+              targetAppointment: apptRecord,
+              notifications: notifRecords,
+              calendarSync: calendarRecords,
+              channelDispatches: channelRecords,
               error: codesErr ? codesErr.message : null,
               recentCancelledAttempts: cancelledAttempts || [],
             }),
