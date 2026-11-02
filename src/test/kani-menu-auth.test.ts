@@ -91,7 +91,7 @@ describe('Kani Barber Studio - Menú y Autenticación', () => {
     expect(code).toContain('if (!isAdmin) return;');
   });
 
-  it('5. Espaciado vertical del menú: sin líneas horizontales, 8px entre opciones, 28-32px entre grupos', () => {
+  it('5. Espaciado vertical del menú: sin líneas horizontales, 8px entre opciones, 40px entre grupos', () => {
     const css = fs.readFileSync(stylesPath, 'utf-8');
 
     // Sin líneas horizontales entre opciones (border-bottom: none)
@@ -103,15 +103,16 @@ describe('Kani Barber Studio - Menú y Autenticación', () => {
     // Separación moderada de 8px entre opciones del mismo grupo
     expect(css).toMatch(/\.mobile-menu-group\s*\{[^}]*gap:\s*8px/);
 
-    // Separación considerablemente mayor entre grupos (28-32px, usando 30px)
-    expect(css).toMatch(/\.mobile-menu-group:not\(:empty\)\s*\+\s*\.mobile-menu-group:not\(:empty\)\s*\{[^}]*margin-top:\s*30px/);
+    // Separación considerablemente mayor entre grupos (40px)
+    expect(css).toMatch(/\.mobile-menu-group:not\(:empty\)\s*\+\s*\.mobile-menu-group:not\(:empty\)[^}]*margin-top:\s*40px/);
 
-    // Bloque de cuenta separado mediante espacio sin líneas
-    expect(css).toMatch(/\.mobile-menu-session\s*\{[^}]*margin-top:\s*30px/);
+    // Bloque de cuenta separado mediante espacio sin líneas (40px)
+    expect(css).toMatch(/\.mobile-menu-session\s*\{[^}]*margin-top:\s*40px/);
     expect(css).toMatch(/\.mobile-menu-session\s*\{[^}]*border-top:\s*none\s*!important/);
 
     // Área táctil de al menos 44px
     expect(css).toMatch(/\.mobile-menu a\s*\{[^}]*min-height:\s*(4[4-9]|5[0-9]|6[0-9])px/);
+    expect(css).toMatch(/\.mobile-menu-signout\s*\{[^}]*min-height:\s*44px/);
 
     // Grupos vacíos no ocupan espacio
     expect(css).toMatch(/\.mobile-menu-group:empty\s*\{[^}]*display:\s*none\s*!important/);
