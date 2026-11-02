@@ -386,7 +386,7 @@ export default {
                       status: 'ACTIVE',
                       updated_at: new Date().toISOString(),
                     };
-                    if (forceReusable && candidate.usage_mode !== 'REUSABLE') {
+                    if (forceReusable && expansionApplied && candidate.usage_mode !== 'REUSABLE') {
                       updatePayload.usage_mode = 'REUSABLE';
                     }
                     const { error: updErr } = await db
@@ -400,9 +400,15 @@ export default {
                         code: candidate.code,
                         previousStatus: candidate.status,
                         newStatus: 'ACTIVE',
-                        timesUsed: candidate.times_used,
+                        timesUsed: candidate.times_used ?? 1,
                         preservedConsumedAppointmentId: candidate.consumed_appointment_id,
                         preservedConsumedAt: candidate.consumed_at,
+                      });
+                    } else {
+                      repaired.push({
+                        id: candidate.id,
+                        code: candidate.code,
+                        error: updErr.message,
                       });
                     }
                   }
