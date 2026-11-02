@@ -276,9 +276,65 @@ export default {
 
       if (url.pathname === "/api/admin/payway-diagnostics") {
         try {
-          const { getRecentPaywayDiagnostics } = await import("./lib/kani-payway.server");
+          const { getRecentPaywayDiagnostics, readPaywayConfig } = await import("./lib/kani-payway.server");
+          const config = readPaywayConfig((k) => process.env[k]);
+
+          let migrationApplied = false;
+          let migrationError: string | null = null;
+          let codesCount = 0;
+          let sampleTest: unknown = null;
+
+          try {
+            const { createPaymentSupabaseClient } = await import("./lib/kani-payment-db.server");
+            const db = await createPaymentSupabaseClient();
+            const { data, error } = await db.rpc('admin_list_benefit_codes');
+            if (!error) {
+              migrationApplied = true;
+              codesCount = Array.isArray(data) ? data.length : 0;
+            } else {
+              migrationError = error.message;
+            }
+
+            const { validateBenefitCodeQuote } = await import("./lib/kani-benefit-codes.server");
+            sampleTest = await validateBenefitCodeQuote({
+              code: "NON_EXISTENT_TEST_PROBE",
+              serviceName: "Corte",
+              barberName: "Lautaro",
+            });
+          } catch (dbErr) {
+            migrationError = dbErr instanceof Error ? dbErr.message : String(dbErr);
+          }
+
+          const siteId = process.env.PAYWAY_PRODUCTION_SITE_ID || process.env.PAYWAY_SITE_ID || '';
           return new Response(
-            JSON.stringify({ diagnostics: getRecentPaywayDiagnostics() }),
+            JSON.stringify({
+              worker: "kanibarberstudio-cloudflare",
+              domainsServed: ["kanibarber.com", "www.kanibarber.com"],
+              payway: {
+                configured: Boolean(config),
+                environment: process.env.PAYWAY_ENVIRONMENT,
+                productionEnabled: process.env.PAYWAY_PRODUCTION_ENABLED === 'true',
+                sandboxEnabled: process.env.PAYWAY_SANDBOX_ENABLED === 'true',
+                apiBaseUrl: process.env.PAYWAY_API_BASE_URL,
+                hasPublicKey: Boolean(process.env.PAYWAY_PRODUCTION_PUBLIC_KEY || process.env.PAYWAY_PUBLIC_API_KEY || process.env.PAYWAY_PUBLIC_KEY),
+                hasPrivateKey: Boolean(process.env.PAYWAY_PRODUCTION_PRIVATE_KEY || process.env.PAYWAY_PRIVATE_API_KEY || process.env.PAYWAY_PRIVATE_KEY),
+                hasSiteId: Boolean(siteId),
+                siteIdFormatValid: /^\d{1,20}$/.test(siteId),
+                hasCheckoutSecret: (process.env.PAYWAY_CHECKOUT_SECRET?.length ?? 0) >= 32,
+                paymentMethods: config?.methods || [],
+              },
+              benefitsMigration: {
+                applied: migrationApplied,
+                codesCount,
+                sampleQuoteProbe: sampleTest,
+                error: migrationError,
+              },
+              accountingInvariants: {
+                freeBookingStatusRule: "Una reserva gratuita confirmada NO cuenta como servicio realizado hasta su cobro/cierre en el local.",
+                cancellationPaymentsRule: "Una cancelación NO borra pagos anteriores; se conservan pagos recibidos y reintegros se registran explícitamente.",
+              },
+              diagnostics: getRecentPaywayDiagnostics(),
+            }),
             {
               status: 200,
               headers: { "content-type": "application/json" },
