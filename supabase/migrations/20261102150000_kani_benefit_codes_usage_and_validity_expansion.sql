@@ -151,6 +151,7 @@ $$;
 -- ==============================================================================
 
 -- 5.1. Crear código (ampliada para usos y vigencia)
+DROP FUNCTION IF EXISTS public.admin_create_benefit_code(text, text, text);
 CREATE OR REPLACE FUNCTION public.admin_create_benefit_code(
   p_type text,
   p_internal_note text DEFAULT NULL,
@@ -404,6 +405,8 @@ END;
 $$;
 
 -- 5.5. Listar códigos con trazabilidad 1:N y estados calculados
+DROP FUNCTION IF EXISTS public.admin_list_benefit_codes();
+DROP FUNCTION IF EXISTS public.admin_list_benefit_codes(boolean);
 CREATE OR REPLACE FUNCTION public.admin_list_benefit_codes(
   p_include_deleted boolean DEFAULT true
 )
@@ -1153,3 +1156,7 @@ GRANT EXECUTE ON FUNCTION public.lock_benefit_code_attempt(text, text, integer) 
 GRANT EXECUTE ON FUNCTION public.release_benefit_code_attempt(text, text) TO public, anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.confirm_zero_deposit_appointment(text, text, date, time, text, text, text, text, text) TO public, anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.admin_consume_benefit_code_for_attempt(uuid, text) TO public, anon, authenticated, service_role;
+
+-- Recargar caché de esquema de PostgREST
+NOTIFY pgrst, 'reload schema';
+

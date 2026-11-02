@@ -69,19 +69,42 @@ export async function assertAdminSession(explicitToken?: string): Promise<{
 /**
  * Lists benefit codes for admin maintenance view.
  * Requires ADMIN role checked via Supabase session.
- * Preserves exact RPC signature when called without optional parameters.
+ * Preserves exact RPC signature when called without optional parameters,
+ * and falls back seamlessly if the schema cache has not yet reloaded the parameterized signature.
  */
 export async function adminListBenefitCodes(authToken?: string, includeDeleted?: boolean): Promise<BenefitCodeItem[]> {
   const { supabase } = await assertAdminSession(authToken);
-  const { data, error } = includeDeleted !== undefined
+  let res = includeDeleted !== undefined
     ? await supabase.rpc('admin_list_benefit_codes', { p_include_deleted: includeDeleted })
     : await supabase.rpc('admin_list_benefit_codes');
 
-  if (error) {
-    console.error('[Kani Benefit Codes] Error fetching admin list:', error);
-    throw new Error(error.message || 'Error al consultar códigos de beneficio');
+  // Fallback: If PostgREST reports PGRST202 (parameterized signature not found in schema cache),
+  // retry calling the legacy zero-argument function admin_list_benefit_codes()
+  if (res.error && (res.error.code === 'PGRST202' || (res.error.message && res.error.message.includes('schema cache'))) && includeDeleted !== undefined) {
+    console.warn('[Kani Benefit Codes] Parameterized admin_list_benefit_codes not found in schema cache, retrying 0-arg signature:', res.error.message);
+    res = await supabase.rpc('admin_list_benefit_codes');
   }
-  return (data as BenefitCodeItem[]) || [];
+
+  if (res.error) {
+    console.error('[Kani Benefit Codes] Error fetching admin list:', res.error);
+    throw new Error(res.error.message || 'Error al consultar códigos de beneficio');
+  }
+
+  const rawList = (res.data as any[]) || [];
+  const mapped = rawList.map(item => ({
+    ...item,
+    usage_mode: item.usage_mode || 'SINGLE_USE',
+    validity_type: item.validity_type || 'NO_EXPIRATION',
+    times_used: item.times_used ?? (item.status === 'CONSUMED' ? 1 : 0),
+    deleted_at: item.deleted_at || null,
+    usages: item.usages || [],
+  })) as BenefitCodeItem[];
+
+  if (includeDeleted === false) {
+    return mapped.filter(item => !item.deleted_at);
+  }
+
+  return mapped;
 }
 
 /**
@@ -118,7 +141,7 @@ export async function adminCreateBenefitCode(params: {
     throw new Error(`VALIDITY_ERROR: ${dates.error}`);
   }
 
-  const { data, error } = await supabase.rpc('admin_create_benefit_code', {
+  let res = await supabase.rpc('admin_create_benefit_code', {
     p_type: params.type,
     p_internal_note: params.internalNote || null,
     p_code: generatedCode,
@@ -130,12 +153,38 @@ export async function adminCreateBenefitCode(params: {
     p_duration_unit: params.durationUnit || null,
   });
 
-  if (error) {
-    console.error('[Kani Benefit Codes] Error creating code:', error);
-    throw new Error(error.message || 'Error al generar código de beneficio');
+  // Fallback: If PostgREST has the legacy 3-param signature in schema cache
+  if (res.error && (res.error.code === 'PGRST202' || (res.error.message && res.error.message.includes('schema cache')))) {
+    console.warn('[Kani Benefit Codes] 9-param admin_create_benefit_code not found, retrying 3-param legacy signature:', res.error.message);
+    res = await supabase.rpc('admin_create_benefit_code', {
+      p_type: params.type,
+      p_internal_note: params.internalNote || null,
+      p_code: generatedCode,
+    });
   }
 
-  return data as BenefitCodeItem;
+  if (res.error) {
+    console.error('[Kani Benefit Codes] Error creating code:', res.error);
+    throw new Error(res.error.message || 'Error al generar código de beneficio');
+  }
+
+  const rawItem = (res.data as any) || {};
+  return {
+    ...rawItem,
+    code: rawItem.code || generatedCode,
+    type: rawItem.type || params.type,
+    internal_note: rawItem.internal_note ?? params.internalNote ?? null,
+    status: rawItem.status || 'ACTIVE',
+    usage_mode: rawItem.usage_mode || usageMode,
+    validity_type: rawItem.validity_type || validityType,
+    valid_from: rawItem.valid_from || dates.validFromIso,
+    valid_until: rawItem.valid_until || dates.validUntilIso,
+    validity_duration_value: rawItem.validity_duration_value ?? params.durationValue ?? null,
+    validity_duration_unit: rawItem.validity_duration_unit ?? params.durationUnit ?? null,
+    times_used: rawItem.times_used ?? 0,
+    deleted_at: rawItem.deleted_at || null,
+    usages: rawItem.usages || [],
+  } as BenefitCodeItem;
 }
 
 /**
@@ -192,17 +241,25 @@ export async function adminToggleBenefitCodeStatus(params: {
   token?: string;
 }): Promise<boolean> {
   const { supabase } = await assertAdminSession(params.token);
-  const { data, error } = await supabase.rpc('admin_toggle_benefit_code_status', {
+  let res = await supabase.rpc('admin_toggle_benefit_code_status', {
     p_code_id: params.codeId,
     p_active: params.active,
   });
 
-  if (error) {
-    console.error('[Kani Benefit Codes] Error toggling code status:', error);
-    throw new Error(error.message || 'Error al cambiar estado del código');
+  // Fallback: If admin_toggle_benefit_code_status is not yet in schema cache and intent is disabling
+  if (res.error && (res.error.code === 'PGRST202' || (res.error.message && res.error.message.includes('schema cache'))) && !params.active) {
+    console.warn('[Kani Benefit Codes] admin_toggle_benefit_code_status not found, retrying admin_disable_benefit_code');
+    res = await supabase.rpc('admin_disable_benefit_code', {
+      p_code_id: params.codeId,
+    });
   }
 
-  return Boolean(data);
+  if (res.error) {
+    console.error('[Kani Benefit Codes] Error toggling code status:', res.error);
+    throw new Error(res.error.message || 'Error al cambiar estado del código');
+  }
+
+  return Boolean(res.data);
 }
 
 /**

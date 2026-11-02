@@ -221,5 +221,45 @@ describe('Benefit Codes Server Authorization Suite', () => {
         p_code_id: 'code-id-123',
       });
     });
+
+    it('adminListBenefitCodes falls back seamlessly to 0-param signature if schema cache returns PGRST202', async () => {
+      mockGetUser.mockResolvedValueOnce({
+        data: { user: { id: 'admin-id' } },
+        error: null,
+      });
+      mockFrom.mockReturnValueOnce({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            maybeSingle: vi.fn().mockResolvedValue({
+              data: { role: 'ADMIN', active: true },
+              error: null,
+            }),
+          }),
+        }),
+      });
+
+      // 1st call with p_include_deleted returns PGRST202 schema cache error
+      mockRpc.mockResolvedValueOnce({
+        data: null,
+        error: {
+          code: 'PGRST202',
+          message: 'Could not find the function public.admin_list_benefit_codes(p_include_deleted) in the schema cache',
+        },
+      });
+      // 2nd call without params succeeds
+      mockRpc.mockResolvedValueOnce({
+        data: [{ id: 'legacy-1', code: 'KANI-LEGACY-001', status: 'CONSUMED' }],
+        error: null,
+      });
+
+      const result = await adminListBenefitCodes('admin-token', true);
+      expect(result).toHaveLength(1);
+      expect(result[0].code).toBe('KANI-LEGACY-001');
+      expect(result[0].usage_mode).toBe('SINGLE_USE');
+      expect(result[0].validity_type).toBe('NO_EXPIRATION');
+      expect(result[0].times_used).toBe(1);
+      expect(mockRpc).toHaveBeenCalledWith('admin_list_benefit_codes', { p_include_deleted: true });
+      expect(mockRpc).toHaveBeenCalledWith('admin_list_benefit_codes');
+    });
   });
 });

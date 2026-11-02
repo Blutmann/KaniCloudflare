@@ -319,6 +319,19 @@ export default {
               serviceName: "Corte",
               barberName: "Lautaro",
             });
+
+            let expansionApplied = false;
+            let expansionError: string | null = null;
+            try {
+              const { error: expErr } = await db.from('benefit_codes').select('usage_mode').limit(1);
+              if (!expErr) {
+                expansionApplied = true;
+              } else {
+                expansionError = expErr.message;
+              }
+            } catch (e: any) {
+              expansionError = e.message;
+            }
           } catch (dbErr) {
             migrationError = dbErr instanceof Error ? dbErr.message : String(dbErr);
           }
@@ -346,6 +359,10 @@ export default {
                 codesCount,
                 sampleQuoteProbe: sampleTest,
                 error: migrationError,
+              },
+              benefitsExpansionMigration: {
+                applied: expansionApplied,
+                error: expansionError,
               },
               accountingInvariants: {
                 freeBookingStatusRule: "Una reserva gratuita confirmada NO cuenta como servicio realizado hasta su cobro/cierre en el local.",
