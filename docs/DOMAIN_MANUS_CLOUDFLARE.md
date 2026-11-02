@@ -36,6 +36,12 @@ Cloudflare confirmó compilaciones correctas de Worker y Pages para el commit `5
 
 Conectar este Worker mantiene su entorno y credenciales actuales, incluidos los ajustes de prueba de pagos. El dominio por sí solo no convierte la aplicación en un entorno de pagos reales.
 
+### Acceso al panel de administración
+
+El panel tenía un filtro de entorno que rechazaba explícitamente el dominio propio antes de mostrar el inicio de sesión. `isV2AdminEnvironment` ahora admite `kanibarber.com` y `www.kanibarber.com` cuando la aplicación usa el mismo proyecto de datos del Worker actual. Conserva también los hosts de prueba que ya estaban autorizados; otros dominios y otros proyectos de datos siguen bloqueados. La clasificación general `isV2Preview` no cambia.
+
+El inicio de sesión y la verificación del perfil activo del personal siguen siendo obligatorios. El proveedor de datos del panel no se monta sin un usuario autorizado. No se modificaron usuarios, contraseñas, roles, políticas de base de datos ni la base de datos utilizada. Las sesiones del navegador se guardan por dominio, por lo que al entrar por www puede ser necesario volver a iniciar sesión con la cuenta existente.
+
 ## Dominio raíz sin www
 
 Pages requiere servidores DNS Cloudflare para el dominio raíz. No se soluciona agregando un CNAME `@` a `workers.dev`, copiando IP de Cloudflare, ni añadiendo registros NS en el editor DNS común.

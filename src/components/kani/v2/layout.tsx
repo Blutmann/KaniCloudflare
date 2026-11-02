@@ -13,7 +13,7 @@ import { AdminAccess } from "@/components/kani/admin-access";
 import { AdminStaffProvider } from "@/lib/kani-admin-context";
 import { getAuthenticatedStaff, type AuthenticatedStaff } from "@/lib/kani-auth";
 import { supabase } from "@/integrations/supabase/client";
-import { isV2Preview } from "@/lib/kani-v2";
+import { isV2AdminEnvironment } from "@/lib/kani-v2";
 import { V2DataProvider, useV2 } from "./data";
 import "./v2.css";
 
@@ -38,9 +38,9 @@ export function V2Layout() {
       import.meta.env["VITE_SUPABASE_URL"] ||
       (supabase as any)?.supabaseUrl ||
       "";
-    const preview = isV2Preview(supabaseUrl, window.location.hostname);
-    setAllowed(preview);
-    if (!preview) {
+    const adminEnvironment = isV2AdminEnvironment(supabaseUrl, window.location.hostname);
+    setAllowed(adminEnvironment);
+    if (!adminEnvironment) {
       setState({
         loading: false,
         staff: null,

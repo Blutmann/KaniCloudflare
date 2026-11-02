@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   isV2Preview,
   isV2PreviewHost,
+  isV2AdminEnvironment,
   scopeV2,
   paymentSummary,
   clientHistory,
@@ -31,6 +32,25 @@ const payment = {
 } as ServicePayment;
 
 describe("V2 preview isolation and role scope", () => {
+  it.each(["kanibarber.com", "www.kanibarber.com", "WWW.KANIBARBER.COM"])(
+    "allows the admin login on %s only with the existing Worker database",
+    (hostname) => {
+      expect(isV2AdminEnvironment(`https://${PREVIEW_PROJECT}.supabase.co`, hostname)).toBe(true);
+      expect(isV2AdminEnvironment("https://production.supabase.co", hostname)).toBe(false);
+      expect(isV2AdminEnvironment("", hostname)).toBe(false);
+    },
+  );
+
+  it("keeps unknown hosts and lookalike domains outside the admin environment", () => {
+    const url = `https://${PREVIEW_PROJECT}.supabase.co`;
+    for (const hostname of ["", "attacker.example", "www.kanibarber.com.attacker.example", "attacker.kanibarber.com"]) {
+      expect(isV2AdminEnvironment(url, hostname)).toBe(false);
+    }
+    expect(isV2AdminEnvironment(url, "kanibarberstudio-cloudflare.kanibarber.workers.dev")).toBe(true);
+    expect(isV2AdminEnvironment(url, "localhost")).toBe(true);
+    expect(isV2AdminEnvironment(`${url}.attacker.example`, "www.kanibarber.com")).toBe(false);
+  });
+
   it("permits only the test project on approved hosts (main preview and versioned deployments)", () => {
     // 1. Preview/Test principal
     expect(

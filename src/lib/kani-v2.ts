@@ -33,6 +33,23 @@ export function isV2Preview(url: string, hostname: string): boolean {
   }
 }
 
+// The custom domains now serve the same Worker and database as the preview.
+// Allow the admin login there without reclassifying them as preview hosts or
+// permitting a different database. Staff authentication remains in V2Layout.
+export function isV2AdminEnvironment(url: string, hostname: string): boolean {
+  try {
+    const cleanHost = hostname.trim().toLowerCase();
+    return (
+      new URL(url).hostname === `${PREVIEW_PROJECT}.supabase.co` &&
+      (isV2PreviewHost(cleanHost) ||
+        cleanHost === "kanibarber.com" ||
+        cleanHost === "www.kanibarber.com")
+    );
+  } catch {
+    return false;
+  }
+}
+
 export function scopeV2<T extends { barberId: string }>(
   items: T[],
   role: string,
