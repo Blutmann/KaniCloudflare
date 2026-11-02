@@ -670,13 +670,15 @@ nav.mobile-menu {
   border: none !important;
   box-sizing: border-box !important;
   z-index: 130 !important;
-  display: grid !important;
-  align-content: start !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-content: stretch !important;
   gap: 0 !important;
   overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
   overscroll-behavior: contain !important;
   touch-action: pan-y !important;
-  padding: calc(98px + 14px) max(20px, calc((100vw - 1184px) / 2)) 40px !important;
+  padding: calc(98px + 14px) max(20px, calc((100vw - 1184px) / 2)) 48px !important;
   background-color: var(--chrome) !important;
   background-image: var(--kani-wallpaper-image, url('/kani-fondo-oscuro-desktop.webp')) !important;
   background-position: center top !important;
@@ -689,10 +691,10 @@ html[data-theme="light"] nav.mobile-menu {
   background-color: var(--chrome) !important;
   background-image: var(--kani-wallpaper-image, url('/kani-fondo-claro-desktop-blanco.webp')) !important;
 }
-.mobile-menu a { display: flex; align-items: center; gap: 12px; min-height: 60px; padding: 0 8px; border-bottom: 1px solid color-mix(in oklch, var(--gold) 28%, var(--border)); color: var(--foreground); font-size: 15px; }
+.mobile-menu a { display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 0 12px; border-radius: var(--radius-control, 0.5rem); border: none !important; border-bottom: none !important; color: var(--foreground); font-size: 15px; font-weight: 500; text-decoration: none; transition: background-color 0.15s ease, color 0.15s ease; }
 .mobile-menu a:hover, .mobile-menu a:focus-visible { background: color-mix(in oklch, var(--gold) 12%, transparent); color: var(--gold); outline: none; }
 .mobile-menu svg { width: 17px; height: 17px; color: var(--gold); }
-.mobile-menu-session { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-width: 0; margin-top: 12px; padding: 18px 8px 4px; border-top: 1px solid color-mix(in oklch, var(--gold) 28%, var(--border)); }
+.mobile-menu-session { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-width: 0; margin-top: 30px; padding: 0 12px; border: none !important; border-top: none !important; }
 .mobile-menu-session-identity { display: flex; min-width: 0; flex-direction: column; gap: 4px; color: var(--foreground); }
 .mobile-menu-session-identity strong { overflow-wrap: anywhere; font-family: var(--font-display); font-size: 15px; font-weight: 600; }
 .mobile-menu-session-identity span { color: var(--muted-foreground); font-family: var(--font-sans); font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
@@ -1374,7 +1376,11 @@ html[data-theme='dark'] .studio-map-card {
    min-height: 100vh !important;
    min-height: 100dvh !important;
    z-index: 130 !important;
-   padding: calc(72px + 14px + env(safe-area-inset-top, 0px)) 20px calc(132px + env(safe-area-inset-bottom, 0px)) !important;
+   display: flex !important;
+    flex-direction: column !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding: calc(72px + 14px + env(safe-area-inset-top, 0px)) 20px calc(132px + env(safe-area-inset-bottom, 0px)) !important;
    background-color: var(--chrome) !important;
    background-position: center top !important;
    background-repeat: no-repeat !important;
@@ -1390,7 +1396,7 @@ html[data-theme='dark'] .studio-map-card {
    background-color: var(--chrome) !important;
    background-image: var(--kani-wallpaper-image, url('/kani-fondo-oscuro-mobile.webp')) !important;
  }
- .mobile-menu a { display: flex; align-items: center; gap: 12px; min-height: 60px; padding: 0 8px; border-bottom: 1px solid color-mix(in oklch, var(--gold) 28%, var(--border)); color: var(--foreground); font-size: 15px; }
+ .mobile-menu a { display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 0 12px; border-radius: var(--radius-control, 0.5rem); border: none !important; border-bottom: none !important; color: var(--foreground); font-size: 15px; font-weight: 500; text-decoration: none; }
  .mobile-menu a:hover, .mobile-menu a:focus-visible { background: color-mix(in oklch, var(--gold) 12%, transparent); color: var(--gold); outline: none; }
  .mobile-menu svg { width: 17px; height: 17px; color: var(--gold); }
  .booking-menu-return { width: 100%; justify-content: center; }
@@ -4423,17 +4429,29 @@ html[data-theme='light'] .booking-page .booking-contact-form :is(.field-label in
 }
 
 
-/* Menu groups and dividers */
+/* Menu groups and dividers — separación vertical sin líneas horizontales */
 .mobile-menu-group {
   display: flex;
   flex-direction: column;
+  gap: 8px; /* 8px entre opciones del mismo grupo */
+}
+.mobile-menu-group:empty {
+  display: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+.mobile-menu-group:not(:empty) + .mobile-menu-group:not(:empty) {
+  margin-top: 30px; /* 28-32px entre grupos */
 }
 .mobile-menu-divider {
-  height: 1px;
-  min-height: 1px;
-  margin: 14px 8px;
-  background-color: color-mix(in oklch, var(--gold) 28%, var(--border));
-  opacity: 0.6;
+  display: none !important;
+  border: none !important;
+  background: transparent !important;
+  height: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  opacity: 0 !important;
 }
 
 /* Header buttons: 52x52px with 22-24px icons strictly on desktop (min-width: 768px) */

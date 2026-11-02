@@ -1,7 +1,7 @@
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router';
 import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState, type MouseEvent } from 'react';
 import { createPortal } from 'react-dom';
-import { ArrowUpRight, Building2, CalendarClock, Instagram, LogIn, LogOut, MapPin, Menu, Moon, Scale, ShieldCheck, Sun, Wrench, X } from 'lucide-react';
+import { ArrowUpRight, Building2, CalendarClock, CalendarDays, ChartNoAxesCombined, Clock3, CreditCard, Instagram, LogIn, LogOut, MapPin, Menu, Moon, Scale, ShieldCheck, Sun, Users, Wrench, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import kaniLogoLight from '@/assets/kani-logo-light.webp';
 import kaniLogoDark from '@/assets/kani-logo-dark.webp';
@@ -154,7 +154,7 @@ export function SiteHeader() {
   const sessionRole = staff?.profile.role === 'ADMIN' ? 'Administrador' : staff?.profile.role === 'BARBER' ? 'Barbero' : '';
   const mobileMenu = menuOpen ? (
     <nav className="mobile-menu" id="kani-main-menu" aria-label="Menú principal">
-      {/* Grupo 1: General */}
+      {/* Grupo usuario */}
       <div className="mobile-menu-group">
         <Link to={path.includes('mercadopago') ? '/reservar-turno-mercadopago' : '/reservar-turno'} onClick={continueBooking}>
           <ArrowUpRight />Reservar turno
@@ -166,17 +166,11 @@ export function SiteHeader() {
 
       <div className="mobile-menu-divider" role="separator" />
 
-      {/* Grupo 2: Opciones administrativas según rol */}
+      {/* Grupo barbero */}
       <div className="mobile-menu-group">
         <Link to="/panel-administracion" onClick={closeMenu}>
           <CalendarClock />Panel de administración
         </Link>
-
-        {staff?.profile.role === 'ADMIN' && (
-          <Link to="/panel-administracion/mantenimiento" onClick={closeMenu}>
-            <Wrench />Panel de mantenimiento
-          </Link>
-        )}
 
         {staff?.profile.role === 'BARBER' && (
           <>
@@ -199,9 +193,21 @@ export function SiteHeader() {
         )}
       </div>
 
+      {/* Grupo admin */}
+      {staff?.profile.role === 'ADMIN' && (
+        <>
+          <div className="mobile-menu-divider" role="separator" />
+          <div className="mobile-menu-group">
+            <Link to="/panel-administracion/mantenimiento" onClick={closeMenu}>
+              <Wrench />Panel de mantenimiento
+            </Link>
+          </div>
+        </>
+      )}
+
       <div className="mobile-menu-divider" role="separator" />
 
-      {/* Grupo 3: Legal */}
+      {/* Grupo legales */}
       <div className="mobile-menu-group">
         <Link to="/politica-de-privacidad" onClick={closeMenu}>
           <ShieldCheck />Política de Privacidad

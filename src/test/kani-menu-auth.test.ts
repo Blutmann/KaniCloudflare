@@ -43,11 +43,11 @@ describe('Kani Barber Studio - Menú y Autenticación', () => {
     expect(menuSection).not.toContain('<MapPin />Ubicación');
     expect(menuSection).not.toContain('<Instagram />Instagram');
 
-    // Grupo 2: Panel de administración visible en todos los roles (con o sin sesión)
+    // Grupo barbero: Panel de administración visible en todos los roles (con o sin sesión)
     expect(menuSection).toMatch(/<Link to="\/panel-administracion"[^>]*>[^<]*<CalendarClock \/>\s*Panel de administración\s*<\/Link>/);
 
-    // Panel de mantenimiento — Solo ADMIN
-    expect(menuSection).toMatch(/staff\?\.profile\.role === 'ADMIN' && \(\s*<Link to="\/panel-administracion\/mantenimiento"[^>]*>[^<]*<Wrench \/>\s*Panel de mantenimiento\s*<\/Link>\s*\)/);
+    // Grupo admin: Panel de mantenimiento — Solo ADMIN
+    expect(menuSection).toMatch(/staff\?\.profile\.role === 'ADMIN' && \([\s\S]*?<Link to="\/panel-administracion\/mantenimiento"[^>]*>[^<]*<Wrench \/>\s*Panel de mantenimiento\s*<\/Link>/);
 
     // Opciones operativas (Turnos, Horarios, Pagos, Clientes, Datos) — Solo BARBER
     expect(menuSection).toMatch(/staff\?\.profile\.role === 'BARBER' && \(/);
@@ -57,11 +57,11 @@ describe('Kani Barber Studio - Menú y Autenticación', () => {
     expect(menuSection).toContain('to="/panel-administracion/clientes"');
     expect(menuSection).toContain('to="/panel-administracion/datos"');
 
-    // Grupo 3: Legal — Política de privacidad y Términos y condiciones
+    // Grupo legales: Legal — Política de privacidad y Términos y condiciones
     expect(menuSection).toContain('to="/politica-de-privacidad"');
     expect(menuSection).toContain('to="/terminos-y-condiciones"');
 
-    // Grupo 4: Sesión iniciada con Cerrar sesión
+    // Bloque de cuenta con Cerrar sesión
     expect(menuSection).toMatch(/<LogOut \/>\s*Cerrar sesión\s*<\/button>/);
   });
 
@@ -89,5 +89,34 @@ describe('Kani Barber Studio - Menú y Autenticación', () => {
 
     // No ejecuta consultas de mantenimiento si no es admin
     expect(code).toContain('if (!isAdmin) return;');
+  });
+
+  it('5. Espaciado vertical del menú: sin líneas horizontales, 8px entre opciones, 28-32px entre grupos', () => {
+    const css = fs.readFileSync(stylesPath, 'utf-8');
+
+    // Sin líneas horizontales entre opciones (border-bottom: none)
+    expect(css).toMatch(/\.mobile-menu a\s*\{[^}]*border-bottom:\s*none\s*!important/);
+
+    // Sin líneas horizontales entre grupos (divisores ocultos)
+    expect(css).toMatch(/\.mobile-menu-divider\s*\{[^}]*display:\s*none\s*!important/);
+
+    // Separación moderada de 8px entre opciones del mismo grupo
+    expect(css).toMatch(/\.mobile-menu-group\s*\{[^}]*gap:\s*8px/);
+
+    // Separación considerablemente mayor entre grupos (28-32px, usando 30px)
+    expect(css).toMatch(/\.mobile-menu-group:not\(:empty\)\s*\+\s*\.mobile-menu-group:not\(:empty\)\s*\{[^}]*margin-top:\s*30px/);
+
+    // Bloque de cuenta separado mediante espacio sin líneas
+    expect(css).toMatch(/\.mobile-menu-session\s*\{[^}]*margin-top:\s*30px/);
+    expect(css).toMatch(/\.mobile-menu-session\s*\{[^}]*border-top:\s*none\s*!important/);
+
+    // Área táctil de al menos 44px
+    expect(css).toMatch(/\.mobile-menu a\s*\{[^}]*min-height:\s*(4[4-9]|5[0-9]|6[0-9])px/);
+
+    // Grupos vacíos no ocupan espacio
+    expect(css).toMatch(/\.mobile-menu-group:empty\s*\{[^}]*display:\s*none\s*!important/);
+
+    // Desplazamiento vertical permitido
+    expect(css).toMatch(/\.mobile-menu,\s*nav\.mobile-menu\s*\{[\s\S]*?overflow-y:\s*auto\s*!important/);
   });
 });
