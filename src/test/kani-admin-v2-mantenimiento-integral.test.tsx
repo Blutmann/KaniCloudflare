@@ -75,8 +75,8 @@ describe('KANI BARBER STUDIO — Corrección Integral de la Interfaz de Mantenim
         container = res.container;
       });
       expect(container!.querySelector('.v2-page-title')).not.toBeNull();
-      expect(container!.querySelector('h1#maintenance-title')?.textContent).toBe('Mantenimiento');
-      expect(container!.querySelector('.v2-page-title p:not(.v2-eyebrow)')?.textContent).toBe('Limpieza de registros e historial de disponibilidad.');
+      expect(container!.querySelector('h1#maintenance-title')?.textContent).toBe('Mantenimiento.');
+      expect(container!.querySelector('.v2-page-title p')).toBeNull();
     });
 
     it('organiza la segunda columna colocando Historial de disponibilidad antes que la tarjeta de preservación', async () => {

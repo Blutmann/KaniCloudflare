@@ -513,141 +513,152 @@ export function BenefitCodesAdminSection() {
 
       {/* Modal para Generar Código */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent className="max-w-[calc(100vw-32px)] sm:max-w-lg p-5 sm:p-6 rounded-[var(--radius-card)]">
-          <DialogTitle className="text-lg font-semibold flex items-center gap-2">
-            <Sparkles size={18} className="text-gold" />
-            <span>Generar código de beneficio</span>
-          </DialogTitle>
-          <DialogDescription className="text-xs sm:text-sm text-muted-foreground">
-            Los códigos son de un solo uso y quedan vinculados estrictamente a la reserva y cliente que los utilice.
-          </DialogDescription>
+        <DialogContent
+          overlayClassName="benefit-code-dialog-overlay"
+          className="benefit-code-dialog-content sm:max-w-lg"
+        >
+          <div className="benefit-code-dialog-header">
+            <DialogTitle className="text-lg font-semibold flex items-center gap-2">
+              <Sparkles size={18} className="text-gold" />
+              <span>Generar código de descuento</span>
+            </DialogTitle>
+            <DialogDescription className="sr-only">
+              Generar código de descuento
+            </DialogDescription>
+          </div>
 
           {createdItem ? (
-            <div className="my-4 p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-center space-y-3">
-              <p className="text-xs text-emerald-500 font-semibold uppercase tracking-wider">¡Código generado con éxito!</p>
-              <p className="font-mono text-2xl font-bold tracking-wider text-foreground select-all bg-background py-2 px-3 rounded border border-emerald-500/40">
-                {createdItem.code}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Tipo: <strong className="text-foreground">{BENEFIT_TYPE_DEFINITIONS[createdItem.type].label}</strong>
-              </p>
-              <div className="pt-2 flex justify-center gap-2">
-                <Button
-                  size="sm"
-                  onClick={() => void handleCopy(createdItem.code)}
-                  className="action-brand text-xs min-h-[38px]"
-                >
-                  {copiedCode === createdItem.code ? <Check size={14} className="mr-1" /> : <Copy size={14} className="mr-1" />}
-                  <span>{copiedCode === createdItem.code ? '¡Copiado!' : 'Copiar código'}</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setCreatedItem(null);
-                    setCreateOpen(false);
-                  }}
-                  className="v2-secondary text-xs min-h-[38px]"
-                >
-                  Cerrar
-                </Button>
+            <div className="benefit-code-dialog-scroll-body">
+              <div className="p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-center space-y-3">
+                <p className="text-xs text-emerald-500 font-semibold uppercase tracking-wider">¡Código generado con éxito!</p>
+                <p className="font-mono text-2xl font-bold tracking-wider text-foreground select-all bg-background py-2 px-3 rounded border border-emerald-500/40">
+                  {createdItem.code}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Tipo: <strong className="text-foreground">{BENEFIT_TYPE_DEFINITIONS[createdItem.type].label}</strong>
+                </p>
+                <div className="pt-2 flex justify-center gap-2">
+                  <Button
+                    size="sm"
+                    onClick={() => void handleCopy(createdItem.code)}
+                    className="action-brand text-xs min-h-[38px]"
+                  >
+                    {copiedCode === createdItem.code ? <Check size={14} className="mr-1" /> : <Copy size={14} className="mr-1" />}
+                    <span>{copiedCode === createdItem.code ? '¡Copiado!' : 'Copiar código'}</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setCreatedItem(null);
+                      setCreateOpen(false);
+                    }}
+                    className="v2-secondary text-xs min-h-[38px]"
+                  >
+                    Cerrar
+                  </Button>
+                </div>
               </div>
             </div>
           ) : (
-            <form onSubmit={handleCreate} className="space-y-4 my-2">
-              <div className="space-y-2">
-                <label className="text-xs font-semibold text-foreground block">
-                  Seleccioná el tipo de beneficio:
-                </label>
-                <div className="grid grid-cols-1 gap-2">
-                  {(['NO_DEPOSIT', 'FREE_SERVICE', 'PERCENT_10', 'PERCENT_50'] as const).map((t) => {
-                    const d = BENEFIT_TYPE_DEFINITIONS[t];
-                    const isSelected = selectedType === t;
-                    return (
-                      <label
-                        key={t}
-                        className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
-                          isSelected
-                            ? 'bg-gold/10 border-gold shadow-sm'
-                            : 'bg-background border-border hover:bg-muted/40'
-                        }`}
-                      >
-                        <input
-                          type="radio"
-                          name="benefit_type"
-                          value={t}
-                          checked={isSelected}
-                          onChange={() => setSelectedType(t)}
-                          className="mt-1 accent-gold text-gold"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs sm:text-sm font-semibold text-foreground">{d.label}</span>
-                            <span className="text-[11px] font-semibold text-gold">{d.shortLabel}</span>
+            <form onSubmit={handleCreate} className="benefit-code-dialog-form flex flex-col flex-1 min-h-0">
+              <div className="benefit-code-dialog-scroll-body space-y-4">
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold text-foreground block">
+                    Seleccioná el tipo de beneficio:
+                  </label>
+                  <div className="grid grid-cols-1 gap-2">
+                    {(['NO_DEPOSIT', 'FREE_SERVICE', 'PERCENT_10', 'PERCENT_50'] as const).map((t) => {
+                      const d = BENEFIT_TYPE_DEFINITIONS[t];
+                      const isSelected = selectedType === t;
+                      return (
+                        <label
+                          key={t}
+                          className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                            isSelected
+                              ? 'bg-gold/10 border-gold shadow-sm'
+                              : 'bg-background border-border hover:bg-muted/40'
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="benefit_type"
+                            value={t}
+                            checked={isSelected}
+                            onChange={() => setSelectedType(t)}
+                            className="mt-1 accent-gold text-gold"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs sm:text-sm font-semibold text-foreground">{d.label}</span>
+                              <span className="text-[11px] font-semibold text-gold">{d.shortLabel}</span>
+                            </div>
+                            <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug">{d.description}</p>
                           </div>
-                          <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug">{d.description}</p>
-                        </div>
-                      </label>
-                    );
-                  })}
+                        </label>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-foreground block">
-                  Nota interna (opcional):
-                </label>
-                <Input
-                  value={internalNote}
-                  onChange={(e) => setInternalNote(e.target.value)}
-                  placeholder="Ej: Cortesía por demora, influencer, fidelización cliente…"
-                  className="text-xs bg-background"
-                  maxLength={250}
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-foreground block">
-                  Código personalizado (opcional, dejar en blanco para aleatorio):
-                </label>
-                <Input
-                  value={customCode}
-                  onChange={(e) => setCustomCode(e.target.value.toUpperCase())}
-                  placeholder="Ej: KANI-VIP-2026"
-                  className="text-xs font-mono uppercase bg-background"
-                  maxLength={32}
-                />
-                <span className="text-[11px] text-muted-foreground block">
-                  Si no se especifica, se generará un código único e irrepetible.
-                </span>
-              </div>
-
-              {createError && (
-                <div className="p-2.5 rounded bg-destructive/10 text-destructive text-xs flex items-center gap-2">
-                  <AlertCircle size={14} className="shrink-0" />
-                  <span>{createError}</span>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-foreground block">
+                    Nota interna (opcional):
+                  </label>
+                  <Input
+                    value={internalNote}
+                    onChange={(e) => setInternalNote(e.target.value)}
+                    placeholder="Ej: Cortesía por demora, influencer, fidelización cliente…"
+                    className="text-xs bg-background"
+                    maxLength={250}
+                  />
                 </div>
-              )}
 
-              <DialogFooter className="mt-4 flex flex-col-reverse sm:flex-row gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setCreateOpen(false)}
-                  disabled={creating}
-                  className="v2-secondary min-h-[40px] text-xs"
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={creating}
-                  className="action-brand min-h-[40px] text-xs font-semibold"
-                >
-                  {creating ? <RefreshCw size={14} className="animate-spin mr-1.5" /> : <Sparkles size={14} className="mr-1.5" />}
-                  <span>{creating ? 'Generando…' : 'Crear código'}</span>
-                </Button>
-              </DialogFooter>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-foreground block">
+                    Código personalizado (opcional)
+                  </label>
+                  <Input
+                    value={customCode}
+                    onChange={(e) => setCustomCode(e.target.value.toUpperCase())}
+                    placeholder="Ej: KANI-VIP-2026"
+                    className="text-xs font-mono uppercase bg-background"
+                    maxLength={32}
+                  />
+                  <span className="text-[11px] text-muted-foreground block">
+                    Si no se especifica, se generará un código único e irrepetible.
+                  </span>
+                </div>
+
+                {createError && (
+                  <div className="p-2.5 rounded bg-destructive/10 text-destructive text-xs flex items-center gap-2">
+                    <AlertCircle size={14} className="shrink-0" />
+                    <span>{createError}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="benefit-code-dialog-footer">
+                <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setCreateOpen(false)}
+                    disabled={creating}
+                    className="v2-secondary min-h-[40px] text-xs"
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={creating}
+                    className="action-brand min-h-[40px] text-xs font-semibold"
+                  >
+                    {creating ? <RefreshCw size={14} className="animate-spin mr-1.5" /> : <Sparkles size={14} className="mr-1.5" />}
+                    <span>{creating ? 'Generando…' : 'Crear código'}</span>
+                  </Button>
+                </DialogFooter>
+              </div>
             </form>
           )}
         </DialogContent>
@@ -655,40 +666,49 @@ export function BenefitCodesAdminSection() {
 
       {/* Modal para Desactivar Código */}
       <Dialog open={!!codeToDisable} onOpenChange={(open) => !disabling && !open && setCodeToDisable(null)}>
-        <DialogContent className="max-w-[calc(100vw-32px)] sm:max-w-md p-5 sm:p-6 rounded-[var(--radius-card)]">
-          <DialogTitle className="text-base font-semibold text-foreground flex items-center gap-2">
-            <Ban size={18} className="text-destructive shrink-0" />
-            <span>¿Desactivar código {codeToDisable?.code}?</span>
-          </DialogTitle>
-          <DialogDescription className="text-xs sm:text-sm text-muted-foreground leading-relaxed mt-1.5">
-            El código no podrá volver a ser utilizado por ningún cliente. Esta acción no afecta turnos que ya lo hayan utilizado previamente.
-          </DialogDescription>
+        <DialogContent
+          overlayClassName="benefit-code-dialog-overlay"
+          className="benefit-code-dialog-content sm:max-w-md"
+        >
+          <div className="benefit-code-dialog-header">
+            <DialogTitle className="text-base font-semibold text-foreground flex items-center gap-2">
+              <Ban size={18} className="text-destructive shrink-0" />
+              <span>¿Desactivar código {codeToDisable?.code}?</span>
+            </DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm text-muted-foreground leading-relaxed mt-1.5">
+              El código no podrá volver a ser utilizado por ningún cliente. Esta acción no afecta turnos que ya lo hayan utilizado previamente.
+            </DialogDescription>
+          </div>
 
-          {disableError && (
-            <div className="p-2.5 rounded bg-destructive/10 text-destructive text-xs flex items-center gap-2 mt-2">
-              <AlertCircle size={14} className="shrink-0" />
-              <span>{disableError}</span>
-            </div>
-          )}
+          <div className="benefit-code-dialog-scroll-body">
+            {disableError && (
+              <div className="p-2.5 rounded bg-destructive/10 text-destructive text-xs flex items-center gap-2">
+                <AlertCircle size={14} className="shrink-0" />
+                <span>{disableError}</span>
+              </div>
+            )}
+          </div>
 
-          <DialogFooter className="mt-4 flex flex-col-reverse sm:flex-row gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setCodeToDisable(null)}
-              disabled={disabling}
-              className="v2-secondary min-h-[40px] text-xs"
-            >
-              Cancelar
-            </Button>
-            <Button
-              onClick={handleDisableConfirm}
-              disabled={disabling}
-              className="v2-destructive action-brand min-h-[40px] text-xs font-semibold"
-            >
-              {disabling ? <RefreshCw size={14} className="animate-spin mr-1.5" /> : <Ban size={14} className="mr-1.5" />}
-              <span>{disabling ? 'Desactivando…' : 'Confirmar desactivación'}</span>
-            </Button>
-          </DialogFooter>
+          <div className="benefit-code-dialog-footer">
+            <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setCodeToDisable(null)}
+                disabled={disabling}
+                className="v2-secondary min-h-[40px] text-xs"
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleDisableConfirm}
+                disabled={disabling}
+                className="v2-destructive action-brand min-h-[40px] text-xs font-semibold"
+              >
+                {disabling ? <RefreshCw size={14} className="animate-spin mr-1.5" /> : <Ban size={14} className="mr-1.5" />}
+                <span>{disabling ? 'Desactivando…' : 'Confirmar desactivación'}</span>
+              </Button>
+            </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
     </section>

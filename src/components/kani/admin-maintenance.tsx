@@ -118,9 +118,7 @@ export function AdminMaintenance() {
     <main className="site-container v2-page admin-maintenance-page" aria-labelledby="maintenance-title" role="main">
       <div className="v2-page-title">
         <div>
-          <p className="v2-eyebrow eyebrow">MANTENIMIENTO</p>
-          <h1 id="maintenance-title">Mantenimiento</h1>
-          <p>Limpieza de registros e historial de disponibilidad.</p>
+          <h1 id="maintenance-title">Mantenimiento.</h1>
         </div>
       </div>
 
