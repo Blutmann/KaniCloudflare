@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { ArrowRight, CalendarDays, Clock3, Info, Mail, Phone, Plus } from "lucide-react";
 import { useAdminStaff } from "@/lib/kani-admin-context";
-import { businessDateToday, addCalendarDays, startOfBusinessWeek } from "@/lib/kani-mobile-appointments";
+import { businessDateToday, addCalendarDays, startOfBusinessWeek, isAppointmentPast } from "@/lib/kani-mobile-appointments";
 import { businessTimeNow } from "@/lib/kani-payments";
 import { money, dateLabel, formatRangeLabel, formatAdminV2Date, formatAdminV2Range } from "@/lib/kani-model";
 import { paymentSummary, scopeV2 } from "@/lib/kani-v2";
@@ -317,6 +317,17 @@ export function V2Appointments() {
     if (!selectedNotifDetail || selectedNotifDetail.channel !== "Email") return;
     const apt = selectedNotifDetail.appointment;
     if (!apt) return;
+
+    // Confirmación explícita para turnos pasados confirmados
+    const apptStatus = (apt.statusCode || (apt as any).status || "").toUpperCase();
+    if ((apptStatus === "CONFIRMED" || apptStatus === "CONFIRMADO") && isAppointmentPast(apt.date, apt.startTime || apt.time)) {
+      if (typeof window !== "undefined" && typeof window.confirm === "function") {
+        const proceed = window.confirm(
+          "Este turno corresponde a una fecha u horario que ya transcurrió. ¿Desea confirmar el envío del correo de confirmación de todas formas?"
+        );
+        if (!proceed) return;
+      }
+    }
 
     setRetryingEmail(true);
     setRetryFeedback(null);
@@ -891,37 +902,56 @@ export function V2Appointments() {
               </p>
               {selectedNotifDetail?.channel === "Email" && (
                 <p style={{ marginTop: "6px" }}>
-                  <strong>Destinatario configurado:</strong> {selectedNotifDetail.appointment.clientEmail || "El cliente no posee correo electrónico registrado"}
+                  <strong>Destinatario configurado:</strong> {selectedNotifDetail.appointment.email || (selectedNotifDetail.appointment as any).clientEmail || "El cliente no posee correo electrónico registrado"}
                 </p>
               )}
             </div>
           )}
 
           {/* Avisos explicativos para Email */}
-          {selectedNotifDetail?.channel === "Email" && selectedNotifDetail.appointment && (
-            <>
-              {selectedNotifDetail.appointment.statusCode !== "CONFIRMED" && selectedNotifDetail.appointment.statusCode !== "CANCELLED" && (
-                <div className="v2-note" style={{ marginTop: "12px", borderLeftColor: "#eab308" }}>
-                  El estado actual del turno es <strong>{statusLabels[selectedNotifDetail.appointment.statusCode] || selectedNotifDetail.appointment.statusCode}</strong>. Solo los turnos confirmados o cancelados admiten notificaciones automáticas por correo.
-                </div>
-              )}
-              {(selectedNotifDetail.dispatch?.status === "DELIVERED" || selectedNotifDetail.dispatch?.status === "READ") && (
-                <div className="v2-note" style={{ marginTop: "12px", borderLeftColor: "#10b981" }}>
-                  ✓ La notificación ya fue entregada al destinatario. No se permite el reenvío duplicado.
-                </div>
-              )}
-              {(selectedNotifDetail.dispatch?.status === "SENT" || selectedNotifDetail.dispatch?.status === "PROVIDER_ACCEPTED") && (
-                <div className="v2-note" style={{ marginTop: "12px", borderLeftColor: "#0ea5e9" }}>
-                  ℹ El correo ya fue aceptado por el proveedor (Resend) y se encuentra en tránsito. Para evitar mensajes duplicados, no se permite un nuevo despacho mientras esté en curso.
-                </div>
-              )}
-              {selectedNotifDetail.dispatch?.status === "PROCESSING" && (
-                <div className="v2-note" style={{ marginTop: "12px", borderLeftColor: "#0ea5e9" }}>
-                  ⏳ Existe una solicitud de envío en procesamiento para este canal.
-                </div>
-              )}
-            </>
-          )}
+          {selectedNotifDetail?.channel === "Email" && selectedNotifDetail.appointment && (() => {
+            const appt = selectedNotifDetail.appointment;
+            const apptStatus = (appt.statusCode || (appt as any).status || "").toUpperCase();
+            const isConfirmed = apptStatus === "CONFIRMED" || apptStatus === "CONFIRMADO";
+            const isCancelled = apptStatus === "CANCELLED" || apptStatus === "CANCELADO";
+            const isPast = isAppointmentPast(appt.date, appt.startTime || appt.time);
+            const clientEmail = appt.email || (appt as any).clientEmail || selectedNotifDetail.dispatch?.recipient;
+
+            return (
+              <>
+                {!isConfirmed && !isCancelled && (
+                  <div className="v2-note" style={{ marginTop: "12px", borderLeftColor: "#eab308" }}>
+                    El estado actual del turno es <strong>{statusLabels[appt.statusCode] || appt.statusCode || "Pendiente"}</strong>. Solo los turnos confirmados o cancelados admiten notificaciones automáticas por correo.
+                  </div>
+                )}
+                {isPast && isConfirmed && (
+                  <div className="v2-note" style={{ marginTop: "12px", borderLeftColor: "#eab308" }}>
+                    ⚠️ <strong>Turno pasado:</strong> Este turno corresponde a una fecha u horario que ya transcurrió ({dateLabel(appt.date || "")} a las {(appt.startTime || appt.time || "").slice(0, 5)} hs). Para no generar confusión al cliente, no se envían confirmaciones retrospectivas para turnos que ya ocurrieron.
+                  </div>
+                )}
+                {!clientEmail && (isConfirmed || isCancelled) && (
+                  <div className="v2-note" style={{ marginTop: "12px", borderLeftColor: "#ef4444" }}>
+                    El cliente no posee un correo electrónico registrado. Para despachar la notificación, edite el turno o complete su correo en Clientes.
+                  </div>
+                )}
+                {(selectedNotifDetail.dispatch?.status === "DELIVERED" || selectedNotifDetail.dispatch?.status === "READ") && (
+                  <div className="v2-note" style={{ marginTop: "12px", borderLeftColor: "#10b981" }}>
+                    ✓ La notificación ya fue entregada al destinatario. No se permite el reenvío duplicado.
+                  </div>
+                )}
+                {(selectedNotifDetail.dispatch?.status === "SENT" || selectedNotifDetail.dispatch?.status === "PROVIDER_ACCEPTED") && (
+                  <div className="v2-note" style={{ marginTop: "12px", borderLeftColor: "#0ea5e9" }}>
+                    ℹ El correo ya fue aceptado por el proveedor (Resend) y se encuentra en tránsito. Para evitar mensajes duplicados, no se permite un nuevo despacho mientras esté en curso.
+                  </div>
+                )}
+                {selectedNotifDetail.dispatch?.status === "PROCESSING" && (
+                  <div className="v2-note" style={{ marginTop: "12px", borderLeftColor: "#0ea5e9" }}>
+                    ⏳ Existe una solicitud de envío en procesamiento para este canal.
+                  </div>
+                )}
+              </>
+            );
+          })()}
 
           {/* Banner de retroalimentación de reintento */}
           {retryFeedback && (
@@ -948,22 +978,37 @@ export function V2Appointments() {
             <button className="v2-secondary" onClick={() => setSelectedNotifDetail(null)}>
               Cerrar
             </button>
-            {selectedNotifDetail?.channel === "Email" &&
-              selectedNotifDetail.appointment &&
-              (selectedNotifDetail.appointment.statusCode === "CONFIRMED" || selectedNotifDetail.appointment.statusCode === "CANCELLED") &&
-              selectedNotifDetail.dispatch?.status !== "SENT" &&
-              selectedNotifDetail.dispatch?.status !== "PROVIDER_ACCEPTED" &&
-              selectedNotifDetail.dispatch?.status !== "DELIVERED" &&
-              selectedNotifDetail.dispatch?.status !== "READ" &&
-              selectedNotifDetail.dispatch?.status !== "PROCESSING" && (
+            {(() => {
+              if (selectedNotifDetail?.channel !== "Email" || !selectedNotifDetail.appointment) return null;
+              const appt = selectedNotifDetail.appointment;
+              const apptStatus = (appt.statusCode || (appt as any).status || "").toUpperCase();
+              const isConfirmed = apptStatus === "CONFIRMED" || apptStatus === "CONFIRMADO";
+              const isCancelled = apptStatus === "CANCELLED" || apptStatus === "CANCELADO";
+              const isPast = isAppointmentPast(appt.date, appt.startTime || appt.time);
+              const clientEmail = appt.email || (appt as any).clientEmail || selectedNotifDetail.dispatch?.recipient;
+
+              // Disponible para confirmados y cancelados (incluso registros antiguos o sin despacho previo)
+              const isEligible = isConfirmed || isCancelled;
+              const isAlreadyDispatched =
+                selectedNotifDetail.dispatch?.status === "SENT" ||
+                selectedNotifDetail.dispatch?.status === "PROVIDER_ACCEPTED" ||
+                selectedNotifDetail.dispatch?.status === "DELIVERED" ||
+                selectedNotifDetail.dispatch?.status === "READ" ||
+                selectedNotifDetail.dispatch?.status === "PROCESSING";
+
+              if (!isEligible || isAlreadyDispatched) return null;
+
+              return (
                 <button
                   className="v2-primary"
-                  disabled={retryingEmail}
+                  disabled={retryingEmail || !clientEmail}
                   onClick={handleRetryEmailModal}
+                  title={!clientEmail ? "El cliente no tiene correo electrónico registrado" : "Reintentar envío de notificación por correo"}
                 >
                   {retryingEmail ? "Enviando…" : "Reintentar envío"}
                 </button>
-              )}
+              );
+            })()}
           </div>
         </DialogContent>
       </Dialog>

@@ -2,6 +2,7 @@ import { createServerFn, createServerOnlyFn } from "@tanstack/react-start";
 import { notificationSubject } from './kani-email-environment';
 import { KANI_MAPS_URL, KANI_STANDARD_DEPOSIT_ARS, KANI_PUBLIC_WHATSAPP_URL, KANI_STUDIO_FULL_ADDRESS } from './kani-constants';
 import { buildTurnoIcsUrl } from './kani-calendar-ics';
+import { isAppointmentPast } from './kani-mobile-appointments';
 
 import type { Database } from "@/integrations/supabase/types";
 
@@ -647,6 +648,15 @@ export async function retryNotificationChannel(input: {
 
     if (currentAptStatus === "CONFIRMED") {
       targetNotificationType = "CONFIRMED";
+      // Turnos pasados: no enviar confirmaciones obsoletas a menos que lo autorice un administrador explícitamente
+      if (input.channel === "EMAIL" && aptData.booking_date && isAppointmentPast(aptData.booking_date, aptData.start_time) && staffProfile?.role !== "ADMIN") {
+        return {
+          success: false,
+          channel: input.channel,
+          status: "SKIPPED",
+          error: "PAST_APPOINTMENT_CONFIRMATION_BLOCKED: El turno corresponde a una fecha u horario pasado. Por política de calidad, solo un administrador puede autorizar notificaciones retrospectivas.",
+        };
+      }
     } else if (currentAptStatus === "CANCELLED") {
       targetNotificationType = "CANCELLED";
     } else if (currentAptStatus === "PENDING") {

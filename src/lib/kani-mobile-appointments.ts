@@ -60,6 +60,24 @@ export function businessDateToday(now = new Date()) {
   }).formatToParts(now));
 }
 
+/** Determina si una fecha y horario de turno ya transcurrieron en el huso de Argentina */
+export function isAppointmentPast(bookingDate?: string | null, startTime?: string | null): boolean {
+  if (!bookingDate) return false;
+  const today = businessDateToday();
+  if (bookingDate < today) return true;
+  if (bookingDate > today) return false;
+  const now = new Date();
+  const timeFormatter = new Intl.DateTimeFormat('en-GB', {
+    timeZone: BUSINESS_TIME_ZONE,
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
+  const currentArgTime = timeFormatter.format(now);
+  const apptTime = (startTime || '23:59').slice(0, 5);
+  return apptTime < currentArgTime;
+}
+
 export function addCalendarDays(date: string, amount: number) {
   const value = new Date(`${date}T00:00:00Z`);
   value.setUTCDate(value.getUTCDate() + amount);

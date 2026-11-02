@@ -453,4 +453,57 @@ describe("Kani — Reintentos de notificaciones de email desde panel administrat
     expect(resForbidden.success).toBe(false);
     expect(resForbidden.error).toContain("ACCESS_DENIED");
   });
+
+  it("10. Validación: Turnos pasados solo permiten confirmación con rol ADMIN", async () => {
+    mockSelectFromDispatches.mockResolvedValue({ data: null, error: null });
+    mockSelectFromAppointments.mockResolvedValue({
+      data: {
+        ...defaultAppointment,
+        booking_date: "2026-10-25",
+        start_time: "10:00:00",
+        status: "CONFIRMED",
+      },
+      error: null,
+    });
+
+    // 10.1 Barbero intenta confirmar turno pasado -> bloqueado
+    mockSelectFromStaffProfiles.mockResolvedValue({
+      data: { role: "BARBER", barber_id: barberId, active: true },
+      error: null,
+    });
+
+    const fetchSpy = vi.fn();
+    globalThis.fetch = fetchSpy as any;
+
+    const resultBarber = await retryNotificationChannel({
+      appointmentId: baseAppointmentId,
+      channel: "EMAIL",
+      token: "barber-token",
+    });
+
+    expect(resultBarber.success).toBe(false);
+    expect(resultBarber.status).toBe("SKIPPED");
+    expect(resultBarber.error).toContain("PAST_APPOINTMENT_CONFIRMATION_BLOCKED");
+    expect(fetchSpy).not.toHaveBeenCalled();
+
+    // 10.2 ADMIN autorizado -> permitido
+    mockSelectFromStaffProfiles.mockResolvedValue({
+      data: { role: "ADMIN", barber_id: null, active: true },
+      error: null,
+    });
+    fetchSpy.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ id: "resend-admin-past-id" }),
+    });
+
+    const resultAdmin = await retryNotificationChannel({
+      appointmentId: baseAppointmentId,
+      channel: "EMAIL",
+      token: "valid-admin-token",
+    });
+
+    expect(resultAdmin.success).toBe(true);
+    expect(resultAdmin.status).toBe("SENT");
+  });
 });

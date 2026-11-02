@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { businessDateToday } from "@/lib/kani-mobile-appointments";
+import { businessDateToday, addCalendarDays } from "@/lib/kani-mobile-appointments";
 
 const mockStaff = vi.hoisted(() => ({
   role: "ADMIN" as "ADMIN" | "BARBER",
@@ -85,8 +85,8 @@ describe("Diagnóstico de notificación: Modal y acción de reintento en UI", ()
       clientId: "c-1",
       barberId: "b1",
       date: businessDateToday(),
-      time: "15:00",
-      startTime: "15:00:00",
+      time: "23:59",
+      startTime: "23:59:00",
       name: "Juan Pérez",
       phone: "1122334455",
       clientEmail: "juan@example.com",
@@ -127,8 +127,8 @@ describe("Diagnóstico de notificación: Modal y acción de reintento en UI", ()
       clientId: "c-1",
       barberId: "b1",
       date: businessDateToday(),
-      time: "16:00",
-      startTime: "16:00:00",
+      time: "23:59",
+      startTime: "23:59:00",
       name: "Esteban Quito",
       phone: "1199887766",
       clientEmail: "esteban@example.com",
@@ -192,8 +192,8 @@ describe("Diagnóstico de notificación: Modal y acción de reintento en UI", ()
       clientId: "c-1",
       barberId: "b1",
       date: businessDateToday(),
-      time: "17:00",
-      startTime: "17:00:00",
+      time: "23:59",
+      startTime: "23:59:00",
       name: "Carlos Error",
       phone: "1155443322",
       clientEmail: "carlos@example.com",
@@ -237,8 +237,8 @@ describe("Diagnóstico de notificación: Modal y acción de reintento en UI", ()
       clientId: "c-1",
       barberId: "b1",
       date: businessDateToday(),
-      time: "18:00",
-      startTime: "18:00:00",
+      time: "23:59",
+      startTime: "23:59:00",
       name: "Mariano Sent",
       phone: "1144332211",
       clientEmail: "mariano@example.com",
@@ -274,8 +274,8 @@ describe("Diagnóstico de notificación: Modal y acción de reintento en UI", ()
       clientId: "c-1",
       barberId: "b1",
       date: businessDateToday(),
-      time: "19:00",
-      startTime: "19:00:00",
+      time: "23:59",
+      startTime: "23:59:00",
       name: "Pedro Pendiente",
       phone: "1166778899",
       clientEmail: "pedro@example.com",
@@ -294,5 +294,59 @@ describe("Diagnóstico de notificación: Modal y acción de reintento en UI", ()
 
     expect(screen.getByText(/Solo los turnos confirmados o cancelados admiten notificaciones automáticas por correo/i)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Reintentar envío" })).toBeNull();
+  });
+  it("6. Turno confirmado pasado: muestra advertencia de turno pasado, muestra botón y requiere confirmación explícita", async () => {
+    mockAppointments.push({
+      id: "apt-past-confirmed",
+      clientId: "c-1",
+      barberId: "b1",
+      date: businessDateToday(),
+      time: "08:00",
+      startTime: "08:00:00",
+      name: "Pedro Pasado",
+      phone: "1100000000",
+      clientEmail: "pedro@example.com",
+      serviceName: "Corte",
+      servicePrice: 25000,
+      barber: "Lautaro",
+      statusCode: "CONFIRMED",
+      depositPaid: true,
+      dispatches: undefined,
+    });
+
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
+
+    mockRetryServerFn.mockResolvedValue({
+      success: true,
+      status: "SENT",
+      providerMessageId: "resend-past-ok",
+      message: "Correo aceptado por Resend",
+      dispatch: {
+        id: "disp-past-ok",
+        appointmentId: "apt-past-confirmed",
+        channel: "EMAIL",
+        status: "SENT",
+      },
+    });
+
+    render(<V2Appointments />);
+
+    const emailPill = screen.getByRole("button", { name: /diagnóstico email: email: pendiente/i });
+    fireEvent.click(emailPill);
+
+    // Debe mostrar la advertencia de turno pasado
+    expect(screen.getByText(/Turno pasado/i)).toBeInTheDocument();
+
+    // El botón SÍ está presente (no se oculta)
+    const retryBtn = screen.getByRole("button", { name: "Reintentar envío" });
+    expect(retryBtn).toBeInTheDocument();
+
+    fireEvent.click(retryBtn);
+
+    // Debe pedir confirmación explícita al usuario
+    expect(confirmSpy).toHaveBeenCalled();
+    await waitFor(() => {
+      expect(mockRetryServerFn).toHaveBeenCalled();
+    });
   });
 });
