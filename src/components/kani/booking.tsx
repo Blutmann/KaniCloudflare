@@ -1,5 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
-import { Check, Clock3, CalendarDays, UserRound, Users, ChevronLeft, ChevronRight, ArrowLeft, CircleAlert, MapPin, Instagram } from 'lucide-react';
+import { Check, Clock3, CalendarDays, UserRound, Users, ChevronLeft, ChevronRight, ArrowLeft, CircleAlert, MapPin, Instagram, Tag, Loader2 } from 'lucide-react';
+import { validateBenefitCodeQuoteFn } from '@/lib/kani-benefit-codes.functions';
+import type { BenefitQuote } from '@/lib/kani-benefit-codes';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { services, barbers, serviceFor, money, bookingEndDateFor, parseDate, isoDate, dateLabel, isBookingDate, getEffectiveServicePrice, barberInstagramHandles, type ServiceId, type Barber, type Appointment } from '@/lib/kani-model';
@@ -23,6 +25,8 @@ type ContactValues = { name: string; email: string; phone: string; notes: string
 export type BookingPaymentDraft = {
   barber: Barber; serviceName: string; date: string; time: string;
   name: string; email: string; phone: string; notes: string;
+  benefitCode?: string;
+  benefitQuote?: BenefitQuote;
 };
 type FieldStatus = 'idle' | 'valid' | 'invalid';
 
@@ -120,6 +124,42 @@ export function Booking({
   const [contact, setContact] = useState(() => initialContact ?? { name: '', email: '', phone: '', notes: '' });
   const [touched, setTouched] = useState<Record<ContactField, boolean>>({ name: false, phone: false, email: false, notes: false });
   const [phoneCountry, setPhoneCountry] = useState<PhoneCountry>('AR');
+  const [benefitCodeInput, setBenefitCodeInput] = useState('');
+  const [appliedBenefit, setAppliedBenefit] = useState<BenefitQuote | null>(null);
+  const [benefitValidationLoading, setBenefitValidationLoading] = useState(false);
+  const [benefitErrorMessage, setBenefitErrorMessage] = useState<string | null>(null);
+
+  const applyBenefitCode = useCallback(async () => {
+    const raw = benefitCodeInput.trim();
+    if (!raw) return;
+    setBenefitValidationLoading(true);
+    setBenefitErrorMessage(null);
+    try {
+      const quote = await validateBenefitCodeQuoteFn({
+        data: {
+          code: raw,
+          serviceName: selected?.name ?? (service ? serviceFor(service).name : 'Corte'),
+          barber: barber ?? undefined,
+        },
+      });
+      if (quote.valid) {
+        setAppliedBenefit(quote);
+        setBenefitErrorMessage(null);
+      } else {
+        setBenefitErrorMessage(quote.message || 'Código inválido o no disponible.');
+      }
+    } catch (err: any) {
+      setBenefitErrorMessage(err?.message || 'Error al validar el código.');
+    } finally {
+      setBenefitValidationLoading(false);
+    }
+  }, [benefitCodeInput, selected, service, barber]);
+
+  const removeBenefitCode = useCallback(() => {
+    setAppliedBenefit(null);
+    setBenefitCodeInput('');
+    setBenefitErrorMessage(null);
+  }, []);
   const [pendingAppointment, setPendingAppointment] = useState<{ id: string; requestNumber: number; expiresAt: number } | null>(null);
   const [returnStatus, setReturnStatus] = useState<'IDLE' | 'LOADING' | 'CONFIRMED' | 'PENDING' | 'CANCELLED'>('IDLE');
   const [returnedAppointment, setReturnedAppointment] = useState<{
@@ -332,9 +372,12 @@ export function Booking({
       });
     }
   }, []);
-  const depositArs = 5000;
+  const normalDepositArs = 5000;
   const effectiveServicePrice = selected ? getEffectiveServicePrice(selected.id, barber) : 0;
-  const remainingPaymentArs = selected ? Math.max(0, effectiveServicePrice - depositArs) : 0;
+  const depositArs = appliedBenefit ? appliedBenefit.onlineDepositArs : normalDepositArs;
+  const remainingPaymentArs = appliedBenefit
+    ? appliedBenefit.inPersonBalanceArs
+    : (selected ? Math.max(0, effectiveServicePrice - depositArs) : 0);
   const hasSpecialPrice = barber === 'Franco';
   const todayValue = businessToday;
   const bookingEndValue = bookingEndDateFor(todayValue);
@@ -490,7 +533,9 @@ export function Booking({
       try {
         await onPaymentRequest({ barber, serviceName: selected?.name ?? serviceFor(service).name,
           date, time, name: contact.name.trim(), phone: normalizedPhone.e164,
-          email: contact.email.trim(), notes: contact.notes });
+          email: contact.email.trim(), notes: contact.notes,
+          benefitCode: appliedBenefit?.code,
+          benefitQuote: appliedBenefit ?? undefined });
       } catch {
         setError('No pudimos iniciar el pago. Tus datos no se perdieron.');
       } finally {
@@ -1114,6 +1159,77 @@ export function Booking({
 
             {(step === 5 || (isV2 || isFiveSteps) && step === 4) && (
               <div className="booking-summary-cards space-y-2 sm:space-y-3.5">
+                {/* Bloque de Código de Beneficio / Descuento */}
+                <div className="booking-summary-card booking-benefit-section rounded-lg border border-border bg-card/60 p-3 sm:p-3.5 space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                      <Tag size={13} className="text-gold" /> Código de beneficio
+                    </span>
+                    {appliedBenefit && (
+                      <span className="text-xs text-emerald-500 font-medium flex items-center gap-1">
+                        <Check size={12} /> Aplicado
+                      </span>
+                    )}
+                  </div>
+
+                  {!appliedBenefit ? (
+                    <div className="flex items-center gap-2">
+                      <Input
+                        placeholder="Ej: KANI-XXXX-XXXX"
+                        value={benefitCodeInput}
+                        onChange={(e) => {
+                          setBenefitCodeInput(e.target.value.toUpperCase());
+                          setBenefitErrorMessage(null);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            applyBenefitCode();
+                          }
+                        }}
+                        className="font-mono text-sm tracking-wide uppercase h-9 bg-background/80"
+                        disabled={benefitValidationLoading}
+                        aria-label="Ingresar código de beneficio o descuento"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={applyBenefitCode}
+                        disabled={!benefitCodeInput.trim() || benefitValidationLoading}
+                        className="h-9 px-3.5 shrink-0 font-medium"
+                      >
+                        {benefitValidationLoading ? <Loader2 size={14} className="animate-spin" /> : 'Aplicar'}
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between gap-2 bg-emerald-500/10 border border-emerald-500/30 rounded-md px-3 py-2">
+                      <div className="min-w-0">
+                        <span className="font-mono font-bold text-xs text-emerald-400 block tracking-wider">
+                          {appliedBenefit.code}
+                        </span>
+                        <span className="text-xs text-muted-foreground block truncate">
+                          {appliedBenefit.label}
+                        </span>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={removeBenefitCode}
+                        className="h-7 px-2 text-xs text-muted-foreground hover:text-destructive hover:bg-transparent"
+                      >
+                        Quitar
+                      </Button>
+                    </div>
+                  )}
+
+                  {benefitErrorMessage && (
+                    <p role="alert" className="text-xs text-destructive mt-1 font-medium">
+                      {benefitErrorMessage}
+                    </p>
+                  )}
+                </div>
                 {/* Card 1: Datos personales compactada */}
                 {isV1 && <section className="booking-summary-card summary-client-card" aria-label="Datos personales">
                   <div className="summary-card-header flex items-center justify-between gap-3">
@@ -1164,28 +1280,67 @@ export function Booking({
                   </dl>
                 </section>
 
-                {/* Card 3: Card de importes compactada */}
+                {/* Card 3: Card de importes compactada con desglose inmutable */}
                 <section className={`${isV2 || isFiveSteps ? '' : 'booking-summary-card '}summary-pricing-card`} aria-label="Importes">
                   <dl className="summary-pricing-list flex flex-col gap-1.5 sm:gap-2.5 text-xs sm:text-sm">
                     <div className="summary-pricing-row flex justify-between items-baseline gap-3 sm:gap-4">
                       <dt className="summary-pricing-label text-muted-foreground">
-                        Precio total del servicio
+                        Precio original del servicio
                         {hasSpecialPrice && (
                           <span className="block text-[11px] text-gold font-medium">Precio especial con Franco</span>
                         )}
                       </dt>
-                      <dd className="summary-pricing-value font-semibold text-foreground text-right">{money(effectiveServicePrice)}</dd>
+                      <dd className="summary-pricing-value font-semibold text-foreground text-right">
+                        {money(appliedBenefit ? appliedBenefit.originalPriceArs : effectiveServicePrice)}
+                      </dd>
                     </div>
+
+                    {appliedBenefit && appliedBenefit.discountAmountArs > 0 && (
+                      <div className="summary-pricing-row flex justify-between items-baseline gap-3 sm:gap-4 text-emerald-500">
+                        <dt className="summary-pricing-label font-medium">Descuento ({appliedBenefit.label})</dt>
+                        <dd className="summary-pricing-value font-semibold text-right">
+                          −{money(appliedBenefit.discountAmountArs)}
+                        </dd>
+                      </div>
+                    )}
+
+                    {appliedBenefit && (
+                      <div className="summary-pricing-row flex justify-between items-baseline gap-3 sm:gap-4">
+                        <dt className="summary-pricing-label text-muted-foreground">Total final</dt>
+                        <dd className="summary-pricing-value font-semibold text-foreground text-right">
+                          {money(appliedBenefit.finalPriceArs)}
+                        </dd>
+                      </div>
+                    )}
+
                     <div className="summary-pricing-row flex justify-between items-baseline gap-3 sm:gap-4">
-                      <dt className="summary-pricing-label text-muted-foreground">Importe de la seña</dt>
-                      <dd className="summary-pricing-value font-semibold text-gold text-right">{money(depositArs)}</dd>
+                      <dt className="summary-pricing-label text-muted-foreground">
+                        {appliedBenefit?.type === 'NO_DEPOSIT' ? 'Seña online' : 'Importe de la seña'}
+                      </dt>
+                      <dd className="summary-pricing-value font-semibold text-gold text-right">
+                        {appliedBenefit?.type === 'NO_DEPOSIT' ? 'No requerida ($0)' : money(depositArs)}
+                      </dd>
                     </div>
+
                     <div className="summary-pricing-row flex justify-between items-baseline gap-3 sm:gap-4">
                       <dt className="summary-pricing-label text-muted-foreground">Saldo a pagar en el local</dt>
-                      <dd className="summary-pricing-value font-semibold text-foreground text-right">{money(remainingPaymentArs)}</dd>
+                      <dd className="summary-pricing-value font-semibold text-foreground text-right">
+                        {money(remainingPaymentArs)}
+                      </dd>
                     </div>
                   </dl>
-                  {remainingPaymentArs === 0 && (
+
+                  {appliedBenefit?.type === 'NO_DEPOSIT' && (
+                    <p className="summary-payment-note mt-2 text-xs text-muted-foreground">
+                      Reserva sin seña. Abonás el total de {money(remainingPaymentArs)} en el local.
+                    </p>
+                  )}
+                  {appliedBenefit?.type === 'FREE_SERVICE' && (
+                    <p className="summary-payment-note mt-2 text-xs text-emerald-400 font-medium">
+                      Servicio 100% bonificado. Total a abonar: $0.
+                    </p>
+                  )}
+                  {!appliedBenefit && remainingPaymentArs === 0 && (
                     <p className="summary-payment-note mt-1.5 text-xs text-muted-foreground">La seña cubre el total del servicio.</p>
                   )}
                 </section>
@@ -1195,7 +1350,7 @@ export function Booking({
                 {/* 4. Aviso de reserva pendiente en container propio */}
                 <div className="booking-summary-card summary-pending-notice summary-card-notice flex items-center gap-2.5 text-xs sm:text-sm" role="note">
                   <Clock3 size={15} className="shrink-0" aria-hidden="true" />
-                  <p className="m-0 leading-normal">Tu turno se confirma cuando se acredita la seña.</p>
+                  <p className="m-0 leading-normal">{appliedBenefit?.skipOnlinePayment ? "Tu turno se confirma directamente. No requiere pago de seña online." : "Tu turno se confirma cuando se acredita la seña."}</p>
                 </div>
 
                 {/* Texto legal informativo antes del pago */}
@@ -1248,7 +1403,9 @@ export function Booking({
                 ? (isPaymentChecking
                     ? 'Comprobando pago…'
                     : submitting
-                    ? 'Preparando pago seguro…'
+                    ? (appliedBenefit?.skipOnlinePayment ? 'Confirmando reserva…' : 'Preparando pago seguro…')
+                    : appliedBenefit?.skipOnlinePayment
+                    ? 'Reservar turno'
                     : paymentActionLabel ?? (isV5 ? `Pagar seña ${money(depositArs)}` : 'Pagar seña'))
                 : 'Continuar'}
             </Button>

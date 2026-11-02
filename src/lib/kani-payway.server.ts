@@ -1,9 +1,12 @@
-import { arsToPaywayAmount, isPaywayApiBase, isPaywaySandboxBase, isPaywayProductionBase, normalizePaywayBaseUrl, PAYWAY_MESSAGES, validatePaywayPayment,
+import { arsToPaywayAmount, isPaywayApiBase, isPaywayAllowedBase, isPaywaySandboxBase, isPaywayProductionBase, normalizePaywayBaseUrl, PAYWAY_MESSAGES, validatePaywayPayment,
   type PaywayDraft, type PaywayPaymentInput, type PaywayPreparation, type PaywayResult } from './kani-payway';
 
 type EnvironmentReader = (name: string) => string | undefined;
+export type PaywayEnvironment = 'sandbox' | 'production';
+
 export type PaywayConfig = {
   apiBaseUrl: string; publicKey: string; privateKey: string; siteId: string;
+  environment?: PaywayEnvironment;
   methods: { id: number; label: string }[];
 };
 
@@ -21,9 +24,9 @@ export function readPaywayConfig(env: EnvironmentReader): PaywayConfig | null {
     && (env('PAYWAY_CHECKOUT_SECRET')?.length ?? 0) >= 32
     && isPaywayProductionBase(apiBaseUrl);
   if (!sandbox && !production) return null;
-  const publicKey = env('PAYWAY_PUBLIC_API_KEY');
-  const privateKey = env('PAYWAY_PRIVATE_API_KEY');
-  const siteId = env('PAYWAY_SITE_ID');
+  const publicKey = env('PAYWAY_PRODUCTION_PUBLIC_KEY') || env('PAYWAY_PUBLIC_API_KEY') || env('PAYWAY_PUBLIC_KEY');
+  const privateKey = env('PAYWAY_PRODUCTION_PRIVATE_KEY') || env('PAYWAY_PRIVATE_API_KEY') || env('PAYWAY_PRIVATE_KEY');
+  const siteId = env('PAYWAY_PRODUCTION_SITE_ID') || env('PAYWAY_SITE_ID');
   if (!publicKey || !privateKey || !siteId || !/^\d{1,20}$/.test(siteId)) return null;
   try {
     const methods: PaywayConfig['methods'] = JSON.parse(env('PAYWAY_PAYMENT_METHODS') ?? '[]');

@@ -1,4 +1,4 @@
-import { isPaywayApiBase, normalizePaywayBaseUrl, type PaywayCheckout } from './kani-payway';
+import { isPaywayApiBase, isPaywayAllowedBase, normalizePaywayBaseUrl, type PaywayCheckout } from './kani-payway';
 
 /** Card values remain in the DOM and in this short-lived request only. No state,
  * storage, telemetry, error payloads or calls to Kani contain PAN/CVV.

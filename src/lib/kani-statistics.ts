@@ -449,9 +449,17 @@ export function computeFinancialControl(appointments: RealAppointment[]): Financ
   };
 
   for (const apt of appointments) {
-    const servicePrice = apt.servicePrice || 0;
-    const depositAmount = getAppointmentDepositAmount(apt);
-    const hasDepositPaid = Boolean(apt.depositPaid);
+    const rawServicePrice = apt.servicePrice || 0;
+    const isFree = apt.benefitType === 'FREE_SERVICE';
+    const isNoDeposit = apt.benefitType === 'NO_DEPOSIT';
+    const finalServicePrice = isFree
+      ? 0
+      : apt.benefitFinalPriceArs != null
+      ? apt.benefitFinalPriceArs
+      : rawServicePrice;
+
+    const depositAmount = isFree || isNoDeposit ? 0 : getAppointmentDepositAmount(apt);
+    const hasDepositPaid = Boolean(apt.depositPaid) && !isFree && !isNoDeposit;
     const effectiveDeposit = hasDepositPaid ? depositAmount : 0;
 
     // A. Señas cobradas: dinero efectivamente recibido por señas de turnos
@@ -460,28 +468,39 @@ export function computeFinancialControl(appointments: RealAppointment[]): Financ
       summary.depositsCollected.count += 1;
     }
 
-    // B. Cobros pendientes: saldo pendiente de los turnos vigentes que todavía no se ejecutaron y que ya tienen una seña abonada.
-    // Saldo pendiente = importe total del servicio − seña efectivamente recibida.
-    // Excluye cancelaciones (CANCELLED), inasistencias (NO_SHOW), ejecutados (COMPLETED) y turnos sin seña recibida.
-    if (apt.statusCode === 'CONFIRMED' && hasDepositPaid) {
-      const remainingBalance = Math.max(0, servicePrice - effectiveDeposit);
-      summary.pendingBalances.totalArs += remainingBalance;
-      summary.pendingBalances.count += 1;
+    // B. Cobros pendientes:
+    // Saldo pendiente de turnos vigentes que todavía no se ejecutaron.
+    // Para turnos con seña abonada: saldo pendiente = finalServicePrice - effectiveDeposit.
+    // Para turnos SIN SEÑA (NO_DEPOSIT): total completo del servicio pendiente en el local.
+    // Excluye cancelaciones (CANCELLED), inasistencias (NO_SHOW) y ejecutados (COMPLETED).
+    if (apt.statusCode === 'CONFIRMED') {
+      if (hasDepositPaid) {
+        const remainingBalance = Math.max(0, finalServicePrice - effectiveDeposit);
+        summary.pendingBalances.totalArs += remainingBalance;
+        summary.pendingBalances.count += 1;
+      } else if (isNoDeposit) {
+        summary.pendingBalances.totalArs += finalServicePrice;
+        summary.pendingBalances.count += 1;
+      }
     }
 
-    // C. Total cobrado por servicios ejecutados: importe total de servicios efectivamente realizados y cobrados
+    // C. Total cobrado por servicios ejecutados: importe total de servicios efectivamente realizados y cobrados.
+    // Las cancelaciones (CANCELLED) nunca cuentan como servicios realizados ni cobranzas.
     if (apt.statusCode === 'COMPLETED') {
       summary.completedServices.count += 1;
-      summary.completedServices.totalServiceValueArs += servicePrice;
-
-      // Si balancePaid no es false, el servicio está totalmente cobrado (saldo + seña = total servicio)
-      const isBalancePaid = apt.balancePaid !== false;
-      if (isBalancePaid) {
-        summary.completedServices.totalCollectedArs += servicePrice;
+      if (isFree) {
+        // Servicio bonificado al 100%: impacto económico cero
+        summary.completedServices.totalServiceValueArs += 0;
+        summary.completedServices.totalCollectedArs += 0;
       } else {
-        // Servicio ejecutado con saldo impago: solo se contabiliza lo efectivamente recibido (la seña) y se diferencia el saldo impago
-        summary.completedServices.totalCollectedArs += effectiveDeposit;
-        summary.completedServices.unpaidBalanceArs += Math.max(0, servicePrice - effectiveDeposit);
+        summary.completedServices.totalServiceValueArs += finalServicePrice;
+        const isBalancePaid = apt.balancePaid !== false;
+        if (isBalancePaid) {
+          summary.completedServices.totalCollectedArs += finalServicePrice;
+        } else {
+          summary.completedServices.totalCollectedArs += effectiveDeposit;
+          summary.completedServices.unpaidBalanceArs += Math.max(0, finalServicePrice - effectiveDeposit);
+        }
       }
     }
 
@@ -691,10 +710,19 @@ export function computeServiceDemand(appointments: RealAppointment[]): ServiceDe
 
   for (const appointment of appointments) {
     const serviceName = appointment.serviceName || appointment.service || 'Otro';
-    const price = appointment.servicePrice || 0;
+    const rawPrice = appointment.servicePrice || 0;
+    const finalPrice = appointment.benefitFinalPriceArs != null
+      ? appointment.benefitFinalPriceArs
+      : appointment.benefitType === 'FREE_SERVICE'
+      ? 0
+      : rawPrice;
+
     const current = countsByService.get(serviceName) ?? { count: 0, revenue: 0 };
     current.count++;
-    current.revenue += price;
+    // Las cancelaciones no suman a la recaudación
+    if (appointment.statusCode !== 'CANCELLED') {
+      current.revenue += finalPrice;
+    }
     countsByService.set(serviceName, current);
   }
 

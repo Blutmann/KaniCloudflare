@@ -80,6 +80,13 @@ type ConfirmedPaywayBooking = {
   clientName: string;
   depositArs: number;
   servicePriceArs: number;
+  benefitType?: 'NO_DEPOSIT' | 'FREE_SERVICE' | 'PERCENT_10' | 'PERCENT_50' | null;
+  benefitCode?: string | null;
+  originalPriceArs?: number | null;
+  discountAmountArs?: number | null;
+  finalPriceArs?: number | null;
+  onlineDepositArs?: number | null;
+  inPersonBalanceArs?: number | null;
 };
 
 function readConfirmedBooking(): ConfirmedPaywayBooking | null {
@@ -527,6 +534,68 @@ export function PaywayBooking() {
     if (isApprovedConfirmed) return;
     if (opening.current || hasPendingPayment || result?.state === 'unknown' || result?.state === 'review') { setOpen(true); return; }
     draftRef.current = draft;
+
+    // Flujo de confirmación directa sin seña (NO_DEPOSIT / FREE_SERVICE)
+    if (draft.benefitQuote?.skipOnlinePayment && draft.benefitCode) {
+      opening.current = true;
+      setOpen(true);
+      setPreparing(true);
+      setResult(null);
+      setCheckout(null);
+      try {
+        const { confirmZeroDepositBookingFn } = await import('@/lib/kani-benefit-codes.functions');
+        const confirmedResult = await confirmZeroDepositBookingFn({
+          data: {
+            benefitCode: draft.benefitCode,
+            barberName: draft.barber,
+            serviceName: draft.serviceName,
+            bookingDate: draft.date,
+            startTime: draft.time,
+            clientName: draft.name,
+            clientPhone: draft.phone,
+            clientEmail: draft.email,
+            notes: draft.notes,
+          },
+        });
+        if (confirmedResult.success) {
+          const confirmedBooking: ConfirmedPaywayBooking = {
+            appointmentId: confirmedResult.appointmentId,
+            attemptId: 'zero-deposit',
+            serviceName: draft.serviceName,
+            barber: draft.barber,
+            date: draft.date,
+            time: draft.time,
+            clientName: draft.name,
+            depositArs: 0,
+            servicePriceArs: confirmedResult.calculation.originalPriceArs,
+            benefitType: confirmedResult.calculation.benefitType,
+            benefitCode: confirmedResult.calculation.code,
+            originalPriceArs: confirmedResult.calculation.originalPriceArs,
+            discountAmountArs: confirmedResult.calculation.discountAmountArs,
+            finalPriceArs: confirmedResult.calculation.finalPriceArs,
+            onlineDepositArs: confirmedResult.calculation.onlineDepositArs,
+            inPersonBalanceArs: confirmedResult.calculation.inPersonBalanceArs,
+          };
+          paidAppointmentsRef.current.add(confirmedResult.appointmentId);
+          persistConfirmedBooking(confirmedBooking);
+          setConfirmed(confirmedBooking);
+          setOpen(false);
+          if (typeof window !== 'undefined' && typeof window.scrollTo === 'function') {
+            window.scrollTo({ top: 0, behavior: 'instant' });
+          }
+          return;
+        } else {
+          setResult({ state: 'recoverable', message: 'No se pudo confirmar la reserva.' });
+        }
+      } catch (err: any) {
+        setResult({ state: 'recoverable', message: err?.message || 'Error al confirmar la reserva con beneficio.' });
+      } finally {
+        opening.current = false;
+        setPreparing(false);
+      }
+      return;
+    }
+
     if (draft.name && !cardHolder) {
       setCardHolder(draft.name);
     }
@@ -606,7 +675,14 @@ export function PaywayBooking() {
           time: activeDraft?.time ?? '',
           clientName: activeDraft?.name ?? '',
           depositArs: checkout.depositArs,
-          servicePriceArs: resolveServicePrice(activeDraft?.serviceName ?? 'Corte', configuredServices),
+          servicePriceArs: activeDraft?.benefitQuote?.originalPriceArs ?? resolveServicePrice(activeDraft?.serviceName ?? 'Corte', configuredServices),
+          benefitType: activeDraft?.benefitQuote?.type ?? null,
+          benefitCode: activeDraft?.benefitCode ?? null,
+          originalPriceArs: activeDraft?.benefitQuote?.originalPriceArs ?? null,
+          discountAmountArs: activeDraft?.benefitQuote?.discountAmountArs ?? null,
+          finalPriceArs: activeDraft?.benefitQuote?.finalPriceArs ?? null,
+          onlineDepositArs: activeDraft?.benefitQuote?.onlineDepositArs ?? null,
+          inPersonBalanceArs: activeDraft?.benefitQuote?.inPersonBalanceArs ?? null,
         };
         paidAppointmentsRef.current.add(checkout.appointmentId);
         persistConfirmedBooking(confirmedBooking);

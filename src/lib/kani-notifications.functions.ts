@@ -46,6 +46,13 @@ type NotificationPayload = {
   transferAlias: string | null;
   transferCuit: string | null;
   transferHolderName: string | null;
+  benefitCode?: string | null;
+  benefitType?: 'NO_DEPOSIT' | 'FREE_SERVICE' | 'PERCENT_10' | 'PERCENT_50' | null;
+  benefitOriginalPriceArs?: number | null;
+  benefitDiscountAmountArs?: number | null;
+  benefitFinalPriceArs?: number | null;
+  benefitOnlineDepositArs?: number | null;
+  benefitInPersonBalanceArs?: number | null;
 };
 
 type DispatchResult = {
@@ -199,6 +206,16 @@ export const dispatchAppointmentNotification = createServerOnlyFn(async (data: {
           const apiKey = getRuntimeEnv("RESEND_API_KEY")?.trim();
           const fromEmail = getRuntimeEnv("RESEND_FROM_EMAIL")?.trim();
           if (apiKey && fromEmail) {
+            let apptBenefit: any = null;
+            try {
+              const { data: bData } = await db
+                .from('appointments')
+                .select('benefit_code, benefit_type, benefit_original_price_ars, benefit_discount_amount_ars, benefit_final_price_ars, benefit_online_deposit_ars, benefit_in_person_balance_ars')
+                .eq('id', data.appointmentId)
+                .maybeSingle();
+              apptBenefit = bData;
+            } catch { /* best effort */ }
+
             const payload: NotificationPayload = {
               notificationId: event.notification_id,
               notificationType: event.notification_type,
@@ -220,6 +237,13 @@ export const dispatchAppointmentNotification = createServerOnlyFn(async (data: {
               transferAlias: event.transfer_alias,
               transferCuit: event.transfer_cuit,
               transferHolderName: event.transfer_holder_name,
+              benefitCode: apptBenefit?.benefit_code ?? (event as any).benefit_code ?? null,
+              benefitType: apptBenefit?.benefit_type ?? (event as any).benefit_type ?? null,
+              benefitOriginalPriceArs: apptBenefit?.benefit_original_price_ars ?? null,
+              benefitDiscountAmountArs: apptBenefit?.benefit_discount_amount_ars ?? null,
+              benefitFinalPriceArs: apptBenefit?.benefit_final_price_ars ?? null,
+              benefitOnlineDepositArs: apptBenefit?.benefit_online_deposit_ars ?? null,
+              benefitInPersonBalanceArs: apptBenefit?.benefit_in_person_balance_ars ?? null,
             };
             const email = buildEmail(payload);
             const subject = notificationSubject(
@@ -835,6 +859,13 @@ export async function retryNotificationChannel(input: {
         transferAlias: null,
         transferCuit: null,
         transferHolderName: null,
+        benefitCode: (aptData as any).benefit_code ?? null,
+        benefitType: (aptData as any).benefit_type ?? null,
+        benefitOriginalPriceArs: (aptData as any).benefit_original_price_ars ?? null,
+        benefitDiscountAmountArs: (aptData as any).benefit_discount_amount_ars ?? null,
+        benefitFinalPriceArs: (aptData as any).benefit_final_price_ars ?? null,
+        benefitOnlineDepositArs: (aptData as any).benefit_online_deposit_ars ?? null,
+        benefitInPersonBalanceArs: (aptData as any).benefit_in_person_balance_ars ?? null,
       };
 
       const email = buildEmail(payload);
@@ -1127,9 +1158,19 @@ export function buildConfirmedEmail(payload: NotificationPayload) {
   const capitalizedDate = spanishDate ? spanishDate.charAt(0).toUpperCase() + spanishDate.slice(1) : '';
   const compactDate = formatSpanishDateCompact(payload.bookingDate);
   const cleanTime = (payload.startTime || "").slice(0, 5);
-  const servicePrice = payload.servicePriceArs ?? 0;
-  const downPayment = (payload.downPaymentArs && payload.downPaymentArs !== 10000) ? payload.downPaymentArs : KANI_STANDARD_DEPOSIT_ARS;
-  const remainingPayment = Math.max(0, servicePrice - downPayment);
+
+  const isNoDeposit = payload.benefitType === 'NO_DEPOSIT';
+  const isFreeService = payload.benefitType === 'FREE_SERVICE';
+  const isPercent10 = payload.benefitType === 'PERCENT_10';
+  const isPercent50 = payload.benefitType === 'PERCENT_50';
+
+  const originalPrice = payload.benefitOriginalPriceArs ?? payload.servicePriceArs ?? 0;
+  const discountAmount = payload.benefitDiscountAmountArs ?? (isFreeService ? originalPrice : 0);
+  const finalPrice = payload.benefitFinalPriceArs ?? (isFreeService ? 0 : isNoDeposit ? originalPrice : Math.max(0, originalPrice - discountAmount));
+  const downPayment = isFreeService || isNoDeposit
+    ? 0
+    : (payload.benefitOnlineDepositArs ?? ((payload.downPaymentArs && payload.downPaymentArs !== 10000) ? payload.downPaymentArs : KANI_STANDARD_DEPOSIT_ARS));
+  const remainingPayment = payload.benefitInPersonBalanceArs ?? (isFreeService ? 0 : Math.max(0, finalPrice - downPayment));
 
   const safe = {
     clientName: escapeHtml(payload.clientName),
@@ -1139,9 +1180,12 @@ export function buildConfirmedEmail(payload: NotificationPayload) {
     capitalizedDate: escapeHtml(capitalizedDate),
     compactDate: escapeHtml(compactDate),
     time: escapeHtml(cleanTime),
-    servicePrice: escapeHtml(`$${servicePrice.toLocaleString("es-AR")}`),
-    downPayment: escapeHtml(`$${downPayment.toLocaleString("es-AR")}`),
-    remainingPayment: escapeHtml(`$${remainingPayment.toLocaleString("es-AR")}`),
+    servicePrice: escapeHtml('$' + originalPrice.toLocaleString("es-AR")),
+    originalPrice: escapeHtml('$' + originalPrice.toLocaleString("es-AR")),
+    discount: escapeHtml('$' + discountAmount.toLocaleString("es-AR")),
+    finalPrice: escapeHtml('$' + finalPrice.toLocaleString("es-AR")),
+    downPayment: escapeHtml('$' + downPayment.toLocaleString("es-AR")),
+    remainingPayment: escapeHtml('$' + remainingPayment.toLocaleString("es-AR")),
   };
 
   const subject = payload.clientName && payload.clientName.trim()
@@ -1485,45 +1529,122 @@ export function buildConfirmedEmail(payload: NotificationPayload) {
                 <tr>
                   <td style="padding: 20px;">
                     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width: 100%; table-layout: fixed;">
-                      <!-- Fila Importe -->
+${isNoDeposit ? `
+                      <!-- Reserva sin seña -->
                       <tr>
-                        <td style="padding: 6px 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 15px; color: #7A746B; width: 55%;">
-                          Importe
+                        <td style="padding: 6px 0; font-family: 'Inter', sans-serif; font-size: 15px; color: #7A746B; width: 55%;">Total del servicio</td>
+                        <td align="right" style="padding: 6px 0; font-family: 'Inter', sans-serif; font-size: 16px; font-weight: 500; color: #1C1A17; width: 45%; text-align: right;">${safe.finalPrice}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 6px 0; font-family: 'Inter', sans-serif; font-size: 15px; color: #7A746B; width: 55%;">Beneficio</td>
+                        <td align="right" style="padding: 6px 0; font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 600; color: #9A7A2E; width: 45%; text-align: right;">Reserva sin seña</td>
+                      </tr>
+                      <tr>
+                        <td colspan="2" style="padding: 10px 0 6px;"><div style="height: 1px; background-color: #E4DCCB; line-height: 1px; font-size: 1px;">&nbsp;</div></td>
+                      </tr>
+                      <tr>
+                        <td colspan="2" style="padding-top: 6px; padding-bottom: 12px;">
+                          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
+                            <tr>
+                              <td valign="baseline" class="balance-label-td"><span style="font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 600; color: #1C1A17;">Saldo a pagar en el local</span></td>
+                              <td align="right" valign="baseline" class="balance-amount-td"><span style="font-family: 'DM Serif Display', serif; font-size: 28px; line-height: 1.15; font-weight: 400; color: #1C1A17;">${safe.remainingPayment}</span></td>
+                            </tr>
+                          </table>
                         </td>
-                        <td align="right" style="padding: 6px 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; font-weight: 500; color: #1C1A17; width: 45%; text-align: right;">
-                          ${safe.servicePrice}
+                      </tr>
+                      <tr>
+                        <td colspan="2" style="padding-top: 12px; border-top: 1px dashed #E4DCCB;">
+                          <p style="margin: 0; font-family: 'Inter', sans-serif; font-size: 13px; line-height: 1.45; color: #8A8378;">
+                            Reserva sin seña. Abonás el total de ${safe.remainingPayment} en el local.
+                          </p>
                         </td>
+                      </tr>
+` : isFreeService ? `
+                      <!-- Servicio gratuito 100% -->
+                      <tr>
+                        <td style="padding: 6px 0; font-family: 'Inter', sans-serif; font-size: 15px; color: #7A746B; width: 55%;">Beneficio</td>
+                        <td align="right" style="padding: 6px 0; font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 600; color: #2E7D32; width: 45%; text-align: right;">Servicio 100% bonificado</td>
+                      </tr>
+                      <tr>
+                        <td colspan="2" style="padding: 10px 0 6px;"><div style="height: 1px; background-color: #E4DCCB; line-height: 1px; font-size: 1px;">&nbsp;</div></td>
+                      </tr>
+                      <tr>
+                        <td colspan="2" style="padding-top: 6px; padding-bottom: 12px;">
+                          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
+                            <tr>
+                              <td valign="baseline" class="balance-label-td"><span style="font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 600; color: #1C1A17;">Total a abonar</span></td>
+                              <td align="right" valign="baseline" class="balance-amount-td"><span style="font-family: 'DM Serif Display', serif; font-size: 28px; line-height: 1.15; font-weight: 400; color: #1C1A17;">$0</span></td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td colspan="2" style="padding-top: 12px; border-top: 1px dashed #E4DCCB;">
+                          <p style="margin: 0; font-family: 'Inter', sans-serif; font-size: 13px; line-height: 1.45; color: #8A8378;">
+                            Servicio bonificado al 100 %. Total a pagar: $0.
+                          </p>
+                        </td>
+                      </tr>
+` : isPercent10 || isPercent50 ? `
+                      <!-- Descuento porcentual -->
+                      <tr>
+                        <td style="padding: 6px 0; font-family: 'Inter', sans-serif; font-size: 15px; color: #7A746B; width: 55%;">Precio original</td>
+                        <td align="right" style="padding: 6px 0; font-family: 'Inter', sans-serif; font-size: 16px; font-weight: 500; color: #1C1A17; width: 45%; text-align: right;">${safe.originalPrice}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 6px 0; font-family: 'Inter', sans-serif; font-size: 15px; color: #7A746B; width: 55%;">Descuento (${isPercent10 ? '10%' : '50%'})</td>
+                        <td align="right" style="padding: 6px 0; font-family: 'Inter', sans-serif; font-size: 16px; font-weight: 500; color: #2E7D32; width: 45%; text-align: right;">−${safe.discount}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 6px 0; font-family: 'Inter', sans-serif; font-size: 15px; color: #7A746B; width: 55%;">Total final</td>
+                        <td align="right" style="padding: 6px 0; font-family: 'Inter', sans-serif; font-size: 16px; font-weight: 600; color: #1C1A17; width: 45%; text-align: right;">${safe.finalPrice}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 6px 0; font-family: 'Inter', sans-serif; font-size: 15px; color: #7A746B; width: 55%;">Seña abonada</td>
+                        <td align="right" style="padding: 6px 0; font-family: 'Inter', sans-serif; font-size: 16px; font-weight: 500; color: #7A2C3A; width: 45%; text-align: right;">−${safe.downPayment}</td>
+                      </tr>
+                      <tr>
+                        <td colspan="2" style="padding: 10px 0 6px;"><div style="height: 1px; background-color: #E4DCCB; line-height: 1px; font-size: 1px;">&nbsp;</div></td>
+                      </tr>
+                      <tr>
+                        <td colspan="2" style="padding-top: 6px; padding-bottom: 12px;">
+                          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
+                            <tr>
+                              <td valign="baseline" class="balance-label-td"><span style="font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 600; color: #1C1A17;">Saldo en el local</span></td>
+                              <td align="right" valign="baseline" class="balance-amount-td"><span style="font-family: 'DM Serif Display', serif; font-size: 28px; line-height: 1.15; font-weight: 400; color: #1C1A17;">${safe.remainingPayment}</span></td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td colspan="2" style="padding-top: 12px; border-top: 1px dashed #E4DCCB;">
+                          <p style="margin: 0; font-family: 'Inter', sans-serif; font-size: 13px; line-height: 1.45; color: #8A8378;">
+                            Podés abonar el saldo en efectivo o por transferencia.
+                          </p>
+                        </td>
+                      </tr>
+` : `
+                      <!-- Fila Importe Estándar -->
+                      <tr>
+                        <td style="padding: 6px 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 15px; color: #7A746B; width: 55%;">Importe</td>
+                        <td align="right" style="padding: 6px 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; font-weight: 500; color: #1C1A17; width: 45%; text-align: right;">${safe.servicePrice}</td>
                       </tr>
                       <!-- Fila Seña abonada (Bordó #7A2C3A) -->
                       <tr>
-                        <td style="padding: 6px 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 15px; color: #7A746B; width: 55%;">
-                          Seña abonada
-                        </td>
-                        <td align="right" style="padding: 6px 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; font-weight: 500; color: #7A2C3A; width: 45%; text-align: right;">
-                          −${safe.downPayment}
-                        </td>
+                        <td style="padding: 6px 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 15px; color: #7A746B; width: 55%;">Seña abonada</td>
+                        <td align="right" style="padding: 6px 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; font-weight: 500; color: #7A2C3A; width: 45%; text-align: right;">−${safe.downPayment}</td>
                       </tr>
                       <!-- Divisor interno -->
                       <tr>
-                        <td colspan="2" style="padding: 10px 0 6px;">
-                          <div style="height: 1px; background-color: #E4DCCB; line-height: 1px; font-size: 1px;">&nbsp;</div>
-                        </td>
+                        <td colspan="2" style="padding: 10px 0 6px;"><div style="height: 1px; background-color: #E4DCCB; line-height: 1px; font-size: 1px;">&nbsp;</div></td>
                       </tr>
                       <!-- Fila Saldo en el local -->
                       <tr>
                         <td colspan="2" style="padding-top: 6px; padding-bottom: 12px;">
                           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
                             <tr>
-                              <td valign="baseline" class="balance-label-td">
-                                <span style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 15px; font-weight: 600; color: #1C1A17;">
-                                  Saldo en el local
-                                </span>
-                              </td>
-                              <td align="right" valign="baseline" class="balance-amount-td">
-                                <span style="font-family: 'DM Serif Display', Georgia, 'Times New Roman', serif; font-size: 28px; line-height: 1.15; font-weight: 400; color: #1C1A17;">
-                                  ${safe.remainingPayment}
-                                </span>
-                              </td>
+                              <td valign="baseline" class="balance-label-td"><span style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 15px; font-weight: 600; color: #1C1A17;">Saldo en el local</span></td>
+                              <td align="right" valign="baseline" class="balance-amount-td"><span style="font-family: 'DM Serif Display', Georgia, 'Times New Roman', serif; font-size: 28px; line-height: 1.15; font-weight: 400; color: #1C1A17;">${safe.remainingPayment}</span></td>
                             </tr>
                           </table>
                         </td>
@@ -1536,6 +1657,7 @@ export function buildConfirmedEmail(payload: NotificationPayload) {
                           </p>
                         </td>
                       </tr>
+`}
                     </table>
                   </td>
                 </tr>
@@ -1675,11 +1797,19 @@ ${calendarUrl}
 --------------------------------------------------
 RESUMEN
 
-Importe: ${safe.servicePrice}
+${isNoDeposit ? `Reserva sin seña
+Abonás el total de ${safe.remainingPayment} en el local.` : isFreeService ? `Servicio bonificado al 100 %
+Total a pagar: $0` : isPercent10 || isPercent50 ? `Precio original: ${safe.originalPrice}
+Descuento (${isPercent10 ? '10%' : '50%'}): -${safe.discount}
+Total final: ${safe.finalPrice}
+Seña efectivamente abonada: ${safe.downPayment}
+Saldo en el local: ${safe.remainingPayment}
+
+Podés abonar el saldo en efectivo o por transferencia.` : `Importe: ${safe.servicePrice}
 Seña abonada: ${safe.downPayment}
 Saldo a pagar en el local: ${safe.remainingPayment}
 
-Podés abonar el saldo en efectivo o por transferencia.
+Podés abonar el saldo en efectivo o por transferencia.`}
 
 --------------------------------------------------
 CÓMO LLEGAR
@@ -1725,10 +1855,16 @@ function buildEmail(payload: NotificationPayload) {
 export function buildCancelledEmail(payload: NotificationPayload, bookingUrl: string) {
   const date = new Date(`${payload.bookingDate}T12:00:00Z`).toLocaleDateString('es-AR', { day: 'numeric', month: 'long' });
   const sentence = `Se canceló tu turno con ${payload.barberName} el día ${date} a las ${payload.startTime.slice(0, 5)} hs.`;
+  const benefitNoteText = payload.benefitCode
+    ? `\n\nTené en cuenta que el código de beneficio utilizado (${payload.benefitCode}) ha sido consumido y no puede reutilizarse.`
+    : '';
+  const benefitNoteHtml = payload.benefitCode
+    ? `<p style="color:#7A2C3A;font-size:13px;margin:12px 0;">Tené en cuenta que el código de beneficio utilizado (<strong>${escapeHtml(payload.benefitCode)}</strong>) ha sido consumido y no puede reutilizarse.</p>`
+    : '';
   return {
     subject: 'Se canceló tu turno en Kani Barber Studio',
-    text: `${sentence}\n\nReservá un nuevo turno: ${bookingUrl}`,
-    html: `<html lang="es"><body style="font-family:Arial,sans-serif;padding:24px"><p>${escapeHtml(sentence)}</p><a href="${escapeHtml(bookingUrl)}" style="display:inline-block;padding:12px 18px;background:#702B3A;color:#fff;border-radius:8px;text-decoration:none">Reservá un nuevo turno</a></body></html>`,
+    text: `${sentence}${benefitNoteText}\n\nReservá un nuevo turno: ${bookingUrl}`,
+    html: `<html lang="es"><body style="font-family:Arial,sans-serif;padding:24px"><p>${escapeHtml(sentence)}</p>${benefitNoteHtml}<a href="${escapeHtml(bookingUrl)}" style="display:inline-block;padding:12px 18px;background:#702B3A;color:#fff;border-radius:8px;text-decoration:none">Reservá un nuevo turno</a></body></html>`,
   };
 }
 

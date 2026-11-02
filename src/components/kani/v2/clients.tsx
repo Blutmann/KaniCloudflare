@@ -308,6 +308,24 @@ export function V2Clients() {
                       <p>
                         {a.date} · {a.time}
                       </p>
+                      {a.benefitCode && (
+                        <div style={{ marginTop: "4px", fontSize: "11px", display: "flex", flexDirection: "column", gap: "2px" }}>
+                          <span style={{ fontFamily: "monospace", fontWeight: 600, color: "var(--gold, #C9A24D)" }}>
+                            Código: {a.benefitCode} · {
+                              a.benefitType === 'NO_DEPOSIT' ? 'Reserva sin seña (Seña online dispensada)' :
+                              a.benefitType === 'FREE_SERVICE' ? 'Servicio 100% bonificado ($0)' :
+                              a.benefitType === 'PERCENT_10' ? `Descuento 10% (-$${(a.benefitDiscountAmountArs ?? 0).toLocaleString('es-AR')})` :
+                              a.benefitType === 'PERCENT_50' ? `Descuento 50% (-$${(a.benefitDiscountAmountArs ?? 0).toLocaleString('es-AR')})` :
+                              'Beneficio aplicado'
+                            }
+                          </span>
+                          {a.statusCode === 'CANCELLED' && (
+                            <span style={{ color: "var(--muted-foreground, #888)", fontStyle: "italic" }}>
+                              Reserva cancelada · código consumido, no reutilizable
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
                     <Status code={a.statusCode} />
                   </div>

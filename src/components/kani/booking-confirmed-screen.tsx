@@ -12,6 +12,13 @@ export type ConfirmedBookingData = {
   clientName?: string;
   depositArs: number;
   servicePriceArs: number;
+  benefitType?: 'NO_DEPOSIT' | 'FREE_SERVICE' | 'PERCENT_10' | 'PERCENT_50' | null;
+  benefitCode?: string | null;
+  originalPriceArs?: number | null;
+  discountAmountArs?: number | null;
+  finalPriceArs?: number | null;
+  onlineDepositArs?: number | null;
+  inPersonBalanceArs?: number | null;
 };
 
 export interface BookingConfirmedScreenProps {
@@ -54,8 +61,34 @@ export function BookingConfirmedScreen({
               <div><dt>Fecha</dt><dd className="capitalize">{confirmed.date ? dateLabel(confirmed.date) : '-'}</dd></div>
               <div><dt>Horario</dt><dd>{confirmed.time}</dd></div>
               {confirmed.clientName ? <div><dt>A nombre de</dt><dd>{confirmed.clientName}</dd></div> : null}
-              <div><dt>Seña abonada</dt><dd>{money(confirmed.depositArs)}</dd></div>
-              <div><dt>Saldo restante del servicio</dt><dd>{money(remainingArs)}</dd></div>
+
+              {confirmed.benefitType === 'NO_DEPOSIT' ? (
+                <>
+                  <div><dt>Beneficio</dt><dd className="text-gold font-medium">Reserva sin seña</dd></div>
+                  <div><dt>Total del servicio</dt><dd>{money(confirmed.finalPriceArs ?? confirmed.servicePriceArs)}</dd></div>
+                  <div><dt>Seña online</dt><dd>No requerida ($0)</dd></div>
+                  <div><dt>Saldo a abonar en el local</dt><dd className="font-semibold">{money(confirmed.inPersonBalanceArs ?? confirmed.servicePriceArs)}</dd></div>
+                </>
+              ) : confirmed.benefitType === 'FREE_SERVICE' ? (
+                <>
+                  <div><dt>Beneficio</dt><dd className="text-emerald-500 font-semibold">Servicio 100% bonificado</dd></div>
+                  <div><dt>Total final</dt><dd>$0</dd></div>
+                  <div><dt>Saldo en el local</dt><dd className="font-semibold">$0</dd></div>
+                </>
+              ) : confirmed.benefitType === 'PERCENT_10' || confirmed.benefitType === 'PERCENT_50' ? (
+                <>
+                  <div><dt>Precio original</dt><dd>{money(confirmed.originalPriceArs ?? confirmed.servicePriceArs)}</dd></div>
+                  <div><dt>Descuento ({confirmed.benefitType === 'PERCENT_10' ? '10%' : '50%'})</dt><dd className="text-emerald-500 font-medium">−{money(confirmed.discountAmountArs ?? 0)}</dd></div>
+                  <div><dt>Total final</dt><dd>{money(confirmed.finalPriceArs ?? confirmed.servicePriceArs)}</dd></div>
+                  <div><dt>Seña abonada</dt><dd className="text-gold font-semibold">{money(confirmed.onlineDepositArs ?? confirmed.depositArs)}</dd></div>
+                  <div><dt>Saldo restante en el local</dt><dd className="font-semibold">{money(confirmed.inPersonBalanceArs ?? remainingArs)}</dd></div>
+                </>
+              ) : (
+                <>
+                  <div><dt>Seña abonada</dt><dd>{money(confirmed.depositArs)}</dd></div>
+                  <div><dt>Saldo restante del servicio</dt><dd>{money(remainingArs)}</dd></div>
+                </>
+              )}
             </dl>
           </div>
 

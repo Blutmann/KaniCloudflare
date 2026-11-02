@@ -15,6 +15,7 @@ import {
 } from '@/lib/kani-maintenance';
 import { useAdminStaff } from '@/lib/kani-admin-context';
 import { GoogleCalendarAdminSection } from '@/components/kani/google-calendar-admin-section';
+import { BenefitCodesAdminSection } from '@/components/kani/admin-benefit-codes-section';
 
 export function AdminMaintenance() {
   const staff = useAdminStaff();
@@ -124,8 +125,10 @@ export function AdminMaintenance() {
       </div>
 
       <div className="maintenance-grid">
-        {/* Columna 1: Google Calendar + Limpiar registros de prueba */}
+        {/* Columna 1: Descuentos + Google Calendar + Limpiar registros de prueba */}
         <div className="maintenance-col maintenance-appointments-col space-y-4">
+          <BenefitCodesAdminSection />
+
           <GoogleCalendarAdminSection />
 
           <section className="v2-panel maintenance-card" aria-labelledby="cleanup-appointments-heading">

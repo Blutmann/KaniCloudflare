@@ -70,6 +70,14 @@ export type RealAppointment = Appointment & {
   noShowRefundAmountArs?: number;
   noShowReason?: string | null;
   dispatches?: AppointmentDispatches;
+  benefitCodeId?: string | null;
+  benefitCode?: string | null;
+  benefitType?: 'NO_DEPOSIT' | 'FREE_SERVICE' | 'PERCENT_10' | 'PERCENT_50' | null;
+  benefitOriginalPriceArs?: number | null;
+  benefitDiscountAmountArs?: number | null;
+  benefitFinalPriceArs?: number | null;
+  benefitOnlineDepositArs?: number | null;
+  benefitInPersonBalanceArs?: number | null;
 };
 
 type AppointmentRow = Tables<'appointments'>;
@@ -446,7 +454,7 @@ export function clearAppointmentsReferenceCache() {
 }
 
 async function executeReadRealAppointments(options?: { bypassCache?: boolean; barberId?: string }): Promise<RealAppointment[]> {
-  const fullColumns = 'id, request_number, client_id, barber_id, service_id, custom_service_name, service_price_ars, booking_date, start_time, end_time, status, notes, created_at, updated_at, is_manual, origin, created_by_user_id, created_by_display_name, recurring_rule_id, deposit_required, deposit_paid, deposit_amount_ars, balance_paid, no_show_decision, no_show_refund_amount_ars, booking_client_name';
+  const fullColumns = 'id, request_number, client_id, barber_id, service_id, custom_service_name, service_price_ars, booking_date, start_time, end_time, status, notes, created_at, updated_at, is_manual, origin, created_by_user_id, created_by_display_name, recurring_rule_id, deposit_required, deposit_paid, deposit_amount_ars, balance_paid, no_show_decision, no_show_refund_amount_ars, booking_client_name, benefit_code_id, benefit_code, benefit_type, benefit_original_price_ars, benefit_discount_amount_ars, benefit_final_price_ars, benefit_online_deposit_ars, benefit_in_person_balance_ars';
   const baseColumns = 'id, request_number, client_id, barber_id, service_id, booking_date, start_time, end_time, status, notes, created_at, updated_at';
 
   let rows: AppointmentRow[] | null = null;
@@ -598,6 +606,14 @@ async function executeReadRealAppointments(options?: { bypassCache?: boolean; ba
       noShowRefundAmountArs: exc?.refund_amount_ars ?? (row as any).no_show_refund_amount_ars ?? 0,
       noShowReason: exc?.reason ?? null,
       dispatches: dispatchesMap.get(row.id),
+      benefitCodeId: (row as any).benefit_code_id ?? null,
+      benefitCode: (row as any).benefit_code ?? null,
+      benefitType: (row as any).benefit_type ?? null,
+      benefitOriginalPriceArs: (row as any).benefit_original_price_ars != null ? Number((row as any).benefit_original_price_ars) : null,
+      benefitDiscountAmountArs: (row as any).benefit_discount_amount_ars != null ? Number((row as any).benefit_discount_amount_ars) : null,
+      benefitFinalPriceArs: (row as any).benefit_final_price_ars != null ? Number((row as any).benefit_final_price_ars) : null,
+      benefitOnlineDepositArs: (row as any).benefit_online_deposit_ars != null ? Number((row as any).benefit_online_deposit_ars) : null,
+      benefitInPersonBalanceArs: (row as any).benefit_in_person_balance_ars != null ? Number((row as any).benefit_in_person_balance_ars) : null,
     } satisfies RealAppointment];
   });
 }

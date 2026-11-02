@@ -31,6 +31,20 @@ export function createPaywayStore(db:Db,siteId:string,session:SessionAccess):Pay
         }
       }
       const attemptId=crypto.randomUUID();
+      if (draft.benefitCode) {
+        try {
+          const { data: locked, error: lockErr } = await db.rpc('lock_benefit_code_attempt', {
+            p_code: draft.benefitCode,
+            p_attempt_id: attemptId,
+            p_ttl_seconds: 600,
+          });
+          if (lockErr || !locked) {
+            throw new Error('BENEFIT_CODE_LOCKED_OR_INVALID');
+          }
+        } catch (e) {
+          if (e instanceof Error && e.message === 'BENEFIT_CODE_LOCKED_OR_INVALID') throw e;
+        }
+      }
       const args={p_attempt_id:attemptId,p_site_id:siteId,p_barber_name:draft.barber,p_service_name:draft.serviceName,
         p_booking_date:draft.date,p_start_time:draft.time,p_client_name:draft.name,p_client_phone:draft.phone,
         p_client_email:draft.email,p_notes:draft.notes,p_existing_appointment_id:previous?.appointmentId??null};
@@ -172,6 +186,11 @@ export function createPaywayStore(db:Db,siteId:string,session:SessionAccess):Pay
       const {error}=await db.rpc('settle_payway_attempt',{p_attempt_id:uuid(attemptId),p_state:state.toUpperCase(),
         p_provider_id:providerId??null,p_provider_status:providerStatus??null,p_provider_code:providerCode??null});
       if(error)throw new Error('PAYMENT_SETTLEMENT_FAILED');
+      if (state.toUpperCase() === 'REJECTED') {
+        try {
+          await db.rpc('release_benefit_code_attempt', { p_code: '', p_attempt_id: attemptId });
+        } catch { /* best effort */ }
+      }
     },
     async confirm(appointmentId,attemptId,providerId,amount) {
       const {data,error}=await db.rpc('confirm_payway_attempt',{p_appointment_id:appointmentId,p_attempt_id:uuid(attemptId),p_provider_id:providerId,p_amount_minor:amount});
@@ -182,6 +201,14 @@ export function createPaywayStore(db:Db,siteId:string,session:SessionAccess):Pay
         try{await dispatchAppointmentNotification({appointmentId,claimToken:result.notification_claim_token});}catch{/* Durable outbox retains notification for recovery. */}
       }
       const confirmed=['CONFIRMED','ALREADY_CONFIRMED'].includes(result.result_code);
+      if (confirmed) {
+        try {
+          await db.rpc('admin_consume_benefit_code_for_attempt', {
+            p_appointment_id: appointmentId,
+            p_attempt_id: attemptId,
+          });
+        } catch { /* best effort */ }
+      }
       if(confirmed){
         try{await session.clear?.();}catch{/* Best-effort session cleanup after terminal confirmation. */}
       }
