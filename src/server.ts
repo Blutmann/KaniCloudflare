@@ -55,11 +55,20 @@ function isH3SwallowedErrorBody(body: string): boolean {
   }
 }
 
-export function getCanonicalRedirectUrl(rawUrl: string): string | null {
+export function getCanonicalRedirectUrl(
+  rawUrl: string,
+  canonicalHost = "kanibarber.com",
+): string | null {
   try {
     const url = new URL(rawUrl);
-    if (url.hostname.toLowerCase() === "www.kanibarber.com") {
-      url.hostname = "kanibarber.com";
+    // Both hosts belong to this application. A www-only Pages gateway can be
+    // used while the registrar does not allow changing the apex nameservers.
+    const hosts = ["kanibarber.com", "www.kanibarber.com"];
+    const configuredHost = canonicalHost.trim().toLowerCase();
+    const targetHost = hosts.includes(configuredHost) ? configuredHost : "kanibarber.com";
+    if (hosts.includes(url.hostname.toLowerCase()) && url.hostname.toLowerCase() !== targetHost) {
+      url.hostname = targetHost;
+      url.port = "";
       url.protocol = "https:";
       return url.toString();
     }
@@ -84,7 +93,7 @@ export default {
       mirrorRuntimeBindings((request as typeof request & { runtime?: { cloudflare?: { env?: unknown } } })?.runtime?.cloudflare?.env);
       mirrorRuntimeBindings(await getCloudflareEnv());
 
-      const canonicalRedirect = getCanonicalRedirectUrl(request.url);
+      const canonicalRedirect = getCanonicalRedirectUrl(request.url, process.env.KANI_CANONICAL_HOST);
       if (canonicalRedirect) {
         return Response.redirect(canonicalRedirect, 301);
       }
@@ -580,6 +589,7 @@ function mirrorRuntimeBindings(bindings: unknown): void {
     "MERCADOPAGO_WEBHOOK_SECRET",
     "MERCADOPAGO_NOTIFICATION_URL",
     "KANI_APP_URL",
+    "KANI_CANONICAL_HOST",
     "APP_URL",
     "PUBLIC_URL",
     "PONTIUN_API_KEY",
