@@ -1,4 +1,5 @@
 import { KANI_DEPOSIT_ARS, KANI_MANUAL_DEPOSIT_ARS, type RealAppointment, type RealAppointmentStatus } from './kani-appointments';
+import { formatServiceName } from './kani-model';
 import { addCalendarDays, businessDateToday, startOfBusinessWeek, BUSINESS_TIME_ZONE } from './kani-mobile-appointments';
 import { normalizeEmailForComparison, normalizePhoneForComparison } from './kani-phone';
 
@@ -709,7 +710,7 @@ export function computeServiceDemand(appointments: RealAppointment[]): ServiceDe
   const countsByService = new Map<string, { count: number; revenue: number }>();
 
   for (const appointment of appointments) {
-    const serviceName = appointment.serviceName || appointment.service || 'Otro';
+    const serviceName = formatServiceName(appointment.serviceName || appointment.service || 'Otro');
     const rawPrice = appointment.servicePrice || 0;
     const finalPrice = appointment.benefitFinalPriceArs != null
       ? appointment.benefitFinalPriceArs

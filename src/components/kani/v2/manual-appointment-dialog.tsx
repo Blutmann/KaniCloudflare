@@ -16,6 +16,7 @@ import {
 } from "@/lib/kani-appointments";
 import { useV2, type V2Client } from "./data";
 import { Search } from "lucide-react";
+import { formatServiceName, getEffectiveServicePrice } from "@/lib/kani-model";
 
 export type ManualAppointmentDialogProps = {
   open: boolean;
@@ -207,7 +208,7 @@ export function ManualAppointmentDialog({
       setCustomServiceName("");
       setCustomPrice("");
       const selectedB = barbersList.find((b) => b.id === defaultBarber);
-      setServicePrice(getEffectiveServicePrice(servicesList[0]?.name || "Corte de cabello", selectedB?.name));
+      setServicePrice(getEffectiveServicePrice(servicesList[0]?.name || "Corte", selectedB?.name));
       setStartTime("10:00");
       setCustomEndTime("10:45");
       setDate(initialDate);
@@ -437,7 +438,7 @@ export function ManualAppointmentDialog({
               >
                 {servicesList.map((s) => (
                   <option key={s.dbId || s.id} value={s.dbId || s.id}>
-                    {s.name}
+                    {formatServiceName(s.name)}
                   </option>
                 ))}
                 <option value="OTRO">Otro</option>

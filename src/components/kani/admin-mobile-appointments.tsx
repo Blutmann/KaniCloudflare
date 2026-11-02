@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { dateLabel, money, serviceFor } from '@/lib/kani-model';
+import { dateLabel, money, serviceFor, formatServiceName } from '@/lib/kani-model';
 import { formatPhoneDisplay, formatPhoneWithCountryAndWhatsApp, normalizePhone, getWhatsAppUrl, type PhoneCountry } from '@/lib/kani-phone';
 const PhoneInput = lazy(() => import('@/components/kani/phone-input').then(m => ({ default: m.PhoneInput })));
 import { cn } from '@/lib/utils';
@@ -703,7 +703,7 @@ export function AdminMobileAppointments() {
         )}
         <div className="grid gap-3">{filteredAppointments.map(appointment => {
           const fallbackService = serviceFor(appointment.service);
-          const serviceName = appointment.serviceName ?? fallbackService.name;
+          const serviceName = formatServiceName(appointment.serviceName ?? fallbackService.name);
           const serviceDuration = appointment.serviceDuration ?? fallbackService.duration;
           const phoneInfo = formatPhoneWithCountryAndWhatsApp(appointment.phone);
           const phoneHref = phoneInfo.e164 || appointment.phone.replace(/[^\d+]/g, '');
@@ -1010,7 +1010,7 @@ export function AdminMobileAppointments() {
                   <span className="text-muted-foreground">{dateLabel(noShowTarget.date)} {noShowTarget.time}</span>
                 </div>
                 <div className="flex justify-between text-muted-foreground text-xs">
-                  <span>{noShowTarget.serviceName || noShowTarget.service} · {noShowTarget.barber}</span>
+                  <span>{formatServiceName(noShowTarget.serviceName || noShowTarget.service)} · {noShowTarget.barber}</span>
                   <span>Total: {money(noShowTarget.servicePrice || 0)}</span>
                 </div>
                 <div className="pt-1.5 mt-1 border-t border-border/50 flex justify-between items-center text-xs">
@@ -1174,7 +1174,7 @@ export function AdminMobileAppointments() {
                   <span className="text-muted-foreground">{dateLabel(completeTarget.date)} {completeTarget.time}</span>
                 </div>
                 <div className="flex justify-between text-muted-foreground text-xs">
-                  <span>{completeTarget.serviceName || completeTarget.service} · {completeTarget.barber}</span>
+                  <span>{formatServiceName(completeTarget.serviceName || completeTarget.service)} · {completeTarget.barber}</span>
                   <span>Total servicio: {money(servicePrice)}</span>
                 </div>
                 <div className="pt-1.5 mt-1 border-t border-border/50 flex justify-between items-center text-xs">
@@ -1383,7 +1383,7 @@ export function AdminMobileAppointments() {
                 >
                   {servicesList.map(s => (
                     <option key={s.id} value={s.id}>
-                      {s.name}
+                      {formatServiceName(s.name)}
                     </option>
                   ))}
                 </select>

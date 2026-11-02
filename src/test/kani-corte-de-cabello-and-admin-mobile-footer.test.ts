@@ -4,6 +4,8 @@ import path from 'path';
 import {
   services,
   formatServiceName,
+  formatServiceNameForEmail,
+  formatServiceNameForChannel,
   getEffectiveServicePrice,
   FRANCO_SPECIAL_PRICES,
 } from '@/lib/kani-model';
@@ -18,11 +20,11 @@ import {
   buildNewRequestEmail,
 } from '@/lib/kani-notifications.functions';
 
-describe('1. Nombre del servicio: "Corte" -> "Corte de cabello"', () => {
-  it('catálogo services contiene "Corte de cabello" manteniendo id "corte", precio $25.000 y duración 45 min', () => {
+describe('1. Nombre del servicio por canal: "Corte" en web/admin y "Corte de cabello" en correos', () => {
+  it('catálogo services contiene "Corte" para web/admin manteniendo id "corte", precio $25.000 y duración 45 min', () => {
     const corte = services.find((s) => s.id === 'corte');
     expect(corte).toBeDefined();
-    expect(corte?.name).toBe('Corte de cabello');
+    expect(corte?.name).toBe('Corte');
     expect(corte?.price).toBe(25000);
     expect(corte?.duration).toBe(45);
 
@@ -38,13 +40,14 @@ describe('1. Nombre del servicio: "Corte" -> "Corte de cabello"', () => {
     expect(barba?.duration).toBe(30);
   });
 
-  it('formatServiceName normaliza "Corte" y "corte" a "Corte de cabello", conservando intactos los demás servicios', () => {
-    expect(formatServiceName('Corte')).toBe('Corte de cabello');
-    expect(formatServiceName('corte')).toBe('Corte de cabello');
-    expect(formatServiceName(' Corte ')).toBe('Corte de cabello');
-    expect(formatServiceName('Corte de cabello')).toBe('Corte de cabello');
+  it('formatServiceName (canal web y panel admin) normaliza "Corte de cabello" y "corte" a "Corte", conservando intactos los demás servicios', () => {
+    expect(formatServiceName('Corte')).toBe('Corte');
+    expect(formatServiceName('corte')).toBe('Corte');
+    expect(formatServiceName(' Corte ')).toBe('Corte');
+    expect(formatServiceName('Corte de cabello')).toBe('Corte');
+    expect(formatServiceName('corte de cabello')).toBe('Corte');
     expect(formatServiceName('Corte y barba')).toBe('Corte y barba');
-    expect(formatServiceName('Corte + barba')).toBe('Corte + barba');
+    expect(formatServiceName('Corte + barba')).toBe('Corte y barba');
     expect(formatServiceName('Barba')).toBe('Barba');
     expect(formatServiceName('Perfilado')).toBe('Perfilado');
     expect(formatServiceName('')).toBe('');
@@ -52,8 +55,31 @@ describe('1. Nombre del servicio: "Corte" -> "Corte de cabello"', () => {
     expect(formatServiceName(undefined)).toBe('');
   });
 
+  it('formatServiceNameForEmail (canal correos) mantiene "Corte de cabello" tanto para reservas nuevas ("Corte") como históricas ("Corte de cabello")', () => {
+    expect(formatServiceNameForEmail('Corte')).toBe('Corte de cabello');
+    expect(formatServiceNameForEmail('corte')).toBe('Corte de cabello');
+    expect(formatServiceNameForEmail(' Corte ')).toBe('Corte de cabello');
+    expect(formatServiceNameForEmail('Corte de cabello')).toBe('Corte de cabello');
+    expect(formatServiceNameForEmail('corte de cabello')).toBe('Corte de cabello');
+    expect(formatServiceNameForEmail('Corte y barba')).toBe('Corte y barba');
+    expect(formatServiceNameForEmail('Corte + barba')).toBe('Corte y barba');
+    expect(formatServiceNameForEmail('Barba')).toBe('Barba');
+    expect(formatServiceNameForEmail('')).toBe('');
+  });
+
+  it('formatServiceNameForChannel preserva nombres de canal en WhatsApp y Calendar', () => {
+    expect(formatServiceNameForChannel('corte', 'whatsapp')).toBe('Corte de cabello');
+    expect(formatServiceNameForChannel('Corte', 'whatsapp')).toBe('Corte de cabello');
+    expect(formatServiceNameForChannel('Corte y barba', 'whatsapp')).toBe('Corte y barba');
+
+    expect(formatServiceNameForChannel('corte', 'calendar')).toBe('Corte de cabello');
+    expect(formatServiceNameForChannel('Corte', 'calendar')).toBe('Corte de cabello');
+    expect(formatServiceNameForChannel('Corte y barba', 'calendar')).toBe('Corte y barba');
+  });
+
   it('getEffectiveServicePrice resuelve precios estándar y promocionales de Franco para "Corte de cabello" y "Corte"', () => {
     expect(getEffectiveServicePrice('corte', 'Lautaro')).toBe(25000);
+    expect(getEffectiveServicePrice('Corte', 'Lautaro')).toBe(25000);
     expect(getEffectiveServicePrice('Corte de cabello', 'Lautaro')).toBe(25000);
     expect(getEffectiveServicePrice('Corte de cabello', 'Franco')).toBe(15000);
     expect(getEffectiveServicePrice('Corte', 'Franco')).toBe(15000);
@@ -65,21 +91,21 @@ describe('1. Nombre del servicio: "Corte" -> "Corte de cabello"', () => {
     expect(getEffectiveServicePrice('corte-barba', 'Lautaro')).toBe(30000);
   });
 
-  it('STANDARD_SERVICE_PRICES incluye "Corte de cabello" con valor 25000', () => {
-    expect(STANDARD_SERVICE_PRICES['Corte de cabello']).toBe(25000);
+  it('STANDARD_SERVICE_PRICES incluye "Corte" y "Corte de cabello" con valor 25000', () => {
     expect(STANDARD_SERVICE_PRICES['Corte']).toBe(25000);
+    expect(STANDARD_SERVICE_PRICES['Corte de cabello']).toBe(25000);
     expect(STANDARD_SERVICE_PRICES['Corte y barba']).toBe(30000);
     expect(STANDARD_SERVICE_PRICES['Barba']).toBe(15000);
   });
 
-  it('filterServicePayments filtra correctamente por "Corte de cabello" y tolera cobros históricos con "Corte"', () => {
+  it('filterServicePayments filtra correctamente por "Corte" y tolera cobros históricos con "Corte de cabello"', () => {
     const mockPayments: ServicePayment[] = [
       {
         id: 'p1',
         barberId: 'b1',
         barberName: 'Lautaro',
         serviceId: 's1',
-        serviceName: 'Corte de cabello',
+        serviceName: 'Corte',
         serviceOtherDetail: null,
         servicePriceArs: 25000,
         discountArs: 0,
@@ -101,7 +127,7 @@ describe('1. Nombre del servicio: "Corte" -> "Corte de cabello"', () => {
         barberId: 'b1',
         barberName: 'Lautaro',
         serviceId: 's1',
-        serviceName: 'Corte' as any,
+        serviceName: 'Corte de cabello' as any,
         serviceOtherDetail: null,
         servicePriceArs: 25000,
         discountArs: 0,
@@ -143,22 +169,22 @@ describe('1. Nombre del servicio: "Corte" -> "Corte de cabello"', () => {
     ];
 
     const filtered = filterServicePayments(mockPayments, {
-      serviceFilter: 'Corte de cabello',
+      serviceFilter: 'Corte',
       permittedBarberIds: new Set(['b1']),
       role: 'ADMIN',
     });
     expect(filtered.map((p) => p.id)).toEqual(['p1', 'p2']);
   });
 
-  it('plantillas de correo de confirmación, cancelación y nueva solicitud muestran "Corte de cabello" en HTML y texto plano', () => {
-    // 1. Correo de confirmación con servicio 'Corte'
+  it('plantillas de correo de confirmación, cancelación y nueva solicitud muestran "Corte de cabello" en HTML y texto plano (para reservas nuevas "Corte" e históricas)', () => {
+    // 1. Correo de confirmación con nueva reserva 'Corte'
     const confirmed = buildConfirmedEmail({
       notificationId: 'notif-1',
       notificationType: 'CONFIRMED',
       recipientEmail: 'cliente@test.com',
       clientName: 'Martín Gómez',
       barberName: 'Franco',
-      serviceName: 'Corte', // Histórico 'Corte'
+      serviceName: 'Corte', // Nueva reserva con "Corte"
       bookingDate: '2026-11-05',
       startTime: '16:00:00',
       servicePriceArs: 15000,
@@ -169,20 +195,51 @@ describe('1. Nombre del servicio: "Corte" -> "Corte de cabello"', () => {
     expect(confirmed.text).toContain('Servicio: Corte de cabello');
     expect(confirmed.text).toContain('para un servicio de Corte de cabello con Franco');
 
-    // 2. Correo de cancelación con servicio 'Corte'
+    // 1b. Correo de confirmación con reserva histórica 'Corte de cabello'
+    const confirmedHist = buildConfirmedEmail({
+      notificationId: 'notif-1b',
+      notificationType: 'CONFIRMED',
+      recipientEmail: 'cliente@test.com',
+      clientName: 'Martín Gómez',
+      barberName: 'Lautaro',
+      serviceName: 'Corte de cabello', // Histórica con "Corte de cabello"
+      bookingDate: '2026-11-05',
+      startTime: '16:00:00',
+      servicePriceArs: 25000,
+      downPaymentArs: 5000,
+    });
+    expect(confirmedHist.html).toContain('Corte de cabello');
+    expect(confirmedHist.text).toContain('Servicio: Corte de cabello');
+
+    // 2. Correo de cancelación con nueva reserva 'Corte'
     const cancelled = buildCancelledEmail({
       notificationId: 'notif-2',
       notificationType: 'CANCELLED',
       recipientEmail: 'cliente@test.com',
       clientName: 'Martín Gómez',
       barberName: 'Lautaro',
-      serviceName: 'Corte', // Histórico 'Corte'
+      serviceName: 'Corte', // Nueva reserva 'Corte'
       bookingDate: '2026-11-05',
       startTime: '16:00:00',
       downPaymentArs: 5000,
     });
     expect(cancelled.html).toContain('Corte de cabello');
     expect(cancelled.text).toContain('Servicio: Corte de cabello');
+
+    // 2b. Correo de cancelación con reserva histórica 'Corte de cabello'
+    const cancelledHist = buildCancelledEmail({
+      notificationId: 'notif-2b',
+      notificationType: 'CANCELLED',
+      recipientEmail: 'cliente@test.com',
+      clientName: 'Martín Gómez',
+      barberName: 'Lautaro',
+      serviceName: 'Corte de cabello', // Histórico
+      bookingDate: '2026-11-05',
+      startTime: '16:00:00',
+      downPaymentArs: 5000,
+    });
+    expect(cancelledHist.html).toContain('Corte de cabello');
+    expect(cancelledHist.text).toContain('Servicio: Corte de cabello');
 
     // 3. Correo de solicitud con transferencia
     const newReq = buildNewRequestEmail(
@@ -192,7 +249,7 @@ describe('1. Nombre del servicio: "Corte" -> "Corte de cabello"', () => {
         recipientEmail: 'cliente@test.com',
         clientName: 'Martín Gómez',
         barberName: 'Lautaro',
-        serviceName: 'Corte', // Histórico 'Corte'
+        serviceName: 'Corte',
         servicePriceArs: 25000,
         serviceDurationMinutes: 45,
         downPaymentArs: 5000,

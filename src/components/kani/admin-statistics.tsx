@@ -42,7 +42,7 @@ import {
   readRealAppointments,
   type RealAppointment,
 } from '@/lib/kani-appointments';
-import { money } from '@/lib/kani-model';
+import { money, formatServiceName } from '@/lib/kani-model';
 import {
   businessDateToday,
   BUSINESS_TIME_ZONE,
@@ -346,7 +346,7 @@ export function AdminStatistics() {
               className="select-control w-full h-9 px-3 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20 font-medium"
             >
               <option value="Todos">Todos los servicios</option>
-              <option value="Corte de cabello">Corte de cabello</option>
+              <option value="Corte">Corte</option>
               <option value="Corte y barba">Corte y barba</option>
               <option value="Barba">Barba</option>
               <option value="Otros">Otros</option>
@@ -693,7 +693,7 @@ export function AdminStatistics() {
                   {operationalStats.byService.map((s) => (
                     <div key={s.serviceName} className="space-y-1 text-xs">
                       <div className="flex items-center justify-between">
-                        <span className="font-medium text-foreground">{s.serviceName}</span>
+                        <span className="font-medium text-foreground">{formatServiceName(s.serviceName)}</span>
                         <span className="font-semibold text-foreground">
                           {s.count} {s.count === 1 ? 'atención' : 'atenciones'}{' '}
                           <span className="text-muted-foreground font-normal">
@@ -872,7 +872,7 @@ export function AdminStatistics() {
                   {financialStats.byService.map((s) => (
                     <div key={s.serviceName} className="space-y-1 text-xs">
                       <div className="flex items-center justify-between">
-                        <span className="font-medium text-foreground">{s.serviceName}</span>
+                        <span className="font-medium text-foreground">{formatServiceName(s.serviceName)}</span>
                         <span className="font-semibold text-foreground">
                           {money(s.total)}{' '}
                           <span className="text-muted-foreground font-normal">
@@ -919,7 +919,7 @@ export function AdminStatistics() {
                         >
                           <div>
                             <span className="font-semibold text-foreground">{item.clientName}</span>
-                            <span className="text-muted-foreground"> · {item.serviceName} ({item.barberName})</span>
+                            <span className="text-muted-foreground"> · {formatServiceName(item.serviceName)} ({item.barberName})</span>
                             <span className="text-muted-foreground block text-[11px]">
                               {item.date} {item.time} hs {item.reason ? `· Motivo: ${item.reason}` : ''}
                             </span>

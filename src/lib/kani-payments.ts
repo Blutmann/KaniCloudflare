@@ -3,7 +3,7 @@ import type { Tables } from '@/integrations/supabase/types';
 import type { AuthenticatedStaff } from '@/lib/kani-auth';
 import type { RealAppointment } from '@/lib/kani-appointments';
 import { businessDateToday, addCalendarDays, startOfBusinessWeek, BUSINESS_TIME_ZONE } from '@/lib/kani-mobile-appointments';
-import { services as defaultCatalogServices, minutes, money } from '@/lib/kani-model';
+import { services as defaultCatalogServices, minutes, money, formatServiceName } from '@/lib/kani-model';
 
 export type PaymentMethod =
   | 'Efectivo'
@@ -469,7 +469,7 @@ export async function fetchServicePayments(
     barberId: row.barber_id,
     barberName: barberMap.get(row.barber_id) || 'Barbero',
     serviceId: row.service_id,
-    serviceName: row.service_name === 'Corte + barba' ? 'Corte y barba' : (row.service_name === 'Corte' ? 'Corte de cabello' : (row.service_name as ServicePaymentType)),
+    serviceName: row.service_name === 'Corte + barba' ? 'Corte y barba' : (formatServiceName(row.service_name) as ServicePaymentType),
     serviceOtherDetail: row.service_other_detail,
     servicePriceArs: row.service_price_ars,
     discountArs: row.discount_ars,
@@ -840,7 +840,7 @@ export async function recordServicePayment(
       barberId: insertedRow.barber_id,
       barberName,
       serviceId: insertedRow.service_id,
-      serviceName: insertedRow.service_name === 'Corte + barba' ? 'Corte y barba' : (insertedRow.service_name === 'Corte' ? 'Corte de cabello' : (insertedRow.service_name as ServicePaymentType)),
+      serviceName: insertedRow.service_name === 'Corte + barba' ? 'Corte y barba' : (formatServiceName(insertedRow.service_name) as ServicePaymentType),
       serviceOtherDetail: insertedRow.service_other_detail,
       servicePriceArs: insertedRow.service_price_ars,
       discountArs: insertedRow.discount_ars,
@@ -959,7 +959,7 @@ export async function updateServicePayment(
     barberId: updatedRow.barber_id,
     barberName,
     serviceId: updatedRow.service_id,
-    serviceName: updatedRow.service_name === 'Corte + barba' ? 'Corte y barba' : (updatedRow.service_name === 'Corte' ? 'Corte de cabello' : (updatedRow.service_name as ServicePaymentType)),
+    serviceName: updatedRow.service_name === 'Corte + barba' ? 'Corte y barba' : (formatServiceName(updatedRow.service_name) as ServicePaymentType),
     serviceOtherDetail: updatedRow.service_other_detail,
     servicePriceArs: updatedRow.service_price_ars,
     discountArs: updatedRow.discount_ars,
@@ -1330,10 +1330,10 @@ export function computeServicePaymentsFinancialStats(
     const sName = p.serviceName === 'Otros' && p.serviceOtherDetail
       ? `${p.serviceOtherDetail} (Otros)`
       : p.serviceName;
-    const entry = serviceMap.get(sName) || { serviceName: sName, total: 0, count: 0 };
+    const entry = serviceMap.get(formatServiceName(sName)) || { serviceName: formatServiceName(sName), total: 0, count: 0 };
     entry.total += (p.finalAmountArs || 0);
     entry.count += 1;
-    serviceMap.set(sName, entry);
+    serviceMap.set(formatServiceName(sName), entry);
   }
 
   const byService = Array.from(serviceMap.values())

@@ -236,13 +236,13 @@ export function PaywayBooking() {
           const confirmedBooking: ConfirmedPaywayBooking = {
             appointmentId: pendingCheck.appointmentId,
             attemptId: pendingCheck.attemptId,
-            serviceName: activeDraft?.serviceName ?? 'Corte de cabello',
+            serviceName: activeDraft?.serviceName ?? 'Corte',
             barber: activeDraft?.barber ?? 'Lautaro',
             date: activeDraft?.date ?? '',
             time: activeDraft?.time ?? '',
             clientName: activeDraft?.name ?? '',
             depositArs: pendingCheck.depositArs,
-            servicePriceArs: resolveServicePrice(activeDraft?.serviceName ?? 'Corte de cabello', configuredServices),
+            servicePriceArs: resolveServicePrice(activeDraft?.serviceName ?? 'Corte', configuredServices),
           };
           paidAppointmentsRef.current.add(pendingCheck.appointmentId);
           persistConfirmedBooking(confirmedBooking);
@@ -300,7 +300,7 @@ export function PaywayBooking() {
     });
     draftRef.current = {
       barber: stored.barber ?? 'Lautaro',
-      serviceName: stored.serviceName ?? 'Corte de cabello',
+      serviceName: stored.serviceName ?? 'Corte',
       date: stored.date ?? '',
       time: stored.time ?? '',
       name: stored.clientName ?? '',
@@ -322,13 +322,13 @@ export function PaywayBooking() {
           const confirmedBooking: ConfirmedPaywayBooking = {
             appointmentId: stored.appointmentId,
             attemptId: stored.attemptId,
-            serviceName: stored.serviceName ?? 'Corte de cabello',
+            serviceName: stored.serviceName ?? 'Corte',
             barber: stored.barber ?? 'Lautaro',
             date: stored.date ?? '',
             time: stored.time ?? '',
             clientName: stored.clientName ?? '',
             depositArs: stored.depositArs,
-            servicePriceArs: resolveServicePrice(stored.serviceName ?? 'Corte de cabello', configuredServices),
+            servicePriceArs: resolveServicePrice(stored.serviceName ?? 'Corte', configuredServices),
           };
           paidAppointmentsRef.current.add(stored.appointmentId);
           persistConfirmedBooking(confirmedBooking);
@@ -378,13 +378,13 @@ export function PaywayBooking() {
           const confirmedBooking: ConfirmedPaywayBooking = {
             appointmentId: pendingCheck.appointmentId,
             attemptId: pendingCheck.attemptId,
-            serviceName: activeDraft?.serviceName ?? 'Corte de cabello',
+            serviceName: activeDraft?.serviceName ?? 'Corte',
             barber: activeDraft?.barber ?? 'Lautaro',
             date: activeDraft?.date ?? '',
             time: activeDraft?.time ?? '',
             clientName: activeDraft?.name ?? '',
             depositArs: pendingCheck.depositArs,
-            servicePriceArs: resolveServicePrice(activeDraft?.serviceName ?? 'Corte de cabello', configuredServices),
+            servicePriceArs: resolveServicePrice(activeDraft?.serviceName ?? 'Corte', configuredServices),
           };
           paidAppointmentsRef.current.add(pendingCheck.appointmentId);
           persistConfirmedBooking(confirmedBooking);
@@ -685,13 +685,13 @@ export function PaywayBooking() {
         const confirmedBooking: ConfirmedPaywayBooking = {
           appointmentId: checkout.appointmentId,
           attemptId: checkout.attemptId,
-          serviceName: activeDraft?.serviceName ?? 'Corte de cabello',
+          serviceName: activeDraft?.serviceName ?? 'Corte',
           barber: activeDraft?.barber ?? 'Lautaro',
           date: activeDraft?.date ?? '',
           time: activeDraft?.time ?? '',
           clientName: activeDraft?.name ?? '',
           depositArs: checkout.depositArs,
-          servicePriceArs: activeDraft?.benefitQuote?.originalPriceArs ?? resolveServicePrice(activeDraft?.serviceName ?? 'Corte de cabello', configuredServices),
+          servicePriceArs: activeDraft?.benefitQuote?.originalPriceArs ?? resolveServicePrice(activeDraft?.serviceName ?? 'Corte', configuredServices),
           benefitType: activeDraft?.benefitQuote?.type ?? null,
           benefitCode: activeDraft?.benefitCode ?? null,
           originalPriceArs: activeDraft?.benefitQuote?.originalPriceArs ?? null,

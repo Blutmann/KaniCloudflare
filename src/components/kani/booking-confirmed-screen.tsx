@@ -1,6 +1,6 @@
 import { Check, Instagram, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { dateLabel, money } from '@/lib/kani-model';
+import { dateLabel, money, formatServiceName } from '@/lib/kani-model';
 import { KANI_MAPS_URL, KANI_MAPS_EMBED_URL } from '@/lib/kani-constants';
 
 export type ConfirmedBookingData = {
@@ -56,7 +56,7 @@ export function BookingConfirmedScreen({
           {/* Columna izquierda: Card de detalles de la reserva */}
           <div className="confirmation-details">
             <dl className="summary-list" style={{ marginTop: 0 }}>
-              <div><dt>Servicio</dt><dd>{confirmed.serviceName}</dd></div>
+              <div><dt>Servicio</dt><dd>{formatServiceName(confirmed.serviceName)}</dd></div>
               <div><dt>Barbero</dt><dd>{confirmed.barber}</dd></div>
               <div><dt>Fecha</dt><dd className="capitalize">{confirmed.date ? dateLabel(confirmed.date) : '-'}</dd></div>
               <div><dt>Horario</dt><dd>{confirmed.time}</dd></div>

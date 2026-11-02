@@ -44,7 +44,7 @@ import {
 } from "@/lib/kani-payments";
 import { businessDateToday } from "@/lib/kani-mobile-appointments";
 import { getConfirmedPaymentOrdersFn, type ConfirmedPaymentOrderInfo } from "@/lib/kani-mercadopago.functions";
-import { money } from "@/lib/kani-model";
+import { money, formatServiceName } from "@/lib/kani-model";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -98,9 +98,9 @@ export function AdminPayments() {
   const [formBarberId, setFormBarberId] = useState<string>(defaultBarberId);
   const [formDate, setFormDate] = useState<string>(todayStr);
   const [formTime, setFormTime] = useState<string>(businessTimeNow());
-  const [formServiceName, setFormServiceName] = useState<ServicePaymentType>("Corte de cabello");
+  const [formServiceName, setFormServiceName] = useState<ServicePaymentType>("Corte");
   const [formOtherDetail, setFormOtherDetail] = useState<string>("");
-  const [formPriceArs, setFormPriceArs] = useState<number>(STANDARD_SERVICE_PRICES["Corte de cabello"]);
+  const [formPriceArs, setFormPriceArs] = useState<number>(STANDARD_SERVICE_PRICES["Corte"]);
   const [formDiscountArs, setFormDiscountArs] = useState<number | string>(0);
   const [formClientName, setFormClientName] = useState<string>("");
   const [formClientContact, setFormClientContact] = useState<string>("");
@@ -236,7 +236,7 @@ export function AdminPayments() {
     for (const p of payments) {
       const sName = p.serviceName === "Otros" && p.serviceOtherDetail
         ? `${p.serviceOtherDetail} (Otros)`
-        : p.serviceName;
+        : formatServiceName(p.serviceName);
       const current = byServiceMap.get(sName) || { total: 0, count: 0 };
       current.total += (p.finalAmountArs || 0);
       current.count += 1;
@@ -324,8 +324,8 @@ export function AdminPayments() {
       setFormServiceName("Barba");
       setFormPriceArs(STANDARD_SERVICE_PRICES["Barba"]);
     } else {
-      setFormServiceName("Corte de cabello");
-      setFormPriceArs(STANDARD_SERVICE_PRICES["Corte de cabello"]);
+      setFormServiceName("Corte");
+      setFormPriceArs(STANDARD_SERVICE_PRICES["Corte"]);
     }
 
     setFormOnlineDepositPaid(Boolean(apt.depositPaid));
@@ -416,8 +416,8 @@ export function AdminPayments() {
     setFormBarberId(defaultBarberId);
     setFormDate(businessDateToday());
     setFormTime(businessTimeNow());
-    setFormServiceName("Corte de cabello");
-    setFormPriceArs(STANDARD_SERVICE_PRICES["Corte de cabello"]);
+    setFormServiceName("Corte");
+    setFormPriceArs(STANDARD_SERVICE_PRICES["Corte"]);
     setFormOtherDetail("");
     setFormDiscountArs(0);
     setFormClientName("");
@@ -606,7 +606,7 @@ export function AdminPayments() {
               <div className="flex items-center gap-2 text-foreground font-semibold">
                 <Pencil className="w-3.5 h-3.5 text-primary shrink-0" />
                 <span>
-                  Editando servicio registrado ({editingPayment.serviceName} · {money(editingPayment.finalAmountArs)})
+                  Editando servicio registrado ({formatServiceName(editingPayment.serviceName)} · {money(editingPayment.finalAmountArs)})
                 </span>
               </div>
               <Button
@@ -742,7 +742,7 @@ export function AdminPayments() {
                       : "border border-border focus:ring-1 focus:ring-foreground/20 text-foreground"
                   }`}
                 >
-                  <option value="Corte de cabello">Corte de cabello</option>
+                  <option value="Corte">Corte</option>
                   <option value="Corte y barba">Corte y barba</option>
                   <option value="Barba">Barba</option>
                   <option value="Otros">Otros</option>
@@ -1071,7 +1071,7 @@ export function AdminPayments() {
                       {apt.date} · {apt.time} hs · {apt.barber}
                     </div>
                     <div className="font-medium text-foreground mt-0.5">
-                      {apt.name} ({apt.serviceName})
+                      {apt.name} ({formatServiceName(apt.serviceName)})
                     </div>
                   </div>
 
@@ -1189,7 +1189,7 @@ export function AdminPayments() {
                 className="select-control w-full h-9 px-2.5 text-xs bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/20"
               >
                 <option value="ALL">Todos</option>
-                <option value="Corte de cabello">Corte de cabello</option>
+                <option value="Corte">Corte</option>
                 <option value="Corte y barba">Corte y barba</option>
                 <option value="Barba">Barba</option>
                 <option value="Otros">Otros</option>
@@ -1262,7 +1262,7 @@ export function AdminPayments() {
                             <span>
                               {payment.serviceName === "Otros" && payment.serviceOtherDetail
                                 ? `${payment.serviceOtherDetail} (Otros)`
-                                : payment.serviceName}
+                                : formatServiceName(payment.serviceName)}
                             </span>
                             {payment.serviceOrigin === 'appointment' || payment.appointmentId ? (
                               <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary/10 text-primary border border-primary/20">
@@ -1374,7 +1374,7 @@ export function AdminPayments() {
                         <span className="font-medium text-foreground">
                           {payment.serviceName === "Otros" && payment.serviceOtherDetail
                             ? `${payment.serviceOtherDetail} (Otros)`
-                            : payment.serviceName}
+                            : formatServiceName(payment.serviceName)}
                         </span>
                         {payment.serviceOrigin === 'appointment' || payment.appointmentId ? (
                           <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-medium bg-primary/10 text-primary border border-primary/20">
@@ -1661,7 +1661,7 @@ export function AdminPayments() {
                   </h3>
                   <p className="text-xs text-muted-foreground leading-normal">
                     Esta acción no se puede deshacer. Se eliminará el registro de{" "}
-                    <strong className="text-foreground">{paymentToDelete.serviceName}</strong> (
+                    <strong className="text-foreground">{formatServiceName(paymentToDelete.serviceName)}</strong> (
                     {money(paymentToDelete.finalAmountArs)}) correspondiente a{" "}
                     <strong className="text-foreground">{paymentToDelete.barberName}</strong>.
                   </p>

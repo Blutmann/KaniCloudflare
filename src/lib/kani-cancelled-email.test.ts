@@ -10,7 +10,7 @@ describe('Kani — Rediseño del correo de cancelación', () => {
     recipientEmail: 'tomas@example.com',
     clientName: 'Martín Palermo',
     barberName: 'Lautaro',
-    serviceName: 'Corte de Cabello',
+    serviceName: 'Corte de cabello',
     bookingDate: '2026-11-05',
     startTime: '16:00:00',
     endTime: '16:45:00',
@@ -49,7 +49,7 @@ describe('Kani — Rediseño del correo de cancelación', () => {
     expect(result.html).toContain('Hola <strong style="color: #F5F5F5; font-weight: 600;">Martín Palermo</strong>, se canceló tu turno con Lautaro. Te dejamos los detalles de la reserva cancelada.');
 
     // Detalles del turno
-    expect(result.html).toContain('Corte de Cabello');
+    expect(result.html).toContain('Corte de cabello');
     expect(result.html).toContain('Lautaro');
     expect(result.html).toContain('16:00 hs');
     expect(result.html).toContain('&#34809;'); // Kanji decorativo 蟹
@@ -141,7 +141,7 @@ describe('Kani — Rediseño del correo de cancelación', () => {
     expect(result.html).toContain('Se canceló tu turno');
     expect(result.text).toContain('Tu turno fue cancelado');
     expect(result.text).toContain('Lautaro');
-    expect(result.text).toContain('Corte de Cabello');
+    expect(result.text).toContain('Corte de cabello');
     expect(result.text).toContain('16:00 hs');
     expect(result.text).toContain('Reservar otro turno: https://www.kanibarber.com/reservar-turno');
     expect(result.text).toContain('Contactar por WhatsApp: https://wa.me/5491155616438');

@@ -4,7 +4,7 @@ import { CheckCircle2, Tag, Trash2, Edit2, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminStaff } from "@/lib/kani-admin-context";
 import { businessDateToday, addCalendarDays } from "@/lib/kani-mobile-appointments";
-import { money } from "@/lib/kani-model";
+import { money, formatServiceName } from "@/lib/kani-model";
 import { deduplicatePaymentMovements, paymentSummary, scopeV2 } from "@/lib/kani-v2";
 import {
   deleteServicePayment,
@@ -39,7 +39,7 @@ export function V2Payments() {
   );
   const [appointmentId, setAppointmentId] = useState(search.turno ?? "");
   const [barberId, setBarberId] = useState(staff.profile.barber_id ?? staff.barbers[0]?.id ?? "");
-  const [serviceName, setServiceName] = useState<string>("Corte de cabello");
+  const [serviceName, setServiceName] = useState<string>("Corte");
   const [customServiceName, setCustomServiceName] = useState<string>("");
   const [priceOverride, setPriceOverride] = useState<number | null>(null);
   const [method, setMethod] = useState<PaymentMethod>("Efectivo");
@@ -60,7 +60,7 @@ export function V2Payments() {
   // States for Editing and Deleting payments
   const [editingPayment, setEditingPayment] = useState<ServicePayment | null>(null);
   const [editBarberId, setEditBarberId] = useState("");
-  const [editServiceName, setEditServiceName] = useState<ServicePaymentType>("Corte de cabello");
+  const [editServiceName, setEditServiceName] = useState<ServicePaymentType>("Corte");
   const [editOtherDetail, setEditOtherDetail] = useState("");
   const [editPrice, setEditPrice] = useState(25000);
   const [editDiscount, setEditDiscount] = useState(0);
@@ -84,7 +84,7 @@ export function V2Payments() {
   );
   const appointment =
     origin === "appointment" ? choices.find((a) => a.id === appointmentId) : undefined;
-  const service = data.services.find((s) => s.name === serviceName);
+  const service = data.services.find((s) => s.name === serviceName || (s.id === 'corte' && (serviceName === 'Corte' || serviceName === 'Corte de cabello')));
   const price =
     priceOverride ?? (appointment ? (appointment.servicePrice ?? 0) : (service?.price ?? 0));
   const deposit = appointment?.depositPaid ? (appointment.depositAmountArs ?? 5000) : 0;
@@ -349,7 +349,7 @@ export function V2Payments() {
                     <span className="v2-field-label">Servicio</span>
                     {origin === "appointment" ? (
                       <input
-                        value={appointment?.serviceName || (appointmentId ? "Cargando…" : "Seleccionar turno")}
+                        value={formatServiceName(appointment?.serviceName) || (appointmentId ? "Cargando…" : "Seleccionar turno")}
                         disabled
                         readOnly
                       />
@@ -363,8 +363,8 @@ export function V2Payments() {
                         }}
                       >
                         {data.services.map((s) => (
-                          <option value={s.name} key={s.id}>
-                            {s.name}
+                          <option value={formatServiceName(s.name)} key={s.id}>
+                            {formatServiceName(s.name)}
                           </option>
                         ))}
                         <option value="Otro">Otro</option>
@@ -646,7 +646,7 @@ export function V2Payments() {
                     </td>
                     <td className="col-service">
                       <strong className="v2-table-service-name">
-                        {p.serviceOtherDetail || p.serviceName}
+                        {p.serviceOtherDetail || formatServiceName(p.serviceName)}
                       </strong>
                       <small className="v2-table-barber-name">{p.barberName}</small>
                     </td>
@@ -721,7 +721,7 @@ export function V2Payments() {
                 <div className="v2-pcm-row-top">
                   <div className="v2-pcm-service-group">
                     <strong className="v2-pcm-service">
-                      {p.serviceOtherDetail || p.serviceName}
+                      {p.serviceOtherDetail || formatServiceName(p.serviceName)}
                     </strong>
                     <span className="v2-pcm-barber">{p.barberName}</span>
                   </div>
@@ -822,7 +822,7 @@ export function V2Payments() {
                 onChange={(e) => setEditServiceName(e.target.value as ServicePaymentType)}
                 disabled={editBusy}
               >
-                <option value="Corte de cabello">Corte de cabello</option>
+                <option value="Corte">Corte</option>
                 <option value="Corte y barba">Corte y barba</option>
                 <option value="Barba">Barba</option>
                 <option value="Otros">Otros</option>
@@ -985,7 +985,7 @@ export function V2Payments() {
           <DialogDescription>
             ¿Estás seguro de anular el cobro de{" "}
             <strong>
-              {deletingPayment?.serviceName} ({money(deletingPayment?.collectedAmountArs || 0)})
+              {formatServiceName(deletingPayment?.serviceName)} ({money(deletingPayment?.collectedAmountArs || 0)})
             </strong>
             ? Esta operación aplicará una baja lógica con trazabilidad y excluirá el cobro de las
             métricas sin alterar pagos externos ni eliminar turnos agendados.

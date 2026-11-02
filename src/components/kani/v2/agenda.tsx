@@ -67,7 +67,7 @@ export function V2Home() {
               <strong>{next.time}</strong>
               <h2>{next.name}</h2>
               <p>
-                {next.serviceName} · {next.barber}
+                {formatServiceName(next.serviceName)} · {next.barber}
               </p>
               <p className={next.date === today ? "v2-current-day" : undefined}>
                 {dateLabel(next.date)}
@@ -858,7 +858,7 @@ export function V2Appointments() {
           {selectedNotifDetail?.appointment && (
             <div style={{ marginTop: "10px", padding: "10px 12px", background: "var(--v2-inset, rgba(255,255,255,0.04))", borderRadius: "6px", fontSize: "13px", display: "flex", flexDirection: "column", gap: "4px" }}>
               <p><strong>Cliente:</strong> {selectedNotifDetail.appointment.name} {selectedNotifDetail.appointment.phone ? `(${selectedNotifDetail.appointment.phone})` : ""}</p>
-              <p><strong>Turno:</strong> {dateLabel(selectedNotifDetail.appointment.date || "")} {(selectedNotifDetail.appointment.startTime || selectedNotifDetail.appointment.time || "").slice(0, 5)} hs — {selectedNotifDetail.appointment.serviceName || "Servicio"}</p>
+              <p><strong>Turno:</strong> {dateLabel(selectedNotifDetail.appointment.date || "")} {(selectedNotifDetail.appointment.startTime || selectedNotifDetail.appointment.time || "").slice(0, 5)} hs — {formatServiceName(selectedNotifDetail.appointment.serviceName) || "Servicio"}</p>
               <p><strong>Estado del turno:</strong> <span className={`v2-status-badge v2-status-${(selectedNotifDetail.appointment.statusCode || "CONFIRMED").toLowerCase()}`}>{statusLabels[selectedNotifDetail.appointment.statusCode] || selectedNotifDetail.appointment.statusCode || "Confirmado"}</span></p>
             </div>
           )}

@@ -1,5 +1,5 @@
 export const services = [
-  { id: 'corte', name: 'Corte de cabello', price: 25000, duration: 45, description: 'Tu estilo, con precisión.', number: '01' },
+  { id: 'corte', name: 'Corte', price: 25000, duration: 45, description: 'Tu estilo, con precisión.', number: '01' },
   { id: 'corte-barba', name: 'Corte y barba', price: 30000, duration: 60, description: 'Una experiencia completa.', number: '02' },
   { id: 'barba', name: 'Barba', price: 15000, duration: 30, description: 'Los detalles hacen la diferencia.', number: '03' },
 ] as const;
@@ -31,13 +31,52 @@ export const FRANCO_SPECIAL_PRICES: Record<string, number> = {
   Barba: 5000,
 };
 
-export function formatServiceName(name?: string | null): string {
+export type ChannelPresentation = 'web' | 'email' | 'whatsapp' | 'calendar';
+
+export function formatServiceNameForChannel(
+  name?: string | null,
+  channel: ChannelPresentation = 'web'
+): string {
   if (!name) return '';
   const trimmed = name.trim();
-  if (trimmed === 'Corte' || trimmed === 'corte') {
-    return 'Corte de cabello';
+  const lower = trimmed.toLowerCase();
+
+  if (channel === 'email') {
+    if (lower === 'corte' || lower === 'corte de cabello') {
+      return 'Corte de cabello';
+    }
+    if (lower === 'corte + barba' || lower === 'corte +barba') {
+      return 'Corte y barba';
+    }
+    return trimmed;
+  }
+
+  if (channel === 'whatsapp' || channel === 'calendar') {
+    if (lower === 'corte' || lower === 'corte de cabello') {
+      return 'Corte de cabello';
+    }
+    if (lower === 'corte + barba' || lower === 'corte +barba') {
+      return 'Corte y barba';
+    }
+    return trimmed;
+  }
+
+  // Web pública y panel administrativo (channel === 'web')
+  if (lower === 'corte de cabello' || lower === 'corte') {
+    return 'Corte';
+  }
+  if (lower === 'corte + barba' || lower === 'corte +barba') {
+    return 'Corte y barba';
   }
   return trimmed;
+}
+
+export function formatServiceName(name?: string | null): string {
+  return formatServiceNameForChannel(name, 'web');
+}
+
+export function formatServiceNameForEmail(name?: string | null): string {
+  return formatServiceNameForChannel(name, 'email');
 }
 
 export function getEffectiveServicePrice(serviceIdOrName: ServiceId | string, barber?: Barber | string | null): number {

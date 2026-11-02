@@ -8,7 +8,7 @@ import { preparePaywayCheckoutFn, payPaywayDepositFn } from '@/lib/kani-payway.f
 import { tokenizePaywayForm } from '@/lib/kani-payway.browser';
 import { PAYWAY_MESSAGES, type PaywayCheckout, type PaywayResult } from '@/lib/kani-payway';
 import { readConfiguredServices, type ConfiguredService } from '@/lib/kani-availability';
-import { dateLabel, money, services } from '@/lib/kani-model';
+import { dateLabel, money, services, formatServiceName } from '@/lib/kani-model';
 import {
   detectCardNetwork,
   formatCardPan,
@@ -365,13 +365,13 @@ export function PaywayBookingV5() {
         const confirmedBooking: ConfirmedPaywayBooking = {
           appointmentId: checkout.appointmentId,
           attemptId: checkout.attemptId,
-          serviceName: activeDraft?.serviceName ?? 'Corte de cabello',
+          serviceName: activeDraft?.serviceName ?? 'Corte',
           barber: activeDraft?.barber ?? 'Lautaro',
           date: activeDraft?.date ?? '',
           time: activeDraft?.time ?? '',
           clientName: activeDraft?.name ?? '',
           depositArs: checkout.depositArs,
-          servicePriceArs: resolveServicePrice(activeDraft?.serviceName ?? 'Corte de cabello', configuredServices),
+          servicePriceArs: resolveServicePrice(activeDraft?.serviceName ?? 'Corte', configuredServices),
         };
         paidAppointmentsRef.current.add(checkout.appointmentId);
         persistConfirmedBooking(confirmedBooking);
@@ -437,7 +437,7 @@ export function PaywayBookingV5() {
           <div className="confirmation-grid">
             <div className="confirmation-details">
               <dl className="summary-list" style={{ marginTop: 0 }}>
-                <div><dt>Servicio</dt><dd>{confirmed.serviceName}</dd></div>
+                <div><dt>Servicio</dt><dd>{formatServiceName(confirmed.serviceName)}</dd></div>
                 <div><dt>Barbero</dt><dd>{confirmed.barber}</dd></div>
                 <div><dt>Fecha</dt><dd className="capitalize">{confirmed.date ? dateLabel(confirmed.date) : '-'}</dd></div>
                 <div><dt>Horario</dt><dd>{confirmed.time}</dd></div>

@@ -56,7 +56,7 @@ import {
   adminToggleBenefitCodeStatusFn,
   adminUpdateBenefitCodeValidityFn,
 } from '@/lib/kani-benefit-codes.functions';
-import { money } from '@/lib/kani-model';
+import { money, formatServiceName } from '@/lib/kani-model';
 
 export type BenefitCodeSortOption = 'RECENT' | 'OLDEST' | 'CODE_ASC' | 'CODE_DESC' | 'MOST_USED';
 
@@ -831,7 +831,7 @@ export function BenefitCodesAdminSection() {
 
                             <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-muted-foreground pt-1 border-t border-border/40">
                               <span>
-                                Servicio: <strong className="text-foreground">{usagesList[0].serviceName}</strong> con{' '}
+                                Servicio: <strong className="text-foreground">{formatServiceName(usagesList[0].serviceName)}</strong> con{' '}
                                 <strong className="text-foreground">{usagesList[0].barberName}</strong>
                               </span>
                               {usagesList[0].isAppointmentCancelled && (
@@ -928,7 +928,7 @@ export function BenefitCodesAdminSection() {
 
                                   <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-muted-foreground pt-1 border-t border-border/40">
                                     <span>
-                                      Servicio: <strong className="text-foreground">{u.serviceName}</strong> con{' '}
+                                      Servicio: <strong className="text-foreground">{formatServiceName(u.serviceName)}</strong> con{' '}
                                       <strong className="text-foreground">{u.barberName}</strong>
                                     </span>
                                     {u.isAppointmentCancelled && (

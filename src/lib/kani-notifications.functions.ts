@@ -4,7 +4,7 @@ import { KANI_MAPS_URL, KANI_STANDARD_DEPOSIT_ARS, KANI_PUBLIC_WHATSAPP_URL, KAN
 import { buildTurnoIcsUrl } from './kani-calendar-ics';
 import { buildCancellationUrl } from './kani-cancellation-token';
 import { isAppointmentPast } from './kani-mobile-appointments';
-import { formatServiceName } from './kani-model';
+import { formatServiceName, formatServiceNameForEmail, formatServiceNameForChannel } from './kani-model';
 
 import type { Database } from "@/integrations/supabase/types";
 
@@ -767,7 +767,7 @@ export async function retryNotificationChannel(input: {
         clientName: client.name || "Cliente",
         clientPhone: client.phone,
         barberName: barber?.name || "Lautaro",
-        serviceName: formatServiceName((aptData as any).custom_service_name || service?.name || "Corte de cabello"),
+        serviceName: formatServiceNameForChannel((aptData as any).custom_service_name || service?.name || "Corte", 'whatsapp'),
         bookingDate: aptData.booking_date,
         startTime: aptData.start_time,
       });
@@ -842,7 +842,7 @@ export async function retryNotificationChannel(input: {
         console.warn("[KANI notification] Advertencia registrando PROCESSING para Email:", procErr);
       }
 
-      const serviceName = formatServiceName((aptData as any).custom_service_name || service?.name || "Corte de cabello");
+      const serviceName = formatServiceNameForEmail((aptData as any).custom_service_name || service?.name || "Corte");
       const servicePriceArs = (aptData as any).service_price_ars ?? service?.price_ars ?? 0;
       const serviceDurationMinutes = service?.duration_minutes ?? 45;
       const downPaymentArs = (aptData as any).deposit_amount_ars ?? KANI_STANDARD_DEPOSIT_ARS;
@@ -1108,7 +1108,7 @@ export function buildGoogleCalendarUrl(payload: {
     d.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
 
   const dates = `${formatUtc(startUtcDate)}/${formatUtc(endUtcDate)}`;
-  const formattedServiceName = formatServiceName(payload.serviceName);
+  const formattedServiceName = formatServiceNameForChannel(payload.serviceName, 'calendar');
   const title = `${formattedServiceName} — Kani Barber Studio`;
   const details = `Turno con ${payload.barberName} para ${formattedServiceName} en Kani Barber Studio.`;
   const location = KANI_STUDIO_FULL_ADDRESS;
@@ -1135,7 +1135,7 @@ export function buildConfirmedEmail(payload: NotificationPayload) {
     : (payload.benefitOnlineDepositArs ?? ((payload.downPaymentArs && payload.downPaymentArs !== 10000) ? payload.downPaymentArs : KANI_STANDARD_DEPOSIT_ARS));
   const remainingPayment = payload.benefitInPersonBalanceArs ?? (isFreeService ? 0 : Math.max(0, finalPrice - downPayment));
 
-  const formattedServiceName = formatServiceName(payload.serviceName);
+  const formattedServiceName = formatServiceNameForEmail(payload.serviceName);
 
   const safe = {
     clientName: escapeHtml(payload.clientName),
@@ -1897,7 +1897,7 @@ export function buildCancelledEmail(payload: NotificationPayload, bookingUrl?: s
   const hasRecordedDeposit = !isNoDeposit && !isFreeService && Boolean(payload.downPaymentArs && payload.downPaymentArs > 0);
   const depositPaidFormatted = hasRecordedDeposit ? '$' + Number(payload.downPaymentArs).toLocaleString("es-AR") : null;
 
-  const formattedServiceName = formatServiceName(payload.serviceName || '');
+  const formattedServiceName = formatServiceNameForEmail(payload.serviceName || '');
 
   const safe = {
     clientName: escapeHtml(payload.clientName || 'Cliente'),
@@ -2346,7 +2346,7 @@ export function buildNewRequestEmail(payload: NotificationPayload, date: string,
   }
 
   const remainingPayment = Math.max(0, payload.servicePriceArs - payload.downPaymentArs);
-  const formattedServiceName = formatServiceName(payload.serviceName);
+  const formattedServiceName = formatServiceNameForEmail(payload.serviceName);
   const safe = {
     clientName: escapeHtml(payload.clientName),
     barberName: escapeHtml(payload.barberName),

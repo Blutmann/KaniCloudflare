@@ -5,6 +5,7 @@ import { getCancellationDetailsFn, confirmCancellationFn, type CancellationDetai
 import { pageHead } from '@/lib/kani-head';
 import { formatSpanishDateNatural } from '@/lib/kani-notifications.functions';
 import { Button } from '@/components/ui/button';
+import { formatServiceName } from '@/lib/kani-model';
 
 export const Route = createFileRoute('/cancelar-turno')({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -179,7 +180,7 @@ function CancelarTurnoPage() {
                 </div>
                 <div className="flex justify-between py-0.5">
                   <span>Servicio:</span>
-                  <span className="font-medium text-foreground">{appointment.serviceName}</span>
+                  <span className="font-medium text-foreground">{formatServiceName(appointment.serviceName)}</span>
                 </div>
                 <div className="flex justify-between py-0.5">
                   <span>Barbero:</span>
@@ -257,7 +258,7 @@ function CancelarTurnoPage() {
               <div className="flex items-center space-x-3 text-sm">
                 <Scissors className="w-4 h-4 text-[#B99A5B] shrink-0" />
                 <span className="text-muted-foreground">Servicio:</span>
-                <span className="font-semibold text-foreground ml-auto">{appointment.serviceName}</span>
+                <span className="font-semibold text-foreground ml-auto">{formatServiceName(appointment.serviceName)}</span>
               </div>
               <div className="flex items-center space-x-3 text-sm">
                 <User className="w-4 h-4 text-[#B99A5B] shrink-0" />
