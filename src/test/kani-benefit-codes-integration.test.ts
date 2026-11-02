@@ -304,9 +304,9 @@ describe('Kani Benefit Codes & Payway Integration Suite', () => {
       );
 
       expect(email.text).toContain('KANI-50PC-1234');
-      expect(email.text).toContain('ha sido consumido y no puede reutilizarse');
+      expect(email.text).toContain('no podrá reutilizarse');
       expect(email.html).toContain('KANI-50PC-1234');
-      expect(email.html).toContain('ha sido consumido y no puede reutilizarse');
+      expect(email.html).toContain('no podrá reutilizarse');
     });
   });
 });

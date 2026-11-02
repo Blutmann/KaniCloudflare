@@ -1,6 +1,6 @@
 import { createServerFn, createServerOnlyFn } from "@tanstack/react-start";
 import { notificationSubject } from './kani-email-environment';
-import { KANI_MAPS_URL, KANI_STANDARD_DEPOSIT_ARS, KANI_PUBLIC_WHATSAPP_URL, KANI_STUDIO_FULL_ADDRESS } from './kani-constants';
+import { KANI_MAPS_URL, KANI_STANDARD_DEPOSIT_ARS, KANI_PUBLIC_WHATSAPP_URL, KANI_PUBLIC_WHATSAPP_NUMBER, KANI_STUDIO_FULL_ADDRESS } from './kani-constants';
 import { buildTurnoIcsUrl } from './kani-calendar-ics';
 import { buildCancellationUrl } from './kani-cancellation-token';
 import { isAppointmentPast } from './kani-mobile-appointments';
@@ -1857,23 +1857,464 @@ function buildEmail(payload: NotificationPayload) {
   const isNewRequest = payload.notificationType === "NEW_REQUEST";
   if (isNewRequest) return buildNewRequestEmail(payload, date, time);
 
-  const baseUrl = getRuntimeEnv('KANI_APP_URL')?.replace(/\/$/, '') || 'https://kanibarber.com';
+  const baseUrl = (
+    getRuntimeEnv('KANI_APP_URL') ||
+    getRuntimeEnv('APP_URL') ||
+    'https://www.kanibarber.com'
+  ).replace(/\/$/, '');
   return buildCancelledEmail(payload, `${baseUrl}/reservar-turno`);
 }
 
-export function buildCancelledEmail(payload: NotificationPayload, bookingUrl: string) {
-  const date = new Date(`${payload.bookingDate}T12:00:00Z`).toLocaleDateString('es-AR', { day: 'numeric', month: 'long' });
-  const sentence = `Se canceló tu turno con ${payload.barberName} el día ${date} a las ${payload.startTime.slice(0, 5)} hs.`;
-  const benefitNoteText = payload.benefitCode
-    ? `\n\nTené en cuenta que el código de beneficio utilizado (${payload.benefitCode}) ha sido consumido y no puede reutilizarse.`
-    : '';
-  const benefitNoteHtml = payload.benefitCode
-    ? `<p style="color:#7A2C3A;font-size:13px;margin:12px 0;">Tené en cuenta que el código de beneficio utilizado (<strong>${escapeHtml(payload.benefitCode)}</strong>) ha sido consumido y no puede reutilizarse.</p>`
-    : '';
+export function buildCancelledEmail(payload: NotificationPayload, bookingUrl?: string) {
+  const appUrl = (
+    getRuntimeEnv('KANI_APP_URL') ||
+    getRuntimeEnv('APP_URL') ||
+    'https://www.kanibarber.com'
+  ).replace(/\/$/, '');
+  const finalBookingUrl = bookingUrl || `${appUrl}/reservar-turno`;
+  const logoUrl = `${appUrl}/kani-email-logo.png`;
+  const instagramUrl = "https://www.instagram.com/kanibarberstudio/";
+
+  const spanishDate = formatSpanishDateNatural(payload.bookingDate);
+  const compactDate = formatSpanishDateCompact(payload.bookingDate);
+  const cleanTime = (payload.startTime || "").slice(0, 5);
+
+  const whatsAppMessage = "Hola, quisiera consultar por mi turno cancelado.";
+  const whatsAppUrl = `https://wa.me/${KANI_PUBLIC_WHATSAPP_NUMBER}?text=${encodeURIComponent(whatsAppMessage)}`;
+
+  const subject = `[KANI] Se canceló tu turno con ${payload.barberName}`;
+  const preheaderText = `Se canceló tu turno del ${compactDate} a las ${cleanTime} hs con ${payload.barberName} · Kani Barber Studio`;
+
+  const isNoDeposit = payload.benefitType === 'NO_DEPOSIT';
+  const isFreeService = payload.benefitType === 'FREE_SERVICE';
+  const hasRecordedDeposit = !isNoDeposit && !isFreeService && Boolean(payload.downPaymentArs && payload.downPaymentArs > 0);
+  const depositPaidFormatted = hasRecordedDeposit ? '$' + Number(payload.downPaymentArs).toLocaleString("es-AR") : null;
+
+  const safe = {
+    clientName: escapeHtml(payload.clientName || 'Cliente'),
+    barberName: escapeHtml(payload.barberName || ''),
+    serviceName: escapeHtml(payload.serviceName || ''),
+    date: escapeHtml(spanishDate),
+    compactDate: escapeHtml(compactDate),
+    time: escapeHtml(cleanTime),
+    benefitCode: payload.benefitCode ? escapeHtml(payload.benefitCode) : null,
+    depositPaid: depositPaidFormatted ? escapeHtml(depositPaidFormatted) : null,
+  };
+
+  const html = `<!doctype html>
+<html lang="es" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="format-detection" content="telephone=no, address=no, email=no, date=no, url=no">
+  <meta name="color-scheme" content="dark only">
+  <meta name="supported-color-schemes" content="dark only">
+  <title>${escapeHtml(subject)}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!--[if mso]>
+  <noscript>
+    <xml>
+      <o:OfficeDocumentSettings>
+        <o:PixelsPerInch>96</o:PixelsPerInch>
+      </o:OfficeDocumentSettings>
+    </xml>
+  </noscript>
+  <![endif]-->
+  <style type="text/css">
+    body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+    table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+    img { -ms-interpolation-mode: bicubic; border: 0; outline: none; text-decoration: none; }
+    a[x-apple-data-detectors] {
+      color: inherit !important;
+      text-decoration: none !important;
+      font-size: inherit !important;
+      font-family: inherit !important;
+      font-weight: inherit !important;
+      line-height: inherit !important;
+    }
+    @media only screen and (max-width: 599px) {
+      .outer-wrapper-td {
+        padding: 0 0 32px 0 !important;
+      }
+      .email-container {
+        width: 100% !important;
+        max-width: 100% !important;
+        border-radius: 0px !important;
+        border-left: none !important;
+        border-right: none !important;
+      }
+      .content-padding {
+        padding-left: 20px !important;
+        padding-right: 20px !important;
+      }
+      .title-h1 {
+        font-size: 30px !important;
+        line-height: 1.15 !important;
+      }
+      .dark-card-inner {
+        padding: 20px !important;
+      }
+      .dark-card-block {
+        display: block !important;
+        max-width: 100% !important;
+        width: 100% !important;
+      }
+      .loc-btn-col {
+        display: block !important;
+        width: 100% !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+      }
+      .loc-btn-col-right {
+        margin-top: 10px !important;
+      }
+    }
+    @media only screen and (min-width: 600px) {
+      .content-padding {
+        padding-left: 48px !important;
+        padding-right: 48px !important;
+      }
+      .mobile-dark-card {
+        display: none !important;
+        max-height: 0px !important;
+        overflow: hidden !important;
+        mso-hide: all !important;
+      }
+      .desktop-dark-card {
+        display: block !important;
+        max-height: none !important;
+        overflow: visible !important;
+      }
+    }
+  </style>
+</head>
+<body style="margin: 0; padding: 0; background-color: #000000; color: #F5F5F5; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; line-height: 1.5;">
+
+  <!-- Preheader invisible para clientes de correo -->
+  <div style="display: none; font-size: 1px; color: #000000; line-height: 1px; max-height: 0px; max-width: 0px; opacity: 0; overflow: hidden; mso-hide: all;">
+    ${escapeHtml(preheaderText)}&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;
+  </div>
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #000000; margin: 0; padding: 0; width: 100%;">
+    <tr>
+      <td align="center" class="outer-wrapper-td" style="padding: 24px 12px 48px; background-color: #000000;">
+        <!--[if (gte mso 9)|(IE)]>
+        <table role="presentation" width="600" align="center" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+        <td>
+        <![endif]-->
+
+        <!-- Contenedor principal de la tarjeta -->
+        <table role="presentation" class="email-container" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; margin: 0 auto; background-color: #000000; border-radius: 16px; overflow: hidden; border: 1px solid #383838;">
+          
+          <!-- Bloque de Encabezado con Fondo Negro Puro (#000000) -->
+          <tr>
+            <td align="center" bgcolor="#000000" style="background-color: #000000; padding: 32px 24px 24px; text-align: center;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin: 0 auto;">
+                <tr>
+                  <td align="center">
+                    <img src="${logoUrl}" alt="Kani Barber Studio" width="180" style="display: block; width: 180px; max-width: 100%; height: auto; border: 0; margin: 0 auto; font-family: 'DM Serif Display', Georgia, serif; font-size: 22px; font-weight: 700; color: #B99A5B; text-align: center;" />
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Filete divisor sutil de 1px entre el encabezado y el cuerpo -->
+          <tr>
+            <td align="center" bgcolor="#383838" style="background-color: #383838; height: 1px; line-height: 1px; font-size: 1px; padding: 0;">
+              <div style="height: 1px; line-height: 1px; font-size: 1px;">&nbsp;</div>
+            </td>
+          </tr>
+
+          <!-- Título y Saludo -->
+          <tr>
+            <td class="content-padding" style="padding: 28px 24px 0; text-align: left;">
+              <h1 class="title-h1" style="margin: 0 0 10px; font-family: 'DM Serif Display', Georgia, 'Times New Roman', serif; font-size: 34px; line-height: 1.15; font-weight: 400; color: #F5F5F5; letter-spacing: -0.01em;">
+                Tu turno fue cancelado
+              </h1>
+              <p style="margin: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.5; color: #C7C7C7;">
+                Hola <strong style="color: #F5F5F5; font-weight: 600;">${safe.clientName}</strong>, se canceló tu turno con ${safe.barberName}. Te dejamos los detalles de la reserva cancelada.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Tarjeta Oscura del Turno Cancelado (#000000) -->
+          <tr>
+            <td class="content-padding" style="padding: 24px 24px 0;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#000000" style="background-color: #000000; border-radius: 14px; border: 1px solid #383838; overflow: hidden; width: 100%; table-layout: fixed;">
+                <tr>
+                  <td class="dark-card-inner" style="padding: 22px;">
+                    
+                    <!-- Insignia visual y textual de estado "Cancelado" -->
+                    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 16px;">
+                      <tr>
+                        <td style="padding: 5px 12px; border-radius: 9999px; background-color: rgba(118, 41, 54, 0.35); border: 1px solid #762936;">
+                          <span style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 700; color: #E06D80; letter-spacing: 0.08em; text-transform: uppercase;">
+                            &#x2715; Estado: Cancelado
+                          </span>
+                        </td>
+                      </tr>
+                    </table>
+
+                    <!-- Tarjeta Modo Móvil (Vertical por defecto) -->
+                    <div class="mobile-dark-card">
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
+                        <tr>
+                          <td style="padding-bottom: 16px;">
+                            <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 600; color: #C7C7C7; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 6px;">
+                              FECHA
+                            </div>
+                            <div style="font-family: 'DM Serif Display', Georgia, 'Times New Roman', serif; font-size: 22px; line-height: 28px; font-weight: 400; color: #F5F5F5; word-break: break-word; overflow-wrap: break-word;">
+                              ${safe.compactDate}
+                            </div>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td style="padding-bottom: 18px;">
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
+                              <tr>
+                                <td valign="bottom" style="padding: 0;">
+                                  <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 600; color: #C7C7C7; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 6px;">
+                                    HORA
+                                  </div>
+                                  <div style="font-family: 'DM Serif Display', Georgia, 'Times New Roman', serif; font-size: 22px; line-height: 28px; font-weight: 400; color: #F5F5F5;">
+                                    ${safe.time} hs
+                                  </div>
+                                </td>
+                                <td align="right" valign="bottom" style="padding: 0; text-align: right; line-height: 1; font-family: sans-serif; font-size: 48px; color: rgba(118, 41, 54, 0.45); user-select: none; pointer-events: none;">
+                                  &#34809;
+                                </td>
+                              </tr>
+                            </table>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td style="padding-bottom: 18px;">
+                            <div style="height: 1px; background-color: #383838; line-height: 1px; font-size: 1px;">&nbsp;</div>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td style="padding-bottom: 16px;">
+                            <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 600; color: #C7C7C7; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 6px;">
+                              SERVICIO
+                            </div>
+                            <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.35; font-weight: 500; color: #F5F5F5; word-break: break-word;">
+                              ${safe.serviceName}
+                            </div>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td style="padding: 0;">
+                            <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 600; color: #C7C7C7; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 6px;">
+                              BARBERO
+                            </div>
+                            <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.35; font-weight: 500; color: #F5F5F5; word-break: break-word;">
+                              ${safe.barberName}
+                            </div>
+                          </td>
+                        </tr>
+                      </table>
+                    </div>
+
+                    <!-- Tarjeta Modo Escritorio (2 Columnas) -->
+                    <!--[if (gte mso 9)|(IE)]>
+                    <div class="desktop-dark-card" style="display: block !important;">
+                    <![endif]-->
+                    <!--[if !mso]><!-->
+                    <div class="desktop-dark-card" style="display: none; max-height: 0px; overflow: hidden; mso-hide: all;">
+                    <!--<![endif]-->
+                      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
+                        <tr>
+                          <td width="50%" valign="top" style="padding-right: 14px;">
+                            <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 600; color: #C7C7C7; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 6px;">
+                              FECHA
+                            </div>
+                            <div style="font-family: 'DM Serif Display', Georgia, 'Times New Roman', serif; font-size: 22px; line-height: 28px; font-weight: 400; color: #F5F5F5; margin-bottom: 18px; word-break: break-word; overflow-wrap: break-word;">
+                              ${safe.compactDate}
+                            </div>
+                            <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 600; color: #C7C7C7; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 6px;">
+                              HORA
+                            </div>
+                            <div style="font-family: 'DM Serif Display', Georgia, 'Times New Roman', serif; font-size: 22px; line-height: 28px; font-weight: 400; color: #F5F5F5;">
+                              ${safe.time} hs
+                            </div>
+                          </td>
+                          <td width="50%" valign="top" style="padding-left: 14px;">
+                            <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 600; color: #C7C7C7; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 6px;">
+                              SERVICIO
+                            </div>
+                            <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.35; font-weight: 500; color: #F5F5F5; margin-bottom: 18px; word-break: break-word;">
+                              ${safe.serviceName}
+                            </div>
+                            <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 600; color: #C7C7C7; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 6px;">
+                              BARBERO
+                            </div>
+                            <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.35; font-weight: 500; color: #F5F5F5; word-break: break-word;">
+                              ${safe.barberName}
+                            </div>
+                            <div style="text-align: right; line-height: 0; height: 0; overflow: visible; font-family: sans-serif; font-size: 48px; color: rgba(118, 41, 54, 0.45); user-select: none; pointer-events: none;">
+                              &#34809;
+                            </div>
+                          </td>
+                        </tr>
+                      </table>
+                    </div>
+
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+${safe.depositPaid ? `
+          <!-- Sección INFORMACIÓN DE SEÑA (solo pagos registrados, sin saldo deudor) -->
+          <tr>
+            <td class="content-padding" style="padding: 24px 24px 0;">
+              <div style="margin-bottom: 10px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 13px; font-weight: 700; color: #D4D4D4; letter-spacing: 0.12em; text-transform: uppercase;">
+                INFORMACIÓN DE SEÑA
+              </div>
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#000000" style="background-color: #000000; border: 1px solid #383838; border-radius: 14px; overflow: hidden; width: 100%; table-layout: fixed;">
+                <tr>
+                  <td style="padding: 18px 20px;">
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
+                      <tr>
+                        <td style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 15px; color: #C7C7C7; width: 55%;">Seña registrada</td>
+                        <td align="right" style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; font-weight: 600; color: #E06D80; width: 45%; text-align: right;">${safe.depositPaid}</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+` : ''}
+
+${safe.benefitCode ? `
+          <!-- Sección de Beneficio Consumido -->
+          <tr>
+            <td class="content-padding" style="padding: 18px 24px 0;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#000000" style="background-color: #000000; border: 1px solid #383838; border-radius: 12px; overflow: hidden; width: 100%;">
+                <tr>
+                  <td style="padding: 16px 20px;">
+                    <p style="margin: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 13px; line-height: 1.5; color: #C7C7C7;">
+                      El código utilizado en esta reserva (<strong style="color: #F5F5F5;">${safe.benefitCode}</strong>) ha sido consumido y no podrá reutilizarse.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+` : ''}
+
+          <!-- Botones de Acción (Reservar otro turno / WhatsApp) -->
+          <tr>
+            <td class="content-padding" style="padding: 28px 24px 0;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
+                <tr>
+                  <!-- Botón Primario: Reservar otro turno (Dorado oficial #B99A5B, texto negro #000000) -->
+                  <td width="50%" valign="top" class="loc-btn-col" style="padding-right: 6px;">
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
+                      <tr>
+                        <td align="center" bgcolor="#B99A5B" style="border-radius: 10px; background-color: #B99A5B;">
+                          <a href="${finalBookingUrl}" target="_blank" rel="noopener noreferrer" style="display: block; padding: 13px 16px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 15px; font-weight: 600; color: #000000; text-decoration: none; text-align: center; line-height: 1.2; min-height: 44px; box-sizing: border-box;">
+                            Reservar otro turno
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+
+                  <!-- Botón Secundario: Contactar por WhatsApp (Verde oscuro #128C4A, texto blanco #FFFFFF) -->
+                  <td width="50%" valign="top" class="loc-btn-col loc-btn-col-right" style="padding-left: 6px;">
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
+                      <tr>
+                        <td align="center" bgcolor="#128C4A" style="border-radius: 10px; background-color: #128C4A;">
+                          <a href="${whatsAppUrl}" target="_blank" rel="noopener noreferrer" style="display: block; padding: 13px 16px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 15px; font-weight: 600; color: #FFFFFF; text-decoration: none; text-align: center; line-height: 1.2; min-height: 44px; box-sizing: border-box;">
+                            Contactar por WhatsApp
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Divisor y Pie de Página Institucional -->
+          <tr>
+            <td class="content-padding" style="padding: 32px 24px 36px; text-align: center;">
+              <div style="height: 1px; width: 100%; background-color: #383838; line-height: 1px; font-size: 1px; margin-bottom: 20px;">&nbsp;</div>
+              
+              <!-- Ícono y enlace de Instagram -->
+              <table role="presentation" align="center" cellpadding="0" cellspacing="0" border="0" style="margin: 0 auto 14px;">
+                <tr>
+                  <td align="center">
+                    <a href="${instagramUrl}" target="_blank" rel="noopener noreferrer" style="display: inline-block; color: #C7C7C7; text-decoration: none;" aria-label="Instagram de Kani Barber Studio">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: block;">
+                        <rect width="20" height="20" x="2" y="2" rx="5" ry="5"/>
+                        <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+                        <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
+                      </svg>
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin: 0 0 4px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 13px; font-weight: 500; color: #F5F5F5;">
+                Kani Barber Studio
+              </p>
+              <p style="margin: 0 0 12px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 12px; color: #8C8C8C;">
+                San Isidro Labrador 7, Martínez · Lunes a sábados de 10:00 a 20:00 hs
+              </p>
+              <p style="margin: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 11px; color: #6E6E6E;">
+                &copy; 2026 Kani Barber Studio. Mensaje automático de cancelación de reserva.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+
+        <!--[if (gte mso 9)|(IE)]>
+        </td>
+        </tr>
+        </table>
+        <![endif]-->
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>`;
+
+  const depositText = safe.depositPaid ? `\nSeña registrada: ${safe.depositPaid}\n` : '';
+  const benefitText = payload.benefitCode ? `\nEl código utilizado en esta reserva (${payload.benefitCode}) ha sido consumido y no podrá reutilizarse.\n` : '';
+
+  const text = `Tu turno fue cancelado
+
+Hola ${payload.clientName || 'Cliente'}, se canceló tu turno con ${payload.barberName}. Te dejamos los detalles de la reserva cancelada.
+
+ESTADO: CANCELADO
+Fecha: ${compactDate}
+Hora: ${cleanTime} hs
+Servicio: ${payload.serviceName}
+Barbero: ${payload.barberName}
+${depositText}${benefitText}
+ACCIONES:
+• Reservar otro turno: ${finalBookingUrl}
+• Contactar por WhatsApp: ${whatsAppUrl}
+
+Kani Barber Studio · San Isidro Labrador 7, Martínez
+Lunes a sábados de 10:00 a 20:00 hs`;
+
   return {
-    subject: 'Se canceló tu turno en Kani Barber Studio',
-    text: `${sentence}${benefitNoteText}\n\nReservá un nuevo turno: ${bookingUrl}`,
-    html: `<html lang="es"><body style="font-family:Arial,sans-serif;padding:24px"><p>${escapeHtml(sentence)}</p>${benefitNoteHtml}<a href="${escapeHtml(bookingUrl)}" style="display:inline-block;padding:12px 18px;background:#702B3A;color:#fff;border-radius:8px;text-decoration:none">Reservá un nuevo turno</a></body></html>`,
+    subject,
+    text,
+    html,
   };
 }
 
