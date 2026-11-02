@@ -380,7 +380,7 @@ export default {
             const { data: cal } = await db.from('appointment_calendar_sync').select('*').eq('appointment_id', targetApptId);
             calendarRecords = cal;
             try {
-              const { data: channels } = await db.from('appointment_notification_channel_dispatches').select('*').eq('appointment_id', targetApptId);
+              const { data: channels } = await db.from('appointment_notification_dispatches').select('*').eq('appointment_id', targetApptId);
               channelRecords = channels;
             } catch { /* table may vary */ }
           }
@@ -498,18 +498,58 @@ export default {
             if (client?.phone) clientPhone = client.phone;
           }
 
-          // 4. Generar evento seguro de notificación y despachar
-          const { data: newToken, error: tokenErr } = await db.rpc('create_appointment_notification_event', {
+          // 4. Generar o recuperar evento de notificación y despachar
+          let claimTokenToUse: string | null = null;
+          let recoveryAction = "NONE";
+          const { data: rpcToken, error: tokenErr } = await db.rpc('create_appointment_notification_event', {
             p_appointment_id: appointmentId,
             p_notification_type: 'CONFIRMED'
           });
+          claimTokenToUse = rpcToken;
+
+          const { data: existingEvent } = await db
+            .from('appointment_notification_events')
+            .select('*')
+            .eq('appointment_id', appointmentId)
+            .eq('notification_type', 'CONFIRMED')
+            .maybeSingle();
+
+          if (!claimTokenToUse && existingEvent) {
+            if (existingEvent.status !== 'SENT') {
+              const rawToken = crypto.randomUUID();
+              const tokenBuffer = new TextEncoder().encode(rawToken);
+              const hashBuf = await crypto.subtle.digest('SHA-256', tokenBuffer);
+              const tokenDigest = Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
+
+              const { error: updErr } = await db
+                .from('appointment_notification_events')
+                .update({
+                  claim_token_digest: tokenDigest,
+                  status: 'PENDING',
+                  attempts: 0,
+                  updated_at: new Date().toISOString()
+                })
+                .eq('id', existingEvent.id);
+
+              if (!updErr) {
+                claimTokenToUse = rawToken;
+                recoveryAction = "TOKEN_REISSUED";
+              } else {
+                recoveryAction = `UPDATE_FAILED: ${updErr.message}`;
+              }
+            } else {
+              recoveryAction = "ALREADY_SENT";
+            }
+          } else if (claimTokenToUse) {
+            recoveryAction = "EVENT_CREATED";
+          }
 
           let dispatchRes = null;
-          if (newToken) {
+          if (claimTokenToUse) {
             const { dispatchAppointmentNotification } = await import("./lib/kani-notifications.functions");
             dispatchRes = await dispatchAppointmentNotification({
               appointmentId,
-              claimToken: newToken,
+              claimToken: claimTokenToUse,
               clientPhone,
             });
           }
@@ -517,7 +557,7 @@ export default {
           // 5. Consultar estado final de canales
           let finalChannels = null;
           try {
-            const { data: channels } = await db.from('appointment_notification_channel_dispatches')
+            const { data: channels } = await db.from('appointment_notification_dispatches')
               .select('*')
               .eq('appointment_id', appointmentId);
             finalChannels = channels;
@@ -532,6 +572,8 @@ export default {
                 action: calendarAction,
                 record: calSync,
               },
+              token: claimTokenToUse,
+              recoveryAction,
               tokenError: tokenErr ? tokenErr.message : null,
               dispatchResult: dispatchRes,
               channels: finalChannels || [],
