@@ -356,8 +356,9 @@ export default {
         try {
           const { createPaymentSupabaseClient } = await import("./lib/kani-payment-db.server");
           const db = await createPaymentSupabaseClient();
-          const { data: barber } = await db.from('barbers').select('*').eq('name', 'Franco').maybeSingle();
-          if (!barber) return new Response(JSON.stringify({ error: "FRANCO_NOT_FOUND" }), { status: 404 });
+          const barberName = url.searchParams.get("barber") || "Franco";
+          const { data: barber } = await db.from('barbers').select('*').eq('name', barberName).maybeSingle();
+          if (!barber) return new Response(JSON.stringify({ error: "BARBER_NOT_FOUND" }), { status: 404 });
 
           const todayStr = new Date().toISOString().split('T')[0];
           const nextTwoWeeks = new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0];
