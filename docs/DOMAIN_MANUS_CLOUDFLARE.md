@@ -32,7 +32,7 @@ Ambos registros tienen TTL de 1 minuto. Los dos TXT originales de Google permane
 
 El proyecto Pages `kani-domain-gateway` está publicado, enlazado al Worker mediante `KANI_APP` y configurado para seguir `main`. La asociación `www.kanibarber.com` se trasladó del dominio personalizado del Worker a Pages. El CNAME ya se publica en DNS: `https://www.kanibarber.com/`, `/reservar`, `/googleb98699670c2c80a6.html` y `/favicon.svg` responden correctamente con HTTPS válido. Las rutas de reserva terminan en `/reservar-turno`, siempre bajo `www`.
 
-Cloudflare confirmó compilaciones correctas de Worker y Pages para el commit `6495721`, que declara `KANI_CANONICAL_HOST=www.kanibarber.com` en el Worker. El registro A del raíz ya fue guardado en Manus; su publicación y certificado se verifican por separado.
+Cloudflare confirmó compilaciones correctas de Worker y Pages para el commit `50492b2`, que incluye `KANI_CANONICAL_HOST=www.kanibarber.com` y la etiqueta canónica `https://www.kanibarber.com`. El registro A del raíz ya se publica como `89.106.200.1` y el certificado HTTPS está activo.
 
 Conectar este Worker mantiene su entorno y credenciales actuales, incluidos los ajustes de prueba de pagos. El dominio por sí solo no convierte la aplicación en un entorno de pagos reales.
 
@@ -48,7 +48,18 @@ Opciones para `https://kanibarber.com`:
 
 Una opción concreta para redirigir el raíz es [redirect.pizza](https://redirect.pizza/support/redirecting-non-www-to-www), que documenta HTTPS automático y un plan gratuito. Configurar primero el origen `kanibarber.com`, destino `https://www.kanibarber.com` y conservación de rutas y parámetros. Después aplicar en Manus el registro A exacto que indique la cuenta del servicio. No apuntar al servicio antes de crear esa configuración. Esto requiere una cuenta adicional; la aplicación seguiría ejecutándose en Cloudflare. Los límites del plan deben comprobarse en el panel antes de activarlo.
 
-La cuenta gratuita y la redirección ya fueron configuradas con autorización del usuario: origen `kanibarber.com`, destino `https://www.kanibarber.com`, código HTTP 301 y conservación de rutas y parámetros. El panel indicó el registro A `89.106.200.1`; no requirió TXT de validación ni se añadió CNAME en el raíz. El servicio emitirá y renovará automáticamente el certificado cuando valide el DNS.
+La cuenta gratuita y la redirección ya fueron configuradas con autorización del usuario: origen `kanibarber.com`, destino `https://www.kanibarber.com`, código HTTP 301 y conservación de rutas y parámetros. El panel indicó el registro A `89.106.200.1`; no requirió TXT de validación ni se añadió CNAME en el raíz. El servicio ya emitió el certificado y se encarga de su renovación automática.
+
+### Verificación pública final
+
+- `https://www.kanibarber.com/` y `/reservar`: página de reservas con HTTP 200, sin salir de www.
+- `https://www.kanibarber.com/googleb98699670c2c80a6.html`: HTTP 200.
+- `https://www.kanibarber.com/favicon.svg`: HTTP 200.
+- `http://kanibarber.com/reservar-turno?source=domain-check`: HTTP 301 a `https://www.kanibarber.com/reservar-turno?source=domain-check`.
+- `https://kanibarber.com/reservar-turno?source=domain-check`: el mismo HTTP 301 y después HTTP 200 en la página de reservas, manteniendo ruta y consulta.
+- HTTPS comprobado con validación de certificado habilitada, tanto mediante el cliente HTTP del sistema como con curl sin cargar configuraciones de usuario (`--disable`); resultado de validación TLS de curl: `0`.
+- La etiqueta canónica de la página final apunta a `https://www.kanibarber.com`.
+- Los dos TXT de Google permanecen publicados. Los servidores DNS siguen siendo los de Global Domain Group: no se transfirió el dominio.
 
 ## Verificación local
 
