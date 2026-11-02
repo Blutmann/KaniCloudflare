@@ -446,13 +446,6 @@ export default {
             // Eliminar si corresponde a las franjas desalineadas viejas
             if (obsoleteOldStarts.includes(s.start_time)) return true;
             return false;
-          }).filter(s => {
-            // Protección: nunca eliminar un slot que coincida con una reserva activa existente
-            const hasAppt = (appointments || []).some(a => {
-              if (a.booking_date !== s.slot_date) return false;
-              return s.start_time < a.end_time && a.start_time < s.end_time;
-            });
-            return !hasAppt;
           });
 
           let deletedCount = 0;

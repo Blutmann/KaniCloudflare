@@ -43,7 +43,7 @@ export function isAllowedPublicBookingStart(
   barber?: Barber | null,
 ) {
   const shortTime = startTime.slice(0, 5);
-  if (isFixedBookingStart(shortTime)) return true;
+  if (barber !== 'Franco' && isFixedBookingStart(shortTime)) return true;
   const isWorkingDay = parseDate(slotDate).getDay() >= 1 && parseDate(slotDate).getDay() <= 6;
   if ((barber === 'Franco' || !barber) && isWorkingDay && FRANCO_ALLOWED_START_TIMES.includes(shortTime)) {
     return true;
