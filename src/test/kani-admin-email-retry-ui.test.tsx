@@ -259,7 +259,7 @@ describe("Diagnóstico de notificación: Modal y acción de reintento en UI", ()
 
     render(<V2Appointments />);
 
-    const emailPill = screen.getByRole("button", { name: /diagnóstico email: email: enviado/i });
+    const emailPill = screen.getByRole("button", { name: /diagnóstico email: email: (enviado|aceptado)/i });
     fireEvent.click(emailPill);
 
     // Aviso de duplicado

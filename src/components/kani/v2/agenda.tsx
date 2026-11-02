@@ -1042,8 +1042,11 @@ function formatWhatsAppStatus(dispatch?: NotificationChannelDispatch): string {
 function formatEmailStatus(dispatch?: NotificationChannelDispatch): string {
   if (!dispatch) return "Email: Pendiente";
   switch (dispatch.status) {
+    case "DELIVERED":
+      return "Email: Entregado";
     case "SENT":
-      return "Email: Enviado";
+    case "PROVIDER_ACCEPTED":
+      return "Email: Aceptado";
     case "FAILED":
       return "Email: Error";
     case "SKIPPED":
@@ -1057,9 +1060,9 @@ function formatDispatchDetailedStatus(status?: string): string {
   switch (status) {
     case "SENT":
     case "PROVIDER_ACCEPTED":
-      return "Aceptado por proveedor";
+      return "Aceptado por proveedor (en tránsito)";
     case "DELIVERED":
-      return "Entrega confirmada";
+      return "Entrega confirmada por proveedor";
     case "READ":
       return "Leído";
     case "PROCESSING":

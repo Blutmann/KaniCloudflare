@@ -151,6 +151,60 @@ export default {
         return await handlePontiunWebhookRequest(request);
       }
 
+      if (url.pathname === "/api/webhook/resend") {
+        if (request.method !== "POST") {
+          return new Response(JSON.stringify({ error: "METHOD_NOT_ALLOWED" }), { status: 405 });
+        }
+        try {
+          const body = (await request.json().catch(() => null)) as any;
+          const eventType = body?.type;
+          const emailId = body?.data?.email_id || body?.data?.id;
+
+          if (emailId && eventType) {
+            const { createPaymentSupabaseClient } = await import("./lib/kani-payment-db.server");
+            const db = await createPaymentSupabaseClient();
+
+            if (eventType === "email.delivered") {
+              await db
+                .from("appointment_notification_dispatches")
+                .update({
+                  status: "DELIVERED",
+                  updated_at: new Date().toISOString(),
+                })
+                .eq("provider_message_id", emailId);
+              console.log(`[Resend Webhook] Email ${emailId} marcado como DELIVERED (entregado).`);
+            } else if (eventType === "email.bounced") {
+              await db
+                .from("appointment_notification_dispatches")
+                .update({
+                  status: "FAILED",
+                  error_code: "BOUNCED",
+                  error_description: body?.data?.bounce?.message || "Email rebotado por el servidor de destino",
+                  updated_at: new Date().toISOString(),
+                })
+                .eq("provider_message_id", emailId);
+            } else if (eventType === "email.complained") {
+              await db
+                .from("appointment_notification_dispatches")
+                .update({
+                  status: "FAILED",
+                  error_code: "COMPLAINED",
+                  error_description: "Email marcado como spam por el destinatario",
+                  updated_at: new Date().toISOString(),
+                })
+                .eq("provider_message_id", emailId);
+            }
+          }
+
+          return new Response(JSON.stringify({ received: true }), {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          });
+        } catch (webhookErr) {
+          return new Response(JSON.stringify({ error: "BAD_REQUEST" }), { status: 400 });
+        }
+      }
+
       if (url.pathname === "/api/admin/online-deposits") {
         try {
           const barberId = url.searchParams.get("barberId") || undefined;
@@ -174,100 +228,6 @@ export default {
           });
         } catch (err) {
           return new Response(JSON.stringify({ error: err instanceof Error ? err.message : "Error" }), {
-            status: 500,
-            headers: { "content-type": "application/json" },
-          });
-        }
-      }
-
-      if (url.pathname === "/api/admin/status-audit") {
-        try {
-          const { createPaymentSupabaseClient } = await import("./lib/kani-payment-db.server");
-          const client = await createPaymentSupabaseClient();
-
-          const { data: appointments, error: apptErr } = await client
-            .from("appointments")
-            .select("*")
-            .order("created_at", { ascending: false })
-            .limit(10);
-
-          if (apptErr) {
-            return new Response(JSON.stringify({ error: apptErr.message }), {
-              status: 500,
-              headers: { "content-type": "application/json" },
-            });
-          }
-
-          const { data: orders, error: ordersErr } = await client
-            .from("appointment_payment_orders")
-            .select("*")
-            .order("created_at", { ascending: false })
-            .limit(10);
-
-          const { data: events, error: eventsErr } = await client
-            .from("appointment_notification_events")
-            .select("*")
-            .order("created_at", { ascending: false })
-            .limit(10);
-
-          const { data: attempts, error: attemptsErr } = await client
-            .from("payment_attempts")
-            .select("id, appointment_id, site_transaction_id, provider_transaction_id, amount_ars, state, provider_status, provider_code, created_at, updated_at")
-            .order("created_at", { ascending: false })
-            .limit(10);
-
-          const { data: rpcMovements, error: rpcMovementsErr } = await (client as any)
-            .rpc("get_online_deposit_movements", {});
-
-          const { data: apptsWithDeposit, error: apptsWithDepositErr } = await client
-            .from("appointments")
-            .select("id, barber_id, service_id, client_id, booking_client_name, deposit_paid, deposit_amount_ars, booking_date, start_time, created_at, status")
-            .eq("deposit_paid", true)
-            .limit(10);
-
-          const { data: approvedAttempts, error: approvedAttemptsErr } = await client
-            .from("payment_attempts")
-            .select("*")
-            .eq("state", "APPROVED")
-            .limit(10);
-
-          const rows = appointments || [];
-          const completedCount = rows.filter((a) => a.status === "COMPLETED").length;
-          const confirmedCount = rows.filter((a) => a.status === "CONFIRMED").length;
-          const pendingCount = rows.filter((a) => a.status === "PENDING").length;
-          const cancelledCount = rows.filter((a) => a.status === "CANCELLED").length;
-
-          return new Response(
-            JSON.stringify({
-              counts: {
-                total: rows.length,
-                completed: completedCount,
-                confirmed: confirmedCount,
-                pending: pendingCount,
-                cancelled: cancelledCount,
-              },
-              appointments,
-              orders: orders || [],
-              events: events || [],
-              attempts: attempts || [],
-              rpcMovements: rpcMovements || [],
-              rpcMovementsError: rpcMovementsErr ? { message: rpcMovementsErr.message, code: rpcMovementsErr.code } : null,
-              apptsWithDeposit: apptsWithDeposit || [],
-              apptsWithDepositError: apptsWithDepositErr?.message,
-              approvedAttempts: approvedAttempts || [],
-              approvedAttemptsError: approvedAttemptsErr?.message,
-              ordersError: ordersErr?.message,
-              eventsError: eventsErr?.message,
-              attemptsError: attemptsErr?.message,
-            }),
-            {
-              status: 200,
-              headers: { "content-type": "application/json" },
-            }
-          );
-        } catch (err) {
-          const message = err instanceof Error ? err.message : String(err);
-          return new Response(JSON.stringify({ error: message }), {
             status: 500,
             headers: { "content-type": "application/json" },
           });
@@ -352,186 +312,74 @@ export default {
         }
       }
 
-      if (url.pathname === "/api/admin/franco-schedule-audit") {
-        try {
-          const { createPaymentSupabaseClient } = await import("./lib/kani-payment-db.server");
-          const db = await createPaymentSupabaseClient();
-          const barberName = url.searchParams.get("barber") || "Franco";
-          const { data: barber } = await db.from('barbers').select('*').eq('name', barberName).maybeSingle();
-          if (!barber) return new Response(JSON.stringify({ error: "BARBER_NOT_FOUND" }), { status: 404 });
-
-          const todayStr = new Date().toISOString().split('T')[0];
-          const nextTwoWeeks = new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0];
-
-          // 1. Slots directos en barber_availability_slots
-          const { data: slots, error: slotsErr } = await db.from('barber_availability_slots')
-            .select('*')
-            .eq('barber_id', barber.id)
-            .gte('slot_date', todayStr)
-            .lte('slot_date', nextTwoWeeks)
-            .order('slot_date', { ascending: true })
-            .order('start_time', { ascending: true });
-
-          // 2. RPC read_valid_availability_starts
-          const { data: validStarts, error: rpcErr } = await db.rpc('read_valid_availability_starts', {
-            p_barber_id: barber.id,
-            p_from_date: todayStr,
-            p_to_date: nextTwoWeeks,
-          });
-
-          // 3. Turnos existentes de Franco
-          const { data: appointments } = await db.from('appointments')
-            .select('id, booking_date, start_time, end_time, status, booking_client_name')
-            .eq('barber_id', barber.id)
-            .gte('booking_date', todayStr)
-            .lte('booking_date', nextTwoWeeks)
-            .neq('status', 'CANCELLED');
-
-          return new Response(JSON.stringify({
-            success: true,
-            barber,
-            slotsCount: slots?.length || 0,
-            slots: slots || [],
-            validStartsCount: validStarts?.length || 0,
-            validStarts: validStarts || [],
-            appointments: appointments || [],
-            errors: {
-              slotsErr: slotsErr?.message || null,
-              rpcErr: rpcErr?.message || null,
-            }
-          }), {
-            status: 200,
-            headers: { "content-type": "application/json" }
-          });
-        } catch (err) {
-          const message = err instanceof Error ? err.message : String(err);
-          return new Response(JSON.stringify({ error: message }), { status: 500, headers: { "content-type": "application/json" } });
-        }
-      }
-
-      if (url.pathname === "/api/admin/benefit-codes-audit") {
-        try {
-          const { createPaymentSupabaseClient } = await import("./lib/kani-payment-db.server");
-          const db = await createPaymentSupabaseClient();
-          const { data: codes, error: codesErr } = await db
-            .from('benefit_codes')
-            .select('*')
-            .order('created_at', { ascending: false });
-
-          // Specific appointment diagnosis if requested or latest consumed
-          const targetApptId = url.searchParams.get("appointmentId") || codes?.[0]?.consumed_appointment_id;
-          let apptRecord = null;
-          let notifRecords = null;
-          let calendarRecords = null;
-          let channelRecords = null;
-
-          if (targetApptId) {
-            const { data: appt } = await db.from('appointments').select('*').eq('id', targetApptId).maybeSingle();
-            apptRecord = appt;
-            if (appt?.client_id) {
-              const { data: client } = await db.from('clients').select('id, name, email, phone').eq('id', appt.client_id).maybeSingle();
-              if (client) (apptRecord as any).client = client;
-            }
-            const { data: notifs } = await db.from('appointment_notification_events').select('*').eq('appointment_id', targetApptId);
-            notifRecords = notifs;
-            const { data: cal } = await db.from('appointment_calendar_sync').select('*').eq('appointment_id', targetApptId);
-            calendarRecords = cal;
-            try {
-              const { data: channels } = await db.from('appointment_notification_dispatches').select('*').eq('appointment_id', targetApptId);
-              channelRecords = channels;
-            } catch { /* table may vary */ }
-          }
-
-          // Also check for orphaned locks tied to cancelled/expired payment attempts
-          const { data: cancelledAttempts } = await db
-            .from('payment_attempts')
-            .select('id, appointment_id, state, created_at')
-            .eq('state', 'CANCELLED')
-            .order('created_at', { ascending: false })
-            .limit(10);
-
-          return new Response(
-            JSON.stringify({
-              success: !codesErr,
-              codes: codes || [],
-              targetAppointment: apptRecord,
-              notifications: notifRecords,
-              calendarSync: calendarRecords,
-              channelDispatches: channelRecords,
-              error: codesErr ? codesErr.message : null,
-              recentCancelledAttempts: cancelledAttempts || [],
-            }),
-            { status: 200, headers: { "content-type": "application/json" } }
-          );
-        } catch (err) {
-          const message = err instanceof Error ? err.message : String(err);
-          return new Response(JSON.stringify({ error: message }), {
-            status: 500,
-            headers: { "content-type": "application/json" },
-          });
-        }
-      }
-
-      if (url.pathname === "/api/admin/benefit-codes-release-lock") {
-        try {
-          const codeToRelease = url.searchParams.get("code")?.trim().toUpperCase();
-          if (!codeToRelease) {
-            return new Response(JSON.stringify({ error: "CODE_PARAM_REQUIRED" }), { status: 400 });
-          }
-          const { createPaymentSupabaseClient } = await import("./lib/kani-payment-db.server");
-          const db = await createPaymentSupabaseClient();
-          
-          // Verify code exists and is currently locked
-          const { data: foundCode, error: findErr } = await db
-            .from('benefit_codes')
-            .select('*')
-            .eq('code', codeToRelease)
-            .maybeSingle();
-
-          if (findErr || !foundCode) {
-            return new Response(JSON.stringify({ error: "CODE_NOT_FOUND" }), { status: 404 });
-          }
-
-          if (foundCode.status === 'CONSUMED') {
-            return new Response(JSON.stringify({ error: "CANNOT_RELEASE_CONSUMED_CODE", message: "El código ya fue consumido por una reserva confirmada." }), { status: 400 });
-          }
-
-          // Release lock and restore to ACTIVE
-          const { data: updated, error: updateErr } = await db
-            .from('benefit_codes')
-            .update({
-              status: 'ACTIVE',
-              locked_at: null,
-              locked_expires_at: null,
-              locked_attempt_id: null,
-              updated_at: new Date().toISOString(),
-            })
-            .eq('id', foundCode.id)
-            .select('*')
-            .single();
-
-          return new Response(
-            JSON.stringify({
-              success: !updateErr,
-              releasedCode: updated,
-              error: updateErr ? updateErr.message : null,
-            }),
-            { status: 200, headers: { "content-type": "application/json" } }
-          );
-        } catch (err) {
-          const message = err instanceof Error ? err.message : String(err);
-          return new Response(JSON.stringify({ error: message }), { status: 500, headers: { "content-type": "application/json" } });
-        }
-      }
-
       if (url.pathname === "/api/admin/recover-appointment-notification") {
         try {
+          // 1. Prohibir terminantemente la especificación de destinatarios arbitrarios
+          if (
+            url.searchParams.has("recipient") ||
+            url.searchParams.has("email") ||
+            url.searchParams.has("phone") ||
+            url.searchParams.has("to")
+          ) {
+            return new Response(
+              JSON.stringify({
+                error: "ARBITRARY_RECIPIENT_FORBIDDEN",
+                message: "No se permite elegir destinatarios arbitrarios. La recuperación utiliza exclusivamente el contacto registrado en el turno.",
+              }),
+              { status: 400, headers: { "content-type": "application/json" } }
+            );
+          }
+
+          // 2. Validación estricta de autorización en el servidor (solo rol ADMIN)
+          const authHeader = request.headers.get("authorization") || request.headers.get("Authorization");
+          const bearerToken = authHeader?.startsWith("Bearer ") ? authHeader.slice(7).trim() : null;
+          const queryToken = url.searchParams.get("token")?.trim() || null;
+          const token = bearerToken || queryToken;
+
+          if (!token) {
+            return new Response(
+              JSON.stringify({
+                error: "AUTH_REQUIRED",
+                message: "Debe iniciar sesión como administrador para recuperar notificaciones.",
+              }),
+              { status: 401, headers: { "content-type": "application/json" } }
+            );
+          }
+
+          const { createPaymentSupabaseClient } = await import("./lib/kani-payment-db.server");
+          const db = await createPaymentSupabaseClient();
+
+          const { data: { user }, error: userError } = await db.auth.getUser(token);
+          if (userError || !user) {
+            return new Response(
+              JSON.stringify({
+                error: "SESSION_INVALID",
+                message: "Sesión inválida o expirada. Por favor, vuelva a iniciar sesión.",
+              }),
+              { status: 401, headers: { "content-type": "application/json" } }
+            );
+          }
+
+          const { data: profile, error: profileErr } = await db
+            .from("staff_profiles")
+            .select("role, active")
+            .eq("user_id", user.id)
+            .maybeSingle();
+
+          if (profileErr || !profile || !profile.active || profile.role !== "ADMIN") {
+            return new Response(
+              JSON.stringify({
+                error: "UNAUTHORIZED_ADMIN_ONLY",
+                message: "Acceso denegado. Se requieren permisos de administrador.",
+              }),
+              { status: 403, headers: { "content-type": "application/json" } }
+            );
+          }
+
           const appointmentId = url.searchParams.get("appointmentId")?.trim();
           if (!appointmentId) {
             return new Response(JSON.stringify({ error: "APPOINTMENT_ID_REQUIRED" }), { status: 400 });
           }
-          const { createPaymentSupabaseClient } = await import("./lib/kani-payment-db.server");
-          const db = await createPaymentSupabaseClient();
           
           // 1. Verificar turno
           const { data: appt, error: apptErr } = await db.from('appointments').select('*').eq('id', appointmentId).maybeSingle();
@@ -651,8 +499,21 @@ export default {
         try {
           const { reconcilePendingPayments } = await import("./lib/kani-payment-maintenance.server");
           await reconcilePendingPayments();
+          
+          let notifResult = null;
+          try {
+            const { recoverPendingNotificationEvents } = await import("./lib/kani-notifications.functions");
+            notifResult = await recoverPendingNotificationEvents({ limit: 10 });
+          } catch (notifErr) {
+            console.warn("[Maintenance Notification Recovery Warning]:", notifErr);
+          }
+
           return new Response(
-            JSON.stringify({ success: true, executed_at: new Date().toISOString() }),
+            JSON.stringify({
+              success: true,
+              notificationsRecovered: notifResult,
+              executed_at: new Date().toISOString(),
+            }),
             {
               status: 200,
               headers: { "content-type": "application/json" },
@@ -913,6 +774,16 @@ export default {
         }
       } catch (err) {
         console.error("[Cron Scheduled Calendar Sync Error]:", err);
+      }
+
+      try {
+        const { recoverPendingNotificationEvents } = await import("./lib/kani-notifications.functions");
+        const notifResult = await recoverPendingNotificationEvents({ limit: 10 });
+        if (notifResult && notifResult.processed > 0) {
+          console.log("[Cron Scheduled Notification Recovery]:", JSON.stringify(notifResult));
+        }
+      } catch (err) {
+        console.error("[Cron Scheduled Notification Recovery Error]:", err);
       }
     };
 

@@ -2381,3 +2381,108 @@ function safeErrorMessage(error: unknown) {
   const message = error instanceof Error ? error.message : String(error);
   return message.replace(/Bearer\s+[^\s]+/gi, "Bearer [redacted]").slice(0, 500);
 }
+
+/**
+ * Recuperación automática periódica de eventos de notificación pendientes o fallidos
+ * almacenados de forma durable en appointment_notification_events.
+ */
+export async function recoverPendingNotificationEvents(options: { limit?: number } = {}): Promise<{
+  processed: number;
+  recovered: number;
+  skipped: number;
+  failed: number;
+}> {
+  const limit = options.limit ?? 10;
+  const { createPaymentSupabaseClient } = await import("./kani-payment-db.server");
+  const db = await createPaymentSupabaseClient();
+
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const { data: events, error } = await db
+    .from("appointment_notification_events")
+    .select("id, appointment_id, notification_type, status, attempts, created_at")
+    .in("status", ["PENDING", "FAILED"])
+    .lt("attempts", 3)
+    .gte("created_at", sevenDaysAgo)
+    .order("created_at", { ascending: true })
+    .limit(limit);
+
+  if (error || !events || events.length === 0) {
+    return { processed: 0, recovered: 0, skipped: 0, failed: 0 };
+  }
+
+  let recovered = 0;
+  let skipped = 0;
+  let failed = 0;
+
+  for (const ev of events) {
+    try {
+      const { data: appt } = await db
+        .from("appointments")
+        .select("id, status, client_id")
+        .eq("id", ev.appointment_id)
+        .maybeSingle();
+
+      if (!appt) {
+        skipped++;
+        continue;
+      }
+
+      if (ev.notification_type === "CONFIRMED" && appt.status !== "CONFIRMED") {
+        skipped++;
+        continue;
+      }
+      if (ev.notification_type === "CANCELLED" && appt.status !== "CANCELLED") {
+        skipped++;
+        continue;
+      }
+
+      let clientPhone: string | null = null;
+      if (appt.client_id) {
+        const { data: client } = await db
+          .from("clients")
+          .select("phone")
+          .eq("id", appt.client_id)
+          .maybeSingle();
+        if (client?.phone) clientPhone = client.phone;
+      }
+
+      const rawToken = crypto.randomUUID();
+      const tokenBuffer = new TextEncoder().encode(rawToken);
+      const hashBuf = await crypto.subtle.digest("SHA-256", tokenBuffer);
+      const tokenDigest = Array.from(new Uint8Array(hashBuf))
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("");
+
+      const { error: updErr } = await db
+        .from("appointment_notification_events")
+        .update({
+          claim_token_digest: tokenDigest,
+          status: "PENDING",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", ev.id);
+
+      if (updErr) {
+        failed++;
+        continue;
+      }
+
+      const res = await dispatchAppointmentNotification({
+        appointmentId: ev.appointment_id,
+        claimToken: rawToken,
+        clientPhone,
+      });
+
+      if (res.sent || res.status === "SENT") {
+        recovered++;
+      } else {
+        failed++;
+      }
+    } catch (procErr) {
+      console.warn("[Notification Recovery] Error en evento:", ev.id, procErr);
+      failed++;
+    }
+  }
+
+  return { processed: events.length, recovered, skipped, failed };
+}
