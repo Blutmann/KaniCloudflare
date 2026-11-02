@@ -131,8 +131,15 @@ function PagoExitoPage() {
       date: appt.date ?? '',
       time: (appt.time ?? '').slice(0, 5),
       clientName: appt.clientName ?? '',
-      depositArs: appt.depositAmountArs ?? KANI_STANDARD_DEPOSIT_ARS,
+      depositArs: typeof appt.depositAmountArs === 'number' ? appt.depositAmountArs : KANI_STANDARD_DEPOSIT_ARS,
       servicePriceArs: appt.servicePriceArs ?? 25000,
+      benefitType: (appt as any).benefitType ?? null,
+      benefitCode: (appt as any).benefitCode ?? null,
+      originalPriceArs: (appt as any).originalPriceArs ?? null,
+      discountAmountArs: (appt as any).discountAmountArs ?? null,
+      finalPriceArs: (appt as any).finalPriceArs ?? null,
+      onlineDepositArs: (appt as any).onlineDepositArs ?? null,
+      inPersonBalanceArs: (appt as any).inPersonBalanceArs ?? null,
     };
 
     return (

@@ -1160,11 +1160,15 @@ export function AdminMobileAppointments() {
         </DialogHeader>
 
         {completeTarget && (() => {
-          const servicePrice = completeTarget.servicePrice || 0;
+          const isFree = completeTarget.benefitType === 'FREE_SERVICE';
+          const isNoDeposit = completeTarget.benefitType === 'NO_DEPOSIT';
+          const servicePrice = completeTarget.benefitFinalPriceArs ?? completeTarget.servicePrice ?? 0;
           const depositAmt = getAppointmentDepositAmount(completeTarget);
           const hasDeposit = Boolean(completeTarget.depositPaid);
-          const effectiveDeposit = hasDeposit ? depositAmt : 0;
-          const remainingBalance = Math.max(0, servicePrice - effectiveDeposit);
+          const effectiveDeposit = (isFree || isNoDeposit)
+            ? 0
+            : (completeTarget.benefitOnlineDepositArs ?? (hasDeposit ? depositAmt : 0));
+          const remainingBalance = completeTarget.benefitInPersonBalanceArs ?? Math.max(0, servicePrice - effectiveDeposit);
 
           return (
             <div className="space-y-4 py-2 text-xs sm:text-sm">

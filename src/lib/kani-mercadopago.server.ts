@@ -192,7 +192,15 @@ export async function handleGetAppointmentPaymentStatus(data: AppointmentPayment
         end_time,
         barber_id,
         service_id,
-        client_id
+        client_id,
+        deposit_amount_ars,
+        benefit_code,
+        benefit_type,
+        benefit_original_price_ars,
+        benefit_discount_amount_ars,
+        benefit_final_price_ars,
+        benefit_online_deposit_ars,
+        benefit_in_person_balance_ars
       `)
       .eq("id", data.appointmentId)
       .maybeSingle();
@@ -215,6 +223,7 @@ export async function handleGetAppointmentPaymentStatus(data: AppointmentPayment
 
     const servicePriceArs = serviceRes.data?.price_ars ? Number(serviceRes.data.price_ars) : 25000;
 
+    const rawDepositAmount = (appt as any).deposit_amount_ars;
     const appointmentDetails = {
       id: appt.id,
       requestNumber: appt.request_number,
@@ -225,8 +234,15 @@ export async function handleGetAppointmentPaymentStatus(data: AppointmentPayment
       clientName: clientRes.data?.name ?? "",
       clientEmail: clientRes.data?.email ?? "",
       clientPhone: clientRes.data?.phone ?? "",
-      depositAmountArs: 5000,
+      depositAmountArs: typeof rawDepositAmount === 'number' ? rawDepositAmount : ((appt as any).benefit_online_deposit_ars ?? 5000),
       servicePriceArs,
+      benefitType: (appt as any).benefit_type ?? null,
+      benefitCode: (appt as any).benefit_code ?? null,
+      originalPriceArs: (appt as any).benefit_original_price_ars ?? null,
+      discountAmountArs: (appt as any).benefit_discount_amount_ars ?? null,
+      finalPriceArs: (appt as any).benefit_final_price_ars ?? null,
+      onlineDepositArs: (appt as any).benefit_online_deposit_ars ?? null,
+      inPersonBalanceArs: (appt as any).benefit_in_person_balance_ars ?? null,
     };
 
     // 1. Si el turno ya está confirmado o completado en la base de datos

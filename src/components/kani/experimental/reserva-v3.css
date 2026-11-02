@@ -501,7 +501,7 @@ html[data-theme='light'] .booking-v3 .phone-country-option {
 
 @media (min-width: 1024px) {
   .booking-v3 .booking-v2-final-layout {
-    grid-template-columns: minmax(0, 3fr) minmax(0, 7fr);
+    grid-template-columns: minmax(0, 4fr) minmax(0, 6fr);
     align-items: stretch;
     gap: 36px;
   }
@@ -521,10 +521,10 @@ html[data-theme='light'] .booking-v3 .phone-country-option {
   }
 }
 
-/* Celular en Desktop: adaptado a la columna del 30% del formulario (prefijo compacto y número con todo el espacio restante) */
+/* Celular en Desktop: adaptado a la columna del 40% del formulario (prefijo compacto y número con todo el espacio restante) */
 .booking-v3 .phone-input-row {
   display: grid !important;
-  grid-template-columns: minmax(100px, 112px) minmax(0, 1fr) !important;
+  grid-template-columns: minmax(100px, 120px) minmax(0, 1fr) !important;
   gap: 8px !important;
   width: 100% !important;
   box-sizing: border-box !important;

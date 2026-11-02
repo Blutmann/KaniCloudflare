@@ -1835,7 +1835,7 @@ html[data-theme='dark'] .studio-map-card {
 @media (min-width: 768px) {
   .booking-page .booking-contact-form .phone-input-row {
     display: grid;
-    grid-template-columns: minmax(100px, 112px) minmax(0, 1fr);
+    grid-template-columns: minmax(100px, 120px) minmax(0, 1fr);
     gap: 8px;
     width: 100%;
   }

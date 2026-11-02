@@ -212,13 +212,27 @@ export const dispatchAppointmentNotification = createServerOnlyFn(async (data: {
           if (apiKey && fromEmail) {
             let apptBenefit: any = null;
             try {
-              const { data: bData } = await supabase
+              const { data: bData, error: bErr } = await supabase
                 .from('appointments')
-                .select('benefit_code, benefit_type, benefit_usage_mode, benefit_original_price_ars, benefit_discount_amount_ars, benefit_final_price_ars, benefit_online_deposit_ars, benefit_in_person_balance_ars')
+                .select('deposit_amount_ars, benefit_code, benefit_type, benefit_usage_mode, benefit_original_price_ars, benefit_discount_amount_ars, benefit_final_price_ars, benefit_online_deposit_ars, benefit_in_person_balance_ars')
                 .eq('id', data.appointmentId)
                 .maybeSingle();
-              apptBenefit = bData;
+              if (!bErr && bData) {
+                apptBenefit = bData;
+              } else if (bErr) {
+                const { data: fallbackData } = await supabase
+                  .from('appointments')
+                  .select('deposit_amount_ars, benefit_code, benefit_type, benefit_original_price_ars, benefit_discount_amount_ars, benefit_final_price_ars, benefit_online_deposit_ars, benefit_in_person_balance_ars')
+                  .eq('id', data.appointmentId)
+                  .maybeSingle();
+                apptBenefit = fallbackData;
+              }
             } catch { /* best effort */ }
+
+            const rawEventDeposit = apptBenefit?.deposit_amount_ars ?? event.down_payment_ars;
+            const effectiveDownPayment = typeof rawEventDeposit === 'number' && rawEventDeposit !== 10000
+              ? rawEventDeposit
+              : (apptBenefit?.benefit_online_deposit_ars ?? KANI_STANDARD_DEPOSIT_ARS);
 
             const payload: NotificationPayload = {
               notificationId: event.notification_id,
@@ -235,10 +249,7 @@ export const dispatchAppointmentNotification = createServerOnlyFn(async (data: {
               clientNotes: event.client_notes,
               servicePriceArs: event.service_price_ars,
               serviceDurationMinutes: event.service_duration_minutes,
-              downPaymentArs:
-                event.down_payment_ars && event.down_payment_ars !== 10000
-                  ? event.down_payment_ars
-                  : KANI_STANDARD_DEPOSIT_ARS,
+              downPaymentArs: effectiveDownPayment,
               transferAlias: event.transfer_alias,
               transferCuit: event.transfer_cuit,
               transferHolderName: event.transfer_holder_name,
@@ -845,7 +856,10 @@ export async function retryNotificationChannel(input: {
       const serviceName = formatServiceNameForEmail((aptData as any).custom_service_name || service?.name || "Corte");
       const servicePriceArs = (aptData as any).service_price_ars ?? service?.price_ars ?? 0;
       const serviceDurationMinutes = service?.duration_minutes ?? 45;
-      const downPaymentArs = (aptData as any).deposit_amount_ars ?? KANI_STANDARD_DEPOSIT_ARS;
+      const rawAptDeposit = (aptData as any).deposit_amount_ars;
+      const downPaymentArs = typeof rawAptDeposit === 'number'
+        ? rawAptDeposit
+        : ((aptData as any).benefit_online_deposit_ars ?? KANI_STANDARD_DEPOSIT_ARS);
 
       const payload: NotificationPayload = {
         notificationId: relevantDispatch?.notification_event_id ?? input.appointmentId,
@@ -1128,12 +1142,22 @@ export function buildConfirmedEmail(payload: NotificationPayload) {
   const isPercent50 = payload.benefitType === 'PERCENT_50';
 
   const originalPrice = payload.benefitOriginalPriceArs ?? payload.servicePriceArs ?? 0;
-  const discountAmount = payload.benefitDiscountAmountArs ?? (isFreeService ? originalPrice : 0);
-  const finalPrice = payload.benefitFinalPriceArs ?? (isFreeService ? 0 : isNoDeposit ? originalPrice : Math.max(0, originalPrice - discountAmount));
-  const downPayment = isFreeService || isNoDeposit
+  const discountAmount = isFreeService
+    ? originalPrice
+    : (payload.benefitDiscountAmountArs ?? (isPercent10 ? Math.round(originalPrice * 0.10) : isPercent50 ? Math.round(originalPrice * 0.50) : 0));
+  const finalPrice = isFreeService
     ? 0
-    : (payload.benefitOnlineDepositArs ?? ((payload.downPaymentArs && payload.downPaymentArs !== 10000) ? payload.downPaymentArs : KANI_STANDARD_DEPOSIT_ARS));
-  const remainingPayment = payload.benefitInPersonBalanceArs ?? (isFreeService ? 0 : Math.max(0, finalPrice - downPayment));
+    : (payload.benefitFinalPriceArs ?? (isNoDeposit ? originalPrice : Math.max(0, originalPrice - discountAmount)));
+  const downPayment = (isFreeService || isNoDeposit)
+    ? 0
+    : (typeof payload.benefitOnlineDepositArs === 'number'
+        ? payload.benefitOnlineDepositArs
+        : (typeof payload.downPaymentArs === 'number' && payload.downPaymentArs !== 10000 ? payload.downPaymentArs : KANI_STANDARD_DEPOSIT_ARS));
+  const remainingPayment = isFreeService
+    ? 0
+    : (typeof payload.benefitInPersonBalanceArs === 'number'
+        ? payload.benefitInPersonBalanceArs
+        : (isNoDeposit ? finalPrice : Math.max(0, finalPrice - downPayment)));
 
   const formattedServiceName = formatServiceNameForEmail(payload.serviceName);
 
@@ -1520,12 +1544,20 @@ export function buildConfirmedEmail(payload: NotificationPayload) {
 ${isNoDeposit ? `
                       <!-- Reserva sin seña -->
                       <tr>
-                        <td style="padding: 6px 0; font-family: 'Inter', sans-serif; font-size: 15px; color: #C7C7C7; width: 55%;">Total del servicio</td>
-                        <td align="right" style="padding: 6px 0; font-family: 'Inter', sans-serif; font-size: 16px; font-weight: 500; color: #F5F5F5; width: 45%; text-align: right;">${safe.finalPrice}</td>
+                        <td style="padding: 6px 0; font-family: 'Inter', sans-serif; font-size: 15px; color: #C7C7C7; width: 55%;">Precio del servicio</td>
+                        <td align="right" style="padding: 6px 0; font-family: 'Inter', sans-serif; font-size: 16px; font-weight: 500; color: #F5F5F5; width: 45%; text-align: right;">${safe.originalPrice}</td>
                       </tr>
                       <tr>
-                        <td style="padding: 6px 0; font-family: 'Inter', sans-serif; font-size: 15px; color: #C7C7C7; width: 55%;">Beneficio</td>
-                        <td align="right" style="padding: 6px 0; font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 600; color: #B99A5B; width: 45%; text-align: right;">Reserva sin seña</td>
+                        <td style="padding: 6px 0; font-family: 'Inter', sans-serif; font-size: 15px; color: #C7C7C7; width: 55%;">Descuento</td>
+                        <td align="right" style="padding: 6px 0; font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 500; color: #A0A0A0; width: 45%; text-align: right;">$0</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 6px 0; font-family: 'Inter', sans-serif; font-size: 15px; color: #C7C7C7; width: 55%;">Total final</td>
+                        <td align="right" style="padding: 6px 0; font-family: 'Inter', sans-serif; font-size: 16px; font-weight: 600; color: #F5F5F5; width: 45%; text-align: right;">${safe.originalPrice}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 6px 0; font-family: 'Inter', sans-serif; font-size: 15px; color: #C7C7C7; width: 55%;">Seña</td>
+                        <td align="right" style="padding: 6px 0; font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 500; color: #A0A0A0; width: 45%; text-align: right;">No requerida ($0)</td>
                       </tr>
                       <tr>
                         <td colspan="2" style="padding: 10px 0 6px;"><div style="height: 1px; background-color: #383838; line-height: 1px; font-size: 1px;">&nbsp;</div></td>
@@ -1550,8 +1582,20 @@ ${isNoDeposit ? `
 ` : isFreeService ? `
                       <!-- Servicio gratuito 100% -->
                       <tr>
-                        <td style="padding: 6px 0; font-family: 'Inter', sans-serif; font-size: 15px; color: #C7C7C7; width: 55%;">Beneficio</td>
-                        <td align="right" style="padding: 6px 0; font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 600; color: #B99A5B; width: 45%; text-align: right;">Servicio 100% bonificado</td>
+                        <td style="padding: 6px 0; font-family: 'Inter', sans-serif; font-size: 15px; color: #C7C7C7; width: 55%;">Precio original</td>
+                        <td align="right" style="padding: 6px 0; font-family: 'Inter', sans-serif; font-size: 16px; font-weight: 500; color: #F5F5F5; width: 45%; text-align: right;">${safe.originalPrice}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 6px 0; font-family: 'Inter', sans-serif; font-size: 15px; color: #C7C7C7; width: 55%;">Bonificación (100%)</td>
+                        <td align="right" style="padding: 6px 0; font-family: 'Inter', sans-serif; font-size: 16px; font-weight: 600; color: #B99A5B; width: 45%; text-align: right;">−${safe.originalPrice}</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 6px 0; font-family: 'Inter', sans-serif; font-size: 15px; color: #C7C7C7; width: 55%;">Total final</td>
+                        <td align="right" style="padding: 6px 0; font-family: 'Inter', sans-serif; font-size: 16px; font-weight: 600; color: #F5F5F5; width: 45%; text-align: right;">$0</td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 6px 0; font-family: 'Inter', sans-serif; font-size: 15px; color: #C7C7C7; width: 55%;">Seña abonada</td>
+                        <td align="right" style="padding: 6px 0; font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 500; color: #A0A0A0; width: 45%; text-align: right;">No requerida ($0)</td>
                       </tr>
                       <tr>
                         <td colspan="2" style="padding: 10px 0 6px;"><div style="height: 1px; background-color: #383838; line-height: 1px; font-size: 1px;">&nbsp;</div></td>
@@ -1560,7 +1604,7 @@ ${isNoDeposit ? `
                         <td colspan="2" style="padding-top: 6px; padding-bottom: 12px;">
                           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
                             <tr>
-                              <td valign="baseline" class="balance-label-td"><span style="font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 600; color: #F5F5F5;">Total a abonar</span></td>
+                              <td valign="baseline" class="balance-label-td"><span style="font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 600; color: #F5F5F5;">Saldo en el local</span></td>
                               <td align="right" valign="baseline" class="balance-amount-td"><span style="font-family: 'DM Serif Display', serif; font-size: 28px; line-height: 1.15; font-weight: 400; color: #F5F5F5;">$0</span></td>
                             </tr>
                           </table>
@@ -1569,7 +1613,7 @@ ${isNoDeposit ? `
                       <tr>
                         <td colspan="2" style="padding-top: 12px; border-top: 1px dashed #383838;">
                           <p style="margin: 0; font-family: 'Inter', sans-serif; font-size: 13px; line-height: 1.45; color: #C7C7C7;">
-                            Servicio bonificado al 100 %. Total a pagar: $0.
+                            Servicio 100% bonificado. Total a pagar: $0.
                           </p>
                         </td>
                       </tr>
@@ -1809,8 +1853,20 @@ ${cancellationUrl}
 RESUMEN
 
 ${isNoDeposit ? `Reserva sin seña
-Abonás el total de ${safe.remainingPayment} en el local.` : isFreeService ? `Servicio bonificado al 100 %
-Total a pagar: $0` : isPercent10 || isPercent50 ? `Precio original: ${safe.originalPrice}
+Precio del servicio: ${safe.originalPrice}
+Descuento: $0
+Total final: ${safe.originalPrice}
+Seña: No requerida ($0)
+Saldo a pagar en el local: ${safe.remainingPayment}
+Abonás el total de ${safe.remainingPayment} en el local.
+
+Podés abonar el saldo en efectivo o por transferencia.` : isFreeService ? `Servicio bonificado al 100 %
+Precio original: ${safe.originalPrice}
+Bonificación: 100 %
+Total final: $0
+Total a pagar: $0
+Seña abonada: No requerida ($0)
+Saldo en el local: $0` : isPercent10 || isPercent50 ? `Precio original: ${safe.originalPrice}
 Descuento (${isPercent10 ? '10%' : '50%'}): -${safe.discount}
 Total final: ${safe.finalPrice}
 Seña efectivamente abonada: ${safe.downPayment}

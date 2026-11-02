@@ -298,6 +298,12 @@ export default {
           let migrationError: string | null = null;
           let codesCount = 0;
           let sampleTest: unknown = null;
+          let expansionApplied = false;
+          let expansionError: string | null = null;
+          let detailedCodes: any[] = [];
+          let codeUsages: any[] = [];
+          let recentBenefitAppointments: any[] = [];
+          let repairResult: any = null;
 
           try {
             const { createPaymentSupabaseClient } = await import("./lib/kani-payment-db.server");
@@ -320,8 +326,6 @@ export default {
               barberName: "Lautaro",
             });
 
-            let expansionApplied = false;
-            let expansionError: string | null = null;
             try {
               const { error: expErr } = await db.from('benefit_codes').select('usage_mode').limit(1);
               if (!expErr) {
@@ -331,6 +335,84 @@ export default {
               }
             } catch (e: any) {
               expansionError = e.message;
+            }
+
+            // Fetch detailed codes and usages
+            try {
+              if (expansionApplied) {
+                const { data: fullCodes } = await db.from('benefit_codes').select('*').order('created_at', { ascending: false });
+                detailedCodes = fullCodes || [];
+              } else {
+                detailedCodes = codes || [];
+              }
+            } catch { /* best-effort */ }
+
+            try {
+              const { data: usages } = await db.from('benefit_code_usages').select('*').order('used_at', { ascending: false });
+              codeUsages = usages || [];
+            } catch { /* best-effort */ }
+
+            try {
+              const { data: bAppts } = await db
+                .from('appointments')
+                .select('id, request_number, client_id, booking_date, start_time, status, deposit_amount_ars, deposit_paid, benefit_code, benefit_type, benefit_original_price_ars, benefit_discount_amount_ars, benefit_final_price_ars, benefit_online_deposit_ars, benefit_in_person_balance_ars, created_at')
+                .not('benefit_code', 'is', null)
+                .order('created_at', { ascending: false })
+                .limit(10);
+              recentBenefitAppointments = bAppts || [];
+            } catch { /* best-effort */ }
+
+            // Safe surgical repair of affected reusable code
+            const shouldRepair = url.searchParams.get("repair_reusable_code") === "true";
+            const targetCode = url.searchParams.get("target_code")?.trim().toUpperCase();
+            const forceReusable = url.searchParams.get("force_reusable") === "true";
+
+            if (shouldRepair || targetCode) {
+              const query = db.from('benefit_codes').select('*');
+              if (targetCode) {
+                query.eq('code', targetCode);
+              } else {
+                query.eq('status', 'CONSUMED');
+              }
+              const { data: candidates } = await query;
+              const repaired: any[] = [];
+
+              if (Array.isArray(candidates)) {
+                for (const candidate of candidates) {
+                  // Only repair if it is explicitly REUSABLE, or if targeted with force_reusable=true
+                  const isCandidateReusable = candidate.usage_mode === 'REUSABLE' || (forceReusable && candidate.code === targetCode);
+                  if (isCandidateReusable && candidate.status === 'CONSUMED') {
+                    const updatePayload: Record<string, any> = {
+                      status: 'ACTIVE',
+                      updated_at: new Date().toISOString(),
+                    };
+                    if (forceReusable && candidate.usage_mode !== 'REUSABLE') {
+                      updatePayload.usage_mode = 'REUSABLE';
+                    }
+                    const { error: updErr } = await db
+                      .from('benefit_codes')
+                      .update(updatePayload)
+                      .eq('id', candidate.id);
+
+                    if (!updErr) {
+                      repaired.push({
+                        id: candidate.id,
+                        code: candidate.code,
+                        previousStatus: candidate.status,
+                        newStatus: 'ACTIVE',
+                        timesUsed: candidate.times_used,
+                        preservedConsumedAppointmentId: candidate.consumed_appointment_id,
+                        preservedConsumedAt: candidate.consumed_at,
+                      });
+                    }
+                  }
+                }
+              }
+              repairResult = {
+                requestedTarget: targetCode || 'ALL_CONSUMED_REUSABLES',
+                repairedCount: repaired.length,
+                repaired,
+              };
             }
           } catch (dbErr) {
             migrationError = dbErr instanceof Error ? dbErr.message : String(dbErr);
