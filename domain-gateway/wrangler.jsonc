@@ -1,0 +1,11 @@
+{
+  "name": "kani-domain-gateway",
+  "pages_build_output_dir": "./public",
+  "compatibility_date": "2026-11-01",
+  "services": [
+    {
+      "binding": "KANI_APP",
+      "service": "kanibarberstudio-cloudflare",
+    },
+  ],
+}

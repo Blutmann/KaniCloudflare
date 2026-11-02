@@ -33,6 +33,18 @@ describe('KANI Barber Studio — Preparación de Dominio y Enrutamiento Canónic
       expect(getCanonicalRedirectUrl('http://localhost:5173/')).toBeNull();
       expect(getCanonicalRedirectUrl('http://127.0.0.1:3000/')).toBeNull();
     });
+
+    it('permite servir www con DNS externo sin redirigir al apex no disponible', () => {
+      expect(getCanonicalRedirectUrl('https://www.kanibarber.com/reservar?service=corte', 'www.kanibarber.com')).toBeNull();
+      expect(getCanonicalRedirectUrl('https://kanibarber.com/reservar?service=corte', 'www.kanibarber.com'))
+        .toBe('https://www.kanibarber.com/reservar?service=corte');
+    });
+
+    it('no cambia los hosts de prueba ni permite redirecciones a dominios ajenos', () => {
+      expect(getCanonicalRedirectUrl('https://kanibarberstudio-cloudflare.kanibarber.workers.dev/', 'www.kanibarber.com')).toBeNull();
+      expect(getCanonicalRedirectUrl('https://www.kanibarber.com/reservar', 'attacker.example'))
+        .toBe('https://kanibarber.com/reservar');
+    });
   });
 
   describe('2. Adaptación dinámica de URLs de retorno en pagos', () => {
