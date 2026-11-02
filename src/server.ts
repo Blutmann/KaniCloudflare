@@ -409,6 +409,157 @@ export default {
         }
       }
 
+      if (url.pathname === "/api/admin/apply-franco-schedule-update") {
+        try {
+          const { createPaymentSupabaseClient } = await import("./lib/kani-payment-db.server");
+          const db = await createPaymentSupabaseClient();
+          const { data: barber, error: bErr } = await db.from('barbers').select('*').eq('name', 'Franco').maybeSingle();
+          if (!barber) return new Response(JSON.stringify({ error: "FRANCO_NOT_FOUND", details: bErr?.message }), { status: 404 });
+
+          // 1. Appointments actuales de Franco
+          const { data: appointments } = await db.from('appointments')
+            .select('id, booking_date, start_time, end_time, status, booking_client_name')
+            .eq('barber_id', barber.id)
+            .neq('status', 'CANCELLED');
+
+          // 2. Traer todos los slots existentes de Franco
+          const { data: currentSlots, error: curErr } = await db.from('barber_availability_slots')
+            .select('*')
+            .eq('barber_id', barber.id);
+
+          if (curErr) {
+            return new Response(JSON.stringify({ error: "FETCH_SLOTS_FAILED", details: curErr.message }), { status: 500 });
+          }
+
+          // 3. Identificar slots obsoletos o conflictivos de Franco
+          // Horarios viejos de sábado que iniciaban a las 15:00 o franjas desalineadas previas a las 16:00
+          const obsoleteOldStarts = ['15:00:00', '15:45:00', '16:30:00', '17:15:00', '18:00:00', '18:45:00'];
+          const slotsToDelete = (currentSlots || []).filter(s => {
+            const dateObj = new Date(s.slot_date + 'T12:00:00Z');
+            const dayOfWeek = dateObj.getUTCDay(); // 0 = Sunday
+            // Eliminar si es domingo
+            if (dayOfWeek === 0) return true;
+            // Eliminar si empieza antes de las 16:00
+            if (s.start_time < '16:00:00') return true;
+            // Eliminar si termina después de las 20:00
+            if (s.end_time > '20:00:00') return true;
+            // Eliminar si corresponde a las franjas desalineadas viejas
+            if (obsoleteOldStarts.includes(s.start_time)) return true;
+            return false;
+          }).filter(s => {
+            // Protección: nunca eliminar un slot que coincida con una reserva activa existente
+            const hasAppt = (appointments || []).some(a => {
+              if (a.booking_date !== s.slot_date) return false;
+              return s.start_time < a.end_time && a.start_time < s.end_time;
+            });
+            return !hasAppt;
+          });
+
+          let deletedCount = 0;
+          if (slotsToDelete.length > 0) {
+            const deleteIds = slotsToDelete.map(s => s.id);
+            for (let i = 0; i < deleteIds.length; i += 100) {
+              const chunk = deleteIds.slice(i, i + 100);
+              const { error: dErr } = await db.from('barber_availability_slots').delete().in('id', chunk);
+              if (dErr) {
+                return new Response(JSON.stringify({ error: "DELETE_OBSOLETE_FAILED", details: dErr.message }), { status: 500 });
+              }
+              deletedCount += chunk.length;
+            }
+          }
+
+          // 4. Generar franjas limpias de 16:00 a 20:00 de Lunes a Sábado para los próximos 180 días
+          const standardDefs = [
+            { start_time: '16:00:00', end_time: '16:45:00' },
+            { start_time: '16:45:00', end_time: '17:30:00' },
+            { start_time: '17:30:00', end_time: '18:15:00' },
+            { start_time: '18:15:00', end_time: '19:00:00' },
+            { start_time: '19:00:00', end_time: '19:45:00' },
+            { start_time: '19:30:00', end_time: '20:00:00' },
+          ];
+
+          const today = new Date();
+          const rowsToInsert: Array<{
+            barber_id: string;
+            slot_date: string;
+            start_time: string;
+            end_time: string;
+            status: string;
+          }> = [];
+
+          for (let dayOffset = 0; dayOffset <= 180; dayOffset++) {
+            const d = new Date(today.getTime() + dayOffset * 86400000);
+            const dayOfWeek = d.getDay(); // 0 = Sun, 1 = Mon, ..., 6 = Sat
+            if (dayOfWeek === 0) continue; // Domingo sin disponibilidad
+
+            const yyyy = d.getFullYear();
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            const dd = String(d.getDate()).padStart(2, '0');
+            const dateStr = `${yyyy}-${mm}-${dd}`;
+
+            for (const def of standardDefs) {
+              rowsToInsert.push({
+                barber_id: barber.id,
+                slot_date: dateStr,
+                start_time: def.start_time,
+                end_time: def.end_time,
+                status: 'AVAILABLE',
+              });
+            }
+          }
+
+          let insertedCount = 0;
+          for (let i = 0; i < rowsToInsert.length; i += 200) {
+            const chunk = rowsToInsert.slice(i, i + 200);
+            const { error: insErr } = await db.from('barber_availability_slots').upsert(chunk, {
+              onConflict: 'barber_id,slot_date,start_time',
+              ignoreDuplicates: true,
+            });
+            if (insErr) {
+              return new Response(JSON.stringify({ error: "UPSERT_FAILED", details: insErr.message }), { status: 500 });
+            }
+            insertedCount += chunk.length;
+          }
+
+          // 5. Verificación post-actualización
+          const todayStr = new Date().toISOString().split('T')[0];
+          const nextTwoWeeks = new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0];
+
+          const { data: finalSlots } = await db.from('barber_availability_slots')
+            .select('*')
+            .eq('barber_id', barber.id)
+            .gte('slot_date', todayStr)
+            .lte('slot_date', nextTwoWeeks)
+            .order('slot_date', { ascending: true })
+            .order('start_time', { ascending: true });
+
+          const { data: finalValidStarts, error: rpcErr } = await db.rpc('read_valid_availability_starts', {
+            p_barber_id: barber.id,
+            p_from_date: todayStr,
+            p_to_date: nextTwoWeeks,
+          });
+
+          return new Response(JSON.stringify({
+            success: true,
+            message: "Disponibilidad semanal de Franco actualizada a 16:00-20:00 de Lunes a Sábado exitosamente",
+            deletedObsoleteSlotsCount: deletedCount,
+            upsertedSlotsCount: insertedCount,
+            twoWeeksSlotCount: finalSlots?.length || 0,
+            twoWeeksValidStartsCount: finalValidStarts?.length || 0,
+            sampleSlotsNextSaturday: (finalSlots || []).filter(s => s.slot_date === '2026-11-07'),
+            sampleValidStartsNextSaturday: (finalValidStarts || []).filter(s => s.slot_date === '2026-11-07'),
+            appointments: appointments || [],
+            rpcError: rpcErr?.message || null,
+          }), {
+            status: 200,
+            headers: { "content-type": "application/json" }
+          });
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          return new Response(JSON.stringify({ error: message }), { status: 500, headers: { "content-type": "application/json" } });
+        }
+      }
+
       if (url.pathname === "/api/admin/benefit-codes-audit") {
         try {
           const { createPaymentSupabaseClient } = await import("./lib/kani-payment-db.server");
