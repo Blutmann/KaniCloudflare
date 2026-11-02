@@ -97,7 +97,7 @@
 @media (min-width: 1024px) {
   .booking-v2-final .booking-layout { max-width: none; }
   .booking-v2 .booking-v2-final-layout {
-    grid-template-columns: minmax(0, 4fr) minmax(0, 6fr);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     align-items: stretch;
     gap: 36px;
   }
@@ -424,4 +424,9 @@ html[data-theme='light'] .booking-v2 .booking-v2-choice-title {
     line-height: 20px;
     font-weight: 500;
   }
+}
+
+
+.booking-summary-legal-disclaimer {
+  text-align: left !important;
 }

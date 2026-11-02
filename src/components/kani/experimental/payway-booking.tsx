@@ -1091,7 +1091,7 @@ export function PaywayBooking() {
                   )}
                 </label>
 
-                <p className="payway-legal-disclaimer text-xs text-muted-foreground text-center my-3 leading-relaxed">
+                <p className="payway-legal-disclaimer text-xs text-muted-foreground text-left my-3 leading-relaxed">
                   Al confirmar tu reserva, aceptás nuestros{' '}
                   <a
                     href="/terminos-y-condiciones"

@@ -1503,7 +1503,7 @@ export function Booking({
                 </div>
 
                 {/* Texto legal informativo antes del pago */}
-                <p className="booking-summary-legal-disclaimer text-xs text-muted-foreground mt-3 px-1 text-center sm:text-left leading-relaxed">
+                <p className="booking-summary-legal-disclaimer text-xs text-muted-foreground mt-3 px-1 text-left leading-relaxed">
                   Al confirmar tu reserva, aceptás nuestros{' '}
                   <a
                     href="/terminos-y-condiciones"

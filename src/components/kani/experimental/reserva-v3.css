@@ -501,7 +501,7 @@ html[data-theme='light'] .booking-v3 .phone-country-option {
 
 @media (min-width: 1024px) {
   .booking-v3 .booking-v2-final-layout {
-    grid-template-columns: minmax(0, 4fr) minmax(0, 6fr);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     align-items: stretch;
     gap: 36px;
   }
@@ -521,43 +521,58 @@ html[data-theme='light'] .booking-v3 .phone-country-option {
   }
 }
 
-/* Celular en Desktop: adaptado a la columna del 40% del formulario (prefijo compacto y número con todo el espacio restante) */
+/* Celular en Desktop: 50% selector de país/prefijo | 50% número de celular con igual altura y alineación */
 .booking-v3 .phone-input-row {
   display: grid !important;
-  grid-template-columns: minmax(100px, 120px) minmax(0, 1fr) !important;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
   gap: 8px !important;
   width: 100% !important;
   box-sizing: border-box !important;
   align-items: center !important;
 }
 
-.booking-v3 .phone-country-trigger {
-  padding-inline: 8px !important;
-  font-size: 11px !important;
-  gap: 4px !important;
-}
-
 .booking-v3 .phone-country-picker {
   width: 100% !important;
   min-width: 0 !important;
+  height: 44px !important;
+  box-sizing: border-box !important;
 }
 
 .booking-v3 .phone-country-trigger {
   width: 100% !important;
   min-width: 0 !important;
+  height: 44px !important;
+  min-height: 44px !important;
+  padding-inline: 8px !important;
+  font-size: 11px !important;
+  gap: 4px !important;
   box-sizing: border-box !important;
+  display: flex !important;
+  align-items: center !important;
 }
 
 .booking-v3 .phone-input-row .field-control {
   width: 100% !important;
   min-width: 0 !important;
+  height: 44px !important;
+  min-height: 44px !important;
   box-sizing: border-box !important;
+  display: flex !important;
+  align-items: center !important;
 }
 
 .booking-v3 .phone-input-row input {
   width: 100% !important;
   min-width: 0 !important;
+  height: 44px !important;
+  min-height: 44px !important;
+  line-height: 44px !important;
   box-sizing: border-box !important;
+}
+
+/* Aviso legal informativo alineado a la izquierda */
+.booking-v3 .booking-summary-legal-disclaimer {
+  text-align: left !important;
 }
 
 /* Textarea Observaciones en desktop (~72px) */

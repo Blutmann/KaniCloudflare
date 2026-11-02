@@ -1835,7 +1835,7 @@ html[data-theme='dark'] .studio-map-card {
 @media (min-width: 768px) {
   .booking-page .booking-contact-form .phone-input-row {
     display: grid;
-    grid-template-columns: minmax(100px, 120px) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 8px;
     width: 100%;
   }
@@ -4875,4 +4875,10 @@ input[placeholder="Nombre, celular o email"]::placeholder {
   .benefit-code-dialog-footer {
     padding: 12px 14px;
   }
+}
+
+
+.booking-summary-legal-disclaimer,
+.payway-legal-disclaimer {
+  text-align: left !important;
 }
