@@ -352,6 +352,62 @@ export default {
         }
       }
 
+      if (url.pathname === "/api/admin/franco-schedule-audit") {
+        try {
+          const { createPaymentSupabaseClient } = await import("./lib/kani-payment-db.server");
+          const db = await createPaymentSupabaseClient();
+          const { data: barber } = await db.from('barbers').select('*').eq('name', 'Franco').maybeSingle();
+          if (!barber) return new Response(JSON.stringify({ error: "FRANCO_NOT_FOUND" }), { status: 404 });
+
+          const todayStr = new Date().toISOString().split('T')[0];
+          const nextTwoWeeks = new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0];
+
+          // 1. Slots directos en barber_availability_slots
+          const { data: slots, error: slotsErr } = await db.from('barber_availability_slots')
+            .select('*')
+            .eq('barber_id', barber.id)
+            .gte('slot_date', todayStr)
+            .lte('slot_date', nextTwoWeeks)
+            .order('slot_date', { ascending: true })
+            .order('start_time', { ascending: true });
+
+          // 2. RPC read_valid_availability_starts
+          const { data: validStarts, error: rpcErr } = await db.rpc('read_valid_availability_starts', {
+            p_barber_id: barber.id,
+            p_from_date: todayStr,
+            p_to_date: nextTwoWeeks,
+          });
+
+          // 3. Turnos existentes de Franco
+          const { data: appointments } = await db.from('appointments')
+            .select('id, booking_date, start_time, end_time, status, booking_client_name')
+            .eq('barber_id', barber.id)
+            .gte('booking_date', todayStr)
+            .lte('booking_date', nextTwoWeeks)
+            .neq('status', 'CANCELLED');
+
+          return new Response(JSON.stringify({
+            success: true,
+            barber,
+            slotsCount: slots?.length || 0,
+            slots: slots || [],
+            validStartsCount: validStarts?.length || 0,
+            validStarts: validStarts || [],
+            appointments: appointments || [],
+            errors: {
+              slotsErr: slotsErr?.message || null,
+              rpcErr: rpcErr?.message || null,
+            }
+          }), {
+            status: 200,
+            headers: { "content-type": "application/json" }
+          });
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          return new Response(JSON.stringify({ error: message }), { status: 500, headers: { "content-type": "application/json" } });
+        }
+      }
+
       if (url.pathname === "/api/admin/benefit-codes-audit") {
         try {
           const { createPaymentSupabaseClient } = await import("./lib/kani-payment-db.server");
