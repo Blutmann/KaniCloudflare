@@ -320,8 +320,9 @@ export default {
             }
 
             const { validateBenefitCodeQuote } = await import("./lib/kani-benefit-codes.server");
+            const probeCode = url.searchParams.get("probe_code") || "NON_EXISTENT_TEST_PROBE";
             sampleTest = await validateBenefitCodeQuote({
-              code: "NON_EXISTENT_TEST_PROBE",
+              code: probeCode,
               serviceName: "Corte",
               barberName: "Lautaro",
             });
