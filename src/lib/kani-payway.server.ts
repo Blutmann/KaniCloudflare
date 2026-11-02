@@ -1,4 +1,4 @@
-import { arsToPaywayAmount, isPaywaySandboxBase, normalizePaywayBaseUrl, PAYWAY_MESSAGES, validatePaywayPayment,
+import { arsToPaywayAmount, isPaywayApiBase, isPaywaySandboxBase, isPaywayProductionBase, normalizePaywayBaseUrl, PAYWAY_MESSAGES, validatePaywayPayment,
   type PaywayDraft, type PaywayPaymentInput, type PaywayPreparation, type PaywayResult } from './kani-payway';
 
 type EnvironmentReader = (name: string) => string | undefined;
@@ -8,13 +8,23 @@ export type PaywayConfig = {
 };
 
 export function readPaywayConfig(env: EnvironmentReader): PaywayConfig | null {
-  // This laboratory deliberately has no production mode or arbitrary destination.
-  if (env('PAYWAY_SANDBOX_ENABLED') !== 'true' || env('PAYWAY_ENVIRONMENT') !== 'sandbox' || env('SUPABASE_URL') !== 'https://iockpxtkflyjfagkvgnr.supabase.co') return null;
   const apiBaseUrl = normalizePaywayBaseUrl(env('PAYWAY_API_BASE_URL'));
+  const sandbox = env('PAYWAY_ENVIRONMENT') === 'sandbox'
+    && env('PAYWAY_SANDBOX_ENABLED') === 'true'
+    && env('PAYWAY_PRODUCTION_ENABLED') !== 'true'
+    && env('SUPABASE_URL') === 'https://iockpxtkflyjfagkvgnr.supabase.co'
+    && isPaywaySandboxBase(apiBaseUrl);
+  const production = env('PAYWAY_ENVIRONMENT') === 'production'
+    && env('PAYWAY_PRODUCTION_ENABLED') === 'true'
+    && env('PAYWAY_SANDBOX_ENABLED') === 'false'
+    && Boolean(env('SUPABASE_URL'))
+    && (env('PAYWAY_CHECKOUT_SECRET')?.length ?? 0) >= 32
+    && isPaywayProductionBase(apiBaseUrl);
+  if (!sandbox && !production) return null;
   const publicKey = env('PAYWAY_PUBLIC_API_KEY');
   const privateKey = env('PAYWAY_PRIVATE_API_KEY');
   const siteId = env('PAYWAY_SITE_ID');
-  if (!isPaywaySandboxBase(apiBaseUrl) || !publicKey || !privateKey || !siteId || !/^\d{1,20}$/.test(siteId)) return null;
+  if (!publicKey || !privateKey || !siteId || !/^\d{1,20}$/.test(siteId)) return null;
   try {
     const methods: PaywayConfig['methods'] = JSON.parse(env('PAYWAY_PAYMENT_METHODS') ?? '[]');
     if (!Array.isArray(methods) || !methods.length || methods.length > 50 || methods.some(m =>
@@ -75,8 +85,8 @@ export function createPaywayService({ config, store, fetcher = fetch }: {
         console.warn(`[Payway Prepare ${correlationId}] Store is null; checkout unavailable.`);
         return { ready: false, message: PAYWAY_MESSAGES.unavailable, correlationId, stage: 'store_init' };
       }
-      if (!isPaywaySandboxBase(config.apiBaseUrl)) {
-        console.warn(`[Payway Prepare ${correlationId}] Sandbox URL invalid: ${config.apiBaseUrl}`);
+      if (!isPaywayApiBase(config.apiBaseUrl)) {
+        console.warn(`[Payway Prepare ${correlationId}] API URL invalid`);
         return { ready: false, message: PAYWAY_MESSAGES.unavailable, correlationId, stage: 'api_url_check' };
       }
 
@@ -149,7 +159,7 @@ export function createPaywayService({ config, store, fetcher = fetch }: {
       }
     },
     async pay(raw: unknown): Promise<PaywayResult> {
-      if (!config || !store || !isPaywaySandboxBase(config.apiBaseUrl)) return { state: 'unavailable', message: PAYWAY_MESSAGES.unavailable };
+      if (!config || !store || !isPaywayApiBase(config.apiBaseUrl)) return { state: 'unavailable', message: PAYWAY_MESSAGES.unavailable };
       let input: PaywayPaymentInput;
       try { input = validatePaywayPayment(raw); }
       catch { return { state: 'recoverable', message: PAYWAY_MESSAGES.recoverable }; }
@@ -266,7 +276,7 @@ export function createPaywayService({ config, store, fetcher = fetch }: {
       }
     },
     async checkPaymentStatus(raw: unknown): Promise<PaywayResult> {
-      if (!config || !store || !isPaywaySandboxBase(config.apiBaseUrl)) {
+      if (!config || !store || !isPaywayApiBase(config.apiBaseUrl)) {
         return { state: 'unavailable', message: PAYWAY_MESSAGES.unavailable };
       }
       let input: import('./kani-payway').PaywayStatusInput;
@@ -610,11 +620,12 @@ export async function queryPaywayPayment(
   fetcher: typeof fetch = fetch,
   expectedAmount?: number
 ): Promise<{ matches: boolean; providerId: string | null; status: 'approved' | 'rejected' | 'unknown' | 'not_found'; code?: string } | null> {
-  if (!config || !isPaywaySandboxBase(config.apiBaseUrl)) return null;
+  if (!config || !isPaywayApiBase(config.apiBaseUrl)) return null;
   try {
     const url = `${config.apiBaseUrl}/payments?siteOperationId=${encodeURIComponent(siteTransactionId)}`;
     const response = await fetcher(url, {
       method: 'GET',
+      redirect: 'error',
       headers: { apikey: config.privateKey, 'Cache-Control': 'no-cache' },
       signal: AbortSignal.timeout(15_000),
     });
@@ -673,6 +684,7 @@ export async function runtimePaywayService() {
   if (!config) return createPaywayService({ config: null, store: null });
   let secret = getRuntimeEnv('PAYWAY_CHECKOUT_SECRET');
   if (!secret || secret.length < 32) {
+    if (isPaywayProductionBase(config.apiBaseUrl)) return createPaywayService({ config: null, store: null });
     const salt = getRuntimeEnv('SUPABASE_SERVICE_ROLE_KEY') ?? 'kani_sandbox_checkout_secret_salt_32';
     const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(config.privateKey + salt));
     secret = Array.from(new Uint8Array(hash)).map((b) => b.toString(16).padStart(2, '0')).join('');

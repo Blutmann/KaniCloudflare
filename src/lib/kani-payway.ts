@@ -24,7 +24,7 @@ export type PaywayStatusInput = {
 };
 
 export const PAYWAY_MESSAGES = {
-  unavailable: 'Pago de prueba todavía no disponible. No se realizó ningún cobro ni se guardó un turno.',
+  unavailable: 'El pago no está disponible en este momento. No se realizó ningún cobro ni se guardó un turno.',
   unknown: 'Estamos verificando tu pago. Podés cerrar esta ventana; seguiremos comprobándolo. No vuelvas a pagar mientras la verificación esté pendiente.',
   verifying: 'Estamos verificando tu pago. Podés cerrar esta ventana; seguiremos comprobándolo. No vuelvas a pagar mientras la verificación esté pendiente.',
   late_review: 'Tu pago fue registrado pero el turno ya no estaba disponible. Nos comunicaremos con vos a la brevedad.',
@@ -39,10 +39,13 @@ export const PAYWAY_SANDBOX_BASES = [
   'https://developers.decidir.com/api/v2',
 ] as const;
 
+// Official Payway SDK production endpoint. Never accept arbitrary destinations.
+export const PAYWAY_PRODUCTION_BASE = 'https://ventasonline.payway.com.ar/api/v2';
+
 export function normalizePaywayBaseUrl(value: string | undefined): string {
   if (!value) return '';
   const trimmed = value.trim().replace(/\/+$/, '');
-  if (trimmed === 'https://developers-ventasonline.payway.com.ar' || trimmed === 'https://developers.decidir.com') {
+  if (trimmed === 'https://developers-ventasonline.payway.com.ar' || trimmed === 'https://developers.decidir.com' || trimmed === 'https://ventasonline.payway.com.ar') {
     return `${trimmed}/api/v2`;
   }
   return trimmed;
@@ -51,6 +54,14 @@ export function normalizePaywayBaseUrl(value: string | undefined): string {
 export function isPaywaySandboxBase(value: string): boolean {
   const normalized = normalizePaywayBaseUrl(value);
   return (PAYWAY_SANDBOX_BASES as readonly string[]).includes(normalized);
+}
+
+export function isPaywayProductionBase(value: string): boolean {
+  return normalizePaywayBaseUrl(value) === PAYWAY_PRODUCTION_BASE;
+}
+
+export function isPaywayApiBase(value: string): boolean {
+  return isPaywaySandboxBase(value) || isPaywayProductionBase(value);
 }
 
 export function arsToPaywayAmount(ars: number): number {

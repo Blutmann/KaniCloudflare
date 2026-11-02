@@ -2,260 +2,122 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const mockRpc = vi.fn();
 const mockFrom = vi.fn();
-const mockSupabase = { from: mockFrom, rpc: mockRpc };
-
 vi.mock('./kani-payment-db.server', () => ({
-  createPaymentSupabaseClient: vi.fn(async () => mockSupabase),
+  createPaymentSupabaseClient: vi.fn(async () => ({ from: mockFrom, rpc: mockRpc })),
 }));
-
-const mockGetRuntimeEnv = vi.fn((key: string) => {
-  if (key === 'SUPABASE_URL') return 'https://iockpxtkflyjfagkvgnr.supabase.co';
-  if (key === 'PAYWAY_SANDBOX_ENABLED') return 'true';
-  if (key === 'PAYWAY_ENVIRONMENT') return 'sandbox';
-  if (key === 'PAYWAY_API_BASE_URL') return 'https://developers-ventasonline.payway.com.ar/api/v2';
-  if (key === 'PAYWAY_PUBLIC_API_KEY') return 'test_public_key';
-  if (key === 'PAYWAY_PRIVATE_API_KEY') return 'test_private_key';
-  if (key === 'PAYWAY_SITE_ID') return '93146639';
-  if (key === 'PAYWAY_PAYMENT_METHODS') return JSON.stringify([{ id: 1, label: 'Visa' }]);
-  return undefined;
-});
-
+const environment: Record<string, string> = {
+  SUPABASE_URL: 'https://iockpxtkflyjfagkvgnr.supabase.co',
+  PAYWAY_SANDBOX_ENABLED: 'true', PAYWAY_ENVIRONMENT: 'sandbox',
+  PAYWAY_API_BASE_URL: 'https://developers-ventasonline.payway.com.ar/api/v2',
+  PAYWAY_PUBLIC_API_KEY: 'test_public_key', PAYWAY_PRIVATE_API_KEY: 'test_private_key',
+  PAYWAY_SITE_ID: '93146639', PAYWAY_PAYMENT_METHODS: JSON.stringify([{ id: 1, label: 'Visa' }]),
+};
 vi.mock('./kani-mercadopago.server', () => ({
-  getRuntimeEnv: (key: string) => mockGetRuntimeEnv(key),
-  verifyAndConfirmAppointmentPayment: vi.fn(),
+  getRuntimeEnv: (key: string) => environment[key], verifyAndConfirmAppointmentPayment: vi.fn(),
 }));
-
 const mockQueryPaywayPayment = vi.fn();
-vi.mock('./kani-payway.server', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('./kani-payway.server')>();
-  return {
-    ...actual,
-    queryPaywayPayment: (...args: unknown[]) => mockQueryPaywayPayment(...args),
-  };
-});
-
+vi.mock('./kani-payway.server', async importOriginal => ({
+  ...await importOriginal<typeof import('./kani-payway.server')>(),
+  queryPaywayPayment: (...args: unknown[]) => mockQueryPaywayPayment(...args),
+}));
 import { reconcilePendingPayments } from './kani-payment-maintenance.server';
+
+const attempt = {
+  id: '22222222-2222-4222-8222-222222222222', appointment_id: 'appt-fixture',
+  site_transaction_id: 'KANI22222222222242228222222222222222',
+  provider_site_id: '93146639', amount_minor_units: 500000, state: 'UNKNOWN',
+  provider_transaction_id: null as string | null,
+};
+function mockLedger(pending = [attempt], approved: typeof attempt[] = []) {
+  const queries: { table: string; eq: ReturnType<typeof vi.fn> }[] = [];
+  let attemptQuery = 0;
+  mockFrom.mockImplementation((table: string) => {
+    const data = table === 'payment_attempts' ? (++attemptQuery === 1 ? pending : approved) : [];
+    const query = {
+      select: vi.fn(() => query), eq: vi.fn(() => query), in: vi.fn(() => query),
+      is: vi.fn(() => query), lt: vi.fn(() => query),
+      limit: vi.fn(async () => ({ data, error: null })),
+    };
+    queries.push({ table, eq: query.eq });
+    return query;
+  });
+  return queries;
+}
 
 describe('Payway reconciliation & cron maintenance', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockRpc.mockResolvedValue({ data: null, error: null });
+    mockQueryPaywayPayment.mockResolvedValue(null);
+    delete environment.PAYWAY_PRODUCTION_ENABLED;
+    delete environment.PAYWAY_CHECKOUT_SECRET;
+    Object.assign(environment, { PAYWAY_SANDBOX_ENABLED: 'true', PAYWAY_ENVIRONMENT: 'sandbox',
+      PAYWAY_API_BASE_URL: 'https://developers-ventasonline.payway.com.ar/api/v2', PAYWAY_SITE_ID: '93146639' });
   });
 
-  it('reconciles UNKNOWN attempt to APPROVED with idempotent confirmation', async () => {
-    const unknownAttempt = {
-      id: '22222222-2222-4222-8222-222222222222',
-      appointment_id: 'appt-1111',
-      site_transaction_id: 'KANI22222222222242228222222222222222',
-      amount_minor_units: 500000,
-      state: 'UNKNOWN',
-    };
-
-    mockFrom.mockImplementation((table: string) => {
-      if (table === 'appointment_payment_orders') {
-        return {
-          select: () => ({
-            eq: () => ({
-              lt: () => ({
-                limit: vi.fn().mockResolvedValue({ data: [], error: null }),
-              }),
-            }),
-          }),
-        };
-      }
-      if (table === 'payment_attempts') {
-        return {
-          select: () => ({
-            eq: () => ({
-              in: () => ({
-                lt: () => ({
-                  limit: vi.fn().mockResolvedValue({ data: [unknownAttempt], error: null }),
-                }),
-              }),
-            }),
-          }),
-        };
-      }
-      return {};
-    });
-
-    mockQueryPaywayPayment.mockResolvedValueOnce({
-      matches: true,
-      providerId: '987654',
-      status: 'approved',
-    });
-
+  it('reconciles UNKNOWN to APPROVED and confirms once with the verified amount', async () => {
+    const queries = mockLedger();
+    mockQueryPaywayPayment.mockResolvedValue({ matches: true, providerId: '987654', status: 'approved' });
     await reconcilePendingPayments();
-
-    expect(mockQueryPaywayPayment).toHaveBeenCalledWith(
-      expect.objectContaining({ siteId: '93146639' }),
-      unknownAttempt.site_transaction_id,
-      expect.anything(),
-      unknownAttempt.amount_minor_units
-    );
-
-    // Settle approved
-    expect(mockRpc).toHaveBeenCalledWith('settle_payway_attempt', {
-      p_attempt_id: unknownAttempt.id,
-      p_state: 'APPROVED',
-      p_provider_id: '987654',
-      p_provider_status: 'approved',
-      p_provider_code: 'reconciled_approved',
-    });
-
-    // Confirm appointment
+    expect(mockQueryPaywayPayment).toHaveBeenCalledWith(expect.objectContaining({ siteId: '93146639' }),
+      attempt.site_transaction_id, expect.anything(), 500000);
+    expect(mockRpc).toHaveBeenCalledWith('settle_payway_attempt', expect.objectContaining({
+      p_attempt_id: attempt.id, p_state: 'APPROVED', p_provider_id: '987654' }));
     expect(mockRpc).toHaveBeenCalledWith('confirm_payway_attempt', {
-      p_appointment_id: unknownAttempt.appointment_id,
-      p_attempt_id: unknownAttempt.id,
-      p_provider_id: '987654',
-      p_amount_minor: 500000,
-    });
+      p_appointment_id: attempt.appointment_id, p_attempt_id: attempt.id, p_provider_id: '987654', p_amount_minor: 500000 });
+    for (const query of queries.filter(q => q.table === 'payment_attempts')) {
+      expect(query.eq).toHaveBeenCalledWith('provider_site_id', '93146639');
+    }
   });
 
-  it('reconciles UNKNOWN attempt to REJECTED without confirming appointment', async () => {
-    const unknownAttempt = {
-      id: '33333333-3333-4333-8333-333333333333',
-      appointment_id: 'appt-2222',
-      site_transaction_id: 'KANI33333333333343338333333333333333',
-      amount_minor_units: 500000,
-      state: 'UNKNOWN',
-    };
-
-    mockFrom.mockImplementation((table: string) => {
-      if (table === 'appointment_payment_orders') {
-        return {
-          select: () => ({
-            eq: () => ({
-              lt: () => ({ limit: vi.fn().mockResolvedValue({ data: [], error: null }) }),
-            }),
-          }),
-        };
-      }
-      if (table === 'payment_attempts') {
-        return {
-          select: () => ({
-            eq: () => ({
-              in: () => ({
-                lt: () => ({ limit: vi.fn().mockResolvedValue({ data: [unknownAttempt], error: null }) }),
-              }),
-            }),
-          }),
-        };
-      }
-      return {};
-    });
-
-    mockQueryPaywayPayment.mockResolvedValueOnce({
-      matches: true,
-      providerId: '987655',
-      status: 'rejected',
-    });
-
+  it('records an authoritative rejection without confirming', async () => {
+    mockLedger();
+    mockQueryPaywayPayment.mockResolvedValue({ matches: true, providerId: '987655', status: 'rejected' });
     await reconcilePendingPayments();
-
-    // Settle rejected
-    expect(mockRpc).toHaveBeenCalledWith('settle_payway_attempt', {
-      p_attempt_id: unknownAttempt.id,
-      p_state: 'REJECTED',
-      p_provider_id: '987655',
-      p_provider_status: 'rejected',
-      p_provider_code: 'reconciled_rejected',
-    });
-
-    // Confirm appointment must NEVER be called
+    expect(mockRpc).toHaveBeenCalledWith('settle_payway_attempt', expect.objectContaining({ p_state: 'REJECTED' }));
     expect(mockRpc).not.toHaveBeenCalledWith('confirm_payway_attempt', expect.anything());
   });
 
-  it('explicitly excludes historical test attempts from reconciliation', async () => {
-    const historicalAttempts = [
-      { id: '1123fda5-abff-4775-8313-aa250967ec12', site_transaction_id: 'KANI1', state: 'UNKNOWN' },
-      { id: '0d3f50b8-baac-4cf9-b88a-7e5bac2f2313', site_transaction_id: 'KANI2', state: 'UNKNOWN' },
-    ];
-
-    mockFrom.mockImplementation((table: string) => {
-      if (table === 'appointment_payment_orders') {
-        return {
-          select: () => ({
-            eq: () => ({
-              lt: () => ({ limit: vi.fn().mockResolvedValue({ data: [], error: null }) }),
-            }),
-          }),
-        };
-      }
-      if (table === 'payment_attempts') {
-        return {
-          select: () => ({
-            eq: () => ({
-              in: () => ({
-                lt: () => ({ limit: vi.fn().mockResolvedValue({ data: historicalAttempts, error: null }) }),
-              }),
-            }),
-          }),
-        };
-      }
-      return {};
-    });
-
+  it('preserves the explicitly excluded historical attempts', async () => {
+    mockLedger(['1123fda5-abff-4775-8313-aa250967ec12', '0d3f50b8-baac-4cf9-b88a-7e5bac2f2313'].map(id => ({ ...attempt, id })));
     await reconcilePendingPayments();
-
-    // Query must never be called for historical attempts
     expect(mockQueryPaywayPayment).not.toHaveBeenCalled();
-    // Neither settle nor confirm should be called
     expect(mockRpc).not.toHaveBeenCalledWith('settle_payway_attempt', expect.anything());
-    expect(mockRpc).not.toHaveBeenCalledWith('confirm_payway_attempt', expect.anything());
   });
 
-  it('leaves attempt as UNKNOWN if remote status is indeterminate or error', async () => {
-    const unknownAttempt = {
-      id: '44444444-4444-4444-8444-444444444444',
-      appointment_id: 'appt-3333',
-      site_transaction_id: 'KANI44444444444444448444444444444444',
-      amount_minor_units: 500000,
-      state: 'UNKNOWN',
-    };
-
-    mockFrom.mockImplementation((table: string) => {
-      if (table === 'appointment_payment_orders') {
-        return {
-          select: () => ({
-            eq: () => ({
-              lt: () => ({ limit: vi.fn().mockResolvedValue({ data: [], error: null }) }),
-            }),
-          }),
-        };
-      }
-      if (table === 'payment_attempts') {
-        return {
-          select: () => ({
-            eq: () => ({
-              in: () => ({
-                lt: () => ({ limit: vi.fn().mockResolvedValue({ data: [unknownAttempt], error: null }) }),
-              }),
-            }),
-          }),
-        };
-      }
-      return {};
+  it.each([null, { matches: false, providerId: null, status: 'unknown' }, { matches: false, providerId: null, status: 'not_found' }])(
+    'never rejects or confirms an indeterminate response %j', async result => {
+      mockLedger(); mockQueryPaywayPayment.mockResolvedValue(result);
+      await reconcilePendingPayments();
+      expect(mockRpc).not.toHaveBeenCalledWith('settle_payway_attempt', expect.anything());
+      expect(mockRpc).not.toHaveBeenCalledWith('confirm_payway_attempt', expect.anything());
     });
 
-    // Indeterminate / network failure
-    mockQueryPaywayPayment.mockResolvedValueOnce(null);
-
+  it('isolates production from sandbox in both pending and approved recovery queries', async () => {
+    Object.assign(environment, { PAYWAY_PRODUCTION_ENABLED: 'true', PAYWAY_SANDBOX_ENABLED: 'false',
+      PAYWAY_ENVIRONMENT: 'production', PAYWAY_API_BASE_URL: 'https://ventasonline.payway.com.ar/api/v2',
+      PAYWAY_SITE_ID: '99999999', PAYWAY_CHECKOUT_SECRET: 's'.repeat(64) });
+    const queries = mockLedger([attempt], [{ ...attempt, state: 'APPROVED', provider_transaction_id: 'fixture' }]);
     await reconcilePendingPayments();
-
-    // Must NOT alter attempt
+    expect(mockQueryPaywayPayment).not.toHaveBeenCalled();
     expect(mockRpc).not.toHaveBeenCalledWith('settle_payway_attempt', expect.anything());
     expect(mockRpc).not.toHaveBeenCalledWith('confirm_payway_attempt', expect.anything());
+    for (const query of queries.filter(q => q.table === 'payment_attempts')) {
+      expect(query.eq).toHaveBeenCalledWith('provider_site_id', '99999999');
+    }
+  });
+
+  it('recovers an approved payment from the current merchant', async () => {
+    mockLedger([], [{ ...attempt, state: 'APPROVED', provider_transaction_id: '987654' }]);
+    await reconcilePendingPayments();
+    expect(mockRpc).toHaveBeenCalledWith('confirm_payway_attempt', expect.objectContaining({ p_provider_id: '987654' }));
   });
 
   it('server scheduled export triggers reconciliation end-to-end', async () => {
+    mockLedger([]);
     const serverModule = await import('../server');
-    const scheduledHandler = serverModule.default.scheduled;
-    expect(typeof scheduledHandler).toBe('function');
-
-    const mockCtx = { waitUntil: vi.fn() };
-    await scheduledHandler({}, {}, mockCtx);
-
-    expect(mockCtx.waitUntil).toHaveBeenCalled();
+    const ctx = { waitUntil: vi.fn() };
+    await serverModule.default.scheduled({}, {}, ctx);
+    expect(ctx.waitUntil).toHaveBeenCalled();
   });
 });

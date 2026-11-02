@@ -1,11 +1,11 @@
-import { isPaywaySandboxBase, type PaywayCheckout } from './kani-payway';
+import { isPaywayApiBase, normalizePaywayBaseUrl, type PaywayCheckout } from './kani-payway';
 
 /** Card values remain in the DOM and in this short-lived request only. No state,
  * storage, telemetry, error payloads or calls to Kani contain PAN/CVV.
  * Official REST contract: Gateway / Solicitud de Token de Pago.
  */
 export async function tokenizePaywayForm(form: HTMLFormElement, checkout: PaywayCheckout) {
-  if (!isPaywaySandboxBase(checkout.apiBaseUrl)) throw new Error('PAYWAY_TOKENIZATION_UNAVAILABLE');
+  if (!isPaywayApiBase(checkout.apiBaseUrl)) throw new Error('PAYWAY_TOKENIZATION_UNAVAILABLE');
   const value = (key: string) => (form.elements.namedItem(key) as HTMLInputElement | null)?.value.trim() ?? '';
   const rawMonth = value('card_expiration_month');
   const month = rawMonth ? rawMonth.padStart(2, '0') : '';
@@ -14,7 +14,7 @@ export async function tokenizePaywayForm(form: HTMLFormElement, checkout: Payway
   const docNumber = value('card_holder_doc_number').replace(/\D/g, '');
   const cardNumber = value('card_number').replace(/[\s-]/g, '');
 
-  const response = await fetch(`${checkout.apiBaseUrl}/tokens`, {
+  const response = await fetch(`${normalizePaywayBaseUrl(checkout.apiBaseUrl)}/tokens`, {
     method: 'POST', credentials: 'omit', redirect: 'error', signal: AbortSignal.timeout(15_000),
     headers: { apikey: checkout.publicKey, 'Content-Type': 'application/json' },
     body: JSON.stringify({

@@ -1,5 +1,5 @@
 {
-  // This repository deploys ONLY the existing Preview/Test Worker.
+  // Existing Worker serving the connected Kani website.
   // Nitro supplies main/assets in its generated deployment configuration.
   "name": "kanibarberstudio-cloudflare",
   "keep_vars": true,
@@ -11,9 +11,10 @@
   "vars": {
     "KANI_CANONICAL_HOST": "www.kanibarber.com",
     "SUPABASE_URL": "https://iockpxtkflyjfagkvgnr.supabase.co",
-    "PAYWAY_SANDBOX_ENABLED": "true",
-    "PAYWAY_ENVIRONMENT": "sandbox",
-    "PAYWAY_API_BASE_URL": "https://developers-ventasonline.payway.com.ar/api/v2",
+    "PAYWAY_SANDBOX_ENABLED": "false",
+    "PAYWAY_PRODUCTION_ENABLED": "true",
+    "PAYWAY_ENVIRONMENT": "production",
+    "PAYWAY_API_BASE_URL": "https://ventasonline.payway.com.ar/api/v2",
     "PAYWAY_PAYMENT_METHODS": "[{\"id\":1,\"label\":\"Visa\"},{\"id\":104,\"label\":\"Mastercard\"},{\"id\":63,\"label\":\"Cabal\"}]",
     "PONTIUN_PHONE_NUMBER_ID": "1391432264052937",
     "PONTIUN_WABA_ID": "1519852186644295",

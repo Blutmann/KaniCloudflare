@@ -1,5 +1,8 @@
 # Reserva V4 — infraestructura Payway Sandbox
 
+> Documento histórico de la etapa Sandbox. Para el modo productivo y la
+> configuración actual, consultar [PAYWAY_PRODUCTION.md](PAYWAY_PRODUCTION.md).
+
 `/reserva-v4` utiliza el mismo `Booking variant="v3"` y CSS de V3:
 Servicio → Barbero → Fecha → Horario → Datos. V3 permanece sin cambios;
 V4 sólo sustituye el callback y diálogo de pago.

@@ -150,6 +150,45 @@ describe('Payway laboratory, synthetic responses only', () => {
     }
   });
 
+  it('enables production only with explicit matching gates, official host and checkout secret', async () => {
+    const env: Record<string, string> = {
+      PAYWAY_PRODUCTION_ENABLED: 'true', PAYWAY_SANDBOX_ENABLED: 'false', PAYWAY_ENVIRONMENT: 'production',
+      PAYWAY_API_BASE_URL: 'https://ventasonline.payway.com.ar/api/v2',
+      PAYWAY_PUBLIC_API_KEY: 'production-public-fixture', PAYWAY_PRIVATE_API_KEY: 'production-private-fixture',
+      PAYWAY_SITE_ID: '99999999', PAYWAY_PAYMENT_METHODS: JSON.stringify(config.methods),
+      SUPABASE_URL: 'https://iockpxtkflyjfagkvgnr.supabase.co', PAYWAY_CHECKOUT_SECRET: 's'.repeat(64),
+    };
+    const productionConfig = readPaywayConfig(key => env[key]);
+    expect(productionConfig?.apiBaseUrl).toBe(env.PAYWAY_API_BASE_URL);
+    for (const patch of [
+      { PAYWAY_PRODUCTION_ENABLED: 'false' }, { PAYWAY_SANDBOX_ENABLED: 'true' },
+      { PAYWAY_ENVIRONMENT: 'sandbox' }, { PAYWAY_API_BASE_URL: config.apiBaseUrl },
+      { PAYWAY_API_BASE_URL: 'https://ventasonline.payway.com.ar.evil.test/api/v2' },
+      { PAYWAY_CHECKOUT_SECRET: '' }, { PAYWAY_CHECKOUT_SECRET: 's'.repeat(31) }, { SUPABASE_URL: '' },
+    ]) {
+      const altered = { ...env, ...patch };
+      expect(readPaywayConfig(key => altered[key])).toBeNull();
+    }
+    const s = setup();
+    s.payment.site_id = '99999999';
+    s.fetcher.mockResolvedValue(new Response(JSON.stringify(s.payment), { status: 201 }));
+    const service = createPaywayService({ config: productionConfig, store: s.store, fetcher: s.fetcher });
+    const prepared = await service.prepare(draft);
+    expect(prepared.ready && prepared.checkout.apiBaseUrl).toBe(env.PAYWAY_API_BASE_URL);
+    expect((await service.pay(input)).state).toBe('approved');
+    expect(s.fetcher.mock.calls[0]![0]).toBe(`${env.PAYWAY_API_BASE_URL}/payments`);
+    expect(s.fetcher.mock.calls[0]![1].headers.apikey).toBe(env.PAYWAY_PRIVATE_API_KEY);
+  });
+
+  it('queries the official production API without allowing redirects or arbitrary destinations', async () => {
+    const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({ results: [] })));
+    const productionConfig = { ...config, apiBaseUrl: 'https://ventasonline.payway.com.ar/api/v2' };
+    expect(await queryPaywayPayment(productionConfig, 'KANIfixture', fetcher)).toEqual({ matches: false, providerId: null, status: 'not_found' });
+    expect(fetcher.mock.calls[0]![0]).toBe(`${productionConfig.apiBaseUrl}/payments?siteOperationId=KANIfixture`);
+    await queryPaywayPayment({ ...config, apiBaseUrl: 'https://example.test' }, 'KANIfixture', fetcher);
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+
   it('accepts string provider ID and omitted site_id from Payway gateway responses', async () => {
     const s = setup();
     s.payment.id = '971344';

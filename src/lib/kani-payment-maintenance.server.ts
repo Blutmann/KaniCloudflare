@@ -40,8 +40,9 @@ export async function reconcilePendingPayments() {
     const paywayConfig = readPaywayConfig(getRuntimeEnv);
     if (paywayConfig) {
       const { data: attempts } = await db.from('payment_attempts')
-        .select('id, appointment_id, site_transaction_id, amount_minor_units, state, created_at')
+        .select('id, appointment_id, site_transaction_id, amount_minor_units, state, created_at, provider_site_id')
         .eq('provider', 'PAYWAY')
+        .eq('provider_site_id', paywayConfig.siteId)
         .in('state', ['UNKNOWN', 'PROCESSING'])
         .lt('created_at', new Date(Date.now() - 30_000).toISOString())
         .limit(20);
@@ -55,6 +56,8 @@ export async function reconcilePendingPayments() {
       const cutoff24h = new Date(Date.now() - 24 * 60 * 60_000).toISOString();
 
       for (const att of attempts ?? []) {
+        // Sandbox and production have separate merchant IDs, even in the same ledger.
+        if (att.provider_site_id !== paywayConfig.siteId) continue;
         if (HISTORICAL_EXCLUDED_ATTEMPTS.includes(att.id)) {
           continue;
         }
@@ -112,14 +115,16 @@ export async function reconcilePendingPayments() {
 
       // Reconcile stranded APPROVED attempts that have not completed confirmation
       const { data: unconfirmedApproved } = await db.from('payment_attempts')
-        .select('id, appointment_id, site_transaction_id, amount_minor_units, state, provider_transaction_id, confirmation_status, created_at')
+        .select('id, appointment_id, site_transaction_id, amount_minor_units, state, provider_transaction_id, confirmation_status, created_at, provider_site_id')
         .eq('provider', 'PAYWAY')
+        .eq('provider_site_id', paywayConfig.siteId)
         .eq('state', 'APPROVED')
         .is('confirmation_status', null)
         .lt('created_at', new Date(Date.now() - 30_000).toISOString())
         .limit(10);
 
       for (const att of unconfirmedApproved ?? []) {
+        if (att.provider_site_id !== paywayConfig.siteId) continue;
         if (HISTORICAL_EXCLUDED_ATTEMPTS.includes(att.id)) continue;
         if (!att.provider_transaction_id) continue;
         const { data: confirmData } = await db.rpc('confirm_payway_attempt', {

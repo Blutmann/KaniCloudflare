@@ -604,6 +604,7 @@ function mirrorRuntimeBindings(bindings: unknown): void {
     "PONTIUN_WEBHOOK_SECRET",
     "PONTIUN_API_BASE_URL",
     "PAYWAY_SANDBOX_ENABLED",
+    "PAYWAY_PRODUCTION_ENABLED",
     "PAYWAY_ENVIRONMENT",
     "PAYWAY_API_BASE_URL",
     "PAYWAY_PUBLIC_API_KEY",
