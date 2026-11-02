@@ -604,6 +604,17 @@ export async function handleGoogleCalendarTestCycle(
       );
     }
 
+    if (action === 'verify-all') {
+      const { verifyAllBarberCalendars } = await import('./kani-google-calendar-sync');
+      const { GoogleCalendarClient } = await import('./kani-google-calendar-client');
+      const client = new GoogleCalendarClient();
+      const verifyResult = await verifyAllBarberCalendars(client, sb);
+      return new Response(JSON.stringify(verifyResult), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
     if (action === 'create') {
       // 1. Obtener Franco y un servicio válido
       const { data: franco } = await sb
