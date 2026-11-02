@@ -113,6 +113,8 @@ export async function getAuthenticatedStaff(options?: { bypassCache?: boolean })
       const result = await fetchAuthenticatedStaff();
       cachedStaff = { data: result, timestamp: Date.now() };
       return result;
+    } catch {
+      return null;
     } finally {
       inFlightStaff = null;
     }

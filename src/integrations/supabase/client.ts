@@ -44,12 +44,16 @@ function syncAuthSessionCookie(session: { access_token?: string; expires_in?: nu
 function createSupabaseClient() {
   // Use import.meta.env for client-side (Vite build-time replacement)
   // Fall back to process.env for SSR (server-side rendering)
-  const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || process.env['SUPABASE_URL'];
+  const SUPABASE_URL =
+    import.meta.env.VITE_SUPABASE_URL ||
+    process.env['SUPABASE_URL'] ||
+    'https://iockpxtkflyjfagkvgnr.supabase.co';
   const SUPABASE_PUBLIC_KEY =
     import.meta.env.VITE_SUPABASE_ANON_KEY ||
     import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
     process.env['SUPABASE_ANON_KEY'] ||
-    process.env['SUPABASE_PUBLISHABLE_KEY'];
+    process.env['SUPABASE_PUBLISHABLE_KEY'] ||
+    'sb_publishable_jLUHqN-Y_2az8c0Y2yG3mA_gl618304';
 
   if (!SUPABASE_URL || !SUPABASE_PUBLIC_KEY) {
     const missing = [

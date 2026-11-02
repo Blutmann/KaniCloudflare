@@ -971,12 +971,8 @@ export const retryNotificationChannelServerFn = createServerFn({ method: "POST" 
     let token = data.token?.trim();
     if (!token) {
       try {
-        const serverModule = await import("@tanstack/react-start/server");
-        const req = serverModule.getRequest();
-        const authHeader = req?.headers.get("authorization") || req?.headers.get("x-supabase-auth");
-        if (authHeader) {
-          token = authHeader.replace(/^Bearer\s+/i, "").trim();
-        }
+        const { getRequestAuthToken } = await import("./kani-notifications.server");
+        token = getRequestAuthToken();
       } catch { /* ignored */ }
     }
 
@@ -1032,50 +1028,8 @@ function getRuntimeEnv(name: string): string | undefined {
 }
 
 async function createRequestSupabaseClient(explicitAuthToken?: string) {
-  const { createClient } = await import("@supabase/supabase-js");
-  let request: Request | undefined;
-  try {
-    const serverModule = await import("@tanstack/react-start/server");
-    request = serverModule.getRequest();
-  } catch { /* Raw Worker webhook has no TanStack request. */ }
-  const supabaseUrl = getRuntimeEnv("SUPABASE_URL") ?? getRuntimeEnv("VITE_SUPABASE_URL");
-  const supabaseKey =
-    getRuntimeEnv("SUPABASE_ANON_KEY") ??
-    getRuntimeEnv("SUPABASE_PUBLISHABLE_KEY") ??
-    getRuntimeEnv("VITE_SUPABASE_ANON_KEY") ??
-    getRuntimeEnv("VITE_SUPABASE_PUBLISHABLE_KEY");
-  if (!supabaseUrl || !supabaseKey) {
-    // Record presence only; never include URLs, API keys, or other secret values.
-    const missing: string[] = [];
-    if (!supabaseUrl) missing.push("SUPABASE_URL_OR_VITE_SUPABASE_URL");
-    if (!supabaseKey) missing.push("SUPABASE_ANON_OR_PUBLISHABLE_KEY");
-    throw new Error(`SUPABASE_SERVER_CONFIGURATION_MISSING:${missing.join(",")}`);
-  }
-
-  let token = explicitAuthToken?.trim();
-  if (!token) {
-    const rawHeader = request?.headers.get("authorization") || request?.headers.get("x-supabase-auth");
-    if (rawHeader) {
-      token = rawHeader.replace(/^Bearer\s+/i, "").trim();
-    }
-  }
-
-  const authorization = token ? `Bearer ${token}` : undefined;
-  return createClient<Database>(supabaseUrl, supabaseKey, {
-    global: {
-      fetch: (input, init) => {
-        const headers = new Headers(
-          typeof Request !== "undefined" && input instanceof Request ? input.headers : undefined,
-        );
-        if (init?.headers)
-          new Headers(init.headers).forEach((value, key) => headers.set(key, value));
-        headers.set("apikey", supabaseKey);
-        if (authorization) headers.set("Authorization", authorization);
-        return fetch(input, { ...init, headers });
-      },
-    },
-    auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
-  });
+  const { createRequestSupabaseClient: createClient } = await import("./kani-notifications.server");
+  return createClient(explicitAuthToken);
 }
 
 const WEEKDAYS = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];

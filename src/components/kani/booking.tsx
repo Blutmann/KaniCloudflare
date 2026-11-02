@@ -129,37 +129,6 @@ export function Booking({
   const [benefitValidationLoading, setBenefitValidationLoading] = useState(false);
   const [benefitErrorMessage, setBenefitErrorMessage] = useState<string | null>(null);
 
-  const applyBenefitCode = useCallback(async () => {
-    const raw = benefitCodeInput.trim();
-    if (!raw) return;
-    setBenefitValidationLoading(true);
-    setBenefitErrorMessage(null);
-    try {
-      const quote = await validateBenefitCodeQuoteFn({
-        data: {
-          code: raw,
-          serviceName: selected?.name ?? (service ? serviceFor(service).name : 'Corte'),
-          barber: barber ?? undefined,
-        },
-      });
-      if (quote.valid) {
-        setAppliedBenefit(quote);
-        setBenefitErrorMessage(null);
-      } else {
-        setBenefitErrorMessage(quote.message || 'Código inválido o no disponible.');
-      }
-    } catch (err: any) {
-      setBenefitErrorMessage(err?.message || 'Error al validar el código.');
-    } finally {
-      setBenefitValidationLoading(false);
-    }
-  }, [benefitCodeInput, selected, service, barber]);
-
-  const removeBenefitCode = useCallback(() => {
-    setAppliedBenefit(null);
-    setBenefitCodeInput('');
-    setBenefitErrorMessage(null);
-  }, []);
   const [pendingAppointment, setPendingAppointment] = useState<{ id: string; requestNumber: number; expiresAt: number } | null>(null);
   const [returnStatus, setReturnStatus] = useState<'IDLE' | 'LOADING' | 'CONFIRMED' | 'PENDING' | 'CANCELLED'>('IDLE');
   const [returnedAppointment, setReturnedAppointment] = useState<{
@@ -412,6 +381,38 @@ export function Booking({
       .sort();
   }, [availabilityBarber, availabilityStartsByDate, barberDeferred, clock, service, serviceName]);
   const availableDatesSet = useMemo(() => new Set(availableDates), [availableDates]);
+
+  const applyBenefitCode = useCallback(async () => {
+    const raw = benefitCodeInput.trim();
+    if (!raw) return;
+    setBenefitValidationLoading(true);
+    setBenefitErrorMessage(null);
+    try {
+      const quote = await validateBenefitCodeQuoteFn({
+        data: {
+          code: raw,
+          serviceName: selected?.name ?? (service ? serviceFor(service).name : 'Corte'),
+          barber: barber ?? undefined,
+        },
+      });
+      if (quote.valid) {
+        setAppliedBenefit(quote);
+        setBenefitErrorMessage(null);
+      } else {
+        setBenefitErrorMessage(quote.message || 'Código inválido o no disponible.');
+      }
+    } catch (err: any) {
+      setBenefitErrorMessage(err?.message || 'Error al validar el código.');
+    } finally {
+      setBenefitValidationLoading(false);
+    }
+  }, [benefitCodeInput, selected, service, barber]);
+
+  const removeBenefitCode = useCallback(() => {
+    setAppliedBenefit(null);
+    setBenefitCodeInput('');
+    setBenefitErrorMessage(null);
+  }, []);
   useEffect(() => {
     let cancelled = false;
     async function loadAvailability() {
@@ -1285,7 +1286,7 @@ export function Booking({
                   <dl className="summary-pricing-list flex flex-col gap-1.5 sm:gap-2.5 text-xs sm:text-sm">
                     <div className="summary-pricing-row flex justify-between items-baseline gap-3 sm:gap-4">
                       <dt className="summary-pricing-label text-muted-foreground">
-                        Precio original del servicio
+                        {appliedBenefit ? 'Precio original del servicio' : 'Precio total del servicio'}
                         {hasSpecialPrice && (
                           <span className="block text-[11px] text-gold font-medium">Precio especial con Franco</span>
                         )}

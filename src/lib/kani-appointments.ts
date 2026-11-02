@@ -2,7 +2,6 @@ import { supabase } from '@/integrations/supabase/client';
 import type { Tables } from '@/integrations/supabase/types';
 import type { AuthenticatedStaff } from '@/lib/kani-auth';
 import type { Appointment, Barber, ServiceId, Status } from '@/lib/kani-model';
-import { sendAppointmentNotification } from '@/lib/kani-notifications.functions';
 import { timeToMinutes } from './kani-manual-intervals';
 
 export {
@@ -418,6 +417,7 @@ async function recordNotificationDispatchError(appointmentId: string, claimToken
 
 async function dispatchAppointmentNotification(appointmentId: string, claimToken: string, clientPhone?: string) {
   try {
+    const { sendAppointmentNotification } = await import('@/lib/kani-notifications.functions');
     const result = await sendAppointmentNotification({
       data: { appointmentId, claimToken, clientPhone },
     });
