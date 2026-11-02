@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AdminV2RouteImport } from './routes/admin-v2'
+import { Route as CancelarTurnoRouteImport } from './routes/cancelar-turno'
 import { Route as CaseStudyRouteImport } from './routes/case-study'
 import { Route as ContactoRouteImport } from './routes/contacto'
 import { Route as EstudioRouteImport } from './routes/estudio'
@@ -67,6 +68,11 @@ const AdminRoute = AdminRouteImport.update({
 const AdminV2Route = AdminV2RouteImport.update({
   id: '/admin-v2',
   path: '/admin-v2',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CancelarTurnoRoute = CancelarTurnoRouteImport.update({
+  id: '/cancelar-turno',
+  path: '/cancelar-turno',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CaseStudyRoute = CaseStudyRouteImport.update({
@@ -288,6 +294,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/admin-v2': typeof AdminV2RouteWithChildren
+  '/cancelar-turno': typeof CancelarTurnoRoute
   '/case-study': typeof CaseStudyRoute
   '/contacto': typeof ContactoRoute
   '/estudio': typeof EstudioRoute
@@ -332,6 +339,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/cancelar-turno': typeof CancelarTurnoRoute
   '/case-study': typeof CaseStudyRoute
   '/contacto': typeof ContactoRoute
   '/estudio': typeof EstudioRoute
@@ -378,6 +386,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/admin-v2': typeof AdminV2RouteWithChildren
+  '/cancelar-turno': typeof CancelarTurnoRoute
   '/case-study': typeof CaseStudyRoute
   '/contacto': typeof ContactoRoute
   '/estudio': typeof EstudioRoute
@@ -426,6 +435,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/admin-v2'
+    | '/cancelar-turno'
     | '/case-study'
     | '/contacto'
     | '/estudio'
@@ -470,6 +480,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/cancelar-turno'
     | '/case-study'
     | '/contacto'
     | '/estudio'
@@ -515,6 +526,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/admin-v2'
+    | '/cancelar-turno'
     | '/case-study'
     | '/contacto'
     | '/estudio'
@@ -562,6 +574,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
   AdminV2Route: typeof AdminV2RouteWithChildren
+  CancelarTurnoRoute: typeof CancelarTurnoRoute
   CaseStudyRoute: typeof CaseStudyRoute
   ContactoRoute: typeof ContactoRoute
   EstudioRoute: typeof EstudioRoute
@@ -602,6 +615,13 @@ declare module '@tanstack/react-router' {
       path: '/admin-v2'
       fullPath: '/admin-v2'
       preLoaderRoute: typeof AdminV2RouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cancelar-turno': {
+      id: '/cancelar-turno'
+      path: '/cancelar-turno'
+      fullPath: '/cancelar-turno'
+      preLoaderRoute: typeof CancelarTurnoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/case-study': {
@@ -972,6 +992,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
   AdminV2Route: AdminV2RouteWithChildren,
+  CancelarTurnoRoute: CancelarTurnoRoute,
   CaseStudyRoute: CaseStudyRoute,
   ContactoRoute: ContactoRoute,
   EstudioRoute: EstudioRoute,

@@ -1,5 +1,8 @@
 /** Label test notifications without changing production subjects. */
 export function notificationSubject(subject: string, environment?: string, supabaseUrl?: string) {
+  if (subject.startsWith("[KANI]")) {
+    return subject;
+  }
   const label = environment?.trim().toUpperCase() || "UNCONFIGURED";
   let testProject = false;
   try {

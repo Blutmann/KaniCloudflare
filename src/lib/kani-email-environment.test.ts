@@ -25,4 +25,20 @@ describe("Test notification subject", () => {
       ),
     ).toBe("[UNCONFIGURED] Turno");
   });
+  it("never prefixes [PRUEBA] or environment tags when the subject starts with [KANI]", () => {
+    expect(
+      notificationSubject(
+        "[KANI] Tomas, tu turno está confirmado",
+        "DEV/PREVIEW",
+        "https://iockpxtkflyjfagkvgnr.supabase.co",
+      ),
+    ).toBe("[KANI] Tomas, tu turno está confirmado");
+    expect(
+      notificationSubject(
+        "[KANI] Tu turno está confirmado",
+        "PRUEBA",
+        "https://iockpxtkflyjfagkvgnr.supabase.co",
+      ),
+    ).toBe("[KANI] Tu turno está confirmado");
+  });
 });

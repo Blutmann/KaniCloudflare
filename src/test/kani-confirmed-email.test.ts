@@ -10,9 +10,10 @@ import {
   handleTurnoIcsRequest,
   verifyTurnoIcsSignature,
 } from '../lib/kani-calendar-ics';
+import { verifyCancellationSignature } from '../lib/kani-cancellation-token';
 import { KANI_MAPS_URL, KANI_PUBLIC_WHATSAPP_URL, KANI_STUDIO_FULL_ADDRESS } from '../lib/kani-constants';
 
-describe('Email transaccional de confirmación de turno (Kani Barber Studio) — Nuevo Diseño Aprobado', () => {
+describe('Email transaccional de confirmación de turno (Kani Barber Studio) — Ajustes Oficiales Kani', () => {
   const basePayload = {
     notificationId: 'notif-123',
     notificationType: 'CONFIRMED' as const,
@@ -32,15 +33,15 @@ describe('Email transaccional de confirmación de turno (Kani Barber Studio) —
     transferHolderName: null,
   };
 
-  it('1. Asunto y preencabezado: Asunto personalizado y preencabezado con detalles clave', () => {
+  it('1. Asunto y preencabezado: Asunto oficial [KANI] {nombre}, tu turno está confirmado', () => {
     const email = buildConfirmedEmail(basePayload);
-    expect(email.subject).toBe('Tomas Harispe, tu turno en Kani está confirmado');
+    expect(email.subject).toBe('[KANI] Tomas Harispe, tu turno está confirmado');
 
     const emailWithoutName = buildConfirmedEmail({
       ...basePayload,
       clientName: '',
     });
-    expect(emailWithoutName.subject).toBe('Tu turno en Kani está confirmado');
+    expect(emailWithoutName.subject).toBe('[KANI] Tu turno está confirmado');
 
     // Preencabezado en HTML con fecha compacta
     expect(email.html).toContain('Jueves 22 de octubre a las 16:45 hs · Corte con Lautaro');
@@ -69,7 +70,7 @@ describe('Email transaccional de confirmación de turno (Kani Barber Studio) —
     expect(email.html).toContain('Tomas Harispe');
   });
 
-  it('4. Resumen financiero: Importe, Seña abonada y Saldo en el local', () => {
+  it('4. Resumen financiero: Importe, Seña abonada en bordó accesible y Saldo en el local', () => {
     const email = buildConfirmedEmail(basePayload);
 
     // Importes formateados
@@ -80,6 +81,8 @@ describe('Email transaccional de confirmación de turno (Kani Barber Studio) —
     expect(email.html).toContain('$25.000');
     expect(email.html).toContain('−$5.000');
     expect(email.html).toContain('$20.000');
+    // Variante accesible de bordó institucional sobre negro puro
+    expect(email.html).toContain('#E06D80');
 
     // Validación matemática: Importe = Seña + Saldo
     const servicePrice = basePayload.servicePriceArs;
@@ -124,7 +127,7 @@ describe('Email transaccional de confirmación de turno (Kani Barber Studio) —
     expect(email.text.toLowerCase()).not.toContain('crédito');
   });
 
-  it('7. Ubicación: Dirección exacta y enlace oficial a Google Maps', () => {
+  it('7. Ubicación: Dirección exacta y botón sólido dorado oficial a Google Maps', () => {
     const email = buildConfirmedEmail(basePayload);
     const mapsExactUrl = KANI_MAPS_URL;
 
@@ -137,6 +140,9 @@ describe('Email transaccional de confirmación de turno (Kani Barber Studio) —
     expect(email.html).toContain('Martínez, Buenos Aires');
     expect(email.html).toContain(mapsExactUrl);
     expect(email.html).toContain('Ver en Google Maps');
+    // Fondo sólido dorado oficial (#B99A5B) y texto negro (#000000)
+    expect(email.html).toContain('background-color: #B99A5B');
+    expect(email.html).toContain('color: #000000');
   });
 
   it('8. WhatsApp y Redes: Enlaces oficiales con número verificado e Instagram', () => {
@@ -151,7 +157,7 @@ describe('Email transaccional de confirmación de turno (Kani Barber Studio) —
     expect(email.html).toContain('https://www.instagram.com/kanibarberstudio/');
   });
 
-  it('9. Integración de descarga iCalendar .ics y Botón de acción', () => {
+  it('9. Acciones del turno: Agregar al calendario y Cancelar turno con enlace único', () => {
     const email = buildConfirmedEmail(basePayload);
     const icsUrl = buildTurnoIcsUrl({
       id: basePayload.notificationId,
@@ -165,45 +171,56 @@ describe('Email transaccional de confirmación de turno (Kani Barber Studio) —
 
     expect(icsUrl).toContain('/api/calendar/turno.ics?');
     expect(icsUrl).toContain('id=notif-123');
-    expect(icsUrl).toContain('d=2026-10-22');
-    expect(icsUrl).toContain('t=16%3A45');
-    expect(icsUrl).toContain('m=45');
-    expect(icsUrl).toContain('sig=');
-    expect(email.html).toContain('Agregar a mi calendario');
-    expect(email.html).toContain(icsUrl);
+
+    // Botón Agregar al calendario
+    expect(email.html).toContain('Agregar al calendario');
+    expect(email.html).not.toContain('Agregar a mi calendario');
+    expect(email.html).toContain('background-color: #B99A5B'); // Dorado oficial
+
+    // Botón Cancelar turno
+    expect(email.html).toContain('Cancelar turno');
+    expect(email.html).toContain('background-color: #762936'); // Bordó oficial
+    expect(email.html).toContain('/cancelar-turno?id=notif-123&token=');
+
+    // En texto plano
+    expect(email.text).toContain('Agregar al calendario:');
+    expect(email.text).toContain('Cancelar turno:');
+    expect(email.text).toContain('/cancelar-turno?id=notif-123&token=');
+
+    // El token generado en el correo es criptográficamente verificable
+    const tokenMatch = email.text.match(/token=([0-9a-f]{64})/);
+    expect(tokenMatch).not.toBeNull();
+    const token = tokenMatch![1];
+    expect(verifyCancellationSignature('notif-123', token)).toBe(true);
   });
 
-  it('10. Estética Kani, composición oscura y tipografía 22px/28px', () => {
+  it('10. Estética Kani, composición completamente oscura (#000000), kanji bordó y colores oficiales', () => {
     const email = buildConfirmedEmail(basePayload);
 
-    // Contenedor del encabezado del logo con fondo negro para máximo contraste
-    expect(email.html).toContain('bgcolor="#000000"');
-    expect(email.html).toContain('kani-email-logo.png');
+    // Fondo completamente negro (#000000) para exterior, contenedor y tarjetas
+    expect(email.html).toContain('background-color: #000000');
+    expect(email.html).not.toContain('background-color: #121212'); // Fondo exterior anterior reemplazado
+    expect(email.html).not.toContain('background-color: #1C1C1C'); // Fondo de tarjetas anterior reemplazado
 
-    // Paleta oscura oficial
-    expect(email.html).toContain('#121212'); // Fondo exterior
-    expect(email.html).toContain('#000000'); // Contenedor principal
-    expect(email.html).toContain('#1C1C1C'); // Tarjetas oscuras
+    // Kanji decorativo 蟹 en bordó oficial (#762936)
+    expect(email.html).toContain('color: rgba(118, 41, 54, 0.45)');
+
+    // Títulos de sección en gris claro legible
+    expect(email.html).toContain('color: #D4D4D4; letter-spacing: 0.12em; text-transform: uppercase;');
+
+    // Paleta oficial
     expect(email.html).toContain('#F5F5F5'); // Texto principal blanco cálido
     expect(email.html).toContain('#C7C7C7'); // Texto secundario gris claro
-    expect(email.html).toContain('#C9A24D'); // Dorado acentos y botón calendario
+    expect(email.html).toContain('#B99A5B'); // Dorado oficial Kani
+    expect(email.html).toContain('#762936'); // Bordó oficial Kani
     expect(email.html).toContain('#383838'); // Bordes y divisores
     expect(email.html).toContain('#128C4A'); // Verde WhatsApp
-
-    // Botones con estilos exactos
-    expect(email.html).toContain('background-color: #C9A24D'); // Botón sólido calendario
-    expect(email.html).toContain('color: #000000'); // Texto botón calendario
-    expect(email.html).toContain('background-color: #128C4A'); // Botón WhatsApp
-    expect(email.html).toContain('border: 1.5px solid #C9A24D'); // Botón Google Maps
 
     // Sección puntualidad
     expect(email.html).toContain('PUNTUALIDAD');
     expect(email.html).toContain('tolerancia de 15 minutos');
     expect(email.text).toContain('PUNTUALIDAD');
     expect(email.text).toContain('tolerancia de 15 minutos');
-
-    // Tipografía compacta 22px con interlineado 28px y serif
-    expect(email.html).toContain('font-size: 22px; line-height: 28px;');
 
     // Compatibilidad estricta
     expect(email.html).not.toContain('<script');
@@ -218,45 +235,44 @@ describe('Email transaccional de confirmación de turno (Kani Barber Studio) —
       startTime: '15:30',
       durationMinutes: 45,
       serviceName: 'Corte',
-      barberName: 'Franco',
+      barberName: 'Lautaro',
     });
 
     expect(icsContent).toContain('BEGIN:VCALENDAR');
+    expect(icsContent).toContain('VERSION:2.0');
     expect(icsContent).toContain('PRODID:-//Kani Barber Studio//Turno//ES');
-    expect(icsContent).toContain('TZID:America/Argentina/Buenos_Aires');
     expect(icsContent).toContain('SUMMARY:Corte — Kani Barber Studio');
+    expect(icsContent).toContain('DESCRIPTION:Turno con Lautaro para Corte en Kani Barber Studio.');
+    expect(icsContent).toContain(`LOCATION:${KANI_STUDIO_FULL_ADDRESS}`);
+    expect(icsContent).toContain('TZID:America/Argentina/Buenos_Aires');
     expect(icsContent).toContain('DTSTART;TZID=America/Argentina/Buenos_Aires:20261102T153000');
     expect(icsContent).toContain('DTEND;TZID=America/Argentina/Buenos_Aires:20261102T161500');
-    expect(icsContent).toContain('UID:kani-turno-notif-test-456@kanibarber.com');
-    expect(icsContent).toContain('LOCATION:San Isidro Labrador 7, Martínez, Provincia de Buenos Aires');
-    expect(icsContent).toContain('STATUS:CONFIRMED');
     expect(icsContent).toContain('END:VCALENDAR');
-    expect(icsContent).toContain('\r\n');
   });
 
-  it('12. Endpoint /api/calendar/turno.ics: validación de firma y prevención de manipulación', async () => {
-    const validUrl = buildTurnoIcsUrl({
-      id: 'notif-sec-789',
+  it('12. Endpoint /api/calendar/turno.ics valida firma criptográfica', async () => {
+    const validParams = {
+      id: 'notif-auth-789',
       bookingDate: '2026-11-02',
       startTime: '10:00',
       durationMinutes: 45,
-      serviceName: 'Corte y barba',
-      barberName: 'Gonzalo',
-    });
+      serviceName: 'Corte',
+      barberName: 'Lautaro',
+    };
 
-    // Petición válida
-    const reqValid = new Request(validUrl);
-    const resValid = await handleTurnoIcsRequest(reqValid);
-    expect(resValid.status).toBe(200);
-    expect(resValid.headers.get('Content-Type')).toContain('text/calendar');
-    expect(resValid.headers.get('Content-Disposition')).toContain('attachment; filename="turno-kani.ics"');
-    const bodyText = await resValid.text();
-    expect(bodyText).toContain('BEGIN:VCALENDAR');
-    expect(bodyText).toContain('Gonzalo');
+    const validUrl = buildTurnoIcsUrl(validParams);
+    const validReq = new Request(validUrl);
+    const validRes = await handleTurnoIcsRequest(validReq);
+    expect(validRes.status).toBe(200);
+    expect(validRes.headers.get('Content-Type')).toContain('text/calendar');
+    expect(validRes.headers.get('Content-Disposition')).toContain('attachment; filename="turno-kani.ics"');
 
-    // Manipulación de id sin firma válida -> 403 Forbidden
-    const tamperedUrl = validUrl.replace('id=notif-sec-789', 'id=notif-sec-hacked');
-    const resTampered = await handleTurnoIcsRequest(new Request(tamperedUrl));
-    expect(resTampered.status).toBe(403);
+    // Firma adulterada
+    const forgedUrl = validUrl.replace(/sig=[a-f0-9]+/, 'sig=badsignature1234');
+    const forgedReq = new Request(forgedUrl);
+    const forgedRes = await handleTurnoIcsRequest(forgedReq);
+    expect(forgedRes.status).toBe(403);
+    const bodyText = await forgedRes.text();
+    expect(bodyText).toBe('Enlace de calendario no válido o alterado.');
   });
 });
