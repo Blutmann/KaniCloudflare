@@ -590,6 +590,134 @@ export default {
       }
 
 
+      if (url.pathname === "/api/admin/run-controlled-test-booking") {
+        try {
+          const type = (url.searchParams.get("type") || "NO_DEPOSIT").trim().toUpperCase();
+          if (!['NO_DEPOSIT', 'FREE_SERVICE'].includes(type)) {
+            return new Response(JSON.stringify({ error: "INVALID_TEST_TYPE" }), { status: 400 });
+          }
+          const cleanUp = url.searchParams.get("cleanUp") === "true";
+
+          const { createPaymentSupabaseClient } = await import("./lib/kani-payment-db.server");
+          const db = await createPaymentSupabaseClient();
+
+          // 1. Encontrar barbero Lautaro
+          const { data: barber } = await db.from('barbers').select('id, name').eq('name', 'Lautaro').single();
+          if (!barber) throw new Error("Barbero Lautaro no encontrado");
+
+          // Encontrar primer slot libre disponible a partir de hoy
+          const todayStr = new Date().toISOString().split('T')[0];
+          const { data: slots } = await db.from('barber_availability_slots')
+            .select('*')
+            .eq('barber_id', barber.id)
+            .gte('slot_date', todayStr)
+            .eq('status', 'available')
+            .order('slot_date', { ascending: true })
+            .order('start_time', { ascending: true })
+            .limit(30);
+
+          if (!slots || slots.length === 0) {
+            throw new Error("No hay slots disponibles en barber_availability_slots");
+          }
+
+          let chosenSlot = null;
+          for (const s of slots) {
+            const { data: existingAppt } = await db.from('appointments')
+              .select('id')
+              .eq('barber_id', barber.id)
+              .eq('booking_date', s.slot_date)
+              .eq('start_time', s.start_time)
+              .in('status', ['PENDING', 'CONFIRMED'])
+              .maybeSingle();
+            if (!existingAppt) {
+              chosenSlot = s;
+              break;
+            }
+          }
+
+          if (!chosenSlot) {
+            throw new Error("No se encontró slot libre sin turno asignado");
+          }
+
+          // 2. Crear código de beneficio de prueba
+          const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
+          const testCode = `TEST-${type === 'NO_DEPOSIT' ? 'ND' : 'FREE'}-${randomSuffix}`;
+          const { data: newBenefit, error: createErr } = await db.from('benefit_codes').insert({
+            code: testCode,
+            type,
+            internal_note: `Test de integración ${type}`,
+            status: 'ACTIVE'
+          }).select('*').single();
+
+          if (createErr || !newBenefit) {
+            throw new Error(`Error creando código de prueba: ${createErr?.message}`);
+          }
+
+          // 3. Confirmar reserva usando confirmZeroDepositBooking
+          const { confirmZeroDepositBooking } = await import("./lib/kani-benefit-codes.server");
+          const bookingResult = await confirmZeroDepositBooking({
+            barberName: 'Lautaro',
+            serviceName: 'Corte',
+            bookingDate: chosenSlot.slot_date,
+            startTime: chosenSlot.start_time,
+            clientName: `Test ${type}`,
+            clientPhone: '+5491128436014',
+            clientEmail: 'tomas.harispe@hotmail.com',
+            benefitCode: testCode,
+            notes: 'Test automatizado sin seña'
+          });
+
+          // 4. Capturar estado inmediato
+          const { data: appt } = await db.from('appointments').select('*').eq('id', bookingResult.appointmentId).single();
+          const { data: cal } = await db.from('appointment_calendar_sync').select('*').eq('appointment_id', bookingResult.appointmentId).maybeSingle();
+          const { data: notif } = await db.from('appointment_notification_events').select('*').eq('appointment_id', bookingResult.appointmentId).maybeSingle();
+          const { data: channels } = await db.from('appointment_notification_dispatches').select('*').eq('appointment_id', bookingResult.appointmentId);
+          const { data: consumedCode } = await db.from('benefit_codes').select('*').eq('id', newBenefit.id).single();
+
+          // 5. Limpieza opcional tras verificación exitosa
+          let cleanedUp = false;
+          if (cleanUp && bookingResult.appointmentId) {
+            const nowIso = new Date().toISOString();
+            await db.from('appointments').update({
+              status: 'CANCELLED',
+              cancellation_reason: 'TEST_CLEANUP',
+              cancelled_at: nowIso,
+              updated_at: nowIso
+            }).eq('id', bookingResult.appointmentId);
+
+            const { enqueueCalendarSyncAction, processCalendarSyncQueue } = await import("./lib/kani-google-calendar-sync");
+            await enqueueCalendarSyncAction({
+              appointmentId: bookingResult.appointmentId,
+              action: "DELETE",
+            });
+            await processCalendarSyncQueue({ limit: 5 });
+            cleanedUp = true;
+          }
+
+          return new Response(JSON.stringify({
+            success: true,
+            type,
+            testCode,
+            bookingResult,
+            appointment: appt,
+            consumedCode,
+            calendarSync: cal,
+            notificationEvent: notif,
+            channels: channels || [],
+            cleanedUp
+          }), {
+            status: 200,
+            headers: { "content-type": "application/json" }
+          });
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          return new Response(JSON.stringify({ error: message }), {
+            status: 500,
+            headers: { "content-type": "application/json" }
+          });
+        }
+      }
+
       if (url.pathname === "/api/admin/trigger-maintenance") {
         try {
           const { reconcilePendingPayments } = await import("./lib/kani-payment-maintenance.server");
