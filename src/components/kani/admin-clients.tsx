@@ -19,6 +19,7 @@ import {
   User,
   Users,
   X,
+  Tag,
   XCircle,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -783,6 +784,23 @@ export function AdminClients({
                               {apt.depositPaid || apt.depositRequired ? 'Sí' : 'No'}
                             </strong>
                           </div>
+                          {apt.benefitCode && (
+                            <div className="sm:col-span-2 mt-1.5 p-2 rounded bg-gold/10 border border-gold/30 text-[11px] space-y-1">
+                              <div className="flex items-center gap-1.5 font-semibold text-gold">
+                                <Tag size={12} className="shrink-0" />
+                                <span>Beneficio aplicado: {apt.benefitCode} ({apt.benefitType === "NO_DEPOSIT" ? "Sin seña" : apt.benefitType === "FREE_SERVICE" ? "100% bonificado" : apt.benefitType === "PERCENT_10" ? "10% OFF" : "50% OFF"})</span>
+                              </div>
+                              {apt.benefitFinalPriceArs !== null && apt.benefitFinalPriceArs !== undefined && (
+                                <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-muted-foreground pt-0.5">
+                                  <span>Original: <strong className="text-foreground">${Number(apt.benefitOriginalPriceArs ?? 0).toLocaleString("es-AR")}</strong></span>
+                                  {apt.benefitDiscountAmountArs ? <span>Descuento: <strong className="text-gold">−${Number(apt.benefitDiscountAmountArs).toLocaleString("es-AR")}</strong></span> : null}
+                                  <span>Total: <strong className="text-foreground">${Number(apt.benefitFinalPriceArs).toLocaleString("es-AR")}</strong></span>
+                                  <span>Seña: <strong className="text-gold">${Number(apt.benefitOnlineDepositArs ?? 0).toLocaleString("es-AR")}</strong></span>
+                                  <span>Saldo: <strong className="text-foreground">${Number(apt.benefitInPersonBalanceArs ?? 0).toLocaleString("es-AR")}</strong></span>
+                                </div>
+                              )}
+                            </div>
+                          )}
                           {apt.notes && (
                             <div className="sm:col-span-2 mt-1 p-2 rounded bg-muted/30 text-[11px] text-muted-foreground border border-border/40">
                               <span className="font-semibold text-foreground">Nota:</span> {apt.notes}

@@ -4,8 +4,12 @@ import {
   type BenefitCalculation,
   type BenefitCodeItem,
   type BenefitCodeType,
+  type BenefitDurationUnit,
   type BenefitQuote,
+  type BenefitUsageMode,
+  type BenefitValidityType,
   calculateBenefitAmounts,
+  calculateValidityDates,
   generateBenefitCodeString,
   normalizeBenefitCode,
 } from './kani-benefit-codes';
@@ -65,10 +69,14 @@ export async function assertAdminSession(explicitToken?: string): Promise<{
 /**
  * Lists benefit codes for admin maintenance view.
  * Requires ADMIN role checked via Supabase session.
+ * Preserves exact RPC signature when called without optional parameters.
  */
-export async function adminListBenefitCodes(authToken?: string): Promise<BenefitCodeItem[]> {
+export async function adminListBenefitCodes(authToken?: string, includeDeleted?: boolean): Promise<BenefitCodeItem[]> {
   const { supabase } = await assertAdminSession(authToken);
-  const { data, error } = await supabase.rpc('admin_list_benefit_codes');
+  const { data, error } = includeDeleted !== undefined
+    ? await supabase.rpc('admin_list_benefit_codes', { p_include_deleted: includeDeleted })
+    : await supabase.rpc('admin_list_benefit_codes');
+
   if (error) {
     console.error('[Kani Benefit Codes] Error fetching admin list:', error);
     throw new Error(error.message || 'Error al consultar códigos de beneficio');
@@ -78,20 +86,48 @@ export async function adminListBenefitCodes(authToken?: string): Promise<Benefit
 
 /**
  * Creates a new benefit code from the admin maintenance panel.
+ * Supports usage mode (SINGLE_USE / REUSABLE) and the 5 validity options.
  */
 export async function adminCreateBenefitCode(params: {
   type: BenefitCodeType;
   internalNote?: string;
   code?: string;
+  usageMode?: BenefitUsageMode;
+  validityType?: BenefitValidityType;
+  startDate?: string;
+  endDate?: string;
+  durationValue?: number;
+  durationUnit?: BenefitDurationUnit;
   token?: string;
 }): Promise<BenefitCodeItem> {
   const { supabase } = await assertAdminSession(params.token);
   const generatedCode = params.code ? normalizeBenefitCode(params.code) : generateBenefitCodeString();
 
+  const usageMode = params.usageMode || 'SINGLE_USE';
+  const validityType = params.validityType || 'NO_EXPIRATION';
+
+  const dates = calculateValidityDates({
+    validityType,
+    startDate: params.startDate,
+    endDate: params.endDate,
+    durationValue: params.durationValue,
+    durationUnit: params.durationUnit,
+  });
+
+  if (!dates.isValid && dates.error) {
+    throw new Error(`VALIDITY_ERROR: ${dates.error}`);
+  }
+
   const { data, error } = await supabase.rpc('admin_create_benefit_code', {
     p_type: params.type,
     p_internal_note: params.internalNote || null,
     p_code: generatedCode,
+    p_usage_mode: usageMode,
+    p_validity_type: validityType,
+    p_valid_from: dates.validFromIso,
+    p_valid_until: dates.validUntilIso,
+    p_duration_value: params.durationValue || null,
+    p_duration_unit: params.durationUnit || null,
   });
 
   if (error) {
@@ -103,7 +139,74 @@ export async function adminCreateBenefitCode(params: {
 }
 
 /**
- * Disables an active benefit code from admin panel.
+ * Updates validity of an active/reusable benefit code.
+ */
+export async function adminUpdateBenefitCodeValidity(params: {
+  codeId: string;
+  validityType: BenefitValidityType;
+  startDate?: string;
+  endDate?: string;
+  durationValue?: number;
+  durationUnit?: BenefitDurationUnit;
+  token?: string;
+}): Promise<BenefitCodeItem> {
+  const { supabase } = await assertAdminSession(params.token);
+
+  const dates = calculateValidityDates({
+    validityType: params.validityType,
+    startDate: params.startDate,
+    endDate: params.endDate,
+    durationValue: params.durationValue,
+    durationUnit: params.durationUnit,
+  });
+
+  if (!dates.isValid && dates.error) {
+    throw new Error(`VALIDITY_ERROR: ${dates.error}`);
+  }
+
+  const { data, error } = await supabase.rpc('admin_update_benefit_code_validity', {
+    p_code_id: params.codeId,
+    p_validity_type: params.validityType,
+    p_valid_from: dates.validFromIso,
+    p_valid_until: dates.validUntilIso,
+    p_duration_value: params.durationValue || null,
+    p_duration_unit: params.durationUnit || null,
+  });
+
+  if (error) {
+    console.error('[Kani Benefit Codes] Error updating code validity:', error);
+    throw new Error(error.message || 'Error al actualizar vigencia del código');
+  }
+
+  return data as BenefitCodeItem;
+}
+
+/**
+ * Toggles status (Active / Disabled) with business validation:
+ * - If code is expired, prevents activation and prompts to update validity first.
+ * - Single-use consumed codes cannot be reactivated.
+ */
+export async function adminToggleBenefitCodeStatus(params: {
+  codeId: string;
+  active: boolean;
+  token?: string;
+}): Promise<boolean> {
+  const { supabase } = await assertAdminSession(params.token);
+  const { data, error } = await supabase.rpc('admin_toggle_benefit_code_status', {
+    p_code_id: params.codeId,
+    p_active: params.active,
+  });
+
+  if (error) {
+    console.error('[Kani Benefit Codes] Error toggling code status:', error);
+    throw new Error(error.message || 'Error al cambiar estado del código');
+  }
+
+  return Boolean(data);
+}
+
+/**
+ * Disables an active benefit code from admin panel (calls admin_disable_benefit_code RPC).
  */
 export async function adminDisableBenefitCode(codeId: string, authToken?: string): Promise<boolean> {
   const { supabase } = await assertAdminSession(authToken);
@@ -114,6 +217,25 @@ export async function adminDisableBenefitCode(codeId: string, authToken?: string
   if (error) {
     console.error('[Kani Benefit Codes] Error disabling code:', error);
     throw new Error(error.message || 'Error al desactivar el código');
+  }
+
+  return Boolean(data);
+}
+
+/**
+ * Soft deletes a benefit code with audit registration.
+ * Preserves all associations, clients and historical bookings.
+ * Does not allow reusing the code text.
+ */
+export async function adminDeleteBenefitCode(codeId: string, authToken?: string): Promise<boolean> {
+  const { supabase } = await assertAdminSession(authToken);
+  const { data, error } = await supabase.rpc('admin_delete_benefit_code', {
+    p_code_id: codeId,
+  });
+
+  if (error) {
+    console.error('[Kani Benefit Codes] Error deleting code:', error);
+    throw new Error(error.message || 'Error al eliminar el código');
   }
 
   return Boolean(data);
@@ -164,6 +286,7 @@ export async function validateBenefitCodeQuote(params: {
     valid: true,
     ...calculation,
     type: calculation.benefitType,
+    usageMode: res.usageMode,
     label: calculation.benefitLabel,
     calculation,
   };
@@ -189,6 +312,7 @@ export async function confirmZeroDepositBooking(params: {
   requestNumber: number;
   notificationClaimToken?: string;
   calculation: BenefitCalculation;
+  usageMode?: BenefitUsageMode;
 }> {
   const db = await createPaymentSupabaseClient();
   const { data, error } = await db.rpc('confirm_zero_deposit_appointment', {
@@ -244,11 +368,13 @@ export async function confirmZeroDepositBooking(params: {
     requestNumber: Number(res.requestNumber),
     notificationClaimToken: res.notificationClaimToken,
     calculation,
+    usageMode: res.usageMode,
   };
 }
 
 /**
  * Locks a benefit code temporarily to a Payway checkout attempt.
+ * For REUSABLE codes, records attempt lock without blocking the code for others.
  */
 export async function lockBenefitCodeToAttempt(code: string, attemptId: string, ttlSeconds = 600): Promise<boolean> {
   const db = await createPaymentSupabaseClient();

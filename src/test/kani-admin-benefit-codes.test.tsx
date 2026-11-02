@@ -114,10 +114,12 @@ describe('BenefitCodesAdminSection Component', () => {
 
     // Check status options have counts
     expect(screen.getByRole('option', { name: 'Todos (3)' })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: 'Disponibles (1)' })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: 'En checkout (0)' })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: 'Consumidos (1)' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Activos (1)' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Programados (0)' })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: 'Desactivados (1)' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Vencidos (0)' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Consumidos (1)' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Eliminados (0)' })).toBeInTheDocument();
 
     // Check sort selector
     const sortSelect = screen.getByLabelText('Ordenar por') as HTMLSelectElement;

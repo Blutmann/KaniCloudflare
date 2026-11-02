@@ -754,6 +754,14 @@ export type ClientAppointmentHistoryItem = {
   createdByDisplayName?: string | null;
   depositRequired?: boolean;
   depositPaid?: boolean;
+  benefitCodeId?: string | null;
+  benefitCode?: string | null;
+  benefitType?: 'NO_DEPOSIT' | 'FREE_SERVICE' | 'PERCENT_10' | 'PERCENT_50' | null;
+  benefitOriginalPriceArs?: number | null;
+  benefitDiscountAmountArs?: number | null;
+  benefitFinalPriceArs?: number | null;
+  onlineDepositArs?: number | null;
+  inPersonBalanceArs?: number | null;
 };
 
 export type ClientDirectoryItem = {
@@ -801,6 +809,14 @@ export function aggregateClientsDirectory(appointments: RealAppointment[]): Clie
       createdByDisplayName: appointment.createdByDisplayName,
       depositRequired: appointment.depositRequired,
       depositPaid: appointment.depositPaid,
+      benefitCodeId: appointment.benefitCodeId,
+      benefitCode: appointment.benefitCode,
+      benefitType: appointment.benefitType,
+      benefitOriginalPriceArs: appointment.benefitOriginalPriceArs,
+      benefitDiscountAmountArs: appointment.benefitDiscountAmountArs,
+      benefitFinalPriceArs: appointment.benefitFinalPriceArs,
+      benefitOnlineDepositArs: appointment.benefitOnlineDepositArs,
+      benefitInPersonBalanceArs: appointment.benefitInPersonBalanceArs,
     };
 
     const normPhone = normalizePhoneForComparison(appointment.phone);

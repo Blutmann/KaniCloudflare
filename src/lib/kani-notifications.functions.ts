@@ -51,6 +51,7 @@ type NotificationPayload = {
   transferHolderName: string | null;
   benefitCode?: string | null;
   benefitType?: 'NO_DEPOSIT' | 'FREE_SERVICE' | 'PERCENT_10' | 'PERCENT_50' | null;
+  benefitUsageMode?: 'SINGLE_USE' | 'REUSABLE' | null;
   benefitOriginalPriceArs?: number | null;
   benefitDiscountAmountArs?: number | null;
   benefitFinalPriceArs?: number | null;
@@ -213,7 +214,7 @@ export const dispatchAppointmentNotification = createServerOnlyFn(async (data: {
             try {
               const { data: bData } = await supabase
                 .from('appointments')
-                .select('benefit_code, benefit_type, benefit_original_price_ars, benefit_discount_amount_ars, benefit_final_price_ars, benefit_online_deposit_ars, benefit_in_person_balance_ars')
+                .select('benefit_code, benefit_type, benefit_usage_mode, benefit_original_price_ars, benefit_discount_amount_ars, benefit_final_price_ars, benefit_online_deposit_ars, benefit_in_person_balance_ars')
                 .eq('id', data.appointmentId)
                 .maybeSingle();
               apptBenefit = bData;
@@ -243,6 +244,7 @@ export const dispatchAppointmentNotification = createServerOnlyFn(async (data: {
               transferHolderName: event.transfer_holder_name,
               benefitCode: apptBenefit?.benefit_code ?? (event as any).benefit_code ?? null,
               benefitType: apptBenefit?.benefit_type ?? (event as any).benefit_type ?? null,
+              benefitUsageMode: apptBenefit?.benefit_usage_mode ?? (event as any).benefit_usage_mode ?? null,
               benefitOriginalPriceArs: apptBenefit?.benefit_original_price_ars ?? null,
               benefitDiscountAmountArs: apptBenefit?.benefit_discount_amount_ars ?? null,
               benefitFinalPriceArs: apptBenefit?.benefit_final_price_ars ?? null,
@@ -866,6 +868,7 @@ export async function retryNotificationChannel(input: {
         transferHolderName: null,
         benefitCode: (aptData as any).benefit_code ?? null,
         benefitType: (aptData as any).benefit_type ?? null,
+        benefitUsageMode: (aptData as any).benefit_usage_mode ?? null,
         benefitOriginalPriceArs: (aptData as any).benefit_original_price_ars ?? null,
         benefitDiscountAmountArs: (aptData as any).benefit_discount_amount_ars ?? null,
         benefitFinalPriceArs: (aptData as any).benefit_final_price_ars ?? null,
@@ -2200,14 +2203,16 @@ ${safe.depositPaid ? `
 ` : ''}
 
 ${safe.benefitCode ? `
-          <!-- Sección de Beneficio Consumido -->
+          <!-- Sección de Beneficio -->
           <tr>
             <td class="content-padding" style="padding: 18px 24px 0;">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#000000" style="background-color: #000000; border: 1px solid #383838; border-radius: 12px; overflow: hidden; width: 100%;">
                 <tr>
                   <td style="padding: 16px 20px;">
                     <p style="margin: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 13px; line-height: 1.5; color: #C7C7C7;">
-                      El código utilizado en esta reserva (<strong style="color: #F5F5F5;">${safe.benefitCode}</strong>) ha sido consumido y no podrá reutilizarse.
+                      ${payload.benefitUsageMode === 'REUSABLE'
+                        ? `Código de beneficio aplicado en esta reserva: <strong style="color: #F5F5F5;">${safe.benefitCode}</strong>.`
+                        : `El código utilizado en esta reserva (<strong style="color: #F5F5F5;">${safe.benefitCode}</strong>) ha sido consumido y no podrá reutilizarse.`}
                     </p>
                   </td>
                 </tr>
@@ -2298,7 +2303,11 @@ ${safe.benefitCode ? `
 </html>`;
 
   const depositText = safe.depositPaid ? `\nSeña registrada: ${safe.depositPaid}\n` : '';
-  const benefitText = payload.benefitCode ? `\nEl código utilizado en esta reserva (${payload.benefitCode}) ha sido consumido y no podrá reutilizarse.\n` : '';
+  const benefitText = payload.benefitCode
+    ? payload.benefitUsageMode === 'REUSABLE'
+      ? `\nCódigo de beneficio aplicado: ${payload.benefitCode}\n`
+      : `\nEl código utilizado en esta reserva (${payload.benefitCode}) ha sido consumido y no podrá reutilizarse.\n`
+    : '';
 
   const text = `Tu turno fue cancelado
 

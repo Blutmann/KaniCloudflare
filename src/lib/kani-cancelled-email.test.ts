@@ -107,7 +107,8 @@ describe('Kani — Rediseño del correo de cancelación', () => {
     const payloadWithBenefit = {
       ...basePayload,
       benefitCode: 'KANI-PROMO-1234',
-      benefitType: 'NO_DEPOSIT',
+      benefitType: 'NO_DEPOSIT' as const,
+      benefitUsageMode: 'SINGLE_USE' as const,
     };
     const result = buildCancelledEmail(payloadWithBenefit);
 
@@ -115,6 +116,23 @@ describe('Kani — Rediseño del correo de cancelación', () => {
     expect(result.html).toContain('no podrá reutilizarse');
     expect(result.text).toContain('KANI-PROMO-1234');
     expect(result.text).toContain('no podrá reutilizarse');
+  });
+
+  it('5b. Beneficios reutilizables: no afirma que el código quedó inutilizable o consumido', () => {
+    const payloadReusable = {
+      ...basePayload,
+      benefitCode: 'KANI-REUSABLE-2026',
+      benefitType: 'PERCENT_50' as const,
+      benefitUsageMode: 'REUSABLE' as const,
+    };
+    const result = buildCancelledEmail(payloadReusable);
+
+    expect(result.html).toContain('KANI-REUSABLE-2026');
+    expect(result.html).not.toContain('no podrá reutilizarse');
+    expect(result.html).not.toContain('ha sido consumido');
+    expect(result.text).toContain('KANI-REUSABLE-2026');
+    expect(result.text).not.toContain('no podrá reutilizarse');
+    expect(result.text).not.toContain('ha sido consumido');
   });
 
   it('6. Preencabezado y texto plano: versión accesible y libre de placeholders', () => {
