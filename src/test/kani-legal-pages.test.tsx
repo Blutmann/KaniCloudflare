@@ -185,4 +185,30 @@ describe('Kani Barber Studio — Páginas Legales', () => {
       expect(bookingContent).not.toMatch(/<input[^>]+type="checkbox"[^>]*required/i);
     });
   });
+
+  describe('5. Ancho de contenedor alineado con header y footer en escritorio', () => {
+    it('ambas páginas legales utilizan site-container y legal-container en su contenedor principal', () => {
+      const { container: privContainer } = render(<PoliticaDePrivacidadPage />);
+      const privMain = privContainer.querySelector('main.legal-page');
+      const privContentWrapper = privMain?.querySelector('.legal-container');
+      expect(privContentWrapper).toBeInTheDocument();
+      expect(privContentWrapper?.classList.contains('site-container')).toBe(true);
+
+      const { container: termContainer } = render(<TerminosYCondicionesPage />);
+      const termMain = termContainer.querySelector('main.legal-page');
+      const termContentWrapper = termMain?.querySelector('.legal-container');
+      expect(termContentWrapper).toBeInTheDocument();
+      expect(termContentWrapper?.classList.contains('site-container')).toBe(true);
+    });
+
+    it('legal-pages.css define el ancho de .legal-container con min(1184px, calc(100% - 80px)) y sin restricciones de 860px', () => {
+      const fs = require('fs');
+      const cssContent = fs.readFileSync('src/legal-pages.css', 'utf8');
+
+      expect(cssContent).not.toContain('max-width: 860px');
+      expect(cssContent).toMatch(/\.legal-container\s*\{[^}]*width:\s*min\(1184px,\s*calc\(100%\s*-\s*80px\)\)/);
+      expect(cssContent).toMatch(/\.legal-container\s*\{[^}]*margin-inline:\s*auto/);
+      expect(cssContent).toMatch(/\.legal-container\s*\{[^}]*padding-inline:\s*0/);
+    });
+  });
 });

@@ -16,7 +16,7 @@ export const Route = createFileRoute('/politica-de-privacidad')({
 export function PoliticaDePrivacidadPage() {
   return (
     <main className="legal-page" id="contenido-principal">
-      <div className="legal-container">
+      <div className="site-container legal-container">
         {/* Navegación superior */}
         <nav className="legal-back-nav" aria-label="Navegación de retorno">
           <Link to="/reservar-turno" className="legal-back-link">
