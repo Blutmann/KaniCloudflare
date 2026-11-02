@@ -210,7 +210,7 @@ export const dispatchAppointmentNotification = createServerOnlyFn(async (data: {
           if (apiKey && fromEmail) {
             let apptBenefit: any = null;
             try {
-              const { data: bData } = await db
+              const { data: bData } = await supabase
                 .from('appointments')
                 .select('benefit_code, benefit_type, benefit_original_price_ars, benefit_discount_amount_ars, benefit_final_price_ars, benefit_online_deposit_ars, benefit_in_person_balance_ars')
                 .eq('id', data.appointmentId)

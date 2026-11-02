@@ -216,19 +216,26 @@ export async function confirmZeroDepositBooking(params: {
     params.benefitCode
   );
 
-  // Dispatch notification asynchronously if claim token is present
+  // Dispatch notification and calendar sync before completing response to guarantee execution in serverless/workers
   if (res.notificationClaimToken && res.appointmentId) {
     try {
       const { dispatchAppointmentNotification } = await import('./kani-notifications.functions');
-      void dispatchAppointmentNotification({
+      await dispatchAppointmentNotification({
         appointmentId: res.appointmentId,
         claimToken: res.notificationClaimToken,
-      }).catch((dispatchErr) => {
-        console.warn('[Kani Benefit Codes] Notification dispatch deferred to recovery:', dispatchErr);
+        clientPhone: params.clientPhone,
       });
-    } catch {
-      // Recovery outbox persists in database
+    } catch (dispatchErr) {
+      console.warn('[Kani Benefit Codes] Notification dispatch deferred to recovery:', dispatchErr);
     }
+  }
+
+  // Trigger Google Calendar sync queue immediately for this confirmation
+  try {
+    const { processCalendarSyncQueue } = await import('./kani-google-calendar-sync');
+    await processCalendarSyncQueue({ limit: 5 });
+  } catch (calErr) {
+    console.warn('[Kani Benefit Codes] Calendar sync trigger error:', calErr);
   }
 
   return {

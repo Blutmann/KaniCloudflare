@@ -371,7 +371,11 @@ export default {
           if (targetApptId) {
             const { data: appt } = await db.from('appointments').select('*').eq('id', targetApptId).maybeSingle();
             apptRecord = appt;
-            const { data: notifs } = await db.from('appointment_notifications').select('*').eq('appointment_id', targetApptId);
+            if (appt?.client_id) {
+              const { data: client } = await db.from('clients').select('id, name, email, phone').eq('id', appt.client_id).maybeSingle();
+              if (client) (apptRecord as any).client = client;
+            }
+            const { data: notifs } = await db.from('appointment_notification_events').select('*').eq('appointment_id', targetApptId);
             notifRecords = notifs;
             const { data: cal } = await db.from('appointment_calendar_sync').select('*').eq('appointment_id', targetApptId);
             calendarRecords = cal;
@@ -460,6 +464,86 @@ export default {
         } catch (err) {
           const message = err instanceof Error ? err.message : String(err);
           return new Response(JSON.stringify({ error: message }), { status: 500, headers: { "content-type": "application/json" } });
+        }
+      }
+
+      if (url.pathname === "/api/admin/recover-appointment-notification") {
+        try {
+          const appointmentId = url.searchParams.get("appointmentId")?.trim();
+          if (!appointmentId) {
+            return new Response(JSON.stringify({ error: "APPOINTMENT_ID_REQUIRED" }), { status: 400 });
+          }
+          const { createPaymentSupabaseClient } = await import("./lib/kani-payment-db.server");
+          const db = await createPaymentSupabaseClient();
+          
+          // 1. Verificar turno
+          const { data: appt, error: apptErr } = await db.from('appointments').select('*').eq('id', appointmentId).maybeSingle();
+          if (apptErr || !appt) {
+            return new Response(JSON.stringify({ error: "APPOINTMENT_NOT_FOUND" }), { status: 404 });
+          }
+
+          // 2. Verificar estado de calendario (no duplicar si ya está SYNCED)
+          const { data: calSync } = await db.from('appointment_calendar_sync').select('*').eq('appointment_id', appointmentId).maybeSingle();
+          let calendarAction = "ALREADY_SYNCED";
+          if (!calSync || calSync.sync_status !== 'SYNCED') {
+            const { processCalendarSyncQueue } = await import("./lib/kani-google-calendar-sync");
+            await processCalendarSyncQueue({ limit: 5 });
+            calendarAction = "QUEUE_PROCESSED";
+          }
+
+          // 3. Obtener cliente para teléfono/email
+          let clientPhone = null;
+          if (appt.client_id) {
+            const { data: client } = await db.from('clients').select('id, name, email, phone').eq('id', appt.client_id).maybeSingle();
+            if (client?.phone) clientPhone = client.phone;
+          }
+
+          // 4. Generar evento seguro de notificación y despachar
+          const { data: newToken, error: tokenErr } = await db.rpc('create_appointment_notification_event', {
+            p_appointment_id: appointmentId,
+            p_notification_type: 'CONFIRMED'
+          });
+
+          let dispatchRes = null;
+          if (newToken) {
+            const { dispatchAppointmentNotification } = await import("./lib/kani-notifications.functions");
+            dispatchRes = await dispatchAppointmentNotification({
+              appointmentId,
+              claimToken: newToken,
+              clientPhone,
+            });
+          }
+
+          // 5. Consultar estado final de canales
+          let finalChannels = null;
+          try {
+            const { data: channels } = await db.from('appointment_notification_channel_dispatches')
+              .select('*')
+              .eq('appointment_id', appointmentId);
+            finalChannels = channels;
+          } catch { /* best effort */ }
+
+          return new Response(
+            JSON.stringify({
+              success: true,
+              appointmentId,
+              status: appt.status,
+              calendar: {
+                action: calendarAction,
+                record: calSync,
+              },
+              tokenError: tokenErr ? tokenErr.message : null,
+              dispatchResult: dispatchRes,
+              channels: finalChannels || [],
+            }),
+            { status: 200, headers: { "content-type": "application/json" } }
+          );
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          return new Response(JSON.stringify({ error: message }), {
+            status: 500,
+            headers: { "content-type": "application/json" },
+          });
         }
       }
 
