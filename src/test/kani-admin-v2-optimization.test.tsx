@@ -1,5 +1,5 @@
 import { render, screen, fireEvent, cleanup, within } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { businessDateToday } from '@/lib/kani-mobile-appointments';
 
 // Mocks
@@ -116,6 +116,11 @@ vi.mock('@tanstack/react-router', () => ({
 import { V2Clients } from '@/components/kani/v2/clients';
 import { V2Payments } from '@/components/kani/v2/payments';
 import { V2Appointments } from '@/components/kani/v2/agenda';
+
+beforeEach(() => {
+  mockAppointments[0].date = businessDateToday();
+  mockPayments[0].paymentDate = businessDateToday();
+});
 
 afterEach(() => {
   cleanup();

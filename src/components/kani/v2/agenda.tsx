@@ -195,8 +195,14 @@ export function V2Appointments() {
     mode: "BLOCKED_131042" | "ALREADY_DELIVERED" | "IN_PROGRESS" | "CONFIRM_RESEND" | "NO_PHONE";
   } | null>(null);
   const [selectedNotifDetail, setSelectedNotifDetail] = useState<{
+    appointment: RealAppointment;
     channel: "WhatsApp" | "Email";
     dispatch?: NotificationChannelDispatch;
+  } | null>(null);
+  const [retryingEmail, setRetryingEmail] = useState(false);
+  const [retryFeedback, setRetryFeedback] = useState<{
+    type: "success" | "error" | "info";
+    message: string;
   } | null>(null);
 
   const isInvalidRange = period === "CUSTOM" && customStartDate > customEndDate;
@@ -304,6 +310,79 @@ export function V2Appointments() {
       setMessage(appointmentErrorMessage(e));
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function handleRetryEmailModal() {
+    if (!selectedNotifDetail || selectedNotifDetail.channel !== "Email") return;
+    const apt = selectedNotifDetail.appointment;
+    if (!apt) return;
+
+    setRetryingEmail(true);
+    setRetryFeedback(null);
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) {
+        setRetryFeedback({
+          type: "error",
+          message: "AUTH_REQUIRED: Debe iniciar sesión como personal autorizado para reintentar notificaciones.",
+        });
+        return;
+      }
+
+      const res = await retryNotificationChannelServerFn({
+        data: { appointmentId: apt.id, channel: "EMAIL", token },
+      });
+
+      if (res.success) {
+        setRetryFeedback({
+          type: "success",
+          message: res.message || `Correo aceptado por el proveedor Resend (ID: ${res.providerMessageId || "OK"}). En tránsito.`,
+        });
+        if (res.dispatch) {
+          setSelectedNotifDetail((prev) => (prev ? { ...prev, dispatch: res.dispatch as any } : null));
+        } else {
+          setSelectedNotifDetail((prev) => (prev ? {
+            ...prev,
+            dispatch: {
+              ...(prev.dispatch || {
+                id: "generated-id",
+                appointmentId: apt.id,
+                channel: "EMAIL",
+                provider: "RESEND",
+                attempts: 1,
+                requestedAt: new Date().toISOString(),
+                createdAt: new Date().toISOString(),
+              }),
+              status: "SENT",
+              providerMessageId: res.providerMessageId || null,
+              errorCode: null,
+              errorDescription: null,
+              updatedAt: new Date().toISOString(),
+            } as any,
+          } : null));
+        }
+        await data.refresh();
+      } else {
+        setRetryFeedback({
+          type: "error",
+          message: res.error || "No se pudo reintentar el envío.",
+        });
+        if (res.dispatch) {
+          setSelectedNotifDetail((prev) => (prev ? { ...prev, dispatch: res.dispatch as any } : null));
+        }
+        await data.refresh();
+      }
+    } catch (err) {
+      setRetryFeedback({
+        type: "error",
+        message: `Error al reintentar: ${err instanceof Error ? err.message : String(err)}`,
+      });
+    } finally {
+      setRetryingEmail(false);
     }
   }
 
@@ -501,12 +580,14 @@ export function V2Appointments() {
                   <button
                     type="button"
                     className={`v2-notif-pill v2-notif-${(a.dispatches?.whatsapp?.status || "PENDING").toLowerCase()}`}
-                    onClick={() =>
+                    onClick={() => {
                       setSelectedNotifDetail({
+                        appointment: a,
                         channel: "WhatsApp",
                         dispatch: a.dispatches?.whatsapp,
-                      })
-                    }
+                      });
+                      setRetryFeedback(null);
+                    }}
                     title="Ver diagnóstico completo de WhatsApp"
                     aria-label={`Diagnóstico WhatsApp: ${formatWhatsAppStatus(a.dispatches?.whatsapp)}`}
                   >
@@ -519,12 +600,14 @@ export function V2Appointments() {
                   <button
                     type="button"
                     className={`v2-notif-pill v2-notif-${(a.dispatches?.email?.status || "PENDING").toLowerCase()}`}
-                    onClick={() =>
+                    onClick={() => {
                       setSelectedNotifDetail({
+                        appointment: a,
                         channel: "Email",
                         dispatch: a.dispatches?.email,
-                      })
-                    }
+                      });
+                      setRetryFeedback(null);
+                    }}
                     title="Ver diagnóstico completo de Email"
                     aria-label={`Diagnóstico Email: ${formatEmailStatus(a.dispatches?.email)}`}
                   >
@@ -750,7 +833,10 @@ export function V2Appointments() {
       <Dialog
         open={!!selectedNotifDetail}
         onOpenChange={(open) => {
-          if (!open) setSelectedNotifDetail(null);
+          if (!open) {
+            setSelectedNotifDetail(null);
+            setRetryFeedback(null);
+          }
         }}
       >
         <DialogContent className="v2-dialog">
@@ -758,12 +844,35 @@ export function V2Appointments() {
           <DialogDescription>
             Detalle técnico del canal de notificación registrado en Supabase.
           </DialogDescription>
+          {selectedNotifDetail?.appointment && (
+            <div style={{ marginTop: "10px", padding: "10px 12px", background: "var(--v2-inset, rgba(255,255,255,0.04))", borderRadius: "6px", fontSize: "13px", display: "flex", flexDirection: "column", gap: "4px" }}>
+              <p><strong>Cliente:</strong> {selectedNotifDetail.appointment.name} {selectedNotifDetail.appointment.phone ? `(${selectedNotifDetail.appointment.phone})` : ""}</p>
+              <p><strong>Turno:</strong> {dateLabel(selectedNotifDetail.appointment.date || "")} {(selectedNotifDetail.appointment.startTime || selectedNotifDetail.appointment.time || "").slice(0, 5)} hs — {selectedNotifDetail.appointment.serviceName || "Servicio"}</p>
+              <p><strong>Estado del turno:</strong> <span className={`v2-status-badge v2-status-${(selectedNotifDetail.appointment.statusCode || "CONFIRMED").toLowerCase()}`}>{statusLabels[selectedNotifDetail.appointment.statusCode] || selectedNotifDetail.appointment.statusCode || "Confirmado"}</span></p>
+            </div>
+          )}
           {selectedNotifDetail?.dispatch ? (
             <div className="v2-diagnostics-box" style={{ marginTop: "12px", display: "flex", flexDirection: "column", gap: "8px", fontSize: "13px" }}>
-              <p><strong>Estado:</strong> {selectedNotifDetail.dispatch.status}</p>
+              <p>
+                <strong>Estado:</strong>{" "}
+                <span className={`v2-notif-pill v2-notif-${(selectedNotifDetail.dispatch.status || "pending").toLowerCase()}`}>
+                  {formatDispatchDetailedStatus(selectedNotifDetail.dispatch.status)}
+                </span>
+                {selectedNotifDetail.dispatch.status === "SENT" && (
+                  <span style={{ marginLeft: "6px", fontSize: "11.5px", color: "var(--muted-foreground)" }}>
+                    (Aceptado por proveedor; en tránsito)
+                  </span>
+                )}
+              </p>
               <p><strong>Proveedor:</strong> {selectedNotifDetail.dispatch.provider || (selectedNotifDetail.channel === "WhatsApp" ? "PONTIUN" : "RESEND")}</p>
               {selectedNotifDetail.dispatch.recipient && (
                 <p><strong>Destinatario:</strong> {selectedNotifDetail.dispatch.recipient}</p>
+              )}
+              {selectedNotifDetail.dispatch.attempts !== undefined && (
+                <p><strong>Intentos:</strong> {selectedNotifDetail.dispatch.attempts}</p>
+              )}
+              {selectedNotifDetail.dispatch.providerMessageId && (
+                <p><strong>ID de mensaje:</strong> <code>{selectedNotifDetail.dispatch.providerMessageId}</code></p>
               )}
               {selectedNotifDetail.dispatch.errorCode && (
                 <p><strong>Código de error:</strong> <code>{selectedNotifDetail.dispatch.errorCode}</code></p>
@@ -771,22 +880,90 @@ export function V2Appointments() {
               {selectedNotifDetail.dispatch.errorDescription && (
                 <p><strong>Detalle:</strong> {selectedNotifDetail.dispatch.errorDescription}</p>
               )}
-              {selectedNotifDetail.dispatch.providerMessageId && (
-                <p><strong>ID de mensaje:</strong> <code>{selectedNotifDetail.dispatch.providerMessageId}</code></p>
-              )}
               {selectedNotifDetail.dispatch.updatedAt && (
                 <p><strong>Última actualización:</strong> {selectedNotifDetail.dispatch.updatedAt.replace("T", " ").slice(0, 19)}</p>
               )}
             </div>
           ) : (
-            <p style={{ marginTop: "12px", color: "var(--muted-foreground)" }}>
-              No hay despacho registrado para este canal.
-            </p>
+            <div style={{ marginTop: "12px", fontSize: "13px" }}>
+              <p style={{ color: "var(--muted-foreground)" }}>
+                No hay despacho registrado para este canal.
+              </p>
+              {selectedNotifDetail?.channel === "Email" && (
+                <p style={{ marginTop: "6px" }}>
+                  <strong>Destinatario configurado:</strong> {selectedNotifDetail.appointment.clientEmail || "El cliente no posee correo electrónico registrado"}
+                </p>
+              )}
+            </div>
           )}
-          <div className="v2-dialog-actions" style={{ display: "flex", justifyContent: "flex-end", marginTop: "16px" }}>
+
+          {/* Avisos explicativos para Email */}
+          {selectedNotifDetail?.channel === "Email" && selectedNotifDetail.appointment && (
+            <>
+              {selectedNotifDetail.appointment.statusCode !== "CONFIRMED" && selectedNotifDetail.appointment.statusCode !== "CANCELLED" && (
+                <div className="v2-note" style={{ marginTop: "12px", borderLeftColor: "#eab308" }}>
+                  El estado actual del turno es <strong>{statusLabels[selectedNotifDetail.appointment.statusCode] || selectedNotifDetail.appointment.statusCode}</strong>. Solo los turnos confirmados o cancelados admiten notificaciones automáticas por correo.
+                </div>
+              )}
+              {(selectedNotifDetail.dispatch?.status === "DELIVERED" || selectedNotifDetail.dispatch?.status === "READ") && (
+                <div className="v2-note" style={{ marginTop: "12px", borderLeftColor: "#10b981" }}>
+                  ✓ La notificación ya fue entregada al destinatario. No se permite el reenvío duplicado.
+                </div>
+              )}
+              {(selectedNotifDetail.dispatch?.status === "SENT" || selectedNotifDetail.dispatch?.status === "PROVIDER_ACCEPTED") && (
+                <div className="v2-note" style={{ marginTop: "12px", borderLeftColor: "#0ea5e9" }}>
+                  ℹ El correo ya fue aceptado por el proveedor (Resend) y se encuentra en tránsito. Para evitar mensajes duplicados, no se permite un nuevo despacho mientras esté en curso.
+                </div>
+              )}
+              {selectedNotifDetail.dispatch?.status === "PROCESSING" && (
+                <div className="v2-note" style={{ marginTop: "12px", borderLeftColor: "#0ea5e9" }}>
+                  ⏳ Existe una solicitud de envío en procesamiento para este canal.
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Banner de retroalimentación de reintento */}
+          {retryFeedback && (
+            <div
+              style={{
+                marginTop: "12px",
+                padding: "8px 12px",
+                borderRadius: "6px",
+                fontSize: "12.5px",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                backgroundColor: retryFeedback.type === "success" ? "rgba(16, 185, 129, 0.12)" : "rgba(239, 68, 68, 0.12)",
+                border: `1px solid ${retryFeedback.type === "success" ? "rgba(16, 185, 129, 0.35)" : "rgba(239, 68, 68, 0.35)"}`,
+                color: retryFeedback.type === "success" ? "#10b981" : "#ef4444",
+              }}
+            >
+              <span>{retryFeedback.type === "success" ? "✓" : "✕"}</span>
+              <span>{retryFeedback.message}</span>
+            </div>
+          )}
+
+          <div className="v2-dialog-actions" style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "16px" }}>
             <button className="v2-secondary" onClick={() => setSelectedNotifDetail(null)}>
               Cerrar
             </button>
+            {selectedNotifDetail?.channel === "Email" &&
+              selectedNotifDetail.appointment &&
+              (selectedNotifDetail.appointment.statusCode === "CONFIRMED" || selectedNotifDetail.appointment.statusCode === "CANCELLED") &&
+              selectedNotifDetail.dispatch?.status !== "SENT" &&
+              selectedNotifDetail.dispatch?.status !== "PROVIDER_ACCEPTED" &&
+              selectedNotifDetail.dispatch?.status !== "DELIVERED" &&
+              selectedNotifDetail.dispatch?.status !== "READ" &&
+              selectedNotifDetail.dispatch?.status !== "PROCESSING" && (
+                <button
+                  className="v2-primary"
+                  disabled={retryingEmail}
+                  onClick={handleRetryEmailModal}
+                >
+                  {retryingEmail ? "Enviando…" : "Reintentar envío"}
+                </button>
+              )}
           </div>
         </DialogContent>
       </Dialog>
@@ -828,6 +1005,28 @@ function formatEmailStatus(dispatch?: NotificationChannelDispatch): string {
       return "Email: Omitido";
     default:
       return `Email: ${dispatch.status}`;
+  }
+}
+
+function formatDispatchDetailedStatus(status?: string): string {
+  switch (status) {
+    case "SENT":
+    case "PROVIDER_ACCEPTED":
+      return "Aceptado por proveedor";
+    case "DELIVERED":
+      return "Entrega confirmada";
+    case "READ":
+      return "Leído";
+    case "PROCESSING":
+      return "En procesamiento";
+    case "PENDING":
+      return "Pendiente de despacho";
+    case "FAILED":
+      return "Error en el envío";
+    case "SKIPPED":
+      return "Omitido";
+    default:
+      return status || "Pendiente";
   }
 }
 

@@ -517,6 +517,7 @@ export function V2Payments() {
                 <div className="v2-payment-row v2-payment-row-final">
                   <div className="v2-payment-total-box">
                     <span className="v2-total-box-label">Importe:</span>
+                    <span className="sr-only">A cobrar ahora</span>
                     <div className="v2-total-box-amount-wrap">
                       <strong className="v2-total-box-amount">{money(total)}</strong>
                       {(discount > 0 || deposit > 0) && (
