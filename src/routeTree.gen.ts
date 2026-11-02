@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AdminV2RouteImport } from './routes/admin-v2'
 import { Route as CaseStudyRouteImport } from './routes/case-study'
+import { Route as ContactoRouteImport } from './routes/contacto'
 import { Route as EstudioRouteImport } from './routes/estudio'
 import { Route as PanelAdministracionRouteImport } from './routes/panel-administracion'
 import { Route as PoliticaDePrivacidadRouteImport } from './routes/politica-de-privacidad'
@@ -71,6 +72,11 @@ const AdminV2Route = AdminV2RouteImport.update({
 const CaseStudyRoute = CaseStudyRouteImport.update({
   id: '/case-study',
   path: '/case-study',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContactoRoute = ContactoRouteImport.update({
+  id: '/contacto',
+  path: '/contacto',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EstudioRoute = EstudioRouteImport.update({
@@ -283,6 +289,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteWithChildren
   '/admin-v2': typeof AdminV2RouteWithChildren
   '/case-study': typeof CaseStudyRoute
+  '/contacto': typeof ContactoRoute
   '/estudio': typeof EstudioRoute
   '/panel-administracion': typeof PanelAdministracionRouteWithChildren
   '/politica-de-privacidad': typeof PoliticaDePrivacidadRoute
@@ -326,6 +333,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/case-study': typeof CaseStudyRoute
+  '/contacto': typeof ContactoRoute
   '/estudio': typeof EstudioRoute
   '/politica-de-privacidad': typeof PoliticaDePrivacidadRoute
   '/reserva-v2': typeof ReservaV2Route
@@ -371,6 +379,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/admin-v2': typeof AdminV2RouteWithChildren
   '/case-study': typeof CaseStudyRoute
+  '/contacto': typeof ContactoRoute
   '/estudio': typeof EstudioRoute
   '/panel-administracion': typeof PanelAdministracionRouteWithChildren
   '/politica-de-privacidad': typeof PoliticaDePrivacidadRoute
@@ -418,6 +427,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/admin-v2'
     | '/case-study'
+    | '/contacto'
     | '/estudio'
     | '/panel-administracion'
     | '/politica-de-privacidad'
@@ -461,6 +471,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/case-study'
+    | '/contacto'
     | '/estudio'
     | '/politica-de-privacidad'
     | '/reserva-v2'
@@ -505,6 +516,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/admin-v2'
     | '/case-study'
+    | '/contacto'
     | '/estudio'
     | '/panel-administracion'
     | '/politica-de-privacidad'
@@ -551,6 +563,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRouteWithChildren
   AdminV2Route: typeof AdminV2RouteWithChildren
   CaseStudyRoute: typeof CaseStudyRoute
+  ContactoRoute: typeof ContactoRoute
   EstudioRoute: typeof EstudioRoute
   PanelAdministracionRoute: typeof PanelAdministracionRouteWithChildren
   PoliticaDePrivacidadRoute: typeof PoliticaDePrivacidadRoute
@@ -596,6 +609,13 @@ declare module '@tanstack/react-router' {
       path: '/case-study'
       fullPath: '/case-study'
       preLoaderRoute: typeof CaseStudyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contacto': {
+      id: '/contacto'
+      path: '/contacto'
+      fullPath: '/contacto'
+      preLoaderRoute: typeof ContactoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/estudio': {
@@ -953,6 +973,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRouteWithChildren,
   AdminV2Route: AdminV2RouteWithChildren,
   CaseStudyRoute: CaseStudyRoute,
+  ContactoRoute: ContactoRoute,
   EstudioRoute: EstudioRoute,
   PanelAdministracionRoute: PanelAdministracionRouteWithChildren,
   PoliticaDePrivacidadRoute: PoliticaDePrivacidadRoute,

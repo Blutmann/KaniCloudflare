@@ -154,50 +154,88 @@ export function SiteHeader() {
   const sessionRole = staff?.profile.role === 'ADMIN' ? 'Administrador' : staff?.profile.role === 'BARBER' ? 'Barbero' : '';
   const mobileMenu = menuOpen ? (
     <nav className="mobile-menu" id="kani-main-menu" aria-label="Menú principal">
-      {/* 1. Reservar turno — Todos */}
-      <Link to={path.includes('mercadopago') ? '/reservar-turno-mercadopago' : '/reservar-turno'} onClick={continueBooking}><ArrowUpRight />Reservar turno</Link>
-      {/* 2. Contacto — Todos */}
-      <Link to="/estudio" onClick={closeMenu}><Building2 />Contacto</Link>
-      {/* 3. Ubicación — Todos */}
-      <a href="https://www.google.com/maps/place/KANI+BARBER+STUDIO/data=!4m2!3m1!1s0x0:0x48bcfe7b2ea7ba60" target="_blank" rel="noreferrer" onClick={closeMenu}><MapPin />Ubicación</a>
-      {/* 4. Instagram — Todos */}
-      <a href="https://www.instagram.com/kanibarberstudio/" target="_blank" rel="noreferrer" onClick={closeMenu}><Instagram />Instagram</a>
-      {/* 5. Términos y Condiciones — Todos */}
-      <Link to="/terminos-y-condiciones" onClick={closeMenu}><Scale />Términos y Condiciones</Link>
-      {/* 6. Política de Privacidad — Todos */}
-      <Link to="/politica-de-privacidad" onClick={closeMenu}><ShieldCheck />Política de Privacidad</Link>
-      {/* 7. Panel de administración — ADMIN y Barbero */}
-      {staff && (staff.profile.role === 'ADMIN' || staff.profile.role === 'BARBER') && (
-        <Link to="/panel-administracion" onClick={closeMenu}><CalendarClock />Panel de administración</Link>
-      )}
-      {/* 8. Panel de mantenimiento — Solo ADMIN */}
-      {staff?.profile.role === 'ADMIN' && (
-        <Link to="/panel-administracion/mantenimiento" onClick={closeMenu}><Wrench />Panel de mantenimiento</Link>
-      )}
-      {/* 9. Autenticación */}
-      {staff ? (
-        <div className="mobile-menu-session">
-          <div className="mobile-menu-session-identity">
-            <strong>{staff.profile.role === 'ADMIN' ? 'KANI Admin' : staff.profile.display_name}</strong>
-            <span>{sessionRole}</span>
+      {/* Grupo 1: General */}
+      <div className="mobile-menu-group">
+        <Link to={path.includes('mercadopago') ? '/reservar-turno-mercadopago' : '/reservar-turno'} onClick={continueBooking}>
+          <ArrowUpRight />Reservar turno
+        </Link>
+        <Link to="/contacto" onClick={closeMenu}>
+          <Building2 />Contacto
+        </Link>
+      </div>
+
+      <div className="mobile-menu-divider" role="separator" />
+
+      {/* Grupo 2: Opciones administrativas según rol */}
+      <div className="mobile-menu-group">
+        <Link to="/panel-administracion" onClick={closeMenu}>
+          <CalendarClock />Panel de administración
+        </Link>
+
+        {staff?.profile.role === 'ADMIN' && (
+          <Link to="/panel-administracion/mantenimiento" onClick={closeMenu}>
+            <Wrench />Panel de mantenimiento
+          </Link>
+        )}
+
+        {staff?.profile.role === 'BARBER' && (
+          <>
+            <Link to="/panel-administracion/turnos" onClick={closeMenu}>
+              <CalendarDays />Turnos
+            </Link>
+            <Link to="/panel-administracion/horarios" onClick={closeMenu}>
+              <Clock3 />Horarios
+            </Link>
+            <Link to="/panel-administracion/pagos" onClick={closeMenu}>
+              <CreditCard />Pagos
+            </Link>
+            <Link to="/panel-administracion/clientes" onClick={closeMenu}>
+              <Users />Clientes
+            </Link>
+            <Link to="/panel-administracion/datos" onClick={closeMenu}>
+              <ChartNoAxesCombined />Datos
+            </Link>
+          </>
+        )}
+      </div>
+
+      <div className="mobile-menu-divider" role="separator" />
+
+      {/* Grupo 3: Legal */}
+      <div className="mobile-menu-group">
+        <Link to="/politica-de-privacidad" onClick={closeMenu}>
+          <ShieldCheck />Política de Privacidad
+        </Link>
+        <Link to="/terminos-y-condiciones" onClick={closeMenu}>
+          <Scale />Términos y Condiciones
+        </Link>
+      </div>
+
+      {/* Grupo 4: Sesión iniciada */}
+      {staff && (
+        <>
+          <div className="mobile-menu-divider" role="separator" />
+          <div className="mobile-menu-session">
+            <div className="mobile-menu-session-identity">
+              <strong>{staff.profile.role === 'ADMIN' ? 'KANI Admin' : (staff.profile.display_name || 'Barbero')}</strong>
+              <span>{sessionRole}</span>
+            </div>
+            <button
+              type="button"
+              className="mobile-menu-signout"
+              onClick={() => {
+                closeMenu();
+                const isMp = path.includes('mercadopago');
+                void signOut().then(() => {
+                  setStaff(null);
+                  void navigate({ to: isMp ? '/reservar-turno-mercadopago' : '/reservar-turno' });
+                });
+              }}
+            >
+              <LogOut />Cerrar sesión
+            </button>
           </div>
-          <button
-            type="button"
-            className="mobile-menu-signout"
-            onClick={() => {
-              closeMenu();
-              const isMp = path.includes('mercadopago');
-              void signOut().then(() => {
-                setStaff(null);
-                void navigate({ to: isMp ? '/reservar-turno-mercadopago' : '/reservar-turno' });
-              });
-            }}
-          >
-            <LogOut />Cerrar sesión
-          </button>
-        </div>
-      ) : (
-        <Link to="/panel-administracion" onClick={closeMenu}><LogIn />Iniciar sesión</Link>
+        </>
       )}
     </nav>
   ) : null;
@@ -220,5 +258,5 @@ export function SiteFooter() {
     window.addEventListener('resize', updateHeight);
     return () => { observer?.disconnect(); window.removeEventListener('resize', updateHeight); document.documentElement.style.removeProperty('--site-footer-height'); };
   }, []);
-  return <footer ref={footerRef} className="site-footer border-t text-xs text-muted-foreground"><div className="site-container site-footer-inner"><div className="site-footer-study"><p>San Isidro Labrador 7, Martínez, Provincia de Buenos Aires</p><p>Lunes a sábados de 10:00 a 20:00 hs</p></div><div className="site-footer-links"><div className="site-footer-link-row"><Link to="/estudio" className="inline-flex items-center gap-2 hover:text-foreground"><Building2 size={14} /> Contacto</Link><a href="https://www.google.com/maps/place/KANI+BARBER+STUDIO/data=!4m2!3m1!1s0x0:0x48bcfe7b2ea7ba60" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 hover:text-foreground"><MapPin size={14} /> Ver ubicación</a><a href="https://www.instagram.com/kanibarberstudio/" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 hover:text-foreground"><Instagram size={14} /> Instagram</a><Link to="/terminos-y-condiciones" className="hover:text-foreground">Términos y Condiciones</Link><Link to="/politica-de-privacidad" className="hover:text-foreground">Política de Privacidad</Link></div><span className="site-footer-copyright">© 2026 Kani Barber Studio</span></div></div></footer>;
+  return <footer ref={footerRef} className="site-footer border-t text-xs text-muted-foreground"><div className="site-container site-footer-inner"><div className="site-footer-study"><p>San Isidro Labrador 7, Martínez, Provincia de Buenos Aires</p><p>Lunes a sábados de 10:00 a 20:00 hs</p></div><div className="site-footer-links"><div className="site-footer-link-row"><Link to="/contacto" className="inline-flex items-center gap-2 hover:text-foreground"><Building2 size={14} /> Contacto</Link><a href="https://www.google.com/maps/place/KANI+BARBER+STUDIO/data=!4m2!3m1!1s0x0:0x48bcfe7b2ea7ba60" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 hover:text-foreground"><MapPin size={14} /> Ver ubicación</a><a href="https://www.instagram.com/kanibarberstudio/" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 hover:text-foreground"><Instagram size={14} /> Instagram</a><Link to="/terminos-y-condiciones" className="hover:text-foreground">Términos y Condiciones</Link><Link to="/politica-de-privacidad" className="hover:text-foreground">Política de Privacidad</Link></div><span className="site-footer-copyright">© 2026 Kani Barber Studio</span></div></div></footer>;
 }

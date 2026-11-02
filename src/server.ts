@@ -99,6 +99,10 @@ export default {
       }
 
       const url = new URL(request.url);
+      if (url.pathname === "/estudio" || url.pathname === "/estudio/") {
+        url.pathname = "/contacto";
+        return Response.redirect(url.toString(), 301);
+      }
       if (url.pathname === "/googleb98699670c2c80a6.html") {
         return new Response("google-site-verification: googleb98699670c2c80a6.html", {
           status: 200,

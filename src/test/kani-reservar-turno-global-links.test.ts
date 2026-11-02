@@ -6,7 +6,8 @@ describe('Kani Barber Studio — Actualización global de enlaces de reservas a 
   const rootDir = path.resolve(__dirname, '..');
 
   it('1. Contacto: el card de Horarios / Reservar turno dirige a /reservar-turno', () => {
-    const estudioCode = fs.readFileSync(path.join(rootDir, 'routes', 'estudio.tsx'), 'utf8');
+    const targetRoute = fs.existsSync(path.join(rootDir, 'routes', 'contacto.tsx')) ? path.join(rootDir, 'routes', 'contacto.tsx') : path.join(rootDir, 'routes', 'estudio.tsx');
+    const estudioCode = fs.readFileSync(targetRoute, 'utf8');
     expect(estudioCode).toContain('to="/reservar-turno"');
     expect(estudioCode).toContain('Reservar turno');
     expect(estudioCode).not.toContain('to="/reservar"');

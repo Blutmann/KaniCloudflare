@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 describe('Kani Barber Studio - Ajustes en Contacto e integración de Google Maps', () => {
-  const estudioPath = path.resolve(__dirname, '../routes/estudio.tsx');
+  const estudioPath = fs.existsSync(path.resolve(__dirname, '../routes/contacto.tsx')) ? path.resolve(__dirname, '../routes/contacto.tsx') : path.resolve(__dirname, '../routes/estudio.tsx');
   const stylesPath = path.resolve(__dirname, '../styles.css');
 
   const estudioCode = fs.readFileSync(estudioPath, 'utf-8');

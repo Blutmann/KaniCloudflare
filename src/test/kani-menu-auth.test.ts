@@ -30,33 +30,39 @@ describe('Kani Barber Studio - Menú y Autenticación', () => {
     expect(css).toContain('.mobile-menu-signout:active');
   });
 
-  it('2. Menú desplegable define exactamente el orden y permisos requeridos', () => {
+  it('2. Menú desplegable define exactamente el orden y permisos requeridos por rol', () => {
     const code = fs.readFileSync(siteHeaderPath, 'utf-8');
 
-    // 1. Reservar turno — Todos
+    // Grupo 1: Reservar turno y Contacto (apuntando a /contacto)
     expect(code).toContain('Reservar turno');
-    expect(code).toMatch(/<Link to=\{path\.includes\('mercadopago'\) \? '\/reservar-turno-mercadopago' : '\/reservar-turno'\}[^>]*>[^<]*<ArrowUpRight \/>\s*Reservar turno\s*<\/Link>|<Link to="\/reservar"[^>]*>[^<]*<ArrowUpRight \/>\s*Reservar turno\s*<\/Link>/);
+    expect(code).toMatch(/<Link to=\{path\.includes\('mercadopago'\) \? '\/reservar-turno-mercadopago' : '\/reservar-turno'\}[^>]*>[^<]*<ArrowUpRight \/>\s*Reservar turno\s*<\/Link>/);
+    expect(code).toMatch(/<Link to="\/contacto"[^>]*>[^<]*<Building2 \/>\s*Contacto\s*<\/Link>/);
 
-    // 2. Contacto — Todos
-    expect(code).toContain('Contacto');
-    expect(code).toMatch(/<Link to="\/estudio"[^>]*>[^<]*<Building2 \/>\s*Contacto\s*<\/Link>/);
+    // Ocultar entradas de Instagram y Ubicación en el menú
+    const menuSection = code.substring(code.indexOf('mobileMenu = menuOpen'), code.indexOf('return <>'));
+    expect(menuSection).not.toContain('<MapPin />Ubicación');
+    expect(menuSection).not.toContain('<Instagram />Instagram');
 
-    // 3. Ubicación — Todos (texto exacto Ubicación)
-    expect(code).toMatch(/<MapPin \/>\s*Ubicación\s*<\/a>/);
+    // Grupo 2: Panel de administración visible en todos los roles (con o sin sesión)
+    expect(menuSection).toMatch(/<Link to="\/panel-administracion"[^>]*>[^<]*<CalendarClock \/>\s*Panel de administración\s*<\/Link>/);
 
-    // 4. Instagram — Todos
-    expect(code).toMatch(/<Instagram \/>\s*Instagram\s*<\/a>/);
+    // Panel de mantenimiento — Solo ADMIN
+    expect(menuSection).toMatch(/staff\?\.profile\.role === 'ADMIN' && \(\s*<Link to="\/panel-administracion\/mantenimiento"[^>]*>[^<]*<Wrench \/>\s*Panel de mantenimiento\s*<\/Link>\s*\)/);
 
-    // 5. Panel de administración — ADMIN y Barbero
-    expect(code).toMatch(/staff && \(staff\.profile\.role === 'ADMIN' \|\| staff\.profile\.role === 'BARBER'\)/);
-    expect(code).toMatch(/<Link to="(\/admin|\/panel-administracion)"[^>]*>[^<]*<CalendarClock \/>\s*Panel de administración\s*<\/Link>/);
+    // Opciones operativas (Turnos, Horarios, Pagos, Clientes, Datos) — Solo BARBER
+    expect(menuSection).toMatch(/staff\?\.profile\.role === 'BARBER' && \(/);
+    expect(menuSection).toContain('to="/panel-administracion/turnos"');
+    expect(menuSection).toContain('to="/panel-administracion/horarios"');
+    expect(menuSection).toContain('to="/panel-administracion/pagos"');
+    expect(menuSection).toContain('to="/panel-administracion/clientes"');
+    expect(menuSection).toContain('to="/panel-administracion/datos"');
 
-    // 6. Panel de mantenimiento — Solo ADMIN
-    expect(code).toMatch(/staff\?\.profile\.role === 'ADMIN' && \(\s*<Link to="(\/admin|\/panel-administracion)\/mantenimiento"[^>]*>[^<]*<Wrench \/>\s*Panel de mantenimiento\s*<\/Link>\s*\)/);
+    // Grupo 3: Legal — Política de privacidad y Términos y condiciones
+    expect(menuSection).toContain('to="/politica-de-privacidad"');
+    expect(menuSection).toContain('to="/terminos-y-condiciones"');
 
-    // 7. Autenticación — Si no hay sesión: "Iniciar sesión". Si hay sesión: usuario + "Cerrar sesión"
-    expect(code).toMatch(/<LogIn \/>\s*Iniciar sesión\s*<\/Link>/);
-    expect(code).toMatch(/<LogOut \/>\s*Cerrar sesión\s*<\/button>/);
+    // Grupo 4: Sesión iniciada con Cerrar sesión
+    expect(menuSection).toMatch(/<LogOut \/>\s*Cerrar sesión\s*<\/button>/);
   });
 
   it('3. Formulario de acceso al panel muestra el texto «Iniciar sesión» en el botón de submit', () => {

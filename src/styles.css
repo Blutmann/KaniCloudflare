@@ -803,7 +803,7 @@ html[data-theme="light"] .booking-option.selected .option-icon img { filter: bri
     gap: 6px;
   }
 }
-.studio-page { max-width: 1020px; padding-top: 32px; padding-bottom: 72px; min-height: 0; }
+.studio-page, .contacto-page { width: min(1184px, calc(100% - 80px)); margin-inline: auto; padding-top: 32px; padding-bottom: 72px; min-height: 0; }
 .studio-info-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1708,7 +1708,7 @@ html[data-theme='dark'] .studio-map-card {
  .booking-defer-option .barber-defer-mark { width: 40px; height: 40px; flex-basis: 40px; }
  .phone-input-row { grid-template-columns: 126px minmax(0, 1fr); }
  .phone-country-trigger { font-size: 11px; }
- .studio-page { min-height: 0; padding-top: 16px; padding-bottom: 40px; }
+ .studio-page, .contacto-page { min-height: 0; padding-top: 16px; padding-bottom: 40px; width: calc(100% - 40px); }
  .studio-info-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: 1fr; align-items: stretch; gap: 10px; }
  .studio-info-card { height: 100%; padding: 12px 10px; gap: 8px; border-radius: var(--radius-control, 0.65rem); }
  .studio-card-top { gap: 8px; }
@@ -4419,5 +4419,49 @@ html[data-theme='light'] .booking-page .booking-contact-form :is(.field-label in
   }
   html[data-theme="dark"] {
     --kani-wallpaper-image: url('/kani-fondo-oscuro-desktop-lossless.webp');
+  }
+}
+
+
+/* Menu groups and dividers */
+.mobile-menu-group {
+  display: flex;
+  flex-direction: column;
+}
+.mobile-menu-divider {
+  height: 1px;
+  min-height: 1px;
+  margin: 14px 8px;
+  background-color: color-mix(in oklch, var(--gold) 28%, var(--border));
+  opacity: 0.6;
+}
+
+/* Header buttons: 52x52px with 22-24px icons strictly on desktop (min-width: 768px) */
+@media (min-width: 768px) {
+  .header-controls {
+    gap: 14px;
+  }
+  .header-control-button {
+    width: 52px !important;
+    height: 52px !important;
+    flex: 0 0 52px !important;
+    min-width: 52px !important;
+    min-height: 52px !important;
+    border-radius: var(--radius-control, 0.75rem) !important;
+  }
+  .header-control-button svg {
+    width: 23px !important;
+    height: 23px !important;
+  }
+  .header-whatsapp-button svg {
+    width: 23px !important;
+    height: 23px !important;
+  }
+  .notification-count {
+    top: -5px;
+    right: -5px;
+    min-width: 20px;
+    height: 20px;
+    font-size: 10px;
   }
 }
