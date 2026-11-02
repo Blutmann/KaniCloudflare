@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { createHmac } from "node:crypto";
+import { createHmac, randomBytes } from "node:crypto";
 import {
   verifyResendWebhookSignature,
   isResendEventDuplicate,
@@ -7,7 +7,7 @@ import {
 } from "@/lib/kani-resend-webhook";
 
 describe("Resend Webhook Official Svix Signature Verification & Idempotency", () => {
-  const secretWithPrefix = "whsec_dGVzdC1zZWNyZXQtZm9yLXN2aXgtdmVyaWZpY2F0aW9u"; // base64 secret
+  let secretWithPrefix: string;
   const rawBody = JSON.stringify({
     type: "email.delivered",
     data: {
@@ -18,6 +18,9 @@ describe("Resend Webhook Official Svix Signature Verification & Idempotency", ()
 
   beforeEach(() => {
     clearProcessedResendEventsForTest();
+    // Credencial efímera sintética generada en memoria en tiempo de ejecución:
+    // preserva la cobertura de Svix (prefijo whsec_ + base64) sin cadenas estáticas fijas.
+    secretWithPrefix = `whsec_${randomBytes(32).toString('base64')}`;
   });
 
   function generateValidSignature(
