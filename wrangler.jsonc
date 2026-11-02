@@ -9,6 +9,7 @@
   },
   "triggers": { "crons": ["* * * * *"] },
   "vars": {
+    "KANI_CANONICAL_HOST": "www.kanibarber.com",
     "SUPABASE_URL": "https://iockpxtkflyjfagkvgnr.supabase.co",
     "PAYWAY_SANDBOX_ENABLED": "true",
     "PAYWAY_ENVIRONMENT": "sandbox",

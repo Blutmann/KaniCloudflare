@@ -14,18 +14,20 @@ Una transferencia y un cambio de servidores DNS son operaciones distintas. Si so
 Cloudflare Pages admite subdominios con DNS externo. El directorio `domain-gateway` contiene una entrada Pages que entrega todas las solicitudes al Worker existente mediante un Service binding. Conserva la URL pública, métodos, cuerpos, cookies, Origin y respuestas; los próximos despliegues del Worker quedan disponibles a través de la misma conexión.
 
 1. Publicar la versión del Worker que permite configurar `KANI_CANONICAL_HOST`.
-2. En ese Worker, configurar `KANI_CANONICAL_HOST=www.kanibarber.com`. Sin esa variable se conserva la redirección anterior de www hacia el dominio raíz.
+2. En ese Worker, configurar `KANI_CANONICAL_HOST=www.kanibarber.com`. El `wrangler.jsonc` raíz ya declara ese valor para conservarlo en cada despliegue. Sin esa variable se conserva la redirección anterior de www hacia el dominio raíz.
 3. Crear un proyecto **Pages**, `kani-domain-gateway`, en la misma cuenta Cloudflare que el Worker. Elegir integración Git con este repositorio, directorio raíz `domain-gateway`, sin comando de compilación y salida `public`. El archivo `domain-gateway/wrangler.jsonc` declara el binding `KANI_APP` al servicio `kanibarberstudio-cloudflare`. Si se configura desde el panel, verificar ese binding y volver a desplegar.
 4. Comprobar primero la URL `pages.dev` exacta asignada por Cloudflare. No asumir que el nombre solicitado está disponible.
 5. En Pages → Custom domains, añadir `www.kanibarber.com` **antes** de cambiar DNS.
 6. Manus debe publicar un único CNAME para `www`, dirigido a la URL base `pages.dev` real asignada al proyecto, sin `https://` ni ruta. TTL: 1 minuto o el mínimo permitido. Si existe un registro A/AAAA o CNAME para ese mismo nombre, habrá que editarlo o retirarlo; un CNAME no puede coexistir con esos registros.
 7. Esperar que Pages indique dominio activo y certificado emitido. Verificar con HTTPS la página principal, reservas, recursos estáticos y acceso administrativo. No crear reservas ni ejecutar pagos como parte de una prueba DNS.
 
-Ejemplo **pendiente de confirmar con el proyecto real**:
+Registro guardado en Manus para el proyecto Pages publicado y comprobado:
 
 | Tipo | Nombre | Valor |
 |---|---|---|
 | CNAME | www | kani-domain-gateway.pages.dev |
+
+El proyecto Pages `kani-domain-gateway` está publicado, enlazado al Worker mediante `KANI_APP` y configurado para seguir `main`. La asociación `www.kanibarber.com` se trasladó del dominio personalizado del Worker a Pages. Manus confirmó el CNAME y conservó ambos TXT de Google. La resolución DNS pública y la emisión del certificado siguen pendientes de verificación; guardar un registro en el panel no demuestra que el servidor autoritativo ya lo publique.
 
 Conectar este Worker mantiene su entorno y credenciales actuales, incluidos los ajustes de prueba de pagos. El dominio por sí solo no convierte la aplicación en un entorno de pagos reales.
 
