@@ -1222,8 +1222,8 @@ export function buildConfirmedEmail(payload: NotificationPayload) {
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="format-detection" content="telephone=no, address=no, email=no, date=no, url=no">
-  <meta name="color-scheme" content="light">
-  <meta name="supported-color-schemes" content="light">
+  <meta name="color-scheme" content="dark only">
+  <meta name="supported-color-schemes" content="dark only">
   <title>${escapeHtml(subject)}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1276,13 +1276,6 @@ export function buildConfirmedEmail(payload: NotificationPayload) {
         max-width: 100% !important;
         width: 100% !important;
       }
-      .dark-card-block-right {
-        margin-left: 0 !important;
-        margin-top: 0 !important;
-      }
-      .mobile-divider {
-        display: block !important;
-      }
       .loc-btn-col {
         display: block !important;
         width: 100% !important;
@@ -1323,16 +1316,16 @@ export function buildConfirmedEmail(payload: NotificationPayload) {
     }
   </style>
 </head>
-<body style="margin: 0; padding: 0; background-color: #E9E3D8; color: #3E3A34; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; line-height: 1.5;">
+<body style="margin: 0; padding: 0; background-color: #121212; color: #F5F5F5; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; line-height: 1.5;">
 
   <!-- Preheader invisible para clientes de correo -->
-  <div style="display: none; font-size: 1px; color: #E9E3D8; line-height: 1px; max-height: 0px; max-width: 0px; opacity: 0; overflow: hidden; mso-hide: all;">
+  <div style="display: none; font-size: 1px; color: #121212; line-height: 1px; max-height: 0px; max-width: 0px; opacity: 0; overflow: hidden; mso-hide: all;">
     ${escapeHtml(preheaderText)}&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;
   </div>
 
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #E9E3D8; margin: 0; padding: 0; width: 100%;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #121212; margin: 0; padding: 0; width: 100%;">
     <tr>
-      <td align="center" class="outer-wrapper-td" style="padding: 24px 12px 48px; background-color: #E9E3D8;">
+      <td align="center" class="outer-wrapper-td" style="padding: 24px 12px 48px; background-color: #121212;">
         <!--[if (gte mso 9)|(IE)]>
         <table role="presentation" width="600" align="center" cellpadding="0" cellspacing="0" border="0">
         <tr>
@@ -1340,11 +1333,11 @@ export function buildConfirmedEmail(payload: NotificationPayload) {
         <![endif]-->
 
         <!-- Contenedor principal de la tarjeta -->
-        <table role="presentation" class="email-container" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; margin: 0 auto; background-color: #F4EFE6; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 16px rgba(28,26,23,0.05); border: 1px solid #E4DCCB;">
+        <table role="presentation" class="email-container" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; margin: 0 auto; background-color: #000000; border-radius: 16px; overflow: hidden; border: 1px solid #383838;">
           
-          <!-- Bloque de Encabezado con Fondo Negro Cálido (#1C1A17) para Máximo Contraste del Logo -->
+          <!-- Bloque de Encabezado con Fondo Negro Puro (#000000) -->
           <tr>
-            <td align="center" bgcolor="#1C1A17" style="background-color: #1C1A17; padding: 28px 24px 22px; text-align: center;">
+            <td align="center" bgcolor="#000000" style="background-color: #000000; padding: 32px 24px 24px; text-align: center;">
               <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin: 0 auto;">
                 <tr>
                   <td align="center">
@@ -1355,29 +1348,29 @@ export function buildConfirmedEmail(payload: NotificationPayload) {
             </td>
           </tr>
 
-          <!-- Filete dorado sutil de 1px entre el encabezado negro y el cuerpo marfil -->
+          <!-- Filete divisor sutil de 1px entre el encabezado y el cuerpo -->
           <tr>
-            <td align="center" bgcolor="#C9A24D" style="background-color: #C9A24D; height: 1px; line-height: 1px; font-size: 1px; padding: 0;">
+            <td align="center" bgcolor="#383838" style="background-color: #383838; height: 1px; line-height: 1px; font-size: 1px; padding: 0;">
               <div style="height: 1px; line-height: 1px; font-size: 1px;">&nbsp;</div>
             </td>
           </tr>
 
           <!-- Título y Saludo -->
           <tr>
-            <td class="content-padding" style="padding: 26px 24px 0; text-align: left;">
-              <h1 class="title-h1" style="margin: 0 0 10px; font-family: 'DM Serif Display', Georgia, 'Times New Roman', serif; font-size: 34px; line-height: 1.15; font-weight: 400; color: #1C1A17; letter-spacing: -0.01em;">
+            <td class="content-padding" style="padding: 28px 24px 0; text-align: left;">
+              <h1 class="title-h1" style="margin: 0 0 10px; font-family: 'DM Serif Display', Georgia, 'Times New Roman', serif; font-size: 34px; line-height: 1.15; font-weight: 400; color: #F5F5F5; letter-spacing: -0.01em;">
                 Se confirmó tu turno
               </h1>
-              <p style="margin: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.5; color: #3E3A34;">
-                Hola <strong style="color: #1C1A17; font-weight: 600;">${safe.clientName}</strong>, te esperamos en Kani.
+              <p style="margin: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.5; color: #C7C7C7;">
+                Hola <strong style="color: #F5F5F5; font-weight: 600;">${safe.clientName}</strong>, te esperamos en Kani.
               </p>
             </td>
           </tr>
 
-          <!-- Tarjeta Oscura del Turno (#1C1A17) -->
+          <!-- Tarjeta Oscura del Turno (#1C1C1C) -->
           <tr>
             <td class="content-padding" style="padding: 24px 24px 0;">
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#1C1A17" style="background-color: #1C1A17; border-radius: 14px; overflow: hidden; width: 100%; table-layout: fixed;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#1C1C1C" style="background-color: #1C1C1C; border-radius: 14px; border: 1px solid #383838; overflow: hidden; width: 100%; table-layout: fixed;">
                 <tr>
                   <td class="dark-card-inner" style="padding: 22px;">
                     
@@ -1386,10 +1379,10 @@ export function buildConfirmedEmail(payload: NotificationPayload) {
                       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
                         <tr>
                           <td style="padding-bottom: 16px;">
-                            <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 600; color: #B8AE9C; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 6px;">
+                            <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 600; color: #C7C7C7; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 6px;">
                               FECHA
                             </div>
-                            <div style="font-family: 'DM Serif Display', Georgia, 'Times New Roman', serif; font-size: 22px; line-height: 28px; font-weight: 400; color: #FFFFFF; word-break: break-word; overflow-wrap: break-word;">
+                            <div style="font-family: 'DM Serif Display', Georgia, 'Times New Roman', serif; font-size: 22px; line-height: 28px; font-weight: 400; color: #F5F5F5; word-break: break-word; overflow-wrap: break-word;">
                               ${safe.compactDate}
                             </div>
                           </td>
@@ -1399,14 +1392,14 @@ export function buildConfirmedEmail(payload: NotificationPayload) {
                             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
                               <tr>
                                 <td valign="bottom" style="padding: 0;">
-                                  <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 600; color: #B8AE9C; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 6px;">
+                                  <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 600; color: #C7C7C7; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 6px;">
                                     HORA
                                   </div>
-                                  <div style="font-family: 'DM Serif Display', Georgia, 'Times New Roman', serif; font-size: 22px; line-height: 28px; font-weight: 400; color: #FFFFFF;">
+                                  <div style="font-family: 'DM Serif Display', Georgia, 'Times New Roman', serif; font-size: 22px; line-height: 28px; font-weight: 400; color: #F5F5F5;">
                                     ${safe.time} hs
                                   </div>
                                 </td>
-                                <td align="right" valign="bottom" style="padding: 0; text-align: right; line-height: 1; font-family: sans-serif; font-size: 58px; color: #341F20; color: rgba(122, 44, 58, 0.25); user-select: none; pointer-events: none;">
+                                <td align="right" valign="bottom" style="padding: 0; text-align: right; line-height: 1; font-family: sans-serif; font-size: 48px; color: rgba(201, 162, 77, 0.12); user-select: none; pointer-events: none;">
                                   &#34809;
                                 </td>
                               </tr>
@@ -1415,35 +1408,35 @@ export function buildConfirmedEmail(payload: NotificationPayload) {
                         </tr>
                         <tr>
                           <td style="padding-bottom: 18px;">
-                            <div style="height: 1px; background-color: #3A362F; line-height: 1px; font-size: 1px;">&nbsp;</div>
+                            <div style="height: 1px; background-color: #383838; line-height: 1px; font-size: 1px;">&nbsp;</div>
                           </td>
                         </tr>
                         <tr>
                           <td style="padding-bottom: 16px;">
-                            <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 600; color: #B8AE9C; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 6px;">
+                            <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 600; color: #C7C7C7; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 6px;">
                               SERVICIO
                             </div>
-                            <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.35; font-weight: 500; color: #FFFFFF; word-break: break-word;">
+                            <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.35; font-weight: 500; color: #F5F5F5; word-break: break-word;">
                               ${safe.serviceName}
                             </div>
                           </td>
                         </tr>
                         <tr>
-                          <td style="padding-bottom: 20px;">
-                            <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 600; color: #B8AE9C; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 6px;">
+                          <td style="padding-bottom: 22px;">
+                            <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 600; color: #C7C7C7; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 6px;">
                               BARBERO
                             </div>
-                            <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.35; font-weight: 500; color: #FFFFFF; word-break: break-word;">
+                            <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.35; font-weight: 500; color: #F5F5F5; word-break: break-word;">
                               ${safe.barberName}
                             </div>
                           </td>
                         </tr>
                         <tr>
-                          <td>
+                          <td style="padding: 0;">
                             <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
                               <tr>
-                                <td align="center" bgcolor="#1C1A17" style="border: 1px solid #C9A24D; border-radius: 8px; background-color: #1C1A17;">
-                                  <a href="${calendarUrl}" target="_blank" rel="noopener noreferrer" style="display: block; padding: 12px 18px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 15px; font-weight: 600; color: #C9A24D; text-decoration: none; text-align: center; line-height: 1.2;">
+                                <td align="center" bgcolor="#C9A24D" style="border-radius: 8px; background-color: #C9A24D;">
+                                  <a href="${calendarUrl}" target="_blank" rel="noopener noreferrer" style="display: block; padding: 13px 20px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 15px; font-weight: 600; color: #000000; text-decoration: none; text-align: center; line-height: 1.2; min-height: 44px; box-sizing: border-box;">
                                     Agregar a mi calendario
                                   </a>
                                 </td>
@@ -1464,43 +1457,43 @@ export function buildConfirmedEmail(payload: NotificationPayload) {
                       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
                         <tr>
                           <td width="50%" valign="top" style="padding-right: 14px;">
-                            <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 600; color: #B8AE9C; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 6px;">
+                            <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 600; color: #C7C7C7; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 6px;">
                               FECHA
                             </div>
-                            <div style="font-family: 'DM Serif Display', Georgia, 'Times New Roman', serif; font-size: 22px; line-height: 28px; font-weight: 400; color: #FFFFFF; margin-bottom: 18px; word-break: break-word; overflow-wrap: break-word;">
+                            <div style="font-family: 'DM Serif Display', Georgia, 'Times New Roman', serif; font-size: 22px; line-height: 28px; font-weight: 400; color: #F5F5F5; margin-bottom: 18px; word-break: break-word; overflow-wrap: break-word;">
                               ${safe.compactDate}
                             </div>
-                            <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 600; color: #B8AE9C; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 6px;">
+                            <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 600; color: #C7C7C7; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 6px;">
                               HORA
                             </div>
-                            <div style="font-family: 'DM Serif Display', Georgia, 'Times New Roman', serif; font-size: 22px; line-height: 28px; font-weight: 400; color: #FFFFFF;">
+                            <div style="font-family: 'DM Serif Display', Georgia, 'Times New Roman', serif; font-size: 22px; line-height: 28px; font-weight: 400; color: #F5F5F5;">
                               ${safe.time} hs
                             </div>
                           </td>
                           <td width="50%" valign="top" style="padding-left: 14px;">
-                            <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 600; color: #B8AE9C; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 6px;">
+                            <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 600; color: #C7C7C7; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 6px;">
                               SERVICIO
                             </div>
-                            <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.35; font-weight: 500; color: #FFFFFF; margin-bottom: 18px; word-break: break-word;">
+                            <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.35; font-weight: 500; color: #F5F5F5; margin-bottom: 18px; word-break: break-word;">
                               ${safe.serviceName}
                             </div>
-                            <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 600; color: #B8AE9C; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 6px;">
+                            <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 600; color: #C7C7C7; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 6px;">
                               BARBERO
                             </div>
-                            <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.35; font-weight: 500; color: #FFFFFF; word-break: break-word;">
+                            <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.35; font-weight: 500; color: #F5F5F5; word-break: break-word;">
                               ${safe.barberName}
                             </div>
-                            <div style="text-align: right; line-height: 1; margin-top: -16px; margin-bottom: -10px; font-family: sans-serif; font-size: 58px; color: #341F20; color: rgba(122, 44, 58, 0.25); user-select: none; pointer-events: none;">
+                            <div style="text-align: right; line-height: 0; height: 0; overflow: visible; font-family: sans-serif; font-size: 48px; color: rgba(201, 162, 77, 0.12); user-select: none; pointer-events: none;">
                               &#34809;
                             </div>
                           </td>
                         </tr>
                         <tr>
-                          <td colspan="2" style="padding-top: 20px;">
-                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width: 100%; max-width: 250px;">
+                          <td colspan="2" style="padding-top: 22px;">
+                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width: 100%; max-width: 260px;">
                               <tr>
-                                <td align="center" bgcolor="#1C1A17" style="border: 1px solid #C9A24D; border-radius: 8px; background-color: #1C1A17;">
-                                  <a href="${calendarUrl}" target="_blank" rel="noopener noreferrer" style="display: block; padding: 12px 18px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 15px; font-weight: 600; color: #C9A24D; text-decoration: none; text-align: center; line-height: 1.2;">
+                                <td align="center" bgcolor="#C9A24D" style="border-radius: 8px; background-color: #C9A24D;">
+                                  <a href="${calendarUrl}" target="_blank" rel="noopener noreferrer" style="display: block; padding: 13px 20px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 15px; font-weight: 600; color: #000000; text-decoration: none; text-align: center; line-height: 1.2; min-height: 44px; box-sizing: border-box;">
                                     Agregar a mi calendario
                                   </a>
                                 </td>
@@ -1520,41 +1513,41 @@ export function buildConfirmedEmail(payload: NotificationPayload) {
           <!-- Sección RESUMEN -->
           <tr>
             <td class="content-padding" style="padding: 28px 24px 0;">
-              <div style="margin-bottom: 10px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 13px; font-weight: 700; color: #9A7A2E; letter-spacing: 0.12em; text-transform: uppercase;">
+              <div style="margin-bottom: 10px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 13px; font-weight: 700; color: #C9A24D; letter-spacing: 0.12em; text-transform: uppercase;">
                 RESUMEN
               </div>
               
-              <!-- Tarjeta blanca de Resumen -->
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#FFFFFF" style="background-color: #FFFFFF; border: 1px solid #E4DCCB; border-radius: 14px; overflow: hidden; width: 100%; table-layout: fixed;">
+              <!-- Tarjeta oscura de Resumen (#1C1C1C) -->
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#1C1C1C" style="background-color: #1C1C1C; border: 1px solid #383838; border-radius: 14px; overflow: hidden; width: 100%; table-layout: fixed;">
                 <tr>
                   <td style="padding: 20px;">
                     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width: 100%; table-layout: fixed;">
 ${isNoDeposit ? `
                       <!-- Reserva sin seña -->
                       <tr>
-                        <td style="padding: 6px 0; font-family: 'Inter', sans-serif; font-size: 15px; color: #7A746B; width: 55%;">Total del servicio</td>
-                        <td align="right" style="padding: 6px 0; font-family: 'Inter', sans-serif; font-size: 16px; font-weight: 500; color: #1C1A17; width: 45%; text-align: right;">${safe.finalPrice}</td>
+                        <td style="padding: 6px 0; font-family: 'Inter', sans-serif; font-size: 15px; color: #C7C7C7; width: 55%;">Total del servicio</td>
+                        <td align="right" style="padding: 6px 0; font-family: 'Inter', sans-serif; font-size: 16px; font-weight: 500; color: #F5F5F5; width: 45%; text-align: right;">${safe.finalPrice}</td>
                       </tr>
                       <tr>
-                        <td style="padding: 6px 0; font-family: 'Inter', sans-serif; font-size: 15px; color: #7A746B; width: 55%;">Beneficio</td>
-                        <td align="right" style="padding: 6px 0; font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 600; color: #9A7A2E; width: 45%; text-align: right;">Reserva sin seña</td>
+                        <td style="padding: 6px 0; font-family: 'Inter', sans-serif; font-size: 15px; color: #C7C7C7; width: 55%;">Beneficio</td>
+                        <td align="right" style="padding: 6px 0; font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 600; color: #C9A24D; width: 45%; text-align: right;">Reserva sin seña</td>
                       </tr>
                       <tr>
-                        <td colspan="2" style="padding: 10px 0 6px;"><div style="height: 1px; background-color: #E4DCCB; line-height: 1px; font-size: 1px;">&nbsp;</div></td>
+                        <td colspan="2" style="padding: 10px 0 6px;"><div style="height: 1px; background-color: #383838; line-height: 1px; font-size: 1px;">&nbsp;</div></td>
                       </tr>
                       <tr>
                         <td colspan="2" style="padding-top: 6px; padding-bottom: 12px;">
                           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
                             <tr>
-                              <td valign="baseline" class="balance-label-td"><span style="font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 600; color: #1C1A17;">Saldo a pagar en el local</span></td>
-                              <td align="right" valign="baseline" class="balance-amount-td"><span style="font-family: 'DM Serif Display', serif; font-size: 28px; line-height: 1.15; font-weight: 400; color: #1C1A17;">${safe.remainingPayment}</span></td>
+                              <td valign="baseline" class="balance-label-td"><span style="font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 600; color: #F5F5F5;">Saldo a pagar en el local</span></td>
+                              <td align="right" valign="baseline" class="balance-amount-td"><span style="font-family: 'DM Serif Display', serif; font-size: 28px; line-height: 1.15; font-weight: 400; color: #F5F5F5;">${safe.remainingPayment}</span></td>
                             </tr>
                           </table>
                         </td>
                       </tr>
                       <tr>
-                        <td colspan="2" style="padding-top: 12px; border-top: 1px dashed #E4DCCB;">
-                          <p style="margin: 0; font-family: 'Inter', sans-serif; font-size: 13px; line-height: 1.45; color: #8A8378;">
+                        <td colspan="2" style="padding-top: 12px; border-top: 1px dashed #383838;">
+                          <p style="margin: 0; font-family: 'Inter', sans-serif; font-size: 13px; line-height: 1.45; color: #C7C7C7;">
                             Reserva sin seña. Abonás el total de ${safe.remainingPayment} en el local.
                           </p>
                         </td>
@@ -1562,25 +1555,25 @@ ${isNoDeposit ? `
 ` : isFreeService ? `
                       <!-- Servicio gratuito 100% -->
                       <tr>
-                        <td style="padding: 6px 0; font-family: 'Inter', sans-serif; font-size: 15px; color: #7A746B; width: 55%;">Beneficio</td>
-                        <td align="right" style="padding: 6px 0; font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 600; color: #2E7D32; width: 45%; text-align: right;">Servicio 100% bonificado</td>
+                        <td style="padding: 6px 0; font-family: 'Inter', sans-serif; font-size: 15px; color: #C7C7C7; width: 55%;">Beneficio</td>
+                        <td align="right" style="padding: 6px 0; font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 600; color: #C9A24D; width: 45%; text-align: right;">Servicio 100% bonificado</td>
                       </tr>
                       <tr>
-                        <td colspan="2" style="padding: 10px 0 6px;"><div style="height: 1px; background-color: #E4DCCB; line-height: 1px; font-size: 1px;">&nbsp;</div></td>
+                        <td colspan="2" style="padding: 10px 0 6px;"><div style="height: 1px; background-color: #383838; line-height: 1px; font-size: 1px;">&nbsp;</div></td>
                       </tr>
                       <tr>
                         <td colspan="2" style="padding-top: 6px; padding-bottom: 12px;">
                           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
                             <tr>
-                              <td valign="baseline" class="balance-label-td"><span style="font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 600; color: #1C1A17;">Total a abonar</span></td>
-                              <td align="right" valign="baseline" class="balance-amount-td"><span style="font-family: 'DM Serif Display', serif; font-size: 28px; line-height: 1.15; font-weight: 400; color: #1C1A17;">$0</span></td>
+                              <td valign="baseline" class="balance-label-td"><span style="font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 600; color: #F5F5F5;">Total a abonar</span></td>
+                              <td align="right" valign="baseline" class="balance-amount-td"><span style="font-family: 'DM Serif Display', serif; font-size: 28px; line-height: 1.15; font-weight: 400; color: #F5F5F5;">$0</span></td>
                             </tr>
                           </table>
                         </td>
                       </tr>
                       <tr>
-                        <td colspan="2" style="padding-top: 12px; border-top: 1px dashed #E4DCCB;">
-                          <p style="margin: 0; font-family: 'Inter', sans-serif; font-size: 13px; line-height: 1.45; color: #8A8378;">
+                        <td colspan="2" style="padding-top: 12px; border-top: 1px dashed #383838;">
+                          <p style="margin: 0; font-family: 'Inter', sans-serif; font-size: 13px; line-height: 1.45; color: #C7C7C7;">
                             Servicio bonificado al 100 %. Total a pagar: $0.
                           </p>
                         </td>
@@ -1588,37 +1581,37 @@ ${isNoDeposit ? `
 ` : isPercent10 || isPercent50 ? `
                       <!-- Descuento porcentual -->
                       <tr>
-                        <td style="padding: 6px 0; font-family: 'Inter', sans-serif; font-size: 15px; color: #7A746B; width: 55%;">Precio original</td>
-                        <td align="right" style="padding: 6px 0; font-family: 'Inter', sans-serif; font-size: 16px; font-weight: 500; color: #1C1A17; width: 45%; text-align: right;">${safe.originalPrice}</td>
+                        <td style="padding: 6px 0; font-family: 'Inter', sans-serif; font-size: 15px; color: #C7C7C7; width: 55%;">Precio original</td>
+                        <td align="right" style="padding: 6px 0; font-family: 'Inter', sans-serif; font-size: 16px; font-weight: 500; color: #F5F5F5; width: 45%; text-align: right;">${safe.originalPrice}</td>
                       </tr>
                       <tr>
-                        <td style="padding: 6px 0; font-family: 'Inter', sans-serif; font-size: 15px; color: #7A746B; width: 55%;">Descuento (${isPercent10 ? '10%' : '50%'})</td>
-                        <td align="right" style="padding: 6px 0; font-family: 'Inter', sans-serif; font-size: 16px; font-weight: 500; color: #2E7D32; width: 45%; text-align: right;">−${safe.discount}</td>
+                        <td style="padding: 6px 0; font-family: 'Inter', sans-serif; font-size: 15px; color: #C7C7C7; width: 55%;">Descuento (${isPercent10 ? '10%' : '50%'})</td>
+                        <td align="right" style="padding: 6px 0; font-family: 'Inter', sans-serif; font-size: 16px; font-weight: 600; color: #C9A24D; width: 45%; text-align: right;">−${safe.discount}</td>
                       </tr>
                       <tr>
-                        <td style="padding: 6px 0; font-family: 'Inter', sans-serif; font-size: 15px; color: #7A746B; width: 55%;">Total final</td>
-                        <td align="right" style="padding: 6px 0; font-family: 'Inter', sans-serif; font-size: 16px; font-weight: 600; color: #1C1A17; width: 45%; text-align: right;">${safe.finalPrice}</td>
+                        <td style="padding: 6px 0; font-family: 'Inter', sans-serif; font-size: 15px; color: #C7C7C7; width: 55%;">Total final</td>
+                        <td align="right" style="padding: 6px 0; font-family: 'Inter', sans-serif; font-size: 16px; font-weight: 600; color: #F5F5F5; width: 45%; text-align: right;">${safe.finalPrice}</td>
                       </tr>
                       <tr>
-                        <td style="padding: 6px 0; font-family: 'Inter', sans-serif; font-size: 15px; color: #7A746B; width: 55%;">Seña abonada</td>
-                        <td align="right" style="padding: 6px 0; font-family: 'Inter', sans-serif; font-size: 16px; font-weight: 500; color: #7A2C3A; width: 45%; text-align: right;">−${safe.downPayment}</td>
+                        <td style="padding: 6px 0; font-family: 'Inter', sans-serif; font-size: 15px; color: #C7C7C7; width: 55%;">Seña abonada</td>
+                        <td align="right" style="padding: 6px 0; font-family: 'Inter', sans-serif; font-size: 16px; font-weight: 600; color: #C9A24D; width: 45%; text-align: right;">−${safe.downPayment}</td>
                       </tr>
                       <tr>
-                        <td colspan="2" style="padding: 10px 0 6px;"><div style="height: 1px; background-color: #E4DCCB; line-height: 1px; font-size: 1px;">&nbsp;</div></td>
+                        <td colspan="2" style="padding: 10px 0 6px;"><div style="height: 1px; background-color: #383838; line-height: 1px; font-size: 1px;">&nbsp;</div></td>
                       </tr>
                       <tr>
                         <td colspan="2" style="padding-top: 6px; padding-bottom: 12px;">
                           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
                             <tr>
-                              <td valign="baseline" class="balance-label-td"><span style="font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 600; color: #1C1A17;">Saldo en el local</span></td>
-                              <td align="right" valign="baseline" class="balance-amount-td"><span style="font-family: 'DM Serif Display', serif; font-size: 28px; line-height: 1.15; font-weight: 400; color: #1C1A17;">${safe.remainingPayment}</span></td>
+                              <td valign="baseline" class="balance-label-td"><span style="font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 600; color: #F5F5F5;">Saldo en el local</span></td>
+                              <td align="right" valign="baseline" class="balance-amount-td"><span style="font-family: 'DM Serif Display', serif; font-size: 28px; line-height: 1.15; font-weight: 400; color: #F5F5F5;">${safe.remainingPayment}</span></td>
                             </tr>
                           </table>
                         </td>
                       </tr>
                       <tr>
-                        <td colspan="2" style="padding-top: 12px; border-top: 1px dashed #E4DCCB;">
-                          <p style="margin: 0; font-family: 'Inter', sans-serif; font-size: 13px; line-height: 1.45; color: #8A8378;">
+                        <td colspan="2" style="padding-top: 12px; border-top: 1px dashed #383838;">
+                          <p style="margin: 0; font-family: 'Inter', sans-serif; font-size: 13px; line-height: 1.45; color: #C7C7C7;">
                             Podés abonar el saldo en efectivo o por transferencia.
                           </p>
                         </td>
@@ -1626,33 +1619,33 @@ ${isNoDeposit ? `
 ` : `
                       <!-- Fila Importe Estándar -->
                       <tr>
-                        <td style="padding: 6px 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 15px; color: #7A746B; width: 55%;">Importe</td>
-                        <td align="right" style="padding: 6px 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; font-weight: 500; color: #1C1A17; width: 45%; text-align: right;">${safe.servicePrice}</td>
+                        <td style="padding: 6px 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 15px; color: #C7C7C7; width: 55%;">Importe</td>
+                        <td align="right" style="padding: 6px 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; font-weight: 500; color: #F5F5F5; width: 45%; text-align: right;">${safe.servicePrice}</td>
                       </tr>
-                      <!-- Fila Seña abonada (Bordó #7A2C3A) -->
+                      <!-- Fila Seña abonada -->
                       <tr>
-                        <td style="padding: 6px 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 15px; color: #7A746B; width: 55%;">Seña abonada</td>
-                        <td align="right" style="padding: 6px 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; font-weight: 500; color: #7A2C3A; width: 45%; text-align: right;">−${safe.downPayment}</td>
+                        <td style="padding: 6px 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 15px; color: #C7C7C7; width: 55%;">Seña abonada</td>
+                        <td align="right" style="padding: 6px 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; font-weight: 600; color: #C9A24D; width: 45%; text-align: right;">−${safe.downPayment}</td>
                       </tr>
                       <!-- Divisor interno -->
                       <tr>
-                        <td colspan="2" style="padding: 10px 0 6px;"><div style="height: 1px; background-color: #E4DCCB; line-height: 1px; font-size: 1px;">&nbsp;</div></td>
+                        <td colspan="2" style="padding: 10px 0 6px;"><div style="height: 1px; background-color: #383838; line-height: 1px; font-size: 1px;">&nbsp;</div></td>
                       </tr>
                       <!-- Fila Saldo en el local -->
                       <tr>
                         <td colspan="2" style="padding-top: 6px; padding-bottom: 12px;">
                           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
                             <tr>
-                              <td valign="baseline" class="balance-label-td"><span style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 15px; font-weight: 600; color: #1C1A17;">Saldo en el local</span></td>
-                              <td align="right" valign="baseline" class="balance-amount-td"><span style="font-family: 'DM Serif Display', Georgia, 'Times New Roman', serif; font-size: 28px; line-height: 1.15; font-weight: 400; color: #1C1A17;">${safe.remainingPayment}</span></td>
+                              <td valign="baseline" class="balance-label-td"><span style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 15px; font-weight: 600; color: #F5F5F5;">Saldo en el local</span></td>
+                              <td align="right" valign="baseline" class="balance-amount-td"><span style="font-family: 'DM Serif Display', Georgia, 'Times New Roman', serif; font-size: 28px; line-height: 1.15; font-weight: 400; color: #F5F5F5;">${safe.remainingPayment}</span></td>
                             </tr>
                           </table>
                         </td>
                       </tr>
-                      <!-- Aclaración verificada de medios de pago -->
+                      <!-- Aclaración de medios de pago -->
                       <tr>
-                        <td colspan="2" style="padding-top: 12px; border-top: 1px dashed #E4DCCB;">
-                          <p style="margin: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 13px; line-height: 1.45; color: #8A8378;">
+                        <td colspan="2" style="padding-top: 12px; border-top: 1px dashed #383838;">
+                          <p style="margin: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 13px; line-height: 1.45; color: #C7C7C7;">
                             Podés abonar el saldo en efectivo o por transferencia.
                           </p>
                         </td>
@@ -1668,29 +1661,29 @@ ${isNoDeposit ? `
           <!-- Sección CÓMO LLEGAR -->
           <tr>
             <td class="content-padding" style="padding: 28px 24px 0;">
-              <div style="margin-bottom: 10px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 13px; font-weight: 700; color: #9A7A2E; letter-spacing: 0.12em; text-transform: uppercase;">
+              <div style="margin-bottom: 10px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 13px; font-weight: 700; color: #C9A24D; letter-spacing: 0.12em; text-transform: uppercase;">
                 CÓMO LLEGAR
               </div>
               
-              <!-- Tarjeta blanca de Ubicación -->
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#FFFFFF" style="background-color: #FFFFFF; border: 1px solid #E4DCCB; border-radius: 14px; overflow: hidden; width: 100%; table-layout: fixed;">
+              <!-- Tarjeta oscura de Ubicación (#1C1C1C) -->
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#1C1C1C" style="background-color: #1C1C1C; border: 1px solid #383838; border-radius: 14px; overflow: hidden; width: 100%; table-layout: fixed;">
                 <tr>
                   <td style="padding: 20px;">
                     <!-- Dirección con ícono dorado -->
                     <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 18px;">
                       <tr>
                         <td valign="top" style="padding-right: 8px; padding-top: 1px;">
-                          <!-- Ícono de ubicación dorado #9A7A2E -->
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9A7A2E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: block;">
+                          <!-- Ícono de ubicación dorado #C9A24D -->
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#C9A24D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: block;">
                             <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
                             <circle cx="12" cy="10" r="3"/>
                           </svg>
                         </td>
                         <td valign="top">
-                          <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; font-weight: 600; color: #1C1A17; line-height: 1.3;">
+                          <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; font-weight: 600; color: #F5F5F5; line-height: 1.3;">
                             San Isidro Labrador 7
                           </div>
-                          <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 14px; color: #7A746B; margin-top: 2px;">
+                          <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 14px; color: #C7C7C7; margin-top: 2px;">
                             Martínez, Buenos Aires
                           </div>
                         </td>
@@ -1700,12 +1693,12 @@ ${isNoDeposit ? `
                     <!-- Botones de Acción (2 columnas en escritorio, apiladas en móvil) -->
                     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                       <tr>
-                        <!-- Botón Primario: Ver en Google Maps -->
+                        <!-- Botón Primario: Ver en Google Maps (Borde dorado, fondo oscuro, texto blanco) -->
                         <td width="50%" valign="top" class="loc-btn-col" style="padding-right: 6px;">
                           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                             <tr>
-                              <td align="center" bgcolor="#1C1A17" style="border-radius: 10px; background-color: #1C1A17;">
-                                <a href="${mapsUrl}" target="_blank" rel="noopener noreferrer" style="display: block; padding: 14px 16px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 15px; font-weight: 600; color: #F4EFE6; text-decoration: none; text-align: center; line-height: 1.2;">
+                              <td align="center" bgcolor="#1C1C1C" style="border-radius: 10px; border: 1.5px solid #C9A24D; background-color: #1C1C1C;">
+                                <a href="${mapsUrl}" target="_blank" rel="noopener noreferrer" style="display: block; padding: 13px 16px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 15px; font-weight: 600; color: #FFFFFF; text-decoration: none; text-align: center; line-height: 1.2; min-height: 44px; box-sizing: border-box;">
                                   Ver en Google Maps
                                 </a>
                               </td>
@@ -1713,12 +1706,12 @@ ${isNoDeposit ? `
                           </table>
                         </td>
 
-                        <!-- Botón Secundario: Contactar por WhatsApp -->
+                        <!-- Botón Secundario: Contactar por WhatsApp (Fondo verde oscuro #128C4A, texto blanco) -->
                         <td width="50%" valign="top" class="loc-btn-col loc-btn-col-right" style="padding-left: 6px;">
                           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                             <tr>
-                              <td align="center" bgcolor="#FFFFFF" style="border-radius: 10px; border: 1.5px solid #1C1A17; background-color: #FFFFFF;">
-                                <a href="${whatsAppUrl}" target="_blank" rel="noopener noreferrer" style="display: block; padding: 12.5px 16px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 15px; font-weight: 600; color: #1C1A17; text-decoration: none; text-align: center; line-height: 1.2;">
+                              <td align="center" bgcolor="#128C4A" style="border-radius: 10px; background-color: #128C4A;">
+                                <a href="${whatsAppUrl}" target="_blank" rel="noopener noreferrer" style="display: block; padding: 13px 16px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 15px; font-weight: 600; color: #FFFFFF; text-decoration: none; text-align: center; line-height: 1.2; min-height: 44px; box-sizing: border-box;">
                                   Contactar por WhatsApp
                                 </a>
                               </td>
@@ -1734,17 +1727,37 @@ ${isNoDeposit ? `
             </td>
           </tr>
 
+          <!-- Sección PUNTUALIDAD -->
+          <tr>
+            <td class="content-padding" style="padding: 28px 24px 0;">
+              <div style="margin-bottom: 10px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 13px; font-weight: 700; color: #C9A24D; letter-spacing: 0.12em; text-transform: uppercase;">
+                PUNTUALIDAD
+              </div>
+              
+              <!-- Tarjeta oscura de Puntualidad (#1C1C1C) -->
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#1C1C1C" style="background-color: #1C1C1C; border: 1px solid #383838; border-radius: 14px; overflow: hidden; width: 100%; table-layout: fixed;">
+                <tr>
+                  <td style="padding: 18px 20px;">
+                    <p style="margin: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 14px; line-height: 1.55; color: #F5F5F5;">
+                      Se establece una tolerancia de 15 minutos a partir del horario reservado. Transcurrido ese plazo, el turno podrá ser cancelado para respetar la atención de los siguientes clientes.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
           <!-- Divisor y Pie de Página Institucional -->
           <tr>
             <td class="content-padding" style="padding: 32px 24px 36px; text-align: center;">
-              <div style="height: 1px; width: 100%; background-color: #D9D1C1; line-height: 1px; font-size: 1px; margin-bottom: 20px;">&nbsp;</div>
+              <div style="height: 1px; width: 100%; background-color: #383838; line-height: 1px; font-size: 1px; margin-bottom: 20px;">&nbsp;</div>
               
               <!-- Ícono y enlace de Instagram -->
               <table role="presentation" align="center" cellpadding="0" cellspacing="0" border="0" style="margin: 0 auto 14px;">
                 <tr>
                   <td align="center">
-                    <a href="${instagramUrl}" target="_blank" rel="noopener noreferrer" style="display: inline-block; color: #7A746B; text-decoration: none;" aria-label="Instagram de Kani Barber Studio">
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7A746B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: block;">
+                    <a href="${instagramUrl}" target="_blank" rel="noopener noreferrer" style="display: inline-block; color: #C7C7C7; text-decoration: none;" aria-label="Instagram de Kani Barber Studio">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: block;">
                         <rect width="20" height="20" x="2" y="2" rx="5" ry="5"/>
                         <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
                         <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/>
@@ -1754,10 +1767,10 @@ ${isNoDeposit ? `
                 </tr>
               </table>
 
-              <p style="margin: 0 0 4px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 13px; line-height: 1.5; color: #8A8378;">
+              <p style="margin: 0 0 4px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 13px; line-height: 1.5; color: #C7C7C7;">
                 © 2026 Kani Barber Studio · San Isidro Labrador 7, Martínez
               </p>
-              <p style="margin: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 12px; line-height: 1.5; color: #8A8378;">
+              <p style="margin: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 12px; line-height: 1.5; color: #C7C7C7;">
                 Correo automático de confirmación · turnos@kanibarber.com
               </p>
             </td>
@@ -1820,11 +1833,16 @@ Martínez, Buenos Aires
 Ver en Google Maps:
 ${mapsUrl}
 
-Contactar vía WhatsApp:
+Contactar por WhatsApp:
 ${whatsAppUrl}
 
 Instagram:
 ${instagramUrl}
+
+--------------------------------------------------
+PUNTUALIDAD
+
+Se establece una tolerancia de 15 minutos a partir del horario reservado. Transcurrido ese plazo, el turno podrá ser cancelado para respetar la atención de los siguientes clientes.
 
 --------------------------------------------------
 © 2026 Kani Barber Studio · San Isidro Labrador 7, Martínez

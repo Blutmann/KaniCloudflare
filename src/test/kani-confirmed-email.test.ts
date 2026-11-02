@@ -143,7 +143,7 @@ describe('Email transaccional de confirmación de turno (Kani Barber Studio) —
     const email = buildConfirmedEmail(basePayload);
     const waExactUrl = KANI_PUBLIC_WHATSAPP_URL;
 
-    expect(email.text).toContain('Contactar vía WhatsApp');
+    expect(email.text).toContain('Contactar por WhatsApp');
     expect(email.text).toContain(waExactUrl);
 
     expect(email.html).toContain('Contactar por WhatsApp');
@@ -173,19 +173,34 @@ describe('Email transaccional de confirmación de turno (Kani Barber Studio) —
     expect(email.html).toContain(icsUrl);
   });
 
-  it('10. Estética Kani, bloque de logo en negro cálido y tipografía 22px/28px', () => {
+  it('10. Estética Kani, composición oscura y tipografía 22px/28px', () => {
     const email = buildConfirmedEmail(basePayload);
 
-    // Contenedor del encabezado del logo con fondo negro cálido para máximo contraste
-    expect(email.html).toContain('bgcolor="#1C1A17"');
+    // Contenedor del encabezado del logo con fondo negro para máximo contraste
+    expect(email.html).toContain('bgcolor="#000000"');
     expect(email.html).toContain('kani-email-logo.png');
 
-    // Paleta oficial aprobada
-    expect(email.html).toContain('#F4EFE6'); // Fondo marfil
-    expect(email.html).toContain('#1C1A17'); // Negro cálido
-    expect(email.html).toContain('#C9A24D'); // Dorado
-    expect(email.html).toContain('#9A7A2E'); // Dorado oscuro
-    expect(email.html).toContain('#7A2C3A'); // Bordó
+    // Paleta oscura oficial
+    expect(email.html).toContain('#121212'); // Fondo exterior
+    expect(email.html).toContain('#000000'); // Contenedor principal
+    expect(email.html).toContain('#1C1C1C'); // Tarjetas oscuras
+    expect(email.html).toContain('#F5F5F5'); // Texto principal blanco cálido
+    expect(email.html).toContain('#C7C7C7'); // Texto secundario gris claro
+    expect(email.html).toContain('#C9A24D'); // Dorado acentos y botón calendario
+    expect(email.html).toContain('#383838'); // Bordes y divisores
+    expect(email.html).toContain('#128C4A'); // Verde WhatsApp
+
+    // Botones con estilos exactos
+    expect(email.html).toContain('background-color: #C9A24D'); // Botón sólido calendario
+    expect(email.html).toContain('color: #000000'); // Texto botón calendario
+    expect(email.html).toContain('background-color: #128C4A'); // Botón WhatsApp
+    expect(email.html).toContain('border: 1.5px solid #C9A24D'); // Botón Google Maps
+
+    // Sección puntualidad
+    expect(email.html).toContain('PUNTUALIDAD');
+    expect(email.html).toContain('tolerancia de 15 minutos');
+    expect(email.text).toContain('PUNTUALIDAD');
+    expect(email.text).toContain('tolerancia de 15 minutos');
 
     // Tipografía compacta 22px con interlineado 28px y serif
     expect(email.html).toContain('font-size: 22px; line-height: 28px;');
