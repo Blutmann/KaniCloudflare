@@ -712,7 +712,7 @@ export default {
 
           const { createPaymentSupabaseClient } = await import("./lib/kani-payment-db.server");
           const db = await createPaymentSupabaseClient();
-          const { enqueueCalendarSyncAction, processCalendarSyncQueue } = await import("./lib/kani-google-calendar-sync");
+          const { processCalendarSyncQueue } = await import("./lib/kani-google-calendar-sync");
 
           const nowIso = new Date().toISOString();
           const results = [];
@@ -724,13 +724,10 @@ export default {
               updated_at: nowIso
             }).eq('id', id);
 
-            await enqueueCalendarSyncAction({
-              appointmentId: id,
-              action: "DELETE",
-            });
             results.push({ id, cancelled: true });
           }
 
+          // Procesar cola de sincronización para eliminar los eventos de Google Calendar
           await processCalendarSyncQueue({ limit: 10 });
 
           return new Response(JSON.stringify({ success: true, results }), {
