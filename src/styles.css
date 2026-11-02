@@ -1045,10 +1045,10 @@ html[data-theme='dark'] .studio-map-card {
     margin-bottom: 32px;
   }
 
-  /* Stepper en Desktop: 12px para los números y 14px para los textos */
+  /* Stepper en Desktop: reducción de 1 a 2px en números (11px en desktop, 10px en 2K) manteniendo 14px en textos */
   .booking-progress > button > span,
   .booking-page .booking-progress > button > span {
-    font-size: 12px;
+    font-size: 11px;
     display: grid;
     place-items: center;
   }
@@ -1056,6 +1056,14 @@ html[data-theme='dark'] .studio-map-card {
   .booking-progress small,
   .booking-page .booking-progress small {
     font-size: 14px;
+  }
+
+  /* Stepper en pantallas 2K: reducción a 10px para los números */
+  @media (min-width: 1920px), (min-width: 1921px), (min-width: 768px) and (min-height: 1081px) {
+    .booking-progress > button > span,
+    .booking-page .booking-progress > button > span {
+      font-size: 10px;
+    }
   }
 
   /* Aviso de seña en Desktop: 14px */

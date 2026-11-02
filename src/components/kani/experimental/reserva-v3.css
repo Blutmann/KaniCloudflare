@@ -18,13 +18,19 @@
 
 @media (min-width: 768px) {
   .booking-page.booking-v3 .booking-progress > button > span {
-    font-size: 12px;
+    font-size: 11px;
     display: grid;
     place-items: center;
   }
 
   .booking-page.booking-v3 .booking-progress small {
     font-size: 14px;
+  }
+
+  @media (min-width: 1920px), (min-width: 1921px), (min-width: 768px) and (min-height: 1081px) {
+    .booking-page.booking-v3 .booking-progress > button > span {
+      font-size: 10px;
+    }
   }
 
   .booking-page.booking-v3 .booking-deposit-notice {

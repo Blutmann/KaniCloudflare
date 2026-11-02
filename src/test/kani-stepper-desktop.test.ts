@@ -44,13 +44,17 @@ describe('Kani Barber Studio - Ajuste de estados visuales del stepper en desktop
     expect(css).toMatch(/\.booking-progress\s*>\s*button\.complete:hover\s*>\s*span[\s\S]*?transform:\s*scale\(1\.08\)/);
   });
 
-  it('5. Configura font-size de 12px para números y 14px para textos en desktop con centrado óptico', () => {
-    expect(css).toMatch(/\.booking-progress\s*>\s*button\s*>\s*span[^{]*\{[^}]*font-size:\s*12px/);
+  it('5. Configura font-size de 11px para números en desktop y 10px en 2K, con 14px para textos y centrado óptico', () => {
+    expect(css).toMatch(/\.booking-progress\s*>\s*button\s*>\s*span[^{]*\{[^}]*font-size:\s*11px/);
     expect(css).toMatch(/\.booking-progress\s*>\s*button\s*>\s*span[^{]*\{[^}]*place-items:\s*center/);
     expect(css).toMatch(/\.booking-progress\s+small[^{]*\{[^}]*font-size:\s*14px/);
 
+    // Regla de pantallas 2K: 10px
+    expect(css).toMatch(/@media[^{]*192[01]px[^{]*\{[\s\S]*?\.booking-progress\s*>\s*button\s*>\s*span[^{]*\{[^}]*font-size:\s*10px/);
+
     const v3Css = fs.readFileSync(path.resolve(__dirname, '../components/kani/experimental/reserva-v3.css'), 'utf-8');
-    expect(v3Css).toMatch(/@media\s*\(min-width:\s*768px\)[\s\S]*?\.booking-page\.booking-v3\s+\.booking-progress\s*>\s*button\s*>\s*span[^{]*\{[^}]*font-size:\s*12px/);
+    expect(v3Css).toMatch(/@media\s*\(min-width:\s*768px\)[\s\S]*?\.booking-page\.booking-v3\s+\.booking-progress\s*>\s*button\s*>\s*span[^{]*\{[^}]*font-size:\s*11px/);
+    expect(v3Css).toMatch(/@media[^{]*192[01]px[^{]*\{[\s\S]*?\.booking-page\.booking-v3\s+\.booking-progress\s*>\s*button\s*>\s*span[^{]*\{[^}]*font-size:\s*10px/);
     expect(v3Css).toMatch(/@media\s*\(min-width:\s*768px\)[\s\S]*?\.booking-page\.booking-v3\s+\.booking-progress\s+small[^{]*\{[^}]*font-size:\s*14px/);
   });
 
