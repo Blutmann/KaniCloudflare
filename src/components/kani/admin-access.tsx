@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,6 +9,15 @@ import kaniSymbolRetina from '@/assets/kani-symbol-2x.webp';
 export function AdminAccess({ onAuthenticated }: { onAuthenticated: () => void }) {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      document.body.dataset.adminLogin = 'true';
+      return () => {
+        delete document.body.dataset.adminLogin;
+      };
+    }
+  }, []);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -44,7 +53,7 @@ export function AdminAccess({ onAuthenticated }: { onAuthenticated: () => void }
             <Input name="password" type="password" autoComplete="current-password" required maxLength={1024} disabled={busy} />
           </label>
           {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
-          <Button type="submit" className="admin-login-submit h-12 w-full" disabled={busy}>
+          <Button type="submit" className="admin-login-submit h-12 w-full" disabled={busy} aria-busy={busy} data-busy={busy}>
             {busy ? 'VERIFICANDO…' : 'Iniciar sesión'}
             <ArrowRight />
           </Button>

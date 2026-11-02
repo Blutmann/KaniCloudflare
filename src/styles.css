@@ -2955,6 +2955,17 @@ textarea:focus-visible { outline: 2px solid var(--ring); outline-offset: 3px; }
 }
 
 @media (max-width: 767px) {
+  /* Inicio de sesión administrativo: ocultar por completo el footer solo en móvil */
+  :is(.site-shell:has(.admin-login-page), body[data-admin-login='true'] .site-shell) {
+    padding-bottom: 0 !important;
+    margin-bottom: 0 !important;
+  }
+  :is(.site-shell:has(.admin-login-page), body[data-admin-login='true'] .site-shell) > .site-footer,
+  :is(.site-shell:has(.admin-login-page), body[data-admin-login='true'] .site-shell) .site-footer,
+  body[data-admin-login='true'] .site-footer {
+    display: none !important;
+  }
+
   .admin-login-page {
     min-height: auto !important;
     padding-top: 0.5rem !important;
@@ -2991,6 +3002,65 @@ textarea:focus-visible { outline: 2px solid var(--ring); outline-offset: 3px; }
     margin-top: 0.5rem !important;
     font-size: 0.86rem !important;
   }
+}
+
+
+/* Botón "Iniciar sesión" en modo oscuro — móvil y escritorio */
+html[data-theme='dark'] .admin-login-submit:not(:disabled) {
+  background: var(--gold) !important;
+  border-color: var(--gold) !important;
+  color: #000000 !important;
+}
+html[data-theme='dark'] .admin-login-submit:not(:disabled) svg {
+  color: #000000 !important;
+  stroke: #000000 !important;
+}
+html[data-theme='dark'] .admin-login-submit:hover:not(:disabled) {
+  background: #cbb075 !important;
+  border-color: #cbb075 !important;
+  color: #000000 !important;
+}
+html[data-theme='dark'] .admin-login-submit:hover:not(:disabled) svg {
+  color: #000000 !important;
+  stroke: #000000 !important;
+}
+html[data-theme='dark'] .admin-login-submit:active:not(:disabled) {
+  background: #a88849 !important;
+  border-color: #a88849 !important;
+  color: #000000 !important;
+}
+html[data-theme='dark'] .admin-login-submit:active:not(:disabled) svg {
+  color: #000000 !important;
+  stroke: #000000 !important;
+}
+html[data-theme='dark'] .admin-login-submit:focus-visible {
+  outline: 2px solid var(--gold) !important;
+  outline-offset: 2px !important;
+  box-shadow: 0 0 0 2px var(--gold) !important;
+}
+html[data-theme='dark'] .admin-login-submit[aria-busy='true'],
+html[data-theme='dark'] .admin-login-submit[data-busy='true'] {
+  background: color-mix(in srgb, var(--gold) 75%, #181818) !important;
+  border-color: color-mix(in srgb, var(--gold) 75%, #181818) !important;
+  color: rgba(0, 0, 0, 0.85) !important;
+  opacity: 0.85 !important;
+  cursor: wait !important;
+}
+html[data-theme='dark'] .admin-login-submit[aria-busy='true'] svg,
+html[data-theme='dark'] .admin-login-submit[data-busy='true'] svg {
+  color: rgba(0, 0, 0, 0.85) !important;
+  stroke: rgba(0, 0, 0, 0.85) !important;
+}
+html[data-theme='dark'] .admin-login-submit:disabled:not([aria-busy='true']):not([data-busy='true']) {
+  background: var(--button-primary-disabled-bg, #222222) !important;
+  border-color: var(--button-primary-disabled-border, #333333) !important;
+  color: var(--button-primary-disabled-text, #666666) !important;
+  opacity: 0.55 !important;
+  cursor: not-allowed !important;
+}
+html[data-theme='dark'] .admin-login-submit:disabled:not([aria-busy='true']):not([data-busy='true']) svg {
+  color: var(--button-primary-disabled-text, #666666) !important;
+  stroke: var(--button-primary-disabled-text, #666666) !important;
 }
 
 /* Densidad visual acotada a los horarios, sin cambiar estados ni interacción. */
@@ -3332,6 +3402,41 @@ html[data-theme='light'] .booking-page .booking-progress > button {
 html[data-theme='light'] {
   --booking-action-height: 3rem;
 }
+
+/* Botón "Volver a la reserva" en el menú desplegable en modo oscuro — móvil y escritorio */
+html[data-theme='dark'] .booking-menu-return:not(:disabled) {
+  background: var(--gold) !important;
+  border-color: var(--gold) !important;
+  color: #000000 !important;
+}
+html[data-theme='dark'] .booking-menu-return:not(:disabled) svg {
+  color: #000000 !important;
+  stroke: #000000 !important;
+}
+html[data-theme='dark'] .booking-menu-return:hover:not(:disabled) {
+  background: #cbb075 !important;
+  border-color: #cbb075 !important;
+  color: #000000 !important;
+}
+html[data-theme='dark'] .booking-menu-return:hover:not(:disabled) svg {
+  color: #000000 !important;
+  stroke: #000000 !important;
+}
+html[data-theme='dark'] .booking-menu-return:active:not(:disabled) {
+  background: #a88849 !important;
+  border-color: #a88849 !important;
+  color: #000000 !important;
+}
+html[data-theme='dark'] .booking-menu-return:active:not(:disabled) svg {
+  color: #000000 !important;
+  stroke: #000000 !important;
+}
+html[data-theme='dark'] .booking-menu-return:focus-visible {
+  outline: 2px solid var(--gold) !important;
+  outline-offset: 2px !important;
+  box-shadow: 0 0 0 2px var(--gold) !important;
+}
+
 html[data-theme='light'] .booking-menu-return,
 html[data-theme='light'] .booking-back-button,
 html[data-theme='light'] .booking-next-button {
