@@ -287,10 +287,13 @@ export default {
           try {
             const { createPaymentSupabaseClient } = await import("./lib/kani-payment-db.server");
             const db = await createPaymentSupabaseClient();
-            const { data, error } = await db.rpc('admin_list_benefit_codes');
+            const { data: codes, error } = await db
+              .from('benefit_codes')
+              .select('id, code, type, status, internal_note, created_at, updated_at, consumed_at, consumed_appointment_id, locked_at, locked_expires_at, locked_attempt_id')
+              .order('created_at', { ascending: false });
             if (!error) {
               migrationApplied = true;
-              codesCount = Array.isArray(data) ? data.length : 0;
+              codesCount = Array.isArray(codes) ? codes.length : 0;
             } else {
               migrationError = error.message;
             }
@@ -348,6 +351,94 @@ export default {
           });
         }
       }
+
+      if (url.pathname === "/api/admin/benefit-codes-audit") {
+        try {
+          const { createPaymentSupabaseClient } = await import("./lib/kani-payment-db.server");
+          const db = await createPaymentSupabaseClient();
+          const { data: codes, error: codesErr } = await db
+            .from('benefit_codes')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+          // Also check for orphaned locks tied to cancelled/expired payment attempts
+          const { data: cancelledAttempts } = await db
+            .from('payment_attempts')
+            .select('id, appointment_id, state, created_at')
+            .eq('state', 'CANCELLED')
+            .order('created_at', { ascending: false })
+            .limit(10);
+
+          return new Response(
+            JSON.stringify({
+              success: !codesErr,
+              codes: codes || [],
+              error: codesErr ? codesErr.message : null,
+              recentCancelledAttempts: cancelledAttempts || [],
+            }),
+            { status: 200, headers: { "content-type": "application/json" } }
+          );
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          return new Response(JSON.stringify({ error: message }), {
+            status: 500,
+            headers: { "content-type": "application/json" },
+          });
+        }
+      }
+
+      if (url.pathname === "/api/admin/benefit-codes-release-lock") {
+        try {
+          const codeToRelease = url.searchParams.get("code")?.trim().toUpperCase();
+          if (!codeToRelease) {
+            return new Response(JSON.stringify({ error: "CODE_PARAM_REQUIRED" }), { status: 400 });
+          }
+          const { createPaymentSupabaseClient } = await import("./lib/kani-payment-db.server");
+          const db = await createPaymentSupabaseClient();
+          
+          // Verify code exists and is currently locked
+          const { data: foundCode, error: findErr } = await db
+            .from('benefit_codes')
+            .select('*')
+            .eq('code', codeToRelease)
+            .maybeSingle();
+
+          if (findErr || !foundCode) {
+            return new Response(JSON.stringify({ error: "CODE_NOT_FOUND" }), { status: 404 });
+          }
+
+          if (foundCode.status === 'CONSUMED') {
+            return new Response(JSON.stringify({ error: "CANNOT_RELEASE_CONSUMED_CODE", message: "El código ya fue consumido por una reserva confirmada." }), { status: 400 });
+          }
+
+          // Release lock and restore to ACTIVE
+          const { data: updated, error: updateErr } = await db
+            .from('benefit_codes')
+            .update({
+              status: 'ACTIVE',
+              locked_at: null,
+              locked_expires_at: null,
+              locked_attempt_id: null,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', foundCode.id)
+            .select('*')
+            .single();
+
+          return new Response(
+            JSON.stringify({
+              success: !updateErr,
+              releasedCode: updated,
+              error: updateErr ? updateErr.message : null,
+            }),
+            { status: 200, headers: { "content-type": "application/json" } }
+          );
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          return new Response(JSON.stringify({ error: message }), { status: 500, headers: { "content-type": "application/json" } });
+        }
+      }
+
 
       if (url.pathname === "/api/admin/trigger-maintenance") {
         try {

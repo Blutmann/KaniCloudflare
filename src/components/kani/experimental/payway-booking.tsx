@@ -538,7 +538,7 @@ export function PaywayBooking() {
     // Flujo de confirmación directa sin seña (NO_DEPOSIT / FREE_SERVICE)
     if (draft.benefitQuote?.skipOnlinePayment && draft.benefitCode) {
       opening.current = true;
-      setOpen(true);
+      setOpen(false); // NUNCA abrir el modal de Payway cuando la seña online es $0
       setPreparing(true);
       setResult(null);
       setCheckout(null);
@@ -585,10 +585,26 @@ export function PaywayBooking() {
           }
           return;
         } else {
-          setResult({ state: 'recoverable', message: 'No se pudo confirmar la reserva.' });
+          throw new Error('No se pudo confirmar la reserva con beneficio.');
         }
       } catch (err: any) {
-        setResult({ state: 'recoverable', message: err?.message || 'Error al confirmar la reserva con beneficio.' });
+        setOpen(false);
+        const rawMsg = err?.message || '';
+        let friendlyMsg = 'No pudimos confirmar tu reserva. Tus datos no se perdieron.';
+        if (rawMsg.includes('BENEFIT_CODE_ALREADY_CONSUMED') || rawMsg.includes('ya fue utilizado')) {
+          friendlyMsg = 'Este código de beneficio ya fue utilizado.';
+        } else if (rawMsg.includes('BENEFIT_CODE_DISABLED') || rawMsg.includes('desactivado')) {
+          friendlyMsg = 'Este código de beneficio ha sido desactivado.';
+        } else if (rawMsg.includes('BENEFIT_CODE_LOCKED') || rawMsg.includes('bloqueado')) {
+          friendlyMsg = 'El código está siendo utilizado en otra reserva en curso. Reintentá en unos minutos.';
+        } else if (rawMsg.includes('BENEFIT_CODE_NOT_FOUND') || rawMsg.includes('no existe')) {
+          friendlyMsg = 'El código de beneficio no existe o es inválido.';
+        } else if (rawMsg.includes('SLOT_COLLISION') || rawMsg.includes('no está disponible') || rawMsg.includes('ya tiene un turno') || rawMsg.includes('SLOT_ALREADY_BOOKED')) {
+          friendlyMsg = 'Ese horario ya no está disponible. Elegí otro para continuar.';
+        } else if (rawMsg) {
+          friendlyMsg = rawMsg;
+        }
+        throw new Error(friendlyMsg);
       } finally {
         opening.current = false;
         setPreparing(false);
@@ -858,7 +874,7 @@ export function PaywayBooking() {
         >
           <DialogTitle className="payway-checkout-title">Pagá la seña a Kani con Payway</DialogTitle>
           <DialogDescription className="payway-checkout-subtitle">
-            {checkout ? `Seña: ${money(checkout.depositArs)} · Pago seguro` : 'Reserva experimental con Payway'}
+            {checkout ? `Seña: ${money(checkout.depositArs ?? 0)} · Pago seguro` : 'Reserva experimental con Payway'}
           </DialogDescription>
           {preparing && <p role="status">Preparando pago seguro…</p>}
           {result && !isVerifying && !pollExhausted && result.state !== 'unknown' && result.state !== 'review' && (

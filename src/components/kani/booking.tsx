@@ -645,8 +645,8 @@ export function Booking({
           email: contact.email.trim(), notes: contact.notes,
           benefitCode: appliedBenefit?.code,
           benefitQuote: appliedBenefit ?? undefined });
-      } catch {
-        setError('No pudimos iniciar el pago. Tus datos no se perdieron.');
+      } catch (cause: any) {
+        setError(cause?.message || 'No pudimos iniciar el pago. Tus datos no se perdieron.');
       } finally {
         setSubmitting(false);
       }
