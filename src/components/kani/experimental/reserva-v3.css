@@ -501,7 +501,7 @@ html[data-theme='light'] .booking-v3 .phone-country-option {
 
 @media (min-width: 1024px) {
   .booking-v3 .booking-v2-final-layout {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 3fr) minmax(0, 7fr);
     align-items: stretch;
     gap: 36px;
   }
@@ -521,14 +521,20 @@ html[data-theme='light'] .booking-v3 .phone-country-option {
   }
 }
 
-/* Celular en Desktop: distribución 50% / 50% (1fr 1fr) simétrica */
+/* Celular en Desktop: adaptado a la columna del 30% del formulario (prefijo compacto y número con todo el espacio restante) */
 .booking-v3 .phone-input-row {
   display: grid !important;
-  grid-template-columns: 1fr 1fr !important;
-  gap: 10px !important;
+  grid-template-columns: minmax(100px, 112px) minmax(0, 1fr) !important;
+  gap: 8px !important;
   width: 100% !important;
   box-sizing: border-box !important;
   align-items: center !important;
+}
+
+.booking-v3 .phone-country-trigger {
+  padding-inline: 8px !important;
+  font-size: 11px !important;
+  gap: 4px !important;
 }
 
 .booking-v3 .phone-country-picker {
@@ -665,6 +671,37 @@ html[data-theme='light'] .booking-v3 .phone-country-option {
   .booking-v3 .field-control:has(> .notes-input) .field-validation-icon {
     top: 50% !important;
     transform: translateY(-50%) !important;
+  }
+
+  /* 5. Código de descuento en mobile: altura exacta 44px, alineación vertical y márgenes reseteados */
+  .booking-v3 .discount-input-row input,
+  .booking-v3 .booking-contact-form .booking-discount-field .discount-input-row input,
+  .booking-v3 .booking-contact-form input#booking-discount-code {
+    height: 44px !important;
+    min-height: 44px !important;
+    max-height: 44px !important;
+    margin: 0 !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    line-height: 44px !important;
+    box-sizing: border-box !important;
+  }
+
+  .booking-v3 .discount-input-row button,
+  .booking-v3 .booking-contact-form .booking-discount-field .discount-input-row button,
+  .booking-v3 .booking-contact-form button.discount-apply-button {
+    height: 44px !important;
+    min-height: 44px !important;
+    max-height: 44px !important;
+    margin: 0 !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    line-height: 1 !important;
+    box-sizing: border-box !important;
   }
 }
 

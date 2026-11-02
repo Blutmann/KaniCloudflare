@@ -97,9 +97,9 @@
 @media (min-width: 1024px) {
   .booking-v2-final .booking-layout { max-width: none; }
   .booking-v2 .booking-v2-final-layout {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 3fr) minmax(0, 7fr);
     align-items: stretch;
-    gap: 24px;
+    gap: 36px;
   }
   .booking-v2-final .booking-summary-cards {
     display: flex;

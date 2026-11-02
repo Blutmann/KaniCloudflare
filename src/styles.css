@@ -1835,8 +1835,8 @@ html[data-theme='dark'] .studio-map-card {
 @media (min-width: 768px) {
   .booking-page .booking-contact-form .phone-input-row {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
+    grid-template-columns: minmax(100px, 112px) minmax(0, 1fr);
+    gap: 8px;
     width: 100%;
   }
 }
@@ -4591,27 +4591,49 @@ html[data-theme='light'] .booking-page .booking-contact-form :is(.field-label in
   width: 100%;
 }
 
-.discount-input-row .discount-input {
-  flex: 3 1 70%;
+.discount-input-row .discount-input,
+.booking-page .booking-contact-form .booking-discount-field .discount-input-row input,
+.booking-page .booking-contact-form input#booking-discount-code {
+  flex: 1 1 auto;
   min-width: 0;
-  height: 52px;
-  min-height: 44px;
+  height: 44px !important;
+  min-height: 44px !important;
+  max-height: 44px !important;
+  margin: 0 !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding-block: 0 !important;
+  padding-inline: 12px;
+  line-height: 44px !important;
   font-family: var(--font-mono, monospace);
   letter-spacing: 0.05em;
-  font-size: 14px;
+  font-size: 13px;
+  box-sizing: border-box !important;
 }
 
-.discount-input-row .discount-apply-button {
-  flex: 1 0 auto;
+.discount-input-row .discount-apply-button,
+.booking-page .booking-contact-form .booking-discount-field .discount-input-row button,
+.booking-page .booking-contact-form button.discount-apply-button {
+  flex: 0 0 auto;
   min-width: 84px;
-  height: 52px;
-  min-height: 44px;
+  height: 44px !important;
+  min-height: 44px !important;
+  max-height: 44px !important;
+  margin: 0 !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding-block: 0 !important;
+  padding-inline: 16px !important;
   font-weight: 600;
+  font-size: 13px;
   border-radius: var(--radius-control, 0.5rem);
   white-space: nowrap;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  line-height: 1 !important;
+  box-sizing: border-box !important;
   transition: all 0.2s ease;
 }
 

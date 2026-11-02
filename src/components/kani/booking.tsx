@@ -1246,7 +1246,7 @@ export function Booking({
                     </span>
                   )}
                 </label>
-                <div className="field-label booking-discount-field">
+                <div className="booking-discount-field">
                   <div className="flex items-center justify-between">
                     <label htmlFor="booking-discount-code" className="text-xs sm:text-sm font-medium">
                       Código de descuento <span className="text-xs font-normal text-muted-foreground">(opcional)</span>
@@ -1254,7 +1254,7 @@ export function Booking({
                   </div>
 
                   {!appliedBenefit ? (
-                    <div className="discount-input-row mt-2.5 flex items-stretch gap-2.5 w-full">
+                    <div className="discount-input-row mt-2 flex items-stretch gap-2.5 w-full">
                       <Input
                         id="booking-discount-code"
                         type="text"
@@ -1276,17 +1276,17 @@ export function Booking({
                         }}
                         aria-invalid={Boolean(benefitErrorMessage)}
                         aria-describedby={benefitErrorMessage ? 'benefit-code-error' : undefined}
-                        className="discount-input font-mono tracking-wider text-sm uppercase min-h-[44px] h-[52px]"
+                        className="discount-input font-mono tracking-wider text-xs sm:text-sm uppercase h-11 min-h-[44px] max-h-[44px] m-0"
                       />
                       <Button
                         type="button"
                         onClick={applyBenefitCode}
                         disabled={!benefitCodeInput.trim() || benefitValidationLoading}
-                        className="discount-apply-button min-h-[44px] h-[52px] px-4 font-semibold text-sm shrink-0"
+                        className="discount-apply-button h-11 min-h-[44px] max-h-[44px] m-0 px-4 font-semibold text-xs sm:text-sm shrink-0 inline-flex items-center justify-center text-center leading-none"
                       >
                         {benefitValidationLoading ? (
-                          <span className="flex items-center gap-1.5">
-                            <Loader2 size={15} className="animate-spin" />
+                          <span className="inline-flex items-center justify-center gap-1.5 leading-none">
+                            <Loader2 size={15} className="animate-spin shrink-0" />
                             <span>Aplicando…</span>
                           </span>
                         ) : (
