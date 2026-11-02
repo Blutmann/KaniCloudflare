@@ -702,6 +702,50 @@ export default {
         }
       }
 
+      if (url.pathname === "/api/admin/clean-test-appointments") {
+        try {
+          const idsParam = url.searchParams.get("ids") || "";
+          const ids = idsParam.split(',').map(s => s.trim()).filter(Boolean);
+          if (!ids.length) {
+            return new Response(JSON.stringify({ error: "NO_IDS_PROVIDED" }), { status: 400 });
+          }
+
+          const { createPaymentSupabaseClient } = await import("./lib/kani-payment-db.server");
+          const db = await createPaymentSupabaseClient();
+          const { enqueueCalendarSyncAction, processCalendarSyncQueue } = await import("./lib/kani-google-calendar-sync");
+
+          const nowIso = new Date().toISOString();
+          const results = [];
+          for (const id of ids) {
+            await db.from('appointments').update({
+              status: 'CANCELLED',
+              cancellation_reason: 'TEST_VALIDATION_CLEANUP',
+              cancelled_at: nowIso,
+              updated_at: nowIso
+            }).eq('id', id);
+
+            await enqueueCalendarSyncAction({
+              appointmentId: id,
+              action: "DELETE",
+            });
+            results.push({ id, cancelled: true });
+          }
+
+          await processCalendarSyncQueue({ limit: 10 });
+
+          return new Response(JSON.stringify({ success: true, results }), {
+            status: 200,
+            headers: { "content-type": "application/json" }
+          });
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          return new Response(JSON.stringify({ error: message }), {
+            status: 500,
+            headers: { "content-type": "application/json" }
+          });
+        }
+      }
+
       if (url.pathname === "/api/admin/trigger-maintenance") {
         try {
           const { reconcilePendingPayments } = await import("./lib/kani-payment-maintenance.server");
