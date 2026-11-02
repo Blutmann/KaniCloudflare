@@ -4613,3 +4613,36 @@ html[data-theme='light'] .discount-apply-button:disabled,
     padding-right: 8px;
   }
 }
+
+/* Campo con placeholder "Nombre, celular o email": fondo interior del contenedor #FFFFFFD9 y contraste accesible */
+.v2-client-search-row .v2-search,
+.v2-client-search-row .v2-search input,
+input[placeholder="Nombre, celular o email"] {
+  background-color: #FFFFFFD9 !important;
+}
+.v2-client-search-row .v2-search {
+  border-radius: var(--radius-control);
+}
+.v2-client-search-row .v2-search input,
+input[placeholder="Nombre, celular o email"] {
+  color: #111111 !important;
+  caret-color: #111111 !important;
+}
+.v2-client-search-row .v2-search input:hover,
+.v2-client-search-row .v2-search input:focus,
+.v2-client-search-row .v2-search input:focus-visible,
+input[placeholder="Nombre, celular o email"]:hover,
+input[placeholder="Nombre, celular o email"]:focus,
+input[placeholder="Nombre, celular o email"]:focus-visible {
+  background-color: #FFFFFFD9 !important;
+  color: #111111 !important;
+}
+.v2-client-search-row .v2-search input::placeholder,
+input[placeholder="Nombre, celular o email"]::placeholder {
+  color: #555555 !important;
+  opacity: 1 !important;
+}
+.v2-client-search-row .v2-search svg,
+:has(> input[placeholder="Nombre, celular o email"]) svg {
+  color: #333333 !important;
+}

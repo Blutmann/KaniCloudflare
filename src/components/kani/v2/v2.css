@@ -3325,11 +3325,35 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
 }
 .v2-client-search-row .v2-search {
   width: 100%;
+  background-color: #FFFFFFD9 !important;
+  border-radius: var(--radius-control);
 }
-.v2-client-search-row .v2-search input {
+.v2-client-search-row .v2-search input,
+input[placeholder="Nombre, celular o email"] {
   width: 100%;
   min-height: 44px;
   height: 44px;
+  background-color: #FFFFFFD9 !important;
+  color: #111111 !important;
+  caret-color: #111111 !important;
+}
+.v2-client-search-row .v2-search input:hover,
+.v2-client-search-row .v2-search input:focus,
+.v2-client-search-row .v2-search input:focus-visible,
+input[placeholder="Nombre, celular o email"]:hover,
+input[placeholder="Nombre, celular o email"]:focus,
+input[placeholder="Nombre, celular o email"]:focus-visible {
+  background-color: #FFFFFFD9 !important;
+  color: #111111 !important;
+}
+.v2-client-search-row .v2-search input::placeholder,
+input[placeholder="Nombre, celular o email"]::placeholder {
+  color: #555555 !important;
+  opacity: 1 !important;
+}
+.v2-client-search-row .v2-search svg,
+:has(> input[placeholder="Nombre, celular o email"]) svg {
+  color: #333333 !important;
 }
 .v2-client-controls-row {
   display: flex;
