@@ -605,39 +605,23 @@ export default {
           const { data: barber } = await db.from('barbers').select('id, name').eq('name', 'Lautaro').single();
           if (!barber) throw new Error("Barbero Lautaro no encontrado");
 
-          // Encontrar primer slot libre disponible a partir de hoy
+          // Encontrar primer inicio válido de disponibilidad usando la RPC oficial del sistema
           const todayStr = new Date().toISOString().split('T')[0];
-          const { data: slots } = await db.from('barber_availability_slots')
-            .select('*')
-            .eq('barber_id', barber.id)
-            .gte('slot_date', todayStr)
-            .eq('status', 'available')
-            .order('slot_date', { ascending: true })
-            .order('start_time', { ascending: true })
-            .limit(30);
+          const nextTwoWeeks = new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0];
+          const { data: validStarts, error: startsErr } = await db.rpc('read_valid_availability_starts', {
+            p_barber_id: barber.id,
+            p_from_date: todayStr,
+            p_to_date: nextTwoWeeks,
+          });
 
-          if (!slots || slots.length === 0) {
-            throw new Error("No hay slots disponibles en barber_availability_slots");
+          if (startsErr || !validStarts || validStarts.length === 0) {
+            throw new Error(`No hay turnos disponibles para Lautaro en las próximas dos semanas: ${startsErr?.message || 'lista vacía'}`);
           }
 
-          let chosenSlot = null;
-          for (const s of slots) {
-            const { data: existingAppt } = await db.from('appointments')
-              .select('id')
-              .eq('barber_id', barber.id)
-              .eq('booking_date', s.slot_date)
-              .eq('start_time', s.start_time)
-              .in('status', ['PENDING', 'CONFIRMED'])
-              .maybeSingle();
-            if (!existingAppt) {
-              chosenSlot = s;
-              break;
-            }
-          }
-
-          if (!chosenSlot) {
-            throw new Error("No se encontró slot libre sin turno asignado");
-          }
+          const chosenSlot = {
+            slot_date: validStarts[0].slot_date,
+            start_time: validStarts[0].start_time,
+          };
 
           // 2. Crear código de beneficio de prueba
           const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
