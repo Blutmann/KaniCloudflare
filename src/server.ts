@@ -446,6 +446,10 @@ export default {
                 applied: expansionApplied,
                 error: expansionError,
               },
+              allBenefitCodes,
+              recentBenefitAppointments,
+              codeUsages,
+              repairResult,
               accountingInvariants: {
                 freeBookingStatusRule: "Una reserva gratuita confirmada NO cuenta como servicio realizado hasta su cobro/cierre en el local.",
                 cancellationPaymentsRule: "Una cancelación NO borra pagos anteriores; se conservan pagos recibidos y reintegros se registran explícitamente.",
