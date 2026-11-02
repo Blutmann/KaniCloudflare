@@ -1,5 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
-import { Check, Clock3, CalendarDays, UserRound, Users, ChevronLeft, ChevronRight, ArrowLeft, CircleAlert, MapPin, Instagram, Tag, Loader2 } from 'lucide-react';
+import { Check, Clock3, CalendarDays, UserRound, Users, ChevronLeft, ChevronRight, ArrowLeft, CircleAlert, MapPin, Instagram, Tag, Loader2, X } from 'lucide-react';
 import { validateBenefitCodeQuoteFn } from '@/lib/kani-benefit-codes.functions';
 import type { BenefitQuote } from '@/lib/kani-benefit-codes';
 import { Button } from '@/components/ui/button';
@@ -36,6 +36,55 @@ function fieldStatus(field: ContactField, values: ContactValues, country: PhoneC
   if (field === 'name') return values.name.trim().length >= 3 ? 'valid' : 'invalid';
   if (field === 'email') return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email.trim()) ? 'valid' : 'invalid';
   return normalizePhone(values.phone, country) ? 'valid' : 'invalid';
+}
+
+function mapBenefitErrorMessage(rawError: unknown): string {
+  const msg = rawError instanceof Error ? rawError.message : String(rawError || '');
+  const lower = msg.toLowerCase();
+
+  // Fallo de conexión / red
+  if (
+    lower.includes('failed to fetch') ||
+    lower.includes('network') ||
+    lower.includes('connection') ||
+    lower.includes('timeout') ||
+    lower.includes('load failed') ||
+    lower.includes('offline') ||
+    lower.includes('aborterror')
+  ) {
+    return 'No pudimos validar el código. Intentá nuevamente.';
+  }
+
+  // Consumido
+  if (
+    lower.includes('consum') ||
+    lower.includes('ya fue utilizado') ||
+    lower.includes('already used')
+  ) {
+    return 'Este código ya fue utilizado.';
+  }
+
+  // Desactivado o vencido
+  if (
+    lower.includes('desactiv') ||
+    lower.includes('vencid') ||
+    lower.includes('expir') ||
+    lower.includes('disabled')
+  ) {
+    return 'Este código ya no está disponible.';
+  }
+
+  // Bloqueo temporal / en uso
+  if (
+    lower.includes('en uso') ||
+    lower.includes('locked') ||
+    lower.includes('bloque')
+  ) {
+    return 'Este código está en uso. Intentá nuevamente más tarde.';
+  }
+
+  // Inválido o inexistente
+  return 'Código inválido. Revisalo e intentá nuevamente.';
 }
 
 function fieldMessage(field: ContactField) {
@@ -128,6 +177,11 @@ export function Booking({
   const [appliedBenefit, setAppliedBenefit] = useState<BenefitQuote | null>(null);
   const [benefitValidationLoading, setBenefitValidationLoading] = useState(false);
   const [benefitErrorMessage, setBenefitErrorMessage] = useState<string | null>(null);
+  const [successAlertVisible, setSuccessAlertVisible] = useState(false);
+  const successTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasUnappliedBenefitCode = Boolean(
+    benefitCodeInput.trim() && (!appliedBenefit || benefitCodeInput.trim().toUpperCase() !== appliedBenefit.code.toUpperCase())
+  );
 
   const [pendingAppointment, setPendingAppointment] = useState<{ id: string; requestNumber: number; expiresAt: number } | null>(null);
   const [returnStatus, setReturnStatus] = useState<'IDLE' | 'LOADING' | 'CONFIRMED' | 'PENDING' | 'CANCELLED'>('IDLE');
@@ -384,7 +438,7 @@ export function Booking({
 
   const applyBenefitCode = useCallback(async () => {
     const raw = benefitCodeInput.trim();
-    if (!raw) return;
+    if (!raw || benefitValidationLoading) return;
     setBenefitValidationLoading(true);
     setBenefitErrorMessage(null);
     try {
@@ -398,21 +452,66 @@ export function Booking({
       if (quote.valid) {
         setAppliedBenefit(quote);
         setBenefitErrorMessage(null);
+        setSuccessAlertVisible(true);
+        if (successTimeoutRef.current) clearTimeout(successTimeoutRef.current);
+        successTimeoutRef.current = setTimeout(() => {
+          setSuccessAlertVisible(false);
+        }, 5000);
       } else {
-        setBenefitErrorMessage(quote.message || 'Código inválido o no disponible.');
+        setBenefitErrorMessage(mapBenefitErrorMessage(quote.message || quote.error));
       }
-    } catch (err: any) {
-      setBenefitErrorMessage(err?.message || 'Error al validar el código.');
+    } catch (err: unknown) {
+      setBenefitErrorMessage(mapBenefitErrorMessage(err));
     } finally {
       setBenefitValidationLoading(false);
     }
-  }, [benefitCodeInput, selected, service, barber]);
+  }, [benefitCodeInput, benefitValidationLoading, selected, service, barber]);
 
   const removeBenefitCode = useCallback(() => {
     setAppliedBenefit(null);
     setBenefitCodeInput('');
     setBenefitErrorMessage(null);
+    setSuccessAlertVisible(false);
+    if (successTimeoutRef.current) clearTimeout(successTimeoutRef.current);
   }, []);
+
+  useEffect(() => {
+    return () => {
+      if (successTimeoutRef.current) clearTimeout(successTimeoutRef.current);
+    };
+  }, []);
+
+  // Revalidar y recalcular si cambia el servicio o el barbero
+  useEffect(() => {
+    if (!appliedBenefit?.code) return;
+    let cancelled = false;
+    const currentCode = appliedBenefit.code;
+    const currentServiceName = selected?.name ?? (service ? serviceFor(service).name : 'Corte');
+
+    validateBenefitCodeQuoteFn({
+      data: {
+        code: currentCode,
+        serviceName: currentServiceName,
+        barber: barber ?? undefined,
+      },
+    }).then((quote) => {
+      if (cancelled) return;
+      if (quote.valid) {
+        setAppliedBenefit(quote);
+        setBenefitErrorMessage(null);
+      } else {
+        setAppliedBenefit(null);
+        setBenefitErrorMessage(mapBenefitErrorMessage(quote.message || quote.error));
+      }
+    }).catch((err) => {
+      if (cancelled) return;
+      setAppliedBenefit(null);
+      setBenefitErrorMessage(mapBenefitErrorMessage(err));
+    });
+
+    return () => { cancelled = true; };
+  }, [service, barber, selected]);
+
   useEffect(() => {
     let cancelled = false;
     async function loadAvailability() {
@@ -501,6 +600,10 @@ export function Booking({
       }
     }
     if (step === 4) {
+      if (hasUnappliedBenefitCode) {
+        setBenefitErrorMessage('Tenés un código ingresado sin aplicar. Aplicá el código o borralo para continuar.');
+        return;
+      }
       setTouched({ name: true, phone: true, email: true, notes: true });
       if (!formRef.current?.reportValidity()) return;
       const normalized = normalizePhone(contact.phone, phoneCountry);
@@ -511,6 +614,11 @@ export function Booking({
   }
   async function submit() {
     if (!service || !barber || !date || !time || submitting) return;
+    if (hasUnappliedBenefitCode) {
+      move(4);
+      setBenefitErrorMessage('Tenés un código ingresado sin aplicar. Aplicá el código o borralo para continuar.');
+      return;
+    }
     if (isV2 || isFiveSteps) {
       setTouched({ name: true, phone: true, email: true, notes: true });
       if (!formRef.current?.reportValidity()) return;
@@ -1138,46 +1246,24 @@ export function Booking({
                     </span>
                   )}
                 </label>
-                <label className="field-label">
-                  <span>Observaciones <span className="text-xs font-normal text-muted-foreground">(opcional)</span></span>
-                  <span className={`field-control ${statusFor('notes')}`}>
-                    <textarea
-                      name="notes"
-                      className="notes-input"
-                      maxLength={500}
-                      value={contact.notes}
-                      onBlur={() => markTouched('notes')}
-                      onChange={e => setContact({ ...contact, notes: e.target.value })}
-                      placeholder="Algo que quieras contarnos"
-                      aria-invalid="false"
-                    />
-                    {feedbackFor('notes')}
-                  </span>
-                </label>
-                {isV1 && <Button type="submit" hidden className="hidden" tabIndex={-1}>Continuar</Button>}
-              </form>
-            )}
-
-            {(step === 5 || (isV2 || isFiveSteps) && step === 4) && (
-              <div className="booking-summary-cards space-y-2 sm:space-y-3.5">
-                {/* Bloque de Código de Beneficio / Descuento */}
-                <div className="booking-summary-card booking-benefit-section rounded-lg border border-border bg-card/60 p-3 sm:p-3.5 space-y-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                      <Tag size={13} className="text-gold" /> Código de beneficio
-                    </span>
-                    {appliedBenefit && (
-                      <span className="text-xs text-emerald-500 font-medium flex items-center gap-1">
-                        <Check size={12} /> Aplicado
-                      </span>
-                    )}
+                <div className="field-label booking-discount-field">
+                  <div className="flex items-center justify-between">
+                    <label htmlFor="booking-discount-code" className="text-xs sm:text-sm font-medium">
+                      Código de descuento <span className="text-xs font-normal text-muted-foreground">(opcional)</span>
+                    </label>
                   </div>
 
                   {!appliedBenefit ? (
-                    <div className="flex items-center gap-2">
+                    <div className="discount-input-row mt-2.5 flex items-stretch gap-2.5 w-full">
                       <Input
-                        placeholder="Ej: KANI-XXXX-XXXX"
+                        id="booking-discount-code"
+                        type="text"
+                        autoCapitalize="characters"
+                        autoCorrect="off"
+                        spellCheck="false"
+                        placeholder="KANI-XXXX-XXXX-XXXX"
                         value={benefitCodeInput}
+                        disabled={benefitValidationLoading}
                         onChange={(e) => {
                           setBenefitCodeInput(e.target.value.toUpperCase());
                           setBenefitErrorMessage(null);
@@ -1185,52 +1271,114 @@ export function Booking({
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') {
                             e.preventDefault();
-                            applyBenefitCode();
+                            void applyBenefitCode();
                           }
                         }}
-                        className="font-mono text-sm tracking-wide uppercase h-9 bg-background/80"
-                        disabled={benefitValidationLoading}
-                        aria-label="Ingresar código de beneficio o descuento"
+                        aria-invalid={Boolean(benefitErrorMessage)}
+                        aria-describedby={benefitErrorMessage ? 'benefit-code-error' : undefined}
+                        className="discount-input font-mono tracking-wider text-sm uppercase min-h-[44px] h-[52px]"
                       />
+                      <Button
+                        type="button"
+                        onClick={applyBenefitCode}
+                        disabled={!benefitCodeInput.trim() || benefitValidationLoading}
+                        className="discount-apply-button min-h-[44px] h-[52px] px-4 font-semibold text-sm shrink-0"
+                      >
+                        {benefitValidationLoading ? (
+                          <span className="flex items-center gap-1.5">
+                            <Loader2 size={15} className="animate-spin" />
+                            <span>Aplicando…</span>
+                          </span>
+                        ) : (
+                          'Aplicar'
+                        )}
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="discount-applied-card mt-2.5 flex items-center justify-between gap-2.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-2.5 sm:p-3">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Tag size={15} className="text-emerald-400 shrink-0" />
+                        <div className="min-w-0">
+                          <span className="font-mono font-bold text-xs sm:text-sm text-emerald-400 block tracking-wider truncate">
+                            {appliedBenefit.code}
+                          </span>
+                          <span className="text-[11px] sm:text-xs text-muted-foreground block truncate">
+                            {appliedBenefit.label}
+                          </span>
+                        </div>
+                      </div>
                       <Button
                         type="button"
                         variant="outline"
                         size="sm"
-                        onClick={applyBenefitCode}
-                        disabled={!benefitCodeInput.trim() || benefitValidationLoading}
-                        className="h-9 px-3.5 shrink-0 font-medium"
-                      >
-                        {benefitValidationLoading ? <Loader2 size={14} className="animate-spin" /> : 'Aplicar'}
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-between gap-2 bg-emerald-500/10 border border-emerald-500/30 rounded-md px-3 py-2">
-                      <div className="min-w-0">
-                        <span className="font-mono font-bold text-xs text-emerald-400 block tracking-wider">
-                          {appliedBenefit.code}
-                        </span>
-                        <span className="text-xs text-muted-foreground block truncate">
-                          {appliedBenefit.label}
-                        </span>
-                      </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
                         onClick={removeBenefitCode}
-                        className="h-7 px-2 text-xs text-muted-foreground hover:text-destructive hover:bg-transparent"
+                        className="discount-remove-button min-h-[44px] h-11 px-3.5 text-xs font-medium text-muted-foreground hover:text-destructive hover:border-destructive/40 transition-colors shrink-0"
                       >
                         Quitar
                       </Button>
                     </div>
                   )}
 
+                  {successAlertVisible && (
+                    <div
+                      role="status"
+                      aria-live="polite"
+                      onClick={() => setSuccessAlertVisible(false)}
+                      className="discount-success-banner mt-2 flex items-center justify-between gap-2 rounded-md bg-emerald-500/15 border border-emerald-500/40 px-3 py-2 text-emerald-400 text-xs sm:text-sm cursor-pointer transition-opacity duration-300"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Check size={16} className="text-emerald-400 shrink-0" />
+                        <span className="font-medium">Código aplicado correctamente.</span>
+                      </div>
+                      <button
+                        type="button"
+                        aria-label="Cerrar aviso"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSuccessAlertVisible(false);
+                        }}
+                        className="p-1 text-emerald-400 hover:text-emerald-200 focus:outline-none focus-visible:ring-1 focus-visible:ring-emerald-400 rounded"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  )}
+
                   {benefitErrorMessage && (
-                    <p role="alert" className="text-xs text-destructive mt-1 font-medium">
-                      {benefitErrorMessage}
+                    <p
+                      id="benefit-code-error"
+                      role="alert"
+                      className="field-validation-message text-destructive text-xs mt-1.5 flex items-center gap-1.5"
+                    >
+                      <CircleAlert size={14} className="shrink-0" aria-hidden="true" />
+                      <span>{benefitErrorMessage}</span>
                     </p>
                   )}
                 </div>
+                {isV1 && <Button type="submit" hidden className="hidden" tabIndex={-1}>Continuar</Button>}
+              </form>
+            )}
+
+            {(step === 5 || (isV2 || isFiveSteps) && step === 4) && (
+              <div className="booking-summary-cards space-y-2 sm:space-y-3.5">
+                {appliedBenefit && (
+                  <div className="booking-summary-card booking-benefit-badge rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-2.5 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Tag size={14} className="text-emerald-400 shrink-0" />
+                      <div className="min-w-0">
+                        <span className="font-mono text-xs font-bold text-emerald-400 tracking-wider truncate block">
+                          {appliedBenefit.code}
+                        </span>
+                        <span className="text-[11px] text-muted-foreground truncate block">
+                          {appliedBenefit.label}
+                        </span>
+                      </div>
+                    </div>
+                    <span className="text-xs text-emerald-500 font-medium flex items-center gap-1 shrink-0">
+                      <Check size={12} /> Aplicado
+                    </span>
+                  </div>
+                )}
                 {/* Card 1: Datos personales compactada */}
                 {isV1 && <section className="booking-summary-card summary-client-card" aria-label="Datos personales">
                   <div className="summary-card-header flex items-center justify-between gap-3">
@@ -1383,7 +1531,8 @@ export function Booking({
             {step === 0 && (
               <p className="booking-deposit-notice" role="note">
                 <Clock3 size={16} aria-hidden="true" />
-                <span>Tu turno requiere abonar una seña. En el resumen verás el importe exacto, el total y el saldo restante.</span>
+                <span className="hidden sm:inline">Tu turno requiere abonar una seña. En el resumen verás el importe exacto, el total y el saldo restante.</span>
+                <span className="sm:hidden">Para reservar tu turno se requiere abonar una seña.</span>
               </p>
             )}
             {paymentNotice && (step === 5 || ((isV2 || isFiveSteps) && step === 4)) && (

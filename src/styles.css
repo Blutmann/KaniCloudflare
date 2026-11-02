@@ -4483,3 +4483,125 @@ html[data-theme='light'] .booking-page .booking-contact-form :is(.field-label in
     font-size: 10px;
   }
 }
+
+
+/* ==========================================================================
+   Kani — Código de descuento en Paso Datos (Desktop y Mobile)
+   ========================================================================== */
+
+.booking-discount-field {
+  width: 100%;
+}
+
+.discount-input-row {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  width: 100%;
+}
+
+.discount-input-row .discount-input {
+  flex: 3 1 70%;
+  min-width: 0;
+  height: 52px;
+  min-height: 44px;
+  font-family: var(--font-mono, monospace);
+  letter-spacing: 0.05em;
+  font-size: 14px;
+}
+
+.discount-input-row .discount-apply-button {
+  flex: 1 0 auto;
+  min-width: 84px;
+  height: 52px;
+  min-height: 44px;
+  font-weight: 600;
+  border-radius: var(--radius-control, 0.5rem);
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+/* Modo oscuro: botón Aplicar dorado con texto negro */
+html[data-theme='dark'] .discount-apply-button:not(:disabled),
+.dark .discount-apply-button:not(:disabled) {
+  background-color: var(--gold, #B99A5B) !important;
+  color: #000000 !important;
+  border: 1px solid var(--gold, #B99A5B) !important;
+}
+
+html[data-theme='dark'] .discount-apply-button:hover:not(:disabled),
+.dark .discount-apply-button:hover:not(:disabled) {
+  background-color: color-mix(in srgb, var(--gold, #B99A5B) 85%, #ffffff) !important;
+  color: #000000 !important;
+}
+
+html[data-theme='dark'] .discount-apply-button:disabled,
+.dark .discount-apply-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Modo claro: botón Aplicar estilo principal bordó */
+html[data-theme='light'] .discount-apply-button:not(:disabled),
+:root:not(.dark) .discount-apply-button:not(:disabled) {
+  background-color: var(--button-primary-bg, #762936) !important;
+  color: #FFFFFF !important;
+  border: 1px solid var(--button-primary-border, #762936) !important;
+}
+
+html[data-theme='light'] .discount-apply-button:hover:not(:disabled),
+:root:not(.dark) .discount-apply-button:hover:not(:disabled) {
+  background-color: var(--button-primary-hover, #63212C) !important;
+  color: #FFFFFF !important;
+}
+
+html[data-theme='light'] .discount-apply-button:disabled,
+:root:not(.dark) .discount-apply-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.discount-remove-button {
+  min-height: 44px;
+}
+
+.discount-success-banner {
+  animation: discountFadeIn 0.25s ease-out;
+}
+
+@keyframes discountFadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 390px) {
+  .discount-input-row {
+    gap: 8px;
+  }
+  .discount-input-row .discount-apply-button {
+    min-width: 76px;
+    padding-left: 10px;
+    padding-right: 10px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 340px) {
+  .discount-input-row {
+    gap: 6px;
+  }
+  .discount-input-row .discount-apply-button {
+    min-width: 70px;
+    padding-left: 8px;
+    padding-right: 8px;
+    font-size: 12px;
+  }
+  .discount-input-row .discount-input {
+    font-size: 12px;
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+}
