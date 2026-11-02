@@ -5,8 +5,6 @@ import {
   Check,
   Copy,
   Gift,
-  Key,
-  Lock,
   Plus,
   RefreshCw,
   Search,
@@ -24,6 +22,7 @@ import {
   DialogFooter,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { supabase } from '@/integrations/supabase/client';
 import {
   BENEFIT_TYPE_DEFINITIONS,
   type BenefitCodeItem,
@@ -37,11 +36,14 @@ import {
 } from '@/lib/kani-benefit-codes.functions';
 import { money } from '@/lib/kani-model';
 
+export type BenefitCodeSortOption = 'RECENT' | 'OLDEST' | 'CODE_ASC' | 'CODE_DESC';
+
 export function BenefitCodesAdminSection() {
   const [items, setItems] = useState<BenefitCodeItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<'ALL' | BenefitCodeStatus>('ALL');
+  const [sortBy, setSortBy] = useState<BenefitCodeSortOption>('RECENT');
   const [searchTerm, setSearchTerm] = useState('');
 
   // Create Modal
@@ -63,12 +65,23 @@ export function BenefitCodesAdminSection() {
 
   const loadCodes = async () => {
     setLoading(true);
-    setError('');
+    setError(null);
     try {
-      const res = await adminListBenefitCodesFn();
+      let token: string | undefined;
+      try {
+        const { data } = await supabase.auth.getSession();
+        token = data.session?.access_token;
+      } catch {
+        // Fallback seguro si se ejecuta en SSR o entorno sin storage
+      }
+      const res = await adminListBenefitCodesFn({
+        data: { token },
+      });
       setItems(res || []);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error al cargar los códigos de beneficio.');
+      const msg = e instanceof Error ? e.message : 'Error al consultar códigos de beneficio.';
+      setError(msg);
+      setItems([]);
     } finally {
       setLoading(false);
     }
@@ -84,7 +97,6 @@ export function BenefitCodesAdminSection() {
       setCopiedCode(code);
       setTimeout(() => setCopiedCode(null), 2500);
     } catch {
-      // Fallback
       setCopiedCode(code);
       setTimeout(() => setCopiedCode(null), 2500);
     }
@@ -95,11 +107,19 @@ export function BenefitCodesAdminSection() {
     setCreating(true);
     setCreateError('');
     try {
+      let token: string | undefined;
+      try {
+        const { data } = await supabase.auth.getSession();
+        token = data.session?.access_token;
+      } catch {
+        // Fallback
+      }
       const newItem = await adminCreateBenefitCodeFn({
         data: {
           type: selectedType,
           internalNote: internalNote.trim() || undefined,
           code: customCode.trim() || undefined,
+          token,
         },
       });
       setCreatedItem(newItem);
@@ -118,7 +138,19 @@ export function BenefitCodesAdminSection() {
     setDisabling(true);
     setDisableError('');
     try {
-      await adminDisableBenefitCodeFn({ data: { codeId: codeToDisable.id } });
+      let token: string | undefined;
+      try {
+        const { data } = await supabase.auth.getSession();
+        token = data.session?.access_token;
+      } catch {
+        // Fallback
+      }
+      await adminDisableBenefitCodeFn({
+        data: {
+          codeId: codeToDisable.id,
+          token,
+        },
+      });
       setCodeToDisable(null);
       await loadCodes();
     } catch (err) {
@@ -128,8 +160,19 @@ export function BenefitCodesAdminSection() {
     }
   };
 
-  const filteredItems = useMemo(() => {
-    return items.filter((item) => {
+  const statusCounts = useMemo(() => {
+    return {
+      ALL: items.length,
+      ACTIVE: items.filter((i) => i.status === 'ACTIVE').length,
+      LOCKED: items.filter((i) => i.status === 'LOCKED').length,
+      CONSUMED: items.filter((i) => i.status === 'CONSUMED').length,
+      DISABLED: items.filter((i) => i.status === 'DISABLED').length,
+    };
+  }, [items]);
+
+  const filteredAndSortedItems = useMemo(() => {
+    // 1. Filtrar por estado y término de búsqueda
+    const filtered = items.filter((item) => {
       if (statusFilter !== 'ALL' && item.status !== statusFilter) return false;
       if (!searchTerm.trim()) return true;
       const term = searchTerm.toLowerCase();
@@ -141,10 +184,32 @@ export function BenefitCodesAdminSection() {
         (item.clientPhone && item.clientPhone.includes(term))
       );
     });
-  }, [items, statusFilter, searchTerm]);
+
+    // 2. Ordenamiento
+    // NOTA ARQUITECTÓNICA: Los códigos de beneficio no disponen de un campo "nombre" individual;
+    // las opciones "Nombre A-Z" y "Nombre Z-A" ordenan alfabéticamente a partir del texto
+    // identificador único del código (item.code) de forma ascendente o descendente.
+    return [...filtered].sort((a, b) => {
+      switch (sortBy) {
+        case 'OLDEST':
+          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        case 'CODE_ASC':
+          return a.code.localeCompare(b.code, undefined, { sensitivity: 'base' });
+        case 'CODE_DESC':
+          return b.code.localeCompare(a.code, undefined, { sensitivity: 'base' });
+        case 'RECENT':
+        default:
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      }
+    });
+  }, [items, statusFilter, searchTerm, sortBy]);
 
   return (
-    <section className="maintenance-section p-5 sm:p-6 rounded-[var(--radius-card)] border border-border bg-card space-y-5" aria-labelledby="discounts-title">
+    <section
+      className="maintenance-section w-full p-5 sm:p-6 rounded-[var(--radius-card)] border border-border bg-card space-y-5"
+      aria-labelledby="discounts-title"
+    >
+      {/* Cabecera de la tarjeta */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-border">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
@@ -184,226 +249,266 @@ export function BenefitCodesAdminSection() {
         </div>
       </div>
 
-      {error && (
-        <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md text-destructive text-xs sm:text-sm flex items-center gap-2">
-          <AlertCircle size={16} className="shrink-0" />
-          <span>{error}</span>
-        </div>
-      )}
-
-      {/* Filtros y búsqueda */}
-      <div className="flex flex-col sm:flex-row gap-2.5 sm:items-center justify-between">
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 text-xs">
-          {(['ALL', 'ACTIVE', 'LOCKED', 'CONSUMED', 'DISABLED'] as const).map((st) => {
-            const count = st === 'ALL' ? items.length : items.filter((i) => i.status === st).length;
-            const labels: Record<string, string> = {
-              ALL: 'Todos',
-              ACTIVE: 'Disponibles',
-              LOCKED: 'En checkout',
-              CONSUMED: 'Consumidos',
-              DISABLED: 'Desactivados',
-            };
-            const active = statusFilter === st;
-            return (
-              <button
-                key={st}
-                type="button"
-                onClick={() => setStatusFilter(st)}
-                className={`px-3 py-1.5 rounded-full border text-xs font-medium whitespace-nowrap transition-colors ${
-                  active
-                    ? 'bg-gold/15 border-gold text-gold font-semibold'
-                    : 'bg-muted/40 border-border text-muted-foreground hover:bg-muted/70'
-                }`}
-              >
-                {labels[st]} ({count})
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="relative min-w-[220px]">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
-          <Input
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Buscar por código, cliente o nota…"
-            className="pl-8 text-xs h-9 bg-background"
-          />
-        </div>
-      </div>
-
-      {/* Lista de Códigos */}
-      {loading ? (
-        <div className="py-12 flex flex-col items-center justify-center gap-2 text-muted-foreground">
-          <RefreshCw size={24} className="animate-spin text-gold" />
-          <span className="text-xs">Cargando códigos de beneficios…</span>
-        </div>
-      ) : filteredItems.length === 0 ? (
-        <div className="py-12 text-center border border-dashed border-border rounded-lg p-6 bg-muted/20">
-          <Gift size={32} className="mx-auto text-muted-foreground/60 mb-2" />
-          <p className="text-sm font-medium text-foreground">No se encontraron códigos</p>
-          <p className="text-xs text-muted-foreground mt-1">
-            {searchTerm || statusFilter !== 'ALL'
-              ? 'Probá ajustando los filtros de búsqueda.'
-              : 'Generá el primer código de beneficio para una reserva.'}
+      {/* Manejo de estado de error: no mostrar contadores en cero ni "no se encontraron códigos" */}
+      {error ? (
+        <div className="p-6 rounded-lg border border-destructive/30 bg-destructive/10 text-center space-y-3">
+          <div className="flex items-center justify-center gap-2 text-destructive font-medium text-sm">
+            <AlertCircle size={20} className="shrink-0" />
+            <span>Error al consultar los códigos de beneficio</span>
+          </div>
+          <p className="text-xs text-muted-foreground max-w-md mx-auto leading-relaxed">
+            {error.includes('UNAUTHORIZED_ADMIN_ONLY') || error.includes('AUTH_REQUIRED')
+              ? 'No se pudieron consultar los códigos porque la sesión no cuenta con permisos de administrador activos o el token es inválido.'
+              : error}
           </p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => void loadCodes()}
+            disabled={loading}
+            className="mt-2 text-xs v2-secondary"
+          >
+            <RefreshCw size={14} className={loading ? 'animate-spin mr-1.5' : 'mr-1.5'} />
+            Reintentar
+          </Button>
         </div>
       ) : (
-        <div className="space-y-3">
-          {filteredItems.map((item) => {
-            const def = BENEFIT_TYPE_DEFINITIONS[item.type];
-            const isConsumed = item.status === 'CONSUMED';
-            const isLocked = item.status === 'LOCKED';
-            const isActive = item.status === 'ACTIVE';
-            const isDisabled = item.status === 'DISABLED';
-            const isCopied = copiedCode === item.code;
-
-            return (
-              <div
-                key={item.id}
-                className="p-4 rounded-lg border border-border bg-background/50 hover:bg-background/80 transition-colors space-y-3"
-              >
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5">
-                  <div className="flex items-center gap-3">
-                    <span className="font-mono text-base font-bold tracking-wider text-foreground select-all bg-muted/50 px-2.5 py-1 rounded border border-border/80">
-                      {item.code}
-                    </span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => void handleCopy(item.code)}
-                      className="h-8 px-2.5 text-xs text-gold hover:text-gold/80"
-                      title="Copiar código"
-                    >
-                      {isCopied ? (
-                        <>
-                          <Check size={14} className="text-green-500 mr-1" />
-                          <span className="text-green-500 font-semibold">¡Copiado!</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy size={14} className="mr-1" />
-                          <span>Copiar</span>
-                        </>
-                      )}
-                    </Button>
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold border ${
-                      item.type === 'FREE_SERVICE'
-                        ? 'bg-purple-500/10 text-purple-400 border-purple-500/30'
-                        : item.type === 'NO_DEPOSIT'
-                        ? 'bg-blue-500/10 text-blue-400 border-blue-500/30'
-                        : 'bg-gold/10 text-gold border-gold/30'
-                    }`}>
-                      {def.shortLabel}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    {/* Badge de estado */}
-                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${
-                      isActive
-                        ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30'
-                        : isLocked
-                        ? 'bg-amber-500/10 text-amber-500 border-amber-500/30 animate-pulse'
-                        : isConsumed
-                        ? 'bg-muted text-muted-foreground border-border'
-                        : 'bg-destructive/10 text-destructive border-destructive/20'
-                    }`}>
-                      {isActive && <Check size={12} />}
-                      {isLocked && <Lock size={12} />}
-                      {isConsumed && <UserCheck size={12} />}
-                      {isDisabled && <Ban size={12} />}
-                      <span>
-                        {isActive
-                          ? 'Disponible'
-                          : isLocked
-                          ? 'Bloqueado en checkout'
-                          : isConsumed
-                          ? 'Consumido'
-                          : 'Desactivado'}
-                      </span>
-                    </span>
-
-                    {/* Botón de desactivar */}
-                    {isActive && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setCodeToDisable(item)}
-                        className="h-8 text-xs text-destructive hover:text-destructive/80 hover:bg-destructive/10"
-                        title="Desactivar este código"
-                      >
-                        <XCircle size={14} className="mr-1" />
-                        <span>Desactivar</span>
-                      </Button>
-                    )}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 text-xs text-muted-foreground pt-1 border-t border-border/50">
-                  <div>
-                    <span className="block font-medium text-foreground">{def.label}</span>
-                    <span className="text-[11px] text-muted-foreground">{def.description}</span>
-                  </div>
-                  <div>
-                    <span className="block text-muted-foreground">Creado por:</span>
-                    <span className="text-foreground font-medium">
-                      {item.createdByDisplayName || 'Administrador'} · {new Date(item.createdAt).toLocaleDateString('es-AR')}
-                    </span>
-                  </div>
-                  {item.internalNote && (
-                    <div className="sm:col-span-2">
-                      <span className="block text-muted-foreground">Nota interna:</span>
-                      <span className="text-foreground italic">{item.internalNote}</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Trazabilidad de uso si fue consumido */}
-                {isConsumed && (
-                  <div className="mt-2 p-3 rounded-md bg-muted/40 border border-border text-xs space-y-2">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <UserCheck size={14} className="text-gold shrink-0" />
-                        <span className="font-semibold text-foreground">
-                          Utilizado por: {item.clientName || 'Cliente'}
-                        </span>
-                        {item.clientPhone && <span>· {item.clientPhone}</span>}
-                        {item.clientEmail && <span className="text-muted-foreground">({item.clientEmail})</span>}
-                      </div>
-                      {item.appointmentRequestNumber && (
-                        <span className="text-muted-foreground font-mono">
-                          Turno #{item.appointmentRequestNumber} ({item.appointmentDate} {item.appointmentTime})
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Desglose de importes snapshot */}
-                    {item.finalPriceArs !== null && item.finalPriceArs !== undefined && (
-                      <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted-foreground pt-1 border-t border-border/60">
-                        <span>Original: <strong className="text-foreground">{money(item.originalPriceArs ?? 0)}</strong></span>
-                        {item.type !== 'NO_DEPOSIT' && (
-                          <span>Descuento: <strong className="text-gold">−{money(item.discountAmountArs ?? 0)}</strong></span>
-                        )}
-                        <span>Total final: <strong className="text-foreground">{money(item.finalPriceArs)}</strong></span>
-                        <span>Seña abonada: <strong className="text-gold">{money(item.onlineDepositArs ?? 0)}</strong></span>
-                        <span>Saldo en local: <strong className="text-foreground">{money(item.inPersonBalanceArs ?? 0)}</strong></span>
-                      </div>
-                    )}
-
-                    {/* Aviso si la reserva fue cancelada */}
-                    {item.isAppointmentCancelled && (
-                      <div className="p-2 rounded bg-destructive/10 border border-destructive/20 text-destructive text-[11px] flex items-center gap-1.5 font-medium">
-                        <AlertCircle size={13} className="shrink-0" />
-                        <span>Reserva cancelada · código consumido, no reutilizable</span>
-                      </div>
-                    )}
-                  </div>
-                )}
+        <>
+          {/* Barra de herramientas: Buscador + Selector de Estado + Selector de Orden */}
+          <div className="flex flex-col lg:flex-row items-stretch lg:items-end gap-3 w-full">
+            {/* Buscador de texto */}
+            <div className="flex-1 min-w-0">
+              <label htmlFor="benefit-search" className="block text-xs font-medium text-muted-foreground mb-1.5">
+                Buscar código o cliente
+              </label>
+              <div className="relative">
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                <Input
+                  id="benefit-search"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Buscar por código, cliente o nota…"
+                  className="pl-8 text-xs h-10 w-full bg-background"
+                />
               </div>
-            );
-          })}
-        </div>
+            </div>
+
+            {/* Selector de Estado */}
+            <div className="w-full lg:w-52 shrink-0">
+              <label htmlFor="benefit-status-filter" className="block text-xs font-medium text-muted-foreground mb-1.5">
+                Estado
+              </label>
+              <select
+                id="benefit-status-filter"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as any)}
+                className="h-10 w-full px-3 text-xs bg-background border border-input rounded-md text-foreground focus:outline-none focus:ring-1 focus:ring-gold"
+              >
+                <option value="ALL">Todos ({statusCounts.ALL})</option>
+                <option value="ACTIVE">Disponibles ({statusCounts.ACTIVE})</option>
+                <option value="LOCKED">En checkout ({statusCounts.LOCKED})</option>
+                <option value="CONSUMED">Consumidos ({statusCounts.CONSUMED})</option>
+                <option value="DISABLED">Desactivados ({statusCounts.DISABLED})</option>
+              </select>
+            </div>
+
+            {/* Selector Ordenar por */}
+            <div className="w-full lg:w-48 shrink-0">
+              <label htmlFor="benefit-sort-order" className="block text-xs font-medium text-muted-foreground mb-1.5">
+                Ordenar por
+              </label>
+              <select
+                id="benefit-sort-order"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as BenefitCodeSortOption)}
+                className="h-10 w-full px-3 text-xs bg-background border border-input rounded-md text-foreground focus:outline-none focus:ring-1 focus:ring-gold"
+              >
+                <option value="RECENT">Más recientes</option>
+                <option value="OLDEST">Más antiguos</option>
+                <option value="CODE_ASC">Nombre A-Z</option>
+                <option value="CODE_DESC">Nombre Z-A</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Lista de Códigos / Estado de Carga / Estado Vacío */}
+          {loading ? (
+            <div className="py-12 flex flex-col items-center justify-center gap-2 text-muted-foreground">
+              <RefreshCw size={24} className="animate-spin text-gold" />
+              <span className="text-xs">Cargando códigos de beneficios…</span>
+            </div>
+          ) : filteredAndSortedItems.length === 0 ? (
+            <div className="py-12 text-center border border-dashed border-border rounded-lg p-6 bg-muted/20">
+              <Gift size={32} className="mx-auto text-muted-foreground/60 mb-2" />
+              <p className="text-sm font-medium text-foreground">No se encontraron códigos</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {searchTerm || statusFilter !== 'ALL'
+                  ? 'Probá ajustando los filtros de búsqueda o estado.'
+                  : 'Generá el primer código de beneficio para una reserva.'}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {filteredAndSortedItems.map((item) => {
+                const def = BENEFIT_TYPE_DEFINITIONS[item.type];
+                const isConsumed = item.status === 'CONSUMED';
+                const isLocked = item.status === 'LOCKED';
+                const isActive = item.status === 'ACTIVE';
+                const isDisabled = item.status === 'DISABLED';
+                const isCopied = copiedCode === item.code;
+
+                return (
+                  <div
+                    key={item.id}
+                    className="p-4 rounded-lg border border-border bg-background/50 hover:bg-background/80 transition-colors space-y-3"
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5">
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <span className="font-mono text-base font-bold tracking-wider text-foreground select-all bg-muted/50 px-2.5 py-1 rounded border border-border/80">
+                          {item.code}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => void handleCopy(item.code)}
+                          className="h-8 px-2.5 text-xs text-gold hover:text-gold/80"
+                          title="Copiar código"
+                        >
+                          {isCopied ? (
+                            <>
+                              <Check size={14} className="text-green-500 mr-1" />
+                              <span className="text-green-500 font-semibold">¡Copiado!</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy size={14} className="mr-1" />
+                              <span>Copiar</span>
+                            </>
+                          )}
+                        </Button>
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold border ${
+                            item.type === 'FREE_SERVICE'
+                              ? 'bg-purple-500/10 text-purple-400 border-purple-500/30'
+                              : item.type === 'NO_DEPOSIT'
+                              ? 'bg-blue-500/10 text-blue-400 border-blue-500/30'
+                              : 'bg-gold/10 text-gold border-gold/30'
+                          }`}
+                        >
+                          {def.shortLabel}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        {/* Badge de estado */}
+                        <span
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${
+                            isActive
+                              ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30'
+                              : isLocked
+                              ? 'bg-amber-500/10 text-amber-500 border-amber-500/30 animate-pulse'
+                              : isConsumed
+                              ? 'bg-muted text-muted-foreground border-border'
+                              : 'bg-destructive/10 text-destructive border-destructive/20'
+                          }`}
+                        >
+                          {isActive && <Check size={12} />}
+                          {isLocked && <Lock size={12} />}
+                          {isConsumed && <UserCheck size={12} />}
+                          {isDisabled && <Ban size={12} />}
+                          <span>
+                            {isActive
+                              ? 'Disponible'
+                              : isLocked
+                              ? 'Bloqueado en checkout'
+                              : isConsumed
+                              ? 'Consumido'
+                              : 'Desactivado'}
+                          </span>
+                        </span>
+
+                        {/* Botón de desactivar */}
+                        {isActive && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setCodeToDisable(item)}
+                            className="h-8 text-xs text-destructive hover:text-destructive/80 hover:bg-destructive/10"
+                            title="Desactivar este código"
+                          >
+                            <XCircle size={14} className="mr-1" />
+                            <span>Desactivar</span>
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 text-xs text-muted-foreground pt-1 border-t border-border/50">
+                      <div>
+                        <span className="block font-medium text-foreground">{def.label}</span>
+                        <span className="text-[11px] text-muted-foreground">{def.description}</span>
+                      </div>
+                      <div>
+                        <span className="block text-muted-foreground">Creado por:</span>
+                        <span className="text-foreground font-medium">
+                          {item.createdByDisplayName || 'Administrador'} · {new Date(item.createdAt).toLocaleDateString('es-AR')}
+                        </span>
+                      </div>
+                      {item.internalNote && (
+                        <div className="sm:col-span-2">
+                          <span className="block text-muted-foreground">Nota interna:</span>
+                          <span className="text-foreground italic">{item.internalNote}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Trazabilidad de uso si fue consumido */}
+                    {isConsumed && (
+                      <div className="mt-2 p-3 rounded-md bg-muted/40 border border-border text-xs space-y-2">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <UserCheck size={14} className="text-gold shrink-0" />
+                            <span className="font-semibold text-foreground">
+                              Utilizado por: {item.clientName || 'Cliente'}
+                            </span>
+                            {item.clientPhone && <span>· {item.clientPhone}</span>}
+                            {item.clientEmail && <span className="text-muted-foreground">({item.clientEmail})</span>}
+                          </div>
+                          {item.appointmentRequestNumber && (
+                            <span className="text-muted-foreground font-mono">
+                              Turno #{item.appointmentRequestNumber} ({item.appointmentDate} {item.appointmentTime})
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Desglose de importes snapshot */}
+                        {item.finalPriceArs !== null && item.finalPriceArs !== undefined && (
+                          <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted-foreground pt-1 border-t border-border/60">
+                            <span>Original: <strong className="text-foreground">{money(item.originalPriceArs ?? 0)}</strong></span>
+                            {item.type !== 'NO_DEPOSIT' && (
+                              <span>Descuento: <strong className="text-gold">−{money(item.discountAmountArs ?? 0)}</strong></span>
+                            )}
+                            <span>Total final: <strong className="text-foreground">{money(item.finalPriceArs)}</strong></span>
+                            <span>Seña abonada: <strong className="text-gold">{money(item.onlineDepositArs ?? 0)}</strong></span>
+                            <span>Saldo en local: <strong className="text-foreground">{money(item.inPersonBalanceArs ?? 0)}</strong></span>
+                          </div>
+                        )}
+
+                        {/* Aviso si la reserva fue cancelada */}
+                        {item.isAppointmentCancelled && (
+                          <div className="p-2 rounded bg-destructive/10 border border-destructive/20 text-destructive text-[11px] flex items-center gap-1.5 font-medium">
+                            <AlertCircle size={13} className="shrink-0" />
+                            <span>Reserva cancelada · código consumido, no reutilizable</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </>
       )}
 
       {/* Modal para Generar Código */}
@@ -513,7 +618,7 @@ export function BenefitCodesAdminSection() {
                   maxLength={32}
                 />
                 <span className="text-[11px] text-muted-foreground block">
-                  Si no se especifica, se generará un código criptográfico único e irrepetible.
+                  Si no se especifica, se generará un código único e irrepetible.
                 </span>
               </div>
 

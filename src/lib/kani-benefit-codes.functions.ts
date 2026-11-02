@@ -1,16 +1,22 @@
 import { createServerFn } from '@tanstack/react-start';
 import type { BenefitCodeType } from './kani-benefit-codes';
 
-export const adminListBenefitCodesFn = createServerFn({ method: 'GET' })
-  .handler(async () => {
+export const adminListBenefitCodesFn = createServerFn({ method: 'POST' })
+  .validator((d: unknown) => {
+    if (d && typeof d === 'object' && typeof (d as any).token === 'string') {
+      return { token: (d as any).token as string };
+    }
+    return { token: undefined };
+  })
+  .handler(async ({ data }) => {
     const { adminListBenefitCodes } = await import('./kani-benefit-codes.server');
-    return adminListBenefitCodes();
+    return adminListBenefitCodes(data?.token);
   });
 
 export const adminCreateBenefitCodeFn = createServerFn({ method: 'POST' })
   .validator((d: unknown) => {
     if (!d || typeof d !== 'object') throw new Error('INVALID_INPUT');
-    const input = d as { type: BenefitCodeType; internalNote?: string; code?: string };
+    const input = d as { type: BenefitCodeType; internalNote?: string; code?: string; token?: string };
     if (!['NO_DEPOSIT', 'FREE_SERVICE', 'PERCENT_10', 'PERCENT_50'].includes(input.type)) {
       throw new Error('INVALID_BENEFIT_TYPE');
     }
@@ -26,11 +32,11 @@ export const adminDisableBenefitCodeFn = createServerFn({ method: 'POST' })
     if (!d || typeof d !== 'object' || typeof (d as any).codeId !== 'string') {
       throw new Error('INVALID_CODE_ID');
     }
-    return d as { codeId: string };
+    return d as { codeId: string; token?: string };
   })
   .handler(async ({ data }) => {
     const { adminDisableBenefitCode } = await import('./kani-benefit-codes.server');
-    return adminDisableBenefitCode(data.codeId);
+    return adminDisableBenefitCode(data.codeId, data.token);
   });
 
 export const validateBenefitCodeQuoteFn = createServerFn({ method: 'POST' })

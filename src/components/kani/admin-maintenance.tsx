@@ -124,11 +124,14 @@ export function AdminMaintenance() {
         </div>
       </div>
 
-      <div className="maintenance-grid">
-        {/* Columna 1: Descuentos + Google Calendar + Limpiar registros de prueba */}
-        <div className="maintenance-col maintenance-appointments-col space-y-4">
-          <BenefitCodesAdminSection />
+      {/* Fila propia a todo el ancho (100%) para Descuentos y Beneficios */}
+      <section className="maintenance-benefit-codes-full-row w-full mb-6" aria-label="Gestión de descuentos y beneficios">
+        <BenefitCodesAdminSection />
+      </section>
 
+      <div className="maintenance-grid">
+        {/* Columna 1: Google Calendar + Limpiar registros de prueba */}
+        <div className="maintenance-col maintenance-appointments-col space-y-4">
           <GoogleCalendarAdminSection />
 
           <section className="v2-panel maintenance-card" aria-labelledby="cleanup-appointments-heading">

@@ -1,20 +1,74 @@
 import { createPaymentSupabaseClient } from './kani-payment-db.server';
+import { createRequestSupabaseClient, getRequestAuthToken } from './kani-notifications.server';
 import {
   type BenefitCalculation,
   type BenefitCodeItem,
   type BenefitCodeType,
+  type BenefitQuote,
   calculateBenefitAmounts,
   generateBenefitCodeString,
   normalizeBenefitCode,
 } from './kani-benefit-codes';
 
 /**
- * Lists benefit codes for admin maintenance view.
- * Requires ADMIN role checked via Supabase session or service role.
+ * Validates that the request or provided token belongs to an active ADMIN staff member.
+ * Throws an explicit error if unauthorized or unauthenticated.
  */
-export async function adminListBenefitCodes(): Promise<BenefitCodeItem[]> {
-  const db = await createPaymentSupabaseClient();
-  const { data, error } = await db.rpc('admin_list_benefit_codes');
+export async function assertAdminSession(explicitToken?: string): Promise<{
+  userId: string;
+  token: string;
+  profile: { role: string; display_name: string | null; active: boolean };
+  supabase: any;
+}> {
+  let token = explicitToken?.trim();
+  if (!token) {
+    try {
+      token = getRequestAuthToken();
+    } catch {
+      // ignore
+    }
+  }
+
+  if (!token) {
+    throw new Error('AUTH_REQUIRED: Debe iniciar sesión como administrador para gestionar códigos de beneficio.');
+  }
+
+  const supabase = await createRequestSupabaseClient(token);
+  const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+  if (userError || !user) {
+    const isExpired = userError?.message?.toLowerCase().includes('expired') || (userError as any)?.status === 401;
+    throw new Error(
+      isExpired
+        ? 'SESSION_EXPIRED: Su sesión ha expirado. Por favor, vuelva a iniciar sesión.'
+        : 'SESSION_INVALID: Sesión inválida o expirada. Por favor, vuelva a iniciar sesión.'
+    );
+  }
+
+  const { data: profile, error: profileError } = await supabase
+    .from('staff_profiles')
+    .select('role, display_name, active')
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  if (profileError || !profile || !profile.active || profile.role !== 'ADMIN') {
+    throw new Error('UNAUTHORIZED_ADMIN_ONLY: Acceso denegado. Se requieren permisos de administrador.');
+  }
+
+  return {
+    userId: user.id,
+    token,
+    profile: profile as { role: string; display_name: string | null; active: boolean },
+    supabase,
+  };
+}
+
+/**
+ * Lists benefit codes for admin maintenance view.
+ * Requires ADMIN role checked via Supabase session.
+ */
+export async function adminListBenefitCodes(authToken?: string): Promise<BenefitCodeItem[]> {
+  const { supabase } = await assertAdminSession(authToken);
+  const { data, error } = await supabase.rpc('admin_list_benefit_codes');
   if (error) {
     console.error('[Kani Benefit Codes] Error fetching admin list:', error);
     throw new Error(error.message || 'Error al consultar códigos de beneficio');
@@ -29,11 +83,12 @@ export async function adminCreateBenefitCode(params: {
   type: BenefitCodeType;
   internalNote?: string;
   code?: string;
+  token?: string;
 }): Promise<BenefitCodeItem> {
-  const db = await createPaymentSupabaseClient();
+  const { supabase } = await assertAdminSession(params.token);
   const generatedCode = params.code ? normalizeBenefitCode(params.code) : generateBenefitCodeString();
 
-  const { data, error } = await db.rpc('admin_create_benefit_code', {
+  const { data, error } = await supabase.rpc('admin_create_benefit_code', {
     p_type: params.type,
     p_internal_note: params.internalNote || null,
     p_code: generatedCode,
@@ -50,9 +105,9 @@ export async function adminCreateBenefitCode(params: {
 /**
  * Disables an active benefit code from admin panel.
  */
-export async function adminDisableBenefitCode(codeId: string): Promise<boolean> {
-  const db = await createPaymentSupabaseClient();
-  const { data, error } = await db.rpc('admin_disable_benefit_code', {
+export async function adminDisableBenefitCode(codeId: string, authToken?: string): Promise<boolean> {
+  const { supabase } = await assertAdminSession(authToken);
+  const { data, error } = await supabase.rpc('admin_disable_benefit_code', {
     p_code_id: codeId,
   });
 
