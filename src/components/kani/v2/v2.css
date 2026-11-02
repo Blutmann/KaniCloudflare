@@ -3669,6 +3669,30 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
   color: var(--muted-foreground);
   line-height: 1;
 }
+@media (max-width: 767px) {
+  .v2-payment-total-box {
+    justify-content: center;
+    padding: 0 8px;
+  }
+  .v2-total-box-label {
+    display: none !important;
+  }
+  .v2-total-box-breakdown {
+    display: none !important;
+  }
+  .v2-total-box-amount-wrap {
+    justify-content: center;
+    margin-left: 0;
+    width: 100%;
+  }
+  .v2-total-box-amount {
+    font-size: 14.5px;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
 .v2-payment-submit-btn {
   min-height: 44px;
   height: 44px;
