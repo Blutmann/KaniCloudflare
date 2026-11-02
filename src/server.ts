@@ -446,7 +446,7 @@ export default {
                 applied: expansionApplied,
                 error: expansionError,
               },
-              allBenefitCodes,
+              allBenefitCodes: detailedCodes,
               recentBenefitAppointments,
               codeUsages,
               repairResult,
