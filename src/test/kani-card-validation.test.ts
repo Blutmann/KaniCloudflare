@@ -91,6 +91,7 @@ describe('Card validation and detection utilities', () => {
     expect(formatDni('40123456')).toBe('40.123.456');
     expect(validateDni('40.123.456').status).toBe('valid');
     expect(validateDni('12345').status).toBe('invalid');
+    expect(validateDni('00000000').status).toBe('invalid');
     expect(validateDni('').status).toBe('idle');
   });
 
@@ -104,6 +105,8 @@ describe('Card validation and detection utilities', () => {
   it('validates cardholder name', () => {
     expect(validateCardholder('Juan Perez').status).toBe('valid');
     expect(validateCardholder('J').status).toBe('invalid');
+    expect(validateCardholder('123456').status).toBe('invalid');
+    expect(validateCardholder('---').status).toBe('invalid');
     expect(validateCardholder('').status).toBe('idle');
   });
 

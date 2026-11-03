@@ -434,23 +434,33 @@ export function PaywayBooking() {
   );
   const cleanPanDigits = cardNumber.replace(/\D/g, '');
   const isPanEmpty = !cleanPanDigits;
-  const showPanInvalid = (touched.cardNumber || submitAttempted) && (isPanEmpty || panValidation.status === 'invalid');
-  const showPanValid = !isPanEmpty && panValidation.status === 'valid';
+  const isPanIncomplete = !isPanEmpty && panValidation.status === 'idle';
+  const showPanInvalid =
+    panValidation.status === 'invalid' ||
+    ((touched.cardNumber || submitAttempted) && (isPanEmpty || isPanIncomplete));
+  const showPanValid = !isPanEmpty && panValidation.status === 'valid' && detected.isSupported && Boolean(detected.methodId);
   const panStatus = showPanValid ? 'valid' : showPanInvalid ? 'invalid' : 'idle';
   const panError = showPanInvalid
-    ? (isPanEmpty ? 'Ingresá el número de tarjeta.' : panValidation.errorMessage)
+    ? isPanEmpty
+      ? 'Ingresá el número de tarjeta.'
+      : panValidation.errorMessage ??
+        (detected.rawBrand && !detected.isSupported
+          ? 'Esta tarjeta no está disponible como medio de pago.'
+          : 'Número de tarjeta inválido.')
     : null;
 
   const expiryValidation = useMemo(() => validateExpiry(month, year, now), [month, year, now]);
   const isExpiryIncomplete = !month || !year;
-  const showExpiryInvalid = (touched.expiry || submitAttempted) && (isExpiryIncomplete || expiryValidation.status === 'invalid');
+  const showExpiryInvalid =
+    (!isExpiryIncomplete && expiryValidation.status === 'invalid') ||
+    ((touched.expiry || submitAttempted) && (isExpiryIncomplete || expiryValidation.status === 'invalid'));
   const showExpiryValid = !isExpiryIncomplete && expiryValidation.status === 'valid';
   const expiryStatus = showExpiryValid ? 'valid' : showExpiryInvalid ? 'invalid' : 'idle';
   const expiryError = showExpiryInvalid
     ? (isExpiryIncomplete ? 'Seleccioná mes y año de vencimiento.' : expiryValidation.errorMessage)
     : null;
-  const monthInvalid = (touched.expiry || submitAttempted) && (!month || (isCurrentYearSelected && parseInt(month, 10) < currentMonth));
-  const yearInvalid = (touched.expiry || submitAttempted) && !year;
+  const monthInvalid = showExpiryInvalid && (!month || expiryValidation.status === 'invalid');
+  const yearInvalid = showExpiryInvalid && (!year || expiryValidation.status === 'invalid');
 
   const cvvValidation = useMemo(() => validateCvv(cvv, detected.codeSize), [cvv, detected.codeSize]);
   const isCvvEmpty = !cvv.trim();
@@ -478,6 +488,15 @@ export function PaywayBooking() {
   const dniError = showDniInvalid
     ? (isDniEmpty ? 'Ingresá el DNI del titular.' : dniValidation.errorMessage)
     : null;
+
+  const isCardFormValid =
+    showPanValid &&
+    showExpiryValid &&
+    showCvvValid &&
+    showHolderValid &&
+    showDniValid &&
+    detected.isSupported &&
+    Boolean(detected.methodId);
 
   function markTouched(field: string) {
     setTouched(current => ({ ...current, [field]: true }));
@@ -650,7 +669,7 @@ export function PaywayBooking() {
 
     setSubmitAttempted(true);
 
-    const hasPanError = isPanEmpty || panValidation.status === 'invalid';
+    const hasPanError = isPanEmpty || isPanIncomplete || panValidation.status === 'invalid' || !detected.isSupported || !detected.methodId;
     const hasExpiryError = isExpiryIncomplete || expiryValidation.status === 'invalid';
     const hasCvvError = isCvvEmpty || cvvValidation.status === 'invalid';
     const hasHolderError = isHolderEmpty || holderValidation.status === 'invalid';
@@ -802,21 +821,35 @@ export function PaywayBooking() {
   }
 
   function handleCardNumberChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const prevDigits = cardNumber.replace(/\D/g, '');
     const digits = e.target.value.replace(/\D/g, '');
     const tempDetected = detectCardNetwork(digits, checkout?.methods ?? []);
     const maxDigits = tempDetected.lengths[tempDetected.lengths.length - 1] ?? 19;
     const truncated = digits.slice(0, maxDigits);
-    setCardNumber(formatCardPan(truncated, tempDetected.gaps));
+    const formatted = formatCardPan(truncated, tempDetected.gaps);
+    setCardNumber(formatted);
+    const tempValidation = validatePan(formatted, tempDetected, checkout?.methods ?? []);
+    if (tempValidation.status !== 'idle' || (prevDigits.length >= (tempDetected.lengths[0] ?? 16) && truncated.length < prevDigits.length) || (prevDigits.length > 0 && !truncated)) {
+      markTouched('cardNumber');
+    }
   }
 
   function handleCvvChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const prevDigits = cvv.replace(/\D/g, '');
     const digits = e.target.value.replace(/\D/g, '').slice(0, detected.codeSize);
     setCvv(digits);
+    if (digits.length === detected.codeSize || (prevDigits.length > 0 && digits.length < prevDigits.length)) {
+      markTouched('cvv');
+    }
   }
 
   function handleDniChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const prevDigits = dni.replace(/\D/g, '');
     const digits = e.target.value.replace(/\D/g, '').slice(0, 10);
     setDni(formatDni(digits));
+    if (digits.length >= 7 || (prevDigits.length > 0 && digits.length < prevDigits.length)) {
+      markTouched('dni');
+    }
   }
 
   if (confirmed) {
@@ -937,8 +970,9 @@ export function PaywayBooking() {
                           aria-label="Mes de vencimiento"
                           value={month}
                           onChange={e => {
-                            setMonth(e.target.value);
-                            markTouched('expiry');
+                            const val = e.target.value;
+                            setMonth(val);
+                            if (year || !val || month) markTouched('expiry');
                           }}
                           onBlur={() => markTouched('expiry')}
                           className="payway-select"
@@ -961,8 +995,9 @@ export function PaywayBooking() {
                           aria-label="Año de vencimiento"
                           value={year}
                           onChange={e => {
-                            setYear(e.target.value);
-                            markTouched('expiry');
+                            const val = e.target.value;
+                            setYear(val);
+                            if (month || !val || year) markTouched('expiry');
                           }}
                           onBlur={() => markTouched('expiry')}
                           className="payway-select"
@@ -1060,7 +1095,10 @@ export function PaywayBooking() {
                       maxLength={60}
                       placeholder="Como figura en la tarjeta"
                       value={cardHolder}
-                      onChange={e => setCardHolder(e.target.value)}
+                      onChange={e => {
+                        setCardHolder(e.target.value);
+                        markTouched('cardHolder');
+                      }}
                       onBlur={() => markTouched('cardHolder')}
                       aria-invalid={holderStatus === 'invalid'}
                       aria-describedby={holderError ? 'holder-error' : undefined}
@@ -1123,7 +1161,7 @@ export function PaywayBooking() {
                   </a>.
                 </p>
 
-                <Button type="submit" className="action-positive payway-submit-btn" disabled={stage !== 'idle'}>
+                <Button type="submit" className="action-positive payway-submit-btn" disabled={!isCardFormValid || stage !== 'idle'}>
                   {stage === 'tokenizing'
                     ? 'Validando tarjeta…'
                     : stage === 'paying'

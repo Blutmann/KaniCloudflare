@@ -1339,3 +1339,24 @@ html[data-theme='light'] .reserva-v5 .confirmation-place-address {
 html[data-theme='light'] .reserva-v5 .confirmation-map-wrap {
   border: 1px solid #B8B8B8 !important;
 }
+
+html[data-theme='light'] .payway-checkout-v5 .payway-submit-btn:not(:disabled) {
+  background-color: #181818 !important;
+  border: 1px solid #181818 !important;
+  color: #FFFFFF !important;
+  transition: all 0.15s ease;
+}
+
+html[data-theme='light'] .payway-checkout-v5 .payway-submit-btn:not(:disabled):hover {
+  background-color: #333333 !important;
+  border-color: #333333 !important;
+  color: #FFFFFF !important;
+}
+
+html[data-theme='light'] .payway-checkout-v5 .payway-submit-btn:disabled {
+  background-color: #F2F2F2 !important;
+  border: 1px solid #B8B8B8 !important;
+  color: #8C8C8C !important;
+  opacity: 0.65 !important;
+  cursor: not-allowed !important;
+}

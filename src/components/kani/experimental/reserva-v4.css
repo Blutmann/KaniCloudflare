@@ -1018,3 +1018,7 @@ html[data-theme="light"] .payway-reservation .booking-page .booking-time-heading
   }
 }
 
+
+.payway-submit-btn:disabled {
+  cursor: not-allowed !important;
+}

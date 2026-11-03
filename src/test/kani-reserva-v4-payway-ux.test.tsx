@@ -394,4 +394,95 @@ describe('Payway V4 Modern Checkout UX/UI', () => {
     // 360px responsive rule (max-width: 440px) applies identical 12.5px across all controls
     expect(cssContent).toMatch(/@media\s*\(max-width:\s*440px\)[\s\S]*?font-size:\s*12\.5px\s*!important/);
   });
+
+  it('keeps Pagar seña $X disabled across empty, incomplete, invalid, valid->invalid, and processing states without marking empty fields on open', async () => {
+    await reachCardModal();
+
+    const submitBtn = screen.getByRole('button', { name: 'Pagar seña $5.000' });
+    const panInput = screen.getByRole('textbox', { name: 'Número de tarjeta' });
+    const monthSelect = screen.getByLabelText('Mes de vencimiento');
+    const yearSelect = screen.getByLabelText('Año de vencimiento');
+    const cvvInput = screen.getByLabelText('Código de seguridad (CVV)');
+    const holderInput = screen.getByRole('textbox', { name: 'Titular de la tarjeta' });
+    const dniInput = screen.getByRole('textbox', { name: 'DNI del titular' });
+
+    // 1. Estado vacío inicial (aunque Titular esté precargado): deshabilitado y sin errores visibles
+    expect(holderInput).toHaveValue('Cliente Simulado');
+    expect(submitBtn).toBeDisabled();
+    expect(submitBtn).toHaveAttribute('disabled');
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+
+    // 2. Estado incompleto: al salir del campo (blur) muestra error claro y el botón sigue deshabilitado
+    fireEvent.change(panInput, { target: { value: '45079900' } });
+    expect(submitBtn).toBeDisabled();
+    fireEvent.blur(panInput);
+    expect(screen.getByText('Número de tarjeta inválido.')).toBeInTheDocument();
+    expect(submitBtn).toBeDisabled();
+
+    fireEvent.change(cvvInput, { target: { value: '12' } });
+    fireEvent.blur(cvvInput);
+    expect(screen.getByText('Ingresá los 3 dígitos de seguridad.')).toBeInTheDocument();
+    expect(submitBtn).toBeDisabled();
+
+    // 3. Estado válido: al completar todos los campos correctamente se habilita el botón
+    fireEvent.change(panInput, { target: { value: '4507990000004905' } });
+    fireEvent.change(monthSelect, { target: { value: '12' } });
+    fireEvent.change(yearSelect, { target: { value: '29' } });
+    fireEvent.change(cvvInput, { target: { value: '123' } });
+    fireEvent.change(holderInput, { target: { value: 'Cliente Simulado' } });
+    fireEvent.change(dniInput, { target: { value: '40123456' } });
+    expect(submitBtn).toBeEnabled();
+
+    // 4. Si cualquier campo vuelve a ser inválido, se deshabilita inmediatamente
+    // 4a. PAN incompleto
+    fireEvent.change(panInput, { target: { value: '450799000000490' } });
+    expect(submitBtn).toBeDisabled();
+    expect(screen.getByText('Número de tarjeta inválido.')).toBeInTheDocument();
+    fireEvent.change(panInput, { target: { value: '4507990000004905' } });
+    expect(submitBtn).toBeEnabled();
+
+    // 4b. Vencimiento vencido (mes pasado del año actual 2026-10)
+    fireEvent.change(monthSelect, { target: { value: '05' } });
+    fireEvent.change(yearSelect, { target: { value: '26' } });
+    expect(submitBtn).toBeDisabled();
+    expect(screen.getByText('La tarjeta está vencida.')).toBeInTheDocument();
+    fireEvent.change(monthSelect, { target: { value: '12' } });
+    fireEvent.change(yearSelect, { target: { value: '29' } });
+    expect(submitBtn).toBeEnabled();
+
+    // 4c. CVV incompleto
+    fireEvent.change(cvvInput, { target: { value: '12' } });
+    expect(submitBtn).toBeDisabled();
+    expect(screen.getByText('Ingresá los 3 dígitos de seguridad.')).toBeInTheDocument();
+    fireEvent.change(cvvInput, { target: { value: '123' } });
+    expect(submitBtn).toBeEnabled();
+
+    // 4d. Titular inválido (con números o muy corto)
+    fireEvent.change(holderInput, { target: { value: '12345' } });
+    expect(submitBtn).toBeDisabled();
+    expect(screen.getByText('Ingresá el nombre como figura en la tarjeta.')).toBeInTheDocument();
+    fireEvent.change(holderInput, { target: { value: 'Cliente Simulado' } });
+    expect(submitBtn).toBeEnabled();
+
+    // 4e. DNI inválido (< 6 dígitos)
+    fireEvent.change(dniInput, { target: { value: '12345' } });
+    expect(submitBtn).toBeDisabled();
+    expect(screen.getByText('Ingresá un DNI válido.')).toBeInTheDocument();
+    fireEvent.change(dniInput, { target: { value: '40123456' } });
+    expect(submitBtn).toBeEnabled();
+
+    // 5. Estado procesando: durante tokenización y pago permanece deshabilitado y muestra estado de procesamiento
+    let resolveTokenize!: (value: { token: string; bin: string }) => void;
+    mocks.tokenize.mockReturnValueOnce(new Promise(r => { resolveTokenize = r; }));
+    fireEvent.click(submitBtn);
+
+    const tokenizingBtn = await screen.findByRole('button', { name: 'Validando tarjeta…' });
+    expect(tokenizingBtn).toBeDisabled();
+    expect(tokenizingBtn).toHaveAttribute('disabled');
+
+    resolveTokenize({ token: 'fixture-token', bin: '450799' });
+    expect(await screen.findByRole('heading', { name: 'Turno confirmado' })).toBeInTheDocument();
+    expect(mocks.tokenize).toHaveBeenCalledTimes(1);
+    expect(mocks.pay).toHaveBeenCalledTimes(1);
+  }, 15000);
 });

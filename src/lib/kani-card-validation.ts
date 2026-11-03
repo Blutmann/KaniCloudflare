@@ -184,7 +184,7 @@ export function validateDni(dni: string): {
 } {
   const digits = dni.replace(/\D/g, '');
   if (!digits) return { status: 'idle', errorMessage: null };
-  if (digits.length >= 6 && digits.length <= 10) {
+  if (digits.length >= 6 && digits.length <= 10 && !/^0+$/.test(digits)) {
     return { status: 'valid', errorMessage: null };
   }
   return { status: 'invalid', errorMessage: 'Ingresá un DNI válido.' };
@@ -217,7 +217,12 @@ export function validateCardholder(name: string): {
 } {
   const trimmed = name.trim();
   if (!trimmed) return { status: 'idle', errorMessage: null };
-  if (trimmed.length < 3) {
+  if (
+    trimmed.length < 3 ||
+    trimmed.length > 60 ||
+    !/[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/.test(trimmed) ||
+    /\d/.test(trimmed)
+  ) {
     return { status: 'invalid', errorMessage: 'Ingresá el nombre como figura en la tarjeta.' };
   }
   return { status: 'valid', errorMessage: null };
