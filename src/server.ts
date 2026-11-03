@@ -303,6 +303,8 @@ export default {
           let detailedCodes: any[] = [];
           let codeUsages: any[] = [];
           let recentBenefitAppointments: any[] = [];
+          let recentServicePayments: any[] = [];
+          let recentPaymentAttempts: any[] = [];
           let repairResult: any = null;
 
           try {
@@ -362,6 +364,53 @@ export default {
                 .limit(10);
               recentBenefitAppointments = bAppts || [];
             } catch { /* best-effort */ }
+
+            try {
+              const { data: sPays } = await db
+                .from('service_payments')
+                .select('id, barber_id, service_name, service_other_detail, service_price_ars, discount_ars, final_amount_ars, collected_amount_ars, payment_date, payment_time, payment_method, client_name, appointment_id, service_origin, created_at, deleted_at')
+                .order('created_at', { ascending: false })
+                .limit(10);
+              recentServicePayments = sPays || [];
+            } catch { /* best-effort */ }
+
+            try {
+              const { data: pAtts } = await db
+                .from('payment_attempts')
+                .select('id, appointment_id, provider, state, amount_ars, site_transaction_id, created_at, updated_at')
+                .order('created_at', { ascending: false })
+                .limit(5);
+              recentPaymentAttempts = pAtts || [];
+            } catch { /* best-effort */ }
+
+            const activateCodeParam = url.searchParams.get("activate_disabled_code")?.trim().toUpperCase();
+            if (activateCodeParam) {
+              const { data: targetRow } = await db
+                .from('benefit_codes')
+                .select('*')
+                .eq('code', activateCodeParam)
+                .maybeSingle();
+              if (targetRow && targetRow.status === 'DISABLED' && !targetRow.consumed_at) {
+                const { error: actErr } = await db
+                  .from('benefit_codes')
+                  .update({ status: 'ACTIVE', updated_at: new Date().toISOString() })
+                  .eq('id', targetRow.id);
+                repairResult = {
+                  activatedCode: targetRow.code,
+                  id: targetRow.id,
+                  previousStatus: targetRow.status,
+                  newStatus: actErr ? targetRow.status : 'ACTIVE',
+                  error: actErr ? actErr.message : null,
+                };
+              } else if (targetRow) {
+                repairResult = {
+                  activatedCode: targetRow.code,
+                  id: targetRow.id,
+                  status: targetRow.status,
+                  skippedReason: targetRow.status === 'CONSUMED' ? 'CANNOT_ACTIVATE_CONSUMED_SINGLE_USE' : 'ALREADY_ACTIVE_OR_NOT_DISABLED',
+                };
+              }
+            }
 
             // Safe surgical repair of affected reusable code
             const shouldRepair = url.searchParams.get("repair_reusable_code") === "true";
@@ -455,6 +504,8 @@ export default {
               },
               allBenefitCodes: detailedCodes,
               recentBenefitAppointments,
+              recentServicePayments,
+              recentPaymentAttempts,
               codeUsages,
               repairResult,
               accountingInvariants: {

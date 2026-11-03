@@ -119,9 +119,13 @@ export function validatePaywayDraft(input: unknown): PaywayDraft {
   if (!input || typeof input !== 'object') throw new Error('PAYWAY_DRAFT_INVALID');
   const d = input as Partial<PaywayDraft> & Record<string, unknown>;
   const limits: Record<string, number> = { barber: 100, serviceName: 100, date: 10, time: 5, name: 120, email: 254, phone: 30, notes: 500, benefitCode: 32 };
-  if (Object.keys(d).some(key => !(key in limits))) throw new Error('PAYWAY_DRAFT_INVALID');
+  const allowedOptionalKeys = new Set(['benefitQuote', 'serviceId', 'servicePriceArs', 'durationMin']);
+  if (Object.keys(d).some(key => !(key in limits) && !allowedOptionalKeys.has(key))) throw new Error('PAYWAY_DRAFT_INVALID');
   for (const [key, max] of Object.entries(limits)) {
     if (key === 'benefitCode' && (d[key] === undefined || d[key] === null || d[key] === '')) {
+      continue;
+    }
+    if (key === 'notes' && (d[key] === undefined || d[key] === null)) {
       continue;
     }
     if (typeof d[key] !== 'string' || (d[key] as string).length > max || key !== 'notes' && key !== 'benefitCode' && !(d[key] as string).trim()) {
@@ -130,7 +134,18 @@ export function validatePaywayDraft(input: unknown): PaywayDraft {
   }
   if (!/^\d{4}-\d{2}-\d{2}$/.test(String(d.date)) || !/^\d{2}:\d{2}$/.test(String(d.time)) ||
     !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(d.email))) throw new Error('PAYWAY_DRAFT_INVALID');
-  return d as PaywayDraft;
+  const normalizedBenefitCode = typeof d.benefitCode === 'string' && d.benefitCode.trim() ? d.benefitCode.trim() : undefined;
+  return {
+    barber: d.barber as string,
+    serviceName: d.serviceName as string,
+    date: d.date as string,
+    time: d.time as string,
+    name: d.name as string,
+    email: d.email as string,
+    phone: d.phone as string,
+    notes: typeof d.notes === 'string' ? d.notes : '',
+    ...(normalizedBenefitCode ? { benefitCode: normalizedBenefitCode } : {}),
+  };
 }
 
 export function validatePaywayStatusQuery(input: unknown): PaywayStatusInput {

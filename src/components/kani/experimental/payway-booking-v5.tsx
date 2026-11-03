@@ -507,7 +507,7 @@ export function PaywayBookingV5() {
         >
           <DialogTitle className="payway-checkout-title">Pagá la seña a Kani con Payway</DialogTitle>
           <DialogDescription className="payway-checkout-subtitle">
-            {checkout ? `Seña: ${money(checkout.depositArs)} · Pago seguro` : 'Reserva experimental con Payway'}
+            {checkout ? `Seña: ${money(checkout.depositArs)} · Pago seguro` : 'Pago seguro de seña'}
           </DialogDescription>
           {preparing && (
             <div className="payway-preparing py-6 text-center text-sm text-muted-foreground flex items-center justify-center gap-2" role="status">

@@ -618,7 +618,18 @@ export function PaywayBooking() {
     opening.current = true;
     setOpen(true); setPreparing(true); setResult(null); setCheckout(null);
     try {
-      const response = await preparePaywayCheckoutFn({ data: draft });
+      const sanitizedDraft: PaywayDraft = {
+        barber: draft.barber,
+        serviceName: draft.serviceName,
+        date: draft.date,
+        time: draft.time,
+        name: draft.name,
+        email: draft.email,
+        phone: draft.phone,
+        notes: draft.notes ?? '',
+        ...(draft.benefitCode ? { benefitCode: draft.benefitCode } : {}),
+      };
+      const response = await preparePaywayCheckoutFn({ data: sanitizedDraft });
       if (response.ready) {
         if (paidAppointmentsRef.current.has(response.checkout.appointmentId)) {
           setOpen(false);
@@ -874,7 +885,7 @@ export function PaywayBooking() {
         >
           <DialogTitle className="payway-checkout-title">Pagá la seña a Kani con Payway</DialogTitle>
           <DialogDescription className="payway-checkout-subtitle">
-            {checkout ? `Seña: ${money(checkout.depositArs ?? 0)} · Pago seguro` : 'Reserva experimental con Payway'}
+            {checkout ? `Seña: ${money(checkout.depositArs ?? 0)} · Pago seguro` : 'Pago seguro de seña'}
           </DialogDescription>
           {preparing && <p role="status">Preparando pago seguro…</p>}
           {result && !isVerifying && !pollExhausted && result.state !== 'unknown' && result.state !== 'review' && (

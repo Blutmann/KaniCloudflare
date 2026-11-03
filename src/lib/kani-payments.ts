@@ -278,7 +278,8 @@ export function validatePaymentInput(
     return { valid: false, error: 'El servicio es obligatorio.' };
   }
 
-  if (input.serviceName === 'Otros') {
+  const isOtherInput = (input.serviceName as string) === 'Otros' || (input.serviceName as string) === 'Otro';
+  if (isOtherInput) {
     if (!input.serviceOtherDetail || input.serviceOtherDetail.trim().length === 0) {
       return { valid: false, error: 'El detalle del servicio es obligatorio para la opción «Otros».' };
     }
@@ -719,8 +720,8 @@ export async function recordServicePayment(
   try {
     const { data, error } = await (supabase.rpc as any)('record_service_payment', {
       p_barber_id: input.barberId,
-      p_service_name: input.serviceName === 'Corte y barba' ? 'Corte y barba' : input.serviceName,
-      p_service_other_detail: input.serviceName === 'Otros' ? input.serviceOtherDetail?.trim() || null : null,
+      p_service_name: (input.serviceName as string) === 'Otro' ? 'Otros' : (input.serviceName as string) === 'Corte de cabello' ? 'Corte' : input.serviceName === 'Corte y barba' ? 'Corte y barba' : input.serviceName,
+      p_service_other_detail: ((input.serviceName as string) === 'Otros' || (input.serviceName as string) === 'Otro') ? input.serviceOtherDetail?.trim() || null : null,
       p_service_price_ars: input.servicePriceArs,
       p_discount_ars: discountArs,
       p_payment_date: paymentDate,
@@ -777,7 +778,7 @@ export async function recordServicePayment(
         const { data: srvData } = await supabase
           .from('services')
           .select('id')
-          .in('name', [input.serviceName, 'Corte y barba', 'Corte + barba'])
+          .in('name', [input.serviceName, 'Corte', 'Corte de cabello', 'Corte y barba', 'Corte + barba'])
           .limit(1)
           .maybeSingle();
         if (srvData?.id) resolvedServiceId = srvData.id;
@@ -787,8 +788,8 @@ export async function recordServicePayment(
     const insertPayload: any = {
       barber_id: input.barberId,
       service_id: resolvedServiceId,
-      service_name: input.serviceName === 'Corte y barba' ? 'Corte y barba' : input.serviceName,
-      service_other_detail: input.serviceName === 'Otros' ? (input.serviceOtherDetail?.trim() || null) : null,
+      service_name: (input.serviceName as string) === 'Otro' ? 'Otros' : (input.serviceName as string) === 'Corte de cabello' ? 'Corte' : input.serviceName === 'Corte y barba' ? 'Corte y barba' : input.serviceName,
+      service_other_detail: ((input.serviceName as string) === 'Otros' || (input.serviceName as string) === 'Otro') ? (input.serviceOtherDetail?.trim() || null) : null,
       service_price_ars: input.servicePriceArs,
       discount_ars: discountArs,
       final_amount_ars: finalAmountArs,
@@ -908,8 +909,8 @@ export async function updateServicePayment(
     : input.paymentTime;
 
   const updatePayload: any = {
-    service_name: input.serviceName === 'Corte y barba' ? 'Corte y barba' : input.serviceName,
-    service_other_detail: input.serviceName === 'Otros' ? (input.serviceOtherDetail?.trim() || null) : null,
+    service_name: (input.serviceName as string) === 'Otro' ? 'Otros' : (input.serviceName as string) === 'Corte de cabello' ? 'Corte' : input.serviceName === 'Corte y barba' ? 'Corte y barba' : input.serviceName,
+    service_other_detail: ((input.serviceName as string) === 'Otros' || (input.serviceName as string) === 'Otro') ? (input.serviceOtherDetail?.trim() || null) : null,
     service_price_ars: input.servicePriceArs,
     discount_ars: discountArs,
     final_amount_ars: finalAmountArs,

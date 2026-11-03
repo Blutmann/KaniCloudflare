@@ -118,8 +118,28 @@ export function V2Payments() {
       setMessage("Seleccioná un turno con información de seña verificable.");
       return;
     }
-    if (origin === "walk_in" && serviceName === "Otro" && !customServiceName.trim()) {
+    const rawServiceName = appointment ? (appointment.serviceName || "Servicio") : serviceName;
+    const isOtherService =
+      origin === "walk_in"
+        ? (serviceName === "Otro" || serviceName === "Otros")
+        : (Boolean(appointment?.customServiceName) ||
+            rawServiceName === "Otro" ||
+            rawServiceName === "Otros" ||
+            !["Corte", "Corte de cabello", "Corte y barba", "Corte + barba", "Barba"].includes(rawServiceName));
+    const trimmedCustomDetail =
+      origin === "walk_in"
+        ? customServiceName.trim()
+        : (appointment?.customServiceName?.trim() ||
+            (!["Corte", "Corte de cabello", "Corte y barba", "Corte + barba", "Barba"].includes(rawServiceName)
+              ? rawServiceName.trim()
+              : ""));
+
+    if (isOtherService && trimmedCustomDetail.length < 2) {
       setMessage("Ingresá el nombre del servicio personalizado.");
+      return;
+    }
+    if (isOtherService && trimmedCustomDetail.length > 120) {
+      setMessage("La descripción del servicio personalizado no puede superar los 120 caracteres.");
       return;
     }
     if (
@@ -136,27 +156,92 @@ export function V2Payments() {
     setBusy(true);
     try {
       const selected = data.clients.find((c) => c.id === clientId);
-      const finalServiceName = appointment
-        ? (appointment.serviceName || "Servicio")
-        : (serviceName === "Otro" ? (customServiceName.trim() || "Otro") : serviceName);
-      const finalOtherDetail = appointment
-        ? (appointment.customServiceName || null)
-        : (serviceName === "Otro" ? customServiceName.trim() : null);
+      const targetBarberId = appointment?.barberId ?? barberId;
+      const canonicalServiceName = isOtherService
+        ? "Otros"
+        : rawServiceName === "Corte de cabello"
+          ? "Corte"
+          : rawServiceName === "Corte + barba"
+            ? "Corte y barba"
+            : rawServiceName;
+      const finalOtherDetail = isOtherService ? trimmedCustomDetail : null;
+      const resolvedClientName =
+        appointment?.name ?? (showClient ? (selected?.name ?? clientName.trim()) : "");
+      const resolvedClientContact =
+        appointment?.phone ?? (showClient ? (selected?.phone ?? clientPhone.trim()) : "");
 
-      const { data: result, error } = await supabase.rpc("record_service_payment", {
-        p_barber_id: appointment?.barberId ?? barberId,
-        p_service_name: finalServiceName,
+      let { data: result, error } = await supabase.rpc("record_service_payment", {
+        p_barber_id: targetBarberId,
+        p_service_name: canonicalServiceName,
         p_service_other_detail: finalOtherDetail,
         p_service_price_ars: price,
         p_discount_ars: discount,
         p_payment_method: method,
         p_online_deposit_paid: !!appointment?.depositPaid,
-        p_client_name:
-          appointment?.name ?? (showClient ? (selected?.name ?? clientName.trim()) : ""),
-        p_client_contact:
-          appointment?.phone ?? (showClient ? (selected?.phone ?? clientPhone.trim()) : ""),
+        p_client_name: resolvedClientName,
+        p_client_contact: resolvedClientContact,
         p_appointment_id: appointment?.id ?? null,
       });
+
+      // Fallback compatible cuando la función RPC desplegada en BD intenta insertar el detalle en service_name y viola service_payments_service_name_check
+      if (
+        error &&
+        String(error.message || "").includes("service_payments_service_name_check") &&
+        typeof (supabase as any).from === "function"
+      ) {
+        const creatorName =
+          (staff as any).profile?.display_name ||
+          (staff.profile.role === "ADMIN"
+            ? "Admin"
+            : staff.barbers.find((b) => b.id === targetBarberId)?.name || "Barbero");
+        const insertPayload: Record<string, unknown> = {
+          barber_id: targetBarberId,
+          service_id: isOtherService
+            ? null
+            : service?.id && /^[0-9a-f-]{36}$/i.test(service.id)
+              ? service.id
+              : null,
+          service_name: canonicalServiceName,
+          service_other_detail: finalOtherDetail,
+          service_price_ars: price,
+          discount_ars: discount,
+          final_amount_ars: price - discount,
+          payment_method: method,
+          online_deposit_paid: !!appointment?.depositPaid,
+          online_deposit_amount_ars: deposit,
+          collected_amount_ars: total,
+          client_name: resolvedClientName ? resolvedClientName.trim() : null,
+          client_contact: resolvedClientContact ? resolvedClientContact.trim() : null,
+          appointment_id: appointment?.id ?? null,
+          service_origin: appointment?.id ? "appointment" : "walk_in",
+          created_by_user_id: (staff as any).user?.id ?? null,
+          created_by_display_name: creatorName,
+        };
+
+        const { data: insertedRow, error: insertError } = await supabase
+          .from("service_payments")
+          .insert(insertPayload)
+          .select("id")
+          .single();
+
+        if (!insertError && insertedRow) {
+          if (appointment?.id) {
+            await supabase
+              .from("appointments")
+              .update({
+                balance_paid: true,
+                status: "COMPLETED",
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", appointment.id);
+          }
+          result = [{ payment_id: insertedRow.id }];
+          error = null;
+        } else if (insertError) {
+          error = insertError;
+        }
+      }
+
       if (error) throw error;
       if (!result?.length)
         throw new Error(

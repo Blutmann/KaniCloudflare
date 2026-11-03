@@ -378,9 +378,22 @@ export async function createRealAppointment(input: CreateAppointmentInput) {
     p_notes: input.notes?.trim() || null,
   });
 
-  // Si falló por discrepancia de nombre ('Corte y barba' vs 'Corte + barba'), intentar alternativo
-  if (error && (targetServiceName === 'Corte y barba' || targetServiceName === 'Corte + barba')) {
-    const alternativeName = targetServiceName === 'Corte y barba' ? 'Corte + barba' : 'Corte y barba';
+  // Si falló por discrepancia de nombre ('Corte' vs 'Corte de cabello' o 'Corte y barba' vs 'Corte + barba'), intentar alternativo
+  if (
+    error &&
+    (targetServiceName === 'Corte' ||
+      targetServiceName === 'Corte de cabello' ||
+      targetServiceName === 'Corte y barba' ||
+      targetServiceName === 'Corte + barba')
+  ) {
+    const alternativeName =
+      targetServiceName === 'Corte'
+        ? 'Corte de cabello'
+        : targetServiceName === 'Corte de cabello'
+          ? 'Corte'
+          : targetServiceName === 'Corte y barba'
+            ? 'Corte + barba'
+            : 'Corte y barba';
     const retry = await supabase.rpc('request_appointment', {
       p_barber_name: input.barber,
       p_service_name: alternativeName,

@@ -3,12 +3,24 @@ import type { PaywaySession } from './kani-payway-session.server';
 import type { PaywayStore, PaywayAttempt } from './kani-payway.server';
 import type { PaywayResult } from './kani-payway';
 import { PAYWAY_MESSAGES } from './kani-payway';
+import {
+  consumeBenefitCodeForPaywayAttempt,
+  prepareBenefitCodeForPaywayAttempt,
+} from './kani-benefit-codes.server';
 
 type Db = Awaited<ReturnType<typeof createPaymentSupabaseClient>>;
 type AttemptRow = { id:string; appointment_id:string; site_transaction_id:string; amount_ars:number; amount_minor_units:number;
   state:string; provider_transaction_id:string|null; confirmation_status:string; expires_at:string; provider_site_id:string };
 type SessionAccess = { read:()=>Promise<PaywaySession|null>; write:(value:PaywaySession)=>Promise<void>; clear?:()=>Promise<void>|void };
 const uuid = (id: string) => id.replace(/^(.{8})(.{4})(.{4})(.{4})(.{12})$/, '$1-$2-$3-$4-$5');
+
+function alternateServiceName(serviceName: string): string | null {
+  if (serviceName === 'Corte y barba') return 'Corte + barba';
+  if (serviceName === 'Corte + barba') return 'Corte y barba';
+  if (serviceName === 'Corte') return 'Corte de cabello';
+  if (serviceName === 'Corte de cabello') return 'Corte';
+  return null;
+}
 
 export function createPaywayStore(db:Db,siteId:string,session:SessionAccess):PaywayStore {
   return {
@@ -31,16 +43,10 @@ export function createPaywayStore(db:Db,siteId:string,session:SessionAccess):Pay
         }
       }
       const attemptId=crypto.randomUUID();
+      let preparedBenefit: { codeId?: string; code: string; usageMode: string } | null = null;
       if (draft.benefitCode) {
         try {
-          const { data: locked, error: lockErr } = await db.rpc('lock_benefit_code_attempt', {
-            p_code: draft.benefitCode,
-            p_attempt_id: attemptId,
-            p_ttl_seconds: 600,
-          });
-          if (lockErr || !locked) {
-            throw new Error('BENEFIT_CODE_LOCKED_OR_INVALID');
-          }
+          preparedBenefit = await prepareBenefitCodeForPaywayAttempt(db, draft.benefitCode, attemptId, 600);
         } catch (e) {
           if (e instanceof Error && e.message === 'BENEFIT_CODE_LOCKED_OR_INVALID') throw e;
         }
@@ -54,8 +60,13 @@ export function createPaywayStore(db:Db,siteId:string,session:SessionAccess):Pay
       };
       const prepareWithServiceFallback = async (parameters:typeof args) => {
         let res=await prepare(parameters);
-        if(res.error?.message.includes('BARBER_OR_SERVICE_NOT_FOUND')&&['Corte y barba','Corte + barba'].includes(draft.serviceName)) {
-          res=await prepare({...parameters,p_service_name:draft.serviceName==='Corte y barba'?'Corte + barba':'Corte y barba'});
+        const alt = alternateServiceName(draft.serviceName);
+        if (
+          alt &&
+          (res.error?.message.includes('BARBER_OR_SERVICE_NOT_FOUND') ||
+            (res.error?.message.includes('CHECKOUT_RESERVATION_CHANGED') && ['Corte', 'Corte de cabello'].includes(draft.serviceName)))
+        ) {
+          res=await prepare({...parameters,p_service_name:alt});
         }
         return res;
       };
@@ -65,6 +76,11 @@ export function createPaywayStore(db:Db,siteId:string,session:SessionAccess):Pay
         response=await prepareWithServiceFallback({...args,p_existing_appointment_id:null});
       }
       if (response.error || !response.data) {
+        if (draft.benefitCode && preparedBenefit?.usageMode !== 'REUSABLE') {
+          try {
+            await db.rpc('release_benefit_code_attempt', { p_code: draft.benefitCode, p_attempt_id: attemptId });
+          } catch { /* best effort */ }
+        }
         const errCode = response.error?.code ?? 'UNKNOWN';
         const errMsg = response.error?.message ?? 'No data returned from prepare_payway_attempt';
         const errDetails = response.error?.details ?? '';
@@ -77,6 +93,17 @@ export function createPaywayStore(db:Db,siteId:string,session:SessionAccess):Pay
         throw customErr;
       }
       const row=response.data as AttemptRow;
+      if (preparedBenefit && typeof db.from === 'function') {
+        try {
+          await db
+            .from('appointments')
+            .update({
+              benefit_code: preparedBenefit.code,
+              ...(preparedBenefit.codeId ? { benefit_code_id: preparedBenefit.codeId } : {}),
+            })
+            .eq('id', row.appointment_id);
+        } catch { /* best effort */ }
+      }
       const accessToken=previous?.accessToken??crypto.randomUUID().replaceAll('-','')+crypto.randomUUID().replaceAll('-','');
       try { await session.write({appointmentId:row.appointment_id,accessToken,expiresAt:new Date(row.expires_at).getTime()}); }
       catch { throw new Error('PAYMENT_REVIEW_REQUIRED'); }
@@ -135,7 +162,7 @@ export function createPaywayStore(db:Db,siteId:string,session:SessionAccess):Pay
 
       const { data: apptRow, error: apptErr } = await db
         .from('appointments')
-        .select('id, status, deposit_ars, service_price_ars, deposit_paid, client_id, clients(id, email)')
+        .select('id, status, deposit_amount_ars, service_price_ars, deposit_paid, client_id, clients(id, email)')
         .eq('id', input.appointmentId)
         .maybeSingle();
       if (apptErr || !apptRow) throw new Error('APPOINTMENT_NOT_FOUND');
@@ -164,7 +191,7 @@ export function createPaywayStore(db:Db,siteId:string,session:SessionAccess):Pay
         appointment: {
           id: apptRow.id,
           status: apptRow.status,
-          depositArs: Number(apptRow.deposit_ars ?? 5000),
+          depositArs: Number((apptRow as any).deposit_amount_ars ?? (apptRow as any).deposit_ars ?? 5000),
           servicePriceArs: Number(apptRow.service_price_ars ?? 25000),
           depositPaid: Boolean(apptRow.deposit_paid),
           origin: 'PUBLIC_WEB',
@@ -196,18 +223,13 @@ export function createPaywayStore(db:Db,siteId:string,session:SessionAccess):Pay
       const {data,error}=await db.rpc('confirm_payway_attempt',{p_appointment_id:appointmentId,p_attempt_id:uuid(attemptId),p_provider_id:providerId,p_amount_minor:amount});
       const result=data?.[0];
       if(error||!result)return false;
+      const confirmed=['CONFIRMED','ALREADY_CONFIRMED'].includes(result.result_code);
+      if (confirmed) {
+        await consumeBenefitCodeForPaywayAttempt(db, appointmentId, attemptId);
+      }
       if(result.notification_claim_token){
         const {dispatchAppointmentNotification}=await import('./kani-notifications.functions');
         try{await dispatchAppointmentNotification({appointmentId,claimToken:result.notification_claim_token});}catch{/* Durable outbox retains notification for recovery. */}
-      }
-      const confirmed=['CONFIRMED','ALREADY_CONFIRMED'].includes(result.result_code);
-      if (confirmed) {
-        try {
-          await db.rpc('admin_consume_benefit_code_for_attempt', {
-            p_appointment_id: appointmentId,
-            p_attempt_id: attemptId,
-          });
-        } catch { /* best effort */ }
       }
       if(confirmed){
         try{await session.clear?.();}catch{/* Best-effort session cleanup after terminal confirmation. */}
