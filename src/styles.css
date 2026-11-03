@@ -4417,7 +4417,7 @@ html[data-theme] :is(
 .booking-page :is(.calendar-panel, .booking-summary-card, .booking-option, .booking-defer-option) {
   border-radius: var(--radius-card);
 }
-html[data-theme] .booking-page :is(.field-label input, .phone-input-row, .phone-country-trigger, .notes-input, .summary-deposit-box) {
+html[data-theme] .booking-page :is(.field-label input, .discount-input, #booking-discount-code, .phone-input-row, .phone-country-trigger, .notes-input, .summary-deposit-box) {
   background: var(--kani-surface-inset) !important;
   border-color: var(--kani-control-border);
   border-radius: var(--radius-control);
@@ -4459,7 +4459,8 @@ html[data-theme='light'] .booking-page :is(.notes-input, .field-label input)::pl
   color: #111111;
   opacity: 1;
 }
-html[data-theme='light'] .booking-contact-form .field-label {
+html[data-theme='light'] .booking-contact-form .field-label,
+html[data-theme='light'] .booking-contact-form .booking-discount-field label {
   text-shadow: 0 0 2px #ffffff, 0 0 4px #ffffff;
 }
 html[data-theme='light'] .booking-contact-form :is(input, textarea) { text-shadow: none; }
@@ -4609,6 +4610,48 @@ html[data-theme='light'] .booking-page .booking-contact-form :is(.field-label in
   letter-spacing: 0.05em;
   font-size: 13px;
   box-sizing: border-box !important;
+  background: var(--kani-surface-inset, var(--surface)) !important;
+  border-color: var(--kani-control-border, var(--input));
+  border-radius: var(--radius-control, 0.65rem);
+  color: var(--foreground);
+}
+
+/* Modo oscuro: mismo fondo interior, borde y estilo que "Email" y "Nombre y apellido" */
+html[data-theme='dark'] .booking-page .booking-contact-form .discount-input,
+html[data-theme='dark'] .booking-page .booking-contact-form input#booking-discount-code,
+.dark .booking-page .booking-contact-form .discount-input,
+.dark .booking-page .booking-contact-form input#booking-discount-code {
+  background: var(--kani-surface-inset) !important;
+  background-color: var(--kani-surface-inset) !important;
+  border-color: var(--kani-control-border);
+  border-radius: var(--radius-control);
+  color: var(--foreground) !important;
+}
+
+html[data-theme='dark'] .booking-page .booking-contact-form .discount-input::placeholder,
+html[data-theme='dark'] .booking-page .booking-contact-form input#booking-discount-code::placeholder,
+.dark .booking-page .booking-contact-form .discount-input::placeholder,
+.dark .booking-page .booking-contact-form input#booking-discount-code::placeholder {
+  color: var(--muted-foreground);
+  opacity: 0.85;
+}
+
+/* Modo claro: fondo interior blanco sólido #FFFFFF sin transparencia y contraste legible */
+html[data-theme='light'] .booking-page .booking-contact-form .discount-input,
+html[data-theme='light'] .booking-page .booking-contact-form input#booking-discount-code {
+  background: #FFFFFF !important;
+  background-color: #FFFFFF !important;
+  border-color: var(--kani-control-border);
+  border-radius: var(--radius-control);
+  color: #000000 !important;
+  caret-color: #000000;
+  text-shadow: none;
+}
+
+html[data-theme='light'] .booking-page .booking-contact-form .discount-input::placeholder,
+html[data-theme='light'] .booking-page .booking-contact-form input#booking-discount-code::placeholder {
+  color: #4a4742;
+  opacity: 1;
 }
 
 .discount-input-row .discount-apply-button,

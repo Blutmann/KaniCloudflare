@@ -462,4 +462,30 @@ describe("Tres incidentes productivos — Regresión integral", () => {
       ).rejects.toThrow(/INVALID_USAGE_MODE/i);
     });
   });
+
+  describe("4. Campo «Código de descuento» en paso Datos: fondo interior por tema", () => {
+    it("aplica #FFFFFF sólido en modo claro y var(--kani-surface-inset) igual a Email/Nombre en modo oscuro conservando dimensiones y alineación", async () => {
+      const fs = await import("node:fs");
+      const path = await import("node:path");
+      const css = fs.readFileSync(path.resolve(process.cwd(), "src/styles.css"), "utf8");
+
+      // Modo claro: fondo interior blanco sólido #FFFFFF sin transparencia
+      expect(css).toMatch(
+        /html\[data-theme='light'\]\s+\.booking-page\s+\.booking-contact-form\s+input#booking-discount-code\s*\{[\s\S]*?background:\s*#FFFFFF\s*!important;[\s\S]*?background-color:\s*#FFFFFF\s*!important;[\s\S]*?color:\s*#000000\s*!important;/,
+      );
+
+      // Modo oscuro: mismo fondo y estilo que Email y Nombre y apellido (var(--kani-surface-inset), var(--kani-control-border), var(--radius-control))
+      expect(css).toMatch(
+        /html\[data-theme='dark'\]\s+\.booking-page\s+\.booking-contact-form\s+input#booking-discount-code[\s\S]*?background:\s*var\(--kani-surface-inset\)\s*!important;[\s\S]*?border-color:\s*var\(--kani-control-border\);[\s\S]*?border-radius:\s*var\(--radius-control\);/,
+      );
+
+      // Dimensiones de 44px y alineación con el botón Aplicar intactas
+      expect(css).toMatch(
+        /\.booking-page\s+\.booking-contact-form\s+input#booking-discount-code\s*\{[\s\S]*?height:\s*44px\s*!important;[\s\S]*?min-height:\s*44px\s*!important;[\s\S]*?max-height:\s*44px\s*!important;/,
+      );
+      expect(css).toMatch(
+        /\.booking-page\s+\.booking-contact-form\s+button\.discount-apply-button\s*\{[\s\S]*?height:\s*44px\s*!important;[\s\S]*?min-height:\s*44px\s*!important;[\s\S]*?max-height:\s*44px\s*!important;/,
+      );
+    });
+  });
 });
