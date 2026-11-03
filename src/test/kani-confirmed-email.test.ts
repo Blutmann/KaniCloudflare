@@ -70,14 +70,19 @@ describe('Email transaccional de confirmación de turno (Kani Barber Studio) —
     expect(email.html).toContain('Tomas Harispe');
   });
 
-  it('4. Resumen financiero: Importe, Seña abonada en bordó accesible y Saldo en el local', () => {
+  it('4. Resumen financiero: Importe, Seña abonada en bordó accesible y Saldo pendiente a pagar en el local', () => {
     const email = buildConfirmedEmail(basePayload);
 
     // Importes formateados
     expect(email.text).toContain('Importe: $25.000');
     expect(email.text).toContain('Seña abonada: $5.000');
-    expect(email.text).toContain('Saldo a pagar en el local: $20.000');
+    expect(email.text).toContain('Saldo pendiente a pagar en el local: $20.000');
+    expect(email.text).not.toContain('Saldo en el local:');
+    expect(email.text).not.toContain('Saldo a pagar en el local:');
 
+    expect(email.html).toContain('Saldo pendiente a pagar en el local');
+    expect(email.html).not.toContain('>Saldo en el local<');
+    expect(email.html).not.toContain('>Saldo a pagar en el local<');
     expect(email.html).toContain('$25.000');
     expect(email.html).toContain('−$5.000');
     expect(email.html).toContain('$20.000');
@@ -108,7 +113,7 @@ describe('Email transaccional de confirmación de turno (Kani Barber Studio) —
     expect(email.text).toContain('Seña abonada: $5.000');
     expect(email.text).not.toContain('Seña abonada: $10.000');
     expect(email.text).not.toContain('$10.000');
-    expect(email.text).toContain('Saldo a pagar en el local: $25.000');
+    expect(email.text).toContain('Saldo pendiente a pagar en el local: $25.000');
     expect(email.text).toContain(
       'Se confirmó tu turno el día sábado 24 de octubre de 2026 a las 11:00 hs, para un servicio de Corte y barba con Gonzalo.'
     );
@@ -218,9 +223,11 @@ describe('Email transaccional de confirmación de turno (Kani Barber Studio) —
 
     // Sección puntualidad
     expect(email.html).toContain('PUNTUALIDAD');
-    expect(email.html).toContain('tolerancia de 15 minutos');
+    expect(email.html).toContain('Se establece una tolerancia de 10 minutos a partir del horario reservado. Transcurrido ese plazo, el turno podrá ser cancelado para respetar la atención de los siguientes clientes.');
+    expect(email.html).not.toContain('tolerancia de 15 minutos');
     expect(email.text).toContain('PUNTUALIDAD');
-    expect(email.text).toContain('tolerancia de 15 minutos');
+    expect(email.text).toContain('Se establece una tolerancia de 10 minutos a partir del horario reservado. Transcurrido ese plazo, el turno podrá ser cancelado para respetar la atención de los siguientes clientes.');
+    expect(email.text).not.toContain('tolerancia de 15 minutos');
 
     // Compatibilidad estricta
     expect(email.html).not.toContain('<script');

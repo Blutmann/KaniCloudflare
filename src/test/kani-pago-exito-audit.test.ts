@@ -95,7 +95,8 @@ describe('Auditoría de consistencia de Pago Exitoso y Confirmación (Kani Barbe
     expect(email.html).toContain('−$5.000');
 
     // Saldo restante: 25.000 - 5.000 = 20.000
-    expect(email.text).toContain('Saldo a pagar en el local: $20.000');
+    expect(email.text).toContain('Saldo pendiente a pagar en el local: $20.000');
+    expect(email.html).toContain('Saldo pendiente a pagar en el local');
     expect(email.html).toContain('$20.000');
 
     // NO muestra $10.000 como seña

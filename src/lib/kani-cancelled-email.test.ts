@@ -65,6 +65,7 @@ describe('Kani — Rediseño del correo de cancelación', () => {
     expect(result.text).not.toContain('Cancelar turno');
 
     // NO incluye la sección de tolerancia de llegada
+    expect(result.html).not.toContain('tolerancia de 10 minutos');
     expect(result.html).not.toContain('tolerancia de 15 minutos');
     expect(result.html).not.toContain('PUNTUALIDAD');
   });
@@ -98,9 +99,13 @@ describe('Kani — Rediseño del correo de cancelación', () => {
     expect(result.html).toContain('$5.000');
 
     // NO presenta saldo deudor ni exigible
+    expect(result.html).not.toContain('Saldo pendiente a pagar en el local');
     expect(result.html).not.toContain('Saldo a pagar en el local');
+    expect(result.html).not.toContain('Saldo en el local');
     expect(result.html).not.toContain('Saldo pendiente');
+    expect(result.text).not.toContain('Saldo pendiente a pagar en el local');
     expect(result.text).not.toContain('Saldo a pagar');
+    expect(result.text).not.toContain('Saldo en el local');
   });
 
   it('5. Beneficios: informa que el código utilizado ha sido consumido y no podrá reutilizarse', () => {

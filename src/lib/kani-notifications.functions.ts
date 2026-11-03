@@ -1280,6 +1280,8 @@ export function buildConfirmedEmail(payload: NotificationPayload) {
       .balance-label-td {
         display: block !important;
         width: 100% !important;
+        padding-right: 0 !important;
+        padding-bottom: 4px !important;
         text-align: left !important;
       }
       .balance-amount-td {
@@ -1287,6 +1289,7 @@ export function buildConfirmedEmail(payload: NotificationPayload) {
         width: 100% !important;
         text-align: left !important;
         margin-top: 4px !important;
+        white-space: nowrap !important;
       }
     }
     @media only screen and (min-width: 600px) {
@@ -1566,8 +1569,8 @@ ${isNoDeposit ? `
                         <td colspan="2" style="padding-top: 6px; padding-bottom: 12px;">
                           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
                             <tr>
-                              <td valign="baseline" class="balance-label-td"><span style="font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 600; color: #F5F5F5;">Saldo a pagar en el local</span></td>
-                              <td align="right" valign="baseline" class="balance-amount-td"><span style="font-family: 'DM Serif Display', serif; font-size: 28px; line-height: 1.15; font-weight: 400; color: #F5F5F5;">${safe.remainingPayment}</span></td>
+                              <td valign="baseline" class="balance-label-td" style="padding-right: 12px; line-height: 1.35; word-break: break-word; overflow-wrap: break-word;"><span style="font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 600; color: #F5F5F5;">Saldo pendiente a pagar en el local</span></td>
+                              <td align="right" valign="baseline" class="balance-amount-td" style="white-space: nowrap; text-align: right;"><span style="font-family: 'DM Serif Display', serif; font-size: 28px; line-height: 1.15; font-weight: 400; color: #F5F5F5;">${safe.remainingPayment}</span></td>
                             </tr>
                           </table>
                         </td>
@@ -1604,8 +1607,8 @@ ${isNoDeposit ? `
                         <td colspan="2" style="padding-top: 6px; padding-bottom: 12px;">
                           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
                             <tr>
-                              <td valign="baseline" class="balance-label-td"><span style="font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 600; color: #F5F5F5;">Saldo en el local</span></td>
-                              <td align="right" valign="baseline" class="balance-amount-td"><span style="font-family: 'DM Serif Display', serif; font-size: 28px; line-height: 1.15; font-weight: 400; color: #F5F5F5;">$0</span></td>
+                              <td valign="baseline" class="balance-label-td" style="padding-right: 12px; line-height: 1.35; word-break: break-word; overflow-wrap: break-word;"><span style="font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 600; color: #F5F5F5;">Saldo pendiente a pagar en el local</span></td>
+                              <td align="right" valign="baseline" class="balance-amount-td" style="white-space: nowrap; text-align: right;"><span style="font-family: 'DM Serif Display', serif; font-size: 28px; line-height: 1.15; font-weight: 400; color: #F5F5F5;">$0</span></td>
                             </tr>
                           </table>
                         </td>
@@ -1642,8 +1645,8 @@ ${isNoDeposit ? `
                         <td colspan="2" style="padding-top: 6px; padding-bottom: 12px;">
                           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
                             <tr>
-                              <td valign="baseline" class="balance-label-td"><span style="font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 600; color: #F5F5F5;">Saldo en el local</span></td>
-                              <td align="right" valign="baseline" class="balance-amount-td"><span style="font-family: 'DM Serif Display', serif; font-size: 28px; line-height: 1.15; font-weight: 400; color: #F5F5F5;">${safe.remainingPayment}</span></td>
+                              <td valign="baseline" class="balance-label-td" style="padding-right: 12px; line-height: 1.35; word-break: break-word; overflow-wrap: break-word;"><span style="font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 600; color: #F5F5F5;">Saldo pendiente a pagar en el local</span></td>
+                              <td align="right" valign="baseline" class="balance-amount-td" style="white-space: nowrap; text-align: right;"><span style="font-family: 'DM Serif Display', serif; font-size: 28px; line-height: 1.15; font-weight: 400; color: #F5F5F5;">${safe.remainingPayment}</span></td>
                             </tr>
                           </table>
                         </td>
@@ -1670,13 +1673,13 @@ ${isNoDeposit ? `
                       <tr>
                         <td colspan="2" style="padding: 10px 0 6px;"><div style="height: 1px; background-color: #383838; line-height: 1px; font-size: 1px;">&nbsp;</div></td>
                       </tr>
-                      <!-- Fila Saldo en el local -->
+                      <!-- Fila Saldo pendiente a pagar en el local -->
                       <tr>
                         <td colspan="2" style="padding-top: 6px; padding-bottom: 12px;">
                           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
                             <tr>
-                              <td valign="baseline" class="balance-label-td"><span style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 15px; font-weight: 600; color: #F5F5F5;">Saldo en el local</span></td>
-                              <td align="right" valign="baseline" class="balance-amount-td"><span style="font-family: 'DM Serif Display', Georgia, 'Times New Roman', serif; font-size: 28px; line-height: 1.15; font-weight: 400; color: #F5F5F5;">${safe.remainingPayment}</span></td>
+                              <td valign="baseline" class="balance-label-td" style="padding-right: 12px; line-height: 1.35; word-break: break-word; overflow-wrap: break-word;"><span style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 15px; font-weight: 600; color: #F5F5F5;">Saldo pendiente a pagar en el local</span></td>
+                              <td align="right" valign="baseline" class="balance-amount-td" style="white-space: nowrap; text-align: right;"><span style="font-family: 'DM Serif Display', Georgia, 'Times New Roman', serif; font-size: 28px; line-height: 1.15; font-weight: 400; color: #F5F5F5;">${safe.remainingPayment}</span></td>
                             </tr>
                           </table>
                         </td>
@@ -1778,7 +1781,7 @@ ${isNoDeposit ? `
                 <tr>
                   <td style="padding: 18px 20px;">
                     <p style="margin: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 14px; line-height: 1.55; color: #F5F5F5;">
-                      Se establece una tolerancia de 15 minutos a partir del horario reservado. Transcurrido ese plazo, el turno podrá ser cancelado para respetar la atención de los siguientes clientes.
+                      Se establece una tolerancia de 10 minutos a partir del horario reservado. Transcurrido ese plazo, el turno podrá ser cancelado para respetar la atención de los siguientes clientes.
                     </p>
                   </td>
                 </tr>
@@ -1857,7 +1860,7 @@ Precio del servicio: ${safe.originalPrice}
 Descuento: $0
 Total final: ${safe.originalPrice}
 Seña: No requerida ($0)
-Saldo a pagar en el local: ${safe.remainingPayment}
+Saldo pendiente a pagar en el local: ${safe.remainingPayment}
 Abonás el total de ${safe.remainingPayment} en el local.
 
 Podés abonar el saldo en efectivo o por transferencia.` : isFreeService ? `Servicio bonificado al 100 %
@@ -1866,15 +1869,15 @@ Bonificación: 100 %
 Total final: $0
 Total a pagar: $0
 Seña abonada: No requerida ($0)
-Saldo en el local: $0` : isPercent10 || isPercent50 ? `Precio original: ${safe.originalPrice}
+Saldo pendiente a pagar en el local: $0` : isPercent10 || isPercent50 ? `Precio original: ${safe.originalPrice}
 Descuento (${isPercent10 ? '10%' : '50%'}): -${safe.discount}
 Total final: ${safe.finalPrice}
 Seña efectivamente abonada: ${safe.downPayment}
-Saldo en el local: ${safe.remainingPayment}
+Saldo pendiente a pagar en el local: ${safe.remainingPayment}
 
 Podés abonar el saldo en efectivo o por transferencia.` : `Importe: ${safe.servicePrice}
 Seña abonada: ${safe.downPayment}
-Saldo a pagar en el local: ${safe.remainingPayment}
+Saldo pendiente a pagar en el local: ${safe.remainingPayment}
 
 Podés abonar el saldo en efectivo o por transferencia.`}
 
@@ -1896,7 +1899,7 @@ ${instagramUrl}
 --------------------------------------------------
 PUNTUALIDAD
 
-Se establece una tolerancia de 15 minutos a partir del horario reservado. Transcurrido ese plazo, el turno podrá ser cancelado para respetar la atención de los siguientes clientes.
+Se establece una tolerancia de 10 minutos a partir del horario reservado. Transcurrido ese plazo, el turno podrá ser cancelado para respetar la atención de los siguientes clientes.
 
 --------------------------------------------------
 © 2026 Kani Barber Studio · San Isidro Labrador 7, Martínez

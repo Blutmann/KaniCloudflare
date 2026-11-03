@@ -129,6 +129,7 @@ describe('Kani Barber Studio — Páginas Legales', () => {
       expect(screen.getByText(/Cancelación con 24 horas o más de anticipación/i)).toBeInTheDocument();
       expect(screen.getByText(/10 días hábiles/i)).toBeInTheDocument();
       expect(screen.getByText(/En ningún supuesto se cobrará automáticamente al cliente el saldo pendiente/i)).toBeInTheDocument();
+      expect(screen.getByText(/Se establece una tolerancia de 10 minutos a partir del horario reservado\. Transcurrido ese plazo, el turno podrá ser cancelado para respetar la atención de los siguientes clientes\./i)).toBeInTheDocument();
       expect(screen.getByText(/Ley N° 24\.240 de Defensa del Consumidor/i)).toBeInTheDocument();
       expect(screen.getByText(/Código Civil y Comercial de la Nación/i)).toBeInTheDocument();
       expect(screen.getAllByText(/República Argentina/i).length).toBeGreaterThan(0);

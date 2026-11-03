@@ -263,6 +263,9 @@ export function TerminosYCondicionesPage() {
               Se solicita a todos los clientes concurrir con puntualidad en el horario exacto de su cita.
             </p>
             <p>
+              Se establece una tolerancia de 10 minutos a partir del horario reservado. Transcurrido ese plazo, el turno podrá ser cancelado para respetar la atención de los siguientes clientes.
+            </p>
+            <p>
               Dado que cada turno cuenta con una duración asignada para garantizar la calidad del servicio y respetar a los clientes posteriores, una llegada tardía puede obligar a reducir el alcance del servicio solicitado o requerir la reprogramación de la cita, en caso de que no sea posible realizar el trabajo en el tiempo restante sin perjudicar turnos sucesivos.
             </p>
           </section>
