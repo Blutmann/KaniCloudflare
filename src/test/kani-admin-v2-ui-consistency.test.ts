@@ -7,15 +7,19 @@ describe('Admin V2 — UI and Visual Consistency Audit (Structural Unification)'
   const sharedPath = path.resolve(__dirname, '../components/kani/v2/shared.tsx');
   const schedulePath = path.resolve(__dirname, '../components/kani/admin-schedule-manager.tsx');
   const agendaPath = path.resolve(__dirname, '../components/kani/v2/agenda.tsx');
+  const horariosRoutePath = path.resolve(__dirname, '../routes/panel-administracion.horarios.tsx');
   const insightsPath = path.resolve(__dirname, '../components/kani/v2/insights.tsx');
   const cssPath = path.resolve(__dirname, '../components/kani/v2/v2.css');
+  const stylesPath = path.resolve(__dirname, '../styles.css');
 
   const panelCode = fs.readFileSync(panelPath, 'utf8');
   const sharedCode = fs.readFileSync(sharedPath, 'utf8');
   const scheduleCode = fs.readFileSync(schedulePath, 'utf8');
   const agendaCode = fs.readFileSync(agendaPath, 'utf8');
+  const horariosRouteCode = fs.readFileSync(horariosRoutePath, 'utf8');
   const insightsCode = fs.readFileSync(insightsPath, 'utf8');
   const cssCode = fs.readFileSync(cssPath, 'utf8');
+  const stylesCode = fs.readFileSync(stylesPath, 'utf8');
 
   describe('1. Componente Compartido Unificado (AdminFilterPanel)', () => {
     it('existe el componente AdminFilterPanel con AdminFilterCell, AdminFilterLabel y AdminFilterControl', () => {
@@ -115,6 +119,32 @@ describe('Admin V2 — UI and Visual Consistency Audit (Structural Unification)'
     it('v2.css unifica labels a 11px font-size y 500 font-weight con color muted', () => {
       expect(cssCode).toMatch(/\.v2-admin-filter-label[^\{]*\{[^}]*font-size:\s*11px\s*!important/);
       expect(cssCode).toMatch(/\.v2-admin-filter-label[^\{]*\{[^}]*font-weight:\s*500\s*!important/);
+    });
+  });
+
+  describe('5. Fondos sólidos opacos y eliminación de avisos en Horarios y Turnos', () => {
+    it('Header: los 4 botones tienen fondo blanco sólido #FFFFFF en modo claro y oscuro sólido #1C1C1C sin transparencia en modo oscuro', () => {
+      expect(stylesCode).toContain('.header-control-button.notification-trigger');
+      expect(stylesCode).toContain('.header-control-button.header-whatsapp-button');
+      expect(stylesCode).toContain('.header-control-button.theme-toggle');
+      expect(stylesCode).toContain('.header-control-button.mobile-menu-trigger');
+      expect(stylesCode).toContain('.header-control-button.admin-menu-trigger');
+      expect(stylesCode).toMatch(/html\[data-theme="light"\]\s*:is\([\s\S]*?\.header-control-button\.admin-menu-trigger[\s\S]*?\)\s*\{[\s\S]*?background-color:\s*#FFFFFF\s*!important;[\s\S]*?backdrop-filter:\s*none\s*!important;/);
+      expect(stylesCode).toMatch(/html\[data-theme="dark"\]\s*:is\([\s\S]*?\.header-control-button\.admin-menu-trigger[\s\S]*?\)\s*\{[\s\S]*?background-color:\s*#1C1C1C\s*!important;[\s\S]*?backdrop-filter:\s*none\s*!important;/);
+    });
+
+    it('Navegación administrativa, Próximo turno y fila/controles de filtros tienen fondos sólidos en modo claro (#FFFFFF) y oscuro (#1C1C1C / #242424)', () => {
+      expect(cssCode).toMatch(/html\[data-theme="light"\]\s*:is\([\s\S]*?\.v2-nav\.admin-section-nav,[\s\S]*?\.v2-next,[\s\S]*?\.v2-admin-filter-panel[\s\S]*?\)\s*\{[\s\S]*?background-color:\s*#FFFFFF\s*!important;[\s\S]*?backdrop-filter:\s*none\s*!important;/);
+      expect(cssCode).toMatch(/html\[data-theme="dark"\]\s*:is\([\s\S]*?\.v2-nav\.admin-section-nav,[\s\S]*?\.v2-next,[\s\S]*?\.v2-admin-filter-panel[\s\S]*?\)\s*\{[\s\S]*?background-color:\s*#1C1C1C\s*!important;[\s\S]*?backdrop-filter:\s*none\s*!important;/);
+      expect(cssCode).toMatch(/html\[data-theme="light"\]\s*:is\([\s\S]*?\.v2-admin-filter-panel\s*:is\(input,\s*select,\s*output\)[\s\S]*?\)\s*\{[\s\S]*?background-color:\s*#FFFFFF\s*!important;/);
+      expect(cssCode).toMatch(/html\[data-theme="dark"\]\s*:is\([\s\S]*?\.v2-admin-filter-panel\s*:is\(input,\s*select,\s*output\)[\s\S]*?\)\s*\{[\s\S]*?background-color:\s*#242424\s*!important;/);
+    });
+
+    it('elimina por completo los avisos inferiores (.v2-footnote) en Horarios y Turnos sin contenedores vacíos', () => {
+      expect(horariosRouteCode).not.toContain('Se reutiliza la gestión autorizada de disponibilidad');
+      expect(horariosRouteCode).not.toContain('v2-footnote');
+      expect(agendaCode).not.toContain('Los turnos pendientes se confirman al acreditarse la seña. Cancelar un turno no devuelve automáticamente la seña.');
+      expect(agendaCode).not.toContain('v2-footnote');
     });
   });
 });

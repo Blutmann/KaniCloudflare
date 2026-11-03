@@ -4316,3 +4316,79 @@ html[data-theme="dark"] .v2-payments-table thead tr th:first-child {
 html[data-theme="dark"] .v2-payments-table thead tr th:last-child {
   border-top-right-radius: calc(var(--radius-card) - 1px);
 }
+
+/* ==========================================================================
+   Fondos sólidos opacos en el panel administrativo (Navegación, Próximo turno,
+   y fila/controles de filtros en Turnos y Horarios)
+   ========================================================================== */
+
+:root :is(
+  .v2-nav.admin-section-nav,
+  .admin-section-nav,
+  .v2-next,
+  .v2-admin-filter-panel,
+  .v2-admin-filter-card,
+  .v2-appointments-page :is(.v2-admin-filter-panel, .v2-admin-filter-card),
+  .v2-schedule :is(.v2-admin-filter-panel, .v2-admin-filter-card)
+),
+html[data-theme="dark"] :is(
+  .v2-nav.admin-section-nav,
+  .admin-section-nav,
+  .v2-next,
+  .v2-admin-filter-panel,
+  .v2-admin-filter-card,
+  .v2-appointments-page :is(.v2-admin-filter-panel, .v2-admin-filter-card),
+  .v2-schedule :is(.v2-admin-filter-panel, .v2-admin-filter-card)
+) {
+  background: var(--surface, #1C1C1C) !important;
+  background-color: #1C1C1C !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+html[data-theme="light"] :is(
+  .v2-nav.admin-section-nav,
+  .admin-section-nav,
+  .v2-next,
+  .v2-admin-filter-panel,
+  .v2-admin-filter-card,
+  .v2-appointments-page :is(.v2-admin-filter-panel, .v2-admin-filter-card),
+  .v2-schedule :is(.v2-admin-filter-panel, .v2-admin-filter-card)
+) {
+  background: #FFFFFF !important;
+  background-color: #FFFFFF !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Fondo interior sólido opaco de cada filtro (Período, Fecha, Barbero y Estado) */
+:root :is(
+  .v2-admin-filter-panel :is(input, select, output),
+  .v2-admin-filter-control :is(input, select, output),
+  .v2-admin-filter-card :is(input, select, output),
+  .v2-custom-range-row :is(input, select, output)
+),
+html[data-theme="dark"] :is(
+  .v2-admin-filter-panel :is(input, select, output),
+  .v2-admin-filter-control :is(input, select, output),
+  .v2-admin-filter-card :is(input, select, output),
+  .v2-custom-range-row :is(input, select, output)
+) {
+  background: var(--card, #242424) !important;
+  background-color: #242424 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+html[data-theme="light"] :is(
+  .v2-admin-filter-panel :is(input, select, output),
+  .v2-admin-filter-control :is(input, select, output),
+  .v2-admin-filter-card :is(input, select, output),
+  .v2-custom-range-row :is(input, select, output)
+) {
+  background: #FFFFFF !important;
+  background-color: #FFFFFF !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+

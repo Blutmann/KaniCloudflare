@@ -720,9 +720,6 @@ export function V2Appointments() {
           </article>
         ))}
       </div>
-      <p className="v2-footnote">
-        Los turnos pendientes se confirman al acreditarse la seña. Cancelar un turno no devuelve automáticamente la seña.
-      </p>
       <ManualAppointmentDialog
         open={manualDialog.open}
         mode={manualDialog.mode}

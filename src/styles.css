@@ -4925,3 +4925,116 @@ input[placeholder="Nombre, celular o email"]::placeholder {
 .payway-legal-disclaimer {
   text-align: left !important;
 }
+
+/* Fondos sólidos opacos en los 4 botones del Header (Notificaciones, WhatsApp, Modo claro/oscuro, Menú) */
+:root :is(
+  .site-header .header-control-button,
+  .site-header .notification-trigger,
+  .header-control-button.notification-trigger,
+  .header-control-button.header-whatsapp-button,
+  .header-control-button.theme-toggle,
+  .header-control-button.mobile-menu-trigger,
+  .header-control-button.admin-menu-trigger
+),
+html[data-theme="dark"] :is(
+  .site-header .header-control-button,
+  .site-header .notification-trigger,
+  .header-control-button.notification-trigger,
+  .header-control-button.header-whatsapp-button,
+  .header-control-button.theme-toggle,
+  .header-control-button.mobile-menu-trigger,
+  .header-control-button.admin-menu-trigger
+) {
+  background: var(--surface, #1C1C1C) !important;
+  background-color: #1C1C1C !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+:root :is(
+  .site-header .header-control-button,
+  .site-header .notification-trigger,
+  .header-control-button.notification-trigger,
+  .header-control-button.header-whatsapp-button,
+  .header-control-button.theme-toggle,
+  .header-control-button.mobile-menu-trigger,
+  .header-control-button.admin-menu-trigger
+):hover:not(:disabled),
+html[data-theme="dark"] :is(
+  .site-header .header-control-button,
+  .site-header .notification-trigger,
+  .header-control-button.notification-trigger,
+  .header-control-button.header-whatsapp-button,
+  .header-control-button.theme-toggle,
+  .header-control-button.mobile-menu-trigger,
+  .header-control-button.admin-menu-trigger
+):hover:not(:disabled) {
+  background: var(--card, #242424) !important;
+  background-color: #242424 !important;
+  border-color: var(--gold) !important;
+}
+
+:root :is(
+  .site-header .header-control-button,
+  .site-header .notification-trigger,
+  .header-control-button.notification-trigger,
+  .header-control-button.header-whatsapp-button,
+  .header-control-button.theme-toggle,
+  .header-control-button.mobile-menu-trigger,
+  .header-control-button.admin-menu-trigger
+):active:not(:disabled),
+html[data-theme="dark"] :is(
+  .site-header .header-control-button,
+  .site-header .notification-trigger,
+  .header-control-button.notification-trigger,
+  .header-control-button.header-whatsapp-button,
+  .header-control-button.theme-toggle,
+  .header-control-button.mobile-menu-trigger,
+  .header-control-button.admin-menu-trigger
+):active:not(:disabled) {
+  background: var(--sidebar, #181818) !important;
+  background-color: #181818 !important;
+}
+
+html[data-theme="light"] :is(
+  .site-header .header-control-button,
+  .site-header .notification-trigger,
+  .header-control-button.notification-trigger,
+  .header-control-button.header-whatsapp-button,
+  .header-control-button.theme-toggle,
+  .header-control-button.mobile-menu-trigger,
+  .header-control-button.admin-menu-trigger
+) {
+  background: #FFFFFF !important;
+  background-color: #FFFFFF !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+html[data-theme="light"] :is(
+  .site-header .header-control-button,
+  .site-header .notification-trigger,
+  .header-control-button.notification-trigger,
+  .header-control-button.header-whatsapp-button,
+  .header-control-button.theme-toggle,
+  .header-control-button.mobile-menu-trigger,
+  .header-control-button.admin-menu-trigger
+):hover:not(:disabled) {
+  background: #FFFFFF !important;
+  background-color: #FFFFFF !important;
+  border-color: var(--gold) !important;
+}
+
+html[data-theme="light"] :is(
+  .site-header .header-control-button,
+  .site-header .notification-trigger,
+  .header-control-button.notification-trigger,
+  .header-control-button.header-whatsapp-button,
+  .header-control-button.theme-toggle,
+  .header-control-button.mobile-menu-trigger,
+  .header-control-button.admin-menu-trigger
+):active:not(:disabled) {
+  background: #F5F2EA !important;
+  background-color: #F5F2EA !important;
+}
+
