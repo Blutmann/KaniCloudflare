@@ -514,6 +514,7 @@ export default {
               const reusCode = `KANI-VREU-TEST-${suffix}`;
               const singCode = `KANI-VSIN-TEST-${suffix}`;
               const nowIso = new Date().toISOString();
+              const testBookingDate = url.searchParams.get("val_date") || "2026-11-18";
 
               try {
                 // 1. Create REUSABLE code and reload from DB
@@ -586,7 +587,7 @@ export default {
                 const reusBooking1 = await confirmZeroDepositBooking({
                   barberName: "Lautaro",
                   serviceName: "Corte",
-                  bookingDate: "2026-12-16",
+                  bookingDate: testBookingDate,
                   startTime: "10:00",
                   clientName: "Test Reutilizable 1",
                   clientPhone: "+5491100001111",
@@ -600,7 +601,7 @@ export default {
                 const reusBooking2 = await confirmZeroDepositBooking({
                   barberName: "Lautaro",
                   serviceName: "Corte",
-                  bookingDate: "2026-12-16",
+                  bookingDate: testBookingDate,
                   startTime: "11:00",
                   clientName: "Test Reutilizable 2",
                   clientPhone: "+5491100002222",
@@ -643,7 +644,7 @@ export default {
                 const singBooking1 = await confirmZeroDepositBooking({
                   barberName: "Lautaro",
                   serviceName: "Corte",
-                  bookingDate: "2026-12-16",
+                  bookingDate: testBookingDate,
                   startTime: "12:00",
                   clientName: "Test Unico 1",
                   clientPhone: "+5491100003333",
@@ -672,7 +673,7 @@ export default {
                   const singBooking2 = await confirmZeroDepositBooking({
                     barberName: "Lautaro",
                     serviceName: "Corte",
-                    bookingDate: "2026-12-16",
+                    bookingDate: testBookingDate,
                     startTime: "13:00",
                     clientName: "Test Unico 2",
                     clientPhone: "+5491100004444",
