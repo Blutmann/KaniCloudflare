@@ -19,14 +19,6 @@ import { formatServiceName } from './kani-model';
 const KANI_META_PREFIX = '[[KANI_META:';
 const KANI_META_SUFFIX = ']]';
 
-const KNOWN_REUSABLE_CODES = new Set([
-  'KANI-O2Q1-FREE-DD99',
-  'KANI-O2Q1-FREE-DD98',
-  'KANI-X9H5-FREE-8R1Z',
-  'KANI-O2Q1-FREE-D100',
-  'KANI-MEMBRESIA-LAUT1',
-]);
-
 export interface BenefitCodeEmbeddedMeta {
   usageMode?: BenefitUsageMode;
   validityType?: BenefitValidityType;
@@ -88,7 +80,7 @@ export function normalizeBenefitCodeRow(
     raw?.usageMode ||
     raw?.usage_mode ||
     meta?.usageMode ||
-    (KNOWN_REUSABLE_CODES.has(code) ? 'REUSABLE' : 'SINGLE_USE');
+    'SINGLE_USE';
 
   const validityType: BenefitValidityType =
     raw?.validityType ||
@@ -464,7 +456,16 @@ export async function adminCreateBenefitCode(params: {
   const { supabase } = await assertAdminSession(params.token);
   const generatedCode = params.code ? normalizeBenefitCode(params.code) : generateBenefitCodeString();
 
-  const usageMode = params.usageMode || 'SINGLE_USE';
+  if (
+    'usageMode' in params &&
+    params.usageMode !== undefined &&
+    params.usageMode !== 'SINGLE_USE' &&
+    params.usageMode !== 'REUSABLE'
+  ) {
+    throw new Error('INVALID_USAGE_MODE: La modalidad debe ser SINGLE_USE o REUSABLE.');
+  }
+
+  const usageMode: BenefitUsageMode = params.usageMode || 'SINGLE_USE';
   const validityType = params.validityType || 'NO_EXPIRATION';
 
   const dates = calculateValidityDates({
@@ -490,6 +491,8 @@ export async function adminCreateBenefitCode(params: {
     deletedAt: null,
   };
 
+  const noteWithMeta = encodeInternalNoteWithMetadata(params.internalNote || null, embeddedMeta);
+
   let res = await supabase.rpc('admin_create_benefit_code', {
     p_type: params.type,
     p_internal_note: params.internalNote || null,
@@ -503,14 +506,10 @@ export async function adminCreateBenefitCode(params: {
   });
 
   // Fallback: If PostgREST has the legacy 3-param signature in schema cache,
-  // persist expansion metadata safely inside internal_note so usageMode and validity survive reloads.
+  // explicitly persist expansion metadata (usageMode + validity) inside internal_note
+  // for BOTH SINGLE_USE and REUSABLE so the chosen modality is always saved in DB.
   if (res.error && isSchemaCacheMissingError(res.error)) {
     console.warn('[Kani Benefit Codes] 9-param admin_create_benefit_code not found, retrying 3-param legacy signature:', res.error.message);
-    const noteWithMeta =
-      usageMode !== 'SINGLE_USE' || validityType !== 'NO_EXPIRATION'
-        ? encodeInternalNoteWithMetadata(params.internalNote || null, embeddedMeta)
-        : (params.internalNote || null);
-
     res = await supabase.rpc('admin_create_benefit_code', {
       p_type: params.type,
       p_internal_note: noteWithMeta,
@@ -523,12 +522,34 @@ export async function adminCreateBenefitCode(params: {
     throw new Error(res.error.message || 'Error al generar código de beneficio');
   }
 
-  const rawItem = (res.data as any) || {};
+  let rawItem = (res.data as any) || {};
+  const persistedMeta = parseInternalNoteMetadata(rawItem.internal_note ?? rawItem.internalNote).meta;
+  const persistedUsageMode = rawItem.usage_mode || rawItem.usageMode || persistedMeta?.usageMode;
+
+  if (rawItem.id && persistedUsageMode !== usageMode) {
+    try {
+      const db = await createPaymentSupabaseClient();
+      if (db && typeof db.from === 'function') {
+        const { data: updatedRow } = await db
+          .from('benefit_codes')
+          .update({ internal_note: noteWithMeta })
+          .eq('id', rawItem.id)
+          .select('*')
+          .maybeSingle();
+        if (updatedRow) {
+          rawItem = updatedRow;
+        }
+      }
+    } catch {
+      // ignore if service client is mocked in unit tests
+    }
+  }
+
   return normalizeBenefitCodeRow({
     ...rawItem,
     code: rawItem.code || generatedCode,
     type: rawItem.type || params.type,
-    internal_note: rawItem.internal_note ?? params.internalNote ?? null,
+    internal_note: rawItem.internal_note ?? noteWithMeta,
     status: rawItem.status || 'ACTIVE',
     usage_mode: rawItem.usage_mode || usageMode,
     validity_type: rawItem.validity_type || validityType,
@@ -945,6 +966,7 @@ export async function confirmZeroDepositBooking(params: {
   clientEmail: string;
   benefitCode: string;
   notes?: string;
+  skipExternalSideEffects?: boolean;
 }): Promise<{
   success: boolean;
   appointmentId: string;
@@ -1042,13 +1064,17 @@ export async function confirmZeroDepositBooking(params: {
         locked_expires_at: null,
         locked_attempt_id: null,
         updated_at: new Date().toISOString(),
-      };
-      if (meta) {
-        updatePayload.internal_note = encodeInternalNoteWithMetadata(parsedCode.internalNote, {
-          ...meta,
+        internal_note: encodeInternalNoteWithMetadata(parsedCode.internalNote, {
+          ...(meta || {}),
+          usageMode: 'REUSABLE',
+          validityType: parsedCode.validityType,
+          validFrom: parsedCode.validFrom,
+          validUntil: parsedCode.validUntil ?? null,
+          validityDurationValue: parsedCode.validityDurationValue ?? null,
+          validityDurationUnit: parsedCode.validityDurationUnit ?? null,
           timesUsed: nextTimesUsed,
-        });
-      }
+        }),
+      };
       await db.from('benefit_codes').update(updatePayload).eq('id', codeRow.id);
     } catch (healErr) {
       console.warn('[Kani Benefit Codes] Reusable post-confirm heal warning:', healErr);
@@ -1062,26 +1088,28 @@ export async function confirmZeroDepositBooking(params: {
     params.benefitCode
   );
 
-  // Dispatch notification and calendar sync before completing response to guarantee execution in serverless/workers
-  if (res.notificationClaimToken && res.appointmentId) {
-    try {
-      const { dispatchAppointmentNotification } = await import('./kani-notifications.functions');
-      await dispatchAppointmentNotification({
-        appointmentId: res.appointmentId,
-        claimToken: res.notificationClaimToken,
-        clientPhone: params.clientPhone,
-      });
-    } catch (dispatchErr) {
-      console.warn('[Kani Benefit Codes] Notification dispatch deferred to recovery:', dispatchErr);
+  if (!params.skipExternalSideEffects) {
+    // Dispatch notification and calendar sync before completing response to guarantee execution in serverless/workers
+    if (res.notificationClaimToken && res.appointmentId) {
+      try {
+        const { dispatchAppointmentNotification } = await import('./kani-notifications.functions');
+        await dispatchAppointmentNotification({
+          appointmentId: res.appointmentId,
+          claimToken: res.notificationClaimToken,
+          clientPhone: params.clientPhone,
+        });
+      } catch (dispatchErr) {
+        console.warn('[Kani Benefit Codes] Notification dispatch deferred to recovery:', dispatchErr);
+      }
     }
-  }
 
-  // Trigger Google Calendar sync queue immediately for this confirmation
-  try {
-    const { processCalendarSyncQueue } = await import('./kani-google-calendar-sync');
-    await processCalendarSyncQueue({ limit: 5 });
-  } catch (calErr) {
-    console.warn('[Kani Benefit Codes] Calendar sync trigger error:', calErr);
+    // Trigger Google Calendar sync queue immediately for this confirmation
+    try {
+      const { processCalendarSyncQueue } = await import('./kani-google-calendar-sync');
+      await processCalendarSyncQueue({ limit: 5 });
+    } catch (calErr) {
+      console.warn('[Kani Benefit Codes] Calendar sync trigger error:', calErr);
+    }
   }
 
   return {
@@ -1106,7 +1134,7 @@ export async function prepareBenefitCodeForPaywayAttempt(
   ttlSeconds = 600
 ): Promise<{ codeId?: string; code: string; usageMode: BenefitUsageMode }> {
   const normalized = normalizeBenefitCode(code);
-  let usageMode: BenefitUsageMode = KNOWN_REUSABLE_CODES.has(normalized) ? 'REUSABLE' : 'SINGLE_USE';
+  let usageMode: BenefitUsageMode = 'SINGLE_USE';
   let codeId: string | undefined;
 
   if (db && typeof db.from === 'function') {

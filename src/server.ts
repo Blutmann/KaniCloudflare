@@ -306,6 +306,7 @@ export default {
           let recentServicePayments: any[] = [];
           let recentPaymentAttempts: any[] = [];
           let repairResult: any = null;
+          let modalityValidationResult: any = null;
 
           try {
             const { createPaymentSupabaseClient } = await import("./lib/kani-payment-db.server");
@@ -412,6 +413,374 @@ export default {
               }
             }
 
+            if (url.searchParams.get("repair_d100") === "true") {
+              const {
+                encodeInternalNoteWithMetadata,
+                normalizeBenefitCodeRow,
+                parseInternalNoteMetadata,
+              } = await import("./lib/kani-benefit-codes.server");
+
+              const { data: d100Before } = await db
+                .from("benefit_codes")
+                .select("*")
+                .eq("id", "d5b18bd1-d3ca-4b0d-a826-fe92edf4c780")
+                .eq("code", "KANI-O2Q1-FREE-D100")
+                .maybeSingle();
+
+              if (d100Before && d100Before.type === "PERCENT_10") {
+                const { cleanNote } = parseInternalNoteMetadata(d100Before.internal_note);
+                const preservedCleanNote = cleanNote || "Primeros 10 clientes :)";
+                const nextInternalNote = encodeInternalNoteWithMetadata(preservedCleanNote, {
+                  usageMode: "REUSABLE",
+                  validityType: "NO_EXPIRATION",
+                  validFrom: d100Before.created_at,
+                  validUntil: null,
+                  validityDurationValue: null,
+                  validityDurationUnit: null,
+                  timesUsed: 0,
+                  deletedAt: null,
+                });
+
+                const { data: d100After, error: d100Err } = await db
+                  .from("benefit_codes")
+                  .update({
+                    internal_note: nextInternalNote,
+                    status: "ACTIVE",
+                    updated_at: new Date().toISOString(),
+                  })
+                  .eq("id", d100Before.id)
+                  .select("*")
+                  .single();
+
+                // Also ensure previously repaired reusable codes have embedded metadata persisted in DB
+                const prevReusableCodes = [
+                  "KANI-O2Q1-FREE-DD99",
+                  "KANI-O2Q1-FREE-DD98",
+                  "KANI-X9H5-FREE-8R1Z",
+                ];
+                for (const prevCode of prevReusableCodes) {
+                  const { data: prevRow } = await db
+                    .from("benefit_codes")
+                    .select("*")
+                    .eq("code", prevCode)
+                    .maybeSingle();
+                  if (prevRow) {
+                    const parsedPrev = parseInternalNoteMetadata(prevRow.internal_note);
+                    if (parsedPrev.meta?.usageMode !== "REUSABLE") {
+                      const prevMetaNote = encodeInternalNoteWithMetadata(parsedPrev.cleanNote, {
+                        ...(parsedPrev.meta || {}),
+                        usageMode: "REUSABLE",
+                        validityType: parsedPrev.meta?.validityType || "NO_EXPIRATION",
+                        validFrom: parsedPrev.meta?.validFrom || prevRow.created_at,
+                        validUntil: parsedPrev.meta?.validUntil ?? null,
+                        timesUsed: parsedPrev.meta?.timesUsed ?? (prevRow.consumed_at ? 1 : 0),
+                        deletedAt: parsedPrev.meta?.deletedAt ?? null,
+                      });
+                      await db
+                        .from("benefit_codes")
+                        .update({ internal_note: prevMetaNote, status: "ACTIVE" })
+                        .eq("id", prevRow.id);
+                    }
+                  }
+                }
+
+                repairResult = {
+                  repairedCode: "KANI-O2Q1-FREE-D100",
+                  id: d100Before.id,
+                  beforeRaw: d100Before,
+                  afterRaw: d100After,
+                  afterNormalized: d100After ? normalizeBenefitCodeRow(d100After) : null,
+                  error: d100Err ? d100Err.message : null,
+                };
+              } else {
+                repairResult = {
+                  error: "TARGET_D100_NOT_FOUND_OR_TYPE_MISMATCH",
+                  found: d100Before || null,
+                };
+              }
+            }
+
+            if (url.searchParams.get("run_modality_validation") === "true") {
+              const {
+                confirmZeroDepositBooking,
+                encodeInternalNoteWithMetadata,
+                normalizeBenefitCodeRow,
+                validateBenefitCodeQuote,
+              } = await import("./lib/kani-benefit-codes.server");
+
+              const createdCodeIds: string[] = [];
+              const createdAppointmentIds: string[] = [];
+              const suffix = Math.random().toString(36).slice(2, 6).toUpperCase();
+              const reusCode = `KANI-VREU-TEST-${suffix}`;
+              const singCode = `KANI-VSIN-TEST-${suffix}`;
+              const nowIso = new Date().toISOString();
+
+              try {
+                // 1. Create REUSABLE code and reload from DB
+                const reusMetaNote = encodeInternalNoteWithMetadata("Validación real reutilizable", {
+                  usageMode: "REUSABLE",
+                  validityType: "NO_EXPIRATION",
+                  validFrom: nowIso,
+                  validUntil: null,
+                  validityDurationValue: null,
+                  validityDurationUnit: null,
+                  timesUsed: 0,
+                  deletedAt: null,
+                });
+                const { data: insertedReus, error: errReus } = await db
+                  .from("benefit_codes")
+                  .insert({
+                    code: reusCode,
+                    type: "FREE_SERVICE",
+                    status: "ACTIVE",
+                    internal_note: reusMetaNote,
+                  })
+                  .select("*")
+                  .single();
+                if (errReus || !insertedReus) {
+                  throw new Error(`Err creating reusable test code: ${errReus?.message}`);
+                }
+                createdCodeIds.push(insertedReus.id);
+
+                const { data: reloadedReusRaw } = await db
+                  .from("benefit_codes")
+                  .select("*")
+                  .eq("id", insertedReus.id)
+                  .single();
+                const reloadedReusAfterCreate = normalizeBenefitCodeRow(reloadedReusRaw);
+
+                // 2. Create SINGLE_USE code and reload from DB
+                const singMetaNote = encodeInternalNoteWithMetadata("Validación real un solo uso", {
+                  usageMode: "SINGLE_USE",
+                  validityType: "NO_EXPIRATION",
+                  validFrom: nowIso,
+                  validUntil: null,
+                  validityDurationValue: null,
+                  validityDurationUnit: null,
+                  timesUsed: 0,
+                  deletedAt: null,
+                });
+                const { data: insertedSing, error: errSing } = await db
+                  .from("benefit_codes")
+                  .insert({
+                    code: singCode,
+                    type: "FREE_SERVICE",
+                    status: "ACTIVE",
+                    internal_note: singMetaNote,
+                  })
+                  .select("*")
+                  .single();
+                if (errSing || !insertedSing) {
+                  throw new Error(`Err creating single-use test code: ${errSing?.message}`);
+                }
+                createdCodeIds.push(insertedSing.id);
+
+                const { data: reloadedSingRaw } = await db
+                  .from("benefit_codes")
+                  .select("*")
+                  .eq("id", insertedSing.id)
+                  .single();
+                const reloadedSingAfterCreate = normalizeBenefitCodeRow(reloadedSingRaw);
+
+                // 3. Confirm 2 reservations with the REUSABLE code
+                const reusBooking1 = await confirmZeroDepositBooking({
+                  barberName: "Lautaro",
+                  serviceName: "Corte",
+                  bookingDate: "2026-12-16",
+                  startTime: "10:00",
+                  clientName: "Test Reutilizable 1",
+                  clientPhone: "+5491100001111",
+                  clientEmail: "test-reus-1@kanibarber.com",
+                  benefitCode: reusCode,
+                  notes: "Validacion reutilizable reserva 1",
+                  skipExternalSideEffects: true,
+                });
+                createdAppointmentIds.push(reusBooking1.appointmentId);
+
+                const reusBooking2 = await confirmZeroDepositBooking({
+                  barberName: "Lautaro",
+                  serviceName: "Corte",
+                  bookingDate: "2026-12-16",
+                  startTime: "11:00",
+                  clientName: "Test Reutilizable 2",
+                  clientPhone: "+5491100002222",
+                  clientEmail: "test-reus-2@kanibarber.com",
+                  benefitCode: reusCode,
+                  notes: "Validacion reutilizable reserva 2",
+                  skipExternalSideEffects: true,
+                });
+                createdAppointmentIds.push(reusBooking2.appointmentId);
+
+                const { data: reusRowAfter2 } = await db
+                  .from("benefit_codes")
+                  .select("*")
+                  .eq("id", insertedReus.id)
+                  .single();
+                const { data: reusAppts } = await db
+                  .from("appointments")
+                  .select("id, request_number, booking_date, start_time, status, created_at, benefit_code")
+                  .eq("benefit_code", reusCode)
+                  .order("created_at", { ascending: false });
+
+                const mappedReusUsages = (reusAppts || []).map((a: any) => ({
+                  id: `appt-${a.id}`,
+                  appointmentId: a.id,
+                  requestNumber: a.request_number,
+                  bookingDate: a.booking_date,
+                  bookingTime: String(a.start_time || "").slice(0, 5),
+                  appointmentStatus: a.status,
+                  usedAt: a.created_at,
+                  isAppointmentCancelled: a.status === "CANCELLED",
+                }));
+                const normalizedReusAfter2 = normalizeBenefitCodeRow(reusRowAfter2, mappedReusUsages as any);
+                const reusQuoteAfter2 = await validateBenefitCodeQuote({
+                  code: reusCode,
+                  serviceName: "Corte",
+                  barberName: "Lautaro",
+                });
+
+                // 4. Confirm 1 reservation with SINGLE_USE code and verify 2nd is rejected
+                const singBooking1 = await confirmZeroDepositBooking({
+                  barberName: "Lautaro",
+                  serviceName: "Corte",
+                  bookingDate: "2026-12-16",
+                  startTime: "12:00",
+                  clientName: "Test Unico 1",
+                  clientPhone: "+5491100003333",
+                  clientEmail: "test-sing-1@kanibarber.com",
+                  benefitCode: singCode,
+                  notes: "Validacion unico reserva 1",
+                  skipExternalSideEffects: true,
+                });
+                createdAppointmentIds.push(singBooking1.appointmentId);
+
+                const { data: singRowAfter1 } = await db
+                  .from("benefit_codes")
+                  .select("*")
+                  .eq("id", insertedSing.id)
+                  .single();
+                const normalizedSingAfter1 = normalizeBenefitCodeRow(singRowAfter1);
+                const singQuoteAfter1 = await validateBenefitCodeQuote({
+                  code: singCode,
+                  serviceName: "Corte",
+                  barberName: "Lautaro",
+                });
+
+                let secondSingConfirmRejected = false;
+                let secondSingConfirmError: string | null = null;
+                try {
+                  const singBooking2 = await confirmZeroDepositBooking({
+                    barberName: "Lautaro",
+                    serviceName: "Corte",
+                    bookingDate: "2026-12-16",
+                    startTime: "13:00",
+                    clientName: "Test Unico 2",
+                    clientPhone: "+5491100004444",
+                    clientEmail: "test-sing-2@kanibarber.com",
+                    benefitCode: singCode,
+                    notes: "Validacion unico reserva 2 (debe fallar)",
+                    skipExternalSideEffects: true,
+                  });
+                  if (singBooking2?.appointmentId) {
+                    createdAppointmentIds.push(singBooking2.appointmentId);
+                  }
+                } catch (err2: any) {
+                  secondSingConfirmRejected = true;
+                  secondSingConfirmError = err2 instanceof Error ? err2.message : String(err2);
+                }
+
+                modalityValidationResult = {
+                  validation1_createReusableAndReload: {
+                    code: reusCode,
+                    id: insertedReus.id,
+                    persistedInternalNote: reloadedReusRaw?.internal_note,
+                    reloadedUsageMode: reloadedReusAfterCreate.usageMode,
+                    reloadedStatus: reloadedReusAfterCreate.status,
+                    reloadedCleanNote: reloadedReusAfterCreate.internalNote,
+                    passed:
+                      reloadedReusAfterCreate.usageMode === "REUSABLE" &&
+                      reloadedReusAfterCreate.status === "ACTIVE",
+                  },
+                  validation2_createSingleUseAndReload: {
+                    code: singCode,
+                    id: insertedSing.id,
+                    persistedInternalNote: reloadedSingRaw?.internal_note,
+                    reloadedUsageMode: reloadedSingAfterCreate.usageMode,
+                    reloadedStatus: reloadedSingAfterCreate.status,
+                    reloadedCleanNote: reloadedSingAfterCreate.internalNote,
+                    passed:
+                      reloadedSingAfterCreate.usageMode === "SINGLE_USE" &&
+                      reloadedSingAfterCreate.status === "ACTIVE",
+                  },
+                  validation3_reusableTwoBookings: {
+                    booking1: {
+                      appointmentId: reusBooking1.appointmentId,
+                      requestNumber: reusBooking1.requestNumber,
+                    },
+                    booking2: {
+                      appointmentId: reusBooking2.appointmentId,
+                      requestNumber: reusBooking2.requestNumber,
+                    },
+                    statusAfter2Bookings: normalizedReusAfter2.status,
+                    usageModeAfter2Bookings: normalizedReusAfter2.usageMode,
+                    timesUsedAfter2Bookings: normalizedReusAfter2.timesUsed,
+                    usagesCountAfter2Bookings: normalizedReusAfter2.usages?.length ?? 0,
+                    subsequentQuoteValid: reusQuoteAfter2.valid,
+                    passed:
+                      normalizedReusAfter2.status === "ACTIVE" &&
+                      normalizedReusAfter2.usageMode === "REUSABLE" &&
+                      normalizedReusAfter2.timesUsed === 2 &&
+                      (normalizedReusAfter2.usages?.length ?? 0) === 2 &&
+                      reusQuoteAfter2.valid === true,
+                  },
+                  validation4_singleUseOneBookingAndSecondRejected: {
+                    booking1: {
+                      appointmentId: singBooking1.appointmentId,
+                      requestNumber: singBooking1.requestNumber,
+                    },
+                    statusAfter1Booking: normalizedSingAfter1.status,
+                    usageModeAfter1Booking: normalizedSingAfter1.usageMode,
+                    timesUsedAfter1Booking: normalizedSingAfter1.timesUsed,
+                    quoteAfter1BookingValid: singQuoteAfter1.valid,
+                    quoteAfter1BookingMessage: singQuoteAfter1.message,
+                    secondConfirmRejected: secondSingConfirmRejected,
+                    secondConfirmError: secondSingConfirmError,
+                    passed:
+                      normalizedSingAfter1.status === "CONSUMED" &&
+                      normalizedSingAfter1.usageMode === "SINGLE_USE" &&
+                      singQuoteAfter1.valid === false &&
+                      secondSingConfirmRejected === true,
+                  },
+                };
+              } finally {
+                if (createdAppointmentIds.length > 0) {
+                  await db.from("calendar_sync_queue").delete().in("appointment_id", createdAppointmentIds);
+                  await db.from("appointment_status_events").delete().in("appointment_id", createdAppointmentIds);
+                  await db.from("benefit_codes").update({ consumed_appointment_id: null, consumed_client_id: null }).in("id", createdCodeIds);
+                  await db.from("appointments").delete().in("id", createdAppointmentIds);
+                }
+                if (createdCodeIds.length > 0) {
+                  await db.from("benefit_codes").delete().in("id", createdCodeIds);
+                }
+              }
+            }
+
+            // Refresh detailedCodes after any repairs/validations
+            try {
+              const { normalizeBenefitCodeRow } = await import("./lib/kani-benefit-codes.server");
+              const { data: refreshedCodes } = await db
+                .from("benefit_codes")
+                .select("*")
+                .order("created_at", { ascending: false });
+              if (refreshedCodes) {
+                detailedCodes = refreshedCodes.map((r: any) => ({
+                  ...r,
+                  normalizedUsageMode: normalizeBenefitCodeRow(r).usageMode,
+                  normalizedCleanNote: normalizeBenefitCodeRow(r).internalNote,
+                }));
+              }
+            } catch { /* best-effort */ }
+
             // Safe surgical repair of affected reusable code
             const shouldRepair = url.searchParams.get("repair_reusable_code") === "true";
             const targetCode = url.searchParams.get("target_code")?.trim().toUpperCase();
@@ -508,6 +877,7 @@ export default {
               recentPaymentAttempts,
               codeUsages,
               repairResult,
+              modalityValidationResult,
               accountingInvariants: {
                 freeBookingStatusRule: "Una reserva gratuita confirmada NO cuenta como servicio realizado hasta su cobro/cierre en el local.",
                 cancellationPaymentsRule: "Una cancelación NO borra pagos anteriores; se conservan pagos recibidos y reintegros se registran explícitamente.",

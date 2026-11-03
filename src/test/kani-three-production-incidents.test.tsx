@@ -80,6 +80,7 @@ vi.mock("@/components/kani/v2/data", () => ({
 
 import { V2Payments } from "@/components/kani/v2/payments";
 import {
+  adminCreateBenefitCode,
   adminToggleBenefitCodeStatus,
   adminDeleteBenefitCode,
 } from "@/lib/kani-benefit-codes.server";
@@ -374,6 +375,91 @@ describe("Tres incidentes productivos — Regresión integral", () => {
       expect(delRes).toBe(true);
       expect(String(currentCodeRow.internal_note)).toContain("[[KANI_META:");
       expect(String(currentCodeRow.internal_note)).toContain("deletedAt");
+    });
+
+    it("persiste explícitamente la modalidad elegida (REUSABLE o SINGLE_USE) al crear un código y rechaza modalidades inválidas", async () => {
+      const rpcCalls: Array<{ fn: string; args: Record<string, unknown> }> = [];
+      dbServerMocks.createRequestSupabaseClient.mockResolvedValue({
+        auth: {
+          getUser: vi.fn().mockResolvedValue({
+            data: { user: { id: "admin-1", email: "admin@kanibarber.com" } },
+            error: null,
+          }),
+        },
+        rpc: vi.fn(async (fn: string, args: Record<string, unknown>) => {
+          rpcCalls.push({ fn, args });
+          if ("p_usage_mode" in args) {
+            return {
+              data: null,
+              error: {
+                code: "PGRST202",
+                message: "Could not find the function public.admin_create_benefit_code in the schema cache",
+              },
+            };
+          }
+          return {
+            data: {
+              id: "d5b18bd1-d3ca-4b0d-a826-fe92edf4c780",
+              code: args.p_code,
+              type: args.p_type,
+              status: "ACTIVE",
+              internal_note: args.p_internal_note,
+              created_at: "2026-11-03T03:59:25.39811+00:00",
+            },
+            error: null,
+          };
+        }),
+        from: (table: string) => {
+          if (table === "staff_profiles") {
+            return {
+              select: () => ({
+                eq: () => ({
+                  maybeSingle: async () => ({
+                    data: { role: "ADMIN", active: true, display_name: "Admin Kani" },
+                    error: null,
+                  }),
+                }),
+              }),
+            };
+          }
+          return {};
+        },
+      });
+
+      const createdReusable = await adminCreateBenefitCode({
+        token: "valid-admin-jwt",
+        code: "KANI-O2Q1-FREE-D100",
+        type: "PERCENT_10",
+        usageMode: "REUSABLE",
+        validityType: "NO_EXPIRATION",
+        internalNote: "Primeros 10 clientes :)",
+      });
+
+      expect(createdReusable.code).toBe("KANI-O2Q1-FREE-D100");
+      expect(createdReusable.type).toBe("PERCENT_10");
+      expect(createdReusable.usageMode).toBe("REUSABLE");
+      expect(createdReusable.internalNote).toBe("Primeros 10 clientes :)");
+      expect(String(rpcCalls[1]?.args.p_internal_note)).toContain('"usageMode":"REUSABLE"');
+
+      const createdSingle = await adminCreateBenefitCode({
+        token: "valid-admin-jwt",
+        code: "KANI-SING-TEST-0001",
+        type: "PERCENT_10",
+        usageMode: "SINGLE_USE",
+        validityType: "NO_EXPIRATION",
+        internalNote: "Nota single",
+      });
+
+      expect(createdSingle.usageMode).toBe("SINGLE_USE");
+      expect(String(rpcCalls[3]?.args.p_internal_note)).toContain('"usageMode":"SINGLE_USE"');
+
+      await expect(
+        adminCreateBenefitCode({
+          token: "valid-admin-jwt",
+          type: "PERCENT_10",
+          usageMode: "INVALID_MODE" as any,
+        }),
+      ).rejects.toThrow(/INVALID_USAGE_MODE/i);
     });
   });
 });

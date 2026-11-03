@@ -40,6 +40,9 @@ export const adminCreateBenefitCodeFn = createServerFn({ method: 'POST' })
     if (!['NO_DEPOSIT', 'FREE_SERVICE', 'PERCENT_10', 'PERCENT_50'].includes(input.type)) {
       throw new Error('INVALID_BENEFIT_TYPE');
     }
+    if (input.usageMode !== 'SINGLE_USE' && input.usageMode !== 'REUSABLE') {
+      throw new Error('INVALID_USAGE_MODE: Debe seleccionarse explícitamente la modalidad de uso (Un solo uso o Reutilizable).');
+    }
     return input;
   })
   .handler(async ({ data }) => {
