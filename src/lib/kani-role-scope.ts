@@ -1,3 +1,4 @@
+import { validStaffScope } from './kani-permissions';
 import { barbers, type Barber } from './kani-model';
 import type { StaffBarber, StaffProfile } from './kani-auth';
 
@@ -6,6 +7,7 @@ function knownBarber(name: string): Barber | null {
 }
 
 export function permittedBarberNames(profile: Pick<StaffProfile, 'role' | 'barber_id'>, rows: StaffBarber[]): Barber[] {
+  if (!validStaffScope(profile)) return [];
   const scopedRows = profile.role === 'BARBER'
     ? rows.filter(row => row.id === profile.barber_id)
     : rows;

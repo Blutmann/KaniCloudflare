@@ -1,3 +1,4 @@
+import { isStaffOperator } from './kani-permissions';
 import type { RealAppointment } from "./kani-appointments";
 import type { ServicePayment } from "./kani-payments";
 import type { AvailabilitySlot } from "./kani-availability";
@@ -58,7 +59,7 @@ export function scopeV2<T extends { barberId: string }>(
 ) {
   return items.filter(
     (item) =>
-      (role === "ADMIN" || (role === "BARBER" && ownId !== null && item.barberId === ownId)) &&
+      (isStaffOperator(role) || (role === "BARBER" && ownId !== null && item.barberId === ownId)) &&
       (filter === "ALL" || item.barberId === filter),
   );
 }
