@@ -59,16 +59,16 @@ function next() {
 
 async function selectServiceAndBarberV3(deferred = false) {
   render(<Booking variant="v3" />);
-  fireEvent.click(screen.getByRole('button', { name: /^Corte 45/ }));
+  fireEvent.click(screen.getByRole('button', { name: /^Corte(?: de cabello)?, 45 minutos/ }));
   next();
   fireEvent.click(screen.getByRole('button', { name: deferred ? /Elegir más adelante/ : /Lautaro/ }));
   await waitFor(() => expect(api.read).toHaveBeenCalled());
   next();
-  await screen.findByRole('button', { name: dateLabel('2026-10-26') });
+  await screen.findByRole('button', { name: new RegExp('^' + dateLabel('2026-10-26')) });
 }
 
 function chooseTime() {
-  fireEvent.click(screen.getByRole('button', { name: '10:00' }));
+  fireEvent.click(screen.getByRole('button', { name: /^Horario 10:00/ }));
 }
 
 async function fillContactV3() {
@@ -111,7 +111,7 @@ describe('Reserva V3 — 5-step booking flow', () => {
 
     // Step 1: Servicio
     expect(screen.getByRole('heading', { name: 'Elegí un servicio' })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /^Corte 45/ }));
+    fireEvent.click(screen.getByRole('button', { name: /^Corte(?: de cabello)?, 45 minutos/ }));
     next();
 
     // Step 2: Barbero
@@ -130,7 +130,7 @@ describe('Reserva V3 — 5-step booking flow', () => {
     expect(screen.getByText('Atendemos de lunes a sábado de 10 a 20 hs.')).toBeInTheDocument();
 
     // Select date and continue to Horario
-    fireEvent.click(screen.getByRole('button', { name: dateLabel('2026-10-26') }));
+    fireEvent.click(screen.getByRole('button', { name: new RegExp('^' + dateLabel('2026-10-26')) }));
     next();
 
     // Step 4: Horario (Paso 4 de 5)
@@ -164,12 +164,12 @@ describe('Reserva V3 — 5-step booking flow', () => {
     await selectServiceAndBarberV3();
 
     // Step 3: Fecha
-    fireEvent.click(screen.getByRole('button', { name: dateLabel('2026-10-26') }));
+    fireEvent.click(screen.getByRole('button', { name: new RegExp('^' + dateLabel('2026-10-26')) }));
     next();
 
     // Step 4: Horario
     chooseTime();
-    expect(screen.getByRole('button', { name: '10:00' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: /^Horario 10:00/ })).toHaveAttribute('aria-pressed', 'true');
     next();
 
     // Step 5: Datos
@@ -178,20 +178,20 @@ describe('Reserva V3 — 5-step booking flow', () => {
     // Return to Step 4 (Horario)
     fireEvent.click(screen.getByRole('button', { name: 'Volver' }));
     expect(screen.getByRole('heading', { name: 'Elegí un horario' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '10:00' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: /^Horario 10:00/ })).toHaveAttribute('aria-pressed', 'true');
 
     // Return to Step 3 (Fecha)
     fireEvent.click(screen.getByRole('button', { name: 'Volver' }));
     expect(screen.getByRole('heading', { name: 'Elegí una fecha' })).toBeInTheDocument();
 
     // Change date to 2026-10-27
-    fireEvent.click(screen.getByRole('button', { name: dateLabel('2026-10-27') }));
+    fireEvent.click(screen.getByRole('button', { name: new RegExp('^' + dateLabel('2026-10-27')) }));
     next();
 
     // In Step 4: Previous time 10:00 is reset / not preselected
     expect(screen.getByRole('heading', { name: 'Elegí un horario' })).toBeInTheDocument();
     expect(screen.getByText('Martes 27/10')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '10:00' })).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByRole('button', { name: /^Horario 10:00/ })).toHaveAttribute('aria-pressed', 'false');
     expect(screen.getByRole('button', { name: 'Continuar' })).toBeDisabled();
 
     // Choose time for the new date and advance to Step 5
@@ -209,16 +209,16 @@ describe('Reserva V3 — 5-step booking flow', () => {
     await selectServiceAndBarberV3(true);
 
     // Step 3: Fecha
-    fireEvent.click(screen.getByRole('button', { name: dateLabel('2026-10-26') }));
+    fireEvent.click(screen.getByRole('button', { name: new RegExp('^' + dateLabel('2026-10-26')) }));
     next();
 
     // Step 4: Horario
     chooseTime();
     // Continuar disabled until barber is picked from candidate list
     expect(screen.getByRole('button', { name: 'Continuar' })).toBeDisabled();
-    expect(screen.getByText('¿Quién te va a atender?')).toBeInTheDocument();
+    expect(screen.getByText(/¿Quién te va a atender a las 10:00 hs\?/)).toBeInTheDocument();
 
-    fireEvent.click(within(screen.getByText('¿Quién te va a atender?').parentElement!).getByRole('button', { name: 'Gonzalo' }));
+    fireEvent.click(within(screen.getByText(/¿Quién te va a atender a las 10:00 hs\?/).parentElement!).getByRole('button', { name: /^Barbero Gonzalo/ }));
     await waitFor(() => expect(screen.getByRole('button', { name: 'Continuar' })).toBeEnabled());
 
     next();
@@ -228,7 +228,7 @@ describe('Reserva V3 — 5-step booking flow', () => {
 
   it('submits Mercado Pago order from Step 5 with $5.000 seña and redirects correctly', async () => {
     await selectServiceAndBarberV3();
-    fireEvent.click(screen.getByRole('button', { name: dateLabel('2026-10-26') }));
+    fireEvent.click(screen.getByRole('button', { name: new RegExp('^' + dateLabel('2026-10-26')) }));
     next();
     chooseTime();
     next();
@@ -272,7 +272,7 @@ describe('Reserva V3 — 5-step booking flow', () => {
 
   it('allows returning from Step 4 (Horario) to Step 3 (Fecha) via Volver button without duplicate Cambiar link', async () => {
     await selectServiceAndBarberV3();
-    fireEvent.click(screen.getByRole('button', { name: dateLabel('2026-10-26') }));
+    fireEvent.click(screen.getByRole('button', { name: new RegExp('^' + dateLabel('2026-10-26')) }));
     next();
 
     expect(screen.getByRole('heading', { name: 'Elegí un horario' })).toBeInTheDocument();

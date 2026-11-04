@@ -174,6 +174,16 @@ except RuntimeError as error: assert 'permission denied' in str(error)
 else: raise AssertionError('Private availability notes exposed')
 assert sql("select ('security_invoker=true'=any(reloptions))::text from pg_class where oid='public.available_barber_slots'::regclass")=='true'
 print('Legacy definer bypasses closed; service callbacks preserved; public invoker view hides blocked intervals and private notes: PASS')
+assert sql("select has_table_privilege('authenticated','public.service_payments','TRUNCATE')::text")=='false'
+assert sql("select has_table_privilege('authenticated','public.service_payments','TRIGGER')::text")=='false'
+assert sql("select has_column_privilege('anon','public.barber_availability_slots','internal_note','SELECT')::text")=='false'
+assert sql("select has_table_privilege('anon','public.barber_availability_slots','SELECT')::text")=='false'
+assert last(sql("set role anon;select count(*) from (select id,barber_id,slot_date,start_time,end_time,status from barber_availability_slots where slot_date=current_date+13) public_columns"))=='2'
+assert last(asuser(1,"select internal_note from barber_availability_slots where internal_note='PRIVATE'"))=='PRIVATE'
+try: sql("set role anon;select * from barber_availability_slots where slot_date=current_date+13")
+except RuntimeError as error: assert 'permission denied' in str(error)
+else: raise AssertionError('Anonymous wildcard read exposed private availability fields')
+print('Broad anon/PUBLIC grants and direct note grants removed; public columns preserved; staff notes remain scoped: PASS')
 
 check_denied(1,"select create_appointment_notification_event('%s','CONFIRMED')"%public_apt,'permission denied')
 check_denied(1,"select staff_create_appointment_notification_event('%s','NEW_REQUEST')"%public_apt,'APPOINTMENT_NOT_ALLOWED')

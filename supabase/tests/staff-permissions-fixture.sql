@@ -403,3 +403,8 @@ END;
 $function$;
 create policy public_can_read_active_barbers on public.barbers for select to anon using(active);
 create policy public_can_read_available_slots on public.barber_availability_slots for select to anon using(status='AVAILABLE');
+-- Match production's broad legacy grant so the migration must actually remove it.
+grant select on public.barber_availability_slots to anon;
+-- Additional grant paths must not survive alongside the safe public-column grants.
+grant select on public.barber_availability_slots to public;
+grant select(internal_note) on public.barber_availability_slots to public,anon;

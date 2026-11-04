@@ -1,4 +1,12 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+const rpc = vi.hoisted(() => vi.fn());
+vi.mock('@/integrations/supabase/client', () => ({ supabase: { rpc } }));
+beforeEach(() => {
+  rpc.mockReset().mockImplementation(async (name: string) => ({
+    data: name === 'create_manual_appointment' ? [{ appointment_id: 'isolated-manual-fixture' }] : null,
+    error: null,
+  }));
+});
 import { appointmentErrorMessage, type RealAppointment } from './kani-appointments';
 import { aggregateClientsDirectory } from './kani-statistics';
 import { normalizePhone } from './kani-phone';
@@ -6,7 +14,7 @@ import { normalizePhone } from './kani-phone';
 describe('Manual Appointments & Recurring Logic Unit Tests', () => {
   it('correctly categorizes manual appointment collision errors in appointmentErrorMessage', () => {
     const error1 = new Error('SLOT_ALREADY_BOOKED');
-    expect(appointmentErrorMessage(error1)).toContain('Ese horario acaba de');
+    expect(appointmentErrorMessage(error1)).toContain('El barbero ya tiene un turno reservado');
 
     const error2 = new Error('MANUAL_APPOINTMENT_NOT_ALLOWED');
     expect(appointmentErrorMessage(error2)).toBe('No tenés permisos para agendar en la agenda de otro barbero.');
@@ -196,31 +204,15 @@ describe('Manual Appointments & Recurring Logic Unit Tests', () => {
     expect(normCL?.e164).toBe('+56961234567');
   });
 
-  it('rejects manual appointment creation if client email is missing or empty', async () => {
+  it('allows an optional empty email without contacting a real database', async () => {
     const { createManualAppointment } = await import('./kani-appointments');
-    await expect(
-      createManualAppointment({
-        barberId: 'barber-1',
-        serviceId: 'service-1',
-        date: '2026-10-25',
-        time: '11:00',
-        name: 'Carlos Tevez',
-        phone: '+5491112345678',
-        email: '',
-      })
-    ).rejects.toThrow('El correo electrónico del cliente es obligatorio y debe tener un formato válido.');
-
-    await expect(
-      createManualAppointment({
-        barberId: 'barber-1',
-        serviceId: 'service-1',
-        date: '2026-10-25',
-        time: '11:00',
-        name: 'Carlos Tevez',
-        phone: '+5491112345678',
-        email: '   ',
-      })
-    ).rejects.toThrow('El correo electrónico del cliente es obligatorio y debe tener un formato válido.');
+    for (const email of ['', '   ']) {
+      await expect(createManualAppointment({
+        barberId: 'barber-1', serviceId: 'service-1', date: '2026-10-25', time: '11:00',
+        name: 'Cliente sintético', phone: '+5491112345678', email,
+      })).resolves.toMatchObject({ appointment_id: 'isolated-manual-fixture' });
+      expect(rpc).toHaveBeenCalledWith('create_manual_appointment', expect.objectContaining({ p_client_email: null }));
+    }
   });
 
   it('rejects manual appointment creation if client email format is invalid', async () => {
@@ -243,7 +235,7 @@ describe('Manual Appointments & Recurring Logic Unit Tests', () => {
 
   it('formats email error message clearly via appointmentErrorMessage', () => {
     const err = new Error('El correo electrónico del cliente es obligatorio y debe tener un formato válido.');
-    expect(appointmentErrorMessage(err)).toBe('El correo electrónico del cliente es obligatorio y debe tener un formato válido.');
+    expect(appointmentErrorMessage(err)).toBe('El correo electrónico del cliente debe tener un formato válido.');
   });
 
   it('defines manual appointment responsive mobile and desktop grid styles in styles.css', async () => {
@@ -440,11 +432,11 @@ describe('Manual Appointments & Recurring Logic Unit Tests', () => {
         serviceId: 'svc-1',
         date: '2026-10-25',
         time: '10:00',
-        name: 'Al',
+        name: 'A',
         phone: '+5491144445555',
         email: 'palermo@boca.internal',
       })
-    ).rejects.toThrow('El nombre del cliente es obligatorio y debe tener al menos 3 caracteres.');
+    ).rejects.toThrow('El nombre del cliente es obligatorio y debe tener al menos 2 caracteres.');
 
     // Invalid phone
     await expect(
@@ -539,7 +531,7 @@ describe('Manual Appointments & Recurring Logic Unit Tests', () => {
     expect(componentCode).toContain('<DialogDescription className="sr-only">');
 
     // Service dropdown simplified: displays {s.name} without duration and price strings
-    expect(componentCode).toMatch(/<option key=\{s\.id\} value=\{s\.id\}>\s*\{s\.name\}\s*<\/option>/);
+    expect(componentCode).toMatch(/<option key=\{s\.id\} value=\{s\.id\}>\s*\{formatServiceName\(s\.name\)\}\s*<\/option>/);
     expect(componentCode).not.toContain('{s.duration_minutes} min');
 
     // Abona seña field with exclusively No / Sí options

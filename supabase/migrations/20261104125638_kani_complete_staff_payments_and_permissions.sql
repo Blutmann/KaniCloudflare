@@ -4,7 +4,8 @@ alter policy staff_can_read_barbers on public.barbers using (
 );
 alter policy service_payments_delete on public.service_payments using ((select public.is_operator()));
 -- Financial writes require the checked RPCs, including soft deletion. RLS remains on reads.
-revoke insert, update, delete on public.service_payments from authenticated;
+revoke all on public.service_payments from anon,authenticated;
+grant select on public.service_payments to authenticated;
 
 alter table public.service_payments
  add column discount_kind text not null default 'FIXED' check (discount_kind in ('FIXED','PERCENT')),
@@ -613,7 +614,15 @@ create or replace view public.available_barber_slots with(security_invoker=true)
  and not public.is_public_slot_booked(s.barber_id,s.slot_date,segment.segment_start::time,(segment.segment_start+interval '5 minutes')::time)
  and not public.is_public_slot_blocked(s.barber_id,s.slot_date,segment.segment_start::time,(segment.segment_start+interval '5 minutes')::time)
  order by s.barber_id,s.slot_date,segment.segment_start,s.id;
+-- Replace broad grants (including inherited PUBLIC access) and any direct note grant.
+revoke select on public.barber_availability_slots from public,anon;
+revoke select(internal_note) on public.barber_availability_slots from public,anon;
 grant select(id,barber_id,slot_date,start_time,end_time,status) on public.barber_availability_slots to anon;
+do $$ begin
+ if has_column_privilege('anon','public.barber_availability_slots','internal_note','SELECT') then
+  raise exception 'Anonymous availability notes remain readable through another inherited grant';
+ end if;
+end; $$;
 grant select(id,active) on public.barbers to anon;
 grant select on public.available_barber_slots to anon,authenticated;
 

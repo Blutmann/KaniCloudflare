@@ -16,6 +16,9 @@ for attempt in range(30):
   if attempt==29:raise
   time.sleep(.2)
 sql((Path(__file__).parent/'staff-permissions-fixture.sql').read_text(encoding='utf-8'))
+assert sql("select has_table_privilege('anon','public.barber_availability_slots','SELECT')::text")=='true'
+assert sql("select has_column_privilege('anon','public.barber_availability_slots','internal_note','SELECT')::text")=='true'
+print('Legacy broad anonymous availability access reproduced before migrations: PASS')
 for name in ['20261104121944_kani_manager_role.sql','20261104121945_kani_operational_permissions.sql','20261104125638_kani_complete_staff_payments_and_permissions.sql']:
  sql('BEGIN;\n'+(repo/'supabase/migrations'/name).read_text(encoding='utf-8')+'\nCOMMIT;')
 print('Migrations apply to production-derived schema fixture: PASS')

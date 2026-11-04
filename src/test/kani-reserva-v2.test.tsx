@@ -28,14 +28,14 @@ const fixtures = ['2026-10-26', '2026-10-27'].flatMap(slot_date =>
 function next() { fireEvent.click(screen.getAllByRole('button', { name: 'Continuar' }).find(button => !button.hidden)!); }
 async function selectServiceAndBarber(combined = true, deferred = false) {
   render(<Booking combinedDateTime={combined} />);
-  fireEvent.click(screen.getByRole('button', { name: /^Corte 45/ }));
+  fireEvent.click(screen.getByRole('button', { name: /^Corte(?: de cabello)?, 45 minutos/ }));
   next();
   fireEvent.click(screen.getByRole('button', { name: deferred ? /Elegir más adelante/ : /Lautaro/ }));
   await waitFor(() => expect(api.read).toHaveBeenCalled());
   next();
-  await screen.findByRole('button', { name: dateLabel('2026-10-26') });
+  await screen.findByRole('button', { name: new RegExp('^' + dateLabel('2026-10-26')) });
 }
-function chooseTime() { fireEvent.click(screen.getByRole('button', { name: '10:00' })); }
+function chooseTime() { fireEvent.click(screen.getByRole('button', { name: /^Horario 10:00/ })); }
 async function fillContact(combined = true) {
   await screen.findByRole('textbox', { name: /^Nombre/ });
   fireEvent.change(screen.getByRole('textbox', { name: /^Nombre/ }), { target: { value: 'Cliente de prueba' } });
@@ -68,14 +68,14 @@ describe('isolated four-stage booking presentation', () => {
     expect(screen.getByRole('group', { name: 'Horarios disponibles' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Continuar' })).toBeDisabled();
     chooseTime();
-    fireEvent.click(screen.getByRole('button', { name: dateLabel('2026-10-27') }));
-    expect(screen.getByRole('button', { name: '10:00' })).toHaveAttribute('aria-pressed', 'false');
+    fireEvent.click(screen.getByRole('button', { name: new RegExp('^' + dateLabel('2026-10-27')) }));
+    expect(screen.getByRole('button', { name: /^Horario 10:00/ })).toHaveAttribute('aria-pressed', 'false');
     expect(screen.getByRole('button', { name: 'Continuar' })).toBeDisabled();
     chooseTime(); next();
     await screen.findByRole('heading', { name: 'Completá tus datos' });
     fireEvent.click(screen.getByRole('button', { name: 'Volver' }));
-    expect(screen.getByRole('button', { name: dateLabel('2026-10-27') })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByRole('button', { name: '10:00' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: new RegExp('^' + dateLabel('2026-10-27')) })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: /^Horario 10:00/ })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByLabelText('Paso 3 de 4: Fecha y horario')).toBeInTheDocument();
   });
 
@@ -83,10 +83,10 @@ describe('isolated four-stage booking presentation', () => {
     await selectServiceAndBarber(true, true);
     chooseTime();
     expect(screen.getByRole('button', { name: 'Continuar' })).toBeDisabled();
-    fireEvent.click(within(screen.getByText('¿Quién te va a atender?').parentElement!).getByRole('button', { name: 'Gonzalo' }));
+    fireEvent.click(within(screen.getByText(/¿Quién te va a atender a las 10:00 hs\?/).parentElement!).getByRole('button', { name: /^Barbero Gonzalo/ }));
     await waitFor(() => expect(screen.getByRole('button', { name: 'Continuar' })).toBeEnabled());
-    fireEvent.click(screen.getByRole('button', { name: dateLabel('2026-10-27') }));
-    expect(screen.queryByText('¿Quién te va a atender?')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: new RegExp('^' + dateLabel('2026-10-27')) }));
+    expect(screen.queryByText(/¿Quién te va a atender a las 10:00 hs\?/)).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Continuar' })).toBeDisabled();
   });
 
@@ -94,10 +94,10 @@ describe('isolated four-stage booking presentation', () => {
     render(<Booking combinedDateTime={combined} />);
     const progress = screen.getByLabelText(`Paso 1 de ${combined ? 4 : 6}: Servicio`);
     expect(within(progress).getByRole('button', { name: /Barbero/ })).toBeDisabled();
-    fireEvent.click(screen.getByRole('button', { name: /^Corte 45/ })); next();
+    fireEvent.click(screen.getByRole('button', { name: /^Corte(?: de cabello)?, 45 minutos/ })); next();
     fireEvent.click(within(progress).getByRole('button', { name: /Servicio/ }));
     expect(screen.getByRole('heading', { name: 'Elegí un servicio' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /^Corte 45/ })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: /^Corte(?: de cabello)?, 45 minutos/ })).toHaveAttribute('aria-pressed', 'true');
   });
 
   it('shows no empty time card before a date is available', async () => {
@@ -126,7 +126,7 @@ describe('isolated four-stage booking presentation', () => {
     await selectServiceAndBarber(combined);
     if (!combined) {
       expect(screen.getByLabelText('Paso 3 de 6: Fecha')).toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: '10:00' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /^Horario 10:00/ })).not.toBeInTheDocument();
       next();
       expect(screen.getByLabelText('Paso 4 de 6: Horario')).toBeInTheDocument();
     }
@@ -158,7 +158,7 @@ describe('isolated four-stage booking presentation', () => {
     expect(document.querySelector('.booking-v2-unified-summary .booking-summary-card')).toBeNull();
     expect(screen.getByText('Tu turno se confirma cuando se acredita la seña.')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Volver' }));
-    fireEvent.click(screen.getByRole('button', { name: '11:30', exact: true })); next();
+    fireEvent.click(screen.getByRole('button', { name: /^Horario 11:30/, exact: true })); next();
     expect(screen.getByRole('textbox', { name: /^Nombre/ })).toHaveValue('Cliente de prueba');
     expect(screen.getByRole('textbox', { name: /^Email/ })).toHaveValue('cliente@example.test');
     expect(screen.getByText('11:30', { selector: 'dd' })).toBeInTheDocument();
@@ -191,9 +191,9 @@ describe('isolated four-stage booking presentation', () => {
       fireEvent.click(screen.getByRole('button', { name: /Gonzalo/ })); next();
     } else {
       fireEvent.click(within(progress).getByRole('button', { name: /Fecha y horario/ }));
-      fireEvent.click(screen.getByRole('button', { name: dateLabel('2026-10-27') }));
+      fireEvent.click(screen.getByRole('button', { name: new RegExp('^' + dateLabel('2026-10-27')) }));
     }
-    await screen.findByRole('button', { name: '10:00' }); chooseTime(); next();
+    await screen.findByRole('button', { name: /^Horario 10:00/ }); chooseTime(); next();
     expect(screen.getByRole('textbox', { name: /^Nombre/ })).toHaveValue('Cliente de prueba');
     expect(screen.getByRole('textbox', { name: /^Email/ })).toHaveValue('cliente@example.test');
     expect(screen.getByRole('button', { name: 'Pagar seña' })).toBeEnabled();
