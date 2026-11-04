@@ -1,5 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
-import { Check, Clock3, CalendarDays, UserRound, Users, ChevronLeft, ChevronRight, ArrowLeft, CircleAlert, MapPin, Instagram, Tag, Loader2, X } from 'lucide-react';
+import { Check, Clock3, Coffee, CalendarDays, UserRound, Users, ChevronLeft, ChevronRight, ArrowLeft, CircleAlert, MapPin, Instagram, Tag, Loader2, X } from 'lucide-react';
 import { validateBenefitCodeQuoteFn } from '@/lib/kani-benefit-codes.functions';
 import type { BenefitQuote } from '@/lib/kani-benefit-codes';
 import { Button } from '@/components/ui/button';
@@ -1530,9 +1530,9 @@ export function Booking({
 
             {step === 0 && (
               <p className="booking-deposit-notice" role="note">
-                <Clock3 size={16} aria-hidden="true" />
-                <span className="hidden sm:inline">Tu turno requiere abonar una seña. En el resumen verás el importe exacto, el total y el saldo restante.</span>
-                <span className="sm:hidden">Reservar un turno requiere abonar una seña.</span>
+                <Coffee size={16} aria-hidden="true" />
+                <span className="hidden sm:inline">Tu servicio incluye lavado de cabello y una bebida de cortesía para disfrutar de tu visita a Kani.</span>
+                <span className="sm:hidden">Tu servicio incluye lavado de cabello y una bebida de cortesía para disfrutar de tu visita.</span>
               </p>
             )}
             {paymentNotice && (step === 5 || ((isV2 || isFiveSteps) && step === 4)) && (

@@ -13,18 +13,24 @@ describe('Kani — Texto de seña en Servicio y Código de descuento en Datos', 
     vi.restoreAllMocks();
   });
 
-  describe('1. Elegir servicio — Texto de seña condicional móvil vs escritorio', () => {
-    it('muestra el texto abreviado solo en móvil y el texto extendido en escritorio', () => {
+  describe('1. Elegir servicio — Aviso de cortesía condicional móvil vs escritorio e ícono de café', () => {
+    it('muestra el texto compacto en móvil, el texto extendido en escritorio y el ícono de taza de café', () => {
       const { container } = renderWithProvider(<Booking initialStep={0} />);
       const depositNotice = container.querySelector('.booking-deposit-notice');
       expect(depositNotice).toBeInTheDocument();
 
+      const iconSvg = depositNotice?.querySelector('svg');
+      expect(iconSvg).toBeInTheDocument();
+      expect(iconSvg).toHaveClass('lucide-coffee');
+
       const mobileSpan = depositNotice?.querySelector('.sm\\:hidden');
       const desktopSpan = depositNotice?.querySelector('.hidden.sm\\:inline');
 
-      expect(mobileSpan).toHaveTextContent('Reservar un turno requiere abonar una seña.');
+      expect(mobileSpan).toHaveTextContent(
+        'Tu servicio incluye lavado de cabello y una bebida de cortesía para disfrutar de tu visita.'
+      );
       expect(desktopSpan).toHaveTextContent(
-        'Tu turno requiere abonar una seña. En el resumen verás el importe exacto, el total y el saldo restante.'
+        'Tu servicio incluye lavado de cabello y una bebida de cortesía para disfrutar de tu visita a Kani.'
       );
     });
   });

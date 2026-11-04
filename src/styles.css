@@ -383,8 +383,9 @@ html[data-theme="light"] .booking-progress .complete > span { border-color: #702
 .booking-page .field-label { font-family: var(--font-sans); }
 .admin-page, .admin-page h1, .admin-page h2, .admin-page h3, .admin-page button, .admin-page input, .admin-page select { font-family: var(--font-sans); }
 .booking-page .section-title { margin-bottom: 12px; }
-.booking-deposit-notice { display: flex; width: 100%; box-sizing: border-box; align-items: center; gap: 9px; margin: 20px 0 0; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius-control, 0.65rem); background: var(--surface); box-shadow: 0 10px 26px rgb(0 0 0 / 0.14); color: var(--foreground); font-size: 12px; line-height: 1.5; }
-.booking-deposit-notice svg { flex: 0 0 auto; margin-top: 0; color: inherit; }
+.booking-deposit-notice { display: flex; width: 100%; box-sizing: border-box; align-items: center; gap: 9px; margin: 20px 0 0; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius-control, 0.65rem); background: var(--surface); box-shadow: 0 10px 26px rgb(0 0 0 / 0.14); color: var(--foreground); font-size: 12px; line-height: 1.4; }
+.booking-deposit-notice svg { flex: 0 0 auto; align-self: center; margin-top: 0; color: var(--gold); }
+.booking-deposit-notice > span { flex: 1 1 auto; min-width: 0; }
 .booking-aside { margin-top: 9px; padding: 27px 0 27px 28px; border-left: 1px solid var(--border); }
 .booking-defer-option { width: 100%; height: 104px; min-height: 104px; display: flex; align-items: center; gap: 18px; padding: 20px 22px; border-radius: var(--radius-control, 0.65rem); background: var(--surface); box-shadow: 0 10px 26px rgb(0 0 0 / 0.14); text-align: left; white-space: normal; }
 .booking-defer-option.selected,
@@ -1718,6 +1719,7 @@ html[data-theme='dark'] .studio-map-card {
  .booking-time-heading-date { min-width: 0; flex: 0 1 auto; gap: 5px; margin-top: 0; overflow: hidden; font-size: clamp(10px, 2.8vw, 13px); white-space: nowrap; text-overflow: ellipsis; }
  .booking-time-heading-date svg { width: 14px; height: 14px; }
  .booking-option { gap: 14px; padding: 14px 16px; height: 70px; min-height: 70px; }
+ .booking-deposit-notice { align-items: center; gap: 10px; padding: 10px 12px; line-height: 1.38; }
  .booking-defer-option { height: 70px; min-height: 70px; padding: 14px 16px; gap: 14px; }
  .booking-defer-option .barber-defer-mark { width: 40px; height: 40px; flex-basis: 40px; }
  .phone-input-row { grid-template-columns: 126px minmax(0, 1fr); }
@@ -3608,7 +3610,7 @@ html[data-theme='light'] .booking-deposit-notice {
   color: var(--foreground) !important;
 }
 html[data-theme='light'] .booking-deposit-notice svg {
-  color: var(--foreground) !important;
+  color: var(--primary) !important;
 }
 
 html[data-theme='light'] .confirmation-details {
@@ -3934,7 +3936,7 @@ html[data-theme='dark'] .booking-deposit-notice {
   color: var(--foreground) !important;
 }
 html[data-theme='dark'] .booking-deposit-notice svg {
-  color: var(--foreground) !important;
+  color: var(--gold) !important;
 }
 
 html[data-theme='dark'] .confirmation-details {
