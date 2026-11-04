@@ -9,28 +9,41 @@ export const Route = createFileRoute("/activar-cuenta")({
   }),
 });
 
-function ActivateAccount() {
+export function ActivateAccount() {
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   useEffect(() => {
     let cancelled = false;
     void (async () => {
-      const parameters = new URL(window.location.href).searchParams;
-      const code = parameters.get("code");
-      const tokenHash = parameters.get("token_hash");
-      if (tokenHash && parameters.get("type") === "invite")
-        await supabase.auth.verifyOtp({ token_hash: tokenHash, type: "invite" });
-      if (code) await supabase.auth.exchangeCodeForSession(code);
-      const {
-        data: { user },
-        error,
-      } = await supabase.auth.getUser();
-      if (cancelled) return;
-      window.history.replaceState({}, "", "/activar-cuenta");
-      if (error || !user)
-        setError("La invitación venció o no es válida. Solicitá un nuevo enlace a KANI.");
-      else setReady(true);
+      try {
+        const url = new URL(window.location.href);
+        const parameters = url.searchParams;
+        const fragment = new URLSearchParams(url.hash.slice(1));
+        if (parameters.has("error") || fragment.has("error")) throw new Error("INVALID_INVITE");
+        const code = parameters.get("code");
+        const tokenHash = parameters.get("token_hash");
+        if (tokenHash) {
+          if (parameters.get("type") !== "invite") throw new Error("INVALID_INVITE");
+          const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: "invite" });
+          if (error) throw error;
+        }
+        if (code) {
+          const { error } = await supabase.auth.exchangeCodeForSession(code);
+          if (error) throw error;
+        }
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (error || !user) throw new Error("INVALID_INVITE");
+        if (!cancelled) setReady(true);
+      } catch {
+        // A failed invitation must never fall back to another user's open session.
+        if (!cancelled) {
+          setReady(false);
+          setError("La invitación venció o no es válida. Solicitá un nuevo enlace a KANI.");
+        }
+      } finally {
+        if (!cancelled) window.history.replaceState({}, "", "/activar-cuenta");
+      }
     })();
     return () => {
       cancelled = true;
@@ -46,13 +59,17 @@ function ActivateAccount() {
     }
     setBusy(true);
     setError("");
-    const { error } = await supabase.auth.updateUser({ password });
-    if (error) {
+    try {
+      const { error } = await supabase.auth.updateUser({ password });
+      if (error) throw error;
+      window.location.assign("/panel-administracion/turnos");
+    } catch {
       setError(
         "No pudimos establecer la contraseña. Revisá los requisitos o solicitá una nueva invitación.",
       );
+    } finally {
       setBusy(false);
-    } else window.location.assign("/panel-administracion/turnos");
+    }
   }
   return (
     <main className="site-container admin-page">
