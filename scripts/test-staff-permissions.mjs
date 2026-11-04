@@ -26,7 +26,7 @@ try {
   created = true;
   const python =
     process.env.KANI_TEST_PYTHON || (process.platform === "win32" ? "python" : "python3");
-  const result = spawnSync(python, ["supabase/tests/staff-permissions.py"], {
+  const result = spawnSync(python, [process.argv[2] || "supabase/tests/staff-permissions.py"], {
     stdio: "inherit",
     env: { ...process.env, PYTHONUTF8: "1", KANI_TEST_CONTAINER: container },
   });
