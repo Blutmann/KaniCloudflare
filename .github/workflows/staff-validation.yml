@@ -16,7 +16,7 @@ jobs:
         with:
           node-version: "24"
       - uses: pnpm/action-setup@v4
-      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - run: pnpm install --frozen-lockfile
       - run: pnpm run test:staff
       - run: pnpm run test:staff:sql
       - run: pnpm run build

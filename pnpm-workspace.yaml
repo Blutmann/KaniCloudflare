@@ -3,3 +3,8 @@ packages:
 
 minimumReleaseAgeExclude:
   - '@lovable.dev/vite-tanstack-config@2.25.2'
+
+# Native binaries used by Vite and Wrangler; review again when their locked versions change.
+allowBuilds:
+  esbuild@0.28.2: true
+  workerd@1.20261103.1: true

@@ -3,11 +3,10 @@
 Trabajo sobre `codex/kani-five-accounts-recovery`, continuando el original
 `84a57a44f1a9166f2804517266a16d4849a65730`. Se conserva su historial.
 
-Commits locales: `7e54e5d` (funcionalidad y seguridad) y `700be99` (herramientas,
-CI y documentación). El push fue rechazado por GitHub porque el OAuth carece de
-`workflow`. No se publicó parcialmente: el remoto sigue en `84a57a4`. Se solicitó
-habilitar ese alcance con `gh auth refresh --hostname github.com -s workflow`.
-La ejecución del nuevo CI remoto queda pendiente de ese acceso.
+Los commits `7e54e5d`, `700be99` y `0a667bd` se publicaron tras habilitar el
+alcance `workflow` de GitHub. La ejecución remota de GitHub Actions
+`41894549398` pasó instalación, 61 pruebas, SQL aislado y build. El preview de
+Pages también pasó; producción conservó su despliegue anterior.
 
 **Estado: implementación y pruebas en desarrollo. No se aplicaron migraciones,
 no se enviaron invitaciones y no se desplegó producción**, conforme a la última
@@ -66,6 +65,18 @@ repitió esa investigación. Su evidencia y los dumps permanecen fuera de Git.
 Se fija `pnpm@12.14.0`, Node `24.20.0` y Wrangler `4.157.0`, junto con el lockfile.
 El workflow `staff-validation.yml` valida instalación congelada, pruebas de
 aplicación/SQL y build. No tiene pasos de despliegue ni secretos productivos.
+
+El registro real del build `4ccb9de8-f6f9-4ec6-a7b3-96bd1d15fedd`, facilitado
+por el usuario, confirma `ERR_PNPM_IGNORED_BUILDS` al instalar dependencias:
+faltaba autorizar los scripts de `esbuild@0.28.2` y `workerd@1.20261103.1`.
+La aplicación aún no había comenzado a compilar. Se autorizan únicamente esas
+versiones en `pnpm-workspace.yaml` mediante `allowBuilds`. Se conserva la política
+estricta para los demás paquetes.
+
+El CI anterior usaba `--ignore-scripts` y por eso no detectó esta diferencia con
+Cloudflare. Se elimina ese flag: ambos validarán `pnpm install --frozen-lockfile`.
+La corrección se verifica mediante una nueva ejecución remota.
+Referencia: [configuración oficial de pnpm](https://github.com/pnpm/pnpm/blob/main/pnpm/docs/settings/build.md).
 
 La configuración de Builds revisada por el usuario separa `main` (producción,
 `pnpm run build`, `npx wrangler deploy`) de previews (`bun run build`,
