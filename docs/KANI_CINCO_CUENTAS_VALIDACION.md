@@ -78,6 +78,15 @@ Cloudflare. Se elimina ese flag: ambos validarán `pnpm install --frozen-lockfil
 La corrección se verifica mediante una nueva ejecución remota.
 Referencia: [configuración oficial de pnpm](https://github.com/pnpm/pnpm/blob/main/pnpm/docs/settings/build.md).
 
+El commit `1fa0cb5` confirmó en GitHub Actions que los dos scripts terminan
+correctamente en Linux, y pasaron las 61 pruebas, SQL y build. El siguiente
+registro real de Cloudflare (`84907e31-9912-4a52-a6f1-622dcbb6b841`) confirmó
+también que el build pasó, pero `npx wrangler preview` rechazó la configuración
+generada por no tener `previews`. Se añade un bloque vacío en `wrangler.jsonc`,
+conservando los ajustes productivos y sin copiar variables de integraciones.
+El workflow comprueba que Nitro conserve el bloque en su configuración generada.
+Referencia: [configuración de Previews](https://developers.cloudflare.com/workers/previews/configuration/).
+
 La configuración de Builds revisada por el usuario separa `main` (producción,
 `pnpm run build`, `npx wrangler deploy`) de previews (`bun run build`,
 `npx wrangler preview`). Conviene reemplazar **solo** el build de previews por

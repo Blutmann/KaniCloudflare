@@ -3,6 +3,8 @@
   // Nitro supplies main/assets in its generated deployment configuration.
   "name": "kanibarberstudio-cloudflare",
   "keep_vars": true,
+  // Preview bindings and secrets stay in the existing Cloudflare Previews Base.
+  "previews": {},
   "assets": {
     "html_handling": "none",
     "not_found_handling": "none"

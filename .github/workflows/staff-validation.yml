@@ -20,3 +20,13 @@ jobs:
       - run: pnpm run test:staff
       - run: pnpm run test:staff:sql
       - run: pnpm run build
+      - name: Check generated Preview configuration
+        run: |
+          node --input-type=module -e '
+            import fs from "node:fs";
+            const config = JSON.parse(fs.readFileSync(".output/server/wrangler.json", "utf8"));
+            if (!config.previews || typeof config.previews !== "object" || Array.isArray(config.previews)) {
+              throw new Error("Nitro output must preserve the Wrangler previews block");
+            }
+            console.log("Generated Wrangler Preview configuration: OK");
+          '
