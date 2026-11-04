@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, Outlet } from "@tanstack/react-router";
+import { Link, Outlet, useLocation } from "@tanstack/react-router";
 import {
   CalendarDays,
   Clock3,
@@ -8,10 +8,12 @@ import {
   Users,
   ChartNoAxesCombined,
   RefreshCw,
+  Tag,
 } from "lucide-react";
 import { AdminAccess } from "@/components/kani/admin-access";
-import { AdminStaffProvider } from "@/lib/kani-admin-context";
-import { getAuthenticatedStaff, type AuthenticatedStaff } from "@/lib/kani-auth";
+import { AdminStaffProvider, useAdminStaff } from "@/lib/kani-admin-context";
+import { mayAccessStaffSection } from "@/lib/kani-permissions";
+import { clearStaffCache, getAuthenticatedStaff, type AuthenticatedStaff } from "@/lib/kani-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { isV2AdminEnvironment } from "@/lib/kani-v2";
 import { V2DataProvider, useV2 } from "./data";
@@ -24,6 +26,7 @@ const sections = [
   { to: "/panel-administracion/pagos", title: "Pagos", icon: CreditCard },
   { to: "/panel-administracion/clientes", title: "Clientes", icon: Users },
   { to: "/panel-administracion/datos", title: "Datos", icon: ChartNoAxesCombined },
+  { to: "/panel-administracion/descuentos", title: "Descuentos", icon: Tag },
 ] as const;
 
 export function V2Layout() {
@@ -49,12 +52,14 @@ export function V2Layout() {
       return;
     }
     let cancelled = false;
+    let refreshRevision = 0;
     async function refresh() {
+      const revision = ++refreshRevision;
       try {
         const staff = await getAuthenticatedStaff({ bypassCache: true });
-        if (!cancelled) setState({ loading: false, staff, error: "" });
+        if (!cancelled && revision === refreshRevision) setState({ loading: false, staff, error: "" });
       } catch {
-        if (!cancelled)
+        if (!cancelled && revision === refreshRevision)
           setState({
             loading: false,
             staff: null,
@@ -66,6 +71,7 @@ export function V2Layout() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(() => {
+      clearStaffCache();
       // Hide stale data immediately, including during account switching.
       if (!cancelled) setState({ loading: true, staff: null, error: "" });
       window.setTimeout(() => {
@@ -110,6 +116,10 @@ export function V2Layout() {
 
 function V2Shell() {
   const { loading, error, refresh } = useV2();
+  const { profile } = useAdminStaff();
+  const pathname = useLocation({ select: (location) => location.pathname });
+  const section = pathname.split('/').filter(Boolean).at(-1) ?? 'inicio';
+  const allowedSection = section === 'panel-administracion' || mayAccessStaffSection(profile, section);
 
   useEffect(() => {
     if (typeof document !== 'undefined') {
@@ -124,7 +134,7 @@ function V2Shell() {
       <header className="v2-navigation">
         <nav className="admin-section-nav v2-nav" aria-label="Administración">
           <div className="admin-section-nav-items">
-            {sections.map(({ to, title, icon: Icon }) => (
+            {sections.filter(({ to }) => mayAccessStaffSection(profile, to.split('/').at(-1)!) && (profile.role === 'ADMIN' || !to.endsWith('/inicio'))).map(({ to, title, icon: Icon }) => (
               <Link
                 key={to}
                 to={to}
@@ -159,7 +169,7 @@ function V2Shell() {
             Actualizando información…
           </p>
         )}
-        <Outlet />
+        {allowedSection ? <Outlet /> : <p role="alert" className="v2-alert">No tenés permisos para acceder a esta sección.</p>}
       </div>
     </div>
   );

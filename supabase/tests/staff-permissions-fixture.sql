@@ -283,3 +283,123 @@ alter table public."clients" enable row level security;
 create policy "admin_can_delete_clients" on public."clients" for DELETE to authenticated using (false);
 alter table public."barber_service_prices" enable row level security;
 create policy "barber_service_prices_admin_manage" on public."barber_service_prices" for ALL to authenticated using (false) with check(false);
+
+-- Notification delivery is external; these permission tests only capture the booking mutation.
+create function public.create_appointment_notification_event(uuid, public.notification_type) returns text language sql as $$ select null::text $$;
+CREATE OR REPLACE FUNCTION public.record_calendar_sync_failure(p_sync_id uuid, p_error text)
+ RETURNS boolean
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'public', 'extensions'
+AS $function$
+BEGIN
+  UPDATE public.appointment_calendar_sync
+  SET attempts = attempts + 1,
+      last_attempt_at = clock_timestamp(),
+      last_error = p_error,
+      sync_status = CASE WHEN attempts + 1 >= max_attempts THEN 'FAILED' ELSE 'PENDING' END,
+      updated_at = clock_timestamp()
+  WHERE id = p_sync_id;
+
+  RETURN FOUND;
+END;
+$function$;
+
+CREATE OR REPLACE FUNCTION public.get_pending_calendar_sync_items(p_limit integer DEFAULT 10)
+ RETURNS TABLE(sync_id uuid, appointment_id uuid, barber_id uuid, barber_name text, calendar_id text, google_event_id text, previous_calendar_id text, previous_google_event_id text, sync_action text, attempts integer, payload_checksum text, booking_date date, start_time time without time zone, end_time time without time zone, request_number bigint, client_name text, service_name text, custom_service_name text, service_price_ars integer, deposit_paid boolean, deposit_amount_ars integer)
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'public', 'extensions'
+AS $function$
+BEGIN
+  RETURN QUERY
+  SELECT
+    s.id AS sync_id,
+    a.id AS appointment_id,
+    a.barber_id,
+    b.name AS barber_name,
+    coalesce(s.calendar_id, bgc.calendar_id) AS calendar_id,
+    s.google_event_id,
+    s.previous_calendar_id,
+    s.previous_google_event_id,
+    s.sync_action,
+    s.attempts,
+    s.payload_checksum,
+    a.booking_date,
+    a.start_time,
+    a.end_time,
+    a.request_number,
+    coalesce(a.booking_client_name, c.name, 'Cliente Kani') AS client_name,
+    coalesce(svc.name, 'Corte') AS service_name,
+    a.custom_service_name,
+    a.service_price_ars,
+    coalesce(a.deposit_paid, false) AS deposit_paid,
+    coalesce(a.deposit_amount_ars, 5000) AS deposit_amount_ars
+  FROM public.appointment_calendar_sync s
+  JOIN public.appointments a ON a.id = s.appointment_id
+  JOIN public.barbers b ON b.id = a.barber_id
+  LEFT JOIN public.barber_google_calendars bgc ON bgc.barber_id = a.barber_id
+  LEFT JOIN public.clients c ON c.id = a.client_id
+  LEFT JOIN public.services svc ON svc.id = a.service_id
+  WHERE s.sync_status = 'PENDING'
+    AND s.attempts < s.max_attempts
+    AND (
+      s.last_attempt_at IS NULL
+      OR s.last_attempt_at + (power(2, least(s.attempts, 6)) * interval '10 seconds') <= clock_timestamp()
+    )
+  ORDER BY s.created_at ASC
+  LIMIT least(coalesce(p_limit, 10), 50);
+END;
+$function$;
+
+CREATE OR REPLACE FUNCTION public.record_calendar_sync_success(p_sync_id uuid, p_google_event_id text, p_calendar_id text, p_checksum text)
+ RETURNS boolean
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'public', 'extensions'
+AS $function$
+BEGIN
+  UPDATE public.appointment_calendar_sync
+  SET sync_status = 'SYNCED',
+      google_event_id = p_google_event_id,
+      calendar_id = p_calendar_id,
+      previous_calendar_id = NULL,
+      previous_google_event_id = NULL,
+      payload_checksum = p_checksum,
+      last_error = NULL,
+      synced_at = clock_timestamp(),
+      updated_at = clock_timestamp()
+  WHERE id = p_sync_id;
+
+  RETURN FOUND;
+END;
+$function$;
+
+CREATE OR REPLACE FUNCTION public.set_barber_google_calendar(p_barber_name text, p_calendar_id text)
+ RETURNS boolean
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'public', 'extensions'
+AS $function$
+DECLARE
+  v_barber_id uuid;
+BEGIN
+  SELECT id INTO v_barber_id
+  FROM public.barbers
+  WHERE name = trim(p_barber_name);
+
+  IF v_barber_id IS NULL THEN
+    RAISE EXCEPTION 'BARBER_NOT_FOUND: %', p_barber_name;
+  END IF;
+
+  INSERT INTO public.barber_google_calendars (barber_id, calendar_id, updated_at)
+  VALUES (v_barber_id, trim(p_calendar_id), clock_timestamp())
+  ON CONFLICT (barber_id) DO UPDATE
+  SET calendar_id = EXCLUDED.calendar_id,
+      updated_at = clock_timestamp();
+
+  RETURN true;
+END;
+$function$;
+create policy public_can_read_active_barbers on public.barbers for select to anon using(active);
+create policy public_can_read_available_slots on public.barber_availability_slots for select to anon using(status='AVAILABLE');

@@ -1,3 +1,4 @@
+import { isStaffOperator } from "@/lib/kani-permissions";
 import { getWhatsAppUrl } from "@/lib/kani-phone";
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
@@ -49,7 +50,7 @@ export function V2Home() {
   const nextSpace = data.starts
     .filter(
       (start) =>
-        (staff.profile.role === "ADMIN" || start.barber_id === staff.profile.barber_id) &&
+        (isStaffOperator(staff.profile.role) || start.barber_id === staff.profile.barber_id) &&
         start.compatible_services.length > 0 &&
         (start.slot_date > today ||
           (start.slot_date === today && start.start_time.slice(0, 5) > now)),
@@ -126,7 +127,7 @@ export function V2Home() {
         </div>
         <div className="v2-team">
           {staff.barbers
-            .filter((b) => staff.profile.role === "ADMIN" || b.id === staff.profile.barber_id)
+            .filter((b) => isStaffOperator(staff.profile.role) || b.id === staff.profile.barber_id)
             .map((b) => (
               <article key={b.id}>
                 <span className="v2-avatar">{b.name[0]}</span>
@@ -494,11 +495,11 @@ export function V2Appointments() {
         <AdminFilterCell label="Barbero" htmlFor="v2-appointments-barber">
           <select
             id="v2-appointments-barber"
-            value={staff.profile.role === "ADMIN" ? data.barberId : (staff.profile.barber_id ?? "")}
+            value={isStaffOperator(staff.profile.role) ? data.barberId : (staff.profile.barber_id ?? "")}
             onChange={(e) => data.setBarberId(e.target.value)}
-            disabled={staff.profile.role !== "ADMIN"}
+            disabled={!isStaffOperator(staff.profile.role)}
           >
-            {staff.profile.role === "ADMIN" && <option value="ALL">Todo Kani</option>}
+            {isStaffOperator(staff.profile.role) && <option value="ALL">Todo Kani</option>}
             {staff.barbers.map((b) => (
               <option key={b.id} value={b.id}>
                 {b.name}
@@ -636,7 +637,7 @@ export function V2Appointments() {
                 const actionNodes: React.ReactNode[] = [];
                 if (
                   ["PENDING", "CONFIRMED"].includes(a.statusCode) &&
-                  (!a.isManual || staff.profile.role === "ADMIN")
+                  (isStaffOperator(staff.profile.role) || a.barberId === staff.profile.barber_id)
                 ) {
                   actionNodes.push(
                     <button
@@ -665,7 +666,7 @@ export function V2Appointments() {
                 if (
                   a.isManual &&
                   ["PENDING", "CONFIRMED"].includes(a.statusCode) &&
-                  (staff.profile.role === "ADMIN" || a.barberId === staff.profile.barber_id)
+                  (isStaffOperator(staff.profile.role) || a.barberId === staff.profile.barber_id)
                 ) {
                   actionNodes.push(
                     <button

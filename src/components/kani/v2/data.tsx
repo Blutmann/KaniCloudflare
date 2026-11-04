@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { addCalendarDays, businessDateToday } from "@/lib/kani-mobile-appointments";
 import { scopeV2 } from "@/lib/kani-v2";
+import { isStaffOperator, validStaffScope } from "@/lib/kani-permissions";
 
 export type V2Client = Tables<"clients"> & { draft?: boolean; archived?: boolean };
 type Data = {
@@ -49,15 +50,12 @@ export function V2DataProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     setError("");
     try {
-      if (
-        staff.profile.role !== "ADMIN" &&
-        (staff.profile.role !== "BARBER" || !staff.profile.barber_id)
-      ) {
+      if (!validStaffScope(staff.profile)) {
         throw new Error("No pudimos determinar el barbero asociado a tu usuario.");
       }
       const today = businessDateToday();
       const barbers = staff.barbers.filter(
-        (barber) => staff.profile.role === "ADMIN" || barber.id === staff.profile.barber_id,
+        (barber) => isStaffOperator(staff.profile.role) || barber.id === staff.profile.barber_id,
       );
       let capabilityQuery = supabase
         .from("appointments")

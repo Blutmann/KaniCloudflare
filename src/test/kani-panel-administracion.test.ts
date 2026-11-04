@@ -29,7 +29,9 @@ describe('Kani Barber Studio — Panel de Administración & Refinamiento de Pago
     expect(layoutCode).toContain('V2Layout');
 
     const indexCode = fs.readFileSync(indexPath, 'utf8');
-    expect(indexCode).toMatch(/to:\s*['"]\/panel-administracion\/inicio['"]/);
+    expect(indexCode).toContain('StaffLanding');
+    expect(indexCode).toContain('/panel-administracion/inicio');
+    expect(indexCode).toContain('/panel-administracion/turnos');
 
     const pagosCode = fs.readFileSync(pagosPath, 'utf8');
     expect(pagosCode).toMatch(/createFileRoute\(['"]\/panel-administracion\/pagos['"]\)/);

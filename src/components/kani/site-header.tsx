@@ -151,7 +151,7 @@ export function SiteHeader() {
       closeMenu();
     }
   };
-  const sessionRole = staff?.profile.role === 'ADMIN' ? 'Administrador' : staff?.profile.role === 'BARBER' ? 'Barbero' : '';
+  const sessionRole = staff?.profile.role === 'ADMIN' ? 'Administrador' : staff?.profile.role === 'MANAGER' ? 'KANI Jefe' : staff?.profile.role === 'BARBER' ? 'Barbero' : '';
   const mobileMenu = menuOpen ? (
     <nav className="mobile-menu" id="kani-main-menu" aria-label="Menú principal">
       {/* Grupo usuario */}

@@ -1,3 +1,4 @@
+import { isStaffOperator } from "@/lib/kani-permissions";
 import { useState, useMemo } from "react";
 import { Lightbulb, TrendingUp } from "lucide-react";
 import { useAdminStaff } from "@/lib/kani-admin-context";
@@ -275,9 +276,11 @@ export function V2Insights() {
   const previousEnd = activeRange.prevEnd;
 
   // Filter payments and appointments consistently across all metrics (deduplicating online deposits by appointmentId)
-  const allPayments = deduplicatePaymentMovements(
+  const scopedMovements = deduplicatePaymentMovements(
     scopeV2(data.payments, staff.profile.role, staff.profile.barber_id, data.barberId),
   );
+  const voidedCount = isInvalidRange ? 0 : scopedMovements.filter(p => p.serviceName === 'Anulado' && p.paymentDate >= start && p.paymentDate <= end).length;
+  const allPayments = scopedMovements.filter(p => p.serviceName !== 'Anulado');
   const payments = isInvalidRange ? [] : allPayments.filter((p) => p.paymentDate >= start && p.paymentDate <= end);
   const previous = isInvalidRange ? [] : allPayments.filter((p) => p.paymentDate >= previousStart && p.paymentDate <= previousEnd);
 
@@ -383,11 +386,11 @@ export function V2Insights() {
         <AdminFilterCell label="Barbero" htmlFor="v2-insights-barber">
           <select
             id="v2-insights-barber"
-            value={staff.profile.role === "ADMIN" ? data.barberId : (staff.profile.barber_id ?? "")}
+            value={isStaffOperator(staff.profile.role) ? data.barberId : (staff.profile.barber_id ?? "")}
             onChange={(e) => data.setBarberId(e.target.value)}
-            disabled={staff.profile.role !== "ADMIN"}
+            disabled={!isStaffOperator(staff.profile.role)}
           >
-            {staff.profile.role === "ADMIN" && <option value="ALL">Todo Kani</option>}
+            {isStaffOperator(staff.profile.role) && <option value="ALL">Todo Kani</option>}
             {staff.barbers.map((b) => (
               <option key={b.id} value={b.id}>
                 {b.name}
@@ -445,6 +448,7 @@ export function V2Insights() {
         />
       </div>
 
+      <p className="v2-footnote">Cobros anulados: {voidedCount} · No se incluyen en la facturación.</p>
       <div className="v2-chart-grid">
         <section className="v2-panel">
           <div className="v2-section-title">

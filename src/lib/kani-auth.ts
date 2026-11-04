@@ -1,8 +1,9 @@
 import type { User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import type { Tables } from '@/integrations/supabase/types';
+import { validStaffScope } from './kani-permissions';
 
-export type StaffProfile = Tables<'staff_profiles'>;
+export type StaffProfile = Omit<Tables<'staff_profiles'>, 'role'> & { role: 'ADMIN' | 'MANAGER' | 'BARBER' };
 export type StaffRole = StaffProfile['role'];
 export type StaffBarber = Tables<'barbers'>;
 
@@ -14,9 +15,11 @@ export type AuthenticatedStaff = {
 
 let cachedStaff: { data: AuthenticatedStaff | null; timestamp: number } | null = null;
 let inFlightStaff: Promise<AuthenticatedStaff | null> | null = null;
+let sessionRevision = 0;
 const STAFF_CACHE_TTL_MS = 15 * 1000; // 15s fast-cache for staff sessions
 
 export function clearStaffCache() {
+  sessionRevision += 1;
   cachedStaff = null;
   inFlightStaff = null;
 }
@@ -72,7 +75,7 @@ async function fetchAuthenticatedStaff(): Promise<AuthenticatedStaff | null> {
     .eq('user_id', user.id)
     .maybeSingle();
 
-  if (profileError || !profile || !profile.active) return null;
+  if (profileError || !profile || !profile.active || !validStaffScope(profile)) return null;
 
   let barbersQuery = supabase
     .from('barbers')
@@ -99,6 +102,7 @@ async function fetchAuthenticatedStaff(): Promise<AuthenticatedStaff | null> {
 }
 
 export async function getAuthenticatedStaff(options?: { bypassCache?: boolean }): Promise<AuthenticatedStaff | null> {
+  const revision = sessionRevision;
   const now = Date.now();
   if (!options?.bypassCache && cachedStaff && now - cachedStaff.timestamp < STAFF_CACHE_TTL_MS) {
     return cachedStaff.data;
@@ -111,12 +115,13 @@ export async function getAuthenticatedStaff(options?: { bypassCache?: boolean })
   const promise = (async () => {
     try {
       const result = await fetchAuthenticatedStaff();
+      if (revision !== sessionRevision) return null;
       cachedStaff = { data: result, timestamp: Date.now() };
       return result;
     } catch {
       return null;
     } finally {
-      inFlightStaff = null;
+      if (revision === sessionRevision) inFlightStaff = null;
     }
   })();
 

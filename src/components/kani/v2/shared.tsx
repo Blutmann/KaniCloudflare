@@ -1,3 +1,4 @@
+import { isStaffOperator } from "@/lib/kani-permissions";
 import type { ReactNode } from "react";
 import { Plus } from "lucide-react";
 import { useAdminStaff } from "@/lib/kani-admin-context";
@@ -31,11 +32,11 @@ export function BarberFilter() {
     <label className="v2-field">
       Barbero
       <select
-        value={staff.profile.role === "ADMIN" ? barberId : (staff.profile.barber_id ?? "")}
+        value={isStaffOperator(staff.profile.role) ? barberId : (staff.profile.barber_id ?? "")}
         onChange={(e) => setBarberId(e.target.value)}
-        disabled={staff.profile.role !== "ADMIN"}
+        disabled={!isStaffOperator(staff.profile.role)}
       >
-        {staff.profile.role === "ADMIN" && <option value="ALL">Todo Kani</option>}
+        {isStaffOperator(staff.profile.role) && <option value="ALL">Todo Kani</option>}
         {staff.barbers.map((b) => (
           <option key={b.id} value={b.id}>
             {b.name}

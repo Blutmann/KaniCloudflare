@@ -103,7 +103,9 @@ describe('Admin V2 Pagos — Resumen Mobile junto al botón "Cobrar"', () => {
 
     it('soporta importes grandes sin alterar la estructura (ej. $1.250.000)', () => {
       render(<V2Payments />);
-      fireEvent.change(screen.getByLabelText(/Servicio/i), { target: { value: 'Servicio VIP' } });
+      fireEvent.change(screen.getByLabelText(/^Servicio$/i), { target: { value: 'Otros' } });
+      fireEvent.change(screen.getByLabelText('Detalle del servicio'), { target: { value: 'Servicio VIP' } });
+      fireEvent.change(screen.getByLabelText(/Importe \(\$ ARS\)/i), { target: { value: '1250000' } });
 
       // Total es $1.250.000
       expect(screen.getByText('$1.250.000')).toBeDefined();

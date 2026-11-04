@@ -1,4 +1,5 @@
-import { createPaymentSupabaseClient } from "./kani-payment-db.server";
+import { createRequestSupabaseClient } from "./kani-notifications.server";
+import { validStaffScope } from './kani-permissions';
 import {
   timestampToBusinessDateTime,
   type ServicePayment,
@@ -11,11 +12,13 @@ export async function readOnlineDepositMovementsServer(
   filters: ServicePaymentFilters = {},
   staff?: {
     profile: { role: string; barber_id: string | null };
+    token?: string;
     barbers?: { id: string; name: string }[];
   } | null,
 ): Promise<ServicePayment[]> {
   try {
-    const client = await createPaymentSupabaseClient();
+    if (!staff?.token || !validStaffScope(staff.profile)) throw new Error('STAFF_REQUIRED');
+    const client = await createRequestSupabaseClient(staff.token);
 
     // 1. Fetch APPROVED payment_attempts (Payway / Mercado Pago)
     const { data: attempts, error: attError } = await client

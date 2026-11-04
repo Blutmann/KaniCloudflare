@@ -1,10 +1,11 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   rpc: vi.fn(),
   refresh: vi.fn(),
   role: "BARBER",
   depositSupported: true,
+  payments: [] as any[],
 }));
 vi.mock("@tanstack/react-router", () => ({ useSearch: () => ({}) }));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc: mocks.rpc } }));
@@ -31,8 +32,8 @@ vi.mock("@/components/kani/v2/data", () => ({
         depositAmountArs: 5000,
       },
     ],
-    payments: [],
-    services: [{ id: "corte", name: "Corte de cabello", price: 25000 }],
+    payments: mocks.payments,
+    services: [{ id: "corte", name: "Corte de cabello", price: 25000 }, { id: 'combinado', name: 'Corte + barba', price: 30000 }],
     clients: [],
     barberId: "ALL",
     setBarberId: vi.fn(),
@@ -49,9 +50,10 @@ describe("V2 quick collection", () => {
     mocks.refresh.mockReset();
     mocks.role = "BARBER";
     mocks.depositSupported = true;
+    mocks.payments = [];
   });
   it("registers an anonymous walk-in using the authenticated barber and server clock", async () => {
-    mocks.rpc.mockResolvedValue({ data: [{ payment_id: "p1" }], error: null });
+    mocks.rpc.mockResolvedValue({ data: { id: "p1" }, error: null });
     render(<V2Payments />);
     fireEvent.click(screen.getByRole("button", { name: /Registrar cobro|Cobrar/i }));
     await waitFor(() => expect(mocks.rpc).toHaveBeenCalledTimes(1));
@@ -59,8 +61,11 @@ describe("V2 quick collection", () => {
       p_barber_id: "b1",
       p_service_price_ars: 25000,
       p_appointment_id: null,
-      p_online_deposit_paid: false,
+      p_discount_kind: "FIXED",
+      p_discount_value: 0,
     });
+    expect(mocks.rpc.mock.calls[0]?.[0]).toBe("staff_save_service_payment");
+    expect(mocks.rpc.mock.calls[0]?.[1]).not.toHaveProperty("p_online_deposit_paid");
     expect(mocks.rpc.mock.calls[0]?.[1]).not.toHaveProperty("p_payment_date");
     expect(await screen.findByText("Cobro registrado.")).toBeTruthy();
   });
@@ -79,5 +84,33 @@ describe("V2 quick collection", () => {
     fireEvent.change(screen.getByLabelText("Turno"), { target: { value: "a1" } });
     expect(screen.getByRole("button", { name: /Registrar cobro|Cobrar/i })).toBeDisabled();
     expect(mocks.rpc).not.toHaveBeenCalled();
+  });
+  it('offers exactly the five payment classifications', () => {
+    render(<V2Payments/>);
+    const options=within(screen.getByLabelText('Servicio')).getAllByRole('option');
+    expect(options.map(option=>option.textContent)).toEqual(['Corte','Corte y barba','Barba','Otro','Anulado']);
+  });
+  it('records an eligible zero-value void without a direct insert or a provider claim', async () => {
+    mocks.rpc.mockResolvedValue({data:{id:'void'},error:null});
+    render(<V2Payments/>);
+    fireEvent.change(screen.getByLabelText('Servicio'),{target:{value:'Anulado'}});
+    const submit=screen.getByRole('button',{name:/Registrar cobro|Cobrar/i});
+    expect(submit).toBeEnabled(); fireEvent.click(submit);
+    await waitFor(()=>expect(mocks.rpc).toHaveBeenCalledTimes(1));
+    expect(mocks.rpc.mock.calls[0]?.[1]).toMatchObject({p_service_name:'Anulado',p_service_price_ars:0});
+    expect(mocks.rpc.mock.calls[0]?.[1]).not.toHaveProperty('p_online_deposit_paid');
+  });
+  it('allows a barber to edit an own payment and retain its fixed discount on service change', () => {
+    const today=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Argentina/Buenos_Aires'}).format(new Date());
+    mocks.payments=[{id:'p1',barberId:'b1',barberName:'Gonzalo',serviceName:'Corte',servicePriceArs:25000,discountArs:5000,finalAmountArs:20000,collectedAmountArs:20000,paymentDate:today,paymentTime:'10:00',paymentMethod:'Efectivo',onlineDepositPaid:false,onlineDepositAmountArs:0,appointmentId:null}];
+    render(<V2Payments/>);
+    expect(screen.queryByRole('button',{name:'Eliminar cobro'})).toBeNull();
+    fireEvent.click(screen.getAllByRole('button',{name:'Editar cobro'})[0]!);
+    const dialog=within(screen.getByRole('dialog'));
+    fireEvent.change(dialog.getByLabelText('Servicio'),{target:{value:'Corte y barba'}});
+    expect(dialog.getByLabelText('Precio servicio ($ ARS)')).toHaveValue(30000);
+    expect(dialog.getByLabelText('Descuento ($ ARS)')).toHaveValue(5000);
+    expect(dialog.getByLabelText('Importe final ($ ARS, incluye seña)')).toHaveValue(25000);
+    expect(dialog.getByLabelText('Barbero')).toBeDisabled();
   });
 });

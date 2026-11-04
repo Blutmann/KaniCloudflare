@@ -368,7 +368,7 @@ describe("Admin V2 — UI de Turnos y Permisos", () => {
     expect(screen.getByRole("button", { name: "Cancelar turno" })).toBeInTheDocument();
   });
 
-  it("restricts BARBER from cancelling manual appointments while permitting 'Editar' for own appointment", () => {
+  it("permits BARBER to cancel and edit an own manual appointment", () => {
     mockStaff.profile.role = "BARBER";
     mockStaff.profile.barber_id = "barber-lautaro"; // matches mockAppointment.barberId
     render(<V2Appointments />);
@@ -376,8 +376,8 @@ describe("Admin V2 — UI de Turnos y Permisos", () => {
     // Barber CAN edit their own manual appointment
     expect(screen.getByRole("button", { name: "Editar" })).toBeInTheDocument();
 
-    // Barber CANNOT cancel manual appointments (button must NOT be offered)
-    expect(screen.queryByRole("button", { name: "Cancelar turno" })).toBeNull();
+    // Staff cancellation of an own manual appointment has no public-client notice restriction.
+    expect(screen.getByRole("button", { name: "Cancelar turno" })).toBeInTheDocument();
   });
 
   it("ManualAppointmentDialog locks barber selection for BARBER and shows discreet badge", () => {

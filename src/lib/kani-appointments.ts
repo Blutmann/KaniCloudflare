@@ -293,7 +293,7 @@ export async function createManualAppointment(input: CreateManualAppointmentInpu
 
   if (row.appointment_id && phone) {
     try {
-      const { data: claimToken } = await supabase.rpc('create_appointment_notification_event', {
+      const { data: claimToken } = await (supabase.rpc as any)('staff_create_appointment_notification_event', {
         p_appointment_id: row.appointment_id,
         p_notification_type: 'CONFIRMED',
       });
@@ -635,7 +635,7 @@ async function executeReadRealAppointments(options?: { bypassCache?: boolean; ba
 
 /** V2 staff reads use verified identity and never reuse another session's in-flight read. */
 export async function readStaffAppointments(staff: AuthenticatedStaff): Promise<RealAppointment[]> {
-  if (staff.profile.role === 'ADMIN') {
+  if (staff.profile.role === 'ADMIN' || staff.profile.role === 'MANAGER') {
     return executeReadRealAppointments({ bypassCache: true });
   }
   if (staff.profile.role !== 'BARBER' || !staff.profile.barber_id) {

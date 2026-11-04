@@ -152,9 +152,9 @@ describe('Kani Admin V2 - Corrección estructural de módulos', () => {
       });
     });
 
-    it('impide a un barbero anular o eliminar cobros', async () => {
+    it('impide a un barbero eliminar cobros (la anulación económica usa otra RPC)', async () => {
       await expect(deleteServicePayment('payment-id-123', barberStaff)).rejects.toThrow(
-        'Solo los administradores tienen permiso para eliminar registros de cobro.',
+        'No tenés permisos para eliminar cobros.',
       );
     });
 

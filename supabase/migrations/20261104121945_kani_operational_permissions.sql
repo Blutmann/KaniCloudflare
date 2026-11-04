@@ -66,8 +66,9 @@ revoke insert, delete on public.clients from authenticated;
 create function kani_private.protect_client_deletion() returns trigger
 language plpgsql security definer set search_path = pg_catalog, public as $$
 begin
+ if new.id is distinct from old.id then raise exception using errcode='42501',message='CLIENT_ID_IMMUTABLE'; end if;
  if auth.uid() is not null and not public.is_operator()
- and (new.deleted_at is distinct from old.deleted_at or new.id is distinct from old.id) then
+ and new.deleted_at is distinct from old.deleted_at then
   raise exception using errcode='42501',message='CLIENT_DELETE_NOT_ALLOWED';
  end if;
  return new;
@@ -404,7 +405,7 @@ BEGIN
   END IF;
 
   IF v_is_admin THEN
-    v_creator_name := 'Admin';
+    select display_name into v_creator_name from public.staff_profiles where user_id=auth.uid() and active;
   ELSE
     SELECT b.name INTO v_creator_name FROM public.barbers b WHERE b.id = v_staff_barber_id;
     v_creator_name := coalesce(v_creator_name, 'Barbero');
@@ -485,40 +486,7 @@ BEGIN
       message = 'APPOINTMENT_COLLISION_DETAILS|' || v_conflict_start::text || '|' || v_conflict_end::text;
   END IF;
 
-  IF p_client_id IS NOT NULL AND NOT v_is_admin AND NOT EXISTS(
-   SELECT 1 FROM public.client_barbers cb WHERE cb.client_id=p_client_id AND cb.barber_id=v_staff_barber_id
-  ) THEN RAISE EXCEPTION USING errcode='42501',message='CLIENT_NOT_ALLOWED'; END IF;
-  IF p_client_id IS NOT NULL AND EXISTS (SELECT 1 FROM public.clients WHERE id = p_client_id) THEN
-    v_client_id := p_client_id;
-    UPDATE public.clients
-    SET name = v_clean_name,
-        phone = v_clean_phone,
-        email = coalesce(v_clean_email, email),
-        deleted_at = NULL,
-        updated_at = now()
-    WHERE id = v_client_id;
-  ELSE
-    SELECT c.id INTO v_client_id
-    FROM public.clients c
-    WHERE (v_clean_email IS NOT NULL AND lower(trim(coalesce(c.email, ''))) = v_clean_email)
-       OR regexp_replace(c.phone, '[^0-9]', '', 'g') = regexp_replace(v_clean_phone, '[^0-9]', '', 'g')
-    ORDER BY c.deleted_at NULLS FIRST, c.created_at ASC
-    LIMIT 1;
-
-    IF v_client_id IS NULL THEN
-      INSERT INTO public.clients (name, phone, email)
-      VALUES (v_clean_name, v_clean_phone, v_clean_email)
-      RETURNING id INTO v_client_id;
-    ELSE
-      UPDATE public.clients
-      SET name = v_clean_name,
-          phone = v_clean_phone,
-          email = coalesce(v_clean_email, email),
-          deleted_at = NULL,
-          updated_at = now()
-      WHERE id = v_client_id;
-    END IF;
-  END IF;
+  SELECT c.id INTO v_client_id FROM public.save_client(p_client_id,v_clean_name,v_clean_phone,v_clean_email) c;
 
   -- Importante: el turno manual reserva directamente el intervalo para este cliente
   -- SIN crear ni abrir disponibilidad pública en barber_availability_slots.
@@ -1057,7 +1025,7 @@ begin
 
   -- Resolver nombre y precio del servicio
   v_other_detail := nullif(trim(coalesce(p_service_other_detail, '')), '');
-  
+
   if p_service_name in ('Corte', 'Corte y barba', 'Corte + barba', 'Barba') then
     select id, price_ars into v_service_id, v_service_price
     from public.services

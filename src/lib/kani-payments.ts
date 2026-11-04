@@ -1,3 +1,5 @@
+import { isStaffOperator } from './kani-permissions';
+import type { DiscountKind } from './kani-payment-amounts';
 import { supabase } from '@/integrations/supabase/client';
 import type { Tables } from '@/integrations/supabase/types';
 import type { AuthenticatedStaff } from '@/lib/kani-auth';
@@ -13,7 +15,7 @@ export type PaymentMethod =
   | 'Tarjeta de débito'
   | 'Payway'
   | 'Mercado Pago';
-export type ServicePaymentType = 'Corte' | 'Corte de cabello' | 'Corte y barba' | 'Barba' | 'Otros';
+export type ServicePaymentType = 'Corte' | 'Corte de cabello' | 'Corte y barba' | 'Barba' | 'Otros' | 'Anulado';
 export type ServicePaymentOrigin = 'appointment' | 'walk_in' | 'legacy' | 'online_deposit';
 
 export type ServicePayment = {
@@ -22,6 +24,12 @@ export type ServicePayment = {
   barberName: string;
   serviceId: string | null;
   serviceName: ServicePaymentType;
+  clientId?: string | null;
+  discountKind?: DiscountKind;
+  discountValue?: number;
+  finalAmountOverrideArs?: number | null;
+  isDepositMovement?: boolean;
+  voidedAt?: string | null;
   serviceOtherDetail: string | null;
   servicePriceArs: number;
   discountArs: number;
@@ -60,6 +68,9 @@ export type RecordServicePaymentInput = {
 };
 
 export type UpdateServicePaymentInput = {
+  discountKind?: DiscountKind;
+  discountValue?: number;
+  finalAmountArs?: number | null;
   barberId?: string;
   serviceName: ServicePaymentType;
   serviceOtherDetail?: string;
@@ -89,7 +100,7 @@ export type CandidateAppointmentMatch = {
   matchReasons: string[];
 };
 
-export const STANDARD_SERVICE_PRICES: Record<Exclude<ServicePaymentType, 'Otros'>, number> = {
+export const STANDARD_SERVICE_PRICES: Record<Exclude<ServicePaymentType, 'Otros' | 'Anulado'>, number> = {
   Corte: 25000,
   'Corte de cabello': 25000,
   'Corte y barba': 30000,
@@ -472,6 +483,11 @@ export async function fetchServicePayments(
     serviceId: row.service_id,
     serviceName: row.service_name === 'Corte + barba' ? 'Corte y barba' : (formatServiceName(row.service_name) as ServicePaymentType),
     serviceOtherDetail: row.service_other_detail,
+    clientId: row.client_id,
+    discountKind: row.discount_kind ?? 'FIXED',
+    discountValue: Number(row.discount_value ?? row.discount_ars),
+    finalAmountOverrideArs: row.final_amount_override_ars,
+    voidedAt: row.voided_at,
     servicePriceArs: row.service_price_ars,
     discountArs: row.discount_ars,
     finalAmountArs: row.final_amount_ars,
@@ -869,120 +885,40 @@ export async function recordServicePayment(
 
 /** Actualiza un cobro existente garantizando autorización por rol y recálculo de montos */
 export async function updateServicePayment(
-  paymentId: string,
-  input: UpdateServicePaymentInput,
-  staff: AuthenticatedStaff,
+  paymentId: string, input: UpdateServicePaymentInput, staff: AuthenticatedStaff,
   currentRecord?: ServicePayment,
 ): Promise<ServicePayment> {
-  if (!paymentId) throw new Error('ID de cobro requerido para actualizar.');
-
-  // Verificación de permisos de barbero
-  if (staff.profile.role === 'BARBER') {
-    if (currentRecord && currentRecord.barberId !== staff.profile.barber_id) {
-      throw new Error('No tenés permisos para editar los cobros de otro barbero.');
-    }
-    if (input.barberId && input.barberId !== staff.profile.barber_id) {
-      throw new Error('No tenés permisos para cambiar el barbero asignado al cobro.');
-    }
+  if (!paymentId || (staff.profile.role === 'BARBER' && currentRecord?.barberId !== staff.profile.barber_id)) {
+    throw new Error('No tenés permisos para editar este cobro.');
   }
-
-  // Validaciones de negocio
-  if (input.serviceName === 'Otros' && (!input.serviceOtherDetail || !input.serviceOtherDetail.trim())) {
-    throw new Error('Para el servicio "Otros", debés especificar el detalle.');
-  }
-  if (!input.servicePriceArs || input.servicePriceArs <= 0) {
-    throw new Error('El precio del servicio debe ser mayor a 0.');
-  }
-  const discountArs = input.discountArs || 0;
-  if (discountArs < 0 || discountArs > input.servicePriceArs) {
-    throw new Error('El descuento no puede ser negativo ni superar el precio del servicio.');
-  }
-
-  const finalAmountArs = input.servicePriceArs - discountArs;
-  const depositDeduction = (currentRecord?.onlineDepositPaid && currentRecord?.onlineDepositAmountArs)
-    ? currentRecord.onlineDepositAmountArs
-    : 0;
-  const collectedAmountArs = Math.max(0, finalAmountArs - depositDeduction);
-
-  const formattedTime = input.paymentTime && input.paymentTime.length === 5
-    ? `${input.paymentTime}:00`
-    : input.paymentTime;
-
-  const updatePayload: any = {
-    service_name: (input.serviceName as string) === 'Otro' ? 'Otros' : (input.serviceName as string) === 'Corte de cabello' ? 'Corte' : input.serviceName === 'Corte y barba' ? 'Corte y barba' : input.serviceName,
-    service_other_detail: ((input.serviceName as string) === 'Otros' || (input.serviceName as string) === 'Otro') ? (input.serviceOtherDetail?.trim() || null) : null,
-    service_price_ars: input.servicePriceArs,
-    discount_ars: discountArs,
-    final_amount_ars: finalAmountArs,
-    collected_amount_ars: collectedAmountArs,
-    payment_method: input.paymentMethod,
-    client_name: input.clientName?.trim() || null,
-    client_contact: input.clientContact?.trim() || null,
-    updated_at: new Date().toISOString(),
-  };
-
-  if (input.paymentDate) updatePayload.payment_date = input.paymentDate;
-  if (formattedTime) updatePayload.payment_time = formattedTime;
-
-  // Actualizar origen y relación con turno si se especifica
-  if (input.serviceOrigin) {
-    updatePayload.service_origin = input.serviceOrigin;
-  }
-  if (input.appointmentId !== undefined) {
-    updatePayload.appointment_id = input.appointmentId;
-    if (!input.serviceOrigin) {
-      updatePayload.service_origin = input.appointmentId ? 'appointment' : 'walk_in';
-    }
-  }
-
-  // Solo administradores pueden reasignar el barbero
-  if (staff.profile.role === 'ADMIN' && input.barberId) {
-    updatePayload.barber_id = input.barberId;
-  }
-
-  const { data: updatedRow, error: updateError } = await supabase
-    .from('service_payments')
-    .update(updatePayload)
-    .eq('id', paymentId)
-    .select()
-    .single();
-
-  if (updateError) {
-    console.error('[KANI payments] Error al actualizar cobro en base de datos:', updateError);
-    throw new Error(updateError.message || 'No se pudo actualizar el cobro en la base de datos.');
-  }
-
-  const barber = staff.barbers.find((b) => b.id === updatedRow.barber_id);
-  const barberName = barber ? barber.name : (currentRecord?.barberName || 'Barbero');
-
-  return {
-    id: updatedRow.id,
-    barberId: updatedRow.barber_id,
-    barberName,
-    serviceId: updatedRow.service_id,
-    serviceName: updatedRow.service_name === 'Corte + barba' ? 'Corte y barba' : (formatServiceName(updatedRow.service_name) as ServicePaymentType),
-    serviceOtherDetail: updatedRow.service_other_detail,
-    servicePriceArs: updatedRow.service_price_ars,
-    discountArs: updatedRow.discount_ars,
-    finalAmountArs: updatedRow.final_amount_ars,
-    paymentDate: updatedRow.payment_date,
-    paymentTime: (updatedRow.payment_time || '').slice(0, 5),
-    paymentMethod: updatedRow.payment_method as PaymentMethod,
-    onlineDepositPaid: updatedRow.online_deposit_paid,
-    onlineDepositAmountArs: updatedRow.online_deposit_amount_ars,
-    collectedAmountArs: updatedRow.collected_amount_ars,
-    clientName: updatedRow.client_name,
-    clientContact: updatedRow.client_contact,
-    appointmentId: updatedRow.appointment_id,
-    appointmentRequestNumber: currentRecord?.appointmentRequestNumber,
-    serviceOrigin: (updatedRow.service_origin as ServicePaymentOrigin) || (updatedRow.appointment_id ? 'appointment' : 'walk_in'),
-    createdByUserId: updatedRow.created_by_user_id,
-    createdByDisplayName: updatedRow.created_by_display_name,
-    createdAt: updatedRow.created_at,
-    updatedAt: updatedRow.updated_at,
-  };
+  const { data: row, error } = await (supabase.rpc as any)('staff_save_service_payment', {
+    p_payment_id: paymentId,
+    p_barber_id: input.barberId ?? currentRecord?.barberId ?? staff.profile.barber_id,
+    p_service_name: input.serviceName, p_service_other_detail: input.serviceOtherDetail || null,
+    p_service_price_ars: input.servicePriceArs,
+    p_discount_kind: input.discountKind ?? 'FIXED',
+    p_discount_value: input.discountValue ?? input.discountArs ?? 0,
+    p_final_amount_ars: input.finalAmountArs ?? null,
+    p_payment_method: input.paymentMethod, p_payment_date: input.paymentDate || null,
+    p_payment_time: input.paymentTime || null,
+    p_client_name: input.clientName || null, p_client_contact: input.clientContact || null,
+  });
+  if (error) throw error;
+  if (!row?.id) throw new Error('No se recibió confirmación del cambio.');
+  return { ...currentRecord, id: row.id, barberId: row.barber_id,
+    barberName: staff.barbers.find(b => b.id === row.barber_id)?.name ?? '',
+    serviceId: row.service_id, serviceName: row.service_name, serviceOtherDetail: row.service_other_detail,
+    servicePriceArs: row.service_price_ars, discountArs: row.discount_ars,
+    discountKind: row.discount_kind, discountValue: Number(row.discount_value),
+    finalAmountOverrideArs: row.final_amount_override_ars, voidedAt: row.voided_at,
+    finalAmountArs: row.final_amount_ars, collectedAmountArs: row.collected_amount_ars,
+    onlineDepositPaid: row.online_deposit_paid, onlineDepositAmountArs: row.online_deposit_amount_ars,
+    clientId: row.client_id, clientName: row.client_name, clientContact: row.client_contact,
+    appointmentId: row.appointment_id, paymentDate: row.payment_date,
+    paymentTime: row.payment_time.slice(0,5), paymentMethod: row.payment_method,
+    serviceOrigin: row.service_origin, createdByUserId: row.created_by_user_id,
+    createdByDisplayName: row.created_by_display_name, createdAt: row.created_at, updatedAt: row.updated_at };
 }
-
 
 export async function updateServicePaymentClient(
   paymentId: string,
@@ -994,17 +930,7 @@ export async function updateServicePaymentClient(
     p_client_name: clientName.trim(),
     p_client_contact: clientContact.trim(),
   });
-  if (error) {
-    const { error: directError } = await supabase
-      .from('service_payments')
-      .update({
-        client_name: clientName.trim() || null,
-        client_contact: clientContact.trim() || null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', paymentId);
-    if (directError) throw directError;
-  }
+  if (error) throw error;
 }
 
 /** Elimina un cobro registrado (exclusivo para Administradores) */
@@ -1014,29 +940,9 @@ export async function deleteServicePayment(
 ): Promise<void> {
   if (!paymentId) throw new Error('ID de cobro requerido para eliminar.');
 
-  if (staff.profile.role !== 'ADMIN') {
-    throw new Error('Solo los administradores tienen permiso para eliminar registros de cobro.');
-  }
-
-  const { error: rpcError } = await supabase.rpc('soft_delete_service_payment', {
-    p_payment_id: paymentId,
-  });
-
-  if (rpcError) {
-    const { error: updateError } = await supabase
-      .from('service_payments')
-      .update({
-        deleted_at: new Date().toISOString(),
-        deleted_by_user_id: staff.user?.id || null,
-        deleted_by_display_name: staff.profile?.name || 'Admin',
-      })
-      .eq('id', paymentId);
-
-    if (updateError) {
-      console.error('[KANI payments] Error al eliminar cobro en base de datos:', updateError);
-      throw new Error(updateError.message || 'No se pudo eliminar el cobro en la base de datos.');
-    }
-  }
+  if (!isStaffOperator(staff.profile.role)) throw new Error('No tenés permisos para eliminar cobros.');
+  const { error } = await supabase.rpc('soft_delete_service_payment', { p_payment_id: paymentId });
+  if (error) throw error;
 
 }
 
@@ -1068,7 +974,7 @@ export type ServicePaymentFilterOptions = {
   timeSlotFilter?: 'ALL' | 'MORNING' | 'AFTERNOON' | 'NIGHT';
   barberFilter?: string;
   serviceFilter?: string;
-  role: 'ADMIN' | 'BARBER';
+  role: 'ADMIN' | 'MANAGER' | 'BARBER';
   profileBarberId: string | null;
   permittedBarberIds: ReadonlySet<string>;
 };

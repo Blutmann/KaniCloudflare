@@ -8,11 +8,12 @@ import { money, formatServiceName } from "@/lib/kani-model";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { useV2, type V2Client } from "./data";
 import { Empty, Metric, Status } from "./shared";
+import { isStaffOperator } from "@/lib/kani-permissions";
 
 export function V2Clients() {
   const data = useV2();
   const staff = useAdminStaff();
-  const isAdmin = staff.profile.role === "ADMIN";
+  const isAdmin = isStaffOperator(staff.profile.role);
   const barberId = staff.profile.barber_id;
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -42,8 +43,8 @@ export function V2Clients() {
   function canEditClient(client: V2Client): boolean {
     if (isAdmin) return true;
     if (!barberId) return false;
-    // Un barbero puede editar exclusivamente clientes con turnos registrados con él
-    return data.appointments.some((a) => a.clientId === client.id && a.barberId === barberId);
+    // The server returns only durable related cards, including manually created clients.
+    return data.clients.some((row) => row.id === client.id);
   }
 
   function openEditor(client?: V2Client, e?: MouseEvent) {
@@ -116,14 +117,7 @@ export function V2Clients() {
         p_client_id: clientId,
       });
 
-      if (rpcError) {
-        // Fallback: intentar actualizar deleted_at directamente
-        const { error: updateError } = await supabase
-          .from("clients")
-          .update({ deleted_at: new Date().toISOString() })
-          .eq("id", clientId);
-        if (updateError) throw updateError;
-      }
+      if (rpcError) throw rpcError;
 
       const deletedName = confirmDelete.name;
       setConfirmDelete(null);

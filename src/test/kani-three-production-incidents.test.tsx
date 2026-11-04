@@ -192,10 +192,10 @@ describe("Tres incidentes productivos — Regresión integral", () => {
 
   describe("2. Pagos administrativos: servicio «Otro» con descripción personalizada", () => {
     it("valida descripción obligatoria en «Otro» y envía clasificación «Otros» con detalle en service_other_detail", async () => {
-      v2Mocks.rpc.mockResolvedValue({ data: [{ payment_id: "pay-otro-1" }], error: null });
+      v2Mocks.rpc.mockResolvedValue({ data: { id: "pay-otro-1" }, error: null });
 
       render(<V2Payments />);
-      fireEvent.change(screen.getByLabelText("Servicio"), { target: { value: "Otro" } });
+      fireEvent.change(screen.getByLabelText("Servicio"), { target: { value: "Otros" } });
 
       const descInput = screen.getByLabelText("Detalle del servicio");
       const priceInput = screen.getByLabelText(/Importe \(\$ ARS\)/i);
@@ -222,43 +222,17 @@ describe("Tres incidentes productivos — Regresión integral", () => {
       expect(await screen.findByText("Cobro registrado.")).toBeTruthy();
     });
 
-    it("ejecuta fallback directo en service_payments con service_name = 'Otros' si la RPC viola service_payments_service_name_check", async () => {
-      v2Mocks.rpc.mockResolvedValue({
-        data: null,
-        error: {
-          message:
-            'new row for relation "service_payments" violates check constraint "service_payments_service_name_check"',
-        },
-      });
-      v2Mocks.fromInsertSingle.mockResolvedValue({
-        data: { id: "pay-fallback-otro-1" },
-        error: null,
-      });
-
+    it("no evita una restricción de la RPC mediante una escritura directa ni duplica cobros", async () => {
+      v2Mocks.rpc.mockResolvedValue({ data:null, error:{message:'service_payments_service_name_check'} });
       render(<V2Payments />);
-      fireEvent.change(screen.getByLabelText("Servicio"), { target: { value: "Otro" } });
-      fireEvent.change(screen.getByLabelText("Detalle del servicio"), {
-        target: { value: "Perfilado" },
-      });
-      fireEvent.change(screen.getByLabelText(/Importe \(\$ ARS\)/i), {
-        target: { value: "18000" },
-      });
-
-      fireEvent.click(screen.getByRole("button", { name: /Registrar cobro|Cobrar/i }));
-
-      await waitFor(() => expect(v2Mocks.fromInsertSingle).toHaveBeenCalledTimes(1));
-      expect(v2Mocks.fromInsertSingle.mock.calls[0]?.[0]).toMatchObject({
-        barber_id: "b1",
-        service_name: "Otros",
-        service_other_detail: "Perfilado",
-        service_price_ars: 18000,
-        discount_ars: 0,
-        final_amount_ars: 18000,
-        collected_amount_ars: 18000,
-        service_origin: "walk_in",
-      });
-      expect(await screen.findByText("Cobro registrado.")).toBeTruthy();
-      expect(v2Mocks.refresh).toHaveBeenCalledTimes(1);
+      fireEvent.change(screen.getByLabelText('Servicio'),{target:{value:'Otros'}});
+      fireEvent.change(screen.getByLabelText('Detalle del servicio'),{target:{value:'Perfilado'}});
+      fireEvent.change(screen.getByLabelText(/Importe \(\$ ARS\)/i),{target:{value:'18000'}});
+      fireEvent.click(screen.getByRole('button',{name:/Registrar cobro|Cobrar/i}));
+      expect(await screen.findByText(/No se confirmó el cobro/)).toBeTruthy();
+      expect(v2Mocks.rpc).toHaveBeenCalledTimes(1);
+      expect(v2Mocks.fromInsertSingle).not.toHaveBeenCalled();
+      expect(v2Mocks.refresh).not.toHaveBeenCalled();
     });
   });
 

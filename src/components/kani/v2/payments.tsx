@@ -1,3 +1,9 @@
+import { isStaffOperator } from "@/lib/kani-permissions";
+import {
+  canonicalPaymentService,
+  paymentAmounts,
+  type DiscountKind,
+} from "@/lib/kani-payment-amounts";
 import { useRef, useState, type FormEvent } from "react";
 import { useSearch } from "@tanstack/react-router";
 import { CheckCircle2, Tag, Trash2, Edit2, User } from "lucide-react";
@@ -9,7 +15,6 @@ import { deduplicatePaymentMovements, paymentSummary, scopeV2 } from "@/lib/kani
 import {
   deleteServicePayment,
   updateServicePayment,
-  updateServicePaymentClient,
   calculatePaymentPeriodRange,
   getPaymentPeriodDynamicLabels,
   type PaymentPeriodFilter,
@@ -31,7 +36,7 @@ export function formatPaymentMethodLabel(method: string): string {
 export function V2Payments() {
   const data = useV2();
   const staff = useAdminStaff();
-  const isAdmin = staff.profile.role === "ADMIN";
+  const isAdmin = isStaffOperator(staff.profile.role);
   const today = businessDateToday();
   const search = useSearch({ strict: false }) as { turno?: string };
   const [origin, setOrigin] = useState<"appointment" | "walk_in">(
@@ -39,11 +44,13 @@ export function V2Payments() {
   );
   const [appointmentId, setAppointmentId] = useState(search.turno ?? "");
   const [barberId, setBarberId] = useState(staff.profile.barber_id ?? staff.barbers[0]?.id ?? "");
-  const [serviceName, setServiceName] = useState<string>("Corte");
+  const [selectedServiceName, setServiceName] = useState<string | null>(null);
   const [customServiceName, setCustomServiceName] = useState<string>("");
   const [priceOverride, setPriceOverride] = useState<number | null>(null);
   const [method, setMethod] = useState<PaymentMethod>("Efectivo");
-  const [discount, setDiscount] = useState(0);
+  const [discountValue, setDiscount] = useState(0);
+  const [discountKind, setDiscountKind] = useState<DiscountKind>("FIXED");
+  const [finalOverride, setFinalOverride] = useState<number | null>(null);
   const [showDiscount, setShowDiscount] = useState(false);
   const [showClient, setShowClient] = useState(false);
   const [clientId, setClientId] = useState("");
@@ -64,6 +71,8 @@ export function V2Payments() {
   const [editOtherDetail, setEditOtherDetail] = useState("");
   const [editPrice, setEditPrice] = useState(25000);
   const [editDiscount, setEditDiscount] = useState(0);
+  const [editDiscountKind, setEditDiscountKind] = useState<DiscountKind>("FIXED");
+  const [editFinal, setEditFinal] = useState<number | null>(null);
   const [editMethod, setEditMethod] = useState<PaymentMethod>("Efectivo");
   const [editClientName, setEditClientName] = useState("");
   const [editClientContact, setEditClientContact] = useState("");
@@ -72,23 +81,34 @@ export function V2Payments() {
   const [editError, setEditError] = useState("");
   const [editBusy, setEditBusy] = useState(false);
 
-  const [editingClientPayment, setEditingClientPayment] = useState<ServicePayment | null>(null);
   const [deletingPayment, setDeletingPayment] = useState<ServicePayment | null>(null);
   const [actionNotice, setActionNotice] = useState("");
 
   const settled = new Set(
-    data.payments.filter((p) => !p.isDepositMovement && p.appointmentId).map((p) => p.appointmentId),
+    data.payments
+      .filter((p) => !p.isDepositMovement && p.appointmentId)
+      .map((p) => p.appointmentId),
   );
   const choices = data.appointments.filter(
-    (a) => ["CONFIRMED", "COMPLETED"].includes(a.statusCode) && !settled.has(a.id) && a.date <= today,
+    (a) =>
+      ["CONFIRMED", "COMPLETED"].includes(a.statusCode) && !settled.has(a.id) && a.date <= today,
   );
   const appointment =
     origin === "appointment" ? choices.find((a) => a.id === appointmentId) : undefined;
-  const service = data.services.find((s) => s.name === serviceName || (s.id === 'corte' && (serviceName === 'Corte' || serviceName === 'Corte de cabello')));
+  const serviceName =
+    selectedServiceName ?? canonicalPaymentService(appointment?.serviceName ?? "Corte");
+  const service = data.services.find(
+    (s) => canonicalPaymentService(s.name) === canonicalPaymentService(serviceName),
+  );
   const price =
-    priceOverride ?? (appointment ? (appointment.servicePrice ?? 0) : (service?.price ?? 0));
+    serviceName === "Anulado"
+      ? 0
+      : (priceOverride ?? service?.price ?? appointment?.servicePrice ?? 0);
   const deposit = appointment?.depositPaid ? (appointment.depositAmountArs ?? 5000) : 0;
-  const total = Math.max(0, price - discount - deposit);
+  const discount =
+    discountKind === "PERCENT" ? Math.round((price * discountValue) / 100) : discountValue;
+  const total =
+    serviceName === "Anulado" ? 0 : Math.max(0, (finalOverride ?? price - discount) - deposit);
   const dynamicLabels = getPaymentPeriodDynamicLabels(today);
   const periodRange = calculatePaymentPeriodRange(period, today, customStartDate, customEndDate);
   const isInvalidRange = period === "CUSTOM" && Boolean(periodRange.isInvalid);
@@ -96,17 +116,8 @@ export function V2Payments() {
   const history = isInvalidRange
     ? []
     : deduplicatePaymentMovements(
-        scopeV2(
-          data.payments,
-          staff.profile.role,
-          staff.profile.barber_id,
-          data.barberId,
-        ),
-      ).filter(
-        (p) =>
-          p.paymentDate >= periodRange.start &&
-          p.paymentDate <= periodRange.end,
-      );
+        scopeV2(data.payments, staff.profile.role, staff.profile.barber_id, data.barberId),
+      ).filter((p) => p.paymentDate >= periodRange.start && p.paymentDate <= periodRange.end);
   const summary = paymentSummary(history);
 
   async function submit(event: FormEvent) {
@@ -118,21 +129,10 @@ export function V2Payments() {
       setMessage("Seleccioná un turno con información de seña verificable.");
       return;
     }
-    const rawServiceName = appointment ? (appointment.serviceName || "Servicio") : serviceName;
-    const isOtherService =
-      origin === "walk_in"
-        ? (serviceName === "Otro" || serviceName === "Otros")
-        : (Boolean(appointment?.customServiceName) ||
-            rawServiceName === "Otro" ||
-            rawServiceName === "Otros" ||
-            !["Corte", "Corte de cabello", "Corte y barba", "Corte + barba", "Barba"].includes(rawServiceName));
+    const rawServiceName = serviceName;
+    const isOtherService = ["Otro", "Otros"].includes(serviceName);
     const trimmedCustomDetail =
-      origin === "walk_in"
-        ? customServiceName.trim()
-        : (appointment?.customServiceName?.trim() ||
-            (!["Corte", "Corte de cabello", "Corte y barba", "Corte + barba", "Barba"].includes(rawServiceName)
-              ? rawServiceName.trim()
-              : ""));
+      customServiceName.trim() || appointment?.customServiceName?.trim() || "";
 
     if (isOtherService && trimmedCustomDetail.length < 2) {
       setMessage("Ingresá el nombre del servicio personalizado.");
@@ -142,14 +142,23 @@ export function V2Payments() {
       setMessage("La descripción del servicio personalizado no puede superar los 120 caracteres.");
       return;
     }
-    if (
-      !Number.isInteger(price) ||
-      price <= 0 ||
-      !Number.isInteger(discount) ||
-      discount < 0 ||
-      discount > price - deposit
-    ) {
-      setMessage("Revisá el importe y el descuento. El total no puede ser menor que la seña.");
+    try {
+      if (
+        serviceName === "Anulado" &&
+        (appointment?.depositPaid || (appointment?.depositAmountArs ?? 0) > 0)
+      ) {
+        throw new Error("No se puede anular un cobro vinculado a un turno con seña.");
+      }
+      paymentAmounts(
+        price,
+        discountKind,
+        discountValue,
+        finalOverride,
+        deposit,
+        serviceName === "Anulado",
+      );
+    } catch (cause) {
+      setMessage(cause instanceof Error ? cause.message : "Revisá los importes.");
       return;
     }
     inFlight.current = true;
@@ -170,80 +179,23 @@ export function V2Payments() {
       const resolvedClientContact =
         appointment?.phone ?? (showClient ? (selected?.phone ?? clientPhone.trim()) : "");
 
-      let { data: result, error } = await supabase.rpc("record_service_payment", {
+      const { data: result, error } = await (supabase.rpc as any)("staff_save_service_payment", {
         p_barber_id: targetBarberId,
         p_service_name: canonicalServiceName,
         p_service_other_detail: finalOtherDetail,
         p_service_price_ars: price,
-        p_discount_ars: discount,
+        p_discount_kind: discountKind,
+        p_discount_value: discountValue,
+        p_final_amount_ars: finalOverride,
+        p_client_id: selected?.id ?? null,
         p_payment_method: method,
-        p_online_deposit_paid: !!appointment?.depositPaid,
         p_client_name: resolvedClientName,
         p_client_contact: resolvedClientContact,
         p_appointment_id: appointment?.id ?? null,
       });
 
-      // Fallback compatible cuando la función RPC desplegada en BD intenta insertar el detalle en service_name y viola service_payments_service_name_check
-      if (
-        error &&
-        String(error.message || "").includes("service_payments_service_name_check") &&
-        typeof (supabase as any).from === "function"
-      ) {
-        const creatorName =
-          (staff as any).profile?.display_name ||
-          (staff.profile.role === "ADMIN"
-            ? "Admin"
-            : staff.barbers.find((b) => b.id === targetBarberId)?.name || "Barbero");
-        const insertPayload: Record<string, unknown> = {
-          barber_id: targetBarberId,
-          service_id: isOtherService
-            ? null
-            : service?.id && /^[0-9a-f-]{36}$/i.test(service.id)
-              ? service.id
-              : null,
-          service_name: canonicalServiceName,
-          service_other_detail: finalOtherDetail,
-          service_price_ars: price,
-          discount_ars: discount,
-          final_amount_ars: price - discount,
-          payment_method: method,
-          online_deposit_paid: !!appointment?.depositPaid,
-          online_deposit_amount_ars: deposit,
-          collected_amount_ars: total,
-          client_name: resolvedClientName ? resolvedClientName.trim() : null,
-          client_contact: resolvedClientContact ? resolvedClientContact.trim() : null,
-          appointment_id: appointment?.id ?? null,
-          service_origin: appointment?.id ? "appointment" : "walk_in",
-          created_by_user_id: (staff as any).user?.id ?? null,
-          created_by_display_name: creatorName,
-        };
-
-        const { data: insertedRow, error: insertError } = await supabase
-          .from("service_payments")
-          .insert(insertPayload)
-          .select("id")
-          .single();
-
-        if (!insertError && insertedRow) {
-          if (appointment?.id) {
-            await supabase
-              .from("appointments")
-              .update({
-                balance_paid: true,
-                status: "COMPLETED",
-                updated_at: new Date().toISOString(),
-              })
-              .eq("id", appointment.id);
-          }
-          result = [{ payment_id: insertedRow.id }];
-          error = null;
-        } else if (insertError) {
-          error = insertError;
-        }
-      }
-
       if (error) throw error;
-      if (!result?.length)
+      if (!result?.id)
         throw new Error(
           "No se recibió confirmación del cobro. Revisá el historial antes de reintentar.",
         );
@@ -252,6 +204,8 @@ export function V2Payments() {
       setAppointmentId("");
       setDiscount(0);
       setPriceOverride(null);
+      setFinalOverride(null);
+      setServiceName(null);
       setCustomServiceName("");
       setShowClient(false);
       setClientId("");
@@ -271,22 +225,17 @@ export function V2Payments() {
   function openEditModal(p: ServicePayment) {
     setEditingPayment(p);
     setEditBarberId(p.barberId);
-    setEditServiceName(p.serviceName);
+    setEditServiceName(canonicalPaymentService(p.serviceName) as ServicePaymentType);
     setEditOtherDetail(p.serviceOtherDetail || "");
     setEditPrice(p.servicePriceArs);
-    setEditDiscount(p.discountArs || 0);
+    setEditDiscount(p.discountValue ?? p.discountArs ?? 0);
+    setEditDiscountKind(p.discountKind ?? "FIXED");
+    setEditFinal(p.finalAmountOverrideArs ?? null);
     setEditMethod(p.paymentMethod);
     setEditClientName(p.clientName || "");
     setEditClientContact(p.clientContact || "");
     setEditDate(p.paymentDate);
     setEditTime(p.paymentTime);
-    setEditError("");
-  }
-
-  function openClientEditModal(p: ServicePayment) {
-    setEditingClientPayment(p);
-    setEditClientName(p.clientName || "");
-    setEditClientContact(p.clientContact || "");
     setEditError("");
   }
 
@@ -301,9 +250,11 @@ export function V2Payments() {
         {
           barberId: editBarberId,
           serviceName: editServiceName,
-          serviceOtherDetail: editServiceName === "Otros" ? editOtherDetail : undefined,
+          ...(editServiceName === "Otros" ? { serviceOtherDetail: editOtherDetail } : {}),
           servicePriceArs: editPrice,
-          discountArs: editDiscount,
+          discountKind: editDiscountKind,
+          discountValue: editDiscount,
+          finalAmountArs: editFinal,
           paymentMethod: editMethod,
           clientName: editClientName,
           clientContact: editClientContact,
@@ -318,27 +269,6 @@ export function V2Payments() {
       await data.refresh();
     } catch (err) {
       setEditError(err instanceof Error ? err.message : "Error al actualizar el cobro.");
-    } finally {
-      setEditBusy(false);
-    }
-  }
-
-  async function handleSaveClientInfo(e: FormEvent) {
-    e.preventDefault();
-    if (!editingClientPayment) return;
-    setEditBusy(true);
-    setEditError("");
-    try {
-      await updateServicePaymentClient(
-        editingClientPayment.id,
-        editClientName,
-        editClientContact,
-      );
-      setEditingClientPayment(null);
-      setActionNotice("Datos de contacto actualizados correctamente.");
-      await data.refresh();
-    } catch (err) {
-      setEditError(err instanceof Error ? err.message : "Error al actualizar contacto del cliente.");
     } finally {
       setEditBusy(false);
     }
@@ -376,6 +306,8 @@ export function V2Payments() {
                 aria-pressed={origin === value}
                 onClick={() => {
                   setOrigin(value);
+                  setServiceName(null);
+                  setFinalOverride(null);
                   setPriceOverride(null);
                   setDiscount(0);
                 }}
@@ -396,6 +328,8 @@ export function V2Payments() {
                         value={appointmentId}
                         onChange={(e) => {
                           setAppointmentId(e.target.value);
+                          setServiceName(null);
+                          setFinalOverride(null);
                           setPriceOverride(null);
                           setDiscount(0);
                         }}
@@ -423,7 +357,11 @@ export function V2Payments() {
                     <label className="v2-field v2-payment-col">
                       <span className="v2-field-label">Barbero</span>
                       <input
-                        value={staff.barbers.find((b) => b.id === barberId)?.name || staff.profile.display_name || "Lautaro"}
+                        value={
+                          staff.barbers.find((b) => b.id === barberId)?.name ||
+                          staff.profile.display_name ||
+                          "Lautaro"
+                        }
                         disabled
                         readOnly
                       />
@@ -432,33 +370,31 @@ export function V2Payments() {
 
                   <label className="v2-field v2-payment-col">
                     <span className="v2-field-label">Servicio</span>
-                    {origin === "appointment" ? (
-                      <input
-                        value={formatServiceName(appointment?.serviceName) || (appointmentId ? "Cargando…" : "Seleccionar turno")}
-                        disabled
-                        readOnly
-                      />
-                    ) : (
-                      <select
-                        value={serviceName}
-                        onChange={(e) => {
-                          setServiceName(e.target.value);
-                          setPriceOverride(null);
-                          setDiscount(0);
-                        }}
+                    <select
+                      value={serviceName}
+                      onChange={(e) => {
+                        setServiceName(e.target.value);
+                        setPriceOverride(null);
+                        setFinalOverride(null);
+                      }}
+                    >
+                      <option value="Corte">Corte</option>
+                      <option value="Corte y barba">Corte y barba</option>
+                      <option value="Barba">Barba</option>
+                      <option value="Otros">Otro</option>
+                      <option
+                        value="Anulado"
+                        disabled={
+                          !!appointment?.depositPaid || (appointment?.depositAmountArs ?? 0) > 0
+                        }
                       >
-                        {data.services.map((s) => (
-                          <option value={formatServiceName(s.name)} key={s.id}>
-                            {formatServiceName(s.name)}
-                          </option>
-                        ))}
-                        <option value="Otro">Otro</option>
-                      </select>
-                    )}
+                        Anulado
+                      </option>
+                    </select>
                   </label>
                 </div>
 
-                {origin === "walk_in" && serviceName === "Otro" && (
+                {["Otro", "Otros"].includes(serviceName) && (
                   <div className="v2-payment-full-row">
                     <label className="v2-field">
                       <span className="v2-field-label">Detalle del servicio</span>
@@ -475,7 +411,8 @@ export function V2Payments() {
                 {origin === "appointment" && appointment && (
                   <div className="v2-payment-full-row v2-appointment-selected-note">
                     <p className="v2-footnote">
-                      {appointment.name} · {appointment.phone || "Sin celular"} · {appointment.date} a las {appointment.time} hs ({appointment.barber})
+                      {appointment.name} · {appointment.phone || "Sin celular"} · {appointment.date}{" "}
+                      a las {appointment.time} hs ({appointment.barber})
                     </p>
                   </div>
                 )}
@@ -484,7 +421,10 @@ export function V2Payments() {
                 <div className="v2-payment-row">
                   <label className="v2-field v2-payment-col">
                     <span className="v2-field-label">Método de cobro</span>
-                    <select value={method} onChange={(e) => setMethod(e.target.value as PaymentMethod)}>
+                    <select
+                      value={method}
+                      onChange={(e) => setMethod(e.target.value as PaymentMethod)}
+                    >
                       <option value="Efectivo">Efectivo</option>
                       <option value="Transferencia">Transferencia</option>
                     </select>
@@ -494,11 +434,19 @@ export function V2Payments() {
                     <span className="v2-field-label">Importe ($ ARS)</span>
                     <input
                       type="number"
-                      min={1}
+                      min={serviceName === "Anulado" ? 0 : 1}
+                      disabled={serviceName === "Anulado"}
                       step={1}
-                      value={priceOverride ?? (serviceName === "Otro" ? "" : (service?.price ?? ""))}
+                      value={
+                        serviceName === "Anulado"
+                          ? 0
+                          : (priceOverride ??
+                            (["Otro", "Otros"].includes(serviceName) ? "" : price))
+                      }
                       placeholder={String(service?.price ?? 25000)}
-                      onChange={(e) => setPriceOverride(e.target.value === "" ? null : Number(e.target.value))}
+                      onChange={(e) =>
+                        setPriceOverride(e.target.value === "" ? null : Number(e.target.value))
+                      }
                     />
                   </label>
                 </div>
@@ -537,7 +485,9 @@ export function V2Payments() {
                   ) : (
                     <div className="v2-payment-appointment-client-badge">
                       <User size={16} />
-                      <span className="v2-truncate">{appointment?.name || "Cliente del turno"}</span>
+                      <span className="v2-truncate">
+                        {appointment?.name || "Cliente del turno"}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -545,16 +495,30 @@ export function V2Payments() {
                 {showDiscount && (
                   <div className="v2-payment-full-row v2-payment-collapsible">
                     <label className="v2-field">
-                      <span className="v2-field-label">Descuento en pesos ($ ARS)</span>
+                      <span className="v2-field-label">
+                        {discountKind === "PERCENT"
+                          ? "Descuento porcentual (%)"
+                          : "Descuento en pesos ($ ARS)"}
+                      </span>
                       <input
                         type="number"
-                        value={discount || ""}
+                        value={discountValue || ""}
                         min={0}
-                        max={Math.max(0, price - deposit)}
+                        max={discountKind === "PERCENT" ? 100 : price}
                         step={1}
                         placeholder="0"
                         onChange={(e) => setDiscount(Number(e.target.value))}
                       />
+                    </label>
+                    <label className="v2-field">
+                      Tipo de descuento
+                      <select
+                        value={discountKind}
+                        onChange={(e) => setDiscountKind(e.target.value as DiscountKind)}
+                      >
+                        <option value="FIXED">Importe fijo ($)</option>
+                        <option value="PERCENT">Porcentaje (%)</option>
+                      </select>
                     </label>
                   </div>
                 )}
@@ -598,6 +562,22 @@ export function V2Payments() {
                   </div>
                 )}
 
+                <div className="v2-payment-full-row">
+                  {" "}
+                  <label className="v2-field">
+                    Importe final ($ ARS, incluye seña)
+                    <input
+                      type="number"
+                      min={deposit}
+                      step="1"
+                      disabled={serviceName === "Anulado"}
+                      value={serviceName === "Anulado" ? 0 : (finalOverride ?? price - discount)}
+                      onChange={(e) =>
+                        setFinalOverride(e.target.value === "" ? null : Number(e.target.value))
+                      }
+                    />
+                  </label>
+                </div>
                 {/* Fila 4: A cobrar ahora | Registrar cobro */}
                 <div className="v2-payment-row v2-payment-row-final">
                   <div className="v2-payment-total-box">
@@ -619,7 +599,7 @@ export function V2Payments() {
                     type="submit"
                     disabled={
                       busy ||
-                      !price ||
+                      (!price && serviceName !== "Anulado") ||
                       (origin === "appointment" && (!appointment || !data.depositSupported))
                     }
                   >
@@ -693,7 +673,10 @@ export function V2Payments() {
           <BarberFilter />
         </div>
         {isInvalidRange && (
-          <p className="v2-notice" style={{ color: "var(--destructive, #ef4444)", margin: "8px 0" }}>
+          <p
+            className="v2-notice"
+            style={{ color: "var(--destructive, #ef4444)", margin: "8px 0" }}
+          >
             Rango no válido: Fecha desde debe ser menor o igual a Fecha hasta.
           </p>
         )}
@@ -739,7 +722,9 @@ export function V2Payments() {
                       <span className="v2-table-client-name">
                         {p.clientName || "Sin cliente asociado"}
                       </span>
-                      {p.clientContact && <small className="v2-table-client-contact">{p.clientContact}</small>}
+                      {p.clientContact && (
+                        <small className="v2-table-client-contact">{p.clientContact}</small>
+                      )}
                     </td>
                     <td className="col-method">
                       <span className={`v2-method-badge ${p.paymentMethod.toLowerCase()}`}>
@@ -753,7 +738,7 @@ export function V2Payments() {
                     </td>
                     <td className="col-actions">
                       <div className="v2-table-actions-cell">
-                        {isAdmin && !p.isDepositMovement ? (
+                        {!p.isDepositMovement ? (
                           <>
                             <button
                               type="button"
@@ -765,29 +750,20 @@ export function V2Payments() {
                               <Edit2 size={13} />
                               <span className="v2-btn-text">Editar</span>
                             </button>
-                            <button
-                              type="button"
-                              className="v2-quiet v2-action-icon-btn delete v2-destructive-text"
-                              onClick={() => setDeletingPayment(p)}
-                              title="Anular cobro"
-                              aria-label="Anular cobro"
-                            >
-                              <Trash2 size={13} />
-                              <span className="v2-btn-text">Eliminar</span>
-                            </button>
+                            {isAdmin && (
+                              <button
+                                type="button"
+                                className="v2-quiet v2-action-icon-btn delete v2-destructive-text"
+                                onClick={() => setDeletingPayment(p)}
+                                title="Eliminar cobro"
+                                aria-label="Eliminar cobro"
+                              >
+                                <Trash2 size={13} />
+                                <span className="v2-btn-text">Eliminar</span>
+                              </button>
+                            )}
                           </>
-                        ) : (
-                          <button
-                            type="button"
-                            className="v2-secondary v2-action-icon-btn client"
-                            onClick={() => openClientEditModal(p)}
-                            title="Editar datos de contacto"
-                            aria-label="Editar datos de cliente"
-                          >
-                            <User size={13} />
-                            <span className="v2-btn-text">Editar cliente</span>
-                          </button>
-                        )}
+                        ) : null}
                       </div>
                     </td>
                   </tr>
@@ -810,9 +786,7 @@ export function V2Payments() {
                     </strong>
                     <span className="v2-pcm-barber">{p.barberName}</span>
                   </div>
-                  <strong className="v2-pcm-amount">
-                    {money(p.collectedAmountArs)}
-                  </strong>
+                  <strong className="v2-pcm-amount">{money(p.collectedAmountArs)}</strong>
                 </div>
 
                 {/* 2. Línea secundaria: Cliente + Teléfono */}
@@ -821,9 +795,7 @@ export function V2Payments() {
                     {p.clientName || "Sin cliente asociado"}
                   </span>
                   {p.clientContact && (
-                    <span className="v2-pcm-client-contact">
-                      {p.clientContact}
-                    </span>
+                    <span className="v2-pcm-client-contact">{p.clientContact}</span>
                   )}
                 </div>
 
@@ -839,7 +811,7 @@ export function V2Payments() {
 
                 {/* 4. Línea inferior: Acciones compactas y estables */}
                 <div className="v2-pcm-actions">
-                  {isAdmin && !p.isDepositMovement ? (
+                  {!p.isDepositMovement ? (
                     <>
                       <button
                         type="button"
@@ -851,29 +823,20 @@ export function V2Payments() {
                         <Edit2 size={13} />
                         <span>Editar</span>
                       </button>
-                      <button
-                        type="button"
-                        className="v2-quiet v2-pcm-btn delete v2-destructive-text"
-                        onClick={() => setDeletingPayment(p)}
-                        title="Anular cobro"
-                        aria-label="Anular cobro"
-                      >
-                        <Trash2 size={13} />
-                        <span>Eliminar</span>
-                      </button>
+                      {isAdmin && (
+                        <button
+                          type="button"
+                          className="v2-quiet v2-pcm-btn delete v2-destructive-text"
+                          onClick={() => setDeletingPayment(p)}
+                          title="Eliminar cobro"
+                          aria-label="Eliminar cobro"
+                        >
+                          <Trash2 size={13} />
+                          <span>Eliminar</span>
+                        </button>
+                      )}
                     </>
-                  ) : (
-                    <button
-                      type="button"
-                      className="v2-secondary v2-pcm-btn client"
-                      onClick={() => openClientEditModal(p)}
-                      title="Editar datos de contacto"
-                      aria-label="Editar datos de cliente"
-                    >
-                      <User size={13} />
-                      <span>Editar cliente</span>
-                    </button>
-                  )}
+                  ) : null}
                 </div>
               </article>
             ))}
@@ -881,8 +844,11 @@ export function V2Payments() {
         )}
       </section>
 
-      {/* Admin Full Edit Dialog */}
-      <Dialog open={!!editingPayment} onOpenChange={(open) => !open && !editBusy && setEditingPayment(null)}>
+      {/* Scoped full edit: own barber payments or all payments for operators. */}
+      <Dialog
+        open={!!editingPayment}
+        onOpenChange={(open) => !open && !editBusy && setEditingPayment(null)}
+      >
         <DialogContent className="v2-dialog">
           <DialogTitle>Editar cobro registrado</DialogTitle>
           <DialogDescription>
@@ -892,7 +858,11 @@ export function V2Payments() {
           <form onSubmit={handleSavePayment} className="v2-form">
             <label className="v2-field">
               Barbero
-              <select value={editBarberId} onChange={(e) => setEditBarberId(e.target.value)} disabled={editBusy}>
+              <select
+                value={editBarberId}
+                onChange={(e) => setEditBarberId(e.target.value)}
+                disabled={editBusy || !isAdmin}
+              >
                 {staff.barbers.map((b) => (
                   <option key={b.id} value={b.id}>
                     {b.name}
@@ -904,13 +874,35 @@ export function V2Payments() {
               Servicio
               <select
                 value={editServiceName}
-                onChange={(e) => setEditServiceName(e.target.value as ServicePaymentType)}
+                onChange={(e) => {
+                  const name = e.target.value as ServicePaymentType;
+                  setEditServiceName(name);
+                  setEditFinal(null);
+                  const service = data.services.find(
+                    (s) => canonicalPaymentService(s.name) === name,
+                  );
+                  setEditPrice(name === "Anulado" ? 0 : (service?.price ?? editPrice));
+                }}
                 disabled={editBusy}
               >
                 <option value="Corte">Corte</option>
                 <option value="Corte y barba">Corte y barba</option>
                 <option value="Barba">Barba</option>
-                <option value="Otros">Otros</option>
+                <option value="Otros">Otro</option>
+                <option
+                  value="Anulado"
+                  disabled={
+                    !!editingPayment?.onlineDepositPaid ||
+                    (editingPayment?.onlineDepositAmountArs ?? 0) > 0 ||
+                    !!data.appointments.find(
+                      (a) =>
+                        a.id === editingPayment?.appointmentId &&
+                        (a.depositPaid || (a.depositAmountArs ?? 0) > 0),
+                    )
+                  }
+                >
+                  Anulado
+                </option>
               </select>
             </label>
             {editServiceName === "Otros" && (
@@ -929,7 +921,7 @@ export function V2Payments() {
                 Precio servicio ($ ARS)
                 <input
                   type="number"
-                  min={1}
+                  min={editServiceName === "Anulado" ? 0 : 1}
                   required
                   value={editPrice}
                   onChange={(e) => setEditPrice(Number(e.target.value))}
@@ -944,6 +936,45 @@ export function V2Payments() {
                   value={editDiscount}
                   onChange={(e) => setEditDiscount(Number(e.target.value))}
                   disabled={editBusy}
+                />
+              </label>
+            </div>
+            <div className="v2-form-row">
+              <label className="v2-field">
+                Tipo de descuento
+                <select
+                  value={editDiscountKind}
+                  onChange={(e) => setEditDiscountKind(e.target.value as DiscountKind)}
+                  disabled={editBusy || editServiceName === "Anulado"}
+                >
+                  <option value="FIXED">Importe fijo ($)</option>
+                  <option value="PERCENT">Porcentaje (%)</option>
+                </select>
+              </label>
+              <label className="v2-field">
+                Importe final ($ ARS, incluye seña)
+                <input
+                  type="number"
+                  min={editingPayment?.onlineDepositAmountArs ?? 0}
+                  step="1"
+                  value={
+                    editServiceName === "Anulado"
+                      ? 0
+                      : (editFinal ??
+                        Math.max(
+                          0,
+                          editPrice -
+                            Math.round(
+                              editDiscountKind === "PERCENT"
+                                ? (editPrice * editDiscount) / 100
+                                : editDiscount,
+                            ),
+                        ))
+                  }
+                  onChange={(e) =>
+                    setEditFinal(e.target.value === "" ? null : Number(e.target.value))
+                  }
+                  disabled={editBusy || editServiceName === "Anulado"}
                 />
               </label>
             </div>
@@ -1013,53 +1044,6 @@ export function V2Payments() {
         </DialogContent>
       </Dialog>
 
-      {/* Barber Client Contact Edit Dialog */}
-      <Dialog
-        open={!!editingClientPayment}
-        onOpenChange={(open) => !open && !editBusy && setEditingClientPayment(null)}
-      >
-        <DialogContent className="v2-dialog">
-          <DialogTitle>Editar cliente del cobro</DialogTitle>
-          <DialogDescription>
-            Actualizá los datos de contacto del cliente asociado a este cobro.
-          </DialogDescription>
-          {editError && <p className="v2-alert">{editError}</p>}
-          <form onSubmit={handleSaveClientInfo} className="v2-form">
-            <label className="v2-field">
-              Nombre del cliente
-              <input
-                required
-                minLength={2}
-                value={editClientName}
-                onChange={(e) => setEditClientName(e.target.value)}
-                disabled={editBusy}
-              />
-            </label>
-            <label className="v2-field">
-              Celular / Contacto
-              <input
-                value={editClientContact}
-                onChange={(e) => setEditClientContact(e.target.value)}
-                disabled={editBusy}
-              />
-            </label>
-            <div className="v2-dialog-actions">
-              <button
-                type="button"
-                className="v2-secondary"
-                onClick={() => setEditingClientPayment(null)}
-                disabled={editBusy}
-              >
-                Cancelar
-              </button>
-              <button type="submit" className="v2-primary" disabled={editBusy}>
-                {editBusy ? "Guardando…" : "Guardar cliente"}
-              </button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
-
       {/* Delete / Anular Confirmation Dialog */}
       <Dialog
         open={!!deletingPayment}
@@ -1070,7 +1054,8 @@ export function V2Payments() {
           <DialogDescription>
             ¿Estás seguro de anular el cobro de{" "}
             <strong>
-              {formatServiceName(deletingPayment?.serviceName)} ({money(deletingPayment?.collectedAmountArs || 0)})
+              {formatServiceName(deletingPayment?.serviceName)} (
+              {money(deletingPayment?.collectedAmountArs || 0)})
             </strong>
             ? Esta operación aplicará una baja lógica con trazabilidad y excluirá el cobro de las
             métricas sin alterar pagos externos ni eliminar turnos agendados.

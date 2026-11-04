@@ -1,3 +1,4 @@
+import { isStaffOperator } from "@/lib/kani-permissions";
 import { useState, useId, useMemo, useEffect } from "react";
 import {
   Dialog,
@@ -45,7 +46,7 @@ export function ManualAppointmentDialog({
 
   const data = useV2();
   const staff = useAdminStaff();
-  const isAdmin = staff?.profile?.role === "ADMIN";
+  const isAdmin = isStaffOperator(staff?.profile?.role ?? "");
   const titleId = useId();
   const descId = useId();
 

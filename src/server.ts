@@ -260,6 +260,16 @@ export default {
         }
       }
 
+      // Central gate also covers diagnostics and maintenance routes that use privileged clients.
+      let verifiedStaff: Awaited<ReturnType<typeof import('./lib/kani-staff-request.server').authenticateStaffRequest>> | undefined;
+      if (url.pathname.startsWith('/api/admin/') || (url.pathname.startsWith('/api/integrations/google-calendar/') && !url.pathname.endsWith('/callback'))) {
+        const { authenticateStaffRequest } = await import('./lib/kani-staff-request.server');
+        verifiedStaff = await authenticateStaffRequest(request);
+        if (!verifiedStaff.ok) return Response.json({ error: verifiedStaff.error }, { status: verifiedStaff.status, headers: { 'cache-control': 'no-store' } });
+        if (url.pathname !== '/api/admin/online-deposits' && verifiedStaff.profile.role !== 'ADMIN') {
+          return Response.json({ error: 'ADMIN_REQUIRED' }, { status: 403, headers: { 'cache-control': 'no-store' } });
+        }
+      }
       if (url.pathname === "/api/admin/online-deposits") {
         try {
           const barberId = url.searchParams.get("barberId") || undefined;
@@ -275,11 +285,11 @@ export default {
             startDate,
             endDate,
             serviceName,
-          });
+          }, verifiedStaff?.ok ? { profile: verifiedStaff.profile, token: verifiedStaff.token } : null);
 
           return new Response(JSON.stringify(movements), {
             status: 200,
-            headers: { "content-type": "application/json" },
+            headers: { "content-type": "application/json", "cache-control": "no-store" },
           });
         } catch (err) {
           return new Response(JSON.stringify({ error: err instanceof Error ? err.message : "Error" }), {

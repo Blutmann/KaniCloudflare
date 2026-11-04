@@ -157,15 +157,15 @@ describe('Admin V2 — Optimización de Clientes, Pagos y Turnos', () => {
       expect(screen.getByLabelText('Eliminar cliente Alejo Test')).toBeInTheDocument();
     });
 
-    it('1.3 Permisos: BARBER sólo puede editar clientes con su propio historial y NO puede eliminar', () => {
+    it('1.3 Permisos: BARBER puede editar fichas relacionadas devueltas por RLS, aun sin turno, y NO puede eliminar', () => {
       mockStaff.role = 'BARBER';
       mockStaff.barber_id = 'b1'; // Vinculado con Alejo (apt-1)
       render(<V2Clients />);
 
       // Puede editar a Alejo (vinculado a b1)
       expect(screen.getByLabelText('Editar datos de Alejo Test')).toBeInTheDocument();
-      // NO puede editar a Gonzalo Otro (no vinculado a b1)
-      expect(screen.queryByLabelText('Editar datos de Gonzalo Otro')).toBeNull();
+      // La ficha relacionada puede no tener turnos: una creación manual también la vincula.
+      expect(screen.getByLabelText('Editar datos de Gonzalo Otro')).toBeInTheDocument();
       // NUNCA puede eliminar clientes
       expect(screen.queryByLabelText(/eliminar cliente/i)).toBeNull();
     });
@@ -252,7 +252,7 @@ describe('Admin V2 — Optimización de Clientes, Pagos y Turnos', () => {
       const actionsCell = table.querySelector('.v2-table-actions-cell');
       expect(actionsCell).toBeInTheDocument();
       expect(within(table).getByRole('button', { name: 'Editar cobro' })).toBeInTheDocument();
-      expect(within(table).getByRole('button', { name: 'Anular cobro' })).toBeInTheDocument();
+      expect(within(table).getByRole('button', { name: 'Eliminar cobro' })).toBeInTheDocument();
     });
 
     it('2.6 Mobile cards: Estructura en 4 líneas con acciones compactas de 44px', () => {

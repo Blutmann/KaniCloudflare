@@ -93,7 +93,8 @@ export function deduplicatePaymentMovements(payments: ServicePayment[]): Service
 
 export function paymentSummary(rawPayments: ServicePayment[]) {
   const payments = deduplicatePaymentMovements(rawPayments);
-  const collected = payments.reduce((sum, p) => sum + p.collectedAmountArs, 0);
+  const activePayments = payments.filter(p => p.serviceName !== "Anulado");
+  const collected = activePayments.reduce((sum, p) => sum + p.collectedAmountArs, 0);
 
   const executedAppointmentIds = new Set(
     payments.filter((p) => !p.isDepositMovement && p.appointmentId).map((p) => p.appointmentId)
@@ -121,7 +122,7 @@ export function paymentSummary(rawPayments: ServicePayment[]) {
   }, 0);
 
   return {
-    count: payments.length,
+    count: activePayments.length,
     collected,
     value,
     deposits,
@@ -136,13 +137,14 @@ export function clientHistory(
 ) {
   const history = appointments.filter((a) => a.clientId === clientId);
   const ids = new Set(history.map((a) => a.id));
-  const linked = payments.filter((p) => p.appointmentId && ids.has(p.appointmentId));
-  const paidIds = new Set(linked.filter((p) => !p.isDepositMovement).map((p) => p.appointmentId));
+  const linked = payments.filter((p) => p.clientId === clientId || (p.appointmentId && ids.has(p.appointmentId)));
+  const paid = linked.filter((p) => !p.isDepositMovement && p.serviceName !== 'Anulado');
+  const paidIds = new Set(paid.map(p => p.appointmentId ?? `payment:${p.id}`));
   const visits = new Set([
     ...history.filter((a) => a.statusCode === "COMPLETED").map((a) => a.id),
     ...paidIds,
   ]);
-  const dates = [...new Set(history.filter((a) => visits.has(a.id)).map((a) => a.date))].sort();
+  const dates = [...new Set([...history.filter((a) => visits.has(a.id)).map((a) => a.date), ...paid.filter(p => !p.appointmentId).map(p => p.paymentDate)])].sort();
   const lastVisit = dates.at(-1) ?? null;
   const frequency =
     dates.length > 1

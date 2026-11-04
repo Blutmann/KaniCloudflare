@@ -1,3 +1,4 @@
+import { isStaffOperator } from "./kani-permissions";
 import { createServerFn, createServerOnlyFn } from "@tanstack/react-start";
 import { notificationSubject } from './kani-email-environment';
 import { KANI_MAPS_URL, KANI_STANDARD_DEPOSIT_ARS, KANI_PUBLIC_WHATSAPP_URL, KANI_PUBLIC_WHATSAPP_NUMBER, KANI_STUDIO_FULL_ADDRESS } from './kani-constants';
@@ -555,7 +556,7 @@ export async function retryNotificationChannel(input: {
       .maybeSingle();
     staffProfile = profile as any;
 
-    if (!staffProfile || !staffProfile.active || (staffProfile.role !== "ADMIN" && staffProfile.role !== "BARBER")) {
+    if (!staffProfile || !staffProfile.active || !["ADMIN", "MANAGER", "BARBER"].includes(staffProfile.role) || (staffProfile.role === "BARBER" && !staffProfile.barber_id)) {
       return {
         success: false,
         channel: input.channel,
@@ -690,7 +691,7 @@ export async function retryNotificationChannel(input: {
     if (currentAptStatus === "CONFIRMED") {
       targetNotificationType = "CONFIRMED";
       // Turnos pasados: no enviar confirmaciones obsoletas a menos que lo autorice un administrador explícitamente
-      if (input.channel === "EMAIL" && aptData.booking_date && isAppointmentPast(aptData.booking_date, aptData.start_time) && staffProfile?.role !== "ADMIN") {
+      if (input.channel === "EMAIL" && aptData.booking_date && isAppointmentPast(aptData.booking_date, aptData.start_time) && !isStaffOperator(staffProfile?.role ?? "")) {
         return {
           success: false,
           channel: input.channel,

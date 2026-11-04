@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ActivarCuentaRouteImport } from './routes/activar-cuenta'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AdminV2RouteImport } from './routes/admin-v2'
 import { Route as CancelarTurnoRouteImport } from './routes/cancelar-turno'
@@ -49,6 +50,7 @@ import { Route as PagoPendienteRouteImport } from './routes/pago.pendiente'
 import { Route as PanelAdministracionIndexRouteImport } from './routes/panel-administracion.index'
 import { Route as PanelAdministracionClientesRouteImport } from './routes/panel-administracion.clientes'
 import { Route as PanelAdministracionDatosRouteImport } from './routes/panel-administracion.datos'
+import { Route as PanelAdministracionDescuentosRouteImport } from './routes/panel-administracion.descuentos'
 import { Route as PanelAdministracionHorariosRouteImport } from './routes/panel-administracion.horarios'
 import { Route as PanelAdministracionInicioRouteImport } from './routes/panel-administracion.inicio'
 import { Route as PanelAdministracionMantenimientoRouteImport } from './routes/panel-administracion.mantenimiento'
@@ -58,6 +60,11 @@ import { Route as PanelAdministracionTurnosRouteImport } from './routes/panel-ad
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ActivarCuentaRoute = ActivarCuentaRouteImport.update({
+  id: '/activar-cuenta',
+  path: '/activar-cuenta',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRoute = AdminRouteImport.update({
@@ -259,6 +266,12 @@ const PanelAdministracionDatosRoute =
     path: '/datos',
     getParentRoute: () => PanelAdministracionRoute,
   } as any)
+const PanelAdministracionDescuentosRoute =
+  PanelAdministracionDescuentosRouteImport.update({
+    id: '/descuentos',
+    path: '/descuentos',
+    getParentRoute: () => PanelAdministracionRoute,
+  } as any)
 const PanelAdministracionHorariosRoute =
   PanelAdministracionHorariosRouteImport.update({
     id: '/horarios',
@@ -292,6 +305,7 @@ const PanelAdministracionTurnosRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/activar-cuenta': typeof ActivarCuentaRoute
   '/admin': typeof AdminRouteWithChildren
   '/admin-v2': typeof AdminV2RouteWithChildren
   '/cancelar-turno': typeof CancelarTurnoRoute
@@ -328,6 +342,7 @@ export interface FileRoutesByFullPath {
   '/pago/pendiente': typeof PagoPendienteRoute
   '/panel-administracion/clientes': typeof PanelAdministracionClientesRoute
   '/panel-administracion/datos': typeof PanelAdministracionDatosRoute
+  '/panel-administracion/descuentos': typeof PanelAdministracionDescuentosRoute
   '/panel-administracion/horarios': typeof PanelAdministracionHorariosRoute
   '/panel-administracion/inicio': typeof PanelAdministracionInicioRoute
   '/panel-administracion/mantenimiento': typeof PanelAdministracionMantenimientoRoute
@@ -339,6 +354,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/activar-cuenta': typeof ActivarCuentaRoute
   '/cancelar-turno': typeof CancelarTurnoRoute
   '/case-study': typeof CaseStudyRoute
   '/contacto': typeof ContactoRoute
@@ -372,6 +388,7 @@ export interface FileRoutesByTo {
   '/pago/pendiente': typeof PagoPendienteRoute
   '/panel-administracion/clientes': typeof PanelAdministracionClientesRoute
   '/panel-administracion/datos': typeof PanelAdministracionDatosRoute
+  '/panel-administracion/descuentos': typeof PanelAdministracionDescuentosRoute
   '/panel-administracion/horarios': typeof PanelAdministracionHorariosRoute
   '/panel-administracion/inicio': typeof PanelAdministracionInicioRoute
   '/panel-administracion/mantenimiento': typeof PanelAdministracionMantenimientoRoute
@@ -384,6 +401,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/activar-cuenta': typeof ActivarCuentaRoute
   '/admin': typeof AdminRouteWithChildren
   '/admin-v2': typeof AdminV2RouteWithChildren
   '/cancelar-turno': typeof CancelarTurnoRoute
@@ -420,6 +438,7 @@ export interface FileRoutesById {
   '/pago/pendiente': typeof PagoPendienteRoute
   '/panel-administracion/clientes': typeof PanelAdministracionClientesRoute
   '/panel-administracion/datos': typeof PanelAdministracionDatosRoute
+  '/panel-administracion/descuentos': typeof PanelAdministracionDescuentosRoute
   '/panel-administracion/horarios': typeof PanelAdministracionHorariosRoute
   '/panel-administracion/inicio': typeof PanelAdministracionInicioRoute
   '/panel-administracion/mantenimiento': typeof PanelAdministracionMantenimientoRoute
@@ -433,6 +452,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/activar-cuenta'
     | '/admin'
     | '/admin-v2'
     | '/cancelar-turno'
@@ -469,6 +489,7 @@ export interface FileRouteTypes {
     | '/pago/pendiente'
     | '/panel-administracion/clientes'
     | '/panel-administracion/datos'
+    | '/panel-administracion/descuentos'
     | '/panel-administracion/horarios'
     | '/panel-administracion/inicio'
     | '/panel-administracion/mantenimiento'
@@ -480,6 +501,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/activar-cuenta'
     | '/cancelar-turno'
     | '/case-study'
     | '/contacto'
@@ -513,6 +535,7 @@ export interface FileRouteTypes {
     | '/pago/pendiente'
     | '/panel-administracion/clientes'
     | '/panel-administracion/datos'
+    | '/panel-administracion/descuentos'
     | '/panel-administracion/horarios'
     | '/panel-administracion/inicio'
     | '/panel-administracion/mantenimiento'
@@ -524,6 +547,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/activar-cuenta'
     | '/admin'
     | '/admin-v2'
     | '/cancelar-turno'
@@ -560,6 +584,7 @@ export interface FileRouteTypes {
     | '/pago/pendiente'
     | '/panel-administracion/clientes'
     | '/panel-administracion/datos'
+    | '/panel-administracion/descuentos'
     | '/panel-administracion/horarios'
     | '/panel-administracion/inicio'
     | '/panel-administracion/mantenimiento'
@@ -572,6 +597,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ActivarCuentaRoute: typeof ActivarCuentaRoute
   AdminRoute: typeof AdminRouteWithChildren
   AdminV2Route: typeof AdminV2RouteWithChildren
   CancelarTurnoRoute: typeof CancelarTurnoRoute
@@ -601,6 +627,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/activar-cuenta': {
+      id: '/activar-cuenta'
+      path: '/activar-cuenta'
+      fullPath: '/activar-cuenta'
+      preLoaderRoute: typeof ActivarCuentaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin': {
@@ -876,6 +909,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PanelAdministracionDatosRouteImport
       parentRoute: typeof PanelAdministracionRoute
     }
+    '/panel-administracion/descuentos': {
+      id: '/panel-administracion/descuentos'
+      path: '/descuentos'
+      fullPath: '/panel-administracion/descuentos'
+      preLoaderRoute: typeof PanelAdministracionDescuentosRouteImport
+      parentRoute: typeof PanelAdministracionRoute
+    }
     '/panel-administracion/horarios': {
       id: '/panel-administracion/horarios'
       path: '/horarios'
@@ -966,6 +1006,7 @@ const AdminV2RouteWithChildren =
 interface PanelAdministracionRouteChildren {
   PanelAdministracionClientesRoute: typeof PanelAdministracionClientesRoute
   PanelAdministracionDatosRoute: typeof PanelAdministracionDatosRoute
+  PanelAdministracionDescuentosRoute: typeof PanelAdministracionDescuentosRoute
   PanelAdministracionHorariosRoute: typeof PanelAdministracionHorariosRoute
   PanelAdministracionInicioRoute: typeof PanelAdministracionInicioRoute
   PanelAdministracionMantenimientoRoute: typeof PanelAdministracionMantenimientoRoute
@@ -977,6 +1018,7 @@ interface PanelAdministracionRouteChildren {
 const PanelAdministracionRouteChildren: PanelAdministracionRouteChildren = {
   PanelAdministracionClientesRoute: PanelAdministracionClientesRoute,
   PanelAdministracionDatosRoute: PanelAdministracionDatosRoute,
+  PanelAdministracionDescuentosRoute: PanelAdministracionDescuentosRoute,
   PanelAdministracionHorariosRoute: PanelAdministracionHorariosRoute,
   PanelAdministracionInicioRoute: PanelAdministracionInicioRoute,
   PanelAdministracionMantenimientoRoute: PanelAdministracionMantenimientoRoute,
@@ -990,6 +1032,7 @@ const PanelAdministracionRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ActivarCuentaRoute: ActivarCuentaRoute,
   AdminRoute: AdminRouteWithChildren,
   AdminV2Route: AdminV2RouteWithChildren,
   CancelarTurnoRoute: CancelarTurnoRoute,
