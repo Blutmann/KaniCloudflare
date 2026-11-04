@@ -512,7 +512,7 @@ export function AdminScheduleManager() {
         {/* 4. Lista de horarios */}
         <section className="admin-schedule-list" aria-label="Disponibilidad horaria">
           {loading && (
-            <div className="p-8 text-center border border-dashed border-border rounded-xl bg-surface/50 my-6">
+            <div className="v2-schedule-cards-container admin-schedule-cards-container p-8 text-center my-6">
               <Clock3 size={32} className="mx-auto text-muted-foreground/60 mb-2 animate-spin" />
               <p className="text-xs text-muted-foreground">Cargando horarios…</p>
             </div>
@@ -524,7 +524,7 @@ export function AdminScheduleManager() {
                 actionLabel="+ Agregar horario"
                 onAction={() => openManualDialog(specificDate, selectedRows[0]?.id)}
               />
-              <div className="p-8 text-center border border-dashed border-border rounded-xl bg-surface/50 my-6">
+              <div className="v2-schedule-cards-container admin-schedule-cards-container p-8 text-center my-6">
                 <SlidersHorizontal size={32} className="mx-auto text-muted-foreground/60 mb-2" />
                 <h2 className="text-sm font-semibold text-foreground">No hay horarios para estos filtros</h2>
                 <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">Podés agregar una disponibilidad en cualquier fecha futura de atención.</p>
@@ -539,60 +539,62 @@ export function AdminScheduleManager() {
                   actionLabel="+ Agregar horario"
                   onAction={() => openManualDialog(date, dateSlots[0]?.barber_id)}
                 />
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                  {dateSlots.map((slot) => {
-                    const available = slot.status === "AVAILABLE";
-                    const saving = savingId === slot.id;
-                    const toneConfig = slot.occupied
-                      ? {
-                          border: "border-amber-500/30 bg-amber-500/5",
-                          statusTone: "text-amber-500",
-                          label: "Reservado",
-                          Icon: Clock3,
-                        }
-                      : available
+                <div className="v2-schedule-cards-container admin-schedule-cards-container">
+                  <div className="v2-schedule-cards-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                    {dateSlots.map((slot) => {
+                      const available = slot.status === "AVAILABLE";
+                      const saving = savingId === slot.id;
+                      const toneConfig = slot.occupied
                         ? {
-                            border: "border-success/30 bg-success/5 hover:border-success/50 hover:bg-success/10",
-                            statusTone: "text-success",
-                            label: "Disponible",
-                            Icon: CheckCircle2,
+                            border: "border-amber-500/30 bg-amber-500/5",
+                            statusTone: "text-amber-500",
+                            label: "Reservado",
+                            Icon: Clock3,
                           }
-                        : {
-                            border: "border-destructive/30 bg-destructive/5 hover:border-destructive/50",
-                            statusTone: "text-destructive",
-                            label: "No disponible",
-                            Icon: XCircle,
-                          };
-                    return (
-                      <button
-                        type="button"
-                        key={slot.id}
-                        className={cn(
-                          "min-h-[4.75rem] p-3 rounded-xl border flex flex-col justify-between text-left transition-all shadow-xs",
-                          toneConfig.border,
-                          slot.occupied ? "cursor-default opacity-90" : "cursor-pointer"
-                        )}
-                        disabled={slot.occupied || saving}
-                        aria-label={`${slot.start_time.slice(0, 5)}: ${slot.occupied ? "Reservado, no modificable" : available ? "Disponible, tocar para marcar no disponible" : "No disponible, tocar para habilitar"}`}
-                        onClick={() => void saveSlot(slot, available ? "UNAVAILABLE" : "AVAILABLE")}
-                      >
-                        <div className="flex items-baseline justify-between w-full">
-                          <strong className="text-lg font-bold text-foreground leading-none">
-                            {slot.start_time.slice(0, 5)}
-                          </strong>
-                          <span className="text-[11px] text-muted-foreground">
-                            hasta {slot.end_time.slice(0, 5)}
-                          </span>
-                        </div>
-                        <div className="mt-2 flex items-center justify-between w-full">
-                          <span className={cn("text-xs font-medium inline-flex items-center gap-1", toneConfig.statusTone)}>
-                            <toneConfig.Icon size={12} />
-                            {toneConfig.label}
-                          </span>
-                        </div>
-                      </button>
-                    );
-                  })}
+                        : available
+                          ? {
+                              border: "border-success/30 bg-success/5 hover:border-success/50 hover:bg-success/10",
+                              statusTone: "text-success",
+                              label: "Disponible",
+                              Icon: CheckCircle2,
+                            }
+                          : {
+                              border: "border-destructive/30 bg-destructive/5 hover:border-destructive/50",
+                              statusTone: "text-destructive",
+                              label: "No disponible",
+                              Icon: XCircle,
+                            };
+                      return (
+                        <button
+                          type="button"
+                          key={slot.id}
+                          className={cn(
+                            "min-h-[4.75rem] p-3 rounded-xl border flex flex-col justify-between text-left transition-all shadow-xs",
+                            toneConfig.border,
+                            slot.occupied ? "cursor-default opacity-90" : "cursor-pointer"
+                          )}
+                          disabled={slot.occupied || saving}
+                          aria-label={`${slot.start_time.slice(0, 5)}: ${slot.occupied ? "Reservado, no modificable" : available ? "Disponible, tocar para marcar no disponible" : "No disponible, tocar para habilitar"}`}
+                          onClick={() => void saveSlot(slot, available ? "UNAVAILABLE" : "AVAILABLE")}
+                        >
+                          <div className="flex items-baseline justify-between w-full">
+                            <strong className="text-lg font-bold text-foreground leading-none">
+                              {slot.start_time.slice(0, 5)}
+                            </strong>
+                            <span className="text-[11px] text-muted-foreground">
+                              hasta {slot.end_time.slice(0, 5)}
+                            </span>
+                          </div>
+                          <div className="mt-2 flex items-center justify-between w-full">
+                            <span className={cn("text-xs font-medium inline-flex items-center gap-1", toneConfig.statusTone)}>
+                              <toneConfig.Icon size={12} />
+                              {toneConfig.label}
+                            </span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </section>
             ))}

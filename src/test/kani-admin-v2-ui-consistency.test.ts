@@ -133,11 +133,21 @@ describe('Admin V2 — UI and Visual Consistency Audit (Structural Unification)'
       expect(stylesCode).toMatch(/html\[data-theme="dark"\]\s*:is\([\s\S]*?\.header-control-button\.admin-menu-trigger[\s\S]*?\)\s*\{[\s\S]*?background-color:\s*#1C1C1C\s*!important;[\s\S]*?backdrop-filter:\s*none\s*!important;/);
     });
 
-    it('Navegación administrativa, Próximo turno y fila/controles de filtros tienen fondos sólidos en modo claro (#FFFFFF) y oscuro (#1C1C1C / #242424)', () => {
-      expect(cssCode).toMatch(/html\[data-theme="light"\]\s*:is\([\s\S]*?\.v2-nav\.admin-section-nav,[\s\S]*?\.v2-next,[\s\S]*?\.v2-admin-filter-panel[\s\S]*?\)\s*\{[\s\S]*?background-color:\s*#FFFFFF\s*!important;[\s\S]*?backdrop-filter:\s*none\s*!important;/);
-      expect(cssCode).toMatch(/html\[data-theme="dark"\]\s*:is\([\s\S]*?\.v2-nav\.admin-section-nav,[\s\S]*?\.v2-next,[\s\S]*?\.v2-admin-filter-panel[\s\S]*?\)\s*\{[\s\S]*?background-color:\s*#1C1C1C\s*!important;[\s\S]*?backdrop-filter:\s*none\s*!important;/);
-      expect(cssCode).toMatch(/html\[data-theme="light"\]\s*:is\([\s\S]*?\.v2-admin-filter-panel\s*:is\(input,\s*select,\s*output\)[\s\S]*?\)\s*\{[\s\S]*?background-color:\s*#FFFFFF\s*!important;/);
-      expect(cssCode).toMatch(/html\[data-theme="dark"\]\s*:is\([\s\S]*?\.v2-admin-filter-panel\s*:is\(input,\s*select,\s*output\)[\s\S]*?\)\s*\{[\s\S]*?background-color:\s*#242424\s*!important;/);
+    it('Navegación administrativa, Próximo turno, contenedor de tarjetas horarias y fila de filtros tienen fondos sólidos (#FFFFFF en modo claro, #1C1C1C en modo oscuro)', () => {
+      expect(cssCode).toMatch(/html\[data-theme="light"\]\s*:is\([\s\S]*?\.v2-nav\.admin-section-nav,[\s\S]*?\.v2-next,[\s\S]*?\.v2-admin-filter-panel,[\s\S]*?\.v2-schedule-cards-container[\s\S]*?\)\s*\{[\s\S]*?background-color:\s*#FFFFFF\s*!important;[\s\S]*?backdrop-filter:\s*none\s*!important;/);
+      expect(cssCode).toMatch(/html\[data-theme="dark"\]\s*:is\([\s\S]*?\.v2-nav\.admin-section-nav,[\s\S]*?\.v2-next,[\s\S]*?\.v2-admin-filter-panel,[\s\S]*?\.v2-schedule-cards-container[\s\S]*?\)\s*\{[\s\S]*?background-color:\s*#1C1C1C\s*!important;[\s\S]*?backdrop-filter:\s*none\s*!important;/);
+    });
+
+    it('Horarios: la grilla de tarjetas horarias está en su propio contenedor independiente del bloque de filtros, conservando la barra de fecha y botón Agregar horario en medio', () => {
+      expect(scheduleCode).toContain('<AdminFilterPanel ariaLabel="Filtros de horarios">');
+      expect(scheduleCode).toContain('className="v2-schedule-cards-container admin-schedule-cards-container"');
+      expect(scheduleCode).toContain('className="v2-schedule-cards-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3"');
+      expect(cssCode).toMatch(/\.v2-schedule-cards-container,\s*\.admin-schedule-cards-container\s*\{[\s\S]*?border:\s*1px solid var\(--border\)\s*!important;[\s\S]*?border-radius:\s*var\(--radius-card\)\s*!important;[\s\S]*?box-shadow:\s*var\(--v2-shadow\)\s*!important;/);
+    });
+
+    it('Fondos interiores de los filtros en Datos, Turnos y Horarios: #FBFAF9 en modo claro y #F9F9F9 en modo oscuro con texto e íconos oscuros legibles', () => {
+      expect(cssCode).toMatch(/html\[data-theme="light"\]\s*:is\([\s\S]*?\.v2-admin-filter-panel\s*:is\(input,\s*select,\s*output\)[\s\S]*?\)\s*\{[\s\S]*?background-color:\s*#FBFAF9\s*!important;/);
+      expect(cssCode).toMatch(/html\[data-theme="dark"\]\s*:is\([\s\S]*?\.v2-admin-filter-panel\s*:is\(input,\s*select,\s*output\)[\s\S]*?\)\s*\{[\s\S]*?color-scheme:\s*light\s*!important;[\s\S]*?background-color:\s*#F9F9F9\s*!important;[\s\S]*?color:\s*#191919\s*!important;/);
     });
 
     it('elimina por completo los avisos inferiores (.v2-footnote) en Horarios y Turnos sin contenedores vacíos', () => {

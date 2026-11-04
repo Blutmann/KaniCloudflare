@@ -4319,8 +4319,30 @@ html[data-theme="dark"] .v2-payments-table thead tr th:last-child {
 
 /* ==========================================================================
    Fondos sólidos opacos en el panel administrativo (Navegación, Próximo turno,
-   y fila/controles de filtros en Turnos y Horarios)
+   Contenedor de tarjetas horarias y fila/controles de filtros en Datos, Turnos y Horarios)
    ========================================================================== */
+
+.v2-schedule-cards-container,
+.admin-schedule-cards-container {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  padding: 14px !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius-card) !important;
+  background: var(--v2-surface) !important;
+  box-shadow: var(--v2-shadow) !important;
+  box-sizing: border-box !important;
+}
+
+@media (max-width: 767px) {
+  .v2-schedule-cards-container,
+  .admin-schedule-cards-container {
+    padding: 10px !important;
+  }
+}
 
 :root :is(
   .v2-nav.admin-section-nav,
@@ -4328,8 +4350,10 @@ html[data-theme="dark"] .v2-payments-table thead tr th:last-child {
   .v2-next,
   .v2-admin-filter-panel,
   .v2-admin-filter-card,
+  .v2-schedule-cards-container,
+  .admin-schedule-cards-container,
   .v2-appointments-page :is(.v2-admin-filter-panel, .v2-admin-filter-card),
-  .v2-schedule :is(.v2-admin-filter-panel, .v2-admin-filter-card)
+  .v2-schedule :is(.v2-admin-filter-panel, .v2-admin-filter-card, .v2-schedule-cards-container, .admin-schedule-cards-container)
 ),
 html[data-theme="dark"] :is(
   .v2-nav.admin-section-nav,
@@ -4337,8 +4361,10 @@ html[data-theme="dark"] :is(
   .v2-next,
   .v2-admin-filter-panel,
   .v2-admin-filter-card,
+  .v2-schedule-cards-container,
+  .admin-schedule-cards-container,
   .v2-appointments-page :is(.v2-admin-filter-panel, .v2-admin-filter-card),
-  .v2-schedule :is(.v2-admin-filter-panel, .v2-admin-filter-card)
+  .v2-schedule :is(.v2-admin-filter-panel, .v2-admin-filter-card, .v2-schedule-cards-container, .admin-schedule-cards-container)
 ) {
   background: var(--surface, #1C1C1C) !important;
   background-color: #1C1C1C !important;
@@ -4352,8 +4378,10 @@ html[data-theme="light"] :is(
   .v2-next,
   .v2-admin-filter-panel,
   .v2-admin-filter-card,
+  .v2-schedule-cards-container,
+  .admin-schedule-cards-container,
   .v2-appointments-page :is(.v2-admin-filter-panel, .v2-admin-filter-card),
-  .v2-schedule :is(.v2-admin-filter-panel, .v2-admin-filter-card)
+  .v2-schedule :is(.v2-admin-filter-panel, .v2-admin-filter-card, .v2-schedule-cards-container, .admin-schedule-cards-container)
 ) {
   background: #FFFFFF !important;
   background-color: #FFFFFF !important;
@@ -4361,7 +4389,8 @@ html[data-theme="light"] :is(
   -webkit-backdrop-filter: none !important;
 }
 
-/* Fondo interior sólido opaco de cada filtro (Período, Fecha, Barbero y Estado) */
+/* Fondo interior sólido opaco de cada filtro en Datos, Turnos y Horarios
+   (Período, Fecha, Barbero, Estado, Fecha desde y Fecha hasta) */
 :root :is(
   .v2-admin-filter-panel :is(input, select, output),
   .v2-admin-filter-control :is(input, select, output),
@@ -4374,10 +4403,14 @@ html[data-theme="dark"] :is(
   .v2-admin-filter-card :is(input, select, output),
   .v2-custom-range-row :is(input, select, output)
 ) {
-  background: var(--card, #242424) !important;
-  background-color: #242424 !important;
+  color-scheme: light !important;
+  background: #F9F9F9 !important;
+  background-color: #F9F9F9 !important;
+  color: #191919 !important;
+  -webkit-text-fill-color: #191919 !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
+  opacity: 1 !important;
 }
 
 html[data-theme="light"] :is(
@@ -4386,9 +4419,136 @@ html[data-theme="light"] :is(
   .v2-admin-filter-card :is(input, select, output),
   .v2-custom-range-row :is(input, select, output)
 ) {
-  background: #FFFFFF !important;
-  background-color: #FFFFFF !important;
+  color-scheme: light !important;
+  background: #FBFAF9 !important;
+  background-color: #FBFAF9 !important;
+  color: #252323 !important;
+  -webkit-text-fill-color: #252323 !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
+  opacity: 1 !important;
 }
+
+:is(
+  .v2-admin-filter-panel,
+  .v2-admin-filter-control,
+  .v2-admin-filter-card,
+  .v2-custom-range-row
+) :is(input, select, output)::placeholder {
+  color: #555555 !important;
+  -webkit-text-fill-color: #555555 !important;
+  opacity: 1 !important;
+}
+
+:root :is(
+  .v2-admin-filter-panel,
+  .v2-admin-filter-control,
+  .v2-admin-filter-card,
+  .v2-custom-range-row
+) select option,
+html[data-theme="dark"] :is(
+  .v2-admin-filter-panel,
+  .v2-admin-filter-control,
+  .v2-admin-filter-card,
+  .v2-custom-range-row
+) select option {
+  background-color: #F9F9F9 !important;
+  color: #191919 !important;
+}
+
+html[data-theme="light"] :is(
+  .v2-admin-filter-panel,
+  .v2-admin-filter-control,
+  .v2-admin-filter-card,
+  .v2-custom-range-row
+) select option {
+  background-color: #FBFAF9 !important;
+  color: #252323 !important;
+}
+
+:root :is(
+  .v2-admin-filter-panel,
+  .v2-admin-filter-control,
+  .v2-admin-filter-card,
+  .v2-custom-range-row
+) :is(input, select, output):disabled,
+html[data-theme="dark"] :is(
+  .v2-admin-filter-panel,
+  .v2-admin-filter-control,
+  .v2-admin-filter-card,
+  .v2-custom-range-row
+) :is(input, select, output):disabled {
+  background: #F9F9F9 !important;
+  background-color: #F9F9F9 !important;
+  color: #4A4A4A !important;
+  -webkit-text-fill-color: #4A4A4A !important;
+  opacity: 1 !important;
+  cursor: not-allowed !important;
+}
+
+html[data-theme="light"] :is(
+  .v2-admin-filter-panel,
+  .v2-admin-filter-control,
+  .v2-admin-filter-card,
+  .v2-custom-range-row
+) :is(input, select, output):disabled {
+  background: #FBFAF9 !important;
+  background-color: #FBFAF9 !important;
+  color: #55524D !important;
+  -webkit-text-fill-color: #55524D !important;
+  opacity: 1 !important;
+  cursor: not-allowed !important;
+}
+
+:is(
+  .v2-admin-filter-panel,
+  .v2-admin-filter-control,
+  .v2-admin-filter-card,
+  .v2-custom-range-row
+) input[type="date"]::-webkit-datetime-edit,
+:is(
+  .v2-admin-filter-panel,
+  .v2-admin-filter-control,
+  .v2-admin-filter-card,
+  .v2-custom-range-row
+) input[type="date"]::-webkit-datetime-edit-fields-wrapper,
+:is(
+  .v2-admin-filter-panel,
+  .v2-admin-filter-control,
+  .v2-admin-filter-card,
+  .v2-custom-range-row
+) input[type="date"]::-webkit-datetime-edit-text,
+:is(
+  .v2-admin-filter-panel,
+  .v2-admin-filter-control,
+  .v2-admin-filter-card,
+  .v2-custom-range-row
+) input[type="date"]::-webkit-datetime-edit-day-field,
+:is(
+  .v2-admin-filter-panel,
+  .v2-admin-filter-control,
+  .v2-admin-filter-card,
+  .v2-custom-range-row
+) input[type="date"]::-webkit-datetime-edit-month-field,
+:is(
+  .v2-admin-filter-panel,
+  .v2-admin-filter-control,
+  .v2-admin-filter-card,
+  .v2-custom-range-row
+) input[type="date"]::-webkit-datetime-edit-year-field {
+  color: #191919 !important;
+  -webkit-text-fill-color: #191919 !important;
+}
+
+:is(
+  .v2-admin-filter-panel,
+  .v2-admin-filter-control,
+  .v2-admin-filter-card,
+  .v2-custom-range-row
+) input[type="date"]::-webkit-calendar-picker-indicator {
+  color-scheme: light !important;
+  filter: none !important;
+  opacity: 0.8 !important;
+}
+
 
