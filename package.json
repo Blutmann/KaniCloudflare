@@ -12,7 +12,9 @@
     "format": "prettier --write .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "deploy": "vite build && npx wrangler deploy --config .output/server/wrangler.json"
+    "deploy": "vite build && npx wrangler deploy --config .output/server/wrangler.json",
+    "test:staff": "vitest run src/lib/kani-permissions.test.ts src/lib/kani-payment-amounts.test.ts src/lib/kani-staff-request.server.test.ts src/test/kani-v2-staff-reads.test.ts src/test/kani-v2-payments.test.tsx src/lib/kani-staff-provisioning.server.test.ts src/test/kani-v2-role-navigation.test.tsx src/test/kani-worker-staff-security.test.ts",
+    "test:staff:sql": "node scripts/test-staff-permissions.mjs"
   },
   "overrides": {
     "rolldown": "1.2.1"
@@ -95,6 +97,8 @@
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.56.1",
     "vite": "8.1.5",
-    "vitest": "^4.1.10"
-  }
+    "vitest": "^4.1.10",
+    "wrangler": "4.157.0"
+  },
+  "packageManager": "pnpm@12.14.0"
 }

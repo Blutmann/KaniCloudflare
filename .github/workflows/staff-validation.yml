@@ -1,0 +1,22 @@
+name: KANI staff validation
+on:
+  push:
+    branches: [codex/kani-five-accounts-recovery]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - uses: pnpm/action-setup@v4
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - run: pnpm run test:staff
+      - run: pnpm run test:staff:sql
+      - run: pnpm run build

@@ -1,5 +1,10 @@
 # Cloudflare: aislamiento DEV/PREVIEW vs producción
 
+> Actualización 2026-11-04: este documento describe una configuración histórica.
+> El proyecto `iockpxtkflyjfagkvgnr` es el productivo indicado por el usuario.
+> No crear otro entorno permanente ni ejecutar reservas de prueba contra él.
+> Para el trabajo actual, consultar `KANI_CINCO_CUENTAS_VALIDACION.md`.
+
 ## Objetivo
 
 - `https://kanibarber.com`: reservas reales, en la base de datos de producción.

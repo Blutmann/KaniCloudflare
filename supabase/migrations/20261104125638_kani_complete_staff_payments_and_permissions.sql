@@ -640,4 +640,3 @@ revoke all on function public.staff_create_appointment_notification_event(uuid,p
 grant execute on function public.staff_create_appointment_notification_event(uuid,public.notification_type) to authenticated;
 
 notify pgrst,'reload schema';
-
