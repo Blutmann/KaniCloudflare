@@ -3,6 +3,12 @@
 Trabajo sobre `codex/kani-five-accounts-recovery`, continuando el original
 `84a57a44f1a9166f2804517266a16d4849a65730`. Se conserva su historial.
 
+Commits locales: `7e54e5d` (funcionalidad y seguridad) y `700be99` (herramientas,
+CI y documentación). El push fue rechazado por GitHub porque el OAuth carece de
+`workflow`. No se publicó parcialmente: el remoto sigue en `84a57a4`. Se solicitó
+habilitar ese alcance con `gh auth refresh --hostname github.com -s workflow`.
+La ejecución del nuevo CI remoto queda pendiente de ese acceso.
+
 **Estado: implementación y pruebas en desarrollo. No se aplicaron migraciones,
 no se enviaron invitaciones y no se desplegó producción**, conforme a la última
 indicación del usuario. No se creó infraestructura permanente adicional.
