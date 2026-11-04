@@ -1,6 +1,19 @@
 # Corrección independiente de disponibilidad
 
-La migración `20261104212939_kani_anonymous_availability_columns.sql` se puede
+**Aplicada en producción el 4 de noviembre de 2026**, registrada una sola vez
+como `20261104223457 / kani_anonymous_availability_columns`. El SQL registrado
+coincide con el archivo revisado; su nombre local se alineó con la versión
+asignada por Supabase. No se aplicaron las migraciones de cinco cuentas.
+
+Verificaciones productivas: nota y `select=*` anónimos denegados por HTTP 401,
+código PostgreSQL `42501`; columnas públicas, vista y RPC responden HTTP 200.
+Las pruebas de rol con las identidades existentes de ADMIN y BARBER pasaron.
+Datos de disponibilidad (3456 filas), políticas, función, vista y perfiles
+conservaron sus hashes; la RPC devolvió los mismos 647 inicios y la vista los
+mismos 5169 segmentos para el rango comparado. No cambiaron las dos identidades
+Auth existentes. El registro previo de ACL y los resultados están fuera de Git.
+
+La migración `20261104223457_kani_anonymous_availability_columns.sql` se puede
 aplicar sobre el esquema productivo actual, sin las tres migraciones de cinco
 cuentas y sin desplegar otro Worker. Solo ajusta permisos de lectura de
 `barber_availability_slots`; no altera filas, políticas RLS, funciones, vistas,
@@ -11,7 +24,7 @@ función `STABLE SECURITY DEFINER` existente que no devuelve notas. La vista
 actual publica únicamente seis columnas. Ambas definiciones se conservaron
 íntegras en la prueba de compatibilidad, sin migrar a MANAGER ni clientes compartidos.
 
-| Acceso | Antes, producción consultada | Después, prueba independiente |
+| Acceso | Antes, producción | Después, producción |
 | --- | --- | --- |
 | anon: SELECT de toda la tabla / nota | Permitido | Denegado |
 | anon: seis columnas públicas | Permitido | Permitido, con RLS |
@@ -23,7 +36,7 @@ Se prueban además concesiones amplias por PUBLIC y permisos directos sobre la
 nota, y una segunda aplicación de la misma migración. En todos los casos se
 elimina el acceso anónimo, se conservan las filas y ADMIN sigue viendo sus datos.
 
-Pasos para aplicar:
+Pasos para reproducir en otra instalación:
 
 1. Confirmar el CI del commit que contiene el archivo y conservar el registro
    previo de ACL. Aplicar **solo esta migración**, dentro de una transacción y
@@ -42,3 +55,8 @@ El bloqueo de 5 segundos evita mantener una espera de locks indefinida; la
 comprobación final aborta toda la transacción si otro permiso heredado permite
 leer la nota. Reabrir el permiso anónimo amplio no es una vía de recuperación
 recomendada. Los permisos anteriores quedan documentados para diagnóstico.
+
+Permanece el aviso previo sobre la vista `SECURITY DEFINER`, cuya definición
+no se modificó y solo proyecta los seis campos públicos. Su revisión integral
+corresponde a las migraciones de cinco cuentas:
+[referencia del asesor](https://supabase.com/docs/guides/database/database-linter?lint=0010_security_definer_view).

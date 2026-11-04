@@ -61,7 +61,7 @@ before=snapshot()
 assert asstaff(1,"select count(*) from barber_availability_slots where internal_note like '%PRIVATE%'")=='2'
 assert asstaff(2,"select count(*) from barber_availability_slots where internal_note like '%PRIVATE%'")=='1'
 assert asstaff(3,"select count(*) from barber_availability_slots where internal_note like '%PRIVATE%'")=='3'
-migration=(repo/'supabase/migrations/20261104212939_kani_anonymous_availability_columns.sql').read_text(encoding='utf-8')
+migration=(repo/'supabase/migrations/20261104223457_kani_anonymous_availability_columns.sql').read_text(encoding='utf-8')
 
 for scenario in ['original production grants','PUBLIC and direct column grants','idempotent replay']:
     if scenario=='PUBLIC and direct column grants':
