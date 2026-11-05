@@ -4620,8 +4620,9 @@ html[data-theme="dark"] .v2-client-card {
   background-color: #1c1c1c !important;
 }
 
-/* Only the five payment-entry fields change in dark mode. */
-html[data-theme="dark"] .v2-payment-entry-field :is(input, select) {
+/* Share dark payment control contrast with the two history selectors. */
+html[data-theme="dark"] .v2-payment-entry-field :is(input, select),
+html[data-theme="dark"] .v2-payments-history-panel > .v2-filters > .v2-field > select {
   background-color: #f9f9f9f9 !important;
   color: #1c1c1c;
   -webkit-text-fill-color: #1c1c1c;
@@ -4629,10 +4630,15 @@ html[data-theme="dark"] .v2-payment-entry-field :is(input, select) {
   color-scheme: light;
 }
 
-html[data-theme="dark"] .v2-payment-entry-field select option {
+html[data-theme="dark"] .v2-payment-entry-field select option,
+html[data-theme="dark"] .v2-payments-history-panel > .v2-filters > .v2-field > select option {
   background-color: #f9f9f9;
   color: #1c1c1c;
   -webkit-text-fill-color: #1c1c1c;
 }
 
 
+/* History filters use an opaque fill without changing the entry controls. */
+html[data-theme="dark"] .v2-payments-history-panel > .v2-filters > .v2-field > select {
+  background-color: #f9f9f9 !important;
+}

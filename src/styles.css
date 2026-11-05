@@ -5040,3 +5040,17 @@ html[data-theme="light"] :is(
   background-color: #F5F2EA !important;
 }
 
+
+/* Contacto: solid light cards retain their hover, border and focus treatments. */
+html[data-theme='light'] .contacto-page .studio-info-grid .studio-info-card {
+  background: #fff !important;
+}
+
+/* Override the shared translucent-surface selector only for the light header. */
+html[data-theme='light'] .site-header .header-controls .header-control-button,
+html[data-theme='light'] .site-header .header-controls .header-control-button:hover:not(:disabled) {
+  background: #fff !important;
+}
+html[data-theme='light'] .site-header .header-controls .header-control-button:active:not(:disabled) {
+  background: #f5f2ea !important;
+}
