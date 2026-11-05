@@ -562,22 +562,6 @@ export function V2Payments() {
                   </div>
                 )}
 
-                <div className="v2-payment-full-row">
-                  {" "}
-                  <label className="v2-field v2-payment-entry-field">
-                    Importe total
-                    <input
-                      type="number"
-                      min={deposit}
-                      step="1"
-                      disabled={serviceName === "Anulado"}
-                      value={serviceName === "Anulado" ? 0 : (finalOverride ?? price - discount)}
-                      onChange={(e) =>
-                        setFinalOverride(e.target.value === "" ? null : Number(e.target.value))
-                      }
-                    />
-                  </label>
-                </div>
                 {/* Fila 4: A cobrar ahora | Registrar cobro */}
                 <div className="v2-payment-row v2-payment-row-final">
                   <div className="v2-payment-total-box">
