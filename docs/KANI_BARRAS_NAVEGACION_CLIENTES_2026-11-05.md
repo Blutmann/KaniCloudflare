@@ -37,5 +37,20 @@ Las capturas utilizan clientes ficticios para conservar la privacidad. La
 verificación de navegador intercepta Auth, Supabase y llamadas de servidor;
 no utiliza contraseñas o sesiones de personas reales ni proveedores externos.
 
-La publicación se realiza en el Worker existente desde la rama recuperada,
-sin enviar `main` ni reactivar la cola histórica de migraciones de Supabase.
+## Publicación efectiva
+
+Commit de implementación `628ef9e`, en `codex/kani-five-accounts-recovery`.
+[GitHub Actions](https://github.com/Blutmann/KaniCloudflare/actions/runs/41982355611),
+Cloudflare Preview y Pages satisfactorios. Se publicó el Worker existente sin
+enviar `main` ni reactivar la cola histórica de migraciones de Supabase.
+
+Versión `45cba059-5536-424c-afcf-2f6022133a12`, despliegue
+`ca4dcc79-a163-4e00-a776-1ca5defece31`, activo al 100 %. Nombres/tipos de bindings
+y variables de texto idénticos al estado anterior; no se reemplazaron secretos.
+
+La misma matriz de 24 escenarios y 120 selecciones pasó sobre el artefacto
+servido por `www.kanibarber.com`, usando exclusivamente los datos sintéticos
+descritos arriba. Inicio, reserva pública y Clientes responden HTTP 200; un
+endpoint administrativo sin sesión responde 401. El servidor local quedó detenido.
+Las capturas finales se conservaron con el prefijo
+`.validation/production-628ef9e-clientes-` en la copia local.
