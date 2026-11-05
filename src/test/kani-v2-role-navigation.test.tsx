@@ -44,13 +44,13 @@ describe("role navigation and direct URLs", () => {
     state.role = "MANAGER";
     state.path = "/panel-administracion/turnos";
   });
-  it("keeps the five operational tabs after an accessible icon-only home link", async () => {
+  it("keeps the five operational tabs after a visible accessible home link", async () => {
     render(<V2Layout />);
     await screen.findByTestId("private-child");
     const navigation = within(screen.getByRole("navigation", { name: "Administración" }));
     const home = navigation.getByRole("link", { name: "Inicio" });
     expect(home).toHaveAttribute("href", "/panel-administracion/inicio");
-    expect(home.textContent).toBe("");
+    expect(home).toHaveTextContent("Inicio");
     const links = navigation.getAllByRole("link");
     expect(links[0]).toBe(home);
     expect(links.slice(1).map(a => a.textContent)).toEqual(["Turnos", "Horarios", "Pagos", "Clientes", "Datos"]);

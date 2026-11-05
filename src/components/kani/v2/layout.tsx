@@ -131,25 +131,26 @@ function V2Shell() {
     <div className="site-container v2-shell">
       <header className="v2-navigation">
         <nav className="admin-section-nav v2-nav" aria-label="Administración">
-          {mayAccessStaffSection(profile, 'inicio') && (
-            <TooltipProvider delayDuration={250}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Link
-                    to="/panel-administracion/inicio"
-                    aria-label="Inicio"
-                    className="admin-section-nav-link admin-section-nav-home-btn"
-                    activeOptions={{ exact: true }}
-                    activeProps={{ className: "is-active", "aria-current": "page" }}
-                  >
-                    <House size={16} aria-hidden="true" />
-                  </Link>
-                </TooltipTrigger>
-                <TooltipContent side="bottom">Inicio</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          )}
           <div className="admin-section-nav-items">
+            {mayAccessStaffSection(profile, 'inicio') && (
+              <TooltipProvider delayDuration={250}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Link
+                      to="/panel-administracion/inicio"
+                      aria-label="Inicio"
+                      className="admin-section-nav-link"
+                      activeOptions={{ exact: true }}
+                      activeProps={{ className: "is-active", "aria-current": "page" }}
+                    >
+                      <House size={16} aria-hidden="true" />
+                      <span>Inicio</span>
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">Inicio</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
             {sections.filter(({ to }) => mayAccessStaffSection(profile, to.split('/').at(-1)!)).map(({ to, title, icon: Icon }) => (
               <Link
                 key={to}
