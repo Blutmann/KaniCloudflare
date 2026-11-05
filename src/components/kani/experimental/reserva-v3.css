@@ -797,3 +797,78 @@ html[data-theme='light'] .booking-page:is(.booking-v2, .booking-v3) .booking-con
     line-height: 52px !important;
   }
 }
+
+/* Dark Datos: opaque light controls, with the surrounding labels left unchanged. */
+html[data-theme='dark'] .booking-page:is(.booking-v2, .booking-v3) .booking-contact-form :is(
+  input[name='name'], input#booking-v2-phone, input[name='email'],
+  input#booking-discount-code, .phone-country-trigger, .phone-country-search
+) {
+  background: #f9f9f9 !important;
+  color: #1c1c1c !important;
+  -webkit-text-fill-color: #1c1c1c !important;
+  caret-color: #1c1c1c !important;
+  color-scheme: light;
+  text-shadow: none;
+}
+
+html[data-theme='dark'] .booking-page:is(.booking-v2, .booking-v3) .booking-contact-form :is(
+  input[name='name'], input#booking-v2-phone, input[name='email'],
+  input#booking-discount-code, .phone-country-search
+)::placeholder {
+  color: #666 !important;
+  -webkit-text-fill-color: #666 !important;
+  opacity: 1 !important;
+}
+
+/* Cover the browser's autofill paint while retaining its focus/validation ring. */
+html[data-theme='dark'] .booking-page:is(.booking-v2, .booking-v3) .booking-contact-form :is(
+  input[name='name'], input#booking-v2-phone, input[name='email'], input#booking-discount-code
+):-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 1000px #f9f9f9 inset !important;
+  box-shadow: 0 0 0 1000px #f9f9f9 inset !important;
+}
+
+html[data-theme='dark'] .booking-page:is(.booking-v2, .booking-v3) .booking-contact-form :is(
+  input[name='name'], input#booking-v2-phone, input[name='email'],
+  input#booking-discount-code, .phone-country-trigger, .phone-country-search
+):disabled {
+  opacity: 1 !important;
+  color: #707070 !important;
+  -webkit-text-fill-color: #707070 !important;
+  cursor: not-allowed;
+}
+
+html[data-theme='dark'] .booking-page:is(.booking-v2, .booking-v3) .booking-contact-form .phone-country-options {
+  background: #f9f9f9;
+  color: #1c1c1c;
+  color-scheme: light;
+}
+
+html[data-theme='dark'] .booking-page:is(.booking-v2, .booking-v3) .booking-contact-form .phone-country-option {
+  color: #1c1c1c !important;
+}
+
+html[data-theme='dark'] .booking-page:is(.booking-v2, .booking-v3) .booking-contact-form :is(
+  .phone-country-option .text-muted-foreground, .phone-country-empty
+) { color: #666; }
+
+html[data-theme='dark'] .booking-page:is(.booking-v2, .booking-v3) .booking-contact-form .phone-country-group-title {
+  color: #725620;
+}
+
+html[data-theme='dark'] .booking-page:is(.booking-v2, .booking-v3) .booking-contact-form .phone-country-option:hover,
+html[data-theme='dark'] .booking-page:is(.booking-v2, .booking-v3) .booking-contact-form .phone-country-option[aria-selected='true'] {
+  background: #e6dcc7;
+}
+
+/* State icons remain recognizable and readable against the light input surface. */
+html[data-theme='dark'] .booking-page:is(.booking-v2, .booking-v3) .booking-contact-form .field-validation-icon.valid {
+  color: #166534;
+}
+html[data-theme='dark'] .booking-page:is(.booking-v2, .booking-v3) .booking-contact-form .field-validation-icon.invalid {
+  color: #b91c1c;
+}
+
+html[data-theme='dark'] .booking-page:is(.booking-v2, .booking-v3) .booking-contact-form .phone-country-search::-webkit-search-cancel-button {
+  filter: grayscale(1) brightness(0.35);
+}
