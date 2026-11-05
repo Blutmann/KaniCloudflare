@@ -2,7 +2,7 @@ import { render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 const state = vi.hoisted(() => ({ role: "MANAGER", path: "/panel-administracion/turnos" }));
 vi.mock("@tanstack/react-router", () => ({
-  Link: ({ to, children }: any) => <a href={to}>{children}</a>,
+  Link: ({ to, children, activeProps, activeOptions, ...props }: any) => <a href={to} {...props}>{children}</a>,
   Outlet: () => <div data-testid="private-child">Contenido de sección</div>,
   useLocation: () => state.path,
 }));
@@ -44,14 +44,16 @@ describe("role navigation and direct URLs", () => {
     state.role = "MANAGER";
     state.path = "/panel-administracion/turnos";
   });
-  it("keeps exactly five operational tabs, without codes or an empty sixth position", async () => {
+  it("keeps the five operational tabs after an accessible icon-only home link", async () => {
     render(<V2Layout />);
     await screen.findByTestId("private-child");
-    expect(
-      within(screen.getByRole("navigation", { name: "Administración" }))
-        .getAllByRole("link")
-        .map((a) => a.textContent),
-    ).toEqual(["Turnos", "Horarios", "Pagos", "Clientes", "Datos"]);
+    const navigation = within(screen.getByRole("navigation", { name: "Administración" }));
+    const home = navigation.getByRole("link", { name: "Inicio" });
+    expect(home).toHaveAttribute("href", "/panel-administracion/inicio");
+    expect(home.textContent).toBe("");
+    const links = navigation.getAllByRole("link");
+    expect(links[0]).toBe(home);
+    expect(links.slice(1).map(a => a.textContent)).toEqual(["Turnos", "Horarios", "Pagos", "Clientes", "Datos"]);
     expect(screen.queryByRole("link", { name: "Descuentos" })).toBeNull();
     expect(screen.queryByRole("link", { name: "Mantenimiento" })).toBeNull();
   });
@@ -76,6 +78,6 @@ describe("role navigation and direct URLs", () => {
     expect(await screen.findByTestId("private-child")).toBeInTheDocument();
     expect(
       within(screen.getByRole("navigation", { name: "Administración" })).getAllByRole("link"),
-    ).toHaveLength(5);
+    ).toHaveLength(6);
   });
 });

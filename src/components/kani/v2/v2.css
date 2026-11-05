@@ -72,14 +72,14 @@ html[data-theme="dark"] :is(.v2-shell, .v2-dialog) {
   gap: 16px;
 }
 
-/* Five operational tabs; secondary sections belong to the header menu. */
+/* Icon-only home, five equal operational tabs and the trailing refresh action. */
 .v2-navigation {
   display: grid;
   gap: 10px;
 }
 .v2-nav.admin-section-nav {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 1px 44px;
+  grid-template-columns: 44px minmax(0, 1fr) 1px 44px;
   background: var(--v2-surface);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -98,10 +98,23 @@ html[data-theme="dark"] :is(.v2-shell, .v2-dialog) {
   font-size: 12px;
 }
 .v2-nav .admin-section-nav-refresh-btn {
-  grid-column: 3;
+  grid-column: 4;
   justify-self: end;
   width: 44px;
   height: 44px;
+}
+.v2-nav .admin-section-nav-link.admin-section-nav-home-btn {
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+  max-height: 44px;
+  padding: 0;
+  gap: 0;
+}
+.v2-nav .admin-section-nav-link.admin-section-nav-home-btn svg {
+  width: 16px;
+  height: 16px;
 }
 .v2-nav .admin-section-nav-divider {
   margin-inline: 0;
