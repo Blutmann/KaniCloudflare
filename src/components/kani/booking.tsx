@@ -1514,31 +1514,33 @@ export function Booking({
                   <p className="m-0 leading-normal">{appliedBenefit?.skipOnlinePayment ? "Tu turno se confirma directamente. No requiere pago de seña online." : "Tu turno se confirma cuando se acredita la seña."}</p>
                 </div>
 
-                {/* Texto legal informativo antes del pago */}
-                <p className="booking-summary-legal-disclaimer text-xs text-muted-foreground mt-3 px-1 text-left leading-relaxed">
-                  Al confirmar tu reserva, aceptás nuestros{' '}
-                  <a
-                    href="/terminos-y-condiciones"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="underline underline-offset-2 hover:text-foreground text-gold transition-colors"
-                  >
-                    Términos y Condiciones
-                  </a>{' '}
-                  y nuestra{' '}
-                  <a
-                    href="/politica-de-privacidad"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="underline underline-offset-2 hover:text-foreground text-gold transition-colors"
-                  >
-                    Política de Privacidad
-                  </a>.
-                </p>
               </div>
             )}
 
             </ExperimentalLayout>
+
+            {(step === 5 || (isV2 || isFiveSteps) && step === 4) && (
+              <p className="booking-summary-legal-disclaimer text-xs text-muted-foreground mt-3 px-1 text-left leading-relaxed">
+                Al confirmar tu reserva, aceptás nuestros{' '}
+                <a
+                  href="https://www.kanibarber.com/terminos-y-condiciones"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline underline-offset-2 hover:text-foreground text-gold transition-colors"
+                >
+                  Términos y Condiciones
+                </a>{' '}
+                y nuestra{' '}
+                <a
+                  href="https://www.kanibarber.com/politica-de-privacidad"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline underline-offset-2 hover:text-foreground text-gold transition-colors"
+                >
+                  Política de Privacidad
+                </a>.
+              </p>
+            )}
 
             {step === 0 && (
               <p className="booking-deposit-notice" role="note">

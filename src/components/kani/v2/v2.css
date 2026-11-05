@@ -4611,4 +4611,28 @@ html[data-theme="light"] :is(
   opacity: 0.8 !important;
 }
 
+/* Client cards keep their geometry and hover borders with solid theme fills. */
+html[data-theme="light"] .v2-client-card {
+  background-color: #fff !important;
+}
+
+html[data-theme="dark"] .v2-client-card {
+  background-color: #1c1c1c !important;
+}
+
+/* Only the five payment-entry fields change in dark mode. */
+html[data-theme="dark"] .v2-payment-entry-field :is(input, select) {
+  background-color: #f9f9f9f9 !important;
+  color: #1c1c1c;
+  -webkit-text-fill-color: #1c1c1c;
+  caret-color: #1c1c1c;
+  color-scheme: light;
+}
+
+html[data-theme="dark"] .v2-payment-entry-field select option {
+  background-color: #f9f9f9;
+  color: #1c1c1c;
+  -webkit-text-fill-color: #1c1c1c;
+}
+
 

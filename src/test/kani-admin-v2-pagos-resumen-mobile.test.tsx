@@ -49,7 +49,7 @@ describe('Admin V2 Pagos — Resumen Mobile junto al botón "Cobrar"', () => {
   const css = fs.readFileSync(
     path.resolve(process.cwd(), 'src/components/kani/v2/v2.css'),
     'utf-8'
-  );
+  ).replace(/\r\n/g, '\n');
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -105,7 +105,7 @@ describe('Admin V2 Pagos — Resumen Mobile junto al botón "Cobrar"', () => {
       render(<V2Payments />);
       fireEvent.change(screen.getByLabelText(/^Servicio$/i), { target: { value: 'Otros' } });
       fireEvent.change(screen.getByLabelText('Detalle del servicio'), { target: { value: 'Servicio VIP' } });
-      fireEvent.change(screen.getByLabelText(/Importe \(\$ ARS\)/i), { target: { value: '1250000' } });
+      fireEvent.change(screen.getByLabelText(/^Importe$/i), { target: { value: '1250000' } });
 
       // Total es $1.250.000
       expect(screen.getByText('$1.250.000')).toBeDefined();

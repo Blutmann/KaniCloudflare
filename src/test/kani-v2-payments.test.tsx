@@ -110,7 +110,7 @@ describe("V2 quick collection", () => {
     fireEvent.change(dialog.getByLabelText('Servicio'),{target:{value:'Corte y barba'}});
     expect(dialog.getByLabelText('Precio servicio ($ ARS)')).toHaveValue(30000);
     expect(dialog.getByLabelText('Descuento ($ ARS)')).toHaveValue(5000);
-    expect(dialog.getByLabelText('Importe final ($ ARS, incluye seña)')).toHaveValue(25000);
+    expect(dialog.getByLabelText('Importe total')).toHaveValue(25000);
     expect(dialog.getByLabelText('Barbero')).toBeDisabled();
   });
 });

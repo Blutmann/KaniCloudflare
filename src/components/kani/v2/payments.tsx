@@ -343,7 +343,7 @@ export function V2Payments() {
                       </select>
                     </label>
                   ) : isAdmin ? (
-                    <label className="v2-field v2-payment-col">
+                    <label className="v2-field v2-payment-col v2-payment-entry-field">
                       <span className="v2-field-label">Barbero</span>
                       <select value={barberId} onChange={(e) => setBarberId(e.target.value)}>
                         {staff.barbers.map((b) => (
@@ -354,7 +354,7 @@ export function V2Payments() {
                       </select>
                     </label>
                   ) : (
-                    <label className="v2-field v2-payment-col">
+                    <label className="v2-field v2-payment-col v2-payment-entry-field">
                       <span className="v2-field-label">Barbero</span>
                       <input
                         value={
@@ -368,7 +368,7 @@ export function V2Payments() {
                     </label>
                   )}
 
-                  <label className="v2-field v2-payment-col">
+                  <label className="v2-field v2-payment-col v2-payment-entry-field">
                     <span className="v2-field-label">Servicio</span>
                     <select
                       value={serviceName}
@@ -417,10 +417,10 @@ export function V2Payments() {
                   </div>
                 )}
 
-                {/* Fila 2: Método de cobro | Importe */}
+                {/* Fila 2: Método de pago | Importe */}
                 <div className="v2-payment-row">
-                  <label className="v2-field v2-payment-col">
-                    <span className="v2-field-label">Método de cobro</span>
+                  <label className="v2-field v2-payment-col v2-payment-entry-field">
+                    <span className="v2-field-label">Método de pago</span>
                     <select
                       value={method}
                       onChange={(e) => setMethod(e.target.value as PaymentMethod)}
@@ -430,8 +430,8 @@ export function V2Payments() {
                     </select>
                   </label>
 
-                  <label className="v2-field v2-payment-col">
-                    <span className="v2-field-label">Importe ($ ARS)</span>
+                  <label className="v2-field v2-payment-col v2-payment-entry-field">
+                    <span className="v2-field-label">Importe</span>
                     <input
                       type="number"
                       min={serviceName === "Anulado" ? 0 : 1}
@@ -564,8 +564,8 @@ export function V2Payments() {
 
                 <div className="v2-payment-full-row">
                   {" "}
-                  <label className="v2-field">
-                    Importe final ($ ARS, incluye seña)
+                  <label className="v2-field v2-payment-entry-field">
+                    Importe total
                     <input
                       type="number"
                       min={deposit}
@@ -856,7 +856,7 @@ export function V2Payments() {
           </DialogDescription>
           {editError && <p className="v2-alert">{editError}</p>}
           <form onSubmit={handleSavePayment} className="v2-form">
-            <label className="v2-field">
+            <label className="v2-field v2-payment-entry-field">
               Barbero
               <select
                 value={editBarberId}
@@ -870,7 +870,7 @@ export function V2Payments() {
                 ))}
               </select>
             </label>
-            <label className="v2-field">
+            <label className="v2-field v2-payment-entry-field">
               Servicio
               <select
                 value={editServiceName}
@@ -917,7 +917,7 @@ export function V2Payments() {
               </label>
             )}
             <div className="v2-form-row">
-              <label className="v2-field">
+              <label className="v2-field v2-payment-entry-field">
                 Precio servicio ($ ARS)
                 <input
                   type="number"
@@ -951,8 +951,8 @@ export function V2Payments() {
                   <option value="PERCENT">Porcentaje (%)</option>
                 </select>
               </label>
-              <label className="v2-field">
-                Importe final ($ ARS, incluye seña)
+              <label className="v2-field v2-payment-entry-field">
+                Importe total
                 <input
                   type="number"
                   min={editingPayment?.onlineDepositAmountArs ?? 0}
@@ -978,7 +978,7 @@ export function V2Payments() {
                 />
               </label>
             </div>
-            <label className="v2-field">
+            <label className="v2-field v2-payment-entry-field">
               Método de pago
               <select
                 value={editMethod}

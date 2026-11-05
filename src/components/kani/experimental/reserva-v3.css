@@ -772,3 +772,28 @@ html[data-theme='light'] .booking-v3 .phone-country-option {
   margin-top: 16px;
   padding: 12px 14px;
 }
+
+/* Datos: match the existing white discount field without changing input states. */
+html[data-theme='light'] .booking-page:is(.booking-v2, .booking-v3) .booking-contact-form :is(
+  input[name='name'], input#booking-v2-phone, input[name='email'],
+  .phone-input-row, .phone-country-trigger
+) {
+  background-color: #fff !important;
+}
+
+/* Desktop controls share the primary inputs' 52px height; mobile sizes stay intact. */
+@media (min-width: 768px) {
+  .booking-page:is(.booking-v2, .booking-v3) .booking-contact-form :is(
+    .phone-country-picker, .phone-country-trigger, .phone-input-row .field-control
+  ),
+  .booking-page:is(.booking-v2, .booking-v3) .booking-contact-form input#booking-discount-code,
+  .booking-page:is(.booking-v2, .booking-v3) .booking-contact-form .booking-discount-field button.discount-apply-button {
+    height: 52px !important;
+    min-height: 52px !important;
+    max-height: 52px !important;
+  }
+
+  .booking-page:is(.booking-v2, .booking-v3) .booking-contact-form input#booking-discount-code {
+    line-height: 52px !important;
+  }
+}
