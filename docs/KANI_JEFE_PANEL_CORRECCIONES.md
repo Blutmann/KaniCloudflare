@@ -44,7 +44,26 @@ sesiones reales ni generaron reservas o cobros.
 
 ## Publicación
 
-Cambios conservados en `codex/kani-five-accounts-recovery`. La publicación del
-Worker se realiza desde esa rama, tras validar CI, sobre el Worker existente.
-No se envía `main` para evitar reactivar la cola histórica de migraciones de
-Supabase pendiente de reconciliación. El despliegue no incluye migraciones.
+Cambios conservados en `codex/kani-five-accounts-recovery`: implementación
+`692f3bd` y ajuste de fechas `e85db0b`.
+[GitHub Actions de la versión publicada](https://github.com/Blutmann/KaniCloudflare/actions/runs/41954433330),
+Cloudflare Preview y Pages finalizaron correctamente.
+
+Se publicó manualmente el Worker existente desde esa rama, sin enviar `main`
+ni reactivar la cola histórica de migraciones de Supabase. Versión productiva
+`aa5d6c64-bf47-40d8-83f3-948a4cafd10c`, despliegue
+`20f619fc-b97f-41d8-a872-5c5ef4309fcd`, activo al 100 %.
+Nombres/tipos de bindings y todas las variables de texto coinciden con la copia
+previa al despliegue; no se reemplazaron secretos ni credenciales.
+
+Después de publicar se volvió a verificar el artefacto servido por
+`www.kanibarber.com` en los mismos cinco escenarios de navegador con datos
+sintéticos, bloqueando accesos de esos fixtures a la base y a proveedores reales.
+No hubo desbordamientos ni errores de página. Inicio, reserva pública, Horarios
+y Códigos responden HTTP 200; un endpoint administrativo sin sesión responde 401.
+
+La comprobación final de Supabase conserva exactamente las huellas iniciales:
+3.456 filas de disponibilidad, códigos y sus siete utilizaciones asociadas.
+Siguen existiendo cuatro barberos y seis perfiles. No se aplicaron migraciones;
+la corrección de disponibilidad anterior sigue registrada una sola vez.
+El servidor local de validación quedó detenido.
