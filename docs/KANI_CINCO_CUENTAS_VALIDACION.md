@@ -106,8 +106,9 @@ deben realizar reservas, cobros ni envíos reales desde ella para validar esta r
 
 La entrega productiva del 4 de noviembre conservó las cuentas de Lautaro y ADMIN,
 creó las otras cuatro identidades con sus perfiles y publicó el panel actualizado.
-Los cuatro envíos fallaron por rechazo de credenciales SMTP; esas cuentas siguen
-sin confirmar. El script `scripts/invite-kani-staff.mjs` preserva identidades,
+Tras un primer rechazo SMTP, el titular actualizó la credencial y las cuatro
+invitaciones se reenviaron correctamente; esas cuentas siguen sin confirmar,
+pendientes de la activación por sus titulares. El script `scripts/invite-kani-staff.mjs` preserva identidades,
 requiere los UUID existentes y un roster privado fuera de Git; su modo inicial
 solo planifica. `--prepare` crea identidades sin contraseña ni correo, y `--send`
 reanuda las invitaciones de las identidades sin confirmar. No establece
@@ -118,8 +119,8 @@ Las invitaciones se deben enviar después de publicar esa ruta y completar las
 migraciones. Nunca guardar roster, contraseñas o claves privilegiadas en Git.
 
 El esquema y el Worker compatible ya están aplicados. Los permisos se verificaron
-en producción con las seis identidades y operaciones revertidas. La entrega de
-invitaciones y la activación por sus titulares siguen pendientes, junto con la
+en producción con las seis identidades y operaciones revertidas. La activación
+por sus titulares sigue pendiente, junto con la
 reconciliación de una migración histórica rechazada por el check de Supabase.
 Consultar [el resultado productivo](KANI_PRODUCCION_CINCO_CUENTAS_2026-11-04.md)
 para distinguir las operaciones ejecutadas de esos pendientes.

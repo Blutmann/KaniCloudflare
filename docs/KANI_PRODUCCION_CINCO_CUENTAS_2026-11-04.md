@@ -1,5 +1,10 @@
 # KANI: resultado productivo del 4 de noviembre de 2026
 
+Actualización posterior: el titular reemplazó la credencial SMTP y los cuatro
+reenvíos de invitación finalizaron correctamente. El bloqueo SMTP descrito en
+el registro inicial de abajo está resuelto. Sigue pendiente la activación por los
+titulares. Ver [el resultado actualizado de SMTP](KANI_ACTIVACION_SMTP_2026-11-04.md).
+
 ## Ejecutado
 
 - Publicado `99b9e85`; revisión y activación corregidas en `7a4b9db`.
