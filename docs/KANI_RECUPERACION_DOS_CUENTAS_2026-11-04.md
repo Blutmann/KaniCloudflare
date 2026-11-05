@@ -42,10 +42,12 @@ proveedor conectada. Los registros de notificaciones de reservas no acreditan
 la entrega de correos Auth. Se solicitó al titular el estado de ambos mensajes
 en Resend → Emails, sin contenido, tokens ni enlaces.
 
-La entrega a bandeja de entrada queda **sin confirmar** hasta disponer de ese
-registro. Ambos correos estaban confirmados antes y permanecen así; esto no
-demuestra que la nueva recuperación haya sido completada. Cada titular debe
-abrir su correo más reciente y guardar su contraseña propia.
+Después de los envíos, el titular confirmó en este chat: **“Llegaron perfecto.”**
+La recepción de ambos correos queda confirmada por el usuario; no se atribuye
+esa confirmación a una lectura directa del estado `Delivered` en Resend.
+Ambos correos estaban confirmados antes y permanecen así; esto no demuestra
+que la nueva recuperación haya sido completada. Cada titular debe abrir su
+correo más reciente y guardar su contraseña propia.
 
 No se ejecutaron migraciones ni despliegues productivos. La incidencia histórica
 `compatible_services` sigue separada de esta operación y sin modificaciones.
