@@ -88,6 +88,22 @@ describe("Manager codes read-only presentation", () => {
     );
     expect(screen.getByText("Utilizado")).toBeInTheDocument();
   });
+  it.each([
+    ["2026-11-05", "2030-11-04", "Programado"],
+    ["2026-11-03", "2026-11-04", "Activo"],
+  ])(
+    "uses Buenos Aires boundaries for calendar validity: %s to %s",
+    (valid_from, valid_until, label) => {
+      vi.useFakeTimers();
+      try {
+        vi.setSystemTime(new Date("2026-11-05T01:30:00Z"));
+        render(<StaffCodeCard row={{ ...code, valid_from, valid_until }} />);
+        expect(screen.getByText(label)).toBeInTheDocument();
+      } finally {
+        vi.useRealTimers();
+      }
+    },
+  );
   it("does not expose raw errors and handles malformed metadata", async () => {
     state.rpc.mockRejectedValue(new Error("private backend diagnostic"));
     render(<V2Discounts />);

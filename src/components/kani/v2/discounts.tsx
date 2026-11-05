@@ -92,7 +92,9 @@ export function StaffCodeCard({ row }: { row: StaffBenefitCode }) {
             status: row.status,
             usageMode,
             timesUsed,
-            validFrom,
+            validFrom: /^\d{4}-\d{2}-\d{2}$/.test(validFrom)
+              ? validFrom + "T00:00:00-03:00"
+              : validFrom,
             validUntil:
               validUntil && /^\d{4}-\d{2}-\d{2}$/.test(validUntil)
                 ? validUntil + "T23:59:59.999-03:00"

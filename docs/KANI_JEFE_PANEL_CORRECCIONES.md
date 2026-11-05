@@ -21,7 +21,7 @@
 
 ## Validación
 
-- 104 pruebas de personal/permisos, 50 de reservas y 28 relacionadas con Horarios
+- 106 pruebas de personal/permisos, 50 de reservas y 28 relacionadas con Horarios
   y Mantenimiento satisfactorias. Pruebas SQL aisladas, build y Wrangler dry-run correctos.
 - Navegador Edge local con respuestas Auth/SQL completamente sintéticas, bloqueando
   accesos reales: 360 y 1440 px, temas claro y oscuro; cinco columnas iguales,
