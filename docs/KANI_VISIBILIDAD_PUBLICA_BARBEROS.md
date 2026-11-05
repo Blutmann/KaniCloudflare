@@ -12,6 +12,10 @@ predeterminado `true` y configura únicamente a Franco en `false`. No elimina ni
 reescribe turnos, clientes, horarios, cobros, perfiles o transacciones existentes.
 Conserva la corrección de ACL de `internal_note` aplicada anteriormente.
 
+Aplicada una sola vez en producción como
+`20261105072253_kani_public_booking_visibility.sql`. El archivo local fue alineado
+con esa versión del historial remoto; no debe ejecutarse nuevamente.
+
 La lista pública usa una RPC de solo lectura que devuelve exclusivamente
 profesionales activos y habilitados, también cuando el visitante tiene una sesión
 de personal. Las políticas anónimas, la vista `security_invoker` y la RPC de
