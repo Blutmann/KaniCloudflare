@@ -78,6 +78,8 @@ html[data-theme="dark"] :is(.v2-shell, .v2-dialog) {
   gap: 10px;
 }
 .v2-nav.admin-section-nav {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 1px 44px;
   background: var(--v2-surface);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -85,14 +87,25 @@ html[data-theme="dark"] :is(.v2-shell, .v2-dialog) {
 }
 .v2-nav .admin-section-nav-items {
   grid-template-columns: repeat(5, minmax(0, 1fr));
+  width: 100%;
+  justify-items: stretch;
+  align-items: stretch;
 }
 .v2-nav .admin-section-nav-link {
+  width: 100%;
+  justify-self: stretch;
   min-height: 44px;
   font-size: 12px;
 }
 .v2-nav .admin-section-nav-refresh-btn {
+  grid-column: 3;
+  justify-self: end;
   width: 44px;
   height: 44px;
+}
+.v2-nav .admin-section-nav-divider {
+  margin-inline: 0;
+  justify-self: center;
 }
 .v2-workspace {
   min-width: 0;
@@ -2185,7 +2198,7 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
   .v2-nav.admin-section-nav { gap: 2px; padding-inline: 3px; }
   .v2-nav .admin-section-nav-refresh-btn { width: 44px; min-width: 44px; height: 44px; padding-inline: 0; }
   .v2-nav .admin-section-nav-divider { margin-inline: 0; }
-  .v2-nav .admin-section-nav-items { width: auto; flex: 1 1 0; }
+  .v2-nav .admin-section-nav-items { width: 100%; }
 }
 
 .v2-appointments-page > .v2-page-title {
@@ -3401,6 +3414,38 @@ input[placeholder="Nombre, celular o email"]::placeholder {
   align-items: center;
   gap: 8px;
   white-space: nowrap;
+}
+
+/* Desktop clients share the solid filter surface; mobile keeps its two rows. */
+@media (min-width: 768px) {
+  .v2-client-toolbar-container {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) max-content;
+    align-items: end;
+    gap: 14px;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+    background: #1C1C1C;
+    box-shadow: var(--v2-shadow);
+  }
+  html[data-theme="light"] .v2-client-toolbar-container {
+    background: #FFFFFF;
+  }
+  .v2-client-toolbar-container .v2-client-search-row,
+  .v2-client-toolbar-container .v2-search {
+    min-width: 0;
+  }
+  .v2-client-toolbar-container .v2-client-controls-row {
+    display: grid;
+    grid-template-columns: 180px max-content;
+    align-items: end;
+    width: auto;
+    gap: 14px;
+  }
+  .v2-client-toolbar-container .v2-client-add-btn {
+    justify-content: center;
+  }
 }
 
 .v2-client-card {

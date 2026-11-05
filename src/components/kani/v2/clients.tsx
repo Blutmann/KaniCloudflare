@@ -145,7 +145,7 @@ export function V2Clients() {
         </p>
       )}
 
-      {/* Toolbar reorganizada: Fila 1 buscador 100%, Fila 2 Ordenar por (ancho contenido) + Nuevo cliente */}
+      {/* Shared toolbar: one desktop row; the mobile search and controls keep their two rows. */}
       <div className="v2-client-toolbar-container">
         <div className="v2-client-search-row">
           <label className="v2-search">
