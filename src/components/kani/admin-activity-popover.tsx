@@ -60,7 +60,7 @@ function toAdminNotification(event: AdminActivityEvent): AdminNotification {
   };
 }
 
-export function AdminActivityPopover({ role = 'ADMIN' }: { role?: 'ADMIN' | 'BARBER' }) {
+export function AdminActivityPopover({ role = 'ADMIN' }: { role?: 'ADMIN' | 'BARBER' | 'MANAGER' }) {
   const [notifications, setNotifications] = useState<AdminNotification[]>([]);
   const [error, setError] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);

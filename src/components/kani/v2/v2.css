@@ -72,7 +72,7 @@ html[data-theme="dark"] :is(.v2-shell, .v2-dialog) {
   gap: 16px;
 }
 
-/* The same navigation capsule as V1, with six sections on every screen. */
+/* Five operational tabs; secondary sections belong to the header menu. */
 .v2-navigation {
   display: grid;
   gap: 10px;
@@ -84,7 +84,7 @@ html[data-theme="dark"] :is(.v2-shell, .v2-dialog) {
   box-shadow: var(--v2-shadow);
 }
 .v2-nav .admin-section-nav-items {
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 .v2-nav .admin-section-nav-link {
   min-height: 44px;
@@ -97,6 +97,21 @@ html[data-theme="dark"] :is(.v2-shell, .v2-dialog) {
 .v2-workspace {
   min-width: 0;
 }
+.v2-code-grid { display: grid; align-items: start; grid-template-columns: repeat(auto-fit, minmax(min(100%, 26rem), 1fr)); gap: 16px; }
+.v2-code-card, .v2-code-card-heading, .v2-code-facts > div { min-width: 0; }
+.v2-code-card { overflow-wrap: anywhere; }
+.v2-code-card-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+.v2-code-card-heading h2 { min-width: 0; margin: 0; }
+.v2-code-status { display: inline-flex; align-items: center; padding: 4px 10px; border: 1px solid var(--border); border-radius: 999px; font-size: 12px; font-weight: 500; background: var(--muted); color: var(--muted-foreground); }
+.v2-code-status[data-status="ACTIVE"] { color: #047857; background: #10b98115; border-color: #10b98150; }
+.v2-code-status[data-status="CONSUMED"] { color: #0369a1; background: #0ea5e915; border-color: #0ea5e950; }
+html[data-theme="dark"] .v2-code-status[data-status="ACTIVE"] { color: #34d399; }
+html[data-theme="dark"] .v2-code-status[data-status="CONSUMED"] { color: #38bdf8; }
+.v2-code-facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 16px; margin-bottom: 0; }
+.v2-code-facts dt { margin-bottom: 4px; }
+.v2-code-facts dd { margin: 0; }
+.v2-code-usages summary { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+.v2-code-usages ul { display: grid; gap: 8px; margin: 12px 0 0; padding: 0; list-style: none; }
 
 /* Keep standalone notes readable over either tone of the ink brush. */
 .v2-page > .v2-footnote {

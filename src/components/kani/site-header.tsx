@@ -1,7 +1,7 @@
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router';
 import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState, type MouseEvent } from 'react';
 import { createPortal } from 'react-dom';
-import { ArrowUpRight, Building2, CalendarClock, CalendarDays, ChartNoAxesCombined, Clock3, CreditCard, Instagram, LogIn, LogOut, MapPin, Menu, Moon, Scale, ShieldCheck, Sun, Users, Wrench, X } from 'lucide-react';
+import { ArrowUpRight, Building2, CalendarClock, CalendarDays, ChartNoAxesCombined, Clock3, CreditCard, Instagram, LogIn, LogOut, MapPin, Menu, Moon, Scale, ShieldCheck, Sun, Tag, Users, Wrench, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import kaniLogoLight from '@/assets/kani-logo-light.webp';
 import kaniLogoDark from '@/assets/kani-logo-dark.webp';
@@ -79,6 +79,7 @@ export function ThemeToggle() {
 }
 
 export function SiteHeader() {
+  const navigate = useNavigate();
   const path = useRouterState({ select: s => s.location.pathname });
   const admin = path.startsWith('/admin') || path.startsWith('/panel-administracion');
   const { mobileMenuOpen: menuOpen, setMobileMenuOpen: onMenuOpenChange } = useKani();
@@ -86,21 +87,25 @@ export function SiteHeader() {
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     let cancelled = false;
+    let revision = 0;
     const refreshStaff = () => {
-      void getAuthenticatedStaff().then(next => {
-        if (!cancelled) setStaff(next);
+      const requestRevision = ++revision;
+      void getAuthenticatedStaff({ bypassCache: true }).then(next => {
+        if (!cancelled && requestRevision === revision) setStaff(next);
       });
     };
     refreshStaff();
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      revision += 1;
+      if (!cancelled && event !== 'INITIAL_SESSION') setStaff(null);
       if (event === 'SIGNED_OUT') {
-        if (!cancelled) setStaff(null);
+        return;
       } else {
-        window.setTimeout(refreshStaff, 0);
+        window.setTimeout(() => { if (!cancelled) refreshStaff(); }, 0);
       }
     });
     return () => { cancelled = true; subscription.unsubscribe(); };
-  }, []);
+  }, [path, menuOpen]);
   useEffect(() => { onMenuOpenChange(false); }, [path, onMenuOpenChange]);
   useEffect(() => {
     if (!menuOpen) return;
@@ -114,7 +119,7 @@ export function SiteHeader() {
         const current = targets.indexOf(document.activeElement as HTMLElement);
         const next = current < 0 ? (e.shiftKey ? targets.length - 1 : 0) : (current + (e.shiftKey ? -1 : 1) + targets.length) % targets.length;
         e.preventDefault();
-        targets[next].focus();
+        targets[next]?.focus();
       }
     };
     window.addEventListener('keydown', onKeyDown);
@@ -192,6 +197,14 @@ export function SiteHeader() {
           </>
         )}
       </div>
+
+      {staff?.profile.role === 'MANAGER' && (
+        <div className="mobile-menu-group">
+          <Link to="/panel-administracion/descuentos" onClick={closeMenu}>
+            <Tag />Códigos
+          </Link>
+        </div>
+      )}
 
       {/* Grupo admin */}
       {staff?.profile.role === 'ADMIN' && (

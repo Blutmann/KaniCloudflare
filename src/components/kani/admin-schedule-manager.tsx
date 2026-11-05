@@ -38,6 +38,7 @@ import {
 } from "@/lib/kani-availability";
 import { readRealAppointments, type RealAppointment } from "@/lib/kani-appointments";
 import { permittedBarberNames } from "@/lib/kani-role-scope";
+import { isStaffOperator, mayManageBarber } from "@/lib/kani-permissions";
 
 const datePresets: ScheduleDatePreset[] = schedulePresets;
 export type ScheduleStatusFilter = "ALL" | "AVAILABLE" | "UNAVAILABLE" | "RESERVED";
@@ -153,6 +154,7 @@ export function AdminScheduleManager() {
   const [manualChecking, setManualChecking] = useState(false);
   const [checkingNotice, setCheckingNotice] = useState(false);
   const validationIdRef = useRef(0);
+  const loadRevisionRef = useRef(0);
 
   useEffect(() => {
     if (!manualOpen) {
@@ -251,8 +253,12 @@ export function AdminScheduleManager() {
       return ownBarberId ? permittedRows.filter((row) => row.id === ownBarberId) : [];
     return permittedRows.filter((row) => row.name === barberFilter);
   }, [barberFilter, ownBarberId, permittedRows, profile.role]);
+  const activeScopeRef = useRef({ selectedRows, dateRange });
+  activeScopeRef.current = { selectedRows, dateRange };
 
   async function loadSlots() {
+    if (activeScopeRef.current.selectedRows !== selectedRows || activeScopeRef.current.dateRange !== dateRange) return;
+    const revision = ++loadRevisionRef.current;
     setLoading(true);
     setIsRefreshing(true);
     setError("");
@@ -266,6 +272,7 @@ export function AdminScheduleManager() {
         ).then((rows) => rows.flat()),
         readRealAppointments(),
       ]);
+      if (revision !== loadRevisionRef.current) return;
       const nextSlots = slotRows
         .map((slot) => ({
           ...slot,
@@ -285,17 +292,21 @@ export function AdminScheduleManager() {
           .sort((a, b) => `${a.slot_date}${a.start_time}`.localeCompare(`${b.slot_date}${b.start_time}`)),
       );
     } catch (cause) {
+      if (revision !== loadRevisionRef.current) return;
       setSlots([]);
       setValidStarts([]);
       setError(errorMessage(cause));
     } finally {
-      setLoading(false);
-      setIsRefreshing(false);
+      if (revision === loadRevisionRef.current) {
+        setLoading(false);
+        setIsRefreshing(false);
+      }
     }
   }
 
   useEffect(() => {
     void loadSlots();
+    return () => { loadRevisionRef.current += 1; };
   }, [dateRange, selectedRows]);
 
   useEffect(() => {
@@ -319,6 +330,7 @@ export function AdminScheduleManager() {
   }
 
   async function saveSlot(slot: ScheduleSlot, nextStatus: AvailabilitySlot["status"]) {
+    if (!mayManageBarber(profile, slot.barber_id)) return;
     if (slot.occupied) {
       setError("No se puede modificar un horario que ya tiene una reserva activa.");
       return;
@@ -350,7 +362,7 @@ export function AdminScheduleManager() {
   }
 
   async function saveManualSlot() {
-    if (!manualBarberId || !manualDate || !manualTime) return;
+    if (!manualBarberId || !manualDate || !manualTime || !mayManageBarber(profile, manualBarberId)) return;
     if (manualChecking || manualError) return;
     setSavingId("manual");
     setManualError("");
@@ -439,7 +451,7 @@ export function AdminScheduleManager() {
 
         {/* 3. Barbero */}
         <AdminFilterCell label="Barbero" htmlFor="schedule-barber-filter">
-          {profile.role === "ADMIN" ? (
+          {isStaffOperator(profile.role) ? (
             <select
               id="schedule-barber-filter"
               value={barberFilter}
@@ -618,7 +630,7 @@ export function AdminScheduleManager() {
             Agregar horario
           </DialogDescription>
           <div className="admin-schedule-manual-fields">
-            {profile.role === "ADMIN" && (
+            {isStaffOperator(profile.role) && (
               <div>
                 <label htmlFor="schedule-manual-barber">Agenda</label>
                 <select
