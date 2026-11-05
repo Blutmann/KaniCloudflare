@@ -10,6 +10,7 @@ vi.mock('@/components/kani/store', () => ({ useKani: () => ({ mobileMenuOpen: fa
 vi.mock('@/lib/kani-availability', async importOriginal => ({
   ...await importOriginal<typeof import('@/lib/kani-availability')>(),
   readConfiguredServices: async () => [],
+  readPublicBookingBarbers: async () => ['Lautaro', 'Gonzalo', 'Valentín'].map(name => ({ id: name, name })),
   readPublicAvailabilityStarts: (...args: unknown[]) => api.read(...args),
 }));
 vi.mock('@/lib/kani-appointments', () => ({ createRealAppointment: (...args: unknown[]) => api.create(...args), appointmentErrorMessage: String }));
@@ -30,6 +31,7 @@ async function selectServiceAndBarber(combined = true, deferred = false) {
   render(<Booking combinedDateTime={combined} />);
   fireEvent.click(screen.getByRole('button', { name: /^Corte(?: de cabello)?, 45 minutos/ }));
   next();
+  await waitFor(() => expect(screen.getByRole('button', { name: /Elegir más adelante/ })).toBeEnabled());
   fireEvent.click(screen.getByRole('button', { name: deferred ? /Elegir más adelante/ : /Lautaro/ }));
   await waitFor(() => expect(api.read).toHaveBeenCalled());
   next();
