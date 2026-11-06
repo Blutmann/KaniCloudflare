@@ -172,12 +172,13 @@ html[data-theme] .notification-popover {
   z-index: 210;
 }
 
-/* Keep the close control outside the scrolling appointment, without a visible heading. */
+/* One surface, with the close control outside the scrolling appointment. */
 html[data-theme] .notification-detail-dialog {
   display: flex !important;
   flex-direction: column;
   gap: 0 !important;
   padding: 48px 12px 12px !important;
+  background: var(--popover) !important;
   min-width: 0;
   max-height: calc(100dvh - 24px) !important;
   overflow: hidden !important;
@@ -188,13 +189,18 @@ html[data-theme] .notification-detail-dialog {
   overflow-y: auto;
   overflow-x: hidden;
   overscroll-behavior: contain;
-  scrollbar-gutter: stable;
 }
 html[data-theme] .notification-detail-dialog .v2-appointment {
   display: flex !important;
   flex-direction: column !important;
-  gap: 12px !important;
-  padding: 12px !important;
+  gap: 8px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
   width: 100%;
   max-width: 100%;
 }
@@ -216,14 +222,15 @@ html[data-theme] .notification-detail-dialog .v2-appointment {
 }
 .notification-appointment-status > * {
   margin: 0 !important;
+  border-radius: 5px !important;
 }
 .notification-detail-dialog .v2-app-row-2 > span {
   min-width: 0;
   overflow-wrap: anywhere;
 }
 .notification-detail-dialog .notification-appointment-facts {
-  gap: 10px;
-  margin-block: 8px;
+  gap: 6px 10px;
+  margin-block: 6px;
 }
 .notification-detail-dialog .notification-appointment-facts dd {
   font-size: 14px;
@@ -265,8 +272,10 @@ html[data-theme] .notification-detail-dialog .v2-appointment-actions .v2-appoint
   min-width: 0 !important;
   max-width: 100%;
   width: 100%;
-  min-height: 48px !important;
-  height: auto !important;
+  min-height: 44px !important;
+  height: 44px !important;
+  border-radius: var(--radius-control) !important;
+  font-size: 13px !important;
   padding: 6px !important;
   white-space: normal !important;
   overflow-wrap: anywhere;
@@ -274,6 +283,13 @@ html[data-theme] .notification-detail-dialog .v2-appointment-actions .v2-appoint
 }
 .notification-detail-dialog .v2-action-btn svg {
   flex-shrink: 0;
+}
+html[data-theme="dark"] .notification-detail-dialog .notification-action-mail {
+  background: #ffffff !important;
+  color: #000000 !important;
+}
+html[data-theme="dark"] .notification-detail-dialog .notification-action-mail svg {
+  color: #000000 !important;
 }
 .notification-detail-dialog .notification-payment-help {
   margin: 4px 0 0;

@@ -612,7 +612,7 @@ export function V2Appointments({ notificationDetail, onNotificationChanged, onNo
                 <div><dt>Email</dt><dd>{notificationDetail.email || 'Sin email registrado'}</dd></div>
                 <div><dt>Precio final</dt><dd>{money(notificationDetail.final_price)}</dd></div>
                 <div><dt>Seña abonada</dt><dd>{notificationDetail.deposit_verifiable ? money(notificationDetail.deposit_paid) : "Sin dato verificable"}</dd></div>
-                <div><dt>Otros cobros</dt><dd>{money(notificationDetail.collected)}</dd></div>
+                <div><dt>Cobros aplicados</dt><dd>{money(notificationDetail.collected)}</dd></div>
                 <div><dt>Saldo</dt><dd>{notificationDetail.deposit_verifiable ? money(notificationDetail.balance) : "Sin dato verificable"}</dd></div>
                 {notificationDetail.benefit && <div><dt>Beneficio aplicado</dt><dd>{notificationDetail.benefit} · {({NO_DEPOSIT:'Sin seña',FREE_SERVICE:'Servicio gratuito',PERCENT_10:'10 % de descuento',PERCENT_50:'50 % de descuento'} as Record<string,string>)[notificationDetail.benefit_type ?? ''] || 'Beneficio'}</dd></div>}
               </dl>}
