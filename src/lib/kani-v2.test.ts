@@ -150,6 +150,13 @@ describe("V2 verified financial and client history", () => {
     expect(result.recordedSpend).toBe(25000);
     expect(result.frequency).toBe(null);
   });
+  it.each(['2020-01-01','2026-11-06','2097-01-10'])('keeps a receipt dated for service %s separate from proof of attendance', date => {
+    const result = clientHistory('c1', [{ ...appointment, statusCode: 'CONFIRMED', date }], [payment]);
+    expect(result.visits).toBe(0);
+    expect(result.lastVisit).toBeNull();
+    expect(result.recordedSpend).toBe(25000);
+    expect(result.payments).toHaveLength(1);
+  });
   it("never joins anonymous payments or clients by matching names", () => {
     const result = clientHistory(
       "c1",

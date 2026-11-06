@@ -139,7 +139,8 @@ export function clientHistory(
   const ids = new Set(history.map((a) => a.id));
   const linked = payments.filter((p) => p.clientId === clientId || (p.appointmentId && ids.has(p.appointmentId)));
   const paid = linked.filter((p) => !p.isDepositMovement && p.serviceName !== 'Anulado');
-  const paidIds = new Set(paid.map(p => p.appointmentId ?? `payment:${p.id}`));
+  // A linked receipt may be an advance. Attendance needs the appointment's completed state.
+  const paidIds = new Set(paid.filter(p => !p.appointmentId).map(p => `payment:${p.id}`));
   const visits = new Set([
     ...history.filter((a) => a.statusCode === "COMPLETED").map((a) => a.id),
     ...paidIds,
