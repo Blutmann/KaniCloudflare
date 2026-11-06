@@ -5055,17 +5055,21 @@ html[data-theme='light'] .site-header .header-controls .header-control-button:ac
   background: #f5f2ea !important;
 }
 
-/* Keep the mobile dark header opaque, including while its menu is open. */
+/* Mobile dark header backgrounds follow the screen and menu state. */
 @media (max-width: 767px) {
   html[data-theme='dark'] header.site-header {
     background: #000000 !important;
   }
 
-  /* Only the administrative background is translucent; controls stay opaque. */
-  html[data-theme='dark'] .site-header-slot[data-administrative='true'] {
+  /* Clear the sticky backing layer without fading any header content. */
+  html[data-theme='dark'] .site-header-slot:is([data-administrative='true'], [data-transparent-booking='true'], :has(> header.menu-open)) {
     background: transparent !important;
   }
   html[data-theme='dark'] .site-header-slot[data-administrative='true'] > header.site-header {
-    background: rgb(0 0 0 / 30%) !important;
+    background: rgb(0 0 0 / 50%) !important;
+  }
+  html[data-theme='dark'] .site-header-slot[data-transparent-booking='true'] > header.site-header,
+  html[data-theme='dark'] .site-header-slot > header.site-header.menu-open {
+    background: rgb(0 0 0 / 0%) !important;
   }
 }

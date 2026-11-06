@@ -82,6 +82,7 @@ export function SiteHeader() {
   const navigate = useNavigate();
   const path = useRouterState({ select: s => s.location.pathname });
   const admin = path.startsWith('/admin') || path.startsWith('/panel-administracion');
+  const transparentBookingHeader = path.replace(/\/+$/, '') === '/reservar-turno';
   const { mobileMenuOpen: menuOpen, setMobileMenuOpen: onMenuOpenChange } = useKani();
   const [staff, setStaff] = useState<AuthenticatedStaff | null>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
@@ -259,7 +260,7 @@ export function SiteHeader() {
     </nav>
   ) : null;
   return <>
-    <div className="site-header-slot" data-administrative={admin ? 'true' : undefined}><header className={`site-header ${menuOpen ? 'menu-open' : ''}`}><div className="site-container flex items-center gap-4"><div className="admin-header-left"><Link to="/" aria-label="Kani Barber Studio, inicio" className="w-fit" onClick={closeMenu}><Wordmark /></Link></div><div className="header-controls ml-auto">{staff && <Suspense fallback={null}><AdminActivityPopover key={staff.user.id} role={staff.profile.role} staff={staff} /></Suspense>}<HeaderWhatsApp /><ThemeToggle /><Button variant="outline" size="icon" className={`mobile-menu-trigger header-control-button ${admin ? 'admin-menu-trigger' : ''}`} aria-label={menuOpen ? 'Cerrar menú' : 'Abrir menú'} aria-expanded={menuOpen} aria-controls={menuOpen ? "kani-main-menu" : undefined} ref={menuButtonRef} onClick={() => onMenuOpenChange(!menuOpen)}>{menuOpen ? <X /> : <Menu />}</Button></div></div></header></div>
+    <div className="site-header-slot" data-administrative={admin ? 'true' : undefined} data-transparent-booking={transparentBookingHeader ? 'true' : undefined}><header className={`site-header ${menuOpen ? 'menu-open' : ''}`}><div className="site-container flex items-center gap-4"><div className="admin-header-left"><Link to="/" aria-label="Kani Barber Studio, inicio" className="w-fit" onClick={closeMenu}><Wordmark /></Link></div><div className="header-controls ml-auto">{staff && <Suspense fallback={null}><AdminActivityPopover key={staff.user.id} role={staff.profile.role} staff={staff} /></Suspense>}<HeaderWhatsApp /><ThemeToggle /><Button variant="outline" size="icon" className={`mobile-menu-trigger header-control-button ${admin ? 'admin-menu-trigger' : ''}`} aria-label={menuOpen ? 'Cerrar menú' : 'Abrir menú'} aria-expanded={menuOpen} aria-controls={menuOpen ? "kani-main-menu" : undefined} ref={menuButtonRef} onClick={() => onMenuOpenChange(!menuOpen)}>{menuOpen ? <X /> : <Menu />}</Button></div></div></header></div>
     {typeof document !== 'undefined' && mobileMenu ? createPortal(mobileMenu, document.body) : null}
     {typeof document !== 'undefined' && menuOpen ? createPortal(<MobileMenuAction />, document.body) : null}
   </>;
