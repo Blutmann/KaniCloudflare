@@ -1,5 +1,5 @@
 import { createPaymentSupabaseClient } from './kani-payment-db.server';
-import { getRuntimeEnv } from './kani-notifications.server';
+import { getRuntimeEnv } from './kani-mercadopago.server';
 import { buildBarberConfirmedEmail, type BarberConfirmationPayload } from './kani-barber-confirmed-email';
 
 type Job = { job_id:string; lease_id:string; recipient_email:string; payload:BarberConfirmationPayload;

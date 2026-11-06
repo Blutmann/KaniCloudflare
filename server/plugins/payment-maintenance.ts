@@ -18,5 +18,14 @@ export default definePlugin(app => {
     } catch (err) {
       console.error('[Scheduled Calendar Sync Error]:', err);
     }
+
+    // Nitro owns the deployed scheduled entry (src/server.ts is the HTTP entry).
+    try {
+      const { dispatchBarberConfirmationEmails } = await import('../../src/lib/kani-barber-email.server');
+      const result = await dispatchBarberConfirmationEmails({ limit:10 });
+      if (result.processed || result.failed) console.log('[Scheduled Barber Email Recovery]', JSON.stringify(result));
+    } catch {
+      console.warn('[Scheduled Barber Email Recovery] Deferred to next scheduled run');
+    }
   });
 });

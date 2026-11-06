@@ -4,7 +4,6 @@ import { handleTurnoIcsRequest } from '../lib/kani-calendar-ics';
 import { dispatchBarberConfirmationEmails } from '../lib/kani-barber-email.server';
 const mocks = vi.hoisted(()=>({ rpc:vi.fn() }));
 vi.mock('../lib/kani-payment-db.server',()=>({ createPaymentSupabaseClient:async()=>({ rpc:mocks.rpc }) }));
-vi.mock('../lib/kani-notifications.server',()=>({ getRuntimeEnv:(name:string)=>process.env[name] }));
 
 export const barberEmailFixture: BarberConfirmationPayload = {
   appointmentId:'00000000-0000-4000-8000-000000000099', clientName:'Cliente de prueba',
@@ -99,6 +98,14 @@ describe('Independent durable sender',()=>{
     const fetcher=vi.fn().mockResolvedValue(Response.json({id:'same-id'}));vi.stubGlobal('fetch',fetcher);
     await dispatchBarberConfirmationEmails();
     expect(JSON.parse(fetcher.mock.calls[0]![1].body)).toEqual(frozen);
+  });
+  it('reads the real Nitro cold-start bindings without relying on a previous HTTP request',async()=>{
+    delete process.env['RESEND_API_KEY'];delete process.env['RESEND_FROM_EMAIL'];
+    vi.stubGlobal('__env__',{RESEND_API_KEY:'nitro-binding-test',RESEND_FROM_EMAIL:'Kani <nitro@example.invalid>'});
+    const fetcher=vi.fn().mockResolvedValue(Response.json({id:'cold-start-provider'}));vi.stubGlobal('fetch',fetcher);
+    expect((await dispatchBarberConfirmationEmails()).accepted).toBe(1);
+    expect(fetcher.mock.calls[0]![1].headers.Authorization).toBe('Bearer nitro-binding-test');
+    expect(JSON.parse(fetcher.mock.calls[0]![1].body).from).toBe('Kani <nitro@example.invalid>');
   });
   it.each([429,500,403])('records provider HTTP %s independently without failing the booking',async(status)=>{
     vi.stubGlobal('fetch',vi.fn().mockResolvedValue(Response.json({message:'never logged'},{status})));
