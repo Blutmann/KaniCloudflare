@@ -96,6 +96,15 @@ describe("Account inbox interactions", () => {
     await screen.findByRole("button", { name: "2 notificaciones sin leer" });
     expect(mock.inbox.items[1].read_at).toBeNull();
   });
+  it("closes the inbox without changing receipts and returns focus to its trigger", async () => {
+    render(<AdminActivityPopover role="MANAGER" staff={staff} />);
+    await bell();
+    fireEvent.click(screen.getByRole("button", { name: "Cerrar notificaciones" }));
+    await waitFor(() => expect(screen.queryByText(/Cliente uno reservó turno para/)).toBeNull());
+    expect(mock.set).not.toHaveBeenCalled();
+    expect(mock.all).not.toHaveBeenCalled();
+    await waitFor(() => expect(screen.getByRole("button", { name: "2 notificaciones sin leer" })).toHaveFocus());
+  });
   it("keeps a concurrent arrival unread when marking all older events", async () => {
     render(<AdminActivityPopover role="MANAGER" staff={staff} />);
     await bell();

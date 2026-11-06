@@ -1,6 +1,6 @@
 import "./notification-inbox.css";
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
-import { Bell, Mail, MailOpen, Trash2 } from "lucide-react";
+import { Bell, Mail, MailOpen, Trash2, X } from "lucide-react";
 import type { AuthenticatedStaff } from "@/lib/kani-auth";
 import { Button } from "@/components/ui/button";
 import {
@@ -39,6 +39,8 @@ export function AdminActivityPopover({
   const [deletion, setDeletion] = useState<{ ids: string[]; scope: 'loaded' | 'single' } | null>(null);
   const [today, setToday] = useState(notificationToday);
   const [busy, setBusy] = useState(false);
+  const [panelElement, setPanelElement] = useState<HTMLDivElement | null>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const revision = useRef(0),
     locked = useRef(false);
   const reload = useCallback(async (before: number | null = null) => {
@@ -111,6 +113,56 @@ export function AdminActivityPopover({
     setSelected(null);
     setOpen(false);
   };
+  useEffect(() => {
+    if (!open) return;
+    const panel = panelElement;
+    if (!panel) return;
+    const mobile = window.matchMedia("(max-width: 767px)");
+    const viewport = window.visualViewport;
+    const header = triggerRef.current?.closest("header");
+    const footer = document.querySelector(".site-shell > .site-footer");
+    let frame = 0;
+    const measure = () => {
+      frame = 0;
+      if (!mobile.matches) {
+        panel.style.removeProperty("--notification-mobile-top");
+        panel.style.removeProperty("--notification-mobile-height");
+        return;
+      }
+      const viewportTop = viewport?.offsetTop ?? 0;
+      const viewportBottom = viewportTop + (viewport?.height ?? window.innerHeight);
+      const top = Math.min(viewportBottom, Math.max(viewportTop, header?.getBoundingClientRect().bottom ?? viewportTop));
+      const available = Math.max(0, viewportBottom - top - 40);
+      const footerBounds = footer?.getBoundingClientRect();
+      const footerVisible = footerBounds && footerBounds.bottom > top && footerBounds.top < viewportBottom;
+      const footerSpace = footerVisible ? Math.max(0, footerBounds.top - top - 40) : available;
+      const height = Math.min(available, footerSpace);
+      panel.style.setProperty("--notification-mobile-top", `${top}px`);
+      panel.style.setProperty("--notification-mobile-height", `${height}px`);
+    };
+    const schedule = () => {
+      if (!frame) frame = window.requestAnimationFrame(measure);
+    };
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(schedule);
+    for (const element of [header, footer, panel.querySelector(".notification-header"), panel.querySelector(".notification-inbox-toolbar")]) {
+      if (element) observer?.observe(element);
+    }
+    measure();
+    window.addEventListener("resize", schedule);
+    window.addEventListener("scroll", schedule, true);
+    mobile.addEventListener("change", schedule);
+    viewport?.addEventListener("resize", schedule);
+    viewport?.addEventListener("scroll", schedule);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      observer?.disconnect();
+      window.removeEventListener("resize", schedule);
+      window.removeEventListener("scroll", schedule, true);
+      mobile.removeEventListener("change", schedule);
+      viewport?.removeEventListener("resize", schedule);
+      viewport?.removeEventListener("scroll", schedule);
+    };
+  }, [open, panelElement]);
   return (
     <TooltipProvider delayDuration={250}>
       <Popover
@@ -122,6 +174,7 @@ export function AdminActivityPopover({
       >
         <PopoverTrigger asChild>
           <Button
+            ref={triggerRef}
             variant="outline"
             size="icon"
             className="notification-trigger header-control-button"
@@ -139,10 +192,13 @@ export function AdminActivityPopover({
             )}
           </Button>
         </PopoverTrigger>
-        <PopoverContent side="bottom" sideOffset={10} align="end" className="notification-popover">
+        <PopoverContent ref={setPanelElement} side="bottom" sideOffset={10} align="end" className="notification-popover">
           <div className="notification-header">
             <h2>Notificaciones</h2>
             <p className="notification-unread-summary">{inbox.unread_count} sin leer</p>
+            <Button type="button" variant="ghost" size="icon" className="notification-close" aria-label="Cerrar notificaciones" onClick={() => setOpen(false)}>
+              <X aria-hidden="true" />
+            </Button>
           </div>
           {error && (
             <p role="alert" className="mt-3 text-xs text-destructive">
@@ -174,6 +230,7 @@ export function AdminActivityPopover({
               </Button>
             )}
           </div>
+          <div className="notification-list-scroll" role="region" aria-label="Lista de notificaciones" tabIndex={0}>
           {!inbox.items.length ? (
             <div className="notification-empty">
               <Bell size={24} />
@@ -236,6 +293,7 @@ export function AdminActivityPopover({
               Cargar más notificaciones
             </Button>
           )}
+          </div>
         </PopoverContent>
       </Popover>
       <Dialog

@@ -172,6 +172,109 @@ html[data-theme] .notification-popover {
   z-index: 210;
 }
 
+.notification-close {
+  display: none;
+}
+.notification-list-scroll {
+  display: contents;
+}
+@media (max-width: 767px) {
+  /* Radix's anchor transform must not constrain the panel to the bell's column. */
+  [data-radix-popper-content-wrapper]:has(> .notification-popover) {
+    inset: 0 auto auto 0 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    transform: none !important;
+    will-change: auto !important;
+    z-index: 150 !important;
+  }
+  html[data-theme] .notification-popover {
+    position: fixed;
+    inset: var(--notification-mobile-top, 72px) 0 auto;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 100%;
+    height: var(--notification-mobile-height, calc(100dvh - var(--notification-mobile-top, 72px) - 40px));
+    max-height: calc(100dvh - 40px);
+    min-width: 0;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 12px;
+    overflow: hidden;
+    transform: none;
+  }
+  .notification-popover .notification-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 44px;
+    grid-template-rows: auto auto;
+    gap: 2px 8px;
+    flex-shrink: 0;
+  }
+  .notification-popover .notification-header h2 {
+    grid-area: 1 / 1;
+    align-self: end;
+    overflow-wrap: anywhere;
+  }
+  .notification-popover .notification-unread-summary {
+    grid-area: 2 / 1;
+  }
+  .notification-popover .notification-close {
+    grid-area: 1 / 2 / 3 / 3;
+    display: inline-flex;
+    width: 44px;
+    height: 44px;
+    min-height: 44px;
+    align-self: center;
+    color: var(--foreground);
+  }
+  .notification-popover .notification-inbox-toolbar {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 8px;
+    flex-shrink: 0;
+  }
+  .notification-popover .notification-inbox-toolbar:has(> button:only-child) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .notification-popover .notification-inbox-toolbar:empty {
+    display: none;
+  }
+  .notification-popover .notification-inbox-toolbar button {
+    width: 100%;
+    min-width: 0;
+    min-height: 48px;
+    height: auto;
+    padding: 6px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-control, 0.65rem);
+    background: var(--background);
+    color: var(--foreground);
+    font-size: 12px;
+    line-height: 1.4;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    text-align: center;
+  }
+  .notification-popover .notification-inbox-toolbar button:hover:not(:disabled) {
+    background: var(--accent);
+  }
+  .notification-list-scroll {
+    display: block;
+    flex: 1;
+    min-height: 0;
+    min-width: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+  }
+  .notification-list-scroll:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: -2px;
+  }
+}
+
 /* One surface, with the close control outside the scrolling appointment. */
 html[data-theme] .notification-detail-dialog {
   display: flex !important;
