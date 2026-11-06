@@ -39,6 +39,7 @@ export function AdminActivityPopover({
   const [deletion, setDeletion] = useState<{ ids: string[]; scope: 'loaded' | 'single' } | null>(null);
   const [today, setToday] = useState(notificationToday);
   const [busy, setBusy] = useState(false);
+  const [mobileInbox, setMobileInbox] = useState(false);
   const [panelElement, setPanelElement] = useState<HTMLDivElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const revision = useRef(0),
@@ -120,10 +121,10 @@ export function AdminActivityPopover({
     const mobile = window.matchMedia("(max-width: 767px)");
     const viewport = window.visualViewport;
     const header = triggerRef.current?.closest("header");
-    const footer = document.querySelector(".site-shell > .site-footer");
     let frame = 0;
     const measure = () => {
       frame = 0;
+      setMobileInbox(mobile.matches);
       if (!mobile.matches) {
         panel.style.removeProperty("--notification-mobile-top");
         panel.style.removeProperty("--notification-mobile-height");
@@ -132,11 +133,7 @@ export function AdminActivityPopover({
       const viewportTop = viewport?.offsetTop ?? 0;
       const viewportBottom = viewportTop + (viewport?.height ?? window.innerHeight);
       const top = Math.min(viewportBottom, Math.max(viewportTop, header?.getBoundingClientRect().bottom ?? viewportTop));
-      const available = Math.max(0, viewportBottom - top - 40);
-      const footerBounds = footer?.getBoundingClientRect();
-      const footerVisible = footerBounds && footerBounds.bottom > top && footerBounds.top < viewportBottom;
-      const footerSpace = footerVisible ? Math.max(0, footerBounds.top - top - 40) : available;
-      const height = Math.min(available, footerSpace);
+      const height = Math.max(0, viewportBottom - top);
       panel.style.setProperty("--notification-mobile-top", `${top}px`);
       panel.style.setProperty("--notification-mobile-height", `${height}px`);
     };
@@ -144,7 +141,7 @@ export function AdminActivityPopover({
       if (!frame) frame = window.requestAnimationFrame(measure);
     };
     const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(schedule);
-    for (const element of [header, footer, panel.querySelector(".notification-header"), panel.querySelector(".notification-inbox-toolbar")]) {
+    for (const element of [header]) {
       if (element) observer?.observe(element);
     }
     measure();
@@ -206,17 +203,17 @@ export function AdminActivityPopover({
             </p>
           )}
           <div className="notification-inbox-toolbar">
-            {inbox.unread_count > 0 && (
+            {(mobileInbox || inbox.unread_count > 0) && (
               <Button
                 variant="ghost"
                 size="sm"
-                disabled={busy}
+                disabled={busy || inbox.unread_count === 0}
                 onClick={() => {
                   const through = inbox.through;
                   void mutate(() => markAllAdminActivityNotificationsRead(through));
                 }}
               >
-                Marcar todas como leídas
+                {mobileInbox ? "Marcar como leídas" : "Marcar todas como leídas"}
               </Button>
             )}
             {role === "ADMIN" && inbox.items.length > 0 && (
@@ -226,7 +223,7 @@ export function AdminActivityPopover({
                 disabled={busy}
                 onClick={() => setDeletion({ ids: inbox.items.map((n) => n.id), scope: 'loaded' })}
               >
-                Eliminar notificaciones
+                {mobileInbox ? "Borrar notificaciones" : "Eliminar notificaciones"}
               </Button>
             )}
           </div>

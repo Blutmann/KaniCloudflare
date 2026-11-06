@@ -195,12 +195,14 @@ html[data-theme] .notification-popover {
     flex-direction: column;
     width: 100%;
     max-width: 100%;
-    height: var(--notification-mobile-height, calc(100dvh - var(--notification-mobile-top, 72px) - 40px));
-    max-height: calc(100dvh - 40px);
+    height: var(--notification-mobile-height, calc(100dvh - var(--notification-mobile-top, 72px)));
+    max-height: 100dvh;
     min-width: 0;
     box-sizing: border-box;
     margin: 0;
-    padding: 12px;
+    padding: 12px 12px 0;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
     overflow: hidden;
     transform: none;
   }
@@ -232,7 +234,11 @@ html[data-theme] .notification-popover {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
-    margin-top: 8px;
+    order: 2;
+    margin: 0 -12px;
+    padding: 8px 12px calc(12px + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid var(--border);
+    background: var(--popover);
     flex-shrink: 0;
   }
   .notification-popover .notification-inbox-toolbar:has(> button:only-child) {
@@ -244,9 +250,9 @@ html[data-theme] .notification-popover {
   .notification-popover .notification-inbox-toolbar button {
     width: 100%;
     min-width: 0;
-    min-height: 48px;
+    min-height: 44px;
     height: auto;
-    padding: 6px;
+    padding: 4px 6px;
     border: 1px solid var(--border);
     border-radius: var(--radius-control, 0.65rem);
     background: var(--background);
@@ -262,12 +268,14 @@ html[data-theme] .notification-popover {
   }
   .notification-list-scroll {
     display: block;
+    order: 1;
     flex: 1;
     min-height: 0;
     min-width: 0;
     overflow-y: auto;
     overflow-x: hidden;
     overscroll-behavior: contain;
+    padding-bottom: 8px;
   }
   .notification-list-scroll:focus-visible {
     outline: 2px solid var(--ring);

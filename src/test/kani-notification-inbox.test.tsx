@@ -70,7 +70,7 @@ describe("Account inbox interactions", () => {
       recount();
     });
   });
-  afterEach(() => { cleanup(); vi.useRealTimers(); });
+  afterEach(() => { cleanup(); vi.useRealTimers(); vi.restoreAllMocks(); });
   it("opens the current detail before marking read and immediately updates the bell afterwards", async () => {
     render(<AdminActivityPopover role="MANAGER" staff={staff} />);
     await bell();
@@ -112,6 +112,39 @@ describe("Account inbox interactions", () => {
     await screen.findByRole("button", { name: "1 notificaciones sin leer" });
     expect(mock.all).toHaveBeenCalledWith(17);
     expect(mock.inbox.items[0].read_at).toBeNull();
+  });
+  it("keeps the mobile short label marking all current-account events through the captured boundary", async () => {
+    const media = window.matchMedia;
+    vi.spyOn(window, "matchMedia").mockImplementation(query => ({ ...media(query), matches: query.includes("767px") }));
+    render(<AdminActivityPopover role="MANAGER" staff={staff} />);
+    await bell();
+    fireEvent.click(await screen.findByRole("button", { name: "Marcar como leídas", exact: true }));
+    await screen.findByRole("button", { name: "1 notificaciones sin leer" });
+    expect(mock.all).toHaveBeenCalledWith(17);
+    expect(mock.inbox.items[0].read_at).toBeNull();
+    expect(screen.queryByRole("button", { name: "Borrar notificaciones" })).toBeNull();
+  });
+  it("keeps mobile deletion behind ADMIN confirmation with the same captured IDs", async () => {
+    const media = window.matchMedia;
+    vi.spyOn(window, "matchMedia").mockImplementation(query => ({ ...media(query), matches: query.includes("767px") }));
+    render(<AdminActivityPopover role="ADMIN" staff={staff} />);
+    await bell();
+    fireEvent.click(await screen.findByRole("button", { name: "Borrar notificaciones", exact: true }));
+    const dialog = await screen.findByRole("dialog", { name: "Eliminar notificaciones" });
+    expect(mock.remove).not.toHaveBeenCalled();
+    expect(within(dialog).getByText(/2 notificaciones cargadas/)).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole("button", { name: "Confirmar eliminación" }));
+    await waitFor(() => expect(mock.remove).toHaveBeenCalledWith(["uno", "dos"]));
+  });
+  it("retains the mobile read action disabled when there is nothing unread", async () => {
+    const media = window.matchMedia;
+    vi.spyOn(window, "matchMedia").mockImplementation(query => ({ ...media(query), matches: query.includes("767px") }));
+    mock.inbox.items.forEach((item: any) => { item.read_at = "read"; });
+    recount();
+    render(<AdminActivityPopover role="MANAGER" staff={staff} />);
+    fireEvent.click(await screen.findByRole("button", { name: "Notificaciones", exact: true }));
+    expect(await screen.findByRole("button", { name: "Marcar como leídas", exact: true })).toBeDisabled();
+    expect(mock.all).not.toHaveBeenCalled();
   });
   it.each(["BARBER", "MANAGER"] as const)("does not offer deletion for %s", async (role) => {
     render(<AdminActivityPopover role={role} staff={staff} />);
