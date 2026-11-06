@@ -5060,4 +5060,12 @@ html[data-theme='light'] .site-header .header-controls .header-control-button:ac
   html[data-theme='dark'] header.site-header {
     background: #000000 !important;
   }
+
+  /* Only the administrative background is translucent; controls stay opaque. */
+  html[data-theme='dark'] .site-header-slot[data-administrative='true'] {
+    background: transparent !important;
+  }
+  html[data-theme='dark'] .site-header-slot[data-administrative='true'] > header.site-header {
+    background: rgb(0 0 0 / 30%) !important;
+  }
 }
