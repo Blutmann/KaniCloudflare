@@ -171,3 +171,113 @@ html[data-theme] .notification-popover {
 .notification-action-tooltip {
   z-index: 210;
 }
+
+/* Keep the close control outside the scrolling appointment, without a visible heading. */
+html[data-theme] .notification-detail-dialog {
+  display: flex !important;
+  flex-direction: column;
+  gap: 0 !important;
+  padding: 48px 12px 12px !important;
+  min-width: 0;
+  max-height: calc(100dvh - 24px) !important;
+  overflow: hidden !important;
+}
+.notification-detail-scroll {
+  min-height: 0;
+  min-width: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+html[data-theme] .notification-detail-dialog .v2-appointment {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+  padding: 12px !important;
+  width: 100%;
+  max-width: 100%;
+}
+.notification-detail-dialog .v2-app-row-1 {
+  align-items: flex-start !important;
+}
+.notification-detail-dialog .v2-app-name {
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  overflow-wrap: anywhere;
+  line-height: 1.4 !important;
+}
+.notification-appointment-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.notification-appointment-status > * {
+  margin: 0 !important;
+}
+.notification-detail-dialog .v2-app-row-2 > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.notification-detail-dialog .notification-appointment-facts {
+  gap: 10px;
+  margin-block: 8px;
+}
+.notification-detail-dialog .notification-appointment-facts dd {
+  font-size: 14px;
+  line-height: 1.5;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+html[data-theme] .notification-detail-dialog .v2-appointment-actions {
+  flex: none !important;
+  width: 100% !important;
+  min-width: 0;
+  max-width: 100% !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+}
+html[data-theme] .notification-detail-dialog .v2-appointment-actions .v2-appointment-actions-grid[class] {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  align-items: start;
+  gap: 8px;
+  min-width: 0;
+}
+.notification-detail-dialog .v2-appointment-actions-grid > * {
+  grid-column: auto !important;
+  min-width: 0;
+}
+.notification-detail-dialog .notification-action-cancel,
+.notification-detail-dialog .notification-action-whatsapp {
+  grid-column: 1 !important;
+}
+.notification-detail-dialog .notification-action-payment,
+.notification-detail-dialog .notification-action-mail {
+  grid-column: 2 !important;
+}
+.notification-detail-dialog .v2-appointment-actions-grid:has(> .notification-action-cancel, > .notification-action-payment) > :is(.notification-action-whatsapp, .notification-action-mail) {
+  grid-row: 2;
+}
+.notification-detail-dialog .v2-action-btn {
+  min-width: 0 !important;
+  max-width: 100%;
+  width: 100%;
+  min-height: 48px !important;
+  height: auto !important;
+  padding: 6px !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+  line-height: 1.4 !important;
+}
+.notification-detail-dialog .v2-action-btn svg {
+  flex-shrink: 0;
+}
+.notification-detail-dialog .notification-payment-help {
+  margin: 4px 0 0;
+  font-size: 12px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}

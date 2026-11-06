@@ -247,11 +247,10 @@ export function AdminActivityPopover({
         <DialogContent
           overlayClassName="notification-dialog-overlay"
           className="v2-dialog notification-detail-dialog"
+          aria-describedby={undefined}
         >
-          <DialogHeader>
-            <DialogTitle>Detalle del turno</DialogTitle>
-            <DialogDescription>Estado actual del turno y sus cobros.</DialogDescription>
-          </DialogHeader>
+          <DialogTitle className="sr-only">Detalle del turno</DialogTitle>
+          <div className="notification-detail-scroll">
           {selected && staff && (
             <Suspense fallback={<p role="status">Consultando turno…</p>}>
               <AppointmentDetail
@@ -265,6 +264,7 @@ export function AdminActivityPopover({
             </Suspense>
           )}
           {error && <p role="alert">{error}</p>}
+          </div>
         </DialogContent>
       </Dialog>
       <Dialog

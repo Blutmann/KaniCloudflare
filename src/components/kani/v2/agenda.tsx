@@ -564,9 +564,15 @@ export function V2Appointments({ notificationDetail, onNotificationChanged, onNo
                 <strong className="v2-app-time">{a.time}</strong>
                 <span className="v2-app-sep">|</span>
                 <h3 className="v2-app-name" title={a.name}>{a.name}</h3>
-                {a.isManual && <span className="v2-manual-badge">Manual</span>}
-                <Status code={a.statusCode} />
+                {!notificationDetail && <>
+                  {a.isManual && <span className="v2-manual-badge">Manual</span>}
+                  <Status code={a.statusCode} />
+                </>}
               </div>
+              {notificationDetail && <div className="notification-appointment-status">
+                <Status code={a.statusCode} />
+                {a.isManual && <span className="v2-manual-badge">Manual</span>}
+              </div>}
 
               {/* Fila 2: 10:45 · Corte · Lautaro (· Fecha si isMultiDay) */}
               <div className="v2-app-row-2">
@@ -668,7 +674,7 @@ export function V2Appointments({ notificationDetail, onNotificationChanged, onNo
                     <button
                       key="cancel"
                       type="button"
-                      className="v2-secondary action-reject v2-action-btn"
+                      className="v2-secondary action-reject v2-action-btn notification-action-cancel"
                       disabled={busy}
                       onClick={() => setAction({ appointment: a, status: "CANCELLED" })}
                     >
@@ -680,7 +686,7 @@ export function V2Appointments({ notificationDetail, onNotificationChanged, onNo
                   actionNodes.push(
                     <Link
                       key="cobrar"
-                      className="v2-secondary v2-action-btn v2-cobrar-btn"
+                      className="v2-secondary v2-action-btn v2-cobrar-btn notification-action-payment"
                       to="/panel-administracion/pagos"
                       search={{ turno: a.id }}
                       onClick={onNotificationNavigate}
@@ -690,7 +696,10 @@ export function V2Appointments({ notificationDetail, onNotificationChanged, onNo
                   );
                 }
                 if (notificationDetail && a.statusCode === 'CONFIRMED' && !notificationDetail.has_payment && !a.balancePaid && a.date > today) {
-                  actionNodes.push(<button key="future-payment" className="v2-secondary v2-action-btn" disabled title="El cobro estará disponible el día del turno">Cobrar · disponible el día del turno</button>);
+                  actionNodes.push(<div key="future-payment" className="notification-action-payment notification-payment-action">
+                    <button type="button" className="v2-secondary v2-action-btn" disabled aria-describedby={`notification-payment-help-${a.id}`}>Cobrar</button>
+                    <p id={`notification-payment-help-${a.id}`} className="notification-payment-help">Disponible el día del turno.</p>
+                  </div>);
                 }
                 if (
                   !notificationDetail && a.isManual &&
@@ -715,7 +724,7 @@ export function V2Appointments({ notificationDetail, onNotificationChanged, onNo
                   <button
                     key="whatsapp"
                     type="button"
-                    className="v2-secondary v2-whatsapp v2-action-btn"
+                    className="v2-secondary v2-whatsapp v2-action-btn notification-action-whatsapp"
                     disabled={busy || !getWhatsAppUrl(a.phone) || (!!notificationDetail && !['CONFIRMED','CANCELLED'].includes(a.statusCode))}
                     onClick={() => handleWhatsAppAction(a)}
                     title={
@@ -733,7 +742,7 @@ export function V2Appointments({ notificationDetail, onNotificationChanged, onNo
                   actionNodes.push(
                     <a
                       key="mail"
-                      className="v2-secondary v2-mail-btn v2-action-btn"
+                      className="v2-secondary v2-mail-btn v2-action-btn notification-action-mail"
                       href={`mailto:${a.email}`}
                     >
                       <Mail size={16} />
@@ -743,7 +752,7 @@ export function V2Appointments({ notificationDetail, onNotificationChanged, onNo
                 }
 
                 if (notificationDetail && (!a.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(a.email))) {
-                  actionNodes.push(<button key="mail-disabled" className="v2-secondary v2-action-btn" disabled title="El cliente no tiene un email válido"><Mail size={16} /> Mail · sin email válido</button>);
+                  actionNodes.push(<button key="mail-disabled" className="v2-secondary v2-action-btn notification-action-mail" disabled title="El cliente no tiene un email válido"><Mail size={16} /> Mail</button>);
                 }
                 return (
                   <div className={`v2-appointment-actions-grid count-${actionNodes.length}`}>
