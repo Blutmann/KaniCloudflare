@@ -313,8 +313,8 @@ export function AdminActivityPopover({
         >
           <div className="notification-detail-heading">
             <DialogTitle>Detalle del turno{detailHeading?.number != null ? ` #${detailHeading.number}` : ''}</DialogTitle>
+            {detailHeading && <div className="notification-detail-state"><Status code={detailHeading.status} /></div>}
           </div>
-          {detailHeading && <div className="notification-detail-state"><Status code={detailHeading.status} /></div>}
           <div className="notification-detail-scroll">
           {selected && staff && (
             <Suspense fallback={<p role="status">Consultando turno…</p>}>

@@ -693,10 +693,7 @@ export function V2Appointments({ notificationDetail, onNotificationChanged, onNo
                   );
                 }
                 if (notificationDetail && a.statusCode === 'CONFIRMED' && notificationDetail.deposit_verifiable && notificationDetail.balance <= 0) {
-                  actionNodes.push(<div key="settled-payment" className="notification-action-payment notification-payment-action">
-                    <button type="button" className="v2-secondary v2-action-btn" disabled aria-describedby={`notification-payment-help-${a.id}`}>Cobrar</button>
-                    <p id={`notification-payment-help-${a.id}`} className="notification-payment-help">Sin saldo pendiente.</p>
-                  </div>);
+                  actionNodes.push(<button key="settled-payment" type="button" className="v2-secondary v2-action-btn notification-action-payment" disabled>Abonado</button>);
                 }
                 if (
                   !notificationDetail && a.isManual &&

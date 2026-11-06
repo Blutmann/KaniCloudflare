@@ -222,7 +222,7 @@ export function V2Clients() {
                     className="v2-client-action-btn edit"
                     onClick={(e) => openEditor(c, e)}
                     title="Editar cliente"
-                    aria-label={`Editar datos de ${c.name}`}
+                    aria-label="Editar cliente"
                   >
                     <Pencil size={15} />
                   </button>
@@ -233,7 +233,7 @@ export function V2Clients() {
                     className="v2-client-action-btn delete"
                     onClick={(e) => promptDelete(c, e)}
                     title="Eliminar cliente"
-                    aria-label={`Eliminar cliente ${c.name}`}
+                    aria-label="Eliminar cliente"
                   >
                     <Trash2 size={15} />
                   </button>

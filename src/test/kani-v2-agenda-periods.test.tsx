@@ -118,8 +118,8 @@ describe('Notification appointment presentation preserves existing actions',()=>
   });
   it('does not offer a fictitious collection for a free or settled appointment',()=>{
     render(<V2Appointments notificationDetail={{...detail,final_price:0,deposit_paid:0,collected:0,balance:0,benefit_type:'FREE_SERVICE'}}/>);
-    expect(screen.getByRole('button',{name:'Cobrar'})).toBeDisabled();
-    expect(screen.getByText('Sin saldo pendiente.')).toBeInTheDocument();
+    expect(screen.getByRole('button',{name:'Abonado'})).toBeDisabled();
+    expect(screen.queryByText('Sin saldo pendiente.')).toBeNull();
   });
   it('offers only contact actions for cancelled appointments',()=>{
     render(<V2Appointments notificationDetail={{...detail,status:'CANCELLED'}}/>);

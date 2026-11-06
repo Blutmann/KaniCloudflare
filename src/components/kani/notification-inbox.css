@@ -190,11 +190,11 @@ html[data-theme] .notification-popover {
   }
   html[data-theme] .notification-popover {
     position: fixed;
-    inset: var(--notification-mobile-top, 72px) 0 auto;
+    inset: var(--notification-mobile-top, 72px) 16px auto;
     display: flex;
     flex-direction: column;
-    width: 100%;
-    max-width: 100%;
+    width: calc(100% - 32px);
+    max-width: calc(100% - 32px);
     height: var(--notification-mobile-height, calc(100dvh - var(--notification-mobile-top, 72px)));
     max-height: 100dvh;
     min-width: 0;
@@ -300,20 +300,29 @@ html[data-theme] .notification-detail-dialog {
   min-height: 44px;
   flex-shrink: 0;
   padding-right: 52px;
+  gap: 8px;
 }
 .notification-detail-heading h2 {
   margin: 0;
   font-size: 16px;
   overflow-wrap: anywhere;
+  flex: 1;
+  min-width: 0;
+  line-height: 1.4;
 }
 .notification-detail-state {
   display: flex;
   justify-content: flex-end;
-  flex-shrink: 0;
-  margin: 6px 0 10px;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 45%;
+  margin: 0;
 }
 .notification-detail-state .v2-badge {
   border-radius: 5px;
+  white-space: normal;
+  text-align: center;
+  line-height: 1.4;
 }
 html[data-theme] .notification-detail-dialog > button:has(> .sr-only) {
   top: 12px;
@@ -327,6 +336,7 @@ html[data-theme] .notification-detail-dialog > button:has(> .sr-only) {
   overscroll-behavior: contain;
 }
 @media (max-width: 767px) {
+  .notification-detail-heading h2 { font-size: 14px; }
   html[data-theme] .notification-detail-dialog {
     top: var(--notification-detail-top, 12px) !important;
     height: var(--notification-detail-height, calc(100dvh - 24px));
