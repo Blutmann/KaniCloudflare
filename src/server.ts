@@ -218,6 +218,21 @@ export default {
             const { createPaymentSupabaseClient } = await import("./lib/kani-payment-db.server");
             const db = await createPaymentSupabaseClient();
 
+            const barberDeliveryStatus: Record<string,string> = {
+              'email.delivered':'DELIVERED', 'email.bounced':'BOUNCED',
+              'email.complained':'COMPLAINED', 'email.failed':'DELIVERY_FAILED',
+            };
+            if (barberDeliveryStatus[eventType]) {
+              const { error:deliveryError } = await db.rpc('record_barber_email_delivery', {
+                p_message_id:emailId, p_status:barberDeliveryStatus[eventType],
+              });
+              if (deliveryError) {
+                const { forgetFailedResendEvent } = await import('./lib/kani-resend-webhook');
+                if (svixId) forgetFailedResendEvent(svixId);
+                return Response.json({ error:'DELIVERY_RECEIPT_NOT_SAVED' }, { status:503 });
+              }
+            }
+
             if (eventType === "email.delivered") {
               await db
                 .from("appointment_notification_dispatches")
@@ -255,6 +270,9 @@ export default {
             headers: { "content-type": "application/json" },
           });
         } catch (webhookErr) {
+          const { forgetFailedResendEvent } = await import('./lib/kani-resend-webhook');
+          const failedId=request.headers.get('svix-id');
+          if (failedId) forgetFailedResendEvent(failedId);
           const msg = webhookErr instanceof Error ? webhookErr.message : "BAD_REQUEST";
           return new Response(JSON.stringify({ error: msg }), { status: 400 });
         }
@@ -1400,6 +1418,13 @@ export default {
         }
       } catch (err) {
         console.error("[Cron Scheduled Notification Recovery Error]:", err);
+      }
+      try {
+        const { dispatchBarberConfirmationEmails } = await import('./lib/kani-barber-email.server');
+        const result = await dispatchBarberConfirmationEmails({ limit:10 });
+        if (result.processed || result.failed) console.log('[Cron Barber Email Recovery]', JSON.stringify(result));
+      } catch {
+        console.warn('[Cron Barber Email Recovery] Deferred to next scheduled run');
       }
     };
 

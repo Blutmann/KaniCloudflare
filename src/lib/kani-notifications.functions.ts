@@ -3,6 +3,7 @@ import { createServerFn, createServerOnlyFn } from "@tanstack/react-start";
 import { notificationSubject } from './kani-email-environment';
 import { KANI_MAPS_URL, KANI_STANDARD_DEPOSIT_ARS, KANI_PUBLIC_WHATSAPP_URL, KANI_PUBLIC_WHATSAPP_NUMBER, KANI_STUDIO_FULL_ADDRESS } from './kani-constants';
 import { buildTurnoIcsUrl } from './kani-calendar-ics';
+import { confirmationEmailLogo } from './kani-confirmation-email-brand';
 import { buildCancellationUrl } from './kani-cancellation-token';
 import { isAppointmentPast } from './kani-mobile-appointments';
 import { formatServiceName, formatServiceNameForEmail, formatServiceNameForChannel } from './kani-model';
@@ -93,6 +94,12 @@ export const dispatchAppointmentNotification = createServerOnlyFn(async (data: {
       if (event.notification_type === "NEW_REQUEST") {
         console.log(`[KANI notification] Omitiendo email NEW_REQUEST para turno ${data.appointmentId} (flujo Mercado Pago).`);
         return { sent: false, status: "SKIPPED" };
+      }
+      if (event.notification_type === 'CONFIRMED') {
+        try {
+          const { dispatchBarberConfirmationEmails } = await import('./kani-barber-email.server');
+          await dispatchBarberConfirmationEmails({ appointmentId:data.appointmentId, limit:1 });
+        } catch { /* Its independent durable job is recovered by the existing cron. */ }
       }
       if (event.dispatch_status === "ALREADY_SENT") return { sent: true, status: "ALREADY_SENT" };
       if (event.dispatch_status === "IN_PROGRESS") return { sent: false, status: "IN_PROGRESS" };
@@ -1337,7 +1344,7 @@ export function buildConfirmedEmail(payload: NotificationPayload) {
               <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin: 0 auto;">
                 <tr>
                   <td align="center">
-                    <img src="${logoUrl}" alt="Kani Barber Studio" width="180" style="display: block; width: 180px; max-width: 100%; height: auto; border: 0; margin: 0 auto; font-family: 'DM Serif Display', Georgia, serif; font-size: 22px; font-weight: 700; color: #B99A5B; text-align: center;" />
+                    ${confirmationEmailLogo(logoUrl)}
                   </td>
                 </tr>
               </table>

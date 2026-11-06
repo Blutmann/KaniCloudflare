@@ -20,7 +20,9 @@
     "test:public-booking:sql": "node scripts/test-staff-permissions.mjs supabase/tests/public-booking-visibility.py",
     "test:booking": "vitest run src/lib/kani-manual-appointments.test.ts src/test/kani-reserva-v2.test.tsx src/test/kani-reserva-v3.test.tsx",
     "test:notifications": "vitest run src/lib/kani-admin-activity.test.ts src/test/kani-notification-inbox.test.tsx src/test/kani-v2-payments.test.tsx",
-    "test:notifications:sql": "node scripts/test-staff-permissions.mjs supabase/tests/notification-inbox.py"
+    "test:notifications:sql": "node scripts/test-staff-permissions.mjs supabase/tests/notification-inbox.py",
+    "test:barber-email": "vitest run src/test/kani-barber-email.test.ts src/test/kani-confirmed-email.test.ts src/test/kani-resend-webhook.test.ts src/lib/kani-phone.test.ts",
+    "test:barber-email:sql": "node scripts/test-staff-permissions.mjs supabase/tests/barber-confirmation-email.py"
   },
   "overrides": {
     "rolldown": "1.2.1"
