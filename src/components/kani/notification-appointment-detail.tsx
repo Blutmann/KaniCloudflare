@@ -16,6 +16,7 @@ type Props = {
   onOpened: () => void;
   onChanged: () => void;
   onNavigate: () => void;
+  onCurrentChange: (heading: { number: number; status: string } | null) => void;
 };
 export default function NotificationAppointmentDetail(props: Props) {
   return (
@@ -26,25 +27,28 @@ export default function NotificationAppointmentDetail(props: Props) {
     </AdminStaffProvider>
   );
 }
-function CurrentDetail({ notificationId, onOpened, onChanged, onNavigate }: Props) {
+function CurrentDetail({ notificationId, onOpened, onChanged, onNavigate, onCurrentChange }: Props) {
   const data = useV2();
   const [detail, setDetail] = useState<NotificationAppointment | null>(null);
   const [error, setError] = useState("");
   const didOpen = useRef(false),
-    callbacks = useRef({ onOpened, onChanged });
-  callbacks.current = { onOpened, onChanged };
+    callbacks = useRef({ onOpened, onChanged, onCurrentChange });
+  callbacks.current = { onOpened, onChanged, onCurrentChange };
   useEffect(() => {
     if (data.loading) return;
     let cancelled = false;
     void readNotificationAppointment(notificationId)
       .then((current) => {
         if (cancelled) return;
-        if (!data.appointments.some((a) => a.id === current.appointment_id)) {
+        const appointment = data.appointments.find((a) => a.id === current.appointment_id);
+        if (!appointment) {
+          callbacks.current.onCurrentChange(null);
           setDetail(null);
           setError("El turno ya no está disponible para esta cuenta.");
           return;
         }
         setDetail(current);
+        callbacks.current.onCurrentChange({ number: appointment.requestNumber, status: current.status });
         setError("");
         if (!didOpen.current) {
           didOpen.current = true;
@@ -53,6 +57,7 @@ function CurrentDetail({ notificationId, onOpened, onChanged, onNavigate }: Prop
       })
       .catch((cause) => {
         if (!cancelled) {
+          callbacks.current.onCurrentChange(null);
           setDetail(null);
           setError(extractErrorMessage(cause));
         }

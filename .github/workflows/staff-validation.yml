@@ -27,6 +27,7 @@ jobs:
       - run: pnpm run test:availability:sql
       - run: pnpm run test:notifications:sql
       - run: pnpm run test:barber-email:sql
+      - run: pnpm run test:advance-payments:sql
       - run: pnpm run build
       - name: Check generated Preview configuration
         run: |

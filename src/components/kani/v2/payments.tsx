@@ -92,7 +92,8 @@ export function V2Payments() {
   );
   const choices = data.appointments.filter(
     (a) =>
-      ["CONFIRMED", "COMPLETED"].includes(a.statusCode) && !settled.has(a.id) && a.date <= today,
+      ["CONFIRMED", "COMPLETED"].includes(a.statusCode) && !settled.has(a.id) && !a.balancePaid &&
+      (isAdmin || a.barberId === staff.profile.barber_id),
   );
   const appointment =
     origin === "appointment" ? choices.find((a) => a.id === appointmentId) : undefined;
@@ -111,11 +112,14 @@ export function V2Payments() {
     ? (appointment.benefitDiscountAmountArs ?? Math.max(0,
         (appointment.benefitOriginalPriceArs ?? appointment.servicePrice ?? 0) -
         (appointment.benefitFinalPriceArs ?? appointment.servicePrice ?? 0))) : 0);
-  const deposit = appointment?.depositPaid ? (appointment.depositAmountArs ?? 5000) : 0;
+  const deposit = appointment?.depositPaid ? (appointment.depositAmountArs ?? 0) : 0;
   const discount =
     discountKind === "PERCENT" ? Math.round((price * discountValue) / 100) : discountValue;
   const total =
     serviceName === "Anulado" ? 0 : Math.max(0, (finalOverride ?? price - discount) - deposit);
+  const appointmentBalance = appointment ? Math.max(0,
+    (appointment.benefitFinalPriceArs ?? appointment.servicePrice ?? 0) - deposit) : null;
+  const depositVerifiable = data.depositSupported && (!appointment?.depositPaid || appointment.depositAmountArs != null);
   const dynamicLabels = getPaymentPeriodDynamicLabels(today);
   const periodRange = calculatePaymentPeriodRange(period, today, customStartDate, customEndDate);
   const isInvalidRange = period === "CUSTOM" && Boolean(periodRange.isInvalid);
@@ -126,15 +130,20 @@ export function V2Payments() {
         scopeV2(data.payments, staff.profile.role, staff.profile.barber_id, data.barberId),
       ).filter((p) => p.paymentDate >= periodRange.start && p.paymentDate <= periodRange.end);
   const summary = paymentSummary(history);
+  const appointmentById = new Map(data.appointments.map(a => [a.id, a]));
 
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (inFlight.current) return;
     setSuccess(false);
     setMessage("");
-    if (origin === "appointment" && (!appointment || !data.depositSupported)) {
+    if (origin === "appointment" && (!appointment || !depositVerifiable)) {
       setMessage("Seleccioná un turno con información de seña verificable.");
       return;
+    }
+    if (appointment && total <= 0) { setMessage("Sin saldo pendiente."); return; }
+    if (appointmentBalance != null && total > appointmentBalance) {
+      setMessage("El cobro no puede superar el saldo pendiente del turno."); return;
     }
     const rawServiceName = serviceName;
     const isOtherService = ["Otro", "Otros"].includes(serviceName);
@@ -592,7 +601,7 @@ export function V2Payments() {
                     disabled={
                       busy ||
                       (!price && serviceName !== "Anulado") ||
-                      (origin === "appointment" && (!appointment || !data.depositSupported))
+                      (origin === "appointment" && (!appointment || !depositVerifiable || total <= 0 || (appointmentBalance != null && total > appointmentBalance)))
                     }
                   >
                     <CheckCircle2 size={18} />
@@ -606,6 +615,7 @@ export function V2Payments() {
                     )}
                   </button>
                 </div>
+                {appointment && total <= 0 && <p role="status">Sin saldo pendiente.</p>}
               </div>
             </fieldset>
           </form>
@@ -687,7 +697,7 @@ export function V2Payments() {
             <table className="v2-payments-table">
               <thead>
                 <tr>
-                  <th className="col-datetime">Fecha y hora</th>
+                  <th className="col-datetime">Fecha del cobro</th>
                   <th className="col-service">Servicio</th>
                   <th className="col-client">Cliente</th>
                   <th className="col-method">Método</th>
@@ -709,6 +719,9 @@ export function V2Payments() {
                         {p.serviceOtherDetail || formatServiceName(p.serviceName)}
                       </strong>
                       <small className="v2-table-barber-name">{p.barberName}</small>
+                      {p.appointmentId && appointmentById.has(p.appointmentId) && <small>
+                        Fecha del servicio: {appointmentById.get(p.appointmentId)!.date} {appointmentById.get(p.appointmentId)!.time} hs
+                      </small>}
                     </td>
                     <td className="col-client">
                       <span className="v2-table-client-name">

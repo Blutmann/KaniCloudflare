@@ -387,6 +387,13 @@ export function formatPhoneDisplay(value: string) {
   return parsed?.isValid() ? parsed.formatInternational() : value;
 }
 
+/** Display an existing contact using the same country-aware normalizer as WhatsApp. */
+export function formatStoredPhone(value: string) {
+  const whatsapp = getWhatsAppUrl(value);
+  const formatted = formatPhoneWithCountryAndWhatsApp(whatsapp ? whatsapp.replace('https://wa.me/', '+') : value);
+  return formatted.flag ? formatted.display.slice(formatted.flag.length).trimStart() : formatted.display;
+}
+
 /**
  * Formatea un número de teléfono con la bandera de su país y el formato internacional de WhatsApp.
  * Si es de Argentina (+54 9), usa el formato "+54 9 11 3399-2102".

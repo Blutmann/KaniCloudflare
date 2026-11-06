@@ -102,19 +102,24 @@ describe('Notification appointment presentation preserves existing actions',()=>
     date:today,time:'10:00',end_time:'10:45',final_price:25000,deposit_paid:5000,deposit_verifiable:true,
     collected:0,balance:20000,benefit:'BENEFICIO-LARGO-CONTROLADO',benefit_type:'PERCENT_10',has_payment:false,
   };
-  it('places the current status in its own row and retains the complete name',()=>{
+  it('retains the complete name and formatted contact without duplicating the modal status',()=>{
     const {container}=render(<V2Appointments notificationDetail={detail}/>);
     expect(container.querySelector('.v2-app-name')).toHaveTextContent(detail.client_name);
     expect(container.querySelector('.v2-app-row-1 .v2-status-badge')).toBeNull();
-    expect(container.querySelector('.notification-appointment-status')).toHaveTextContent('Confirmado');
+    expect(container.querySelector('.notification-appointment-status')).toBeNull();
+    expect(screen.getByText('+54 9 11 2843-6014')).toBeInTheDocument();
     expect(screen.getByRole('button',{name:'Cancelar turno'})).toBeInTheDocument();
     expect(screen.getByText('Cobrar',{exact:true})).toBeInTheDocument();
   });
-  it('keeps a future collection disabled, with short text and a separate accessible reason',()=>{
+  it('offers collection for a future appointment with a real pending balance',()=>{
     render(<V2Appointments notificationDetail={{...detail,date:addCalendarDays(today,1)}}/>);
-    const button=screen.getByRole('button',{name:'Cobrar'});
-    expect(button).toBeDisabled();expect(button).toHaveTextContent(/^Cobrar$/);
-    expect(document.getElementById(button.getAttribute('aria-describedby')!)).toHaveTextContent('Disponible el día del turno.');
+    expect(screen.getByText('Cobrar',{exact:true}).closest('a')).toBeInTheDocument();
+    expect(screen.queryByText('Disponible el día del turno.')).toBeNull();
+  });
+  it('does not offer a fictitious collection for a free or settled appointment',()=>{
+    render(<V2Appointments notificationDetail={{...detail,final_price:0,deposit_paid:0,collected:0,balance:0,benefit_type:'FREE_SERVICE'}}/>);
+    expect(screen.getByRole('button',{name:'Cobrar'})).toBeDisabled();
+    expect(screen.getByText('Sin saldo pendiente.')).toBeInTheDocument();
   });
   it('offers only contact actions for cancelled appointments',()=>{
     render(<V2Appointments notificationDetail={{...detail,status:'CANCELLED'}}/>);

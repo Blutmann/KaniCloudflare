@@ -288,11 +288,36 @@ html[data-theme] .notification-detail-dialog {
   display: flex !important;
   flex-direction: column;
   gap: 0 !important;
-  padding: 48px 12px 12px !important;
+  padding: 0.75rem !important;
   background: var(--popover) !important;
   min-width: 0;
   max-height: calc(100dvh - 24px) !important;
   overflow: hidden !important;
+}
+.notification-detail-heading {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  flex-shrink: 0;
+  padding-right: 52px;
+}
+.notification-detail-heading h2 {
+  margin: 0;
+  font-size: 16px;
+  overflow-wrap: anywhere;
+}
+.notification-detail-state {
+  display: flex;
+  justify-content: flex-end;
+  flex-shrink: 0;
+  margin: 6px 0 10px;
+}
+.notification-detail-state .v2-badge {
+  border-radius: 5px;
+}
+html[data-theme] .notification-detail-dialog > button:has(> .sr-only) {
+  top: 12px;
+  right: 8px;
 }
 .notification-detail-scroll {
   min-height: 0;
@@ -300,6 +325,38 @@ html[data-theme] .notification-detail-dialog {
   overflow-y: auto;
   overflow-x: hidden;
   overscroll-behavior: contain;
+}
+@media (max-width: 767px) {
+  html[data-theme] .notification-detail-dialog {
+    top: var(--notification-detail-top, 12px) !important;
+    height: var(--notification-detail-height, calc(100dvh - 24px));
+    max-height: var(--notification-detail-height, calc(100dvh - 24px)) !important;
+    --tw-translate-y: 0px !important;
+    transform: none !important;
+  }
+  .notification-detail-scroll {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+  }
+  .notification-detail-dialog :is(.v2-page, .v2-agenda) {
+    display: flex !important;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+  }
+  html[data-theme] .notification-detail-dialog .v2-appointment {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .notification-detail-dialog .v2-appointment-main {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+  }
 }
 html[data-theme] .notification-detail-dialog .v2-appointment {
   display: flex !important;

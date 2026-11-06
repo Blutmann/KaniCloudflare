@@ -1,4 +1,6 @@
 import "./notification-inbox.css";
+import { Status } from './v2/shared';
+import { useNotificationDetailBounds } from './use-notification-detail-bounds';
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { Bell, Mail, MailOpen, Trash2, X } from "lucide-react";
 import type { AuthenticatedStaff } from "@/lib/kani-auth";
@@ -36,6 +38,9 @@ export function AdminActivityPopover({
   const [error, setError] = useState("");
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
+  const [detailHeading, setDetailHeading] = useState<{ number: number; status: string } | null>(null);
+  const [detailElement, setDetailElement] = useState<HTMLDivElement | null>(null);
+  useNotificationDetailBounds(detailElement, selected !== null);
   const [deletion, setDeletion] = useState<{ ids: string[]; scope: 'loaded' | 'single' } | null>(null);
   const [today, setToday] = useState(notificationToday);
   const [busy, setBusy] = useState(false);
@@ -112,6 +117,7 @@ export function AdminActivityPopover({
   }
   const closeDetail = () => {
     setSelected(null);
+    setDetailHeading(null);
     setOpen(false);
   };
   useEffect(() => {
@@ -259,7 +265,7 @@ export function AdminActivityPopover({
                     <p className="notification-barber">{notification.barber_name}</p>
                     <div className="notification-meta">
                       <button type="button" className="notification-link notification-detail-link" disabled={busy || !staff}
-                        onClick={() => { setOpen(false); setSelected(notification.id); }}>
+                        onClick={() => { setOpen(false); setDetailHeading(null); setSelected(notification.id); }}>
                         Ver detalles
                       </button>
                       {role === "ADMIN" && (
@@ -300,11 +306,15 @@ export function AdminActivityPopover({
         }}
       >
         <DialogContent
+          ref={setDetailElement}
           overlayClassName="notification-dialog-overlay"
           className="v2-dialog notification-detail-dialog"
           aria-describedby={undefined}
         >
-          <DialogTitle className="sr-only">Detalle del turno</DialogTitle>
+          <div className="notification-detail-heading">
+            <DialogTitle>Detalle del turno{detailHeading?.number != null ? ` #${detailHeading.number}` : ''}</DialogTitle>
+          </div>
+          {detailHeading && <div className="notification-detail-state"><Status code={detailHeading.status} /></div>}
           <div className="notification-detail-scroll">
           {selected && staff && (
             <Suspense fallback={<p role="status">Consultando turno…</p>}>
@@ -315,6 +325,7 @@ export function AdminActivityPopover({
                 onOpened={() => void markOpened(selected)}
                 onChanged={() => void reload()}
                 onNavigate={closeDetail}
+                onCurrentChange={setDetailHeading}
               />
             </Suspense>
           )}

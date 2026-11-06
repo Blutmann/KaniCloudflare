@@ -1,6 +1,6 @@
 import { type NotificationAppointment } from '@/lib/kani-admin-activity';
 import { isStaffOperator } from "@/lib/kani-permissions";
-import { getWhatsAppUrl } from "@/lib/kani-phone";
+import { getWhatsAppUrl, formatStoredPhone } from "@/lib/kani-phone";
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { ArrowRight, CalendarDays, Clock3, Info, Mail, Phone, Plus } from "lucide-react";
@@ -569,10 +569,7 @@ export function V2Appointments({ notificationDetail, onNotificationChanged, onNo
                   <Status code={a.statusCode} />
                 </>}
               </div>
-              {notificationDetail && <div className="notification-appointment-status">
-                <Status code={a.statusCode} />
-                {a.isManual && <span className="v2-manual-badge">Manual</span>}
-              </div>}
+              {notificationDetail && a.isManual && <span className="v2-manual-badge">Manual</span>}
 
               {/* Fila 2: 10:45 · Corte · Lautaro (· Fecha si isMultiDay) */}
               <div className="v2-app-row-2">
@@ -608,13 +605,13 @@ export function V2Appointments({ notificationDetail, onNotificationChanged, onNo
               </div>}
 
               {notificationDetail && <dl className="notification-appointment-facts">
-                <div><dt>Celular</dt><dd>{notificationDetail.phone || 'Sin celular registrado'}</dd></div>
+                <div><dt>Celular</dt><dd>{notificationDetail.phone ? formatStoredPhone(notificationDetail.phone) : 'Sin celular registrado'}</dd></div>
                 <div><dt>Email</dt><dd>{notificationDetail.email || 'Sin email registrado'}</dd></div>
                 <div><dt>Precio final</dt><dd>{money(notificationDetail.final_price)}</dd></div>
                 <div><dt>Seña abonada</dt><dd>{notificationDetail.deposit_verifiable ? money(notificationDetail.deposit_paid) : "Sin dato verificable"}</dd></div>
                 <div><dt>Cobros aplicados</dt><dd>{money(notificationDetail.collected)}</dd></div>
                 <div><dt>Saldo</dt><dd>{notificationDetail.deposit_verifiable ? money(notificationDetail.balance) : "Sin dato verificable"}</dd></div>
-                {notificationDetail.benefit && <div><dt>Beneficio aplicado</dt><dd>{notificationDetail.benefit} · {({NO_DEPOSIT:'Sin seña',FREE_SERVICE:'Servicio gratuito',PERCENT_10:'10 % de descuento',PERCENT_50:'50 % de descuento'} as Record<string,string>)[notificationDetail.benefit_type ?? ''] || 'Beneficio'}</dd></div>}
+                {notificationDetail.benefit && <div><dt>Descuento aplicado</dt><dd>{notificationDetail.benefit} · {({NO_DEPOSIT:'Reserva sin seña',FREE_SERVICE:'Servicio gratuito',PERCENT_10:'10 % de descuento',PERCENT_50:'50 % de descuento'} as Record<string,string>)[notificationDetail.benefit_type ?? ''] || 'Beneficio'}</dd></div>}
               </dl>}
               {/* Fila 4: Diagnóstico compacto y accesible de notificaciones */}
               {!notificationDetail && <div className="v2-app-notifications">
@@ -682,7 +679,7 @@ export function V2Appointments({ notificationDetail, onNotificationChanged, onNo
                     </button>,
                   );
                 }
-                if (a.statusCode === "CONFIRMED" && (!notificationDetail || (!notificationDetail.has_payment && !a.balancePaid && notificationDetail.deposit_verifiable && a.date <= today))) {
+                if (a.statusCode === "CONFIRMED" && (!notificationDetail || (!notificationDetail.has_payment && !a.balancePaid && notificationDetail.deposit_verifiable && notificationDetail.balance > 0))) {
                   actionNodes.push(
                     <Link
                       key="cobrar"
@@ -695,10 +692,10 @@ export function V2Appointments({ notificationDetail, onNotificationChanged, onNo
                     </Link>,
                   );
                 }
-                if (notificationDetail && a.statusCode === 'CONFIRMED' && !notificationDetail.has_payment && !a.balancePaid && a.date > today) {
-                  actionNodes.push(<div key="future-payment" className="notification-action-payment notification-payment-action">
+                if (notificationDetail && a.statusCode === 'CONFIRMED' && notificationDetail.deposit_verifiable && notificationDetail.balance <= 0) {
+                  actionNodes.push(<div key="settled-payment" className="notification-action-payment notification-payment-action">
                     <button type="button" className="v2-secondary v2-action-btn" disabled aria-describedby={`notification-payment-help-${a.id}`}>Cobrar</button>
-                    <p id={`notification-payment-help-${a.id}`} className="notification-payment-help">Disponible el día del turno.</p>
+                    <p id={`notification-payment-help-${a.id}`} className="notification-payment-help">Sin saldo pendiente.</p>
                   </div>);
                 }
                 if (

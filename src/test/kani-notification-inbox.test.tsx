@@ -76,7 +76,7 @@ describe("Account inbox interactions", () => {
     await bell();
     fireEvent.click(within(screen.getByText(/Cliente uno reservó turno para/).closest('article')!).getByRole('button', {name:'Ver detalles'}));
     expect(await screen.findByRole("dialog", { name: "Detalle del turno" })).toBeInTheDocument();
-    expect(screen.getByText('Detalle del turno')).toHaveClass('sr-only');
+    expect(screen.getByText('Detalle del turno')).not.toHaveClass('sr-only');
     expect(screen.queryByText('Estado actual del turno y sus cobros.')).toBeNull();
     expect(mock.set).not.toHaveBeenCalled();
     fireEvent.click(
