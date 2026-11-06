@@ -18,7 +18,7 @@ export async function dispatchBarberConfirmationEmails(options: { limit?:number;
       result.processed++;
       try {
         const apiKey = getRuntimeEnv('RESEND_API_KEY');
-        const from = getRuntimeEnv('RESEND_FROM_EMAIL');
+        const from = getRuntimeEnv('RESEND_BARBER_FROM_EMAIL') || getRuntimeEnv('RESEND_FROM_EMAIL');
         if (!apiKey || !from) throw new Error('RESEND_CONFIGURATION_MISSING');
         const email = buildBarberConfirmedEmail(job.payload, {
           appUrl:getRuntimeEnv('KANI_APP_URL') || getRuntimeEnv('APP_URL') || 'https://www.kanibarber.com',

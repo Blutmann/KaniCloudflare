@@ -99,6 +99,13 @@ describe('Independent durable sender',()=>{
     await dispatchBarberConfirmationEmails();
     expect(JSON.parse(fetcher.mock.calls[0]![1].body)).toEqual(frozen);
   });
+  it('uses the dedicated barber sender without changing the general sender',async()=>{
+    vi.stubGlobal('__env__',{RESEND_BARBER_FROM_EMAIL:'Kani Barber <turnos@kanibarber.com>'});
+    const fetcher=vi.fn().mockResolvedValue(Response.json({id:'dedicated-sender-provider'}));vi.stubGlobal('fetch',fetcher);
+    expect((await dispatchBarberConfirmationEmails()).accepted).toBe(1);
+    expect(JSON.parse(fetcher.mock.calls[0]![1].body).from).toBe('Kani Barber <turnos@kanibarber.com>');
+    expect(process.env['RESEND_FROM_EMAIL']).toBe('Kani <sender@example.invalid>');
+  });
   it('reads the real Nitro cold-start bindings without relying on a previous HTTP request',async()=>{
     delete process.env['RESEND_API_KEY'];delete process.env['RESEND_FROM_EMAIL'];
     vi.stubGlobal('__env__',{RESEND_API_KEY:'nitro-binding-test',RESEND_FROM_EMAIL:'Kani <nitro@example.invalid>'});

@@ -1449,6 +1449,7 @@ function mirrorRuntimeBindings(bindings: unknown): void {
     "VITE_SUPABASE_PUBLISHABLE_KEY",
     "RESEND_API_KEY",
     "RESEND_FROM_EMAIL",
+    "RESEND_BARBER_FROM_EMAIL",
     "RESEND_WEBHOOK_SECRET",
     "KANI_ENVIRONMENT",
     "WHATSAPP_PHONE_NUMBER_ID",

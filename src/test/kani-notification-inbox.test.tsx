@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within, cleanup } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within, cleanup } from "@testing-library/react";
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 const mock = vi.hoisted(() => ({
   inbox: null as any,
@@ -43,7 +43,7 @@ function recount() {
 async function bell() {
   const b = await screen.findByRole("button", { name: "2 notificaciones sin leer" });
   fireEvent.click(b);
-  await screen.findByText("Cliente agendó turno.");
+  await screen.findByText(/Cliente uno reservó turno para/);
 }
 describe("Account inbox interactions", () => {
   beforeEach(() => {
@@ -70,11 +70,11 @@ describe("Account inbox interactions", () => {
       recount();
     });
   });
-  afterEach(cleanup);
+  afterEach(() => { cleanup(); vi.useRealTimers(); });
   it("opens the current detail before marking read and immediately updates the bell afterwards", async () => {
     render(<AdminActivityPopover role="MANAGER" staff={staff} />);
     await bell();
-    fireEvent.click(screen.getByText("Cliente agendó turno.").closest("button")!);
+    fireEvent.click(within(screen.getByText(/Cliente uno reservó turno para/).closest('article')!).getByRole('button', {name:'Ver detalles'}));
     expect(await screen.findByRole("dialog", { name: "Detalle del turno" })).toBeInTheDocument();
     expect(mock.set).not.toHaveBeenCalled();
     fireEvent.click(
@@ -88,7 +88,7 @@ describe("Account inbox interactions", () => {
   it("marks an individual unread/read without changing other items", async () => {
     render(<AdminActivityPopover role="MANAGER" staff={staff} />);
     await bell();
-    fireEvent.click(screen.getAllByRole("button", { name: "Marcar como leída" })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: "Marcar como leída" })[0]!);
     await screen.findByRole("button", { name: "1 notificaciones sin leer" });
     fireEvent.click(screen.getByRole("button", { name: "Marcar como no leída" }));
     await screen.findByRole("button", { name: "2 notificaciones sin leer" });
@@ -110,9 +110,11 @@ describe("Account inbox interactions", () => {
   it("requires ADMIN confirmation before audited global deletion", async () => {
     render(<AdminActivityPopover role="ADMIN" staff={staff} />);
     await bell();
-    fireEvent.click(screen.getByRole("button", { name: "Eliminar notificación de Cliente uno" }));
+    fireEvent.click(screen.getAllByRole("button", { name: "Eliminar notificación" })[0]!);
     const confirmation = await screen.findByRole("dialog", { name: "Eliminar notificaciones" });
     expect(mock.remove).not.toHaveBeenCalled();
+    expect(screen.queryByRole('dialog', {name:'Detalle del turno'})).toBeNull();
+    expect(within(confirmation).getByText(/1 notificación seleccionada/)).toBeInTheDocument();
     fireEvent.click(within(confirmation).getByRole("button", { name: "Confirmar eliminación" }));
     await waitFor(() => expect(mock.remove).toHaveBeenCalledWith(["uno"]));
     await screen.findByRole("button", { name: "1 notificaciones sin leer" });
@@ -121,8 +123,52 @@ describe("Account inbox interactions", () => {
     mock.set.mockRejectedValue(new Error("denied"));
     render(<AdminActivityPopover role="MANAGER" staff={staff} />);
     await bell();
-    fireEvent.click(screen.getAllByRole("button", { name: "Marcar como leída" })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: "Marcar como leída" })[0]!);
     expect(await screen.findByRole("alert")).toHaveTextContent("No se pudo guardar");
     expect(screen.getByRole("button", { name: "2 notificaciones sin leer" })).toBeInTheDocument();
+  });
+  it('shows one compact title, real names once, separate generation time and icon-only controls',async()=>{
+    mock.inbox.items[1].event_date='2020-01-02';
+    render(<AdminActivityPopover role="ADMIN" staff={staff}/>);await bell();
+    expect(screen.getAllByRole('heading',{name:'Notificaciones'})).toHaveLength(1);
+    expect(screen.queryByText('ACTIVIDAD')).toBeNull();
+    expect(screen.getByText('Cliente dos canceló el turno del 02/01')).toBeInTheDocument();
+    const card=screen.getByText(/Cliente uno reservó turno/).closest('article')!;
+    expect(within(card).getAllByText(/Cliente uno/)).toHaveLength(1);
+    expect(within(card).getByText('Uno',{exact:true})).toBeInTheDocument();
+    const time=card.querySelector('time')!;
+    expect(time.dateTime).toBe('2026-11-06T10:00:00Z');
+    expect(time.textContent).toContain('07:00');
+    expect(time.getAttribute('aria-label')).toContain('Generada el');
+    expect(within(card).getByRole('button',{name:'Eliminar notificación'}).textContent).toBe('');
+    expect(within(card).getByRole('button',{name:'Marcar como leída'}).textContent).toBe('');
+    expect(card.querySelector('.notification-kind')).toBeNull();
+  });
+  it('confirms only the captured loaded IDs and keeps unloaded/new arrivals outside deletion',async()=>{
+    mock.inbox.next_before=10;
+    render(<AdminActivityPopover role="ADMIN" staff={staff}/>);await bell();
+    fireEvent.click(screen.getByRole('button',{name:'Eliminar notificaciones'}));
+    const dialog=await screen.findByRole('dialog',{name:'Eliminar notificaciones'});
+    expect(within(dialog).getByText(/2 notificaciones cargadas/)).toBeInTheDocument();
+    expect(within(dialog).getByText(/No incluye las que aún no se cargaron/)).toBeInTheDocument();
+    mock.inbox.items.unshift(event('nuevo',18));recount();fireEvent.focus(window);
+    await waitFor(()=>expect(mock.read).toHaveBeenCalledTimes(3));
+    fireEvent.click(within(dialog).getByRole('button',{name:'Confirmar eliminación'}));
+    await waitFor(()=>expect(mock.remove).toHaveBeenCalledWith(['uno','dos']));
+    expect(mock.inbox.items.map((n:any)=>n.id)).toEqual(['nuevo']);
+  });
+  it('updates the BA calendar day across midnight and on tab return, without losing old items',async()=>{
+    vi.useFakeTimers({toFake:['Date','setInterval','clearInterval']});
+    vi.setSystemTime(new Date('2026-11-09T02:59:59Z'));
+    mock.inbox.items[0].event_date='2026-11-09';mock.inbox.items[1].event_date='2020-01-02';
+    render(<AdminActivityPopover role="MANAGER" staff={staff}/>);await bell();
+    expect(screen.getByText('Cliente uno reservó turno para mañana')).toBeInTheDocument();
+    mock.read.mockRejectedValue(new Error('Controlled offline state'));
+    await act(async()=>{vi.advanceTimersByTime(1000);});
+    expect(screen.getByText('Cliente uno reservó turno para hoy')).toBeInTheDocument();
+    vi.setSystemTime(new Date('2026-11-10T12:00:00Z'));
+    fireEvent(document,new Event('visibilitychange'));
+    await screen.findByText('Cliente uno reservó turno para el 09/11');
+    expect(screen.getByText('Cliente dos canceló el turno del 02/01')).toBeInTheDocument();
   });
 });

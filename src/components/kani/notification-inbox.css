@@ -72,3 +72,102 @@
 .notification-confirm-dialog {
   width: min(480px, calc(100vw - 24px)) !important;
 }
+
+/* Compact inbox; appointment actions remain in the existing detail dialog. */
+html[data-theme] .notification-popover {
+  /* Stay above the sticky agenda controls and below the existing detail dialogs. */
+  z-index: 150;
+}
+.notification-popover .notification-header {
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 8px;
+}
+.notification-popover .notification-header h2 {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.25;
+}
+.notification-popover .notification-unread-summary {
+  margin: 0;
+  white-space: nowrap;
+}
+.notification-popover .notification-inbox-toolbar {
+  gap: 2px 8px;
+  margin-top: 4px;
+}
+.notification-popover .notification-inbox-toolbar button {
+  padding: 4px 0;
+  font-size: 11px;
+  min-height: 28px;
+}
+.notification-popover .notification-list {
+  gap: 8px;
+  padding-top: 8px;
+}
+.notification-popover .notification-item {
+  display: block;
+  padding: 8px 10px;
+}
+.notification-message-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+.notification-message {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+.notification-item.is-unread .notification-message {
+  font-weight: 600;
+}
+.notification-barber {
+  margin: 2px 0 0;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.notification-popover .notification-meta {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  margin-top: 4px;
+}
+.notification-detail-link {
+  min-height: 28px;
+  padding: 3px 0;
+  color: var(--gold);
+  font-size: 11px;
+  text-align: left;
+}
+.notification-detail-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.notification-icon-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-control, 0.65rem);
+  color: var(--muted-foreground);
+}
+.notification-icon-action:hover {
+  background: color-mix(in srgb, var(--gold) 12%, transparent);
+  color: var(--foreground);
+}
+.notification-meta time {
+  margin-left: auto;
+  color: var(--muted-foreground);
+  font-size: 10px;
+  white-space: nowrap;
+}
+.notification-action-tooltip {
+  z-index: 210;
+}

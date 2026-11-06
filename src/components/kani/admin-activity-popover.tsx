@@ -1,6 +1,6 @@
 import "./notification-inbox.css";
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
-import { Bell, CalendarDays, Mail, MailOpen, Trash2 } from "lucide-react";
+import { Bell, Mail, MailOpen, Trash2 } from "lucide-react";
 import type { AuthenticatedStaff } from "@/lib/kani-auth";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,6 +12,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { notificationGeneratedAt, notificationPhrase, notificationToday } from "@/lib/kani-notification-dates";
 import {
   deleteAllAdminActivityNotificationsGlobal,
   extractErrorMessage,
@@ -34,7 +36,8 @@ export function AdminActivityPopover({
   const [error, setError] = useState("");
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
-  const [deleteIds, setDeleteIds] = useState<string[] | null>(null);
+  const [deletion, setDeletion] = useState<{ ids: string[]; scope: 'loaded' | 'single' } | null>(null);
+  const [today, setToday] = useState(notificationToday);
   const [busy, setBusy] = useState(false);
   const revision = useRef(0),
     locked = useRef(false);
@@ -63,8 +66,11 @@ export function AdminActivityPopover({
   useEffect(() => {
     void reload();
     const refresh = () => {
+      setToday(notificationToday());
       if (!document.hidden) void reload();
     };
+    // Independent of network success: an open card changes wording at the BA day boundary.
+    const dayTimer = window.setInterval(() => setToday(notificationToday()), 1000);
     const timer = window.setInterval(refresh, 15000);
     window.addEventListener("focus", refresh);
     window.addEventListener("kani-activity-changed", refresh);
@@ -72,6 +78,7 @@ export function AdminActivityPopover({
     return () => {
       ++revision.current;
       window.clearInterval(timer);
+      window.clearInterval(dayTimer);
       window.removeEventListener("focus", refresh);
       window.removeEventListener("kani-activity-changed", refresh);
       document.removeEventListener("visibilitychange", refresh);
@@ -105,7 +112,7 @@ export function AdminActivityPopover({
     setOpen(false);
   };
   return (
-    <>
+    <TooltipProvider delayDuration={250}>
       <Popover
         open={open}
         onOpenChange={(value) => {
@@ -134,13 +141,8 @@ export function AdminActivityPopover({
         </PopoverTrigger>
         <PopoverContent side="bottom" sideOffset={10} align="end" className="notification-popover">
           <div className="notification-header">
-            <div>
-              <span className="eyebrow">ACTIVIDAD</span>
-              <h2 className="mt-1 text-lg">Notificaciones</h2>
-              <p className="notification-unread-summary">
-                {inbox.unread_count ? `${inbox.unread_count} sin leer` : "Todas leídas"}
-              </p>
-            </div>
+            <h2>Notificaciones</h2>
+            <p className="notification-unread-summary">{inbox.unread_count} sin leer</p>
           </div>
           {error && (
             <p role="alert" className="mt-3 text-xs text-destructive">
@@ -166,16 +168,16 @@ export function AdminActivityPopover({
                 variant="ghost"
                 size="sm"
                 disabled={busy}
-                onClick={() => setDeleteIds(inbox.items.map((n) => n.id))}
+                onClick={() => setDeletion({ ids: inbox.items.map((n) => n.id), scope: 'loaded' })}
               >
-                Eliminar visibles
+                Eliminar notificaciones
               </Button>
             )}
           </div>
           {!inbox.items.length ? (
             <div className="notification-empty">
               <Bell size={24} />
-              <p>No hay novedades recientes.</p>
+              <p>No hay notificaciones.</p>
             </div>
           ) : (
             <div className="notification-list">
@@ -184,72 +186,45 @@ export function AdminActivityPopover({
                   key={notification.id}
                   className={`notification-item ${notification.read_at ? "is-read" : "is-unread"}`}
                 >
-                  <span className="notification-kind appointment" aria-hidden="true">
-                    <CalendarDays size={13} />
-                  </span>
                   <div className="notification-body">
-                    <button
-                      type="button"
-                      className="notification-link"
-                      disabled={busy || !staff}
-                      onClick={() => {
-                        setOpen(false);
-                        setSelected(notification.id);
-                      }}
-                    >
-                      <p className="text-sm leading-relaxed">
-                        {notification.event_type === "APPOINTMENT_CONFIRMED"
-                          ? "Cliente agendó turno."
-                          : "Cliente canceló turno."}
+                    <div className="notification-message-row">
+                      <p className="notification-message">
+                        {notificationPhrase(notification.event_type, notification.client_name, notification.event_date, today)}
                       </p>
-                      <p className="text-xs">
-                        {notification.client_name} · {notification.barber_name}
-                      </p>
-                      <time>
-                        {new Date(notification.created_at).toLocaleString("es-AR", {
-                          day: "2-digit",
-                          month: "2-digit",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </time>
-                    </button>
-                    <div className="notification-meta flex items-center justify-between gap-2 mt-2">
-                      <button
-                        type="button"
-                        className="notification-toggle"
-                        disabled={busy}
-                        onClick={() =>
-                          void mutate(() =>
-                            setAdminActivityNotificationRead(
-                              notification.id,
-                              notification.read_at ? null : new Date().toISOString(),
-                            ),
-                          )
-                        }
-                      >
-                        {notification.read_at ? (
-                          <>
-                            <Mail size={13} /> Marcar como no leída
-                          </>
-                        ) : (
-                          <>
-                            <MailOpen size={13} /> Marcar como leída
-                          </>
-                        )}
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button type="button" className="notification-toggle notification-icon-action" disabled={busy}
+                            aria-label={notification.read_at ? 'Marcar como no leída' : 'Marcar como leída'}
+                            onClick={() => void mutate(() => setAdminActivityNotificationRead(notification.id, notification.read_at ? null : new Date().toISOString()))}>
+                            {notification.read_at ? <Mail size={15} /> : <MailOpen size={15} />}
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent className="notification-action-tooltip">{notification.read_at ? 'Marcar como no leída' : 'Marcar como leída'}</TooltipContent>
+                      </Tooltip>
+                    </div>
+                    <p className="notification-barber">{notification.barber_name}</p>
+                    <div className="notification-meta">
+                      <button type="button" className="notification-link notification-detail-link" disabled={busy || !staff}
+                        onClick={() => { setOpen(false); setSelected(notification.id); }}>
+                        Ver detalles
                       </button>
                       {role === "ADMIN" && (
-                        <button
-                          type="button"
-                          className="notification-delete"
-                          disabled={busy}
-                          onClick={() => setDeleteIds([notification.id])}
-                          aria-label={`Eliminar notificación de ${notification.client_name}`}
-                        >
-                          <Trash2 size={13} />
-                          <span>Eliminar</span>
-                        </button>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button type="button" className="notification-delete notification-icon-action" disabled={busy}
+                              onClick={(event) => { event.stopPropagation(); setDeletion({ ids: [notification.id], scope: 'single' }); }}
+                              aria-label="Eliminar notificación">
+                              <Trash2 size={15} />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent className="notification-action-tooltip">Eliminar notificación</TooltipContent>
+                        </Tooltip>
                       )}
+                      <time dateTime={notification.created_at}
+                        title={`Generada el ${notificationGeneratedAt(notification.created_at)} (Buenos Aires)`}
+                        aria-label={`Generada el ${notificationGeneratedAt(notification.created_at)}, hora de Buenos Aires`}>
+                        {notificationGeneratedAt(notification.created_at)}
+                      </time>
                     </div>
                   </div>
                 </article>
@@ -293,9 +268,9 @@ export function AdminActivityPopover({
         </DialogContent>
       </Dialog>
       <Dialog
-        open={deleteIds !== null}
+        open={deletion !== null}
         onOpenChange={(value) => {
-          if (!value && !busy) setDeleteIds(null);
+          if (!value && !busy) setDeletion(null);
         }}
       >
         <DialogContent
@@ -305,23 +280,25 @@ export function AdminActivityPopover({
           <DialogHeader>
             <DialogTitle>Eliminar notificaciones</DialogTitle>
             <DialogDescription>
-              Se retirarán de todas las cuentas. El turno y sus registros se conservan, junto con la
-              auditoría.
+              {deletion?.scope === 'loaded'
+                ? `Se eliminarán ${deletion.ids.length} notificaciones cargadas en este listado al abrir esta confirmación, de todas las cuentas. No incluye las que aún no se cargaron ni las que lleguen después de abrir esta confirmación.`
+                : 'Se eliminará 1 notificación seleccionada de todas las cuentas.'}
+              {' '}El turno y sus registros se conservan, junto con la auditoría.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" disabled={busy} onClick={() => setDeleteIds(null)}>
+            <Button variant="outline" disabled={busy} onClick={() => setDeletion(null)}>
               Cancelar
             </Button>
             <Button
               variant="destructive"
               disabled={busy}
               onClick={() => {
-                const ids = deleteIds;
+                const ids = deletion?.ids;
                 if (ids)
                   void mutate(async () => {
                     await deleteAllAdminActivityNotificationsGlobal(ids);
-                    setDeleteIds(null);
+                    setDeletion(null);
                   });
               }}
             >
@@ -331,6 +308,6 @@ export function AdminActivityPopover({
           {error && <p role="alert">{error}</p>}
         </DialogContent>
       </Dialog>
-    </>
+    </TooltipProvider>
   );
 }
