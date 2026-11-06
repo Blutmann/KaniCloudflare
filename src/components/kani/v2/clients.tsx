@@ -148,14 +148,17 @@ export function V2Clients() {
       {/* Shared toolbar: one desktop row; the mobile search and controls keep their two rows. */}
       <div className="v2-client-toolbar-container">
         <div className="v2-client-search-row">
-          <label className="v2-search">
-            <Search size={18} />
-            <input
-              aria-label="Buscar clientes"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Nombre, celular o email"
-            />
+          <label className="v2-field v2-client-search-field" htmlFor="v2-client-search">
+            <span className="v2-field-label">Buscar cliente</span>
+            <span className="v2-search">
+              <Search size={18} aria-hidden="true" />
+              <input
+                id="v2-client-search"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Nombre, celular o email"
+              />
+            </span>
           </label>
         </div>
         <div className="v2-client-controls-row">

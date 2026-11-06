@@ -132,7 +132,7 @@ describe('Admin V2 — Optimización de Clientes, Pagos y Turnos', () => {
   describe('1. CLIENTES (/admin-v2/clientes)', () => {
     it('1.1 Toolbar: renderiza buscador a ancho completo y fila 2 con Ordenar por y Nuevo cliente', () => {
       render(<V2Clients />);
-      const searchInput = screen.getByLabelText('Buscar clientes');
+      const searchInput = screen.getByLabelText('Buscar cliente');
       expect(searchInput).toBeInTheDocument();
       expect(searchInput.closest('.v2-client-search-row')).toBeInTheDocument();
 
