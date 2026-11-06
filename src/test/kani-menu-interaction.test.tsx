@@ -49,7 +49,7 @@ describe("mobile navigation scroll and closing", () => {
     identity.read
       .mockReset()
       .mockImplementation(async () =>
-        identity.role ? { profile: { role: identity.role, display_name: "Personal" } } : null,
+        identity.role ? { user: { id: "controlled-staff" }, profile: { role: identity.role, display_name: "Personal" } } : null,
       );
     location.pathname = "/reservar";
     window.history.replaceState({}, "", "/reservar");

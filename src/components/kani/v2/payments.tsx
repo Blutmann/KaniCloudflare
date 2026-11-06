@@ -1,3 +1,4 @@
+import { notifyActivityChanged } from '@/lib/kani-admin-activity';
 import { isStaffOperator } from "@/lib/kani-permissions";
 import {
   canonicalPaymentService,
@@ -48,7 +49,7 @@ export function V2Payments() {
   const [customServiceName, setCustomServiceName] = useState<string>("");
   const [priceOverride, setPriceOverride] = useState<number | null>(null);
   const [method, setMethod] = useState<PaymentMethod>("Efectivo");
-  const [discountValue, setDiscount] = useState(0);
+  const [discountOverride, setDiscount] = useState<number | null>(null);
   const [discountKind, setDiscountKind] = useState<DiscountKind>("FIXED");
   const [finalOverride, setFinalOverride] = useState<number | null>(null);
   const [showDiscount, setShowDiscount] = useState(false);
@@ -103,7 +104,13 @@ export function V2Payments() {
   const price =
     serviceName === "Anulado"
       ? 0
-      : (priceOverride ?? service?.price ?? appointment?.servicePrice ?? 0);
+      : (priceOverride ?? (selectedServiceName === null && appointment
+          ? (appointment.benefitOriginalPriceArs ?? appointment.servicePrice ?? service?.price ?? 0)
+          : (service?.price ?? appointment?.servicePrice ?? 0)));
+  const discountValue = discountOverride ?? (appointment
+    ? (appointment.benefitDiscountAmountArs ?? Math.max(0,
+        (appointment.benefitOriginalPriceArs ?? appointment.servicePrice ?? 0) -
+        (appointment.benefitFinalPriceArs ?? appointment.servicePrice ?? 0))) : 0);
   const deposit = appointment?.depositPaid ? (appointment.depositAmountArs ?? 5000) : 0;
   const discount =
     discountKind === "PERCENT" ? Math.round((price * discountValue) / 100) : discountValue;
@@ -202,7 +209,7 @@ export function V2Payments() {
       setSuccess(true);
       setMessage("Cobro registrado.");
       setAppointmentId("");
-      setDiscount(0);
+      setDiscount(null);
       setPriceOverride(null);
       setFinalOverride(null);
       setServiceName(null);
@@ -212,6 +219,7 @@ export function V2Payments() {
       setClientName("");
       setClientPhone("");
       await data.refresh();
+      notifyActivityChanged();
     } catch (e) {
       setMessage(
         `No se confirmó el cobro. Revisá el historial antes de reintentar. ${e && typeof e === "object" && "message" in e ? String(e.message) : ""}`,
@@ -309,7 +317,7 @@ export function V2Payments() {
                   setServiceName(null);
                   setFinalOverride(null);
                   setPriceOverride(null);
-                  setDiscount(0);
+                  setDiscount(null);
                 }}
               >
                 {value === "walk_in" ? "Sin turno" : "Con turno"}
@@ -331,7 +339,7 @@ export function V2Payments() {
                           setServiceName(null);
                           setFinalOverride(null);
                           setPriceOverride(null);
-                          setDiscount(0);
+                          setDiscount(null);
                         }}
                       >
                         <option value="">Seleccionar turno</option>

@@ -18,7 +18,9 @@
     "test:availability:sql": "node scripts/test-staff-permissions.mjs supabase/tests/availability-columns.py",
     "test:public-booking": "vitest run src/lib/kani-public-booking.test.ts src/lib/kani-availability.test.ts src/test/kani-reserva-v4.test.tsx src/test/kani-reserva-v4-payway-ux.test.tsx src/test/kani-reserva-v4-pending-payment-recovery.test.tsx src/test/kani-reserva-v4-mobile-buttons.test.tsx",
     "test:public-booking:sql": "node scripts/test-staff-permissions.mjs supabase/tests/public-booking-visibility.py",
-    "test:booking": "vitest run src/lib/kani-manual-appointments.test.ts src/test/kani-reserva-v2.test.tsx src/test/kani-reserva-v3.test.tsx"
+    "test:booking": "vitest run src/lib/kani-manual-appointments.test.ts src/test/kani-reserva-v2.test.tsx src/test/kani-reserva-v3.test.tsx",
+    "test:notifications": "vitest run src/lib/kani-admin-activity.test.ts src/test/kani-notification-inbox.test.tsx src/test/kani-v2-payments.test.tsx",
+    "test:notifications:sql": "node scripts/test-staff-permissions.mjs supabase/tests/notification-inbox.py"
   },
   "overrides": {
     "rolldown": "1.2.1"

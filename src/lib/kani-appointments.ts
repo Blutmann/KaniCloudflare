@@ -1,3 +1,4 @@
+import { notifyActivityChanged } from './kani-admin-activity';
 import { supabase } from '@/integrations/supabase/client';
 import type { Tables } from '@/integrations/supabase/types';
 import type { AuthenticatedStaff } from '@/lib/kani-auth';
@@ -306,6 +307,7 @@ export async function createManualAppointment(input: CreateManualAppointmentInpu
     }
   }
 
+  notifyActivityChanged();
   return row;
 }
 
@@ -655,6 +657,7 @@ export async function updateRealAppointmentStatus(id: string, status: 'CONFIRMED
   if (row?.notification_claim_token) {
     await dispatchAppointmentNotification(id, row.notification_claim_token);
   }
+  notifyActivityChanged();
   return row?.appointment_status;
 }
 

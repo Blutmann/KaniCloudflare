@@ -18,11 +18,13 @@ jobs:
       - uses: pnpm/action-setup@v4
       - run: pnpm install --frozen-lockfile
       - run: pnpm run test:staff
+      - run: pnpm run test:notifications
       - run: pnpm run test:booking
       - run: pnpm run test:public-booking
       # Includes the existing staff SQL suite, then the visibility migration probes.
       - run: pnpm run test:public-booking:sql
       - run: pnpm run test:availability:sql
+      - run: pnpm run test:notifications:sql
       - run: pnpm run build
       - name: Check generated Preview configuration
         run: |

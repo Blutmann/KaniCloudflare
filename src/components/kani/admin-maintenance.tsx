@@ -5,11 +5,9 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogTitle } from '@/components/ui/dialog';
 import {
   cleanupAppointmentRecords,
-  cleanupAvailabilityNotifications,
   cleanupStatusOptions,
   countAvailabilityNotifications,
   reauthenticateAdmin,
-  type AvailabilityMaintenanceResult,
   type CleanupStatus,
   type MaintenanceResult,
 } from '@/lib/kani-maintenance';
@@ -38,10 +36,7 @@ export function AdminMaintenance() {
   const [error, setError] = useState('');
   const [result, setResult] = useState<MaintenanceResult | null>(null);
   const [availabilityCount, setAvailabilityCount] = useState<number | null>(null);
-  const [availabilityConfirmationOpen, setAvailabilityConfirmationOpen] = useState(false);
-  const [availabilityBusy, setAvailabilityBusy] = useState(false);
   const [availabilityError, setAvailabilityError] = useState('');
-  const [availabilityResult, setAvailabilityResult] = useState<AvailabilityMaintenanceResult | null>(null);
 
   const selectedLabels = useMemo(
     () => cleanupStatusOptions.filter(option => selectedStatuses.includes(option.value)).map(option => option.label),
@@ -89,21 +84,6 @@ export function AdminMaintenance() {
       setError(cause instanceof Error ? cause.message : 'No se pudo completar el mantenimiento.');
     } finally {
       setBusy(false);
-    }
-  }
-
-  async function handleAvailabilityCleanup() {
-    setAvailabilityBusy(true);
-    setAvailabilityError('');
-    try {
-      setAvailabilityConfirmationOpen(false);
-      const cleanupResult = await cleanupAvailabilityNotifications();
-      setAvailabilityResult(cleanupResult);
-      setAvailabilityCount(0);
-    } catch (cause) {
-      setAvailabilityError(cause instanceof Error ? cause.message : 'No se pudo eliminar el historial de disponibilidad.');
-    } finally {
-      setAvailabilityBusy(false);
     }
   }
 
@@ -225,12 +205,12 @@ export function AdminMaintenance() {
             <span className="v2-eyebrow eyebrow">HISTORIAL</span>
             <h2 id="availability-history-title" className="mt-1 text-base font-medium">Historial de disponibilidad</h2>
             <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
-              Eliminá las notificaciones históricas de horarios bloqueados y liberados. Esta acción no modifica la disponibilidad actual de los barberos.
+              Registro histórico de horarios bloqueados y liberados, conservado para auditoría.
             </p>
 
             <div className="mt-4 p-4 rounded-[var(--radius-control)] bg-[var(--v2-inset)] border border-border flex items-center justify-between gap-4">
               <div>
-                <span className="text-xs text-muted-foreground uppercase tracking-wider block">Notificaciones eliminables</span>
+                <span className="text-xs text-muted-foreground uppercase tracking-wider block">Eventos históricos conservados</span>
                 <strong className="mt-1 block text-3xl font-semibold text-foreground">
                   {availabilityCount === null ? '—' : availabilityCount}
                 </strong>
@@ -244,30 +224,10 @@ export function AdminMaintenance() {
                 <span className="min-w-0 break-words">{availabilityError}</span>
               </div>
             )}
-            {availabilityResult && (
-              <div role="status" className="notice v2-success-notice mt-4">
-                <Check size={16} className="shrink-0" />
-                <span className="min-w-0 break-words">
-                  Se eliminaron {availabilityResult.notifications_deleted} notificaciones de disponibilidad.
-                </span>
-              </div>
-            )}
-            {availabilityCount === 0 && !availabilityError && (
-              <p className="mt-4 text-xs text-muted-foreground">
-                No hay notificaciones de disponibilidad para eliminar.
-              </p>
-            )}
-
-            <div className="mt-5 pt-4 border-t border-border flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-              <Button
-                className="v2-destructive action-brand w-full sm:w-auto"
-                disabled={availabilityCount === null || availabilityCount === 0 || availabilityBusy}
-                onClick={() => { setAvailabilityError(''); setAvailabilityResult(null); setAvailabilityConfirmationOpen(true); }}
-              >
-                <Trash2 size={16} className="shrink-0" />
-                <span>Eliminar notificaciones</span>
-              </Button>
-            </div>
+            <p className="mt-4 text-sm text-muted-foreground leading-relaxed">
+              Los cambios de horarios se conservan para auditoría y ya no generan notificaciones en la campana.
+              Este historial permanece disponible y no se elimina desde el panel.
+            </p>
           </section>
 
           <section className="v2-panel maintenance-preserve-card" aria-labelledby="preserve-heading">
@@ -360,39 +320,7 @@ export function AdminMaintenance() {
         </DialogContent>
       </Dialog>
 
-      {/* Diálogo de confirmación para eliminar disponibilidad */}
-      <Dialog open={availabilityConfirmationOpen} onOpenChange={open => { if (!availabilityBusy) setAvailabilityConfirmationOpen(open); }}>
-        <DialogContent className="max-w-[calc(100vw-32px)] sm:max-w-md p-5 sm:p-6 rounded-[var(--radius-card)]">
-          <DialogTitle className="text-lg font-medium">¿Eliminar historial de disponibilidad?</DialogTitle>
-          <DialogDescription className="text-sm text-muted-foreground mt-1.5 leading-relaxed">
-            Se eliminarán exactamente {availabilityCount ?? 0} notificaciones de horarios bloqueados y liberados. Esta acción es irreversible y no modifica la disponibilidad actual de los barberos.
-          </DialogDescription>
-          <div className="maintenance-confirmation-list mt-4">
-            <strong className="block text-sm font-semibold">{availabilityCount ?? 0} notificaciones</strong>
-            <span className="block text-xs text-muted-foreground mt-1">
-              Las notificaciones de turnos y los horarios vigentes permanecerán intactos.
-            </span>
-          </div>
-          <DialogFooter className="mt-5 flex flex-col-reverse sm:flex-row gap-2.5">
-            <Button
-              variant="outline"
-              className="v2-secondary w-full sm:w-auto min-h-[44px]"
-              disabled={availabilityBusy}
-              onClick={() => setAvailabilityConfirmationOpen(false)}
-            >
-              Cancelar
-            </Button>
-            <Button
-              className="v2-destructive action-brand w-full sm:w-auto min-h-[44px]"
-              disabled={availabilityBusy}
-              onClick={() => void handleAvailabilityCleanup()}
-            >
-              <Trash2 size={16} className="shrink-0" />
-              <span>Eliminar notificaciones</span>
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+
     </main>
   );
 }

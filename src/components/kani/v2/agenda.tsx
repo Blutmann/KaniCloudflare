@@ -1,3 +1,4 @@
+import { type NotificationAppointment } from '@/lib/kani-admin-activity';
 import { isStaffOperator } from "@/lib/kani-permissions";
 import { getWhatsAppUrl } from "@/lib/kani-phone";
 import { useState } from "react";
@@ -171,7 +172,11 @@ export function V2Home() {
 export type AgendaPeriodPreset = "TODAY" | "THIS_WEEK" | "NEXT_10_DAYS" | "CUSTOM";
 export type AgendaPeriodFilter = AgendaPeriodPreset | "DATE";
 
-export function V2Appointments() {
+export function V2Appointments({ notificationDetail, onNotificationChanged, onNotificationNavigate }: {
+  notificationDetail?: NotificationAppointment;
+  onNotificationChanged?: () => void;
+  onNotificationNavigate?: () => void;
+} = {}) {
   const data = useV2();
   const staff = useAdminStaff();
   const today = businessDateToday();
@@ -246,7 +251,15 @@ export function V2Appointments() {
     period === "NEXT_10_DAYS" ||
     (period === "CUSTOM" && !isInvalidRange && customStartDate !== customEndDate);
 
-  const rows = isInvalidRange
+  const rows = notificationDetail
+    ? scopeV2(data.appointments, staff.profile.role, staff.profile.barber_id).filter(a => a.id === notificationDetail.appointment_id).map(a => ({
+        ...a, statusCode: notificationDetail.status as RealAppointment['statusCode'],
+        name: notificationDetail.client_name, phone: notificationDetail.phone ?? '', email: notificationDetail.email ?? '',
+        barber: notificationDetail.barber as RealAppointment['barber'], barberId: notificationDetail.barber_id,
+        date: notificationDetail.date, time: notificationDetail.time.slice(0,5), endTime: notificationDetail.end_time.slice(0,5),
+        serviceName: notificationDetail.service,
+      }))
+    : isInvalidRange
     ? []
     : scopeV2(
         data.appointments,
@@ -307,6 +320,7 @@ export function V2Appointments() {
       setAction(null);
       await data.refresh();
       setMessage("Turno actualizado.");
+      onNotificationChanged?.();
     } catch (e) {
       setMessage(appointmentErrorMessage(e));
     } finally {
@@ -441,6 +455,7 @@ export function V2Appointments() {
   }
   return (
     <main className="v2-page v2-appointments-page">
+      {!notificationDetail && <>
       <AdminFilterPanel
         ariaLabel="Filtros de turnos"
         footer={
@@ -527,6 +542,7 @@ export function V2Appointments() {
         actionLabel="+ Agregar turno"
         onAction={() => setManualDialog({ open: true, mode: "CREATE", appointment: null })}
       />
+      </>}
       {message && (
         <p className="v2-alert" role="status">
           {message}
@@ -563,7 +579,7 @@ export function V2Appointments() {
                 <span className="v2-app-service">{formatServiceName(a.serviceName)}</span>
                 <span className="v2-app-dot">·</span>
                 <span className="v2-app-barber">{a.barber}</span>
-                {isMultiDay && (
+                {(isMultiDay || notificationDetail) && (
                   <>
                     <span className="v2-app-dot">·</span>
                     <span className="v2-app-date">{dateLabel(a.date)}</span>
@@ -572,7 +588,7 @@ export function V2Appointments() {
               </div>
 
               {/* Fila 3: Seña: No abonada · Importe: $25.000 */}
-              <div className="v2-app-row-3">
+              {!notificationDetail && <div className="v2-app-row-3">
                 <span className="v2-app-deposit">
                   Seña:{" "}
                   {data.depositSupported
@@ -583,10 +599,19 @@ export function V2Appointments() {
                 </span>
                 <span className="v2-app-dot">·</span>
                 <span className="v2-app-price">Importe: {money(a.servicePrice ?? 0)}</span>
-              </div>
+              </div>}
 
+              {notificationDetail && <dl className="notification-appointment-facts">
+                <div><dt>Celular</dt><dd>{notificationDetail.phone || 'Sin celular registrado'}</dd></div>
+                <div><dt>Email</dt><dd>{notificationDetail.email || 'Sin email registrado'}</dd></div>
+                <div><dt>Precio final</dt><dd>{money(notificationDetail.final_price)}</dd></div>
+                <div><dt>Seña abonada</dt><dd>{notificationDetail.deposit_verifiable ? money(notificationDetail.deposit_paid) : "Sin dato verificable"}</dd></div>
+                <div><dt>Otros cobros</dt><dd>{money(notificationDetail.collected)}</dd></div>
+                <div><dt>Saldo</dt><dd>{notificationDetail.deposit_verifiable ? money(notificationDetail.balance) : "Sin dato verificable"}</dd></div>
+                {notificationDetail.benefit && <div><dt>Beneficio aplicado</dt><dd>{notificationDetail.benefit} · {({NO_DEPOSIT:'Sin seña',FREE_SERVICE:'Servicio gratuito',PERCENT_10:'10 % de descuento',PERCENT_50:'50 % de descuento'} as Record<string,string>)[notificationDetail.benefit_type ?? ''] || 'Beneficio'}</dd></div>}
+              </dl>}
               {/* Fila 4: Diagnóstico compacto y accesible de notificaciones */}
-              <div className="v2-app-notifications">
+              {!notificationDetail && <div className="v2-app-notifications">
                 <div className="v2-notif-channel">
                   <span className="v2-notif-icon" aria-hidden="true">💬</span>
                   <button
@@ -627,7 +652,7 @@ export function V2Appointments() {
                     <Info size={12} className="v2-notif-info-icon" aria-hidden="true" />
                   </button>
                 </div>
-              </div>
+              </div>}
 
               {a.notes && <p className="v2-note">{a.notes}</p>}
             </div>
@@ -651,20 +676,24 @@ export function V2Appointments() {
                     </button>,
                   );
                 }
-                if (a.statusCode === "CONFIRMED") {
+                if (a.statusCode === "CONFIRMED" && (!notificationDetail || (!notificationDetail.has_payment && !a.balancePaid && notificationDetail.deposit_verifiable && a.date <= today))) {
                   actionNodes.push(
                     <Link
                       key="cobrar"
                       className="v2-secondary v2-action-btn v2-cobrar-btn"
                       to="/panel-administracion/pagos"
                       search={{ turno: a.id }}
+                      onClick={onNotificationNavigate}
                     >
                       Cobrar
                     </Link>,
                   );
                 }
+                if (notificationDetail && a.statusCode === 'CONFIRMED' && !notificationDetail.has_payment && !a.balancePaid && a.date > today) {
+                  actionNodes.push(<button key="future-payment" className="v2-secondary v2-action-btn" disabled title="El cobro estará disponible el día del turno">Cobrar · disponible el día del turno</button>);
+                }
                 if (
-                  a.isManual &&
+                  !notificationDetail && a.isManual &&
                   ["PENDING", "CONFIRMED"].includes(a.statusCode) &&
                   (isStaffOperator(staff.profile.role) || a.barberId === staff.profile.barber_id)
                 ) {
@@ -687,18 +716,20 @@ export function V2Appointments() {
                     key="whatsapp"
                     type="button"
                     className="v2-secondary v2-whatsapp v2-action-btn"
-                    disabled={busy || !a.phone || !a.phone.trim()}
+                    disabled={busy || !getWhatsAppUrl(a.phone) || (!!notificationDetail && !['CONFIRMED','CANCELLED'].includes(a.statusCode))}
                     onClick={() => handleWhatsAppAction(a)}
                     title={
-                      !a.phone || !a.phone.trim()
+                      !getWhatsAppUrl(a.phone)
                         ? "El cliente no tiene un teléfono válido"
+                        : notificationDetail && !['CONFIRMED','CANCELLED'].includes(a.statusCode)
+                        ? "Este estado no admite reenviar la confirmación por WhatsApp"
                         : "Reenviar confirmación por WhatsApp mediante Pontiun"
                     }
                   >
                     <WhatsAppLabel />
                   </button>,
                 );
-                if (a.email) {
+                if (a.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(a.email)) {
                   actionNodes.push(
                     <a
                       key="mail"
@@ -711,6 +742,9 @@ export function V2Appointments() {
                   );
                 }
 
+                if (notificationDetail && (!a.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(a.email))) {
+                  actionNodes.push(<button key="mail-disabled" className="v2-secondary v2-action-btn" disabled title="El cliente no tiene un email válido"><Mail size={16} /> Mail · sin email válido</button>);
+                }
                 return (
                   <div className={`v2-appointment-actions-grid count-${actionNodes.length}`}>
                     {actionNodes}
@@ -741,7 +775,7 @@ export function V2Appointments() {
           if (!open && !busy) setAction(null);
         }}
       >
-        <DialogContent className="v2-dialog">
+        <DialogContent {...(notificationDetail ? { overlayClassName: "notification-dialog-child-overlay" } : {})} className={notificationDetail ? "v2-dialog notification-dialog-child" : "v2-dialog"}>
           <DialogTitle>
             ¿Cancelar este turno?
           </DialogTitle>
@@ -760,7 +794,7 @@ export function V2Appointments() {
           if (!open && !busy) setWhatsAppModal(null);
         }}
       >
-        <DialogContent className="v2-dialog">
+        <DialogContent {...(notificationDetail ? { overlayClassName: "notification-dialog-child-overlay" } : {})} className={notificationDetail ? "v2-dialog notification-dialog-child" : "v2-dialog"}>
           {whatsAppModal?.mode === "BLOCKED_131042" && (
             <>
               <DialogTitle>Configuración pendiente en Meta (Error 131042)</DialogTitle>
@@ -848,7 +882,7 @@ export function V2Appointments() {
           }
         }}
       >
-        <DialogContent className="v2-dialog">
+        <DialogContent {...(notificationDetail ? { overlayClassName: "notification-dialog-child-overlay" } : {})} className={notificationDetail ? "v2-dialog notification-dialog-child" : "v2-dialog"}>
           <DialogTitle>Diagnóstico de notificación: {selectedNotifDetail?.channel}</DialogTitle>
           <DialogDescription>
             Detalle técnico del canal de notificación registrado en Supabase.

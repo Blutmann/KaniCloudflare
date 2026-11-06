@@ -1,0 +1,74 @@
+/* The inbox detail reuses agenda actions and remains inside the viewport. */
+.notification-detail-dialog,
+.notification-confirm-dialog {
+  width: min(860px, calc(100vw - 24px)) !important;
+  max-width: calc(100vw - 24px) !important;
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+.notification-detail-dialog .v2-page {
+  padding: 0;
+  min-width: 0;
+}
+.notification-detail-dialog .v2-appointment {
+  min-width: 0;
+}
+.notification-appointment-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-block: 14px;
+}
+.notification-appointment-facts div {
+  min-width: 0;
+}
+.notification-appointment-facts dt {
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+.notification-appointment-facts dd {
+  margin: 4px 0 0;
+  overflow-wrap: anywhere;
+}
+.notification-inbox-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.notification-inbox-toolbar button {
+  white-space: normal;
+  height: auto;
+  min-height: 32px;
+}
+.notification-body > button.notification-link {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+}
+@media (max-width: 480px) {
+  .notification-appointment-facts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.notification-detail-dialog,
+.notification-confirm-dialog {
+  z-index: 200 !important;
+}
+.notification-dialog-overlay {
+  z-index: 199 !important;
+}
+.notification-dialog-child {
+  z-index: 220 !important;
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
+}
+.notification-dialog-child-overlay {
+  z-index: 219 !important;
+}
+.notification-confirm-dialog {
+  width: min(480px, calc(100vw - 24px)) !important;
+}
