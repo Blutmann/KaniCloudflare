@@ -99,6 +99,14 @@ export default {
       }
 
       const url = new URL(request.url);
+      if (url.pathname === '/api/staff/password-recovery') {
+        const { handleStaffRecoveryRequest } = await import('./lib/kani-staff-recovery.server');
+        return handleStaffRecoveryRequest(request, ctx as { waitUntil?: (task: Promise<unknown>) => void });
+      }
+      if (url.pathname === '/api/staff/password-reset') {
+        const { handleStaffPasswordReset } = await import('./lib/kani-staff-recovery.server');
+        return handleStaffPasswordReset(request);
+      }
       if (url.pathname === "/estudio" || url.pathname === "/estudio/") {
         url.pathname = "/contacto";
         return Response.redirect(url.toString(), 301);

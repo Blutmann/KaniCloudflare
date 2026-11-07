@@ -18,6 +18,8 @@ jobs:
       - uses: pnpm/action-setup@v4
       - run: pnpm install --frozen-lockfile
       - run: pnpm run test:staff
+      - run: pnpm run test:staff-recovery
+      - run: pnpm run test:staff-recovery:integration
       - run: pnpm run test:notifications
       - run: pnpm run test:barber-email
       - run: pnpm run test:booking

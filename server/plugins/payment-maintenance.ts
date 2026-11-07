@@ -4,6 +4,10 @@ import { reconcilePendingPayments } from '../../src/lib/kani-payment-maintenance
 export default definePlugin(app => {
   app.hooks.hook('cloudflare:scheduled', async () => {
     try {
+      const { dispatchStaffRecoveryEmails } = await import('../../src/lib/kani-staff-recovery.server');
+      await dispatchStaffRecoveryEmails();
+    } catch { console.warn('[Staff recovery] Deferred to next scheduled run'); }
+    try {
       await reconcilePendingPayments();
     } catch (err) {
       console.error('[Scheduled Payment Maintenance Error]:', err);
