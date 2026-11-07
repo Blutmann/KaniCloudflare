@@ -9,6 +9,11 @@
 .v2-payment-compact-form .v2-payment-row > * {
   min-width: 0;
 }
+/* WebKit's native option text must not enlarge the grid's scrollable width. */
+.v2-payment-compact-form .v2-payment-col:has(select) {
+  overflow-x: clip;
+  overflow-clip-margin: 4px;
+}
 .v2-payment-compact-form input[type="number"],
 .v2-payment-edit-dialog input[type="number"] {
   text-align: right;
