@@ -21,8 +21,16 @@ const response = (body: unknown, status = 200) =>
 const generic = () => response({ message: STAFF_RECOVERY_MESSAGE });
 
 async function dependencies(): Promise<Dependencies> {
-  const url = getRuntimeEnv("SUPABASE_URL") || getRuntimeEnv("VITE_SUPABASE_URL");
-  const key = getRuntimeEnv("SUPABASE_ANON_KEY") || getRuntimeEnv("VITE_SUPABASE_ANON_KEY");
+  const url =
+    getRuntimeEnv("SUPABASE_URL") ||
+    getRuntimeEnv("VITE_SUPABASE_URL") ||
+    import.meta.env.VITE_SUPABASE_URL;
+  // This public key is already supplied at build time by the existing Vite integration.
+  // Production does not bind it as a separate Worker variable. Never fall back to the service key here.
+  const key =
+    getRuntimeEnv("SUPABASE_ANON_KEY") ||
+    getRuntimeEnv("VITE_SUPABASE_ANON_KEY") ||
+    import.meta.env.VITE_SUPABASE_ANON_KEY;
   const pepper = getRuntimeEnv("SUPABASE_SERVICE_ROLE_KEY");
   if (!url || !key || !pepper) throw new Error("RECOVERY_CONFIGURATION_MISSING");
   return {
