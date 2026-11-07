@@ -14,6 +14,10 @@ vi.mock("../lib/kani-payment-db.server", () => ({
 }));
 vi.mock("@supabase/supabase-js", () => ({ createClient: mocks.client }));
 import { handleStaffRecoveryRequest } from "../lib/kani-staff-recovery.server";
+import {
+  DEFAULT_SUPABASE_PUBLIC_KEY,
+  createSupabaseFetch,
+} from "../integrations/supabase/public-config";
 const req = () =>
   new Request("https://www.kanibarber.com/api/staff/password-recovery", {
     method: "POST",
@@ -51,11 +55,30 @@ it("supports the actual production bindings: private runtime credentials and a p
     }),
   );
 });
-it("fails closed if the public key is missing and never substitutes service_role into the recovery Auth client", async () => {
+it("reuses the existing shared publishable configuration when Vite and Worker bindings omit a public key", async () => {
   vi.stubEnv("VITE_SUPABASE_ANON_KEY", "");
   const tasks: Promise<unknown>[] = [];
   await handleStaffRecoveryRequest(req(), { waitUntil: (p) => tasks.push(p) });
   await Promise.all(tasks);
-  expect(mocks.client).not.toHaveBeenCalled();
-  expect(mocks.rpc).not.toHaveBeenCalled();
+  expect(mocks.send).toHaveBeenCalledOnce();
+  expect(mocks.client.mock.calls[0][1] === DEFAULT_SUPABASE_PUBLIC_KEY).toBe(true);
+  expect(mocks.client.mock.calls[0][1] === "controlled-private-key").toBe(false);
+});
+it("strips an opaque-key bearer header, preserves the apikey and keeps real session JWTs", async () => {
+  const spy = vi.fn().mockResolvedValue(new Response("{}"));
+  vi.stubGlobal("fetch", spy);
+  try {
+    const fetcher = createSupabaseFetch("sb_publishable_controlled");
+    await fetcher("https://controlled.invalid", {
+      headers: { Authorization: "Bearer sb_publishable_controlled" },
+    });
+    expect(spy.mock.calls[0][1].headers.has("Authorization")).toBe(false);
+    expect(spy.mock.calls[0][1].headers.get("apikey")).toBe("sb_publishable_controlled");
+    await fetcher("https://controlled.invalid", {
+      headers: { Authorization: "Bearer controlled-session-jwt" },
+    });
+    expect(spy.mock.calls[1][1].headers.get("Authorization")).toBe("Bearer controlled-session-jwt");
+  } finally {
+    vi.unstubAllGlobals();
+  }
 });

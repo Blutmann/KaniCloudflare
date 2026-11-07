@@ -1,4 +1,9 @@
 import { createClient } from "@supabase/supabase-js";
+import {
+  DEFAULT_SUPABASE_URL,
+  DEFAULT_SUPABASE_PUBLIC_KEY,
+  createSupabaseFetch,
+} from "../integrations/supabase/public-config";
 import { createPaymentSupabaseClient } from "./kani-payment-db.server";
 import { getRuntimeEnv } from "./kani-mercadopago.server";
 import {
@@ -24,13 +29,18 @@ async function dependencies(): Promise<Dependencies> {
   const url =
     getRuntimeEnv("SUPABASE_URL") ||
     getRuntimeEnv("VITE_SUPABASE_URL") ||
-    import.meta.env.VITE_SUPABASE_URL;
+    import.meta.env.VITE_SUPABASE_URL ||
+    DEFAULT_SUPABASE_URL;
   // This public key is already supplied at build time by the existing Vite integration.
   // Production does not bind it as a separate Worker variable. Never fall back to the service key here.
   const key =
     getRuntimeEnv("SUPABASE_ANON_KEY") ||
+    getRuntimeEnv("SUPABASE_PUBLISHABLE_KEY") ||
     getRuntimeEnv("VITE_SUPABASE_ANON_KEY") ||
-    import.meta.env.VITE_SUPABASE_ANON_KEY;
+    getRuntimeEnv("VITE_SUPABASE_PUBLISHABLE_KEY") ||
+    import.meta.env.VITE_SUPABASE_ANON_KEY ||
+    import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+    DEFAULT_SUPABASE_PUBLIC_KEY;
   const pepper = getRuntimeEnv("SUPABASE_SERVICE_ROLE_KEY");
   if (!url || !key || !pepper) throw new Error("RECOVERY_CONFIGURATION_MISSING");
   return {
@@ -38,6 +48,7 @@ async function dependencies(): Promise<Dependencies> {
     pepper,
     auth: () =>
       createClient(url, key, {
+        global: { fetch: createSupabaseFetch(key) },
         auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
       }),
   };
