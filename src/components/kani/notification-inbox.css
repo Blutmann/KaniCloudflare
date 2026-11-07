@@ -291,13 +291,22 @@ html[data-theme] .notification-popover {
 
 /* One surface, with the close control outside the scrolling appointment. */
 html[data-theme] .notification-detail-dialog {
+  --notification-detail-gap-top: max(12px, env(safe-area-inset-top, 0px));
+  --notification-detail-gap-bottom: max(12px, env(safe-area-inset-bottom, 0px));
+  --notification-detail-gap-left: max(12px, env(safe-area-inset-left, 0px));
+  --notification-detail-gap-right: max(12px, env(safe-area-inset-right, 0px));
+  top: calc(var(--notification-detail-viewport-top, 0px) + var(--notification-detail-gap-top) + (var(--notification-detail-viewport-height, 100dvh) - var(--notification-detail-gap-top) - var(--notification-detail-gap-bottom)) / 2) !important;
+  left: calc(var(--notification-detail-viewport-left, 0px) + var(--notification-detail-gap-left) + (var(--notification-detail-viewport-width, 100vw) - var(--notification-detail-gap-left) - var(--notification-detail-gap-right)) / 2) !important;
+  width: min(860px, calc(var(--notification-detail-viewport-width, 100vw) - var(--notification-detail-gap-left) - var(--notification-detail-gap-right))) !important;
+  max-width: calc(var(--notification-detail-viewport-width, 100vw) - var(--notification-detail-gap-left) - var(--notification-detail-gap-right)) !important;
+  height: auto;
+  max-height: calc(var(--notification-detail-viewport-height, 100dvh) - var(--notification-detail-gap-top) - var(--notification-detail-gap-bottom)) !important;
   display: flex !important;
   flex-direction: column;
   gap: 0 !important;
   padding: 0.75rem !important;
   background: var(--popover) !important;
   min-width: 0;
-  max-height: calc(100dvh - 24px) !important;
   overflow: hidden !important;
 }
 .notification-detail-heading {
@@ -305,9 +314,9 @@ html[data-theme] .notification-detail-dialog {
   flex-wrap: wrap;
   align-items: center;
   flex-shrink: 0;
-  padding: 48px 0 10px;
+  padding: 40px 0 8px;
   gap: 8px;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
   border-bottom: 1px solid var(--border);
 }
 .notification-detail-heading h2 {
@@ -333,8 +342,8 @@ html[data-theme] .notification-detail-dialog {
   line-height: 1.4;
 }
 html[data-theme] .notification-detail-dialog > button:has(> .sr-only) {
-  top: 12px;
-  right: 8px;
+  top: 4px;
+  right: 4px;
 }
 .notification-detail-scroll {
   flex: 0 1 auto;
@@ -365,13 +374,6 @@ html[data-theme] .notification-detail-dialog .v2-appointment {
 }
 @media (max-width: 767px) {
   .notification-detail-heading h2 { font-size: 14px; }
-  html[data-theme] .notification-detail-dialog {
-    top: var(--notification-detail-top, 12px) !important;
-    height: auto;
-    max-height: var(--notification-detail-height, calc(100dvh - 24px)) !important;
-    --tw-translate-y: 0px !important;
-    transform: none !important;
-  }
 }
 html[data-theme] .notification-detail-dialog .v2-appointment {
   display: flex !important;
@@ -390,12 +392,8 @@ html[data-theme] .notification-detail-dialog .v2-appointment {
 .notification-detail-dialog .v2-app-row-1 {
   align-items: flex-start !important;
 }
-.notification-detail-dialog .v2-app-time {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.notification-appointment-end { font-size: 11px; font-weight: 400; color: var(--muted-foreground); white-space: nowrap; }
+.notification-detail-dialog .v2-app-sep { color: var(--muted-foreground) !important; }
+.notification-detail-dialog .notification-appointment-end { margin: -4px 0 0; font-size: 11px; line-height: 1.5; font-weight: 400; color: var(--muted-foreground); white-space: nowrap; }
 .notification-appointment-schedule { min-width: 0; }
 .notification-appointment-service { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 8px; font-size: 13px; line-height: 1.4; }
 .notification-appointment-service > span { min-width: 0; overflow-wrap: anywhere; }
@@ -426,13 +424,22 @@ html[data-theme] .notification-detail-dialog .v2-appointment {
 }
 .notification-detail-dialog .notification-appointment-facts {
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px 12px;
+  grid-auto-rows: 1fr;
+  gap: 0;
   margin: 0;
-  padding: 10px;
+  padding: 0;
   border: 1px solid var(--border);
   border-radius: var(--radius-sub, 8px);
   background: var(--v2-inset);
 }
+.notification-detail-dialog .notification-appointment-facts > div {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 8px 10px;
+}
+.notification-detail-dialog .notification-appointment-facts > div:nth-child(odd) { border-right: 1px solid var(--border); }
+.notification-detail-dialog .notification-appointment-facts > div:nth-child(n + 3) { border-top: 1px solid var(--border); }
 .notification-detail-dialog .notification-appointment-facts dd {
   font-size: 14px;
   line-height: 1.5;
@@ -441,7 +448,8 @@ html[data-theme] .notification-detail-dialog .v2-appointment {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
-.notification-detail-dialog .notification-appointment-balance dd { color: var(--gold); font-weight: 600; }
+.notification-detail-dialog .notification-appointment-balance dd { font-weight: 600; }
+.notification-detail-dialog .notification-balance-outstanding dd { color: var(--gold); }
 html[data-theme] .notification-detail-dialog .v2-appointment-actions {
   flex: none !important;
   width: 100% !important;
