@@ -579,7 +579,7 @@ export function V2Appointments({ notificationDetail, onNotificationChanged, onNo
                   <Status code={a.statusCode} />
                 </>}
               </div>
-              {notificationDetail && a.endTime && <p className="notification-appointment-end">hasta {a.endTime}</p>}
+              {notificationDetail && a.endTime && <p className="notification-appointment-end">Hasta {a.endTime}</p>}
               {notificationDetail && a.isManual && <span className="v2-manual-badge">Manual</span>}
 
               {/* Fila 2: 10:45 · Corte · Lautaro (· Fecha si isMultiDay) */}
@@ -624,10 +624,10 @@ export function V2Appointments({ notificationDetail, onNotificationChanged, onNo
                 <div><dt>Email</dt><dd>{notificationDetail.email || 'Sin email registrado'}</dd></div>
               </dl>
               <dl className="notification-appointment-facts">
-                <div><dt>Precio final</dt><dd>{money(notificationDetail.final_price)}</dd></div>
+                <div><dt>Importe total</dt><dd>{money(notificationDetail.final_price)}</dd></div>
                 <div><dt>Seña abonada</dt><dd>{notificationDetail.deposit_verifiable ? money(notificationDetail.deposit_paid) : "Sin dato verificable"}</dd></div>
                 <div><dt>Cobros aplicados</dt><dd>{money(notificationDetail.collected)}</dd></div>
-                <div className={`notification-appointment-balance${notificationDetail.deposit_verifiable && notificationDetail.balance > 0 ? ' notification-balance-outstanding' : ''}`}><dt>Saldo</dt><dd>{notificationDetail.deposit_verifiable ? money(notificationDetail.balance) : "Sin dato verificable"}</dd></div>
+                <div className={`notification-appointment-balance${notificationDetail.deposit_verifiable && notificationDetail.balance > 0 ? ' notification-balance-outstanding' : ''}`}><dt>Saldo pendiente</dt><dd>{notificationDetail.deposit_verifiable ? money(notificationDetail.balance) : "Sin dato verificable"}</dd></div>
               </dl>
               {notificationDetail.benefit && <dl className="notification-appointment-discount"><div><dt>Descuento aplicado</dt><dd>{notificationDetail.benefit} · {({NO_DEPOSIT:'Reserva sin seña',FREE_SERVICE:'Servicio gratuito',PERCENT_10:'10 % de descuento',PERCENT_50:'50 % de descuento'} as Record<string,string>)[notificationDetail.benefit_type ?? ''] || 'Beneficio'}</dd></div></dl>}
               </>}

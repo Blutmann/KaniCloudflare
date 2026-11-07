@@ -7,6 +7,7 @@ import type { AuthenticatedStaff } from "@/lib/kani-auth";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -312,11 +313,15 @@ export function AdminActivityPopover({
           ref={setDetailElement}
           overlayClassName="notification-dialog-overlay"
           className="v2-dialog notification-detail-dialog"
+          showCloseButton={false}
           aria-describedby={undefined}
         >
           <div className="notification-detail-heading">
             <DialogTitle>Detalle del turno{detailHeading?.number != null ? ` #${detailHeading.number}` : ''}</DialogTitle>
             {detailHeading && <div className="notification-detail-state"><Status code={detailHeading.status} /></div>}
+            <DialogClose asChild>
+              <Button type="button" variant="ghost" size="icon" className="notification-detail-close" aria-label="Cerrar detalle del turno" title="Cerrar detalle del turno"><X size={18} aria-hidden="true" /></Button>
+            </DialogClose>
           </div>
           <div className="notification-detail-scroll">
           {selected && staff && (
