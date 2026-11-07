@@ -61,8 +61,8 @@ it("reuses the existing shared publishable configuration when Vite and Worker bi
   await handleStaffRecoveryRequest(req(), { waitUntil: (p) => tasks.push(p) });
   await Promise.all(tasks);
   expect(mocks.send).toHaveBeenCalledOnce();
-  expect(mocks.client.mock.calls[0][1] === DEFAULT_SUPABASE_PUBLIC_KEY).toBe(true);
-  expect(mocks.client.mock.calls[0][1] === "controlled-private-key").toBe(false);
+  expect(mocks.client.mock.calls[0]![1] === DEFAULT_SUPABASE_PUBLIC_KEY).toBe(true);
+  expect(mocks.client.mock.calls[0]![1] === "controlled-private-key").toBe(false);
 });
 it("strips an opaque-key bearer header, preserves the apikey and keeps real session JWTs", async () => {
   const spy = vi.fn().mockResolvedValue(new Response("{}"));
@@ -72,12 +72,14 @@ it("strips an opaque-key bearer header, preserves the apikey and keeps real sess
     await fetcher("https://controlled.invalid", {
       headers: { Authorization: "Bearer sb_publishable_controlled" },
     });
-    expect(spy.mock.calls[0][1].headers.has("Authorization")).toBe(false);
-    expect(spy.mock.calls[0][1].headers.get("apikey")).toBe("sb_publishable_controlled");
+    expect(spy.mock.calls[0]![1].headers.has("Authorization")).toBe(false);
+    expect(spy.mock.calls[0]![1].headers.get("apikey")).toBe("sb_publishable_controlled");
     await fetcher("https://controlled.invalid", {
       headers: { Authorization: "Bearer controlled-session-jwt" },
     });
-    expect(spy.mock.calls[1][1].headers.get("Authorization")).toBe("Bearer controlled-session-jwt");
+    expect(spy.mock.calls[1]![1].headers.get("Authorization")).toBe(
+      "Bearer controlled-session-jwt",
+    );
   } finally {
     vi.unstubAllGlobals();
   }

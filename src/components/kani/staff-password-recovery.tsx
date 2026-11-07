@@ -15,9 +15,9 @@ import "./staff-password-recovery.css";
 
 function RecoveryShell({ title, children }: { title: string; children: ReactNode }) {
   useEffect(() => {
-    document.body.dataset.adminLogin = "true";
+    document.body.dataset["adminLogin"] = "true";
     return () => {
-      delete document.body.dataset.adminLogin;
+      delete document.body.dataset["adminLogin"];
     };
   }, []);
   return (

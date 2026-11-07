@@ -29,7 +29,7 @@ async function dependencies(): Promise<Dependencies> {
   const url =
     getRuntimeEnv("SUPABASE_URL") ||
     getRuntimeEnv("VITE_SUPABASE_URL") ||
-    import.meta.env.VITE_SUPABASE_URL ||
+    import.meta.env["VITE_SUPABASE_URL"] ||
     DEFAULT_SUPABASE_URL;
   // This public key is already supplied at build time by the existing Vite integration.
   // Production does not bind it as a separate Worker variable. Never fall back to the service key here.
@@ -38,8 +38,8 @@ async function dependencies(): Promise<Dependencies> {
     getRuntimeEnv("SUPABASE_PUBLISHABLE_KEY") ||
     getRuntimeEnv("VITE_SUPABASE_ANON_KEY") ||
     getRuntimeEnv("VITE_SUPABASE_PUBLISHABLE_KEY") ||
-    import.meta.env.VITE_SUPABASE_ANON_KEY ||
-    import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+    import.meta.env["VITE_SUPABASE_ANON_KEY"] ||
+    import.meta.env["VITE_SUPABASE_PUBLISHABLE_KEY"] ||
     DEFAULT_SUPABASE_PUBLIC_KEY;
   const pepper = getRuntimeEnv("SUPABASE_SERVICE_ROLE_KEY");
   if (!url || !key || !pepper) throw new Error("RECOVERY_CONFIGURATION_MISSING");
@@ -126,8 +126,8 @@ export async function handleStaffRecoveryRequest(
   if (!allowed(request)) return generic();
   try {
     const body = await readBody(request),
-      email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
-    if (body.website || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+      email = typeof body["email"] === "string" ? body["email"].trim().toLowerCase() : "";
+    if (body["website"] || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
       return generic();
     const deps = depsOverride || (await dependencies());
     const id = await consume(deps, request, "REQUEST", email, email);
@@ -186,13 +186,13 @@ export async function handleStaffPasswordReset(request: Request, depsOverride?: 
   if (!allowed(request)) return response({ ok: false, code: "INVALID_LINK" });
   try {
     const body = await readBody(request);
-    const token = typeof body.tokenHash === "string" ? body.tokenHash : "";
-    const password = typeof body.password === "string" ? body.password : "";
+    const token = typeof body["tokenHash"] === "string" ? body["tokenHash"] : "";
+    const password = typeof body["password"] === "string" ? body["password"] : "";
     if (!isStaffRecoveryToken(token)) return response({ ok: false, code: "INVALID_LINK" });
     if (
       password.length < STAFF_RECOVERY_MIN_PASSWORD ||
       password.length > 1024 ||
-      password !== body.confirmation
+      password !== body["confirmation"]
     )
       return response({ ok: false, code: "PASSWORD_POLICY" });
     const deps = depsOverride || (await dependencies());

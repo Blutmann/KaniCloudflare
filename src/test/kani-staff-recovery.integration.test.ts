@@ -12,9 +12,9 @@ import {
 } from "../lib/kani-staff-recovery.server";
 import { STAFF_RECOVERY_MESSAGE, STAFF_RECOVERY_URL } from "../lib/kani-staff-recovery";
 const env = process.env,
-  container = env.KANI_RECOVERY_TEST_CONTAINER!,
-  authUrl = env.KANI_RECOVERY_TEST_AUTH!,
-  mailUrl = env.KANI_RECOVERY_TEST_MAIL!;
+  container = env["KANI_RECOVERY_TEST_CONTAINER"]!,
+  authUrl = env["KANI_RECOVERY_TEST_AUTH"]!,
+  mailUrl = env["KANI_RECOVERY_TEST_MAIL"]!;
 const quote = (s: unknown) => (s === null ? "null" : "'" + String(s).replaceAll("'", "''") + "'");
 const sql = (q: string) =>
   execFileSync(
@@ -66,7 +66,7 @@ const db = {
   },
 };
 const auth = () =>
-  createClient(authUrl, env.KANI_RECOVERY_TEST_ANON!, {
+  createClient(authUrl, env["KANI_RECOVERY_TEST_ANON"]!, {
     auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
     global: {
       fetch: ((input: any, init: any) => {
@@ -81,10 +81,10 @@ async function provider(path: string, body?: unknown, method = "POST") {
   const r = await fetch(authUrl + path, {
     method,
     headers: {
-      Authorization: "Bearer " + env.KANI_RECOVERY_TEST_SERVICE,
+      Authorization: "Bearer " + env["KANI_RECOVERY_TEST_SERVICE"],
       "content-type": "application/json",
     },
-    body: body === undefined ? undefined : JSON.stringify(body),
+    body: body === undefined ? null : JSON.stringify(body),
   });
   if (!r.ok) throw new Error("Isolated Auth admin operation failed: " + r.status);
   return r.json();
@@ -243,13 +243,13 @@ describe.skipIf(!container)("Staff recovery with real isolated Auth, PostgreSQL 
     }
   });
   it("rejects an expired recovery token", async () => {
-    const u = users.manager,
+    const u = users["manager"],
       token = await freshToken(u);
     sql(`update auth.users set recovery_sent_at=now()-interval '2 hours' where id=${quote(u.id)}`);
     expect(await complete(token, password())).toEqual({ ok: false, code: "INVALID_LINK" });
   });
   it("checks password confirmation before consuming the provider link", async () => {
-    const token = await freshToken(users.admin);
+    const token = await freshToken(users["admin"]);
     expect(await complete(token, "short")).toEqual({ ok: false, code: "PASSWORD_POLICY" });
     expect(await complete(token, password(), password())).toEqual({
       ok: false,
@@ -258,7 +258,7 @@ describe.skipIf(!container)("Staff recovery with real isolated Auth, PostgreSQL 
     expect(await complete(token, password())).toEqual({ ok: true });
   });
   it("rechecks eligibility after the link was issued; disabled staff cannot change a password or become active", async () => {
-    const u = users.barber,
+    const u = users["barber"],
       token = await freshToken(u);
     sql(`update public.staff_profiles set active=false where user_id=${quote(u.id)}`);
     expect(await complete(token, password())).toEqual({ ok: false, code: "INVALID_LINK" });
@@ -268,9 +268,9 @@ describe.skipIf(!container)("Staff recovery with real isolated Auth, PostgreSQL 
   it("ignores malformed, honeypot and cross-origin requests without sending or enqueueing", async () => {
     const before = sql("select count(*) from kani_private.staff_recovery_requests");
     for (const r of [
-      request("password-recovery", { email: users.admin.email }, "https://untrusted.invalid"),
+      request("password-recovery", { email: users["admin"].email }, "https://untrusted.invalid"),
       request("password-recovery", { email: "invalid" }),
-      request("password-recovery", { email: users.admin.email, website: "filled" }),
+      request("password-recovery", { email: users["admin"].email, website: "filled" }),
     ]) {
       expect(await (await handleStaffRecoveryRequest(r, undefined, deps)).json()).toEqual({
         message: STAFF_RECOVERY_MESSAGE,

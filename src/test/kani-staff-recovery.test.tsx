@@ -31,7 +31,7 @@ afterEach(() => {
 describe("Staff recovery forms", () => {
   for (const result of ["accepted", "suppressed", "limited", "unavailable"])
     it(`keeps the same public message for ${result}`, async () => {
-      const fetchMock = vi.fn(
+      const fetchMock = vi.fn<typeof fetch>(
         result === "unavailable"
           ? () => Promise.reject(new Error("controlled offline"))
           : () => Promise.resolve(new Response("{}")),
@@ -45,7 +45,7 @@ describe("Staff recovery forms", () => {
       expect(await screen.findByRole("status")).toHaveTextContent(STAFF_RECOVERY_MESSAGE);
       expect(screen.getByRole("button", { name: "Enviar enlace" })).toBeDisabled();
       expect(fetchMock).toHaveBeenCalledTimes(1);
-      expect(fetchMock.mock.calls[0][0]).toBe("/api/staff/password-recovery");
+      expect(fetchMock.mock.calls[0]![0]).toBe("/api/staff/password-recovery");
       expect(screen.getByRole("link", { name: "Volver al inicio de sesión" })).toHaveAttribute(
         "href",
         "/panel-administracion",
@@ -89,7 +89,7 @@ describe("Staff recovery forms", () => {
     );
     expect(mocks.signOut).toHaveBeenCalledWith("local");
     expect(screen.queryByLabelText("Nueva contraseña")).not.toBeInTheDocument();
-    expect(fetchMock.mock.calls[0][0]).toBe("/api/staff/password-reset");
+    expect(fetchMock.mock.calls[0]![0]).toBe("/api/staff/password-reset");
     expect(screen.getByRole("link", { name: "Volver al inicio de sesión" })).toHaveAttribute(
       "href",
       "/panel-administracion",
