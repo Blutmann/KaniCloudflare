@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAdminStaff } from "@/lib/kani-admin-context";
 import { sortClients, type ClientOrder } from "./client-order";
 import { clientHistory } from "@/lib/kani-v2";
+import { formatStoredPhone } from "@/lib/kani-phone";
 import { money, formatServiceName } from "@/lib/kani-model";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { useV2, type V2Client } from "./data";
@@ -11,6 +12,7 @@ import { Empty, Metric, Status } from "./shared";
 import { isStaffOperator } from "@/lib/kani-permissions";
 import { useClientDialogViewport } from "./use-client-dialog-viewport";
 import "./client-dialog.css";
+import "./client-cards-mobile.css";
 
 function clientDate(value: string) {
   const [year, month, day] = value.slice(0, 10).split("-");
@@ -198,7 +200,7 @@ export function V2Clients() {
                 <div className="v2-client-main-info">
                   <h2 className="v2-client-name">{c.name}</h2>
                   <div className="v2-client-contact">
-                    <span className="v2-client-phone">{c.phone || "Sin celular"}</span>
+                    <span className="v2-client-phone"><span className="v2-client-desktop-only">{c.phone || "Sin celular"}</span><span className="v2-client-mobile-only">{c.phone ? formatStoredPhone(c.phone) : "Sin celular"}</span></span>
                     {c.email && (
                       <>
                         <span className="v2-client-dot">·</span>
@@ -251,7 +253,7 @@ export function V2Clients() {
                   className="v2-secondary v2-client-details-btn"
                   onClick={() => setSelectedId(c.id)}
                 >
-                  Ver detalles
+                  <span className="v2-client-desktop-only">Ver detalles</span><span className="v2-client-mobile-only">Detalles</span>
                 </button>
               </div>
             </div>
