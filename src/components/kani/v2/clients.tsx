@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAdminStaff } from "@/lib/kani-admin-context";
 import { sortClients, type ClientOrder } from "./client-order";
 import { clientHistory } from "@/lib/kani-v2";
-import { formatStoredPhone } from "@/lib/kani-phone";
+import { ClientCardMobile } from "./client-card-mobile";
 import { money, formatServiceName } from "@/lib/kani-model";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { useV2, type V2Client } from "./data";
@@ -200,7 +200,7 @@ export function V2Clients() {
                 <div className="v2-client-main-info">
                   <h2 className="v2-client-name">{c.name}</h2>
                   <div className="v2-client-contact">
-                    <span className="v2-client-phone"><span className="v2-client-desktop-only">{c.phone || "Sin celular"}</span><span className="v2-client-mobile-only">{c.phone ? formatStoredPhone(c.phone) : "Sin celular"}</span></span>
+                    <span className="v2-client-phone">{c.phone || "Sin celular"}</span>
                     {c.email && (
                       <>
                         <span className="v2-client-dot">·</span>
@@ -253,9 +253,17 @@ export function V2Clients() {
                   className="v2-secondary v2-client-details-btn"
                   onClick={() => setSelectedId(c.id)}
                 >
-                  <span className="v2-client-desktop-only">Ver detalles</span><span className="v2-client-mobile-only">Detalles</span>
+                  Ver detalles
                 </button>
               </div>
+              <ClientCardMobile
+                client={c}
+                canEdit={editable}
+                canDelete={isAdmin}
+                onDetails={() => setSelectedId(c.id)}
+                onEdit={(event) => openEditor(c, event)}
+                onDelete={(event) => promptDelete(c, event)}
+              />
             </div>
           );
         })}

@@ -1,50 +1,79 @@
-/* Presentation only: preserve the existing desktop cards and stored contacts. */
-.v2-client-card .v2-client-mobile-only { display: none; }
+/* Three compact mobile rows; existing desktop markup keeps its original layout. */
+.v2-client-card .v2-client-mobile-grid { display: none; }
 
 @media (max-width: 767px) {
   .v2-client-grid > .v2-client-card {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: flex-start;
-    gap: 6px 8px;
-    padding: 10px 12px;
+    display: block;
+    padding: 4px 10px;
   }
-  .v2-client-card .v2-client-desktop-only,
-  .v2-client-card .v2-avatar,
-  .v2-client-card .v2-client-meta { display: none; }
-  .v2-client-card .v2-client-mobile-only { display: inline; }
-  .v2-client-card .v2-client-identity {
-    flex: 1 0 100%;
-    order: 0;
-    gap: 0;
+  .v2-client-card > :not(.v2-client-mobile-grid) { display: none; }
+  .v2-client-card .v2-client-mobile-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) max-content;
+    grid-template-rows: repeat(3, 36px);
+    align-items: center;
+    gap: 2px 10px;
     min-width: 0;
   }
-  .v2-client-card .v2-client-main-info { width: 100%; gap: 3px; }
-  .v2-client-card .v2-client-contact { display: block; font-size: 12px; line-height: 1.5; }
-  .v2-client-card .v2-client-phone { white-space: nowrap; }
-  .v2-client-card .v2-client-dot { display: inline; margin-inline: 5px; }
-  .v2-client-card .v2-client-email { display: inline; overflow-wrap: anywhere; }
-  .v2-client-card .v2-client-details-btn {
-    order: 1;
+  .v2-client-mobile-info {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    min-width: 0;
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--muted-foreground);
+  }
+  .v2-client-mobile-info > svg { flex: 0 0 16px; }
+  .v2-client-mobile-name { grid-area: 1 / 1; }
+  .v2-client-mobile-grid:not(:has(> .delete)) .v2-client-mobile-name { grid-column: 1 / -1; }
+  .v2-client-mobile-grid:not(:has(> .edit)) .v2-client-mobile-email { grid-column: 1 / -1; }
+  .v2-client-mobile-name h2 {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+    margin: 0;
+    min-width: 0;
+    font-size: 15px;
+    line-height: 1.2;
+    font-weight: 700;
+    color: var(--foreground);
+  }
+  .v2-client-mobile-email { grid-area: 2 / 1; }
+  .v2-client-mobile-phone { grid-area: 3 / 1; }
+  .v2-client-mobile-phone > svg { color: #25d366; }
+  .v2-client-mobile-info a, .v2-client-mobile-empty {
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .v2-client-mobile-info a { display: flex; align-items: center; min-height: 36px; color: inherit; }
+  .v2-client-mobile-info a > span { overflow: hidden; text-overflow: ellipsis; }
+  .v2-client-mobile-info a:hover { text-decoration: underline; }
+  .v2-client-mobile-info a:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; border-radius: 3px; }
+  .v2-client-mobile-grid .v2-client-action-btn {
+    width: 36px;
+    min-width: 36px;
+    height: 36px;
+    min-height: 36px;
+    justify-self: end;
+    border-radius: var(--radius-control);
+  }
+  .v2-client-mobile-grid .v2-client-action-btn.delete { grid-area: 1 / 2; }
+  .v2-client-mobile-grid .v2-client-action-btn.edit { grid-area: 2 / 2; }
+  .v2-client-mobile-grid .v2-client-details-btn {
+    grid-area: 3 / 2;
+    justify-self: end;
     width: auto;
     min-width: 0;
-    flex: 0 0 auto;
-    height: 44px;
-    min-height: 44px;
-    padding: 6px 12px;
+    height: 36px;
+    min-height: 36px;
+    padding: 4px 8px;
+    font-size: 13px;
+    line-height: 1.4;
   }
-  .v2-client-card .v2-client-action-btn {
-    flex: 0 0 44px;
-    width: 44px;
-    min-width: 44px;
-    height: 44px;
-    min-height: 44px;
-  }
-  .v2-client-card .v2-client-action-btn.edit { order: 2; }
-  .v2-client-card .v2-client-action-btn.delete { order: 3; }
-}
-
-@media (min-width: 600px) and (max-width: 767px) {
-  .v2-client-card .v2-client-identity { flex: 1 1 260px; }
 }
