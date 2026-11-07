@@ -4,11 +4,10 @@ import {
   CalendarDays,
   Clock3,
   CreditCard,
-  Home,
   Users,
   ChartNoAxesCombined,
   RefreshCw,
-  Tag,
+  House,
 } from "lucide-react";
 import { AdminAccess } from "@/components/kani/admin-access";
 import { AdminStaffProvider, useAdminStaff } from "@/lib/kani-admin-context";
@@ -16,17 +15,16 @@ import { mayAccessStaffSection } from "@/lib/kani-permissions";
 import { clearStaffCache, getAuthenticatedStaff, type AuthenticatedStaff } from "@/lib/kani-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { isV2AdminEnvironment } from "@/lib/kani-v2";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { V2DataProvider, useV2 } from "./data";
 import "./v2.css";
 
 const sections = [
-  { to: "/panel-administracion/inicio", title: "Inicio", icon: Home },
   { to: "/panel-administracion/turnos", title: "Turnos", icon: CalendarDays },
   { to: "/panel-administracion/horarios", title: "Horarios", icon: Clock3 },
   { to: "/panel-administracion/pagos", title: "Pagos", icon: CreditCard },
   { to: "/panel-administracion/clientes", title: "Clientes", icon: Users },
   { to: "/panel-administracion/datos", title: "Datos", icon: ChartNoAxesCombined },
-  { to: "/panel-administracion/descuentos", title: "Descuentos", icon: Tag },
 ] as const;
 
 export function V2Layout() {
@@ -134,7 +132,26 @@ function V2Shell() {
       <header className="v2-navigation">
         <nav className="admin-section-nav v2-nav" aria-label="Administración">
           <div className="admin-section-nav-items">
-            {sections.filter(({ to }) => mayAccessStaffSection(profile, to.split('/').at(-1)!) && (profile.role === 'ADMIN' || !to.endsWith('/inicio'))).map(({ to, title, icon: Icon }) => (
+            {mayAccessStaffSection(profile, 'inicio') && (
+              <TooltipProvider delayDuration={250}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Link
+                      to="/panel-administracion/inicio"
+                      aria-label="Inicio"
+                      className="admin-section-nav-link"
+                      activeOptions={{ exact: true }}
+                      activeProps={{ className: "is-active", "aria-current": "page" }}
+                    >
+                      <House size={16} aria-hidden="true" />
+                      <span>Inicio</span>
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">Inicio</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+            {sections.filter(({ to }) => mayAccessStaffSection(profile, to.split('/').at(-1)!)).map(({ to, title, icon: Icon }) => (
               <Link
                 key={to}
                 to={to}

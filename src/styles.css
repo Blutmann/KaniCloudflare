@@ -5040,3 +5040,36 @@ html[data-theme="light"] :is(
   background-color: #F5F2EA !important;
 }
 
+
+/* Contacto: solid light cards retain their hover, border and focus treatments. */
+html[data-theme='light'] .contacto-page .studio-info-grid .studio-info-card {
+  background: #fff !important;
+}
+
+/* Override the shared translucent-surface selector only for the light header. */
+html[data-theme='light'] .site-header .header-controls .header-control-button,
+html[data-theme='light'] .site-header .header-controls .header-control-button:hover:not(:disabled) {
+  background: #fff !important;
+}
+html[data-theme='light'] .site-header .header-controls .header-control-button:active:not(:disabled) {
+  background: #f5f2ea !important;
+}
+
+/* Mobile dark header backgrounds follow the screen and menu state. */
+@media (max-width: 767px) {
+  html[data-theme='dark'] header.site-header {
+    background: #000000 !important;
+  }
+
+  /* Clear the sticky backing layer without fading any header content. */
+  html[data-theme='dark'] .site-header-slot:is([data-administrative='true'], [data-transparent-booking='true'], :has(> header.menu-open)) {
+    background: transparent !important;
+  }
+  html[data-theme='dark'] .site-header-slot[data-administrative='true'] > header.site-header {
+    background: rgb(0 0 0 / 50%) !important;
+  }
+  html[data-theme='dark'] .site-header-slot[data-transparent-booking='true'] > header.site-header,
+  html[data-theme='dark'] .site-header-slot > header.site-header.menu-open {
+    background: rgb(0 0 0 / 0%) !important;
+  }
+}

@@ -12,11 +12,20 @@
     "format": "prettier --write .",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:staff-recovery": "vitest run src/test/kani-staff-recovery.test.tsx src/test/kani-staff-recovery-server.test.ts src/test/kani-staff-recovery-runtime.test.ts src/test/kani-barber-email-scheduled.test.ts",
+    "test:staff-recovery:integration": "node scripts/test-staff-recovery.mjs",
     "deploy": "vite build && npx wrangler deploy --config .output/server/wrangler.json",
-    "test:staff": "vitest run src/lib/kani-permissions.test.ts src/lib/kani-payment-amounts.test.ts src/lib/kani-staff-request.server.test.ts src/test/kani-v2-staff-reads.test.ts src/test/kani-v2-payments.test.tsx src/lib/kani-staff-provisioning.server.test.ts src/test/kani-v2-role-navigation.test.tsx src/test/kani-worker-staff-security.test.ts src/test/kani-activation.test.tsx",
+    "test:staff": "vitest run src/lib/kani-permissions.test.ts src/lib/kani-payment-amounts.test.ts src/lib/kani-staff-request.server.test.ts src/test/kani-v2-staff-reads.test.ts src/test/kani-v2-payments.test.tsx src/lib/kani-staff-provisioning.server.test.ts src/test/kani-v2-role-navigation.test.tsx src/test/kani-worker-staff-security.test.ts src/test/kani-activation.test.tsx src/test/kani-manager-codes.test.tsx src/test/kani-manager-schedule.test.tsx src/test/kani-menu-interaction.test.tsx src/lib/kani-role-scope.test.ts",
     "test:staff:sql": "node scripts/test-staff-permissions.mjs",
     "test:availability:sql": "node scripts/test-staff-permissions.mjs supabase/tests/availability-columns.py",
-    "test:booking": "vitest run src/lib/kani-manual-appointments.test.ts src/test/kani-reserva-v2.test.tsx src/test/kani-reserva-v3.test.tsx"
+    "test:public-booking": "vitest run src/lib/kani-public-booking.test.ts src/lib/kani-availability.test.ts src/test/kani-reserva-v4.test.tsx src/test/kani-reserva-v4-payway-ux.test.tsx src/test/kani-reserva-v4-pending-payment-recovery.test.tsx src/test/kani-reserva-v4-mobile-buttons.test.tsx",
+    "test:public-booking:sql": "node scripts/test-staff-permissions.mjs supabase/tests/public-booking-visibility.py",
+    "test:booking": "vitest run src/lib/kani-manual-appointments.test.ts src/test/kani-reserva-v2.test.tsx src/test/kani-reserva-v3.test.tsx",
+    "test:notifications": "vitest run src/lib/kani-admin-activity.test.ts src/lib/kani-notification-dates.test.ts src/test/kani-notification-inbox.test.tsx src/test/kani-v2-payments.test.tsx src/test/kani-v2-agenda-periods.test.tsx src/lib/kani-v2.test.ts",
+    "test:advance-payments:sql": "node scripts/test-staff-permissions.mjs supabase/tests/advance-payments.py",
+    "test:notifications:sql": "node scripts/test-staff-permissions.mjs supabase/tests/notification-inbox.py",
+    "test:barber-email": "vitest run src/test/kani-barber-email.test.ts src/test/kani-barber-email-scheduled.test.ts src/test/kani-confirmed-email.test.ts src/test/kani-resend-webhook.test.ts src/lib/kani-phone.test.ts src/test/kani-notifications-dispatch.test.ts src/test/kani-notification-channel-dispatches.test.ts src/test/kani-google-calendar-sync.test.ts src/test/kani-google-calendar-stage2.test.ts src/lib/kani-mercadopago-audit.test.ts",
+    "test:barber-email:sql": "node scripts/test-staff-permissions.mjs supabase/tests/barber-confirmation-email.py"
   },
   "overrides": {
     "rolldown": "1.2.1"

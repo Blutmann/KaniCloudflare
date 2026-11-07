@@ -4,6 +4,7 @@ import {
   verifyResendWebhookSignature,
   isResendEventDuplicate,
   clearProcessedResendEventsForTest,
+  forgetFailedResendEvent,
 } from "@/lib/kani-resend-webhook";
 
 describe("Resend Webhook Official Svix Signature Verification & Idempotency", () => {
@@ -105,5 +106,11 @@ describe("Resend Webhook Official Svix Signature Verification & Idempotency", ()
     expect(isResendEventDuplicate(eventId)).toBe(false);
     expect(isResendEventDuplicate(eventId)).toBe(true);
     expect(isResendEventDuplicate("svix_event_otro")).toBe(false);
+  });
+  it('permite reintentar la persistencia cuando falló el primer procesamiento',()=>{
+    expect(isResendEventDuplicate('retry-persist')).toBe(false);
+    forgetFailedResendEvent('retry-persist');
+    expect(isResendEventDuplicate('retry-persist')).toBe(false);
+    expect(isResendEventDuplicate('retry-persist')).toBe(true);
   });
 });

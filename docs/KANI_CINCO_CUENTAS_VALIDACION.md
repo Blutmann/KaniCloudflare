@@ -102,21 +102,25 @@ y el uso de [packageManager para fijar herramientas](https://developers.cloudfla
 Una URL preview no demuestra aislamiento de Supabase ni de proveedores: no se
 deben realizar reservas, cobros ni envíos reales desde ella para validar esta rama.
 
-## Activación pendiente
+## Activación y estado productivo
 
-El inventario de solo lectura encontró a Lautaro ya activo como BARBER con su
-barbero correcto, y una cuenta ADMIN activa. Las otras cuatro identidades todavía
-no se crearon. El script `scripts/invite-kani-staff.mjs` preserva identidades,
+La entrega productiva del 4 de noviembre conservó las cuentas de Lautaro y ADMIN,
+creó las otras cuatro identidades con sus perfiles y publicó el panel actualizado.
+Tras un primer rechazo SMTP, el titular actualizó la credencial y las cuatro
+invitaciones se reenviaron correctamente; esas cuentas siguen sin confirmar,
+pendientes de la activación por sus titulares. El script `scripts/invite-kani-staff.mjs` preserva identidades,
 requiere los UUID existentes y un roster privado fuera de Git; su modo inicial
-solo planifica. `--send` verifica migraciones, URL canónica, redirect permitido
-y SMTP antes de enviar invitaciones individuales. No establece contraseñas comunes.
+solo planifica. `--prepare` crea identidades sin contraseña ni correo, y `--send`
+reanuda las invitaciones de las identidades sin confirmar. No establece
+contraseñas comunes ni vuelve a invitar a cuentas ya confirmadas.
 
 La activación `/activar-cuenta` permite a cada invitado definir su contraseña.
 Las invitaciones se deben enviar después de publicar esa ruta y completar las
 migraciones. Nunca guardar roster, contraseñas o claves privilegiadas en Git.
 
-Para la entrega productiva posterior se debe coordinar el cambio de esquema y
-el Worker compatible: las nuevas restricciones revocan escrituras directas del
-libro de cobros. No aplicar solamente las migraciones dejando la interfaz antigua.
-Quedan pendientes la activación real de cuentas y las comprobaciones funcionales
-productivas; esta etapa se limita a implementación, preservación y validación.
+El esquema y el Worker compatible ya están aplicados. Los permisos se verificaron
+en producción con las seis identidades y operaciones revertidas. La activación
+por sus titulares sigue pendiente, junto con la
+reconciliación de una migración histórica rechazada por el check de Supabase.
+Consultar [el resultado productivo](KANI_PRODUCCION_CINCO_CUENTAS_2026-11-04.md)
+para distinguir las operaciones ejecutadas de esos pendientes.

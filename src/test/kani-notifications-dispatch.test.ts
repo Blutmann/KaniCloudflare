@@ -1,11 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-const { mockClaim, mockComplete, mockFail, mockRecordError } = vi.hoisted(() => ({
+const { mockClaim, mockComplete, mockFail, mockRecordError, mockBarber } = vi.hoisted(() => ({
   mockClaim: vi.fn(),
   mockComplete: vi.fn(),
   mockFail: vi.fn(),
   mockRecordError: vi.fn(),
+  mockBarber:vi.fn(),
 }));
+vi.mock('../lib/kani-barber-email.server',()=>({ dispatchBarberConfirmationEmails:mockBarber }));
 
 vi.mock("@supabase/supabase-js", () => ({
   createClient: () => ({
@@ -41,6 +43,8 @@ describe("dispatchAppointmentNotification Matrix", () => {
     mockComplete.mockReset().mockResolvedValue({ data: true, error: null });
     mockFail.mockReset().mockResolvedValue({ data: true, error: null });
     mockRecordError.mockReset().mockResolvedValue({ data: true, error: null });
+    // A failed barber email must never change the customer's successful dispatch.
+    mockBarber.mockReset().mockResolvedValue({ processed:1,accepted:0,failed:1 });
   });
 
   afterEach(() => {
@@ -98,6 +102,7 @@ describe("dispatchAppointmentNotification Matrix", () => {
 
     expect(result.sent).toBe(true);
     expect(result.status).toBe("SENT");
+    expect(mockBarber).toHaveBeenCalledWith({appointmentId:baseAppointmentId,limit:1});
 
     // Verify Pontiun contract: template name and language
     expect(capturedPontiunBody).toBeDefined();

@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   role: "BARBER",
   depositSupported: true,
   payments: [] as any[],
+  benefit: null as any,
 }));
 vi.mock("@tanstack/react-router", () => ({ useSearch: () => ({}) }));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc: mocks.rpc } }));
@@ -30,6 +31,7 @@ vi.mock("@/components/kani/v2/data", () => ({
         time: "10:00",
         depositPaid: true,
         depositAmountArs: 5000,
+        ...mocks.benefit,
       },
     ],
     payments: mocks.payments,
@@ -51,6 +53,7 @@ describe("V2 quick collection", () => {
     mocks.role = "BARBER";
     mocks.depositSupported = true;
     mocks.payments = [];
+    mocks.benefit = null;
   });
   it("registers an anonymous walk-in using the authenticated barber and server clock", async () => {
     mocks.rpc.mockResolvedValue({ data: { id: "p1" }, error: null });
@@ -110,7 +113,31 @@ describe("V2 quick collection", () => {
     fireEvent.change(dialog.getByLabelText('Servicio'),{target:{value:'Corte y barba'}});
     expect(dialog.getByLabelText('Precio servicio ($ ARS)')).toHaveValue(30000);
     expect(dialog.getByLabelText('Descuento ($ ARS)')).toHaveValue(5000);
-    expect(dialog.getByLabelText('Importe final ($ ARS, incluye seña)')).toHaveValue(25000);
+    expect(dialog.getByLabelText('Importe total')).toHaveValue(25000);
     expect(dialog.getByLabelText('Barbero')).toBeDisabled();
   });
+});
+
+describe('Benefit-aware appointment collection',()=>{
+ beforeEach(()=>{mocks.rpc.mockReset();mocks.refresh.mockReset();mocks.payments=[];mocks.role='BARBER';mocks.depositSupported=true;});
+ it.each([[2500,22500,17500]])('keeps benefit discount %i and the true remaining balance',async(discount,final,balance)=>{
+  mocks.benefit={benefitCode:'CONTROL',benefitOriginalPriceArs:25000,benefitDiscountAmountArs:discount,benefitFinalPriceArs:final,depositPaid:final>0,depositAmountArs:final>0?5000:0};
+  mocks.rpc.mockResolvedValue({data:{id:'benefit-payment'},error:null});
+  render(<V2Payments/>);fireEvent.click(screen.getByRole('button',{name:'Con turno'}));fireEvent.change(screen.getByLabelText('Turno'),{target:{value:'a1'}});
+  expect(screen.getByText('$'+balance.toLocaleString('es-AR'),{selector:'.v2-total-box-amount'})).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button',{name:/Registrar cobro|Cobrar/i}));await waitFor(()=>expect(mocks.rpc).toHaveBeenCalled());
+  expect(mocks.rpc.mock.calls.at(-1)[1]).toMatchObject({p_appointment_id:'a1',p_service_price_ars:25000,p_discount_value:discount});
+ });
+ it('offers a future appointment and uses the server clock for its receipt',async()=>{
+  mocks.benefit={date:'2097-01-10'};mocks.rpc.mockResolvedValue({data:{id:'advance'},error:null});
+  render(<V2Payments/>);fireEvent.click(screen.getByRole('button',{name:'Con turno'}));fireEvent.change(screen.getByLabelText('Turno'),{target:{value:'a1'}});
+  fireEvent.click(screen.getByRole('button',{name:/Registrar cobro|Cobrar/i}));await waitFor(()=>expect(mocks.rpc).toHaveBeenCalledTimes(1));
+  expect(mocks.rpc.mock.calls[0][1]).toMatchObject({p_appointment_id:'a1'});expect(mocks.rpc.mock.calls[0][1]).not.toHaveProperty('p_payment_date');
+ });
+ it('does not record a fictitious zero receipt for a free service',()=>{
+  mocks.benefit={benefitCode:'FREE',benefitOriginalPriceArs:25000,benefitDiscountAmountArs:25000,benefitFinalPriceArs:0,depositPaid:false,depositAmountArs:0};
+  render(<V2Payments/>);fireEvent.click(screen.getByRole('button',{name:'Con turno'}));fireEvent.change(screen.getByLabelText('Turno'),{target:{value:'a1'}});
+  expect(screen.getByRole('button',{name:/Registrar cobro|Cobrar/i})).toBeDisabled();expect(screen.getByText('Sin saldo pendiente.')).toBeInTheDocument();expect(mocks.rpc).not.toHaveBeenCalled();
+ });
+
 });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { countryDisplayName, formatPhoneDisplay, formatPhoneInput, formatPhoneWithCountryAndWhatsApp, getWhatsAppUrl, normalizeCountrySearch, normalizePhone, otherPhoneCountries, phoneCountries, phonePlaceholder, primaryPhoneCountries } from "./kani-phone";
+import { countryDisplayName, formatStoredPhone, formatPhoneDisplay, formatPhoneInput, formatPhoneWithCountryAndWhatsApp, getWhatsAppUrl, normalizeCountrySearch, normalizePhone, otherPhoneCountries, phoneCountries, phonePlaceholder, primaryPhoneCountries } from "./kani-phone";
 
 describe("phone normalization", () => {
   it("generates direct WhatsApp wa.me links correctly", () => {
@@ -147,3 +147,7 @@ describe('invalid WhatsApp destinations', () => {
     expect(getWhatsAppUrl('5491128436014')).toBe('https://wa.me/5491128436014');
   });
 });
+
+ describe('stored appointment contact presentation',()=>{
+ it.each([['1128436014','+54 9 11 2843-6014'],['+5491128436014','+54 9 11 2843-6014'],['+5493512345678','+54 9 351 234-5678'],['+56987654321','+56 9 8765 4321'],['+34612345678','+34 612 34 56 78'],['invalid','invalid']])('formats %s without changing its country', (raw,expected)=>{expect(formatStoredPhone(raw)).toBe(expected);});
+ });

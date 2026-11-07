@@ -1,0 +1,33 @@
+/* Presentation only: keep the existing inputs, spacing and payment calculations. */
+.v2-payment-compact-form :is(.v2-payment-form-fieldset, .v2-payment-grid, .v2-payment-row) {
+  min-width: 0;
+  max-width: 100%;
+}
+.v2-payment-compact-form .v2-payment-row {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.v2-payment-compact-form .v2-payment-row > * {
+  min-width: 0;
+}
+/* WebKit's native option text must not enlarge the grid's scrollable width. */
+.v2-payment-compact-form .v2-payment-col:has(select) {
+  overflow-x: clip;
+  overflow-clip-margin: 4px;
+}
+.v2-payment-compact-form input[type="number"],
+.v2-payment-edit-dialog input[type="number"] {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.v2-payment-compact-form .v2-total-box-amount-wrap {
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 3px;
+  min-width: 0;
+  margin-left: auto;
+  text-align: right;
+}
+.v2-payment-compact-form :is(.v2-total-box-amount, .v2-total-box-breakdown) {
+  text-align: right;
+}

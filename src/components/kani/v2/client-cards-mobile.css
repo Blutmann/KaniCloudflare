@@ -1,0 +1,50 @@
+/* Presentation only: preserve the existing desktop cards and stored contacts. */
+.v2-client-card .v2-client-mobile-only { display: none; }
+
+@media (max-width: 767px) {
+  .v2-client-grid > .v2-client-card {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 6px 8px;
+    padding: 10px 12px;
+  }
+  .v2-client-card .v2-client-desktop-only,
+  .v2-client-card .v2-avatar,
+  .v2-client-card .v2-client-meta { display: none; }
+  .v2-client-card .v2-client-mobile-only { display: inline; }
+  .v2-client-card .v2-client-identity {
+    flex: 1 0 100%;
+    order: 0;
+    gap: 0;
+    min-width: 0;
+  }
+  .v2-client-card .v2-client-main-info { width: 100%; gap: 3px; }
+  .v2-client-card .v2-client-contact { display: block; font-size: 12px; line-height: 1.5; }
+  .v2-client-card .v2-client-phone { white-space: nowrap; }
+  .v2-client-card .v2-client-dot { display: inline; margin-inline: 5px; }
+  .v2-client-card .v2-client-email { display: inline; overflow-wrap: anywhere; }
+  .v2-client-card .v2-client-details-btn {
+    order: 1;
+    width: auto;
+    min-width: 0;
+    flex: 0 0 auto;
+    height: 44px;
+    min-height: 44px;
+    padding: 6px 12px;
+  }
+  .v2-client-card .v2-client-action-btn {
+    flex: 0 0 44px;
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
+  }
+  .v2-client-card .v2-client-action-btn.edit { order: 2; }
+  .v2-client-card .v2-client-action-btn.delete { order: 3; }
+}
+
+@media (min-width: 600px) and (max-width: 767px) {
+  .v2-client-card .v2-client-identity { flex: 1 1 260px; }
+}

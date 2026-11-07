@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Restablecé tu contraseña</title>
+  </head>
+  <body
+    style="
+      margin: 0;
+      padding: 0;
+      background: #090909;
+      color: #f7f5ef;
+      font-family: Inter, Arial, sans-serif;
+    "
+  >
+    <table
+      role="presentation"
+      width="100%"
+      cellpadding="0"
+      cellspacing="0"
+      style="background: #090909"
+    >
+      <tr>
+        <td align="center" style="padding: 24px 16px">
+          <table
+            role="presentation"
+            width="560"
+            cellpadding="0"
+            cellspacing="0"
+            style="
+              width: 100%;
+              max-width: 560px;
+              background: #151515;
+              border: 1px solid #3d3420;
+              border-radius: 12px;
+            "
+          >
+            <tr>
+              <td style="padding: 28px 24px; text-align: center">
+                <img
+                  src="https://www.kanibarber.com/kani-email-logo.png"
+                  alt="KANI Barber Studio"
+                  width="156"
+                  style="
+                    display: block;
+                    width: 156px;
+                    max-width: 100%;
+                    height: auto;
+                    margin: 0 auto 24px;
+                  "
+                />
+                <h1
+                  style="
+                    margin: 0 0 20px;
+                    color: #c9a24d;
+                    font-family: Georgia, serif;
+                    font-size: 26px;
+                    font-weight: 400;
+                  "
+                >
+                  Restablecé tu contraseña
+                </h1>
+                <p style="margin: 0 0 24px; font-size: 15px; line-height: 1.7; color: #f7f5ef">
+                  Recibimos una solicitud para restablecer la contraseña de tu cuenta de Kani Barber
+                  Studio.
+                </p>
+                <!-- Fixed official destination; the fragment never reaches HTTP request logs. OTP is consumed only on password submission. -->
+                <a
+                  href="https://www.kanibarber.com/restablecer-contrasena#token_hash={{ .TokenHash }}&amp;type=recovery"
+                  style="
+                    display: inline-block;
+                    padding: 15px 22px;
+                    border-radius: 8px;
+                    background: #74283e;
+                    color: #ffffff;
+                    text-decoration: none;
+                    font-size: 15px;
+                    font-weight: 600;
+                  "
+                  >Restablecer contraseña</a
+                >
+                <p style="margin: 24px 0 0; font-size: 13px; line-height: 1.7; color: #c5c0b5">
+                  El enlace es temporal y de un solo uso.
+                </p>
+                <p style="margin: 12px 0 0; font-size: 13px; line-height: 1.7; color: #c5c0b5">
+                  Si no solicitaste este cambio, podés ignorar este correo.
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

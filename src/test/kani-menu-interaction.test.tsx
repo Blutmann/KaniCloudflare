@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const location = vi.hoisted(() => ({ pathname: "/reservar" }));
+const identity = vi.hoisted(() => ({ role: null as string | null, read: vi.fn() }));
 const MenuContext = createContext({
   mobileMenuOpen: false,
   setMobileMenuOpen: (_open: boolean) => {},
@@ -19,7 +20,11 @@ vi.mock("@tanstack/react-router", () => ({
   useNavigate: () => vi.fn(),
   useRouterState: ({ select }: { select: (value: unknown) => string }) => select({ location }),
 }));
-vi.mock("@/lib/kani-auth", () => ({ getAuthenticatedStaff: async () => null, signOut: vi.fn() }));
+vi.mock("@/lib/kani-auth", () => ({
+  getAuthenticatedStaff: (...args: unknown[]) => identity.read(...args),
+  signOut: vi.fn(),
+}));
+vi.mock("@/components/kani/admin-activity-popover", () => ({ AdminActivityPopover: () => null }));
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     auth: { onAuthStateChange: () => ({ data: { subscription: { unsubscribe: vi.fn() } } }) },
@@ -40,12 +45,49 @@ function Harness() {
 
 describe("mobile navigation scroll and closing", () => {
   beforeEach(() => {
+    identity.role = null;
+    identity.read
+      .mockReset()
+      .mockImplementation(async () =>
+        identity.role ? { user: { id: "controlled-staff" }, profile: { role: identity.role, display_name: "Personal" } } : null,
+      );
     location.pathname = "/reservar";
     window.history.replaceState({}, "", "/reservar");
     vi.stubGlobal("scrollY", 240);
     vi.stubGlobal("scrollTo", vi.fn());
     document.body.style.overflow = "clip";
   });
+  it("refreshes the menu identity instead of keeping a late anonymous result", async () => {
+    identity.role = "MANAGER";
+    let complete: (value: unknown) => void = () => {};
+    identity.read.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          complete = resolve;
+        }),
+    );
+    render(<Harness />);
+    fireEvent.click(screen.getByRole("button", { name: "Abrir menú" }));
+    expect(await screen.findByRole("link", { name: "Códigos" })).toBeInTheDocument();
+    complete(null);
+    await waitFor(() => expect(screen.getByRole("link", { name: "Códigos" })).toBeInTheDocument());
+  });
+  it.each(["MANAGER", "BARBER", "ADMIN"])(
+    "keeps codes in the manager menu and maintenance restricted to ADMIN: %s",
+    async (role) => {
+      identity.role = role;
+      render(<Harness />);
+      await waitFor(() =>
+        expect(screen.getByRole("button", { name: "Abrir menú" })).toBeInTheDocument(),
+      );
+      fireEvent.click(screen.getByRole("button", { name: "Abrir menú" }));
+      await screen.findByText(role === "ADMIN" ? "KANI Admin" : "Personal");
+      expect(Boolean(screen.queryByRole("link", { name: "Códigos" }))).toBe(role === "MANAGER");
+      expect(Boolean(screen.queryByRole("link", { name: "Panel de mantenimiento" }))).toBe(
+        role === "ADMIN",
+      );
+    },
+  );
   afterEach(() => {
     document.body.removeAttribute("style");
     vi.unstubAllGlobals();

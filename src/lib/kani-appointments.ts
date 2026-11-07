@@ -1,3 +1,4 @@
+import { notifyActivityChanged } from './kani-admin-activity';
 import { supabase } from '@/integrations/supabase/client';
 import type { Tables } from '@/integrations/supabase/types';
 import type { AuthenticatedStaff } from '@/lib/kani-auth';
@@ -202,6 +203,7 @@ export function appointmentErrorMessage(error: unknown) {
     return 'El correo electrónico del cliente debe tener un formato válido.';
   }
   if (message.includes('BARBER_REQUIRED')) return 'Tenés que seleccionar un barbero.';
+  if (message.includes('BARBER_NOT_PUBLICLY_BOOKABLE')) return 'Ese profesional no está disponible para reservas online. Elegí otro para continuar.';
   if (message.includes('DATE_REQUIRED')) return 'Tenés que indicar una fecha.';
   if (message.includes('START_TIME_REQUIRED')) return 'Tenés que seleccionar un horario para el turno.';
   if (message.includes('CUSTOM_SERVICE_NAME_REQUIRED')) return 'El nombre del servicio personalizado es obligatorio.';
@@ -305,6 +307,7 @@ export async function createManualAppointment(input: CreateManualAppointmentInpu
     }
   }
 
+  notifyActivityChanged();
   return row;
 }
 
@@ -654,6 +657,7 @@ export async function updateRealAppointmentStatus(id: string, status: 'CONFIRMED
   if (row?.notification_claim_token) {
     await dispatchAppointmentNotification(id, row.notification_claim_token);
   }
+  notifyActivityChanged();
   return row?.appointment_status;
 }
 

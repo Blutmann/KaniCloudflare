@@ -13,6 +13,8 @@
   "vars": {
     "KANI_CANONICAL_HOST": "www.kanibarber.com",
     "SUPABASE_URL": "https://iockpxtkflyjfagkvgnr.supabase.co",
+    "RESEND_FROM_EMAIL": "Kani Barber <noresponder@kanibarber.com>",
+    "RESEND_BARBER_FROM_EMAIL": "Kani Barber <turnos@kanibarber.com>",
     "PAYWAY_SANDBOX_ENABLED": "false",
     "PAYWAY_PRODUCTION_ENABLED": "true",
     "PAYWAY_ENVIRONMENT": "production",

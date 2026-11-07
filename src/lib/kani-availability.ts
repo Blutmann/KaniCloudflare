@@ -111,27 +111,18 @@ export async function readConfiguredServices(options: { bypassCache?: boolean } 
   return result;
 }
 
-let cachedActiveBarbers: { data: { id: string; name: string }[]; timestamp: number } | null = null;
-const BARBERS_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
-
-export function clearActiveBarbersCache() {
-  cachedActiveBarbers = null;
-}
-
-async function getActiveBarbers(): Promise<{ id: string; name: string }[]> {
-  const now = Date.now();
-  if (cachedActiveBarbers && now - cachedActiveBarbers.timestamp < BARBERS_CACHE_TTL_MS) {
-    return cachedActiveBarbers.data;
-  }
-  const { data, error } = await supabase.from('barbers').select('id, name').eq('active', true);
+export async function readPublicBookingBarbers(): Promise<{ id: string; name: Barber }[]> {
+  const { data, error } = await supabase.rpc('read_public_booking_barbers');
   if (error) throw error;
-  const result = data ?? [];
-  cachedActiveBarbers = { data: result, timestamp: now };
-  return result;
+  // Staff sessions can also read hidden barbers, so filter the response explicitly.
+  // Keep the established display order and the separate internal roster.
+  return barbers.flatMap(name => (data ?? [])
+    .filter(row => row.name === name && row.public_booking_enabled === true)
+    .map(row => ({ id: row.id, name })));
 }
 
 export async function readPublicAvailabilityStarts(barber: Barber | null, fromDate: string, toDate: string) {
-  const allBarbers = await getActiveBarbers();
+  const allBarbers = await readPublicBookingBarbers();
   const barberRows = barber ? allBarbers.filter(b => b.name === barber) : allBarbers;
   if (!barberRows.length) return [] as PublicAvailabilityStart[];
   const barberById = new Map(barberRows.map(row => [row.id, row.name as Barber]));

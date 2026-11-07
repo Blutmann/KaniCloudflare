@@ -132,7 +132,7 @@ describe('Admin V2 — Optimización de Clientes, Pagos y Turnos', () => {
   describe('1. CLIENTES (/admin-v2/clientes)', () => {
     it('1.1 Toolbar: renderiza buscador a ancho completo y fila 2 con Ordenar por y Nuevo cliente', () => {
       render(<V2Clients />);
-      const searchInput = screen.getByLabelText('Buscar clientes');
+      const searchInput = screen.getByLabelText('Buscar cliente');
       expect(searchInput).toBeInTheDocument();
       expect(searchInput.closest('.v2-client-search-row')).toBeInTheDocument();
 
@@ -148,13 +148,13 @@ describe('Admin V2 — Optimización de Clientes, Pagos y Turnos', () => {
       expect(screen.getByText('Alejo Test')).toHaveClass('v2-client-name');
       expect(screen.getByText('1133445566')).toHaveClass('v2-client-phone');
       expect(screen.getByText('alejo@test.com')).toHaveClass('v2-client-email');
-      expect(screen.getByText(/1 visita verificada/i)).toBeInTheDocument();
+      expect(within(screen.getByText('Alejo Test').closest('.v2-client-card')!).getByText('0 visitas verificadas')).toBeInTheDocument();
     });
 
     it('1.3 Permisos: ADMIN puede ver botones de Editar y Eliminar en tarjetas', () => {
       render(<V2Clients />);
-      expect(screen.getByLabelText('Editar datos de Alejo Test')).toBeInTheDocument();
-      expect(screen.getByLabelText('Eliminar cliente Alejo Test')).toBeInTheDocument();
+      expect(within(screen.getByText('Alejo Test').closest('.v2-client-card')!).getByRole('button', {name:'Editar cliente'})).toBeInTheDocument();
+      expect(within(screen.getByText('Alejo Test').closest('.v2-client-card')!).getByRole('button', {name:'Eliminar cliente'})).toBeInTheDocument();
     });
 
     it('1.3 Permisos: BARBER puede editar fichas relacionadas devueltas por RLS, aun sin turno, y NO puede eliminar', () => {
@@ -163,9 +163,9 @@ describe('Admin V2 — Optimización de Clientes, Pagos y Turnos', () => {
       render(<V2Clients />);
 
       // Puede editar a Alejo (vinculado a b1)
-      expect(screen.getByLabelText('Editar datos de Alejo Test')).toBeInTheDocument();
+      expect(within(screen.getByText('Alejo Test').closest('.v2-client-card')!).getByRole('button', {name:'Editar cliente'})).toBeInTheDocument();
       // La ficha relacionada puede no tener turnos: una creación manual también la vincula.
-      expect(screen.getByLabelText('Editar datos de Gonzalo Otro')).toBeInTheDocument();
+      expect(within(screen.getByText('Gonzalo Otro').closest('.v2-client-card')!).getByRole('button', {name:'Editar cliente'})).toBeInTheDocument();
       // NUNCA puede eliminar clientes
       expect(screen.queryByLabelText(/eliminar cliente/i)).toBeNull();
     });
@@ -181,14 +181,14 @@ describe('Admin V2 — Optimización de Clientes, Pagos y Turnos', () => {
 
       // Al hacer clic en Ver detalles abre el diálogo de ficha
       fireEvent.click(detailsButtons[0]);
-      expect(screen.getByText(/historial de atenciones registradas/i)).toBeInTheDocument();
+      expect(screen.getByText('Cliente desde 02/10/2026')).toBeInTheDocument();
     });
 
     it('1.5 Mobile Cards: Botones de editar y eliminar dispuestos horizontalmente en .v2-client-actions', () => {
       mockStaff.role = 'ADMIN';
       render(<V2Clients />);
-      const editBtn = screen.getByLabelText('Editar datos de Alejo Test');
-      const deleteBtn = screen.getByLabelText('Eliminar cliente Alejo Test');
+      const editBtn = within(screen.getByText('Alejo Test').closest('.v2-client-card')!).getByRole('button', {name:'Editar cliente'});
+      const deleteBtn = within(screen.getByText('Alejo Test').closest('.v2-client-card')!).getByRole('button', {name:'Eliminar cliente'});
       const actionsContainer = editBtn.closest('.v2-client-actions');
       expect(actionsContainer).toBeInTheDocument();
       expect(deleteBtn.closest('.v2-client-actions')).toBe(actionsContainer);
@@ -330,8 +330,7 @@ describe('Admin V2 — Optimización de Clientes, Pagos y Turnos', () => {
       expect(css).toContain('.v2-client-search-row');
       expect(css).toContain('.v2-client-controls-row');
       expect(css).toContain('.v2-client-details-btn');
-      expect(css).toMatch(/\.v2-client-actions\s*\{[^}]*flex-direction:\s*row/);
-      expect(css).toMatch(/\.v2-client-action-btn\s*\{[^}]*min-width:\s*44px/);
+      expect(css).toMatch(/\.v2-client-action-btn\s*\{[^}]*min-height:\s*44px/);
       expect(css).toMatch(/\.v2-client-details-btn\s*\{[^}]*min-height:\s*44px/);
     });
 

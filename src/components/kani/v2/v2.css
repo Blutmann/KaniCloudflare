@@ -72,12 +72,14 @@ html[data-theme="dark"] :is(.v2-shell, .v2-dialog) {
   gap: 16px;
 }
 
-/* The same navigation capsule as V1, with six sections on every screen. */
+/* Six equal navigation tabs and the trailing refresh action. */
 .v2-navigation {
   display: grid;
   gap: 10px;
 }
 .v2-nav.admin-section-nav {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 1px 44px;
   background: var(--v2-surface);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -85,18 +87,44 @@ html[data-theme="dark"] :is(.v2-shell, .v2-dialog) {
 }
 .v2-nav .admin-section-nav-items {
   grid-template-columns: repeat(6, minmax(0, 1fr));
+  width: 100%;
+  justify-items: stretch;
+  align-items: stretch;
 }
 .v2-nav .admin-section-nav-link {
+  width: 100%;
+  justify-self: stretch;
   min-height: 44px;
   font-size: 12px;
 }
 .v2-nav .admin-section-nav-refresh-btn {
+  grid-column: 3;
+  justify-self: end;
   width: 44px;
   height: 44px;
+}
+.v2-nav .admin-section-nav-divider {
+  margin-inline: 0;
+  justify-self: center;
 }
 .v2-workspace {
   min-width: 0;
 }
+.v2-code-grid { display: grid; align-items: start; grid-template-columns: repeat(auto-fit, minmax(min(100%, 26rem), 1fr)); gap: 16px; }
+.v2-code-card, .v2-code-card-heading, .v2-code-facts > div { min-width: 0; }
+.v2-code-card { overflow-wrap: anywhere; }
+.v2-code-card-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+.v2-code-card-heading h2 { min-width: 0; margin: 0; }
+.v2-code-status { display: inline-flex; align-items: center; padding: 4px 10px; border: 1px solid var(--border); border-radius: 999px; font-size: 12px; font-weight: 500; background: var(--muted); color: var(--muted-foreground); }
+.v2-code-status[data-status="ACTIVE"] { color: #047857; background: #10b98115; border-color: #10b98150; }
+.v2-code-status[data-status="CONSUMED"] { color: #0369a1; background: #0ea5e915; border-color: #0ea5e950; }
+html[data-theme="dark"] .v2-code-status[data-status="ACTIVE"] { color: #34d399; }
+html[data-theme="dark"] .v2-code-status[data-status="CONSUMED"] { color: #38bdf8; }
+.v2-code-facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 16px; margin-bottom: 0; }
+.v2-code-facts dt { margin-bottom: 4px; }
+.v2-code-facts dd { margin: 0; }
+.v2-code-usages summary { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+.v2-code-usages ul { display: grid; gap: 8px; margin: 12px 0 0; padding: 0; list-style: none; }
 
 /* Keep standalone notes readable over either tone of the ink brush. */
 .v2-page > .v2-footnote {
@@ -2170,7 +2198,7 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
   .v2-nav.admin-section-nav { gap: 2px; padding-inline: 3px; }
   .v2-nav .admin-section-nav-refresh-btn { width: 44px; min-width: 44px; height: 44px; padding-inline: 0; }
   .v2-nav .admin-section-nav-divider { margin-inline: 0; }
-  .v2-nav .admin-section-nav-items { width: auto; flex: 1 1 0; }
+  .v2-nav .admin-section-nav-items { width: 100%; }
 }
 
 .v2-appointments-page > .v2-page-title {
@@ -3388,6 +3416,38 @@ input[placeholder="Nombre, celular o email"]::placeholder {
   white-space: nowrap;
 }
 
+/* Desktop clients share the solid filter surface; mobile keeps its two rows. */
+@media (min-width: 768px) {
+  .v2-client-toolbar-container {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) max-content;
+    align-items: end;
+    gap: 14px;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+    background: #1C1C1C;
+    box-shadow: var(--v2-shadow);
+  }
+  html[data-theme="light"] .v2-client-toolbar-container {
+    background: #FFFFFF;
+  }
+  .v2-client-toolbar-container .v2-client-search-row,
+  .v2-client-toolbar-container .v2-search {
+    min-width: 0;
+  }
+  .v2-client-toolbar-container .v2-client-controls-row {
+    display: grid;
+    grid-template-columns: 180px max-content;
+    align-items: end;
+    width: auto;
+    gap: 14px;
+  }
+  .v2-client-toolbar-container .v2-client-add-btn {
+    justify-content: center;
+  }
+}
+
 .v2-client-card {
   display: grid;
   grid-template-columns: minmax(220px, 1.8fr) minmax(140px, 1.2fr) auto auto;
@@ -3509,18 +3569,15 @@ input[placeholder="Nombre, celular o email"]::placeholder {
   }
   .v2-client-card {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-areas:
-      "identity actions"
-      "meta meta"
-      "cta cta";
-    gap: 8px 12px;
+    grid-template-columns: minmax(0, 3fr) minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas: none;
+    gap: 8px;
     padding: 12px 14px;
   }
   .v2-client-identity {
-    grid-area: identity;
+    grid-area: 1 / 1 / 2 / -1;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 10px;
     min-width: 0;
   }
@@ -3539,22 +3596,17 @@ input[placeholder="Nombre, celular o email"]::placeholder {
     display: none;
   }
   .v2-client-actions {
-    grid-area: actions;
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 8px;
+    display: contents;
   }
   .v2-client-action-btn {
-    min-width: 44px;
+    min-width: 0;
     min-height: 44px;
-    width: 44px;
+    width: 100%;
     height: 44px;
     border-radius: var(--radius-control);
   }
   .v2-client-meta {
-    grid-area: meta;
+    grid-area: 2 / 1 / 3 / -1;
     display: flex;
     flex-direction: row;
     align-items: center;
@@ -3564,16 +3616,34 @@ input[placeholder="Nombre, celular o email"]::placeholder {
     padding-top: 2px;
   }
   .v2-client-cta {
-    grid-area: cta;
-    display: flex;
-    margin-top: 2px;
+    display: contents;
   }
   .v2-client-details-btn {
+    grid-area: 3 / 1;
     width: 100%;
     min-height: 44px;
+    height: 44px;
+    min-width: 0;
+    padding: 4px 6px;
     justify-content: center;
     font-size: 13px;
     font-weight: 500;
+  }
+  .v2-client-action-btn.edit { grid-area: 3 / 2; }
+  .v2-client-action-btn.delete { grid-area: 3 / 3; }
+  .v2-client-card:not(:has(.v2-client-action-btn.delete)) {
+    grid-template-columns: minmax(0, 4fr) minmax(0, 1fr);
+  }
+  .v2-client-card:not(:has(.v2-client-action-btn)) { grid-template-columns: minmax(0, 1fr); }
+  .v2-client-tag, .v2-client-meta-sep { display: none; }
+  .v2-client-main-info { flex: 1; }
+  .v2-client-contact { width: 100%; }
+  .v2-client-name, .v2-client-phone, .v2-client-email {
+    max-width: 100%;
+    white-space: normal;
+    text-overflow: clip;
+    overflow: visible;
+    overflow-wrap: anywhere;
   }
 }
 
@@ -4551,4 +4621,56 @@ html[data-theme="light"] :is(
   opacity: 0.8 !important;
 }
 
+/* Client cards keep their geometry and hover borders with solid theme fills. */
+html[data-theme="light"] .v2-client-card {
+  background-color: #fff !important;
+}
 
+html[data-theme="dark"] .v2-client-card {
+  background-color: #1c1c1c !important;
+}
+
+/* Share dark payment control contrast with the two history selectors. */
+html[data-theme="dark"] .v2-payment-entry-field :is(input, select),
+html[data-theme="dark"] .v2-payments-history-panel > .v2-filters > .v2-field > select {
+  background-color: #f9f9f9f9 !important;
+  color: #1c1c1c;
+  -webkit-text-fill-color: #1c1c1c;
+  caret-color: #1c1c1c;
+  color-scheme: light;
+}
+
+html[data-theme="dark"] .v2-payment-entry-field select option,
+html[data-theme="dark"] .v2-payments-history-panel > .v2-filters > .v2-field > select option {
+  background-color: #f9f9f9;
+  color: #1c1c1c;
+  -webkit-text-fill-color: #1c1c1c;
+}
+
+
+/* History filters use an opaque fill without changing the entry controls. */
+html[data-theme="dark"] .v2-payments-history-panel > .v2-filters > .v2-field > select {
+  background-color: #f9f9f9 !important;
+}
+
+/* Client search and ordering share a solid control surface in both themes. */
+.v2-client-search-field {
+  gap: 4px;
+}
+.v2-client-toolbar-container :is(
+  .v2-client-search-row .v2-search input, .v2-client-order select
+) {
+  background: #fff !important;
+  color: #111 !important;
+  -webkit-text-fill-color: #111;
+  caret-color: #111;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.7;
+  color-scheme: light;
+}
+.v2-client-toolbar-container .v2-client-order select option {
+  background: #fff;
+  color: #111;
+}

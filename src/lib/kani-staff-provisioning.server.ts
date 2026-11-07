@@ -72,19 +72,34 @@ export async function planStaffInvitations(db: any, rows: StaffInvite[]) {
   }
   const { data: profiles, error } = await db
     .from("staff_profiles")
-    .select("user_id,role,barber_id");
+    .select("user_id,role,barber_id,active");
   if (error) throw new Error("Cannot inspect existing profiles");
   return rows.map((row) => {
-    const user = users.find(
+    const matches = users.filter(
       (u) => u.email?.trim().toLowerCase() === row.email.trim().toLowerCase(),
     );
+    if (matches.length > 1) throw new Error("Duplicate Auth identity");
+    const user = matches[0];
     const profile = profiles.find((p: any) => p.user_id === user?.id);
     if (
       profile &&
-      (profile.role === "ADMIN" || profile.role !== row.role || profile.barber_id !== row.barberId)
+      (profile.role === "ADMIN" ||
+        profile.role !== row.role ||
+        profile.barber_id !== row.barberId ||
+        profile.active === false)
     )
       throw new Error("An existing identity has a protected or different staff assignment");
-    return { row, userId: user?.id as string | undefined, profileExists: Boolean(profile) };
+    if (
+      row.barberId &&
+      profiles.some((p: any) => p.barber_id === row.barberId && p.user_id !== user?.id)
+    )
+      throw new Error("Permanent barber already belongs to another identity");
+    return {
+      row,
+      userId: user?.id as string | undefined,
+      profileExists: Boolean(profile),
+      invitationPending: !user || !(user.email_confirmed_at || user.confirmed_at),
+    };
   });
 }
 
@@ -94,33 +109,52 @@ export async function sendStaffInvitations(
   config: Record<string, unknown>,
 ) {
   verifyInviteConfiguration(config);
+  return provisionStaffAccounts(db, rows, true);
+}
+
+// Creates unconfirmed identities without passwords or mail. A later --send invites
+// those same identities; confirmed accounts and existing assignments are preserved.
+export async function prepareStaffAccounts(db: any, rows: StaffInvite[]) {
+  return provisionStaffAccounts(db, rows, false);
+}
+
+async function provisionStaffAccounts(db: any, rows: StaffInvite[], send: boolean) {
   const plan = await planStaffInvitations(db, rows);
   const outcomes: Array<{ name: string; status: string; emailSent: boolean; userId?: string }> = [];
   for (const item of plan) {
     let userId = item.userId;
     let emailSent = false;
-    if (!userId) {
-      const { data, error } = await db.auth.admin.inviteUserByEmail(
-        item.row.email.trim().toLowerCase(),
-        { redirectTo: STAFF_INVITE_REDIRECT, data: { display_name: item.row.name } },
-      );
-      if (error || !data.user?.id) {
-        outcomes.push({ name: item.row.name, status: "INVITATION_FAILED", emailSent: false });
+    if (!userId || (send && item.invitationPending)) {
+      const email = item.row.email.trim().toLowerCase();
+      const { data, error } = send
+        ? await db.auth.admin.inviteUserByEmail(email, {
+            redirectTo: STAFF_INVITE_REDIRECT,
+            data: { display_name: item.row.name },
+          })
+        : await db.auth.admin.createUser({
+            email,
+            email_confirm: false,
+            user_metadata: { display_name: item.row.name },
+          });
+      if (error || !data.user?.id || (userId && data.user.id !== userId)) {
+        outcomes.push({
+          name: item.row.name,
+          status: send ? "INVITATION_FAILED" : "ACCOUNT_CREATION_FAILED",
+          emailSent: false,
+        });
         continue;
       }
       userId = data.user.id;
-      emailSent = true;
+      emailSent = send;
     }
     if (!item.profileExists) {
-      const { error } = await db
-        .from("staff_profiles")
-        .insert({
-          user_id: userId,
-          role: item.row.role,
-          barber_id: item.row.barberId,
-          display_name: item.row.name,
-          active: true,
-        });
+      const { error } = await db.from("staff_profiles").insert({
+        user_id: userId,
+        role: item.row.role,
+        barber_id: item.row.barberId,
+        display_name: item.row.name,
+        active: true,
+      });
       if (error) {
         outcomes.push({
           name: item.row.name,
@@ -133,7 +167,11 @@ export async function sendStaffInvitations(
     }
     outcomes.push({
       name: item.row.name,
-      status: emailSent ? "INVITED" : "EXISTING_IDENTITY_PRESERVED",
+      status: emailSent
+        ? "INVITED"
+        : item.invitationPending
+          ? "AWAITING_INVITATION"
+          : "EXISTING_IDENTITY_PRESERVED",
       emailSent,
       ...(userId ? { userId } : {}),
     });
