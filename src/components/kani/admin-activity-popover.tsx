@@ -197,8 +197,11 @@ export function AdminActivityPopover({
         </PopoverTrigger>
         <PopoverContent ref={setPanelElement} side="bottom" sideOffset={10} align="end" className="notification-popover">
           <div className="notification-header">
-            <h2>Notificaciones</h2>
-            <p className="notification-unread-summary">{inbox.unread_count} sin leer</p>
+            <div className="notification-heading-line">
+              <h2>Notificaciones</h2>
+              <span className="notification-heading-separator" aria-hidden="true">·</span>
+              <p className="notification-unread-summary">{inbox.unread_count} sin leer</p>
+            </div>
             <Button type="button" variant="ghost" size="icon" className="notification-close" aria-label="Cerrar notificaciones" onClick={() => setOpen(false)}>
               <X aria-hidden="true" />
             </Button>

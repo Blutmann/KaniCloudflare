@@ -77,16 +77,28 @@
 html[data-theme] .notification-popover {
   /* Stay above the sticky agenda controls and below the existing detail dialogs. */
   z-index: 150;
+  padding-block: 8px;
 }
 .notification-popover .notification-header {
+  display: flex;
   align-items: center;
-  gap: 12px;
-  padding-bottom: 8px;
+  gap: 8px;
+  padding-bottom: 4px;
+}
+.notification-heading-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.notification-heading-separator {
+  color: var(--muted-foreground);
 }
 .notification-popover .notification-header h2 {
   margin: 0;
   font-size: 17px;
   line-height: 1.25;
+  white-space: nowrap;
 }
 .notification-popover .notification-unread-summary {
   margin: 0;
@@ -103,7 +115,7 @@ html[data-theme] .notification-popover {
 }
 .notification-popover .notification-list {
   gap: 8px;
-  padding-top: 8px;
+  padding-top: 4px;
 }
 .notification-popover .notification-item {
   display: block;
@@ -172,8 +184,14 @@ html[data-theme] .notification-popover {
   z-index: 210;
 }
 
-.notification-close {
-  display: none;
+.notification-popover .notification-close {
+  display: inline-flex;
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  margin-left: auto;
+  color: var(--foreground);
 }
 .notification-list-scroll {
   display: contents;
@@ -200,35 +218,23 @@ html[data-theme] .notification-popover {
     min-width: 0;
     box-sizing: border-box;
     margin: 0;
-    padding: 12px 12px 0;
+    padding: 4px 12px 0;
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;
     overflow: hidden;
     transform: none;
   }
   .notification-popover .notification-header {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 44px;
-    grid-template-rows: auto auto;
-    gap: 2px 8px;
     flex-shrink: 0;
   }
   .notification-popover .notification-header h2 {
-    grid-area: 1 / 1;
-    align-self: end;
-    overflow-wrap: anywhere;
-  }
-  .notification-popover .notification-unread-summary {
-    grid-area: 2 / 1;
+    font-size: 16px;
   }
   .notification-popover .notification-close {
-    grid-area: 1 / 2 / 3 / 3;
-    display: inline-flex;
+    flex-basis: 44px;
     width: 44px;
     height: 44px;
     min-height: 44px;
-    align-self: center;
-    color: var(--foreground);
   }
   .notification-popover .notification-inbox-toolbar {
     display: grid;
