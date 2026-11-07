@@ -181,7 +181,7 @@ describe('Admin V2 — Optimización de Clientes, Pagos y Turnos', () => {
 
       // Al hacer clic en Ver detalles abre el diálogo de ficha
       fireEvent.click(detailsButtons[0]);
-      expect(screen.getByText(/historial de atenciones registradas/i)).toBeInTheDocument();
+      expect(screen.getByText('Cliente desde 02/10/2026')).toBeInTheDocument();
     });
 
     it('1.5 Mobile Cards: Botones de editar y eliminar dispuestos horizontalmente en .v2-client-actions', () => {
