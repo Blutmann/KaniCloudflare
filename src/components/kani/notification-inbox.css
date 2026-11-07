@@ -302,26 +302,28 @@ html[data-theme] .notification-detail-dialog {
 }
 .notification-detail-heading {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  min-height: 44px;
   flex-shrink: 0;
-  padding-right: 52px;
+  padding: 48px 0 10px;
   gap: 8px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--border);
 }
 .notification-detail-heading h2 {
   margin: 0;
   font-size: 16px;
   overflow-wrap: anywhere;
-  flex: 1;
+  flex: 0 1 auto;
   min-width: 0;
   line-height: 1.4;
 }
 .notification-detail-state {
   display: flex;
-  justify-content: flex-end;
+  justify-content: flex-start;
   flex: 0 1 auto;
   min-width: 0;
-  max-width: 45%;
+  max-width: 100%;
   margin: 0;
 }
 .notification-detail-state .v2-badge {
@@ -335,8 +337,28 @@ html[data-theme] .notification-detail-dialog > button:has(> .sr-only) {
   right: 8px;
 }
 .notification-detail-scroll {
+  flex: 0 1 auto;
+  display: flex;
   min-height: 0;
   min-width: 0;
+  overflow: hidden;
+  overscroll-behavior: contain;
+}
+.notification-detail-dialog :is(.v2-page, .v2-agenda) {
+  display: flex !important;
+  flex-direction: column;
+  flex: 0 1 auto;
+  min-height: 0;
+  width: 100%;
+}
+html[data-theme] .notification-detail-dialog .v2-appointment {
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+.notification-detail-dialog .v2-appointment-main {
+  flex: 0 1 auto;
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
   overscroll-behavior: contain;
@@ -345,33 +367,10 @@ html[data-theme] .notification-detail-dialog > button:has(> .sr-only) {
   .notification-detail-heading h2 { font-size: 14px; }
   html[data-theme] .notification-detail-dialog {
     top: var(--notification-detail-top, 12px) !important;
-    height: var(--notification-detail-height, calc(100dvh - 24px));
+    height: auto;
     max-height: var(--notification-detail-height, calc(100dvh - 24px)) !important;
     --tw-translate-y: 0px !important;
     transform: none !important;
-  }
-  .notification-detail-scroll {
-    flex: 1;
-    display: flex;
-    overflow: hidden;
-  }
-  .notification-detail-dialog :is(.v2-page, .v2-agenda) {
-    display: flex !important;
-    flex-direction: column;
-    flex: 1;
-    min-height: 0;
-  }
-  html[data-theme] .notification-detail-dialog .v2-appointment {
-    flex: 1;
-    min-height: 0;
-    overflow: hidden;
-  }
-  .notification-detail-dialog .v2-appointment-main {
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
-    overflow-x: hidden;
-    overscroll-behavior: contain;
   }
 }
 html[data-theme] .notification-detail-dialog .v2-appointment {
@@ -391,6 +390,19 @@ html[data-theme] .notification-detail-dialog .v2-appointment {
 .notification-detail-dialog .v2-app-row-1 {
   align-items: flex-start !important;
 }
+.notification-detail-dialog .v2-app-time {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.notification-appointment-end { font-size: 11px; font-weight: 400; color: var(--muted-foreground); white-space: nowrap; }
+.notification-appointment-schedule { min-width: 0; }
+.notification-appointment-service { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 8px; font-size: 13px; line-height: 1.4; }
+.notification-appointment-service > span { min-width: 0; overflow-wrap: anywhere; }
+.notification-detail-dialog .notification-appointment-date { margin: 3px 0 0; font-size: 13px; line-height: 1.5; color: var(--muted-foreground); }
+.notification-contact-facts, .notification-appointment-discount { display: grid; gap: 6px; margin: 0; min-width: 0; }
+.notification-detail-dialog :is(.notification-contact-facts, .notification-appointment-discount) dt { font-size: 11px; color: var(--muted-foreground); line-height: 1.4; }
+.notification-detail-dialog :is(.notification-contact-facts, .notification-appointment-discount) dd { margin: 2px 0 0; font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
 .notification-detail-dialog .v2-app-name {
   white-space: normal !important;
   overflow: visible !important;
@@ -413,15 +425,23 @@ html[data-theme] .notification-detail-dialog .v2-appointment {
   overflow-wrap: anywhere;
 }
 .notification-detail-dialog .notification-appointment-facts {
-  gap: 6px 10px;
-  margin-block: 6px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 12px;
+  margin: 0;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sub, 8px);
+  background: var(--v2-inset);
 }
 .notification-detail-dialog .notification-appointment-facts dd {
   font-size: 14px;
   line-height: 1.5;
   white-space: normal;
   overflow-wrap: anywhere;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
+.notification-detail-dialog .notification-appointment-balance dd { color: var(--gold); font-weight: 600; }
 html[data-theme] .notification-detail-dialog .v2-appointment-actions {
   flex: none !important;
   width: 100% !important;

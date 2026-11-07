@@ -26,6 +26,7 @@ import {
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { BarberFilter, Empty } from "./shared";
 import { useV2 } from "./data";
+import './payment-amount-alignment.css';
 
 export function formatPaymentMethodLabel(method: string): string {
   if (!method) return "";
@@ -854,7 +855,7 @@ export function V2Payments() {
         open={!!editingPayment}
         onOpenChange={(open) => !open && !editBusy && setEditingPayment(null)}
       >
-        <DialogContent className="v2-dialog">
+        <DialogContent className="v2-dialog v2-payment-edit-dialog">
           <DialogTitle>Editar cobro registrado</DialogTitle>
           <DialogDescription>
             Modificá los detalles del cobro. Los cambios se registran con trazabilidad.

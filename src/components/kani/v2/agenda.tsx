@@ -172,6 +172,16 @@ export function V2Home() {
 export type AgendaPeriodPreset = "TODAY" | "THIS_WEEK" | "NEXT_10_DAYS" | "CUSTOM";
 export type AgendaPeriodFilter = AgendaPeriodPreset | "DATE";
 
+// Only the notification detail uses this compact, explicit Buenos Aires date presentation.
+function notificationDateLabel(value: string) {
+  return new Intl.DateTimeFormat('es-AR', {weekday:'long',day:'numeric',month:'long',timeZone:'America/Argentina/Buenos_Aires'})
+    .formatToParts(new Date(`${value}T12:00:00Z`))
+    .map(part => part.type === 'weekday' || part.type === 'month'
+      ? part.value.charAt(0).toUpperCase() + part.value.slice(1)
+      : part.value.replace(',', ''))
+    .join('');
+}
+
 export function V2Appointments({ notificationDetail, onNotificationChanged, onNotificationNavigate }: {
   notificationDetail?: NotificationAppointment;
   onNotificationChanged?: () => void;
@@ -561,7 +571,7 @@ export function V2Appointments({ notificationDetail, onNotificationChanged, onNo
             <div className="v2-appointment-main">
               {/* Fila 1: 10:00 | Matias Zarate | Estado */}
               <div className="v2-app-row-1">
-                <strong className="v2-app-time">{a.time}</strong>
+                <strong className="v2-app-time">{a.time}{notificationDetail && a.endTime && <small className="notification-appointment-end">hasta {a.endTime}</small>}</strong>
                 <span className="v2-app-sep">|</span>
                 <h3 className="v2-app-name" title={a.name}>{a.name}</h3>
                 {!notificationDetail && <>
@@ -572,7 +582,10 @@ export function V2Appointments({ notificationDetail, onNotificationChanged, onNo
               {notificationDetail && a.isManual && <span className="v2-manual-badge">Manual</span>}
 
               {/* Fila 2: 10:45 · Corte · Lautaro (· Fecha si isMultiDay) */}
-              <div className="v2-app-row-2">
+              {notificationDetail ? <div className="notification-appointment-schedule">
+                <div className="notification-appointment-service"><span>{formatServiceName(a.serviceName)}</span><span aria-hidden="true">|</span><span>{a.barber}</span></div>
+                <p className="notification-appointment-date">{notificationDateLabel(a.date)}</p>
+              </div> : <div className="v2-app-row-2">
                 {a.endTime && (
                   <>
                     <span className="v2-app-endtime">{a.endTime}</span>
@@ -588,7 +601,7 @@ export function V2Appointments({ notificationDetail, onNotificationChanged, onNo
                     <span className="v2-app-date">{dateLabel(a.date)}</span>
                   </>
                 )}
-              </div>
+              </div>}
 
               {/* Fila 3: Seña: No abonada · Importe: $25.000 */}
               {!notificationDetail && <div className="v2-app-row-3">
@@ -604,15 +617,19 @@ export function V2Appointments({ notificationDetail, onNotificationChanged, onNo
                 <span className="v2-app-price">Importe: {money(a.servicePrice ?? 0)}</span>
               </div>}
 
-              {notificationDetail && <dl className="notification-appointment-facts">
+              {notificationDetail && <>
+              <dl className="notification-contact-facts">
                 <div><dt>Celular</dt><dd>{notificationDetail.phone ? formatStoredPhone(notificationDetail.phone) : 'Sin celular registrado'}</dd></div>
                 <div><dt>Email</dt><dd>{notificationDetail.email || 'Sin email registrado'}</dd></div>
+              </dl>
+              <dl className="notification-appointment-facts">
                 <div><dt>Precio final</dt><dd>{money(notificationDetail.final_price)}</dd></div>
                 <div><dt>Seña abonada</dt><dd>{notificationDetail.deposit_verifiable ? money(notificationDetail.deposit_paid) : "Sin dato verificable"}</dd></div>
                 <div><dt>Cobros aplicados</dt><dd>{money(notificationDetail.collected)}</dd></div>
-                <div><dt>Saldo</dt><dd>{notificationDetail.deposit_verifiable ? money(notificationDetail.balance) : "Sin dato verificable"}</dd></div>
-                {notificationDetail.benefit && <div><dt>Descuento aplicado</dt><dd>{notificationDetail.benefit} · {({NO_DEPOSIT:'Reserva sin seña',FREE_SERVICE:'Servicio gratuito',PERCENT_10:'10 % de descuento',PERCENT_50:'50 % de descuento'} as Record<string,string>)[notificationDetail.benefit_type ?? ''] || 'Beneficio'}</dd></div>}
-              </dl>}
+                <div className="notification-appointment-balance"><dt>Saldo</dt><dd>{notificationDetail.deposit_verifiable ? money(notificationDetail.balance) : "Sin dato verificable"}</dd></div>
+              </dl>
+              {notificationDetail.benefit && <dl className="notification-appointment-discount"><div><dt>Descuento aplicado</dt><dd>{notificationDetail.benefit} · {({NO_DEPOSIT:'Reserva sin seña',FREE_SERVICE:'Servicio gratuito',PERCENT_10:'10 % de descuento',PERCENT_50:'50 % de descuento'} as Record<string,string>)[notificationDetail.benefit_type ?? ''] || 'Beneficio'}</dd></div></dl>}
+              </>}
               {/* Fila 4: Diagnóstico compacto y accesible de notificaciones */}
               {!notificationDetail && <div className="v2-app-notifications">
                 <div className="v2-notif-channel">
