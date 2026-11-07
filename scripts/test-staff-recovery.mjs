@@ -9,7 +9,14 @@ const prefix = `kani-recovery-${randomUUID().slice(0, 8)}`,
 const secret = randomBytes(40).toString("hex");
 const run = (args, input) => {
   const r = spawnSync("docker", args, { encoding: "utf8", input });
-  if (r.status !== 0) throw new Error(`Docker test operation failed (${args[0]})`);
+  if (r.status !== 0) {
+    const databaseError = args.includes("psql")
+      ? (r.stderr || "").split("\n").find((line) => /ERROR:|FATAL:/.test(line))
+      : "";
+    throw new Error(
+      `Docker test operation failed (${args[0]})${databaseError ? ": " + databaseError : ""}`,
+    );
+  }
   return r.stdout.trim();
 };
 const jwt = (role) => {
@@ -40,15 +47,25 @@ try {
     "POSTGRES_HOST_AUTH_METHOD=trust",
     "postgres:17",
   ]);
+  let databaseReady = false;
+  // The entrypoint's temporary initdb server accepts Unix sockets before final startup.
+  // Wait for TCP so bootstrap SQL cannot race its shutdown on a fresh CI runner.
   for (let i = 0; i < 60; i++) {
     if (
-      spawnSync("docker", ["exec", prefix + "-db", "pg_isready", "-U", "postgres"], {
-        stdio: "ignore",
-      }).status === 0
-    )
+      spawnSync(
+        "docker",
+        ["exec", prefix + "-db", "pg_isready", "-h", "127.0.0.1", "-U", "postgres"],
+        {
+          stdio: "ignore",
+        },
+      ).status === 0
+    ) {
+      databaseReady = true;
       break;
+    }
     await delay(500);
   }
+  if (!databaseReady) throw new Error("Isolated PostgreSQL did not finish initialization");
   run(
     ["exec", "-i", prefix + "-db", "psql", "-U", "postgres", "-v", "ON_ERROR_STOP=1"],
     `create schema auth; create schema kani_private; create role anon; create role authenticated; create role service_role bypassrls;
