@@ -1,6 +1,16 @@
 /* Presentation only: keep the existing inputs, spacing and payment calculations. */
-.v2-payment-compact-form input[type='number'],
-.v2-payment-edit-dialog input[type='number'] {
+.v2-payment-compact-form :is(.v2-payment-form-fieldset, .v2-payment-grid, .v2-payment-row) {
+  min-width: 0;
+  max-width: 100%;
+}
+.v2-payment-compact-form .v2-payment-row {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.v2-payment-compact-form .v2-payment-row > * {
+  min-width: 0;
+}
+.v2-payment-compact-form input[type="number"],
+.v2-payment-edit-dialog input[type="number"] {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
