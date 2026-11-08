@@ -16,6 +16,20 @@ describe("Mobile client contact links and existing actions", () => {
     expect(whatsapp).toHaveAttribute("rel", "noopener noreferrer");
     expect(client.phone).toBe("+5491128436014");
   });
+  it("removes informational icons and places Edit and Delete side-by-side in Row 1 in mandatory order [Editar, Eliminar]", () => {
+    const { container } = render(<ClientCardMobile client={client} canEdit canDelete {...callbacks()} />);
+    expect(container.querySelector(".v2-client-mobile-name svg")).toBeNull();
+    expect(container.querySelector(".v2-client-mobile-email svg")).toBeNull();
+    expect(container.querySelector(".v2-client-mobile-phone svg")).toBeNull();
+
+    const actionsContainer = container.querySelector(".v2-client-mobile-actions");
+    expect(actionsContainer).not.toBeNull();
+    const actionButtons = Array.from(actionsContainer!.querySelectorAll("button"));
+    expect(actionButtons.map((btn) => btn.getAttribute("aria-label"))).toEqual([
+      "Editar cliente",
+      "Eliminar cliente",
+    ]);
+  });
   it("keeps the original callbacks separate and stops card clicks from propagating", () => {
     const actions = callbacks(), parent = vi.fn();
     render(<div onClick={parent}><ClientCardMobile client={client} canEdit canDelete {...actions} /></div>);
@@ -37,10 +51,14 @@ describe("Mobile client contact links and existing actions", () => {
     expect(parent).not.toHaveBeenCalled();
   });
   it("does not render unauthorized editing or deletion actions", () => {
-    render(<ClientCardMobile client={client} canEdit={false} canDelete={false} {...callbacks()} />);
+    const { rerender } = render(<ClientCardMobile client={client} canEdit={false} canDelete={false} {...callbacks()} />);
     expect(screen.queryByRole("button", { name: "Editar cliente" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Eliminar cliente" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Detalles" })).toBeInTheDocument();
+
+    rerender(<ClientCardMobile client={client} canEdit canDelete={false} {...callbacks()} />);
+    expect(screen.getByRole("button", { name: "Editar cliente" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Eliminar cliente" })).not.toBeInTheDocument();
   });
   it("keeps international numbers and does not create links for missing contacts", () => {
     const { rerender } = render(<ClientCardMobile client={{ ...client, phone: "+12025550147" }} canEdit canDelete {...callbacks()} />);
