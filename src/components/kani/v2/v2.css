@@ -1363,8 +1363,8 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
     gap: 2px;
   }
   .v2-nav .admin-section-nav-refresh-btn {
-    width: 44px;
-    min-width: 44px;
+    width: 32px;
+    min-width: 32px;
   }
   .v2-nav .admin-section-nav-divider {
     margin-inline: 0;
@@ -2195,8 +2195,9 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
 .v2-whatsapp-icon { width: 16px; height: 16px; flex: 0 0 16px; fill: currentColor; }
 
 @media (max-width: 767px) {
-  .v2-nav.admin-section-nav { gap: 2px; padding-inline: 3px; }
-  .v2-nav .admin-section-nav-refresh-btn { width: 44px; min-width: 44px; height: 44px; padding-inline: 0; }
+  .v2-nav.admin-section-nav { grid-template-columns: minmax(0, 1fr) 1px 32px; gap: 2px; padding-inline: 3px; }
+  .v2-nav .admin-section-nav-refresh-btn { width: 32px; min-width: 32px; height: 44px; padding-inline: 0; position: relative; display: inline-flex; align-items: center; justify-content: center; }
+  .v2-nav .admin-section-nav-refresh-btn::before { content: ""; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); min-width: 44px; min-height: 44px; }
   .v2-nav .admin-section-nav-divider { margin-inline: 0; }
   .v2-nav .admin-section-nav-items { width: 100%; }
 }
