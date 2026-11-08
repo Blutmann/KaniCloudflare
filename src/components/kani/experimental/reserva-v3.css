@@ -522,6 +522,15 @@ html[data-theme='light'] .booking-v3 .phone-country-option {
 }
 
 /* Celular en Desktop: 50% selector de país/prefijo | 50% número de celular con igual altura y alineación */
+
+/* Celular en reservas: contenedor sin fondo para evitar artefactos sólidos entre campos */
+.booking-v3 .phone-input-row {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
 .booking-v3 .phone-input-row {
   display: grid !important;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
@@ -549,6 +558,12 @@ html[data-theme='light'] .booking-v3 .phone-country-option {
   box-sizing: border-box !important;
   display: flex !important;
   align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+}
+
+.booking-v3 .phone-country-trigger :is(span, svg) {
+  text-align: center !important;
 }
 
 .booking-v3 .phone-input-row .field-control {
@@ -568,6 +583,26 @@ html[data-theme='light'] .booking-v3 .phone-country-option {
   min-height: 44px !important;
   line-height: 44px !important;
   box-sizing: border-box !important;
+  text-align: center !important;
+  padding-left: 28px !important;
+  padding-right: 28px !important;
+  padding-inline: 28px !important;
+  padding-block: 0 !important;
+}
+
+.booking-v3 .phone-input-row input::placeholder {
+  text-align: center !important;
+}
+
+.booking-v3 .phone-input-row .field-validation-icon {
+  position: absolute !important;
+  top: 50% !important;
+  right: 7px !important;
+  transform: translateY(-50%) !important;
+  width: 18px !important;
+  height: 18px !important;
+  pointer-events: none !important;
+  z-index: 2 !important;
 }
 
 /* Aviso legal informativo alineado a la izquierda */
@@ -633,6 +668,12 @@ html[data-theme='light'] .booking-v3 .phone-country-option {
     box-sizing: border-box !important;
     display: flex !important;
     align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+  }
+
+  .booking-v3 .phone-country-trigger :is(span, svg) {
+    text-align: center !important;
   }
 
   .booking-v3 .phone-input-row .field-control {
@@ -649,6 +690,15 @@ html[data-theme='light'] .booking-v3 .phone-country-option {
     line-height: 44px !important;
     border-radius: var(--radius-control, 0.65rem) !important;
     box-sizing: border-box !important;
+    text-align: center !important;
+    padding-left: 28px !important;
+    padding-right: 28px !important;
+    padding-inline: 28px !important;
+    padding-block: 0 !important;
+  }
+
+  .booking-v3 .phone-input-row input::placeholder {
+    text-align: center !important;
   }
 
   /* 3. Altura compacta moderada (44px) para inputs en mobile */
@@ -775,8 +825,8 @@ html[data-theme='light'] .booking-v3 .phone-country-option {
 
 /* Datos: match the existing white discount field without changing input states. */
 html[data-theme='light'] .booking-page:is(.booking-v2, .booking-v3) .booking-contact-form :is(
-  input[name='name'], input#booking-v2-phone, input[name='email'],
-  .phone-input-row, .phone-country-trigger
+  input[name='name'], input#booking-v2-phone, input[name='phone'], input[name='email'],
+  .phone-country-trigger
 ) {
   background-color: #fff !important;
 }
@@ -800,7 +850,7 @@ html[data-theme='light'] .booking-page:is(.booking-v2, .booking-v3) .booking-con
 
 /* Dark Datos: opaque light controls, with the surrounding labels left unchanged. */
 html[data-theme='dark'] .booking-page:is(.booking-v2, .booking-v3) .booking-contact-form :is(
-  input[name='name'], input#booking-v2-phone, input[name='email'],
+  input[name='name'], input#booking-v2-phone, input[name='phone'], input[name='email'],
   input#booking-discount-code, .phone-country-trigger, .phone-country-search
 ) {
   background: #f9f9f9 !important;

@@ -1877,6 +1877,51 @@ html[data-theme='dark'] .studio-map-card {
 }
 
 
+/* Celular en reservas: contenedor sin fondo para evitar artefactos sólidos entre campos */
+.booking-page .phone-input-row,
+.booking-contact-form .phone-input-row {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Celular en reservas: selector de país y número (placeholder y valor) centrados horizontalmente */
+.booking-page .booking-contact-form .phone-country-trigger {
+  justify-content: center !important;
+  text-align: center !important;
+}
+.booking-page .booking-contact-form .phone-country-trigger :is(span, svg) {
+  text-align: center !important;
+}
+
+.booking-page .booking-contact-form .phone-input-row input,
+.booking-page .booking-contact-form input[name="phone"],
+.booking-page .booking-contact-form input#booking-v2-phone {
+  text-align: center !important;
+  padding-left: 28px !important;
+  padding-right: 28px !important;
+  padding-inline: 28px !important;
+  padding-block: 0 !important;
+}
+
+.booking-page .booking-contact-form .phone-input-row input::placeholder,
+.booking-page .booking-contact-form input[name="phone"]::placeholder,
+.booking-page .booking-contact-form input#booking-v2-phone::placeholder {
+  text-align: center !important;
+}
+
+.booking-page .booking-contact-form .phone-input-row .field-validation-icon {
+  position: absolute !important;
+  top: 50% !important;
+  right: 7px !important;
+  transform: translateY(-50%) !important;
+  width: 18px !important;
+  height: 18px !important;
+  pointer-events: none !important;
+  z-index: 2 !important;
+}
+
 /* Admin maintenance: responsive layout, consistent surfaces and theme-aware destructive flow. */
 .admin-maintenance-page {
   width: 100%;
@@ -4419,7 +4464,7 @@ html[data-theme] :is(
 .booking-page :is(.calendar-panel, .booking-summary-card, .booking-option, .booking-defer-option) {
   border-radius: var(--radius-card);
 }
-html[data-theme] .booking-page :is(.field-label input, .discount-input, #booking-discount-code, .phone-input-row, .phone-country-trigger, .notes-input, .summary-deposit-box) {
+html[data-theme] .booking-page :is(.field-label input, .discount-input, #booking-discount-code, .phone-country-trigger, .notes-input, .summary-deposit-box) {
   background: var(--kani-surface-inset) !important;
   border-color: var(--kani-control-border);
   border-radius: var(--radius-control);
@@ -4492,7 +4537,7 @@ html[data-theme='light'] .booking-page :is(.booking-deposit-notice[role="note"],
 html[data-theme='light'] .booking-page .booking-time-slot:not(.selected):not(:disabled):not(.time-unavailable):hover {
   background: color-mix(in srgb, var(--primary) 5%, var(--kani-surface-strong)) !important;
 }
-html[data-theme='light'] .booking-page .booking-contact-form :is(.field-label input, .phone-input-row, .phone-country-trigger, .notes-input) {
+html[data-theme='light'] .booking-page .booking-contact-form :is(.field-label input, .phone-country-trigger, .notes-input) {
   background: var(--kani-surface-control) !important;
 }
 
