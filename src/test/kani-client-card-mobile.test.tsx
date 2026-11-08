@@ -68,4 +68,19 @@ describe("Mobile client contact links and existing actions", () => {
     expect(screen.getByText("Sin email")).toBeInTheDocument();
     expect(screen.getByText("Sin celular")).toBeInTheDocument();
   });
+  it("enforces balanced vertical spacing on mobile client cards: equivalent top margin and action gap", async () => {
+    const fs = await import("node:fs");
+    const path = await import("node:path");
+    const css = fs.readFileSync(path.resolve(process.cwd(), "src/components/kani/v2/client-cards-mobile.css"), "utf8");
+
+    // Card padding ensures greater separation from top border (9px)
+    expect(css).toMatch(/\.v2-client-grid\s*>\s*\.v2-client-card\s*\{[^}]*padding:\s*9px\s+12px;/);
+    // Vertical gap between upper actions and Detalles button matches distance to border
+    expect(css).toMatch(/--v2-client-btn-vgap:\s*10px;/);
+    // Left column padding is aligned with right column actions
+    expect(css).toMatch(/\.v2-client-mobile-name\s*\{[^}]*padding-top:\s*1px;/);
+    expect(css).toMatch(/\.v2-client-mobile-phone\s*\{[^}]*padding-bottom:\s*1px;/);
+    // Button actions grid configuration
+    expect(css).toMatch(/--v2-client-actions-width:\s*calc\(var\(--v2-client-btn-size\)\s*\*\s*2\s*\+\s*var\(--v2-client-btn-hgap\)\);/);
+  });
 });

@@ -4,14 +4,14 @@
 @media (max-width: 767px) {
   .v2-client-grid > .v2-client-card {
     display: block;
-    padding: 8px 12px;
+    padding: 9px 12px;
     height: auto;
   }
   .v2-client-card > :not(.v2-client-mobile-grid) { display: none; }
   .v2-client-card .v2-client-mobile-grid {
     --v2-client-btn-size: 36px;
     --v2-client-btn-hgap: 5px;
-    --v2-client-btn-vgap: 5px;
+    --v2-client-btn-vgap: 10px;
     --v2-client-actions-width: calc(var(--v2-client-btn-size) * 2 + var(--v2-client-btn-hgap));
     display: grid;
     grid-template-columns: minmax(0, 1fr) var(--v2-client-actions-width);
@@ -19,7 +19,7 @@
     align-content: space-between;
     align-items: center;
     column-gap: 10px;
-    row-gap: 2px;
+    row-gap: 3px;
     min-width: 0;
     min-height: calc(var(--v2-client-btn-size) * 2 + var(--v2-client-btn-vgap));
   }
@@ -36,7 +36,7 @@
   .v2-client-mobile-name {
     grid-column: 1;
     grid-row: 1;
-    padding-top: 4px;
+    padding-top: 1px;
   }
   .v2-client-mobile-grid:not(:has(> .v2-client-mobile-actions)) .v2-client-mobile-name {
     grid-column: 1 / -1;
@@ -72,7 +72,7 @@
   .v2-client-mobile-phone {
     grid-column: 1;
     grid-row: 3;
-    padding-bottom: 4px;
+    padding-bottom: 1px;
   }
   .v2-client-mobile-info a, .v2-client-mobile-empty {
     min-width: 0;
