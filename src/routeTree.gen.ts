@@ -56,6 +56,7 @@ import { Route as PanelAdministracionDescuentosRouteImport } from './routes/pane
 import { Route as PanelAdministracionHorariosRouteImport } from './routes/panel-administracion.horarios'
 import { Route as PanelAdministracionInicioRouteImport } from './routes/panel-administracion.inicio'
 import { Route as PanelAdministracionMantenimientoRouteImport } from './routes/panel-administracion.mantenimiento'
+import { Route as PanelAdministracionMembresiasRouteImport } from './routes/panel-administracion.membresias'
 import { Route as PanelAdministracionPagosRouteImport } from './routes/panel-administracion.pagos'
 import { Route as PanelAdministracionTurnosRouteImport } from './routes/panel-administracion.turnos'
 
@@ -302,6 +303,12 @@ const PanelAdministracionMantenimientoRoute =
     path: '/mantenimiento',
     getParentRoute: () => PanelAdministracionRoute,
   } as any)
+const PanelAdministracionMembresiasRoute =
+  PanelAdministracionMembresiasRouteImport.update({
+    id: '/membresias',
+    path: '/membresias',
+    getParentRoute: () => PanelAdministracionRoute,
+  } as any)
 const PanelAdministracionPagosRoute =
   PanelAdministracionPagosRouteImport.update({
     id: '/pagos',
@@ -360,6 +367,7 @@ export interface FileRoutesByFullPath {
   '/panel-administracion/horarios': typeof PanelAdministracionHorariosRoute
   '/panel-administracion/inicio': typeof PanelAdministracionInicioRoute
   '/panel-administracion/mantenimiento': typeof PanelAdministracionMantenimientoRoute
+  '/panel-administracion/membresias': typeof PanelAdministracionMembresiasRoute
   '/panel-administracion/pagos': typeof PanelAdministracionPagosRoute
   '/panel-administracion/turnos': typeof PanelAdministracionTurnosRoute
   '/admin-v2/': typeof AdminV2IndexRoute
@@ -408,6 +416,7 @@ export interface FileRoutesByTo {
   '/panel-administracion/horarios': typeof PanelAdministracionHorariosRoute
   '/panel-administracion/inicio': typeof PanelAdministracionInicioRoute
   '/panel-administracion/mantenimiento': typeof PanelAdministracionMantenimientoRoute
+  '/panel-administracion/membresias': typeof PanelAdministracionMembresiasRoute
   '/panel-administracion/pagos': typeof PanelAdministracionPagosRoute
   '/panel-administracion/turnos': typeof PanelAdministracionTurnosRoute
   '/admin-v2': typeof AdminV2IndexRoute
@@ -460,6 +469,7 @@ export interface FileRoutesById {
   '/panel-administracion/horarios': typeof PanelAdministracionHorariosRoute
   '/panel-administracion/inicio': typeof PanelAdministracionInicioRoute
   '/panel-administracion/mantenimiento': typeof PanelAdministracionMantenimientoRoute
+  '/panel-administracion/membresias': typeof PanelAdministracionMembresiasRoute
   '/panel-administracion/pagos': typeof PanelAdministracionPagosRoute
   '/panel-administracion/turnos': typeof PanelAdministracionTurnosRoute
   '/admin-v2/': typeof AdminV2IndexRoute
@@ -513,6 +523,7 @@ export interface FileRouteTypes {
     | '/panel-administracion/horarios'
     | '/panel-administracion/inicio'
     | '/panel-administracion/mantenimiento'
+    | '/panel-administracion/membresias'
     | '/panel-administracion/pagos'
     | '/panel-administracion/turnos'
     | '/admin-v2/'
@@ -561,6 +572,7 @@ export interface FileRouteTypes {
     | '/panel-administracion/horarios'
     | '/panel-administracion/inicio'
     | '/panel-administracion/mantenimiento'
+    | '/panel-administracion/membresias'
     | '/panel-administracion/pagos'
     | '/panel-administracion/turnos'
     | '/admin-v2'
@@ -612,6 +624,7 @@ export interface FileRouteTypes {
     | '/panel-administracion/horarios'
     | '/panel-administracion/inicio'
     | '/panel-administracion/mantenimiento'
+    | '/panel-administracion/membresias'
     | '/panel-administracion/pagos'
     | '/panel-administracion/turnos'
     | '/admin-v2/'
@@ -977,6 +990,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PanelAdministracionMantenimientoRouteImport
       parentRoute: typeof PanelAdministracionRoute
     }
+    '/panel-administracion/membresias': {
+      id: '/panel-administracion/membresias'
+      path: '/membresias'
+      fullPath: '/panel-administracion/membresias'
+      preLoaderRoute: typeof PanelAdministracionMembresiasRouteImport
+      parentRoute: typeof PanelAdministracionRoute
+    }
     '/panel-administracion/pagos': {
       id: '/panel-administracion/pagos'
       path: '/pagos'
@@ -1050,6 +1070,7 @@ interface PanelAdministracionRouteChildren {
   PanelAdministracionHorariosRoute: typeof PanelAdministracionHorariosRoute
   PanelAdministracionInicioRoute: typeof PanelAdministracionInicioRoute
   PanelAdministracionMantenimientoRoute: typeof PanelAdministracionMantenimientoRoute
+  PanelAdministracionMembresiasRoute: typeof PanelAdministracionMembresiasRoute
   PanelAdministracionPagosRoute: typeof PanelAdministracionPagosRoute
   PanelAdministracionTurnosRoute: typeof PanelAdministracionTurnosRoute
   PanelAdministracionIndexRoute: typeof PanelAdministracionIndexRoute
@@ -1062,6 +1083,7 @@ const PanelAdministracionRouteChildren: PanelAdministracionRouteChildren = {
   PanelAdministracionHorariosRoute: PanelAdministracionHorariosRoute,
   PanelAdministracionInicioRoute: PanelAdministracionInicioRoute,
   PanelAdministracionMantenimientoRoute: PanelAdministracionMantenimientoRoute,
+  PanelAdministracionMembresiasRoute: PanelAdministracionMembresiasRoute,
   PanelAdministracionPagosRoute: PanelAdministracionPagosRoute,
   PanelAdministracionTurnosRoute: PanelAdministracionTurnosRoute,
   PanelAdministracionIndexRoute: PanelAdministracionIndexRoute,

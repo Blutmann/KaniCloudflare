@@ -1434,6 +1434,16 @@ export default {
       } catch {
         console.warn('[Cron Barber Email Recovery] Deferred to next scheduled run');
       }
+
+      try {
+        const { runScheduledRecurrencesAndReminders } = await import('./lib/kani-recurring-notifications');
+        const recResult = await runScheduledRecurrencesAndReminders();
+        if (recResult.generatedOccurrences > 0 || recResult.remindersSent > 0) {
+          console.log('[Cron Recurrences & Reminders]:', JSON.stringify(recResult));
+        }
+      } catch (err) {
+        console.warn('[Cron Recurrences & Reminders Error]:', err);
+      }
     };
 
     const task = run();

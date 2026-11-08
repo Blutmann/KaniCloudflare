@@ -79,6 +79,9 @@ export type RealAppointment = Appointment & {
   benefitFinalPriceArs?: number | null;
   benefitOnlineDepositArs?: number | null;
   benefitInPersonBalanceArs?: number | null;
+  membershipId?: string | null;
+  membershipConsumptionId?: string | null;
+  pricingMode?: 'CURRENT_RATE' | 'FIXED_PRICE' | null;
 };
 
 type AppointmentRow = Tables<'appointments'>;
@@ -632,6 +635,9 @@ async function executeReadRealAppointments(options?: { bypassCache?: boolean; ba
       benefitFinalPriceArs: (row as any).benefit_final_price_ars != null ? Number((row as any).benefit_final_price_ars) : null,
       benefitOnlineDepositArs: (row as any).benefit_online_deposit_ars != null ? Number((row as any).benefit_online_deposit_ars) : null,
       benefitInPersonBalanceArs: (row as any).benefit_in_person_balance_ars != null ? Number((row as any).benefit_in_person_balance_ars) : null,
+      membershipId: (row as any).membership_id ?? null,
+      membershipConsumptionId: (row as any).membership_consumption_id ?? null,
+      pricingMode: ((row as any).pricing_mode as 'CURRENT_RATE' | 'FIXED_PRICE' | undefined) ?? null,
     } satisfies RealAppointment];
   });
 }

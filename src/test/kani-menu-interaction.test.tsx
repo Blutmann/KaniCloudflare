@@ -68,9 +68,9 @@ describe("mobile navigation scroll and closing", () => {
     );
     render(<Harness />);
     fireEvent.click(screen.getByRole("button", { name: "Abrir menú" }));
-    expect(await screen.findByRole("link", { name: "Códigos" })).toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: "Membresías y descuentos" })).toBeInTheDocument();
     complete(null);
-    await waitFor(() => expect(screen.getByRole("link", { name: "Códigos" })).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole("link", { name: "Membresías y descuentos" })).toBeInTheDocument());
   });
   it.each(["MANAGER", "BARBER", "ADMIN"])(
     "keeps codes in the manager menu and maintenance restricted to ADMIN: %s",
@@ -82,7 +82,7 @@ describe("mobile navigation scroll and closing", () => {
       );
       fireEvent.click(screen.getByRole("button", { name: "Abrir menú" }));
       await screen.findByText(role === "ADMIN" ? "KANI Admin" : "Personal");
-      expect(Boolean(screen.queryByRole("link", { name: "Códigos" }))).toBe(role === "MANAGER");
+      expect(Boolean(screen.queryByRole("link", { name: "Membresías y descuentos" }))).toBe(true);
       expect(Boolean(screen.queryByRole("link", { name: "Panel de mantenimiento" }))).toBe(
         role === "ADMIN",
       );

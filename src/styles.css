@@ -2777,6 +2777,28 @@ html[data-theme="light"] .admin-section-nav-link.is-active:active {
 .admin-schedule-status.unavailable { color: var(--destructive); }
 .admin-schedule-manual-fields { display: grid; gap: .85rem; margin-top: 1rem; }
 .admin-schedule-manual-fields label { display: block; margin-bottom: .4rem; color: var(--muted-foreground); font-size: .76rem; }
+.admin-schedule-manual-fields select.select-control,
+.admin-schedule-manual-fields input.select-control,
+.admin-schedule-manual-fields input[type="date"],
+.admin-schedule-manual-fields input[type="number"] {
+  height: 44px !important;
+  min-height: 44px !important;
+  font-size: 12px !important;
+  line-height: 1.25 !important;
+  font-weight: 400 !important;
+  padding: 0 12px !important;
+  border: 1px solid var(--border) !important;
+  background: var(--background) !important;
+  color: var(--foreground) !important;
+  border-radius: var(--radius-control, 0.65rem) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+.admin-schedule-manual-fields select.select-control {
+  padding-right: 30px !important;
+}
 .admin-schedule-time-pair { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: end; gap: .5rem; }
 .admin-schedule-time-pair > span { padding-bottom: .7rem; color: var(--muted-foreground); }
 .admin-schedule-time-window { display: block; }

@@ -12,6 +12,10 @@ import type { Tables } from "@/integrations/supabase/types";
 import { addCalendarDays, businessDateToday } from "@/lib/kani-mobile-appointments";
 import { scopeV2 } from "@/lib/kani-v2";
 import { isStaffOperator, validStaffScope } from "@/lib/kani-permissions";
+import {
+  fetchClientMemberships,
+  type ClientMembershipRecord,
+} from "@/lib/kani-recurrences-memberships";
 
 export type V2Client = Tables<"clients"> & { draft?: boolean; archived?: boolean };
 type Data = {
@@ -20,6 +24,7 @@ type Data = {
   starts: Awaited<ReturnType<typeof readAvailabilityStartsForRange>>;
   services: ConfiguredService[];
   clients: V2Client[];
+  memberships: ClientMembershipRecord[];
   depositSupported: boolean;
 };
 const empty: Data = {
@@ -28,6 +33,7 @@ const empty: Data = {
   starts: [],
   services: [],
   clients: [],
+  memberships: [],
   depositSupported: false,
 };
 type Value = Data & {
@@ -63,7 +69,7 @@ export function V2DataProvider({ children }: { children: ReactNode }) {
         .limit(1);
       if (staff.profile.role === "BARBER")
         capabilityQuery = capabilityQuery.eq("barber_id", staff.profile.barber_id!);
-      const [appointments, payments, starts, services, clientResult, capability] =
+      const [appointments, payments, starts, services, clientResult, capability, memberships] =
         await Promise.all([
           readStaffAppointments(staff),
           fetchServicePayments({}, staff),
@@ -78,6 +84,7 @@ export function V2DataProvider({ children }: { children: ReactNode }) {
           readConfiguredServices(),
           supabase.from("clients").select("*").order("name"),
           capabilityQuery,
+          fetchClientMemberships(staff).catch(() => [] as ClientMembershipRecord[]),
         ]);
       if (clientResult.error) throw clientResult.error;
       const loadedClients = ((clientResult.data ?? []) as V2Client[]).filter(
@@ -89,6 +96,7 @@ export function V2DataProvider({ children }: { children: ReactNode }) {
         starts,
         services,
         clients: loadedClients,
+        memberships: memberships ?? [],
         depositSupported: !capability.error,
       });
       setClients(loadedClients);

@@ -32,6 +32,14 @@ import {
   statusLabels,
 } from "./shared";
 import { ManualAppointmentDialog } from "./manual-appointment-dialog";
+import {
+  consumeMembershipSession,
+  modifyRecurringAppointmentSeries,
+  refundMembershipSession,
+  type ClientMembershipRecord,
+  type MembershipConsumptionType,
+  type RecurrenceScopeType,
+} from "@/lib/kani-recurrences-memberships";
 
 export function V2Home() {
   const data = useV2();
@@ -216,6 +224,23 @@ export function V2Appointments({ notificationDetail, onNotificationChanged, onNo
     dispatch?: NotificationChannelDispatch;
   } | null>(null);
   const [retryingEmail, setRetryingEmail] = useState(false);
+  const [cancelScope, setCancelScope] = useState<RecurrenceScopeType>("SINGLE");
+  const [cancelRefundSession, setCancelRefundSession] = useState<boolean>(true);
+  const [consumeAptModal, setConsumeAptModal] = useState<{
+    appointment: RealAppointment;
+    membership: ClientMembershipRecord;
+  } | null>(null);
+  const [consumeAptType, setConsumeAptType] = useState<MembershipConsumptionType>(
+    "SERVICE_COMPLETED",
+  );
+  const [refundAptModal, setRefundAptModal] = useState<{
+    appointment: RealAppointment;
+    membership: ClientMembershipRecord;
+    consumptionId: string;
+  } | null>(null);
+  const [exhaustedAptMembership, setExhaustedAptMembership] = useState<ClientMembershipRecord | null>(
+    null,
+  );
   const [retryFeedback, setRetryFeedback] = useState<{
     type: "success" | "error" | "info";
     message: string;
@@ -326,7 +351,42 @@ export function V2Appointments({ notificationDetail, onNotificationChanged, onNo
     setBusy(true);
     setMessage("");
     try {
-      await updateRealAppointmentStatus(action.appointment.id, action.status);
+      if (action.appointment.recurringRuleId && cancelScope !== "SINGLE") {
+        await modifyRecurringAppointmentSeries(
+          {
+            appointmentId: action.appointment.id,
+            scope: cancelScope,
+            action: "CANCEL",
+          },
+          staff,
+        );
+      } else {
+        await updateRealAppointmentStatus(action.appointment.id, action.status);
+        if (action.appointment.recurringRuleId) {
+          await modifyRecurringAppointmentSeries(
+            {
+              appointmentId: action.appointment.id,
+              scope: "SINGLE",
+              action: "CANCEL",
+            },
+            staff,
+          );
+        }
+      }
+      const linkedConsumptionId =
+        action.appointment.membershipConsumptionId ||
+        (data.memberships ?? [])
+          .flatMap((m) => m.consumptions)
+          .find((c) => c.appointmentId === action.appointment.id && c.status === "CONSUMED")?.id;
+      if (linkedConsumptionId && cancelRefundSession) {
+        await refundMembershipSession(
+          {
+            consumptionId: linkedConsumptionId,
+            reason: "Reintegro por cancelación de turno",
+          },
+          staff,
+        );
+      }
       setAction(null);
       await data.refresh();
       setMessage("Turno actualizado.");
@@ -576,6 +636,7 @@ export function V2Appointments({ notificationDetail, onNotificationChanged, onNo
                 <h3 className="v2-app-name" title={a.name}>{a.name}</h3>
                 {!notificationDetail && <>
                   {a.isManual && <span className="v2-manual-badge">Manual</span>}
+                  {a.recurringRuleId && <span className="v2-manual-badge">Recurrente</span>}
                   <Status code={a.statusCode} />
                 </>}
               </div>
@@ -676,6 +737,73 @@ export function V2Appointments({ notificationDetail, onNotificationChanged, onNo
               </div>}
 
               {a.notes && <p className="v2-note">{a.notes}</p>}
+              {!notificationDetail && (() => {
+                const linkedMembership =
+                  (data.memberships ?? []).find((m) => m.id === a.membershipId) ||
+                  (a.clientId
+                    ? (data.memberships ?? []).find(
+                        (m) => m.clientId === a.clientId && m.status === "ACTIVE",
+                      )
+                    : undefined);
+                if (!linkedMembership) return null;
+                const activeConsumption = linkedMembership.consumptions.find(
+                  (c) => c.appointmentId === a.id && c.status === "CONSUMED",
+                );
+                const isConsumed = Boolean(a.membershipConsumptionId || activeConsumption);
+                return (
+                  <div
+                    className="v2-note"
+                    style={{
+                      marginTop: "6px",
+                      display: "flex",
+                      flexWrap: "wrap",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: "8px",
+                    }}
+                  >
+                    <span>
+                      <strong>{linkedMembership.planName}</strong> — Sesiones disponibles:{" "}
+                      <strong>{linkedMembership.remainingSessions}</strong> — Estado de este turno:{" "}
+                      <strong>{isConsumed ? "Sesión consumida" : "Sin consumir"}</strong>
+                    </span>
+                    <span style={{ display: "inline-flex", gap: "6px" }}>
+                      {!isConsumed &&
+                        linkedMembership.status === "ACTIVE" &&
+                        linkedMembership.remainingSessions > 0 &&
+                        a.statusCode !== "CANCELLED" && (
+                          <button
+                            type="button"
+                            className="v2-secondary"
+                            style={{ minHeight: "26px", padding: "0 8px", fontSize: "11.5px" }}
+                            onClick={() => {
+                              setConsumeAptModal({ appointment: a, membership: linkedMembership });
+                              setConsumeAptType("SERVICE_COMPLETED");
+                            }}
+                          >
+                            Registrar consumo
+                          </button>
+                        )}
+                      {isConsumed && (a.membershipConsumptionId || activeConsumption?.id) && (
+                        <button
+                          type="button"
+                          className="v2-secondary"
+                          style={{ minHeight: "26px", padding: "0 8px", fontSize: "11.5px" }}
+                          onClick={() =>
+                            setRefundAptModal({
+                              appointment: a,
+                              membership: linkedMembership,
+                              consumptionId: (a.membershipConsumptionId || activeConsumption?.id)!,
+                            })
+                          }
+                        >
+                          Reintegrar sesión
+                        </button>
+                      )}
+                    </span>
+                  </div>
+                );
+              })()}
             </div>
 
             <div className="v2-appointment-actions">
@@ -691,7 +819,11 @@ export function V2Appointments({ notificationDetail, onNotificationChanged, onNo
                       type="button"
                       className="v2-secondary action-reject v2-action-btn notification-action-cancel"
                       disabled={busy}
-                      onClick={() => setAction({ appointment: a, status: "CANCELLED" })}
+                      onClick={() => {
+                        setCancelScope("SINGLE");
+                        setCancelRefundSession(true);
+                        setAction({ appointment: a, status: "CANCELLED" });
+                      }}
                     >
                       Cancelar turno
                     </button>,
@@ -776,6 +908,211 @@ export function V2Appointments({ notificationDetail, onNotificationChanged, onNo
           </article>
         ))}
       </div>
+      <Dialog
+        open={!!consumeAptModal}
+        onOpenChange={(open) => {
+          if (!open && !busy) setConsumeAptModal(null);
+        }}
+      >
+        <DialogContent className="v2-dialog">
+          <DialogTitle>Registrar consumo de sesión de membresía</DialogTitle>
+          <DialogDescription>
+            {consumeAptModal?.membership.planName} · Turno de {consumeAptModal?.appointment.name} (
+            {consumeAptModal?.appointment.date} {consumeAptModal?.appointment.time} hs).
+          </DialogDescription>
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "10px" }}>
+            <label className="v2-field">
+              <span className="v2-field-label">Motivo del consumo</span>
+              <select
+                value={consumeAptType}
+                onChange={(e) =>
+                  setConsumeAptType(e.target.value as MembershipConsumptionType)
+                }
+              >
+                <option value="SERVICE_COMPLETED">Servicio realizado</option>
+                <option value="NO_SHOW_DEDUCTION">Descontar sesión por inasistencia</option>
+              </select>
+            </label>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
+              <button
+                type="button"
+                className="v2-secondary"
+                disabled={busy}
+                onClick={() => setConsumeAptModal(null)}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="v2-primary"
+                disabled={busy}
+                onClick={async () => {
+                  if (!consumeAptModal) return;
+                  setBusy(true);
+                  try {
+                    const m = consumeAptModal.membership;
+                    const apt = consumeAptModal.appointment;
+                    const res = await consumeMembershipSession(
+                      {
+                        membershipId: m.id,
+                        serviceName: apt.serviceName,
+                        appointmentId: apt.id,
+                        consumptionType: consumeAptType,
+                      },
+                      staff,
+                    );
+                    setConsumeAptModal(null);
+                    await data.refresh();
+                    if (res.isExhausted) {
+                      setExhaustedAptMembership(res.membership);
+                    } else {
+                      setMessage(
+                        `Sesión de membresía registrada. Sesiones disponibles: ${res.remainingSessions}.`,
+                      );
+                    }
+                  } catch (err) {
+                    setMessage(appointmentErrorMessage(err));
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+              >
+                {busy ? "Registrando…" : "Confirmar consumo"}
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+      <Dialog
+        open={!!refundAptModal}
+        onOpenChange={(open) => {
+          if (!open && !busy) setRefundAptModal(null);
+        }}
+      >
+        <DialogContent className="v2-dialog">
+          <DialogTitle>Este turno consumió una sesión de membresía. ¿Querés reintegrarla?</DialogTitle>
+          <DialogDescription>
+            Se reintegrará la sesión consumida en {refundAptModal?.membership.planName} manteniendo la trazabilidad en el historial.
+          </DialogDescription>
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", marginTop: "12px" }}>
+            <button
+              type="button"
+              className="v2-secondary"
+              disabled={busy}
+              onClick={() => setRefundAptModal(null)}
+            >
+              Volver
+            </button>
+            <button
+              type="button"
+              className="v2-secondary"
+              disabled={busy}
+              onClick={() => {
+                setRefundAptModal(null);
+                setMessage("Se conservó el consumo de la sesión.");
+              }}
+            >
+              No, conservar el consumo
+            </button>
+            <button
+              type="button"
+              className="v2-primary"
+              disabled={busy}
+              onClick={async () => {
+                if (!refundAptModal) return;
+                setBusy(true);
+                try {
+                  const res = await refundMembershipSession(
+                    {
+                      consumptionId: refundAptModal.consumptionId,
+                      membershipId: refundAptModal.membership.id,
+                      reason: "Reintegro manual desde Turnos",
+                    },
+                    staff,
+                  );
+                  setRefundAptModal(null);
+                  await data.refresh();
+                  setMessage(`Sesión reintegrada. Sesiones disponibles: ${res.remainingSessions}.`);
+                } catch (err) {
+                  setMessage(appointmentErrorMessage(err));
+                } finally {
+                  setBusy(false);
+                }
+              }}
+            >
+              {busy ? "Reintegrando…" : "Sí, reintegrar sesión"}
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+      <Dialog
+        open={!!exhaustedAptMembership}
+        onOpenChange={(open) => {
+          if (!open && !busy) setExhaustedAptMembership(null);
+        }}
+      >
+        <DialogContent className="v2-dialog">
+          <DialogTitle>Membresía agotada</DialogTitle>
+          <DialogDescription>
+            Se consumió la última sesión de <strong>{exhaustedAptMembership?.planName}</strong>. Elegí cómo continuar:
+          </DialogDescription>
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "12px" }}>
+            <Link
+              to="/panel-administracion/membresias"
+              className="v2-primary"
+              onClick={() => setExhaustedAptMembership(null)}
+            >
+              1. Renovar membresía
+            </Link>
+            <button
+              type="button"
+              className="v2-secondary"
+              onClick={() => {
+                setExhaustedAptMembership(null);
+                setMessage("Los próximos turnos continuarán como turnos individuales sin membresía.");
+              }}
+            >
+              2. Continuar con turnos individuales sin membresía
+            </button>
+            <button
+              type="button"
+              className="v2-secondary action-reject"
+              disabled={busy}
+              onClick={async () => {
+                if (!exhaustedAptMembership) return;
+                setBusy(true);
+                try {
+                  const recurringApt = (data.appointments ?? []).find(
+                    (apt) =>
+                      apt.clientId === exhaustedAptMembership.clientId &&
+                      apt.date >= today &&
+                      apt.recurringRuleId,
+                  );
+                  if (recurringApt) {
+                    await modifyRecurringAppointmentSeries(
+                      {
+                        appointmentId: recurringApt.id,
+                        scope: "ALL_FUTURE",
+                        action: "CANCEL",
+                      },
+                      staff,
+                    );
+                  }
+                  setExhaustedAptMembership(null);
+                  await data.refresh();
+                  setMessage("Se finalizó la recurrencia asociada a la membresía agotada.");
+                } catch (err) {
+                  setMessage(appointmentErrorMessage(err));
+                } finally {
+                  setBusy(false);
+                }
+              }}
+            >
+              3. Finalizar la recurrencia asociada
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
       <ManualAppointmentDialog
         open={manualDialog.open}
         mode={manualDialog.mode}
@@ -804,6 +1141,84 @@ export function V2Appointments({ notificationDetail, onNotificationChanged, onNo
             {action?.appointment.name} · {action?.appointment.time}. Esta acción actualiza el turno
             y utiliza las notificaciones existentes.
           </DialogDescription>
+          {action?.appointment.recurringRuleId && (
+            <div style={{ marginTop: "10px", display: "flex", flexDirection: "column", gap: "8px" }}>
+              <label className="v2-field">
+                <span className="v2-field-label">Alcance de la cancelación (serie recurrente)</span>
+                <select
+                  value={cancelScope}
+                  onChange={(e) => setCancelScope(e.target.value as RecurrenceScopeType)}
+                >
+                  <option value="SINGLE">Solo esta fecha ({action.appointment.date})</option>
+                  <option value="THIS_AND_FOLLOWING">Esta fecha y las siguientes</option>
+                  <option value="ALL_FUTURE">Toda la serie futura</option>
+                </select>
+              </label>
+              {(() => {
+                const affected = (data.appointments ?? []).filter(
+                  (apt) =>
+                    apt.recurringRuleId === action.appointment.recurringRuleId &&
+                    apt.statusCode !== "CANCELLED" &&
+                    (cancelScope === "SINGLE"
+                      ? apt.id === action.appointment.id
+                      : cancelScope === "THIS_AND_FOLLOWING"
+                        ? apt.date >= action.appointment.date
+                        : apt.date >= today),
+                );
+                const hasPayments = affected.some((apt) => apt.depositPaid || apt.balancePaid);
+                return (
+                  <div className="v2-note" style={{ fontSize: "12px" }}>
+                    <div>
+                      <strong>Fechas afectadas ({affected.length}):</strong>{" "}
+                      {affected
+                        .slice(0, 5)
+                        .map((apt) => apt.date)
+                        .join(", ")}
+                      {affected.length > 5 ? ` (+${affected.length - 5} más)` : ""}
+                    </div>
+                    {hasPayments && (
+                      <div style={{ color: "#eab308", marginTop: "4px" }}>
+                        ⚠️ Atención: existen señas o cobros registrados en las fechas seleccionadas. No se alterarán pagos históricos registrados.
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+          {action?.appointment &&
+            (() => {
+              const hasConsumed = Boolean(
+                action.appointment.membershipConsumptionId ||
+                  (data.memberships ?? [])
+                    .flatMap((m) => m.consumptions)
+                    .find((c) => c.appointmentId === action.appointment.id && c.status === "CONSUMED"),
+              );
+              if (!hasConsumed) return null;
+              return (
+                <div className="v2-note" style={{ marginTop: "10px", fontSize: "12.5px" }}>
+                  <strong>Este turno consumió una sesión de membresía. ¿Querés reintegrarla?</strong>
+                  <div style={{ display: "flex", gap: "8px", marginTop: "6px" }}>
+                    <button
+                      type="button"
+                      className={cancelRefundSession ? "v2-primary" : "v2-secondary"}
+                      style={{ minHeight: "30px", padding: "0 10px", fontSize: "12px" }}
+                      onClick={() => setCancelRefundSession(true)}
+                    >
+                      Sí, reintegrar sesión
+                    </button>
+                    <button
+                      type="button"
+                      className={!cancelRefundSession ? "v2-primary" : "v2-secondary"}
+                      style={{ minHeight: "30px", padding: "0 10px", fontSize: "12px" }}
+                      onClick={() => setCancelRefundSession(false)}
+                    >
+                      No, conservar el consumo
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
           <button className="v2-secondary action-reject" disabled={busy} onClick={() => void cancelAppointment()}>
             {busy ? "Guardando…" : "Cancelar turno"}
           </button>

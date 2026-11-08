@@ -336,6 +336,41 @@ export function V2Clients() {
                     ? `Frecuencia: cada ${summary.frequency} días.`
                     : "Historial insuficiente"}
                 </p>
+                <h3 className="v2-client-history-heading">Membresías asociadas</h3>
+                {!(data.memberships ?? []).filter((m) => m.clientId === selected.id).length ? (
+                  <p className="v2-client-history-empty">Sin membresías registradas.</p>
+                ) : (
+                  (data.memberships ?? [])
+                    .filter((m) => m.clientId === selected.id)
+                    .map((m) => (
+                      <div className="v2-history-row" key={m.id}>
+                        <div>
+                          <h3>
+                            {m.planName} ·{" "}
+                            {m.status === "ACTIVE"
+                              ? "Activa"
+                              : m.status === "PENDING_PAYMENT"
+                                ? "Pendiente de pago"
+                                : m.status === "EXHAUSTED"
+                                  ? "Agotada"
+                                  : m.status === "EXPIRED"
+                                    ? "Vencida"
+                                    : "Cancelada"}
+                          </h3>
+                          <p>
+                            Sesiones disponibles: {m.remainingSessions} de {m.totalSessions} ·{" "}
+                            {m.expiresAt ? `Vence ${clientDate(m.expiresAt)}` : "Sin vencimiento"}
+                          </p>
+                          <p style={{ fontSize: "11px", color: "var(--muted-foreground)" }}>
+                            {m.items
+                              .map((i) => `${i.serviceName}: ${i.remainingQuantity}/${i.totalQuantity}`)
+                              .join(" · ")}
+                          </p>
+                        </div>
+                        <strong style={{ fontSize: "12.5px" }}>{money(m.totalPriceArs)}</strong>
+                      </div>
+                    ))
+                )}
                 <h3 className="v2-client-history-heading">Historial</h3>
                 {!summary.history.length && (
                   <p className="v2-client-history-empty">Sin atenciones registradas.</p>

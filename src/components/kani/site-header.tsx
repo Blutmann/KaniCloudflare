@@ -199,10 +199,10 @@ export function SiteHeader() {
         )}
       </div>
 
-      {staff?.profile.role === 'MANAGER' && (
+      {staff && ['ADMIN', 'MANAGER', 'BARBER'].includes(staff.profile.role) && (
         <div className="mobile-menu-group">
-          <Link to="/panel-administracion/descuentos" onClick={closeMenu}>
-            <Tag />Códigos
+          <Link to="/panel-administracion/membresias" onClick={closeMenu}>
+            <Tag />Membresías y descuentos
           </Link>
         </div>
       )}

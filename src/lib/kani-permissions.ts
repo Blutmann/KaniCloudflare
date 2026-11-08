@@ -21,7 +21,7 @@ export function mayAccessStaffSection(profile: StaffScope, section: string): boo
   if (!validStaffScope(profile)) return false;
   if (section === 'mantenimiento' || section === 'roles') return profile.role === 'ADMIN';
   if (section === 'descuentos') return isStaffOperator(profile.role);
-  return ['inicio','turnos','horarios','clientes','pagos','datos'].includes(section);
+  return ['inicio','turnos','horarios','clientes','pagos','datos','membresias'].includes(section);
 }
 
 export function mayDeleteOperationalRecord(profile: StaffScope): boolean {
