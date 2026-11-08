@@ -424,7 +424,7 @@ export function V2Insights() {
 
       <div className="v2-metrics v2-metrics-four">
         <Metric
-          label="Servicios"
+          label="Cobros registrados"
           value={summary.count}
           note={
             comparison !== null ? (
@@ -452,20 +452,20 @@ export function V2Insights() {
       <div className="v2-chart-grid">
         <section className="v2-panel">
           <div className="v2-section-title">
-            <h2>Ritmo de servicios</h2>
+            <h2>Ritmo de cobros</h2>
             <TrendingUp size={20} />
           </div>
           <p className="v2-muted">Cobros registrados en el período</p>
           {!payments.length ? (
-            <Empty>No hay servicios registrados en este período.</Empty>
+            <Empty>No hay cobros registrados en este período.</Empty>
           ) : (
             <div
               className="v2-bar-chart"
               role="img"
-              aria-label={`Servicios por día: ${points.map((p) => `${p.date}: ${p.count}`).join(", ")}`}
+              aria-label={`Cobros por día: ${points.map((p) => `${p.date}: ${p.count}`).join(", ")}`}
             >
               {points.map((p) => (
-                <div key={p.date} title={`${p.date}: ${p.count} servicios`}>
+                <div key={p.date} title={`${p.date}: ${p.count} cobros`}>
                   <span>{p.count || ""}</span>
                   <i style={{ height: `${(p.count / maxCount) * 140 + 2}px` }} />
                   <small>{p.label}</small>

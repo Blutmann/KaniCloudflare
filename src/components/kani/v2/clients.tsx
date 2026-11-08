@@ -4,11 +4,20 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAdminStaff } from "@/lib/kani-admin-context";
 import { sortClients, type ClientOrder } from "./client-order";
 import { clientHistory } from "@/lib/kani-v2";
+import { ClientCardMobile } from "./client-card-mobile";
 import { money, formatServiceName } from "@/lib/kani-model";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { useV2, type V2Client } from "./data";
 import { Empty, Metric, Status } from "./shared";
 import { isStaffOperator } from "@/lib/kani-permissions";
+import { useClientDialogViewport } from "./use-client-dialog-viewport";
+import "./client-dialog.css";
+import "./client-cards-mobile.css";
+
+function clientDate(value: string) {
+  const [year, month, day] = value.slice(0, 10).split("-");
+  return day && month && year ? `${day}/${month}/${year}` : value;
+}
 
 export function V2Clients() {
   const data = useV2();
@@ -30,6 +39,7 @@ export function V2Clients() {
 
   const selected = data.clients.find((c) => c.id === selectedId);
   const summary = selected ? clientHistory(selected.id, data.appointments, data.payments) : null;
+  const dialogViewport = useClientDialogViewport(Boolean(selected || editing || confirmDelete));
   const rows = sortClients(
     data.clients.filter(
       (c) =>
@@ -145,17 +155,20 @@ export function V2Clients() {
         </p>
       )}
 
-      {/* Toolbar reorganizada: Fila 1 buscador 100%, Fila 2 Ordenar por (ancho contenido) + Nuevo cliente */}
+      {/* Shared toolbar: one desktop row; the mobile search and controls keep their two rows. */}
       <div className="v2-client-toolbar-container">
         <div className="v2-client-search-row">
-          <label className="v2-search">
-            <Search size={18} />
-            <input
-              aria-label="Buscar clientes"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Nombre, celular o email"
-            />
+          <label className="v2-field v2-client-search-field" htmlFor="v2-client-search">
+            <span className="v2-field-label">Buscar cliente</span>
+            <span className="v2-search">
+              <Search size={18} aria-hidden="true" />
+              <input
+                id="v2-client-search"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Nombre, celular o email"
+              />
+            </span>
           </label>
         </div>
         <div className="v2-client-controls-row">
@@ -181,11 +194,7 @@ export function V2Clients() {
           const history = clientHistory(c.id, data.appointments, data.payments);
           const editable = canEditClient(c);
           return (
-            <div
-              className="v2-client-card"
-              key={c.id}
-              onClick={() => setSelectedId(c.id)}
-            >
+            <div className="v2-client-card" key={c.id} onClick={() => setSelectedId(c.id)}>
               <div className="v2-client-identity">
                 <span className="v2-avatar">{c.name[0]}</span>
                 <div className="v2-client-main-info">
@@ -206,7 +215,8 @@ export function V2Clients() {
 
               <div className="v2-client-meta">
                 <span className="v2-client-visits">
-                  {history.visits} {history.visits === 1 ? "visita verificada" : "visitas verificadas"}
+                  {history.visits}{" "}
+                  {history.visits === 1 ? "visita verificada" : "visitas verificadas"}
                 </span>
                 <span className="v2-client-meta-sep">·</span>
                 <span className="v2-client-tag">Ficha existente</span>
@@ -219,7 +229,7 @@ export function V2Clients() {
                     className="v2-client-action-btn edit"
                     onClick={(e) => openEditor(c, e)}
                     title="Editar cliente"
-                    aria-label={`Editar datos de ${c.name}`}
+                    aria-label="Editar cliente"
                   >
                     <Pencil size={15} />
                   </button>
@@ -230,7 +240,7 @@ export function V2Clients() {
                     className="v2-client-action-btn delete"
                     onClick={(e) => promptDelete(c, e)}
                     title="Eliminar cliente"
-                    aria-label={`Eliminar cliente ${c.name}`}
+                    aria-label="Eliminar cliente"
                   >
                     <Trash2 size={15} />
                   </button>
@@ -246,6 +256,14 @@ export function V2Clients() {
                   Ver detalles
                 </button>
               </div>
+              <ClientCardMobile
+                client={c}
+                canEdit={editable}
+                canDelete={isAdmin}
+                onDetails={() => setSelectedId(c.id)}
+                onEdit={(event) => openEditor(c, event)}
+                onDelete={(event) => promptDelete(c, event)}
+              />
             </div>
           );
         })}
@@ -257,74 +275,165 @@ export function V2Clients() {
           if (!open) setSelectedId(null);
         }}
       >
-        <DialogContent className="v2-dialog v2-client-dialog">
-          <DialogTitle>{selected?.name}</DialogTitle>
-          <DialogDescription>
-            Historial de atenciones registradas {isAdmin ? "en Kani" : "en tu actividad"}.
-          </DialogDescription>
+        <DialogContent
+          className="v2-dialog v2-client-modal v2-client-dialog"
+          style={dialogViewport}
+          overlayClassName="v2-client-modal-overlay"
+          closeLabel="Cerrar detalles del cliente"
+        >
+          <div className="v2-client-modal-header">
+            <DialogTitle>{selected?.name}</DialogTitle>
+            <DialogDescription>
+              Cliente desde {selected ? clientDate(selected.created_at) : ""}
+            </DialogDescription>
+          </div>
           {selected && summary && (
             <>
-              <div className="v2-metrics">
-                <Metric label="Visitas verificadas" value={summary.visits} />
-                <Metric
-                  label="Valor de servicios registrados"
-                  value={money(summary.recordedSpend)}
-                />
-                <Metric label="Cancelaciones" value={summary.cancellations} />
-                <Metric label="Última visita" value={summary.lastVisit ?? "Sin registro"} />
-              </div>
-              <p className="v2-footnote">
-                Cliente desde {selected.created_at.slice(0, 10)} · Frecuencia:{" "}
-                {summary.frequency !== null
-                  ? `cada ${summary.frequency} días entre visitas registradas`
-                  : "historial insuficiente"}
-                .
-              </p>
-              <div className="v2-contact">
-                <a href={`tel:${selected.phone.replace(/[^+\d]/g, "")}`}>{selected.phone}</a>
-                {selected.email && <a href={`mailto:${selected.email}`}>{selected.email}</a>}
-              </div>
-              <h3>Historial</h3>
-              {!summary.history.length && (
-                <Empty>
-                  Sin atenciones vinculadas actualmente.
-                </Empty>
-              )}
-              {summary.history
-                .slice()
-                .reverse()
-                .map((a) => (
-                  <div className="v2-history-row" key={a.id}>
-                    <div>
-                      <h3>
-                        {a.name ? `${a.name} · ` : ""}{formatServiceName(a.serviceName)} · {a.barber}
-                      </h3>
-                      <p>
-                        {a.date} · {a.time}
-                      </p>
-                      {a.benefitCode && (
-                        <div style={{ marginTop: "4px", fontSize: "11px", display: "flex", flexDirection: "column", gap: "2px" }}>
-                          <span style={{ fontFamily: "monospace", fontWeight: 600, color: "var(--gold, #C9A24D)" }}>
-                            Código: {a.benefitCode} · {
-                              a.benefitType === 'NO_DEPOSIT' ? 'Reserva sin seña (Seña online dispensada)' :
-                              a.benefitType === 'FREE_SERVICE' ? 'Servicio 100% bonificado ($0)' :
-                              a.benefitType === 'PERCENT_10' ? `Descuento 10% (-$${(a.benefitDiscountAmountArs ?? 0).toLocaleString('es-AR')})` :
-                              a.benefitType === 'PERCENT_50' ? `Descuento 50% (-$${(a.benefitDiscountAmountArs ?? 0).toLocaleString('es-AR')})` :
-                              'Beneficio aplicado'
-                            }
-                          </span>
-                          {a.statusCode === 'CANCELLED' && (
-                            <span style={{ color: "var(--muted-foreground, #888)", fontStyle: "italic" }}>
-                              Reserva cancelada · código consumido, no reutilizable
-                            </span>
-                          )}
-                        </div>
+              <div
+                className="v2-client-modal-scroll"
+                role="region"
+                aria-label="Información del cliente"
+                tabIndex={0}
+              >
+                <dl className="v2-client-contact-facts">
+                  <div>
+                    <dt>Teléfono</dt>
+                    <dd>
+                      {selected.phone ? (
+                        <a href={`tel:${selected.phone.replace(/[^+\d]/g, "")}`}>
+                          {selected.phone}
+                        </a>
+                      ) : (
+                        "Sin celular"
                       )}
-                    </div>
-                    <Status code={a.statusCode} />
+                    </dd>
                   </div>
-                ))}
-              <div className="v2-dialog-actions" style={{ display: "flex", justifyContent: "space-between", gap: "8px" }}>
+                  <div>
+                    <dt>Correo electrónico</dt>
+                    <dd>
+                      {selected.email ? (
+                        <a href={`mailto:${selected.email}`}>{selected.email}</a>
+                      ) : (
+                        "Sin correo electrónico"
+                      )}
+                    </dd>
+                  </div>
+                </dl>
+                <div className="v2-metrics">
+                  <Metric label="Visitas verificadas" value={summary.visits} />
+                  <Metric
+                    label="Valor de servicios registrados"
+                    value={money(summary.recordedSpend)}
+                  />
+                  <Metric label="Cancelaciones" value={summary.cancellations} />
+                  <Metric
+                    label="Última visita"
+                    value={summary.lastVisit ? clientDate(summary.lastVisit) : "Sin registro"}
+                  />
+                </div>
+                <p className="v2-client-frequency">
+                  {summary.frequency !== null
+                    ? `Frecuencia: cada ${summary.frequency} días.`
+                    : "Historial insuficiente"}
+                </p>
+                <h3 className="v2-client-history-heading">Membresías asociadas</h3>
+                {!(data.memberships ?? []).filter((m) => m.clientId === selected.id).length ? (
+                  <p className="v2-client-history-empty">Sin membresías registradas.</p>
+                ) : (
+                  (data.memberships ?? [])
+                    .filter((m) => m.clientId === selected.id)
+                    .map((m) => (
+                      <div className="v2-history-row" key={m.id}>
+                        <div>
+                          <h3>
+                            {m.planName} ·{" "}
+                            {m.status === "ACTIVE"
+                              ? "Activa"
+                              : m.status === "PENDING_PAYMENT"
+                                ? "Pendiente de pago"
+                                : m.status === "EXHAUSTED"
+                                  ? "Agotada"
+                                  : m.status === "EXPIRED"
+                                    ? "Vencida"
+                                    : "Cancelada"}
+                          </h3>
+                          <p>
+                            Sesiones disponibles: {m.remainingSessions} de {m.totalSessions} ·{" "}
+                            {m.expiresAt ? `Vence ${clientDate(m.expiresAt)}` : "Sin vencimiento"}
+                          </p>
+                          <p style={{ fontSize: "11px", color: "var(--muted-foreground)" }}>
+                            {m.items
+                              .map((i) => `${i.serviceName}: ${i.remainingQuantity}/${i.totalQuantity}`)
+                              .join(" · ")}
+                          </p>
+                        </div>
+                        <strong style={{ fontSize: "12.5px" }}>{money(m.totalPriceArs)}</strong>
+                      </div>
+                    ))
+                )}
+                <h3 className="v2-client-history-heading">Historial</h3>
+                {!summary.history.length && (
+                  <p className="v2-client-history-empty">Sin atenciones registradas.</p>
+                )}
+                {summary.history
+                  .slice()
+                  .reverse()
+                  .map((a) => (
+                    <div className="v2-history-row" key={a.id}>
+                      <div>
+                        <h3>
+                          {a.name ? `${a.name} · ` : ""}
+                          {formatServiceName(a.serviceName)} · {a.barber}
+                        </h3>
+                        <p>
+                          {a.date} · {a.time}
+                        </p>
+                        {a.benefitCode && (
+                          <div
+                            style={{
+                              marginTop: "4px",
+                              fontSize: "11px",
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: "2px",
+                            }}
+                          >
+                            <span
+                              style={{
+                                fontFamily: "monospace",
+                                fontWeight: 600,
+                                color: "var(--gold, #C9A24D)",
+                              }}
+                            >
+                              Código: {a.benefitCode} ·{" "}
+                              {a.benefitType === "NO_DEPOSIT"
+                                ? "Reserva sin seña (Seña online dispensada)"
+                                : a.benefitType === "FREE_SERVICE"
+                                  ? "Servicio 100% bonificado ($0)"
+                                  : a.benefitType === "PERCENT_10"
+                                    ? `Descuento 10% (-$${(a.benefitDiscountAmountArs ?? 0).toLocaleString("es-AR")})`
+                                    : a.benefitType === "PERCENT_50"
+                                      ? `Descuento 50% (-$${(a.benefitDiscountAmountArs ?? 0).toLocaleString("es-AR")})`
+                                      : "Beneficio aplicado"}
+                            </span>
+                            {a.statusCode === "CANCELLED" && (
+                              <span
+                                style={{
+                                  color: "var(--muted-foreground, #888)",
+                                  fontStyle: "italic",
+                                }}
+                              >
+                                Reserva cancelada · código consumido, no reutilizable
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      <Status code={a.statusCode} />
+                    </div>
+                  ))}
+              </div>
+              <footer className="v2-client-modal-footer">
                 {canEditClient(selected) && (
                   <button
                     className="v2-secondary"
@@ -337,14 +446,11 @@ export function V2Clients() {
                   </button>
                 )}
                 {isAdmin && (
-                  <button
-                    className="v2-destructive"
-                    onClick={() => setConfirmDelete(selected)}
-                  >
+                  <button className="v2-destructive" onClick={() => setConfirmDelete(selected)}>
                     Eliminar cliente
                   </button>
                 )}
-              </div>
+              </footer>
             </>
           )}
         </DialogContent>
@@ -355,17 +461,26 @@ export function V2Clients() {
           if (!open && !deleting) setConfirmDelete(null);
         }}
       >
-        <DialogContent className="v2-dialog">
-          <DialogTitle>¿Eliminar este cliente?</DialogTitle>
-          <DialogDescription>
-            {confirmDelete?.name} dejará de figurar en la lista de clientes activos. Se preservará todo su historial de turnos y pagos pasados.
-          </DialogDescription>
-          {errorNotice && (
-            <p role="alert" className="v2-alert">
-              {errorNotice}
-            </p>
-          )}
-          <div className="v2-dialog-actions" style={{ display: "flex", justifyContent: "flex-end", gap: "8px", marginTop: "16px" }}>
+        <DialogContent
+          className="v2-dialog v2-client-modal v2-client-confirm"
+          style={dialogViewport}
+          overlayClassName="v2-client-modal-overlay v2-client-confirm-overlay"
+        >
+          <div className="v2-client-modal-header">
+            <DialogTitle>¿Eliminar este cliente?</DialogTitle>
+          </div>
+          <div className="v2-client-modal-scroll">
+            <DialogDescription>
+              {confirmDelete?.name} dejará de figurar en la lista de clientes activos. Se preservará
+              todo su historial de turnos y pagos pasados.
+            </DialogDescription>
+            {errorNotice && (
+              <p role="alert" className="v2-alert">
+                {errorNotice}
+              </p>
+            )}
+          </div>
+          <footer className="v2-client-modal-footer">
             <button
               className="v2-secondary"
               disabled={deleting}
@@ -380,7 +495,7 @@ export function V2Clients() {
             >
               {deleting ? "Eliminando…" : "Sí, eliminar"}
             </button>
-          </div>
+          </footer>
         </DialogContent>
       </Dialog>
       <Dialog
@@ -389,50 +504,60 @@ export function V2Clients() {
           if (!open && !saving) setEditing(null);
         }}
       >
-        <DialogContent className="v2-dialog">
-          <DialogTitle>{editing === "new" ? "Nuevo cliente" : "Editar cliente"}</DialogTitle>
-          <DialogDescription>
-            Los datos se guardan de forma permanente en Supabase.
-          </DialogDescription>
-          {errorNotice && (
-            <p role="alert" className="v2-alert">
-              {errorNotice}
-            </p>
-          )}
-          <form onSubmit={save} className="v2-form">
-            <label className="v2-field">
-              Nombre
-              <input
-                required
-                minLength={2}
-                disabled={saving}
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
-            </label>
-            <label className="v2-field">
-              Celular
-              <input
-                required
-                type="tel"
-                minLength={6}
-                disabled={saving}
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-              />
-            </label>
-            <label className="v2-field">
-              Email · opcional
-              <input
-                type="email"
-                disabled={saving}
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </label>
-            <button className="v2-primary" disabled={saving}>
-              {saving ? "Guardando…" : "Guardar cliente"}
-            </button>
+        <DialogContent
+          className="v2-dialog v2-client-modal v2-client-editor"
+          style={dialogViewport}
+          overlayClassName="v2-client-modal-overlay"
+        >
+          <div className="v2-client-modal-header">
+            <DialogTitle>{editing === "new" ? "Nuevo cliente" : "Editar cliente"}</DialogTitle>
+            <DialogDescription>
+              Los datos se guardan de forma permanente en Supabase.
+            </DialogDescription>
+          </div>
+          <form onSubmit={save} className="v2-client-editor-form">
+            <div className="v2-client-modal-scroll">
+              {errorNotice && (
+                <p role="alert" className="v2-alert">
+                  {errorNotice}
+                </p>
+              )}
+              <label className="v2-field">
+                Nombre
+                <input
+                  required
+                  minLength={2}
+                  disabled={saving}
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
+              </label>
+              <label className="v2-field">
+                Celular
+                <input
+                  required
+                  type="tel"
+                  minLength={6}
+                  disabled={saving}
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                />
+              </label>
+              <label className="v2-field">
+                Email · opcional
+                <input
+                  type="email"
+                  disabled={saving}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </label>
+            </div>
+            <footer className="v2-client-modal-footer">
+              <button className="v2-primary" disabled={saving}>
+                {saving ? "Guardando…" : "Guardar cliente"}
+              </button>
+            </footer>
           </form>
         </DialogContent>
       </Dialog>

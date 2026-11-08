@@ -99,6 +99,14 @@ export default {
       }
 
       const url = new URL(request.url);
+      if (url.pathname === '/api/staff/password-recovery') {
+        const { handleStaffRecoveryRequest } = await import('./lib/kani-staff-recovery.server');
+        return handleStaffRecoveryRequest(request, ctx as { waitUntil?: (task: Promise<unknown>) => void });
+      }
+      if (url.pathname === '/api/staff/password-reset') {
+        const { handleStaffPasswordReset } = await import('./lib/kani-staff-recovery.server');
+        return handleStaffPasswordReset(request);
+      }
       if (url.pathname === "/estudio" || url.pathname === "/estudio/") {
         url.pathname = "/contacto";
         return Response.redirect(url.toString(), 301);
@@ -218,6 +226,21 @@ export default {
             const { createPaymentSupabaseClient } = await import("./lib/kani-payment-db.server");
             const db = await createPaymentSupabaseClient();
 
+            const barberDeliveryStatus: Record<string,string> = {
+              'email.delivered':'DELIVERED', 'email.bounced':'BOUNCED',
+              'email.complained':'COMPLAINED', 'email.failed':'DELIVERY_FAILED',
+            };
+            if (barberDeliveryStatus[eventType]) {
+              const { error:deliveryError } = await db.rpc('record_barber_email_delivery', {
+                p_message_id:emailId, p_status:barberDeliveryStatus[eventType],
+              });
+              if (deliveryError) {
+                const { forgetFailedResendEvent } = await import('./lib/kani-resend-webhook');
+                if (svixId) forgetFailedResendEvent(svixId);
+                return Response.json({ error:'DELIVERY_RECEIPT_NOT_SAVED' }, { status:503 });
+              }
+            }
+
             if (eventType === "email.delivered") {
               await db
                 .from("appointment_notification_dispatches")
@@ -255,6 +278,9 @@ export default {
             headers: { "content-type": "application/json" },
           });
         } catch (webhookErr) {
+          const { forgetFailedResendEvent } = await import('./lib/kani-resend-webhook');
+          const failedId=request.headers.get('svix-id');
+          if (failedId) forgetFailedResendEvent(failedId);
           const msg = webhookErr instanceof Error ? webhookErr.message : "BAD_REQUEST";
           return new Response(JSON.stringify({ error: msg }), { status: 400 });
         }
@@ -1401,6 +1427,23 @@ export default {
       } catch (err) {
         console.error("[Cron Scheduled Notification Recovery Error]:", err);
       }
+      try {
+        const { dispatchBarberConfirmationEmails } = await import('./lib/kani-barber-email.server');
+        const result = await dispatchBarberConfirmationEmails({ limit:10 });
+        if (result.processed || result.failed) console.log('[Cron Barber Email Recovery]', JSON.stringify(result));
+      } catch {
+        console.warn('[Cron Barber Email Recovery] Deferred to next scheduled run');
+      }
+
+      try {
+        const { runScheduledRecurrencesAndReminders } = await import('./lib/kani-recurring-notifications');
+        const recResult = await runScheduledRecurrencesAndReminders();
+        if (recResult.generatedOccurrences > 0 || recResult.remindersSent > 0) {
+          console.log('[Cron Recurrences & Reminders]:', JSON.stringify(recResult));
+        }
+      } catch (err) {
+        console.warn('[Cron Recurrences & Reminders Error]:', err);
+      }
     };
 
     const task = run();
@@ -1424,6 +1467,7 @@ function mirrorRuntimeBindings(bindings: unknown): void {
     "VITE_SUPABASE_PUBLISHABLE_KEY",
     "RESEND_API_KEY",
     "RESEND_FROM_EMAIL",
+    "RESEND_BARBER_FROM_EMAIL",
     "RESEND_WEBHOOK_SECRET",
     "KANI_ENVIRONMENT",
     "WHATSAPP_PHONE_NUMBER_ID",

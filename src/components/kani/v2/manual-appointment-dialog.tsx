@@ -16,8 +16,22 @@ import {
   type RealAppointment,
 } from "@/lib/kani-appointments";
 import { useV2, type V2Client } from "./data";
-import { Search } from "lucide-react";
-import { formatServiceName, getEffectiveServicePrice } from "@/lib/kani-model";
+import { AlertTriangle, CheckCircle2, Repeat, Search } from "lucide-react";
+import { dateLabel, formatServiceName, getEffectiveServicePrice, money } from "@/lib/kani-model";
+import { addCalendarDays } from "@/lib/kani-mobile-appointments";
+import {
+  createRecurringManualSeries,
+  modifyRecurringAppointmentSeries,
+  RECURRENCE_END_OPTIONS,
+  RECURRENCE_FREQUENCY_OPTIONS,
+  RECURRENCE_SCOPE_OPTIONS,
+  type CreateRecurringManualSeriesResult,
+  type RecurrenceEndType,
+  type RecurrenceFrequencyType,
+  type RecurrenceScopeType,
+  type RecurringPricingMode,
+} from "@/lib/kani-recurrences-memberships";
+import { sendRecurringSeriesGroupedEmailServerFn } from "@/lib/kani-recurring-notifications";
 
 export type ManualAppointmentDialogProps = {
   open: boolean;
@@ -26,6 +40,7 @@ export type ManualAppointmentDialogProps = {
   initialDate: string;
   onClose: () => void;
   onSuccess: (message: string) => void;
+  onViewCreatedSeries?: (firstDate?: string) => void;
 };
 
 const TIME_15_OPTIONS = Array.from({ length: 96 }, (_, i) => {
@@ -41,11 +56,12 @@ export function ManualAppointmentDialog({
   initialDate,
   onClose,
   onSuccess,
+  onViewCreatedSeries,
 }: ManualAppointmentDialogProps) {
   if (!open) return null;
 
   const data = useV2();
-  const staff = useAdminStaff();
+  const { staff } = useAdminStaff();
   const isAdmin = isStaffOperator(staff?.profile?.role ?? "");
   const titleId = useId();
   const descId = useId();
@@ -53,6 +69,7 @@ export function ManualAppointmentDialog({
   const servicesList = data?.services || [];
   const clientsList = data?.clients || [];
   const appointmentsList = data?.appointments || [];
+  const membershipsList = data?.memberships || [];
   const barbersList = staff?.barbers || [];
 
   // Find active barbers
@@ -76,6 +93,16 @@ export function ManualAppointmentDialog({
   const [clientPhone, setClientPhone] = useState<string>("");
   const [clientEmail, setClientEmail] = useState<string>("");
 
+  // Recurrence & Membership states (FASE 4, 5, 7, 11, 12)
+  const [frequency, setFrequency] = useState<RecurrenceFrequencyType>("ONCE");
+  const [endType, setEndType] = useState<RecurrenceEndType>("NEVER");
+  const [endDate, setEndDate] = useState<string>(() => addCalendarDays(initialDate, 60));
+  const [maxOccurrences, setMaxOccurrences] = useState<number>(4);
+  const [pricingMode, setPricingMode] = useState<RecurringPricingMode>("CURRENT_RATE");
+  const [selectedMembershipId, setSelectedMembershipId] = useState<string>("");
+  const [editScope, setEditScope] = useState<RecurrenceScopeType>("SINGLE");
+  const [seriesSummaryModal, setSeriesSummaryModal] = useState<CreateRecurringManualSeriesResult | null>(null);
+
   const [clientSearch, setClientSearch] = useState<string>("");
   const [showClientSuggestions, setShowClientSuggestions] = useState<boolean>(false);
   const [isBusy, setIsBusy] = useState<boolean>(false);
@@ -93,6 +120,17 @@ export function ManualAppointmentDialog({
     );
   }, [servicesList, serviceId, isOtro]);
 
+  // Membresías activas del cliente seleccionado con sesiones disponibles (FASE 7)
+  const clientActiveMemberships = useMemo(() => {
+    if (!selectedClientId) return [];
+    return membershipsList.filter(
+      (m) =>
+        m.clientId === selectedClientId &&
+        m.status === "ACTIVE" &&
+        m.remainingSessions > 0,
+    );
+  }, [membershipsList, selectedClientId]);
+
   // Duration in minutes (allowing midnight crossing)
   const durationMinutes = useMemo(() => {
     const startM = timeToMinutes(startTime);
@@ -103,11 +141,14 @@ export function ManualAppointmentDialog({
     return endM - startM;
   }, [startTime, customEndTime]);
 
-  // Overlap and boundary conflict detection
+  // Overlap and boundary conflict detection (only blocks single appointments; recurring series use partial creation FASE 5)
   const overlapConflict = useMemo(() => {
     if (!date || !barberId || !startTime || !customEndTime) return null;
     if (customEndTime === startTime) {
       return "La hora de finalización debe ser distinta a la de inicio.";
+    }
+    if (mode === "CREATE" && frequency !== "ONCE") {
+      return null;
     }
 
     const startM = timeToMinutes(startTime);
@@ -148,6 +189,7 @@ export function ManualAppointmentDialog({
     appointmentsList,
     mode,
     appointment?.id,
+    frequency,
   ]);
 
   // Initialize or reset form when dialog opens or changes mode
@@ -158,6 +200,7 @@ export function ManualAppointmentDialog({
       setClientSearch("");
       setShowClientSuggestions(false);
       setSelectedClientId(null);
+      setSeriesSummaryModal(null);
       return;
     }
 
@@ -193,6 +236,9 @@ export function ManualAppointmentDialog({
           ? ""
           : appointment.email || ""
       );
+      setPricingMode(appointment.pricingMode || "CURRENT_RATE");
+      setSelectedMembershipId(appointment.membershipId || "");
+      setEditScope("SINGLE");
     } else {
       // Default barber for CREATE
       const defaultBarber = isAdmin
@@ -217,9 +263,23 @@ export function ManualAppointmentDialog({
       setClientName("");
       setClientPhone("");
       setClientEmail("");
+      setFrequency("ONCE");
+      setEndType("NEVER");
+      setEndDate(addCalendarDays(initialDate, 60));
+      setMaxOccurrences(4);
+      setPricingMode("CURRENT_RATE");
+      setSelectedMembershipId("");
+      setSeriesSummaryModal(null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, mode, appointment?.id, initialDate]);
+
+  // Auto-select active membership if client has one
+  useEffect(() => {
+    if (mode === "CREATE" && clientActiveMemberships.length === 1 && !selectedMembershipId) {
+      setSelectedMembershipId(clientActiveMemberships[0]!.id);
+    }
+  }, [mode, clientActiveMemberships, selectedMembershipId]);
 
   // When changing start time, auto-update end time to default duration if not customized
   function handleStartTimeChange(newStart: string) {
@@ -283,9 +343,10 @@ export function ManualAppointmentDialog({
 
   // Active price for submission
   const resolvedPrice = useMemo(() => {
+    if (selectedMembershipId) return 0;
     if (isOtro) return typeof customPrice === "number" ? customPrice : 0;
     return servicePrice || activeService?.price || 0;
-  }, [isOtro, customPrice, servicePrice, activeService?.price]);
+  }, [selectedMembershipId, isOtro, customPrice, servicePrice, activeService?.price]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -310,13 +371,24 @@ export function ManualAppointmentDialog({
         setFormError("El nombre del servicio es obligatorio.");
         return;
       }
-      if (customPrice === "" || Number(customPrice) < 0) {
+      if (!selectedMembershipId && (customPrice === "" || Number(customPrice) < 0)) {
         setFormError("El importe del servicio es obligatorio.");
         return;
       }
     } else {
       if (!startTime) {
         setFormError("Tenés que seleccionar un horario para el turno.");
+        return;
+      }
+    }
+
+    if (mode === "CREATE" && frequency !== "ONCE") {
+      if (endType === "UNTIL_DATE" && (!endDate || endDate < date)) {
+        setFormError("La fecha de finalización de la recurrencia debe ser igual o posterior a la fecha de inicio.");
+        return;
+      }
+      if (endType === "AFTER_COUNT" && (!maxOccurrences || maxOccurrences < 1)) {
+        setFormError("Indicá una cantidad válida de repeticiones (mínimo 1).");
         return;
       }
     }
@@ -342,6 +414,29 @@ export function ManualAppointmentDialog({
     setIsBusy(true);
     try {
       if (mode === "EDIT" && appointment) {
+        if (appointment.recurringRuleId && editScope !== "SINGLE") {
+          await modifyRecurringAppointmentSeries(
+            {
+              appointmentId: appointment.id,
+              scope: editScope,
+              action: "UPDATE",
+              newStartTime: startTime,
+              newServiceId: targetServiceUuid,
+              newPriceArs: resolvedPrice,
+              newPricingMode: pricingMode,
+            },
+            staff,
+          );
+          await data.refresh();
+          onSuccess(
+            editScope === "THIS_AND_FOLLOWING"
+              ? "Se actualizaron esta fecha y los turnos siguientes de la recurrencia."
+              : "Se actualizó toda la serie futura de turnos recurrentes.",
+          );
+          onClose();
+          return;
+        }
+
         await updateManualAppointment({
           appointmentId: appointment.id,
           barberId,
@@ -360,6 +455,67 @@ export function ManualAppointmentDialog({
         await data.refresh();
         onSuccess("Turno manual actualizado exitosamente.");
         onClose();
+      } else if (frequency !== "ONCE") {
+        // FASE 4 & FASE 5: Crear serie recurrente con ventana móvil de 90 días y gestión de conflictos parciales
+        const seriesResult = await createRecurringManualSeries(
+          {
+            barberId,
+            serviceId: targetServiceUuid,
+            customServiceName: isOtro ? customServiceName.trim() : null,
+            servicePriceArs: resolvedPrice,
+            startDate: date,
+            startTime,
+            durationMinutes,
+            clientName: cleanName,
+            clientPhone: cleanPhone,
+            clientEmail: clientEmail.trim() || null,
+            clientId: selectedClientId,
+            frequencyType: frequency,
+            endType,
+            endDate: endType === "UNTIL_DATE" ? endDate : null,
+            maxOccurrences: endType === "AFTER_COUNT" ? maxOccurrences : null,
+            pricingMode,
+            membershipId: selectedMembershipId || null,
+            horizonDays: 90,
+          },
+          staff,
+          appointmentsList,
+        );
+
+        // FASE 10: Despachar confirmación agrupada en un único correo con links individuales de cancelación
+        if (clientEmail.trim() && seriesResult.createdAppointments.length > 0) {
+          const barberName = barbersList.find((b) => b.id === barberId)?.name || "Kani Barber Studio";
+          const srvName = isOtro
+            ? customServiceName.trim()
+            : formatServiceName(activeService?.name || "Corte");
+          const freqLabel =
+            RECURRENCE_FREQUENCY_OPTIONS.find((o) => o.value === frequency)?.label || "Recurrente";
+          const linkedMembership = membershipsList.find((m) => m.id === selectedMembershipId);
+
+          void sendRecurringSeriesGroupedEmailServerFn({
+            data: {
+              ruleId: seriesResult.ruleId,
+              clientName: cleanName,
+              recipientEmail: clientEmail.trim(),
+              barberName,
+              serviceName: srvName,
+              frequencyLabel: freqLabel,
+              membershipPlanName: linkedMembership?.planName ?? null,
+              appointments: seriesResult.createdAppointments.map((a) => ({
+                id: a.id,
+                bookingDate: a.bookingDate,
+                startTime: a.startTime,
+                endTime: a.endTime,
+                serviceName: srvName,
+                barberName,
+                servicePriceArs: a.servicePriceArs,
+              })),
+            },
+          }).catch(() => null);
+        }
+
+        await data.refresh();
+        setSeriesSummaryModal(seriesResult);
       } else {
         await createManualAppointment({
           barberId,
@@ -388,6 +544,112 @@ export function ManualAppointmentDialog({
     }
   }
 
+  // FASE 5: Modal de resultado de creación de recurrencia con conflictos omitidos
+  if (seriesSummaryModal) {
+    return (
+      <Dialog
+        open={open}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) {
+            onSuccess(
+              `Recurrencia creada: ${seriesSummaryModal.createdCount} turnos creados, ${seriesSummaryModal.omittedCount} fechas omitidas por conflictos.`,
+            );
+            setSeriesSummaryModal(null);
+            onClose();
+          }
+        }}
+      >
+        <DialogContent className="v2-dialog v2-manual-dialog">
+          <DialogTitle className="flex items-center gap-2">
+            <CheckCircle2 size={18} className="text-success" />
+            Recurrencia creada
+          </DialogTitle>
+          <DialogDescription>
+            <strong>{seriesSummaryModal.createdCount}</strong>{" "}
+            {seriesSummaryModal.createdCount === 1 ? "turno creado" : "turnos creados"} en la ventana de 90 días ·{" "}
+            <strong>{seriesSummaryModal.omittedCount}</strong>{" "}
+            {seriesSummaryModal.omittedCount === 1
+              ? "fecha omitida por conflicto"
+              : "fechas omitidas por conflictos"}
+            .
+          </DialogDescription>
+
+          {seriesSummaryModal.omittedConflicts.length > 0 && (
+            <div className="my-3 p-3 rounded-lg border border-amber-500/35 bg-amber-500/10 text-xs space-y-2">
+              <p className="font-semibold text-amber-400 flex items-center gap-1.5">
+                <AlertTriangle size={14} />
+                Fechas omitidas (se mantienen los turnos existentes):
+              </p>
+              <ul className="space-y-1 max-h-40 overflow-y-auto">
+                {seriesSummaryModal.omittedConflicts.map((c) => (
+                  <li key={c.targetDate} className="flex items-center justify-between gap-2">
+                    <span>
+                      <strong>{dateLabel(c.targetDate)}</strong> · {c.startTime} hs
+                    </span>
+                    <span className="text-muted-foreground">
+                      {c.conflictingClientName
+                        ? `Ocupado (${c.conflictingClientName})`
+                        : "Horario ya reservado"}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {seriesSummaryModal.createdAppointments.length > 0 && (
+            <div className="my-2 p-3 rounded-lg border border-border bg-secondary/20 text-xs space-y-1.5">
+              <p className="font-semibold text-foreground">
+                Próximas ocurrencias creadas ({seriesSummaryModal.createdAppointments.length}):
+              </p>
+              <div className="max-h-40 overflow-y-auto space-y-1">
+                {seriesSummaryModal.createdAppointments.map((apt) => (
+                  <div key={apt.id} className="flex items-center justify-between text-muted-foreground">
+                    <span>{dateLabel(apt.bookingDate)}</span>
+                    <span>
+                      {apt.startTime} a {apt.endTime} hs
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="v2-manual-dialog-actions">
+            <button
+              type="button"
+              className="v2-secondary"
+              onClick={() => {
+                onSuccess(
+                  `Recurrencia creada: ${seriesSummaryModal.createdCount} turnos creados, ${seriesSummaryModal.omittedCount} fechas omitidas por conflictos.`,
+                );
+                setSeriesSummaryModal(null);
+                onClose();
+              }}
+            >
+              Cerrar
+            </button>
+            <button
+              type="button"
+              className="v2-primary"
+              onClick={() => {
+                const firstDate = seriesSummaryModal.createdAppointments[0]?.bookingDate;
+                onSuccess(
+                  `Recurrencia creada: ${seriesSummaryModal.createdCount} turnos creados, ${seriesSummaryModal.omittedCount} fechas omitidas por conflictos.`,
+                );
+                setSeriesSummaryModal(null);
+                onViewCreatedSeries?.(firstDate);
+                onClose();
+              }}
+            >
+              Ver turnos creados
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
       <DialogContent
@@ -400,7 +662,7 @@ export function ManualAppointmentDialog({
         </DialogTitle>
         <DialogDescription id={descId}>
           {mode === "CREATE"
-            ? "Crea un turno operativo directamente confirmado sin limitaciones de horario comercial."
+            ? "Crea un turno operativo o una serie recurrente directamente confirmada."
             : "Modifica los datos del turno manual seleccionado."}
         </DialogDescription>
 
@@ -469,10 +731,10 @@ export function ManualAppointmentDialog({
                     type="number"
                     min={0}
                     step={1}
-                    required
+                    required={!selectedMembershipId}
                     placeholder="Ej. 35000"
-                    value={customPrice}
-                    disabled={isBusy}
+                    value={selectedMembershipId ? 0 : customPrice}
+                    disabled={isBusy || Boolean(selectedMembershipId)}
                     onChange={(e) =>
                       setCustomPrice(e.target.value === "" ? "" : Number(e.target.value))
                     }
@@ -512,8 +774,8 @@ export function ManualAppointmentDialog({
                   step={1}
                   required
                   placeholder="Ej. 25000"
-                  value={servicePrice}
-                  disabled={isBusy}
+                  value={selectedMembershipId ? 0 : servicePrice}
+                  disabled={isBusy || Boolean(selectedMembershipId)}
                   onChange={(e) => setServicePrice(Number(e.target.value))}
                 />
               </label>
@@ -552,6 +814,118 @@ export function ManualAppointmentDialog({
               </select>
             </label>
           </div>
+
+          {/* FASE 4 & 12: Selector de Repetición y modo de precio */}
+          {mode === "CREATE" && (
+            <>
+              <div className="v2-manual-row">
+                <label className="v2-field">
+                  <span className="inline-flex items-center gap-1">
+                    <Repeat size={13} />
+                    Repetición
+                  </span>
+                  <select
+                    value={frequency}
+                    disabled={isBusy}
+                    onChange={(e) => setFrequency(e.target.value as RecurrenceFrequencyType)}
+                  >
+                    {RECURRENCE_FREQUENCY_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                {frequency !== "ONCE" && (
+                  <label className="v2-field">
+                    Finalización
+                    <select
+                      value={endType}
+                      disabled={isBusy}
+                      onChange={(e) => setEndType(e.target.value as RecurrenceEndType)}
+                    >
+                      {RECURRENCE_END_OPTIONS.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
+              </div>
+
+              {frequency !== "ONCE" && (
+                <div className="v2-manual-row">
+                  {endType === "UNTIL_DATE" && (
+                    <label className="v2-field">
+                      Hasta la fecha *
+                      <input
+                        type="date"
+                        min={date}
+                        value={endDate}
+                        disabled={isBusy}
+                        onChange={(e) => setEndDate(e.target.value)}
+                      />
+                    </label>
+                  )}
+
+                  {endType === "AFTER_COUNT" && (
+                    <label className="v2-field">
+                      Cantidad de repeticiones *
+                      <input
+                        type="number"
+                        min={1}
+                        max={100}
+                        step={1}
+                        value={maxOccurrences}
+                        disabled={isBusy}
+                        onChange={(e) =>
+                          setMaxOccurrences(Math.max(1, Number(e.target.value) || 1))
+                        }
+                      />
+                    </label>
+                  )}
+
+                  {!selectedMembershipId && (
+                    <label className="v2-field">
+                      Modalidad de tarifa
+                      <select
+                        value={pricingMode}
+                        disabled={isBusy}
+                        onChange={(e) =>
+                          setPricingMode(e.target.value as RecurringPricingMode)
+                        }
+                      >
+                        <option value="CURRENT_RATE">Tarifa vigente en cada fecha</option>
+                        <option value="FIXED_PRICE">Precio fijo ({money(resolvedPrice)})</option>
+                      </select>
+                    </label>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+
+          {/* FASE 11: Si se está editando un turno que pertenece a una serie recurrente, ofrecer alcance */}
+          {mode === "EDIT" && appointment?.recurringRuleId && (
+            <div className="v2-manual-row-single">
+              <label className="v2-field">
+                Alcance de la modificación
+                <select
+                  value={editScope}
+                  disabled={isBusy}
+                  onChange={(e) => setEditScope(e.target.value as RecurrenceScopeType)}
+                >
+                  {RECURRENCE_SCOPE_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          )}
 
           {overlapConflict && (
             <p className="v2-alert" role="alert" style={{ marginTop: "4px" }}>
@@ -620,7 +994,7 @@ export function ManualAppointmentDialog({
               </label>
             </div>
 
-            <div className="v2-manual-row-single">
+            <div className="v2-manual-row">
               <label className="v2-field">
                 Email · opcional
                 <input
@@ -631,6 +1005,25 @@ export function ManualAppointmentDialog({
                   onChange={(e) => setClientEmail(e.target.value)}
                 />
               </label>
+
+              {/* FASE 4 & 7: Asociar membresía activa del cliente si corresponde */}
+              {clientActiveMemberships.length > 0 && (
+                <label className="v2-field">
+                  Membresía asociada
+                  <select
+                    value={selectedMembershipId}
+                    disabled={isBusy}
+                    onChange={(e) => setSelectedMembershipId(e.target.value)}
+                  >
+                    <option value="">Sin membresía (turno independiente)</option>
+                    {clientActiveMemberships.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.planName} ({m.remainingSessions} sesiones disp.)
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
             </div>
           </div>
 
@@ -651,7 +1044,9 @@ export function ManualAppointmentDialog({
               {isBusy
                 ? "Guardando…"
                 : mode === "CREATE"
-                ? "Crear turno"
+                ? frequency !== "ONCE"
+                  ? "Crear recurrencia"
+                  : "Crear turno"
                 : "Guardar cambios"}
             </button>
           </div>

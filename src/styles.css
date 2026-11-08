@@ -403,7 +403,7 @@ html[data-theme="light"] .booking-progress .complete > span { border-color: #702
 .barber-choice-list > button { min-height: 48px; justify-content: center; padding-inline: 13px; text-align: center; white-space: nowrap; border-radius: var(--radius-control, 0.65rem); }
 
 .booking-aside .eyebrow { font-size: 9px; }
-.booking-option { width: 100%; display: flex; gap: 18px; height: 104px; padding: 20px 22px; border-radius: var(--radius-control, 0.65rem); background: var(--surface); box-shadow: 0 10px 26px rgb(0 0 0 / 0.14); white-space: normal; }
+.booking-option { width: 100%; display: flex; align-items: center; gap: 18px; height: 104px; padding: 20px 22px; border-radius: var(--radius-control, 0.65rem); background: var(--surface); box-shadow: 0 10px 26px rgb(0 0 0 / 0.14); white-space: normal; }
 .booking-option.selected, .barber-choice-list .selected { border-color: #702B3A !important; background: #702B3A !important; color: #FFFFFF !important; }
 .selection-circle { width: 18px; height: 18px; display: grid; place-items: center; border: 1px solid var(--border); border-radius: 50%; flex-shrink: 0; }
 .booking-option.selected .selection-circle { background: transparent; border-color: #FFFFFF; color: #FFFFFF; }
@@ -1718,9 +1718,9 @@ html[data-theme='dark'] .studio-map-card {
  .booking-time-heading .section-title { min-width: 0; flex: 0 1 auto; margin-bottom: 0; }
  .booking-time-heading-date { min-width: 0; flex: 0 1 auto; gap: 5px; margin-top: 0; overflow: hidden; font-size: clamp(10px, 2.8vw, 13px); white-space: nowrap; text-overflow: ellipsis; }
  .booking-time-heading-date svg { width: 14px; height: 14px; }
- .booking-option { gap: 14px; padding: 14px 16px; height: 70px; min-height: 70px; }
+ .booking-option { display: flex; align-items: center; gap: 14px; padding: 14px 16px; height: 70px; min-height: 70px; }
  .booking-deposit-notice { align-items: center; gap: 10px; padding: 10px 12px; line-height: 1.38; }
- .booking-defer-option { height: 70px; min-height: 70px; padding: 14px 16px; gap: 14px; }
+ .booking-defer-option { display: flex; align-items: center; height: 70px; min-height: 70px; padding: 14px 16px; gap: 14px; }
  .booking-defer-option .barber-defer-mark { width: 40px; height: 40px; flex-basis: 40px; }
  .phone-input-row { grid-template-columns: 126px minmax(0, 1fr); }
  .phone-country-trigger { font-size: 11px; }
@@ -1876,6 +1876,51 @@ html[data-theme='dark'] .studio-map-card {
   align-self: center;
 }
 
+
+/* Celular en reservas: contenedor sin fondo para evitar artefactos sólidos entre campos */
+.booking-page .phone-input-row,
+.booking-contact-form .phone-input-row {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Celular en reservas: selector de país y número (placeholder y valor) centrados horizontalmente */
+.booking-page .booking-contact-form .phone-country-trigger {
+  justify-content: center !important;
+  text-align: center !important;
+}
+.booking-page .booking-contact-form .phone-country-trigger :is(span, svg) {
+  text-align: center !important;
+}
+
+.booking-page .booking-contact-form .phone-input-row input,
+.booking-page .booking-contact-form input[name="phone"],
+.booking-page .booking-contact-form input#booking-v2-phone {
+  text-align: center !important;
+  padding-left: 28px !important;
+  padding-right: 28px !important;
+  padding-inline: 28px !important;
+  padding-block: 0 !important;
+}
+
+.booking-page .booking-contact-form .phone-input-row input::placeholder,
+.booking-page .booking-contact-form input[name="phone"]::placeholder,
+.booking-page .booking-contact-form input#booking-v2-phone::placeholder {
+  text-align: center !important;
+}
+
+.booking-page .booking-contact-form .phone-input-row .field-validation-icon {
+  position: absolute !important;
+  top: 50% !important;
+  right: 7px !important;
+  transform: translateY(-50%) !important;
+  width: 18px !important;
+  height: 18px !important;
+  pointer-events: none !important;
+  z-index: 2 !important;
+}
 
 /* Admin maintenance: responsive layout, consistent surfaces and theme-aware destructive flow. */
 .admin-maintenance-page {
@@ -2732,6 +2777,28 @@ html[data-theme="light"] .admin-section-nav-link.is-active:active {
 .admin-schedule-status.unavailable { color: var(--destructive); }
 .admin-schedule-manual-fields { display: grid; gap: .85rem; margin-top: 1rem; }
 .admin-schedule-manual-fields label { display: block; margin-bottom: .4rem; color: var(--muted-foreground); font-size: .76rem; }
+.admin-schedule-manual-fields select.select-control,
+.admin-schedule-manual-fields input.select-control,
+.admin-schedule-manual-fields input[type="date"],
+.admin-schedule-manual-fields input[type="number"] {
+  height: 44px !important;
+  min-height: 44px !important;
+  font-size: 12px !important;
+  line-height: 1.25 !important;
+  font-weight: 400 !important;
+  padding: 0 12px !important;
+  border: 1px solid var(--border) !important;
+  background: var(--background) !important;
+  color: var(--foreground) !important;
+  border-radius: var(--radius-control, 0.65rem) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+.admin-schedule-manual-fields select.select-control {
+  padding-right: 30px !important;
+}
 .admin-schedule-time-pair { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: end; gap: .5rem; }
 .admin-schedule-time-pair > span { padding-bottom: .7rem; color: var(--muted-foreground); }
 .admin-schedule-time-window { display: block; }
@@ -3364,40 +3431,86 @@ html[data-theme='light'] .booking-defer-option.selected .selection-circle {
   color: var(--primary-foreground) !important;
 }
 
-/* Servicios: dos filas compactas; nombre arriba, duración y precio abajo. */
-html[data-theme='light'] .service-option .booking-option-copy {
-  display: flex;
+/* Servicios: nombre y duración en columna compacta (gap 3px, line-height 1.2), precio centrado a la derecha. */
+.service-option .booking-option-copy {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  align-items: center;
+  row-gap: 3px;
+  column-gap: 16px;
   min-width: 0;
-  flex-direction: column;
-  justify-content: center;
-  gap: 4px;
   text-align: left;
 }
-html[data-theme='light'] .service-option .booking-option-name {
+.service-option .booking-option-name {
+  grid-column: 1;
+  grid-row: 1;
   display: block;
   margin: 0;
-  line-height: 1.15;
+  line-height: 1.2;
   text-align: left;
 }
-html[data-theme='light'] .service-option .booking-option-meta {
-  display: flex;
-  width: 100%;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
+.service-option .booking-option-meta {
+  display: contents;
 }
-html[data-theme='light'] .service-option .booking-option-duration,
-html[data-theme='light'] .service-option .booking-option-price {
-  margin-top: 0 !important;
+.service-option .booking-option-duration {
+  grid-column: 1;
+  grid-row: 2;
+  display: block;
+  margin: 0 !important;
+  line-height: 1.2;
+  text-align: left;
   white-space: nowrap;
 }
-html[data-theme='light'] .service-option .booking-option-price {
-  flex-shrink: 0;
+.service-option .booking-option-price {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  display: block;
+  position: static;
+  top: auto;
+  margin: 0 !important;
   text-align: right;
+  white-space: nowrap;
 }
-html[data-theme='light'] .booking-option:not(.service-option) .booking-option-copy,
-html[data-theme='light'] .booking-defer-option .booking-option-copy {
-  text-align: center;
+.service-option .option-icon {
+  align-self: center !important;
+  flex-shrink: 0 !important;
+}
+.booking-option .selection-circle,
+.booking-defer-option .selection-circle {
+  align-self: center !important;
+  flex-shrink: 0 !important;
+}
+
+/* Barberos y opción Defer: bloque compacto (gap 3px, line-height 1.2), alineado a la izquierda y centrado verticalmente. */
+.booking-page .booking-barber-options .booking-option-copy,
+.booking-page .booking-defer-option .booking-defer-copy {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  gap: 3px !important;
+  text-align: left !important;
+  min-width: 0 !important;
+}
+.booking-page .booking-barber-options .booking-barber-name,
+.booking-page .booking-defer-option .booking-defer-copy > span:first-child {
+  display: block;
+  line-height: 1.2 !important;
+  margin: 0 !important;
+  text-align: left !important;
+}
+.booking-page .booking-barber-options .booking-barber-handle,
+.booking-page .booking-defer-option .booking-defer-copy > span:last-child {
+  display: block;
+  line-height: 1.2 !important;
+  margin: 0 !important;
+  text-align: left !important;
+}
+.booking-option .barber-avatar,
+.booking-defer-option .barber-defer-mark {
+  align-self: center !important;
+  flex-shrink: 0 !important;
 }
 
 /* La selección mantiene el texto principal oscuro y el secundario gris legible. */
@@ -3622,50 +3735,7 @@ html[data-theme='light'] .confirmation-details {
 /* Fondos del header iguales a las cards inactivas en modo claro. */
 html[data-theme='light'] .header-control-button { background: var(--kani-surface) !important; }
 
-/* Alineación final: el precio queda centrado con la tarjeta y su selector. */
-.service-option .booking-option-price {
-  position: relative;
-  top: -12px;
-}
-
-html[data-theme='dark'] .service-option .booking-option-price {
-  top: -12px;
-}
-
-html[data-theme='dark'] .service-option .booking-option-copy {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  justify-content: center;
-  gap: 4px;
-  text-align: left;
-}
-
-html[data-theme='dark'] .service-option .booking-option-name {
-  display: block;
-  margin: 0;
-  line-height: 1.15;
-  text-align: left;
-}
-
-html[data-theme='dark'] .service-option .booking-option-meta {
-  display: flex;
-  width: 100%;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-html[data-theme='dark'] .service-option .booking-option-duration,
-html[data-theme='dark'] .service-option .booking-option-price {
-  margin-top: 0 !important;
-  white-space: nowrap;
-}
-
-html[data-theme='dark'] .service-option .booking-option-price {
-  flex-shrink: 0;
-  text-align: right;
-}
+/* Alineación limpia: precio centrado naturalmente en grid junto al bloque de textos */
 
 /* Modo oscuro premium: solo color y contraste; la geometría queda compartida. */
 html[data-theme='dark'] .header-control-button {
@@ -4419,7 +4489,7 @@ html[data-theme] :is(
 .booking-page :is(.calendar-panel, .booking-summary-card, .booking-option, .booking-defer-option) {
   border-radius: var(--radius-card);
 }
-html[data-theme] .booking-page :is(.field-label input, .discount-input, #booking-discount-code, .phone-input-row, .phone-country-trigger, .notes-input, .summary-deposit-box) {
+html[data-theme] .booking-page :is(.field-label input, .discount-input, #booking-discount-code, .phone-country-trigger, .notes-input, .summary-deposit-box) {
   background: var(--kani-surface-inset) !important;
   border-color: var(--kani-control-border);
   border-radius: var(--radius-control);
@@ -4492,7 +4562,7 @@ html[data-theme='light'] .booking-page :is(.booking-deposit-notice[role="note"],
 html[data-theme='light'] .booking-page .booking-time-slot:not(.selected):not(:disabled):not(.time-unavailable):hover {
   background: color-mix(in srgb, var(--primary) 5%, var(--kani-surface-strong)) !important;
 }
-html[data-theme='light'] .booking-page .booking-contact-form :is(.field-label input, .phone-input-row, .phone-country-trigger, .notes-input) {
+html[data-theme='light'] .booking-page .booking-contact-form :is(.field-label input, .phone-country-trigger, .notes-input) {
   background: var(--kani-surface-control) !important;
 }
 
@@ -5040,3 +5110,36 @@ html[data-theme="light"] :is(
   background-color: #F5F2EA !important;
 }
 
+
+/* Contacto: solid light cards retain their hover, border and focus treatments. */
+html[data-theme='light'] .contacto-page .studio-info-grid .studio-info-card {
+  background: #fff !important;
+}
+
+/* Override the shared translucent-surface selector only for the light header. */
+html[data-theme='light'] .site-header .header-controls .header-control-button,
+html[data-theme='light'] .site-header .header-controls .header-control-button:hover:not(:disabled) {
+  background: #fff !important;
+}
+html[data-theme='light'] .site-header .header-controls .header-control-button:active:not(:disabled) {
+  background: #f5f2ea !important;
+}
+
+/* Mobile dark header backgrounds follow the screen and menu state. */
+@media (max-width: 767px) {
+  html[data-theme='dark'] header.site-header {
+    background: #000000 !important;
+  }
+
+  /* Clear the sticky backing layer without fading any header content. */
+  html[data-theme='dark'] .site-header-slot:is([data-administrative='true'], [data-transparent-booking='true'], :has(> header.menu-open)) {
+    background: transparent !important;
+  }
+  html[data-theme='dark'] .site-header-slot[data-administrative='true'] > header.site-header {
+    background: rgb(0 0 0 / 50%) !important;
+  }
+  html[data-theme='dark'] .site-header-slot[data-transparent-booking='true'] > header.site-header,
+  html[data-theme='dark'] .site-header-slot > header.site-header.menu-open {
+    background: rgb(0 0 0 / 0%) !important;
+  }
+}

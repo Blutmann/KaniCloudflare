@@ -1,5 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { ArrowRight } from 'lucide-react';
+import { Link } from '@tanstack/react-router';
+import './staff-password-recovery.css';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { signInWithPassword } from '@/lib/kani-auth';
@@ -58,6 +60,8 @@ export function AdminAccess({ onAuthenticated }: { onAuthenticated: () => void }
             <ArrowRight />
           </Button>
         </form>
+        <Link to="/recuperar-contrasena" className="admin-recovery-link" aria-disabled={busy}
+          onClick={event => { if (busy) event.preventDefault(); }}>Olvidé mi contraseña</Link>
       </div>
     </main>
   );

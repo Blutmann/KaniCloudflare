@@ -1,3 +1,4 @@
+import { notifyActivityChanged } from '@/lib/kani-admin-activity';
 import { isStaffOperator } from "@/lib/kani-permissions";
 import {
   canonicalPaymentService,
@@ -25,6 +26,7 @@ import {
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { BarberFilter, Empty } from "./shared";
 import { useV2 } from "./data";
+import './payment-amount-alignment.css';
 
 export function formatPaymentMethodLabel(method: string): string {
   if (!method) return "";
@@ -48,7 +50,7 @@ export function V2Payments() {
   const [customServiceName, setCustomServiceName] = useState<string>("");
   const [priceOverride, setPriceOverride] = useState<number | null>(null);
   const [method, setMethod] = useState<PaymentMethod>("Efectivo");
-  const [discountValue, setDiscount] = useState(0);
+  const [discountOverride, setDiscount] = useState<number | null>(null);
   const [discountKind, setDiscountKind] = useState<DiscountKind>("FIXED");
   const [finalOverride, setFinalOverride] = useState<number | null>(null);
   const [showDiscount, setShowDiscount] = useState(false);
@@ -91,7 +93,8 @@ export function V2Payments() {
   );
   const choices = data.appointments.filter(
     (a) =>
-      ["CONFIRMED", "COMPLETED"].includes(a.statusCode) && !settled.has(a.id) && a.date <= today,
+      ["CONFIRMED", "COMPLETED"].includes(a.statusCode) && !settled.has(a.id) && !a.balancePaid &&
+      (isAdmin || a.barberId === staff.profile.barber_id),
   );
   const appointment =
     origin === "appointment" ? choices.find((a) => a.id === appointmentId) : undefined;
@@ -103,12 +106,21 @@ export function V2Payments() {
   const price =
     serviceName === "Anulado"
       ? 0
-      : (priceOverride ?? service?.price ?? appointment?.servicePrice ?? 0);
-  const deposit = appointment?.depositPaid ? (appointment.depositAmountArs ?? 5000) : 0;
+      : (priceOverride ?? (selectedServiceName === null && appointment
+          ? (appointment.benefitOriginalPriceArs ?? appointment.servicePrice ?? service?.price ?? 0)
+          : (service?.price ?? appointment?.servicePrice ?? 0)));
+  const discountValue = discountOverride ?? (appointment
+    ? (appointment.benefitDiscountAmountArs ?? Math.max(0,
+        (appointment.benefitOriginalPriceArs ?? appointment.servicePrice ?? 0) -
+        (appointment.benefitFinalPriceArs ?? appointment.servicePrice ?? 0))) : 0);
+  const deposit = appointment?.depositPaid ? (appointment.depositAmountArs ?? 0) : 0;
   const discount =
     discountKind === "PERCENT" ? Math.round((price * discountValue) / 100) : discountValue;
   const total =
     serviceName === "Anulado" ? 0 : Math.max(0, (finalOverride ?? price - discount) - deposit);
+  const appointmentBalance = appointment ? Math.max(0,
+    (appointment.benefitFinalPriceArs ?? appointment.servicePrice ?? 0) - deposit) : null;
+  const depositVerifiable = data.depositSupported && (!appointment?.depositPaid || appointment.depositAmountArs != null);
   const dynamicLabels = getPaymentPeriodDynamicLabels(today);
   const periodRange = calculatePaymentPeriodRange(period, today, customStartDate, customEndDate);
   const isInvalidRange = period === "CUSTOM" && Boolean(periodRange.isInvalid);
@@ -119,15 +131,20 @@ export function V2Payments() {
         scopeV2(data.payments, staff.profile.role, staff.profile.barber_id, data.barberId),
       ).filter((p) => p.paymentDate >= periodRange.start && p.paymentDate <= periodRange.end);
   const summary = paymentSummary(history);
+  const appointmentById = new Map(data.appointments.map(a => [a.id, a]));
 
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (inFlight.current) return;
     setSuccess(false);
     setMessage("");
-    if (origin === "appointment" && (!appointment || !data.depositSupported)) {
+    if (origin === "appointment" && (!appointment || !depositVerifiable)) {
       setMessage("Seleccioná un turno con información de seña verificable.");
       return;
+    }
+    if (appointment && total <= 0) { setMessage("Sin saldo pendiente."); return; }
+    if (appointmentBalance != null && total > appointmentBalance) {
+      setMessage("El cobro no puede superar el saldo pendiente del turno."); return;
     }
     const rawServiceName = serviceName;
     const isOtherService = ["Otro", "Otros"].includes(serviceName);
@@ -202,7 +219,7 @@ export function V2Payments() {
       setSuccess(true);
       setMessage("Cobro registrado.");
       setAppointmentId("");
-      setDiscount(0);
+      setDiscount(null);
       setPriceOverride(null);
       setFinalOverride(null);
       setServiceName(null);
@@ -212,6 +229,7 @@ export function V2Payments() {
       setClientName("");
       setClientPhone("");
       await data.refresh();
+      notifyActivityChanged();
     } catch (e) {
       setMessage(
         `No se confirmó el cobro. Revisá el historial antes de reintentar. ${e && typeof e === "object" && "message" in e ? String(e.message) : ""}`,
@@ -309,7 +327,7 @@ export function V2Payments() {
                   setServiceName(null);
                   setFinalOverride(null);
                   setPriceOverride(null);
-                  setDiscount(0);
+                  setDiscount(null);
                 }}
               >
                 {value === "walk_in" ? "Sin turno" : "Con turno"}
@@ -331,7 +349,7 @@ export function V2Payments() {
                           setServiceName(null);
                           setFinalOverride(null);
                           setPriceOverride(null);
-                          setDiscount(0);
+                          setDiscount(null);
                         }}
                       >
                         <option value="">Seleccionar turno</option>
@@ -343,7 +361,7 @@ export function V2Payments() {
                       </select>
                     </label>
                   ) : isAdmin ? (
-                    <label className="v2-field v2-payment-col">
+                    <label className="v2-field v2-payment-col v2-payment-entry-field">
                       <span className="v2-field-label">Barbero</span>
                       <select value={barberId} onChange={(e) => setBarberId(e.target.value)}>
                         {staff.barbers.map((b) => (
@@ -354,7 +372,7 @@ export function V2Payments() {
                       </select>
                     </label>
                   ) : (
-                    <label className="v2-field v2-payment-col">
+                    <label className="v2-field v2-payment-col v2-payment-entry-field">
                       <span className="v2-field-label">Barbero</span>
                       <input
                         value={
@@ -368,7 +386,7 @@ export function V2Payments() {
                     </label>
                   )}
 
-                  <label className="v2-field v2-payment-col">
+                  <label className="v2-field v2-payment-col v2-payment-entry-field">
                     <span className="v2-field-label">Servicio</span>
                     <select
                       value={serviceName}
@@ -417,10 +435,10 @@ export function V2Payments() {
                   </div>
                 )}
 
-                {/* Fila 2: Método de cobro | Importe */}
+                {/* Fila 2: Método de pago | Importe */}
                 <div className="v2-payment-row">
-                  <label className="v2-field v2-payment-col">
-                    <span className="v2-field-label">Método de cobro</span>
+                  <label className="v2-field v2-payment-col v2-payment-entry-field">
+                    <span className="v2-field-label">Método de pago</span>
                     <select
                       value={method}
                       onChange={(e) => setMethod(e.target.value as PaymentMethod)}
@@ -430,8 +448,8 @@ export function V2Payments() {
                     </select>
                   </label>
 
-                  <label className="v2-field v2-payment-col">
-                    <span className="v2-field-label">Importe ($ ARS)</span>
+                  <label className="v2-field v2-payment-col v2-payment-entry-field">
+                    <span className="v2-field-label">Importe</span>
                     <input
                       type="number"
                       min={serviceName === "Anulado" ? 0 : 1}
@@ -562,22 +580,6 @@ export function V2Payments() {
                   </div>
                 )}
 
-                <div className="v2-payment-full-row">
-                  {" "}
-                  <label className="v2-field">
-                    Importe final ($ ARS, incluye seña)
-                    <input
-                      type="number"
-                      min={deposit}
-                      step="1"
-                      disabled={serviceName === "Anulado"}
-                      value={serviceName === "Anulado" ? 0 : (finalOverride ?? price - discount)}
-                      onChange={(e) =>
-                        setFinalOverride(e.target.value === "" ? null : Number(e.target.value))
-                      }
-                    />
-                  </label>
-                </div>
                 {/* Fila 4: A cobrar ahora | Registrar cobro */}
                 <div className="v2-payment-row v2-payment-row-final">
                   <div className="v2-payment-total-box">
@@ -600,7 +602,7 @@ export function V2Payments() {
                     disabled={
                       busy ||
                       (!price && serviceName !== "Anulado") ||
-                      (origin === "appointment" && (!appointment || !data.depositSupported))
+                      (origin === "appointment" && (!appointment || !depositVerifiable || total <= 0 || (appointmentBalance != null && total > appointmentBalance)))
                     }
                   >
                     <CheckCircle2 size={18} />
@@ -614,6 +616,7 @@ export function V2Payments() {
                     )}
                   </button>
                 </div>
+                {appointment && total <= 0 && <p role="status">Sin saldo pendiente.</p>}
               </div>
             </fieldset>
           </form>
@@ -695,7 +698,7 @@ export function V2Payments() {
             <table className="v2-payments-table">
               <thead>
                 <tr>
-                  <th className="col-datetime">Fecha y hora</th>
+                  <th className="col-datetime">Fecha del cobro</th>
                   <th className="col-service">Servicio</th>
                   <th className="col-client">Cliente</th>
                   <th className="col-method">Método</th>
@@ -717,6 +720,9 @@ export function V2Payments() {
                         {p.serviceOtherDetail || formatServiceName(p.serviceName)}
                       </strong>
                       <small className="v2-table-barber-name">{p.barberName}</small>
+                      {p.appointmentId && appointmentById.has(p.appointmentId) && <small>
+                        Fecha del servicio: {appointmentById.get(p.appointmentId)!.date} {appointmentById.get(p.appointmentId)!.time} hs
+                      </small>}
                     </td>
                     <td className="col-client">
                       <span className="v2-table-client-name">
@@ -849,14 +855,14 @@ export function V2Payments() {
         open={!!editingPayment}
         onOpenChange={(open) => !open && !editBusy && setEditingPayment(null)}
       >
-        <DialogContent className="v2-dialog">
+        <DialogContent className="v2-dialog v2-payment-edit-dialog">
           <DialogTitle>Editar cobro registrado</DialogTitle>
           <DialogDescription>
             Modificá los detalles del cobro. Los cambios se registran con trazabilidad.
           </DialogDescription>
           {editError && <p className="v2-alert">{editError}</p>}
           <form onSubmit={handleSavePayment} className="v2-form">
-            <label className="v2-field">
+            <label className="v2-field v2-payment-entry-field">
               Barbero
               <select
                 value={editBarberId}
@@ -870,7 +876,7 @@ export function V2Payments() {
                 ))}
               </select>
             </label>
-            <label className="v2-field">
+            <label className="v2-field v2-payment-entry-field">
               Servicio
               <select
                 value={editServiceName}
@@ -917,7 +923,7 @@ export function V2Payments() {
               </label>
             )}
             <div className="v2-form-row">
-              <label className="v2-field">
+              <label className="v2-field v2-payment-entry-field">
                 Precio servicio ($ ARS)
                 <input
                   type="number"
@@ -951,8 +957,8 @@ export function V2Payments() {
                   <option value="PERCENT">Porcentaje (%)</option>
                 </select>
               </label>
-              <label className="v2-field">
-                Importe final ($ ARS, incluye seña)
+              <label className="v2-field v2-payment-entry-field">
+                Importe total
                 <input
                   type="number"
                   min={editingPayment?.onlineDepositAmountArs ?? 0}
@@ -978,7 +984,7 @@ export function V2Payments() {
                 />
               </label>
             </div>
-            <label className="v2-field">
+            <label className="v2-field v2-payment-entry-field">
               Método de pago
               <select
                 value={editMethod}

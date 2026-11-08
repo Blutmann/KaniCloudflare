@@ -5,7 +5,7 @@ import type { BenefitQuote } from '@/lib/kani-benefit-codes';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { services, barbers, serviceFor, money, bookingEndDateFor, parseDate, isoDate, dateLabel, isBookingDate, getEffectiveServicePrice, barberInstagramHandles, type ServiceId, type Barber, type Appointment } from '@/lib/kani-model';
-import { availabilityStartTimesForServiceDate, eligibleBarbersForAvailabilityStart, readConfiguredServices, readPublicAvailabilityStarts, type ConfiguredService, type PublicAvailabilityStart } from '@/lib/kani-availability';
+import { availabilityStartTimesForServiceDate, eligibleBarbersForAvailabilityStart, readConfiguredServices, readPublicBookingBarbers, readPublicAvailabilityStarts, type ConfiguredService, type PublicAvailabilityStart } from '@/lib/kani-availability';
 import { businessDateToday } from '@/lib/kani-mobile-appointments';
 import { appointmentErrorMessage, createRealAppointment } from '@/lib/kani-appointments';
 import { getDynamicDownPayment } from '@/lib/kani-down-payment';
@@ -208,6 +208,9 @@ export function Booking({
   const [publicSlots, setPublicSlots] = useState<PublicAvailabilityStart[]>([]);
   const [availabilityLoading, setAvailabilityLoading] = useState(false);
   const [availabilityError, setAvailabilityError] = useState('');
+  const [publicBarbers, setPublicBarbers] = useState<Barber[]>([]);
+  const [barbersLoading, setBarbersLoading] = useState(true);
+  const [barbersError, setBarbersError] = useState('');
   const [configuredServices, setConfiguredServices] = useState<ConfiguredService[]>(() => services.map(service => ({ ...service })));
   const [submitting, setSubmitting] = useState(false);
   const [clock, setClock] = useState(() => new Date());
@@ -343,6 +346,11 @@ export function Booking({
 
   useEffect(() => {
     let cancelled = false;
+    void readPublicBookingBarbers().then(rows => {
+      if (!cancelled) setPublicBarbers(rows.map(row => row.name));
+    }).catch(() => {
+      if (!cancelled) setBarbersError('No pudimos consultar los profesionales. Actualizá la página para reintentar.');
+    }).finally(() => { if (!cancelled) setBarbersLoading(false); });
     void readConfiguredServices().then(next => {
       if (!cancelled && next.length) setConfiguredServices(next);
     }).catch(() => {
@@ -524,7 +532,7 @@ export function Booking({
       setAvailabilityError('');
       try {
         const nextSlots = await readPublicAvailabilityStarts(availabilityBarber, todayValue, bookingEndValue);
-        if (!cancelled) setPublicSlots(nextSlots);
+        if (!cancelled) setPublicSlots(nextSlots.filter(slot => publicBarbers.includes(slot.barber_name)));
       } catch (cause) {
         if (!cancelled) {
           setPublicSlots([]);
@@ -536,7 +544,7 @@ export function Booking({
     }
     void loadAvailability();
     return () => { cancelled = true; };
-  }, [availabilityBarber, barber, barberDeferred, bookingEndValue, todayValue]);
+  }, [availabilityBarber, barber, barberDeferred, bookingEndValue, todayValue, publicBarbers]);
   useEffect(() => {
     if (!service || availabilityLoading) return;
     const todayHasSlots = availableDates.includes(todayValue);
@@ -1007,7 +1015,10 @@ export function Booking({
 
             {step === 1 && (
               <div className="booking-barber-options space-y-3">
-                {barbers.map((b, i) => (
+                {barbersLoading && <p role="status" className="text-sm text-muted-foreground">Consultando profesionales…</p>}
+                {barbersError && <p role="alert" className="text-sm text-destructive">{barbersError}</p>}
+                {!barbersLoading && !barbersError && !publicBarbers.length && <p role="status" className="text-sm text-muted-foreground">No hay profesionales disponibles para reservas online.</p>}
+                {publicBarbers.map(b => (
                   <Button
                     key={b}
                     variant="outline"
@@ -1016,7 +1027,7 @@ export function Booking({
                     className={`booking-option ${barber === b && !barberDeferred ? 'selected' : ''}`}
                     onClick={() => chooseBarber(b)}
                   >
-                    <span className={`barber-avatar avatar-${i}`}>{b.charAt(0)}</span>
+                    <span className={`barber-avatar avatar-${barbers.indexOf(b)}`}>{b.charAt(0)}</span>
                     <span className={`booking-option-copy flex-1 ${isV5 ? 'text-left' : 'text-center'}`}>
                       <span className="booking-barber-name block text-lg font-medium">{b}</span>
                       <span className="booking-barber-handle mt-0.5 block text-sm text-muted-foreground">{barberInstagramHandles[b]}</span>
@@ -1027,6 +1038,7 @@ export function Booking({
                 <Button
                   variant="outline"
                   aria-pressed={barberDeferred}
+                  disabled={barbersLoading || !publicBarbers.length}
                   aria-label={isV5 ? `Cualquier barbero disponible, el sistema asignará según fecha y horario${barberDeferred ? ', seleccionado' : ''}` : "Elegir más adelante"}
                   className={`booking-defer-option ${barberDeferred ? 'selected' : ''}`}
                   onClick={() => { setBarber(null); setBarberDeferred(true); setPublicSlots([]); setAvailabilityError(''); setDate(''); setTime(''); }}
@@ -1502,31 +1514,33 @@ export function Booking({
                   <p className="m-0 leading-normal">{appliedBenefit?.skipOnlinePayment ? "Tu turno se confirma directamente. No requiere pago de seña online." : "Tu turno se confirma cuando se acredita la seña."}</p>
                 </div>
 
-                {/* Texto legal informativo antes del pago */}
-                <p className="booking-summary-legal-disclaimer text-xs text-muted-foreground mt-3 px-1 text-left leading-relaxed">
-                  Al confirmar tu reserva, aceptás nuestros{' '}
-                  <a
-                    href="/terminos-y-condiciones"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="underline underline-offset-2 hover:text-foreground text-gold transition-colors"
-                  >
-                    Términos y Condiciones
-                  </a>{' '}
-                  y nuestra{' '}
-                  <a
-                    href="/politica-de-privacidad"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="underline underline-offset-2 hover:text-foreground text-gold transition-colors"
-                  >
-                    Política de Privacidad
-                  </a>.
-                </p>
               </div>
             )}
 
             </ExperimentalLayout>
+
+            {(step === 5 || (isV2 || isFiveSteps) && step === 4) && (
+              <p className="booking-summary-legal-disclaimer text-xs text-muted-foreground mt-3 px-1 text-left leading-relaxed">
+                Al confirmar tu reserva, aceptás nuestros{' '}
+                <a
+                  href="https://www.kanibarber.com/terminos-y-condiciones"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline underline-offset-2 hover:text-foreground text-gold transition-colors"
+                >
+                  Términos y Condiciones
+                </a>{' '}
+                y nuestra{' '}
+                <a
+                  href="https://www.kanibarber.com/politica-de-privacidad"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline underline-offset-2 hover:text-foreground text-gold transition-colors"
+                >
+                  Política de Privacidad
+                </a>.
+              </p>
+            )}
 
             {step === 0 && (
               <p className="booking-deposit-notice" role="note">

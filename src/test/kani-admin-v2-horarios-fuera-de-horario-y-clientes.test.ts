@@ -81,7 +81,7 @@ describe('2. CLIENTES — Eliminación segura por ADMIN y preservación de histo
     expect(sql).toContain('ADD COLUMN IF NOT EXISTS deleted_at timestamptz DEFAULT NULL');
     expect(sql).toContain('CREATE POLICY admin_can_delete_clients');
     expect(sql).toContain('FOR DELETE');
-    expect(sql).toContain('USING (\n    public.is_admin()\n  )');
+    expect(sql.replace(/\r\n/g, '\n')).toContain('USING (\n    public.is_admin()\n  )');
     expect(sql).toContain('CREATE OR REPLACE FUNCTION public.delete_client(p_client_id uuid)');
     expect(sql).toContain("RAISE EXCEPTION USING errcode = '42501', message = 'ADMIN_ROLE_REQUIRED'");
   });

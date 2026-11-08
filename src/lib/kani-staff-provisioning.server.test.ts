@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   planStaffInvitations,
+  prepareStaffAccounts,
   sendStaffInvitations,
   verifyInviteConfiguration,
   STAFF_INVITE_REDIRECT,
@@ -49,6 +50,12 @@ function database(users: any[] = [], profiles: any[] = [], failedProfile = false
     auth: {
       admin: {
         listUsers: vi.fn(async () => ({ data: { users }, error: null })),
+        createUser: vi.fn(async (attributes: any) => ({
+          data: {
+            user: { id: `20000000-0000-0000-0000-00000000000${attributes.email.match(/\d/)?.[0]}` },
+          },
+          error: null,
+        })),
         inviteUserByEmail: vi.fn(async (email: string, _options?: unknown) => ({
           data: { user: { id: `20000000-0000-0000-0000-00000000000${email.match(/\d/)?.[0]}` } },
           error: null,
@@ -86,7 +93,13 @@ describe("five individual Auth invitations", () => {
   });
   it("preserves an existing account and avoids a duplicate invitation", async () => {
     const db = database(
-      [{ id: "existing", email: "STAFF1@example.invalid" }],
+      [
+        {
+          id: "existing",
+          email: "STAFF1@example.invalid",
+          email_confirmed_at: "2026-11-01T00:00:00Z",
+        },
+      ],
       [{ user_id: "existing", role: "BARBER", barber_id: roster()[0]?.barberId }],
     );
     const result = await sendStaffInvitations(db, roster(), mail);
@@ -104,6 +117,71 @@ describe("five individual Auth invitations", () => {
     );
     await expect(sendStaffInvitations(db, roster(), mail)).rejects.toThrow(/protected/);
     expect(db.auth.admin.inviteUserByEmail).not.toHaveBeenCalled();
+    expect(db.inserted).toEqual([]);
+  });
+  it("prepares unconfirmed accounts without mail, passwords or confirmation", async () => {
+    const db = database();
+    const result = await prepareStaffAccounts(db, roster());
+    expect(result.every((r) => r.status === "AWAITING_INVITATION" && !r.emailSent)).toBe(true);
+    expect(db.auth.admin.createUser).toHaveBeenCalledTimes(5);
+    expect(db.auth.admin.createUser.mock.calls[0]?.[0]).toEqual({
+      email: "staff1@example.invalid",
+      email_confirm: false,
+      user_metadata: { display_name: "Personal 1" },
+    });
+    expect(db.auth.admin.inviteUserByEmail).not.toHaveBeenCalled();
+    expect(db.inserted).toHaveLength(5);
+  });
+  it("resumes preparation without duplicating pending accounts or profiles", async () => {
+    const db = database(
+      [{ id: "existing", email: "staff1@example.invalid" }],
+      [{ user_id: "existing", role: "BARBER", barber_id: roster()[0]?.barberId }],
+    );
+    const result = await prepareStaffAccounts(db, roster());
+    expect(result[0]).toMatchObject({ userId: "existing", status: "AWAITING_INVITATION" });
+    expect(db.auth.admin.createUser).toHaveBeenCalledTimes(4);
+    expect(db.inserted).toHaveLength(4);
+    expect(db.auth.admin.inviteUserByEmail).not.toHaveBeenCalled();
+  });
+  it("invites a previously prepared identity without changing its permanent ID", async () => {
+    const id = "20000000-0000-0000-0000-000000000001";
+    const db = database(
+      [{ id, email: "staff1@example.invalid" }],
+      [{ user_id: id, role: "BARBER", barber_id: roster()[0]?.barberId }],
+    );
+    expect((await sendStaffInvitations(db, roster(), mail))[0]).toMatchObject({
+      userId: id,
+      status: "INVITED",
+      emailSent: true,
+    });
+    expect(db.auth.admin.createUser).not.toHaveBeenCalled();
+    expect(db.inserted).toHaveLength(4);
+  });
+  it("does not link a different identity returned by an invitation", async () => {
+    const db = database([{ id: "existing", email: "staff1@example.invalid" }]);
+    expect((await sendStaffInvitations(db, roster(), mail))[0]?.status).toBe("INVITATION_FAILED");
+    expect(db.inserted).toHaveLength(4);
+  });
+  it("rejects a barber already associated with a different identity before any mutation", async () => {
+    const db = database(
+      [],
+      [{ user_id: "other", role: "BARBER", barber_id: roster()[0]?.barberId }],
+    );
+    await expect(prepareStaffAccounts(db, roster())).rejects.toThrow(/already belongs/);
+    expect(db.auth.admin.createUser).not.toHaveBeenCalled();
+    expect(db.inserted).toEqual([]);
+  });
+  it("keeps failed creations unlinked for a safe retry", async () => {
+    const db = database();
+    db.auth.admin.createUser.mockResolvedValue({
+      data: { user: null },
+      error: new Error("blocked"),
+    } as any);
+    expect(
+      (await prepareStaffAccounts(db, roster())).every(
+        (r) => r.status === "ACCOUNT_CREATION_FAILED",
+      ),
+    ).toBe(true);
     expect(db.inserted).toEqual([]);
   });
   it("rejects a different existing assignment rather than overwriting it", async () => {

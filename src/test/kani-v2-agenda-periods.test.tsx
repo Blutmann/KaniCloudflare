@@ -2,6 +2,7 @@ import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { businessDateToday, addCalendarDays, startOfBusinessWeek } from '@/lib/kani-mobile-appointments';
 import { formatRangeLabel, dateLabel, formatAdminV2Date, formatAdminV2Range } from '@/lib/kani-model';
+import type { NotificationAppointment } from '@/lib/kani-admin-activity';
 
 const today = businessDateToday();
 const mondayOfWeek = startOfBusinessWeek(today);
@@ -92,6 +93,41 @@ import { V2Appointments } from '@/components/kani/v2/agenda';
 
 afterEach(() => {
   cleanup();
+});
+
+describe('Notification appointment presentation preserves existing actions',()=>{
+  const detail:NotificationAppointment={
+    appointment_id:'apt-today',status:'CONFIRMED',client_name:'Nombre completo con muchos apellidos para una reserva',
+    phone:'+5491128436014',email:'cliente.nombre.extenso@dominio.example',service:'Corte',barber:'Lautaro',barber_id:'b1',
+    date:today,time:'10:00',end_time:'10:45',final_price:25000,deposit_paid:5000,deposit_verifiable:true,
+    collected:0,balance:20000,benefit:'BENEFICIO-LARGO-CONTROLADO',benefit_type:'PERCENT_10',has_payment:false,
+  };
+  it('retains the complete name and formatted contact without duplicating the modal status',()=>{
+    const {container}=render(<V2Appointments notificationDetail={detail}/>);
+    expect(container.querySelector('.v2-app-name')).toHaveTextContent(detail.client_name);
+    expect(container.querySelector('.v2-app-row-1 .v2-status-badge')).toBeNull();
+    expect(container.querySelector('.notification-appointment-status')).toBeNull();
+    expect(screen.getByText('+54 9 11 2843-6014')).toBeInTheDocument();
+    expect(screen.getByRole('button',{name:'Cancelar turno'})).toBeInTheDocument();
+    expect(screen.getByText('Cobrar',{exact:true})).toBeInTheDocument();
+  });
+  it('offers collection for a future appointment with a real pending balance',()=>{
+    render(<V2Appointments notificationDetail={{...detail,date:addCalendarDays(today,1)}}/>);
+    expect(screen.getByText('Cobrar',{exact:true}).closest('a')).toBeInTheDocument();
+    expect(screen.queryByText('Disponible el día del turno.')).toBeNull();
+  });
+  it('does not offer a fictitious collection for a free or settled appointment',()=>{
+    render(<V2Appointments notificationDetail={{...detail,final_price:0,deposit_paid:0,collected:0,balance:0,benefit_type:'FREE_SERVICE'}}/>);
+    expect(screen.getByRole('button',{name:'Abonado'})).toBeDisabled();
+    expect(screen.queryByText('Sin saldo pendiente.')).toBeNull();
+  });
+  it('offers only contact actions for cancelled appointments',()=>{
+    render(<V2Appointments notificationDetail={{...detail,status:'CANCELLED'}}/>);
+    expect(screen.queryByRole('button',{name:'Cancelar turno'})).toBeNull();
+    expect(screen.queryByText('Cobrar',{exact:true})).toBeNull();
+    expect(screen.getByRole('button',{name:'WhatsApp'})).toBeInTheDocument();
+    expect(screen.getByRole('link',{name:'Mail'})).toHaveAttribute('href',`mailto:${detail.email}`);
+  });
 });
 
 describe('formatRangeLabel helper', () => {

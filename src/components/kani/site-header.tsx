@@ -1,7 +1,7 @@
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router';
 import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState, type MouseEvent } from 'react';
 import { createPortal } from 'react-dom';
-import { ArrowUpRight, Building2, CalendarClock, CalendarDays, ChartNoAxesCombined, Clock3, CreditCard, Instagram, LogIn, LogOut, MapPin, Menu, Moon, Scale, ShieldCheck, Sun, Users, Wrench, X } from 'lucide-react';
+import { ArrowUpRight, Building2, CalendarClock, CalendarDays, ChartNoAxesCombined, Clock3, CreditCard, Instagram, LogIn, LogOut, MapPin, Menu, Moon, Scale, ShieldCheck, Sun, Tag, Users, Wrench, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import kaniLogoLight from '@/assets/kani-logo-light.webp';
 import kaniLogoDark from '@/assets/kani-logo-dark.webp';
@@ -79,28 +79,34 @@ export function ThemeToggle() {
 }
 
 export function SiteHeader() {
+  const navigate = useNavigate();
   const path = useRouterState({ select: s => s.location.pathname });
   const admin = path.startsWith('/admin') || path.startsWith('/panel-administracion');
+  const transparentBookingHeader = path.replace(/\/+$/, '') === '/reservar-turno';
   const { mobileMenuOpen: menuOpen, setMobileMenuOpen: onMenuOpenChange } = useKani();
   const [staff, setStaff] = useState<AuthenticatedStaff | null>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     let cancelled = false;
+    let revision = 0;
     const refreshStaff = () => {
-      void getAuthenticatedStaff().then(next => {
-        if (!cancelled) setStaff(next);
+      const requestRevision = ++revision;
+      void getAuthenticatedStaff({ bypassCache: true }).then(next => {
+        if (!cancelled && requestRevision === revision) setStaff(next);
       });
     };
     refreshStaff();
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      revision += 1;
+      if (!cancelled && event !== 'INITIAL_SESSION') setStaff(null);
       if (event === 'SIGNED_OUT') {
-        if (!cancelled) setStaff(null);
+        return;
       } else {
-        window.setTimeout(refreshStaff, 0);
+        window.setTimeout(() => { if (!cancelled) refreshStaff(); }, 0);
       }
     });
     return () => { cancelled = true; subscription.unsubscribe(); };
-  }, []);
+  }, [path, menuOpen]);
   useEffect(() => { onMenuOpenChange(false); }, [path, onMenuOpenChange]);
   useEffect(() => {
     if (!menuOpen) return;
@@ -114,7 +120,7 @@ export function SiteHeader() {
         const current = targets.indexOf(document.activeElement as HTMLElement);
         const next = current < 0 ? (e.shiftKey ? targets.length - 1 : 0) : (current + (e.shiftKey ? -1 : 1) + targets.length) % targets.length;
         e.preventDefault();
-        targets[next].focus();
+        targets[next]?.focus();
       }
     };
     window.addEventListener('keydown', onKeyDown);
@@ -193,6 +199,14 @@ export function SiteHeader() {
         )}
       </div>
 
+      {staff && ['ADMIN', 'MANAGER', 'BARBER'].includes(staff.profile.role) && (
+        <div className="mobile-menu-group">
+          <Link to="/panel-administracion/membresias" onClick={closeMenu}>
+            <Tag />Membresías y descuentos
+          </Link>
+        </div>
+      )}
+
       {/* Grupo admin */}
       {staff?.profile.role === 'ADMIN' && (
         <>
@@ -246,7 +260,7 @@ export function SiteHeader() {
     </nav>
   ) : null;
   return <>
-    <div className="site-header-slot"><header className={`site-header ${menuOpen ? 'menu-open' : ''}`}><div className="site-container flex items-center gap-4"><div className="admin-header-left"><Link to="/" aria-label="Kani Barber Studio, inicio" className="w-fit" onClick={closeMenu}><Wordmark /></Link></div><div className="header-controls ml-auto">{staff && <Suspense fallback={null}><AdminActivityPopover role={staff.profile.role} /></Suspense>}<HeaderWhatsApp /><ThemeToggle /><Button variant="outline" size="icon" className={`mobile-menu-trigger header-control-button ${admin ? 'admin-menu-trigger' : ''}`} aria-label={menuOpen ? 'Cerrar menú' : 'Abrir menú'} aria-expanded={menuOpen} aria-controls={menuOpen ? "kani-main-menu" : undefined} ref={menuButtonRef} onClick={() => onMenuOpenChange(!menuOpen)}>{menuOpen ? <X /> : <Menu />}</Button></div></div></header></div>
+    <div className="site-header-slot" data-administrative={admin ? 'true' : undefined} data-transparent-booking={transparentBookingHeader ? 'true' : undefined}><header className={`site-header ${menuOpen ? 'menu-open' : ''}`}><div className="site-container flex items-center gap-4"><div className="admin-header-left"><Link to="/" aria-label="Kani Barber Studio, inicio" className="w-fit" onClick={closeMenu}><Wordmark /></Link></div><div className="header-controls ml-auto">{staff && <Suspense fallback={null}><AdminActivityPopover key={staff.user.id} role={staff.profile.role} staff={staff} /></Suspense>}<HeaderWhatsApp /><ThemeToggle /><Button variant="outline" size="icon" className={`mobile-menu-trigger header-control-button ${admin ? 'admin-menu-trigger' : ''}`} aria-label={menuOpen ? 'Cerrar menú' : 'Abrir menú'} aria-expanded={menuOpen} aria-controls={menuOpen ? "kani-main-menu" : undefined} ref={menuButtonRef} onClick={() => onMenuOpenChange(!menuOpen)}>{menuOpen ? <X /> : <Menu />}</Button></div></div></header></div>
     {typeof document !== 'undefined' && mobileMenu ? createPortal(mobileMenu, document.body) : null}
     {typeof document !== 'undefined' && menuOpen ? createPortal(<MobileMenuAction />, document.body) : null}
   </>;

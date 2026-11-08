@@ -522,6 +522,15 @@ html[data-theme='light'] .booking-v3 .phone-country-option {
 }
 
 /* Celular en Desktop: 50% selector de país/prefijo | 50% número de celular con igual altura y alineación */
+
+/* Celular en reservas: contenedor sin fondo para evitar artefactos sólidos entre campos */
+.booking-v3 .phone-input-row {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
 .booking-v3 .phone-input-row {
   display: grid !important;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
@@ -549,6 +558,12 @@ html[data-theme='light'] .booking-v3 .phone-country-option {
   box-sizing: border-box !important;
   display: flex !important;
   align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+}
+
+.booking-v3 .phone-country-trigger :is(span, svg) {
+  text-align: center !important;
 }
 
 .booking-v3 .phone-input-row .field-control {
@@ -568,6 +583,26 @@ html[data-theme='light'] .booking-v3 .phone-country-option {
   min-height: 44px !important;
   line-height: 44px !important;
   box-sizing: border-box !important;
+  text-align: center !important;
+  padding-left: 28px !important;
+  padding-right: 28px !important;
+  padding-inline: 28px !important;
+  padding-block: 0 !important;
+}
+
+.booking-v3 .phone-input-row input::placeholder {
+  text-align: center !important;
+}
+
+.booking-v3 .phone-input-row .field-validation-icon {
+  position: absolute !important;
+  top: 50% !important;
+  right: 7px !important;
+  transform: translateY(-50%) !important;
+  width: 18px !important;
+  height: 18px !important;
+  pointer-events: none !important;
+  z-index: 2 !important;
 }
 
 /* Aviso legal informativo alineado a la izquierda */
@@ -633,6 +668,12 @@ html[data-theme='light'] .booking-v3 .phone-country-option {
     box-sizing: border-box !important;
     display: flex !important;
     align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+  }
+
+  .booking-v3 .phone-country-trigger :is(span, svg) {
+    text-align: center !important;
   }
 
   .booking-v3 .phone-input-row .field-control {
@@ -649,6 +690,15 @@ html[data-theme='light'] .booking-v3 .phone-country-option {
     line-height: 44px !important;
     border-radius: var(--radius-control, 0.65rem) !important;
     box-sizing: border-box !important;
+    text-align: center !important;
+    padding-left: 28px !important;
+    padding-right: 28px !important;
+    padding-inline: 28px !important;
+    padding-block: 0 !important;
+  }
+
+  .booking-v3 .phone-input-row input::placeholder {
+    text-align: center !important;
   }
 
   /* 3. Altura compacta moderada (44px) para inputs en mobile */
@@ -771,4 +821,104 @@ html[data-theme='light'] .booking-v3 .phone-country-option {
 .booking-v3-final .summary-pending-notice {
   margin-top: 16px;
   padding: 12px 14px;
+}
+
+/* Datos: match the existing white discount field without changing input states. */
+html[data-theme='light'] .booking-page:is(.booking-v2, .booking-v3) .booking-contact-form :is(
+  input[name='name'], input#booking-v2-phone, input[name='phone'], input[name='email'],
+  .phone-country-trigger
+) {
+  background-color: #fff !important;
+}
+
+/* Desktop controls share the primary inputs' 52px height; mobile sizes stay intact. */
+@media (min-width: 768px) {
+  .booking-page:is(.booking-v2, .booking-v3) .booking-contact-form :is(
+    .phone-country-picker, .phone-country-trigger, .phone-input-row .field-control
+  ),
+  .booking-page:is(.booking-v2, .booking-v3) .booking-contact-form input#booking-discount-code,
+  .booking-page:is(.booking-v2, .booking-v3) .booking-contact-form .booking-discount-field button.discount-apply-button {
+    height: 52px !important;
+    min-height: 52px !important;
+    max-height: 52px !important;
+  }
+
+  .booking-page:is(.booking-v2, .booking-v3) .booking-contact-form input#booking-discount-code {
+    line-height: 52px !important;
+  }
+}
+
+/* Dark Datos: opaque light controls, with the surrounding labels left unchanged. */
+html[data-theme='dark'] .booking-page:is(.booking-v2, .booking-v3) .booking-contact-form :is(
+  input[name='name'], input#booking-v2-phone, input[name='phone'], input[name='email'],
+  input#booking-discount-code, .phone-country-trigger, .phone-country-search
+) {
+  background: #f9f9f9 !important;
+  color: #1c1c1c !important;
+  -webkit-text-fill-color: #1c1c1c !important;
+  caret-color: #1c1c1c !important;
+  color-scheme: light;
+  text-shadow: none;
+}
+
+html[data-theme='dark'] .booking-page:is(.booking-v2, .booking-v3) .booking-contact-form :is(
+  input[name='name'], input#booking-v2-phone, input[name='email'],
+  input#booking-discount-code, .phone-country-search
+)::placeholder {
+  color: #666 !important;
+  -webkit-text-fill-color: #666 !important;
+  opacity: 1 !important;
+}
+
+/* Cover the browser's autofill paint while retaining its focus/validation ring. */
+html[data-theme='dark'] .booking-page:is(.booking-v2, .booking-v3) .booking-contact-form :is(
+  input[name='name'], input#booking-v2-phone, input[name='email'], input#booking-discount-code
+):-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 1000px #f9f9f9 inset !important;
+  box-shadow: 0 0 0 1000px #f9f9f9 inset !important;
+}
+
+html[data-theme='dark'] .booking-page:is(.booking-v2, .booking-v3) .booking-contact-form :is(
+  input[name='name'], input#booking-v2-phone, input[name='email'],
+  input#booking-discount-code, .phone-country-trigger, .phone-country-search
+):disabled {
+  opacity: 1 !important;
+  color: #707070 !important;
+  -webkit-text-fill-color: #707070 !important;
+  cursor: not-allowed;
+}
+
+html[data-theme='dark'] .booking-page:is(.booking-v2, .booking-v3) .booking-contact-form .phone-country-options {
+  background: #f9f9f9;
+  color: #1c1c1c;
+  color-scheme: light;
+}
+
+html[data-theme='dark'] .booking-page:is(.booking-v2, .booking-v3) .booking-contact-form .phone-country-option {
+  color: #1c1c1c !important;
+}
+
+html[data-theme='dark'] .booking-page:is(.booking-v2, .booking-v3) .booking-contact-form :is(
+  .phone-country-option .text-muted-foreground, .phone-country-empty
+) { color: #666; }
+
+html[data-theme='dark'] .booking-page:is(.booking-v2, .booking-v3) .booking-contact-form .phone-country-group-title {
+  color: #725620;
+}
+
+html[data-theme='dark'] .booking-page:is(.booking-v2, .booking-v3) .booking-contact-form .phone-country-option:hover,
+html[data-theme='dark'] .booking-page:is(.booking-v2, .booking-v3) .booking-contact-form .phone-country-option[aria-selected='true'] {
+  background: #e6dcc7;
+}
+
+/* State icons remain recognizable and readable against the light input surface. */
+html[data-theme='dark'] .booking-page:is(.booking-v2, .booking-v3) .booking-contact-form .field-validation-icon.valid {
+  color: #166534;
+}
+html[data-theme='dark'] .booking-page:is(.booking-v2, .booking-v3) .booking-contact-form .field-validation-icon.invalid {
+  color: #b91c1c;
+}
+
+html[data-theme='dark'] .booking-page:is(.booking-v2, .booking-v3) .booking-contact-form .phone-country-search::-webkit-search-cancel-button {
+  filter: grayscale(1) brightness(0.35);
 }

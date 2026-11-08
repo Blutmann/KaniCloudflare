@@ -121,6 +121,11 @@ export function isResendEventDuplicate(eventId: string): boolean {
   return false;
 }
 
+/** Release a failed attempt so a provider retry can persist the signed receipt. */
+export function forgetFailedResendEvent(eventId: string): void {
+  processedResendEventIds.delete(eventId);
+}
+
 export function clearProcessedResendEventsForTest(): void {
   processedResendEventIds.clear();
 }

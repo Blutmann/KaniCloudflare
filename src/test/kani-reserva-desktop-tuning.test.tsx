@@ -103,4 +103,26 @@ describe('Reserva Desktop - Fecha & Datos visual tuning', () => {
     expect(cssV3).toMatch(/\.booking-summary-legal-disclaimer\s*\{[^}]*text-align:\s*left\s*!important;/);
     expect(cssStyles).toMatch(/\.booking-summary-legal-disclaimer[\s\S]*?text-align:\s*left\s*!important;/);
   });
+
+  it('7. CELULAR VISUAL FIX: phone container is transparent and contents are centered horizontally', () => {
+    // 1. Container has transparent background in styles.css and reserva-v3.css
+    expect(cssStyles).toMatch(/\.booking-page\s+\.phone-input-row[\s\S]*?background:\s*transparent\s*!important;/);
+    expect(cssV3).toMatch(/\.booking-v3\s+\.phone-input-row[\s\S]*?background:\s*transparent\s*!important;/);
+
+    // .phone-input-row is NOT in the solid background selectors
+    expect(cssStyles).not.toMatch(/html\[data-theme\][^{]*\.phone-input-row[^{]*\{[^}]*background:\s*var\(--kani-surface-inset\)/);
+    expect(cssStyles).not.toMatch(/html\[data-theme='light'\][^{]*\.phone-input-row[^{]*\{[^}]*background:\s*var\(--kani-surface-control\)/);
+    expect(cssV3).not.toMatch(/html\[data-theme='light'\][^{]*\.phone-input-row[^{]*\{[^}]*background-color:\s*#fff/);
+
+    // 2. Country selector content is centered
+    expect(cssStyles).toMatch(/\.booking-page\s+\.booking-contact-form\s+\.phone-country-trigger\s*\{[^}]*justify-content:\s*center\s*!important;/);
+    expect(cssStyles).toMatch(/\.booking-page\s+\.booking-contact-form\s+\.phone-country-trigger\s*\{[^}]*text-align:\s*center\s*!important;/);
+    expect(cssV3).toMatch(/\.booking-v3\s+\.phone-country-trigger\s*\{[^}]*justify-content:\s*center\s*!important;/);
+
+    // 3. Phone input and placeholder are centered with symmetric padding
+    expect(cssStyles).toMatch(/\.booking-page\s+\.booking-contact-form\s+\.phone-input-row\s+input[^{]*\{[^}]*text-align:\s*center\s*!important;/);
+    expect(cssStyles).toMatch(/\.booking-page\s+\.booking-contact-form\s+\.phone-input-row\s+input::placeholder[^{]*\{[^}]*text-align:\s*center\s*!important;/);
+    expect(cssV3).toMatch(/\.booking-v3\s+\.phone-input-row\s+input[^{]*\{[^}]*text-align:\s*center\s*!important;/);
+    expect(cssV3).toMatch(/\.booking-v3\s+\.phone-input-row\s+input::placeholder[^{]*\{[^}]*text-align:\s*center\s*!important;/);
+  });
 });

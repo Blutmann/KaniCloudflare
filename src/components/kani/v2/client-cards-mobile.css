@@ -1,0 +1,129 @@
+/* Three compact mobile rows; existing desktop markup keeps its original layout. */
+.v2-client-card .v2-client-mobile-grid { display: none; }
+
+@media (max-width: 767px) {
+  .v2-client-grid > .v2-client-card {
+    display: block;
+    padding: 9px 12px;
+    height: auto;
+  }
+  .v2-client-card > :not(.v2-client-mobile-grid) { display: none; }
+  .v2-client-card .v2-client-mobile-grid {
+    --v2-client-btn-size: 36px;
+    --v2-client-btn-hgap: 5px;
+    --v2-client-btn-vgap: 10px;
+    --v2-client-actions-width: calc(var(--v2-client-btn-size) * 2 + var(--v2-client-btn-hgap));
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) var(--v2-client-actions-width);
+    grid-template-rows: auto auto auto;
+    align-content: space-between;
+    align-items: center;
+    column-gap: 10px;
+    row-gap: 3px;
+    min-width: 0;
+    min-height: calc(var(--v2-client-btn-size) * 2 + var(--v2-client-btn-vgap));
+  }
+  .v2-client-mobile-info {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    font-size: 12px;
+    line-height: 1.3;
+    color: var(--muted-foreground);
+  }
+  .v2-client-mobile-name {
+    grid-column: 1;
+    grid-row: 1;
+    padding-top: 1px;
+  }
+  .v2-client-mobile-grid:not(:has(> .v2-client-mobile-actions)) .v2-client-mobile-name {
+    grid-column: 1 / -1;
+  }
+  .v2-client-mobile-name h2 {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+    margin: 0;
+    min-width: 0;
+    font-size: 13px;
+    line-height: 1.25;
+    font-weight: 700;
+    color: var(--foreground);
+  }
+  .v2-client-mobile-actions {
+    grid-column: 2;
+    grid-row: 1 / 4;
+    align-self: start;
+    justify-self: end;
+    width: 100%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--v2-client-btn-hgap);
+  }
+  .v2-client-mobile-email {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .v2-client-mobile-phone {
+    grid-column: 1;
+    grid-row: 3;
+    padding-bottom: 1px;
+  }
+  .v2-client-mobile-info a, .v2-client-mobile-empty {
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .v2-client-mobile-info a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 0;
+    padding: 0;
+    color: inherit;
+    text-decoration: none;
+  }
+  .v2-client-mobile-info a > span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .v2-client-mobile-info a:hover { text-decoration: underline; }
+  .v2-client-mobile-info a:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; border-radius: 3px; }
+  .v2-client-mobile-grid .v2-client-action-btn {
+    width: var(--v2-client-btn-size);
+    min-width: var(--v2-client-btn-size);
+    height: var(--v2-client-btn-size);
+    min-height: var(--v2-client-btn-size);
+    aspect-ratio: 1 / 1;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-control);
+  }
+  .v2-client-mobile-grid .v2-client-details-btn {
+    grid-column: 2;
+    grid-row: 1 / 4;
+    align-self: end;
+    justify-self: end;
+    width: 100%;
+    min-width: var(--v2-client-actions-width);
+    height: var(--v2-client-btn-size);
+    min-height: var(--v2-client-btn-size);
+    padding: 0 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12.5px;
+    font-weight: 500;
+    line-height: 1;
+    white-space: nowrap;
+  }
+}

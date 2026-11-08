@@ -39,14 +39,14 @@ export async function signInWithPassword(email: string, password: string) {
   return res;
 }
 
-export async function signOut() {
+export async function signOut(scope: 'global' | 'local' | 'others' = 'global') {
   clearStaffCache();
   if (typeof document !== 'undefined') {
     try {
       document.cookie = `sb-access-token=; path=/; max-age=0; SameSite=Lax; Secure`;
     } catch {}
   }
-  return supabase.auth.signOut();
+  return supabase.auth.signOut({ scope });
 }
 
 async function fetchAuthenticatedStaff(): Promise<AuthenticatedStaff | null> {

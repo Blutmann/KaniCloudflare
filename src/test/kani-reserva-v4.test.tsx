@@ -6,6 +6,7 @@ import { dateLabel } from '@/lib/kani-model';
 const mocks = vi.hoisted(() => ({ prepare: vi.fn(), pay: vi.fn(), tokenize: vi.fn(), mp: vi.fn(), create: vi.fn() }));
 vi.mock('@/components/kani/store', () => ({ useKani: () => ({ mobileMenuOpen: false, setMobileMenuOpen: vi.fn() }) }));
 vi.mock('@/lib/kani-availability', async original => ({ ...await original<typeof import('@/lib/kani-availability')>(),
+  readPublicBookingBarbers: async () => ['Lautaro', 'Gonzalo', 'Valentín'].map(name => ({ id: name, name })),
   readConfiguredServices: async () => [], readPublicAvailabilityStarts: async () => ['10:00', '11:30'].map(start_time => ({
     barber_id: 'Lautaro', barber_name: 'Lautaro', slot_date: '2026-10-27', start_time, is_exception: false,
     compatible_services: ['Corte'],
@@ -24,7 +25,7 @@ function next() { fireEvent.click(screen.getByRole('button', { name: 'Continuar'
 async function reachData() {
   render(<PaywayBooking />);
   fireEvent.click(screen.getByRole('button', { name: /^Corte,/ })); next();
-  fireEvent.click(screen.getByRole('button', { name: /Lautaro/ })); next();
+  fireEvent.click(await screen.findByRole('button', { name: /Lautaro/ })); next();
   fireEvent.click(await screen.findByRole('button', { name: dateLabel('2026-10-27') })); next();
   await screen.findByRole('button', { name: /10:00/ });
   fireEvent.click(screen.getByRole('button', { name: /10:00/ })); next();

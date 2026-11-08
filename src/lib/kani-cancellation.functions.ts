@@ -93,7 +93,7 @@ export async function handleConfirmCancellation(data: {
     // Check current appointment state
     const { data: apt, error: fetchErr } = await supabase
       .from("appointments")
-      .select("id, status, booking_date, start_time, client_phone")
+      .select("id, status, booking_date, start_time, client_phone, membership_consumption_id")
       .eq("id", appointmentId)
       .maybeSingle();
 
@@ -106,11 +106,11 @@ export async function handleConfirmCancellation(data: {
       return { ok: true, alreadyCancelled: true, message: "El turno ya fue cancelado previamente." };
     }
 
-    if (apt.status === "COMPLETED" || apt.status === "NO_SHOW") {
+    if (apt.status === "COMPLETED" || apt.status === "NO_SHOW" || (apt as any).membership_consumption_id) {
       return {
         ok: false,
         error: "NOT_CANCELABLE",
-        message: "Este turno ya fue completado y no puede ser cancelado.",
+        message: "Este turno ya fue completado o tiene una sesión consumida y no puede ser cancelado por este enlace.",
       };
     }
 

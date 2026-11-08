@@ -1,31 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 import { brokeredPreviewStorage } from './previewAuthStorage';
-
-// Cloudflare test deployment: VITE_* values are injected at build time.
-function isNewSupabaseApiKey(value: string): boolean {
-  return value.startsWith('sb_publishable_') || value.startsWith('sb_secret_');
-}
-
-function createSupabaseFetch(supabaseKey: string): typeof fetch {
-  return (input, init) => {
-    const headers = new Headers(
-      typeof Request !== 'undefined' && input instanceof Request ? input.headers : undefined,
-    );
-
-    if (init?.headers) {
-      new Headers(init.headers).forEach((value, key) => headers.set(key, value));
-    }
-
-    // New Supabase API keys are opaque strings, not bearer JWTs.
-    if (isNewSupabaseApiKey(supabaseKey) && headers.get('Authorization') === `Bearer ${supabaseKey}`) {
-      headers.delete('Authorization');
-    }
-
-    headers.set('apikey', supabaseKey);
-    return fetch(input, { ...init, headers });
-  };
-}
+import { DEFAULT_SUPABASE_URL, DEFAULT_SUPABASE_PUBLIC_KEY, createSupabaseFetch } from './public-config';
 
 function syncAuthSessionCookie(session: { access_token?: string; expires_in?: number } | null) {
   if (typeof document === 'undefined') return;
@@ -47,13 +23,13 @@ function createSupabaseClient() {
   const SUPABASE_URL =
     import.meta.env.VITE_SUPABASE_URL ||
     process.env['SUPABASE_URL'] ||
-    'https://iockpxtkflyjfagkvgnr.supabase.co';
+    DEFAULT_SUPABASE_URL;
   const SUPABASE_PUBLIC_KEY =
     import.meta.env.VITE_SUPABASE_ANON_KEY ||
     import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
     process.env['SUPABASE_ANON_KEY'] ||
     process.env['SUPABASE_PUBLISHABLE_KEY'] ||
-    'sb_publishable_jLUHqN-Y_2az8c0Y2yG3mA_gl618304';
+    DEFAULT_SUPABASE_PUBLIC_KEY;
 
   if (!SUPABASE_URL || !SUPABASE_PUBLIC_KEY) {
     const missing = [

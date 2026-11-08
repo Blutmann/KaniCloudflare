@@ -19,18 +19,21 @@ export type Database = {
           id: string
           name: string
           active: boolean
+          public_booking_enabled: boolean
           created_at: string
         }
         Insert: {
           id?: string
           name: string
           active?: boolean
+          public_booking_enabled?: boolean
           created_at?: string
         }
         Update: {
           id?: string
           name?: string
           active?: boolean
+          public_booking_enabled?: boolean
           created_at?: string
         }
         Relationships: []
@@ -803,6 +806,14 @@ export type Database = {
           updated_at: string
           updated_by: string | null
         }[]
+      }
+      read_public_booking_barbers: {
+        Args: Record<PropertyKey, never>
+        Returns: { id: string; name: string; public_booking_enabled: boolean }[]
+      }
+      admin_set_barber_public_booking: {
+        Args: { p_barber_id: string; p_enabled: boolean }
+        Returns: boolean
       }
       read_valid_availability_starts: {
         Args: {

@@ -55,10 +55,10 @@ vi.mock("@/components/kani/v2/data", () => ({
 import { V2Payments } from "@/components/kani/v2/payments";
 
 describe("Admin V2 — Rediseño de Registrar Pago Mobile y Desktop", () => {
-  it("renders Importe ($ ARS) as a standard form field with default catalog price", () => {
+  it("renders Importe as a standard form field with default catalog price", () => {
     render(<V2Payments />);
     // Importe field exists directly without details/summary
-    const importeInput = screen.getByLabelText(/Importe \(\$ ARS\)/i) as HTMLInputElement;
+    const importeInput = screen.getByLabelText(/^Importe$/i) as HTMLInputElement;
     expect(importeInput).toBeDefined();
     expect(importeInput.type).toBe("number");
     expect(importeInput.value).toBe("25000");

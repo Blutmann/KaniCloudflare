@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, Check, CheckCircle2, Clock3, SlidersHorizontal, X, XCircle } from "lucide-react";
-import { Link } from "@tanstack/react-router";
+import { AlertTriangle, Check, CheckCircle2, Clock3, Repeat, SlidersHorizontal, X, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -24,36 +23,55 @@ import { dateLabel, minutes, formatAdminV2Date, type Barber } from "@/lib/kani-m
 import {
   AdminFilterPanel,
   AdminFilterCell,
-  AdminV2FiltersPanel,
-  AdminV2FilterField,
   AdminV2SectionToolbar,
 } from "@/components/kani/v2/shared";
 import {
   createAvailabilitySlots,
-  FIXED_BOOKING_START_TIMES,
   readAvailabilityStartsForRange,
   readAvailabilitySlotsForRange,
   updateAvailabilitySlot,
   type AvailabilitySlot,
 } from "@/lib/kani-availability";
-import { readRealAppointments, type RealAppointment } from "@/lib/kani-appointments";
+import {
+  readRealAppointments,
+  updateRealAppointmentStatus,
+  type RealAppointment,
+} from "@/lib/kani-appointments";
 import { permittedBarberNames } from "@/lib/kani-role-scope";
+import { isStaffOperator, mayManageBarber } from "@/lib/kani-permissions";
+import {
+  createRecurringAvailabilityRule,
+  fetchRecurringAvailabilityRules,
+  generateRecurrenceDates,
+  modifyRecurringAvailabilityRule,
+  RECURRENCE_END_OPTIONS,
+  RECURRENCE_FREQUENCY_OPTIONS,
+  RECURRENCE_SCOPE_OPTIONS,
+  type RecurrenceEndType,
+  type RecurrenceFrequencyType,
+  type RecurrenceScopeType,
+  type RecurringAvailabilityRuleRecord,
+} from "@/lib/kani-recurrences-memberships";
 
 const datePresets: ScheduleDatePreset[] = schedulePresets;
 export type ScheduleStatusFilter = "ALL" | "AVAILABLE" | "UNAVAILABLE" | "RESERVED";
-type ScheduleSlot = AvailabilitySlot & { barberName: Barber; occupied: boolean };
+type ScheduleSlot = AvailabilitySlot & {
+  barberName: Barber;
+  occupied: boolean;
+  recurringRuleId?: string | null;
+};
 type ScheduleStart = Awaited<ReturnType<typeof readAvailabilityStartsForRange>>[number] & { barberName: Barber };
 
 const SCHEDULE_TIME_OPTIONS = Array.from({ length: 96 }, (_, index) => {
   const totalMinutes = index * 15;
   const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
-  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+  const minutesVal = totalMinutes % 60;
+  return `${String(hours).padStart(2, '0')}:${String(minutesVal).padStart(2, '0')}`;
 });
 
 export function defaultSlotEndTime(startTime: string): string {
-  const [hours, minutes] = startTime.split(':').map(Number);
-  const totalMinutes = (hours * 60 + minutes + 45) % (24 * 60);
+  const [hours, minutesVal] = startTime.split(':').map(Number);
+  const totalMinutes = (hours * 60 + minutesVal + 45) % (24 * 60);
   const endHours = Math.floor(totalMinutes / 60);
   const endMinutes = totalMinutes % 60;
   return `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}`;
@@ -122,7 +140,7 @@ function overlaps(slot: AvailabilitySlot, appointment: RealAppointment) {
 }
 
 export function AdminScheduleManager() {
-  const { profile, barbers: permittedRows, refreshCount, setIsRefreshing } = useAdminStaff();
+  const { staff, profile, barbers: permittedRows, refreshCount, setIsRefreshing } = useAdminStaff();
   const permittedBarbers = useMemo(
     () => permittedBarberNames(profile, permittedRows),
     [permittedRows, profile],
@@ -138,21 +156,45 @@ export function AdminScheduleManager() {
   const [barberFilter, setBarberFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState<ScheduleStatusFilter>("ALL");
   const [slots, setSlots] = useState<ScheduleSlot[]>([]);
-  const [validStarts, setValidStarts] = useState<ScheduleStart[]>([]);
+  const [allAppointments, setAllAppointments] = useState<RealAppointment[]>([]);
+  const [recurringRules, setRecurringRules] = useState<RecurringAvailabilityRuleRecord[]>([]);
+  const [, setValidStarts] = useState<ScheduleStart[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+
+  // Modal Agregar Horario (FASE 2 & FASE 3)
   const [manualOpen, setManualOpen] = useState(false);
   const [manualDate, setManualDate] = useState(() => businessDateToday());
   const [manualBarberId, setManualBarberId] = useState(
     () => ownBarberId ?? permittedRows[0]?.id ?? "",
   );
   const [manualTime, setManualTime] = useState("10:00");
+  const [manualFrequency, setManualFrequency] = useState<RecurrenceFrequencyType>("ONCE");
+  const [manualEndType, setManualEndType] = useState<RecurrenceEndType>("NEVER");
+  const [manualEndDate, setManualEndDate] = useState(() => addCalendarDays(businessDateToday(), 30));
+  const [manualMaxOccurrences, setManualMaxOccurrences] = useState<number>(4);
   const [manualError, setManualError] = useState("");
   const [manualChecking, setManualChecking] = useState(false);
   const [checkingNotice, setCheckingNotice] = useState(false);
+
+  // FASE 6: Modal de advertencia al bloquear un horario o período con turnos confirmados
+  const [blockConflictModal, setBlockConflictModal] = useState<{
+    slot: ScheduleSlot;
+    affectedAppointments: RealAppointment[];
+    confirmCancelAll?: boolean;
+  } | null>(null);
+
+  // FASE 3 & 11: Modal de alcance al modificar/bloquear una disponibilidad recurrente
+  const [recurringScopeModal, setRecurringScopeModal] = useState<{
+    slot: ScheduleSlot;
+    rule: RecurringAvailabilityRuleRecord;
+    scope: RecurrenceScopeType;
+  } | null>(null);
+
   const validationIdRef = useRef(0);
+  const loadRevisionRef = useRef(0);
 
   useEffect(() => {
     if (!manualOpen) {
@@ -194,7 +236,7 @@ export function AdminScheduleManager() {
       .then((appointments) => {
         if (validationIdRef.current !== currentReqId) return;
         const conflict = appointments.find((apt) => overlaps(candidateSlot, apt));
-        if (conflict) {
+        if (conflict && manualFrequency === "ONCE") {
           const barberName = barberById.get(manualBarberId)?.name ?? conflict.barber ?? "El barbero";
           const conflictStart = conflict.time;
           const conflictEnd = conflict.endTime || defaultSlotEndTime(conflict.time);
@@ -220,7 +262,7 @@ export function AdminScheduleManager() {
     return () => {
       window.clearTimeout(timer);
     };
-  }, [manualOpen, manualBarberId, manualDate, manualTime, barberById]);
+  }, [manualOpen, manualBarberId, manualDate, manualTime, manualFrequency, barberById]);
 
   useEffect(() => {
     if (profile.role === "BARBER") {
@@ -233,6 +275,7 @@ export function AdminScheduleManager() {
         setManualBarberId(permittedRows[0]?.id ?? "");
     }
   }, [barberFilter, manualBarberId, ownBarberId, permittedBarbers, permittedRows, profile.role]);
+
   useEffect(() => {
     const timer = window.setInterval(() => {
       const next = businessDateToday();
@@ -251,13 +294,17 @@ export function AdminScheduleManager() {
       return ownBarberId ? permittedRows.filter((row) => row.id === ownBarberId) : [];
     return permittedRows.filter((row) => row.name === barberFilter);
   }, [barberFilter, ownBarberId, permittedRows, profile.role]);
+  const activeScopeRef = useRef({ selectedRows, dateRange });
+  activeScopeRef.current = { selectedRows, dateRange };
 
   async function loadSlots() {
+    if (activeScopeRef.current.selectedRows !== selectedRows || activeScopeRef.current.dateRange !== dateRange) return;
+    const revision = ++loadRevisionRef.current;
     setLoading(true);
     setIsRefreshing(true);
     setError("");
     try {
-      const [slotRows, starts, appointments] = await Promise.all([
+      const [slotRows, starts, appointments, rules] = await Promise.all([
         Promise.all(
           selectedRows.map((row) => readAvailabilitySlotsForRange(row.id, dateRange)),
         ).then((rows) => rows.flat()),
@@ -265,13 +312,67 @@ export function AdminScheduleManager() {
           selectedRows.map((row) => readAvailabilityStartsForRange(row.id, dateRange)),
         ).then((rows) => rows.flat()),
         readRealAppointments(),
+        fetchRecurringAvailabilityRules(staff, selectedRows[0]?.id).catch(
+          () => [] as RecurringAvailabilityRuleRecord[],
+        ),
       ]);
-      const nextSlots = slotRows
-        .map((slot) => ({
-          ...slot,
-          barberName: (barberById.get(slot.barber_id)?.name ?? "Barbero") as Barber,
-          occupied: appointments.some((appointment) => overlaps(slot, appointment)),
-        }))
+      if (revision !== loadRevisionRef.current) return;
+
+      setAllAppointments(appointments);
+      setRecurringRules(rules);
+
+      // Combinar slots físicos con evaluación dinámica de reglas recurrentes activas para el rango solicitado
+      const existingKeys = new Set(
+        slotRows.map((s) => `${s.barber_id}|${s.slot_date}|${s.start_time.slice(0, 5)}`),
+      );
+      const ruleByKey = new Map<string, string>();
+      const syntheticSlots: AvailabilitySlot[] = [];
+
+      for (const rule of rules) {
+        if (!rule.active) continue;
+        if (!selectedRows.some((r) => r.id === rule.barberId)) continue;
+        const dates = generateRecurrenceDates({
+          startDate: rule.startDate,
+          frequencyType: rule.frequencyType,
+          endType: rule.endType,
+          endDate: rule.endDate,
+          maxOccurrences: rule.maxOccurrences,
+          windowFrom: dateRange.start,
+          windowTo: dateRange.end,
+          excludedDates: rule.excludedDates,
+        });
+        for (const d of dates) {
+          const key = `${rule.barberId}|${d}|${rule.startTime.slice(0, 5)}`;
+          ruleByKey.set(key, rule.id);
+          if (!existingKeys.has(key)) {
+            existingKeys.add(key);
+            syntheticSlots.push({
+              id: `recurring-${rule.id}-${d}`,
+              barber_id: rule.barberId,
+              slot_date: d,
+              start_time: `${rule.startTime.slice(0, 5)}:00`,
+              end_time: `${rule.endTime.slice(0, 5)}:00`,
+              status: "AVAILABLE",
+              internal_note: rule.internalNote,
+              created_at: rule.createdAt,
+              updated_at: rule.createdAt,
+              updated_by: rule.createdByUserId,
+            });
+          }
+        }
+      }
+
+      const mergedSlotRows = [...slotRows, ...syntheticSlots];
+      const nextSlots = mergedSlotRows
+        .map((slot) => {
+          const key = `${slot.barber_id}|${slot.slot_date}|${slot.start_time.slice(0, 5)}`;
+          return {
+            ...slot,
+            barberName: (barberById.get(slot.barber_id)?.name ?? "Barbero") as Barber,
+            occupied: appointments.some((appointment) => overlaps(slot, appointment)),
+            recurringRuleId: ruleByKey.get(key) ?? null,
+          };
+        })
         .sort((a, b) =>
           `${a.slot_date}${a.start_time}`.localeCompare(`${b.slot_date}${b.start_time}`),
         );
@@ -285,17 +386,21 @@ export function AdminScheduleManager() {
           .sort((a, b) => `${a.slot_date}${a.start_time}`.localeCompare(`${b.slot_date}${b.start_time}`)),
       );
     } catch (cause) {
+      if (revision !== loadRevisionRef.current) return;
       setSlots([]);
       setValidStarts([]);
       setError(errorMessage(cause));
     } finally {
-      setLoading(false);
-      setIsRefreshing(false);
+      if (revision === loadRevisionRef.current) {
+        setLoading(false);
+        setIsRefreshing(false);
+      }
     }
   }
 
   useEffect(() => {
     void loadSlots();
+    return () => { loadRevisionRef.current += 1; };
   }, [dateRange, selectedRows]);
 
   useEffect(() => {
@@ -319,14 +424,60 @@ export function AdminScheduleManager() {
   }
 
   async function saveSlot(slot: ScheduleSlot, nextStatus: AvailabilitySlot["status"]) {
+    if (!mayManageBarber(profile, slot.barber_id)) return;
+
+    // FASE 6: Si el horario tiene turnos confirmados/pendientes y el usuario intenta bloquearlo,
+    // mostrar el modal «Se encontraron turnos afectados» con las 3 opciones.
     if (slot.occupied) {
+      const affected = allAppointments.filter((apt) => overlaps(slot, apt));
+      if (affected.length > 0) {
+        setBlockConflictModal({
+          slot,
+          affectedAppointments: affected,
+          confirmCancelAll: false,
+        });
+        return;
+      }
       setError("No se puede modificar un horario que ya tiene una reserva activa.");
       return;
     }
+
+    // FASE 3 & 11: Si pertenece a una regla recurrente y se va a bloquear, ofrecer alcance
+    if (slot.recurringRuleId && nextStatus === "UNAVAILABLE") {
+      const rule = recurringRules.find((r) => r.id === slot.recurringRuleId);
+      if (rule) {
+        setRecurringScopeModal({
+          slot,
+          rule,
+          scope: "SINGLE",
+        });
+        return;
+      }
+    }
+
+    await executeDirectSlotSave(slot, nextStatus);
+  }
+
+  async function executeDirectSlotSave(slot: ScheduleSlot, nextStatus: AvailabilitySlot["status"]) {
     setSavingId(slot.id);
     setError("");
     setNotice("");
     try {
+      if (slot.id.startsWith("recurring-") && slot.recurringRuleId) {
+        await modifyRecurringAvailabilityRule(
+          {
+            ruleId: slot.recurringRuleId,
+            scope: "SINGLE",
+            targetDate: slot.slot_date,
+            action: nextStatus === "UNAVAILABLE" ? "BLOCK" : "MODIFY",
+          },
+          staff,
+        );
+        await loadSlots();
+        setNotice(`${slot.barberName} · ${slot.start_time.slice(0, 5)} actualizado.`);
+        return;
+      }
+
       const updated = await updateAvailabilitySlot({
         id: slot.id,
         barberId: slot.barber_id,
@@ -336,7 +487,12 @@ export function AdminScheduleManager() {
       setSlots((current) =>
         current.map((currentSlot) =>
           currentSlot.id === updated.id
-            ? { ...updated, barberName: slot.barberName, occupied: slot.occupied }
+            ? {
+                ...updated,
+                barberName: slot.barberName,
+                occupied: slot.occupied,
+                recurringRuleId: slot.recurringRuleId,
+              }
             : currentSlot,
         ),
       );
@@ -349,28 +505,170 @@ export function AdminScheduleManager() {
     }
   }
 
+  async function handleConfirmRecurringScope() {
+    if (!recurringScopeModal) return;
+    const { slot, rule, scope } = recurringScopeModal;
+    setSavingId(slot.id);
+    setError("");
+    setNotice("");
+    try {
+      await modifyRecurringAvailabilityRule(
+        {
+          ruleId: rule.id,
+          scope,
+          targetDate: slot.slot_date,
+          action: scope === "ALL_FUTURE" ? "DEACTIVATE" : "BLOCK",
+        },
+        staff,
+      );
+      if (!slot.id.startsWith("recurring-") && scope === "SINGLE") {
+        await updateAvailabilitySlot({
+          id: slot.id,
+          barberId: slot.barber_id,
+          status: "UNAVAILABLE",
+          internalNote: slot.internal_note,
+        }).catch(() => null);
+      }
+      setRecurringScopeModal(null);
+      await loadSlots();
+      setNotice(
+        scope === "SINGLE"
+          ? `Se bloqueó la ocurrencia del ${slot.slot_date} (${slot.start_time.slice(0, 5)}) sin afectar el resto de la recurrencia.`
+          : scope === "THIS_AND_FOLLOWING"
+            ? `Se finalizó la disponibilidad recurrente desde el ${slot.slot_date} en adelante.`
+            : "Se desactivó toda la serie futura de disponibilidad recurrente.",
+      );
+    } catch (cause) {
+      setError(errorMessage(cause));
+    } finally {
+      setSavingId(null);
+    }
+  }
+
+  async function handleCancelSingleAffectedAppointment(aptId: string) {
+    if (!blockConflictModal) return;
+    setSavingId(aptId);
+    try {
+      await updateRealAppointmentStatus(aptId, "CANCELLED");
+      const remaining = blockConflictModal.affectedAppointments.filter((a) => a.id !== aptId);
+      if (remaining.length === 0) {
+        const targetSlot = blockConflictModal.slot;
+        setBlockConflictModal(null);
+        await executeDirectSlotSave({ ...targetSlot, occupied: false }, "UNAVAILABLE");
+        setNotice("Turno cancelado y horario bloqueado correctamente.");
+      } else {
+        setBlockConflictModal({
+          ...blockConflictModal,
+          affectedAppointments: remaining,
+        });
+        await loadSlots();
+      }
+    } catch (cause) {
+      setError(errorMessage(cause));
+    } finally {
+      setSavingId(null);
+    }
+  }
+
+  async function handleCancelAllAffectedAppointmentsAndBlock() {
+    if (!blockConflictModal) return;
+    const { slot, affectedAppointments } = blockConflictModal;
+    setSavingId("cancel-all-block");
+    try {
+      for (const apt of affectedAppointments) {
+        await updateRealAppointmentStatus(apt.id, "CANCELLED");
+      }
+      setBlockConflictModal(null);
+      await executeDirectSlotSave({ ...slot, occupied: false }, "UNAVAILABLE");
+      setNotice(
+        `Se cancelaron ${affectedAppointments.length} turnos afectados y se bloqueó el horario ${slot.start_time.slice(0, 5)}.`,
+      );
+    } catch (cause) {
+      setError(errorMessage(cause));
+    } finally {
+      setSavingId(null);
+    }
+  }
+
   async function saveManualSlot() {
-    if (!manualBarberId || !manualDate || !manualTime) return;
+    if (!manualBarberId || !manualDate || !manualTime || !mayManageBarber(profile, manualBarberId)) return;
     if (manualChecking || manualError) return;
+
+    if (manualFrequency !== "ONCE") {
+      if (manualEndType === "UNTIL_DATE" && (!manualEndDate || manualEndDate < manualDate)) {
+        setManualError("La fecha de finalización debe ser igual o posterior a la fecha de inicio.");
+        return;
+      }
+      if (manualEndType === "AFTER_COUNT" && (!manualMaxOccurrences || manualMaxOccurrences < 1)) {
+        setManualError("Indicá una cantidad válida de repeticiones (mínimo 1).");
+        return;
+      }
+    }
+
     setSavingId("manual");
     setManualError("");
     setNotice("");
     try {
       const endTime = defaultSlotEndTime(manualTime);
-      const created = await createAvailabilitySlots({
-        barberId: manualBarberId,
-        dates: [manualDate],
-        startTime: manualTime,
-        endTime,
-      });
-      setManualOpen(false);
-      await loadSlots();
       const barberName = barberById.get(manualBarberId)?.name ?? "Agenda";
-      setNotice(
-        created.length > 0
-          ? `${barberName} · disponibilidad guardada (${manualTime} a ${endTime}).`
-          : "Ese intervalo ya estaba cubierto; no se creó un duplicado.",
-      );
+
+      if (manualFrequency === "ONCE") {
+        const created = await createAvailabilitySlots({
+          barberId: manualBarberId,
+          dates: [manualDate],
+          startTime: manualTime,
+          endTime,
+        });
+        setManualOpen(false);
+        await loadSlots();
+        setNotice(
+          created.length > 0
+            ? `${barberName} · disponibilidad guardada (${manualTime} a ${endTime}).`
+            : "Ese intervalo ya estaba cubierto; no se creó un duplicado.",
+        );
+      } else {
+        // FASE 3: Crear regla de disponibilidad recurrente y materializar ventana próxima
+        await createRecurringAvailabilityRule(
+          {
+            barberId: manualBarberId,
+            startDate: manualDate,
+            startTime: manualTime,
+            endTime,
+            frequencyType: manualFrequency,
+            endType: manualEndType,
+            endDate: manualEndType === "UNTIL_DATE" ? manualEndDate : null,
+            maxOccurrences: manualEndType === "AFTER_COUNT" ? manualMaxOccurrences : null,
+          },
+          staff,
+        );
+
+        const immediateDates = generateRecurrenceDates({
+          startDate: manualDate,
+          frequencyType: manualFrequency,
+          endType: manualEndType,
+          endDate: manualEndType === "UNTIL_DATE" ? manualEndDate : null,
+          maxOccurrences: manualEndType === "AFTER_COUNT" ? manualMaxOccurrences : null,
+          windowFrom: manualDate,
+          windowTo: addCalendarDays(businessToday, 60),
+        });
+
+        if (immediateDates.length > 0) {
+          await createAvailabilitySlots({
+            barberId: manualBarberId,
+            dates: immediateDates,
+            startTime: manualTime,
+            endTime,
+          }).catch(() => null);
+        }
+
+        const freqLabel =
+          RECURRENCE_FREQUENCY_OPTIONS.find((o) => o.value === manualFrequency)?.label ?? manualFrequency;
+        setManualOpen(false);
+        await loadSlots();
+        setNotice(
+          `${barberName} · disponibilidad recurrente configurada (${freqLabel.toLowerCase()}, ${manualTime} a ${endTime}).`,
+        );
+      }
     } catch (cause) {
       setManualError(errorMessage(cause, "add"));
     } finally {
@@ -383,8 +681,13 @@ export function AdminScheduleManager() {
     setManualError("");
     setManualChecking(false);
     setCheckingNotice(false);
-    setManualDate(date || specificDate || businessToday);
+    const startDate = date || specificDate || businessToday;
+    setManualDate(startDate);
     setManualTime("10:00");
+    setManualFrequency("ONCE");
+    setManualEndType("NEVER");
+    setManualEndDate(addCalendarDays(startDate, 30));
+    setManualMaxOccurrences(4);
     const contextualBarberId = barberId ?? selectedRows[0]?.id;
     if (contextualBarberId && permittedRows.some((row) => row.id === contextualBarberId))
       setManualBarberId(contextualBarberId);
@@ -439,7 +742,7 @@ export function AdminScheduleManager() {
 
         {/* 3. Barbero */}
         <AdminFilterCell label="Barbero" htmlFor="schedule-barber-filter">
-          {profile.role === "ADMIN" ? (
+          {isStaffOperator(profile.role) ? (
             <select
               id="schedule-barber-filter"
               value={barberFilter}
@@ -458,7 +761,7 @@ export function AdminScheduleManager() {
           )}
         </AdminFilterCell>
 
-        {/* 4. Estado (Fila 2 Col 2 en Mobile / Fila 1 Col 4 en Desktop) */}
+        {/* 4. Estado */}
         <AdminFilterCell label="Estado" htmlFor="schedule-status-filter">
           <select
             id="schedule-status-filter"
@@ -473,133 +776,142 @@ export function AdminScheduleManager() {
         </AdminFilterCell>
       </AdminFilterPanel>
 
-        {/* 3. Avisos contextuales */}
-        {notice && (
-          <div role="status" className="p-3.5 rounded-xl border border-success/30 bg-success/10 text-success text-xs font-medium flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Check size={16} />
-              <span>{notice}</span>
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6 text-success hover:bg-success/20"
-              aria-label="Cerrar aviso"
-              onClick={() => setNotice("")}
-            >
-              <X size={14} />
-            </Button>
+      {/* 3. Avisos contextuales */}
+      {notice && (
+        <div role="status" className="p-3.5 rounded-xl border border-success/30 bg-success/10 text-success text-xs font-medium flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Check size={16} />
+            <span>{notice}</span>
           </div>
-        )}
-        {error && (
-          <div role="alert" className="p-3.5 rounded-xl border border-destructive/40 bg-destructive/10 text-destructive text-xs font-medium flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <XCircle size={16} />
-              <span>{error}</span>
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6 text-destructive hover:bg-destructive/20"
-              aria-label="Cerrar error"
-              onClick={() => setError("")}
-            >
-              <X size={14} />
-            </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 text-success hover:bg-success/20"
+            aria-label="Cerrar aviso"
+            onClick={() => setNotice("")}
+          >
+            <X size={14} />
+          </Button>
+        </div>
+      )}
+      {error && (
+        <div role="alert" className="p-3.5 rounded-xl border border-destructive/40 bg-destructive/10 text-destructive text-xs font-medium flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <XCircle size={16} />
+            <span>{error}</span>
           </div>
-        )}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 text-destructive hover:bg-destructive/20"
+            aria-label="Cerrar error"
+            onClick={() => setError("")}
+          >
+            <X size={14} />
+          </Button>
+        </div>
+      )}
 
-        {/* 4. Lista de horarios */}
-        <section className="admin-schedule-list" aria-label="Disponibilidad horaria">
-          {loading && (
+      {/* 4. Lista de horarios */}
+      <section className="admin-schedule-list" aria-label="Disponibilidad horaria">
+        {loading && (
+          <div className="v2-schedule-cards-container admin-schedule-cards-container p-8 text-center my-6">
+            <Clock3 size={32} className="mx-auto text-muted-foreground/60 mb-2 animate-spin" />
+            <p className="text-xs text-muted-foreground">Cargando horarios…</p>
+          </div>
+        )}
+        {!loading && groupedSlots.length === 0 && (
+          <>
+            <AdminV2SectionToolbar
+              dateLabel={formatAdminV2Date(specificDate)}
+              actionLabel="+ Agregar horario"
+              onAction={() => openManualDialog(specificDate, selectedRows[0]?.id)}
+            />
             <div className="v2-schedule-cards-container admin-schedule-cards-container p-8 text-center my-6">
-              <Clock3 size={32} className="mx-auto text-muted-foreground/60 mb-2 animate-spin" />
-              <p className="text-xs text-muted-foreground">Cargando horarios…</p>
+              <SlidersHorizontal size={32} className="mx-auto text-muted-foreground/60 mb-2" />
+              <h2 className="text-sm font-semibold text-foreground">No hay horarios para estos filtros</h2>
+              <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">Podés agregar una disponibilidad en cualquier fecha futura de atención.</p>
             </div>
-          )}
-          {!loading && groupedSlots.length === 0 && (
-            <>
+          </>
+        )}
+        {!loading &&
+          groupedSlots.map(([date, dateSlots]) => (
+            <section key={date} className="admin-schedule-date-group space-y-3 mb-6">
               <AdminV2SectionToolbar
-                dateLabel={formatAdminV2Date(specificDate)}
+                dateLabel={formatAdminV2Date(date)}
                 actionLabel="+ Agregar horario"
-                onAction={() => openManualDialog(specificDate, selectedRows[0]?.id)}
+                onAction={() => openManualDialog(date, dateSlots[0]?.barber_id)}
               />
-              <div className="v2-schedule-cards-container admin-schedule-cards-container p-8 text-center my-6">
-                <SlidersHorizontal size={32} className="mx-auto text-muted-foreground/60 mb-2" />
-                <h2 className="text-sm font-semibold text-foreground">No hay horarios para estos filtros</h2>
-                <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">Podés agregar una disponibilidad en cualquier fecha futura de atención.</p>
-              </div>
-            </>
-          )}
-          {!loading &&
-            groupedSlots.map(([date, dateSlots]) => (
-              <section key={date} className="admin-schedule-date-group space-y-3 mb-6">
-                <AdminV2SectionToolbar
-                  dateLabel={formatAdminV2Date(date)}
-                  actionLabel="+ Agregar horario"
-                  onAction={() => openManualDialog(date, dateSlots[0]?.barber_id)}
-                />
-                <div className="v2-schedule-cards-container admin-schedule-cards-container">
-                  <div className="v2-schedule-cards-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                    {dateSlots.map((slot) => {
-                      const available = slot.status === "AVAILABLE";
-                      const saving = savingId === slot.id;
-                      const toneConfig = slot.occupied
+              <div className="v2-schedule-cards-container admin-schedule-cards-container">
+                <div className="v2-schedule-cards-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                  {dateSlots.map((slot) => {
+                    const available = slot.status === "AVAILABLE";
+                    const saving = savingId === slot.id;
+                    const toneConfig = slot.occupied
+                      ? {
+                          border: "border-amber-500/30 bg-amber-500/5 hover:border-amber-500/50",
+                          statusTone: "text-amber-500",
+                          label: "Reservado",
+                          Icon: Clock3,
+                        }
+                      : available
                         ? {
-                            border: "border-amber-500/30 bg-amber-500/5",
-                            statusTone: "text-amber-500",
-                            label: "Reservado",
-                            Icon: Clock3,
+                            border: "border-success/30 bg-success/5 hover:border-success/50 hover:bg-success/10",
+                            statusTone: "text-success",
+                            label: "Disponible",
+                            Icon: CheckCircle2,
                           }
-                        : available
-                          ? {
-                              border: "border-success/30 bg-success/5 hover:border-success/50 hover:bg-success/10",
-                              statusTone: "text-success",
-                              label: "Disponible",
-                              Icon: CheckCircle2,
-                            }
-                          : {
-                              border: "border-destructive/30 bg-destructive/5 hover:border-destructive/50",
-                              statusTone: "text-destructive",
-                              label: "No disponible",
-                              Icon: XCircle,
-                            };
-                      return (
-                        <button
-                          type="button"
-                          key={slot.id}
-                          className={cn(
-                            "min-h-[4.75rem] p-3 rounded-xl border flex flex-col justify-between text-left transition-all shadow-xs",
-                            toneConfig.border,
-                            slot.occupied ? "cursor-default opacity-90" : "cursor-pointer"
+                        : {
+                            border: "border-destructive/30 bg-destructive/5 hover:border-destructive/50",
+                            statusTone: "text-destructive",
+                            label: "No disponible",
+                            Icon: XCircle,
+                          };
+                    return (
+                      <button
+                        type="button"
+                        key={slot.id}
+                        className={cn(
+                          "min-h-[4.75rem] p-3 rounded-xl border flex flex-col justify-between text-left transition-all shadow-xs cursor-pointer",
+                          toneConfig.border,
+                        )}
+                        disabled={saving}
+                        aria-label={`${slot.start_time.slice(0, 5)}: ${slot.occupied ? "Reservado, tocar para gestionar bloqueo o turnos afectados" : available ? "Disponible, tocar para marcar no disponible" : "No disponible, tocar para habilitar"}`}
+                        onClick={() => void saveSlot(slot, available ? "UNAVAILABLE" : "AVAILABLE")}
+                      >
+                        <div className="flex items-baseline justify-between w-full">
+                          <strong className="text-lg font-bold text-foreground leading-none">
+                            {slot.start_time.slice(0, 5)}
+                          </strong>
+                          <span className="text-[11px] text-muted-foreground">
+                            hasta {slot.end_time.slice(0, 5)}
+                          </span>
+                        </div>
+                        <div className="mt-2 flex items-center justify-between w-full gap-1">
+                          <span className={cn("text-xs font-medium inline-flex items-center gap-1", toneConfig.statusTone)}>
+                            <toneConfig.Icon size={12} />
+                            {toneConfig.label}
+                          </span>
+                          {slot.recurringRuleId && (
+                            <span
+                              className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground"
+                              title="Horario recurrente"
+                            >
+                              <Repeat size={10} />
+                              Recurrente
+                            </span>
                           )}
-                          disabled={slot.occupied || saving}
-                          aria-label={`${slot.start_time.slice(0, 5)}: ${slot.occupied ? "Reservado, no modificable" : available ? "Disponible, tocar para marcar no disponible" : "No disponible, tocar para habilitar"}`}
-                          onClick={() => void saveSlot(slot, available ? "UNAVAILABLE" : "AVAILABLE")}
-                        >
-                          <div className="flex items-baseline justify-between w-full">
-                            <strong className="text-lg font-bold text-foreground leading-none">
-                              {slot.start_time.slice(0, 5)}
-                            </strong>
-                            <span className="text-[11px] text-muted-foreground">
-                              hasta {slot.end_time.slice(0, 5)}
-                            </span>
-                          </div>
-                          <div className="mt-2 flex items-center justify-between w-full">
-                            <span className={cn("text-xs font-medium inline-flex items-center gap-1", toneConfig.statusTone)}>
-                              <toneConfig.Icon size={12} />
-                              {toneConfig.label}
-                            </span>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
-              </section>
-            ))}
-        </section>
+              </div>
+            </section>
+          ))}
+      </section>
 
+      {/* Modal Agregar horario de disponibilidad (FASE 2 & FASE 3) */}
       <Dialog
         open={manualOpen}
         onOpenChange={(open) => {
@@ -618,7 +930,7 @@ export function AdminScheduleManager() {
             Agregar horario
           </DialogDescription>
           <div className="admin-schedule-manual-fields">
-            {profile.role === "ADMIN" && (
+            {isStaffOperator(profile.role) && (
               <div>
                 <label htmlFor="schedule-manual-barber">Agenda</label>
                 <select
@@ -643,7 +955,7 @@ export function AdminScheduleManager() {
                 min={businessToday}
                 value={manualDate}
                 onChange={(event) => setManualDate(event.target.value)}
-                className="min-w-0 max-w-full px-2"
+                className="select-control w-full min-w-0 max-w-full"
               />
             </div>
             <div>
@@ -661,6 +973,77 @@ export function AdminScheduleManager() {
                 ))}
               </select>
             </div>
+            <div>
+              <label htmlFor="schedule-manual-frequency">Repetición</label>
+              <select
+                id="schedule-manual-frequency"
+                className="select-control w-full"
+                value={manualFrequency}
+                onChange={(event) =>
+                  setManualFrequency(event.target.value as RecurrenceFrequencyType)
+                }
+              >
+                {RECURRENCE_FREQUENCY_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {manualFrequency !== "ONCE" && (
+              <>
+                <div>
+                  <label htmlFor="schedule-manual-end-type">Finalización de la recurrencia</label>
+                  <select
+                    id="schedule-manual-end-type"
+                    className="select-control w-full"
+                    value={manualEndType}
+                    onChange={(event) =>
+                      setManualEndType(event.target.value as RecurrenceEndType)
+                    }
+                  >
+                    {RECURRENCE_END_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {manualEndType === "UNTIL_DATE" && (
+                  <div className="min-w-0">
+                    <label htmlFor="schedule-manual-end-date">Hasta la fecha</label>
+                    <Input
+                      id="schedule-manual-end-date"
+                      type="date"
+                      min={manualDate || businessToday}
+                      value={manualEndDate}
+                      onChange={(event) => setManualEndDate(event.target.value)}
+                      className="select-control w-full min-w-0 max-w-full"
+                    />
+                  </div>
+                )}
+
+                {manualEndType === "AFTER_COUNT" && (
+                  <div>
+                    <label htmlFor="schedule-manual-max-occurrences">Cantidad de repeticiones</label>
+                    <input
+                      id="schedule-manual-max-occurrences"
+                      type="number"
+                      min={1}
+                      max={365}
+                      step={1}
+                      value={manualMaxOccurrences}
+                      onChange={(event) =>
+                        setManualMaxOccurrences(Math.max(1, Number(event.target.value) || 1))
+                      }
+                      className="select-control w-full"
+                    />
+                  </div>
+                )}
+              </>
+            )}
           </div>
           {manualError && (
             <div
@@ -705,6 +1088,168 @@ export function AdminScheduleManager() {
               onClick={() => void saveManualSlot()}
             >
               {savingId === "manual" ? "Guardando…" : "Guardar horario"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* FASE 6: Modal «Se encontraron turnos afectados» */}
+      <Dialog
+        open={Boolean(blockConflictModal)}
+        onOpenChange={(open) => {
+          if (!open && !savingId) setBlockConflictModal(null);
+        }}
+      >
+        <DialogContent className="manual-dialog admin-schedule-dialog">
+          <DialogTitle className="flex items-center gap-2 text-amber-500">
+            <AlertTriangle size={18} />
+            Se encontraron turnos afectados
+          </DialogTitle>
+          <DialogDescription>
+            El horario {blockConflictModal?.slot.start_time.slice(0, 5)} del{" "}
+            {blockConflictModal ? dateLabel(blockConflictModal.slot.slot_date) : ""} tiene turnos confirmados. Elegí cómo proceder antes de bloquear el horario:
+          </DialogDescription>
+
+          <div className="space-y-2 my-3 max-h-60 overflow-y-auto">
+            {blockConflictModal?.affectedAppointments.map((apt) => (
+              <div
+                key={apt.id}
+                className="p-3 rounded-lg border border-border bg-secondary/40 flex items-center justify-between gap-3 text-xs"
+              >
+                <div className="min-w-0">
+                  <p className="font-semibold text-foreground truncate">
+                    {apt.name} · {apt.serviceName}
+                  </p>
+                  <p className="text-muted-foreground">
+                    {dateLabel(apt.date)} · {apt.time} hs · {apt.barber} · {apt.status}
+                  </p>
+                </div>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  disabled={Boolean(savingId)}
+                  onClick={() => void handleCancelSingleAffectedAppointment(apt.id)}
+                >
+                  {savingId === apt.id ? "Cancelando…" : "Cancelar turno"}
+                </Button>
+              </div>
+            ))}
+          </div>
+
+          {blockConflictModal?.confirmCancelAll ? (
+            <div className="p-3 rounded-lg border border-destructive/40 bg-destructive/10 space-y-2 text-xs">
+              <p className="font-medium text-destructive">
+                ¿Confirmás cancelar todos los turnos afectados ({blockConflictModal.affectedAppointments.length}) y bloquear el horario?
+              </p>
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={Boolean(savingId)}
+                  onClick={() =>
+                    setBlockConflictModal((prev) =>
+                      prev ? { ...prev, confirmCancelAll: false } : null,
+                    )
+                  }
+                >
+                  Volver
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  disabled={Boolean(savingId)}
+                  onClick={() => void handleCancelAllAffectedAppointmentsAndBlock()}
+                >
+                  {savingId === "cancel-all-block"
+                    ? "Cancelando…"
+                    : "Sí, cancelar todos y bloquear"}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <DialogFooter className="manual-dialog-footer flex-col sm:flex-row gap-2">
+              <Button
+                variant="outline"
+                disabled={Boolean(savingId)}
+                onClick={() => setBlockConflictModal(null)}
+              >
+                No bloquear el horario
+              </Button>
+              <Button
+                variant="destructive"
+                disabled={Boolean(savingId)}
+                onClick={() =>
+                  setBlockConflictModal((prev) =>
+                    prev ? { ...prev, confirmCancelAll: true } : null,
+                  )
+                }
+              >
+                Cancelar todos los turnos afectados
+              </Button>
+            </DialogFooter>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* FASE 3 & 11: Modal de alcance para modificar/bloquear disponibilidad recurrente */}
+      <Dialog
+        open={Boolean(recurringScopeModal)}
+        onOpenChange={(open) => {
+          if (!open && !savingId) setRecurringScopeModal(null);
+        }}
+      >
+        <DialogContent className="manual-dialog admin-schedule-dialog">
+          <DialogTitle>Modificar disponibilidad recurrente</DialogTitle>
+          <DialogDescription>
+            Este horario ({recurringScopeModal?.slot.start_time.slice(0, 5)} hs del{" "}
+            {recurringScopeModal ? dateLabel(recurringScopeModal.slot.slot_date) : ""}) forma parte de una regla recurrente. Seleccioná el alcance del bloqueo:
+          </DialogDescription>
+
+          <div className="space-y-2 my-3">
+            {RECURRENCE_SCOPE_OPTIONS.map((opt) => (
+              <label
+                key={opt.value}
+                className={cn(
+                  "flex items-start gap-2.5 p-3 rounded-lg border cursor-pointer text-xs transition-colors",
+                  recurringScopeModal?.scope === opt.value
+                    ? "border-primary bg-primary/10"
+                    : "border-border bg-secondary/20",
+                )}
+              >
+                <input
+                  type="radio"
+                  name="recurring-availability-scope"
+                  value={opt.value}
+                  checked={recurringScopeModal?.scope === opt.value}
+                  onChange={() =>
+                    setRecurringScopeModal((prev) =>
+                      prev ? { ...prev, scope: opt.value } : null,
+                    )
+                  }
+                  className="mt-0.5"
+                />
+                <div>
+                  <strong className="block text-foreground">{opt.label}</strong>
+                  <span className="text-muted-foreground">{opt.description}</span>
+                </div>
+              </label>
+            ))}
+          </div>
+
+          <DialogFooter className="manual-dialog-footer">
+            <Button
+              variant="outline"
+              disabled={Boolean(savingId)}
+              onClick={() => setRecurringScopeModal(null)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={Boolean(savingId)}
+              onClick={() => void handleConfirmRecurringScope()}
+            >
+              {savingId ? "Aplicando…" : "Confirmar bloqueo"}
             </Button>
           </DialogFooter>
         </DialogContent>
