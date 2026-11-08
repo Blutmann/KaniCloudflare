@@ -403,7 +403,7 @@ html[data-theme="light"] .booking-progress .complete > span { border-color: #702
 .barber-choice-list > button { min-height: 48px; justify-content: center; padding-inline: 13px; text-align: center; white-space: nowrap; border-radius: var(--radius-control, 0.65rem); }
 
 .booking-aside .eyebrow { font-size: 9px; }
-.booking-option { width: 100%; display: flex; gap: 18px; height: 104px; padding: 20px 22px; border-radius: var(--radius-control, 0.65rem); background: var(--surface); box-shadow: 0 10px 26px rgb(0 0 0 / 0.14); white-space: normal; }
+.booking-option { width: 100%; display: flex; align-items: center; gap: 18px; height: 104px; padding: 20px 22px; border-radius: var(--radius-control, 0.65rem); background: var(--surface); box-shadow: 0 10px 26px rgb(0 0 0 / 0.14); white-space: normal; }
 .booking-option.selected, .barber-choice-list .selected { border-color: #702B3A !important; background: #702B3A !important; color: #FFFFFF !important; }
 .selection-circle { width: 18px; height: 18px; display: grid; place-items: center; border: 1px solid var(--border); border-radius: 50%; flex-shrink: 0; }
 .booking-option.selected .selection-circle { background: transparent; border-color: #FFFFFF; color: #FFFFFF; }
@@ -1718,9 +1718,9 @@ html[data-theme='dark'] .studio-map-card {
  .booking-time-heading .section-title { min-width: 0; flex: 0 1 auto; margin-bottom: 0; }
  .booking-time-heading-date { min-width: 0; flex: 0 1 auto; gap: 5px; margin-top: 0; overflow: hidden; font-size: clamp(10px, 2.8vw, 13px); white-space: nowrap; text-overflow: ellipsis; }
  .booking-time-heading-date svg { width: 14px; height: 14px; }
- .booking-option { gap: 14px; padding: 14px 16px; height: 70px; min-height: 70px; }
+ .booking-option { display: flex; align-items: center; gap: 14px; padding: 14px 16px; height: 70px; min-height: 70px; }
  .booking-deposit-notice { align-items: center; gap: 10px; padding: 10px 12px; line-height: 1.38; }
- .booking-defer-option { height: 70px; min-height: 70px; padding: 14px 16px; gap: 14px; }
+ .booking-defer-option { display: flex; align-items: center; height: 70px; min-height: 70px; padding: 14px 16px; gap: 14px; }
  .booking-defer-option .barber-defer-mark { width: 40px; height: 40px; flex-basis: 40px; }
  .phone-input-row { grid-template-columns: 126px minmax(0, 1fr); }
  .phone-country-trigger { font-size: 11px; }
@@ -3409,40 +3409,86 @@ html[data-theme='light'] .booking-defer-option.selected .selection-circle {
   color: var(--primary-foreground) !important;
 }
 
-/* Servicios: dos filas compactas; nombre arriba, duración y precio abajo. */
-html[data-theme='light'] .service-option .booking-option-copy {
-  display: flex;
+/* Servicios: nombre y duración en columna compacta (gap 3px, line-height 1.2), precio centrado a la derecha. */
+.service-option .booking-option-copy {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  align-items: center;
+  row-gap: 3px;
+  column-gap: 16px;
   min-width: 0;
-  flex-direction: column;
-  justify-content: center;
-  gap: 4px;
   text-align: left;
 }
-html[data-theme='light'] .service-option .booking-option-name {
+.service-option .booking-option-name {
+  grid-column: 1;
+  grid-row: 1;
   display: block;
   margin: 0;
-  line-height: 1.15;
+  line-height: 1.2;
   text-align: left;
 }
-html[data-theme='light'] .service-option .booking-option-meta {
-  display: flex;
-  width: 100%;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
+.service-option .booking-option-meta {
+  display: contents;
 }
-html[data-theme='light'] .service-option .booking-option-duration,
-html[data-theme='light'] .service-option .booking-option-price {
-  margin-top: 0 !important;
+.service-option .booking-option-duration {
+  grid-column: 1;
+  grid-row: 2;
+  display: block;
+  margin: 0 !important;
+  line-height: 1.2;
+  text-align: left;
   white-space: nowrap;
 }
-html[data-theme='light'] .service-option .booking-option-price {
-  flex-shrink: 0;
+.service-option .booking-option-price {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  display: block;
+  position: static;
+  top: auto;
+  margin: 0 !important;
   text-align: right;
+  white-space: nowrap;
 }
-html[data-theme='light'] .booking-option:not(.service-option) .booking-option-copy,
-html[data-theme='light'] .booking-defer-option .booking-option-copy {
-  text-align: center;
+.service-option .option-icon {
+  align-self: center !important;
+  flex-shrink: 0 !important;
+}
+.booking-option .selection-circle,
+.booking-defer-option .selection-circle {
+  align-self: center !important;
+  flex-shrink: 0 !important;
+}
+
+/* Barberos y opción Defer: bloque compacto (gap 3px, line-height 1.2), alineado a la izquierda y centrado verticalmente. */
+.booking-page .booking-barber-options .booking-option-copy,
+.booking-page .booking-defer-option .booking-defer-copy {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  gap: 3px !important;
+  text-align: left !important;
+  min-width: 0 !important;
+}
+.booking-page .booking-barber-options .booking-barber-name,
+.booking-page .booking-defer-option .booking-defer-copy > span:first-child {
+  display: block;
+  line-height: 1.2 !important;
+  margin: 0 !important;
+  text-align: left !important;
+}
+.booking-page .booking-barber-options .booking-barber-handle,
+.booking-page .booking-defer-option .booking-defer-copy > span:last-child {
+  display: block;
+  line-height: 1.2 !important;
+  margin: 0 !important;
+  text-align: left !important;
+}
+.booking-option .barber-avatar,
+.booking-defer-option .barber-defer-mark {
+  align-self: center !important;
+  flex-shrink: 0 !important;
 }
 
 /* La selección mantiene el texto principal oscuro y el secundario gris legible. */
@@ -3667,50 +3713,7 @@ html[data-theme='light'] .confirmation-details {
 /* Fondos del header iguales a las cards inactivas en modo claro. */
 html[data-theme='light'] .header-control-button { background: var(--kani-surface) !important; }
 
-/* Alineación final: el precio queda centrado con la tarjeta y su selector. */
-.service-option .booking-option-price {
-  position: relative;
-  top: -12px;
-}
-
-html[data-theme='dark'] .service-option .booking-option-price {
-  top: -12px;
-}
-
-html[data-theme='dark'] .service-option .booking-option-copy {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  justify-content: center;
-  gap: 4px;
-  text-align: left;
-}
-
-html[data-theme='dark'] .service-option .booking-option-name {
-  display: block;
-  margin: 0;
-  line-height: 1.15;
-  text-align: left;
-}
-
-html[data-theme='dark'] .service-option .booking-option-meta {
-  display: flex;
-  width: 100%;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-html[data-theme='dark'] .service-option .booking-option-duration,
-html[data-theme='dark'] .service-option .booking-option-price {
-  margin-top: 0 !important;
-  white-space: nowrap;
-}
-
-html[data-theme='dark'] .service-option .booking-option-price {
-  flex-shrink: 0;
-  text-align: right;
-}
+/* Alineación limpia: precio centrado naturalmente en grid junto al bloque de textos */
 
 /* Modo oscuro premium: solo color y contraste; la geometría queda compartida. */
 html[data-theme='dark'] .header-control-button {
