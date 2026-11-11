@@ -274,29 +274,29 @@ describe("FASE 15 — Pruebas integrales de Recurrencias, Membresías, Descuento
   });
 
   describe("3. Membresías prepagadas (4 y 10 servicios), pagos, consumos, reintegros y agotamiento", () => {
-    it("calcula con exactitud entera en ARS el 10% (4 servicios) y 15% (10 servicios) y valida la suma", () => {
+    it("calcula con exactitud entera en ARS el 20% (4 servicios) y 30% (10 servicios) y valida la suma", () => {
       // Membresía 4 servicios: 2 Cortes ($25.000 c/u) + 2 Corte y barba ($28.000 c/u) = $106.000
-      // 10% descuento = $10.600 -> Total final = $95.400
+      // 20% descuento = $21.200 -> Total final = $84.800
       const calc4 = calculateMembershipPricing(4, [
         { serviceName: "Corte", quantity: 2, unitPriceArs: 25000 },
         { serviceName: "Corte y barba", quantity: 2, unitPriceArs: 28000 },
       ]);
       expect(calc4.isValidComposition).toBe(true);
       expect(calc4.subtotalArs).toBe(106000);
-      expect(calc4.discountPercent).toBe(10);
-      expect(calc4.discountAmountArs).toBe(10600);
-      expect(calc4.totalPriceArs).toBe(95400);
+      expect(calc4.discountPercent).toBe(20);
+      expect(calc4.discountAmountArs).toBe(21200);
+      expect(calc4.totalPriceArs).toBe(84800);
 
       // Membresía 10 servicios: 10 Cortes ($25.000 c/u) = $250.000
-      // 15% descuento = $37.500 -> Total final = $212.500
+      // 30% descuento = $75.000 -> Total final = $175.000
       const calc10 = calculateMembershipPricing(10, [
         { serviceName: "Corte", quantity: 10, unitPriceArs: 25000 },
       ]);
       expect(calc10.isValidComposition).toBe(true);
       expect(calc10.subtotalArs).toBe(250000);
-      expect(calc10.discountPercent).toBe(15);
-      expect(calc10.discountAmountArs).toBe(37500);
-      expect(calc10.totalPriceArs).toBe(212500);
+      expect(calc10.discountPercent).toBe(30);
+      expect(calc10.discountAmountArs).toBe(75000);
+      expect(calc10.totalPriceArs).toBe(175000);
 
       // Suma incorrecta (3 en lugar de 4) debe ser inválida
       const invalidCalc = calculateMembershipPricing(4, [
