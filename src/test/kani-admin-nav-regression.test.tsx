@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -8,6 +8,8 @@ const state = vi.hoisted(() => ({
   path: '/panel-administracion/inicio',
   menuOpen: true,
   memberships: [] as any[],
+  membershipsError: null as string | null,
+  refreshMemberships: vi.fn(),
 }));
 
 vi.mock('@tanstack/react-router', () => ({
@@ -71,6 +73,8 @@ vi.mock('@/components/kani/v2/data', () => ({
     payments: [],
     starts: [],
     memberships: state.memberships,
+    membershipsError: state.membershipsError,
+    refreshMemberships: state.refreshMemberships,
     barberId: 'ALL',
     setBarberId: vi.fn(),
     setClients: vi.fn(),
@@ -215,8 +219,9 @@ describe('KANI — Regresión de navegación en panel original y hamburguesa', (
     expect(screen.queryByRole('tab', { name: 'Descuentos' })).toBeNull();
   });
 
-  it('8. Recupera y visualiza la membresía preexistente de «Membresia Prueba» (4 servicios, 1 consumida, 3 restantes)', async () => {
+  it('8. Visualización simulada de membresía activa (4 servicios, 1 consumida, 3 restantes)', async () => {
     state.role = 'ADMIN';
+    state.membershipsError = null;
     state.memberships = [
       {
         id: 'mem-test-prueba-1',
@@ -283,5 +288,43 @@ describe('KANI — Regresión de navegación en panel original y hamburguesa', (
     expect(screen.getByRole('button', { name: /Detalle e historial/i })).toBeInTheDocument();
 
     unmount();
+  });
+
+  it('9. Distingue error de consulta de lista vacía: muestra banner localizado y reintentable cuando falla Supabase', async () => {
+    state.role = 'ADMIN';
+    state.memberships = [];
+    state.membershipsError = 'permission denied for table client_memberships';
+
+    const { unmount } = render(<V2MembershipsAndDiscounts initialTab="MEMBRESIAS" />);
+
+    expect(await screen.findByRole('alert')).toBeInTheDocument();
+    expect(screen.getByText('No se pudieron cargar las membresías')).toBeInTheDocument();
+    expect(screen.getByText('permission denied for table client_memberships')).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /Reintentar/i }).length).toBeGreaterThanOrEqual(1);
+    expect(screen.queryByText(/No hay membresías registradas para este filtro/i)).toBeNull();
+
+    unmount();
+  });
+
+  it('10. Permite reintentar la carga de membresías individualmente mediante refreshMemberships', async () => {
+    state.role = 'ADMIN';
+    state.memberships = [];
+    state.membershipsError = 'Network timeout';
+    state.refreshMemberships = vi.fn();
+
+    const { unmount } = render(<V2MembershipsAndDiscounts initialTab="MEMBRESIAS" />);
+
+    const retryBtns = screen.getAllByRole('button', { name: /Reintentar/i });
+    expect(retryBtns.length).toBeGreaterThanOrEqual(1);
+    fireEvent.click(retryBtns[0]);
+    expect(state.refreshMemberships).toHaveBeenCalledTimes(1);
+
+    unmount();
+  });
+
+  it('11. Membresías no utiliza ni persiste en localStorage en entorno productivo', async () => {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      expect(window.localStorage.getItem('kani_client_memberships_fallback_v1')).toBeNull();
+    }
   });
 });

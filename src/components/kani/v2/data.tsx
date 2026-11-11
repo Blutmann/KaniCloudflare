@@ -25,6 +25,7 @@ type Data = {
   services: ConfiguredService[];
   clients: V2Client[];
   memberships: ClientMembershipRecord[];
+  membershipsError: string | null;
   depositSupported: boolean;
 };
 const empty: Data = {
@@ -34,12 +35,14 @@ const empty: Data = {
   services: [],
   clients: [],
   memberships: [],
+  membershipsError: null,
   depositSupported: false,
 };
 type Value = Data & {
   loading: boolean;
   error: string;
   refresh: () => Promise<void>;
+  refreshMemberships: () => Promise<void>;
   setClients: React.Dispatch<React.SetStateAction<V2Client[]>>;
   barberId: string;
   setBarberId: (id: string) => void;
@@ -69,7 +72,20 @@ export function V2DataProvider({ children }: { children: ReactNode }) {
         .limit(1);
       if (staff.profile.role === "BARBER")
         capabilityQuery = capabilityQuery.eq("barber_id", staff.profile.barber_id!);
-      const [appointments, payments, starts, services, clientResult, capability, memberships] =
+
+      let loadedMemberships: ClientMembershipRecord[] = [];
+      let membershipsErrorMsg: string | null = null;
+      try {
+        loadedMemberships = await fetchClientMemberships(staff);
+      } catch (memCause) {
+        console.warn("[V2DataProvider] Error al cargar membresías desde Supabase:", memCause);
+        membershipsErrorMsg =
+          memCause instanceof Error
+            ? memCause.message
+            : "No se pudieron cargar las membresías.";
+      }
+
+      const [appointments, payments, starts, services, clientResult, capability] =
         await Promise.all([
           readStaffAppointments(staff),
           fetchServicePayments({}, staff),
@@ -84,10 +100,6 @@ export function V2DataProvider({ children }: { children: ReactNode }) {
           readConfiguredServices(),
           supabase.from("clients").select("*").order("name"),
           capabilityQuery,
-          fetchClientMemberships(staff).catch((err) => {
-            console.warn("[V2DataProvider] fetchClientMemberships fallback:", err);
-            return [] as ClientMembershipRecord[];
-          }),
         ]);
       if (clientResult.error) throw clientResult.error;
       const loadedClients = ((clientResult.data ?? []) as V2Client[]).filter(
@@ -99,7 +111,8 @@ export function V2DataProvider({ children }: { children: ReactNode }) {
         starts,
         services,
         clients: loadedClients,
-        memberships: memberships ?? [],
+        memberships: loadedMemberships,
+        membershipsError: membershipsErrorMsg,
         depositSupported: !capability.error,
       });
       setClients(loadedClients);
@@ -109,12 +122,34 @@ export function V2DataProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     }
   }, [staff]);
+
+  const refreshMemberships = useCallback(async () => {
+    try {
+      const list = await fetchClientMemberships(staff);
+      setData((prev) => ({ ...prev, memberships: list, membershipsError: null }));
+    } catch (cause) {
+      const msg =
+        cause instanceof Error ? cause.message : "No se pudieron cargar las membresías.";
+      setData((prev) => ({ ...prev, membershipsError: msg }));
+    }
+  }, [staff]);
+
   useEffect(() => {
     void refresh();
   }, [refresh]);
   return (
     <Context.Provider
-      value={{ ...data, clients, setClients, loading, error, refresh, barberId, setBarberId }}
+      value={{
+        ...data,
+        clients,
+        setClients,
+        loading,
+        error,
+        refresh,
+        refreshMemberships,
+        barberId,
+        setBarberId,
+      }}
     >
       {children}
     </Context.Provider>

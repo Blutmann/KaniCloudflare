@@ -445,6 +445,50 @@ export function V2MembershipsAndDiscounts({
 
         {activeTab === "MEMBRESIAS" ? (
           <div style={{ marginTop: "16px", display: "flex", flexDirection: "column", gap: "16px" }}>
+            {data.membershipsError && (
+              <div
+                role="alert"
+                className="v2-alert"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: "12px",
+                  padding: "12px 14px",
+                  borderRadius: "8px",
+                }}
+              >
+                <div>
+                  <strong style={{ display: "block" }}>No se pudieron cargar las membresías</strong>
+                  <span style={{ fontSize: "12.5px", opacity: 0.9 }}>
+                    {data.membershipsError}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  className="v2-secondary"
+                  style={{
+                    minHeight: "32px",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    fontSize: "12.5px",
+                    whiteSpace: "nowrap",
+                  }}
+                  onClick={() => {
+                    if (data.refreshMemberships) {
+                      void data.refreshMemberships();
+                    } else {
+                      void data.refresh();
+                    }
+                  }}
+                >
+                  <RefreshCw size={14} />
+                  <span>Reintentar</span>
+                </button>
+              </div>
+            )}
+
             <div className="v2-metrics">
               <Metric label="Membresías activas" value={kpiActive} />
               <Metric label="Pendientes de pago" value={kpiPending} />
@@ -525,7 +569,34 @@ export function V2MembershipsAndDiscounts({
 
             {!scopedMemberships.length ? (
               <Empty>
-                No hay membresías registradas para este filtro. Podés crear una Membresía 4 servicios (10% OFF) o Membresía 10 servicios (15% OFF).
+                {data.membershipsError ? (
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px" }}>
+                    <span>No se pudieron cargar las membresías desde la base de datos.</span>
+                    <button
+                      type="button"
+                      className="v2-secondary"
+                      style={{
+                        minHeight: "32px",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        fontSize: "12.5px",
+                      }}
+                      onClick={() => {
+                        if (data.refreshMemberships) {
+                          void data.refreshMemberships();
+                        } else {
+                          void data.refresh();
+                        }
+                      }}
+                    >
+                      <RefreshCw size={14} />
+                      <span>Reintentar carga</span>
+                    </button>
+                  </div>
+                ) : (
+                  "No hay membresías registradas para este filtro. Podés crear una Membresía 4 servicios (10% OFF) o Membresía 10 servicios (15% OFF)."
+                )}
               </Empty>
             ) : (
               <div

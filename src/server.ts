@@ -317,6 +317,7 @@ export default {
           let recentPaymentAttempts: any[] = [];
           let repairResult: any = null;
           let modalityValidationResult: any = null;
+          let membershipsDiagnostics: any = null;
 
           try {
             const { createPaymentSupabaseClient } = await import("./lib/kani-payment-db.server");
@@ -393,6 +394,33 @@ export default {
                 .limit(5);
               recentPaymentAttempts = pAtts || [];
             } catch { /* best-effort */ }
+
+            try {
+              const { data: mems, error: memsErr } = await db
+                .from('client_memberships')
+                .select('*')
+                .order('created_at', { ascending: false });
+              const { data: memItems } = await db.from('client_membership_items').select('*');
+              const { data: memCons } = await db.from('client_membership_consumptions').select('*');
+              const { data: memEvents } = await db.from('client_membership_events').select('*');
+              const { data: memClients } = await db
+                .from('clients')
+                .select('id, name, phone, email')
+                .or('name.ilike.%Membresia%,name.ilike.%Prueba%');
+
+              membershipsDiagnostics = {
+                applied: !memsErr,
+                error: memsErr ? memsErr.message : null,
+                totalMemberships: mems?.length ?? 0,
+                memberships: mems || [],
+                items: memItems || [],
+                consumptions: memCons || [],
+                events: memEvents || [],
+                matchingClients: memClients || [],
+              };
+            } catch (e: any) {
+              membershipsDiagnostics = { applied: false, error: e?.message || String(e) };
+            }
 
             const activateCodeParam = url.searchParams.get("activate_disabled_code")?.trim().toUpperCase();
             if (activateCodeParam) {
@@ -889,6 +917,7 @@ export default {
               codeUsages,
               repairResult,
               modalityValidationResult,
+              membershipsDiagnostics,
               accountingInvariants: {
                 freeBookingStatusRule: "Una reserva gratuita confirmada NO cuenta como servicio realizado hasta su cobro/cierre en el local.",
                 cancellationPaymentsRule: "Una cancelación NO borra pagos anteriores; se conservan pagos recibidos y reintegros se registran explícitamente.",
