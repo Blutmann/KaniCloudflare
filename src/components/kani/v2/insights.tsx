@@ -193,7 +193,7 @@ export function V2Insights() {
         isYearly: false,
       },
       ESTE_MES: {
-        label: `Este mes (${monthName} ${currentYear})`,
+        label: `${monthName} ${currentYear}`,
         start: esteMesStart,
         end: esteMesEnd,
         prevStart: esteMesPrevStart,
@@ -202,7 +202,7 @@ export function V2Insights() {
         isYearly: false,
       },
       ESTE_ANIO: {
-        label: `Este año (${currentYear})`,
+        label: `${currentYear}`,
         start: esteAnioStart,
         end: esteAnioEnd,
         prevStart: esteAnioPrevStart,
@@ -239,7 +239,7 @@ export function V2Insights() {
         isYearly: false,
       },
       MES_ANTERIOR: {
-        label: `Mes anterior (${prevMonthName} ${prevMonthYear})`,
+        label: `${prevMonthName} ${prevMonthYear}`,
         start: mesAnteriorStart,
         end: mesAnteriorEnd,
         prevStart: mesAnteriorPrevStart,
@@ -248,7 +248,7 @@ export function V2Insights() {
         isYearly: false,
       },
       ANIO_ANTERIOR: {
-        label: `Año anterior (${anioAnteriorYear})`,
+        label: `${anioAnteriorYear}`,
         start: anioAnteriorStart,
         end: anioAnteriorEnd,
         prevStart: anioAnteriorPrevStart,

@@ -217,19 +217,27 @@ describe('Kani Admin V2 - Corrección estructural de módulos', () => {
       const today = '2026-10-29';
       const [year, month] = today.split('-').map(Number);
 
-      const esteMesLabel = `Este mes (${months[month - 1]} ${year})`;
-      expect(esteMesLabel).toBe('Este mes (Octubre 2026)');
+      const esteMesLabel = `${months[month - 1]} ${year}`;
+      expect(esteMesLabel).toBe('Octubre 2026');
 
-      const esteAnioLabel = `Este año (${year})`;
-      expect(esteAnioLabel).toBe('Este año (2026)');
+      const esteAnioLabel = `${year}`;
+      expect(esteAnioLabel).toBe('2026');
 
       const prevMonthNum = month === 1 ? 12 : month - 1;
       const prevYear = month === 1 ? year - 1 : year;
-      const mesAnteriorLabel = `Mes anterior (${months[prevMonthNum - 1]} ${prevYear})`;
-      expect(mesAnteriorLabel).toBe('Mes anterior (Septiembre 2026)');
+      const mesAnteriorLabel = `${months[prevMonthNum - 1]} ${prevYear}`;
+      expect(mesAnteriorLabel).toBe('Septiembre 2026');
 
-      const anioAnteriorLabel = `Año anterior (${year - 1})`;
-      expect(anioAnteriorLabel).toBe('Año anterior (2025)');
+      const anioAnteriorLabel = `${year - 1}`;
+      expect(anioAnteriorLabel).toBe('2025');
+
+      // Validar cambio de año (enero -> diciembre año anterior)
+      const janToday = '2027-01-15';
+      const [janYear, janMonth] = janToday.split('-').map(Number);
+      const janPrevMonthNum = janMonth === 1 ? 12 : janMonth - 1;
+      const janPrevYear = janMonth === 1 ? janYear - 1 : janYear;
+      const janMesAnteriorLabel = `${months[janPrevMonthNum - 1]} ${janPrevYear}`;
+      expect(janMesAnteriorLabel).toBe('Diciembre 2026');
     });
 
     it('incluye los cobros del día de hoy en el rango de últimos 7 días', () => {
