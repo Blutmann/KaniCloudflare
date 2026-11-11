@@ -206,7 +206,7 @@ export interface MembershipCompositionItemInput {
 export interface MembershipPriceCalculation {
   packageSize: MembershipPackageSize;
   planName: string;
-  discountPercent: 10 | 15;
+  discountPercent: 10 | 15 | 20 | 30;
   totalQuantity: number;
   isValidComposition: boolean;
   validationError?: string;
@@ -258,7 +258,7 @@ export function calculateMembershipPricing(
     throw new Error("El paquete de membresía debe ser de 4 o 10 servicios.");
   }
 
-  const discountPercent: 10 | 15 = packageSize === 4 ? 10 : 15;
+  const discountPercent: 20 | 30 = packageSize === 4 ? 20 : 30;
   const planName = packageSize === 4 ? "Membresía 4 servicios" : "Membresía 10 servicios";
 
   let totalQuantity = 0;
@@ -379,7 +379,7 @@ export interface ClientMembershipRecord {
   barberName: string;
   planName: string;
   packageSize: MembershipPackageSize;
-  discountPercent: 10 | 15;
+  discountPercent: 10 | 15 | 20 | 30;
   subtotalArs: number;
   discountAmountArs: number;
   totalPriceArs: number;
@@ -398,6 +398,9 @@ export interface ClientMembershipRecord {
   createdByDisplayName: string | null;
   createdAt: string;
   updatedAt: string;
+  publicToken: string | null;
+  publicTokenCreatedAt: string | null;
+  publicTokenRevokedAt: string | null;
   items: ClientMembershipItemRecord[];
   consumptions: ClientMembershipConsumptionRecord[];
   events: ClientMembershipEventRecord[];
@@ -591,7 +594,11 @@ export async function fetchClientMemberships(
         barberName: r.barber_id ? barberById.get(r.barber_id) || "Barbero" : "Todo Kani",
         planName: r.plan_name,
         packageSize: (Number(r.package_size) === 10 ? 10 : 4) as MembershipPackageSize,
-        discountPercent: (Number(r.discount_percent) === 15 ? 15 : 10) as 10 | 15,
+        discountPercent: ([10, 15, 20, 30].includes(Number(r.discount_percent))
+          ? Number(r.discount_percent)
+          : Number(r.package_size) === 10
+            ? 30
+            : 20) as 10 | 15 | 20 | 30,
         subtotalArs: Number(r.subtotal_ars ?? 0),
         discountAmountArs: Number(r.discount_amount_ars ?? 0),
         totalPriceArs: Number(r.total_price_ars ?? 0),
@@ -610,6 +617,9 @@ export async function fetchClientMemberships(
         createdByDisplayName: r.created_by_display_name ?? null,
         createdAt: r.created_at,
         updatedAt: r.updated_at,
+        publicToken: r.public_token ?? null,
+        publicTokenCreatedAt: r.public_token_created_at ?? null,
+        publicTokenRevokedAt: r.public_token_revoked_at ?? null,
         items: itemsByMembership.get(r.id) ?? [],
         consumptions: consumptionsByMembership.get(r.id) ?? [],
         events: eventsByMembership.get(r.id) ?? [],
@@ -759,6 +769,11 @@ export async function createClientMembership(
     createdByDisplayName: staff.profile.display_name,
     createdAt: nowIso,
     updatedAt: nowIso,
+    publicToken:
+      crypto.randomUUID().replace(/-/g, "") +
+      crypto.randomUUID().replace(/-/g, "").slice(0, 16),
+    publicTokenCreatedAt: nowIso,
+    publicTokenRevokedAt: null,
     items,
     consumptions: [],
     events: [
@@ -1779,3 +1794,176 @@ export async function modifyRecurringAppointmentSeries(
     affectedDates: [],
   };
 }
+
+export interface PublicMembershipCardResult {
+  found: boolean;
+  error?: string;
+  client_name?: string;
+  barber_name?: string;
+  plan_name?: string;
+  package_size?: number;
+  status?: string;
+  total_sessions?: number;
+  consumed_sessions?: number;
+  remaining_sessions?: number;
+  expires_at?: string | null;
+  created_at?: string;
+  items?: Array<{
+    service_name: string;
+    total_quantity: number;
+    consumed_quantity: number;
+    remaining_quantity: number;
+  }>;
+  consumptions?: Array<{
+    service_name: string;
+    consumption_type: string;
+    status: string;
+    consumed_at: string;
+    refunded_at: string | null;
+  }>;
+}
+
+export async function getPublicMembershipCard(token: string): Promise<PublicMembershipCardResult> {
+  const cleanToken = (token || "").trim();
+  if (!cleanToken || cleanToken.length < 16) {
+    return { found: false, error: "INVALID_TOKEN" };
+  }
+
+  try {
+    const { data, error } = await (supabase.rpc as any)("get_public_membership_card", {
+      p_token: cleanToken,
+    });
+    if (error) throw error;
+    if (data && typeof data === "object") {
+      if (
+        data.found ||
+        !Array.from(fallbackMembershipsStore.values()).some(
+          (m) => m.publicToken === cleanToken && !m.publicTokenRevokedAt,
+        )
+      ) {
+        return data as PublicMembershipCardResult;
+      }
+    }
+  } catch (err: any) {
+    const msg = String(err?.message || err || "");
+    if (!msg.includes("get_public_membership_card") && !msg.includes("PGRST202")) {
+      // ignore
+    }
+  }
+
+  for (const m of fallbackMembershipsStore.values()) {
+    if (m.publicToken === cleanToken && !m.publicTokenRevokedAt) {
+      const today = businessDateToday();
+      const status = computeEffectiveMembershipStatus(
+        m.status,
+        m.consumedSessions,
+        m.totalSessions,
+        m.expiresAt,
+        today,
+      );
+      return {
+        found: true,
+        client_name: m.clientName || "Titular",
+        barber_name: m.barberName || "Kani Barber Studio",
+        plan_name: m.planName,
+        package_size: m.packageSize,
+        status,
+        total_sessions: m.totalSessions,
+        consumed_sessions: m.consumedSessions,
+        remaining_sessions: m.remainingSessions,
+        expires_at: m.expiresAt,
+        created_at: m.createdAt,
+        items: m.items.map((i) => ({
+          service_name: i.serviceName,
+          total_quantity: i.totalQuantity,
+          consumed_quantity: i.consumedQuantity,
+          remaining_quantity: i.remainingQuantity,
+        })),
+        consumptions: m.consumptions.map((c) => ({
+          service_name: c.serviceName,
+          consumption_type: c.consumptionType,
+          status: c.status,
+          consumed_at: c.consumedAt,
+          refunded_at: c.refundedAt,
+        })),
+      };
+    }
+  }
+
+  return { found: false, error: "NOT_FOUND_OR_REVOKED" };
+}
+
+export async function fetchMembershipForVerification(
+  token: string,
+  staff: AuthenticatedStaff,
+): Promise<ClientMembershipRecord | null> {
+  const cleanToken = (token || "").trim();
+  if (!cleanToken || cleanToken.length < 16) return null;
+
+  const isOp = isStaffOperator(staff.profile.role);
+  const staffBarberId = staff.profile.barber_id;
+  if (!isOp && (staff.profile.role !== "BARBER" || !staffBarberId)) {
+    return null;
+  }
+
+  const all = await fetchClientMemberships(staff);
+  const found = all.find((m) => m.publicToken === cleanToken && !m.publicTokenRevokedAt);
+  if (!found) return null;
+  if (!isOp && found.barberId && found.barberId !== staffBarberId) {
+    return null;
+  }
+  return found;
+}
+
+export async function regenerateMembershipPublicToken(
+  membershipId: string,
+  staff: AuthenticatedStaff,
+): Promise<{ success: boolean; publicToken: string }> {
+  if (!isStaffOperator(staff.profile.role)) {
+    throw new Error("ACCESS_DENIED: Solo administradores o encargados pueden regenerar el enlace.");
+  }
+
+  try {
+    const { data, error } = await (supabase.rpc as any)("regenerate_membership_public_token", {
+      p_membership_id: membershipId,
+    });
+    if (error) throw error;
+    if (data?.success && data?.public_token) {
+      notifyActivityChanged();
+      return { success: true, publicToken: data.public_token };
+    }
+  } catch (err: any) {
+    const msg = String(err?.message || err || "");
+    if (!msg.includes("regenerate_membership_public_token") && !msg.includes("PGRST202")) {
+      throw err;
+    }
+  }
+
+  const existing = fallbackMembershipsStore.get(membershipId);
+  if (!existing) {
+    throw new Error("No se encontró la membresía.");
+  }
+
+  const newToken =
+    crypto.randomUUID().replace(/-/g, "") +
+    crypto.randomUUID().replace(/-/g, "").slice(0, 16);
+  const nowIso = new Date().toISOString();
+  existing.publicToken = newToken;
+  existing.publicTokenCreatedAt = nowIso;
+  existing.publicTokenRevokedAt = null;
+  existing.updatedAt = nowIso;
+  existing.events.unshift({
+    id: crypto.randomUUID(),
+    membershipId: existing.id,
+    eventType: "TOKEN_REGENERATED",
+    description: `Enlace público de tarjeta digital regenerado por ${staff.profile.display_name}. Enlace anterior revocado inmediatamente.`,
+    metadata: { created_at: nowIso },
+    actorUserId: staff.user.id,
+    actorDisplayName: staff.profile.display_name,
+    createdAt: nowIso,
+  });
+  fallbackMembershipsStore.set(existing.id, { ...existing });
+  notifyActivityChanged();
+  return { success: true, publicToken: newToken };
+}
+

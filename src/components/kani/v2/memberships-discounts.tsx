@@ -1,5 +1,17 @@
 import { useMemo, useState, type FormEvent } from "react";
-import { Calendar, CheckCircle2, CreditCard, History, PackageCheck, Plus, RefreshCw, Tag } from "lucide-react";
+import {
+  Calendar,
+  Check,
+  CheckCircle2,
+  Copy,
+  CreditCard,
+  ExternalLink,
+  History,
+  PackageCheck,
+  Plus,
+  RefreshCw,
+  Tag,
+} from "lucide-react";
 import { useAdminStaff } from "@/lib/kani-admin-context";
 import { isStaffOperator } from "@/lib/kani-permissions";
 import { businessDateToday, addCalendarDays } from "@/lib/kani-mobile-appointments";
@@ -8,6 +20,7 @@ import {
   calculateMembershipPricing,
   consumeMembershipSession,
   createClientMembership,
+  regenerateMembershipPublicToken,
   KANI_MEMBERSHIP_PAYMENT_METHODS,
   MEMBERSHIP_STATUS_LABELS,
   modifyRecurringAppointmentSeries,
@@ -106,6 +119,50 @@ export function V2MembershipsAndDiscounts({
   // Exhausted Membership Warning Modal (FASE 7)
   const [exhaustedMembership, setExhaustedMembership] = useState<ClientMembershipRecord | null>(null);
   const [confirmEndRecurrence, setConfirmEndRecurrence] = useState(false);
+
+  // Black Card & Digital Link State (b733a0b2)
+  const [copiedMembershipId, setCopiedMembershipId] = useState<string | null>(null);
+  const [regeneratingMembership, setRegeneratingMembership] = useState<ClientMembershipRecord | null>(null);
+  const [isRegenerating, setIsRegenerating] = useState(false);
+
+  async function handleCopyLink(token?: string | null, membershipId?: string) {
+    if (!token) return;
+    const origin = typeof window !== "undefined" && window.location.origin ? window.location.origin : "https://www.kanibarber.com";
+    const url = `${origin}/membresia/${token}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      if (membershipId) {
+        setCopiedMembershipId(membershipId);
+        setTimeout(() => setCopiedMembershipId(null), 2500);
+      }
+      setSuccessNotice("Enlace de tarjeta digital copiado al portapapeles.");
+    } catch {
+      setErrorNotice("No se pudo copiar el enlace automáticamente.");
+    }
+  }
+
+  async function handleRegenerateToken(target: ClientMembershipRecord) {
+    if (!isOperator) {
+      setErrorNotice("Solo administradores o encargados pueden regenerar enlaces.");
+      return;
+    }
+    setIsRegenerating(true);
+    try {
+      const res = await regenerateMembershipPublicToken(target.id, staff);
+      if (res?.publicToken) {
+        target.publicToken = res.publicToken;
+        target.publicTokenRevokedAt = null;
+        await handleCopyLink(res.publicToken, target.id);
+        setSuccessNotice("Enlace regenerado con éxito y copiado al portapapeles. El enlace anterior quedó revocado.");
+        setRegeneratingMembership(null);
+        await data.refresh();
+      }
+    } catch (err: any) {
+      setErrorNotice(err instanceof Error ? err.message : "No se pudo regenerar el enlace.");
+    } finally {
+      setIsRegenerating(false);
+    }
+  }
 
   const scopedMemberships = useMemo(() => {
     return (data.memberships ?? []).filter((m) => {
@@ -595,7 +652,7 @@ export function V2MembershipsAndDiscounts({
                     </button>
                   </div>
                 ) : (
-                  "No hay membresías registradas para este filtro. Podés crear una Membresía 4 servicios (10% OFF) o Membresía 10 servicios (15% OFF)."
+                  "No hay membresías registradas para este filtro. Podés crear una Membresía 4 servicios (20% OFF) o Membresía 10 servicios (30% OFF)."
                 )}
               </Empty>
             ) : (
@@ -788,6 +845,43 @@ export function V2MembershipsAndDiscounts({
                             <span>Renovar</span>
                           </button>
                         )}
+                        {m.publicToken && (
+                          <>
+                            <a
+                              href={`/membresia/${m.publicToken}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="v2-secondary"
+                              style={{
+                                minHeight: "32px",
+                                padding: "0 10px",
+                                fontSize: "12px",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "5px",
+                                textDecoration: "none",
+                              }}
+                              title="Abrir tarjeta digital en nueva pestaña"
+                            >
+                              <CreditCard size={13} />
+                              <span>Ver tarjeta</span>
+                            </a>
+                            <button
+                              type="button"
+                              className="v2-secondary"
+                              style={{ minHeight: "32px", padding: "0 10px", fontSize: "12px" }}
+                              title={copiedMembershipId === m.id ? "¡Enlace copiado!" : "Copiar enlace de tarjeta digital"}
+                              onClick={() => handleCopyLink(m.publicToken, m.id)}
+                            >
+                              {copiedMembershipId === m.id ? (
+                                <Check size={13} style={{ color: "#10b981" }} />
+                              ) : (
+                                <Copy size={13} />
+                              )}
+                              <span>{copiedMembershipId === m.id ? "Copiado" : "Copiar enlace"}</span>
+                            </button>
+                          </>
+                        )}
                       </div>
                     </article>
                   );
@@ -866,8 +960,8 @@ export function V2MembershipsAndDiscounts({
                   handlePackageSizeChange((Number(e.target.value) === 10 ? 10 : 4) as MembershipPackageSize)
                 }
               >
-                <option value={4}>Membresía 4 servicios (10% de descuento)</option>
-                <option value={10}>Membresía 10 servicios (15% de descuento)</option>
+                <option value={4}>Membresía 4 servicios (20% de descuento)</option>
+                <option value={10}>Membresía 10 servicios (30% de descuento)</option>
               </select>
             </label>
 
@@ -1225,6 +1319,65 @@ export function V2MembershipsAndDiscounts({
                 overflowY: "auto",
               }}
             >
+              {detailMembership.publicToken && (
+                <div
+                  style={{
+                    padding: "10px 12px",
+                    borderRadius: "8px",
+                    background: "var(--v2-inset, rgba(255,255,255,0.03))",
+                    border: "1px solid var(--border)",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "6px",
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontSize: "12px", fontWeight: 600 }}>Black Card del titular</span>
+                    <a
+                      href={`/membresia/${detailMembership.publicToken}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        fontSize: "11.5px",
+                        color: "var(--gold)",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "4px",
+                        textDecoration: "none",
+                      }}
+                    >
+                      <span>Ver tarjeta</span>
+                      <ExternalLink size={11} />
+                    </a>
+                  </div>
+                  <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginTop: "4px" }}>
+                    <button
+                      type="button"
+                      className="v2-secondary"
+                      style={{ minHeight: "30px", padding: "0 10px", fontSize: "11.5px" }}
+                      onClick={() => handleCopyLink(detailMembership.publicToken, detailMembership.id)}
+                    >
+                      {copiedMembershipId === detailMembership.id ? (
+                        <Check size={12} style={{ color: "#10b981" }} />
+                      ) : (
+                        <Copy size={12} />
+                      )}
+                      <span>{copiedMembershipId === detailMembership.id ? "Copiado" : "Copiar enlace"}</span>
+                    </button>
+                    {isOperator && (
+                      <button
+                        type="button"
+                        className="v2-secondary"
+                        style={{ minHeight: "30px", padding: "0 10px", fontSize: "11.5px", color: "#f87171" }}
+                        onClick={() => setRegeneratingMembership(detailMembership)}
+                      >
+                        <RefreshCw size={12} />
+                        <span>Regenerar enlace</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
               <div>
                 <h3 style={{ fontSize: "13px", fontWeight: 700, marginBottom: "6px" }}>
                   Sesiones por servicio
@@ -1540,6 +1693,40 @@ export function V2MembershipsAndDiscounts({
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* DIALOG DE CONFIRMACIÓN PARA REGENERAR ENLACE DIGITAL (b733a0b2) */}
+      <Dialog
+        open={!!regeneratingMembership}
+        onOpenChange={(open) => {
+          if (!open && !isRegenerating) setRegeneratingMembership(null);
+        }}
+      >
+        <DialogContent className="v2-dialog" style={{ maxWidth: "460px" }}>
+          <DialogTitle>¿Regenerar enlace de tarjeta digital?</DialogTitle>
+          <DialogDescription>
+            Al regenerar el enlace, el enlace anterior quedará invalidado y dejará de funcionar de forma inmediata. Deberás proporcionarle al cliente el nuevo enlace o reenviarle el correo.
+          </DialogDescription>
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", marginTop: "16px" }}>
+            <button
+              type="button"
+              className="v2-secondary"
+              disabled={isRegenerating}
+              onClick={() => setRegeneratingMembership(null)}
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              className="v2-primary"
+              style={{ background: "#dc2626", borderColor: "#dc2626", color: "#fff" }}
+              disabled={isRegenerating}
+              onClick={() => regeneratingMembership && void handleRegenerateToken(regeneratingMembership)}
+            >
+              {isRegenerating ? "Regenerando..." : "Sí, regenerar enlace"}
+            </button>
+          </div>
         </DialogContent>
       </Dialog>
     </main>

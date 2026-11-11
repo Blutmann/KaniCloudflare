@@ -44,6 +44,7 @@ import { Route as AdminMantenimientoRouteImport } from './routes/admin.mantenimi
 import { Route as AdminMovilRouteImport } from './routes/admin.movil'
 import { Route as AdminPagosRouteImport } from './routes/admin.pagos'
 import { Route as AdminTurnosRouteImport } from './routes/admin.turnos'
+import { Route as MembresiaTokenRouteImport } from './routes/membresia.$token'
 import { Route as PagoErrorRouteImport } from './routes/pago.error'
 import { Route as PagoExitoRouteImport } from './routes/pago.exito'
 import { Route as PagoPendienteRouteImport } from './routes/pago.pendiente'
@@ -57,6 +58,7 @@ import { Route as PanelAdministracionMantenimientoRouteImport } from './routes/p
 import { Route as PanelAdministracionMembresiasRouteImport } from './routes/panel-administracion.membresias'
 import { Route as PanelAdministracionPagosRouteImport } from './routes/panel-administracion.pagos'
 import { Route as PanelAdministracionTurnosRouteImport } from './routes/panel-administracion.turnos'
+import { Route as VerificarMembresiaTokenRouteImport } from './routes/verificar-membresia.$token'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -234,6 +236,11 @@ const AdminTurnosRoute = AdminTurnosRouteImport.update({
   path: '/turnos',
   getParentRoute: () => AdminRoute,
 } as any)
+const MembresiaTokenRoute = MembresiaTokenRouteImport.update({
+  id: '/membresia/$token',
+  path: '/membresia/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PagoErrorRoute = PagoErrorRouteImport.update({
   id: '/pago/error',
   path: '/pago/error',
@@ -309,6 +316,11 @@ const PanelAdministracionTurnosRoute =
     path: '/turnos',
     getParentRoute: () => PanelAdministracionRoute,
   } as any)
+const VerificarMembresiaTokenRoute = VerificarMembresiaTokenRouteImport.update({
+  id: '/verificar-membresia/$token',
+  path: '/verificar-membresia/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -344,6 +356,7 @@ export interface FileRoutesByFullPath {
   '/admin/movil': typeof AdminMovilRoute
   '/admin/pagos': typeof AdminPagosRoute
   '/admin/turnos': typeof AdminTurnosRoute
+  '/membresia/$token': typeof MembresiaTokenRoute
   '/pago/error': typeof PagoErrorRoute
   '/pago/exito': typeof PagoExitoRoute
   '/pago/pendiente': typeof PagoPendienteRoute
@@ -356,6 +369,7 @@ export interface FileRoutesByFullPath {
   '/panel-administracion/membresias': typeof PanelAdministracionMembresiasRoute
   '/panel-administracion/pagos': typeof PanelAdministracionPagosRoute
   '/panel-administracion/turnos': typeof PanelAdministracionTurnosRoute
+  '/verificar-membresia/$token': typeof VerificarMembresiaTokenRoute
   '/admin-v2/': typeof AdminV2IndexRoute
   '/admin/': typeof AdminIndexRoute
   '/panel-administracion/': typeof PanelAdministracionIndexRoute
@@ -391,6 +405,7 @@ export interface FileRoutesByTo {
   '/admin/movil': typeof AdminMovilRoute
   '/admin/pagos': typeof AdminPagosRoute
   '/admin/turnos': typeof AdminTurnosRoute
+  '/membresia/$token': typeof MembresiaTokenRoute
   '/pago/error': typeof PagoErrorRoute
   '/pago/exito': typeof PagoExitoRoute
   '/pago/pendiente': typeof PagoPendienteRoute
@@ -403,6 +418,7 @@ export interface FileRoutesByTo {
   '/panel-administracion/membresias': typeof PanelAdministracionMembresiasRoute
   '/panel-administracion/pagos': typeof PanelAdministracionPagosRoute
   '/panel-administracion/turnos': typeof PanelAdministracionTurnosRoute
+  '/verificar-membresia/$token': typeof VerificarMembresiaTokenRoute
   '/admin-v2': typeof AdminV2IndexRoute
   '/admin': typeof AdminIndexRoute
   '/panel-administracion': typeof PanelAdministracionIndexRoute
@@ -442,6 +458,7 @@ export interface FileRoutesById {
   '/admin/movil': typeof AdminMovilRoute
   '/admin/pagos': typeof AdminPagosRoute
   '/admin/turnos': typeof AdminTurnosRoute
+  '/membresia/$token': typeof MembresiaTokenRoute
   '/pago/error': typeof PagoErrorRoute
   '/pago/exito': typeof PagoExitoRoute
   '/pago/pendiente': typeof PagoPendienteRoute
@@ -454,6 +471,7 @@ export interface FileRoutesById {
   '/panel-administracion/membresias': typeof PanelAdministracionMembresiasRoute
   '/panel-administracion/pagos': typeof PanelAdministracionPagosRoute
   '/panel-administracion/turnos': typeof PanelAdministracionTurnosRoute
+  '/verificar-membresia/$token': typeof VerificarMembresiaTokenRoute
   '/admin-v2/': typeof AdminV2IndexRoute
   '/admin/': typeof AdminIndexRoute
   '/panel-administracion/': typeof PanelAdministracionIndexRoute
@@ -494,6 +512,7 @@ export interface FileRouteTypes {
     | '/admin/movil'
     | '/admin/pagos'
     | '/admin/turnos'
+    | '/membresia/$token'
     | '/pago/error'
     | '/pago/exito'
     | '/pago/pendiente'
@@ -506,6 +525,7 @@ export interface FileRouteTypes {
     | '/panel-administracion/membresias'
     | '/panel-administracion/pagos'
     | '/panel-administracion/turnos'
+    | '/verificar-membresia/$token'
     | '/admin-v2/'
     | '/admin/'
     | '/panel-administracion/'
@@ -541,6 +561,7 @@ export interface FileRouteTypes {
     | '/admin/movil'
     | '/admin/pagos'
     | '/admin/turnos'
+    | '/membresia/$token'
     | '/pago/error'
     | '/pago/exito'
     | '/pago/pendiente'
@@ -553,6 +574,7 @@ export interface FileRouteTypes {
     | '/panel-administracion/membresias'
     | '/panel-administracion/pagos'
     | '/panel-administracion/turnos'
+    | '/verificar-membresia/$token'
     | '/admin-v2'
     | '/admin'
     | '/panel-administracion'
@@ -591,6 +613,7 @@ export interface FileRouteTypes {
     | '/admin/movil'
     | '/admin/pagos'
     | '/admin/turnos'
+    | '/membresia/$token'
     | '/pago/error'
     | '/pago/exito'
     | '/pago/pendiente'
@@ -603,6 +626,7 @@ export interface FileRouteTypes {
     | '/panel-administracion/membresias'
     | '/panel-administracion/pagos'
     | '/panel-administracion/turnos'
+    | '/verificar-membresia/$token'
     | '/admin-v2/'
     | '/admin/'
     | '/panel-administracion/'
@@ -628,9 +652,11 @@ export interface RootRouteChildren {
   ReservarTurnoRoute: typeof ReservarTurnoRoute
   ReservarTurnoMercadopagoRoute: typeof ReservarTurnoMercadopagoRoute
   TerminosYCondicionesRoute: typeof TerminosYCondicionesRoute
+  MembresiaTokenRoute: typeof MembresiaTokenRoute
   PagoErrorRoute: typeof PagoErrorRoute
   PagoExitoRoute: typeof PagoExitoRoute
   PagoPendienteRoute: typeof PagoPendienteRoute
+  VerificarMembresiaTokenRoute: typeof VerificarMembresiaTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -880,6 +906,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminTurnosRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/membresia/$token': {
+      id: '/membresia/$token'
+      path: '/membresia/$token'
+      fullPath: '/membresia/$token'
+      preLoaderRoute: typeof MembresiaTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/pago/error': {
       id: '/pago/error'
       path: '/pago/error'
@@ -970,6 +1003,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/panel-administracion/turnos'
       preLoaderRoute: typeof PanelAdministracionTurnosRouteImport
       parentRoute: typeof PanelAdministracionRoute
+    }
+    '/verificar-membresia/$token': {
+      id: '/verificar-membresia/$token'
+      path: '/verificar-membresia/$token'
+      fullPath: '/verificar-membresia/$token'
+      preLoaderRoute: typeof VerificarMembresiaTokenRouteImport
+      parentRoute: typeof rootRouteImport
     }
   }
 }
@@ -1072,9 +1112,11 @@ const rootRouteChildren: RootRouteChildren = {
   ReservarTurnoRoute: ReservarTurnoRoute,
   ReservarTurnoMercadopagoRoute: ReservarTurnoMercadopagoRoute,
   TerminosYCondicionesRoute: TerminosYCondicionesRoute,
+  MembresiaTokenRoute: MembresiaTokenRoute,
   PagoErrorRoute: PagoErrorRoute,
   PagoExitoRoute: PagoExitoRoute,
   PagoPendienteRoute: PagoPendienteRoute,
+  VerificarMembresiaTokenRoute: VerificarMembresiaTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

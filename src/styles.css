@@ -5040,3 +5040,85 @@ html[data-theme="light"] :is(
   background-color: #F5F2EA !important;
 }
 
+/* ==========================================================================
+   KANI DIGITAL BLACK CARD & VERIFICATION SCENE (b733a0b2)
+   ========================================================================== */
+:is(.site-shell:has(.kani-membership-pass), body[data-membership-page="true"] .site-shell) {
+  background-color: #050505 !important;
+  min-height: 100dvh !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+:is(.site-shell:has(.kani-membership-pass), body[data-membership-page="true"] .site-shell) > .site-header,
+:is(.site-shell:has(.kani-membership-pass), body[data-membership-page="true"] .site-shell) .site-header,
+:is(.site-shell:has(.kani-membership-pass), body[data-membership-page="true"] .site-shell) .site-header-slot,
+:is(.site-shell:has(.kani-membership-pass), body[data-membership-page="true"] .site-shell) > .site-footer,
+:is(.site-shell:has(.kani-membership-pass), body[data-membership-page="true"] .site-shell) .site-footer,
+body[data-membership-page="true"] .site-header,
+body[data-membership-page="true"] .site-footer,
+body[data-membership-page="true"] .site-header-slot {
+  display: none !important;
+}
+
+.kani-card-3d-scene {
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  perspective: none;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  display: flex;
+}
+
+.kani-card-3d-scene.is-3d-active {
+  perspective: 1400px;
+}
+
+.kani-card-3d-flipper {
+  transform-style: flat;
+  width: 100%;
+  position: relative;
+}
+
+.kani-card-3d-scene.is-3d-active .kani-card-3d-flipper {
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.kani-card-3d-face {
+  backface-visibility: visible;
+  width: 100%;
+}
+
+.kani-card-3d-scene.is-3d-active .kani-card-3d-face {
+  backface-visibility: hidden;
+  transform: translateZ(1.5px);
+}
+
+.kani-card-3d-back {
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.kani-card-3d-scene.is-3d-active .kani-card-3d-back {
+  transform: rotateY(180deg) translateZ(1.5px);
+}
+
+.kani-card-3d-scene.is-settled-front .kani-card-3d-back,
+.kani-card-3d-scene.is-settled-back .kani-card-3d-face:not(.kani-card-3d-back) {
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.kani-card-3d-scene.is-settled-back .kani-card-3d-back {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+}
+
+
