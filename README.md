@@ -1,376 +1,204 @@
-# Kani Barber Studio - Reservar turno
+# KANI Barber Studio
 
-Quiero diseñar el MVP de una aplicación web responsive para una barbería premium llamada KANI Barber Studio.
+**Booking Platform · Product Design · UX Research · AI-Assisted Engineering**
 
-IMPORTANTE:
-En esta primera etapa NO quiero que implementes backend, autenticación, base de datos, emails ni lógica de producción.
+A responsive booking and business management platform designed for KANI Barber Studio, an independent premium barbershop in Buenos Aires, Argentina.
 
-Quiero que construyas únicamente un prototipo funcional de la interfaz y los principales flujos de usuario utilizando datos ficticios/mock data.
+**Live website:** https://www.kanibarber.com
 
-El objetivo de esta primera etapa es validar UX, arquitectura de información y UI antes de implementar la lógica real.
+## Overview
 
-==================================================
-CONTEXTO DEL NEGOCIO
-==================================================
+KANI began as a UX/UI prototype focused on improving appointment scheduling and reducing uncertainty around waiting times.
 
-KANI Barber Studio es una barbería premium ubicada en Zona Norte de Buenos Aires.
+The project evolved into a production-oriented digital platform connecting the customer booking experience with daily barbershop operations, payment workflows, customer management, and digital memberships.
 
-Actualmente funciona principalmente por orden de llegada, pero quiere incorporar un sistema de reservas online sin eliminar la posibilidad de atender clientes que llegan sin turno.
+The product was developed through iterative design, AI-assisted software engineering, integration testing, and continuous refinement.
 
-La aplicación debe complementar el funcionamiento actual de la barbería, no reemplazarlo.
+## The Problem
 
-Los principales objetivos son:
+Traditional walk-in barbershop experiences can create uncertainty for customers and operational challenges for professionals.
 
-1. Organizar mejor la agenda de los barberos.
-2. Garantizar cierto nivel de ingresos mediante reservas.
-3. Identificar horarios de menor demanda.
-4. Reducir la incertidumbre del cliente respecto del tiempo de espera.
-5. Mejorar la experiencia general del cliente.
+Customers need predictable appointment times, while barbers need better visibility into availability, reservations, and daily workload.
 
-Un problema importante actualmente es que un cliente puede llegar esperando estar aproximadamente una hora en la barbería y terminar esperando mucho más tiempo debido a la cantidad de personas que están esperando para ser atendidas.
+The challenge was to introduce digital booking without compromising the business's existing service model or premium brand experience.
 
-La reserva debe aportar principalmente PREVISIBILIDAD.
+## Product Goals
 
-==================================================
-PÚBLICO
-==================================================
+- Improve appointment predictability.
+- Reduce friction throughout the booking journey.
+- Simplify daily scheduling and customer management.
+- Support secure, traceable payment workflows.
+- Introduce digital memberships and customer benefits.
+- Maintain a consistent responsive experience.
+- Build a scalable foundation for future product iterations.
 
-La clientela es principalmente de Zona Norte de Buenos Aires.
+## Core Features
 
-Hay dos grandes grupos:
+### Customer Experience
 
-- Adolescentes de 14 a 18 años.
-- Adultos jóvenes de 19 a 30 años.
+- Responsive appointment booking.
+- Service and barber selection.
+- Real-time availability management.
+- Customer information and booking confirmation.
+- Booking deposits and payment integration.
+- Promotional discount codes.
+- Digital membership cards with QR verification.
 
-El público tiene un poder adquisitivo medio-alto/alto.
+### Business Administration
 
-Los adolescentes tienen un perfil más social y relajado.
+- Appointment management.
+- Barber availability and scheduling.
+- Customer directory and records.
+- Payment tracking.
+- Membership and session management.
+- Business statistics and operational insights.
+- Role-based access for administrators, managers, and barbers.
 
-Los adultos tienen un perfil más serio.
+### Digital Membership Experience
 
-La interfaz debe funcionar para ambos grupos.
+The Black Card experience introduces a premium digital membership credential featuring:
 
-NO quiero una estética adolescente ni una estética de barbería vintage.
+- Personalized membership information.
+- Available and consumed sessions.
+- Digital session stamps.
+- Visit history.
+- QR-based membership verification.
+- Authorized session redemption and reinstatement.
 
-Debe sentirse:
+## UX & Product Design
 
-- premium
-- moderna
-- sobria
-- masculina
-- contemporánea
-- cuidada
-- simple
+The design process focuses on aligning business requirements with user needs and operational constraints.
 
-==================================================
-IDENTIDAD VISUAL
-==================================================
+**Areas of work:**
 
-La marca utiliza principalmente:
+- Problem framing and requirements analysis.
+- Information architecture.
+- User journeys and task flows.
+- Responsive interaction design.
+- Visual hierarchy and usability heuristics.
+- Iterative prototyping.
+- Accessibility considerations.
+- Product evaluation and refinement.
 
-- Negro como color predominante.
-- Bordó/rojo como color secundario.
-- Dorado como color de acento.
+### Information Architecture — Admin Panel V2
 
-La identidad visual debe inspirarse en el local físico de KANI:
+An alternative administration experience was introduced to address the increasing complexity of the original navigation.
 
-- interior predominantemente negro
-- mobiliario oscuro
-- iluminación geométrica y moderna
-- detalles metálicos
-- estética industrial contemporánea
-- sensación premium
+The proposed structure separates the platform into two workspaces:
 
-Utilizar el logo de KANI Barber Studio proporcionado como referencia visual.
+**Operations:** Appointments, Availability, Customers, Payments.
 
-NO convertir el diseño en una barbería vintage, retro, hipster o excesivamente ornamentada.
+**Business:** Memberships, Discounts, Analytics.
 
-La interfaz debe tener suficiente espacio en blanco/espacio visual, jerarquía clara y buena legibilidad.
+The architecture preserves independent functional pages and existing workflows while reducing simultaneous navigation choices.
 
-El dorado debe utilizarse como acento, NO como color dominante.
+The redesign is an implementation of a UX hypothesis, with qualitative user validation planned as a subsequent activity.
 
-==================================================
-SERVICIOS
-==================================================
+## Technology & Engineering
 
-Actualmente existen estos servicios:
+| Area | Technology |
+|---|---|
+| Frontend | React, TypeScript, TanStack Start |
+| Build tooling | Vite |
+| Styling | CSS, Tailwind CSS |
+| Backend & database | Supabase, PostgreSQL |
+| Authentication & authorization | Supabase Auth, role-based access |
+| Hosting & deployment | Cloudflare Workers |
+| Transactional email | Resend |
+| Testing | Vitest, integration and browser-based validation |
+| Version control | Git, GitHub |
+| Development workflow | AI-assisted engineering and iterative implementation |
 
-1. Corte
-Precio: $25.000
-Duración: 45 minutos
+Additional integrations and configuration requirements are maintained within the project source and internal documentation.
 
-2. Corte + barba
-Precio: $30.000
-Duración: 60 minutos
+## Engineering Approach
 
-3. Barba
-Precio: $10.000
-Duración: 30 minutos
+The project combines product thinking with AI-assisted software development.
 
-Los tres servicios pueden ser realizados por cualquiera de estos tres barberos:
+The workflow emphasizes:
 
-- Lautaro
-- Gonzalo
-- Valentín
+1. Defining user needs and business constraints.
+2. Establishing functional and UX acceptance criteria.
+3. Implementing changes through iterative development.
+4. Reviewing generated code and system behavior.
+5. Running regression and integration tests.
+6. Validating responsive layouts and critical user flows.
+7. Deploying and monitoring production changes.
 
-Existe un servicio adicional llamado Color, realizado únicamente por Gonzalo, pero NO debe incluirse en esta primera versión del prototipo.
+AI tools assist with implementation, debugging, and iteration. Product decisions, requirements, and acceptance criteria remain human-directed.
 
-==================================================
-HORARIOS
-==================================================
+## Quality & Security
 
-La barbería funciona:
+The platform incorporates:
 
-Lunes a sábado
-10:00 a 20:00
+- Role-based access controls.
+- Server-side authorization for protected operations.
+- Controlled appointment and payment state transitions.
+- Membership session traceability.
+- Responsive regression checks.
+- QR verification testing.
+- Environment-based configuration for sensitive credentials.
 
-Los tres barberos tienen inicialmente el mismo horario.
+Security controls and automated tests are part of an ongoing engineering process and should not be interpreted as a formal security certification.
 
-==================================================
-FLUJO PRINCIPAL DEL CLIENTE
-==================================================
+## Project Evolution
 
-El cliente NO necesita crear una cuenta para reservar.
+**Phase 1 — Discovery & UX Prototyping**
 
-El flujo principal debe ser:
+Initial booking flow, interaction design, and responsive prototype.
 
-1. Seleccionar servicio.
-2. Seleccionar barbero.
-3. Seleccionar fecha.
-4. Seleccionar horario disponible.
-5. Completar:
-   - nombre
-   - email
-   - celular
-6. Revisar los datos.
-7. Solicitar turno.
-8. Mostrar una pantalla de confirmación indicando que la solicitud quedó pendiente de confirmación.
+**Phase 2 — Functional Platform**
 
-IMPORTANTE:
+Database integration, authentication, scheduling, and administrative workflows.
 
-El cliente selecciona SIEMPRE al barbero.
+**Phase 3 — Operational Integrations**
 
-Esto es importante porque muchos clientes tienen un barbero habitual.
+Payment workflows, transactional notifications, and expanded administrative tools.
 
-==================================================
-ESTADOS DEL TURNO
-==================================================
+**Phase 4 — Membership Experience**
 
-Un turno puede encontrarse en:
+Digital membership management, Black Card interface, QR verification, and session tracking.
 
-- Pendiente
-- Confirmado
-- Cancelado
+**Phase 5 — Information Architecture**
 
-Una solicitud pendiente debe bloquear temporalmente ese horario para evitar que otro cliente pueda solicitarlo.
+Development of Admin Panel V2, organized around operational and business tasks.
 
-Si un turno pendiente o confirmado es cancelado, el horario vuelve a estar disponible.
+## Product Status
 
-La confirmación NO es automática.
+**Active development — Production deployment**
 
-El turno queda pendiente hasta que el barbero correspondiente lo confirme desde el panel administrativo.
+The live application is available at https://www.kanibarber.com.
 
-==================================================
-SISTEMA MIXTO
-==================================================
+New functionality is evaluated iteratively. Certain UX hypotheses and workflows remain subject to further validation with real users.
 
-La barbería continuará atendiendo clientes que llegan sin turno.
+## Project Ownership
 
-NO diseñar en esta versión:
+**Product direction, UX/Product Design, and AI-assisted development:** Tomás Blutmann.
 
-- cola virtual
-- turnos para walk-ins
-- gestión de personas esperando en el local
-- estimación de tiempo de espera de clientes sin turno
-
-La aplicación solamente administra los turnos reservados online.
-
-==================================================
-PANEL ADMINISTRATIVO
-==================================================
-
-Crear un panel administrativo separado de la experiencia del cliente.
-
-Debe tener tres secciones principales:
-
-1. PRÓXIMOS TURNOS
-
-Mostrar los próximos turnos confirmados.
-
-Cada turno debe mostrar:
-
-- fecha
-- hora
-- nombre del cliente
-- servicio
-- barbero
-- estado
-
-Permitir cancelar un turno.
-
-2. PENDIENTES DE CONFIRMAR
-
-Mostrar las solicitudes que todavía no fueron confirmadas.
-
-Cada solicitud debe permitir:
-
-- Confirmar
-- Cancelar
-
-3. HORARIOS DISPONIBLES
-
-Permitir visualizar y posteriormente modificar la disponibilidad de cada barbero.
-
-Inicialmente todos tienen:
-
-Lunes a sábado
-10:00–20:00
-
-==================================================
-RESPONSIVE
-==================================================
-
-La aplicación debe diseñarse mobile-first.
-
-Debe funcionar correctamente en:
-
-- teléfonos
-- tablets
-- notebooks
-- desktop
-
-No crear una versión mobile y otra desktop completamente diferentes.
-
-Utilizar un sistema responsive coherente.
-
-En mobile:
-
-- navegación simple
-- botones fáciles de tocar
-- formularios cortos
-- horarios fáciles de seleccionar
-- evitar tablas horizontales cuando sea posible
-
-En desktop:
-
-- aprovechar el espacio disponible
-- mantener una interfaz limpia
-- utilizar layouts de dos columnas cuando ayuden a la experiencia
-
-==================================================
-IMPORTANTE SOBRE UX
-==================================================
-
-La reserva debe sentirse simple y rápida.
-
-No quiero un formulario administrativo.
-
-El usuario debe sentir que está reservando su turno en una barbería premium.
-
-Reducir la cantidad de decisiones simultáneas.
-
-Mostrar una etapa claramente diferenciada a la vez.
-
-Dar feedback visual después de cada acción.
-
-Los horarios deben ser fáciles de comparar y seleccionar.
-
-Evitar información innecesaria.
-
-No solicitar la creación de una cuenta antes de reservar.
-
-==================================================
-DATOS FICTICIOS
-==================================================
-
-Utilizar datos ficticios realistas para demostrar cómo funcionaría la interfaz.
-
-Ejemplos de clientes:
-
-- Tomás Blutmann
-- Martín González
-- Nicolás Rodríguez
-- Lucas Fernández
-
-Ejemplos de turnos:
-
-- Corte — Tomás — Gonzalo — 19:00 — Confirmado
-- Corte + barba — Martín — Lautaro — 19:30 — Pendiente
-- Barba — Nicolás — Valentín — 20:00 — Confirmado
-
-==================================================
-RESTRICCIONES
-==================================================
-
-NO agregar funcionalidades que no hayan sido especificadas.
-
-NO agregar:
-
-- pagos online
-- promociones
-- cupones
-- puntos
-- reviews
-- WhatsApp
-- SMS
-- push notifications
-- Google Calendar
-- múltiples sucursales
-- estadísticas avanzadas
-- programa de fidelización
-- aplicación nativa
-- registro obligatorio
-
-No implementar todavía backend ni base de datos.
-
-Primero quiero validar la experiencia y la interfaz.
-
-Antes de agregar funcionalidades adicionales, priorizar simplicidad, claridad y facilidad de uso.
-
-==================================================
-OBJETIVO DE ESTA PRIMERA ETAPA
-==================================================
-
-Construir un prototipo navegable de alta fidelidad del producto, con:
-
-- Home
-- Selección de servicio
-- Selección de barbero
-- Selección de fecha
-- Selección de horario
-- Formulario de datos
-- Resumen de reserva
-- Confirmación de solicitud
-- Panel administrativo
-- Próximos turnos
-- Turnos pendientes
-- Gestión visual de disponibilidad
-
-Utilizar mock data para simular el funcionamiento.
-
-NO conectar todavía una base de datos.
-
-Primero quiero revisar y validar la UX/UI.
-
-This project was built with [Lovable](https://lovable.dev).
-
-**Live app**: https://kanibarberstudio.lovable.app
-
-## Build with Lovable
-
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/50013633-0ea8-4b15-b889-c11c9761f165).
-
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
+Developed for KANI Barber Studio.
 
 ## Development
 
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+This repository contains the application's source code, configuration, database migrations, and automated tests.
+
+For local development, refer to the current project configuration and package scripts. A compatible Node.js environment (Node 24 recommended), `pnpm`, and the required environment variables are necessary.
 
 ```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
-npm run dev
+# Install dependencies
+pnpm install
+
+# Start local development server
+pnpm run dev
+
+# Run automated tests
+pnpm test
+
+# Build for production
+pnpm run build
 ```
+
+Do not commit access tokens, service-role keys, payment credentials, webhook secrets, or production environment files.
+
+## License
+
+No open-source license is granted by default. The source code and visual assets remain subject to their respective ownership and usage rights.
