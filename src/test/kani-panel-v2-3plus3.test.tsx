@@ -337,14 +337,17 @@ describe("KANI Panel V2 — Implementación experimental aislada 3 + 3 y protecc
     expect(headerCode).toContain('to="/panel-administracion/mantenimiento"');
     expect(headerCode).toContain('to="/panel-v2"');
 
-    // 6.3 Módulo combinado «Membresías y descuentos» en panel original muestra membresías y consumos
+    // 6.3 Módulo combinado «Membresías y descuentos» en panel original muestra card restaurada y modal Editar
     const { unmount } = render(<V2MembershipsAndDiscounts initialTab="MEMBRESIAS" />);
     expect(screen.getByRole("heading", { name: "Membresías y descuentos" })).toBeInTheDocument();
     expect(screen.getByRole("tablist", { name: "Pestañas de Membresías y descuentos" })).toBeInTheDocument();
     expect(screen.getByText("Juan Pérez")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /Detalle e historial/i }));
+    expect(screen.getByText(/sesiones disponibles de 4/i)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Ver tarjeta/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^Copiar enlace$/i })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /^Editar$/i }));
     expect(await screen.findByText(/Historial de sesiones consumidas/i)).toBeInTheDocument();
-    expect(screen.getByText(/Servicio realizado/i)).toBeInTheDocument();
+    expect(screen.getByText(/Registrar consumo de sesión/i)).toBeInTheDocument();
     unmount();
 
     // 6.4 En Panel V2 Membresías se presenta aislada sin pestañas duplicadas
