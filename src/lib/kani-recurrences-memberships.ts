@@ -415,14 +415,47 @@ export interface CreateClientMembershipInput {
 }
 
 // Almacenamiento en memoria de respaldo para pruebas aisladas o si la migración aún no fue aplicada en producción
+const MEMBERSHIPS_FALLBACK_KEY = "kani_client_memberships_fallback_v1";
 const fallbackMembershipsStore = new Map<string, ClientMembershipRecord>();
 const fallbackRecurringAvailabilityStore = new Map<string, RecurringAvailabilityRuleRecord>();
 const fallbackRecurringAppointmentRulesStore = new Map<string, RecurringAppointmentRuleRecord>();
+
+function loadFallbackMembershipsFromStorage(): void {
+  if (typeof window !== "undefined" && window.localStorage) {
+    try {
+      const raw = window.localStorage.getItem(MEMBERSHIPS_FALLBACK_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          for (const item of parsed) {
+            if (item?.id) fallbackMembershipsStore.set(item.id, item);
+          }
+        }
+      }
+    } catch {}
+  }
+}
+
+function persistFallbackMembershipsToStorage(): void {
+  if (typeof window !== "undefined" && window.localStorage) {
+    try {
+      const serialized = JSON.stringify([...fallbackMembershipsStore.values()]);
+      window.localStorage.setItem(MEMBERSHIPS_FALLBACK_KEY, serialized);
+    } catch {}
+  }
+}
+
+loadFallbackMembershipsFromStorage();
 
 export function resetFallbackStoresForTesting() {
   fallbackMembershipsStore.clear();
   fallbackRecurringAvailabilityStore.clear();
   fallbackRecurringAppointmentRulesStore.clear();
+  if (typeof window !== "undefined" && window.localStorage) {
+    try {
+      window.localStorage.removeItem(MEMBERSHIPS_FALLBACK_KEY);
+    } catch {}
+  }
 }
 
 export function computeEffectiveMembershipStatus(
@@ -469,10 +502,13 @@ export async function fetchClientMemberships(
     if (error) throw error;
 
     const membershipRows = (rows ?? []) as any[];
-    if (!membershipRows.length && fallbackMembershipsStore.size > 0) {
-      return filterFallbackMemberships(staff, options);
+    if (!membershipRows.length) {
+      loadFallbackMembershipsFromStorage();
+      if (fallbackMembershipsStore.size > 0) {
+        return filterFallbackMemberships(staff, options);
+      }
+      return [];
     }
-    if (!membershipRows.length) return [];
 
     const membershipIds = membershipRows.map((r) => r.id);
     const clientIds = [...new Set(membershipRows.map((r) => r.client_id).filter(Boolean))];
@@ -571,7 +607,7 @@ export async function fetchClientMemberships(
       return {
         id: r.id,
         clientId: r.client_id,
-        clientName: client?.name || "Cliente",
+        clientName: client?.name || (r as any).client_name || "Cliente",
         clientPhone: client?.phone || "",
         clientEmail: client?.email || "",
         barberId: r.barber_id ?? null,
@@ -611,6 +647,7 @@ function filterFallbackMemberships(
   staff: AuthenticatedStaff,
   options?: { clientId?: string; barberId?: string },
 ): ClientMembershipRecord[] {
+  loadFallbackMembershipsFromStorage();
   const isOp = isStaffOperator(staff.profile.role);
   const staffBarberId = staff.profile.barber_id;
   const today = businessDateToday();
@@ -767,6 +804,7 @@ export async function createClientMembership(
   };
 
   fallbackMembershipsStore.set(id, record);
+  persistFallbackMembershipsToStorage();
   notifyActivityChanged();
   return record;
 }
@@ -824,6 +862,7 @@ export async function registerMembershipPayment(
   });
 
   fallbackMembershipsStore.set(membershipId, { ...existing });
+  persistFallbackMembershipsToStorage();
   notifyActivityChanged();
   return existing;
 }
@@ -988,6 +1027,7 @@ export async function consumeMembershipSession(
   existing.updatedAt = nowIso;
 
   fallbackMembershipsStore.set(existing.id, { ...existing });
+  persistFallbackMembershipsToStorage();
   notifyActivityChanged();
 
   return {
@@ -1119,6 +1159,7 @@ export async function refundMembershipSession(
   targetMembership.updatedAt = nowIso;
 
   fallbackMembershipsStore.set(targetMembership.id, { ...targetMembership });
+  persistFallbackMembershipsToStorage();
   notifyActivityChanged();
 
   return {
@@ -1208,6 +1249,7 @@ export async function updateClientMembershipDetails(
   });
 
   fallbackMembershipsStore.set(existing.id, { ...existing });
+  persistFallbackMembershipsToStorage();
   notifyActivityChanged();
   return existing;
 }

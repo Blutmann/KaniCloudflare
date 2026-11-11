@@ -7,6 +7,7 @@ const state = vi.hoisted(() => ({
   role: 'ADMIN' as 'ADMIN' | 'MANAGER' | 'BARBER',
   path: '/panel-administracion/inicio',
   menuOpen: true,
+  memberships: [] as any[],
 }));
 
 vi.mock('@tanstack/react-router', () => ({
@@ -69,6 +70,7 @@ vi.mock('@/components/kani/v2/data', () => ({
     appointments: [],
     payments: [],
     starts: [],
+    memberships: state.memberships,
     barberId: 'ALL',
     setBarberId: vi.fn(),
     setClients: vi.fn(),
@@ -211,5 +213,75 @@ describe('KANI — Regresión de navegación en panel original y hamburguesa', (
     expect(screen.getByText('Membresías activas')).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Membresías' })).toBeInTheDocument();
     expect(screen.queryByRole('tab', { name: 'Descuentos' })).toBeNull();
+  });
+
+  it('8. Recupera y visualiza la membresía preexistente de «Membresia Prueba» (4 servicios, 1 consumida, 3 restantes)', async () => {
+    state.role = 'ADMIN';
+    state.memberships = [
+      {
+        id: 'mem-test-prueba-1',
+        clientId: 'client-prueba-1',
+        clientName: 'Membresia Prueba',
+        clientPhone: '+5491122334455',
+        clientEmail: 'prueba@kanibarber.com',
+        barberId: null,
+        barberName: 'Todo Kani',
+        planName: 'Membresía 4 servicios',
+        packageSize: 4,
+        discountPercent: 10,
+        subtotalArs: 100000,
+        discountAmountArs: 10000,
+        totalPriceArs: 90000,
+        totalSessions: 4,
+        consumedSessions: 1,
+        remainingSessions: 3,
+        status: 'ACTIVE',
+        paymentMethod: 'Transferencia',
+        paymentId: 'pay-1',
+        paidAt: '2026-11-01T12:00:00Z',
+        expiresAt: null,
+        notes: 'Membresía de prueba inicial',
+        items: [
+          {
+            id: 'item-1',
+            membershipId: 'mem-test-prueba-1',
+            serviceId: 'service-corte',
+            serviceName: 'Corte',
+            unitPriceSnapshotArs: 25000,
+            totalQuantity: 4,
+            consumedQuantity: 1,
+            remainingQuantity: 3,
+          },
+        ],
+        consumptions: [
+          {
+            id: 'con-1',
+            membershipId: 'mem-test-prueba-1',
+            itemId: 'item-1',
+            clientId: 'client-prueba-1',
+            appointmentId: null,
+            barberId: null,
+            serviceId: 'service-corte',
+            serviceName: 'Corte',
+            consumptionType: 'SERVICE_COMPLETED',
+            status: 'CONSUMED',
+            consumedAt: '2026-11-05T14:00:00Z',
+            notes: 'Consumo de prueba inicial',
+          },
+        ],
+        events: [],
+      },
+    ];
+
+    const { unmount } = render(<V2MembershipsAndDiscounts initialTab="MEMBRESIAS" />);
+
+    expect(await screen.findByText('Membresia Prueba')).toBeInTheDocument();
+    expect(screen.getByText('3 de 4')).toBeInTheDocument();
+    expect(screen.getAllByText('Activa').length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByText('Corte: 3/4')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Registrar consumo/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Detalle e historial/i })).toBeInTheDocument();
+
+    unmount();
   });
 });
