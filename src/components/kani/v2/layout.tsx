@@ -8,7 +8,6 @@ import {
   Users,
   ChartNoAxesCombined,
   RefreshCw,
-  Tag,
 } from "lucide-react";
 import { AdminAccess } from "@/components/kani/admin-access";
 import { AdminStaffProvider, useAdminStaff } from "@/lib/kani-admin-context";
@@ -26,7 +25,6 @@ const sections = [
   { to: "/panel-administracion/pagos", title: "Pagos", icon: CreditCard },
   { to: "/panel-administracion/clientes", title: "Clientes", icon: Users },
   { to: "/panel-administracion/datos", title: "Datos", icon: ChartNoAxesCombined },
-  { to: "/panel-administracion/descuentos", title: "Descuentos", icon: Tag },
 ] as const;
 
 export function V2Layout() {

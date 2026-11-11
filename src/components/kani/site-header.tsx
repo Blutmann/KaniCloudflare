@@ -1,7 +1,7 @@
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router';
 import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState, type MouseEvent } from 'react';
 import { createPortal } from 'react-dom';
-import { ArrowUpRight, Building2, CalendarClock, CalendarDays, ChartNoAxesCombined, Clock3, CreditCard, Instagram, LogIn, LogOut, MapPin, Menu, Moon, Scale, ShieldCheck, Sun, Users, Wrench, X } from 'lucide-react';
+import { ArrowUpRight, Building2, CalendarClock, CalendarDays, ChartNoAxesCombined, Clock3, CreditCard, Instagram, LogIn, LogOut, MapPin, Menu, Moon, Scale, ShieldCheck, Sun, Tag, Users, Wrench, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import kaniLogoLight from '@/assets/kani-logo-light.webp';
 import kaniLogoDark from '@/assets/kani-logo-dark.webp';
@@ -190,6 +190,12 @@ export function SiteHeader() {
               <ChartNoAxesCombined />Datos
             </Link>
           </>
+        )}
+
+        {(staff?.profile.role === 'ADMIN' || staff?.profile.role === 'MANAGER') && (
+          <Link to="/panel-administracion/descuentos" onClick={closeMenu}>
+            <Tag />Descuentos
+          </Link>
         )}
       </div>
 

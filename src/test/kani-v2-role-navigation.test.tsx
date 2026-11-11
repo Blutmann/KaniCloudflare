@@ -16,10 +16,16 @@ vi.mock('@/integrations/supabase/client',()=>({supabase:{supabaseUrl:'https://io
 import { V2Layout } from '@/components/kani/v2/layout';
 describe('role navigation and direct URLs',()=>{
   beforeEach(()=>{state.role='MANAGER';state.path='/panel-administracion/turnos';});
-  it('shows operational sections and read-only discounts for manager',async()=>{
+  it('shows operational sections and excludes discounts from the top navigation bar',async()=>{
     render(<V2Layout/>); await screen.findByTestId('private-child');
-    expect(screen.getByRole('link',{name:'Descuentos'})).toBeInTheDocument();
+    expect(screen.queryByRole('link',{name:'Descuentos'})).toBeNull();
     expect(screen.queryByRole('link',{name:'Mantenimiento'})).toBeNull();
+    expect(screen.getByRole('link',{name:'Turnos'})).toBeInTheDocument();
+  });
+  it('renders discounts child on direct URL for authorized manager',async()=>{
+    state.role='MANAGER';state.path='/panel-administracion/descuentos';render(<V2Layout/>);
+    expect(await screen.findByTestId('private-child')).toBeInTheDocument();
+    expect(screen.queryByRole('link',{name:'Descuentos'})).toBeNull();
   });
   it('does not render a restricted child on a direct manager maintenance URL',async()=>{
     state.path='/panel-administracion/mantenimiento';render(<V2Layout/>);
