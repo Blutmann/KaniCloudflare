@@ -822,3 +822,7 @@ export async function dismissAllAdminActivityNotificationsPersonal(ids: string[]
 
   return dismissedCount;
 }
+
+export function notifyActivityChanged() {
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event('kani-activity-changed'));
+}

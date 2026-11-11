@@ -56,7 +56,23 @@ vi.mock('@/components/kani/store', () => ({
 
 vi.mock('@/components/kani/v2/data', () => ({
   V2DataProvider: ({ children }: any) => children,
-  useV2: () => ({ loading: false, error: '', refresh: vi.fn() }),
+  useV2: () => ({
+    loading: false,
+    error: '',
+    refresh: vi.fn(),
+    services: [
+      { id: 'service-corte', name: 'Corte', price_ars: 25000, duration_minutes: 45 },
+    ],
+    clients: [
+      { id: 'client-1', name: 'Carlos Gardel', phone: '1122334455' },
+    ],
+    appointments: [],
+    payments: [],
+    starts: [],
+    barberId: 'ALL',
+    setBarberId: vi.fn(),
+    setClients: vi.fn(),
+  }),
 }));
 
 vi.mock('@/integrations/supabase/client', () => ({
@@ -65,11 +81,21 @@ vi.mock('@/integrations/supabase/client', () => ({
     auth: {
       onAuthStateChange: () => ({ data: { subscription: { unsubscribe: vi.fn() } } }),
     },
+    from: () => ({
+      select: () => ({
+        order: () => Promise.resolve({ data: [], error: null }),
+        eq: () => ({
+          order: () => Promise.resolve({ data: [], error: null }),
+        }),
+      }),
+    }),
   },
 }));
 
 import { V2Layout } from '@/components/kani/v2/layout';
 import { SiteHeader } from '@/components/kani/site-header';
+import { mayAccessStaffSection } from '@/lib/kani-permissions';
+import { V2MembershipsAndDiscounts } from '@/components/kani/v2/memberships-discounts';
 
 describe('KANI — Regresión de navegación en panel original y hamburguesa', () => {
   const rootDir = path.resolve(__dirname, '..');
@@ -121,29 +147,69 @@ describe('KANI — Regresión de navegación en panel original y hamburguesa', (
     expect(v2Css).toMatch(/\.v2-nav \.admin-section-nav-link\s*\{[^}]*flex-direction:\s*column;/);
   });
 
-  it('4. Menú desplegable (hamburguesa) muestra «Descuentos» para ADMIN y MANAGER', async () => {
+  it('4. Menú desplegable (hamburguesa) recupera «Membresías y descuentos» para ADMIN, MANAGER y BARBER', async () => {
     state.role = 'ADMIN';
     state.menuOpen = true;
     const { unmount } = render(<SiteHeader />);
     await screen.findByText('Panel de administración');
 
-    const discountLink = screen.getByRole('link', { name: 'Descuentos' });
-    expect(discountLink).toBeInTheDocument();
-    expect(discountLink).toHaveAttribute('href', '/panel-administracion/descuentos');
+    const linkAdmin = screen.getByRole('link', { name: 'Membresías y descuentos' });
+    expect(linkAdmin).toBeInTheDocument();
+    expect(linkAdmin).toHaveAttribute('href', '/panel-administracion/membresias');
+    expect(screen.queryByRole('link', { name: /^Descuentos$/ })).toBeNull();
     unmount();
 
     state.role = 'MANAGER';
+    const resManager = render(<SiteHeader />);
+    await screen.findByText('Panel de administración');
+    const linkManager = screen.getByRole('link', { name: 'Membresías y descuentos' });
+    expect(linkManager).toBeInTheDocument();
+    expect(linkManager).toHaveAttribute('href', '/panel-administracion/membresias');
+    resManager.unmount();
+
+    state.role = 'BARBER';
     render(<SiteHeader />);
     await screen.findByText('Panel de administración');
-    expect(screen.getByRole('link', { name: 'Descuentos' })).toBeInTheDocument();
+    const linkBarber = screen.getByRole('link', { name: 'Membresías y descuentos' });
+    expect(linkBarber).toBeInTheDocument();
+    expect(linkBarber).toHaveAttribute('href', '/panel-administracion/membresias');
   });
 
-  it('5. Menú desplegable (hamburguesa) NO muestra «Descuentos» para BARBER', async () => {
-    state.role = 'BARBER';
-    state.menuOpen = true;
-    render(<SiteHeader />);
-    await screen.findByText('Panel de administración');
+  it('5. mayAccessStaffSection autoriza «membresias» para todos los roles y restringe «descuentos» a operadores', () => {
+    const admin = { role: 'ADMIN', barber_id: null, active: true };
+    const manager = { role: 'MANAGER', barber_id: null, active: true };
+    const barber = { role: 'BARBER', barber_id: 'barber-1', active: true };
 
-    expect(screen.queryByRole('link', { name: 'Descuentos' })).toBeNull();
+    expect(mayAccessStaffSection(admin, 'membresias')).toBe(true);
+    expect(mayAccessStaffSection(manager, 'membresias')).toBe(true);
+    expect(mayAccessStaffSection(barber, 'membresias')).toBe(true);
+
+    expect(mayAccessStaffSection(admin, 'descuentos')).toBe(true);
+    expect(mayAccessStaffSection(manager, 'descuentos')).toBe(true);
+    expect(mayAccessStaffSection(barber, 'descuentos')).toBe(false);
+  });
+
+  it('6. Componente unificado V2MembershipsAndDiscounts renderiza pestañas Membresías y Descuentos con KPIs y creación', async () => {
+    state.role = 'ADMIN';
+    const { unmount } = render(<V2MembershipsAndDiscounts initialTab="MEMBRESIAS" />);
+
+    expect(await screen.findByText('Membresías y descuentos')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Membresías' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Descuentos' })).toBeInTheDocument();
+    expect(screen.getByText('Membresías activas')).toBeInTheDocument();
+    expect(screen.getByText('Sesiones restantes')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Nueva membresía/i })).toBeInTheDocument();
+    unmount();
+  });
+
+  it('7. Componente unificado restringe la pestaña Descuentos para BARBER', async () => {
+    state.role = 'BARBER';
+    render(<V2MembershipsAndDiscounts initialTab="DESCUENTOS" />);
+
+    // Si un barbero intenta ingresar con initialTab="DESCUENTOS", el componente lo fuerza a "MEMBRESIAS"
+    expect(await screen.findByText('Membresías y descuentos')).toBeInTheDocument();
+    expect(screen.getByText('Membresías activas')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Membresías' })).toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: 'Descuentos' })).toBeNull();
   });
 });

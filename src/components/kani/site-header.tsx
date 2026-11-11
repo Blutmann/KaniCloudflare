@@ -191,13 +191,15 @@ export function SiteHeader() {
             </Link>
           </>
         )}
-
-        {(staff?.profile.role === 'ADMIN' || staff?.profile.role === 'MANAGER') && (
-          <Link to="/panel-administracion/descuentos" onClick={closeMenu}>
-            <Tag />Descuentos
-          </Link>
-        )}
       </div>
+
+      {staff && ['ADMIN', 'MANAGER', 'BARBER'].includes(staff.profile.role) && (
+        <div className="mobile-menu-group">
+          <Link to="/panel-administracion/membresias" onClick={closeMenu}>
+            <Tag />Membresías y descuentos
+          </Link>
+        </div>
+      )}
 
       {/* Grupo admin */}
       {staff?.profile.role === 'ADMIN' && (
