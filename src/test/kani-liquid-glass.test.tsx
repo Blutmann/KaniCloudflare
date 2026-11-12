@@ -94,4 +94,15 @@ describe('KANI Barber Studio — Liquid Glass Experience (/reservar-turno-liquid
     expect(liquidCss).toContain('flex: 0 0 30% !important');
     expect(liquidCss).toContain('flex: 1 1 70% !important');
   });
+
+  it('6. Stepper de 5 pasos en única superficie Liquid Glass sin tarjetas blancas y con barra continua inferior', () => {
+    expect(liquidCss).toMatch(/\.booking-progress\s*>\s*button\[aria-current="step"\][\s\S]*?background:\s*transparent\s*!important/);
+    expect(liquidCss).toMatch(/\.booking-progress\s*>\s*button\[aria-current="step"\]\s*>\s*span[\s\S]*?border:\s*1\.5px solid #b5945b\s*!important/);
+    expect(liquidCss).toMatch(/\.booking-progress\s*>\s*button\.complete\s*>\s*span[\s\S]*?background:\s*#702b3a\s*!important/);
+    expect(liquidCss).toContain('--liquid-progress-ratio: 0.2;');
+    expect(liquidCss).toContain('--liquid-progress-ratio: 0.4;');
+    expect(liquidCss).toContain('--liquid-progress-ratio: 0.6;');
+    expect(liquidCss).toContain('--liquid-progress-ratio: 0.8;');
+    expect(liquidCss).toContain('--liquid-progress-ratio: 1;');
+  });
 });
