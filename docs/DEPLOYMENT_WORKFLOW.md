@@ -54,3 +54,4 @@ Antes de publicar una Preview:
 | 2026-11-12 | `main` (prod) | `a17bca3` | `d0b332b6-025b-47f5-8e1e-aa559b382846` | `www.kanibarber.com` | Despliegue definitivo consolidado (rollback anterior: `f74baba9` / `60943f5c`) |
 | 2026-11-12 | `main` (prod) | `4044956` | Cloudflare Build | `www.kanibarber.com` | Exclusión pública de Franco y eliminación de barra contextual en paso Horarios |
 | 2026-11-12 | `main` (prod) | `372d52e` | Cloudflare Build | `www.kanibarber.com` | Eliminación de checkmark en horario seleccionado y fondo sólido (#ffffff / #242424) en horarios disponibles |
+| 2026-11-12 | `main` (prod) | `7036c01` | Cloudflare Build | `www.kanibarber.com` | Banderas SVG de alta resolución en selector y listado de país (compatible multiplataforma) |
