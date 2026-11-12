@@ -4,6 +4,7 @@ import { Booking, type BookingPaymentDraft } from '@/components/kani/booking';
 import { BookingConfirmedScreen, type ConfirmedBookingData } from '@/components/kani/booking-confirmed-screen';
 import { createRealAppointment, appointmentErrorMessage } from '@/lib/kani-appointments';
 import { createBookingOrderFn, getAppointmentPaymentStatusFn } from '@/lib/kani-mercadopago.functions';
+import { isAvailabilityConflictError, SlotUnavailableConflictError } from '@/lib/kani-booking-slots';
 import { readConfiguredServices, type ConfiguredService } from '@/lib/kani-availability';
 import { services, serviceFor, type ServiceId, type Barber } from '@/lib/kani-model';
 import { KANI_STANDARD_DEPOSIT_ARS } from '@/lib/kani-constants';
@@ -226,9 +227,9 @@ export function MercadoPagoBooking() {
       services.find((s) => s.name.toLowerCase() === draft.serviceName.toLowerCase());
     const servicePrice = matchedSvc?.price ?? 25000;
 
-    let appointmentId: string;
+    let appointmentId: string | undefined;
 
-    // Si ya existe un intento activo vigente (< 10 min) para este mismo barbero/fecha/horario, reutilizarlo
+    // Si ya existe un intento activo vigente (< 10 min) para este mismo barbero/fecha/horario, verificar su estado real antes de continuar
     const currentActive = readActiveAttempt();
     if (
       currentActive &&
@@ -236,32 +237,80 @@ export function MercadoPagoBooking() {
       currentActive.date === draft.date &&
       currentActive.time === draft.time
     ) {
-      appointmentId = currentActive.appointmentId;
-    } else {
-      // Crear nueva reserva en estado PENDING con hold de 10 min en Supabase
-      const created = await createRealAppointment({
-        barber: draft.barber,
-        serviceName: draft.serviceName,
-        date: draft.date,
-        time: draft.time,
-        name: draft.name.trim(),
-        phone: draft.phone,
-        email: draft.email.trim(),
-        notes: draft.notes,
-      });
-      appointmentId = created.appointment_id;
+      if (typeof getAppointmentPaymentStatusFn === 'function') {
+        try {
+          const existingStatus = await getAppointmentPaymentStatusFn({
+            data: { appointmentId: currentActive.appointmentId },
+          });
+          if (existingStatus?.isConfirmed && existingStatus.appointment) {
+            const appt = existingStatus.appointment;
+            const confirmedData: ConfirmedBookingData = {
+              appointmentId: appt.id,
+              serviceName: appt.serviceName ?? draft.serviceName,
+              barber: appt.barberName ?? draft.barber,
+              date: appt.date ?? draft.date,
+              time: (appt.time ?? draft.time).slice(0, 5),
+              clientName: appt.clientName ?? draft.name.trim(),
+              depositArs: appt.depositAmountArs ?? KANI_STANDARD_DEPOSIT_ARS,
+              servicePriceArs: appt.servicePriceArs ?? servicePrice,
+            };
+            persistConfirmedBooking(confirmedData);
+            setConfirmed(confirmedData);
+            clearActiveAttempt();
+            setInitialAttempt(null);
+            return;
+          }
+          if (existingStatus?.appointmentStatus === 'CANCELLED') {
+            clearActiveAttempt();
+            setInitialAttempt(null);
+          } else {
+            appointmentId = currentActive.appointmentId;
+          }
+        } catch {
+          appointmentId = currentActive.appointmentId;
+        }
+      } else {
+        appointmentId = currentActive.appointmentId;
+      }
+    }
 
-      persistActiveAttempt({
-        appointmentId,
-        serviceName: draft.serviceName,
-        barber: draft.barber,
-        date: draft.date,
-        time: draft.time,
-        clientName: draft.name.trim(),
-        clientEmail: draft.email.trim(),
-        clientPhone: draft.phone,
-        timestamp: Date.now(),
-      });
+    if (!appointmentId) {
+      try {
+        // Crear nueva reserva en estado PENDING con hold de 10 min en Supabase
+        const created = await createRealAppointment({
+          barber: draft.barber,
+          serviceName: draft.serviceName,
+          date: draft.date,
+          time: draft.time,
+          name: draft.name.trim(),
+          phone: draft.phone,
+          email: draft.email.trim(),
+          notes: draft.notes,
+        });
+        appointmentId = created.appointment_id;
+
+        persistActiveAttempt({
+          appointmentId,
+          serviceName: draft.serviceName,
+          barber: draft.barber,
+          date: draft.date,
+          time: draft.time,
+          clientName: draft.name.trim(),
+          clientEmail: draft.email.trim(),
+          clientPhone: draft.phone,
+          timestamp: Date.now(),
+        });
+      } catch (err) {
+        const msg = appointmentErrorMessage(err);
+        if (isAvailabilityConflictError(err) || isAvailabilityConflictError(msg)) {
+          throw new SlotUnavailableConflictError(msg, {
+            phase: 'pre_payment',
+            slotDate: draft.date,
+            slotTime: draft.time,
+          });
+        }
+        throw err;
+      }
     }
 
     // Crear orden de Mercado Pago Checkout Pro mediante Orders API en el servidor

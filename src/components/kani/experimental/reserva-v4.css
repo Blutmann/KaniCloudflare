@@ -1022,3 +1022,555 @@ html[data-theme="light"] .payway-reservation .booking-page .booking-time-heading
 .payway-submit-btn:disabled {
   cursor: not-allowed !important;
 }
+
+/* ==============================================================================
+ * UX/UI V2 — Step "Elegí un horario" (Mañana / Tarde, contexto y estados)
+ * Scoped strictly to .payway-reservation / .mercadopago-reservation
+ * ============================================================================== */
+.payway-reservation .booking-time-selection {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+  min-width: 0;
+}
+
+.payway-reservation .booking-time-context-bar {
+  background: var(--card);
+  border: 1px solid color-mix(in oklch, var(--gold) 22%, var(--border));
+  border-radius: var(--radius-card, 0.9rem);
+  padding: 10px 12px;
+  box-shadow: var(--kani-surface-shadow);
+}
+
+.payway-reservation .booking-time-context-items {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.payway-reservation .booking-time-context-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--foreground);
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1.25;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.payway-reservation .booking-time-context-chip:hover:not(:disabled),
+.payway-reservation .booking-time-context-chip:focus-visible {
+  border-color: var(--gold);
+  background: color-mix(in oklch, var(--gold) 8%, var(--surface));
+  outline: none;
+}
+
+.payway-reservation .booking-time-context-chip:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.payway-reservation .booking-time-context-leading-icon {
+  color: var(--gold);
+  flex-shrink: 0;
+}
+
+html[data-theme='light'] .payway-reservation .booking-time-context-leading-icon {
+  color: var(--primary);
+}
+
+.payway-reservation .booking-time-context-edit-icon {
+  color: var(--muted-foreground);
+  flex-shrink: 0;
+}
+
+.payway-reservation .booking-time-context-value {
+  white-space: nowrap;
+}
+
+.payway-reservation .booking-time-periods {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.payway-reservation .booking-time-period-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.payway-reservation .booking-time-period-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid color-mix(in oklch, var(--border) 70%, transparent);
+}
+
+.payway-reservation .booking-time-period-title-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.payway-reservation .booking-time-period-icon {
+  color: var(--gold);
+  flex-shrink: 0;
+}
+
+html[data-theme='light'] .payway-reservation .booking-time-period-icon {
+  color: var(--primary);
+}
+
+.payway-reservation .booking-time-period-title {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--foreground);
+}
+
+.payway-reservation .booking-time-period-count {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted-foreground);
+}
+
+/* Responsive Time Grid: 3 cols <=359px, 4 cols 360px-1023px, 5 cols >=1024px */
+.payway-reservation .booking-v3-times .booking-time-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+}
+
+@media (max-width: 359px) {
+  .payway-reservation .booking-v3-times .booking-time-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+  }
+}
+
+@media (min-width: 640px) {
+  .payway-reservation .booking-v3-times .booking-time-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  .payway-reservation .booking-v3-times .booking-time-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+    gap: 12px !important;
+  }
+}
+
+.payway-reservation .booking-time-slot {
+  display: inline-flex !important;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 52px !important;
+  height: auto !important;
+  padding: 6px 4px !important;
+  font-variant-numeric: tabular-nums;
+  position: relative;
+}
+
+.payway-reservation .booking-time-slot-value {
+  line-height: 1.15;
+}
+
+.payway-reservation .booking-time-slot-check {
+  flex-shrink: 0;
+}
+
+.payway-reservation .booking-time-slot.selected {
+  flex-direction: row;
+  gap: 5px;
+  border-width: 1.5px !important;
+  box-shadow: 0 4px 14px color-mix(in oklch, var(--gold) 24%, transparent);
+}
+
+html[data-theme='light'] .payway-reservation .booking-time-slot.selected {
+  border-color: var(--primary) !important;
+  background: var(--primary) !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 4px 14px color-mix(in oklch, var(--primary) 26%, transparent);
+}
+
+.payway-reservation .booking-time-slot.time-unavailable,
+.payway-reservation .booking-time-slot:disabled:not(.selected) {
+  text-decoration: none !important;
+  border-style: dashed !important;
+  border-color: color-mix(in oklch, var(--border) 85%, transparent) !important;
+  background: color-mix(in oklch, var(--muted) 65%, var(--surface)) !important;
+  color: var(--muted-foreground) !important;
+  opacity: 0.85 !important;
+  cursor: not-allowed !important;
+  box-shadow: none !important;
+}
+
+.payway-reservation .booking-time-slot-status {
+  font-size: 9.5px;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  color: var(--muted-foreground);
+}
+
+/* Loading Skeleton */
+.payway-reservation .booking-time-loading-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.payway-reservation .booking-time-skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+@media (max-width: 359px) {
+  .payway-reservation .booking-time-skeleton-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .payway-reservation .booking-time-skeleton-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 12px;
+  }
+}
+
+.payway-reservation .booking-time-skeleton-item {
+  height: 52px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--muted);
+  opacity: 0.65;
+  animation: kaniSlotPulse 1.3s ease-in-out infinite;
+}
+
+@keyframes kaniSlotPulse {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 0.85; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .payway-reservation .booking-time-skeleton-item {
+    animation: none;
+  }
+}
+
+.payway-reservation .booking-time-empty {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card, 0.9rem);
+  padding: 24px 16px;
+}
+
+.payway-reservation .booking-time-empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+/* ==============================================================================
+ * UX/UI V2 — "Ese horario ya no está disponible" (Recuperación sin pérdida de datos)
+ * ============================================================================== */
+.booking-slot-recovery-card {
+  width: 100%;
+  max-width: 560px;
+  margin-inline: auto;
+  background: var(--card);
+  color: var(--foreground);
+  border: 1px solid color-mix(in oklch, var(--gold) 28%, var(--border));
+  border-radius: var(--radius-card, 0.9rem);
+  padding: 24px 20px;
+  box-shadow: 0 12px 32px rgb(0 0 0 / 0.14);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.booking-slot-recovery-card:focus {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+html[data-theme='light'] .booking-slot-recovery-card {
+  background: #FFFFFF;
+  border-color: color-mix(in oklch, var(--gold) 32%, var(--border));
+  box-shadow: 0 10px 28px rgb(0 0 0 / 0.06);
+}
+
+html[data-theme='dark'] .booking-slot-recovery-card {
+  background: #1C1C1C;
+}
+
+.booking-slot-recovery-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+}
+
+.booking-slot-recovery-icon-ring {
+  width: 50px;
+  height: 50px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: color-mix(in oklch, var(--gold) 14%, var(--card));
+  border: 1px solid color-mix(in oklch, var(--gold) 45%, var(--border));
+  color: var(--gold);
+  margin-bottom: 2px;
+}
+
+html[data-theme='light'] .booking-slot-recovery-icon-ring {
+  color: var(--primary);
+  border-color: color-mix(in oklch, var(--primary) 35%, var(--border));
+  background: color-mix(in oklch, var(--primary) 8%, #FFFFFF);
+}
+
+.booking-slot-recovery-eyebrow {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+html[data-theme='light'] .booking-slot-recovery-eyebrow {
+  color: var(--primary);
+}
+
+.booking-slot-recovery-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 21px;
+  font-weight: 500;
+  line-height: 1.25;
+  color: var(--foreground);
+}
+
+.booking-slot-recovery-copy {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--muted-foreground);
+  max-width: 44ch;
+}
+
+.booking-slot-recovery-context {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--radius-control, 0.65rem);
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.booking-slot-recovery-context-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  text-align: left;
+}
+
+.booking-slot-recovery-context-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted-foreground);
+}
+
+.booking-slot-recovery-context-summary {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.booking-slot-recovery-context-datetime {
+  font-size: 12.5px;
+  color: var(--muted-foreground);
+}
+
+.booking-slot-recovery-status-badge {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in oklch, var(--primary) 35%, var(--border));
+  background: color-mix(in oklch, var(--primary) 10%, var(--card));
+  color: var(--foreground);
+}
+
+.booking-slot-recovery-feedback {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  padding: 9px 12px;
+  border-radius: var(--radius-sub, 0.5rem);
+  background: color-mix(in oklch, var(--gold) 12%, var(--surface));
+  border: 1px solid color-mix(in oklch, var(--gold) 32%, var(--border));
+  color: var(--foreground);
+  text-align: left;
+}
+
+.booking-slot-recovery-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px;
+  font-size: 13px;
+  color: var(--muted-foreground);
+}
+
+.booking-slot-recovery-alternatives {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.booking-slot-recovery-alternatives-label {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--foreground);
+  text-align: left;
+}
+
+.booking-slot-recovery-alternatives-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+@media (max-width: 359px) {
+  .booking-slot-recovery-alternatives-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.booking-slot-recovery-alt-btn {
+  min-height: 48px !important;
+  height: auto !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  font-variant-numeric: tabular-nums;
+  border-color: color-mix(in oklch, var(--gold) 38%, var(--border)) !important;
+  background: var(--surface) !important;
+  color: var(--foreground) !important;
+}
+
+.booking-slot-recovery-alt-btn:hover:not(:disabled) {
+  border-color: var(--gold) !important;
+  background: color-mix(in oklch, var(--gold) 12%, var(--surface)) !important;
+}
+
+.booking-slot-recovery-no-alternatives {
+  padding: 14px;
+  border-radius: var(--radius-control, 0.65rem);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.booking-slot-recovery-no-alternatives-title {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.booking-slot-recovery-no-alternatives-hint {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--muted-foreground);
+}
+
+.booking-slot-recovery-preserved {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sub, 0.5rem);
+  background: color-mix(in oklch, var(--gold) 8%, var(--surface));
+  border: 1px solid color-mix(in oklch, var(--gold) 22%, var(--border));
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--foreground);
+  text-align: left;
+}
+
+.booking-slot-recovery-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.booking-slot-recovery-primary-btn {
+  width: 100%;
+  min-height: 48px !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+}
+
+.booking-slot-recovery-secondary-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.booking-slot-recovery-secondary-btn {
+  min-height: 44px !important;
+  font-size: 13px !important;
+  gap: 6px;
+}
+
+@media (min-width: 1024px) {
+  .booking-slot-recovery-card {
+    padding: 20px 22px;
+    gap: 14px;
+  }
+}
+
+@media (max-width: 400px) {
+  .booking-slot-recovery-card {
+    padding: 18px 14px;
+  }
+  .booking-slot-recovery-secondary-actions {
+    grid-template-columns: 1fr;
+  }
+}
+

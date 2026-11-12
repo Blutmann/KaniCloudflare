@@ -5,7 +5,7 @@ import type { BenefitQuote } from '@/lib/kani-benefit-codes';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { services, barbers, serviceFor, money, bookingEndDateFor, parseDate, isoDate, dateLabel, isBookingDate, getEffectiveServicePrice, barberInstagramHandles, type ServiceId, type Barber, type Appointment } from '@/lib/kani-model';
-import { availabilityStartTimesForServiceDate, eligibleBarbersForAvailabilityStart, readConfiguredServices, readPublicAvailabilityStarts, type ConfiguredService, type PublicAvailabilityStart } from '@/lib/kani-availability';
+import { availabilityStartTimesForServiceDate, eligibleBarbersForAvailabilityStart, readConfiguredServices, readPublicAvailabilityStarts, slotCanStillBeBooked, type ConfiguredService, type PublicAvailabilityStart } from '@/lib/kani-availability';
 import { businessDateToday } from '@/lib/kani-mobile-appointments';
 import { appointmentErrorMessage, createRealAppointment } from '@/lib/kani-appointments';
 import { getDynamicDownPayment } from '@/lib/kani-down-payment';
@@ -14,6 +14,14 @@ import { normalizePhone, type PhoneCountry } from '@/lib/kani-phone';
 const PhoneInput = lazy(() => import('@/components/kani/phone-input').then(m => ({ default: m.PhoneInput })));
 import { useKani } from '@/components/kani/store';
 import { BookingStepHeading } from '@/components/kani/booking-step-heading';
+import { BookingTimeSelection } from '@/components/kani/booking-time-selection';
+import { BookingSlotUnavailableRecovery, type SlotUnavailableRecoveryState } from '@/components/kani/booking-slot-recovery';
+import {
+  buildSlotItemsForDate,
+  findClosestAlternativeTimes,
+  isAvailabilityConflictError,
+  normalizeSlotTime,
+} from '@/lib/kani-booking-slots';
 const steps = ['Servicio', 'Barbero', 'Fecha', 'Horario', 'Datos', 'Resumen'];
 const serviceIconById: Record<ServiceId, { light: string; dark: string }> = {
   corte: { light: '/service-corte-light.png', dark: '/service-corte-dark-strokes.png' },
@@ -127,6 +135,7 @@ export function Booking({
   paymentActionLabel,
   paymentNotice,
   isPaymentChecking = false,
+  hasActivePaymentAttempt = false,
   initialStep,
   initialService,
   initialBarber,
@@ -140,6 +149,7 @@ export function Booking({
   paymentActionLabel?: string;
   paymentNotice?: ReactNode;
   isPaymentChecking?: boolean;
+  hasActivePaymentAttempt?: boolean;
   initialStep?: number;
   initialService?: ServiceId;
   initialBarber?: Barber;
@@ -208,6 +218,8 @@ export function Booking({
   const [publicSlots, setPublicSlots] = useState<PublicAvailabilityStart[]>([]);
   const [availabilityLoading, setAvailabilityLoading] = useState(false);
   const [availabilityError, setAvailabilityError] = useState('');
+  const [slotConflict, setSlotConflict] = useState<SlotUnavailableRecoveryState | null>(null);
+  const [conflictedSlotMap, setConflictedSlotMap] = useState<Record<string, string[]>>({});
   const [configuredServices, setConfiguredServices] = useState<ConfiguredService[]>(() => services.map(service => ({ ...service })));
   const [submitting, setSubmitting] = useState(false);
   const [clock, setClock] = useState(() => new Date());
@@ -424,9 +436,19 @@ export function Booking({
   );
   const visibleSlots = useMemo(() => {
     if (!service || !date || !availabilityBarber && !barberDeferred) return [];
-    return availabilityStartTimesForServiceDate(availabilityStartsByDate.get(date) ?? [], date, serviceName, clock, availabilityBarber)
-      .map(time => ({ time, status: 'AVAILABLE' as const }));
-  }, [availabilityBarber, availabilityStartsByDate, barberDeferred, clock, date, service, serviceName]);
+    const availableTimes = availabilityStartTimesForServiceDate(
+      availabilityStartsByDate.get(date) ?? [],
+      date,
+      serviceName,
+      clock,
+      availabilityBarber,
+    );
+    const conflictKey = `${date}|${barber ?? (barberDeferred ? 'ANY' : availabilityBarber ?? 'ANY')}`;
+    const conflictedTimes = (conflictedSlotMap[conflictKey] ?? []).filter(slotTime =>
+      slotCanStillBeBooked(date, slotTime, clock),
+    );
+    return buildSlotItemsForDate(availableTimes, conflictedTimes);
+  }, [availabilityBarber, availabilityStartsByDate, barber, barberDeferred, clock, conflictedSlotMap, date, service, serviceName]);
   const slots = visibleSlots.filter(slot => slot.status === 'AVAILABLE').map(slot => slot.time);
   const availableDates = useMemo(() => {
     if (!service || !availabilityBarber && !barberDeferred) return [];
@@ -551,13 +573,39 @@ export function Booking({
   }, [availabilityLoading, availableDates, barberDeferred, date, service, todayValue]);
   const homeLink = isV5 ? "/reserva-v5" : isV3 ? "/reserva-v3" : isV2 ? "/reserva-v2" : "/reservar-turno";
 
-  function move(next: number) {
-    setStep(isFiveSteps ? next : isV2 ? next === 3 ? 2 : next === 5 ? 4 : next : next);
-    setError('');
+  const recordConflictedSlot = useCallback((slotDate: string, slotBarber: Barber | string | null, slotTime: string) => {
+    const cleanTime = normalizeSlotTime(slotTime);
+    if (!slotDate || !cleanTime) return;
+    const conflictKey = `${slotDate}|${slotBarber || 'ANY'}`;
+    setConflictedSlotMap(prev => {
+      const existing = prev[conflictKey] ?? [];
+      if (existing.includes(cleanTime)) return prev;
+      return { ...prev, [conflictKey]: [...existing, cleanTime] };
+    });
+  }, []);
+
+  const refreshAvailabilityNow = useCallback(
+    async (targetBarber: Barber | null = availabilityBarber) => {
+      const nextSlots = await readPublicAvailabilityStarts(targetBarber, todayValue, bookingEndValue);
+      setPublicSlots(nextSlots);
+      return nextSlots;
+    },
+    [availabilityBarber, bookingEndValue, todayValue],
+  );
+
+  function scrollToTopSmooth() {
+    if (typeof window === 'undefined' || typeof window.scrollTo !== 'function') return;
     window.scrollTo({
       top: 0,
       behavior: (isV2 || isFiveSteps) && window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
     });
+  }
+
+  function move(next: number) {
+    setSlotConflict(null);
+    setStep(isFiveSteps ? next : isV2 ? next === 3 ? 2 : next === 5 ? 4 : next : next);
+    setError('');
+    scrollToTopSmooth();
   }
   const statusFor = (field: ContactField) => fieldStatus(field, contact, phoneCountry, touched[field]);
   const markTouched = (field: ContactField) => setTouched(current => ({ ...current, [field]: true }));
@@ -612,6 +660,158 @@ export function Booking({
     }
     move(isV2 && step === 2 ? 4 : step + 1);
   }
+  function openSlotUnavailableRecovery({
+    requestedDate,
+    requestedTime,
+    requestedBarber,
+    prefetchedStarts,
+    refreshInBackground,
+  }: {
+    requestedDate: string;
+    requestedTime: string;
+    requestedBarber: Barber;
+    prefetchedStarts?: PublicAvailabilityStart[];
+    refreshInBackground: boolean;
+  }) {
+    const nowRef = new Date();
+    const effectiveClock = clock > nowRef ? clock : nowRef;
+    if (slotCanStillBeBooked(requestedDate, requestedTime, effectiveClock)) {
+      recordConflictedSlot(requestedDate, requestedBarber, requestedTime);
+    }
+
+    const sourceStarts = prefetchedStarts ?? publicSlots;
+    const sameDayStarts = sourceStarts.filter(s => s.slot_date === requestedDate);
+    const sameBarberAvailable = availabilityStartTimesForServiceDate(
+      sameDayStarts,
+      requestedDate,
+      serviceName,
+      effectiveClock,
+      requestedBarber,
+    );
+    const initialAlternatives = findClosestAlternativeTimes({
+      requestedTime,
+      availableTimes: sameBarberAvailable,
+      maxCount: 3,
+    });
+
+    setPendingAppointment(null);
+    setTime('');
+    setError('');
+    setSlotConflict({
+      requestedDate,
+      requestedTime,
+      requestedBarber,
+      alternatives: initialAlternatives,
+      loadingAlternatives: refreshInBackground,
+      verifyingAlternative: null,
+      feedbackMessage: null,
+    });
+    setStep(isV2 ? 2 : 3);
+    scrollToTopSmooth();
+
+    if (refreshInBackground) {
+      void refreshAvailabilityNow(availabilityBarber)
+        .then(freshStarts => {
+          const checkNow = new Date();
+          const checkClock = clock > checkNow ? clock : checkNow;
+          const freshAvailable = availabilityStartTimesForServiceDate(
+            freshStarts.filter(s => s.slot_date === requestedDate),
+            requestedDate,
+            serviceName,
+            checkClock,
+            requestedBarber,
+          );
+          const refreshedAlternatives = findClosestAlternativeTimes({
+            requestedTime,
+            availableTimes: freshAvailable,
+            maxCount: 3,
+          });
+          setSlotConflict(current => {
+            if (!current || current.requestedDate !== requestedDate || current.requestedTime !== requestedTime) {
+              return current;
+            }
+            return {
+              ...current,
+              alternatives: refreshedAlternatives,
+              loadingAlternatives: false,
+            };
+          });
+        })
+        .catch(() => {
+          setSlotConflict(current => (current ? { ...current, loadingAlternatives: false } : null));
+        });
+    }
+  }
+
+  async function handleSelectAlternativeTime(altTime: string) {
+    if (!slotConflict || !service) return;
+    const targetDate = slotConflict.requestedDate;
+    const targetBarber = (slotConflict.requestedBarber as Barber) || barber;
+    setSlotConflict(current =>
+      current ? { ...current, verifyingAlternative: altTime, feedbackMessage: null } : null,
+    );
+
+    try {
+      const freshStarts = await refreshAvailabilityNow(barberDeferred ? null : targetBarber);
+      const checkNow = new Date();
+      const checkClock = clock > checkNow ? clock : checkNow;
+      const freshTimes = availabilityStartTimesForServiceDate(
+        freshStarts,
+        targetDate,
+        serviceName,
+        checkClock,
+        targetBarber,
+      );
+      const eligible = barberDeferred
+        ? eligibleBarbersForAvailabilityStart(freshStarts, targetDate, altTime, serviceName, checkClock)
+        : [];
+      const stillValid =
+        freshTimes.includes(altTime) && (!barberDeferred || !targetBarber || eligible.includes(targetBarber));
+
+      if (!stillValid) {
+        if (slotCanStillBeBooked(targetDate, altTime, checkClock)) {
+          recordConflictedSlot(targetDate, targetBarber, altTime);
+        }
+        const refreshedAlternatives = findClosestAlternativeTimes({
+          requestedTime: altTime,
+          availableTimes: freshTimes,
+          maxCount: 3,
+        });
+        setSlotConflict(current =>
+          current
+            ? {
+                ...current,
+                alternatives: refreshedAlternatives,
+                verifyingAlternative: null,
+                feedbackMessage: `El horario ${altTime} también acaba de ocuparse. Actualizamos las opciones disponibles.`,
+              }
+            : null,
+        );
+        return;
+      }
+
+      if (targetBarber && barber !== targetBarber) {
+        setBarber(targetBarber);
+      }
+      setDate(targetDate);
+      setTime(altTime);
+      setPendingAppointment(null);
+      setSlotConflict(null);
+      setError('');
+      move(isV2 || isFiveSteps ? 4 : 5);
+    } catch {
+      setSlotConflict(current =>
+        current
+          ? {
+              ...current,
+              verifyingAlternative: null,
+              feedbackMessage: 'No pudimos verificar ese horario en este momento. Intentá nuevamente.',
+            }
+          : null,
+      );
+    }
+  }
+
   async function submit() {
     if (!service || !barber || !date || !time || submitting) return;
     if (hasUnappliedBenefitCode) {
@@ -629,13 +829,63 @@ export function Booking({
       setError('Ingresá un número de teléfono válido para el país seleccionado.');
       return;
     }
-    if (!pendingAppointment && (!slots.includes(time) || (isV2 || isFiveSteps) && (!availableDatesSet.has(date) || barberDeferred && !eligibleBarbersForAvailabilityStart(availabilityStartsByDate.get(date) ?? [], date, time, serviceName, clock).includes(barber)))) {
-      move(3);
-      setError('Ese horario ya no está disponible. Elegí otro para continuar.');
+    if (
+      !hasActivePaymentAttempt &&
+      !pendingAppointment &&
+      (!slots.includes(time) ||
+        ((isV2 || isFiveSteps) &&
+          (!availableDatesSet.has(date) ||
+            (barberDeferred &&
+              !eligibleBarbersForAvailabilityStart(
+                availabilityStartsByDate.get(date) ?? [],
+                date,
+                time,
+                serviceName,
+                clock,
+              ).includes(barber)))))
+    ) {
+      openSlotUnavailableRecovery({
+        requestedDate: date,
+        requestedTime: time,
+        requestedBarber: barber,
+        refreshInBackground: true,
+      });
       return;
     }
     setSubmitting(true);
     setError('');
+
+    if (!hasActivePaymentAttempt && !pendingAppointment) {
+      try {
+        const freshStarts = await refreshAvailabilityNow(availabilityBarber);
+        const checkNow = new Date();
+        const checkClock = clock > checkNow ? clock : checkNow;
+        const freshTimes = availabilityStartTimesForServiceDate(
+          freshStarts,
+          date,
+          serviceName,
+          checkClock,
+          availabilityBarber,
+        );
+        const eligible = barberDeferred
+          ? eligibleBarbersForAvailabilityStart(freshStarts, date, time, serviceName, checkClock)
+          : [];
+        const stillAvailable = freshTimes.includes(time) && (!barberDeferred || eligible.includes(barber));
+        if (!stillAvailable) {
+          openSlotUnavailableRecovery({
+            requestedDate: date,
+            requestedTime: time,
+            requestedBarber: barber,
+            prefetchedStarts: freshStarts,
+            refreshInBackground: false,
+          });
+          setSubmitting(false);
+          return;
+        }
+      } catch {
+        // Si la lectura previa falla transitoriamente, el backend valida atómicamente al preparar la reserva.
+      }
+    }
 
     // An opt-in provider owns its checkout; existing routes retain their original path.
     if (onPaymentRequest) {
@@ -646,6 +896,15 @@ export function Booking({
           benefitCode: appliedBenefit?.code,
           benefitQuote: appliedBenefit ?? undefined });
       } catch (cause: any) {
+        if (isAvailabilityConflictError(cause)) {
+          openSlotUnavailableRecovery({
+            requestedDate: date,
+            requestedTime: time,
+            requestedBarber: barber,
+            refreshInBackground: true,
+          });
+          return;
+        }
         setError(cause?.message || 'No pudimos iniciar el pago. Tus datos no se perdieron.');
       } finally {
         setSubmitting(false);
@@ -713,14 +972,20 @@ export function Booking({
     } catch (cause) {
       console.error('[Mercado Pago] Error durante el proceso de reserva/pago:', cause);
       const friendlyMsg = appointmentErrorMessage(cause);
-      const isKnownAvailabilityMessage =
-        friendlyMsg === 'Ese horario ya no está disponible. Elegí otro para continuar.' ||
-        friendlyMsg === 'Ese horario acaba de dejar de estar disponible o ya tiene un turno reservado.' ||
-        friendlyMsg === 'La fecha seleccionada ya no está disponible.' ||
-        friendlyMsg === 'El estudio permanece cerrado los domingos.' ||
+      if (isAvailabilityConflictError(cause) || isAvailabilityConflictError(friendlyMsg)) {
+        openSlotUnavailableRecovery({
+          requestedDate: date,
+          requestedTime: time,
+          requestedBarber: barber,
+          refreshInBackground: true,
+        });
+        setSubmitting(false);
+        return;
+      }
+      const isKnownValidationMessage =
         friendlyMsg === 'El correo electrónico del cliente es obligatorio y debe tener un formato válido.';
 
-      if (isKnownAvailabilityMessage) {
+      if (isKnownValidationMessage) {
         setError(friendlyMsg);
       } else {
         setError('No pudimos iniciar el pago. Tus datos no se perdieron. Podés volver a intentarlo.');
@@ -965,10 +1230,10 @@ export function Booking({
               title={isV2 && step === 2 ? 'Elegir una fecha' : titles[step]}
               stepIndex={step}
               className={`${step === 0 ? 'booking-service-heading' : ''} ${step === 1 ? 'booking-barber-heading' : ''} ${step === 2 ? 'booking-date-heading' : ''} ${step === 3 ? 'booking-time-heading' : ''} ${step === 4 ? 'booking-contact-heading' : ''} ${step === 5 ? 'booking-summary-heading' : ''}`.trim()}
-              secondary={
-                step === 3 && date ? (
+                secondary={
+                step === 3 && (date || slotConflict?.requestedDate) ? (
                   <span className="booking-time-heading-date">
-                    <CalendarDays size={16} />{onPaymentRequest ? <><span className="booking-v4-date-mobile">{formatV4BookingDate(date)}</span><span className="booking-v4-date-desktop">{formatV4BookingDate(date, true)}</span></> : isFiveSteps ? formatShortBookingDate(date) : dateLabel(date)}
+                    <CalendarDays size={16} />{onPaymentRequest ? <><span className="booking-v4-date-mobile">{formatV4BookingDate(date || slotConflict!.requestedDate)}</span><span className="booking-v4-date-desktop">{formatV4BookingDate(date || slotConflict!.requestedDate, true)}</span></> : isFiveSteps ? formatShortBookingDate(date || slotConflict!.requestedDate) : dateLabel(date || slotConflict!.requestedDate)}
                   </span>
                 ) : undefined
               }
@@ -1080,7 +1345,7 @@ export function Booking({
                         disabled={disabled}
                         aria-label={ariaLabel}
                         aria-pressed={date === value}
-                        onClick={() => { if (isV2) { revealTimesRef.current = true; setDateSelection(current => current + 1); } if (date !== value) { setDate(value); setTime(''); if (barberDeferred) setBarber(null); } }}
+                        onClick={() => { if (isV2) { revealTimesRef.current = true; setDateSelection(current => current + 1); } if (date !== value) { setSlotConflict(null); setPendingAppointment(null); setDate(value); setTime(''); if (barberDeferred) setBarber(null); } }}
                       >
                         {i + 1}
                       </Button>
@@ -1110,58 +1375,73 @@ export function Booking({
               </ExperimentalLayout>
             )}
 
-            {(step === 3 || isV2 && step === 2 && date) && (
+            {(step === 3 || isV2 && step === 2 && (date || Boolean(slotConflict))) && (
               <div ref={timeSectionRef} className={isV2 ? 'booking-v2-times' : isFiveSteps ? `booking-${isV5 ? 'v5' : 'v3'}-times` : undefined} aria-busy={availabilityLoading}>
-                {isV2 && <h2 className="booking-v2-choice-title">Elegir un horario</h2>}
-                {isV5 && availabilityLoading ? (
-                  <div className="booking-time-loading py-10 text-center text-sm text-muted-foreground flex items-center justify-center gap-2" role="status">
-                    <Clock3 size={18} className="animate-spin text-gold" />
-                    <span>Buscando horarios disponibles…</span>
-                  </div>
+                {isV2 && !slotConflict && <h2 className="booking-v2-choice-title">Elegir un horario</h2>}
+                {slotConflict ? (
+                  <BookingSlotUnavailableRecovery
+                    recovery={slotConflict}
+                    serviceName={selected?.name ?? (service ? serviceFor(service).name : '')}
+                    serviceDurationMinutes={selected?.duration}
+                    formattedDate={formatV4BookingDate(slotConflict.requestedDate, true)}
+                    onSelectAlternative={handleSelectAlternativeTime}
+                    onChooseAnotherTime={() => {
+                      setSlotConflict(null);
+                      setError('');
+                    }}
+                    onEditDate={!isV2 ? () => { void refreshAvailabilityNow(availabilityBarber).catch(() => {}); move(2); } : undefined}
+                    onEditBarber={() => move(1)}
+                  />
                 ) : (
-                  <div className="booking-time-grid grid grid-cols-3 gap-2 sm:grid-cols-4" role={isV2 || isFiveSteps ? "group" : undefined} aria-label={isV2 || isFiveSteps ? "Horarios disponibles" : undefined}>
-                    {timeSlots.map(slot => (
-                      <Button
-                        key={slot.time}
-                        variant="outline"
-                        className={`booking-time-slot h-12 ${time === slot.time ? 'selected' : ''}`}
-                        aria-pressed={time === slot.time}
-                        aria-label={`Horario ${slot.time}${time === slot.time ? ', seleccionado' : ''}`}
-                        onClick={() => { setTime(slot.time); if (barberDeferred) { setBarber(null); scrollAfterTimeSelectRef.current = true; } }}
-                      >
-                        {slot.time}
-                      </Button>
-                    ))}
-                  </div>
-                )}
-                {barberDeferred && time && (
-                  <div ref={barberSectionRef} className="barber-choice-inline mt-4 pt-3 border-t border-border/40">
-                    <h2 className={isV2 ? "booking-v2-choice-title" : "text-sm font-medium mb-2.5 text-foreground"}>
-                      {candidateBarbers.length === 1 ? `Barbero asignado para las ${time} hs:` : `¿Quién te va a atender a las ${time} hs?`}
-                    </h2>
-                    <div className="barber-choice-list flex flex-wrap gap-2" data-barbers-count={candidateBarbers.length}>
-                      {candidateBarbers.map(candidate => (
-                        <Button
-                          key={candidate}
-                          variant="outline"
-                          aria-pressed={barber === candidate}
-                          aria-label={`Barbero ${candidate}${barber === candidate ? ', seleccionado' : ''}`}
-                          className={`booking-candidate-barber-btn ${barber === candidate ? 'selected' : ''}`}
-                          onClick={() => setBarber(candidate)}
-                        >
-                          <span className="candidate-name">{candidate}</span>
-                          {barber === candidate && <Check size={14} className="ml-1.5" />}
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                {availabilityError && <p role="alert" className="py-3 text-sm text-destructive">{availabilityError}</p>}
-                {slots.length === 0 && !availabilityLoading && (
-                  <div className="py-8 text-center text-muted-foreground space-y-1">
-                    <p className="text-sm font-medium text-foreground">No hay horarios disponibles para esta fecha.</p>
-                    <p className="text-xs">Podés volver al paso anterior para elegir otro día o cambiar de barbero.</p>
-                  </div>
+                  <>
+                    <BookingTimeSelection
+                      slots={timeSlots}
+                      selectedTime={time}
+                      onSelectTime={selectedSlot => {
+                        setTime(selectedSlot);
+                        setPendingAppointment(null);
+                        setError('');
+                        if (barberDeferred) {
+                          setBarber(null);
+                          scrollAfterTimeSelectRef.current = true;
+                        }
+                      }}
+                      availabilityLoading={availabilityLoading && isFiveSteps ? true : availabilityLoading}
+                      serviceName={selected?.name ?? (service ? serviceFor(service).name : '')}
+                      serviceDurationMinutes={selected?.duration}
+                      barberLabel={barber ?? undefined}
+                      barberDeferred={barberDeferred}
+                      showContextBar={step === 3 && !isV2}
+                      onEditService={() => move(0)}
+                      onEditBarber={() => move(1)}
+                      onEditDate={!isV2 ? () => { void refreshAvailabilityNow(availabilityBarber).catch(() => {}); move(2); } : undefined}
+                      useGroupRole={isV2 || isFiveSteps}
+                      showExtendedEmptyActions={!isV2}
+                    />
+                    {barberDeferred && time && (
+                      <div ref={barberSectionRef} className="barber-choice-inline mt-4 pt-3 border-t border-border/40">
+                        <h2 className={isV2 ? "booking-v2-choice-title" : "text-sm font-medium mb-2.5 text-foreground"}>
+                          {candidateBarbers.length === 1 ? `Barbero asignado para las ${time} hs:` : `¿Quién te va a atender a las ${time} hs?`}
+                        </h2>
+                        <div className="barber-choice-list flex flex-wrap gap-2" data-barbers-count={candidateBarbers.length}>
+                          {candidateBarbers.map(candidate => (
+                            <Button
+                              key={candidate}
+                              variant="outline"
+                              aria-pressed={barber === candidate}
+                              aria-label={`Barbero ${candidate}${barber === candidate ? ', seleccionado' : ''}`}
+                              className={`booking-candidate-barber-btn ${barber === candidate ? 'selected' : ''}`}
+                              onClick={() => setBarber(candidate)}
+                            >
+                              <span className="candidate-name">{candidate}</span>
+                              {barber === candidate && <Check size={14} className="ml-1.5" />}
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {availabilityError && <p role="alert" className="py-3 text-sm text-destructive">{availabilityError}</p>}
+                  </>
                 )}
               </div>
             )}
@@ -1538,12 +1818,13 @@ export function Booking({
             {paymentNotice && (step === 5 || ((isV2 || isFiveSteps) && step === 4)) && (
               <div className="mt-4">{paymentNotice}</div>
             )}
-            {error && <p role="alert" className="mt-5 text-destructive">{error}</p>}
+            {error && !slotConflict && <p role="alert" className="mt-5 text-destructive">{error}</p>}
           </section>
         </div>
       </div>
 
-      <div ref={ctaRef} className="booking-cta" aria-hidden={mobileMenuOpen || undefined} inert={mobileMenuOpen} style={mobileMenuOpen ? { visibility: 'hidden' } : undefined}>
+      {(!slotConflict || isV2 || step !== 3) && (
+        <div ref={ctaRef} className="booking-cta" aria-hidden={mobileMenuOpen || undefined} inert={mobileMenuOpen} style={mobileMenuOpen ? { visibility: 'hidden' } : undefined}>
           <div className="booking-cta-inner flex items-center">
             <Button variant="outline" className="booking-back-button" onClick={() => move(isV2 && step === 4 ? 2 : step - 1)} disabled={step === 0 || submitting}>
               <ArrowLeft size={14} aria-hidden="true" /> Volver
@@ -1561,6 +1842,7 @@ export function Booking({
             </Button>
           </div>
         </div>
+      )}
     </main>
   );
 }
