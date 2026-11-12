@@ -9,47 +9,68 @@ import {
   X,
 } from "lucide-react";
 import QRCode from "qrcode";
-import { getPublicMembershipCard, type PublicMembershipCardResult } from "@/lib/kani-recurrences-memberships";
-import kanjiStamp from "@/assets/kani-kanji-stamp.png";
+import { pageHead } from "@/lib/kani-head";
+import {
+  getPublicMembershipCard,
+  type PublicMembershipCardResult,
+} from "@/lib/kani-recurrences-memberships";
+import kaniKanjiStamp from "@/assets/kani-kanji-stamp.png";
+import kaniLogoDark from "@/assets/kani-logo-dark.png";
 
 export const Route = createFileRoute("/membresia/$token")({
   head: () => ({
-    meta: [
-      { title: "Black Membership · KANI Barber Studio" },
-      { name: "description", content: "Credencial digital oficial de membresía KANI Barber Studio." },
-      { name: "robots", content: "noindex, nofollow, noarchive" },
-    ],
+    ...pageHead(
+      "Black Membership · KANI Barber Studio",
+      "Credencial digital oficial de membresía KANI Barber Studio.",
+      "KANI Barber Studio - Private Membership",
+    ),
+    meta: [{ name: "robots", content: "noindex, nofollow, noarchive" }],
   }),
-  component: BlackMembershipCardView,
+  component: PublicMembershipCardPage,
 });
 
-const MONTHS_ES = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"];
+const SPANISH_MONTHS = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"];
 
-function formatDateShort(dateStr?: string | null): string {
-  if (!dateStr) return "";
-  const [datePart] = dateStr.replace("Z", "").split("T");
+/**
+ * Formato pasaporte de lujo: DD MMM AA (e.g. 09 NOV 26)
+ */
+function formatPassportDate(isoString?: string | null): string {
+  if (!isoString) return "";
+  const clean = isoString.replace("Z", "");
+  const [datePart] = clean.split("T");
   if (!datePart) return "";
-  const [y, m, d] = datePart.split("-");
-  if (!y || !m || !d) return "";
-  return `${d} ${MONTHS_ES[parseInt(m, 10) - 1] || m} ${y.slice(-2)}`;
+  const [year, month, day] = datePart.split("-");
+  if (!year || !month || !day) return "";
+  const mIndex = parseInt(month, 10) - 1;
+  const monthStr = SPANISH_MONTHS[mIndex] || month;
+  const shortYear = year.slice(-2);
+  return `${day} ${monthStr} ${shortYear}`;
 }
 
-function formatDateTimeShort(dateStr?: string | null): string {
-  if (!dateStr) return "";
-  const [datePart, timePart] = dateStr.replace("Z", "").split("T");
-  if (!datePart) return dateStr;
-  const [y, m, d] = datePart.split("-");
-  if (!y || !m || !d) return dateStr;
-  return `${d}/${m}/${y}${timePart ? ` · ${timePart.slice(0, 5)} hs` : ""}`;
+/**
+ * Formato editorial para historial: DD/MM/AAAA · HH:mm hs
+ */
+function formatArgentinaDateTime(isoString?: string | null): string {
+  if (!isoString) return "";
+  const clean = isoString.replace("Z", "");
+  const [datePart, timePart] = clean.split("T");
+  if (!datePart) return isoString;
+  const [year, month, day] = datePart.split("-");
+  if (!year || !month || !day) return isoString;
+  const time = timePart ? ` · ${timePart.slice(0, 5)} hs` : "";
+  return `${day}/${month}/${year}${time}`;
 }
 
-function QRCodeCanvas({
+/**
+ * Renderizador SVG estándar de código QR de alto contraste y lectura directa por cámara/jsQR.
+ */
+function KaniQRCode({
   value,
-  size = 200,
+  size = 240,
   className = "",
   margin = 3,
   fgColor = "#000000",
-  bgColor = "#ffffff",
+  bgColor = "#FFFFFF",
 }: {
   value: string;
   size?: number;
@@ -58,72 +79,84 @@ function QRCodeCanvas({
   fgColor?: string;
   bgColor?: string;
 }) {
-  const [svgMarkup, setSvgMarkup] = useState("");
+  const [svgString, setSvgString] = useState<string>("");
+
   useEffect(() => {
-    let active = true;
+    let isMounted = true;
     QRCode.toString(value, {
       type: "svg",
       margin,
-      color: { dark: fgColor, light: bgColor },
+      color: {
+        dark: fgColor,
+        light: bgColor,
+      },
     })
       .then((svg) => {
-        if (active) setSvgMarkup(svg);
+        if (isMounted) setSvgString(svg);
       })
-      .catch(() => {});
+      .catch((err) => {
+        console.error("Error generando código QR:", err);
+      });
+
     return () => {
-      active = false;
+      isMounted = false;
     };
   }, [value, margin, fgColor, bgColor]);
 
   return (
     <div
       style={{ width: size, height: size }}
-      className={`bg-white rounded-lg flex items-center justify-center ${className}`}
-      dangerouslySetInnerHTML={{ __html: svgMarkup }}
+      className={`inline-flex items-center justify-center bg-white rounded-lg select-none overflow-hidden ${className}`}
+      dangerouslySetInnerHTML={{ __html: svgString }}
     />
   );
 }
 
-export function BlackMembershipCardView() {
+export function PublicMembershipCardPage() {
   const { token } = Route.useParams();
+
   const [loading, setLoading] = useState(true);
-  const [card, setCard] = useState<PublicMembershipCardResult | null>(null);
+  const [data, setData] = useState<PublicMembershipCardResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isFlipped, setIsFlipped] = useState(false);
-  const [isQrModalOpen, setIsQrModalOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const flipperRef = useRef<HTMLDivElement | null>(null);
+  // Referencias para manipulación 3D continua de alto rendimiento (Pointer Events)
+  const sceneRef = useRef<HTMLDivElement>(null);
+  const flipperRef = useRef<HTMLDivElement>(null);
   const isDraggingRef = useRef(false);
-  const dragStartXRef = useRef(0);
-  const dragStartYRef = useRef(0);
-  const dragStartAngleYRef = useRef(0);
-  const currentAngleYRef = useRef(0);
-  const hasDraggedFarRef = useRef(false);
-  const lastMoveTimeRef = useRef(0);
-  const lastMoveXRef = useRef(0);
+  const isHorizontalDragRef = useRef(false);
+  const startXRef = useRef(0);
+  const startYRef = useRef(0);
+  const startAngleRef = useRef(0);
+  const currentAngleRef = useRef(0);
+  const hasMovedRef = useRef(false);
+  const lastTimeRef = useRef(0);
+  const lastXRef = useRef(0);
   const velocityXRef = useRef(0);
-  const activePointerIdRef = useRef<number | null>(null);
-  const settleTimeoutRef = useRef<any>(null);
 
+  // Aislamiento absoluto de la credencial (oculta el cascarón global de la web)
   useEffect(() => {
     if (typeof document !== "undefined") {
       document.body.setAttribute("data-membership-page", "true");
-      return () => {
-        document.body.removeAttribute("data-membership-page");
-      };
     }
-  }, []);
-
-  useEffect(() => {
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && isQrModalOpen) {
-        setIsQrModalOpen(false);
+    return () => {
+      if (typeof document !== "undefined") {
+        document.body.removeAttribute("data-membership-page");
       }
     };
-    window.addEventListener("keydown", handleKey);
-    return () => window.removeEventListener("keydown", handleKey);
-  }, [isQrModalOpen]);
+  }, []);
+
+  // Cierre de modal con Escape
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isModalOpen) {
+        setIsModalOpen(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isModalOpen]);
 
   useEffect(() => {
     if (!token || token.trim().length < 16) {
@@ -131,35 +164,39 @@ export function BlackMembershipCardView() {
       setLoading(false);
       return;
     }
-    let active = true;
+
+    let isMounted = true;
     (async () => {
       try {
-        const res = await getPublicMembershipCard(token);
-        if (!active) return;
-        if (res.found) {
-          setCard(res);
+        const card = await getPublicMembershipCard(token);
+        if (!isMounted) return;
+        if (!card.found) {
+          setError(card.error || "NOT_FOUND_OR_REVOKED");
         } else {
-          setError(res.error || "NOT_FOUND_OR_REVOKED");
+          setData(card);
         }
       } catch {
-        if (!active) return;
+        if (!isMounted) return;
         setError("LOAD_FAILED");
       } finally {
-        if (active) setLoading(false);
+        if (isMounted) setLoading(false);
       }
     })();
+
     return () => {
-      active = false;
+      isMounted = false;
     };
   }, [token]);
 
-  const setCardStateMode = useCallback((mode: "3d" | "settled-front" | "settled-back") => {
-    if (!containerRef.current) return;
-    containerRef.current.classList.remove("is-3d-active", "is-settled-front", "is-settled-back");
+  const settleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const setScene3DState = useCallback((mode: "3d" | "settled-front" | "settled-back") => {
+    if (!sceneRef.current) return;
+    sceneRef.current.classList.remove("is-3d-active", "is-settled-front", "is-settled-back");
     if (mode === "3d") {
-      containerRef.current.classList.add("is-3d-active");
+      sceneRef.current.classList.add("is-3d-active");
     } else {
-      containerRef.current.classList.add(mode === "settled-front" ? "is-settled-front" : "is-settled-back");
+      sceneRef.current.classList.add(mode === "settled-front" ? "is-settled-front" : "is-settled-back");
       if (flipperRef.current) {
         flipperRef.current.style.transition = "none";
         flipperRef.current.style.transform = "";
@@ -167,195 +204,264 @@ export function BlackMembershipCardView() {
     }
   }, []);
 
-  const settleTo = useCallback(
-    (flipped: boolean, delay = 470) => {
-      if (settleTimeoutRef.current) clearTimeout(settleTimeoutRef.current);
-      settleTimeoutRef.current = setTimeout(() => {
+  const scheduleSettle = useCallback(
+    (targetFlipped: boolean, delayMs: number = 470) => {
+      if (settleTimerRef.current) clearTimeout(settleTimerRef.current);
+      settleTimerRef.current = setTimeout(() => {
         if (isDraggingRef.current) return;
-        const target = flipped ? 180 : 0;
-        currentAngleYRef.current = target;
+        const normalized = targetFlipped ? 180 : 0;
+        currentAngleRef.current = normalized;
         if (flipperRef.current) {
-          flipperRef.current.setAttribute("data-angle-y", String(target));
+          flipperRef.current.setAttribute("data-angle-y", String(normalized));
         }
-        setCardStateMode(flipped ? "settled-back" : "settled-front");
-      }, delay);
+        setScene3DState(targetFlipped ? "settled-back" : "settled-front");
+      }, delayMs);
     },
-    [setCardStateMode],
+    [setScene3DState],
   );
 
   useEffect(() => {
     return () => {
-      if (settleTimeoutRef.current) clearTimeout(settleTimeoutRef.current);
+      if (settleTimerRef.current) clearTimeout(settleTimerRef.current);
     };
   }, []);
 
-  const rotateCard = useCallback((angleY: number, angleX = 0, withTransition = true) => {
+  const applyTransform = useCallback((angleY: number, tiltX: number = 0, animated: boolean = true) => {
     if (!flipperRef.current) return;
-    if (withTransition) {
+    if (animated) {
       flipperRef.current.style.transition = "transform 0.45s cubic-bezier(0.2, 0.9, 0.3, 1)";
     } else {
       flipperRef.current.style.transition = "none";
     }
-    flipperRef.current.style.transform = `rotateY(${angleY}deg) rotateX(${angleX}deg)`;
+    flipperRef.current.style.transform = `rotateY(${angleY}deg) rotateX(${tiltX}deg)`;
     flipperRef.current.setAttribute("data-angle-y", String(Math.round(angleY)));
-    currentAngleYRef.current = angleY;
+    currentAngleRef.current = angleY;
   }, []);
 
   const toggleFlip = useCallback(() => {
-    if (settleTimeoutRef.current) clearTimeout(settleTimeoutRef.current);
-    const rounded = Math.round(currentAngleYRef.current / 180);
-    const nextFlipped = Math.abs(rounded) % 2 !== 1;
-    const target = nextFlipped ? rounded * 180 + 180 : rounded * 180 - 180;
-    setCardStateMode("3d");
+    if (settleTimerRef.current) clearTimeout(settleTimerRef.current);
+    const currentStep = Math.round(currentAngleRef.current / 180);
+    const currentlyFlipped = Math.abs(currentStep) % 2 === 1;
+    const nextFlipped = !currentlyFlipped;
+    const targetAngle = nextFlipped ? currentStep * 180 + 180 : currentStep * 180 - 180;
+
+    setScene3DState("3d");
     if (flipperRef.current) {
       flipperRef.current.style.transition = "none";
-      flipperRef.current.style.transform = `rotateY(${currentAngleYRef.current}deg) rotateX(0deg)`;
+      flipperRef.current.style.transform = `rotateY(${currentAngleRef.current}deg) rotateX(0deg)`;
       void flipperRef.current.offsetWidth;
     }
-    rotateCard(target, 0, true);
+
+    applyTransform(targetAngle, 0, true);
     setIsFlipped(nextFlipped);
-    settleTo(nextFlipped, 470);
-  }, [rotateCard, settleTo, setCardStateMode]);
+    scheduleSettle(nextFlipped, 470);
+  }, [applyTransform, scheduleSettle, setScene3DState]);
 
-  const handlePointerMove = useCallback((clientX: number, clientY: number) => {
-    if (!Number.isFinite(clientX) || !Number.isFinite(clientY)) return;
-    const dx = clientX - dragStartXRef.current;
-    const dy = clientY - dragStartYRef.current;
-    if (Math.hypot(dx, dy) > 4) {
-      hasDraggedFarRef.current = true;
-    }
-    const now = performance.now();
-    const dt = now - lastMoveTimeRef.current;
-    if (dt > 0) {
-      velocityXRef.current = (clientX - lastMoveXRef.current) / dt;
-      lastMoveTimeRef.current = now;
-      lastMoveXRef.current = clientX;
-    }
-    const width = containerRef.current?.getBoundingClientRect().width || 320;
-    const sensitivity = 180 / Math.max(180, width * 0.62);
-    const angleY = dragStartAngleYRef.current + dx * sensitivity;
-    const angleX = Math.max(-10, Math.min(10, -dy * 0.1));
-    if (flipperRef.current) {
-      flipperRef.current.style.transition = "none";
-      flipperRef.current.style.transform = `rotateY(${angleY}deg) rotateX(${angleX}deg)`;
-      flipperRef.current.setAttribute("data-angle-y", String(Math.round(angleY)));
-    }
-    currentAngleYRef.current = angleY;
-  }, []);
+  const activePointerIdRef = useRef<number | null>(null);
 
-  const handlePointerUp = useCallback(
-    (pointerId?: number) => {
+  const updateDragFromClientPos = useCallback(
+    (clientX: number, clientY: number) => {
+      if (!Number.isFinite(clientX) || !Number.isFinite(clientY)) return;
+      const deltaX = clientX - startXRef.current;
+      const deltaY = clientY - startYRef.current;
+
+      if (Math.hypot(deltaX, deltaY) > 4) {
+        hasMovedRef.current = true;
+      }
+
+      if (!isHorizontalDragRef.current) {
+        if (Math.abs(deltaX) > 6 && Math.abs(deltaX) >= Math.abs(deltaY) * 0.75) {
+          isHorizontalDragRef.current = true;
+          setScene3DState("3d");
+        } else if (Math.abs(deltaY) > 10 && Math.abs(deltaY) > Math.abs(deltaX) * 1.4) {
+          // Respeta el scroll vertical natural en dispositivos táctiles sin girar la tarjeta
+          return;
+        }
+      }
+
+      const now = performance.now();
+      const dt = now - lastTimeRef.current;
+      if (dt > 0) {
+        velocityXRef.current = (clientX - lastXRef.current) / dt;
+        lastTimeRef.current = now;
+        lastXRef.current = clientX;
+      }
+
+      const sceneWidth = sceneRef.current?.getBoundingClientRect().width || 320;
+      const degPerPx = 180 / Math.max(180, sceneWidth * 0.62);
+      const newAngle = startAngleRef.current + deltaX * degPerPx;
+      const tiltX = Math.max(-10, Math.min(10, -deltaY * 0.1));
+
+      if (isHorizontalDragRef.current || Math.abs(deltaX) > 4) {
+        setScene3DState("3d");
+        if (flipperRef.current) {
+          flipperRef.current.style.transition = "none";
+          flipperRef.current.style.transform = `rotateY(${newAngle}deg) rotateX(${tiltX}deg)`;
+          flipperRef.current.setAttribute("data-angle-y", String(Math.round(newAngle)));
+        }
+        currentAngleRef.current = newAngle;
+      }
+    },
+    [setScene3DState],
+  );
+
+  const finishDragGesture = useCallback(
+    (pointerId?: number, cancelled: boolean = false) => {
       if (!isDraggingRef.current) return;
       isDraggingRef.current = false;
+      const wasHorizontal = isHorizontalDragRef.current;
+      isHorizontalDragRef.current = false;
       activePointerIdRef.current = null;
-      if (pointerId !== undefined && containerRef.current) {
+
+      if (pointerId !== undefined && sceneRef.current) {
         try {
-          containerRef.current.releasePointerCapture(pointerId);
-        } catch {}
+          sceneRef.current.releasePointerCapture(pointerId);
+        } catch {
+          // Ignorar si no estaba capturado
+        }
       }
-      if (!hasDraggedFarRef.current) {
+
+      if (cancelled) {
+        const settleAngle = Math.round(startAngleRef.current / 180) * 180;
+        const flippedAfterCancel = Math.abs(Math.round(settleAngle / 180)) % 2 === 1;
+        applyTransform(settleAngle, 0, true);
+        setIsFlipped(flippedAfterCancel);
+        scheduleSettle(flippedAfterCancel, 220);
+        return;
+      }
+
+      if (!hasMovedRef.current) {
         toggleFlip();
         return;
       }
-      const startAngle = dragStartAngleYRef.current;
-      const current = currentAngleYRef.current;
-      const vel = velocityXRef.current;
-      const delta = current - startAngle;
-      let target: number;
-      if (Math.abs(vel) > 0.35) {
-        const dir = vel > 0 ? 1 : -1;
-        target = Math.round(startAngle / 180) * 180 + dir * 180;
-      } else if (Math.abs(delta) >= 60) {
-        const dir = delta > 0 ? 1 : -1;
-        const snap = Math.round(startAngle / 180) * 180;
-        target = Math.abs(delta) > 270 ? Math.round(current / 180) * 180 : snap + dir * 180;
-      } else {
-        target = Math.round(startAngle / 180) * 180;
+
+      if (!wasHorizontal) {
+        const settleAngle = Math.round(startAngleRef.current / 180) * 180;
+        const keepFlipped = Math.abs(Math.round(settleAngle / 180)) % 2 === 1;
+        applyTransform(settleAngle, 0, true);
+        setIsFlipped(keepFlipped);
+        scheduleSettle(keepFlipped, 220);
+        return;
       }
-      rotateCard(target, 0, true);
-      const flipped = Math.abs(Math.round(target / 180)) % 2 === 1;
-      setIsFlipped(flipped);
-      settleTo(flipped, 470);
+
+      const startAngle = startAngleRef.current;
+      const current = currentAngleRef.current;
+      const velocity = velocityXRef.current;
+      const deltaAngle = current - startAngle;
+
+      let targetAngle: number;
+      if (Math.abs(velocity) > 0.35) {
+        const stepDir = velocity > 0 ? 1 : -1;
+        const baseStep = Math.round(startAngle / 180) * 180;
+        targetAngle = baseStep + stepDir * 180;
+      } else if (Math.abs(deltaAngle) >= 60) {
+        const stepDir = deltaAngle > 0 ? 1 : -1;
+        const baseStep = Math.round(startAngle / 180) * 180;
+        targetAngle = Math.abs(deltaAngle) > 270 ? Math.round(current / 180) * 180 : baseStep + stepDir * 180;
+      } else {
+        targetAngle = Math.round(startAngle / 180) * 180;
+      }
+
+      applyTransform(targetAngle, 0, true);
+      const flippedAfter = Math.abs(Math.round(targetAngle / 180)) % 2 === 1;
+      setIsFlipped(flippedAfter);
+      scheduleSettle(flippedAfter, 470);
     },
-    [rotateCard, settleTo, toggleFlip],
+    [applyTransform, scheduleSettle, toggleFlip],
   );
 
   useEffect(() => {
-    const onMove = (e: PointerEvent) => {
-      if (isDraggingRef.current) {
-        if (activePointerIdRef.current !== null && e.pointerId !== activePointerIdRef.current) return;
-        handlePointerMove(e.clientX, e.clientY);
-      }
+    const onWinPointerMove = (ev: PointerEvent) => {
+      if (!isDraggingRef.current) return;
+      if (activePointerIdRef.current !== null && ev.pointerId !== activePointerIdRef.current) return;
+      updateDragFromClientPos(ev.clientX, ev.clientY);
     };
-    const onUp = (e: PointerEvent) => {
-      if (isDraggingRef.current) {
-        if (activePointerIdRef.current !== null && e.pointerId !== activePointerIdRef.current) return;
-        handlePointerUp(e.pointerId);
-      }
+
+    const onWinPointerUp = (ev: PointerEvent) => {
+      if (!isDraggingRef.current) return;
+      if (activePointerIdRef.current !== null && ev.pointerId !== activePointerIdRef.current) return;
+      finishDragGesture(ev.pointerId, false);
     };
-    window.addEventListener("pointermove", onMove);
-    window.addEventListener("pointerup", onUp);
-    window.addEventListener("pointercancel", onUp);
+
+    const onWinPointerCancel = (ev: PointerEvent) => {
+      if (!isDraggingRef.current) return;
+      if (activePointerIdRef.current !== null && ev.pointerId !== activePointerIdRef.current) return;
+      finishDragGesture(ev.pointerId, true);
+    };
+
+    window.addEventListener("pointermove", onWinPointerMove);
+    window.addEventListener("pointerup", onWinPointerUp);
+    window.addEventListener("pointercancel", onWinPointerCancel);
+
     return () => {
-      window.removeEventListener("pointermove", onMove);
-      window.removeEventListener("pointerup", onUp);
-      window.removeEventListener("pointercancel", onUp);
+      window.removeEventListener("pointermove", onWinPointerMove);
+      window.removeEventListener("pointerup", onWinPointerUp);
+      window.removeEventListener("pointercancel", onWinPointerCancel);
     };
-  }, [handlePointerMove, handlePointerUp]);
+  }, [updateDragFromClientPos, finishDragGesture]);
 
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (isQrModalOpen || (e.target as HTMLElement).closest("button, a")) return;
-    if (settleTimeoutRef.current) clearTimeout(settleTimeoutRef.current);
-    setCardStateMode("3d");
-    const settledAngle = Math.abs(Math.round(currentAngleYRef.current / 180)) % 2 === 1 ? 180 : 0;
-    if (currentAngleYRef.current !== settledAngle && flipperRef.current) {
+    if (isModalOpen) return;
+    if ((e.target as HTMLElement).closest("button, a")) return;
+
+    if (settleTimerRef.current) clearTimeout(settleTimerRef.current);
+
+    const idleAngle = Math.abs(Math.round(currentAngleRef.current / 180)) % 2 === 1 ? 180 : 0;
+    if (currentAngleRef.current !== idleAngle && flipperRef.current) {
       flipperRef.current.style.transition = "none";
-      flipperRef.current.style.transform = `rotateY(${settledAngle}deg) rotateX(0deg)`;
-      currentAngleYRef.current = settledAngle;
-    } else if (flipperRef.current && !flipperRef.current.style.transform) {
-      flipperRef.current.style.transition = "none";
-      flipperRef.current.style.transform = `rotateY(${settledAngle}deg) rotateX(0deg)`;
+      flipperRef.current.style.transform = `rotateY(${idleAngle}deg) rotateX(0deg)`;
+      currentAngleRef.current = idleAngle;
     }
+
     isDraggingRef.current = true;
+    isHorizontalDragRef.current = false;
     activePointerIdRef.current = typeof e.pointerId === "number" ? e.pointerId : null;
-    hasDraggedFarRef.current = false;
-    dragStartXRef.current = Number.isFinite(e.clientX) ? e.clientX : 0;
-    dragStartYRef.current = Number.isFinite(e.clientY) ? e.clientY : 0;
-    lastMoveXRef.current = dragStartXRef.current;
-    lastMoveTimeRef.current = performance.now();
+    hasMovedRef.current = false;
+    startXRef.current = Number.isFinite(e.clientX) ? e.clientX : 0;
+    startYRef.current = Number.isFinite(e.clientY) ? e.clientY : 0;
+    lastXRef.current = startXRef.current;
+    lastTimeRef.current = performance.now();
     velocityXRef.current = 0;
-    dragStartAngleYRef.current = currentAngleYRef.current;
-    if (flipperRef.current) {
-      flipperRef.current.style.transition = "none";
+    startAngleRef.current = currentAngleRef.current;
+
+    // Capturamos puntero en mouse; en touch dejamos fluir pan-y hasta detectar arrastre horizontal
+    if (e.pointerType !== "touch") {
+      try {
+        (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+      } catch {
+        // Ignorar si no soporta pointer capture
+      }
     }
-    try {
-      e.currentTarget.setPointerCapture(e.pointerId);
-    } catch {}
   };
 
-  const handleMouseMoveHover = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (isQrModalOpen || isDraggingRef.current) return;
-    if (e.pointerType === "mouse" && containerRef.current && flipperRef.current) {
-      if (settleTimeoutRef.current) clearTimeout(settleTimeoutRef.current);
-      setCardStateMode("3d");
-      const rect = containerRef.current.getBoundingClientRect();
-      const normX = (e.clientX - rect.left) / rect.width - 0.5;
-      const normY = (e.clientY - rect.top) / rect.height - 0.5;
-      const angleY = currentAngleYRef.current + normX * 8;
-      const angleX = -normY * 6;
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (isModalOpen || isDraggingRef.current) return;
+
+    if (e.pointerType === "mouse" && sceneRef.current && flipperRef.current) {
+      if (settleTimerRef.current) clearTimeout(settleTimerRef.current);
+      setScene3DState("3d");
+      const rect = sceneRef.current.getBoundingClientRect();
+      const relX = (e.clientX - rect.left) / rect.width - 0.5;
+      const relY = (e.clientY - rect.top) / rect.height - 0.5;
+      const baseAngle = currentAngleRef.current;
+      const tiltY = baseAngle + relX * 8;
+      const tiltX = -relY * 6;
       flipperRef.current.style.transition = "transform 0.15s ease-out";
-      flipperRef.current.style.transform = `rotateY(${angleY}deg) rotateX(${angleX}deg)`;
+      flipperRef.current.style.transform = `rotateY(${tiltY}deg) rotateX(${tiltX}deg)`;
     }
   };
 
-  const handleMouseLeaveHover = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!isDraggingRef.current && e.pointerType === "mouse" && flipperRef.current) {
-      const flipped = Math.abs(Math.round(currentAngleYRef.current / 180)) % 2 === 1;
-      rotateCard(flipped ? 180 : 0, 0, true);
-      settleTo(flipped, 240);
+  const handlePointerLeave = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (isDraggingRef.current) return;
+
+    if (e.pointerType === "mouse" && flipperRef.current) {
+      const targetFlipped = Math.abs(Math.round(currentAngleRef.current / 180)) % 2 === 1;
+      applyTransform(targetFlipped ? 180 : 0, 0, true);
+      scheduleSettle(targetFlipped, 240);
     }
   };
 
+  // Estado de Carga
   if (loading) {
     return (
       <main className="kani-membership-pass min-h-[100dvh] w-full flex flex-col justify-center items-center py-6 px-4 bg-[#050505] text-[#EDECEC]">
@@ -369,7 +475,8 @@ export function BlackMembershipCardView() {
     );
   }
 
-  if (error || !card) {
+  // Estado de Error
+  if (error || !data) {
     return (
       <main className="kani-membership-pass min-h-[100dvh] w-full flex flex-col justify-between items-center py-6 px-4 bg-[#050505] text-[#EDECEC]">
         <div className="w-full max-w-[380px] my-auto bg-gradient-to-b from-[#14110E] to-[#0A0908] border border-[#282117] rounded-2xl p-6 shadow-2xl text-center space-y-4">
@@ -385,6 +492,7 @@ export function BlackMembershipCardView() {
             </p>
           </div>
         </div>
+
         <footer className="text-center text-[11px] text-[#443E35] tracking-widest py-4 font-mono">
           <p>© 2026 KANI Barber Studio</p>
         </footer>
@@ -392,14 +500,25 @@ export function BlackMembershipCardView() {
     );
   }
 
-  const totalSessions = card.total_sessions || card.package_size || 4;
-  const consumedSessions = card.consumed_sessions || 0;
-  const remainingSessions = card.remaining_sessions ?? Math.max(0, totalSessions - consumedSessions);
-  const isCompleted = remainingSessions <= 0 || card.status === "EXHAUSTED";
-  const planLabel = totalSessions === 10 || card.plan_name?.includes("10") ? "10 SESIONES" : `${totalSessions} SESIONES`;
-  const expiresLabel = card.expires_at ? formatDateShort(card.expires_at) : "SIN VENCIMIENTO";
-  const consumptionsList = card.consumptions || [];
-  const effectiveStatus = isCompleted ? "COMPLETED" : (card.status || "ACTIVE");
+  const totalSessions = data.total_sessions || data.package_size || 4;
+  const consumedSessions = data.consumed_sessions || 0;
+  const remainingSessions = data.remaining_sessions ?? Math.max(0, totalSessions - consumedSessions);
+  const isExhausted = remainingSessions <= 0 || data.status === "EXHAUSTED";
+
+  const compactPlan =
+    totalSessions === 10 || data.plan_name?.includes("10")
+      ? "10 SESIONES"
+      : `${totalSessions} SESIONES`;
+
+  const expiresLabel = data.expires_at ? formatPassportDate(data.expires_at) : "SIN VENCIMIENTO";
+
+  const allConsumptions = data.consumptions || [];
+  const validConsumptions = allConsumptions.filter((c) => c.status === "CONSUMED");
+
+  let statusKey = data.status || "ACTIVE";
+  if (isExhausted) {
+    statusKey = "COMPLETED";
+  }
 
   const statusConfig: Record<string, { label: string; bg: string; text: string; border: string }> = {
     ACTIVE: {
@@ -434,12 +553,14 @@ export function BlackMembershipCardView() {
     },
   };
 
-  const statusBadge = statusConfig[effectiveStatus] || statusConfig.ACTIVE;
+  const currentStatus = statusConfig[statusKey] || statusConfig.ACTIVE;
+
   const verificationUrl =
     typeof window !== "undefined" && window.location.origin
       ? `${window.location.origin}/verificar-membresia/${token}`
       : `https://www.kanibarber.com/verificar-membresia/${token}`;
-  const serialToken = token.slice(0, 8).toUpperCase();
+
+  const shortSerial = token.slice(0, 8).toUpperCase();
 
   return (
     <main
@@ -458,24 +579,42 @@ export function BlackMembershipCardView() {
         backgroundAttachment: "fixed",
       }}
     >
+      {/* Acción superior izquierda fuera de la credencial */}
       <div className="w-full flex items-center justify-start pb-3 sm:pb-3.5 shrink-0">
         <a
           href="https://www.kanibarber.com/reservar-turno"
-          className="inline-flex items-center gap-2 sm:gap-2.5 min-h-[42px] sm:min-h-[44px] md:min-h-[46px] px-4 py-2.5 sm:px-5 md:px-6 md:py-3 rounded-full bg-[#08080A]/95 hover:bg-[#141418] border border-[#D4B475]/60 hover:border-[#F0D9A3] text-[#F0D9A3] hover:text-white transition-all text-[11.5px] sm:text-xs md:text-[13px] font-mono font-semibold tracking-[0.16em] uppercase shadow-[0_8px_24px_rgba(0,0,0,0.65),0_0_14px_rgba(212,180,117,0.10)] backdrop-blur-sm whitespace-nowrap cursor-pointer"
+          className="inline-flex items-center gap-2 sm:gap-2.5 min-h-[42px] sm:min-h-[44px] md:min-h-[46px] px-4 py-2.5 sm:px-5 md:px-6 md:py-3 rounded-full bg-[#08080A]/95 hover:bg-[#141418] border border-[#D4B475]/60 hover:border-[#F0D9A3] text-[#F0D9A3] hover:text-white transition-all text-[11.5px] sm:text-xs md:text-[13px] font-mono font-semibold tracking-[0.16em] uppercase shadow-[0_8px_24px_rgba(0,0,0,0.65),0_0_14px_rgba(212,180,117,0.10)] backdrop-blur-sm whitespace-nowrap"
         >
-          <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#D4B475] shrink-0" />
+          <Calendar className="w-4 h-4 md:w-[18px] md:h-[18px] text-[#D4B475] shrink-0" />
           <span>RESERVAR TURNO</span>
         </a>
       </div>
 
-      <div className="w-full flex-1 flex flex-col items-center justify-center py-2 sm:py-3 md:py-4">
+      <div className="w-full max-w-[420px] sm:max-w-[560px] md:max-w-[680px] lg:max-w-[760px] xl:max-w-[800px] 2xl:max-w-[840px] mx-auto my-auto space-y-4 md:space-y-5 flex flex-col items-center">
+        {/* Micro-píldora sutil para alternar cara */}
+        <button
+          onClick={toggleFlip}
+          type="button"
+          aria-label={isFlipped ? "Ver frente de la credencial" : "Ver reverso de la credencial"}
+          className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-[#09090B]/95 hover:bg-[#141417] border border-[#C8A96B]/30 text-[#9B8A68] hover:text-[#F0D9A3] transition-colors text-[9.5px] md:text-[10.5px] font-mono tracking-[0.22em] uppercase cursor-pointer shadow-lg backdrop-blur-sm"
+        >
+          <RotateCw
+            className="w-3 h-3 md:w-3.5 md:h-3.5 text-[#D4B475] transition-transform duration-500"
+            style={{ transform: isFlipped ? "rotate(180deg)" : "none" }}
+          />
+          <span>{isFlipped ? "FRENTE" : "REVERSO"}</span>
+        </button>
+
+        {/* ===================================================================
+            ESCENARIO FOTOGRÁFICO Y CREDENCIAL 3D CON INTERACCIÓN CONTINUA
+            =================================================================== */}
         <div
-          ref={containerRef}
-          data-testid="kani-card-scene"
-          className="kani-card-3d-scene is-settled-front w-full max-w-[342px] sm:max-w-[430px] md:max-w-[530px] lg:max-w-[580px] xl:max-w-[610px] 2xl:max-w-[640px] mx-auto cursor-grab active:cursor-grabbing select-none focus:outline-none"
+          ref={sceneRef}
+          data-testid="kani-card-3d-scene"
+          className="kani-card-3d-scene is-settled-front relative cursor-grab active:cursor-grabbing select-none focus:outline-none"
           onPointerDown={handlePointerDown}
-          onPointerMove={handleMouseMoveHover}
-          onPointerLeave={handleMouseLeaveHover}
+          onPointerMove={handlePointerMove}
+          onPointerLeave={handlePointerLeave}
           onKeyDown={(e) => {
             if (e.key === "Enter" || e.key === " " || e.key === "ArrowLeft" || e.key === "ArrowRight") {
               e.preventDefault();
@@ -486,6 +625,7 @@ export function BlackMembershipCardView() {
           role="region"
           aria-label="Credencial interactiva 3D KANI"
         >
+          {/* Sombra de contacto proyectada en el plano inferior */}
           <div
             className="absolute -bottom-4 inset-x-8 h-7 rounded-[100%] bg-black/90 blur-md pointer-events-none transition-opacity duration-300"
             style={{ opacity: 0.9 }}
@@ -497,7 +637,9 @@ export function BlackMembershipCardView() {
             data-angle-y={isFlipped ? "180" : "0"}
             className="kani-card-3d-flipper"
           >
-            {/* FRONT FACE */}
+            {/* ===============================================================
+                CARA A: FRENTE (NEGRO OBSIDIANA MATE, WORDMARK Y GRABADO KANJI)
+                =============================================================== */}
             <div
               className="kani-card-3d-face relative overflow-hidden rounded-[22px] sm:rounded-[26px] md:rounded-[30px] lg:rounded-[32px] bg-[linear-gradient(145deg,#121214_0%,#09090B_52%,#040405_100%)] border border-[#C8A96B]/40 p-5 sm:p-7 md:p-9 lg:p-10 xl:p-11 min-h-[268px] sm:min-h-[368px] md:min-h-[444px] lg:min-h-[496px] xl:min-h-[520px] 2xl:min-h-[546px] flex flex-col justify-between"
               style={{
@@ -506,47 +648,45 @@ export function BlackMembershipCardView() {
               }}
             >
               <div className="absolute top-0 inset-x-0 h-[1.5px] bg-gradient-to-r from-transparent via-[#D4B475]/75 to-transparent" />
-              <div className="absolute top-0 right-0 w-44 h-44 bg-[radial-gradient(circle,rgba(212,180,117,0.08)_0%,transparent_70%)] pointer-events-none" />
 
-              <div className="absolute right-5 bottom-8 sm:right-7 sm:bottom-11 md:right-10 md:bottom-14 lg:right-12 lg:bottom-16 w-24 h-24 sm:w-32 sm:h-32 md:w-40 md:h-40 lg:w-44 lg:h-44 xl:w-48 xl:h-48 opacity-[0.14] pointer-events-none select-none overflow-hidden">
+              {/* Sello kanji bordó decorativo de fondo */}
+              <div className="absolute right-4 bottom-10 sm:right-7 sm:bottom-12 md:right-10 md:bottom-14 lg:right-12 lg:bottom-16 w-24 h-24 sm:w-32 sm:h-32 md:w-40 md:h-40 lg:w-44 lg:h-44 xl:w-48 xl:h-48 opacity-[0.14] pointer-events-none select-none overflow-hidden">
                 <img
-                  src={kanjiStamp}
+                  src={kaniKanjiStamp}
                   alt=""
                   className="w-full h-full object-contain"
                   style={{ filter: "brightness(1.18) contrast(1.06)" }}
                 />
               </div>
 
-              {/* Card Header */}
+              {/* Fila Superior Frente: Logo KANI dorado + VIP CLIENT + Estado */}
               <div className="flex items-center justify-between gap-3 border-b border-white/[0.08] pb-3 md:pb-4 lg:pb-5 relative z-10">
-                <div className="flex items-center gap-2.5 sm:gap-3">
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-[#231F18] to-[#0A0907] border border-[#C8A96B]/50 flex items-center justify-center p-1.5 shadow-inner shrink-0">
-                    <img src={kanjiStamp} alt="KANI" className="w-full h-full object-contain" />
-                  </div>
-                  <div>
-                    <span className="font-serif font-bold text-xs sm:text-sm md:text-base lg:text-[17px] tracking-[0.2em] text-[#EDE8DF] block">
-                      KANI
-                    </span>
-                    <span className="text-[7.5px] sm:text-[9px] md:text-[10px] lg:text-[11px] font-mono tracking-[0.3em] text-[#C8A96B] uppercase block">
-                      PRIVATE MEMBERSHIP
-                    </span>
-                  </div>
+                <div className="flex items-center gap-2.5 sm:gap-3.5 md:gap-4">
+                  <img
+                    src={kaniLogoDark}
+                    alt="KANI Barber Studio"
+                    className="h-9 sm:h-12 md:h-14 lg:h-[60px] xl:h-[64px] w-auto object-contain select-none shrink-0"
+                  />
+                  <span className="h-5 md:h-7 w-[1px] bg-[#C8A96B]/25 shrink-0" aria-hidden="true" />
+                  <span className="text-[9px] sm:text-xs md:text-[13px] lg:text-sm tracking-[0.18em] sm:tracking-[0.26em] text-[#D4B475] uppercase font-mono font-semibold whitespace-nowrap">
+                    VIP CLIENT
+                  </span>
                 </div>
 
                 <div
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full text-[9px] sm:text-[10.5px] md:text-xs lg:text-[12.5px] font-semibold tracking-[0.15em] border font-mono shrink-0"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-0.5 md:px-3.5 md:py-1 rounded-full text-[9.5px] sm:text-[11px] md:text-xs lg:text-[12.5px] font-semibold tracking-[0.15em] border font-mono shrink-0"
                   style={{
-                    backgroundColor: statusBadge.bg,
-                    color: statusBadge.text,
-                    borderColor: statusBadge.border,
+                    backgroundColor: currentStatus.bg,
+                    color: currentStatus.text,
+                    borderColor: currentStatus.border,
                   }}
                 >
                   <span className="w-1.5 h-1.5 rounded-full bg-current opacity-85" />
-                  {statusBadge.label}
+                  {currentStatus.label}
                 </div>
               </div>
 
-              {/* Card Body */}
+              {/* Zona Central Frente: TITULAR + Nombre en Zen Antique */}
               <div className="my-auto py-3.5 md:py-6 relative z-10">
                 <span className="text-[9.5px] sm:text-[10.5px] md:text-xs tracking-[0.25em] text-[#8E8B84] uppercase font-mono block mb-1.5">
                   TITULAR
@@ -555,35 +695,32 @@ export function BlackMembershipCardView() {
                   className="text-[23px] sm:text-[32px] md:text-[39px] lg:text-[45px] xl:text-[49px] font-serif font-bold text-white tracking-tight leading-tight break-words"
                   style={{ fontFamily: "'Zen Antique', Georgia, serif" }}
                 >
-                  {card.client_name}
+                  {data.client_name}
                 </h1>
               </div>
 
-              {/* Card Footer */}
+              {/* Fila Inferior Frente: BARBERO & Cantidad de sesiones */}
               <div className="flex items-end justify-between pt-3 md:pt-4 lg:pt-5 border-t border-white/[0.08] relative z-10">
                 <div className="space-y-0.5 md:space-y-1 font-mono">
                   <span className="text-[9.5px] sm:text-[10.5px] md:text-xs tracking-[0.22em] text-[#8E8B84] uppercase block">
                     BARBERO
                   </span>
-                  <span className="text-[13.5px] sm:text-[15px] md:text-lg lg:text-[19px] text-[#F2F0EC] font-medium tracking-wide block">
-                    {card.barber_name}
+                  <span className="text-[13.5px] sm:text-[15px] md:text-lg lg:text-[19px] text-[#F2F0EC] font-medium tracking-wide">
+                    {data.barber_name}
                   </span>
                 </div>
 
-                <div className="text-right space-y-0.5 md:space-y-1 font-mono">
-                  <span className="text-[9.5px] sm:text-[10.5px] md:text-xs tracking-[0.22em] text-[#8E8B84] uppercase block">
-                    VENCE
-                  </span>
-                  <span className="text-[13px] sm:text-[14.5px] md:text-[17px] lg:text-[18px] text-[#D4B475] font-semibold tracking-wider block">
-                    {expiresLabel}
-                  </span>
-                </div>
+                <span className="text-[10.5px] sm:text-xs md:text-[13px] lg:text-sm font-mono font-semibold tracking-[0.2em] text-[#D4B475] uppercase">
+                  {compactPlan}
+                </span>
               </div>
             </div>
 
-            {/* BACK FACE */}
+            {/* ===============================================================
+                CARA B: REVERSO (NEGRO OBSIDIANA MATE, PRIVATE PASS, SELLOS KANJI)
+                =============================================================== */}
             <div
-              className="kani-card-3d-face kani-card-3d-back relative overflow-hidden rounded-[22px] sm:rounded-[26px] md:rounded-[30px] lg:rounded-[32px] bg-[linear-gradient(145deg,#121214_0%,#09090B_52%,#040405_100%)] border border-[#C8A96B]/40 p-4 sm:p-6 md:p-8 lg:p-9 xl:p-10 min-h-[268px] sm:min-h-[368px] md:min-h-[444px] lg:min-h-[496px] xl:min-h-[520px] 2xl:min-h-[546px] flex flex-col justify-between"
+              className="kani-card-3d-face kani-card-3d-back relative overflow-hidden rounded-[22px] sm:rounded-[26px] md:rounded-[30px] lg:rounded-[32px] bg-[linear-gradient(145deg,#121214_0%,#09090B_52%,#040405_100%)] border border-[#C8A96B]/40 p-4 sm:p-7 md:p-9 lg:p-10 xl:p-11 min-h-[268px] sm:min-h-[368px] md:min-h-[444px] lg:min-h-[496px] xl:min-h-[520px] 2xl:min-h-[546px] flex flex-col justify-between"
               style={{
                 boxShadow:
                   "0 0 0 1px rgba(212, 180, 117, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 38px 75px -12px rgba(0, 0, 0, 0.96)",
@@ -591,80 +728,99 @@ export function BlackMembershipCardView() {
             >
               <div className="absolute top-0 inset-x-0 h-[1.5px] bg-gradient-to-r from-transparent via-[#D4B475]/75 to-transparent" />
 
+              {/* 1. Encabezado Reverso: PRIVATE PASS + Sesiones y vencimiento */}
               <div className="flex items-center justify-between gap-2 border-b border-white/[0.08] pb-2.5 md:pb-3.5 lg:pb-4">
-                <span className="text-[9.5px] sm:text-xs md:text-[13px] lg:text-sm tracking-[0.20em] sm:tracking-[0.26em] text-[#D4B475] uppercase font-mono font-semibold">
-                  BENEFICIOS DISPONIBLES
+                <span className="text-[9.5px] sm:text-xs md:text-[13px] lg:text-sm tracking-[0.20em] sm:tracking-[0.26em] text-[#D4B475] uppercase font-mono font-semibold whitespace-nowrap">
+                  PRIVATE PASS
                 </span>
-                <span className="text-[9px] sm:text-xs md:text-[12.5px] lg:text-[13px] font-mono tracking-widest text-[#B5AEA0]">
-                  {planLabel}
-                </span>
+
+                <div className="font-mono text-[8.5px] sm:text-[11px] md:text-xs lg:text-[13px] tracking-wider text-[#9A968E] whitespace-nowrap">
+                  <strong className="text-[#F0D9A3] font-semibold">{compactPlan}</strong>
+                  <span className="text-[#3C3B38] mx-1 sm:mx-1.5">•</span>
+                  <span className="text-[#C7C2B8] font-medium">{expiresLabel}</span>
+                </div>
               </div>
 
-              {/* Sessions Grid */}
-              <div className="my-auto py-2.5 sm:py-3.5 md:py-4 space-y-2 sm:space-y-3 md:space-y-3.5">
-                <div className="flex items-center justify-between text-[11px] sm:text-xs md:text-sm lg:text-[14.5px] font-mono px-0.5">
-                  <span className="text-[#A39E93]">Sesiones realizadas</span>
-                  <span className="font-semibold text-white">
-                    {consumedSessions} de {totalSessions}
-                  </span>
-                </div>
-
+              {/* 2. Zona de Sellos Kanji (círculos horizontales 4 ó cuadrícula 5x2 para 10) */}
+              <div className="py-2 sm:py-3 md:py-4">
                 <div
-                  className={`grid gap-1.5 sm:gap-2 md:gap-2.5 ${
+                  className={`grid ${
                     totalSessions === 10
-                      ? "grid-cols-5"
-                      : "grid-cols-4"
+                      ? "grid-cols-5 gap-1.5 sm:gap-3 md:gap-4 lg:gap-5"
+                      : "grid-cols-4 gap-2 sm:gap-4 md:gap-5 lg:gap-7"
                   }`}
                 >
-                  {Array.from({ length: totalSessions }).map((_, idx) => {
-                    const isConsumed = idx < consumedSessions;
+                  {Array.from({ length: totalSessions }).map((_, index) => {
+                    const isConsumed = index < consumedSessions;
+                    const consumptionInfo = isConsumed ? validConsumptions[index] : null;
+
+                    if (isConsumed) {
+                      return (
+                        <div
+                          key={`kanji-stamp-${index}`}
+                          className="aspect-square rounded-full relative overflow-hidden border border-[#9A7F4D]/65 shadow-[inset_0_0_10px_rgba(0,0,0,0.85)]"
+                          style={{
+                            background: "radial-gradient(circle, #0D0D0F 0%, #060607 100%)",
+                          }}
+                        >
+                          <img
+                            src={kaniKanjiStamp}
+                            alt="Sello Kanji KANI"
+                            className={`absolute left-1/2 top-[43.5%] ${
+                              totalSessions === 10 ? "w-[33%] h-[33%]" : "w-[35%] h-[35%]"
+                            } object-contain select-none`}
+                            style={{
+                              transform: "translate(-50%, -50%)",
+                              filter: "brightness(1.22) contrast(1.1)",
+                            }}
+                          />
+                          <span
+                            className={`absolute inset-x-0 bottom-[16%] sm:bottom-[15%] md:bottom-[14.5%] text-center ${
+                              totalSessions === 10
+                                ? "text-[7px] sm:text-[9px] md:text-[10px] lg:text-[10.5px] tracking-[0.02em] sm:tracking-[0.05em]"
+                                : "text-[8.5px] sm:text-[10.5px] md:text-[12px] lg:text-[12.5px] xl:text-[13px] tracking-[0.03em] sm:tracking-[0.07em]"
+                            } font-mono text-[#EBD7AC] font-semibold leading-none uppercase whitespace-nowrap`}
+                          >
+                            {consumptionInfo?.consumed_at
+                              ? formatPassportDate(consumptionInfo.consumed_at)
+                              : "SELLADA"}
+                          </span>
+                        </div>
+                      );
+                    }
+
                     return (
                       <div
-                        key={idx}
-                        className={`relative rounded-lg sm:rounded-xl md:rounded-2xl border p-2 sm:p-2.5 md:p-3 text-center transition-all ${
-                          isConsumed
-                            ? "bg-[#181410] border-[#382F24] text-[#7A7062]"
-                            : "bg-[#090807] border-[#C8A96B]/50 text-[#F0D9A3] shadow-[0_0_12px_rgba(200,169,107,0.12)]"
-                        }`}
+                        key={`kanji-stamp-${index}`}
+                        className="aspect-square rounded-full flex flex-col items-center justify-center text-center relative overflow-hidden bg-[#09090B] border border-[#232220] shadow-inner"
                       >
-                        <span className="block text-[8px] sm:text-[9px] md:text-[10px] font-mono uppercase tracking-wider mb-0.5">
-                          #{idx + 1}
-                        </span>
-                        <span
-                          className={`block text-[10px] sm:text-xs md:text-sm font-semibold ${
-                            isConsumed ? "line-through text-[#635B4E]" : "text-white"
-                          }`}
-                        >
-                          {isConsumed ? "Usada" : "Libre"}
+                        <img
+                          src={kaniKanjiStamp}
+                          alt=""
+                          className="absolute inset-0 m-auto w-[36%] h-[36%] object-contain opacity-[0.06] pointer-events-none"
+                        />
+                        <span className="text-xs sm:text-sm md:text-base lg:text-lg font-mono font-medium text-[#7E7A72] tracking-widest relative z-10">
+                          {String(index + 1).padStart(2, "0")}
                         </span>
                       </div>
                     );
                   })}
                 </div>
 
-                {consumptionsList.length > 0 && (
-                  <div className="pt-1.5 border-t border-white/[0.06] space-y-1 max-h-[85px] sm:max-h-[110px] md:max-h-[135px] overflow-y-auto font-mono text-[9px] sm:text-[10px] md:text-[11px]">
-                    {consumptionsList.map((c, i) => (
-                      <div key={i} className="flex items-center justify-between text-[#8E8B84] px-0.5">
-                        <span className="truncate">
-                          {c.service_name} · {c.consumption_type === "NO_SHOW_DEDUCTION" ? "Inasistencia" : "Corte"}
-                        </span>
-                        <span className="shrink-0 text-[#6E6B65] ml-2">
-                          {formatDateTimeShort(c.consumed_at)}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
+                {isExhausted && (
+                  <p className="text-[9.5px] sm:text-[11px] tracking-[0.24em] text-[#9B8A68] uppercase font-mono text-center pt-2.5">
+                    MEMBERSHIP COMPLETED
+                  </p>
                 )}
               </div>
 
-              {/* Back Footer Actions */}
+              {/* 3. Fila Inferior Reverso: Botón VERIFICAR y Serial */}
               <div className="flex items-center justify-between gap-2 pt-2.5 md:pt-3.5 lg:pt-4 border-t border-white/[0.08]">
                 <button
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
-                    setIsQrModalOpen(true);
+                    setIsModalOpen(true);
                   }}
                   className="relative inline-flex items-center justify-center min-h-[44px] min-w-[44px] -my-1 md:my-0 bg-transparent border-0 p-0 cursor-pointer group focus:outline-none"
                   aria-label="Abrir código QR de verificación"
@@ -676,30 +832,77 @@ export function BlackMembershipCardView() {
                 </button>
 
                 <span className="text-[8px] sm:text-[10px] md:text-[11px] lg:text-xs font-mono tracking-[0.12em] sm:tracking-[0.18em] text-[#8E8B84] uppercase whitespace-nowrap">
-                  #{serialToken} · SOLO LECTURA
+                  #{shortSerial} · SOLO LECTURA
                 </span>
               </div>
             </div>
           </div>
         </div>
 
-        <p className="pt-3.5 pb-1 sm:pt-4 sm:pb-1.5 md:pt-5 md:pb-2 text-center text-[9.5px] sm:text-[10px] md:text-[11px] font-mono tracking-[0.22em] text-[#7A7263] uppercase">
-          TOCÁ LA TARJETA PARA GIRARLA
+        <p className="pt-3.5 pb-1 sm:pt-4 sm:pb-1.5 md:pt-5 md:pb-2 text-center text-[9.5px] sm:text-[10px] md:text-[10.5px] font-mono tracking-[0.22em] text-[#837E74] uppercase">
+          DESLIZÁ HORIZONTALMENTE PARA GIRAR
         </p>
+
+        {/* ===================================================================
+            HISTORIAL DE VISITAS
+            =================================================================== */}
+        {allConsumptions.length > 0 && (
+          <div className="w-full space-y-2 pt-1.5">
+            <span className="text-[9px] sm:text-[10px] tracking-[0.28em] text-[#B89B62] uppercase font-mono block px-1">
+              HISTORIAL DE VISITAS
+            </span>
+
+            <div className="rounded-xl bg-[#070708]/92 border border-white/[0.08] divide-y divide-white/[0.06] px-4 sm:px-5 py-0.5 backdrop-blur-sm shadow-xl">
+              {allConsumptions.map((c, idx) => {
+                const isRefunded = c.status === "REFUNDED" || c.status === "VOIDED";
+                return (
+                  <div
+                    key={`hist-${idx}`}
+                    className="flex items-center justify-between gap-3 py-3.5 sm:py-4"
+                  >
+                    <div className="space-y-1 sm:space-y-1.5">
+                      <strong
+                        className={`text-[13px] sm:text-sm font-medium leading-snug block ${
+                          isRefunded ? "text-[#7A7770] line-through" : "text-[#F0EDE6]"
+                        }`}
+                      >
+                        {c.service_name}
+                      </strong>
+                      <span className="text-[10.5px] sm:text-[11.5px] text-[#8E897F] font-mono leading-none block">
+                        {formatArgentinaDateTime(c.consumed_at)}
+                      </span>
+                    </div>
+
+                    {isRefunded && (
+                      <span className="text-[9px] sm:text-[9.5px] text-amber-300/90 font-mono tracking-[0.14em] uppercase border border-amber-500/25 bg-amber-500/10 px-2.5 py-1 rounded shrink-0">
+                        REINTEGRADO
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
+      {/* ===================================================================
+          FOOTER AUTÓNOMO
+          =================================================================== */}
       <footer className="w-full text-center text-[10px] sm:text-[10.5px] text-[#66625B] tracking-[0.2em] uppercase font-mono pt-6 pb-1 shrink-0">
         <p>© 2026 KANI Barber Studio</p>
       </footer>
 
-      {/* QR MODAL */}
-      {isQrModalOpen && (
+      {/* ===================================================================
+          MODAL AMPLIADO DE VERIFICACIÓN QR — VERIFICACIÓN EN KANI
+          =================================================================== */}
+      {isModalOpen && (
         <div
           role="dialog"
           aria-modal="true"
           aria-labelledby="qr-modal-title"
           className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/82 backdrop-blur-md animate-in fade-in duration-200 overflow-y-auto"
-          onClick={() => setIsQrModalOpen(false)}
+          onClick={() => setIsModalOpen(false)}
         >
           <div
             className="w-full max-w-[440px] sm:max-w-[440px] md:max-w-[470px] bg-gradient-to-b from-[#111113] to-[#060607] border border-[#C8A96B]/40 rounded-2xl sm:rounded-3xl p-5 sm:p-7 md:p-8 shadow-[0_28px_70px_rgba(0,0,0,0.96)] text-center space-y-3.5 sm:space-y-4 md:space-y-5 relative my-auto"
@@ -707,7 +910,7 @@ export function BlackMembershipCardView() {
           >
             <button
               type="button"
-              onClick={() => setIsQrModalOpen(false)}
+              onClick={() => setIsModalOpen(false)}
               className="absolute top-3.5 right-3.5 sm:top-4 sm:right-4 p-2 rounded-full text-[#9B8A68] hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
               aria-label="Cerrar ventana de verificación"
             >
@@ -715,53 +918,57 @@ export function BlackMembershipCardView() {
             </button>
 
             <div className="space-y-1.5 sm:space-y-2 px-6">
+              <img
+                src={kaniLogoDark}
+                alt="KANI Barber Studio"
+                className="h-8 sm:h-10 md:h-11 w-auto mx-auto object-contain select-none"
+              />
+              <span className="text-[8.5px] sm:text-[9.5px] md:text-[10px] font-mono tracking-[0.28em] text-[#C8A96B] uppercase block pt-0.5">
+                CREDENCIAL DIGITAL OFICIAL
+              </span>
               <h2
                 id="qr-modal-title"
-                className="text-base sm:text-lg md:text-xl font-serif font-bold text-white tracking-tight"
+                className="text-lg sm:text-xl md:text-2xl font-serif font-bold text-white tracking-tight"
+                style={{ fontFamily: "'Zen Antique', Georgia, serif" }}
               >
-                Verificación en salón
+                Verificación en Kani
               </h2>
-              <p className="text-[11px] sm:text-xs text-[#9B8A68] leading-relaxed">
-                Presentá este código QR ante tu barbero al momento del servicio para registrar el consumo.
-              </p>
             </div>
 
-            <div className="flex justify-center p-2.5 sm:p-3 bg-white rounded-2xl w-fit mx-auto shadow-[0_0_28px_rgba(200,169,107,0.22)]">
-              <QRCodeCanvas value={verificationUrl} size={210} margin={2} />
+            <div className="mx-auto w-[196px] h-[196px] min-[360px]:w-[218px] min-[360px]:h-[218px] sm:w-[244px] sm:h-[244px] md:w-[258px] md:h-[258px] bg-white rounded-2xl p-2.5 sm:p-3 flex items-center justify-center shadow-xl">
+              <KaniQRCode
+                value={verificationUrl}
+                size={240}
+                className="!w-full !h-full [&_svg]:w-full [&_svg]:h-full"
+                fgColor="#000000"
+                bgColor="#FFFFFF"
+              />
             </div>
 
-            <div className="grid grid-cols-2 gap-2 text-[10px] sm:text-xs font-mono text-left bg-[#0A0908] border border-[#241E17] rounded-xl p-3">
+            <div className="grid grid-cols-2 gap-x-4 gap-y-2.5 text-left bg-[#080706] border border-[#242018] rounded-xl px-4 py-3 sm:px-5 sm:py-3.5 font-mono text-[11px] sm:text-xs md:text-[13px]">
               <div className="truncate">
-                <span className="text-[#867C68] block text-[8.5px] sm:text-[9.5px] tracking-[0.16em] mb-0.5">
-                  TITULAR
-                </span>
-                <span className="text-white font-medium">{card.client_name}</span>
+                <span className="text-[#867C68] block text-[8.5px] sm:text-[9.5px] tracking-[0.16em] mb-0.5">TITULAR</span>
+                <span className="text-white font-medium">{data.client_name}</span>
               </div>
               <div className="truncate">
-                <span className="text-[#867C68] block text-[8.5px] sm:text-[9.5px] tracking-[0.16em] mb-0.5">
-                  PROFESIONAL
-                </span>
-                <span className="text-[#E6E2DA]">{card.barber_name}</span>
+                <span className="text-[#867C68] block text-[8.5px] sm:text-[9.5px] tracking-[0.16em] mb-0.5">PROFESIONAL</span>
+                <span className="text-[#E6E2DA]">{data.barber_name}</span>
               </div>
               <div>
-                <span className="text-[#867C68] block text-[8.5px] sm:text-[9.5px] tracking-[0.16em] mb-0.5">
-                  DISPONIBLES
-                </span>
+                <span className="text-[#867C68] block text-[8.5px] sm:text-[9.5px] tracking-[0.16em] mb-0.5">DISPONIBLES</span>
                 <span className="text-[#D4B475] font-semibold">
                   {remainingSessions} de {totalSessions}
                 </span>
               </div>
               <div>
-                <span className="text-[#867C68] block text-[8.5px] sm:text-[9.5px] tracking-[0.16em] mb-0.5">
-                  SERIAL
-                </span>
-                <span className="text-[#A39E93]">#{serialToken}</span>
+                <span className="text-[#867C68] block text-[8.5px] sm:text-[9.5px] tracking-[0.16em] mb-0.5">SERIAL</span>
+                <span className="text-[#A39E93]">#{shortSerial}</span>
               </div>
             </div>
 
             <button
               type="button"
-              onClick={() => setIsQrModalOpen(false)}
+              onClick={() => setIsModalOpen(false)}
               className="w-full min-h-[44px] py-2.5 sm:py-3 rounded-xl bg-[#16130E] hover:bg-[#221D15] border border-[#D4B475]/45 hover:border-[#F0D9A3] text-[#F0D9A3] hover:text-white text-xs sm:text-[13px] font-mono font-semibold tracking-[0.2em] uppercase transition-colors cursor-pointer"
             >
               Cerrar
@@ -772,3 +979,5 @@ export function BlackMembershipCardView() {
     </main>
   );
 }
+
+export const BlackMembershipCardView = PublicMembershipCardPage;
