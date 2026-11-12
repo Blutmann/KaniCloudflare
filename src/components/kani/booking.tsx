@@ -1276,7 +1276,6 @@ export function Booking({
                         <span className="booking-option-price block text-base">{money(s.price)}</span>
                       </span>
                     </span>
-                    <span className="selection-circle">{service === s.id && <Check size={12} />}</span>
                   </Button>
                 ))}
               </div>

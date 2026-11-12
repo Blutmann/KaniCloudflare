@@ -1834,4 +1834,179 @@ html[data-theme="dark"] .booking-page .booking-candidate-barber-btn.selected:hov
   color: #ffffff !important;
 }
 
+/* ==============================================================================
+ * KANI — Refinamiento UX/UI Premium Mobile: Tarjetas de Servicio & CTAs
+ * ============================================================================== */
+
+/* 1. Ocultar círculo de selección y checkmark en tarjetas de servicio */
+.payway-reservation .service-option .selection-circle,
+.mercadopago-reservation .service-option .selection-circle,
+.booking-page .service-option .selection-circle {
+  display: none !important;
+}
+
+/* 2. Geometría, proporciones y microinteracciones suaves */
+.payway-reservation .service-option,
+.mercadopago-reservation .service-option,
+.booking-page .service-option {
+  position: relative;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  width: 100% !important;
+  min-height: 72px !important;
+  height: auto !important;
+  padding: 14px 18px !important;
+  border-radius: var(--radius-control, 0.65rem) !important;
+  box-sizing: border-box !important;
+  transition: background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease, color 180ms ease !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .payway-reservation .service-option,
+  .mercadopago-reservation .service-option,
+  .booking-page .service-option {
+    transition: none !important;
+  }
+}
+
+/* 3. Modo Claro — Tarjetas de servicio */
+html[data-theme="light"] .payway-reservation .service-option,
+html[data-theme="light"] .mercadopago-reservation .service-option,
+html[data-theme="light"] .booking-page .service-option {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
+  color: var(--foreground) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  opacity: 1 !important;
+}
+
+html[data-theme="light"] .payway-reservation .service-option:hover:not(.selected),
+html[data-theme="light"] .mercadopago-reservation .service-option:hover:not(.selected),
+html[data-theme="light"] .booking-page .service-option:hover:not(.selected) {
+  border-color: color-mix(in srgb, var(--primary) 35%, rgba(0, 0, 0, 0.12)) !important;
+  background: #ffffff !important;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.06) !important;
+}
+
+html[data-theme="light"] .payway-reservation .service-option.selected,
+html[data-theme="light"] .mercadopago-reservation .service-option.selected,
+html[data-theme="light"] .booking-page .service-option.selected {
+  background: #fff8f6 !important;
+  background-color: #fff8f6 !important;
+  border: 2px solid var(--primary) !important;
+  border-color: var(--primary) !important;
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--primary) 14%, transparent) !important;
+  color: var(--foreground) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  opacity: 1 !important;
+}
+
+/* 4. Modo Oscuro — Tarjetas de servicio */
+html[data-theme="dark"] .payway-reservation .service-option,
+html[data-theme="dark"] .mercadopago-reservation .service-option,
+html[data-theme="dark"] .booking-page .service-option {
+  background: #1e1e1e !important;
+  background-color: #1e1e1e !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25) !important;
+  color: #ffffff !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  opacity: 1 !important;
+}
+
+html[data-theme="dark"] .payway-reservation .service-option:hover:not(.selected),
+html[data-theme="dark"] .mercadopago-reservation .service-option:hover:not(.selected),
+html[data-theme="dark"] .booking-page .service-option:hover:not(.selected) {
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  background: #242424 !important;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35) !important;
+}
+
+html[data-theme="dark"] .payway-reservation .service-option.selected,
+html[data-theme="dark"] .mercadopago-reservation .service-option.selected,
+html[data-theme="dark"] .booking-page .service-option.selected {
+  background: #282626 !important;
+  background-color: #282626 !important;
+  border: 2px solid #C8A96B !important;
+  border-color: #C8A96B !important;
+  box-shadow: 0 4px 14px rgba(200, 169, 107, 0.18) !important;
+  color: #ffffff !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  opacity: 1 !important;
+}
+
+/* 5. Jerarquía Tipográfica y Alineación de Precios */
+.payway-reservation .service-option .booking-option-copy,
+.mercadopago-reservation .service-option .booking-option-copy,
+.booking-page .service-option .booking-option-copy {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  grid-template-rows: auto auto !important;
+  align-items: center !important;
+  row-gap: 3px !important;
+  column-gap: 16px !important;
+  min-width: 0 !important;
+  flex: 1 1 auto !important;
+}
+
+.payway-reservation .service-option .booking-option-name,
+.mercadopago-reservation .service-option .booking-option-name,
+.booking-page .service-option .booking-option-name {
+  font-weight: 500 !important;
+  font-size: 16px !important;
+  line-height: 1.25 !important;
+  letter-spacing: -0.01em !important;
+  margin: 0 !important;
+}
+
+.payway-reservation .service-option .booking-option-duration,
+.mercadopago-reservation .service-option .booking-option-duration,
+.booking-page .service-option .booking-option-duration {
+  font-weight: 400 !important;
+  font-size: 13px !important;
+  line-height: 1.25 !important;
+  color: var(--muted-foreground) !important;
+  margin: 0 !important;
+}
+
+.payway-reservation .service-option .booking-option-price,
+.mercadopago-reservation .service-option .booking-option-price,
+.booking-page .service-option .booking-option-price {
+  font-weight: 500 !important;
+  font-size: 15px !important;
+  line-height: 1.25 !important;
+  text-align: right !important;
+  margin: 0 !important;
+  color: inherit !important;
+}
+
+/* 6. Navegación inferior (mobile footer CTA) - Payway y Mercado Pago */
+@media (max-width: 767px) {
+  html[data-theme="light"] .payway-reservation .booking-page .booking-next-button:not(:disabled),
+  html[data-theme="light"] .mercadopago-reservation .booking-page .booking-next-button:not(:disabled),
+  html[data-theme="light"] .booking-page .booking-next-button:not(:disabled) {
+    background: var(--primary) !important;
+    border-color: var(--primary) !important;
+    color: #ffffff !important;
+  }
+
+  html[data-theme="dark"] .payway-reservation .booking-page .booking-next-button:not(:disabled),
+  html[data-theme="dark"] .mercadopago-reservation .booking-page .booking-next-button:not(:disabled),
+  html[data-theme="dark"] .booking-page .booking-next-button:not(:disabled) {
+    background: var(--gold, #C8A96B) !important;
+    border-color: var(--gold, #C8A96B) !important;
+    color: #161515 !important;
+  }
+}
+
+
 
