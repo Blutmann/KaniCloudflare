@@ -276,6 +276,8 @@ describe("KANI Panel V2 — Implementación experimental aislada 3 + 3 y protecc
 
     expect(panelV2Css).toContain(".v2-shell.kani-panel-v2");
     expect(panelV2Css).toContain("--v2-surface: #ffffff;");
+    expect(panelV2Css).toContain("var(--panel-v2-tab-count, 3)");
+    expect(panelV2Css).not.toContain("width: min(1240px, 100%)");
     expect(panelV2Css).not.toContain("display: grid;\n  gap: 12px;");
     expect(v2Css).not.toContain("kani-panel-v2");
     expect(stylesCss).not.toContain("kani-panel-v2");
@@ -322,6 +324,7 @@ describe("KANI Panel V2 — Implementación experimental aislada 3 + 3 y protecc
     expect(await screen.findByRole("alert")).toHaveTextContent("No tenés permisos");
     expect(screen.queryByTestId("panel-v2-outlet")).toBeNull();
     nav = screen.getByRole("navigation", { name: "Navegación de Negocio" });
+    expect(nav.style.getPropertyValue("--panel-v2-tab-count")).toBe("2");
     expect(within(nav).getAllByRole("link").map((a) => a.textContent)).toEqual([
       "Pagos",
       "Membresías",

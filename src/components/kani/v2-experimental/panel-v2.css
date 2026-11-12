@@ -9,16 +9,18 @@
   --v2-surface: #ffffff;
   --v2-reading-surface: #ffffff;
   --v2-inset: #f6f3ee;
-  --v2-line: #d8d0c5;
-  --v2-shadow: 0 6px 18px rgba(24, 21, 18, 0.06);
+  --v2-line: #cfc7bc;
+  --v2-shadow: 0 4px 14px rgba(24, 21, 18, 0.06);
+  --muted-foreground: #56524b;
 
   /* Nunca usar display: grid sin align-content dentro de .site-shell flex (100dvh) */
+  /* Conservar el ancho de .site-container para mantener márgenes laterales consistentes en mobile y desktop */
   display: flex;
   flex-direction: column;
   align-items: stretch;
   justify-content: flex-start;
-  gap: 10px;
-  width: min(1240px, 100%);
+  gap: 8px;
+  padding-top: 6px;
   margin-inline: auto;
   min-width: 0;
   box-sizing: border-box;
@@ -30,8 +32,9 @@ html.dark .v2-shell.kani-panel-v2 {
   --v2-surface: #1b1a18;
   --v2-reading-surface: #22201d;
   --v2-inset: #141311;
-  --v2-line: rgba(200, 169, 107, 0.28);
-  --v2-shadow: 0 14px 32px rgba(0, 0, 0, 0.42);
+  --v2-line: rgba(200, 169, 107, 0.32);
+  --v2-shadow: 0 10px 24px rgba(0, 0, 0, 0.42);
+  --muted-foreground: #b8b1a6;
 }
 
 /* Superficies sólidas en controles, tarjetas y paneles dentro de Panel V2 */
@@ -42,10 +45,18 @@ html.dark .v2-shell.kani-panel-v2 {
 .kani-panel-v2 .v2-client-card,
 .kani-panel-v2 .v2-insights,
 .kani-panel-v2 .v2-filters,
-.kani-panel-v2 .v2-metric {
+.kani-panel-v2 .v2-metric,
+.kani-panel-v2 .v2-callout,
+.kani-panel-v2 .v2-empty,
+.kani-panel-v2 .v2-payment-card,
+.kani-panel-v2 .v2-alert,
+.kani-panel-v2 .admin-schedule-card,
+.kani-panel-v2 .admin-schedule-panel {
   background: var(--v2-surface);
   border-color: var(--v2-line);
   box-shadow: var(--v2-shadow);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .kani-panel-v2 .v2-field input,
@@ -61,10 +72,21 @@ html[data-theme="dark"] .kani-panel-v2 .v2-field select,
 html[data-theme="dark"] .kani-panel-v2 .v2-field textarea,
 html.dark .kani-panel-v2 .v2-field input,
 html.dark .kani-panel-v2 .v2-field select,
-html.dark .kani-panel-v2 .v2-field textarea {
-  background: #141311;
-  color: #f5f0e8;
-  border-color: rgba(200, 169, 107, 0.3);
+html.dark .kani-panel-v2 .v2-field textarea,
+html[data-theme="dark"] .kani-panel-v2 .v2-admin-filter-panel :is(input, select, output),
+html[data-theme="dark"] .kani-panel-v2 .v2-admin-filter-control :is(input, select, output),
+html[data-theme="dark"] .kani-panel-v2 .v2-admin-filter-card :is(input, select, output),
+html[data-theme="dark"] .kani-panel-v2 .v2-custom-range-row :is(input, select, output),
+html.dark .kani-panel-v2 .v2-admin-filter-panel :is(input, select, output),
+html.dark .kani-panel-v2 .v2-admin-filter-control :is(input, select, output),
+html.dark .kani-panel-v2 .v2-admin-filter-card :is(input, select, output),
+html.dark .kani-panel-v2 .v2-custom-range-row :is(input, select, output) {
+  color-scheme: dark !important;
+  background: #141311 !important;
+  background-color: #141311 !important;
+  color: #f5f0e8 !important;
+  -webkit-text-fill-color: #f5f0e8 !important;
+  border-color: rgba(200, 169, 107, 0.34) !important;
 }
 
 .kani-panel-v2 .v2-primary {
@@ -86,7 +108,7 @@ html.dark .kani-panel-v2 .v2-field textarea {
 }
 
 .kani-panel-v2 .v2-page {
-  padding-top: 2px;
+  padding-top: 0;
   gap: 14px;
 }
 
@@ -95,7 +117,7 @@ html.dark .kani-panel-v2 .v2-field textarea {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 8px;
+  gap: 6px;
   flex: 0 0 auto;
   width: 100%;
   padding: 0;
@@ -111,8 +133,8 @@ html.dark .kani-panel-v2 .v2-field textarea {
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 8px 12px;
-  padding: 6px 10px;
+  gap: 6px 10px;
+  padding: 4px 10px;
   min-height: 0;
   border: 1px solid var(--v2-line);
   border-radius: 12px;
@@ -272,7 +294,7 @@ html.dark .kani-panel-v2-stats-link.is-selected {
   flex: 1 1 0%;
   min-width: 0;
   display: grid;
-  grid-template-columns: repeat(var(--admin-nav-count, 3), minmax(0, 1fr));
+  grid-template-columns: repeat(var(--panel-v2-tab-count, 3), minmax(0, 1fr));
   gap: 4px;
 }
 
@@ -319,8 +341,9 @@ html.dark .v2-shell.kani-panel-v2 .kani-panel-v2-nav .admin-section-nav-link[ari
 
 .v2-shell.kani-panel-v2 .kani-panel-v2-nav .admin-section-nav-divider {
   width: 1px;
-  align-self: stretch;
-  margin: 4px 6px;
+  height: 22px;
+  align-self: center;
+  margin: 0 6px;
   background: var(--v2-line);
   flex: 0 0 auto;
 }
@@ -348,22 +371,22 @@ html.dark .v2-shell.kani-panel-v2 .kani-panel-v2-nav .admin-section-nav-link[ari
 /* Pantalla inicial /panel-v2 */
 .kani-panel-v2-home {
   width: min(860px, 100%);
-  margin: 18px auto 28px;
+  margin: 12px auto 24px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 18px;
   box-sizing: border-box;
 }
 
 .kani-panel-v2-home-header {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
 }
 
 .kani-panel-v2-home-title {
   margin: 0;
-  font-size: clamp(24px, 3vw, 32px);
+  font-size: clamp(26px, 3vw, 34px);
   line-height: 1.2;
   font-weight: 600;
   color: var(--foreground);
@@ -530,9 +553,14 @@ html.dark .kani-panel-v2-home-stats-link:hover {
 .kani-panel-v2-payments-wrap {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   min-width: 0;
   width: 100%;
+}
+
+.kani-panel-v2 .kani-panel-v2-payments-wrap > .v2-page {
+  padding-top: 0;
+  gap: 12px;
 }
 
 .kani-panel-v2-payments-toolbar {
@@ -666,8 +694,8 @@ html.dark .kani-panel-v2-view-tab.is-active {
 /* Responsive mobile & tablet */
 @media (max-width: 720px) {
   .kani-panel-v2-home {
-    margin: 8px auto 20px;
-    gap: 16px;
+    margin: 6px auto 18px;
+    gap: 14px;
   }
 
   .kani-panel-v2-home-grid,
@@ -676,8 +704,8 @@ html.dark .kani-panel-v2-view-tab.is-active {
   }
 
   .kani-panel-v2-topbar {
-    padding: 6px 8px;
-    gap: 6px 8px;
+    padding: 5px 8px;
+    gap: 5px 8px;
   }
 
   .kani-panel-v2-view-tabs {
@@ -695,13 +723,21 @@ html.dark .kani-panel-v2-view-tab.is-active {
     justify-content: space-between;
   }
 
+  .kani-panel-v2-space-option {
+    min-height: 26px;
+  }
+
+  .kani-panel-v2-stats-link {
+    min-height: 28px;
+  }
+
   .v2-shell.kani-panel-v2 .kani-panel-v2-nav .admin-section-nav-link {
     flex-direction: column;
-    gap: 3px;
-    padding: 6px 4px;
+    gap: 2px;
+    padding: 5px 4px;
     font-size: 11px;
     line-height: 1.15;
-    min-height: 44px;
+    min-height: 40px;
   }
 
   .v2-shell.kani-panel-v2 .kani-panel-v2-nav .admin-section-nav-divider {
