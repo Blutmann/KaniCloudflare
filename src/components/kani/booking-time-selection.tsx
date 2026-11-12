@@ -1,4 +1,4 @@
-import { CalendarDays, Check, Clock3, PencilLine, Sun, Sunset, User } from 'lucide-react';
+import { CalendarDays, Check, Clock3, Sun, Sunset, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { groupSlotsByPeriod, type BookingTimeSlotItem } from '@/lib/kani-booking-slots';
 
@@ -28,7 +28,6 @@ export function BookingTimeSelection({
   serviceDurationMinutes,
   barberLabel,
   barberDeferred,
-  showContextBar = false,
   onEditService,
   onEditBarber,
   onEditDate,
@@ -40,54 +39,6 @@ export function BookingTimeSelection({
 
   return (
     <div className="booking-time-selection">
-      {showContextBar && serviceName && (
-        <div className="booking-time-context-bar" aria-label="Resumen de selección">
-          <div className="booking-time-context-items">
-            <button
-              type="button"
-              className="booking-time-context-chip"
-              onClick={onEditService}
-              aria-label={`Editar servicio: ${serviceName}`}
-              disabled={!onEditService}
-            >
-              <span className="booking-time-context-value">
-                {serviceName}
-                {typeof serviceDurationMinutes === 'number' && serviceDurationMinutes > 0
-                  ? ` · ${serviceDurationMinutes} min`
-                  : ''}
-              </span>
-              {onEditService && <PencilLine size={12} className="booking-time-context-edit-icon" aria-hidden="true" />}
-            </button>
-
-            <button
-              type="button"
-              className="booking-time-context-chip"
-              onClick={onEditBarber}
-              aria-label={barberDeferred && !barberLabel ? 'Editar preferencia de barbero' : `Editar barbero: ${barberLabel}`}
-              disabled={!onEditBarber}
-            >
-              <User size={12} className="booking-time-context-leading-icon" aria-hidden="true" />
-              <span className="booking-time-context-value">
-                {barberLabel || (barberDeferred ? 'Barbero a elegir' : 'Profesional')}
-              </span>
-              {onEditBarber && <PencilLine size={12} className="booking-time-context-edit-icon" aria-hidden="true" />}
-            </button>
-
-            {onEditDate && (
-              <button
-                type="button"
-                className="booking-time-context-chip booking-time-context-chip-date"
-                onClick={onEditDate}
-                aria-label="Editar fecha"
-              >
-                <CalendarDays size={12} className="booking-time-context-leading-icon" aria-hidden="true" />
-                <span className="booking-time-context-value">Otra fecha</span>
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-
       {availabilityLoading ? (
         <div className="booking-time-loading-wrap" role="status" aria-live="polite">
           <div className="booking-time-loading py-4 text-center text-sm text-muted-foreground flex items-center justify-center gap-2">

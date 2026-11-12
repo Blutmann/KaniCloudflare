@@ -203,11 +203,12 @@ describe('UX/UI V2 — Horarios agrupados y recuperación ante conflicto de disp
     expect(morningHeading).toBeInTheDocument();
     expect(afternoonHeading).toBeInTheDocument();
 
-    // Context summary bar con Servicio + Duración + Barbero
-    expect(screen.getByText('Corte · 45 min')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Editar servicio: Corte/ })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Editar barbero: Lautaro/ })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Editar fecha' })).toBeInTheDocument();
+    // La barra horizontal de resumen de selección ("Otra fecha", Servicio, Barbero) fue eliminada completamente
+    expect(screen.queryByLabelText('Resumen de selección')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Editar servicio/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Editar barbero/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Editar fecha' })).not.toBeInTheDocument();
+    expect(screen.queryByText('Otra fecha')).not.toBeInTheDocument();
 
     // Orden cronológico ascendente estricto dentro de cada franja (incluye 15m/13:45/14:00/19:15)
     const morningSection = morningHeading.closest('section')!;
@@ -243,7 +244,6 @@ describe('UX/UI V2 — Horarios agrupados y recuperación ante conflicto de disp
 
     expect(screen.queryByRole('heading', { level: 2, name: 'Mañana' })).not.toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 2, name: 'Tarde' })).toBeInTheDocument();
-    expect(screen.getByText('Barba · 30 min')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^Horario 19:15/ })).toBeInTheDocument();
   });
 
@@ -270,7 +270,7 @@ describe('UX/UI V2 — Horarios agrupados y recuperación ante conflicto de disp
 
     // Simulamos fecha sin horarios para validar el estado vacío
     mocks.read.mockResolvedValueOnce([]);
-    fireEvent.click(screen.getByRole('button', { name: /Editar barbero: Lautaro/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Barbero' }));
     fireEvent.click(await screen.findByRole('button', { name: /Gonzalo/ }));
     await waitFor(() => expect(mocks.read).toHaveBeenCalledTimes(2));
 

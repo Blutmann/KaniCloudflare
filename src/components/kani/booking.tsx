@@ -1427,8 +1427,6 @@ export function Booking({
                       serviceDurationMinutes={selected?.duration}
                       barberLabel={barber ?? undefined}
                       barberDeferred={barberDeferred}
-                      showContextBar={step === 3 && !isV2}
-                      onEditService={() => move(0)}
                       onEditBarber={() => move(1)}
                       onEditDate={!isV2 ? () => { void refreshAvailabilityNow(availabilityBarber).catch(() => {}); move(2); } : undefined}
                       useGroupRole={isV2 || isFiveSteps}
