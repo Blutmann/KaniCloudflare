@@ -1448,7 +1448,6 @@ export function Booking({
                               onClick={() => setBarber(candidate)}
                             >
                               <span className="candidate-name">{candidate}</span>
-                              {barber === candidate && <Check size={14} className="ml-1.5" />}
                             </Button>
                           ))}
                         </div>
