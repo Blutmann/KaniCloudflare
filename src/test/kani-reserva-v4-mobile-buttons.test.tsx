@@ -11,6 +11,7 @@ vi.mock('@/components/kani/store', () => ({
 vi.mock('@/lib/kani-availability', async original => ({
   ...await original<typeof import('@/lib/kani-availability')>(),
   readConfiguredServices: async () => [],
+  readPublicBookingBarbers: async () => ['Lautaro', 'Gonzalo', 'Valentín'].map(name => ({ id: name, name })),
   readPublicAvailabilityStarts: async () => [],
 }));
 

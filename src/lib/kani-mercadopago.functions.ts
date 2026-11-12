@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { isPublicBookingBarber } from "./kani-model";
 
 export type CreateBookingOrderInput = {
   appointmentId: string;
@@ -50,6 +51,9 @@ export const createBookingOrderFn = createServerFn({ method: "POST" })
   .validator((data: CreateBookingOrderInput) => {
     if (!data?.appointmentId || !data?.clientEmail || !data?.serviceName) {
       throw new Error("BOOKING_ORDER_INPUT_INVALID");
+    }
+    if (data.barberName && !isPublicBookingBarber(data.barberName)) {
+      throw new Error("BARBER_NOT_PUBLICLY_BOOKABLE");
     }
     return data;
   })

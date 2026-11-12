@@ -20,6 +20,7 @@ vi.mock('@/components/kani/store', () => ({
 vi.mock('@/lib/kani-availability', async original => ({
   ...await original<typeof import('@/lib/kani-availability')>(),
   readConfiguredServices: async () => [],
+  readPublicBookingBarbers: async () => ['Lautaro', 'Gonzalo', 'Valentín'].map(name => ({ id: name, name })),
   readPublicAvailabilityStarts: async () => ['10:00'].map(start_time => ({
     barber_id: 'Lautaro',
     barber_name: 'Lautaro',
@@ -76,7 +77,7 @@ async function reachCardModal() {
   render(<PaywayBooking />);
   fireEvent.click(screen.getByRole('button', { name: /^Corte, 45/ }));
   next();
-  fireEvent.click(screen.getByRole('button', { name: /Lautaro/ }));
+  fireEvent.click(await screen.findByRole('button', { name: /Lautaro/ }));
   next();
   fireEvent.click(await screen.findByRole('button', { name: dateLabel('2026-10-27') }));
   next();

@@ -25,6 +25,7 @@ vi.mock('@/components/kani/store', () => ({
 vi.mock('@/lib/kani-availability', async importOriginal => ({
   ...(await importOriginal<typeof import('@/lib/kani-availability')>()),
   readConfiguredServices: async () => [],
+  readPublicBookingBarbers: async () => ['Lautaro', 'Gonzalo', 'Valentín'].map(name => ({ id: name, name })),
   readPublicAvailabilityStarts: (...args: unknown[]) => mocks.read(...args),
 }));
 
@@ -105,7 +106,7 @@ async function goToScheduleStep({
 
   fireEvent.click(screen.getByRole('button', { name: serviceRegex }));
   next();
-  fireEvent.click(screen.getByRole('button', { name: new RegExp(barberName) }));
+  fireEvent.click(await screen.findByRole('button', { name: new RegExp(barberName) }));
   await waitFor(() => expect(mocks.read).toHaveBeenCalled());
   next();
   fireEvent.click(await screen.findByRole('button', { name: new RegExp('^' + dateLabel(slotDate)) }));
@@ -229,14 +230,14 @@ describe('UX/UI V2 — Horarios agrupados y recuperación ante conflicto de disp
     expect(slot1345).toHaveClass('selected');
   });
 
-  it('2. Oculta Mañana cuando solo hay horarios de Tarde (ej. Franco) y respeta duraciones de servicio compatibles', async () => {
+  it('2. Oculta Mañana cuando solo hay horarios de Tarde (ej. Gonzalo) y respeta duraciones de servicio compatibles', async () => {
     mocks.read.mockResolvedValue(
-      makeStarts(['16:00', '16:45', '17:30', '19:15'], '2026-10-26', 'Franco', ['Barba']),
+      makeStarts(['16:00', '16:45', '17:30', '19:15'], '2026-10-26', 'Gonzalo', ['Barba']),
     );
 
     await goToScheduleStep({
       serviceRegex: /^Barba, 30 minutos/,
-      barberName: 'Franco',
+      barberName: 'Gonzalo',
       slotDate: '2026-10-26',
     });
 
@@ -257,7 +258,7 @@ describe('UX/UI V2 — Horarios agrupados y recuperación ante conflicto de disp
     render(<Booking variant="v3" />);
     fireEvent.click(screen.getByRole('button', { name: /^Corte(?: de cabello)?, 45 minutos/ }));
     next();
-    fireEvent.click(screen.getByRole('button', { name: /Lautaro/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /Lautaro/ }));
 
     // Ir directo a fecha -> sin esperar? Esperamos resolución inicial primero
     await act(async () => {
@@ -270,7 +271,7 @@ describe('UX/UI V2 — Horarios agrupados y recuperación ante conflicto de disp
     // Simulamos fecha sin horarios para validar el estado vacío
     mocks.read.mockResolvedValueOnce([]);
     fireEvent.click(screen.getByRole('button', { name: /Editar barbero: Lautaro/ }));
-    fireEvent.click(screen.getByRole('button', { name: /Gonzalo/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /Gonzalo/ }));
     await waitFor(() => expect(mocks.read).toHaveBeenCalledTimes(2));
 
     // Confirmar estado vacío accionable tras recargar disponibilidad vacía
@@ -479,7 +480,7 @@ describe('UX/UI V2 — Horarios agrupados y recuperación ante conflicto de disp
         timestamp: Date.now(),
       }),
     );
-    mocks.getStatus.mockResolvedValueOnce({
+    mocks.getStatus.mockResolvedValue({
       success: true,
       isConfirmed: true,
       appointmentStatus: 'CONFIRMED',

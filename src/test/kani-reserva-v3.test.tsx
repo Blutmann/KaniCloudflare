@@ -8,6 +8,7 @@ const api = vi.hoisted(() => ({
   create: vi.fn(),
   order: vi.fn(),
   checkout: vi.fn(),
+  roster: vi.fn(),
 }));
 
 vi.mock('@/components/kani/store', () => ({
@@ -17,6 +18,7 @@ vi.mock('@/components/kani/store', () => ({
 vi.mock('@/lib/kani-availability', async importOriginal => ({
   ...await importOriginal<typeof import('@/lib/kani-availability')>(),
   readConfiguredServices: async () => [],
+  readPublicBookingBarbers: () => api.roster(),
   readPublicAvailabilityStarts: (...args: unknown[]) => api.read(...args),
 }));
 
@@ -61,6 +63,7 @@ async function selectServiceAndBarberV3(deferred = false) {
   render(<Booking variant="v3" />);
   fireEvent.click(screen.getByRole('button', { name: /^Corte(?: de cabello)?, 45 minutos/ }));
   next();
+  await waitFor(() => expect(screen.getByRole('button', { name: /Elegir más adelante/ })).toBeEnabled());
   fireEvent.click(screen.getByRole('button', { name: deferred ? /Elegir más adelante/ : /Lautaro/ }));
   await waitFor(() => expect(api.read).toHaveBeenCalled());
   next();
@@ -83,6 +86,7 @@ beforeEach(() => {
   vi.useFakeTimers({ toFake: ['Date'] });
   vi.setSystemTime(new Date('2026-10-24T12:00:00Z'));
   api.read.mockReset().mockResolvedValue(fixtures);
+  api.roster.mockReset().mockResolvedValue(['Lautaro', 'Gonzalo', 'Valentín'].map(name => ({ id: name, name })));
   api.create.mockReset().mockResolvedValue({ appointment_id: 'v3-fixture-id', request_number: 103 });
   api.order.mockReset().mockResolvedValue({ success: true, checkoutUrl: 'https://payments.example.test/checkout-v3' });
   api.checkout.mockReset();
@@ -96,6 +100,40 @@ afterEach(() => {
 });
 
 describe('Reserva V3 — 5-step booking flow', () => {
+  it.each(['v3', 'v5'] as const)('offers only commercially enabled professionals in %s', async variant => {
+    render(<Booking variant={variant} />);
+    fireEvent.click(screen.getByRole('button', { name: /^Corte(?: de cabello)?, 45 minutos/ }));
+    next();
+    for (const name of ['Lautaro', 'Gonzalo', 'Valentín']) {
+      expect(await screen.findByRole('button', { name: new RegExp('^Barbero ' + name) })).toBeInTheDocument();
+    }
+    expect(screen.queryByRole('button', { name: /^Barbero Franco/ })).not.toBeInTheDocument();
+  });
+
+  it('offers no deferred date when only a hidden professional has availability', async () => {
+    api.read.mockResolvedValue([{ ...fixtures[0], barber_id: 'Franco', barber_name: 'Franco' }]);
+    render(<Booking variant="v3" />);
+    fireEvent.click(screen.getByRole('button', { name: /^Corte(?: de cabello)?, 45 minutos/ }));
+    next();
+    await waitFor(() => expect(screen.getByRole('button', { name: /Elegir más adelante/ })).toBeEnabled());
+    fireEvent.click(screen.getByRole('button', { name: /Elegir más adelante/ }));
+    await waitFor(() => expect(api.read).toHaveBeenCalled());
+    next();
+    expect(screen.getByRole('button', { name: 'Continuar' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: new RegExp('^' + dateLabel(fixtures[0].slot_date)) })).toBeDisabled();
+    expect(api.create).not.toHaveBeenCalled();
+  });
+
+  it('does not fall back to the internal roster when the public listing fails', async () => {
+    api.roster.mockRejectedValue(new Error('offline'));
+    render(<Booking variant="v3" />);
+    fireEvent.click(screen.getByRole('button', { name: /^Corte(?: de cabello)?, 45 minutos/ }));
+    next();
+    expect(await screen.findByRole('alert')).toHaveTextContent('No pudimos consultar los profesionales');
+    expect(screen.queryByRole('button', { name: /^Barbero / })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Elegir más adelante/ })).toBeDisabled();
+  });
+
   it('displays 5 steps in the stepper with correct labels and isolated date/time steps', async () => {
     render(<Booking variant="v3" />);
     const progress = screen.getByLabelText('Paso 1 de 5: Servicio');
@@ -117,7 +155,7 @@ describe('Reserva V3 — 5-step booking flow', () => {
     // Step 2: Barbero
     expect(screen.getByRole('heading', { name: 'Elegí un barbero' })).toBeInTheDocument();
     expect(screen.getByLabelText('Paso 2 de 5: Barbero')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /Lautaro/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /Lautaro/ }));
     await waitFor(() => expect(api.read).toHaveBeenCalled());
     next();
 
