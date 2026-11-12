@@ -161,7 +161,7 @@ function resolveServicePrice(serviceName: string, configured: ConfiguredService[
   return match?.price ?? 25000;
 }
 
-export function PaywayBooking() {
+export function PaywayBooking({ homeUrl = '/reservar-turno' }: { homeUrl?: string } = {}) {
   const [open, setOpen] = useState(false);
   const [preparing, setPreparing] = useState(false);
   const [checkout, setCheckout] = useState<PaywayCheckout | null>(null);
@@ -881,7 +881,7 @@ export function PaywayBooking() {
       <BookingConfirmedScreen
         confirmed={confirmed}
         onHomeClick={startNewReservation}
-        homeUrl="/reservar-turno"
+        homeUrl={homeUrl}
       />
     );
   }
