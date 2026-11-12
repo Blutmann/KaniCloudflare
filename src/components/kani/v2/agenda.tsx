@@ -171,7 +171,11 @@ export function V2Home() {
 export type AgendaPeriodPreset = "TODAY" | "THIS_WEEK" | "NEXT_10_DAYS" | "CUSTOM";
 export type AgendaPeriodFilter = AgendaPeriodPreset | "DATE";
 
-export function V2Appointments() {
+export function V2Appointments({
+  paymentsTo = "/panel-administracion/pagos",
+}: {
+  paymentsTo?: "/panel-administracion/pagos" | "/panel-v2/negocio/pagos";
+} = {}) {
   const data = useV2();
   const staff = useAdminStaff();
   const today = businessDateToday();
@@ -653,14 +657,25 @@ export function V2Appointments() {
                 }
                 if (a.statusCode === "CONFIRMED") {
                   actionNodes.push(
-                    <Link
-                      key="cobrar"
-                      className="v2-secondary v2-action-btn v2-cobrar-btn"
-                      to="/panel-administracion/pagos"
-                      search={{ turno: a.id }}
-                    >
-                      Cobrar
-                    </Link>,
+                    paymentsTo === "/panel-v2/negocio/pagos" ? (
+                      <Link
+                        key="cobrar"
+                        className="v2-secondary v2-action-btn v2-cobrar-btn"
+                        to="/panel-v2/negocio/pagos"
+                        search={{ turno: a.id }}
+                      >
+                        Cobrar
+                      </Link>
+                    ) : (
+                      <Link
+                        key="cobrar"
+                        className="v2-secondary v2-action-btn v2-cobrar-btn"
+                        to="/panel-administracion/pagos"
+                        search={{ turno: a.id }}
+                      >
+                        Cobrar
+                      </Link>
+                    ),
                   );
                 }
                 if (

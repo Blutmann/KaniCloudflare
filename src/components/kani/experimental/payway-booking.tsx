@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/compone
 import { preparePaywayCheckoutFn, payPaywayDepositFn, checkPaywayPaymentStatusFn } from '@/lib/kani-payway.functions';
 import { tokenizePaywayForm } from '@/lib/kani-payway.browser';
 import { PAYWAY_MESSAGES, type PaywayCheckout, type PaywayResult } from '@/lib/kani-payway';
+import { isAvailabilityConflictError, SlotUnavailableConflictError } from '@/lib/kani-booking-slots';
 import { readConfiguredServices, type ConfiguredService } from '@/lib/kani-availability';
 import { dateLabel, money, services } from '@/lib/kani-model';
 import {
@@ -618,8 +619,18 @@ export function PaywayBooking() {
           friendlyMsg = 'El código está siendo utilizado en otra reserva en curso. Reintentá en unos minutos.';
         } else if (rawMsg.includes('BENEFIT_CODE_NOT_FOUND') || rawMsg.includes('no existe')) {
           friendlyMsg = 'El código de beneficio no existe o es inválido.';
-        } else if (rawMsg.includes('SLOT_COLLISION') || rawMsg.includes('no está disponible') || rawMsg.includes('ya tiene un turno') || rawMsg.includes('SLOT_ALREADY_BOOKED')) {
-          friendlyMsg = 'Ese horario ya no está disponible. Elegí otro para continuar.';
+        } else if (
+          rawMsg.includes('SLOT_COLLISION') ||
+          rawMsg.includes('no está disponible') ||
+          rawMsg.includes('ya tiene un turno') ||
+          rawMsg.includes('SLOT_ALREADY_BOOKED') ||
+          isAvailabilityConflictError(rawMsg)
+        ) {
+          throw new SlotUnavailableConflictError('Ese horario ya no está disponible. Elegí otro para continuar.', {
+            phase: 'pre_payment',
+            slotDate: draft.date,
+            slotTime: draft.time,
+          });
         } else if (rawMsg) {
           friendlyMsg = rawMsg;
         }
@@ -636,6 +647,7 @@ export function PaywayBooking() {
     }
     opening.current = true;
     setOpen(true); setPreparing(true); setResult(null); setCheckout(null);
+    let slotConflictToThrow: SlotUnavailableConflictError | null = null;
     try {
       const sanitizedDraft: PaywayDraft = {
         barber: draft.barber,
@@ -655,11 +667,23 @@ export function PaywayBooking() {
           return;
         }
         setCheckout(response.checkout);
+      } else if (response.state === 'recoverable' && isAvailabilityConflictError(response.message)) {
+        setOpen(false);
+        setResult(null);
+        setCheckout(null);
+        slotConflictToThrow = new SlotUnavailableConflictError(response.message, {
+          phase: 'pre_payment',
+          slotDate: draft.date,
+          slotTime: draft.time,
+        });
       } else {
         setResult({ state: response.state ?? 'unavailable', message: response.message });
       }
     } catch { setResult({ state: 'unavailable', message: PAYWAY_MESSAGES.unavailable }); }
     finally { opening.current = false; setPreparing(false); }
+    if (slotConflictToThrow) {
+      throw slotConflictToThrow;
+    }
   }
 
   async function pay(event: React.FormEvent<HTMLFormElement>) {
@@ -887,6 +911,7 @@ export function PaywayBooking() {
           ) : undefined
         }
         isPaymentChecking={isPaymentChecking}
+        hasActivePaymentAttempt={hasPendingPayment || hasReviewNotice || result?.state === 'unknown'}
         initialStep={initialAttempt ? 4 : undefined}
         initialService={
           initialAttempt?.serviceName?.toLowerCase().includes('barba') && !initialAttempt?.serviceName?.toLowerCase().includes('corte')
