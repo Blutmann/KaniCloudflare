@@ -115,4 +115,12 @@ describe('KANI Barber Studio — Liquid Glass Experience (/reservar-turno-liquid
     expect(liquidCss).toContain('contain: layout style paint;');
     expect(liquidCss).toContain('@keyframes liquidMenuEnter');
   });
+
+  it('8. El stepper comparte exactamente los mismos márgenes laterales que las tarjetas de servicio', () => {
+    expect(liquidCss).toContain('padding: 8px 0 15px !important;');
+    expect(liquidCss).toContain('padding: 6px 20px 13px !important;');
+    expect(liquidCss).toContain('padding: 5px 16px 12px !important;');
+    expect(liquidCss).toContain('width: calc((100% - 40px) * var(--liquid-progress-ratio, 0.2)) !important;');
+    expect(liquidCss).toContain('width: calc((100% - 32px) * var(--liquid-progress-ratio, 0.2)) !important;');
+  });
 });
