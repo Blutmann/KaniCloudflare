@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useMemo, type ChangeEvent, type ReactNode } from 'react';
 import { Input } from '@/components/ui/input';
+import { CountryFlag } from '@/components/kani/country-flag';
 import {
   formatPhoneInput,
   normalizeCountrySearch,
@@ -149,7 +150,9 @@ export function PhoneInput({
             setQuery('');
           }}
         >
-          <span aria-hidden="true" className="phone-country-flag shrink-0">{selectedCountry?.flag}</span>
+          <span aria-hidden="true" className="phone-country-flag shrink-0">
+            <CountryFlag code={selectedCountry?.code} fallbackFlag={selectedCountry?.flag} />
+          </span>
           <span aria-hidden="true" className="phone-country-label whitespace-nowrap truncate">
             {countryDisplayName(selectedCountry)} {selectedCountry?.dialCode}
           </span>
@@ -179,7 +182,12 @@ export function PhoneInput({
                     key={c.code}
                     onClick={() => handleSelectCountry(c.code)}
                   >
-                    <span className="truncate">{c.flag} {c.name}</span>
+                    <span className="phone-country-option-content flex items-center gap-2 truncate min-w-0">
+                      <span aria-hidden="true" className="phone-country-flag shrink-0">
+                        <CountryFlag code={c.code} fallbackFlag={c.flag} />
+                      </span>
+                      <span className="truncate">{c.name}</span>
+                    </span>
                     <span className="shrink-0 text-muted-foreground">{c.dialCode}</span>
                   </button>
                 ))}
@@ -198,7 +206,12 @@ export function PhoneInput({
                     key={c.code}
                     onClick={() => handleSelectCountry(c.code)}
                   >
-                    <span className="truncate">{c.flag} {c.name}</span>
+                    <span className="phone-country-option-content flex items-center gap-2 truncate min-w-0">
+                      <span aria-hidden="true" className="phone-country-flag shrink-0">
+                        <CountryFlag code={c.code} fallbackFlag={c.flag} />
+                      </span>
+                      <span className="truncate">{c.name}</span>
+                    </span>
                     <span className="shrink-0 text-muted-foreground">{c.dialCode}</span>
                   </button>
                 ))}

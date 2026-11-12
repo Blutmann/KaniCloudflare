@@ -32,7 +32,7 @@ async function reachData() {
   await screen.findByRole('textbox', { name: /^Nombre/ });
   fireEvent.change(screen.getByRole('textbox', { name: /^Nombre/ }), { target: { value: 'Cliente Simulado' } });
   fireEvent.change(screen.getByRole('textbox', { name: /^Email/ }), { target: { value: 'fixture@example.test' } });
-  fireEvent.change(screen.getByPlaceholderText('11 2345-6789'), { target: { value: '1128436014' } });
+  fireEvent.change(await screen.findByPlaceholderText('11 2345-6789'), { target: { value: '1128436014' } });
 }
 async function openCard() {
   await reachData(); fireEvent.click(screen.getByRole('button', { name: 'Pagar seña' }));

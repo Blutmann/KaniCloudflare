@@ -1671,3 +1671,50 @@ html[data-theme='light'] .booking-slot-recovery-eyebrow {
   }
 }
 
+/* ==============================================================================
+   SELECTOR DE PAÍS / BANDERA (STEP "COMPLETÁ TUS DATOS")
+   - Bandera SVG nítida y perfectamente alineada
+   - Soporte para mobile y desktop, light y dark mode
+   - Evita desbordes horizontales o saltos de línea en pantallas pequeñas
+   ============================================================================== */
+
+.payway-reservation .phone-country-flag,
+.booking-page .phone-country-flag {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+  line-height: 1 !important;
+}
+
+.payway-reservation .phone-country-flag svg,
+.payway-reservation .phone-country-flag-svg,
+.booking-page .phone-country-flag svg,
+.booking-page .phone-country-flag-svg {
+  width: 19px !important;
+  height: 13px !important;
+  min-width: 19px !important;
+  max-width: 19px !important;
+  border-radius: 2px !important;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.12) !important;
+  object-fit: cover !important;
+  display: inline-block !important;
+  vertical-align: middle !important;
+  flex-shrink: 0 !important;
+}
+
+html[data-theme='dark'] .payway-reservation .phone-country-flag svg,
+html[data-theme='dark'] .payway-reservation .phone-country-flag-svg,
+html[data-theme='dark'] .booking-page .phone-country-flag svg,
+html[data-theme='dark'] .booking-page .phone-country-flag-svg {
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.2) !important;
+}
+
+.phone-country-option-content {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  min-width: 0 !important;
+}
+
+
