@@ -19,14 +19,24 @@ const requiredMarkers = [
     label: 'Black Card aprobada (54deb27c / 1e3fe4e)',
   },
   {
+    file: 'src/components/kani/v2-experimental/PanelV2Navigation.tsx',
+    patterns: ['Operación', 'Negocio', 'Estadísticas'],
+    label: 'Panel V2 3+3 (e57c74f1 / 112c2e1)',
+  },
+  {
+    file: 'src/components/kani/v2/MembershipCard.tsx',
+    patterns: ['MembershipCard'],
+    label: 'Card de Membresías restaurada (e57c74f1 / 112c2e1)',
+  },
+  {
     file: 'src/components/kani/booking-time-selection.tsx',
     patterns: ['BookingTimeSelection', 'groupSlotsByPeriod'],
-    label: 'Selector de horarios Mañana/Tarde (69f1cea)',
+    label: 'Selector de horarios Mañana/Tarde (57a337d7 / 69f1cea)',
   },
   {
     file: 'src/components/kani/booking-slot-recovery.tsx',
     patterns: ['BookingSlotUnavailableRecovery', 'Ese horario ya no está disponible'],
-    label: 'Recuperación de disponibilidad en reservas (69f1cea)',
+    label: 'Recuperación de disponibilidad en reservas (57a337d7 / 69f1cea)',
   },
 ];
 

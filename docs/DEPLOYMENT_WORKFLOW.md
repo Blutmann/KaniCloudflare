@@ -5,8 +5,8 @@ Este documento define el protocolo obligatorio para acumular mejoras aprobadas y
 ## 1. Arquitectura de ramas
 
 - `main`: versión estable actualmente en producción (`www.kanibarber.com`). No desarrollar directamente sobre `main`.
-- `integration/stable-preview`: rama acumulativa de integración con **todas** las mejoras y correcciones aprobadas listas para convivir en un mismo Preview antes de pasar a `main`.
-- `feat/*` / `fix/*`: ramas aisladas para una tarea puntual. **Deben crearse desde `integration/stable-preview`** (o incorporar sus cambios antes de publicar una Preview).
+- `integration/kani-consolidated`: rama acumulativa oficial con **todas** las mejoras aprobadas (Black Card 3D + Panel V2 3+3 + Reservas UX V2) listas para convivir antes de promover a `main`.
+- `feat/*` / `fix/*`: ramas aisladas para una tarea puntual. **Deben crearse desde `integration/kani-consolidated`** (o incorporar sus cambios antes de publicar una Preview).
 
 ## 2. Regla anti-regresión antes de empezar cualquier tarea
 
@@ -48,5 +48,6 @@ Antes de publicar una Preview:
 | --- | --- | --- | --- | --- | --- |
 | 2026-11-11 | `main` (prod) | `e37b8e1` | `f74baba9-9698-4256-be8d-096885c19eed` | `www.kanibarber.com` | Baseline estable de producción |
 | 2026-11-12 | `fix/restore-black-card` | `1e3fe4e` | `54deb27c-dd10-4d80-b5f8-efc0a9f696cd` | `restore-black-card` | Restauración aprobada de Black Card 3D + QR |
-| 2026-11-12 | `feat/booking-slots-recovery` | `69f1cea` | `57a337d7-746d-4a0b-a205-d09943fa4e08` | `reserva-ux` | UX V2 horarios y recuperación (base `main`, sin `1e3fe4e`) |
-| 2026-11-12 | `integration/stable-preview` | Ver historial git | Ver `wrangler versions list` | `stable-preview` | Integración de `69f1cea` + `1e3fe4e` |
+| 2026-11-12 | `feature/kani-panel-v2` | `112c2e1` | `e57c74f1-4fa1-4e3a-a649-662dfddba0d2` | `feature-kani-panel-v2` | Panel V2 3+3 + card Membresías restaurada |
+| 2026-11-12 | `feat/booking-slots-recovery` | `69f1cea` | `57a337d7-746d-4a0b-a205-d09943fa4e08` | `reserva-ux` | UX V2 horarios y recuperación (base `main`, sin `1e3fe4e` ni `112c2e1`) |
+| 2026-11-12 | `integration/kani-consolidated` | Ver historial git | Ver `wrangler versions list` | `kani-integrated` | Consolidación de `1e3fe4e` + `112c2e1` + `69f1cea` |
