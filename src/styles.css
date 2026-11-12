@@ -5166,7 +5166,7 @@ body[data-membership-page="true"] .site-header-slot {
 }
 
 .kani-card-3d-scene {
-  touch-action: none;
+  touch-action: pan-y;
   -webkit-user-select: none;
   user-select: none;
   perspective: none;
@@ -5192,11 +5192,13 @@ body[data-membership-page="true"] .site-header-slot {
 }
 
 .kani-card-3d-face {
+  -webkit-backface-visibility: visible;
   backface-visibility: visible;
   width: 100%;
 }
 
 .kani-card-3d-scene.is-3d-active .kani-card-3d-face {
+  -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
   transform: translateZ(1.5px);
 }
