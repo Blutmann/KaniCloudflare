@@ -55,3 +55,6 @@ Antes de publicar una Preview:
 | 2026-11-12 | `main` (prod) | `4044956` | Cloudflare Build | `www.kanibarber.com` | Exclusión pública de Franco y eliminación de barra contextual en paso Horarios |
 | 2026-11-12 | `main` (prod) | `372d52e` | Cloudflare Build | `www.kanibarber.com` | Eliminación de checkmark en horario seleccionado y fondo sólido (#ffffff / #242424) en horarios disponibles |
 | 2026-11-12 | `main` (prod) | `7036c01` | Cloudflare Build | `www.kanibarber.com` | Banderas SVG de alta resolución en selector y listado de país (compatible multiplataforma) |
+| 2026-11-12 | `main` (prod) | `e8b9f4d` | `377eaa12-4618-42ec-b6ae-37f0c71ae099` | `www.kanibarber.com` | Baseline previo a Liquid Glass V4 (disponible para rollback) |
+| 2026-11-12 | `feat/booking-liquid-glass` | `91a8b48` | `fd27acbf-5969-4ec4-8eca-c259f4cbb97c` | `feat-booking-liquid-glass` Preview | Liquid Glass V4 (`/reservar-turno-liquid`) |
+| 2026-11-12 | `main` (prod) | `ddff21b` | `4f6a5aeb-327d-495e-9472-d1d7f3a348ba` | `www.kanibarber.com/reservar-turno-liquid` | Integración Liquid Glass V4 en `main` (ruta independiente `/reservar-turno-liquid`; rutas tradicionales, Black Card, Panel V2 y pagos intactos; `verify-integration-base.mjs` 5/5 + `pnpm build` OK) |
