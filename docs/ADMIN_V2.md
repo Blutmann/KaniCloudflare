@@ -121,3 +121,34 @@ No asumir que un push a `main` es inocuo: GitHub registra Workers Builds para
 Hasta verificar esos puntos, no publicar ni hacer push a una rama que pueda
 activar un despliegue. La ausencia de GitHub Actions no implica ausencia de
 automatización: la integración de Cloudflare funciona como aplicación GitHub.
+
+---
+
+## Arquitectura experimental Panel V2 (Modelo 3 + 3)
+
+### Justificación UX del modelo 3 + 3
+
+La navegación histórica de `/panel-administracion/*` concentra seis destinos planos en una única barra. Con la incorporación de Pagos, Clientes y Membresías/Descuentos, la barra horizontal llegó al límite de densidad en mobile y mezcló tareas operativas de salón en tiempo real con tareas administrativas o comerciales.
+
+El modelo **3 + 3** separa la experiencia experimental (`/panel-v2/*`) en dos espacios mentales equivalentes sin alterar `/panel-administracion/*`:
+
+1. **Operación (`/panel-v2/operacion/*`)**: gestión diaria en tiempo real.
+   - `Turnos` | `Horarios` | `Clientes` (+ `Actualizar`)
+2. **Negocio (`/panel-v2/negocio/*`)**: caja, membresías y beneficios comerciales.
+   - `Pagos` (`Movimientos | Resumen`) | `Membresías` | `Descuentos` (+ `Actualizar`)
+3. **Estadísticas (`/panel-v2/estadisticas`)**: herramienta analítica independiente, accesible desde la entrada principal `/panel-v2` y desde el encabezado superior de espacios sin saturar la barra de operación ni de negocio.
+
+Ambas barras internas mantienen 3 pestañas funcionales (+ `Actualizar`) con igual jerarquía, una sola fila horizontal en desktop y mobile, y un selector discreto y persistente para conmutar directamente entre **Operación** y **Negocio**. Los estilos se encapsulan bajo `.kani-panel-v2` (`src/components/kani/v2-experimental/panel-v2.css`) sin modificar `styles.css`, `v2.css` ni `V2Layout`.
+
+### Inventario de métricas existentes por módulo (para futura redistribución)
+
+Antes de trasladar tarjetas analíticas dentro de cada espacio, se inventariaron las métricas reales ya calculadas en el código base (sin alterar fórmulas ni inventar indicadores):
+
+- **Turnos (`agenda.tsx`, `insights.tsx`)**: conteo por estado (`PENDING`, `CONFIRMED`, `COMPLETED`, `CANCELLED`, `NO_SHOW`), tasa de cancelación/inasistencia sobre turnos del período en `V2Insights` y próximo espacio disponible (`nextSpace`).
+- **Horarios (`admin-schedule-manager.tsx`, `data.tsx`)**: franjas habilitadas en ventana de 7 días (`starts`), servicios compatibles por bloque y excepciones extraordinarias.
+- **Clientes (`clients.tsx`, `kani-v2.ts#clientHistory`)**: visitas contabilizadas por IDs verificados (`COMPLETED` + pagos vinculados), gasto registrado (`paymentSummary(linked).value`), última visita, frecuencia promedio en días y cantidad de cancelaciones.
+- **Pagos (`payments.tsx`, `kani-v2.ts#paymentSummary`)**: `collected` (total recaudado), `value` (valor de servicios deduplicando señas vinculadas), `deposits` (señas online), `count` (movimientos activos), además de desglose por `paymentMethod` y barbero disponible en la nueva vista `Resumen` de `PanelV2Payments`.
+- **Membresías (`memberships-discounts.tsx`, `kani-recurrences-memberships.ts`)**: KPIs existentes en módulo (`membresías activas`, `pendientes de pago`, `próximas a vencer <= 30 días`, `sesiones restantes`), consumos y reintegros auditados.
+- **Descuentos (`discounts.tsx`, `admin-benefit-codes-section.tsx`)**: estado de códigos promocionales (`ACTIVE`, `CONSUMED`, vencidos) y `times_used` / `usages` asociados a turnos.
+
+En esta primera iteración experimental se conserva `V2Insights` completo en `/panel-v2/estadisticas` y se añade únicamente la vista `Resumen` en Pagos sin sobrecargar Turnos, Horarios o Clientes hasta validar rutas y paridad del panel original.

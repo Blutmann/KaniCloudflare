@@ -1,12 +1,5 @@
 import { useMemo, useState, type FormEvent } from "react";
 import {
-  Calendar,
-  Check,
-  CheckCircle2,
-  Copy,
-  CreditCard,
-  ExternalLink,
-  History,
   PackageCheck,
   Plus,
   RefreshCw,
@@ -22,7 +15,6 @@ import {
   createClientMembership,
   regenerateMembershipPublicToken,
   KANI_MEMBERSHIP_PAYMENT_METHODS,
-  MEMBERSHIP_STATUS_LABELS,
   modifyRecurringAppointmentSeries,
   refundMembershipSession,
   registerMembershipPayment,
@@ -38,6 +30,7 @@ import { BenefitCodesAdminSection } from "@/components/kani/admin-benefit-codes-
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { useV2 } from "./data";
 import { V2Discounts } from "./discounts";
+import { EditMembershipModal, MembershipCard } from "./MembershipCard";
 import { AdminFilterCell, AdminFilterPanel, Empty, Metric } from "./shared";
 
 const SERVICE_DEFAULT_PRICES: Record<MembershipAllowedServiceName, number> = {
@@ -48,8 +41,10 @@ const SERVICE_DEFAULT_PRICES: Record<MembershipAllowedServiceName, number> = {
 
 export function V2MembershipsAndDiscounts({
   initialTab = "MEMBRESIAS",
+  standaloneTab,
 }: {
   initialTab?: "MEMBRESIAS" | "DESCUENTOS";
+  standaloneTab?: "MEMBRESIAS" | "DESCUENTOS";
 }) {
   const data = useV2();
   const staff = useAdminStaff();
@@ -58,9 +53,15 @@ export function V2MembershipsAndDiscounts({
   const today = businessDateToday();
   const soonThreshold = addCalendarDays(today, 30);
 
-  const [activeTab, setActiveTab] = useState<"MEMBRESIAS" | "DESCUENTOS">(
+  const [tabState, setTabState] = useState<"MEMBRESIAS" | "DESCUENTOS">(
     !isOperator && initialTab === "DESCUENTOS" ? "MEMBRESIAS" : initialTab,
   );
+  const activeTab = standaloneTab
+    ? !isOperator && standaloneTab === "DESCUENTOS"
+      ? "MEMBRESIAS"
+      : standaloneTab
+    : tabState;
+  const setActiveTab = setTabState;
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"ALL" | MembershipStatus>("ALL");
   const [barberFilter, setBarberFilter] = useState<string>(
@@ -88,33 +89,8 @@ export function V2MembershipsAndDiscounts({
   const [paymentMethod, setPaymentMethod] = useState<KaniMembershipPaymentMethod>("Transferencia");
   const [createNotes, setCreateNotes] = useState("");
 
-  // Detail & History Modal
+  // Detail & Unified Edit Modal
   const [detailMembershipId, setDetailMembershipId] = useState<string | null>(null);
-
-  // Register Payment Modal
-  const [payModalMembership, setPayModalMembership] = useState<ClientMembershipRecord | null>(null);
-  const [payModalMethod, setPayModalMethod] = useState<KaniMembershipPaymentMethod>("Transferencia");
-
-  // Consume Session Modal
-  const [consumeModalMembership, setConsumeModalMembership] = useState<ClientMembershipRecord | null>(null);
-  const [consumeServiceName, setConsumeServiceName] = useState<MembershipAllowedServiceName>("Corte");
-  const [consumeType, setConsumeType] = useState<MembershipConsumptionType>("SERVICE_COMPLETED");
-  const [consumeAppointmentId, setConsumeAppointmentId] = useState<string>("");
-  const [consumeNotes, setConsumeNotes] = useState("");
-
-  // Refund Confirmation Modal
-  const [refundTarget, setRefundTarget] = useState<{
-    membership: ClientMembershipRecord;
-    consumptionId: string;
-    serviceName: string;
-  } | null>(null);
-  const [refundNotes, setRefundNotes] = useState("");
-
-  // Edit Expiration Modal
-  const [editExpirationMembership, setEditExpirationMembership] = useState<ClientMembershipRecord | null>(null);
-  const [editExpMode, setEditExpMode] = useState<"NONE" | "DATE">("NONE");
-  const [editExpDate, setEditExpDate] = useState("");
-  const [editExpNotes, setEditExpNotes] = useState("");
 
   // Exhausted Membership Warning Modal (FASE 7)
   const [exhaustedMembership, setExhaustedMembership] = useState<ClientMembershipRecord | null>(null);
@@ -122,12 +98,14 @@ export function V2MembershipsAndDiscounts({
 
   // Black Card & Digital Link State (b733a0b2)
   const [copiedMembershipId, setCopiedMembershipId] = useState<string | null>(null);
-  const [regeneratingMembership, setRegeneratingMembership] = useState<ClientMembershipRecord | null>(null);
   const [isRegenerating, setIsRegenerating] = useState(false);
 
   async function handleCopyLink(token?: string | null, membershipId?: string) {
     if (!token) return;
-    const origin = typeof window !== "undefined" && window.location.origin ? window.location.origin : "https://www.kanibarber.com";
+    const origin =
+      typeof window !== "undefined" && window.location.origin
+        ? window.location.origin
+        : "https://www.kanibarber.com";
     const url = `${origin}/membresia/${token}`;
     try {
       await navigator.clipboard.writeText(url);
@@ -135,7 +113,7 @@ export function V2MembershipsAndDiscounts({
         setCopiedMembershipId(membershipId);
         setTimeout(() => setCopiedMembershipId(null), 2500);
       }
-      setSuccessNotice("Enlace de tarjeta digital copiado al portapapeles.");
+      setNotice("Enlace de tarjeta digital copiado al portapapeles.");
     } catch {
       setErrorNotice("No se pudo copiar el enlace automáticamente.");
     }
@@ -143,8 +121,9 @@ export function V2MembershipsAndDiscounts({
 
   async function handleRegenerateToken(target: ClientMembershipRecord) {
     if (!isOperator) {
-      setErrorNotice("Solo administradores o encargados pueden regenerar enlaces.");
-      return;
+      const msg = "Solo administradores o encargados pueden regenerar enlaces.";
+      setErrorNotice(msg);
+      throw new Error(msg);
     }
     setIsRegenerating(true);
     try {
@@ -153,12 +132,15 @@ export function V2MembershipsAndDiscounts({
         target.publicToken = res.publicToken;
         target.publicTokenRevokedAt = null;
         await handleCopyLink(res.publicToken, target.id);
-        setSuccessNotice("Enlace regenerado con éxito y copiado al portapapeles. El enlace anterior quedó revocado.");
-        setRegeneratingMembership(null);
+        setNotice(
+          "Enlace regenerado con éxito y copiado al portapapeles. El enlace anterior quedó revocado.",
+        );
         await data.refresh();
       }
-    } catch (err: any) {
-      setErrorNotice(err instanceof Error ? err.message : "No se pudo regenerar el enlace.");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "No se pudo regenerar el enlace.";
+      setErrorNotice(msg);
+      throw err instanceof Error ? err : new Error(msg);
     } finally {
       setIsRegenerating(false);
     }
@@ -295,96 +277,115 @@ export function V2MembershipsAndDiscounts({
     }
   }
 
-  async function handleRegisterPayment() {
-    if (!payModalMembership || busy) return;
+  async function handleRegisterPayment(
+    membership: ClientMembershipRecord,
+    method: KaniMembershipPaymentMethod,
+  ) {
+    if (busy) return;
     setBusy(true);
     setErrorNotice("");
     try {
-      await registerMembershipPayment(payModalMembership.id, payModalMethod, staff);
-      setPayModalMembership(null);
+      await registerMembershipPayment(membership.id, method, staff);
       setNotice("Pago registrado. La membresía ahora está Activa.");
       await data.refresh();
     } catch (err) {
-      setErrorNotice(err instanceof Error ? err.message : "No se pudo registrar el pago.");
+      const msg = err instanceof Error ? err.message : "No se pudo registrar el pago.";
+      setErrorNotice(msg);
+      throw err instanceof Error ? err : new Error(msg);
     } finally {
       setBusy(false);
     }
   }
 
-  async function handleConsumeSession() {
-    if (!consumeModalMembership || busy) return;
+  async function handleConsumeSession(input: {
+    membership: ClientMembershipRecord;
+    serviceName: MembershipAllowedServiceName;
+    appointmentId: string | null;
+    consumptionType: MembershipConsumptionType;
+    notes: string | null;
+  }) {
+    if (busy) return;
     setBusy(true);
     setErrorNotice("");
     try {
       const res = await consumeMembershipSession(
         {
-          membershipId: consumeModalMembership.id,
-          serviceName: consumeServiceName,
-          appointmentId: consumeAppointmentId || null,
-          consumptionType: consumeType,
-          notes: consumeNotes.trim() || null,
+          membershipId: input.membership.id,
+          serviceName: input.serviceName,
+          appointmentId: input.appointmentId,
+          consumptionType: input.consumptionType,
+          notes: input.notes,
         },
         staff,
       );
-      setConsumeModalMembership(null);
-      setConsumeNotes("");
-      setConsumeAppointmentId("");
       await data.refresh();
       if (res.isExhausted) {
+        setDetailMembershipId(null);
         setExhaustedMembership(res.membership);
       } else {
         setNotice(`Sesión consumida correctamente. Sesiones restantes: ${res.remainingSessions}.`);
       }
     } catch (err) {
-      setErrorNotice(err instanceof Error ? err.message : "No se pudo consumir la sesión.");
+      const msg = err instanceof Error ? err.message : "No se pudo consumir la sesión.";
+      setErrorNotice(msg);
+      throw err instanceof Error ? err : new Error(msg);
     } finally {
       setBusy(false);
     }
   }
 
-  async function handleRefundSession() {
-    if (!refundTarget || busy) return;
+  async function handleRefundSession(input: {
+    membership: ClientMembershipRecord;
+    consumptionId: string;
+    reason: string;
+  }) {
+    if (busy) return;
     setBusy(true);
     setErrorNotice("");
     try {
       const res = await refundMembershipSession(
         {
-          consumptionId: refundTarget.consumptionId,
-          membershipId: refundTarget.membership.id,
-          reason: refundNotes.trim() || "Reintegro autorizado por personal",
+          consumptionId: input.consumptionId,
+          membershipId: input.membership.id,
+          reason: input.reason,
         },
         staff,
       );
-      setRefundTarget(null);
-      setRefundNotes("");
       setNotice(`Sesión reintegrada al cliente. Sesiones disponibles: ${res.remainingSessions}.`);
       await data.refresh();
     } catch (err) {
-      setErrorNotice(err instanceof Error ? err.message : "No se pudo reintegrar la sesión.");
+      const msg = err instanceof Error ? err.message : "No se pudo reintegrar la sesión.";
+      setErrorNotice(msg);
+      throw err instanceof Error ? err : new Error(msg);
     } finally {
       setBusy(false);
     }
   }
 
-  async function handleSaveExpiration() {
-    if (!editExpirationMembership || busy) return;
+  async function handleUpdateMembershipDetails(input: {
+    membership: ClientMembershipRecord;
+    expiresAt: string | null;
+    notes: string | null;
+  }) {
+    if (busy) return;
     setBusy(true);
     setErrorNotice("");
     try {
       await updateClientMembershipDetails(
         {
-          membershipId: editExpirationMembership.id,
-          expiresAt: editExpMode === "DATE" && editExpDate ? editExpDate : null,
-          clearExpiration: editExpMode === "NONE",
-          notes: editExpNotes.trim() || null,
+          membershipId: input.membership.id,
+          expiresAt: input.expiresAt,
+          clearExpiration: !input.expiresAt,
+          notes: input.notes,
         },
         staff,
       );
-      setEditExpirationMembership(null);
-      setNotice("Fecha de vencimiento actualizada y auditada en el historial.");
+      setNotice("Vigencia y observaciones actualizadas y auditadas en el historial.");
       await data.refresh();
     } catch (err) {
-      setErrorNotice(err instanceof Error ? err.message : "No se pudo actualizar el vencimiento.");
+      const msg = err instanceof Error ? err.message : "No se pudo actualizar el vencimiento.";
+      setErrorNotice(msg);
+      throw err instanceof Error ? err : new Error(msg);
     } finally {
       setBusy(false);
     }
@@ -443,50 +444,60 @@ export function V2MembershipsAndDiscounts({
         >
           <div>
             <h1 style={{ fontSize: "18px", fontWeight: 700, margin: 0 }}>
-              Membresías y descuentos
+              {standaloneTab === "DESCUENTOS"
+                ? "Descuentos"
+                : standaloneTab === "MEMBRESIAS"
+                  ? "Membresías"
+                  : "Membresías y descuentos"}
             </h1>
             <p style={{ fontSize: "12.5px", color: "var(--muted-foreground)", margin: "2px 0 0" }}>
-              Gestión integral de paquetes prepagados de 4 y 10 servicios, sesiones y códigos de beneficio.
+              {standaloneTab === "DESCUENTOS"
+                ? "Administración de códigos promocionales y beneficios."
+                : standaloneTab === "MEMBRESIAS"
+                  ? "Gestión integral de paquetes prepagados de 4 y 10 servicios, sesiones y tarjetas."
+                  : "Gestión integral de paquetes prepagados de 4 y 10 servicios, sesiones y códigos de beneficio."}
             </p>
           </div>
 
-          <div
-            role="tablist"
-            aria-label="Pestañas de Membresías y descuentos"
-            style={{
-              display: "inline-flex",
-              gap: "6px",
-              padding: "4px",
-              borderRadius: "10px",
-              background: "var(--v2-inset, rgba(255,255,255,0.04))",
-              border: "1px solid var(--border)",
-            }}
-          >
-            <button
-              type="button"
-              role="tab"
-              aria-selected={activeTab === "MEMBRESIAS"}
-              className={activeTab === "MEMBRESIAS" ? "v2-primary" : "v2-secondary"}
-              style={{ minHeight: "34px", padding: "0 14px", fontSize: "12.5px" }}
-              onClick={() => setActiveTab("MEMBRESIAS")}
+          {!standaloneTab && (
+            <div
+              role="tablist"
+              aria-label="Pestañas de Membresías y descuentos"
+              style={{
+                display: "inline-flex",
+                gap: "6px",
+                padding: "4px",
+                borderRadius: "10px",
+                background: "var(--v2-inset, rgba(255,255,255,0.04))",
+                border: "1px solid var(--border)",
+              }}
             >
-              <PackageCheck size={15} />
-              <span>Membresías</span>
-            </button>
-            {isOperator && (
               <button
                 type="button"
                 role="tab"
-                aria-selected={activeTab === "DESCUENTOS"}
-                className={activeTab === "DESCUENTOS" ? "v2-primary" : "v2-secondary"}
+                aria-selected={activeTab === "MEMBRESIAS"}
+                className={activeTab === "MEMBRESIAS" ? "v2-primary" : "v2-secondary"}
                 style={{ minHeight: "34px", padding: "0 14px", fontSize: "12.5px" }}
-                onClick={() => setActiveTab("DESCUENTOS")}
+                onClick={() => setActiveTab("MEMBRESIAS")}
               >
-                <Tag size={15} />
-                <span>Descuentos</span>
+                <PackageCheck size={15} />
+                <span>Membresías</span>
               </button>
-            )}
-          </div>
+              {isOperator && (
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={activeTab === "DESCUENTOS"}
+                  className={activeTab === "DESCUENTOS" ? "v2-primary" : "v2-secondary"}
+                  style={{ minHeight: "34px", padding: "0 14px", fontSize: "12.5px" }}
+                  onClick={() => setActiveTab("DESCUENTOS")}
+                >
+                  <Tag size={15} />
+                  <span>Descuentos</span>
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {notice && (
@@ -656,234 +667,27 @@ export function V2MembershipsAndDiscounts({
                 )}
               </Empty>
             ) : (
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fill, minmax(290px, 1fr))",
-                  gap: "12px",
-                }}
-              >
+              <div className={`kani-mgrid${scopedMemberships.length === 1 ? " is-single" : ""}`}>
                 {scopedMemberships.map((m) => {
                   const client = data.clients.find((c) => c.id === m.clientId);
                   const barber = staff.barbers.find((b) => b.id === m.barberId);
                   return (
-                    <article
+                    <MembershipCard
                       key={m.id}
-                      className="v2-panel"
-                      style={{
-                        padding: "14px",
-                        display: "flex",
-                        flexDirection: "column",
-                        justifyContent: "space-between",
-                        gap: "10px",
-                        border: "1px solid var(--border)",
+                      membership={m}
+                      clientName={m.clientName || client?.name || "Cliente"}
+                      barberName={barber?.name || m.barberName || null}
+                      today={today}
+                      soonThreshold={soonThreshold}
+                      copied={copiedMembershipId === m.id}
+                      onEdit={(selected) => {
+                        setErrorNotice("");
+                        setDetailMembershipId(selected.id);
                       }}
-                    >
-                      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            gap: "8px",
-                          }}
-                        >
-                          <strong style={{ fontSize: "14px" }}>{m.planName}</strong>
-                          <span
-                            className="v2-manual-badge"
-                            style={{
-                              background:
-                                m.status === "ACTIVE"
-                                  ? "rgba(16, 185, 129, 0.14)"
-                                  : m.status === "PENDING_PAYMENT"
-                                    ? "rgba(234, 179, 8, 0.16)"
-                                    : "rgba(148, 163, 184, 0.15)",
-                              color:
-                                m.status === "ACTIVE"
-                                  ? "#10b981"
-                                  : m.status === "PENDING_PAYMENT"
-                                    ? "#eab308"
-                                    : "var(--muted-foreground)",
-                            }}
-                          >
-                            {MEMBERSHIP_STATUS_LABELS[m.status]}
-                          </span>
-                        </div>
-
-                        <div style={{ fontSize: "13px", fontWeight: 600 }}>
-                          {m.clientName || client?.name || "Cliente"}
-                          {barber?.name || m.barberName ? (
-                            <span style={{ fontWeight: 400, color: "var(--muted-foreground)" }}>
-                              {" "}
-                              · {barber?.name || m.barberName}
-                            </span>
-                          ) : null}
-                        </div>
-
-                        <div
-                          style={{
-                            padding: "8px 10px",
-                            borderRadius: "8px",
-                            background: "var(--v2-inset, rgba(255,255,255,0.03))",
-                            fontSize: "12px",
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: "4px",
-                          }}
-                        >
-                          <div style={{ display: "flex", justifyContent: "space-between" }}>
-                            <span>Sesiones disponibles:</span>
-                            <strong>
-                              {m.remainingSessions} de {m.totalSessions}
-                            </strong>
-                          </div>
-                          <div style={{ color: "var(--muted-foreground)", fontSize: "11.5px" }}>
-                            {m.items
-                              .map(
-                                (item) =>
-                                  `${item.serviceName}: ${item.remainingQuantity}/${item.totalQuantity}`,
-                              )
-                              .join(" · ")}
-                          </div>
-                        </div>
-
-                        <div
-                          style={{
-                            fontSize: "11.5px",
-                            color: "var(--muted-foreground)",
-                            display: "flex",
-                            flexWrap: "wrap",
-                            justifyContent: "space-between",
-                            gap: "4px",
-                          }}
-                        >
-                          <span>
-                            Total ({m.discountPercent}% OFF):{" "}
-                            <strong style={{ color: "var(--foreground)" }}>
-                              {money(m.totalPriceArs)}
-                            </strong>
-                          </span>
-                          <span>
-                            {m.expiresAt ? `Vence: ${dateLabel(m.expiresAt)}` : "Sin vencimiento"}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div
-                        style={{
-                          display: "flex",
-                          flexWrap: "wrap",
-                          gap: "6px",
-                          paddingTop: "8px",
-                          borderTop: "1px solid var(--border)",
-                        }}
-                      >
-                        {m.status === "PENDING_PAYMENT" && (
-                          <button
-                            type="button"
-                            className="v2-primary"
-                            style={{ minHeight: "32px", padding: "0 10px", fontSize: "12px" }}
-                            onClick={() => {
-                              setPayModalMembership(m);
-                              setPayModalMethod("Transferencia");
-                            }}
-                          >
-                            <CreditCard size={13} />
-                            <span>Registrar pago</span>
-                          </button>
-                        )}
-                        {m.status === "ACTIVE" && m.remainingSessions > 0 && (
-                          <button
-                            type="button"
-                            className="v2-primary"
-                            style={{ minHeight: "32px", padding: "0 10px", fontSize: "12px" }}
-                            onClick={() => {
-                              const availableItem =
-                                m.items.find((i) => i.remainingQuantity > 0) ?? m.items[0];
-                              setConsumeModalMembership(m);
-                              setConsumeServiceName(availableItem?.serviceName ?? "Corte");
-                              setConsumeType("SERVICE_COMPLETED");
-                              setConsumeAppointmentId("");
-                              setConsumeNotes("");
-                            }}
-                          >
-                            <CheckCircle2 size={13} />
-                            <span>Registrar consumo</span>
-                          </button>
-                        )}
-                        <button
-                          type="button"
-                          className="v2-secondary"
-                          style={{ minHeight: "32px", padding: "0 10px", fontSize: "12px" }}
-                          onClick={() => setDetailMembershipId(m.id)}
-                        >
-                          <History size={13} />
-                          <span>Detalle e historial</span>
-                        </button>
-                        <button
-                          type="button"
-                          className="v2-secondary"
-                          style={{ minHeight: "32px", padding: "0 10px", fontSize: "12px" }}
-                          onClick={() => {
-                            setEditExpirationMembership(m);
-                            setEditExpMode(m.expiresAt ? "DATE" : "NONE");
-                            setEditExpDate(m.expiresAt || addCalendarDays(today, 90));
-                            setEditExpNotes(m.notes || "");
-                          }}
-                        >
-                          <Calendar size={13} />
-                          <span>Vencimiento</span>
-                        </button>
-                        {m.status === "EXHAUSTED" && (
-                          <button
-                            type="button"
-                            className="v2-secondary"
-                            style={{ minHeight: "32px", padding: "0 10px", fontSize: "12px" }}
-                            onClick={() => openRenewalModal(m)}
-                          >
-                            <RefreshCw size={13} />
-                            <span>Renovar</span>
-                          </button>
-                        )}
-                        {m.publicToken && (
-                          <>
-                            <a
-                              href={`/membresia/${m.publicToken}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="v2-secondary"
-                              style={{
-                                minHeight: "32px",
-                                padding: "0 10px",
-                                fontSize: "12px",
-                                display: "inline-flex",
-                                alignItems: "center",
-                                gap: "5px",
-                                textDecoration: "none",
-                              }}
-                              title="Abrir tarjeta digital en nueva pestaña"
-                            >
-                              <CreditCard size={13} />
-                              <span>Ver tarjeta</span>
-                            </a>
-                            <button
-                              type="button"
-                              className="v2-secondary"
-                              style={{ minHeight: "32px", padding: "0 10px", fontSize: "12px" }}
-                              title={copiedMembershipId === m.id ? "¡Enlace copiado!" : "Copiar enlace de tarjeta digital"}
-                              onClick={() => handleCopyLink(m.publicToken, m.id)}
-                            >
-                              {copiedMembershipId === m.id ? (
-                                <Check size={13} style={{ color: "#10b981" }} />
-                              ) : (
-                                <Copy size={13} />
-                              )}
-                              <span>{copiedMembershipId === m.id ? "Copiado" : "Copiar enlace"}</span>
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </article>
+                      onCopyLink={(selected) => {
+                        void handleCopyLink(selected.publicToken, selected.id);
+                      }}
+                    />
                   );
                 })}
               </div>
@@ -1140,477 +944,36 @@ export function V2MembershipsAndDiscounts({
         </DialogContent>
       </Dialog>
 
-      {/* Modal: Registrar Pago de Membresía Pendiente */}
-      <Dialog
-        open={!!payModalMembership}
-        onOpenChange={(open) => {
-          if (!open && !busy) setPayModalMembership(null);
+      {/* Modal Unificado: Editar y Administrar Membresía */}
+      <EditMembershipModal
+        membership={detailMembership}
+        clientName={
+          detailMembership?.clientName ||
+          data.clients.find((c) => c.id === detailMembership?.clientId)?.name ||
+          "Cliente"
+        }
+        barberName={
+          staff.barbers.find((b) => b.id === detailMembership?.barberId)?.name ||
+          detailMembership?.barberName ||
+          null
+        }
+        appointments={data.appointments ?? []}
+        isOperator={isOperator}
+        busy={busy}
+        isRegenerating={isRegenerating}
+        copied={copiedMembershipId === detailMembership?.id}
+        onClose={() => setDetailMembershipId(null)}
+        onCopyLink={(selected) => handleCopyLink(selected.publicToken, selected.id)}
+        onRegenerateToken={handleRegenerateToken}
+        onRegisterPayment={handleRegisterPayment}
+        onConsumeSession={handleConsumeSession}
+        onRefundSession={handleRefundSession}
+        onUpdateDetails={handleUpdateMembershipDetails}
+        onRenew={(selected) => {
+          setDetailMembershipId(null);
+          openRenewalModal(selected);
         }}
-      >
-        <DialogContent className="v2-dialog">
-          <DialogTitle>Registrar pago de membresía</DialogTitle>
-          <DialogDescription>
-            {payModalMembership?.planName} · Total a cobrar:{" "}
-            <strong>{money(payModalMembership?.totalPriceArs ?? 0)}</strong>. Al registrar el pago completo, la membresía pasará a estado <strong>Activa</strong> y permitirá consumir sesiones.
-          </DialogDescription>
-          <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "10px" }}>
-            <label className="v2-field">
-              <span className="v2-field-label">Medio de pago</span>
-              <select
-                value={payModalMethod}
-                onChange={(e) => setPayModalMethod(e.target.value as KaniMembershipPaymentMethod)}
-              >
-                {KANI_MEMBERSHIP_PAYMENT_METHODS.map((method) => (
-                  <option key={method} value={method}>
-                    {method}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", marginTop: "8px" }}>
-              <button
-                type="button"
-                className="v2-secondary"
-                disabled={busy}
-                onClick={() => setPayModalMembership(null)}
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                className="v2-primary"
-                disabled={busy}
-                onClick={() => void handleRegisterPayment()}
-              >
-                {busy ? "Procesando…" : "Confirmar pago y activar"}
-              </button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Modal: Registrar Consumo de Sesión */}
-      <Dialog
-        open={!!consumeModalMembership}
-        onOpenChange={(open) => {
-          if (!open && !busy) setConsumeModalMembership(null);
-        }}
-      >
-        <DialogContent className="v2-dialog">
-          <DialogTitle>Registrar consumo de sesión</DialogTitle>
-          <DialogDescription>
-            {consumeModalMembership?.planName} · Sesiones disponibles:{" "}
-            {consumeModalMembership?.remainingSessions}.
-          </DialogDescription>
-          {consumeModalMembership && (
-            <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "10px" }}>
-              <label className="v2-field">
-                <span className="v2-field-label">Servicio a descontar</span>
-                <select
-                  value={consumeServiceName}
-                  onChange={(e) =>
-                    setConsumeServiceName(e.target.value as MembershipAllowedServiceName)
-                  }
-                >
-                  {consumeModalMembership.items.map((item) => (
-                    <option
-                      key={item.id}
-                      value={item.serviceName}
-                      disabled={item.remainingQuantity <= 0}
-                    >
-                      {item.serviceName} (Disponibles: {item.remainingQuantity}/{item.totalQuantity})
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="v2-field">
-                <span className="v2-field-label">Motivo del consumo</span>
-                <select
-                  value={consumeType}
-                  onChange={(e) => setConsumeType(e.target.value as MembershipConsumptionType)}
-                >
-                  <option value="SERVICE_COMPLETED">Servicio realizado</option>
-                  <option value="NO_SHOW_DEDUCTION">Descontar sesión por inasistencia</option>
-                </select>
-              </label>
-
-              <label className="v2-field">
-                <span className="v2-field-label">Turno vinculado (opcional)</span>
-                <select
-                  value={consumeAppointmentId}
-                  onChange={(e) => setConsumeAppointmentId(e.target.value)}
-                >
-                  <option value="">Sin turno específico / registro directo</option>
-                  {(data.appointments ?? [])
-                    .filter(
-                      (a) =>
-                        a.clientId === consumeModalMembership.clientId &&
-                        a.statusCode !== "CANCELLED" &&
-                        !a.membershipConsumptionId,
-                    )
-                    .map((a) => (
-                      <option key={a.id} value={a.id}>
-                        {a.date} · {a.time} — {formatServiceName(a.serviceName)}
-                      </option>
-                    ))}
-                </select>
-              </label>
-
-              <label className="v2-field">
-                <span className="v2-field-label">Observación</span>
-                <input
-                  type="text"
-                  value={consumeNotes}
-                  onChange={(e) => setConsumeNotes(e.target.value)}
-                  placeholder="Opcional"
-                />
-              </label>
-
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", marginTop: "8px" }}>
-                <button
-                  type="button"
-                  className="v2-secondary"
-                  disabled={busy}
-                  onClick={() => setConsumeModalMembership(null)}
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="button"
-                  className="v2-primary"
-                  disabled={busy}
-                  onClick={() => void handleConsumeSession()}
-                >
-                  {busy ? "Registrando…" : "Confirmar consumo"}
-                </button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Modal: Detalle e Historial de Membresía */}
-      <Dialog
-        open={!!detailMembership}
-        onOpenChange={(open) => {
-          if (!open) setDetailMembershipId(null);
-        }}
-      >
-        <DialogContent className="v2-dialog" style={{ maxWidth: "560px" }}>
-          <DialogTitle>{detailMembership?.planName}</DialogTitle>
-          <DialogDescription>
-            Estado:{" "}
-            <strong>
-              {detailMembership ? MEMBERSHIP_STATUS_LABELS[detailMembership.status] : ""}
-            </strong>{" "}
-            · Subtotal: {money(detailMembership?.subtotalArs ?? 0)} · Descuento (
-            {detailMembership?.discountPercent}%): -{money(detailMembership?.discountAmountArs ?? 0)}{" "}
-            · Total congelado: <strong>{money(detailMembership?.totalPriceArs ?? 0)}</strong>
-          </DialogDescription>
-          {detailMembership && (
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "12px",
-                marginTop: "10px",
-                maxHeight: "65vh",
-                overflowY: "auto",
-              }}
-            >
-              {detailMembership.publicToken && (
-                <div
-                  style={{
-                    padding: "10px 12px",
-                    borderRadius: "8px",
-                    background: "var(--v2-inset, rgba(255,255,255,0.03))",
-                    border: "1px solid var(--border)",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "6px",
-                  }}
-                >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontSize: "12px", fontWeight: 600 }}>Black Card del titular</span>
-                    <a
-                      href={`/membresia/${detailMembership.publicToken}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{
-                        fontSize: "11.5px",
-                        color: "var(--gold)",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "4px",
-                        textDecoration: "none",
-                      }}
-                    >
-                      <span>Ver tarjeta</span>
-                      <ExternalLink size={11} />
-                    </a>
-                  </div>
-                  <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginTop: "4px" }}>
-                    <button
-                      type="button"
-                      className="v2-secondary"
-                      style={{ minHeight: "30px", padding: "0 10px", fontSize: "11.5px" }}
-                      onClick={() => handleCopyLink(detailMembership.publicToken, detailMembership.id)}
-                    >
-                      {copiedMembershipId === detailMembership.id ? (
-                        <Check size={12} style={{ color: "#10b981" }} />
-                      ) : (
-                        <Copy size={12} />
-                      )}
-                      <span>{copiedMembershipId === detailMembership.id ? "Copiado" : "Copiar enlace"}</span>
-                    </button>
-                    {isOperator && (
-                      <button
-                        type="button"
-                        className="v2-secondary"
-                        style={{ minHeight: "30px", padding: "0 10px", fontSize: "11.5px", color: "#f87171" }}
-                        onClick={() => setRegeneratingMembership(detailMembership)}
-                      >
-                        <RefreshCw size={12} />
-                        <span>Regenerar enlace</span>
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
-              <div>
-                <h3 style={{ fontSize: "13px", fontWeight: 700, marginBottom: "6px" }}>
-                  Sesiones por servicio
-                </h3>
-                <div style={{ display: "flex", flexDirection: "column", gap: "4px", fontSize: "12.5px" }}>
-                  {detailMembership.items.map((item) => (
-                    <div
-                      key={item.id}
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        padding: "6px 10px",
-                        borderRadius: "6px",
-                        background: "var(--v2-inset, rgba(255,255,255,0.03))",
-                      }}
-                    >
-                      <span>
-                        {item.serviceName} (Tarifa congelada: {money(item.unitPriceSnapshotArs)})
-                      </span>
-                      <strong>
-                        {item.remainingQuantity} disponibles / {item.totalQuantity} totales
-                      </strong>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <h3 style={{ fontSize: "13px", fontWeight: 700, marginBottom: "6px" }}>
-                  Historial de sesiones consumidas y reintegros
-                </h3>
-                {!detailMembership.consumptions.length ? (
-                  <p style={{ fontSize: "12px", color: "var(--muted-foreground)" }}>
-                    Aún no se registraron consumos en esta membresía.
-                  </p>
-                ) : (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                    {detailMembership.consumptions.map((c) => (
-                      <div
-                        key={c.id}
-                        style={{
-                          padding: "8px 10px",
-                          borderRadius: "6px",
-                          border: "1px solid var(--border)",
-                          fontSize: "12px",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          gap: "8px",
-                        }}
-                      >
-                        <div>
-                          <strong>{c.serviceName}</strong> ·{" "}
-                          {c.consumptionType === "NO_SHOW_DEDUCTION"
-                            ? "Descontada por inasistencia"
-                            : "Servicio realizado"}
-                          <div style={{ color: "var(--muted-foreground)", fontSize: "11px" }}>
-                            {c.consumedAt.replace("T", " ").slice(0, 16)}
-                            {c.status === "REFUNDED"
-                              ? ` · Reintegrada (${c.refundReason || "Autorizado"})`
-                              : ""}
-                          </div>
-                        </div>
-                        {c.status === "CONSUMED" ? (
-                          <button
-                            type="button"
-                            className="v2-secondary"
-                            style={{ minHeight: "28px", padding: "0 8px", fontSize: "11.5px" }}
-                            onClick={() => {
-                              setRefundTarget({
-                                membership: detailMembership,
-                                consumptionId: c.id,
-                                serviceName: c.serviceName,
-                              });
-                              setRefundNotes("");
-                            }}
-                          >
-                            Reintegrar sesión
-                          </button>
-                        ) : (
-                          <span style={{ fontSize: "11px", color: "#10b981", fontWeight: 600 }}>
-                            Reintegrada
-                          </span>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <h3 style={{ fontSize: "13px", fontWeight: 700, marginBottom: "6px" }}>
-                  Auditoría de eventos
-                </h3>
-                {!detailMembership.events.length ? (
-                  <p style={{ fontSize: "12px", color: "var(--muted-foreground)" }}>
-                    Sin eventos adicionales.
-                  </p>
-                ) : (
-                  <ul style={{ margin: 0, paddingLeft: "16px", fontSize: "11.5px", color: "var(--muted-foreground)" }}>
-                    {detailMembership.events.map((ev) => (
-                      <li key={ev.id}>
-                        <strong>{ev.eventType}</strong> — {ev.description} (
-                        {ev.createdAt.replace("T", " ").slice(0, 16)})
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Modal: Reintegrar Sesión (FASE 7) */}
-      <Dialog
-        open={!!refundTarget}
-        onOpenChange={(open) => {
-          if (!open && !busy) setRefundTarget(null);
-        }}
-      >
-        <DialogContent className="v2-dialog">
-          <DialogTitle>Este turno consumió una sesión de membresía. ¿Querés reintegrarla?</DialogTitle>
-          <DialogDescription>
-            Se devolverá 1 sesión de <strong>{refundTarget?.serviceName}</strong> a{" "}
-            {refundTarget?.membership.planName}, conservando la trazabilidad completa en el historial sin borrar registros previos.
-          </DialogDescription>
-          <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "10px" }}>
-            <label className="v2-field">
-              <span className="v2-field-label">Motivo del reintegro</span>
-              <input
-                type="text"
-                value={refundNotes}
-                onChange={(e) => setRefundNotes(e.target.value)}
-                placeholder="Ej. Cancelación acordada / corrección administrativa"
-              />
-            </label>
-            <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "flex-end", gap: "8px" }}>
-              <button
-                type="button"
-                className="v2-secondary"
-                disabled={busy}
-                onClick={() => setRefundTarget(null)}
-              >
-                Volver
-              </button>
-              <button
-                type="button"
-                className="v2-secondary"
-                disabled={busy}
-                onClick={() => {
-                  setRefundTarget(null);
-                  setNotice("Se conservó el consumo de la sesión.");
-                }}
-              >
-                No, conservar el consumo
-              </button>
-              <button
-                type="button"
-                className="v2-primary"
-                disabled={busy}
-                onClick={() => void handleRefundSession()}
-              >
-                {busy ? "Reintegrando…" : "Sí, reintegrar sesión"}
-              </button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Modal: Editar Vencimiento */}
-      <Dialog
-        open={!!editExpirationMembership}
-        onOpenChange={(open) => {
-          if (!open && !busy) setEditExpirationMembership(null);
-        }}
-      >
-        <DialogContent className="v2-dialog">
-          <DialogTitle>Vigencia y vencimiento de membresía</DialogTitle>
-          <DialogDescription>
-            Cualquier modificación de vencimiento queda registrada con fecha y usuario en la auditoría de la membresía.
-          </DialogDescription>
-          <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "10px" }}>
-            <label className="v2-field">
-              <span className="v2-field-label">Modalidad de vencimiento</span>
-              <select
-                value={editExpMode}
-                onChange={(e) => setEditExpMode(e.target.value as "NONE" | "DATE")}
-              >
-                <option value="NONE">Sin vencimiento</option>
-                <option value="DATE">Fecha de vencimiento determinada</option>
-              </select>
-            </label>
-            {editExpMode === "DATE" && (
-              <label className="v2-field">
-                <span className="v2-field-label">Fecha de vencimiento</span>
-                <input
-                  type="date"
-                  value={editExpDate}
-                  onChange={(e) => setEditExpDate(e.target.value)}
-                />
-              </label>
-            )}
-            <label className="v2-field">
-              <span className="v2-field-label">Nota de auditoría</span>
-              <input
-                type="text"
-                value={editExpNotes}
-                onChange={(e) => setEditExpNotes(e.target.value)}
-                placeholder="Motivo del ajuste de vigencia"
-              />
-            </label>
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", marginTop: "8px" }}>
-              <button
-                type="button"
-                className="v2-secondary"
-                disabled={busy}
-                onClick={() => setEditExpirationMembership(null)}
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                className="v2-primary"
-                disabled={busy}
-                onClick={() => void handleSaveExpiration()}
-              >
-                {busy ? "Guardando…" : "Guardar vencimiento"}
-              </button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      />
 
       {/* Modal: Membresía Agotada (FASE 7) */}
       <Dialog
@@ -1696,39 +1059,6 @@ export function V2MembershipsAndDiscounts({
         </DialogContent>
       </Dialog>
 
-      {/* DIALOG DE CONFIRMACIÓN PARA REGENERAR ENLACE DIGITAL (b733a0b2) */}
-      <Dialog
-        open={!!regeneratingMembership}
-        onOpenChange={(open) => {
-          if (!open && !isRegenerating) setRegeneratingMembership(null);
-        }}
-      >
-        <DialogContent className="v2-dialog" style={{ maxWidth: "460px" }}>
-          <DialogTitle>¿Regenerar enlace de tarjeta digital?</DialogTitle>
-          <DialogDescription>
-            Al regenerar el enlace, el enlace anterior quedará invalidado y dejará de funcionar de forma inmediata. Deberás proporcionarle al cliente el nuevo enlace o reenviarle el correo.
-          </DialogDescription>
-          <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", marginTop: "16px" }}>
-            <button
-              type="button"
-              className="v2-secondary"
-              disabled={isRegenerating}
-              onClick={() => setRegeneratingMembership(null)}
-            >
-              Cancelar
-            </button>
-            <button
-              type="button"
-              className="v2-primary"
-              style={{ background: "#dc2626", borderColor: "#dc2626", color: "#fff" }}
-              disabled={isRegenerating}
-              onClick={() => regeneratingMembership && void handleRegenerateToken(regeneratingMembership)}
-            >
-              {isRegenerating ? "Regenerando..." : "Sí, regenerar enlace"}
-            </button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </main>
   );
 }

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -281,11 +281,17 @@ describe('KANI — Regresión de navegación en panel original y hamburguesa', (
     const { unmount } = render(<V2MembershipsAndDiscounts initialTab="MEMBRESIAS" />);
 
     expect(await screen.findByText('Membresia Prueba')).toBeInTheDocument();
-    expect(screen.getByText('3 de 4')).toBeInTheDocument();
+    const card = screen.getByTestId('membership-card-mem-test-prueba-1');
+    expect(within(card).getByText('3')).toBeInTheDocument();
+    expect(within(card).getByText(/sesiones disponibles de 4/i)).toBeInTheDocument();
     expect(screen.getAllByText('Activa').length).toBeGreaterThanOrEqual(2);
-    expect(screen.getByText('Corte: 3/4')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Registrar consumo/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Detalle e historial/i })).toBeInTheDocument();
+    expect(within(card).getByText('Corte: 3/4')).toBeInTheDocument();
+    expect(within(card).getByRole('button', { name: /^Editar$/i })).toBeInTheDocument();
+    expect(within(card).getByRole('link', { name: /Ver tarjeta/i })).toBeInTheDocument();
+    expect(within(card).getByRole('button', { name: /^Copiar enlace$/i })).toBeInTheDocument();
+    fireEvent.click(within(card).getByRole('button', { name: /^Editar$/i }));
+    expect(await screen.findByText(/Registrar consumo de sesión/i)).toBeInTheDocument();
+    expect(screen.getByText(/Historial de sesiones consumidas/i)).toBeInTheDocument();
 
     unmount();
   });

@@ -18,6 +18,7 @@ import { Route as CaseStudyRouteImport } from './routes/case-study'
 import { Route as ContactoRouteImport } from './routes/contacto'
 import { Route as EstudioRouteImport } from './routes/estudio'
 import { Route as PanelAdministracionRouteImport } from './routes/panel-administracion'
+import { Route as PanelV2RouteImport } from './routes/panel-v2'
 import { Route as PoliticaDePrivacidadRouteImport } from './routes/politica-de-privacidad'
 import { Route as ReservaV2RouteImport } from './routes/reserva-v2'
 import { Route as ReservaV3RouteImport } from './routes/reserva-v3'
@@ -58,7 +59,17 @@ import { Route as PanelAdministracionMantenimientoRouteImport } from './routes/p
 import { Route as PanelAdministracionMembresiasRouteImport } from './routes/panel-administracion.membresias'
 import { Route as PanelAdministracionPagosRouteImport } from './routes/panel-administracion.pagos'
 import { Route as PanelAdministracionTurnosRouteImport } from './routes/panel-administracion.turnos'
+import { Route as PanelV2IndexRouteImport } from './routes/panel-v2.index'
+import { Route as PanelV2EstadisticasRouteImport } from './routes/panel-v2.estadisticas'
 import { Route as VerificarMembresiaTokenRouteImport } from './routes/verificar-membresia.$token'
+import { Route as PanelV2NegocioIndexRouteImport } from './routes/panel-v2.negocio.index'
+import { Route as PanelV2NegocioDescuentosRouteImport } from './routes/panel-v2.negocio.descuentos'
+import { Route as PanelV2NegocioMembresiasRouteImport } from './routes/panel-v2.negocio.membresias'
+import { Route as PanelV2NegocioPagosRouteImport } from './routes/panel-v2.negocio.pagos'
+import { Route as PanelV2OperacionIndexRouteImport } from './routes/panel-v2.operacion.index'
+import { Route as PanelV2OperacionClientesRouteImport } from './routes/panel-v2.operacion.clientes'
+import { Route as PanelV2OperacionHorariosRouteImport } from './routes/panel-v2.operacion.horarios'
+import { Route as PanelV2OperacionTurnosRouteImport } from './routes/panel-v2.operacion.turnos'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -103,6 +114,11 @@ const EstudioRoute = EstudioRouteImport.update({
 const PanelAdministracionRoute = PanelAdministracionRouteImport.update({
   id: '/panel-administracion',
   path: '/panel-administracion',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PanelV2Route = PanelV2RouteImport.update({
+  id: '/panel-v2',
+  path: '/panel-v2',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PoliticaDePrivacidadRoute = PoliticaDePrivacidadRouteImport.update({
@@ -316,10 +332,64 @@ const PanelAdministracionTurnosRoute =
     path: '/turnos',
     getParentRoute: () => PanelAdministracionRoute,
   } as any)
+const PanelV2IndexRoute = PanelV2IndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => PanelV2Route,
+} as any)
+const PanelV2EstadisticasRoute = PanelV2EstadisticasRouteImport.update({
+  id: '/estadisticas',
+  path: '/estadisticas',
+  getParentRoute: () => PanelV2Route,
+} as any)
 const VerificarMembresiaTokenRoute = VerificarMembresiaTokenRouteImport.update({
   id: '/verificar-membresia/$token',
   path: '/verificar-membresia/$token',
   getParentRoute: () => rootRouteImport,
+} as any)
+const PanelV2NegocioIndexRoute = PanelV2NegocioIndexRouteImport.update({
+  id: '/negocio/',
+  path: '/negocio/',
+  getParentRoute: () => PanelV2Route,
+} as any)
+const PanelV2NegocioDescuentosRoute =
+  PanelV2NegocioDescuentosRouteImport.update({
+    id: '/negocio/descuentos',
+    path: '/negocio/descuentos',
+    getParentRoute: () => PanelV2Route,
+  } as any)
+const PanelV2NegocioMembresiasRoute =
+  PanelV2NegocioMembresiasRouteImport.update({
+    id: '/negocio/membresias',
+    path: '/negocio/membresias',
+    getParentRoute: () => PanelV2Route,
+  } as any)
+const PanelV2NegocioPagosRoute = PanelV2NegocioPagosRouteImport.update({
+  id: '/negocio/pagos',
+  path: '/negocio/pagos',
+  getParentRoute: () => PanelV2Route,
+} as any)
+const PanelV2OperacionIndexRoute = PanelV2OperacionIndexRouteImport.update({
+  id: '/operacion/',
+  path: '/operacion/',
+  getParentRoute: () => PanelV2Route,
+} as any)
+const PanelV2OperacionClientesRoute =
+  PanelV2OperacionClientesRouteImport.update({
+    id: '/operacion/clientes',
+    path: '/operacion/clientes',
+    getParentRoute: () => PanelV2Route,
+  } as any)
+const PanelV2OperacionHorariosRoute =
+  PanelV2OperacionHorariosRouteImport.update({
+    id: '/operacion/horarios',
+    path: '/operacion/horarios',
+    getParentRoute: () => PanelV2Route,
+  } as any)
+const PanelV2OperacionTurnosRoute = PanelV2OperacionTurnosRouteImport.update({
+  id: '/operacion/turnos',
+  path: '/operacion/turnos',
+  getParentRoute: () => PanelV2Route,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -332,6 +402,7 @@ export interface FileRoutesByFullPath {
   '/contacto': typeof ContactoRoute
   '/estudio': typeof EstudioRoute
   '/panel-administracion': typeof PanelAdministracionRouteWithChildren
+  '/panel-v2': typeof PanelV2RouteWithChildren
   '/politica-de-privacidad': typeof PoliticaDePrivacidadRoute
   '/reserva-v2': typeof ReservaV2Route
   '/reserva-v3': typeof ReservaV3Route
@@ -369,10 +440,20 @@ export interface FileRoutesByFullPath {
   '/panel-administracion/membresias': typeof PanelAdministracionMembresiasRoute
   '/panel-administracion/pagos': typeof PanelAdministracionPagosRoute
   '/panel-administracion/turnos': typeof PanelAdministracionTurnosRoute
+  '/panel-v2/estadisticas': typeof PanelV2EstadisticasRoute
   '/verificar-membresia/$token': typeof VerificarMembresiaTokenRoute
   '/admin-v2/': typeof AdminV2IndexRoute
   '/admin/': typeof AdminIndexRoute
   '/panel-administracion/': typeof PanelAdministracionIndexRoute
+  '/panel-v2/': typeof PanelV2IndexRoute
+  '/panel-v2/negocio/descuentos': typeof PanelV2NegocioDescuentosRoute
+  '/panel-v2/negocio/membresias': typeof PanelV2NegocioMembresiasRoute
+  '/panel-v2/negocio/pagos': typeof PanelV2NegocioPagosRoute
+  '/panel-v2/operacion/clientes': typeof PanelV2OperacionClientesRoute
+  '/panel-v2/operacion/horarios': typeof PanelV2OperacionHorariosRoute
+  '/panel-v2/operacion/turnos': typeof PanelV2OperacionTurnosRoute
+  '/panel-v2/negocio/': typeof PanelV2NegocioIndexRoute
+  '/panel-v2/operacion/': typeof PanelV2OperacionIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -418,10 +499,20 @@ export interface FileRoutesByTo {
   '/panel-administracion/membresias': typeof PanelAdministracionMembresiasRoute
   '/panel-administracion/pagos': typeof PanelAdministracionPagosRoute
   '/panel-administracion/turnos': typeof PanelAdministracionTurnosRoute
+  '/panel-v2/estadisticas': typeof PanelV2EstadisticasRoute
   '/verificar-membresia/$token': typeof VerificarMembresiaTokenRoute
   '/admin-v2': typeof AdminV2IndexRoute
   '/admin': typeof AdminIndexRoute
   '/panel-administracion': typeof PanelAdministracionIndexRoute
+  '/panel-v2': typeof PanelV2IndexRoute
+  '/panel-v2/negocio/descuentos': typeof PanelV2NegocioDescuentosRoute
+  '/panel-v2/negocio/membresias': typeof PanelV2NegocioMembresiasRoute
+  '/panel-v2/negocio/pagos': typeof PanelV2NegocioPagosRoute
+  '/panel-v2/operacion/clientes': typeof PanelV2OperacionClientesRoute
+  '/panel-v2/operacion/horarios': typeof PanelV2OperacionHorariosRoute
+  '/panel-v2/operacion/turnos': typeof PanelV2OperacionTurnosRoute
+  '/panel-v2/negocio': typeof PanelV2NegocioIndexRoute
+  '/panel-v2/operacion': typeof PanelV2OperacionIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -434,6 +525,7 @@ export interface FileRoutesById {
   '/contacto': typeof ContactoRoute
   '/estudio': typeof EstudioRoute
   '/panel-administracion': typeof PanelAdministracionRouteWithChildren
+  '/panel-v2': typeof PanelV2RouteWithChildren
   '/politica-de-privacidad': typeof PoliticaDePrivacidadRoute
   '/reserva-v2': typeof ReservaV2Route
   '/reserva-v3': typeof ReservaV3Route
@@ -471,10 +563,20 @@ export interface FileRoutesById {
   '/panel-administracion/membresias': typeof PanelAdministracionMembresiasRoute
   '/panel-administracion/pagos': typeof PanelAdministracionPagosRoute
   '/panel-administracion/turnos': typeof PanelAdministracionTurnosRoute
+  '/panel-v2/estadisticas': typeof PanelV2EstadisticasRoute
   '/verificar-membresia/$token': typeof VerificarMembresiaTokenRoute
   '/admin-v2/': typeof AdminV2IndexRoute
   '/admin/': typeof AdminIndexRoute
   '/panel-administracion/': typeof PanelAdministracionIndexRoute
+  '/panel-v2/': typeof PanelV2IndexRoute
+  '/panel-v2/negocio/descuentos': typeof PanelV2NegocioDescuentosRoute
+  '/panel-v2/negocio/membresias': typeof PanelV2NegocioMembresiasRoute
+  '/panel-v2/negocio/pagos': typeof PanelV2NegocioPagosRoute
+  '/panel-v2/operacion/clientes': typeof PanelV2OperacionClientesRoute
+  '/panel-v2/operacion/horarios': typeof PanelV2OperacionHorariosRoute
+  '/panel-v2/operacion/turnos': typeof PanelV2OperacionTurnosRoute
+  '/panel-v2/negocio/': typeof PanelV2NegocioIndexRoute
+  '/panel-v2/operacion/': typeof PanelV2OperacionIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -488,6 +590,7 @@ export interface FileRouteTypes {
     | '/contacto'
     | '/estudio'
     | '/panel-administracion'
+    | '/panel-v2'
     | '/politica-de-privacidad'
     | '/reserva-v2'
     | '/reserva-v3'
@@ -525,10 +628,20 @@ export interface FileRouteTypes {
     | '/panel-administracion/membresias'
     | '/panel-administracion/pagos'
     | '/panel-administracion/turnos'
+    | '/panel-v2/estadisticas'
     | '/verificar-membresia/$token'
     | '/admin-v2/'
     | '/admin/'
     | '/panel-administracion/'
+    | '/panel-v2/'
+    | '/panel-v2/negocio/descuentos'
+    | '/panel-v2/negocio/membresias'
+    | '/panel-v2/negocio/pagos'
+    | '/panel-v2/operacion/clientes'
+    | '/panel-v2/operacion/horarios'
+    | '/panel-v2/operacion/turnos'
+    | '/panel-v2/negocio/'
+    | '/panel-v2/operacion/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -574,10 +687,20 @@ export interface FileRouteTypes {
     | '/panel-administracion/membresias'
     | '/panel-administracion/pagos'
     | '/panel-administracion/turnos'
+    | '/panel-v2/estadisticas'
     | '/verificar-membresia/$token'
     | '/admin-v2'
     | '/admin'
     | '/panel-administracion'
+    | '/panel-v2'
+    | '/panel-v2/negocio/descuentos'
+    | '/panel-v2/negocio/membresias'
+    | '/panel-v2/negocio/pagos'
+    | '/panel-v2/operacion/clientes'
+    | '/panel-v2/operacion/horarios'
+    | '/panel-v2/operacion/turnos'
+    | '/panel-v2/negocio'
+    | '/panel-v2/operacion'
   id:
     | '__root__'
     | '/'
@@ -589,6 +712,7 @@ export interface FileRouteTypes {
     | '/contacto'
     | '/estudio'
     | '/panel-administracion'
+    | '/panel-v2'
     | '/politica-de-privacidad'
     | '/reserva-v2'
     | '/reserva-v3'
@@ -626,10 +750,20 @@ export interface FileRouteTypes {
     | '/panel-administracion/membresias'
     | '/panel-administracion/pagos'
     | '/panel-administracion/turnos'
+    | '/panel-v2/estadisticas'
     | '/verificar-membresia/$token'
     | '/admin-v2/'
     | '/admin/'
     | '/panel-administracion/'
+    | '/panel-v2/'
+    | '/panel-v2/negocio/descuentos'
+    | '/panel-v2/negocio/membresias'
+    | '/panel-v2/negocio/pagos'
+    | '/panel-v2/operacion/clientes'
+    | '/panel-v2/operacion/horarios'
+    | '/panel-v2/operacion/turnos'
+    | '/panel-v2/negocio/'
+    | '/panel-v2/operacion/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -642,6 +776,7 @@ export interface RootRouteChildren {
   ContactoRoute: typeof ContactoRoute
   EstudioRoute: typeof EstudioRoute
   PanelAdministracionRoute: typeof PanelAdministracionRouteWithChildren
+  PanelV2Route: typeof PanelV2RouteWithChildren
   PoliticaDePrivacidadRoute: typeof PoliticaDePrivacidadRoute
   ReservaV2Route: typeof ReservaV2Route
   ReservaV3Route: typeof ReservaV3Route
@@ -722,6 +857,13 @@ declare module '@tanstack/react-router' {
       path: '/panel-administracion'
       fullPath: '/panel-administracion'
       preLoaderRoute: typeof PanelAdministracionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/panel-v2': {
+      id: '/panel-v2'
+      path: '/panel-v2'
+      fullPath: '/panel-v2'
+      preLoaderRoute: typeof PanelV2RouteImport
       parentRoute: typeof rootRouteImport
     }
     '/politica-de-privacidad': {
@@ -1004,12 +1146,82 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PanelAdministracionTurnosRouteImport
       parentRoute: typeof PanelAdministracionRoute
     }
+    '/panel-v2/': {
+      id: '/panel-v2/'
+      path: '/'
+      fullPath: '/panel-v2/'
+      preLoaderRoute: typeof PanelV2IndexRouteImport
+      parentRoute: typeof PanelV2Route
+    }
+    '/panel-v2/estadisticas': {
+      id: '/panel-v2/estadisticas'
+      path: '/estadisticas'
+      fullPath: '/panel-v2/estadisticas'
+      preLoaderRoute: typeof PanelV2EstadisticasRouteImport
+      parentRoute: typeof PanelV2Route
+    }
     '/verificar-membresia/$token': {
       id: '/verificar-membresia/$token'
       path: '/verificar-membresia/$token'
       fullPath: '/verificar-membresia/$token'
       preLoaderRoute: typeof VerificarMembresiaTokenRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/panel-v2/negocio/': {
+      id: '/panel-v2/negocio/'
+      path: '/negocio'
+      fullPath: '/panel-v2/negocio/'
+      preLoaderRoute: typeof PanelV2NegocioIndexRouteImport
+      parentRoute: typeof PanelV2Route
+    }
+    '/panel-v2/negocio/descuentos': {
+      id: '/panel-v2/negocio/descuentos'
+      path: '/negocio/descuentos'
+      fullPath: '/panel-v2/negocio/descuentos'
+      preLoaderRoute: typeof PanelV2NegocioDescuentosRouteImport
+      parentRoute: typeof PanelV2Route
+    }
+    '/panel-v2/negocio/membresias': {
+      id: '/panel-v2/negocio/membresias'
+      path: '/negocio/membresias'
+      fullPath: '/panel-v2/negocio/membresias'
+      preLoaderRoute: typeof PanelV2NegocioMembresiasRouteImport
+      parentRoute: typeof PanelV2Route
+    }
+    '/panel-v2/negocio/pagos': {
+      id: '/panel-v2/negocio/pagos'
+      path: '/negocio/pagos'
+      fullPath: '/panel-v2/negocio/pagos'
+      preLoaderRoute: typeof PanelV2NegocioPagosRouteImport
+      parentRoute: typeof PanelV2Route
+    }
+    '/panel-v2/operacion/': {
+      id: '/panel-v2/operacion/'
+      path: '/operacion'
+      fullPath: '/panel-v2/operacion/'
+      preLoaderRoute: typeof PanelV2OperacionIndexRouteImport
+      parentRoute: typeof PanelV2Route
+    }
+    '/panel-v2/operacion/clientes': {
+      id: '/panel-v2/operacion/clientes'
+      path: '/operacion/clientes'
+      fullPath: '/panel-v2/operacion/clientes'
+      preLoaderRoute: typeof PanelV2OperacionClientesRouteImport
+      parentRoute: typeof PanelV2Route
+    }
+    '/panel-v2/operacion/horarios': {
+      id: '/panel-v2/operacion/horarios'
+      path: '/operacion/horarios'
+      fullPath: '/panel-v2/operacion/horarios'
+      preLoaderRoute: typeof PanelV2OperacionHorariosRouteImport
+      parentRoute: typeof PanelV2Route
+    }
+    '/panel-v2/operacion/turnos': {
+      id: '/panel-v2/operacion/turnos'
+      path: '/operacion/turnos'
+      fullPath: '/panel-v2/operacion/turnos'
+      preLoaderRoute: typeof PanelV2OperacionTurnosRouteImport
+      parentRoute: typeof PanelV2Route
     }
   }
 }
@@ -1092,6 +1304,35 @@ const PanelAdministracionRouteChildren: PanelAdministracionRouteChildren = {
 const PanelAdministracionRouteWithChildren =
   PanelAdministracionRoute._addFileChildren(PanelAdministracionRouteChildren)
 
+interface PanelV2RouteChildren {
+  PanelV2EstadisticasRoute: typeof PanelV2EstadisticasRoute
+  PanelV2IndexRoute: typeof PanelV2IndexRoute
+  PanelV2NegocioDescuentosRoute: typeof PanelV2NegocioDescuentosRoute
+  PanelV2NegocioMembresiasRoute: typeof PanelV2NegocioMembresiasRoute
+  PanelV2NegocioPagosRoute: typeof PanelV2NegocioPagosRoute
+  PanelV2OperacionClientesRoute: typeof PanelV2OperacionClientesRoute
+  PanelV2OperacionHorariosRoute: typeof PanelV2OperacionHorariosRoute
+  PanelV2OperacionTurnosRoute: typeof PanelV2OperacionTurnosRoute
+  PanelV2NegocioIndexRoute: typeof PanelV2NegocioIndexRoute
+  PanelV2OperacionIndexRoute: typeof PanelV2OperacionIndexRoute
+}
+
+const PanelV2RouteChildren: PanelV2RouteChildren = {
+  PanelV2EstadisticasRoute: PanelV2EstadisticasRoute,
+  PanelV2IndexRoute: PanelV2IndexRoute,
+  PanelV2NegocioDescuentosRoute: PanelV2NegocioDescuentosRoute,
+  PanelV2NegocioMembresiasRoute: PanelV2NegocioMembresiasRoute,
+  PanelV2NegocioPagosRoute: PanelV2NegocioPagosRoute,
+  PanelV2OperacionClientesRoute: PanelV2OperacionClientesRoute,
+  PanelV2OperacionHorariosRoute: PanelV2OperacionHorariosRoute,
+  PanelV2OperacionTurnosRoute: PanelV2OperacionTurnosRoute,
+  PanelV2NegocioIndexRoute: PanelV2NegocioIndexRoute,
+  PanelV2OperacionIndexRoute: PanelV2OperacionIndexRoute,
+}
+
+const PanelV2RouteWithChildren =
+  PanelV2Route._addFileChildren(PanelV2RouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ActivarCuentaRoute: ActivarCuentaRoute,
@@ -1102,6 +1343,7 @@ const rootRouteChildren: RootRouteChildren = {
   ContactoRoute: ContactoRoute,
   EstudioRoute: EstudioRoute,
   PanelAdministracionRoute: PanelAdministracionRouteWithChildren,
+  PanelV2Route: PanelV2RouteWithChildren,
   PoliticaDePrivacidadRoute: PoliticaDePrivacidadRoute,
   ReservaV2Route: ReservaV2Route,
   ReservaV3Route: ReservaV3Route,

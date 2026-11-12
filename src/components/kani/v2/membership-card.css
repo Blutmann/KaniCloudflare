@@ -1,0 +1,521 @@
+/* Isolated styles for restored MembershipCard grid, editorial hierarchy, and EditMembershipModal.
+ * Scoped strictly to .kani-mgrid, .kani-mcard*, and .kani-medit* so global surfaces and v2.css remain untouched.
+ */
+
+.kani-mgrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 310px), 1fr));
+  gap: 14px;
+  align-items: stretch;
+  width: 100%;
+  min-width: 0;
+}
+
+.kani-mgrid.is-single {
+  grid-template-columns: minmax(0, 440px);
+}
+
+.kani-mcard {
+  --mc-bg: var(--surface, #ffffff);
+  --mc-border: color-mix(in srgb, var(--border, #e5e0d8) 88%, transparent);
+  --mc-shadow: 0 2px 10px rgb(0 0 0 / 5%);
+  --mc-inset-bg: color-mix(in srgb, var(--background, #f6f3ee) 72%, var(--surface, #ffffff));
+  --mc-inset-border: color-mix(in srgb, var(--border, #e5e0d8) 70%, transparent);
+  --mc-track: color-mix(in srgb, var(--border, #e5e0d8) 72%, transparent);
+  --mc-text: var(--foreground, #1e1b18);
+  --mc-muted: var(--muted-foreground, #6e675f);
+
+  background: var(--mc-bg);
+  color: var(--mc-text);
+  border: 1px solid var(--mc-border);
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: var(--mc-shadow);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 14px;
+  min-width: 0;
+  transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+
+html[data-theme="dark"] .kani-mcard {
+  --mc-bg: color-mix(in srgb, var(--surface, #1d1b19) 92%, #ffffff 8%);
+  --mc-border: color-mix(in srgb, var(--border, #35302a) 90%, transparent);
+  --mc-shadow: 0 2px 12px rgb(0 0 0 / 26%);
+  --mc-inset-bg: rgb(255 255 255 / 4.5%);
+  --mc-inset-border: rgb(255 255 255 / 9%);
+  --mc-track: rgb(255 255 255 / 11%);
+}
+
+.kani-mcard:hover {
+  border-color: color-mix(in srgb, var(--gold, #c9a15d) 45%, var(--mc-border));
+}
+
+.kani-mcard-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+/* Nivel 1: Header (título + chip estado) */
+.kani-mcard-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+
+.kani-mcard-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  color: var(--mc-text);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.kani-mcard-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+
+.kani-mcard-badge.is-active {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.28);
+  color: #047857;
+}
+
+.kani-mcard-badge.is-pending {
+  background: rgba(217, 119, 6, 0.13);
+  border-color: rgba(217, 119, 6, 0.3);
+  color: #92400e;
+}
+
+.kani-mcard-badge.is-exhausted {
+  background: rgba(100, 116, 139, 0.12);
+  border-color: rgba(100, 116, 139, 0.24);
+  color: #475569;
+}
+
+.kani-mcard-badge.is-expired,
+.kani-mcard-badge.is-cancelled {
+  background: rgba(220, 38, 38, 0.1);
+  border-color: rgba(220, 38, 38, 0.24);
+  color: #b91c1c;
+}
+
+html[data-theme="dark"] .kani-mcard-badge.is-active {
+  background: rgba(16, 185, 129, 0.16);
+  border-color: rgba(52, 211, 153, 0.32);
+  color: #34d399;
+}
+
+html[data-theme="dark"] .kani-mcard-badge.is-pending {
+  background: rgba(245, 158, 11, 0.16);
+  border-color: rgba(251, 191, 36, 0.34);
+  color: #fbbf24;
+}
+
+html[data-theme="dark"] .kani-mcard-badge.is-exhausted {
+  background: rgba(148, 163, 184, 0.16);
+  border-color: rgba(148, 163, 184, 0.28);
+  color: #cbd5e1;
+}
+
+html[data-theme="dark"] .kani-mcard-badge.is-expired,
+html[data-theme="dark"] .kani-mcard-badge.is-cancelled {
+  background: rgba(248, 113, 113, 0.14);
+  border-color: rgba(248, 113, 113, 0.3);
+  color: #fca5a5;
+}
+
+/* Nivel 2: Identidad (titular + barbero) */
+.kani-mcard-identity {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.kani-mcard-client {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--mc-text);
+  overflow-wrap: anywhere;
+}
+
+.kani-mcard-barber {
+  font-size: 12.5px;
+  line-height: 1.35;
+  color: var(--mc-muted);
+}
+
+/* Nivel 3: Bloque principal de sesiones disponibles */
+.kani-mcard-sessions {
+  padding: 12px 13px;
+  border-radius: 10px;
+  background: var(--mc-inset-bg);
+  border: 1px solid var(--mc-inset-border);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.kani-mcard-sessions-main {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.kani-mcard-sessions-count {
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--mc-text);
+}
+
+.kani-mcard-sessions-label {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--mc-muted);
+}
+
+.kani-mcard-sessions-breakdown {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--mc-muted);
+  overflow-wrap: anywhere;
+}
+
+/* Nivel 4: Vencimiento & pendiente de cobro */
+.kani-mcard-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  font-size: 12.5px;
+  line-height: 1.35;
+  color: var(--mc-muted);
+}
+
+.kani-mcard-expiry {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.kani-mcard-expiry.is-expiring {
+  color: #b45309;
+  font-weight: 600;
+}
+
+.kani-mcard-expiry.is-expired {
+  color: #b91c1c;
+  font-weight: 600;
+}
+
+html[data-theme="dark"] .kani-mcard-expiry.is-expiring {
+  color: #fbbf24;
+}
+
+html[data-theme="dark"] .kani-mcard-expiry.is-expired {
+  color: #fca5a5;
+}
+
+.kani-mcard-due {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #92400e;
+  font-variant-numeric: tabular-nums;
+}
+
+html[data-theme="dark"] .kani-mcard-due {
+  color: #fbbf24;
+}
+
+/* Nivel 5: Barra de progreso */
+.kani-mcard-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.kani-mcard-progress-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.kani-mcard-progress-label {
+  color: var(--mc-muted);
+}
+
+.kani-mcard-progress-value {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--mc-text);
+}
+
+.kani-mcard-progress-track {
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--mc-track);
+  overflow: hidden;
+}
+
+.kani-mcard-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 220ms ease;
+  background: #10b981;
+}
+
+.kani-mcard-progress-fill.is-pending {
+  background: #d97706;
+}
+
+.kani-mcard-progress-fill.is-exhausted {
+  background: #64748b;
+}
+
+.kani-mcard-progress-fill.is-expired,
+.kani-mcard-progress-fill.is-cancelled {
+  background: #dc2626;
+}
+
+/* Nivel 6: Footer con exactamente 3 controles */
+.kani-mcard-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--mc-border);
+  min-width: 0;
+}
+
+.kani-mcard-btn-edit,
+.kani-mcard-btn-view {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 36px;
+  padding: 0 11px;
+  font-size: 12.5px !important;
+  font-weight: 600;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.kani-mcard-btn-view {
+  flex: 1.25 1 0;
+}
+
+.kani-mcard-btn-view.is-disabled {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.kani-mcard-btn-copy {
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
+  padding: 0 !important;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.kani-mcard-btn-copy.is-copied {
+  border-color: rgba(16, 185, 129, 0.5) !important;
+  color: #047857 !important;
+}
+
+html[data-theme="dark"] .kani-mcard-btn-copy.is-copied {
+  color: #34d399 !important;
+}
+
+@media (max-width: 380px) {
+  .kani-mcard {
+    padding: 13px 12px;
+    gap: 12px;
+  }
+
+  .kani-mcard-badge {
+    padding: 3px 7px;
+    font-size: 9.5px;
+  }
+
+  .kani-mcard-actions {
+    gap: 6px;
+  }
+
+  .kani-mcard-btn-edit,
+  .kani-mcard-btn-view {
+    padding: 0 8px;
+    gap: 4px;
+    font-size: 11.5px !important;
+  }
+
+  .kani-mcard-btn-copy {
+    flex: 0 0 34px;
+    width: 34px;
+    height: 34px;
+    min-height: 34px;
+  }
+}
+
+/* Unified EditMembershipModal styles */
+.kani-medit-dialog {
+  max-width: 600px !important;
+}
+
+.kani-medit-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  padding-right: 24px;
+}
+
+.kani-medit-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 12px;
+  max-height: min(68vh, 620px);
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.kani-medit-section {
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--v2-inset, rgba(128, 128, 128, 0.05));
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.kani-medit-section-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.kani-medit-kv-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 12px;
+  font-size: 12.5px;
+}
+
+@media (max-width: 480px) {
+  .kani-medit-kv-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.kani-medit-kv {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.kani-medit-kv-label {
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+
+.kani-medit-kv-value {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.kani-medit-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.kani-medit-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+@media (max-width: 520px) {
+  .kani-medit-form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.kani-medit-item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  font-size: 12.5px;
+}
+
+.kani-medit-history-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  font-size: 12px;
+}
+
+.kani-medit-history-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
