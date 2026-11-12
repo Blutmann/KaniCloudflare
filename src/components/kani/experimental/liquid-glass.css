@@ -202,9 +202,9 @@ html[data-theme] .liquid-glass-reservation .booking-page .booking-progress {
   -webkit-backdrop-filter: none !important;
   border: none !important;
   border-radius: 0 !important;
-  padding: 4px 8px 12px !important;
+  padding: 8px 10px 15px !important;
   margin-top: 0 !important;
-  margin-bottom: 14px !important;
+  margin-bottom: 20px !important;
   box-shadow: none !important;
   overflow: visible !important;
   --liquid-progress-ratio: 0.2;
@@ -349,13 +349,14 @@ html[data-theme] .liquid-glass-reservation .booking-page .booking-progress > but
 
 @media (max-width: 767px) {
   body.liquid-glass-active .site-header-slot {
-    height: 56px !important;
-    flex-basis: 56px !important;
+    height: 64px !important;
+    flex-basis: 64px !important;
   }
 
   body.liquid-glass-active .site-header.liquid-glass-header:not(.menu-open) {
-    flex: 0 0 56px !important;
-    height: 56px !important;
+    flex: 0 0 64px !important;
+    height: 64px !important;
+    padding-block: 4px !important;
     background: transparent !important;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
@@ -366,15 +367,23 @@ html[data-theme] .liquid-glass-reservation .booking-page .booking-progress > but
   .liquid-glass-reservation .booking-page {
     width: 100% !important;
     max-width: 100% !important;
-    height: calc(100dvh - 56px) !important;
-    max-height: calc(100dvh - 56px) !important;
+    height: calc(100dvh - 64px) !important;
+    max-height: calc(100dvh - 64px) !important;
     padding-top: 0 !important;
     padding-inline: 0 !important;
   }
 
   .liquid-glass-reservation .booking-scroll-content {
+    flex: 0 1 auto !important;
+    min-height: 0 !important;
     padding-inline: 20px !important;
-    padding-top: 10px !important;
+    padding-top: 20px !important;
+    padding-bottom: 16px !important;
+  }
+
+  .liquid-glass-reservation .booking-page .section-title,
+  .liquid-glass-reservation .booking-step-heading-title {
+    margin-bottom: 14px !important;
   }
 
   html[data-theme] .liquid-glass-reservation .booking-page .booking-progress {
@@ -385,7 +394,7 @@ html[data-theme] .liquid-glass-reservation .booking-page .booking-progress > but
     border: none !important;
     border-radius: 0 !important;
     box-shadow: none !important;
-    padding: 0 16px 9px !important;
+    padding: 6px 16px 13px !important;
     margin-top: 0 !important;
     margin-bottom: 0 !important;
   }
@@ -407,31 +416,33 @@ html[data-theme] .liquid-glass-reservation .booking-page .booking-progress > but
   }
 
   html[data-theme] .liquid-glass-reservation .booking-page .booking-progress > button {
-    gap: 3px !important;
-    padding: 1px 1px 0 !important;
+    gap: 5px !important;
+    padding: 2px 2px 0 !important;
   }
 
   html[data-theme] .liquid-glass-reservation .booking-page .booking-progress > button > span {
-    width: 22px !important;
-    height: 22px !important;
-    min-width: 22px !important;
-    min-height: 22px !important;
-    font-size: 9px !important;
+    width: 24px !important;
+    height: 24px !important;
+    min-width: 24px !important;
+    min-height: 24px !important;
+    font-size: 9.5px !important;
   }
 
   html[data-theme] .liquid-glass-reservation .booking-page .booking-progress > button small {
-    font-size: 11px !important;
-    line-height: 1.15 !important;
+    font-size: 11.5px !important;
+    line-height: 1.2 !important;
   }
 }
 
 @media (max-width: 360px) {
   .liquid-glass-reservation .booking-scroll-content {
     padding-inline: 16px !important;
+    padding-top: 16px !important;
+    padding-bottom: 14px !important;
   }
 
   html[data-theme] .liquid-glass-reservation .booking-page .booking-progress {
-    padding: 2px 10px 10px !important;
+    padding: 5px 10px 12px !important;
   }
 
   html[data-theme] .liquid-glass-reservation .booking-page .booking-progress::before,
@@ -765,6 +776,13 @@ html[data-theme] .liquid-glass-reservation .booking-page .booking-progress > but
 }
 
 @media (max-width: 767px) {
+  .liquid-glass-reservation .booking-cta {
+    margin-top: 8px !important;
+    padding: 10px 20px max(14px, env(safe-area-inset-bottom)) !important;
+    background: linear-gradient(180deg, rgba(250, 248, 244, 0.48) 0%, rgba(250, 248, 244, 0.78) 100%) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.78) !important;
+    box-shadow: 0 -4px 18px rgba(20, 22, 26, 0.035) !important;
+  }
   .liquid-glass-reservation .booking-cta-inner {
     display: flex !important;
     gap: 10px !important;
@@ -776,6 +794,12 @@ html[data-theme] .liquid-glass-reservation .booking-page .booking-progress > but
   .liquid-glass-reservation .booking-next-button {
     flex: 1 1 70% !important;
     width: auto !important;
+  }
+}
+
+@media (max-width: 360px) {
+  .liquid-glass-reservation .booking-cta {
+    padding-inline: 16px !important;
   }
 }
 
