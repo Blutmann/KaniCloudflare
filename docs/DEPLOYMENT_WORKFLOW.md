@@ -50,4 +50,5 @@ Antes de publicar una Preview:
 | 2026-11-12 | `fix/restore-black-card` | `1e3fe4e` | `54deb27c-dd10-4d80-b5f8-efc0a9f696cd` | `restore-black-card` | Restauración aprobada de Black Card 3D + QR |
 | 2026-11-12 | `feature/kani-panel-v2` | `112c2e1` | `e57c74f1-4fa1-4e3a-a649-662dfddba0d2` | `feature-kani-panel-v2` | Panel V2 3+3 + card Membresías restaurada |
 | 2026-11-12 | `feat/booking-slots-recovery` | `69f1cea` | `57a337d7-746d-4a0b-a205-d09943fa4e08` | `reserva-ux` | UX V2 horarios y recuperación (base `main`, sin `1e3fe4e` ni `112c2e1`) |
-| 2026-11-12 | `integration/kani-consolidated` | Ver historial git | Ver `wrangler versions list` | `kani-integrated` | Consolidación de `1e3fe4e` + `112c2e1` + `69f1cea` |
+| 2026-11-12 | `integration/kani-consolidated` | `3ea366e` | `d0b332b6-025b-47f5-8e1e-aa559b382846` | `kani-integrated` | Consolidación de `1e3fe4e` + `112c2e1` + `69f1cea` |
+| 2026-11-12 | `main` (prod) | `a17bca3` | `d0b332b6-025b-47f5-8e1e-aa559b382846` | `www.kanibarber.com` | Despliegue definitivo consolidado (rollback anterior: `f74baba9` / `60943f5c`) |
