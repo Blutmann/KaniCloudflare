@@ -27,6 +27,7 @@ import { Route as ReservaV5RouteImport } from './routes/reserva-v5'
 import { Route as ReservarRouteImport } from './routes/reservar'
 import { Route as ReservarMercadopagoRouteImport } from './routes/reservar-mercadopago'
 import { Route as ReservarTurnoRouteImport } from './routes/reservar-turno'
+import { Route as ReservarTurnoLiquidRouteImport } from './routes/reservar-turno-liquid'
 import { Route as ReservarTurnoMercadopagoRouteImport } from './routes/reservar-turno-mercadopago'
 import { Route as TerminosYCondicionesRouteImport } from './routes/terminos-y-condiciones'
 import { Route as AdminV2IndexRouteImport } from './routes/admin-v2.index'
@@ -159,6 +160,11 @@ const ReservarMercadopagoRoute = ReservarMercadopagoRouteImport.update({
 const ReservarTurnoRoute = ReservarTurnoRouteImport.update({
   id: '/reservar-turno',
   path: '/reservar-turno',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReservarTurnoLiquidRoute = ReservarTurnoLiquidRouteImport.update({
+  id: '/reservar-turno-liquid',
+  path: '/reservar-turno-liquid',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ReservarTurnoMercadopagoRoute =
@@ -411,6 +417,7 @@ export interface FileRoutesByFullPath {
   '/reservar': typeof ReservarRoute
   '/reservar-mercadopago': typeof ReservarMercadopagoRoute
   '/reservar-turno': typeof ReservarTurnoRoute
+  '/reservar-turno-liquid': typeof ReservarTurnoLiquidRoute
   '/reservar-turno-mercadopago': typeof ReservarTurnoMercadopagoRoute
   '/terminos-y-condiciones': typeof TerminosYCondicionesRoute
   '/admin-v2/clientes': typeof AdminV2ClientesRoute
@@ -470,6 +477,7 @@ export interface FileRoutesByTo {
   '/reservar': typeof ReservarRoute
   '/reservar-mercadopago': typeof ReservarMercadopagoRoute
   '/reservar-turno': typeof ReservarTurnoRoute
+  '/reservar-turno-liquid': typeof ReservarTurnoLiquidRoute
   '/reservar-turno-mercadopago': typeof ReservarTurnoMercadopagoRoute
   '/terminos-y-condiciones': typeof TerminosYCondicionesRoute
   '/admin-v2/clientes': typeof AdminV2ClientesRoute
@@ -534,6 +542,7 @@ export interface FileRoutesById {
   '/reservar': typeof ReservarRoute
   '/reservar-mercadopago': typeof ReservarMercadopagoRoute
   '/reservar-turno': typeof ReservarTurnoRoute
+  '/reservar-turno-liquid': typeof ReservarTurnoLiquidRoute
   '/reservar-turno-mercadopago': typeof ReservarTurnoMercadopagoRoute
   '/terminos-y-condiciones': typeof TerminosYCondicionesRoute
   '/admin-v2/clientes': typeof AdminV2ClientesRoute
@@ -599,6 +608,7 @@ export interface FileRouteTypes {
     | '/reservar'
     | '/reservar-mercadopago'
     | '/reservar-turno'
+    | '/reservar-turno-liquid'
     | '/reservar-turno-mercadopago'
     | '/terminos-y-condiciones'
     | '/admin-v2/clientes'
@@ -658,6 +668,7 @@ export interface FileRouteTypes {
     | '/reservar'
     | '/reservar-mercadopago'
     | '/reservar-turno'
+    | '/reservar-turno-liquid'
     | '/reservar-turno-mercadopago'
     | '/terminos-y-condiciones'
     | '/admin-v2/clientes'
@@ -721,6 +732,7 @@ export interface FileRouteTypes {
     | '/reservar'
     | '/reservar-mercadopago'
     | '/reservar-turno'
+    | '/reservar-turno-liquid'
     | '/reservar-turno-mercadopago'
     | '/terminos-y-condiciones'
     | '/admin-v2/clientes'
@@ -785,6 +797,7 @@ export interface RootRouteChildren {
   ReservarRoute: typeof ReservarRoute
   ReservarMercadopagoRoute: typeof ReservarMercadopagoRoute
   ReservarTurnoRoute: typeof ReservarTurnoRoute
+  ReservarTurnoLiquidRoute: typeof ReservarTurnoLiquidRoute
   ReservarTurnoMercadopagoRoute: typeof ReservarTurnoMercadopagoRoute
   TerminosYCondicionesRoute: typeof TerminosYCondicionesRoute
   MembresiaTokenRoute: typeof MembresiaTokenRoute
@@ -920,6 +933,13 @@ declare module '@tanstack/react-router' {
       path: '/reservar-turno'
       fullPath: '/reservar-turno'
       preLoaderRoute: typeof ReservarTurnoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reservar-turno-liquid': {
+      id: '/reservar-turno-liquid'
+      path: '/reservar-turno-liquid'
+      fullPath: '/reservar-turno-liquid'
+      preLoaderRoute: typeof ReservarTurnoLiquidRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reservar-turno-mercadopago': {
@@ -1352,6 +1372,7 @@ const rootRouteChildren: RootRouteChildren = {
   ReservarRoute: ReservarRoute,
   ReservarMercadopagoRoute: ReservarMercadopagoRoute,
   ReservarTurnoRoute: ReservarTurnoRoute,
+  ReservarTurnoLiquidRoute: ReservarTurnoLiquidRoute,
   ReservarTurnoMercadopagoRoute: ReservarTurnoMercadopagoRoute,
   TerminosYCondicionesRoute: TerminosYCondicionesRoute,
   MembresiaTokenRoute: MembresiaTokenRoute,
