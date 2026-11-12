@@ -1,6 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { Tables } from '@/integrations/supabase/types';
-import { barbers, bookingStartTimes, minutes, parseDate, services, type Barber } from '@/lib/kani-model';
+import { barbers, publicBarbers, isPublicBookingBarber, bookingStartTimes, minutes, parseDate, services, type Barber } from '@/lib/kani-model';
 import { BUSINESS_TIME_ZONE, businessDateToday } from '@/lib/kani-mobile-appointments';
 
 export type AvailabilitySlot = Tables<'barber_availability_slots'>;
@@ -111,27 +111,18 @@ export async function readConfiguredServices(options: { bypassCache?: boolean } 
   return result;
 }
 
-let cachedActiveBarbers: { data: { id: string; name: string }[]; timestamp: number } | null = null;
-const BARBERS_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
-
-export function clearActiveBarbersCache() {
-  cachedActiveBarbers = null;
-}
-
-async function getActiveBarbers(): Promise<{ id: string; name: string }[]> {
-  const now = Date.now();
-  if (cachedActiveBarbers && now - cachedActiveBarbers.timestamp < BARBERS_CACHE_TTL_MS) {
-    return cachedActiveBarbers.data;
-  }
-  const { data, error } = await supabase.from('barbers').select('id, name').eq('active', true);
+export async function readPublicBookingBarbers(): Promise<{ id: string; name: Barber }[]> {
+  const { data, error } = await supabase.rpc('read_public_booking_barbers');
   if (error) throw error;
-  const result = data ?? [];
-  cachedActiveBarbers = { data: result, timestamp: now };
-  return result;
+  // Staff sessions can also read hidden barbers, so filter the response explicitly.
+  // Keep the established display order and the separate internal roster.
+  return barbers.flatMap(name => (data ?? [])
+    .filter(row => row.name === name && (row as any).public_booking_enabled === true)
+    .map(row => ({ id: row.id, name: name as Barber })));
 }
 
 export async function readPublicAvailabilityStarts(barber: Barber | null, fromDate: string, toDate: string) {
-  const allBarbers = await getActiveBarbers();
+  const allBarbers = await readPublicBookingBarbers();
   const barberRows = barber ? allBarbers.filter(b => b.name === barber) : allBarbers;
   if (!barberRows.length) return [] as PublicAvailabilityStart[];
   const barberById = new Map(barberRows.map(row => [row.id, row.name as Barber]));
@@ -177,7 +168,7 @@ export function eligibleBarbersForAvailabilityStart(
     .filter(start => slotCanStillBeBooked(start.slot_date, start.start_time, now))
     .map(start => start.barber_name));
 
-  return (barbers as readonly Barber[]).filter(b => eligible.has(b));
+  return (publicBarbers as readonly Barber[]).filter(b => eligible.has(b));
 }
 
 function businessClockMinutes(now: Date) {

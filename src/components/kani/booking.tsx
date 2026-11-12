@@ -4,8 +4,8 @@ import { validateBenefitCodeQuoteFn } from '@/lib/kani-benefit-codes.functions';
 import type { BenefitQuote } from '@/lib/kani-benefit-codes';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { services, barbers, serviceFor, money, bookingEndDateFor, parseDate, isoDate, dateLabel, isBookingDate, getEffectiveServicePrice, barberInstagramHandles, type ServiceId, type Barber, type Appointment } from '@/lib/kani-model';
-import { availabilityStartTimesForServiceDate, eligibleBarbersForAvailabilityStart, readConfiguredServices, readPublicAvailabilityStarts, slotCanStillBeBooked, type ConfiguredService, type PublicAvailabilityStart } from '@/lib/kani-availability';
+import { services, barbers, publicBarbers, isPublicBookingBarber, serviceFor, money, bookingEndDateFor, parseDate, isoDate, dateLabel, isBookingDate, getEffectiveServicePrice, barberInstagramHandles, type ServiceId, type Barber, type Appointment } from '@/lib/kani-model';
+import { availabilityStartTimesForServiceDate, eligibleBarbersForAvailabilityStart, readConfiguredServices, readPublicBookingBarbers, readPublicAvailabilityStarts, slotCanStillBeBooked, type ConfiguredService, type PublicAvailabilityStart } from '@/lib/kani-availability';
 import { businessDateToday } from '@/lib/kani-mobile-appointments';
 import { appointmentErrorMessage, createRealAppointment } from '@/lib/kani-appointments';
 import { getDynamicDownPayment } from '@/lib/kani-down-payment';
@@ -173,7 +173,7 @@ export function Booking({
   const { mobileMenuOpen, setMobileMenuOpen } = useKani();
   const [step, setStep] = useState(() => initialStep ?? 0);
   const [service, setService] = useState<ServiceId | null>(() => initialService ?? null);
-  const [barber, setBarber] = useState<Barber | null>(() => initialBarber ?? null);
+  const [barber, setBarber] = useState<Barber | null>(() => (initialBarber && initialBarber !== 'Franco' ? initialBarber : null));
   const [barberDeferred, setBarberDeferred] = useState(false);
   const [date, setDate] = useState(() => initialDate ?? '');
   const [time, setTime] = useState(() => initialTime ?? '');
@@ -218,6 +218,9 @@ export function Booking({
   const [publicSlots, setPublicSlots] = useState<PublicAvailabilityStart[]>([]);
   const [availabilityLoading, setAvailabilityLoading] = useState(false);
   const [availabilityError, setAvailabilityError] = useState('');
+  const [publicBarbersState, setPublicBarbers] = useState<Barber[]>(() => [...publicBarbers]);
+  const [barbersLoading, setBarbersLoading] = useState(false);
+  const [barbersError, setBarbersError] = useState('');
   const [slotConflict, setSlotConflict] = useState<SlotUnavailableRecoveryState | null>(null);
   const [conflictedSlotMap, setConflictedSlotMap] = useState<Record<string, string[]>>({});
   const [configuredServices, setConfiguredServices] = useState<ConfiguredService[]>(() => services.map(service => ({ ...service })));
@@ -355,6 +358,14 @@ export function Booking({
 
   useEffect(() => {
     let cancelled = false;
+    void readPublicBookingBarbers().then(rows => {
+      if (!cancelled) setPublicBarbers(rows.map(row => row.name));
+    }).catch(() => {
+      if (!cancelled) {
+        setPublicBarbers([]);
+        setBarbersError('No pudimos consultar los profesionales. Actualizá la página para reintentar.');
+      }
+    }).finally(() => { if (!cancelled) setBarbersLoading(false); });
     void readConfiguredServices().then(next => {
       if (!cancelled && next.length) setConfiguredServices(next);
     }).catch(() => {
@@ -546,7 +557,7 @@ export function Booking({
       setAvailabilityError('');
       try {
         const nextSlots = await readPublicAvailabilityStarts(availabilityBarber, todayValue, bookingEndValue);
-        if (!cancelled) setPublicSlots(nextSlots);
+        if (!cancelled) setPublicSlots(nextSlots.filter(slot => publicBarbersState.includes(slot.barber_name)));
       } catch (cause) {
         if (!cancelled) {
           setPublicSlots([]);
@@ -558,7 +569,7 @@ export function Booking({
     }
     void loadAvailability();
     return () => { cancelled = true; };
-  }, [availabilityBarber, barber, barberDeferred, bookingEndValue, todayValue]);
+  }, [availabilityBarber, barber, barberDeferred, bookingEndValue, todayValue, publicBarbersState]);
   useEffect(() => {
     if (!service || availabilityLoading) return;
     const todayHasSlots = availableDates.includes(todayValue);
@@ -622,6 +633,7 @@ export function Booking({
     if (!date || compatibleTimes.length === 0) setDate('');
   }
   function chooseBarber(nextBarber: Barber) {
+    if (!publicBarbersState.includes(nextBarber)) return;
     setBarber(nextBarber);
     setBarberDeferred(false);
     setPublicSlots([]);
@@ -1272,7 +1284,10 @@ export function Booking({
 
             {step === 1 && (
               <div className="booking-barber-options space-y-3">
-                {barbers.map((b, i) => (
+                {barbersLoading && <p role="status" className="text-sm text-muted-foreground">Consultando profesionales…</p>}
+                {barbersError && <p role="alert" className="text-sm text-destructive">{barbersError}</p>}
+                {!barbersLoading && !barbersError && !publicBarbersState.length && <p role="status" className="text-sm text-muted-foreground">No hay profesionales disponibles para reservas online.</p>}
+                {publicBarbersState.map(b => (
                   <Button
                     key={b}
                     variant="outline"
@@ -1281,7 +1296,7 @@ export function Booking({
                     className={`booking-option ${barber === b && !barberDeferred ? 'selected' : ''}`}
                     onClick={() => chooseBarber(b)}
                   >
-                    <span className={`barber-avatar avatar-${i}`}>{b.charAt(0)}</span>
+                    <span className={`barber-avatar avatar-${barbers.indexOf(b)}`}>{b.charAt(0)}</span>
                     <span className={`booking-option-copy flex-1 ${isV5 ? 'text-left' : 'text-center'}`}>
                       <span className="booking-barber-name block text-lg font-medium">{b}</span>
                       <span className="booking-barber-handle mt-0.5 block text-sm text-muted-foreground">{barberInstagramHandles[b]}</span>
@@ -1292,6 +1307,7 @@ export function Booking({
                 <Button
                   variant="outline"
                   aria-pressed={barberDeferred}
+                  disabled={barbersLoading || !publicBarbersState.length}
                   aria-label={isV5 ? `Cualquier barbero disponible, el sistema asignará según fecha y horario${barberDeferred ? ', seleccionado' : ''}` : "Elegir más adelante"}
                   className={`booking-defer-option ${barberDeferred ? 'selected' : ''}`}
                   onClick={() => { setBarber(null); setBarberDeferred(true); setPublicSlots([]); setAvailabilityError(''); setDate(''); setTime(''); }}

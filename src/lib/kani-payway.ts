@@ -1,3 +1,5 @@
+import { isPublicBookingBarber } from './kani-model';
+
 // Public contracts only. No credentials, runtime bindings or provider responses here.
 export type PaywayState = 'approved' | 'rejected' | 'unknown' | 'recoverable' | 'unavailable' | 'verifying' | 'review';
 export type PaywayResult = { state: PaywayState; message: string; appointmentConfirmed?: boolean };
@@ -133,7 +135,8 @@ export function validatePaywayDraft(input: unknown): PaywayDraft {
     }
   }
   if (!/^\d{4}-\d{2}-\d{2}$/.test(String(d.date)) || !/^\d{2}:\d{2}$/.test(String(d.time)) ||
-    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(d.email))) throw new Error('PAYWAY_DRAFT_INVALID');
+    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(d.email)) ||
+    !isPublicBookingBarber(d.barber as string)) throw new Error('PAYWAY_DRAFT_INVALID');
   const normalizedBenefitCode = typeof d.benefitCode === 'string' && d.benefitCode.trim() ? d.benefitCode.trim() : undefined;
   return {
     barber: d.barber as string,

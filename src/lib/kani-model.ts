@@ -6,6 +6,13 @@ export const services = [
 export const barbers = ['Lautaro', 'Gonzalo', 'Valentín', 'Franco'] as const;
 export type Barber = typeof barbers[number];
 
+export const publicBarbers = ['Lautaro', 'Gonzalo', 'Valentín'] as const;
+export type PublicBarber = (typeof publicBarbers)[number];
+
+export function isPublicBookingBarber(name?: string | null): name is PublicBarber {
+  return typeof name === 'string' && (publicBarbers as readonly string[]).includes(name);
+}
+
 export const barberInstagramHandles: Record<Barber, string> = {
   Lautaro: '@lautarodejesus_',
   Gonzalo: '@gonzalopierucci',
