@@ -60,18 +60,19 @@ export function PanelV2Navigation({
   } as CSSProperties;
 
   return (
-    <header className="v2-navigation">
-      <div className="kani-panel-v2-topbar" aria-label="Espacios de Panel V2">
+    <header className="v2-navigation kani-panel-v2-header">
+      <div className="kani-panel-v2-topbar" aria-label="Espacios de administración">
         <div className="kani-panel-v2-space-heading">
           <Link
             to="/panel-v2"
             className="kani-panel-v2-brand-pill"
-            aria-label="Inicio de Panel V2"
-            title="Inicio de Panel V2"
+            aria-label="Inicio del panel"
+            title="Inicio del panel"
           >
             <LayoutGrid size={13} aria-hidden="true" />
-            <span>Panel V2</span>
+            <span>Inicio</span>
           </Link>
+          <span className="kani-panel-v2-space-sep" aria-hidden="true">/</span>
           <span className="kani-panel-v2-space-name">{spaceTitle}</span>
         </div>
 
@@ -109,12 +110,12 @@ export function PanelV2Navigation({
           {activeSpace === "estadisticas" && (
             <button
               type="button"
-              className="admin-section-nav-refresh-btn"
+              className="admin-section-nav-refresh-btn kani-panel-v2-compact-refresh"
               onClick={onRefresh}
               disabled={loading}
               aria-label="Actualizar datos"
             >
-              <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
+              <RefreshCw size={15} className={loading ? "animate-spin" : ""} />
             </button>
           )}
         </div>
@@ -135,7 +136,7 @@ export function PanelV2Navigation({
                 className="admin-section-nav-link"
                 activeProps={{ className: "is-active", "aria-current": "page" }}
               >
-                <Icon size={16} aria-hidden="true" />
+                <Icon size={15} strokeWidth={1.85} aria-hidden="true" />
                 <span>{title}</span>
               </Link>
             ))}
@@ -148,7 +149,7 @@ export function PanelV2Navigation({
             disabled={loading}
             aria-label="Actualizar datos"
           >
-            <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
+            <RefreshCw size={15} className={loading ? "animate-spin" : ""} />
           </button>
         </nav>
       )}

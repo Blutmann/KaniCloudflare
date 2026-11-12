@@ -1,31 +1,128 @@
-/* ==========================================================================
-   KANI BARBER STUDIO — PANEL V2 (Aislamiento experimental 3 + 3)
-   Regla de aislamiento: todas las reglas están encapsuladas bajo .kani-panel-v2.
-   No modifica styles.css, v2.css ni el layout histórico de /panel-administracion/*.
-   ========================================================================== */
+/*
+ * Estilos exclusivos y completamente aislados de Panel V2 (/panel-v2/*).
+ * Todas las reglas están contenidas bajo .kani-panel-v2 para no afectar
+ * /panel-administracion/*, /reservar-turno, Black Card, QR ni v2.css/styles.css.
+ */
 
-.kani-panel-v2 {
-  display: grid;
-  gap: 12px;
+.v2-shell.kani-panel-v2 {
+  /* Tema claro: superficies blancas sólidas y contraste WCAG AA */
+  --v2-surface: #ffffff;
+  --v2-reading-surface: #ffffff;
+  --v2-inset: #f6f3ee;
+  --v2-line: #d8d0c5;
+  --v2-shadow: 0 6px 18px rgba(24, 21, 18, 0.06);
+
+  /* Nunca usar display: grid sin align-content dentro de .site-shell flex (100dvh) */
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 10px;
+  width: min(1240px, 100%);
+  margin-inline: auto;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+html[data-theme="dark"] .v2-shell.kani-panel-v2,
+html.dark .v2-shell.kani-panel-v2 {
+  /* Tema oscuro: grafito sólido definido, bordó y dorado consistentes */
+  --v2-surface: #1b1a18;
+  --v2-reading-surface: #22201d;
+  --v2-inset: #141311;
+  --v2-line: rgba(200, 169, 107, 0.28);
+  --v2-shadow: 0 14px 32px rgba(0, 0, 0, 0.42);
+}
+
+/* Superficies sólidas en controles, tarjetas y paneles dentro de Panel V2 */
+.kani-panel-v2 .v2-panel,
+.kani-panel-v2 .v2-next,
+.kani-panel-v2 .v2-today,
+.kani-panel-v2 .v2-appointment,
+.kani-panel-v2 .v2-client-card,
+.kani-panel-v2 .v2-insights,
+.kani-panel-v2 .v2-filters,
+.kani-panel-v2 .v2-metric {
+  background: var(--v2-surface);
+  border-color: var(--v2-line);
+  box-shadow: var(--v2-shadow);
+}
+
+.kani-panel-v2 .v2-field input,
+.kani-panel-v2 .v2-field select,
+.kani-panel-v2 .v2-field textarea {
+  background: #ffffff;
+  color: #1b1815;
+  border-color: #cfc6ba;
+}
+
+html[data-theme="dark"] .kani-panel-v2 .v2-field input,
+html[data-theme="dark"] .kani-panel-v2 .v2-field select,
+html[data-theme="dark"] .kani-panel-v2 .v2-field textarea,
+html.dark .kani-panel-v2 .v2-field input,
+html.dark .kani-panel-v2 .v2-field select,
+html.dark .kani-panel-v2 .v2-field textarea {
+  background: #141311;
+  color: #f5f0e8;
+  border-color: rgba(200, 169, 107, 0.3);
+}
+
+.kani-panel-v2 .v2-primary {
+  background: #702b3a;
+  border-color: #702b3a;
+  color: #ffffff;
+}
+
+.kani-panel-v2 .v2-primary:hover:not(:disabled) {
+  background: #5b222f;
+  border-color: #5b222f;
+}
+
+.kani-panel-v2 .v2-workspace {
+  display: block;
+  flex: 0 0 auto;
+  width: 100%;
   min-width: 0;
 }
 
-/* Barra superior discreta de espacio (Operación / Negocio / Estadísticas) */
+.kani-panel-v2 .v2-page {
+  padding-top: 2px;
+  gap: 14px;
+}
+
+/* Cabecera de navegación interna: sin doble contenedor ni alturas excesivas */
+.v2-shell.kani-panel-v2 .v2-navigation.kani-panel-v2-header {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  flex: 0 0 auto;
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+/* Fila superior compacta: espacio actual + selector Operación/Negocio + Estadísticas */
 .kani-panel-v2-topbar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 8px 12px;
   padding: 6px 10px;
-  border: 1px solid var(--border);
-  border-radius: 0.75rem;
-  background: var(--v2-surface, var(--surface));
+  min-height: 0;
+  border: 1px solid var(--v2-line);
+  border-radius: 12px;
+  background: var(--v2-surface);
   box-shadow: var(--v2-shadow);
-  min-width: 0;
+  box-sizing: border-box;
 }
 
 .kani-panel-v2-space-heading {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 8px;
   min-width: 0;
@@ -35,438 +132,486 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 3px 8px;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  background: var(--v2-inset, rgba(120, 120, 120, 0.08));
-  color: var(--muted-foreground);
-  font-size: 11px;
+  padding: 4px 9px;
+  border-radius: 8px;
+  font-size: 12px;
   font-weight: 600;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.01em;
   text-decoration: none;
-  white-space: nowrap;
+  color: var(--foreground);
+  background: var(--v2-inset);
+  border: 1px solid var(--v2-line);
+  transition: background-color 140ms ease, border-color 140ms ease;
 }
 
 .kani-panel-v2-brand-pill:hover {
-  color: var(--foreground);
-  border-color: var(--gold, var(--border));
+  border-color: #702b3a;
+}
+
+html[data-theme="dark"] .kani-panel-v2-brand-pill:hover,
+html.dark .kani-panel-v2-brand-pill:hover {
+  border-color: var(--gold);
+}
+
+.kani-panel-v2-space-sep {
+  font-size: 13px;
+  color: var(--muted-foreground);
+  user-select: none;
 }
 
 .kani-panel-v2-space-name {
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 600;
   color: var(--foreground);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  letter-spacing: -0.01em;
 }
 
 .kani-panel-v2-switcher-group {
   display: inline-flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 6px;
-  flex-shrink: 0;
   min-width: 0;
 }
 
 .kani-panel-v2-space-switch {
   display: inline-flex;
   align-items: center;
-  padding: 2px;
   gap: 2px;
-  border-radius: 0.65rem;
-  border: 1px solid var(--border);
-  background: var(--v2-inset, rgba(120, 120, 120, 0.06));
+  padding: 2px;
+  border-radius: 9px;
+  border: 1px solid var(--v2-line);
+  background: var(--v2-inset);
 }
 
 .kani-panel-v2-space-option {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
-  min-height: 30px;
-  padding: 0 10px;
-  border-radius: 0.5rem;
-  color: var(--muted-foreground);
+  min-height: 28px;
+  padding: 0 11px;
+  border-radius: 7px;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
   text-decoration: none;
-  white-space: nowrap;
-  transition: background-color 0.18s ease, color 0.18s ease;
-}
-
-.kani-panel-v2-space-option:hover {
   color: var(--foreground);
+  white-space: nowrap;
+  transition: background-color 140ms ease, color 140ms ease;
 }
 
 .kani-panel-v2-space-option.is-selected {
-  background: var(--foreground);
-  color: var(--background);
-  font-weight: 600;
+  background: #702b3a;
+  color: #ffffff;
+}
+
+html[data-theme="dark"] .kani-panel-v2-space-option.is-selected,
+html.dark .kani-panel-v2-space-option.is-selected {
+  background: var(--gold);
+  color: #161412;
 }
 
 .kani-panel-v2-stats-link {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  min-height: 32px;
+  min-height: 30px;
   padding: 0 10px;
-  border-radius: 0.55rem;
-  border: 1px solid var(--border);
-  background: transparent;
-  color: var(--muted-foreground);
+  border-radius: 8px;
+  border: 1px solid var(--v2-line);
+  background: var(--v2-inset);
+  color: var(--foreground);
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
   text-decoration: none;
   white-space: nowrap;
+  transition: border-color 140ms ease, background-color 140ms ease, color 140ms ease;
 }
 
-.kani-panel-v2-stats-link:hover,
+.kani-panel-v2-stats-link:hover {
+  border-color: #702b3a;
+}
+
 .kani-panel-v2-stats-link.is-selected {
-  color: var(--foreground);
-  border-color: var(--gold, var(--border));
+  background: #702b3a;
+  border-color: #702b3a;
+  color: #ffffff;
 }
 
-/* Barra horizontal interna (Turnos | Horarios | Clientes | Actualizar / Pagos | Membresías | Descuentos | Actualizar) */
-.kani-panel-v2 .kani-panel-v2-nav.admin-section-nav {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 1px 44px;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.35rem;
-  width: 100%;
-  box-sizing: border-box;
-  border: 1px solid var(--border);
-  border-radius: 0.9rem;
-  background: var(--v2-surface, var(--surface));
-  box-shadow: var(--v2-shadow);
+html[data-theme="dark"] .kani-panel-v2-stats-link.is-selected,
+html.dark .kani-panel-v2-stats-link.is-selected {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: #161412;
 }
 
-.kani-panel-v2 .kani-panel-v2-nav-items {
-  display: grid;
-  grid-template-columns: repeat(var(--panel-v2-tab-count, 3), minmax(0, 1fr));
+.kani-panel-v2-compact-refresh {
+  min-height: 30px;
+  min-width: 30px;
+  padding: 0 8px;
+}
+
+/* Barra horizontal compacta tipo /panel-administracion/* */
+.v2-shell.kani-panel-v2 .admin-section-nav.kani-panel-v2-nav {
+  display: flex;
   align-items: stretch;
-  gap: 0.35rem;
+  gap: 0;
   width: 100%;
-  min-width: 0;
-}
-
-.kani-panel-v2 .kani-panel-v2-nav-items .admin-section-nav-link {
-  width: 100%;
-  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
   min-height: 44px;
-  font-size: 13px;
+  height: auto;
+  padding: 4px;
+  border-radius: 14px;
+  border: 1px solid var(--v2-line);
+  background: var(--v2-surface);
+  box-shadow: var(--v2-shadow);
+  overflow: hidden;
 }
 
-.kani-panel-v2 .kani-panel-v2-nav .admin-section-nav-divider {
-  margin-inline: 0;
-  justify-self: center;
-}
-
-.kani-panel-v2 .kani-panel-v2-nav .admin-section-nav-refresh-btn {
-  grid-column: 3;
-  justify-self: end;
-  width: 44px;
-  height: 44px;
-}
-
-@media (max-width: 767px) {
-  .kani-panel-v2-topbar {
-    padding: 6px 8px;
-    gap: 6px;
-    flex-wrap: wrap;
-  }
-
-  .kani-panel-v2-brand-pill span {
-    display: none;
-  }
-
-  .kani-panel-v2-space-name {
-    font-size: 12px;
-  }
-
-  .kani-panel-v2-space-option {
-    min-height: 28px;
-    padding: 0 8px;
-    font-size: 11px;
-  }
-
-  .kani-panel-v2-stats-link {
-    min-height: 30px;
-    padding: 0 8px;
-    font-size: 11px;
-  }
-
-  .kani-panel-v2-stats-link span {
-    display: none;
-  }
-
-  .kani-panel-v2 .kani-panel-v2-nav.admin-section-nav {
-    grid-template-columns: minmax(0, 1fr) 1px 34px;
-    gap: 2px;
-    padding: 4px;
-  }
-
-  .kani-panel-v2 .kani-panel-v2-nav-items {
-    gap: 2px;
-  }
-
-  .kani-panel-v2 .kani-panel-v2-nav-items .admin-section-nav-link {
-    flex-direction: column;
-    gap: 3px;
-    min-height: 48px;
-    padding: 5px 3px;
-    font-size: clamp(10px, 2.9vw, 11.5px);
-  }
-
-  .kani-panel-v2 .kani-panel-v2-nav .admin-section-nav-refresh-btn {
-    width: 34px;
-    min-width: 34px;
-    height: 44px;
-    padding: 0;
-    position: relative;
-  }
-}
-
-/* Entrada principal /panel-v2 (dos tarjetas simples) */
-.kani-panel-v2-home {
+.v2-shell.kani-panel-v2 .kani-panel-v2-nav-items {
+  flex: 1 1 0%;
+  min-width: 0;
   display: grid;
-  gap: 14px;
-  padding: 6px 0 18px;
+  grid-template-columns: repeat(var(--admin-nav-count, 3), minmax(0, 1fr));
+  gap: 4px;
+}
+
+.v2-shell.kani-panel-v2 .kani-panel-v2-nav .admin-section-nav-link {
+  min-width: 0;
+  min-height: 36px;
+  height: auto;
+  padding: 6px 10px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--foreground);
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: background-color 140ms ease, color 140ms ease;
+}
+
+.v2-shell.kani-panel-v2 .kani-panel-v2-nav .admin-section-nav-link:hover {
+  background: var(--v2-inset);
+}
+
+.v2-shell.kani-panel-v2 .kani-panel-v2-nav .admin-section-nav-link.is-active,
+.v2-shell.kani-panel-v2 .kani-panel-v2-nav .admin-section-nav-link[aria-current="page"] {
+  background: #702b3a;
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(112, 43, 58, 0.22);
+}
+
+html[data-theme="dark"] .v2-shell.kani-panel-v2 .kani-panel-v2-nav .admin-section-nav-link.is-active,
+html[data-theme="dark"] .v2-shell.kani-panel-v2 .kani-panel-v2-nav .admin-section-nav-link[aria-current="page"],
+html.dark .v2-shell.kani-panel-v2 .kani-panel-v2-nav .admin-section-nav-link.is-active,
+html.dark .v2-shell.kani-panel-v2 .kani-panel-v2-nav .admin-section-nav-link[aria-current="page"] {
+  background: var(--gold);
+  color: #161412;
+  box-shadow: none;
+}
+
+.v2-shell.kani-panel-v2 .kani-panel-v2-nav .admin-section-nav-divider {
+  width: 1px;
+  align-self: stretch;
+  margin: 4px 6px;
+  background: var(--v2-line);
+  flex: 0 0 auto;
+}
+
+.v2-shell.kani-panel-v2 .kani-panel-v2-nav .admin-section-nav-refresh-btn {
+  flex: 0 0 auto;
+  min-width: 38px;
+  min-height: 36px;
+  height: auto;
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--v2-line);
+  background: var(--v2-inset);
+  color: var(--foreground);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.v2-shell.kani-panel-v2 .kani-panel-v2-nav .admin-section-nav-refresh-btn:hover:not(:disabled) {
+  border-color: #702b3a;
+}
+
+/* Pantalla inicial /panel-v2 */
+.kani-panel-v2-home {
+  width: min(860px, 100%);
+  margin: 18px auto 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  box-sizing: border-box;
 }
 
 .kani-panel-v2-home-header {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 16px 18px;
-  border-radius: 14px;
-  border: 1px solid var(--border);
-  background: var(--v2-surface, var(--surface));
-  box-shadow: var(--v2-shadow);
-}
-
-.kani-panel-v2-home-kicker {
-  margin: 0;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--muted-foreground);
+  gap: 6px;
 }
 
 .kani-panel-v2-home-title {
   margin: 0;
-  font-size: 20px;
-  font-weight: 700;
+  font-size: clamp(24px, 3vw, 32px);
+  line-height: 1.2;
+  font-weight: 600;
   color: var(--foreground);
+  letter-spacing: -0.02em;
+}
+
+.kani-panel-v2-home-copy {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--muted-foreground);
 }
 
 .kani-panel-v2-home-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-}
-
-@media (max-width: 720px) {
-  .kani-panel-v2-home-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
+  gap: 16px;
 }
 
 .kani-panel-v2-space-card {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  gap: 14px;
-  padding: 20px;
-  border-radius: 14px;
-  border: 1px solid var(--border);
-  background: var(--v2-surface, var(--surface));
+  gap: 20px;
+  padding: 22px;
+  border-radius: 16px;
+  border: 1px solid var(--v2-line);
+  background: var(--v2-surface);
   box-shadow: var(--v2-shadow);
   text-decoration: none;
   color: inherit;
   min-width: 0;
-  transition: border-color 0.2s ease, transform 0.16s ease;
+  transition: transform 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
 }
 
 .kani-panel-v2-space-card:hover {
-  border-color: var(--gold, var(--primary));
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  border-color: #702b3a;
+  box-shadow: 0 12px 28px rgba(112, 43, 58, 0.12);
 }
 
-.kani-panel-v2-space-card-top {
+html[data-theme="dark"] .kani-panel-v2-space-card:hover,
+html.dark .kani-panel-v2-space-card:hover {
+  border-color: var(--gold);
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.5);
+}
+
+.kani-panel-v2-space-card-body {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
+  flex-direction: column;
+  gap: 14px;
 }
 
 .kani-panel-v2-space-icon {
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: var(--v2-inset, rgba(120, 120, 120, 0.1));
-  color: var(--foreground);
-  border: 1px solid var(--border);
+  background: rgba(112, 43, 58, 0.1);
+  border: 1px solid rgba(112, 43, 58, 0.2);
+  color: #702b3a;
 }
 
-.kani-panel-v2-space-card h2 {
-  margin: 10px 0 4px;
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--foreground);
+html[data-theme="dark"] .kani-panel-v2-space-icon,
+html.dark .kani-panel-v2-space-icon {
+  background: rgba(200, 169, 107, 0.14);
+  border-color: rgba(200, 169, 107, 0.3);
+  color: var(--gold);
 }
 
-.kani-panel-v2-space-card p {
-  margin: 0;
-  font-size: 13.5px;
-  color: var(--muted-foreground);
-  line-height: 1.45;
-}
-
-.kani-panel-v2-space-pills {
+.kani-panel-v2-space-text {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 6px;
 }
 
-.kani-panel-v2-space-pills span {
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 500;
-  border: 1px solid var(--border);
-  background: var(--v2-inset, rgba(120, 120, 120, 0.06));
+.kani-panel-v2-space-text h2 {
+  margin: 0;
+  font-size: 21px;
+  line-height: 1.25;
+  font-weight: 600;
   color: var(--foreground);
+}
+
+.kani-panel-v2-space-desc {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.45;
+  color: var(--foreground);
+  font-weight: 500;
+}
+
+.kani-panel-v2-space-modules {
+  margin: 2px 0 0;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--muted-foreground);
 }
 
 .kani-panel-v2-space-cta {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 13px;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 16px;
+  border-radius: 11px;
+  background: #702b3a;
+  color: #ffffff;
+  font-size: 14px;
   font-weight: 600;
-  color: var(--primary, #702B3A);
+  text-align: center;
+  box-sizing: border-box;
+  transition: background-color 140ms ease;
 }
 
-html[data-theme="dark"] .kani-panel-v2-space-cta {
-  color: var(--gold, #c8a96b);
+.kani-panel-v2-space-card:hover .kani-panel-v2-space-cta {
+  background: #5b222f;
 }
 
-.kani-panel-v2-home-tools {
+html[data-theme="dark"] .kani-panel-v2-space-cta,
+html.dark .kani-panel-v2-space-cta {
+  background: #702b3a;
+  color: #ffffff;
+}
+
+.kani-panel-v2-home-footer {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 10px;
-  padding: 14px 18px;
-  border-radius: 14px;
-  border: 1px solid var(--border);
-  background: var(--v2-surface, var(--surface));
-  box-shadow: var(--v2-shadow);
+  justify-content: flex-start;
+  padding-top: 2px;
 }
 
-.kani-panel-v2-home-tools-copy {
-  display: flex;
+.kani-panel-v2-home-stats-link {
+  display: inline-flex;
   align-items: center;
-  gap: 10px;
-  font-size: 13.5px;
-  color: var(--muted-foreground);
-}
-
-.kani-panel-v2-home-tools-copy strong {
+  gap: 7px;
+  min-height: 36px;
+  padding: 6px 13px;
+  border-radius: 10px;
+  border: 1px solid var(--v2-line);
+  background: var(--v2-surface);
   color: var(--foreground);
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  box-shadow: var(--v2-shadow);
+  transition: border-color 140ms ease, background-color 140ms ease;
 }
 
-/* Vista Movimientos | Resumen en /panel-v2/negocio/pagos */
+.kani-panel-v2-home-stats-link:hover {
+  border-color: #702b3a;
+  background: var(--v2-inset);
+}
+
+html[data-theme="dark"] .kani-panel-v2-home-stats-link:hover,
+html.dark .kani-panel-v2-home-stats-link:hover {
+  border-color: var(--gold);
+}
+
+/* Subnavegación integrada de Pagos V2 (Movimientos | Resumen) */
 .kani-panel-v2-payments-wrap {
-  display: grid;
-  gap: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   min-width: 0;
+  width: 100%;
 }
 
-.kani-panel-v2-view-bar {
+.kani-panel-v2-payments-toolbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 10px;
-  padding: 10px 14px;
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  background: var(--v2-surface, var(--surface));
-  box-shadow: var(--v2-shadow);
+  justify-content: flex-start;
+  padding: 0;
+  margin: 0;
+  min-height: 0;
 }
 
 .kani-panel-v2-view-tabs {
   display: inline-grid;
-  grid-template-columns: repeat(2, minmax(110px, 1fr));
-  gap: 4px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   padding: 3px;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  background: var(--v2-inset, rgba(120, 120, 120, 0.06));
+  border-radius: 11px;
+  border: 1px solid var(--v2-line);
+  background: var(--v2-surface);
+  box-shadow: var(--v2-shadow);
+  gap: 3px;
+  width: min(320px, 100%);
 }
 
 .kani-panel-v2-view-tab {
-  min-height: 36px;
-  padding: 0 14px;
+  appearance: none;
+  border: 0;
   border-radius: 8px;
-  border: 1px solid transparent;
-  background: transparent;
-  color: var(--muted-foreground);
+  min-height: 34px;
+  padding: 6px 14px;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
+  background: transparent;
+  color: var(--foreground);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
+  transition: background-color 140ms ease, color 140ms ease;
+}
+
+.kani-panel-v2-view-tab:hover:not(.is-active) {
+  background: var(--v2-inset);
 }
 
 .kani-panel-v2-view-tab.is-active {
-  background: var(--primary, #702B3A);
+  background: #702b3a;
   color: #ffffff;
 }
 
-html[data-theme="dark"] .kani-panel-v2-view-tab.is-active {
-  background: var(--gold, #c8a96b);
-  color: #121212;
+html[data-theme="dark"] .kani-panel-v2-view-tab.is-active,
+html.dark .kani-panel-v2-view-tab.is-active {
+  background: var(--gold);
+  color: #161412;
 }
 
+/* Resumen de Pagos V2 */
 .kani-panel-v2-summary-card {
+  border: 1px solid var(--v2-line);
+  border-radius: var(--radius-card, 16px);
+  background: var(--v2-surface);
+  box-shadow: var(--v2-shadow);
+  padding: 18px;
   display: grid;
   gap: 14px;
-  padding: 16px;
-  border-radius: 14px;
-  border: 1px solid var(--border);
-  background: var(--v2-surface, var(--surface));
-  box-shadow: var(--v2-shadow);
 }
 
 .kani-panel-v2-summary-kpis {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
   gap: 10px;
 }
 
-@media (max-width: 767px) {
-  .kani-panel-v2-summary-kpis {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
 .kani-panel-v2-summary-kpi {
-  padding: 12px;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  background: var(--v2-inset, rgba(120, 120, 120, 0.05));
-  display: flex;
-  flex-direction: column;
+  border: 1px solid var(--v2-line);
+  border-radius: 12px;
+  padding: 12px 14px;
+  background: var(--v2-inset);
+  display: grid;
   gap: 4px;
 }
 
@@ -476,8 +621,8 @@ html[data-theme="dark"] .kani-panel-v2-view-tab.is-active {
 }
 
 .kani-panel-v2-summary-kpi strong {
-  font-size: 18px;
-  font-weight: 700;
+  font-size: 20px;
+  font-weight: 600;
   color: var(--foreground);
 }
 
@@ -487,39 +632,101 @@ html[data-theme="dark"] .kani-panel-v2-view-tab.is-active {
   gap: 12px;
 }
 
-@media (max-width: 767px) {
-  .kani-panel-v2-summary-splits {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
 .kani-panel-v2-summary-box {
+  border: 1px solid var(--v2-line);
+  border-radius: 12px;
   padding: 14px;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
+  background: var(--v2-surface);
+  display: grid;
   gap: 8px;
 }
 
 .kani-panel-v2-summary-box h3 {
   margin: 0;
-  font-size: 14px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 600;
   color: var(--foreground);
 }
 
 .kani-panel-v2-summary-row {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  padding-block: 6px;
-  border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+  gap: 10px;
   font-size: 13px;
+  color: var(--foreground);
+  padding-top: 6px;
+  border-top: 1px solid var(--v2-line);
 }
 
-.kani-panel-v2-summary-row:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
+.kani-panel-v2-summary-row:first-of-type {
+  border-top: 0;
+  padding-top: 0;
+}
+
+/* Responsive mobile & tablet */
+@media (max-width: 720px) {
+  .kani-panel-v2-home {
+    margin: 8px auto 20px;
+    gap: 16px;
+  }
+
+  .kani-panel-v2-home-grid,
+  .kani-panel-v2-summary-splits {
+    grid-template-columns: 1fr;
+  }
+
+  .kani-panel-v2-topbar {
+    padding: 6px 8px;
+    gap: 6px 8px;
+  }
+
+  .kani-panel-v2-view-tabs {
+    width: 100%;
+  }
+}
+
+@media (max-width: 520px) {
+  .kani-panel-v2-topbar {
+    justify-content: space-between;
+  }
+
+  .kani-panel-v2-switcher-group {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .v2-shell.kani-panel-v2 .kani-panel-v2-nav .admin-section-nav-link {
+    flex-direction: column;
+    gap: 3px;
+    padding: 6px 4px;
+    font-size: 11px;
+    line-height: 1.15;
+    min-height: 44px;
+  }
+
+  .v2-shell.kani-panel-v2 .kani-panel-v2-nav .admin-section-nav-divider {
+    margin: 4px 4px;
+  }
+
+  .v2-shell.kani-panel-v2 .kani-panel-v2-nav .admin-section-nav-refresh-btn {
+    min-width: 36px;
+    padding: 6px 8px;
+  }
+}
+
+@media (max-width: 359px) {
+  .v2-shell.kani-panel-v2 .kani-panel-v2-nav .admin-section-nav-link {
+    font-size: 10.5px;
+    padding: 5px 2px;
+  }
+
+  .kani-panel-v2-space-option {
+    padding: 0 8px;
+    font-size: 11.5px;
+  }
+
+  .kani-panel-v2-stats-link {
+    padding: 0 8px;
+    font-size: 11.5px;
+  }
 }

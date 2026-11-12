@@ -246,21 +246,39 @@ describe("KANI Panel V2 — Implementación experimental aislada 3 + 3 y protecc
     expect(resolvePanelV2Section("/panel-v2/desconocida")).toBe("unknown");
   });
 
-  it("2. Entrada /panel-v2 muestra dos tarjetas limpias (Operación y Negocio) + acceso a Estadísticas", () => {
+  it("2. Entrada /panel-v2 muestra encabezado limpio, dos tarjetas (Operación y Negocio) y acceso discreto a Estadísticas", () => {
     render(<PanelV2Home />);
 
-    const opLink = screen.getByRole("link", { name: /Operación/i });
+    expect(screen.getByRole("heading", { level: 1, name: "Panel de administración" })).toBeInTheDocument();
+    expect(screen.getByText("Elegí qué querés gestionar.")).toBeInTheDocument();
+    expect(screen.queryByText(/Arquitectura 3 \+ 3/i)).toBeNull();
+
+    const opLink = screen.getByRole("link", { name: /Ingresar a Operación/i });
     expect(opLink).toHaveAttribute("href", "/panel-v2/operacion/turnos");
-    expect(opLink).toHaveTextContent("Gestión diaria del salón.");
+    expect(opLink).toHaveTextContent("Gestión diaria del salón");
+    expect(opLink).toHaveTextContent("Turnos · Horarios · Clientes");
 
-    const negLink = screen.getByRole("link", { name: /Negocio/i });
+    const negLink = screen.getByRole("link", { name: /Ingresar a Negocio/i });
     expect(negLink).toHaveAttribute("href", "/panel-v2/negocio/pagos");
-    expect(negLink).toHaveTextContent("Cobros, membresías y promociones.");
+    expect(negLink).toHaveTextContent("Administración del negocio");
+    expect(negLink).toHaveTextContent("Pagos · Membresías · Descuentos");
 
-    expect(screen.getByRole("link", { name: /Abrir estadísticas/i })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: /Estadísticas/i })).toHaveAttribute(
       "href",
       "/panel-v2/estadisticas",
     );
+  });
+
+  it("2b. Aislamiento absoluto: estilos de Panel V2 permanecen encapsulados bajo .kani-panel-v2 sin alterar styles.css ni v2.css", () => {
+    const panelV2Css = fs.readFileSync(path.join(rootDir, "components/kani/v2-experimental/panel-v2.css"), "utf8");
+    const v2Css = fs.readFileSync(path.join(rootDir, "components/kani/v2/v2.css"), "utf8");
+    const stylesCss = fs.readFileSync(path.join(rootDir, "styles.css"), "utf8");
+
+    expect(panelV2Css).toContain(".v2-shell.kani-panel-v2");
+    expect(panelV2Css).toContain("--v2-surface: #ffffff;");
+    expect(panelV2Css).not.toContain("display: grid;\n  gap: 12px;");
+    expect(v2Css).not.toContain("kani-panel-v2");
+    expect(stylesCss).not.toContain("kani-panel-v2");
   });
 
   it("3. Operación muestra barra horizontal Turnos | Horarios | Clientes | Actualizar sin Inicio adicional", async () => {

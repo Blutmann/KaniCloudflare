@@ -74,10 +74,7 @@ export function PanelV2Payments() {
 
   return (
     <div className="kani-panel-v2-payments-wrap">
-      <div className="kani-panel-v2-view-bar">
-        <span style={{ fontSize: "13px", fontWeight: 600, color: "var(--muted-foreground)" }}>
-          Vista de pagos
-        </span>
+      <div className="kani-panel-v2-payments-toolbar">
         <div className="kani-panel-v2-view-tabs" role="tablist" aria-label="Vistas de Pagos">
           <button
             type="button"
