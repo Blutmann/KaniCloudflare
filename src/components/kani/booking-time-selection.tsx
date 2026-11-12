@@ -1,4 +1,4 @@
-import { CalendarDays, Check, Clock3, Sun, Sunset, User } from 'lucide-react';
+import { CalendarDays, Clock3, Sun, Sunset, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { groupSlotsByPeriod, type BookingTimeSlotItem } from '@/lib/kani-booking-slots';
 
@@ -111,9 +111,6 @@ export function BookingTimeSelection({
                           }}
                         >
                           <span className="booking-time-slot-value">{slot.time}</span>
-                          {isSelected && (
-                            <Check size={13} className="booking-time-slot-check" aria-hidden="true" />
-                          )}
                           {isUnavailable && (
                             <span className="booking-time-slot-status" aria-hidden="true">
                               Ocupado

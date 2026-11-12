@@ -1178,6 +1178,14 @@ html[data-theme='light'] .payway-reservation .booking-time-period-icon {
   }
 }
 
+/* ==============================================================================
+   SELECCIÓN DE HORARIOS (STEP "ELEGÍ UN HORARIO")
+   - Modo claro: fondo blanco sólido (#ffffff) idéntico a Volver
+   - Modo oscuro: fondo gris oscuro sólido (#242424) idéntico a Volver
+   - Seleccionado: fondo bordó institucional (var(--primary)) en ambos temas
+   - Sin checkmark ni transparencias que dejen traslucir ilustraciones
+   ============================================================================== */
+
 .payway-reservation .booking-time-slot {
   display: inline-flex !important;
   flex-direction: column;
@@ -1189,38 +1197,126 @@ html[data-theme='light'] .payway-reservation .booking-time-period-icon {
   padding: 6px 4px !important;
   font-variant-numeric: tabular-nums;
   position: relative;
+  border-radius: var(--radius-control, 0.65rem) !important;
+  transition: all 0.15s ease;
 }
 
 .payway-reservation .booking-time-slot-value {
   line-height: 1.15;
 }
 
-.payway-reservation .booking-time-slot-check {
-  flex-shrink: 0;
+/* Horarios disponibles NO seleccionados - Modo Claro (fondo blanco sólido como Volver) */
+html[data-theme="light"] .payway-reservation .booking-time-slot:not(.selected):not(:disabled):not(.time-unavailable) {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  border: 1px solid var(--border) !important;
+  border-color: var(--border) !important;
+  opacity: 1 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
-.payway-reservation .booking-time-slot.selected {
-  flex-direction: row;
-  gap: 5px;
-  border-width: 1.5px !important;
-  box-shadow: 0 4px 14px color-mix(in oklch, var(--gold) 24%, transparent);
+html[data-theme="light"] .payway-reservation .booking-time-slot:not(.selected):not(:disabled):not(.time-unavailable):hover,
+html[data-theme="light"] .payway-reservation .booking-time-slot:not(.selected):not(:disabled):not(.time-unavailable):focus-visible {
+  background: #f5f5f5 !important;
+  background-color: #f5f5f5 !important;
+  border-color: color-mix(in srgb, var(--primary) 35%, var(--border)) !important;
+  color: #000000 !important;
+  opacity: 1 !important;
 }
 
-html[data-theme='light'] .payway-reservation .booking-time-slot.selected {
+html[data-theme="light"] .payway-reservation .booking-time-slot:not(.selected):not(:disabled):not(.time-unavailable):active {
+  background: #ebebeb !important;
+  background-color: #ebebeb !important;
+  color: #000000 !important;
+  opacity: 1 !important;
+}
+
+/* Horarios disponibles NO seleccionados - Modo Oscuro (fondo gris oscuro #242424 sólido idéntico a Volver) */
+html[data-theme="dark"] .payway-reservation .booking-time-slot:not(.selected):not(:disabled):not(.time-unavailable) {
+  background: #242424 !important;
+  background-color: #242424 !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  opacity: 1 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+html[data-theme="dark"] .payway-reservation .booking-time-slot:not(.selected):not(:disabled):not(.time-unavailable):hover,
+html[data-theme="dark"] .payway-reservation .booking-time-slot:not(.selected):not(:disabled):not(.time-unavailable):focus-visible {
+  background: #2e2e2e !important;
+  background-color: #2e2e2e !important;
+  border-color: rgba(255, 255, 255, 0.28) !important;
+  color: #ffffff !important;
+  opacity: 1 !important;
+}
+
+html[data-theme="dark"] .payway-reservation .booking-time-slot:not(.selected):not(:disabled):not(.time-unavailable):active {
+  background: #1a1a1a !important;
+  background-color: #1a1a1a !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  color: #ffffff !important;
+  opacity: 1 !important;
+}
+
+/* Horario seleccionado - Fondo bordó sólido (var(--primary)) en AMBOS temas */
+.payway-reservation .booking-time-slot.selected,
+html[data-theme="light"] .payway-reservation .booking-time-slot.selected,
+html[data-theme="dark"] .payway-reservation .booking-time-slot.selected {
   border-color: var(--primary) !important;
   background: var(--primary) !important;
-  color: #FFFFFF !important;
-  box-shadow: 0 4px 14px color-mix(in oklch, var(--primary) 26%, transparent);
+  background-color: var(--primary) !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  border-width: 1.5px !important;
+  box-shadow: 0 4px 14px color-mix(in oklch, var(--primary) 26%, transparent) !important;
+  opacity: 1 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
-.payway-reservation .booking-time-slot.time-unavailable,
-.payway-reservation .booking-time-slot:disabled:not(.selected) {
+.payway-reservation .booking-time-slot.selected:hover,
+.payway-reservation .booking-time-slot.selected:focus-visible,
+html[data-theme="light"] .payway-reservation .booking-time-slot.selected:hover,
+html[data-theme="light"] .payway-reservation .booking-time-slot.selected:focus-visible,
+html[data-theme="dark"] .payway-reservation .booking-time-slot.selected:hover,
+html[data-theme="dark"] .payway-reservation .booking-time-slot.selected:focus-visible {
+  border-color: var(--primary) !important;
+  background: var(--primary) !important;
+  background-color: var(--primary) !important;
+  color: #ffffff !important;
+}
+
+/* Horarios no disponibles / deshabilitados */
+html[data-theme="light"] .payway-reservation .booking-time-slot.time-unavailable,
+html[data-theme="light"] .payway-reservation .booking-time-slot:disabled:not(.selected) {
   text-decoration: none !important;
   border-style: dashed !important;
-  border-color: color-mix(in oklch, var(--border) 85%, transparent) !important;
-  background: color-mix(in oklch, var(--muted) 65%, var(--surface)) !important;
-  color: var(--muted-foreground) !important;
-  opacity: 0.85 !important;
+  border-color: rgba(0, 0, 0, 0.12) !important;
+  background: #f4f4f4 !important;
+  background-color: #f4f4f4 !important;
+  color: rgba(0, 0, 0, 0.38) !important;
+  opacity: 0.75 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  cursor: not-allowed !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="dark"] .payway-reservation .booking-time-slot.time-unavailable,
+html[data-theme="dark"] .payway-reservation .booking-time-slot:disabled:not(.selected) {
+  text-decoration: none !important;
+  border-style: dashed !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  background: #242424 !important;
+  background-color: #242424 !important;
+  color: rgba(255, 255, 255, 0.38) !important;
+  opacity: 0.65 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
   cursor: not-allowed !important;
   box-shadow: none !important;
 }
@@ -1230,7 +1326,8 @@ html[data-theme='light'] .payway-reservation .booking-time-slot.selected {
   font-weight: 500;
   line-height: 1;
   letter-spacing: 0.02em;
-  color: var(--muted-foreground);
+  color: inherit;
+  opacity: 0.8;
 }
 
 /* Loading Skeleton */
