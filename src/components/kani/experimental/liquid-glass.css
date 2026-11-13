@@ -647,15 +647,34 @@ html[data-theme] .site-shell .liquid-glass-reservation .booking-option.selected 
   color: #626a74 !important;
 }
 
-/* Iconos de servicio monocromáticos sobre cristal (sin divisor vertical) */
+/* Iconos de servicio SVG unificados (30-32px, trazo fino grafito suave) */
 .liquid-glass-reservation .service-option .option-icon {
   border: none !important;
   border-right: none !important;
   border-radius: 0 !important;
   padding-right: 0 !important;
-  width: 40px !important;
+  width: 32px !important;
   height: 32px !important;
+  flex: 0 0 32px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
   background: transparent !important;
+  color: #626a74 !important;
+  opacity: 0.84 !important;
+  transition: color 160ms ease, opacity 160ms ease !important;
+}
+
+.liquid-glass-reservation .service-option.selected .option-icon {
+  color: #34383e !important;
+  opacity: 1 !important;
+}
+
+.liquid-glass-reservation .service-option .option-icon .service-unified-svg {
+  width: 30px !important;
+  height: 30px !important;
+  display: block !important;
+  flex-shrink: 0 !important;
 }
 
 html[data-theme] .liquid-glass-reservation .booking-option .service-icon-mask,
@@ -688,11 +707,12 @@ html[data-theme] .liquid-glass-reservation .booking-option.selected .option-icon
   display: none !important;
 }
 
-/* Tipografía interna de tarjetas */
+/* Tipografía interna de tarjetas (unificada en las 3 cards de servicios) */
 .liquid-glass-reservation .service-option .booking-option-name,
 .liquid-glass-reservation .booking-option .booking-option-name {
   font-weight: 500 !important;
-  font-size: 16px !important;
+  font-size: 20px !important;
+  line-height: 1.18 !important;
   color: #34383e !important;
 }
 
@@ -700,12 +720,14 @@ html[data-theme] .liquid-glass-reservation .booking-option.selected .option-icon
 .liquid-glass-reservation .booking-barber-handle {
   font-weight: 400 !important;
   font-size: 13px !important;
+  line-height: 1.25 !important;
   color: #707781 !important;
 }
 
 .liquid-glass-reservation .service-option .booking-option-price {
-  font-weight: 500 !important;
-  font-size: 15px !important;
+  font-weight: 600 !important;
+  font-size: 16px !important;
+  line-height: 1.2 !important;
   color: #34383e !important;
   text-align: right !important;
 }
@@ -759,18 +781,19 @@ html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-de
     flex-direction: column !important;
     align-items: stretch !important;
     justify-content: space-between !important;
-    gap: 12px !important;
-    min-height: 158px !important;
+    gap: 14px !important;
+    min-height: 192px !important;
     height: 100% !important;
-    padding: 16px 14px 15px !important;
+    padding: 18px 15px 16px !important;
     text-align: left !important;
   }
 
   html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option:nth-child(-n+2) .option-icon {
-    width: 34px !important;
-    height: 28px !important;
-    flex: 0 0 auto !important;
+    width: 32px !important;
+    height: 32px !important;
+    flex: 0 0 32px !important;
     align-self: flex-start !important;
+    justify-content: flex-start !important;
   }
 
   html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option:nth-child(-n+2) .booking-option-copy {
@@ -785,9 +808,9 @@ html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-de
   }
 
   html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option:nth-child(-n+2) .booking-option-name {
-    font-size: 16px !important;
+    font-size: 20px !important;
     font-weight: 500 !important;
-    line-height: 1.2 !important;
+    line-height: 1.18 !important;
     white-space: normal !important;
     text-align: left !important;
     width: 100% !important;
@@ -800,35 +823,35 @@ html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-de
     justify-content: space-between !important;
     flex: 1 1 auto !important;
     width: 100% !important;
-    margin-top: 3px !important;
+    margin-top: 4px !important;
   }
 
   html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option:nth-child(-n+2) .booking-option-duration {
     font-size: 13px !important;
     font-weight: 400 !important;
-    line-height: 1.2 !important;
+    line-height: 1.25 !important;
     color: #707781 !important;
     text-align: left !important;
     width: 100% !important;
   }
 
   html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option:nth-child(-n+2) .booking-option-price {
-    font-size: 15px !important;
-    font-weight: 500 !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
     line-height: 1.2 !important;
     color: #34383e !important;
     text-align: left !important;
     width: 100% !important;
     margin-top: auto !important;
-    padding-top: 10px !important;
+    padding-top: 12px !important;
   }
 
   html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option:nth-child(3) {
     grid-column: 1 / -1 !important;
     flex-direction: row !important;
     align-items: center !important;
-    min-height: 70px !important;
-    padding: 12px 16px !important;
+    min-height: 78px !important;
+    padding: 15px 16px !important;
   }
 
   /* Barberos: 3 tarjetas verticales 4:5 iguales arriba + Elegir más adelante abajo */
@@ -932,8 +955,8 @@ html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-de
   }
 
   html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option:nth-child(-n+2) {
-    min-height: 144px !important;
-    padding: 14px 12px 13px !important;
+    min-height: 190px !important;
+    padding: 16px 12px 15px !important;
   }
 
   html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-barber-options {
