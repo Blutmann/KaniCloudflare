@@ -222,4 +222,13 @@ describe('KANI Barber Studio — Liquid Glass Experience (/reservar-turno-liquid
     expect(liquidCss).toContain('mask-composite: exclude');
     expect(liquidCss).toContain('@keyframes livingGlassGlint');
   });
+
+  it('17. Liquid Glass V5: servicios editoriales sin íconos, Geist 500/400/500 y Crystal Selection accesible', () => {
+    expect(liquidCss).toContain('.booking-service-options .service-option .option-icon');
+    expect(liquidCss).toContain('LIQUID GLASS V5: Editorial Service Cards & Crystal Selection');
+    expect(liquidCss).toContain('.selected .selection-circle');
+    expect(liquidCss).toContain('rgba(246, 240, 229, 0.94)');
+    expect(liquidCss).toContain('rgba(224, 200, 156, 0.46)');
+    expect(liquidCss).toContain(':focus-visible');
+  });
 });
