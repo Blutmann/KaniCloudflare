@@ -96,10 +96,15 @@ body.liquid-glass-active,
   --button-primary-text: #34383e;
   --radius-control: 16px;
 
-  background-color: var(--lg-bg-pearl) !important;
+  background-color: #f4f5f7 !important;
   color: var(--lg-ink-primary) !important;
   color-scheme: light !important;
   overflow-x: clip;
+}
+
+.liquid-glass-reservation {
+  background: transparent !important;
+  background-color: transparent !important;
 }
 
 /* Ocultar fondos japoneses globales únicamente en Liquid Glass */
@@ -124,7 +129,7 @@ body.liquid-glass-active .service-icon-dark,
   display: none !important;
 }
 
-/* 2. Atmósfera orgánica y planos de profundidad */
+/* 2. Atmósfera orgánica y fondos Liquid Glass Light Mode (compatibles con Safari iOS) */
 .liquid-glass-reservation {
   position: relative;
   min-height: calc(100dvh - 64px);
@@ -137,11 +142,23 @@ body.liquid-glass-active .service-icon-dark,
   z-index: -1;
   pointer-events: none;
   overflow: hidden;
-  background:
-    radial-gradient(120% 85% at 14% 6%, #ffffff 0%, rgba(255, 255, 255, 0) 62%),
-    radial-gradient(95% 75% at 88% 20%, #f1f2f4 0%, rgba(241, 242, 244, 0) 60%),
-    radial-gradient(110% 80% at 28% 72%, #f4f5f7 0%, rgba(244, 245, 247, 0) 64%),
-    linear-gradient(165deg, #ffffff 0%, #fcfcfd 48%, #f4f5f7 100%);
+  background-color: #f4f5f7;
+  background-image: url('/kani-liquid-glass-light-mobile.webp');
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+}
+
+@media (min-width: 1024px), (min-width: 768px) and (orientation: landscape) {
+  .liquid-glass-atmosphere {
+    background-image: url('/kani-liquid-glass-light-desktop.webp');
+  }
+}
+
+.liquid-orb {
+  display: none;
 }
 
 .liquid-orb {
