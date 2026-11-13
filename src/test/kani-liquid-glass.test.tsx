@@ -359,18 +359,21 @@ describe('KANI Barber Studio — Liquid Glass Experience (/reservar-turno-liquid
     expect(liquidCss).toContain('height: 100% !important;');
   });
 
-  it('27. Liquid Glass V12.4 + V12.5: Ondas WAAPI (220/380ms sin tirones), Servicios 92px y Barberos gap 14-16px', () => {
+  it('27. Liquid Glass V12.4 + V12.5 + V12.6: Ondas WAAPI (320/440ms), Barberos gap igualado (10/12px), CTA Continuar y Encabezado Calendario 14px/500', () => {
     const motionTsx = fs.readFileSync(
       path.join(process.cwd(), 'src/components/kani/experimental/liquid-glass-motion.tsx'),
       'utf8',
     );
-    expect(liquidCss).toContain('LIQUID GLASS V12.4 + V12.5: Ondas WAAPI (220/380ms sin tirones), Barberos 14-16px y Servicios 92px');
+    expect(liquidCss).toContain('LIQUID GLASS V12.6: Microajustes CTA «Continuar» y Encabezado del Calendario');
     expect(liquidCss).toContain('touch-action: manipulation;');
     expect(liquidCss).toContain('-webkit-tap-highlight-color: transparent;');
-    expect(liquidCss).toContain('column-gap: 16px !important;');
-    expect(liquidCss).toContain('column-gap: 14px !important;');
+    expect(liquidCss).toContain('column-gap: 12px !important;');
+    expect(liquidCss).toContain('column-gap: 10px !important;');
+    expect(liquidCss).toContain('font-size: 14px !important;');
+    expect(liquidCss).toContain('box-shadow: none !important;');
     expect(liquidCss).not.toMatch(/\.lg-living-refraction[\s\S]{0,400}backdrop-filter:/);
-    expect(motionTsx).toContain('livingSettleMs: 380');
+    expect(motionTsx).toContain('livingSettleMs: 440');
+    expect(motionTsx).toContain('duration: 320');
     expect(motionTsx).toContain('getAnimations');
   });
 });

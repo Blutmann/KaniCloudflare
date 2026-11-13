@@ -18,7 +18,7 @@ export const LIQUID_GLASS_MOTION = {
     step: 0.3,
     stepExit: 0.12,
     reduced: 0.08,
-    livingSettleMs: 380,
+    livingSettleMs: 440,
   },
   easings: {
     crystal: [0.22, 1, 0.36, 1] as const,
@@ -165,26 +165,26 @@ function InteractiveCard({
 
       coreEl?.animate?.(
         [
-          { opacity: 0.88, transform: 'translate3d(-50%, -50%, 0) scale(0.42)' },
-          { opacity: 0.56, transform: 'translate3d(-50%, -50%, 0) scale(0.95)', offset: 0.45 },
-          { opacity: 0, transform: 'translate3d(-50%, -50%, 0) scale(1.22)' },
+          { opacity: 0.82, transform: 'translate3d(-50%, -50%, 0) scale(0.42)' },
+          { opacity: 0.42, transform: 'translate3d(-50%, -50%, 0) scale(0.92)', offset: 0.48 },
+          { opacity: 0, transform: 'translate3d(-50%, -50%, 0) scale(1.20)' },
         ],
         {
-          duration: 220,
-          easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+          duration: 320,
+          easing: 'cubic-bezier(0.16, 1, 0.3, 1)',
           fill: 'none',
         },
       );
 
       waveEl.animate(
         [
-          { opacity: 0.92, transform: 'translate3d(-50%, -50%, 0) scale(0.24)' },
-          { opacity: 0.68, transform: 'translate3d(-50%, -50%, 0) scale(0.76)', offset: 0.52 },
+          { opacity: 0.88, transform: 'translate3d(-50%, -50%, 0) scale(0.24)' },
+          { opacity: 0.44, transform: 'translate3d(-50%, -50%, 0) scale(0.74)', offset: 0.5 },
           { opacity: 0, transform: 'translate3d(-50%, -50%, 0) scale(1.12)' },
         ],
         {
           duration: LIQUID_GLASS_MOTION.durations.livingSettleMs,
-          easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+          easing: 'cubic-bezier(0.16, 1, 0.3, 1)',
           fill: 'none',
         },
       );

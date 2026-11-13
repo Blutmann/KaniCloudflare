@@ -5525,19 +5525,84 @@ html[data-theme] .site-shell .liquid-glass-reservation :is(
   animation: none !important;
 }
 
-/* 2. Barberos — Gap horizontal real de 14 px (<=360px) y 16 px (361-767px) */
+/* 2. Barberos — Gap horizontal igualado a los márgenes laterales (10 px <=360px, 12 px 361-767px) */
 @media (max-width: 767px) {
   html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-barber-options {
-    column-gap: 16px !important;
+    column-gap: 12px !important;
     row-gap: 14px !important;
   }
 }
 
 @media (max-width: 360px) {
   html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-barber-options {
-    column-gap: 14px !important;
+    column-gap: 10px !important;
     row-gap: 12px !important;
   }
+}
+
+/* === LIQUID GLASS V12.6: Microajustes CTA «Continuar» y Encabezado del Calendario === */
+
+/* 3. Jerarquía del CTA «Continuar» habilitado vs deshabilitado (Light & Dark Mode) */
+html[data-theme="light"] .site-shell .liquid-glass-reservation :is(.booking-next-button, .payway-submit-btn):not(:disabled) {
+  background: linear-gradient(
+    148deg,
+    rgba(222, 217, 209, 0.94) 0%,
+    rgba(206, 200, 190, 0.88) 56%,
+    rgba(218, 211, 199, 0.92) 100%
+  ) !important;
+  border: 1.5px solid rgba(200, 169, 107, 0.78) !important;
+  color: #171513 !important;
+  font-weight: 600 !important;
+  box-shadow:
+    0 12px 28px rgba(34, 28, 22, 0.16),
+    0 3px 8px rgba(34, 28, 22, 0.08),
+    inset 0 1.5px 0 rgba(255, 252, 245, 0.98),
+    inset 0 -1px 0 rgba(120, 104, 82, 0.16) !important;
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-reservation :is(.booking-next-button, .payway-submit-btn):not(:disabled) {
+  background: linear-gradient(
+    148deg,
+    rgba(62, 58, 56, 0.92) 0%,
+    rgba(44, 41, 40, 0.86) 56%,
+    rgba(54, 47, 44, 0.90) 100%
+  ) !important;
+  border: 1.5px solid rgba(200, 169, 107, 0.72) !important;
+  color: #faf8f4 !important;
+  font-weight: 600 !important;
+  box-shadow:
+    0 16px 34px rgba(0, 0, 0, 0.68),
+    0 0 0 1px rgba(200, 169, 107, 0.18),
+    inset 0 1.5px 0 rgba(255, 245, 224, 0.44),
+    inset 0 -1px 0 rgba(112, 43, 58, 0.28) !important;
+}
+
+html[data-theme="light"] .site-shell .liquid-glass-reservation :is(.booking-next-button, .payway-submit-btn):disabled {
+  background: rgba(244, 243, 240, 0.56) !important;
+  border: 1px solid rgba(204, 199, 191, 0.42) !important;
+  color: rgba(88, 84, 78, 0.48) !important;
+  box-shadow: none !important;
+  pointer-events: none !important;
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-reservation :is(.booking-next-button, .payway-submit-btn):disabled {
+  background: rgba(18, 18, 20, 0.48) !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  color: rgba(244, 242, 238, 0.36) !important;
+  box-shadow: none !important;
+  pointer-events: none !important;
+}
+
+/* 4. Encabezado del Calendario — Cápsula 50px sin sombras innecesarias y mes/año secundario (14px / 500) */
+html[data-theme] .site-shell .liquid-glass-reservation .calendar-header {
+  box-shadow: none !important;
+}
+
+html[data-theme] .site-shell .liquid-glass-reservation .calendar-header h2 {
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  text-shadow: none !important;
+  filter: none !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
