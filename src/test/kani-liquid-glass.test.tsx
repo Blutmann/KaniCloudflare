@@ -376,4 +376,18 @@ describe('KANI Barber Studio — Liquid Glass Experience (/reservar-turno-liquid
     expect(motionTsx).toContain('duration: 320');
     expect(motionTsx).toContain('getAnimations');
   });
+
+  it('28. Liquid Glass V12.7: Menú desplegable translúcido (Light/Dark + .mobile-menu-cta) y Header de escritorio Optical Glass', () => {
+    expect(liquidCss).toContain('LIQUID GLASS V12.7 — OPTICAL GLASS NAVIGATION MENU & DESKTOP HEADER');
+    expect(liquidCss).toContain('html[data-theme="light"] body.liquid-glass-active .mobile-menu');
+    expect(liquidCss).toContain('html[data-theme="dark"] body.liquid-glass-active .mobile-menu');
+    expect(liquidCss).toContain('backdrop-filter: blur(26px) saturate(145%) brightness(1.03) !important;');
+    expect(liquidCss).toContain('backdrop-filter: blur(26px) saturate(135%) !important;');
+    expect(liquidCss).toContain('html[data-theme="light"] body.liquid-glass-active .mobile-menu-cta .booking-menu-return:not(:disabled)');
+    expect(liquidCss).toContain('html[data-theme="dark"] body.liquid-glass-active .mobile-menu-cta .booking-menu-return:not(:disabled)');
+    expect(liquidCss).toContain('html[data-theme="light"] body.liquid-glass-active .site-header.liquid-glass-header:not(.menu-open)');
+    expect(liquidCss).toContain('html[data-theme="dark"] body.liquid-glass-active .site-header.liquid-glass-header:not(.menu-open)');
+    expect(liquidCss).toContain('backdrop-filter: blur(20px) saturate(145%) brightness(1.02) !important;');
+    expect(liquidCss).toContain('backdrop-filter: blur(20px) saturate(135%) !important;');
+  });
 });
