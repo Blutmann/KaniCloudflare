@@ -13,9 +13,10 @@ import type {
  */
 export const LIQUID_GLASS_MOTION = {
   durations: {
-    tap: 0.15,
-    cardState: 0.21,
-    step: 0.24,
+    tap: 0.14,
+    cardState: 0.25,
+    step: 0.3,
+    stepExit: 0.12,
     reduced: 0.08,
   },
   easings: {
@@ -24,19 +25,19 @@ export const LIQUID_GLASS_MOTION = {
   springs: {
     stepperLens: {
       type: 'spring' as const,
-      stiffness: 380,
-      damping: 34,
-      mass: 0.9,
+      stiffness: 340,
+      damping: 32,
+      mass: 0.95,
     },
   },
   distances: {
-    stepShiftPx: 14,
+    stepShiftPx: 18,
   },
   scales: {
-    cardTap: 0.987,
-    actionTap: 0.986,
-    slotTap: 0.98,
-    dayTap: 0.96,
+    cardTap: 0.985,
+    actionTap: 0.985,
+    slotTap: 0.978,
+    dayTap: 0.955,
     avatarSelected: 1.045,
   },
 } as const;
@@ -92,12 +93,30 @@ function InteractiveCard({
   ...rest
 }: LiquidGlassInteractiveCardProps) {
   const shouldReduceMotion = useReducedMotion();
+  const isSelected = className.includes('selected');
+  const isCalendarDay = className.includes('calendar-day');
+  const isActionButton =
+    className.includes('booking-back-button') || className.includes('booking-next-button');
+
+  const animateState = shouldReduceMotion
+    ? undefined
+    : isCalendarDay
+      ? { scale: isSelected ? 1.03 : 1 }
+      : isActionButton
+        ? undefined
+        : { y: isSelected ? -1.5 : 0 };
 
   return (
     <motion.button
       type={type}
       disabled={disabled}
       className={className}
+      animate={animateState}
+      whileHover={
+        disabled || shouldReduceMotion || isActionButton
+          ? undefined
+          : { y: isSelected ? -2 : -1 }
+      }
       whileTap={
         disabled || shouldReduceMotion
           ? undefined
@@ -105,14 +124,17 @@ function InteractiveCard({
       }
       transition={
         shouldReduceMotion
-          ? { duration: 0.01 }
+          ? { duration: LIQUID_GLASS_MOTION.durations.reduced }
           : {
-              duration: LIQUID_GLASS_MOTION.durations.tap,
+              duration: LIQUID_GLASS_MOTION.durations.cardState,
               ease: LIQUID_GLASS_MOTION.easings.crystal,
             }
       }
       {...rest}
     >
+      {!disabled && !isCalendarDay && (
+        <span className="lg-optical-sheen" aria-hidden="true" />
+      )}
       {children}
     </motion.button>
   );
