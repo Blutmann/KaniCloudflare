@@ -240,4 +240,13 @@ describe('KANI Barber Studio — Liquid Glass Experience (/reservar-turno-liquid
     expect(liquidCss).toContain('rgba(168, 52, 72, 0.28)');
     expect(liquidCss).toContain('rgba(154, 130, 88, 0.54)');
   });
+
+  it('19. Liquid Glass V7: Optical Density sin checkmarks, variantes A/B de Servicios, Stepper alineado, KANI Identity y Motion V4', () => {
+    expect(liquidCss).toContain('LIQUID GLASS V7: Optical Density · Living Glass · KANI Identity · Motion V4');
+    expect(liquidCss).toContain('[data-services-variant="a"]');
+    expect(liquidCss).toContain('[data-services-variant="b"]');
+    expect(liquidCss).toContain('rgba(200, 169, 107, 0.38)');
+    expect(liquidCss).toContain('rgba(112, 43, 58, 0.32)');
+    expect(liquidCss).toContain('@keyframes livingGlassOpticalSweep');
+  });
 });
