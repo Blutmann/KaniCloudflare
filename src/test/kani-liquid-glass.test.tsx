@@ -390,4 +390,16 @@ describe('KANI Barber Studio — Liquid Glass Experience (/reservar-turno-liquid
     expect(liquidCss).toContain('backdrop-filter: blur(20px) saturate(145%) brightness(1.02) !important;');
     expect(liquidCss).toContain('backdrop-filter: blur(20px) saturate(135%) !important;');
   });
+
+  it('29. Liquid Glass V12.8: Dark Mode negro profundo en cards, Light Mode menú/header translúcidos, geometría unificada Volver/Continuar (48px) y acentos KANI', () => {
+    expect(liquidCss).toContain('LIQUID GLASS V12.8 — MATERIAL IDENTITY REFINEMENT · DARK GLASS & LIGHT TRANSPARENCY');
+    expect(liquidCss).toContain('rgba(14, 14, 16, 0.68) 0%');
+    expect(liquidCss).toContain('rgba(24, 22, 21, 0.84) 0%');
+    expect(liquidCss).toContain('rgba(242, 237, 229, 0.40) 0%');
+    expect(liquidCss).toContain('rgba(243, 238, 230, 0.38) 0%');
+    expect(liquidCss).toContain('height: 48px !important;');
+    expect(liquidCss).toContain('min-height: 48px !important;');
+    expect(liquidCss).toContain('color: #a98440 !important;');
+    expect(liquidCss).toContain('color: #d8ba7c !important;');
+  });
 });
