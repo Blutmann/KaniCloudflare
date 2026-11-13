@@ -358,4 +358,13 @@ describe('KANI Barber Studio — Liquid Glass Experience (/reservar-turno-liquid
     expect(liquidCss).toContain('width: 100% !important;');
     expect(liquidCss).toContain('height: 100% !important;');
   });
+
+  it('27. Liquid Glass V12.4: Fluidez táctil global (sin backdrop-filter anidado ni will-change permanente) y gap horizontal equilibrado en Barberos', () => {
+    expect(liquidCss).toContain('LIQUID GLASS V12.4: Fluidez táctil global (Safari iOS) + Espaciado horizontal Barberos');
+    expect(liquidCss).toContain('touch-action: manipulation;');
+    expect(liquidCss).toContain('-webkit-tap-highlight-color: transparent;');
+    expect(liquidCss).toContain('column-gap: 12px !important;');
+    expect(liquidCss).toContain('column-gap: 10px !important;');
+    expect(liquidCss).not.toMatch(/\.lg-living-refraction[\s\S]{0,400}backdrop-filter:/);
+  });
 });

@@ -156,8 +156,10 @@ function InteractiveCard({
     el.style.setProperty('--lg-touch-y-pct', `${((localY / Math.max(rect.height, 1)) * 100).toFixed(1)}%`);
     el.style.setProperty('--lg-wave-size', `${waveSize}px`);
 
-    el.removeAttribute('data-lg-ripple');
-    void waveRef.current?.offsetWidth;
+    if (el.hasAttribute('data-lg-ripple')) {
+      el.removeAttribute('data-lg-ripple');
+      void waveRef.current?.offsetWidth;
+    }
     el.setAttribute('data-lg-ripple', 'active');
 
     if (rippleTimerRef.current !== null) {
