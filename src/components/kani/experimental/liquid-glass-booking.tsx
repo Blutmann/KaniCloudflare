@@ -24,7 +24,7 @@ export function LiquidGlassBooking() {
         <span className="liquid-orb liquid-orb-4" />
         <span className="liquid-grain" />
       </div>
-      <PaywayBooking homeUrl="/reservar-turno-liquid" useUnifiedServiceIcons />
+      <PaywayBooking homeUrl="/reservar-turno-liquid" />
     </div>
   );
 }

@@ -161,13 +161,7 @@ function resolveServicePrice(serviceName: string, configured: ConfiguredService[
   return match?.price ?? 25000;
 }
 
-export function PaywayBooking({
-  homeUrl = '/reservar-turno',
-  useUnifiedServiceIcons = false,
-}: {
-  homeUrl?: string;
-  useUnifiedServiceIcons?: boolean;
-} = {}) {
+export function PaywayBooking({ homeUrl = '/reservar-turno' }: { homeUrl?: string } = {}) {
   const [open, setOpen] = useState(false);
   const [preparing, setPreparing] = useState(false);
   const [checkout, setCheckout] = useState<PaywayCheckout | null>(null);
@@ -896,7 +890,6 @@ export function PaywayBooking({
     <div className="payway-reservation">
       <Booking
         variant="v3"
-        useUnifiedServiceIcons={useUnifiedServiceIcons}
         onPaymentRequest={begin}
         paymentActionLabel={hasReviewNotice ? 'Ver detalle de revisión' : hasPendingPayment ? 'Ver estado del pago' : undefined}
         paymentNotice={

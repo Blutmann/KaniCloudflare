@@ -1,5 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
-import { Check, Clock3, Coffee, CalendarDays, UserRound, Users, ChevronLeft, ChevronRight, ArrowLeft, CircleAlert, MapPin, Instagram, Tag, Loader2, X, Scissors } from 'lucide-react';
+import { Check, Clock3, Coffee, CalendarDays, UserRound, Users, ChevronLeft, ChevronRight, ArrowLeft, CircleAlert, MapPin, Instagram, Tag, Loader2, X } from 'lucide-react';
 import { validateBenefitCodeQuoteFn } from '@/lib/kani-benefit-codes.functions';
 import type { BenefitQuote } from '@/lib/kani-benefit-codes';
 import { Button } from '@/components/ui/button';
@@ -28,51 +28,6 @@ const serviceIconById: Record<ServiceId, { light: string; dark: string }> = {
   'corte-barba': { light: '/service-corte-barba-light.png', dark: '/service-corte-barba-dark-strokes.png' },
   barba: { light: '/service-barba-light.png', dark: '/service-barba-dark-strokes.png' },
 };
-
-function UnifiedServiceSvg({ serviceId }: { serviceId: ServiceId }) {
-  if (serviceId === 'corte') {
-    return <Scissors className="service-unified-svg" size={30} strokeWidth={1.45} aria-hidden="true" />;
-  }
-  if (serviceId === 'corte-barba') {
-    return (
-      <svg
-        className="service-unified-svg"
-        width={30}
-        height={30}
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={1.45}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden="true"
-      >
-        <path d="M6.5 9.5C6.5 6.4 8.9 4 12 4c2.5 0 4.5 1.3 5.2 3.3.2.6.3 1.4.3 2.2" />
-        <path d="M6.2 10.5c-.2 2.9.6 5.6 2.5 7.4 1 .9 2.2 1.6 3.3 1.6s2.3-.7 3.3-1.6c1.9-1.8 2.7-4.5 2.5-7.4" />
-        <path d="M8.5 12.2c1.1.8 2.3 1 3.5 1s2.4-.2 3.5-1" />
-        <path d="M9.8 15.2c.7.4 1.5.6 2.2.6s1.5-.2 2.2-.6" />
-      </svg>
-    );
-  }
-  return (
-    <svg
-      className="service-unified-svg"
-      width={30}
-      height={30}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.45}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M5 18.5 13.8 5.4a1.6 1.6 0 0 1 2.4-.2l.7.7a1.6 1.6 0 0 1 .1 2.2L9.2 18.5" />
-      <path d="M4.5 19.5c1.1 0 2.5-.4 3.6-1.3l11.2-9.5" />
-      <circle cx="6.2" cy="18.2" r="1.1" />
-    </svg>
-  );
-}
 type ContactField = 'name' | 'phone' | 'email' | 'notes';
 type ContactValues = { name: string; email: string; phone: string; notes: string };
 export type BookingPaymentDraft = {
@@ -187,7 +142,6 @@ export function Booking({
   initialDate,
   initialTime,
   initialContact,
-  useUnifiedServiceIcons = false,
 }: {
   combinedDateTime?: boolean;
   variant?: 'v1' | 'v2' | 'v3' | 'v5';
@@ -202,7 +156,6 @@ export function Booking({
   initialDate?: string;
   initialTime?: string;
   initialContact?: { name: string; email: string; phone: string; notes: string };
-  useUnifiedServiceIcons?: boolean;
 } = {}) {
   const isV5 = propVariant === 'v5';
   const isV3 = propVariant === 'v3';
@@ -1311,16 +1264,10 @@ export function Booking({
                     onClick={() => { if (service !== s.id) chooseService(s.id) }}
                   >
                     <span className="option-icon">
-                      {useUnifiedServiceIcons ? (
-                        <UnifiedServiceSvg serviceId={s.id} />
-                      ) : (
-                        <>
-                          <span className="service-icon-mask service-icon-mask-light" style={{ maskImage: `url(${serviceIconById[s.id].light})`, WebkitMaskImage: `url(${serviceIconById[s.id].light})` }} aria-hidden="true" />
-                          <span className="service-icon-mask service-icon-mask-dark" style={{ maskImage: `url(${serviceIconById[s.id].dark})`, WebkitMaskImage: `url(${serviceIconById[s.id].dark})` }} aria-hidden="true" />
-                          <img className="service-icon-light" src={serviceIconById[s.id].light} alt="" aria-hidden="true" width={44} height={44} />
-                          <img className="service-icon-dark" src={serviceIconById[s.id].dark} alt="" aria-hidden="true" width={44} height={44} />
-                        </>
-                      )}
+                      <span className="service-icon-mask service-icon-mask-light" style={{ maskImage: `url(${serviceIconById[s.id].light})`, WebkitMaskImage: `url(${serviceIconById[s.id].light})` }} aria-hidden="true" />
+                      <span className="service-icon-mask service-icon-mask-dark" style={{ maskImage: `url(${serviceIconById[s.id].dark})`, WebkitMaskImage: `url(${serviceIconById[s.id].dark})` }} aria-hidden="true" />
+                      <img className="service-icon-light" src={serviceIconById[s.id].light} alt="" aria-hidden="true" width={44} height={44} />
+                      <img className="service-icon-dark" src={serviceIconById[s.id].dark} alt="" aria-hidden="true" width={44} height={44} />
                     </span>
                     <span className="booking-option-copy min-w-0 flex-1 text-left">
                       <span className="booking-option-name block text-lg font-medium">{s.name}</span>

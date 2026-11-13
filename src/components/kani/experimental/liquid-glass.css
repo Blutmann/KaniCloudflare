@@ -647,56 +647,41 @@ html[data-theme] .site-shell .liquid-glass-reservation .booking-option.selected 
   color: #626a74 !important;
 }
 
-/* Iconos de servicio SVG unificados (30-32px, trazo fino grafito suave) */
+/* Iconos de servicio monocromáticos sobre cristal (assets originales reconocibles en grafito suave) */
 .liquid-glass-reservation .service-option .option-icon {
   border: none !important;
   border-right: none !important;
   border-radius: 0 !important;
   padding-right: 0 !important;
-  width: 32px !important;
-  height: 32px !important;
-  flex: 0 0 32px !important;
+  width: 34px !important;
+  height: 30px !important;
+  flex: 0 0 34px !important;
   display: flex !important;
   align-items: center !important;
-  justify-content: center !important;
+  justify-content: flex-start !important;
   background: transparent !important;
-  color: #626a74 !important;
-  opacity: 0.84 !important;
-  transition: color 160ms ease, opacity 160ms ease !important;
-}
-
-.liquid-glass-reservation .service-option.selected .option-icon {
-  color: #34383e !important;
-  opacity: 1 !important;
-}
-
-.liquid-glass-reservation .service-option .option-icon .service-unified-svg {
-  width: 30px !important;
-  height: 30px !important;
-  display: block !important;
-  flex-shrink: 0 !important;
 }
 
 html[data-theme] .liquid-glass-reservation .booking-option .service-icon-mask,
 html[data-theme] .liquid-glass-reservation .booking-option:not(.selected) .service-icon-mask {
-  background-color: #626a74 !important;
-  opacity: 0.72 !important;
+  background-color: #545b66 !important;
+  opacity: 0.82 !important;
   transition: background-color 160ms ease, opacity 160ms ease !important;
 }
 
 html[data-theme] .liquid-glass-reservation .booking-option.selected .service-icon-mask {
-  background-color: #4b525c !important;
-  opacity: 0.86 !important;
+  background-color: #34383e !important;
+  opacity: 0.96 !important;
 }
 
 html[data-theme] .liquid-glass-reservation .booking-option .service-icon-mask-light {
   display: block !important;
-  background-color: #626a74 !important;
+  background-color: #545b66 !important;
 }
 
 html[data-theme] .liquid-glass-reservation .booking-option.selected .service-icon-mask-light {
   display: block !important;
-  background-color: #4b525c !important;
+  background-color: #34383e !important;
 }
 html[data-theme] .liquid-glass-reservation .booking-option .service-icon-mask-dark,
 html[data-theme] .liquid-glass-reservation .booking-option.selected .service-icon-mask-dark {
@@ -711,7 +696,7 @@ html[data-theme] .liquid-glass-reservation .booking-option.selected .option-icon
 .liquid-glass-reservation .service-option .booking-option-name,
 .liquid-glass-reservation .booking-option .booking-option-name {
   font-weight: 500 !important;
-  font-size: 20px !important;
+  font-size: 19px !important;
   line-height: 1.18 !important;
   color: #34383e !important;
 }
@@ -720,7 +705,7 @@ html[data-theme] .liquid-glass-reservation .booking-option.selected .option-icon
 .liquid-glass-reservation .booking-barber-handle {
   font-weight: 400 !important;
   font-size: 13px !important;
-  line-height: 1.25 !important;
+  line-height: 1.22 !important;
   color: #707781 !important;
 }
 
@@ -781,34 +766,19 @@ html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-de
     flex-direction: column !important;
     align-items: stretch !important;
     justify-content: space-between !important;
-    gap: 10px !important;
-    min-height: 156px !important;
+    gap: 8px !important;
+    min-height: 148px !important;
     height: 100% !important;
-    padding: 16px 14px 15px !important;
+    padding: 15px 14px 14px !important;
     text-align: left !important;
   }
 
-  html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option:nth-child(-n+2):not(.selected) {
-    background: linear-gradient(
-      155deg,
-      rgba(255, 255, 255, 0.74) 0%,
-      rgba(255, 255, 255, 0.36) 55%,
-      rgba(247, 248, 250, 0.54) 100%
-    ) !important;
-    box-shadow:
-      0 8px 20px rgba(52, 56, 62, 0.06),
-      0 0 0 0.5px rgba(98, 106, 116, 0.15),
-      inset 0 1.5px 0 #ffffff !important;
-  }
-
   html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option:nth-child(-n+2) .option-icon {
-    width: 30px !important;
+    width: 34px !important;
     height: 30px !important;
     flex: 0 0 30px !important;
     align-self: flex-start !important;
     justify-content: flex-start !important;
-    color: #4b525c !important;
-    opacity: 0.92 !important;
   }
 
   html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option:nth-child(-n+2) .booking-option-copy {
@@ -823,10 +793,10 @@ html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-de
   }
 
   html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option:nth-child(-n+2) .booking-option-name {
-    font-size: 20px !important;
+    font-size: 19px !important;
     font-weight: 500 !important;
-    line-height: 1.16 !important;
-    color: #2c3036 !important;
+    line-height: 1.18 !important;
+    color: #34383e !important;
     white-space: normal !important;
     text-align: left !important;
     width: 100% !important;
@@ -852,65 +822,49 @@ html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-de
   }
 
   html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option:nth-child(-n+2) .booking-option-price {
-    font-size: 17px !important;
+    font-size: 16px !important;
     font-weight: 600 !important;
     line-height: 1.2 !important;
-    color: #2c3036 !important;
+    color: #34383e !important;
     text-align: left !important;
     width: 100% !important;
     margin-top: auto !important;
-    padding-top: 10px !important;
+    padding-top: 8px !important;
   }
 
   html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option:nth-child(3) {
     grid-column: 1 / -1 !important;
     flex-direction: row !important;
     align-items: center !important;
-    min-height: 66px !important;
-    padding: 12px 15px !important;
-  }
-
-  html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option:nth-child(3):not(.selected) {
-    background: linear-gradient(
-      155deg,
-      rgba(255, 255, 255, 0.44) 0%,
-      rgba(255, 255, 255, 0.16) 55%,
-      rgba(245, 246, 248, 0.28) 100%
-    ) !important;
-    box-shadow:
-      0 3px 10px rgba(52, 56, 62, 0.03),
-      0 0 0 0.5px rgba(98, 106, 116, 0.1) !important;
+    min-height: 74px !important;
+    padding: 14px 16px !important;
   }
 
   html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option:nth-child(3) .option-icon {
-    width: 26px !important;
-    height: 26px !important;
-    flex: 0 0 26px !important;
-    color: #626a74 !important;
-    opacity: 0.72 !important;
-  }
-
-  html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option:nth-child(3) .option-icon .service-unified-svg {
-    width: 24px !important;
-    height: 24px !important;
+    width: 34px !important;
+    height: 30px !important;
+    flex: 0 0 34px !important;
   }
 
   html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option:nth-child(3) .booking-option-name {
-    font-size: 17px !important;
+    font-size: 19px !important;
     font-weight: 500 !important;
-    line-height: 1.2 !important;
-    color: #4b525c !important;
+    line-height: 1.18 !important;
+    color: #34383e !important;
   }
 
   html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option:nth-child(3) .booking-option-duration {
-    font-size: 12.5px !important;
+    font-size: 13px !important;
+    font-weight: 400 !important;
+    line-height: 1.22 !important;
     color: #707781 !important;
   }
 
   html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option:nth-child(3) .booking-option-price {
-    font-size: 15px !important;
-    font-weight: 500 !important;
-    color: #4b525c !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    line-height: 1.2 !important;
+    color: #34383e !important;
   }
 
   /* Barberos: 3 tarjetas verticales 4:5 iguales arriba + Elegir más adelante abajo */
@@ -1014,7 +968,7 @@ html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-de
   }
 
   html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option:nth-child(-n+2) {
-    min-height: 152px !important;
+    min-height: 144px !important;
     padding: 14px 12px 13px !important;
   }
 
