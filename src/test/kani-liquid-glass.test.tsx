@@ -341,7 +341,7 @@ describe('KANI Barber Studio — Liquid Glass Experience (/reservar-turno-liquid
     );
     expect(liquidCss).toContain('LIQUID GLASS V12.1 + V12.2: Servicios 96px, Barberos +12-16px e Interacción Táctil Unificada');
     expect(liquidCss).toContain('[data-services-variant="a"] .booking-page .booking-service-options > .service-option:nth-child(n)');
-    expect(liquidCss).toContain('height: 96px !important;');
+    expect(liquidCss).toContain('height: 92px !important;');
     expect(liquidCss).toContain('aspect-ratio: 11 / 16.3 !important;');
     expect(liquidCss).toContain('.calendar-panel::before');
     expect(liquidCss).toContain('content: none !important;');
@@ -359,12 +359,18 @@ describe('KANI Barber Studio — Liquid Glass Experience (/reservar-turno-liquid
     expect(liquidCss).toContain('height: 100% !important;');
   });
 
-  it('27. Liquid Glass V12.4: Fluidez táctil global (sin backdrop-filter anidado ni will-change permanente) y gap horizontal equilibrado en Barberos', () => {
-    expect(liquidCss).toContain('LIQUID GLASS V12.4: Fluidez táctil global (Safari iOS) + Espaciado horizontal Barberos');
+  it('27. Liquid Glass V12.4 + V12.5: Ondas WAAPI (220/380ms sin tirones), Servicios 92px y Barberos gap 14-16px', () => {
+    const motionTsx = fs.readFileSync(
+      path.join(process.cwd(), 'src/components/kani/experimental/liquid-glass-motion.tsx'),
+      'utf8',
+    );
+    expect(liquidCss).toContain('LIQUID GLASS V12.4 + V12.5: Ondas WAAPI (220/380ms sin tirones), Barberos 14-16px y Servicios 92px');
     expect(liquidCss).toContain('touch-action: manipulation;');
     expect(liquidCss).toContain('-webkit-tap-highlight-color: transparent;');
-    expect(liquidCss).toContain('column-gap: 12px !important;');
-    expect(liquidCss).toContain('column-gap: 10px !important;');
+    expect(liquidCss).toContain('column-gap: 16px !important;');
+    expect(liquidCss).toContain('column-gap: 14px !important;');
     expect(liquidCss).not.toMatch(/\.lg-living-refraction[\s\S]{0,400}backdrop-filter:/);
+    expect(motionTsx).toContain('livingSettleMs: 380');
+    expect(motionTsx).toContain('getAnimations');
   });
 });

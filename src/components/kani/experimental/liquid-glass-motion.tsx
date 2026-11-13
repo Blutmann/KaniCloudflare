@@ -18,7 +18,7 @@ export const LIQUID_GLASS_MOTION = {
     step: 0.3,
     stepExit: 0.12,
     reduced: 0.08,
-    livingSettleMs: 680,
+    livingSettleMs: 380,
   },
   easings: {
     crystal: [0.22, 1, 0.36, 1] as const,
@@ -98,6 +98,7 @@ function InteractiveCard({
 }: LiquidGlassInteractiveCardProps) {
   const shouldReduceMotion = useReducedMotion();
   const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const coreRef = useRef<HTMLSpanElement | null>(null);
   const waveRef = useRef<HTMLSpanElement | null>(null);
   const rippleTimerRef = useRef<number | null>(null);
 
@@ -156,10 +157,39 @@ function InteractiveCard({
     el.style.setProperty('--lg-touch-y-pct', `${((localY / Math.max(rect.height, 1)) * 100).toFixed(1)}%`);
     el.style.setProperty('--lg-wave-size', `${waveSize}px`);
 
-    if (el.hasAttribute('data-lg-ripple')) {
-      el.removeAttribute('data-lg-ripple');
-      void waveRef.current?.offsetWidth;
+    const coreEl = coreRef.current;
+    const waveEl = waveRef.current;
+    if (typeof waveEl?.animate === 'function') {
+      coreEl?.getAnimations?.().forEach((anim) => anim.cancel());
+      waveEl.getAnimations?.().forEach((anim) => anim.cancel());
+
+      coreEl?.animate?.(
+        [
+          { opacity: 0.88, transform: 'translate3d(-50%, -50%, 0) scale(0.42)' },
+          { opacity: 0.56, transform: 'translate3d(-50%, -50%, 0) scale(0.95)', offset: 0.45 },
+          { opacity: 0, transform: 'translate3d(-50%, -50%, 0) scale(1.22)' },
+        ],
+        {
+          duration: 220,
+          easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+          fill: 'none',
+        },
+      );
+
+      waveEl.animate(
+        [
+          { opacity: 0.92, transform: 'translate3d(-50%, -50%, 0) scale(0.24)' },
+          { opacity: 0.68, transform: 'translate3d(-50%, -50%, 0) scale(0.76)', offset: 0.52 },
+          { opacity: 0, transform: 'translate3d(-50%, -50%, 0) scale(1.12)' },
+        ],
+        {
+          duration: LIQUID_GLASS_MOTION.durations.livingSettleMs,
+          easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+          fill: 'none',
+        },
+      );
     }
+
     el.setAttribute('data-lg-ripple', 'active');
 
     if (rippleTimerRef.current !== null) {
@@ -211,7 +241,7 @@ function InteractiveCard({
     >
       {!disabled && (
         <span className="lg-living-surface" aria-hidden="true">
-          <span className="lg-living-core" />
+          <span ref={coreRef} className="lg-living-core" />
           <span className="lg-living-refraction" />
           <span ref={waveRef} className="lg-living-wave" />
           <span className="lg-living-edge" />

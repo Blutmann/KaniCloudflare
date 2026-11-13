@@ -5393,12 +5393,12 @@ html[data-theme="dark"] .site-shell .liquid-glass-reservation :is(.booking-next-
 
 /* === LIQUID GLASS V12.1 + V12.2: Servicios 96px, Barberos +12-16px e Interacción Táctil Unificada === */
 
-/* 1. Servicios — Regla única consolidada (96 px reales en mobile y consistencia en las 3 cards) */
+/* 1. Servicios — Regla única consolidada (92 px reales en mobile y consistencia en las 3 cards) */
 html[data-theme] .site-shell .liquid-glass-reservation[data-services-variant="a"] .booking-page .booking-service-options > .service-option:nth-child(n),
 html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option:nth-child(n) {
-  min-height: 96px !important;
-  height: 96px !important;
-  padding: 18px 18px !important;
+  min-height: 92px !important;
+  height: 92px !important;
+  padding: 16px 18px !important;
   box-sizing: border-box !important;
   align-items: center !important;
 }
@@ -5487,25 +5487,9 @@ html[data-theme] .site-shell .liquid-glass-reservation :is(
   padding: 2.25px;
 }
 
-.liquid-glass-reservation :is(.service-option, .booking-barber-options > .booking-option:not(.booking-defer-option))[data-lg-ripple="active"] > .lg-living-surface > .lg-living-core {
-  animation: kaniLivingCoreV2 320ms cubic-bezier(0.22, 1, 0.36, 1) 1 forwards;
-}
+/* === LIQUID GLASS V12.4 + V12.5: Ondas WAAPI (220/380ms sin tirones), Barberos 14-16px y Servicios 92px === */
 
-.liquid-glass-reservation :is(.service-option, .booking-barber-options > .booking-option:not(.booking-defer-option))[data-lg-ripple="active"] > .lg-living-surface > .lg-living-refraction {
-  animation: kaniLivingRefractionV3 600ms cubic-bezier(0.22, 1, 0.36, 1) 1 forwards;
-}
-
-.liquid-glass-reservation :is(.service-option, .booking-barber-options > .booking-option:not(.booking-defer-option))[data-lg-ripple="active"] > .lg-living-surface > .lg-living-wave {
-  animation: kaniLivingWaveV3 650ms cubic-bezier(0.22, 1, 0.36, 1) 1 forwards;
-}
-
-.liquid-glass-reservation :is(.service-option, .booking-barber-options > .booking-option:not(.booking-defer-option))[data-lg-ripple="active"] > .lg-living-surface > .lg-living-edge {
-  animation: kaniLivingEdgePulseV3 600ms cubic-bezier(0.22, 1, 0.36, 1) 1 forwards;
-}
-
-/* === LIQUID GLASS V12.4: Fluidez táctil global (Safari iOS) + Espaciado horizontal Barberos === */
-
-/* 1. Respuesta táctil inmediata sin highlight nativo ni promoción permanente de capas GPU */
+/* 1. Respuesta táctil inmediata sin highlight nativo ni animación CSS lenta/desfasada */
 html[data-theme] .site-shell .liquid-glass-reservation :is(
   .service-option,
   .booking-option,
@@ -5519,30 +5503,40 @@ html[data-theme] .site-shell .liquid-glass-reservation :is(
   -webkit-tap-highlight-color: transparent;
 }
 
+.liquid-glass-reservation .lg-living-wave {
+  box-shadow: none !important;
+}
+
 .liquid-glass-reservation [data-lg-ripple="active"] > .lg-living-surface > :is(
   .lg-living-core,
   .lg-living-refraction,
-  .lg-living-wave
+  .lg-living-wave,
+  .lg-living-edge
 ) {
-  will-change: transform, opacity;
+  animation: none !important;
 }
 
-.liquid-glass-reservation [data-lg-ripple="active"] > .lg-living-surface > .lg-living-edge {
-  will-change: opacity;
+html[data-theme] .site-shell .liquid-glass-reservation :is(
+  .booking-option.selected,
+  .service-option.selected,
+  .booking-defer-option.selected,
+  .booking-time-slot.selected
+) .lg-optical-sheen {
+  animation: none !important;
 }
 
-/* 2. Barberos — Gap horizontal equivalente al margen lateral disponible (10px <=360px, 12px 361-767px) */
+/* 2. Barberos — Gap horizontal real de 14 px (<=360px) y 16 px (361-767px) */
 @media (max-width: 767px) {
   html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-barber-options {
-    column-gap: 12px !important;
-    row-gap: 12px !important;
+    column-gap: 16px !important;
+    row-gap: 14px !important;
   }
 }
 
 @media (max-width: 360px) {
   html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-barber-options {
-    column-gap: 10px !important;
-    row-gap: 10px !important;
+    column-gap: 14px !important;
+    row-gap: 12px !important;
   }
 }
 
@@ -5554,7 +5548,7 @@ html[data-theme] .site-shell .liquid-glass-reservation :is(
     transition: none !important;
   }
 
-  .liquid-glass-reservation :is(.service-option, .booking-barber-options > .booking-option:not(.booking-defer-option))[data-lg-ripple="active"] > .lg-living-surface > * {
+  .liquid-glass-reservation [data-lg-ripple="active"] > .lg-living-surface > * {
     animation: none !important;
     opacity: 0 !important;
   }
