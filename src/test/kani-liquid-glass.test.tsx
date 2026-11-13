@@ -78,9 +78,11 @@ describe('KANI Barber Studio — Liquid Glass Experience (/reservar-turno-liquid
     expect(siteHeaderCode).toContain('{staff && !isLiquidRoute &&');
   });
 
-  it('4. Define una única identidad visual Liquid Glass V8 blanco perla (#FCFCFD) monocromática inmune al tema global', () => {
+  it('4. Define una única identidad visual Liquid Glass V9 blanco perla (#FCFCFD) monocromática grafito suave (#34383E) inmune al tema global', () => {
     expect(liquidCss).toMatch(/body\.liquid-glass-active[\s\S]*?--background:\s*#fcfcfd/);
-    expect(liquidCss).toMatch(/body\.liquid-glass-active[\s\S]*?--foreground:\s*#18181b/);
+    expect(liquidCss).toMatch(/body\.liquid-glass-active[\s\S]*?--foreground:\s*#34383e/);
+    expect(liquidCss).toMatch(/body\.liquid-glass-active[\s\S]*?--lg-ink-secondary:\s*#626a74/);
+    expect(liquidCss).toMatch(/body\.liquid-glass-active[\s\S]*?--lg-ink-muted:\s*#707781/);
     expect(liquidCss).toMatch(/body\.liquid-glass-active[\s\S]*?color-scheme:\s*light\s*!important/);
     expect(liquidCss).toMatch(/body\.liquid-glass-active::before,\s*\r?\nbody\.liquid-glass-active::after\s*\{[^}]*display:\s*none\s*!important/);
     expect(liquidCss).not.toContain('#702b3a');
