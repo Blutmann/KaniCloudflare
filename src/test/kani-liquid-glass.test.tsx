@@ -249,4 +249,29 @@ describe('KANI Barber Studio — Liquid Glass Experience (/reservar-turno-liquid
     expect(liquidCss).toContain('rgba(112, 43, 58, 0.32)');
     expect(liquidCss).toContain('@keyframes livingGlassOpticalSweep');
   });
+
+  it('20. Liquid Glass V8: Servicios Variante A definitiva, Optical Density V2, Living Surface física y KANI Ambient Identity', () => {
+    const bookingWrapperTsx = fs.readFileSync(
+      path.resolve(process.cwd(), 'src/components/kani/experimental/liquid-glass-booking.tsx'),
+      'utf8',
+    );
+    const motionTsx = fs.readFileSync(
+      path.resolve(process.cwd(), 'src/components/kani/experimental/liquid-glass-motion.tsx'),
+      'utf8',
+    );
+
+    expect(bookingWrapperTsx).not.toContain('lg-services-variant-bar');
+    expect(bookingWrapperTsx).not.toContain('ServicesLayoutVariant');
+    expect(motionTsx).toContain('lg-living-surface');
+    expect(motionTsx).toContain('lg-living-wave');
+    expect(motionTsx).toContain('lg-living-edge');
+    expect(motionTsx).toContain('--lg-touch-x');
+    expect(motionTsx).toContain('--lg-touch-y');
+    expect(motionTsx).toContain('data-lg-ripple');
+    expect(liquidCss).toContain('LIQUID GLASS V8: KANI Living Surface · Fluid Interaction · Optical Density V2 · Brand Identity');
+    expect(liquidCss).toContain('@keyframes kaniLivingWave');
+    expect(liquidCss).toContain('@keyframes kaniLivingEdgePulse');
+    expect(liquidCss).toContain('rgba(200, 169, 107, 0.56)');
+    expect(liquidCss).toContain('rgba(112, 43, 58, 0.14)');
+  });
 });

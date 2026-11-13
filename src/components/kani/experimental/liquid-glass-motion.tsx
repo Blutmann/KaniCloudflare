@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useEffect, useRef, type PointerEvent, type ReactNode } from 'react';
 import { AnimatePresence, MotionConfig, motion, useReducedMotion } from 'motion/react';
 import type {
   LiquidGlassInteractiveCardProps,
@@ -8,8 +8,8 @@ import type {
 } from './liquid-glass-motion.types';
 
 /**
- * Sistema centralizado de parámetros Motion V1 para /reservar-turno-liquid.
- * Prioriza transform/opacity, respuesta táctil breve y compatibilidad con prefers-reduced-motion.
+ * Sistema centralizado de parámetros Motion V4 / Living Surface V8 para /reservar-turno-liquid.
+ * Prioriza transform/opacity, física de contacto en coordenadas reales y prefers-reduced-motion.
  */
 export const LIQUID_GLASS_MOTION = {
   durations: {
@@ -18,6 +18,7 @@ export const LIQUID_GLASS_MOTION = {
     step: 0.3,
     stepExit: 0.12,
     reduced: 0.08,
+    livingSettleMs: 650,
   },
   easings: {
     crystal: [0.22, 1, 0.36, 1] as const,
@@ -90,13 +91,63 @@ function InteractiveCard({
   disabled,
   type = 'button',
   tapScale = LIQUID_GLASS_MOTION.scales.cardTap,
+  onPointerDown,
   ...rest
 }: LiquidGlassInteractiveCardProps) {
   const shouldReduceMotion = useReducedMotion();
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const waveRef = useRef<HTMLSpanElement | null>(null);
+  const rippleTimerRef = useRef<number | null>(null);
+
   const isSelected = className.includes('selected');
   const isCalendarDay = className.includes('calendar-day');
   const isActionButton =
     className.includes('booking-back-button') || className.includes('booking-next-button');
+
+  useEffect(() => {
+    return () => {
+      if (rippleTimerRef.current !== null && typeof window !== 'undefined') {
+        window.clearTimeout(rippleTimerRef.current);
+        rippleTimerRef.current = null;
+      }
+    };
+  }, []);
+
+  const handlePointerDown = (event: PointerEvent<HTMLButtonElement>) => {
+    onPointerDown?.(event);
+    if (disabled || shouldReduceMotion) return;
+
+    const el = buttonRef.current;
+    if (!el || typeof window === 'undefined') return;
+
+    const rect = el.getBoundingClientRect();
+    const hasCoords = rect.width > 0 && rect.height > 0 && (event.clientX !== 0 || event.clientY !== 0);
+    const localX = hasCoords ? Math.min(Math.max(event.clientX - rect.left, 0), rect.width) : rect.width / 2;
+    const localY = hasCoords ? Math.min(Math.max(event.clientY - rect.top, 0), rect.height) : rect.height / 2;
+    const maxRadius = Math.hypot(
+      Math.max(localX, rect.width - localX),
+      Math.max(localY, rect.height - localY),
+    );
+    const waveSize = Math.max(Math.ceil(maxRadius * 2), 96);
+
+    el.style.setProperty('--lg-touch-x', `${localX.toFixed(1)}px`);
+    el.style.setProperty('--lg-touch-y', `${localY.toFixed(1)}px`);
+    el.style.setProperty('--lg-touch-x-pct', `${((localX / Math.max(rect.width, 1)) * 100).toFixed(1)}%`);
+    el.style.setProperty('--lg-touch-y-pct', `${((localY / Math.max(rect.height, 1)) * 100).toFixed(1)}%`);
+    el.style.setProperty('--lg-wave-size', `${waveSize}px`);
+
+    el.removeAttribute('data-lg-ripple');
+    void waveRef.current?.offsetWidth;
+    el.setAttribute('data-lg-ripple', 'active');
+
+    if (rippleTimerRef.current !== null) {
+      window.clearTimeout(rippleTimerRef.current);
+    }
+    rippleTimerRef.current = window.setTimeout(() => {
+      el.removeAttribute('data-lg-ripple');
+      rippleTimerRef.current = null;
+    }, LIQUID_GLASS_MOTION.durations.livingSettleMs);
+  };
 
   const animateState = shouldReduceMotion
     ? undefined
@@ -108,10 +159,12 @@ function InteractiveCard({
 
   return (
     <motion.button
+      ref={buttonRef}
       type={type}
       disabled={disabled}
       className={className}
       animate={animateState}
+      onPointerDown={handlePointerDown}
       whileHover={
         disabled || shouldReduceMotion || isActionButton
           ? undefined
@@ -132,6 +185,12 @@ function InteractiveCard({
       }
       {...rest}
     >
+      {!disabled && (
+        <span className="lg-living-surface" aria-hidden="true">
+          <span ref={waveRef} className="lg-living-wave" />
+          <span className="lg-living-edge" />
+        </span>
+      )}
       {!disabled && !isCalendarDay && (
         <span className="lg-optical-sheen" aria-hidden="true" />
       )}
