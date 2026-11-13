@@ -79,7 +79,7 @@ describe('KANI Barber Studio — Liquid Glass Experience (/reservar-turno-liquid
   });
 
   it('4. Define una única identidad visual Liquid Glass (perla/niebla/grafito/bordó) inmune al tema global', () => {
-    expect(liquidCss).toMatch(/body\.liquid-glass-active[\s\S]*?--background:\s*#f5f4f0/);
+    expect(liquidCss).toMatch(/body\.liquid-glass-active[\s\S]*?--background:\s*#f6f7f9/);
     expect(liquidCss).toMatch(/body\.liquid-glass-active[\s\S]*?--foreground:\s*#1d1e20/);
     expect(liquidCss).toMatch(/body\.liquid-glass-active[\s\S]*?color-scheme:\s*light\s*!important/);
     expect(liquidCss).toMatch(/body\.liquid-glass-active::before,\s*\r?\nbody\.liquid-glass-active::after\s*\{[^}]*display:\s*none\s*!important/);
@@ -122,5 +122,16 @@ describe('KANI Barber Studio — Liquid Glass Experience (/reservar-turno-liquid
     expect(liquidCss).toContain('padding: 5px 16px 12px !important;');
     expect(liquidCss).toContain('width: calc((100% - 40px) * var(--liquid-progress-ratio, 0.2)) !important;');
     expect(liquidCss).toContain('width: calc((100% - 32px) * var(--liquid-progress-ratio, 0.2)) !important;');
+  });
+
+  it('9. V5 Polish: paleta perla/gris niebla, CTA anclado al pie, headers de Horarios alineados y resumen Datos en única superficie', () => {
+    expect(liquidCss).toContain('--lg-bg-pearl: #f6f7f9;');
+    expect(liquidCss).toContain('--lg-bg-mist: #eceff3;');
+    expect(liquidCss).toContain('--lg-glass-surface:');
+    expect(liquidCss).toMatch(/\.booking-scroll-content\s*\{[\s\S]*?flex:\s*1 1 auto\s*!important/);
+    expect(liquidCss).toContain('padding: 8px 20px max(8px, env(safe-area-inset-bottom)) !important;');
+    expect(liquidCss).toMatch(/\.booking-time-period-header\s*\{[\s\S]*?align-items:\s*center\s*!important/);
+    expect(liquidCss).toMatch(/\.booking-time-period-title\s*\{[\s\S]*?margin:\s*0\s*!important/);
+    expect(liquidCss).toMatch(/\.booking-v2-unified-summary \.summary-appointment-card,\s*\.liquid-glass-reservation \.booking-v2-unified-summary \.summary-pricing-card\s*\{[\s\S]*?background:\s*transparent\s*!important/);
   });
 });
