@@ -422,4 +422,14 @@ describe('KANI Barber Studio — Liquid Glass Experience (/reservar-turno-liquid
     expect(liquidCss).toContain('rgba(196, 164, 102, 0.72)');
     expect(liquidCss).toContain('.liquid-glass-stepper-lens');
   });
+
+  it('32. Liquid Glass V12.11: CTA flotante en menú, botón Aplicar secundario al estar deshabilitado y shared motion del stepper', () => {
+    expect(liquidCss).toContain('LIQUID GLASS V12.11 — OPTICAL MATERIAL REFINEMENT · PROFESSIONAL MOTION');
+    expect(liquidCss).toContain('.mobile-menu-cta .booking-menu-return:not(:disabled)');
+    expect(liquidCss).toContain('border-top: none !important;');
+    expect(liquidCss).toContain('.discount-apply-button:disabled');
+    expect(liquidCss).toContain('.discount-apply-button:not(:disabled)');
+    expect(liquidCss).toContain('overflow: visible !important;');
+    expect(liquidCss).toContain('transition: none !important;');
+  });
 });

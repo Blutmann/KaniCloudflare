@@ -1,5 +1,5 @@
 import { useEffect, useRef, type PointerEvent, type ReactNode } from 'react';
-import { AnimatePresence, MotionConfig, motion, useReducedMotion } from 'motion/react';
+import { AnimatePresence, LayoutGroup, MotionConfig, motion, useReducedMotion } from 'motion/react';
 import type {
   LiquidGlassInteractiveCardProps,
   LiquidGlassMotionAdapter,
@@ -14,9 +14,9 @@ import type {
 export const LIQUID_GLASS_MOTION = {
   durations: {
     tap: 0.14,
-    cardState: 0.25,
+    cardState: 0.24,
     step: 0.3,
-    stepExit: 0.12,
+    stepExit: 0.14,
     reduced: 0.08,
     livingSettleMs: 440,
   },
@@ -26,9 +26,9 @@ export const LIQUID_GLASS_MOTION = {
   springs: {
     stepperLens: {
       type: 'spring' as const,
-      stiffness: 340,
-      damping: 32,
-      mass: 0.95,
+      stiffness: 400,
+      damping: 36,
+      mass: 0.85,
     },
   },
   distances: {
@@ -53,10 +53,18 @@ const stepVariants = {
   center: {
     opacity: 1,
     x: 0,
+    transition: {
+      duration: LIQUID_GLASS_MOTION.durations.step,
+      ease: LIQUID_GLASS_MOTION.easings.crystal,
+    },
   },
   exit: (direction: StepDirection) => ({
     opacity: 0,
     x: -direction * LIQUID_GLASS_MOTION.distances.stepShiftPx,
+    transition: {
+      duration: LIQUID_GLASS_MOTION.durations.stepExit,
+      ease: LIQUID_GLASS_MOTION.easings.crystal,
+    },
   }),
 };
 
@@ -67,7 +75,11 @@ const reducedStepVariants = {
 };
 
 export function LiquidGlassMotionProvider({ children }: { children: ReactNode }) {
-  return <MotionConfig reducedMotion="user">{children}</MotionConfig>;
+  return (
+    <MotionConfig reducedMotion="user">
+      <LayoutGroup id="kani-liquid-stepper">{children}</LayoutGroup>
+    </MotionConfig>
+  );
 }
 
 function StepperLens() {
@@ -78,10 +90,11 @@ function StepperLens() {
       layoutId="liquid-glass-stepper-lens"
       className="liquid-glass-stepper-lens"
       aria-hidden="true"
+      style={{ borderRadius: 9999 }}
       transition={
         shouldReduceMotion
           ? { duration: 0.01 }
-          : LIQUID_GLASS_MOTION.springs.stepperLens
+          : { layout: LIQUID_GLASS_MOTION.springs.stepperLens }
       }
     />
   );
