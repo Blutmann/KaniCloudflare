@@ -78,9 +78,9 @@ describe('KANI Barber Studio — Liquid Glass Experience (/reservar-turno-liquid
     expect(siteHeaderCode).toContain('{staff && !isLiquidRoute &&');
   });
 
-  it('4. Define una única identidad visual Crystal Glass monocromática (perla/niebla/plata/grafito/negro suave) inmune al tema global', () => {
-    expect(liquidCss).toMatch(/body\.liquid-glass-active[\s\S]*?--background:\s*#f5f7fa/);
-    expect(liquidCss).toMatch(/body\.liquid-glass-active[\s\S]*?--foreground:\s*#141619/);
+  it('4. Define una única identidad visual Liquid Glass V6 blanco perla (#F9FAFB) monocromática inmune al tema global', () => {
+    expect(liquidCss).toMatch(/body\.liquid-glass-active[\s\S]*?--background:\s*#f9fafb/);
+    expect(liquidCss).toMatch(/body\.liquid-glass-active[\s\S]*?--foreground:\s*#18181b/);
     expect(liquidCss).toMatch(/body\.liquid-glass-active[\s\S]*?color-scheme:\s*light\s*!important/);
     expect(liquidCss).toMatch(/body\.liquid-glass-active::before,\s*\r?\nbody\.liquid-glass-active::after\s*\{[^}]*display:\s*none\s*!important/);
     expect(liquidCss).not.toContain('#702b3a');
@@ -97,20 +97,17 @@ describe('KANI Barber Studio — Liquid Glass Experience (/reservar-turno-liquid
     expect(liquidCss).toContain('flex: 1 1 70% !important');
   });
 
-  it('6. Stepper de 5 pasos en única superficie Crystal Glass sin tarjetas opacas y con barra continua monocromática', () => {
-    expect(liquidCss).toMatch(/\.booking-progress\s*>\s*button\[aria-current="step"\][\s\S]*?background:\s*transparent\s*!important/);
-    expect(liquidCss).toMatch(/\.booking-progress\s*>\s*button\[aria-current="step"\]\s*>\s*span[\s\S]*?border:\s*1\.5px solid rgba\(20, 22, 25, 0\.74\)\s*!important/);
-    expect(liquidCss).toMatch(/\.booking-progress\s*>\s*button\.complete\s*>\s*span[\s\S]*?background:\s*var\(--cg-crystal-smoked\)\s*!important/);
-    expect(liquidCss).toContain('--liquid-progress-ratio: 0.2;');
-    expect(liquidCss).toContain('--liquid-progress-ratio: 0.4;');
-    expect(liquidCss).toContain('--liquid-progress-ratio: 0.6;');
-    expect(liquidCss).toContain('--liquid-progress-ratio: 0.8;');
-    expect(liquidCss).toContain('--liquid-progress-ratio: 1;');
+  it('6. Stepper segmentado Liquid Glass V6: cápsula única con lente deslizante, sin círculos ni checks', () => {
+    expect(liquidCss).toMatch(/\.booking-progress\s*\{[\s\S]*?border-radius:\s*9999px\s*!important/);
+    expect(liquidCss).toMatch(/\.booking-progress\s*>\s*button\s*>\s*span\s*\{[\s\S]*?display:\s*none\s*!important/);
+    expect(liquidCss).toMatch(/\.booking-progress::before\s*\{[\s\S]*?transform:\s*translate3d\(calc\(var\(--liquid-step-index, 0\) \* 100%\), 0, 0\)\s*!important/);
+    expect(liquidCss).toMatch(/\.booking-progress::after\s*\{[\s\S]*?display:\s*none\s*!important/);
+    expect(liquidCss).toContain('--liquid-step-index: 0;');
+    expect(liquidCss).toContain('--liquid-step-index: 4;');
   });
 
-  it('7. Header+Stepper abiertos integrados, divisor de icono, botones pill Crystal Glass y menú optimizado sin backdrop-filter fullscreen', () => {
-    expect(liquidCss).toMatch(/\.booking-progress\s*\{[\s\S]*?background:\s*transparent\s*!important/);
-    expect(liquidCss).toContain('border-right: 1px solid rgba(20, 22, 25, 0.1) !important;');
+  it('7. Tarjetas sin divisor vertical de ícono, botones pill Crystal Glass y menú optimizado sin backdrop-filter fullscreen', () => {
+    expect(liquidCss).toContain('border-right: none !important;');
     expect(liquidCss).toMatch(/\.booking-next-button:not\(:disabled\)[\s\S]*?border-radius:\s*9999px\s*!important/);
     expect(liquidCss).not.toMatch(/\.liquid-orb\s*\{[^}]*filter:\s*blur\(/);
     expect(liquidCss).toMatch(/body\.liquid-glass-active \.mobile-menu[\s\S]*?backdrop-filter:\s*none\s*!important/);
@@ -118,20 +115,18 @@ describe('KANI Barber Studio — Liquid Glass Experience (/reservar-turno-liquid
     expect(liquidCss).toContain('@keyframes liquidMenuEnter');
   });
 
-  it('8. El stepper comparte exactamente los mismos márgenes laterales que las tarjetas de servicio', () => {
-    expect(liquidCss).toContain('padding: 8px 0 15px !important;');
-    expect(liquidCss).toContain('padding: 6px 20px 13px !important;');
-    expect(liquidCss).toContain('padding: 5px 16px 12px !important;');
-    expect(liquidCss).toContain('width: calc((100% - 40px) * var(--liquid-progress-ratio, 0.2)) !important;');
-    expect(liquidCss).toContain('width: calc((100% - 32px) * var(--liquid-progress-ratio, 0.2)) !important;');
+  it('8. El stepper cápsula comparte exactamente los mismos márgenes laterales que las tarjetas de servicio', () => {
+    expect(liquidCss).toContain('width: calc(100% - 40px) !important;');
+    expect(liquidCss).toContain('margin-inline: 20px !important;');
+    expect(liquidCss).toContain('width: calc(100% - 32px) !important;');
+    expect(liquidCss).toContain('margin-inline: 16px !important;');
   });
 
-  it('9. V5 Crystal Glass: sistema de superficies (claro/seleccionado/flotante/ahumado), CTA anclado al pie, headers de Horarios alineados y Datos unificado', () => {
-    expect(liquidCss).toContain('--lg-bg-pearl: #f5f7fa;');
-    expect(liquidCss).toContain('--lg-bg-mist: #e3e7ee;');
-    expect(liquidCss).toContain('--lg-glass-surface:');
-    expect(liquidCss).toContain('--cg-crystal-floating:');
-    expect(liquidCss).toContain('--cg-crystal-smoked:');
+  it('9. V6 Bottom & Layout: elimina padding-bottom heredado en mobile, ancla CTA al pie, alinea Horarios y unifica Datos', () => {
+    expect(liquidCss).toContain('--lg-bg-pearl: #f9fafb;');
+    expect(liquidCss).toContain('--lg-bg-mist: #f3f4f6;');
+    expect(liquidCss).toContain('padding-bottom: 0 !important;');
+    expect(liquidCss).toContain('height: calc(100svh - 64px) !important;');
     expect(liquidCss).toMatch(/\.booking-scroll-content\s*\{[\s\S]*?flex:\s*1 1 auto\s*!important/);
     expect(liquidCss).toContain('padding: 8px 20px max(8px, env(safe-area-inset-bottom)) !important;');
     expect(liquidCss).toMatch(/\.booking-time-period-header\s*\{[\s\S]*?align-items:\s*center\s*!important/);
