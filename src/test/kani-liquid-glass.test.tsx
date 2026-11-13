@@ -341,7 +341,7 @@ describe('KANI Barber Studio — Liquid Glass Experience (/reservar-turno-liquid
     );
     expect(liquidCss).toContain('LIQUID GLASS V12.1 + V12.2: Servicios 96px, Barberos +12-16px e Interacción Táctil Unificada');
     expect(liquidCss).toContain('[data-services-variant="a"] .booking-page .booking-service-options > .service-option:nth-child(n)');
-    expect(liquidCss).toContain('height: 91px !important;');
+    expect(liquidCss).toContain('height: 90px !important;');
     expect(liquidCss).toContain('aspect-ratio: 11 / 16.3 !important;');
     expect(liquidCss).toContain('.calendar-panel::before');
     expect(liquidCss).toContain('content: none !important;');
@@ -433,10 +433,8 @@ describe('KANI Barber Studio — Liquid Glass Experience (/reservar-turno-liquid
     expect(liquidCss).toContain('transition: none !important;');
   });
 
-  it('33. Liquid Glass V12.12: Stepper sin overshoot y cápsula completa, Servicios 91px, Aplicar transparente, inputs Dark Mode y error inline alineado', () => {
+  it('33. Liquid Glass V12.12: Stepper sin overshoot y cápsula completa, Aplicar transparente, inputs Dark Mode y error inline alineado', () => {
     expect(liquidCss).toContain('LIQUID GLASS V12.12 — STEPPER MOTION POLISH · MICROSPACING · FORM UX FIXES');
-    expect(liquidCss).toContain('min-height: 91px !important;');
-    expect(liquidCss).toContain('height: 91px !important;');
     expect(liquidCss).toContain('min-height: 44px !important;');
     expect(liquidCss).toContain('opacity: 0.56 !important;');
     expect(liquidCss).toContain('-webkit-text-fill-color: #faf8f4 !important;');
@@ -446,5 +444,20 @@ describe('KANI Barber Studio — Liquid Glass Experience (/reservar-turno-liquid
       duration: 0.28,
       ease: [0.22, 1, 0.36, 1],
     });
+  });
+
+  it('34. Liquid Glass V12.13: Servicios 90px y precios 16.5px, Stepper 44/46px, Barberos +4px, Notice secundario KANI y Header estable', () => {
+    expect(liquidCss).toContain('LIQUID GLASS V12.13 — MICROPROPORTIONS · INFORMATION CARD · HEADER STABILITY');
+    expect(liquidCss).toContain('min-height: 90px !important;');
+    expect(liquidCss).toContain('height: 90px !important;');
+    expect(liquidCss).toContain('font-size: 16.5px !important;');
+    expect(liquidCss).toContain('min-height: 46px !important;');
+    expect(liquidCss).toContain('aspect-ratio: 11 / 16.7 !important;');
+    expect(liquidCss).toContain('min-height: 146px !important;');
+    expect(liquidCss).toContain('min-height: 144px !important;');
+    expect(liquidCss).toContain('rgba(14, 14, 16, 0.38)');
+    expect(liquidCss).toContain('rgba(208, 178, 122, 0.76)');
+    expect(liquidCss).toContain('scrollbar-gutter: stable;');
+    expect(liquidCss).toContain('body.liquid-glass-active .site-header.liquid-glass-header.menu-open');
   });
 });

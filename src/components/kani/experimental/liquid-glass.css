@@ -5396,11 +5396,11 @@ html[data-theme="dark"] .site-shell .liquid-glass-reservation .booking-cta:not(.
 
 /* === LIQUID GLASS V12.1 + V12.2: Servicios 96px, Barberos +12-16px e Interacción Táctil Unificada === */
 
-/* 1. Servicios — Regla única consolidada (92 px reales en mobile y consistencia en las 3 cards) */
+/* 1. Servicios — Regla única consolidada (90 px reales y consistencia en las 3 cards) */
 html[data-theme] .site-shell .liquid-glass-reservation[data-services-variant="a"] .booking-page .booking-service-options > .service-option:nth-child(n),
 html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option:nth-child(n) {
-  min-height: 91px !important;
-  height: 91px !important;
+  min-height: 90px !important;
+  height: 90px !important;
   padding: 16px 18px !important;
   box-sizing: border-box !important;
   align-items: center !important;
@@ -6888,4 +6888,152 @@ html[data-theme] .site-shell .liquid-glass-reservation .booking-page #benefit-co
 html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-discount-field .field-validation-message > svg {
   flex-shrink: 0 !important;
   margin-top: 2px !important;
+}
+
+/* ==============================================================================
+ * LIQUID GLASS V12.13 — MICROPROPORTIONS · INFORMATION CARD · HEADER STABILITY
+ * 1. Servicios: 90 px de altura e importes +1 px (16.5 px).
+ * 2. Stepper: +2 px de altura (44 px mobile / 46 px desktop) y botones proporcionados.
+ * 3. Barberos (L, G, V): +4 px de altura real equilibrada verticalmente.
+ * 4. Card informativa (.booking-deposit-notice): cristal secundario cromático KANI.
+ * 5. Header: estabilidad geométrica exacta al abrir y cerrar el menú.
+ * ============================================================================== */
+
+/* 1. SERVICIOS: 90 px + IMPORTES 16.5 px (+1 px) */
+html[data-theme] .site-shell .liquid-glass-reservation[data-services-variant="a"] .booking-page .booking-service-options > .service-option:nth-child(n),
+html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option:nth-child(n) {
+  min-height: 90px !important;
+  height: 90px !important;
+}
+
+html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option:nth-child(n) .booking-option-price {
+  font-size: 16.5px !important;
+}
+
+/* 2. STEPPER: +2 px (Desktop 46 px / Mobile 44 px) */
+html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-progress {
+  min-height: 46px !important;
+}
+
+html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-progress > button {
+  height: 40px !important;
+  min-height: 40px !important;
+  max-height: 40px !important;
+}
+
+@media (max-width: 767px) {
+  html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-progress {
+    min-height: 44px !important;
+  }
+
+  html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-progress > button {
+    height: 38px !important;
+    min-height: 38px !important;
+    max-height: 38px !important;
+  }
+}
+
+@media (max-width: 360px) {
+  html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-progress {
+    height: 44px !important;
+    min-height: 44px !important;
+    max-height: 44px !important;
+  }
+
+  html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-progress > button {
+    height: 100% !important;
+    min-height: 0 !important;
+    max-height: none !important;
+  }
+}
+
+/* 3. BARBEROS (Lautaro, Gonzalo, Valentín): +4 px reales equilibrados verticalmente */
+@media (min-width: 768px) {
+  html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-barber-options > .booking-option:not(.booking-defer-option) {
+    padding-top: 14px !important;
+    padding-bottom: 14px !important;
+  }
+}
+
+@media (max-width: 767px) {
+  html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-barber-options > .booking-option:not(.booking-defer-option) {
+    aspect-ratio: 11 / 16.7 !important;
+    min-height: 146px !important;
+    padding: 16px 6px !important;
+    gap: 13px !important;
+    justify-content: center !important;
+  }
+
+  html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-barber-options > .booking-option:not(.booking-defer-option) .booking-option-copy {
+    gap: 5px !important;
+  }
+}
+
+@media (max-width: 360px) {
+  html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-barber-options > .booking-option:not(.booking-defer-option) {
+    min-height: 144px !important;
+    padding: 14px 4px !important;
+    gap: 11px !important;
+  }
+}
+
+/* 4. CARD INFORMATIVA DE SERVICIOS — CRISTAL SECUNDARIO KANI */
+html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-deposit-notice {
+  pointer-events: none !important;
+  cursor: default !important;
+  transition: none !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-deposit-notice::before,
+html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-deposit-notice::after {
+  display: none !important;
+  content: none !important;
+  background: none !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="light"] .site-shell .liquid-glass-reservation .booking-page .booking-deposit-notice {
+  background: rgba(255, 254, 251, 0.34) !important;
+  border: 1px solid rgba(28, 25, 21, 0.07) !important;
+  color: rgba(74, 70, 64, 0.78) !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="light"] .site-shell .liquid-glass-reservation .booking-page .booking-deposit-notice svg {
+  color: rgba(164, 132, 76, 0.82) !important;
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-reservation .booking-page .booking-deposit-notice {
+  background: rgba(14, 14, 16, 0.38) !important;
+  border: 1px solid rgba(255, 250, 240, 0.08) !important;
+  color: rgba(232, 227, 218, 0.74) !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-reservation .booking-page .booking-deposit-notice svg {
+  color: rgba(208, 178, 122, 0.76) !important;
+}
+
+/* 5. HEADER — ESTABILIDAD GEOMÉTRICA EXACTA AL ABRIR Y CERRAR EL MENÚ */
+html:has(body.liquid-glass-active) {
+  scrollbar-gutter: stable;
+}
+
+html[data-theme] body.liquid-glass-active .site-header.liquid-glass-header.menu-open {
+  border-bottom: 1px solid transparent !important;
+}
+
+@media (max-width: 767px) {
+  html[data-theme] body.liquid-glass-active .site-header.liquid-glass-header,
+  html[data-theme] body.liquid-glass-active .site-header.liquid-glass-header.menu-open {
+    flex: 0 0 64px !important;
+    height: 64px !important;
+    min-height: 64px !important;
+    max-height: 64px !important;
+    padding-block: 4px !important;
+    border-bottom: 1px solid transparent !important;
+    box-shadow: none !important;
+  }
 }
