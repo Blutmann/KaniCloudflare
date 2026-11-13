@@ -2435,6 +2435,362 @@ html[data-theme="dark"] .site-shell .liquid-glass-reservation .booking-option.se
   }
 }
 
+/* ==============================================================================
+ * LIQUID GLASS V4 — LIVING GLASS · OPTICAL REFRACTION & DYNAMIC LIGHTING
+ * - Desactiva temporalmente fondos ilustrados en /reservar-turno-liquid (#FAFAFB / #0B0B0D)
+ * - Iluminación ambiental mínima neutra con leve calidez champagne imperceptible
+ * - Transparencia real + backdrop-filter estable (mobile 18px / desktop 24px)
+ * - Bordes ópticos discontinuos con mask-composite y destello localizado al seleccionar
+ * ============================================================================== */
+
+/* 1. Fondos neutros (#FAFAFB / #0B0B0D) + iluminación ambiental mínima */
+html[data-theme="light"] body.liquid-glass-active,
+html[data-theme="light"] .liquid-glass-reservation {
+  background-color: #fafafb !important;
+}
+
+html[data-theme="light"] .liquid-glass-atmosphere {
+  background-color: #fafafb !important;
+  background-image:
+    radial-gradient(65% 45% at 18% 16%, rgba(230, 233, 240, 0.58) 0%, rgba(230, 233, 240, 0) 70%),
+    radial-gradient(55% 42% at 84% 26%, rgba(238, 233, 224, 0.36) 0%, rgba(238, 233, 224, 0) 72%),
+    radial-gradient(70% 48% at 52% 82%, rgba(226, 230, 238, 0.46) 0%, rgba(226, 230, 238, 0) 74%) !important;
+}
+
+html[data-theme="light"] .liquid-glass-atmosphere::after {
+  background: transparent !important;
+}
+
+html[data-theme="dark"] body.liquid-glass-active,
+html[data-theme="dark"] .liquid-glass-reservation {
+  background-color: #0b0b0d !important;
+}
+
+html[data-theme="dark"] .liquid-glass-atmosphere {
+  background-color: #0b0b0d !important;
+  background-image:
+    radial-gradient(62% 46% at 16% 18%, rgba(44, 47, 56, 0.30) 0%, rgba(44, 47, 56, 0) 72%),
+    radial-gradient(54% 40% at 86% 28%, rgba(56, 50, 42, 0.16) 0%, rgba(56, 50, 42, 0) 74%),
+    radial-gradient(68% 48% at 50% 84%, rgba(36, 39, 48, 0.24) 0%, rgba(36, 39, 48, 0) 74%) !important;
+}
+
+html[data-theme="dark"] .liquid-glass-atmosphere::after {
+  background: transparent !important;
+}
+
+/* Orbes neutros imperceptibles para revelar refracción al hacer scroll */
+.liquid-glass-atmosphere .liquid-orb {
+  display: block !important;
+  opacity: 0.45 !important;
+}
+
+.liquid-glass-atmosphere .liquid-orb-1 {
+  background: radial-gradient(circle, rgba(214, 218, 226, 0.28) 0%, rgba(214, 218, 226, 0) 70%) !important;
+}
+
+.liquid-glass-atmosphere .liquid-orb-2 {
+  background: radial-gradient(circle, rgba(226, 220, 210, 0.20) 0%, rgba(226, 220, 210, 0) 70%) !important;
+}
+
+.liquid-glass-atmosphere .liquid-orb-3,
+.liquid-glass-atmosphere .liquid-orb-4 {
+  background: radial-gradient(circle, rgba(210, 214, 224, 0.22) 0%, rgba(210, 214, 224, 0) 70%) !important;
+}
+
+html[data-theme="dark"] .liquid-glass-atmosphere .liquid-orb {
+  opacity: 0.28 !important;
+}
+
+html[data-theme="dark"] .liquid-glass-atmosphere .liquid-orb-1,
+html[data-theme="dark"] .liquid-glass-atmosphere .liquid-orb-3 {
+  background: radial-gradient(circle, rgba(64, 68, 82, 0.24) 0%, rgba(64, 68, 82, 0) 70%) !important;
+}
+
+html[data-theme="dark"] .liquid-glass-atmosphere .liquid-orb-2,
+html[data-theme="dark"] .liquid-glass-atmosphere .liquid-orb-4 {
+  background: radial-gradient(circle, rgba(72, 64, 52, 0.16) 0%, rgba(72, 64, 52, 0) 70%) !important;
+}
+
+/* 2. Tokens Living Glass: transparencia real y profundidad óptica */
+html[data-theme="light"] body.liquid-glass-active {
+  --cg-crystal-rest: linear-gradient(
+    148deg,
+    rgba(255, 255, 255, 0.56) 0%,
+    rgba(250, 251, 253, 0.30) 54%,
+    rgba(244, 246, 250, 0.44) 100%
+  );
+  --cg-crystal-hover: linear-gradient(
+    148deg,
+    rgba(255, 255, 255, 0.68) 0%,
+    rgba(252, 253, 255, 0.42) 54%,
+    rgba(246, 248, 252, 0.56) 100%
+  );
+  --cg-crystal-selected: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.78) 0%,
+    rgba(248, 250, 253, 0.52) 55%,
+    rgba(240, 243, 248, 0.68) 100%
+  );
+  --cg-crystal-active: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.84) 0%,
+    rgba(248, 250, 253, 0.60) 55%,
+    rgba(240, 243, 248, 0.74) 100%
+  );
+  --lg-glass-shadow:
+    0 8px 24px rgba(24, 28, 36, 0.05),
+    0 1px 3px rgba(24, 28, 36, 0.03),
+    inset 1px 1px 0 rgba(255, 255, 255, 0.92),
+    inset -1px -1px 0 rgba(196, 204, 218, 0.20);
+  --cg-crystal-shadow-selected:
+    0 14px 32px rgba(20, 24, 32, 0.09),
+    0 3px 10px rgba(20, 24, 32, 0.045),
+    inset 1.5px 1.5px 0 rgba(255, 255, 255, 1),
+    inset -1px -1px 0 rgba(168, 178, 194, 0.28);
+}
+
+html[data-theme="dark"] body.liquid-glass-active {
+  --cg-crystal-rest: linear-gradient(
+    150deg,
+    rgba(30, 32, 38, 0.54) 0%,
+    rgba(20, 22, 27, 0.38) 55%,
+    rgba(24, 26, 32, 0.48) 100%
+  );
+  --cg-crystal-hover: linear-gradient(
+    150deg,
+    rgba(38, 41, 49, 0.64) 0%,
+    rgba(25, 27, 33, 0.48) 55%,
+    rgba(30, 33, 40, 0.58) 100%
+  );
+  --cg-crystal-selected: linear-gradient(
+    148deg,
+    rgba(48, 52, 62, 0.74) 0%,
+    rgba(30, 33, 40, 0.56) 55%,
+    rgba(36, 39, 48, 0.68) 100%
+  );
+  --cg-crystal-active: linear-gradient(
+    148deg,
+    rgba(46, 50, 60, 0.80) 0%,
+    rgba(28, 31, 38, 0.66) 55%,
+    rgba(34, 37, 46, 0.74) 100%
+  );
+  --lg-glass-shadow:
+    0 10px 26px rgba(0, 0, 0, 0.40),
+    inset 1px 1px 0 rgba(255, 255, 255, 0.11),
+    inset -1px -1px 0 rgba(255, 255, 255, 0.02);
+  --cg-crystal-shadow-selected:
+    0 16px 34px rgba(0, 0, 0, 0.56),
+    inset 1px 1px 0 rgba(255, 255, 255, 0.22),
+    inset -1px -1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* 3. Desenfoque estable diferenciado Mobile (18px) vs Desktop (24px) */
+@media (max-width: 767px) {
+  html[data-theme] .site-shell .liquid-glass-reservation :is(
+    #_,
+    .booking-progress,
+    .calendar-panel,
+    .booking-summary-card,
+    .booking-option,
+    .service-option,
+    .booking-defer-option,
+    .booking-time-slot,
+    .booking-back-button,
+    .booking-next-button,
+    .payway-submit-btn
+  ) {
+    -webkit-backdrop-filter: blur(18px) saturate(145%) !important;
+    backdrop-filter: blur(18px) saturate(145%) !important;
+  }
+}
+
+@media (min-width: 768px) {
+  html[data-theme] .site-shell .liquid-glass-reservation :is(
+    #_,
+    .booking-progress,
+    .calendar-panel,
+    .booking-summary-card,
+    .booking-option,
+    .service-option,
+    .booking-defer-option,
+    .booking-time-slot,
+    .booking-back-button,
+    .booking-next-button,
+    .payway-submit-btn
+  ) {
+    -webkit-backdrop-filter: blur(24px) saturate(155%) !important;
+    backdrop-filter: blur(24px) saturate(155%) !important;
+  }
+}
+
+/* 4. Bordes ópticos discontinuos de luminosidad variable (mask-composite) */
+html[data-theme] .site-shell .liquid-glass-reservation :is(
+  .booking-option,
+  .service-option,
+  .booking-defer-option,
+  .calendar-panel,
+  .booking-summary-card,
+  .booking-deposit-notice,
+  .booking-time-slot:not(.time-unavailable):not(:disabled),
+  .booking-back-button,
+  .booking-next-button,
+  .payway-submit-btn
+) {
+  border: 1px solid transparent !important;
+}
+
+html[data-theme] .site-shell .liquid-glass-reservation :is(
+  .booking-option,
+  .service-option,
+  .booking-defer-option,
+  .calendar-panel,
+  .booking-summary-card,
+  .booking-deposit-notice,
+  .booking-time-slot:not(.time-unavailable):not(:disabled),
+  .booking-back-button,
+  .booking-next-button,
+  .payway-submit-btn
+)::after {
+  content: "" !important;
+  position: absolute !important;
+  inset: 0 !important;
+  border-radius: inherit !important;
+  padding: 1px !important;
+  pointer-events: none !important;
+  z-index: 2 !important;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  transition: opacity 240ms cubic-bezier(0.22, 1, 0.36, 1) !important;
+}
+
+html[data-theme="light"] .site-shell .liquid-glass-reservation :is(
+  .booking-option,
+  .service-option,
+  .booking-defer-option,
+  .calendar-panel,
+  .booking-summary-card,
+  .booking-deposit-notice,
+  .booking-time-slot:not(.time-unavailable):not(:disabled),
+  .booking-back-button,
+  .booking-next-button,
+  .payway-submit-btn
+)::after {
+  background: linear-gradient(
+    132deg,
+    rgba(255, 255, 255, 0.96) 0%,
+    rgba(255, 255, 255, 0.14) 34%,
+    rgba(205, 212, 224, 0.04) 55%,
+    rgba(255, 255, 255, 0.56) 84%,
+    rgba(255, 255, 255, 0.18) 100%
+  );
+}
+
+html[data-theme="light"] .site-shell .liquid-glass-reservation :is(
+  .booking-option.selected,
+  .service-option.selected,
+  .booking-defer-option.selected,
+  .booking-time-slot.selected,
+  .booking-next-button:not(:disabled),
+  .payway-submit-btn:not(:disabled)
+)::after {
+  background: linear-gradient(
+    132deg,
+    #ffffff 0%,
+    rgba(255, 255, 255, 0.30) 32%,
+    rgba(182, 192, 208, 0.10) 56%,
+    rgba(255, 255, 255, 0.84) 86%,
+    rgba(255, 255, 255, 0.36) 100%
+  );
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-reservation :is(
+  .booking-option,
+  .service-option,
+  .booking-defer-option,
+  .calendar-panel,
+  .booking-summary-card,
+  .booking-deposit-notice,
+  .booking-time-slot:not(.time-unavailable):not(:disabled),
+  .booking-back-button,
+  .booking-next-button,
+  .payway-submit-btn
+)::after {
+  background: linear-gradient(
+    132deg,
+    rgba(255, 255, 255, 0.28) 0%,
+    rgba(255, 255, 255, 0.04) 34%,
+    rgba(255, 255, 255, 0.015) 56%,
+    rgba(255, 255, 255, 0.14) 86%,
+    rgba(255, 255, 255, 0.04) 100%
+  );
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-reservation :is(
+  .booking-option.selected,
+  .service-option.selected,
+  .booking-defer-option.selected,
+  .booking-time-slot.selected,
+  .booking-next-button:not(:disabled),
+  .payway-submit-btn:not(:disabled)
+)::after {
+  background: linear-gradient(
+    132deg,
+    rgba(255, 255, 255, 0.48) 0%,
+    rgba(255, 255, 255, 0.11) 32%,
+    rgba(255, 255, 255, 0.03) 56%,
+    rgba(255, 255, 255, 0.26) 86%,
+    rgba(255, 255, 255, 0.09) 100%
+  );
+}
+
+/* 5. Destello localizado breve al seleccionar (sin loop continuo) */
+@keyframes livingGlassGlint {
+  0% {
+    opacity: 0.45;
+    transform: translate3d(-4%, -4%, 0) scale(0.96);
+  }
+  45% {
+    opacity: 1;
+    transform: translate3d(2%, 1%, 0) scale(1.02);
+  }
+  100% {
+    opacity: 0.85;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+html[data-theme] .site-shell .liquid-glass-reservation .booking-option.selected .lg-optical-sheen,
+html[data-theme] .site-shell .liquid-glass-reservation .service-option.selected .lg-optical-sheen,
+html[data-theme] .site-shell .liquid-glass-reservation .booking-defer-option.selected .lg-optical-sheen,
+html[data-theme] .site-shell .liquid-glass-reservation .booking-time-slot.selected .lg-optical-sheen {
+  animation: livingGlassGlint 340ms cubic-bezier(0.22, 1, 0.36, 1) 1 both;
+}
+
+/* 6. Legibilidad de CTAs inferiores y estados deshabilitados */
+html[data-theme="light"] .site-shell .liquid-glass-reservation .booking-back-button:disabled,
+html[data-theme="light"] .site-shell .liquid-glass-reservation .booking-next-button:disabled,
+html[data-theme="light"] .site-shell .liquid-glass-reservation .payway-submit-btn:disabled {
+  background: rgba(244, 245, 248, 0.68) !important;
+  color: rgba(74, 80, 90, 0.68) !important;
+  opacity: 1 !important;
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-reservation .booking-back-button:disabled,
+html[data-theme="dark"] .site-shell .liquid-glass-reservation .booking-next-button:disabled,
+html[data-theme="dark"] .site-shell .liquid-glass-reservation .payway-submit-btn:disabled {
+  background: rgba(20, 22, 27, 0.62) !important;
+  color: rgba(244, 244, 246, 0.56) !important;
+  opacity: 1 !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-theme] .site-shell .liquid-glass-reservation .lg-optical-sheen {
+    animation: none !important;
+  }
+}
+
 @supports not (backdrop-filter: blur(1px)) {
   html[data-theme="dark"] body.liquid-glass-active .site-header.liquid-glass-header,
   html[data-theme="dark"] .liquid-glass-reservation .booking-progress,
