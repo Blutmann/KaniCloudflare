@@ -290,4 +290,18 @@ describe('KANI Barber Studio — Liquid Glass Experience (/reservar-turno-liquid
     expect(liquidCss).toContain('@keyframes kaniLivingWaveV2');
     expect(liquidCss).toContain('@keyframes kaniLivingEdgePulseV2');
   });
+
+  it('22. Liquid Glass V10: Selección unificada en Servicios/Barberos, Identidad KANI y Living Surface V3', () => {
+    const motionTsx = fs.readFileSync(
+      path.resolve(process.cwd(), 'src/components/kani/experimental/liquid-glass-motion.tsx'),
+      'utf8',
+    );
+
+    expect(motionTsx).toContain('lg-living-refraction');
+    expect(liquidCss).toContain('LIQUID GLASS V10: Unified Crystal Selection · KANI Identity · Living Surface V3');
+    expect(liquidCss).toContain('rgba(200, 169, 107, 0.78)');
+    expect(liquidCss).toContain('@keyframes kaniLivingRefractionV3');
+    expect(liquidCss).toContain('@keyframes kaniLivingWaveV3');
+    expect(liquidCss).toContain('@keyframes kaniLivingEdgePulseV3');
+  });
 });

@@ -18,7 +18,7 @@ export const LIQUID_GLASS_MOTION = {
     step: 0.3,
     stepExit: 0.12,
     reduced: 0.08,
-    livingSettleMs: 620,
+    livingSettleMs: 680,
   },
   easings: {
     crystal: [0.22, 1, 0.36, 1] as const,
@@ -188,6 +188,7 @@ function InteractiveCard({
       {!disabled && (
         <span className="lg-living-surface" aria-hidden="true">
           <span className="lg-living-core" />
+          <span className="lg-living-refraction" />
           <span ref={waveRef} className="lg-living-wave" />
           <span className="lg-living-edge" />
         </span>

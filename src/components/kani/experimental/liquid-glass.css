@@ -4473,3 +4473,243 @@ html[data-theme="light"] .liquid-glass-reservation .lg-living-edge {
     opacity: 0 !important;
   }
 }
+
+
+/* === LIQUID GLASS V10: Unified Crystal Selection · KANI Identity · Living Surface V3 === */
+
+/* 1. Unificar el Sistema de Selección (Referencia: .calendar-day.selected y Horarios en Light Mode) */
+html[data-theme="light"] .site-shell .liquid-glass-reservation :is(
+  .service-option:not(.selected),
+  .booking-option:not(.selected),
+  .booking-defer-option:not(.selected)
+) {
+  background: linear-gradient(
+    148deg,
+    rgba(255, 255, 255, 0.44) 0%,
+    rgba(248, 249, 252, 0.24) 55%,
+    rgba(244, 246, 250, 0.34) 100%
+  ) !important;
+  border: 1px solid rgba(192, 198, 210, 0.56) !important;
+  box-shadow:
+    0 2px 8px rgba(24, 28, 36, 0.03),
+    inset 0 1px 0 rgba(255, 255, 255, 0.86) !important;
+}
+
+html[data-theme="light"] .site-shell .liquid-glass-reservation :is(
+  .service-option.selected,
+  .service-option.selected:hover:not(:disabled),
+  .service-option.selected:focus-visible,
+  .booking-option.selected,
+  .booking-option.selected:hover:not(:disabled),
+  .booking-option.selected:focus-visible,
+  .booking-defer-option.selected,
+  .booking-defer-option.selected:hover:not(:disabled),
+  .booking-defer-option.selected:focus-visible
+) {
+  background: linear-gradient(
+    148deg,
+    rgba(202, 210, 224, 0.94) 0%,
+    rgba(182, 190, 206, 0.88) 54%,
+    rgba(210, 200, 182, 0.92) 100%
+  ) !important;
+  border: 1.5px solid rgba(200, 169, 107, 0.78) !important;
+  box-shadow:
+    0 14px 30px rgba(24, 28, 36, 0.16),
+    0 4px 10px rgba(24, 28, 36, 0.08),
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.98),
+    inset 0 -1px 0 rgba(112, 43, 58, 0.20) !important;
+}
+
+html[data-theme="light"] .site-shell .liquid-glass-reservation :is(
+  .service-option.selected,
+  .booking-option.selected,
+  .booking-defer-option.selected
+)::after {
+  background: linear-gradient(
+    132deg,
+    rgba(255, 255, 255, 1) 0%,
+    rgba(200, 169, 107, 0.72) 26%,
+    rgba(116, 122, 134, 0.30) 54%,
+    rgba(255, 255, 255, 0.96) 84%,
+    rgba(112, 43, 58, 0.24) 100%
+  );
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-reservation :is(
+  .service-option.selected,
+  .booking-option.selected,
+  .booking-defer-option.selected
+) {
+  border: 1.5px solid rgba(200, 169, 107, 0.58) !important;
+  box-shadow:
+    0 18px 40px rgba(0, 0, 0, 0.72),
+    0 0 0 1px rgba(200, 169, 107, 0.28),
+    inset 0 1.5px 0 rgba(255, 248, 236, 0.46),
+    inset 0 -1px 0 rgba(112, 43, 58, 0.40) !important;
+}
+
+/* Coherencia KANI en Stepper Light Mode */
+html[data-theme="light"] .site-shell .liquid-glass-reservation .booking-progress .liquid-glass-stepper-lens {
+  border-color: rgba(200, 169, 107, 0.46) !important;
+  box-shadow:
+    0 4px 12px rgba(24, 28, 36, 0.08),
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.96),
+    inset 0 -1px 0 rgba(112, 43, 58, 0.12) !important;
+}
+
+/* 2. Living Surface V3 — Refracción óptica multicapa (Contacto -> Deformación -> Propagación -> Borde -> Asentamiento, 450–700 ms) */
+.liquid-glass-reservation .lg-living-refraction {
+  position: absolute;
+  left: var(--lg-touch-x, 50%);
+  top: var(--lg-touch-y, 50%);
+  width: var(--lg-wave-size, 220px);
+  height: var(--lg-wave-size, 220px);
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate3d(-50%, -50%, 0) scale(0.10);
+  -webkit-mask: radial-gradient(circle, transparent 32%, #000 50%, #000 66%, transparent 82%);
+  mask: radial-gradient(circle, transparent 32%, #000 50%, #000 66%, transparent 82%);
+  will-change: transform, opacity;
+}
+
+html[data-theme="light"] .liquid-glass-reservation .lg-living-refraction {
+  backdrop-filter: brightness(1.08) contrast(1.08) saturate(1.28);
+  -webkit-backdrop-filter: brightness(1.08) contrast(1.08) saturate(1.28);
+}
+
+html[data-theme="dark"] .liquid-glass-reservation .lg-living-refraction {
+  backdrop-filter: brightness(1.22) contrast(1.10) saturate(1.36);
+  -webkit-backdrop-filter: brightness(1.22) contrast(1.10) saturate(1.36);
+}
+
+html[data-theme="light"] .liquid-glass-reservation .lg-living-core {
+  width: 84px;
+  height: 84px;
+  background: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.98) 0%,
+    rgba(200, 169, 107, 0.56) 38%,
+    rgba(130, 138, 154, 0.22) 62%,
+    rgba(255, 255, 255, 0) 80%
+  );
+}
+
+html[data-theme="dark"] .liquid-glass-reservation .lg-living-core {
+  width: 84px;
+  height: 84px;
+  background: radial-gradient(
+    circle,
+    rgba(255, 250, 240, 0.78) 0%,
+    rgba(200, 169, 107, 0.52) 42%,
+    rgba(112, 43, 58, 0.22) 66%,
+    rgba(255, 255, 255, 0) 82%
+  );
+}
+
+html[data-theme="light"] .liquid-glass-reservation .lg-living-wave {
+  background: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.04) 0%,
+    rgba(128, 136, 152, 0.24) 22%,
+    rgba(200, 169, 107, 0.46) 36%,
+    rgba(255, 255, 255, 0.94) 48%,
+    rgba(112, 43, 58, 0.16) 60%,
+    rgba(255, 255, 255, 0) 76%
+  );
+  box-shadow:
+    inset 0 0 28px rgba(255, 255, 255, 0.56),
+    0 0 22px rgba(200, 169, 107, 0.28);
+}
+
+html[data-theme="dark"] .liquid-glass-reservation .lg-living-wave {
+  background: radial-gradient(
+    circle,
+    rgba(255, 250, 240, 0.04) 0%,
+    rgba(200, 169, 107, 0.44) 28%,
+    rgba(248, 250, 255, 0.46) 44%,
+    rgba(112, 43, 58, 0.36) 60%,
+    rgba(255, 255, 255, 0) 76%
+  );
+  box-shadow:
+    inset 0 0 26px rgba(255, 248, 236, 0.28),
+    0 0 22px rgba(200, 169, 107, 0.26);
+}
+
+.liquid-glass-reservation .lg-living-edge {
+  padding: 2px;
+}
+
+@keyframes kaniLivingRefractionV3 {
+  0% {
+    opacity: 0.92;
+    transform: translate3d(-50%, -50%, 0) scale(0.10);
+  }
+  50% {
+    opacity: 0.85;
+    transform: translate3d(-50%, -50%, 0) scale(0.76);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(-50%, -50%, 0) scale(1.26);
+  }
+}
+
+@keyframes kaniLivingWaveV3 {
+  0% {
+    opacity: 0.98;
+    transform: translate3d(-50%, -50%, 0) scale(0.08);
+  }
+  28% {
+    opacity: 0.94;
+    transform: translate3d(-50%, -50%, 0) scale(0.50);
+  }
+  65% {
+    opacity: 0.72;
+    transform: translate3d(-50%, -50%, 0) scale(1.04);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(-50%, -50%, 0) scale(1.30);
+  }
+}
+
+@keyframes kaniLivingEdgePulseV3 {
+  0% {
+    opacity: 0;
+  }
+  26% {
+    opacity: 1;
+  }
+  62% {
+    opacity: 0.82;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.liquid-glass-reservation [data-lg-ripple="active"] > .lg-living-surface > .lg-living-core {
+  animation: kaniLivingCoreV2 260ms cubic-bezier(0.22, 1, 0.36, 1) 1 forwards;
+}
+
+.liquid-glass-reservation [data-lg-ripple="active"] > .lg-living-surface > .lg-living-refraction {
+  animation: kaniLivingRefractionV3 560ms cubic-bezier(0.22, 1, 0.36, 1) 1 forwards;
+}
+
+.liquid-glass-reservation [data-lg-ripple="active"] > .lg-living-surface > .lg-living-wave {
+  animation: kaniLivingWaveV3 620ms cubic-bezier(0.22, 1, 0.36, 1) 1 forwards;
+}
+
+.liquid-glass-reservation [data-lg-ripple="active"] > .lg-living-surface > .lg-living-edge {
+  animation: kaniLivingEdgePulseV3 600ms cubic-bezier(0.22, 1, 0.36, 1) 1 forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .liquid-glass-reservation .lg-living-refraction,
+  .liquid-glass-reservation [data-lg-ripple="active"] > .lg-living-surface > .lg-living-refraction {
+    animation: none !important;
+    transition: none !important;
+    opacity: 0 !important;
+  }
+}
