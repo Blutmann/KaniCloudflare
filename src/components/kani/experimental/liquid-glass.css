@@ -1474,3 +1474,80 @@ html[data-theme] .liquid-glass-reservation .booking-barber-options > button.sele
     transform: none !important;
   }
 }
+
+/* =========================================================
+ * REFINAMIENTO TIPOGRÁFICO V1 — Zen Antique (editorial) + Geist Sans (UI)
+ * Exclusivo para /reservar-turno-liquid
+ * ========================================================= */
+.liquid-glass-reservation {
+  --lg-font-editorial: 'Zen Antique', serif;
+  --lg-font-ui: 'Geist Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --lg-weight-regular: 400;
+  --lg-weight-medium: 500;
+  --lg-weight-semibold: 600;
+  font-family: var(--lg-font-ui);
+}
+
+.liquid-glass-reservation,
+.liquid-glass-reservation button,
+.liquid-glass-reservation input,
+.liquid-glass-reservation select,
+.liquid-glass-reservation textarea,
+.liquid-glass-reservation label,
+.liquid-glass-reservation small,
+.liquid-glass-reservation p,
+.liquid-glass-reservation span,
+.liquid-glass-reservation dd,
+.liquid-glass-reservation dt,
+.liquid-glass-reservation th,
+.liquid-glass-reservation td,
+body.liquid-glass-active [role="dialog"],
+body.liquid-glass-active [role="dialog"] button,
+body.liquid-glass-active [role="dialog"] input,
+body.liquid-glass-active .mobile-menu {
+  font-family: var(--lg-font-ui);
+}
+
+/* Identidad editorial: Zen Antique en títulos principales de cada etapa */
+html[data-theme] .liquid-glass-reservation .booking-page .section-title,
+html[data-theme] .liquid-glass-reservation .booking-step-heading-title,
+html[data-theme] .liquid-glass-reservation .booking-step-heading h1,
+html[data-theme] .liquid-glass-reservation .booking-confirmed-screen h1 {
+  font-family: var(--lg-font-editorial) !important;
+  font-weight: 400 !important;
+}
+
+/* Pesos y legibilidad funcional con Geist Sans (400 / 500 / 600, sin 700) */
+html[data-theme] .liquid-glass-reservation .booking-option-name,
+html[data-theme] .liquid-glass-reservation .booking-barber-name,
+html[data-theme] .liquid-glass-reservation .booking-back-button,
+html[data-theme] .liquid-glass-reservation .booking-next-button,
+html[data-theme] .liquid-glass-reservation .calendar-day,
+html[data-theme] .liquid-glass-reservation .booking-time-slot,
+html[data-theme] .liquid-glass-reservation .field-label {
+  font-family: var(--lg-font-ui) !important;
+  font-weight: var(--lg-weight-medium) !important;
+}
+
+html[data-theme] .liquid-glass-reservation .booking-option-duration,
+html[data-theme] .liquid-glass-reservation .booking-barber-handle,
+html[data-theme] .liquid-glass-reservation .booking-deposit-notice,
+html[data-theme] .liquid-glass-reservation input::placeholder,
+html[data-theme] .liquid-glass-reservation textarea::placeholder {
+  font-family: var(--lg-font-ui) !important;
+  font-weight: var(--lg-weight-regular) !important;
+}
+
+html[data-theme] .liquid-glass-reservation .booking-option-price,
+html[data-theme] .liquid-glass-reservation .calendar-header h2,
+html[data-theme] .liquid-glass-reservation .summary-detail-value,
+html[data-theme] .liquid-glass-reservation .summary-pricing-row strong {
+  font-family: var(--lg-font-ui) !important;
+  font-weight: var(--lg-weight-semibold) !important;
+  font-variant-numeric: tabular-nums;
+}
+
+html[data-theme] .liquid-glass-reservation .calendar-day,
+html[data-theme] .liquid-glass-reservation .booking-time-slot {
+  font-variant-numeric: tabular-nums;
+}

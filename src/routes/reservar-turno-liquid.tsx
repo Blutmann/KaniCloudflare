@@ -1,4 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
+import '@fontsource/geist-sans/400.css';
+import '@fontsource/geist-sans/500.css';
+import '@fontsource/geist-sans/600.css';
 import { LiquidGlassBooking } from '@/components/kani/experimental/liquid-glass-booking';
 import { pageHead } from '@/lib/kani-head';
 import '@/components/kani/experimental/reserva-v2.css';
