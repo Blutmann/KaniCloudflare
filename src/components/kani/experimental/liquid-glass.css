@@ -3055,6 +3055,273 @@ html[data-theme="dark"] .site-shell .liquid-glass-reservation :is(
   }
 }
 
+/* === LIQUID GLASS V6: Service Cards Redesign, Unified Crystal Selection, Calendar Crispness & KANI Dark Identity === */
+
+/* 1. Cards de Servicios 2+1 compactas (-12/15% altura superior) y jerarquía equilibrada */
+html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option:nth-child(n) .booking-option-name {
+  font-size: 18.5px !important;
+  font-weight: 500 !important;
+  line-height: 1.18 !important;
+  letter-spacing: -0.015em !important;
+}
+
+html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option:nth-child(n) .booking-option-duration {
+  font-size: 12.5px !important;
+  font-weight: 400 !important;
+  line-height: 1.22 !important;
+}
+
+html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option:nth-child(n) .booking-option-price {
+  font-size: 15.5px !important;
+  font-weight: 500 !important;
+  line-height: 1.2 !important;
+  letter-spacing: -0.01em !important;
+}
+
+html[data-theme="light"] .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option:nth-child(n) .booking-option-name {
+  color: #1e2126 !important;
+}
+
+html[data-theme="light"] .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option:nth-child(n) .booking-option-duration {
+  color: #5f6672 !important;
+}
+
+html[data-theme="light"] .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option:nth-child(n) .booking-option-price {
+  color: #464c56 !important;
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option:nth-child(n) .booking-option-name {
+  color: #f4f4f6 !important;
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option:nth-child(n) .booking-option-duration {
+  color: rgba(218, 222, 230, 0.66) !important;
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option:nth-child(n) .booking-option-price {
+  color: rgba(232, 235, 242, 0.84) !important;
+}
+
+@media (max-width: 767px) {
+  html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option:nth-child(-n+2) {
+    min-height: 100px !important;
+    padding: 13px 14px 12px !important;
+  }
+
+  html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option:nth-child(-n+2) .booking-option-copy {
+    padding-right: 20px !important;
+  }
+
+  html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option:nth-child(-n+2) .booking-option-meta {
+    margin-top: 2px !important;
+  }
+
+  html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option:nth-child(-n+2) .booking-option-price {
+    margin-top: 10px !important;
+  }
+
+  html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option:nth-child(3) {
+    min-height: 70px !important;
+    padding: 13px 15px !important;
+  }
+
+  html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option:nth-child(3) .booking-option-meta {
+    margin-top: 2px !important;
+  }
+}
+
+@media (max-width: 360px) {
+  html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option:nth-child(-n+2) {
+    min-height: 96px !important;
+    padding: 12px 13px 11px !important;
+  }
+}
+
+/* 2. Unificación del cristal seleccionado (inspirado en la lente óptica del calendario) */
+html[data-theme="light"] body.liquid-glass-active {
+  --cg-crystal-rest: linear-gradient(
+    148deg,
+    rgba(255, 255, 255, 0.50) 0%,
+    rgba(249, 250, 252, 0.28) 54%,
+    rgba(243, 245, 249, 0.38) 100%
+  );
+  --cg-crystal-selected: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.98) 0%,
+    rgba(247, 242, 232, 0.94) 52%,
+    rgba(239, 231, 216, 0.90) 100%
+  );
+  --lg-glass-shadow:
+    0 4px 14px rgba(24, 28, 36, 0.035),
+    0 1px 2px rgba(24, 28, 36, 0.02),
+    inset 1px 1px 0 rgba(255, 255, 255, 0.84),
+    inset -1px -1px 0 rgba(196, 204, 218, 0.12);
+  --cg-crystal-shadow-selected:
+    0 14px 30px rgba(28, 24, 18, 0.11),
+    0 3px 10px rgba(28, 24, 18, 0.055),
+    0 0 0 1px rgba(172, 148, 104, 0.44),
+    inset 0 1.5px 0 rgba(255, 255, 255, 1),
+    inset 0 -1px 0 rgba(186, 166, 128, 0.26);
+}
+
+/* Dark Mode: cristal ahumado con micro-acentos ópticos Champagne + Borgoña KANI */
+html[data-theme="dark"] body.liquid-glass-active {
+  --cg-crystal-rest: linear-gradient(
+    150deg,
+    rgba(25, 27, 32, 0.50) 0%,
+    rgba(17, 19, 24, 0.36) 55%,
+    rgba(21, 23, 28, 0.44) 100%
+  );
+  --cg-crystal-selected: linear-gradient(
+    146deg,
+    rgba(62, 58, 52, 0.86) 0%,
+    rgba(39, 36, 36, 0.74) 56%,
+    rgba(48, 36, 40, 0.80) 100%
+  );
+  --cg-crystal-active: linear-gradient(
+    146deg,
+    rgba(68, 63, 57, 0.90) 0%,
+    rgba(44, 40, 40, 0.78) 56%,
+    rgba(52, 39, 43, 0.84) 100%
+  );
+  --lg-glass-shadow:
+    0 6px 18px rgba(0, 0, 0, 0.34),
+    inset 1px 1px 0 rgba(255, 255, 255, 0.07),
+    inset -1px -1px 0 rgba(255, 255, 255, 0.015);
+  --cg-crystal-shadow-selected:
+    0 18px 38px rgba(0, 0, 0, 0.64),
+    0 0 0 1px rgba(224, 198, 152, 0.36),
+    inset 0 1.5px 0 rgba(255, 247, 234, 0.32),
+    inset 0 -1px 0 rgba(152, 44, 62, 0.24);
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-reservation :is(
+  .booking-option.selected,
+  .service-option.selected,
+  .booking-defer-option.selected,
+  .booking-time-slot.selected
+)::after {
+  background: linear-gradient(
+    134deg,
+    rgba(255, 246, 230, 0.76) 0%,
+    rgba(224, 198, 152, 0.30) 28%,
+    rgba(255, 255, 255, 0.05) 54%,
+    rgba(168, 52, 72, 0.28) 84%,
+    rgba(224, 198, 152, 0.24) 100%
+  );
+}
+
+/* Indicador de selección cristalino e integrado (no sticker flotante) */
+html[data-theme] .site-shell .liquid-glass-reservation :is(
+  .booking-option,
+  .service-option,
+  .booking-defer-option
+).selected .selection-circle {
+  width: 16px !important;
+  height: 16px !important;
+  min-width: 16px !important;
+  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1), opacity 200ms ease !important;
+}
+
+html[data-theme="light"] .site-shell .liquid-glass-reservation :is(
+  .booking-option,
+  .service-option,
+  .booking-defer-option
+).selected .selection-circle {
+  background: rgba(255, 255, 255, 0.90) !important;
+  color: #1e2126 !important;
+  border: 1px solid rgba(154, 130, 88, 0.54) !important;
+  box-shadow: 0 2px 6px rgba(24, 24, 28, 0.08), inset 0 1px 0 #ffffff !important;
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-reservation :is(
+  .booking-option,
+  .service-option,
+  .booking-defer-option
+).selected .selection-circle {
+  background: rgba(255, 248, 236, 0.14) !important;
+  color: #f8f3ea !important;
+  border: 1px solid rgba(224, 198, 152, 0.56) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.22) !important;
+}
+
+/* Transiciones refinadas (180-280ms) para cristal, bordes y profundidad */
+html[data-theme] .site-shell .liquid-glass-reservation :is(
+  .booking-option,
+  .service-option,
+  .booking-defer-option,
+  .booking-time-slot:not(:disabled),
+  .calendar-day:not(:disabled)
+) {
+  transition:
+    background 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 240ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 200ms cubic-bezier(0.22, 1, 0.36, 1) !important;
+}
+
+/* 3. Calendario: nitidez total y contraste WCAG AA+ en «Noviembre 2026» y controles */
+html[data-theme] .site-shell .liquid-glass-reservation .calendar-panel > * {
+  position: relative !important;
+  z-index: 3 !important;
+}
+
+html[data-theme] .site-shell .liquid-glass-reservation .calendar-header h2 {
+  font-family: var(--lg-font-ui) !important;
+  font-size: 17px !important;
+  font-weight: 500 !important;
+  line-height: 1.25 !important;
+  letter-spacing: -0.015em !important;
+  opacity: 1 !important;
+  filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  text-shadow: none !important;
+  -webkit-font-smoothing: antialiased !important;
+  -moz-osx-font-smoothing: grayscale !important;
+}
+
+html[data-theme="light"] .site-shell .liquid-glass-reservation .calendar-header h2 {
+  color: #1c1f24 !important;
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-reservation .calendar-header h2 {
+  color: #f4f4f6 !important;
+}
+
+html[data-theme="light"] .site-shell .liquid-glass-reservation .calendar-header button {
+  color: #242830 !important;
+  opacity: 1 !important;
+}
+
+html[data-theme="light"] .site-shell .liquid-glass-reservation .calendar-weekday {
+  color: #525866 !important;
+  opacity: 1 !important;
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-reservation .calendar-header button {
+  color: #eceef2 !important;
+  opacity: 1 !important;
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-reservation .calendar-weekday {
+  color: #a6adb8 !important;
+  opacity: 1 !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-theme] .site-shell .liquid-glass-reservation :is(
+    .booking-option,
+    .service-option,
+    .booking-defer-option,
+    .booking-time-slot:not(:disabled),
+    .calendar-day:not(:disabled),
+    .selection-circle
+  ) {
+    transition: none !important;
+  }
+}
+
 @supports not (backdrop-filter: blur(1px)) {
   html[data-theme="dark"] body.liquid-glass-active .site-header.liquid-glass-header,
   html[data-theme="dark"] .liquid-glass-reservation .booking-progress,

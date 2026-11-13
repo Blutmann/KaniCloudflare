@@ -231,4 +231,13 @@ describe('KANI Barber Studio — Liquid Glass Experience (/reservar-turno-liquid
     expect(liquidCss).toContain('rgba(224, 200, 156, 0.46)');
     expect(liquidCss).toContain(':focus-visible');
   });
+
+  it('18. Liquid Glass V6: cards de servicios compactas, cristal unificado, nitidez en calendario e identidad KANI Dark', () => {
+    expect(liquidCss).toContain('LIQUID GLASS V6: Service Cards Redesign, Unified Crystal Selection, Calendar Crispness & KANI Dark Identity');
+    expect(liquidCss).toContain('min-height: 100px !important;');
+    expect(liquidCss).toContain('.calendar-panel > *');
+    expect(liquidCss).toContain('color: #1c1f24 !important;');
+    expect(liquidCss).toContain('rgba(168, 52, 72, 0.28)');
+    expect(liquidCss).toContain('rgba(154, 130, 88, 0.54)');
+  });
 });
