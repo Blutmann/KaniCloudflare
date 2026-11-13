@@ -78,8 +78,8 @@ describe('KANI Barber Studio — Liquid Glass Experience (/reservar-turno-liquid
     expect(siteHeaderCode).toContain('{staff && !isLiquidRoute &&');
   });
 
-  it('4. Define una única identidad visual Liquid Glass V6 blanco perla (#F9FAFB) monocromática inmune al tema global', () => {
-    expect(liquidCss).toMatch(/body\.liquid-glass-active[\s\S]*?--background:\s*#f9fafb/);
+  it('4. Define una única identidad visual Liquid Glass V8 blanco perla (#FCFCFD) monocromática inmune al tema global', () => {
+    expect(liquidCss).toMatch(/body\.liquid-glass-active[\s\S]*?--background:\s*#fcfcfd/);
     expect(liquidCss).toMatch(/body\.liquid-glass-active[\s\S]*?--foreground:\s*#18181b/);
     expect(liquidCss).toMatch(/body\.liquid-glass-active[\s\S]*?color-scheme:\s*light\s*!important/);
     expect(liquidCss).toMatch(/body\.liquid-glass-active::before,\s*\r?\nbody\.liquid-glass-active::after\s*\{[^}]*display:\s*none\s*!important/);
@@ -117,22 +117,27 @@ describe('KANI Barber Studio — Liquid Glass Experience (/reservar-turno-liquid
 
   it('8. El stepper cápsula comparte el ancho útil del viewport mobile con márgenes compactos (8-10px)', () => {
     expect(liquidCss).toContain('width: calc(100% - 20px) !important;');
-    expect(liquidCss).toContain('margin: 4px 10px 0 !important;');
+    expect(liquidCss).toContain('margin: 8px 10px 0 !important;');
     expect(liquidCss).toContain('width: calc(100% - 16px) !important;');
-    expect(liquidCss).toContain('margin: 4px 8px 0 !important;');
+    expect(liquidCss).toContain('margin: 8px 8px 0 !important;');
   });
 
-  it('9. V7 Crystal UI: cristal óptico sin fondos negros opacos, CTA ancho completo anclado al pie, Horarios alineados y Datos unificado', () => {
-    expect(liquidCss).toContain('--lg-bg-pearl: #f9fafb;');
-    expect(liquidCss).toContain('--lg-bg-mist: #f3f4f6;');
+  it('9. V8 Crystal Glass: sistema unificado sin fondos negros ni bordes oscuros fuertes, CTA ancho completo, Horarios y Datos unificados', () => {
+    expect(liquidCss).toContain('--lg-bg-pearl: #fcfcfd;');
+    expect(liquidCss).toContain('--lg-bg-mist: #f5f6f8;');
+    expect(liquidCss).toContain('--cg-crystal-rest:');
+    expect(liquidCss).toContain('--cg-crystal-selected:');
     expect(liquidCss).toContain('--cg-crystal-active:');
     expect(liquidCss).not.toContain('--cg-crystal-smoked');
+    expect(liquidCss).not.toContain('--button-primary-bg: #18181b');
+    expect(liquidCss).toContain('html[data-theme] .site-shell .liquid-glass-reservation .booking-next-button:not(:disabled)');
+    expect(liquidCss).toContain('html[data-theme] .site-shell .liquid-glass-reservation .booking-option.selected');
     expect(liquidCss).toContain('padding: 0 !important;');
     expect(liquidCss).toContain('height: calc(100svh - 64px) !important;');
     expect(liquidCss).toMatch(/\.booking-scroll-content\s*\{[\s\S]*?flex:\s*1 1 auto\s*!important/);
     expect(liquidCss).toContain('padding: 6px 10px max(6px, env(safe-area-inset-bottom)) !important;');
     expect(liquidCss).toMatch(/\.booking-time-period-header\s*\{[\s\S]*?align-items:\s*center\s*!important/);
     expect(liquidCss).toMatch(/\.booking-time-period-title\s*\{[\s\S]*?margin:\s*0\s*!important/);
-    expect(liquidCss).toMatch(/\.booking-v2-unified-summary \.summary-appointment-card,\s*\.liquid-glass-reservation \.booking-v2-unified-summary \.summary-pricing-card\s*\{[\s\S]*?background:\s*transparent\s*!important/);
+    expect(liquidCss).toMatch(/\.booking-v2-unified-summary \.summary-appointment-card,[\s\S]*?\.booking-v2-unified-summary \.summary-pricing-card\s*\{[\s\S]*?background:\s*transparent\s*!important/);
   });
 });
