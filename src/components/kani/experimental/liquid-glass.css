@@ -5394,3 +5394,31 @@ html[data-theme="dark"] .site-shell .liquid-glass-reservation :is(.booking-next-
     inset 0 1.5px 0 rgba(255, 248, 236, 0.34),
     inset 0 -1px 0 rgba(112, 43, 58, 0.24) !important;
 }
+
+
+/* === LIQUID GLASS V12.1: Corrección altura real Servicios (82px) y separación visual del Calendario === */
+
+/* 1. Servicios — Superar especificidad de [data-services-variant="a"] para garantizar 82px reales en mobile */
+html[data-theme] .site-shell .liquid-glass-reservation[data-services-variant="a"] .booking-page .booking-service-options > .service-option:nth-child(n),
+html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option:nth-child(n) {
+  min-height: 82px !important;
+  height: 82px !important;
+  padding: 16px 16px !important;
+  box-sizing: border-box !important;
+  align-items: center !important;
+}
+
+/* 2. Calendario — Eliminar por completo ::before y ::after del contenedor .calendar-panel para independencia total */
+html[data-theme] .site-shell .liquid-glass-reservation .calendar-panel {
+  gap: 14px !important;
+  overflow: visible !important;
+  border: none !important;
+}
+
+html[data-theme] .site-shell .liquid-glass-reservation .calendar-panel::before,
+html[data-theme] .site-shell .liquid-glass-reservation .calendar-panel::after {
+  display: none !important;
+  content: none !important;
+  background: none !important;
+  box-shadow: none !important;
+}
