@@ -402,4 +402,15 @@ describe('KANI Barber Studio — Liquid Glass Experience (/reservar-turno-liquid
     expect(liquidCss).toContain('color: #a98440 !important;');
     expect(liquidCss).toContain('color: #d8ba7c !important;');
   });
+
+  it('30. Liquid Glass V12.9: Avatares oscuros cálidos, selección persistente del calendario (focus/blur) y contraste cálido Light Mode', () => {
+    expect(liquidCss).toContain('LIQUID GLASS V12.9 — WARM CRYSTAL CONSISTENCY · CALENDAR SELECTION · LIGHT MODE REFINEMENT');
+    expect(liquidCss).toContain('.barber-avatar');
+    expect(liquidCss).toContain('.barber-defer-mark');
+    expect(liquidCss).toContain('rgba(248, 242, 231, 0.92)');
+    expect(liquidCss).toContain('.calendar-day.selected:focus');
+    expect(liquidCss).toContain('.calendar-day.selected:focus-visible');
+    expect(liquidCss).toContain('rgba(242, 237, 229, 0.54)');
+    expect(liquidCss).toContain('rgba(226, 217, 203, 0.92)');
+  });
 });
