@@ -324,22 +324,29 @@ describe('KANI Barber Studio — Liquid Glass Experience (/reservar-turno-liquid
     expect(liquidCss).toContain('.lg-refraction-poc-card');
   });
 
-  it('24. Liquid Glass V12: Contraste cálido Light Mode, Dark Mode más profundo (#080809/#111113), alturas 82px/78px/50px y CTAs neutros', () => {
+  it('24. Liquid Glass V12: Contraste cálido Light Mode, Dark Mode más profundo (#080809/#111113), alturas 78px/50px y CTAs neutros', () => {
     expect(liquidCss).toContain('LIQUID GLASS V12: Warm Crystal Contrast · Deeper Dark Mode · Spacing Refinement');
     expect(liquidCss).toContain('rgba(204, 198, 190, 0.92)');
     expect(liquidCss).toContain('#080809');
     expect(liquidCss).toContain('rgba(17, 17, 19, 0.64)');
-    expect(liquidCss).toContain('min-height: 82px !important;');
     expect(liquidCss).toContain('min-height: 78px !important;');
     expect(liquidCss).toContain('height: 50px !important;');
     expect(liquidCss).toContain('min-width: 44px !important;');
   });
 
-  it('25. Liquid Glass V12.1: Altura efectiva 82px en Servicios y eliminación de ::before/::after en .calendar-panel', () => {
-    expect(liquidCss).toContain('LIQUID GLASS V12.1: Corrección altura real Servicios (82px) y separación visual del Calendario');
+  it('25. Liquid Glass V12.1 + V12.2: Servicios consolidados a 96px, Barberos con mayor altura e Instagram visible, separación del Calendario e Interacción Táctil Unificada', () => {
+    const motionTsx = fs.readFileSync(
+      path.join(process.cwd(), 'src/components/kani/experimental/liquid-glass-motion.tsx'),
+      'utf8',
+    );
+    expect(liquidCss).toContain('LIQUID GLASS V12.1 + V12.2: Servicios 96px, Barberos +12-16px e Interacción Táctil Unificada');
     expect(liquidCss).toContain('[data-services-variant="a"] .booking-page .booking-service-options > .service-option:nth-child(n)');
-    expect(liquidCss).toContain('height: 82px !important;');
+    expect(liquidCss).toContain('height: 96px !important;');
+    expect(liquidCss).toContain('aspect-ratio: 11 / 16.3 !important;');
     expect(liquidCss).toContain('.calendar-panel::before');
     expect(liquidCss).toContain('content: none !important;');
+    expect(motionTsx).toContain('serviceCardTap');
+    expect(motionTsx).toContain('barberCardTap');
+    expect(motionTsx).toContain('isLargeCard');
   });
 });

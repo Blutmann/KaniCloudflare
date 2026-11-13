@@ -36,6 +36,8 @@ export const LIQUID_GLASS_MOTION = {
   },
   scales: {
     cardTap: 0.985,
+    serviceCardTap: 0.968,
+    barberCardTap: 0.958,
     actionTap: 0.982,
     slotTap: 0.972,
     dayTap: 0.952,
@@ -101,8 +103,22 @@ function InteractiveCard({
 
   const isSelected = className.includes('selected');
   const isCalendarDay = className.includes('calendar-day');
+  const isServiceOption = className.includes('service-option');
+  const isBarberOption =
+    className.includes('booking-option') &&
+    !isServiceOption &&
+    !className.includes('booking-defer-option');
+  const isLargeCard = isServiceOption || isBarberOption;
   const isActionButton =
     className.includes('booking-back-button') || className.includes('booking-next-button');
+  const effectiveTapScale =
+    tapScale !== LIQUID_GLASS_MOTION.scales.cardTap
+      ? tapScale
+      : isServiceOption
+        ? LIQUID_GLASS_MOTION.scales.serviceCardTap
+        : isBarberOption
+          ? LIQUID_GLASS_MOTION.scales.barberCardTap
+          : tapScale;
 
   useEffect(() => {
     return () => {
@@ -128,7 +144,11 @@ function InteractiveCard({
       Math.max(localX, rect.width - localX),
       Math.max(localY, rect.height - localY),
     );
-    const waveSize = Math.max(Math.ceil(maxRadius * 2), 96);
+    const waveSize = isServiceOption
+      ? Math.min(Math.max(Math.ceil(maxRadius * 1.15), 240), 380)
+      : isBarberOption
+        ? Math.min(Math.max(Math.ceil(maxRadius * 1.35), 180), 260)
+        : Math.max(Math.ceil(maxRadius * 2), 96);
 
     el.style.setProperty('--lg-touch-x', `${localX.toFixed(1)}px`);
     el.style.setProperty('--lg-touch-y', `${localY.toFixed(1)}px`);
@@ -153,9 +173,11 @@ function InteractiveCard({
     ? undefined
     : isCalendarDay
       ? { scale: isSelected ? 1.03 : 1 }
-      : isActionButton
-        ? undefined
-        : { y: isSelected ? -1.5 : 0 };
+      : isLargeCard
+        ? { scale: isSelected ? 1.012 : 1, y: isSelected ? -1.5 : 0 }
+        : isActionButton
+          ? undefined
+          : { y: isSelected ? -1.5 : 0 };
 
   return (
     <motion.button
@@ -173,7 +195,7 @@ function InteractiveCard({
       whileTap={
         disabled || shouldReduceMotion
           ? undefined
-          : { scale: tapScale }
+          : { scale: effectiveTapScale }
       }
       transition={
         shouldReduceMotion
