@@ -78,11 +78,13 @@ describe('KANI Barber Studio — Liquid Glass Experience (/reservar-turno-liquid
     expect(siteHeaderCode).toContain('{staff && !isLiquidRoute &&');
   });
 
-  it('4. Define una única identidad visual Liquid Glass (perla/niebla/grafito/bordó) inmune al tema global', () => {
-    expect(liquidCss).toMatch(/body\.liquid-glass-active[\s\S]*?--background:\s*#f6f7f9/);
-    expect(liquidCss).toMatch(/body\.liquid-glass-active[\s\S]*?--foreground:\s*#1d1e20/);
+  it('4. Define una única identidad visual Crystal Glass monocromática (perla/niebla/plata/grafito/negro suave) inmune al tema global', () => {
+    expect(liquidCss).toMatch(/body\.liquid-glass-active[\s\S]*?--background:\s*#f5f7fa/);
+    expect(liquidCss).toMatch(/body\.liquid-glass-active[\s\S]*?--foreground:\s*#141619/);
     expect(liquidCss).toMatch(/body\.liquid-glass-active[\s\S]*?color-scheme:\s*light\s*!important/);
     expect(liquidCss).toMatch(/body\.liquid-glass-active::before,\s*\r?\nbody\.liquid-glass-active::after\s*\{[^}]*display:\s*none\s*!important/);
+    expect(liquidCss).not.toContain('#702b3a');
+    expect(liquidCss).not.toContain('#b5945b');
   });
 
   it('5. Sistema de materiales Liquid Glass: oculta checkmarks/círculos e incluye fallbacks de accesibilidad y rendimiento', () => {
@@ -95,10 +97,10 @@ describe('KANI Barber Studio — Liquid Glass Experience (/reservar-turno-liquid
     expect(liquidCss).toContain('flex: 1 1 70% !important');
   });
 
-  it('6. Stepper de 5 pasos en única superficie Liquid Glass sin tarjetas blancas y con barra continua inferior', () => {
+  it('6. Stepper de 5 pasos en única superficie Crystal Glass sin tarjetas opacas y con barra continua monocromática', () => {
     expect(liquidCss).toMatch(/\.booking-progress\s*>\s*button\[aria-current="step"\][\s\S]*?background:\s*transparent\s*!important/);
-    expect(liquidCss).toMatch(/\.booking-progress\s*>\s*button\[aria-current="step"\]\s*>\s*span[\s\S]*?border:\s*1\.5px solid #b5945b\s*!important/);
-    expect(liquidCss).toMatch(/\.booking-progress\s*>\s*button\.complete\s*>\s*span[\s\S]*?background:\s*#702b3a\s*!important/);
+    expect(liquidCss).toMatch(/\.booking-progress\s*>\s*button\[aria-current="step"\]\s*>\s*span[\s\S]*?border:\s*1\.5px solid rgba\(20, 22, 25, 0\.74\)\s*!important/);
+    expect(liquidCss).toMatch(/\.booking-progress\s*>\s*button\.complete\s*>\s*span[\s\S]*?background:\s*var\(--cg-crystal-smoked\)\s*!important/);
     expect(liquidCss).toContain('--liquid-progress-ratio: 0.2;');
     expect(liquidCss).toContain('--liquid-progress-ratio: 0.4;');
     expect(liquidCss).toContain('--liquid-progress-ratio: 0.6;');
@@ -106,9 +108,9 @@ describe('KANI Barber Studio — Liquid Glass Experience (/reservar-turno-liquid
     expect(liquidCss).toContain('--liquid-progress-ratio: 1;');
   });
 
-  it('7. Header+Stepper abiertos integrados, divisor de icono, botones pill y menú optimizado sin backdrop-filter fullscreen', () => {
+  it('7. Header+Stepper abiertos integrados, divisor de icono, botones pill Crystal Glass y menú optimizado sin backdrop-filter fullscreen', () => {
     expect(liquidCss).toMatch(/\.booking-progress\s*\{[\s\S]*?background:\s*transparent\s*!important/);
-    expect(liquidCss).toContain('border-right: 1px solid rgba(29, 30, 32, 0.09) !important;');
+    expect(liquidCss).toContain('border-right: 1px solid rgba(20, 22, 25, 0.1) !important;');
     expect(liquidCss).toMatch(/\.booking-next-button:not\(:disabled\)[\s\S]*?border-radius:\s*9999px\s*!important/);
     expect(liquidCss).not.toMatch(/\.liquid-orb\s*\{[^}]*filter:\s*blur\(/);
     expect(liquidCss).toMatch(/body\.liquid-glass-active \.mobile-menu[\s\S]*?backdrop-filter:\s*none\s*!important/);
@@ -124,10 +126,12 @@ describe('KANI Barber Studio — Liquid Glass Experience (/reservar-turno-liquid
     expect(liquidCss).toContain('width: calc((100% - 32px) * var(--liquid-progress-ratio, 0.2)) !important;');
   });
 
-  it('9. V5 Polish: paleta perla/gris niebla, CTA anclado al pie, headers de Horarios alineados y resumen Datos en única superficie', () => {
-    expect(liquidCss).toContain('--lg-bg-pearl: #f6f7f9;');
-    expect(liquidCss).toContain('--lg-bg-mist: #eceff3;');
+  it('9. V5 Crystal Glass: sistema de superficies (claro/seleccionado/flotante/ahumado), CTA anclado al pie, headers de Horarios alineados y Datos unificado', () => {
+    expect(liquidCss).toContain('--lg-bg-pearl: #f5f7fa;');
+    expect(liquidCss).toContain('--lg-bg-mist: #e3e7ee;');
     expect(liquidCss).toContain('--lg-glass-surface:');
+    expect(liquidCss).toContain('--cg-crystal-floating:');
+    expect(liquidCss).toContain('--cg-crystal-smoked:');
     expect(liquidCss).toMatch(/\.booking-scroll-content\s*\{[\s\S]*?flex:\s*1 1 auto\s*!important/);
     expect(liquidCss).toContain('padding: 8px 20px max(8px, env(safe-area-inset-bottom)) !important;');
     expect(liquidCss).toMatch(/\.booking-time-period-header\s*\{[\s\S]*?align-items:\s*center\s*!important/);
