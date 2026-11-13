@@ -115,20 +115,22 @@ describe('KANI Barber Studio — Liquid Glass Experience (/reservar-turno-liquid
     expect(liquidCss).toContain('@keyframes liquidMenuEnter');
   });
 
-  it('8. El stepper cápsula comparte exactamente los mismos márgenes laterales que las tarjetas de servicio', () => {
-    expect(liquidCss).toContain('width: calc(100% - 40px) !important;');
-    expect(liquidCss).toContain('margin-inline: 20px !important;');
-    expect(liquidCss).toContain('width: calc(100% - 32px) !important;');
-    expect(liquidCss).toContain('margin-inline: 16px !important;');
+  it('8. El stepper cápsula comparte el ancho útil del viewport mobile con márgenes compactos (8-10px)', () => {
+    expect(liquidCss).toContain('width: calc(100% - 20px) !important;');
+    expect(liquidCss).toContain('margin: 4px 10px 0 !important;');
+    expect(liquidCss).toContain('width: calc(100% - 16px) !important;');
+    expect(liquidCss).toContain('margin: 4px 8px 0 !important;');
   });
 
-  it('9. V6 Bottom & Layout: elimina padding-bottom heredado en mobile, ancla CTA al pie, alinea Horarios y unifica Datos', () => {
+  it('9. V7 Crystal UI: cristal óptico sin fondos negros opacos, CTA ancho completo anclado al pie, Horarios alineados y Datos unificado', () => {
     expect(liquidCss).toContain('--lg-bg-pearl: #f9fafb;');
     expect(liquidCss).toContain('--lg-bg-mist: #f3f4f6;');
-    expect(liquidCss).toContain('padding-bottom: 0 !important;');
+    expect(liquidCss).toContain('--cg-crystal-active:');
+    expect(liquidCss).not.toContain('--cg-crystal-smoked');
+    expect(liquidCss).toContain('padding: 0 !important;');
     expect(liquidCss).toContain('height: calc(100svh - 64px) !important;');
     expect(liquidCss).toMatch(/\.booking-scroll-content\s*\{[\s\S]*?flex:\s*1 1 auto\s*!important/);
-    expect(liquidCss).toContain('padding: 8px 20px max(8px, env(safe-area-inset-bottom)) !important;');
+    expect(liquidCss).toContain('padding: 6px 10px max(6px, env(safe-area-inset-bottom)) !important;');
     expect(liquidCss).toMatch(/\.booking-time-period-header\s*\{[\s\S]*?align-items:\s*center\s*!important/);
     expect(liquidCss).toMatch(/\.booking-time-period-title\s*\{[\s\S]*?margin:\s*0\s*!important/);
     expect(liquidCss).toMatch(/\.booking-v2-unified-summary \.summary-appointment-card,\s*\.liquid-glass-reservation \.booking-v2-unified-summary \.summary-pricing-card\s*\{[\s\S]*?background:\s*transparent\s*!important/);
