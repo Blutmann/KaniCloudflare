@@ -274,4 +274,20 @@ describe('KANI Barber Studio — Liquid Glass Experience (/reservar-turno-liquid
     expect(liquidCss).toContain('rgba(200, 169, 107, 0.56)');
     expect(liquidCss).toContain('rgba(112, 43, 58, 0.14)');
   });
+
+  it('21. Liquid Glass V9: Calendario 5 estados, Optical Density V3 en Horarios y Living Surface V2', () => {
+    const motionTsx = fs.readFileSync(
+      path.resolve(process.cwd(), 'src/components/kani/experimental/liquid-glass-motion.tsx'),
+      'utf8',
+    );
+
+    expect(motionTsx).toContain('lg-living-core');
+    expect(liquidCss).toContain('LIQUID GLASS V9: Crystal Selection · Calendar Accessibility · Enhanced Living Surface · KANI Identity');
+    expect(liquidCss).toContain('.calendar-day[data-past="true"]:disabled');
+    expect(liquidCss).toContain('.calendar-day:disabled:not([data-past="true"])');
+    expect(liquidCss).toContain('.calendar-day.today::before');
+    expect(liquidCss).toContain('@keyframes kaniLivingCoreV2');
+    expect(liquidCss).toContain('@keyframes kaniLivingWaveV2');
+    expect(liquidCss).toContain('@keyframes kaniLivingEdgePulseV2');
+  });
 });

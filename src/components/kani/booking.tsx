@@ -1398,7 +1398,7 @@ export function Booking({
                       onClick: () => { if (isV2) { revealTimesRef.current = true; setDateSelection(current => current + 1); } if (date !== value) { setSlotConflict(null); setPendingAppointment(null); setDate(value); setTime(''); if (barberDeferred) setBarber(null); } },
                     };
                     return MotionCardButton ? (
-                      <MotionCardButton key={value} tapScale={0.96} {...dayProps}>
+                      <MotionCardButton key={value} tapScale={0.94} data-past={value < todayValue ? 'true' : undefined} {...dayProps}>
                         {i + 1}
                       </MotionCardButton>
                     ) : (

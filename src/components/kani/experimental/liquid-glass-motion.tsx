@@ -18,7 +18,7 @@ export const LIQUID_GLASS_MOTION = {
     step: 0.3,
     stepExit: 0.12,
     reduced: 0.08,
-    livingSettleMs: 650,
+    livingSettleMs: 620,
   },
   easings: {
     crystal: [0.22, 1, 0.36, 1] as const,
@@ -36,9 +36,9 @@ export const LIQUID_GLASS_MOTION = {
   },
   scales: {
     cardTap: 0.985,
-    actionTap: 0.985,
-    slotTap: 0.978,
-    dayTap: 0.955,
+    actionTap: 0.982,
+    slotTap: 0.972,
+    dayTap: 0.952,
     avatarSelected: 1.045,
   },
 } as const;
@@ -187,6 +187,7 @@ function InteractiveCard({
     >
       {!disabled && (
         <span className="lg-living-surface" aria-hidden="true">
+          <span className="lg-living-core" />
           <span ref={waveRef} className="lg-living-wave" />
           <span className="lg-living-edge" />
         </span>
