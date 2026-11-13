@@ -6198,7 +6198,36 @@ html[data-theme="dark"] .site-shell .liquid-glass-reservation .booking-page :is(
   color: #1c1a17 !important;
 }
 
-/* 2. CALENDARIO — SELECCIÓN PERSISTENTE (con foco, hover, active y tras perder foco) */
+/* ==============================================================================
+ * LIQUID GLASS V12.10 — UNIFIED SELECTION STATES · NEUTRAL PEARL LIGHT MODE
+ * 1. Calendario y Horarios unificados:
+ *    - Disponible/Inactivo = cristal oscuro discreto (Ref B: horarios disponibles V12.9)
+ *    - Seleccionado = cristal luminoso cálido + borde champagne (Ref A: fecha 20 V12.9)
+ *    - Persistente ante :focus, :focus-visible, :hover, :active y pérdida de foco
+ * 2. Light Mode blanco/perla neutro translúcido (sin exceso beige/crema ni azulados),
+ *    unificado en Servicios, Barberos, Diferir, Calendario, Horarios, Avatares, Stepper y CTAs.
+ * 3. Dark Mode V12.9 preservado en Servicios, Barberos, Avatares, Header, Menú y CTAs.
+ * ============================================================================== */
+
+/* 1. DARK MODE — CALENDARIO Y HORARIOS UNIFICADOS (disponible = Ref B, seleccionado = Ref A) */
+html[data-theme="dark"] .site-shell .liquid-glass-reservation :is(
+  .calendar-day:not(:disabled):not(.selected),
+  .booking-time-slot:not(:disabled):not(.selected)
+) {
+  background: linear-gradient(
+    164deg,
+    rgba(14, 14, 16, 0.68) 0%,
+    rgba(9, 9, 11, 0.50) 58%,
+    rgba(12, 12, 14, 0.62) 100%
+  ) !important;
+  border: 1px solid rgba(255, 255, 255, 0.085) !important;
+  box-shadow:
+    0 8px 22px rgba(0, 0, 0, 0.44),
+    inset 0 1px 0 rgba(255, 248, 232, 0.12),
+    inset 0 -1px 0 rgba(255, 246, 228, 0.03) !important;
+  color: rgba(244, 242, 238, 0.90) !important;
+}
+
 html[data-theme="dark"] .site-shell .liquid-glass-reservation :is(
   .calendar-day.selected,
   .calendar-day.selected:hover:not(:disabled),
@@ -6206,7 +6235,14 @@ html[data-theme="dark"] .site-shell .liquid-glass-reservation :is(
   .calendar-day.selected:focus-visible,
   .calendar-day.selected:active,
   .calendar-day[aria-selected="true"],
-  .calendar-day[aria-pressed="true"]
+  .calendar-day[aria-pressed="true"],
+  .booking-time-slot.selected,
+  .booking-time-slot.selected:hover:not(:disabled),
+  .booking-time-slot.selected:focus,
+  .booking-time-slot.selected:focus-visible,
+  .booking-time-slot.selected:active,
+  .booking-time-slot[aria-selected="true"],
+  .booking-time-slot[aria-pressed="true"]
 ) {
   background: linear-gradient(
     148deg,
@@ -6223,50 +6259,53 @@ html[data-theme="dark"] .site-shell .liquid-glass-reservation :is(
   font-weight: 600 !important;
 }
 
-html[data-theme="dark"] .site-shell .liquid-glass-reservation .calendar-day.selected:focus-visible {
+html[data-theme="dark"] .site-shell .liquid-glass-reservation :is(
+  .calendar-day:focus-visible,
+  .booking-time-slot:focus-visible
+) {
   outline: 2px solid rgba(228, 201, 143, 0.90) !important;
   outline-offset: 2px !important;
 }
 
-/* 3. LIGHT MODE — PALETA CÁLIDA TRANSLÚCIDA Y CONTRASTE INMEDIATO ENTRE REPOSO Y SELECCIÓN */
+/* 2. LIGHT MODE — CRISTAL BLANCO/PERLA NEUTRO (sin exceso beige ni azulados) */
 html[data-theme="light"] body.liquid-glass-active,
 html[data-theme="light"] .liquid-glass-reservation {
   --cg-crystal-rest: linear-gradient(
     156deg,
-    rgba(242, 237, 229, 0.54) 0%,
-    rgba(232, 225, 214, 0.36) 55%,
-    rgba(238, 232, 222, 0.46) 100%
+    rgba(255, 255, 255, 0.52) 0%,
+    rgba(248, 247, 245, 0.28) 54%,
+    rgba(252, 251, 249, 0.42) 100%
   );
   --cg-crystal-hover: linear-gradient(
     152deg,
-    rgba(238, 231, 220, 0.68) 0%,
-    rgba(226, 218, 205, 0.52) 55%,
-    rgba(234, 226, 214, 0.62) 100%
+    rgba(255, 255, 255, 0.72) 0%,
+    rgba(245, 244, 241, 0.52) 54%,
+    rgba(250, 249, 247, 0.64) 100%
   );
   --cg-crystal-selected: linear-gradient(
     148deg,
-    rgba(226, 217, 203, 0.92) 0%,
-    rgba(208, 197, 180, 0.86) 56%,
-    rgba(218, 206, 190, 0.90) 100%
+    rgba(255, 255, 255, 0.90) 0%,
+    rgba(242, 240, 236, 0.80) 56%,
+    rgba(248, 246, 243, 0.86) 100%
   );
   --cg-crystal-active: linear-gradient(
     148deg,
-    rgba(220, 210, 194, 0.95) 0%,
-    rgba(202, 190, 172, 0.88) 56%,
-    rgba(212, 200, 182, 0.92) 100%
+    rgba(250, 249, 247, 0.94) 0%,
+    rgba(236, 234, 230, 0.84) 56%,
+    rgba(244, 242, 238, 0.90) 100%
   );
   --lg-glass-shadow:
-    0 6px 16px rgba(42, 34, 24, 0.06),
-    inset 0 1px 0 rgba(255, 253, 248, 0.68);
+    0 6px 16px rgba(28, 26, 24, 0.055),
+    inset 0 1px 0 rgba(255, 255, 255, 0.84);
   --cg-crystal-shadow-selected:
-    0 12px 26px rgba(42, 34, 24, 0.14),
-    0 3px 8px rgba(42, 34, 24, 0.07),
-    inset 0 1.5px 0 rgba(255, 252, 245, 0.92),
-    inset 0 -1px 0 rgba(112, 43, 58, 0.18);
+    0 12px 26px rgba(28, 26, 24, 0.12),
+    0 3px 8px rgba(28, 26, 24, 0.06),
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.98),
+    inset 0 -1px 0 rgba(112, 43, 58, 0.12);
 }
 
 /* Superficies inactivas Light Mode (Servicios, Barberos, Diferir, Calendario, Horarios) */
-html[data-theme="light"] .site-shell .liquid-glass-reservation :is(
+html[data-theme="light"] body.liquid-glass-active .site-shell .liquid-glass-reservation :is(
   .service-option:not(.selected),
   .booking-option:not(.selected),
   .booking-defer-option:not(.selected),
@@ -6274,13 +6313,13 @@ html[data-theme="light"] .site-shell .liquid-glass-reservation :is(
   .booking-time-slot:not(:disabled):not(.selected)
 ) {
   background: var(--cg-crystal-rest) !important;
-  border: 1px solid rgba(176, 164, 146, 0.48) !important;
+  border: 1px solid rgba(168, 164, 158, 0.38) !important;
   box-shadow: var(--lg-glass-shadow) !important;
-  color: #211e1a !important;
+  color: #1e1d1b !important;
 }
 
-/* Superficies seleccionadas Light Mode (sistema unificado cálido, sin celestes/azulados) */
-html[data-theme="light"] .site-shell .liquid-glass-reservation :is(
+/* Superficies seleccionadas Light Mode (sistema unificado blanco/perla + borde champagne delicado) */
+html[data-theme="light"] body.liquid-glass-active .site-shell .liquid-glass-reservation :is(
   .service-option.selected,
   .service-option.selected:hover:not(:disabled),
   .service-option.selected:focus,
@@ -6299,45 +6338,98 @@ html[data-theme="light"] .site-shell .liquid-glass-reservation :is(
   .calendar-day.selected:focus-visible,
   .calendar-day.selected:active,
   .calendar-day[aria-selected="true"],
+  .calendar-day[aria-pressed="true"],
   .booking-time-slot.selected,
   .booking-time-slot.selected:hover:not(:disabled),
   .booking-time-slot.selected:focus,
-  .booking-time-slot.selected:focus-visible
+  .booking-time-slot.selected:focus-visible,
+  .booking-time-slot.selected:active,
+  .booking-time-slot[aria-selected="true"],
+  .booking-time-slot[aria-pressed="true"]
 ) {
   background: var(--cg-crystal-selected) !important;
-  border: 1.5px solid rgba(186, 150, 86, 0.86) !important;
+  border: 1.5px solid rgba(196, 164, 102, 0.72) !important;
   box-shadow: var(--cg-crystal-shadow-selected) !important;
-  color: #171512 !important;
+  color: #141311 !important;
   font-weight: 600 !important;
 }
 
-html[data-theme="light"] .site-shell .liquid-glass-reservation .calendar-day.selected:focus-visible {
+html[data-theme="light"] .site-shell .liquid-glass-reservation :is(
+  .calendar-day:focus-visible,
+  .booking-time-slot:focus-visible
+) {
   outline: 2px solid rgba(169, 132, 64, 0.90) !important;
   outline-offset: 2px !important;
 }
 
-/* Avatares Light Mode (piedra cálida en reposo -> perla champagne en selección) */
+/* Avatares Light Mode (blanco translúcido en reposo -> perla de mayor densidad en selección) */
 html[data-theme="light"] .site-shell .liquid-glass-reservation .booking-page :is(
   .barber-avatar,
   .barber-defer-mark
 ) {
-  background: linear-gradient(152deg, rgba(244, 239, 231, 0.76) 0%, rgba(230, 222, 209, 0.58) 100%) !important;
-  border: 1px solid rgba(176, 164, 146, 0.52) !important;
+  background: linear-gradient(152deg, rgba(255, 255, 255, 0.66) 0%, rgba(246, 245, 243, 0.44) 100%) !important;
+  border: 1px solid rgba(168, 164, 158, 0.42) !important;
   box-shadow:
-    0 3px 10px rgba(42, 34, 24, 0.06),
-    inset 0 1px 0 rgba(255, 253, 248, 0.72) !important;
-  color: #2a2622 !important;
+    0 3px 10px rgba(28, 26, 24, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.86) !important;
+  color: #262523 !important;
 }
 
 html[data-theme="light"] .site-shell .liquid-glass-reservation .booking-page :is(
   .booking-option.selected .barber-avatar,
   .booking-defer-option.selected .barber-defer-mark
 ) {
-  background: linear-gradient(150deg, rgba(255, 251, 242, 0.94) 0%, rgba(236, 224, 202, 0.84) 100%) !important;
-  border: 1.5px solid rgba(186, 150, 86, 0.82) !important;
+  background: linear-gradient(150deg, rgba(255, 255, 255, 0.96) 0%, rgba(244, 242, 238, 0.86) 100%) !important;
+  border: 1.5px solid rgba(196, 164, 102, 0.68) !important;
   box-shadow:
-    0 5px 14px rgba(42, 34, 24, 0.12),
-    inset 0 1px 0 rgba(255, 254, 250, 0.92),
-    inset 0 -1px 0 rgba(112, 43, 58, 0.14) !important;
-  color: #171512 !important;
+    0 5px 14px rgba(28, 26, 24, 0.10),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98),
+    inset 0 -1px 0 rgba(112, 43, 58, 0.10) !important;
+  color: #141311 !important;
+}
+
+/* Stepper Light Mode (cápsula activa blanco/perla con borde champagne delicado) */
+html[data-theme="light"] .site-shell .liquid-glass-reservation .booking-progress .liquid-glass-stepper-lens {
+  background: linear-gradient(148deg, rgba(255, 255, 255, 0.94) 0%, rgba(244, 242, 239, 0.84) 100%) !important;
+  border: 1px solid rgba(196, 164, 102, 0.52) !important;
+  box-shadow:
+    0 4px 12px rgba(28, 26, 24, 0.08),
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.98),
+    inset 0 -1px 0 rgba(112, 43, 58, 0.10) !important;
+}
+
+/* Botones inferiores Light Mode (cristal blanco/perla, menos crema) */
+html[data-theme="light"] .site-shell .liquid-glass-reservation .booking-back-button:not(:disabled),
+html[data-theme="light"] .site-shell .liquid-glass-reservation .booking-cta:not(.mobile-menu-cta) .booking-back-button:not(:disabled) {
+  background: linear-gradient(156deg, rgba(255, 255, 255, 0.46) 0%, rgba(246, 245, 243, 0.28) 100%) !important;
+  border: 1px solid rgba(168, 164, 158, 0.42) !important;
+  color: #252422 !important;
+  box-shadow:
+    0 6px 16px rgba(28, 26, 24, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.82) !important;
+}
+
+html[data-theme="light"] .site-shell .liquid-glass-reservation :is(.booking-next-button, .payway-submit-btn):not(:disabled),
+html[data-theme="light"] .site-shell .liquid-glass-reservation .booking-cta:not(.mobile-menu-cta) .booking-cta-inner :is(.booking-next-button, .payway-submit-btn):not(:disabled) {
+  background: linear-gradient(
+    148deg,
+    rgba(255, 255, 255, 0.90) 0%,
+    rgba(243, 241, 237, 0.80) 56%,
+    rgba(249, 247, 244, 0.86) 100%
+  ) !important;
+  border: 1.5px solid rgba(196, 164, 102, 0.72) !important;
+  color: #141311 !important;
+  font-weight: 600 !important;
+  box-shadow:
+    0 12px 26px rgba(28, 26, 24, 0.11),
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.98),
+    inset 0 -1px 0 rgba(112, 43, 58, 0.12) !important;
+}
+
+html[data-theme="light"] .site-shell .liquid-glass-reservation :is(.booking-next-button, .payway-submit-btn):disabled {
+  background: rgba(246, 245, 243, 0.36) !important;
+  border: 1px solid rgba(182, 179, 174, 0.32) !important;
+  color: rgba(74, 72, 68, 0.42) !important;
+  box-shadow: none !important;
+  pointer-events: none !important;
 }
