@@ -349,4 +349,13 @@ describe('KANI Barber Studio — Liquid Glass Experience (/reservar-turno-liquid
     expect(motionTsx).toContain('barberCardTap');
     expect(motionTsx).toContain('isLargeCard');
   });
+
+  it('26. Liquid Glass V12.3: .lg-living-surface mantiene position: absolute a tamaño completo en Servicios y Barberos (sin colapso por > *)', () => {
+    expect(liquidCss).toContain('LIQUID GLASS V12.1 + V12.2');
+    expect(liquidCss).toContain('Interacción Táctil Unificada V12.3');
+    expect(liquidCss).toContain('.service-option > :not(.lg-living-surface):not(.lg-optical-sheen)');
+    expect(liquidCss).toContain('.booking-option > :not(.lg-living-surface):not(.lg-optical-sheen)');
+    expect(liquidCss).toContain('width: 100% !important;');
+    expect(liquidCss).toContain('height: 100% !important;');
+  });
 });

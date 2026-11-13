@@ -650,11 +650,11 @@ html[data-theme] .site-shell .liquid-glass-reservation .booking-back-button::bef
   ) !important;
 }
 
-html[data-theme] .site-shell .liquid-glass-reservation .booking-option > *,
-html[data-theme] .site-shell .liquid-glass-reservation .service-option > *,
-html[data-theme] .site-shell .liquid-glass-reservation .booking-defer-option > *,
-html[data-theme] .site-shell .liquid-glass-reservation .booking-next-button > *,
-html[data-theme] .site-shell .liquid-glass-reservation .booking-back-button > * {
+html[data-theme] .site-shell .liquid-glass-reservation .booking-option > :not(.lg-living-surface):not(.lg-optical-sheen),
+html[data-theme] .site-shell .liquid-glass-reservation .service-option > :not(.lg-living-surface):not(.lg-optical-sheen),
+html[data-theme] .site-shell .liquid-glass-reservation .booking-defer-option > :not(.lg-living-surface):not(.lg-optical-sheen),
+html[data-theme] .site-shell .liquid-glass-reservation .booking-next-button > :not(.lg-living-surface):not(.lg-optical-sheen),
+html[data-theme] .site-shell .liquid-glass-reservation .booking-back-button > :not(.lg-living-surface):not(.lg-optical-sheen) {
   position: relative;
   z-index: 1;
 }
@@ -5449,7 +5449,18 @@ html[data-theme] .site-shell .liquid-glass-reservation .calendar-panel::after {
   }
 }
 
-/* 4. Interacción Táctil Unificada — Servicios y Barberos sin conflicto CSS de transform y adaptados al tamaño de card */
+/* 4. Interacción Táctil Unificada V12.3 — Garantizar .lg-living-surface absoluto a tamaño completo en Servicios y Barberos */
+html[data-theme] .site-shell .liquid-glass-reservation .lg-living-surface {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: inherit !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+  z-index: 1 !important;
+}
+
 html[data-theme] .site-shell .liquid-glass-reservation :is(
   .service-option,
   .booking-barber-options > .booking-option:not(.booking-defer-option)
