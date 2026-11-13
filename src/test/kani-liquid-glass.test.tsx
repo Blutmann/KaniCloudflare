@@ -73,9 +73,9 @@ describe('KANI Barber Studio — Liquid Glass Experience (/reservar-turno-liquid
     expect(document.body.classList.contains('liquid-glass-active')).toBe(false);
   });
 
-  it('3. SiteHeader excluye ThemeToggle y campana de notificaciones en /reservar-turno-liquid', () => {
+  it('3. SiteHeader habilita ThemeToggle para modos Claro/Oscuro y excluye campana de notificaciones en /reservar-turno-liquid', () => {
     expect(siteHeaderCode).toContain("path === '/reservar-turno-liquid'");
-    expect(siteHeaderCode).toContain('{!isLiquidRoute && <ThemeToggle />}');
+    expect(siteHeaderCode).toContain('<ThemeToggle />');
     expect(siteHeaderCode).toContain('{staff && !isLiquidRoute &&');
   });
 
@@ -170,5 +170,16 @@ describe('KANI Barber Studio — Liquid Glass Experience (/reservar-turno-liquid
     expect(liquidCss).toContain("--lg-font-ui: 'Geist Sans'");
     expect(liquidCss).not.toMatch(/^body\s*\{[^}]*Geist/m);
     expect(liquidCss).not.toMatch(/^html\s*\{[^}]*Geist/m);
+  });
+
+  it('12. Fondos KANI Signature Glass (Claro/Oscuro, Mobile/Desktop) con fallbacks y contraste Dark Mode', () => {
+    expect(liquidCss).toContain('/kani-signature-light-mobile.webp');
+    expect(liquidCss).toContain('/kani-signature-light-desktop.webp');
+    expect(liquidCss).toContain('/kani-signature-dark-mobile.webp');
+    expect(liquidCss).toContain('/kani-signature-dark-desktop.webp');
+    expect(liquidCss).toContain('image-set(');
+    expect(liquidCss).toContain('background-color: #f3f2f0;');
+    expect(liquidCss).toContain('background-color: #121213;');
+    expect(liquidCss).toContain('html[data-theme="dark"] .liquid-glass-atmosphere');
   });
 });

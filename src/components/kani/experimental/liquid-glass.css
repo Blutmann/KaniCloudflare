@@ -115,21 +115,33 @@ body.liquid-glass-active::after {
   background-image: none !important;
 }
 
-/* Forzar wordmark e iconos de servicio claros sobre cristal independientemente del tema global */
-body.liquid-glass-active .wordmark-light,
-.liquid-glass-reservation .wordmark-light,
-body.liquid-glass-active .service-icon-light,
-.liquid-glass-reservation .service-icon-light {
+/* Wordmark e iconos según tema activo en Liquid Glass */
+html[data-theme="light"] body.liquid-glass-active .wordmark-light,
+html[data-theme="light"] .liquid-glass-reservation .wordmark-light,
+html[data-theme="light"] body.liquid-glass-active .service-icon-light,
+html[data-theme="light"] .liquid-glass-reservation .service-icon-light {
   display: block !important;
 }
-body.liquid-glass-active .wordmark-dark,
-.liquid-glass-reservation .wordmark-dark,
-body.liquid-glass-active .service-icon-dark,
-.liquid-glass-reservation .service-icon-dark {
+html[data-theme="light"] body.liquid-glass-active .wordmark-dark,
+html[data-theme="light"] .liquid-glass-reservation .wordmark-dark,
+html[data-theme="light"] body.liquid-glass-active .service-icon-dark,
+html[data-theme="light"] .liquid-glass-reservation .service-icon-dark {
+  display: none !important;
+}
+html[data-theme="dark"] body.liquid-glass-active .wordmark-dark,
+html[data-theme="dark"] .liquid-glass-reservation .wordmark-dark,
+html[data-theme="dark"] body.liquid-glass-active .service-icon-dark,
+html[data-theme="dark"] .liquid-glass-reservation .service-icon-dark {
+  display: block !important;
+}
+html[data-theme="dark"] body.liquid-glass-active .wordmark-light,
+html[data-theme="dark"] .liquid-glass-reservation .wordmark-light,
+html[data-theme="dark"] body.liquid-glass-active .service-icon-light,
+html[data-theme="dark"] .liquid-glass-reservation .service-icon-light {
   display: none !important;
 }
 
-/* 2. Atmósfera orgánica y fondos Liquid Glass Light Mode (compatibles con Safari iOS) */
+/* 2. Atmósfera orgánica y fondos KANI Signature Glass (compatibles con Safari iOS) */
 .liquid-glass-reservation {
   position: relative;
   min-height: calc(100dvh - 64px);
@@ -142,8 +154,9 @@ body.liquid-glass-active .service-icon-dark,
   z-index: -1;
   pointer-events: none;
   overflow: hidden;
-  background-color: #f4f5f7;
-  background-image: url('/kani-liquid-glass-light-mobile.webp');
+  background-color: #f3f2f0;
+  background-image: url('/kani-signature-light-mobile.webp');
+  background-image: image-set(url('/kani-signature-light-mobile.webp') type('image/webp') 1x);
   background-size: cover;
   background-position: center center;
   background-repeat: no-repeat;
@@ -153,7 +166,21 @@ body.liquid-glass-active .service-icon-dark,
 
 @media (min-width: 1024px), (min-width: 768px) and (orientation: landscape) {
   .liquid-glass-atmosphere {
-    background-image: url('/kani-liquid-glass-light-desktop.webp');
+    background-image: url('/kani-signature-light-desktop.webp');
+    background-image: image-set(url('/kani-signature-light-desktop.webp') type('image/webp') 1x);
+  }
+}
+
+html[data-theme="dark"] .liquid-glass-atmosphere {
+  background-color: #121213;
+  background-image: url('/kani-signature-dark-mobile.webp');
+  background-image: image-set(url('/kani-signature-dark-mobile.webp') type('image/webp') 1x);
+}
+
+@media (min-width: 1024px), (min-width: 768px) and (orientation: landscape) {
+  html[data-theme="dark"] .liquid-glass-atmosphere {
+    background-image: url('/kani-signature-dark-desktop.webp');
+    background-image: image-set(url('/kani-signature-dark-desktop.webp') type('image/webp') 1x);
   }
 }
 
@@ -1550,4 +1577,282 @@ html[data-theme] .liquid-glass-reservation .summary-pricing-row strong {
 html[data-theme] .liquid-glass-reservation .calendar-day,
 html[data-theme] .liquid-glass-reservation .booking-time-slot {
   font-variant-numeric: tabular-nums;
+}
+
+/* =========================================================
+ * SIGNATURE GLASS DARK MODE — Materialidad y Accesibilidad
+ * ========================================================= */
+html[data-theme="dark"]:has(.liquid-glass-reservation) {
+  background-color: #121213 !important;
+}
+
+html[data-theme="dark"] body.liquid-glass-active,
+html[data-theme="dark"] .liquid-glass-reservation {
+  --lg-bg-pearl: #121213;
+  --lg-bg-mist: #18191b;
+  --lg-bg-warm: #1e1f23;
+  --lg-ink-primary: #f4f4f6;
+  --lg-ink-secondary: #c5cad2;
+  --lg-ink-muted: #9ca3af;
+  --cg-silver: #c5cad2;
+  --cg-graphite: #f4f4f6;
+  --lg-glass-border: rgba(255, 255, 255, 0.18);
+  --lg-glass-border-subtle: rgba(255, 255, 255, 0.1);
+  --lg-highlight: rgba(255, 255, 255, 0.24);
+
+  --cg-crystal-rest: linear-gradient(
+    155deg,
+    rgba(36, 37, 42, 0.62) 0%,
+    rgba(22, 23, 27, 0.48) 55%,
+    rgba(28, 29, 34, 0.56) 100%
+  );
+  --cg-crystal-hover: linear-gradient(
+    155deg,
+    rgba(46, 48, 54, 0.72) 0%,
+    rgba(28, 29, 34, 0.58) 55%,
+    rgba(36, 37, 42, 0.66) 100%
+  );
+  --cg-crystal-selected: linear-gradient(
+    148deg,
+    rgba(62, 64, 72, 0.84) 0%,
+    rgba(38, 40, 46, 0.74) 55%,
+    rgba(46, 48, 56, 0.8) 100%
+  );
+  --cg-crystal-floating: linear-gradient(
+    180deg,
+    rgba(34, 35, 40, 0.68) 0%,
+    rgba(22, 23, 27, 0.56) 100%
+  );
+  --cg-crystal-active: linear-gradient(
+    150deg,
+    rgba(68, 70, 78, 0.9) 0%,
+    rgba(44, 46, 52, 0.82) 55%,
+    rgba(52, 54, 62, 0.86) 100%
+  );
+
+  --lg-glass-shadow:
+    0 10px 28px rgba(0, 0, 0, 0.36),
+    0 0 0 0.5px rgba(255, 255, 255, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.25);
+  --cg-crystal-shadow-selected:
+    0 12px 32px rgba(0, 0, 0, 0.45),
+    0 0 0 1.5px rgba(255, 255, 255, 0.44),
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.28),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.3);
+  --cg-crystal-shadow-active:
+    0 10px 26px rgba(0, 0, 0, 0.42),
+    0 0 0 1px rgba(255, 255, 255, 0.36),
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.26),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.28);
+
+  --background: #121213;
+  --foreground: #f4f4f6;
+  --card: rgba(24, 24, 27, 0.58);
+  --card-foreground: #f4f4f6;
+  --popover: rgba(22, 22, 25, 0.94);
+  --popover-foreground: #f4f4f6;
+  --primary: #f4f4f6;
+  --primary-foreground: #121213;
+  --secondary: rgba(34, 35, 40, 0.62);
+  --secondary-foreground: #f4f4f6;
+  --muted: rgba(34, 35, 40, 0.72);
+  --muted-foreground: #b4bac4;
+  --border: rgba(255, 255, 255, 0.18);
+  --input: rgba(30, 31, 35, 0.74);
+  --ring: #c5cad2;
+  --kani-surface: rgba(26, 27, 31, 0.62);
+  --surface: rgba(30, 31, 36, 0.62);
+  --button-primary-bg: rgba(58, 60, 68, 0.88);
+  --button-primary-border: rgba(255, 255, 255, 0.34);
+  --button-primary-text: #f4f4f6;
+
+  background-color: #121213 !important;
+  color: #f4f4f6 !important;
+  color-scheme: dark !important;
+}
+
+html[data-theme="dark"] .liquid-glass-reservation {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+html[data-theme="dark"] body.liquid-glass-active .site-header.liquid-glass-header .header-control-button {
+  background: var(--cg-crystal-rest) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  color: #f4f4f6 !important;
+  box-shadow: var(--lg-glass-shadow) !important;
+}
+
+html[data-theme="dark"] .liquid-glass-reservation .booking-page .section-title,
+html[data-theme="dark"] .liquid-glass-reservation .booking-step-heading-title,
+html[data-theme="dark"] .liquid-glass-reservation .booking-step-heading h1 {
+  color: #f4f4f6 !important;
+}
+
+html[data-theme="dark"] .liquid-glass-reservation .booking-time-heading-date {
+  color: #c5cad2 !important;
+  background: rgba(30, 31, 36, 0.62);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+html[data-theme="dark"] .liquid-glass-reservation .booking-page .booking-progress {
+  background: linear-gradient(160deg, rgba(32, 33, 38, 0.66) 0%, rgba(20, 21, 25, 0.52) 100%) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  box-shadow: var(--lg-glass-shadow) !important;
+}
+
+html[data-theme="dark"] .liquid-glass-reservation .booking-page .booking-progress .liquid-glass-stepper-lens,
+html[data-theme="dark"] .liquid-glass-reservation .booking-page .booking-progress::before {
+  background: var(--cg-crystal-selected) !important;
+  border-color: rgba(255, 255, 255, 0.34) !important;
+  box-shadow: var(--cg-crystal-shadow-selected) !important;
+}
+
+html[data-theme="dark"] .liquid-glass-reservation .booking-page .booking-progress > button small {
+  color: #9ca3af !important;
+}
+
+html[data-theme="dark"] .liquid-glass-reservation .booking-page .booking-progress > button.complete small {
+  color: #c5cad2 !important;
+}
+
+html[data-theme="dark"] .liquid-glass-reservation .booking-page .booking-progress > button[aria-current="step"] small,
+html[data-theme="dark"] .liquid-glass-reservation .booking-page .booking-progress > button.current small {
+  color: #ffffff !important;
+}
+
+html[data-theme="dark"] .liquid-glass-reservation .booking-service-options > button,
+html[data-theme="dark"] .liquid-glass-reservation .booking-barber-options > button,
+html[data-theme="dark"] .liquid-glass-reservation .booking-defer-option,
+html[data-theme="dark"] .liquid-glass-reservation .calendar-panel,
+html[data-theme="dark"] .liquid-glass-reservation .booking-summary-card,
+html[data-theme="dark"] .liquid-glass-reservation .booking-deposit-notice {
+  background: var(--cg-crystal-rest) !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
+  box-shadow: var(--lg-glass-shadow) !important;
+  color: #f4f4f6 !important;
+}
+
+html[data-theme="dark"] .liquid-glass-reservation .booking-service-options > button.selected,
+html[data-theme="dark"] .liquid-glass-reservation .booking-barber-options > button.selected,
+html[data-theme="dark"] .liquid-glass-reservation .booking-defer-option.selected {
+  background: var(--cg-crystal-selected) !important;
+  border-color: rgba(255, 255, 255, 0.44) !important;
+  box-shadow: var(--cg-crystal-shadow-selected) !important;
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option:nth-child(n) .booking-option-name,
+html[data-theme="dark"] .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option:nth-child(n) .booking-option-price,
+html[data-theme="dark"] .site-shell .liquid-glass-reservation .booking-option-name,
+html[data-theme="dark"] .site-shell .liquid-glass-reservation .service-option .booking-option-name,
+html[data-theme="dark"] .site-shell .liquid-glass-reservation .booking-option.selected .booking-option-name,
+html[data-theme="dark"] .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option .booking-option-name,
+html[data-theme="dark"] .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option.selected .booking-option-name,
+html[data-theme="dark"] .site-shell .liquid-glass-reservation .booking-option-price,
+html[data-theme="dark"] .site-shell .liquid-glass-reservation .service-option .booking-option-price,
+html[data-theme="dark"] .site-shell .liquid-glass-reservation .booking-option.selected .booking-option-price,
+html[data-theme="dark"] .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option .booking-option-price,
+html[data-theme="dark"] .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option.selected .booking-option-price,
+html[data-theme="dark"] .site-shell .liquid-glass-reservation .booking-barber-name,
+html[data-theme="dark"] .site-shell .liquid-glass-reservation .booking-option.selected .booking-barber-name,
+html[data-theme="dark"] .site-shell .liquid-glass-reservation .booking-defer-copy span:first-child,
+html[data-theme="dark"] .site-shell .liquid-glass-reservation .calendar-header h2,
+html[data-theme="dark"] .site-shell .liquid-glass-reservation .summary-detail-value,
+html[data-theme="dark"] .site-shell .liquid-glass-reservation .summary-pricing-row strong {
+  color: #f4f4f6 !important;
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option:nth-child(n) .booking-option-duration,
+html[data-theme="dark"] .site-shell .liquid-glass-reservation .booking-option-duration,
+html[data-theme="dark"] .site-shell .liquid-glass-reservation .service-option .booking-option-duration,
+html[data-theme="dark"] .site-shell .liquid-glass-reservation .booking-option.selected .booking-option-duration,
+html[data-theme="dark"] .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option .booking-option-duration,
+html[data-theme="dark"] .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option.selected .booking-option-duration,
+html[data-theme="dark"] .site-shell .liquid-glass-reservation .booking-barber-handle,
+html[data-theme="dark"] .site-shell .liquid-glass-reservation .booking-defer-copy span:last-child,
+html[data-theme="dark"] .site-shell .liquid-glass-reservation .booking-deposit-notice,
+html[data-theme="dark"] .site-shell .liquid-glass-reservation .booking-deposit-notice span,
+html[data-theme="dark"] .site-shell .liquid-glass-reservation .booking-deposit-notice svg,
+html[data-theme="dark"] .site-shell .liquid-glass-reservation .field-label {
+  color: #d1d5db !important;
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-reservation .booking-option:not(.selected) .service-icon-mask,
+html[data-theme="dark"] .site-shell .liquid-glass-reservation .booking-option:not(.selected) .service-icon-mask-light {
+  background-color: #d1d5db !important;
+  opacity: 0.9 !important;
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-reservation .booking-option.selected .service-icon-mask,
+html[data-theme="dark"] .site-shell .liquid-glass-reservation .booking-option.selected .service-icon-mask-light {
+  background-color: #ffffff !important;
+  opacity: 1 !important;
+}
+
+html[data-theme="dark"] .liquid-glass-reservation .barber-avatar,
+html[data-theme="dark"] .liquid-glass-reservation .barber-defer-mark {
+  background: rgba(44, 46, 54, 0.82) !important;
+  border-color: rgba(255, 255, 255, 0.24) !important;
+  color: #f4f4f6 !important;
+}
+
+html[data-theme="dark"] .liquid-glass-reservation .calendar-day:not(:disabled),
+html[data-theme="dark"] .liquid-glass-reservation .booking-time-slot:not(:disabled) {
+  color: #f4f4f6 !important;
+  background: rgba(38, 40, 46, 0.58) !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
+}
+
+html[data-theme="dark"] .liquid-glass-reservation .calendar-day.selected,
+html[data-theme="dark"] .liquid-glass-reservation .booking-time-slot.selected {
+  background: var(--cg-crystal-active) !important;
+  border-color: rgba(255, 255, 255, 0.48) !important;
+  color: #ffffff !important;
+}
+
+html[data-theme="dark"] .liquid-glass-reservation .calendar-day:disabled {
+  color: #6b7280 !important;
+}
+
+html[data-theme="dark"] .liquid-glass-reservation input,
+html[data-theme="dark"] .liquid-glass-reservation textarea,
+html[data-theme="dark"] .liquid-glass-reservation select {
+  background: rgba(26, 27, 32, 0.72) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  color: #f4f4f6 !important;
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-reservation .booking-back-button,
+html[data-theme="dark"] .site-shell .liquid-glass-reservation .booking-next-button:not(:disabled) {
+  background: var(--cg-crystal-active) !important;
+  border-color: rgba(255, 255, 255, 0.34) !important;
+  color: #f4f4f6 !important;
+  box-shadow: var(--cg-crystal-shadow-active) !important;
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-reservation .booking-back-button:disabled,
+html[data-theme="dark"] .site-shell .liquid-glass-reservation .booking-next-button:disabled {
+  background: rgba(28, 29, 34, 0.46) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: rgba(244, 244, 246, 0.4) !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="dark"] body.liquid-glass-active .mobile-menu {
+  background: rgba(22, 23, 27, 0.94) !important;
+  border-color: rgba(255, 255, 255, 0.16) !important;
+  color: #f4f4f6 !important;
+}
+
+@supports not (backdrop-filter: blur(1px)) {
+  html[data-theme="dark"] body.liquid-glass-active .site-header.liquid-glass-header,
+  html[data-theme="dark"] .liquid-glass-reservation .booking-progress,
+  html[data-theme="dark"] .liquid-glass-reservation .calendar-panel,
+  html[data-theme="dark"] .liquid-glass-reservation .booking-summary-card,
+  html[data-theme="dark"] .liquid-glass-reservation .booking-option,
+  html[data-theme="dark"] .liquid-glass-reservation .service-option,
+  html[data-theme="dark"] .liquid-glass-reservation .booking-defer-option {
+    background: rgba(26, 27, 32, 0.96) !important;
+  }
 }
