@@ -370,7 +370,7 @@ html[data-theme] .liquid-glass-reservation .booking-page .booking-progress > but
 }
 
 /* Ocultar círculos numerados y checkmarks en V6 */
-html[data-theme] .liquid-glass-reservation .booking-page .booking-progress > button > span {
+html[data-theme] .liquid-glass-reservation .booking-page .booking-progress > button > span:not(.liquid-glass-stepper-lens) {
   display: none !important;
 }
 
@@ -1390,5 +1390,87 @@ body.liquid-glass-active [role="dialog"] {
     background: #f8f9fb !important;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
+  }
+}
+
+/* =========================================================
+ * MOTION V1 — Lente deslizante, tarjetas y transiciones
+ * ========================================================= */
+html[data-theme] .liquid-glass-reservation .booking-page .booking-progress:has(.liquid-glass-stepper-lens)::before {
+  display: none !important;
+  content: none !important;
+}
+
+html[data-theme] .liquid-glass-reservation .booking-page .booking-progress > button > span,
+html[data-theme] .liquid-glass-reservation .booking-page .booking-progress > button small {
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+html[data-theme] .liquid-glass-reservation .booking-page .booking-progress .liquid-glass-stepper-lens {
+  display: block !important;
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: 9999px !important;
+  pointer-events: none !important;
+  z-index: 0 !important;
+  background: var(--cg-crystal-selected) !important;
+  border: 1px solid rgba(255, 255, 255, 0.98) !important;
+  box-shadow:
+    0 4px 12px rgba(52, 56, 62, 0.08),
+    0 0 0 0.5px rgba(98, 106, 116, 0.14),
+    inset 0 1.5px 0 #ffffff,
+    inset 0 -1px 0 rgba(52, 56, 62, 0.05) !important;
+}
+
+html[data-theme] .liquid-glass-reservation .booking-scroll-content {
+  overflow-x: clip !important;
+}
+
+html[data-theme] .liquid-glass-reservation .booking-layout > section {
+  position: relative !important;
+}
+
+html[data-theme] .liquid-glass-reservation .liquid-glass-step-stage {
+  width: 100%;
+  will-change: transform, opacity;
+}
+
+/* Transición cristalina suave en bordes/sombras/brillo sin interferir con transform de Motion */
+html[data-theme] .liquid-glass-reservation .booking-service-options > button,
+html[data-theme] .liquid-glass-reservation .booking-barber-options > button,
+html[data-theme] .liquid-glass-reservation .booking-defer-option {
+  transition:
+    background 180ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 180ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 180ms cubic-bezier(0.22, 1, 0.36, 1) !important;
+  will-change: transform;
+}
+
+html[data-theme] .liquid-glass-reservation .booking-barber-options > button {
+  overflow: hidden !important;
+}
+
+html[data-theme] .liquid-glass-reservation .booking-barber-options > button .barber-avatar {
+  transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+html[data-theme] .liquid-glass-reservation .booking-barber-options > button.selected .barber-avatar {
+  transform: scale(1.045);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-theme] .liquid-glass-reservation .booking-service-options > button,
+  html[data-theme] .liquid-glass-reservation .booking-barber-options > button,
+  html[data-theme] .liquid-glass-reservation .booking-defer-option,
+  html[data-theme] .liquid-glass-reservation .booking-barber-options > button .barber-avatar {
+    transition: none !important;
+    transition-duration: 0s !important;
+  }
+
+  html[data-theme] .liquid-glass-reservation .booking-barber-options > button.selected .barber-avatar {
+    transform: none !important;
   }
 }

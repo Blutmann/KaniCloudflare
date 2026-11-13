@@ -4,6 +4,7 @@ import * as path from 'path';
 import { render, screen, act, cleanup } from '@testing-library/react';
 import React from 'react';
 import { LiquidGlassBooking } from '@/components/kani/experimental/liquid-glass-booking';
+import { LIQUID_GLASS_MOTION } from '@/components/kani/experimental/liquid-glass-motion';
 
 vi.mock('@/components/kani/store', () => ({
   useKani: () => ({
@@ -101,7 +102,7 @@ describe('KANI Barber Studio — Liquid Glass Experience (/reservar-turno-liquid
 
   it('6. Stepper segmentado Liquid Glass V6: cápsula única con lente deslizante, sin círculos ni checks', () => {
     expect(liquidCss).toMatch(/\.booking-progress\s*\{[\s\S]*?border-radius:\s*9999px\s*!important/);
-    expect(liquidCss).toMatch(/\.booking-progress\s*>\s*button\s*>\s*span\s*\{[\s\S]*?display:\s*none\s*!important/);
+    expect(liquidCss).toMatch(/\.booking-progress\s*>\s*button\s*>\s*span:not\(\.liquid-glass-stepper-lens\)\s*\{[\s\S]*?display:\s*none\s*!important/);
     expect(liquidCss).toMatch(/\.booking-progress::before\s*\{[\s\S]*?transform:\s*translate3d\(calc\(var\(--liquid-step-index, 0\) \* 100%\), 0, 0\)\s*!important/);
     expect(liquidCss).toMatch(/\.booking-progress::after\s*\{[\s\S]*?display:\s*none\s*!important/);
     expect(liquidCss).toContain('--liquid-step-index: 0;');
@@ -142,5 +143,22 @@ describe('KANI Barber Studio — Liquid Glass Experience (/reservar-turno-liquid
     expect(liquidCss).toMatch(/\.booking-time-period-header\s*\{[\s\S]*?align-items:\s*center\s*!important/);
     expect(liquidCss).toMatch(/\.booking-time-period-title\s*\{[\s\S]*?margin:\s*0\s*!important/);
     expect(liquidCss).toMatch(/\.booking-v2-unified-summary \.summary-appointment-card,[\s\S]*?\.booking-v2-unified-summary \.summary-pricing-card\s*\{[\s\S]*?background:\s*transparent\s*!important/);
+  });
+
+  it('10. Motion V1: parámetros centralizados, lente deslizante y transición de pasos aislados en LiquidGlassBooking', () => {
+    expect(LIQUID_GLASS_MOTION.scales.cardTap).toBeGreaterThanOrEqual(0.985);
+    expect(LIQUID_GLASS_MOTION.scales.cardTap).toBeLessThanOrEqual(0.99);
+    expect(LIQUID_GLASS_MOTION.durations.tap).toBeGreaterThanOrEqual(0.12);
+    expect(LIQUID_GLASS_MOTION.durations.tap).toBeLessThanOrEqual(0.22);
+    expect(LIQUID_GLASS_MOTION.durations.step).toBeGreaterThanOrEqual(0.2);
+    expect(LIQUID_GLASS_MOTION.durations.step).toBeLessThanOrEqual(0.3);
+    expect(LIQUID_GLASS_MOTION.springs.stepperLens.type).toBe('spring');
+
+    const { container, unmount } = render(<LiquidGlassBooking />);
+    expect(container.querySelectorAll('.liquid-glass-stepper-lens')).toHaveLength(1);
+    expect(container.querySelectorAll('.liquid-glass-step-stage')).toHaveLength(1);
+    expect(liquidCss).toContain('.liquid-glass-stepper-lens');
+    expect(liquidCss).toContain('.liquid-glass-step-stage');
+    unmount();
   });
 });

@@ -1,5 +1,9 @@
 import { useEffect } from 'react';
 import { PaywayBooking } from '@/components/kani/experimental/payway-booking';
+import {
+  LiquidGlassMotionProvider,
+  liquidGlassMotionAdapter,
+} from '@/components/kani/experimental/liquid-glass-motion';
 
 /**
  * LiquidGlassBooking — Experiencia experimental Liquid Glass aislada para /reservar-turno-liquid.
@@ -16,15 +20,17 @@ export function LiquidGlassBooking() {
   }, []);
 
   return (
-    <div className="liquid-glass-reservation">
-      <div className="liquid-glass-atmosphere" aria-hidden="true">
-        <span className="liquid-orb liquid-orb-1" />
-        <span className="liquid-orb liquid-orb-2" />
-        <span className="liquid-orb liquid-orb-3" />
-        <span className="liquid-orb liquid-orb-4" />
-        <span className="liquid-grain" />
+    <LiquidGlassMotionProvider>
+      <div className="liquid-glass-reservation">
+        <div className="liquid-glass-atmosphere" aria-hidden="true">
+          <span className="liquid-orb liquid-orb-1" />
+          <span className="liquid-orb liquid-orb-2" />
+          <span className="liquid-orb liquid-orb-3" />
+          <span className="liquid-orb liquid-orb-4" />
+          <span className="liquid-grain" />
+        </div>
+        <PaywayBooking homeUrl="/reservar-turno-liquid" experimentalMotion={liquidGlassMotionAdapter} />
       </div>
-      <PaywayBooking homeUrl="/reservar-turno-liquid" />
-    </div>
+    </LiquidGlassMotionProvider>
   );
 }

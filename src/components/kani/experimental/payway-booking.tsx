@@ -25,6 +25,7 @@ import {
 import { KANI_MAPS_URL, KANI_MAPS_EMBED_URL } from '@/lib/kani-constants';
 import { BookingConfirmedScreen } from '@/components/kani/booking-confirmed-screen';
 import { CardBrandBadge } from './card-brand-badges';
+import type { LiquidGlassMotionAdapter } from './liquid-glass-motion.types';
 
 const CONFIRMED_STORAGE_KEY = 'kani:payway:confirmed-booking';
 const PAID_APPOINTMENTS_STORAGE_KEY = 'kani:payway:paid-appointments';
@@ -161,7 +162,13 @@ function resolveServicePrice(serviceName: string, configured: ConfiguredService[
   return match?.price ?? 25000;
 }
 
-export function PaywayBooking({ homeUrl = '/reservar-turno' }: { homeUrl?: string } = {}) {
+export function PaywayBooking({
+  homeUrl = '/reservar-turno',
+  experimentalMotion,
+}: {
+  homeUrl?: string;
+  experimentalMotion?: LiquidGlassMotionAdapter;
+} = {}) {
   const [open, setOpen] = useState(false);
   const [preparing, setPreparing] = useState(false);
   const [checkout, setCheckout] = useState<PaywayCheckout | null>(null);
@@ -890,6 +897,7 @@ export function PaywayBooking({ homeUrl = '/reservar-turno' }: { homeUrl?: strin
     <div className="payway-reservation">
       <Booking
         variant="v3"
+        experimentalMotion={experimentalMotion}
         onPaymentRequest={begin}
         paymentActionLabel={hasReviewNotice ? 'Ver detalle de revisión' : hasPendingPayment ? 'Ver estado del pago' : undefined}
         paymentNotice={
