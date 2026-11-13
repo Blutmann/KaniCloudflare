@@ -1,9 +1,15 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { PaywayBooking } from '@/components/kani/experimental/payway-booking';
+import { RefractionPoc } from '@/components/kani/experimental/refraction-poc';
 import {
   LiquidGlassMotionProvider,
   liquidGlassMotionAdapter,
 } from '@/components/kani/experimental/liquid-glass-motion';
+
+function isRefractionPocRoute(): boolean {
+  if (typeof window === 'undefined') return false;
+  return new URLSearchParams(window.location.search).get('refraction-poc') === '1';
+}
 
 /**
  * LiquidGlassBooking — Experiencia experimental Liquid Glass aislada para /reservar-turno-liquid.
@@ -11,6 +17,8 @@ import {
  * sin duplicar reglas ni alterar las rutas existentes.
  */
 export function LiquidGlassBooking() {
+  const [showRefractionPoc] = useState(isRefractionPocRoute);
+
   useEffect(() => {
     if (typeof document === 'undefined') return;
     document.body.classList.add('liquid-glass-active');
@@ -29,7 +37,11 @@ export function LiquidGlassBooking() {
           <span className="liquid-orb liquid-orb-4" />
           <span className="liquid-grain" />
         </div>
-        <PaywayBooking homeUrl="/reservar-turno-liquid" experimentalMotion={liquidGlassMotionAdapter} />
+        {showRefractionPoc ? (
+          <RefractionPoc />
+        ) : (
+          <PaywayBooking homeUrl="/reservar-turno-liquid" experimentalMotion={liquidGlassMotionAdapter} />
+        )}
       </div>
     </LiquidGlassMotionProvider>
   );

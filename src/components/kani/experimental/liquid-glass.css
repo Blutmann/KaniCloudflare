@@ -4713,3 +4713,461 @@ html[data-theme="dark"] .liquid-glass-reservation .lg-living-wave {
     opacity: 0 !important;
   }
 }
+
+
+/* === LIQUID GLASS V11: Modern Japanese Atelier · Warm Optical Glass · Calendar 3-Surface · Bottom CTAs · Refraction POC === */
+
+/* 1. Paleta cálida Light Mode (sin matices azulados/celestes; gris perla cálido próximo a #D8D2CA + blanco marfil + #C8A96B) */
+html[data-theme="light"] body.liquid-glass-active {
+  --cg-crystal-rest: linear-gradient(
+    148deg,
+    rgba(254, 253, 250, 0.48) 0%,
+    rgba(249, 247, 243, 0.26) 55%,
+    rgba(245, 242, 237, 0.36) 100%
+  );
+  --cg-crystal-hover: linear-gradient(
+    148deg,
+    rgba(250, 248, 244, 0.68) 0%,
+    rgba(242, 238, 232, 0.54) 55%,
+    rgba(238, 234, 226, 0.62) 100%
+  );
+  --cg-crystal-selected: linear-gradient(
+    148deg,
+    rgba(226, 221, 214, 0.94) 0%,
+    rgba(212, 206, 198, 0.88) 54%,
+    rgba(224, 216, 202, 0.92) 100%
+  );
+  --cg-crystal-active: linear-gradient(
+    148deg,
+    rgba(219, 213, 205, 0.96) 0%,
+    rgba(206, 199, 190, 0.90) 54%,
+    rgba(218, 210, 196, 0.94) 100%
+  );
+  --lg-glass-shadow:
+    0 2px 8px rgba(34, 28, 22, 0.03),
+    inset 0 1px 0 rgba(255, 253, 249, 0.88),
+    inset -1px -1px 0 rgba(206, 199, 189, 0.12);
+  --cg-crystal-shadow-selected:
+    0 14px 30px rgba(34, 28, 22, 0.14),
+    0 4px 10px rgba(34, 28, 22, 0.07),
+    inset 0 1.5px 0 rgba(255, 253, 249, 0.98),
+    inset 0 -1px 0 rgba(112, 43, 58, 0.18);
+}
+
+html[data-theme="light"] .liquid-glass-atmosphere .liquid-orb-3,
+html[data-theme="light"] .liquid-glass-atmosphere .liquid-orb-4 {
+  background: radial-gradient(circle, rgba(232, 226, 218, 0.16) 0%, rgba(232, 226, 218, 0) 72%) !important;
+}
+
+html[data-theme="light"] .site-shell .liquid-glass-reservation :is(
+  .service-option:not(.selected),
+  .booking-option:not(.selected),
+  .booking-defer-option:not(.selected)
+) {
+  background: var(--cg-crystal-rest) !important;
+  border: 1px solid rgba(206, 199, 189, 0.56) !important;
+  box-shadow: var(--lg-glass-shadow) !important;
+}
+
+html[data-theme="light"] .site-shell .liquid-glass-reservation :is(
+  .service-option.selected,
+  .service-option.selected:hover:not(:disabled),
+  .service-option.selected:focus-visible,
+  .booking-option.selected,
+  .booking-option.selected:hover:not(:disabled),
+  .booking-option.selected:focus-visible,
+  .booking-defer-option.selected,
+  .booking-defer-option.selected:hover:not(:disabled),
+  .booking-defer-option.selected:focus-visible,
+  .booking-time-slot.selected,
+  .booking-time-slot.selected:hover:not(:disabled),
+  .booking-time-slot.selected:focus-visible,
+  .calendar-day.selected,
+  .calendar-day.selected:hover:not(:disabled),
+  .calendar-day.selected:focus-visible
+) {
+  background: var(--cg-crystal-selected) !important;
+  border: 1.5px solid rgba(200, 169, 107, 0.78) !important;
+  box-shadow: var(--cg-crystal-shadow-selected) !important;
+  color: #1c1916 !important;
+}
+
+html[data-theme="light"] .site-shell .liquid-glass-reservation :is(
+  .service-option.selected,
+  .booking-option.selected,
+  .booking-defer-option.selected,
+  .booking-time-slot.selected
+)::after {
+  background: linear-gradient(
+    132deg,
+    rgba(255, 253, 249, 1) 0%,
+    rgba(200, 169, 107, 0.72) 26%,
+    rgba(164, 156, 146, 0.28) 54%,
+    rgba(255, 253, 249, 0.94) 84%,
+    rgba(112, 43, 58, 0.20) 100%
+  );
+}
+
+html[data-theme="light"] .site-shell .liquid-glass-reservation .booking-time-slot:not(.selected):not(:disabled) {
+  background: var(--cg-crystal-rest) !important;
+  border-color: rgba(206, 199, 189, 0.60) !important;
+  color: #26221e !important;
+}
+
+html[data-theme="dark"] .liquid-glass-atmosphere .liquid-orb-3,
+html[data-theme="dark"] .liquid-glass-atmosphere .liquid-orb-4 {
+  background: radial-gradient(circle, rgba(68, 65, 62, 0.20) 0%, rgba(68, 65, 62, 0) 72%) !important;
+}
+
+/* 2. Botones inferiores — Unificación de materialidad («Volver» baja densidad, «Continuar» densidad media) */
+html[data-theme="light"] .site-shell .liquid-glass-reservation .booking-back-button:not(:disabled) {
+  background: linear-gradient(148deg, rgba(254, 252, 248, 0.42), rgba(246, 243, 238, 0.26)) !important;
+  border: 1px solid rgba(202, 195, 186, 0.52) !important;
+  color: #36322d !important;
+  box-shadow:
+    0 2px 8px rgba(34, 28, 22, 0.04),
+    inset 0 1px 0 rgba(255, 253, 249, 0.84) !important;
+}
+
+html[data-theme="light"] .site-shell .liquid-glass-reservation .booking-back-button:not(:disabled):hover {
+  background: linear-gradient(148deg, rgba(250, 247, 242, 0.62), rgba(240, 236, 229, 0.48)) !important;
+  border-color: rgba(188, 179, 168, 0.72) !important;
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-reservation .booking-back-button:not(:disabled) {
+  background: linear-gradient(148deg, rgba(22, 22, 25, 0.48), rgba(15, 15, 18, 0.34)) !important;
+  border: 1px solid rgba(255, 255, 255, 0.11) !important;
+  color: rgba(242, 239, 234, 0.88) !important;
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+}
+
+html[data-theme="light"] .site-shell .liquid-glass-reservation :is(.booking-next-button, .payway-submit-btn):not(:disabled) {
+  background: linear-gradient(
+    148deg,
+    rgba(242, 238, 231, 0.88) 0%,
+    rgba(229, 223, 214, 0.80) 56%,
+    rgba(237, 230, 217, 0.86) 100%
+  ) !important;
+  border: 1.5px solid rgba(200, 169, 107, 0.68) !important;
+  color: #1c1916 !important;
+  font-weight: 500 !important;
+  box-shadow:
+    0 10px 24px rgba(34, 28, 22, 0.11),
+    0 2px 6px rgba(34, 28, 22, 0.05),
+    inset 0 1.5px 0 rgba(255, 253, 249, 0.96),
+    inset 0 -1px 0 rgba(112, 43, 58, 0.12) !important;
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-reservation :is(.booking-next-button, .payway-submit-btn):not(:disabled) {
+  background: linear-gradient(
+    148deg,
+    rgba(66, 65, 70, 0.84) 0%,
+    rgba(48, 47, 52, 0.76) 56%,
+    rgba(60, 47, 52, 0.80) 100%
+  ) !important;
+  border: 1.5px solid rgba(200, 169, 107, 0.56) !important;
+  color: #f8f6f2 !important;
+  font-weight: 500 !important;
+  box-shadow:
+    0 14px 28px rgba(0, 0, 0, 0.56),
+    inset 0 1.5px 0 rgba(255, 248, 236, 0.36),
+    inset 0 -1px 0 rgba(112, 43, 58, 0.30) !important;
+}
+
+html[data-theme] .site-shell .liquid-glass-reservation :is(.booking-back-button, .booking-next-button, .payway-submit-btn):disabled {
+  pointer-events: none !important;
+  box-shadow: none !important;
+}
+
+html[data-theme] .site-shell .liquid-glass-reservation :is(.booking-back-button, .booking-next-button, .payway-submit-btn):focus-visible {
+  outline: 2px solid rgba(200, 169, 107, 0.85) !important;
+  outline-offset: 2px !important;
+}
+
+/* 3. Calendario — Tres superficies independientes (Encabezado cápsula, Grilla de fechas, Info no interactiva) */
+html[data-theme] .site-shell .liquid-glass-reservation .calendar-panel {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  padding: 0 !important;
+}
+
+html[data-theme] .site-shell .liquid-glass-reservation .calendar-panel::after {
+  display: none !important;
+}
+
+html[data-theme] .site-shell .liquid-glass-reservation .calendar-header,
+html[data-theme] .site-shell .liquid-glass-reservation .calendar-grid {
+  -webkit-backdrop-filter: blur(18px) saturate(140%) !important;
+  backdrop-filter: blur(18px) saturate(140%) !important;
+}
+
+html[data-theme] .site-shell .liquid-glass-reservation .calendar-header {
+  border-radius: 20px !important;
+  padding: 11px 14px !important;
+  margin-bottom: 0 !important;
+}
+
+html[data-theme="light"] .site-shell .liquid-glass-reservation .calendar-header,
+html[data-theme="light"] .site-shell .liquid-glass-reservation .calendar-grid {
+  background: linear-gradient(
+    148deg,
+    rgba(254, 253, 250, 0.56) 0%,
+    rgba(249, 247, 243, 0.34) 56%,
+    rgba(245, 242, 237, 0.44) 100%
+  ) !important;
+  border: 1px solid rgba(206, 199, 189, 0.58) !important;
+  box-shadow:
+    0 6px 18px rgba(34, 28, 22, 0.045),
+    inset 0 1px 0 rgba(255, 253, 249, 0.90) !important;
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-reservation .calendar-header,
+html[data-theme="dark"] .site-shell .liquid-glass-reservation .calendar-grid {
+  background: linear-gradient(
+    150deg,
+    rgba(20, 21, 25, 0.58) 0%,
+    rgba(14, 15, 19, 0.44) 56%,
+    rgba(18, 19, 23, 0.52) 100%
+  ) !important;
+  border: 1px solid rgba(255, 255, 255, 0.11) !important;
+  box-shadow:
+    0 10px 24px rgba(0, 0, 0, 0.38),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+}
+
+html[data-theme] .site-shell .liquid-glass-reservation .calendar-header h2 {
+  font-family: var(--lg-font-ui) !important;
+  font-size: 16px !important;
+  font-weight: 500 !important;
+  letter-spacing: -0.01em !important;
+  filter: none !important;
+}
+
+html[data-theme] .site-shell .liquid-glass-reservation .calendar-header button:not(:disabled) {
+  border-radius: 999px !important;
+  transition: background-color 180ms ease, transform 140ms ease !important;
+}
+
+html[data-theme] .site-shell .liquid-glass-reservation .calendar-grid {
+  border-radius: 22px !important;
+  padding: 14px 12px !important;
+}
+
+html[data-theme="light"] .site-shell .liquid-glass-reservation .calendar-day:not(:disabled):not(.selected) {
+  background: linear-gradient(150deg, rgba(254, 253, 250, 0.72), rgba(246, 243, 238, 0.50)) !important;
+  border-color: rgba(202, 195, 186, 0.68) !important;
+  color: #231f1b !important;
+}
+
+html[data-theme="light"] .site-shell .liquid-glass-reservation .calendar-day:not(:disabled):not(.selected):hover {
+  background: linear-gradient(150deg, rgba(245, 241, 235, 0.88), rgba(235, 230, 222, 0.78)) !important;
+  border-color: rgba(200, 169, 107, 0.64) !important;
+}
+
+/* Tercera superficie: Información de horarios comerciales (NO interactiva) */
+html[data-theme] .site-shell .liquid-glass-reservation .calendar-footer-info {
+  border-radius: 16px !important;
+  padding: 10px 14px !important;
+  margin-top: 0 !important;
+  cursor: default !important;
+  pointer-events: auto !important;
+  transition: none !important;
+}
+
+html[data-theme="light"] .site-shell .liquid-glass-reservation .calendar-footer-info {
+  background: rgba(252, 250, 247, 0.34) !important;
+  border: 1px solid rgba(206, 199, 189, 0.38) !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-reservation .calendar-footer-info {
+  background: rgba(18, 19, 23, 0.34) !important;
+  border: 1px solid rgba(255, 255, 255, 0.07) !important;
+  box-shadow: none !important;
+}
+
+html[data-theme] .site-shell .liquid-glass-reservation .calendar-footer-info .calendar-note {
+  margin: 0 !important;
+  font-size: 12.5px !important;
+  line-height: 1.35 !important;
+}
+
+html[data-theme] .site-shell .liquid-glass-reservation .calendar-footer-info .calendar-note > span:first-child {
+  position: relative !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 15px !important;
+  height: 15px !important;
+  flex: 0 0 15px !important;
+  border-radius: 999px !important;
+  border: 1px solid rgba(200, 169, 107, 0.62) !important;
+  background: transparent !important;
+}
+
+html[data-theme] .site-shell .liquid-glass-reservation .calendar-footer-info .calendar-note > span:first-child::after {
+  content: 'i';
+  font-size: 9.5px;
+  font-weight: 600;
+  line-height: 1;
+  color: rgba(168, 138, 84, 0.95);
+}
+
+/* 4. Prototipo aislado de Refracción Óptica Real (?refraction-poc=1) */
+.lg-refraction-poc {
+  max-width: 520px;
+  margin: 96px auto 48px;
+  padding: 0 16px;
+  font-family: var(--lg-font-ui, sans-serif);
+}
+
+.lg-refraction-poc-kicker {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(168, 138, 84, 0.95);
+  margin: 0 0 6px;
+}
+
+.lg-refraction-poc-header h1 {
+  font-family: var(--lg-font-display, serif);
+  font-size: 26px;
+  font-weight: 400;
+  margin: 0 0 8px;
+}
+
+.lg-refraction-poc-desc {
+  font-size: 13.5px;
+  line-height: 1.5;
+  opacity: 0.82;
+  margin: 0 0 14px;
+}
+
+.lg-refraction-poc-controls {
+  display: inline-flex;
+  gap: 6px;
+  padding: 4px;
+  border-radius: 999px;
+  border: 1px solid rgba(200, 169, 107, 0.42);
+  margin-bottom: 18px;
+}
+
+.lg-refraction-poc-controls button {
+  border: none;
+  background: transparent;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  color: inherit;
+}
+
+.lg-refraction-poc-controls button.is-active {
+  background: rgba(200, 169, 107, 0.24);
+}
+
+.lg-refraction-poc-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 20px;
+  min-height: 112px;
+  padding: 18px 20px;
+  border: 1.5px solid rgba(200, 169, 107, 0.65);
+  cursor: pointer;
+  user-select: none;
+}
+
+.lg-refraction-poc-underlay {
+  position: absolute;
+  inset: -12px;
+  z-index: 1;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lg-refraction-poc-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(to right, rgba(200, 169, 107, 0.28) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(112, 43, 58, 0.24) 1px, transparent 1px);
+  background-size: 18px 18px;
+}
+
+.lg-refraction-poc-watermark {
+  position: relative;
+  font-size: 14px;
+  letter-spacing: 0.24em;
+  font-weight: 600;
+  opacity: 0.34;
+}
+
+.lg-refraction-poc-glass {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(148deg, rgba(255, 253, 249, 0.44), rgba(226, 221, 214, 0.32));
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+html[data-theme="dark"] .lg-refraction-poc-glass {
+  background: linear-gradient(148deg, rgba(32, 32, 36, 0.46), rgba(18, 18, 22, 0.36));
+}
+
+.lg-refraction-poc-content {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.lg-refraction-poc-title {
+  font-size: 17px;
+  font-weight: 500;
+}
+
+.lg-refraction-poc-sub {
+  font-size: 13px;
+  opacity: 0.72;
+}
+
+.lg-refraction-poc-price {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.lg-refraction-poc-telemetry {
+  font-size: 12.5px;
+  margin: 12px 0;
+  opacity: 0.85;
+}
+
+.lg-refraction-poc-notes {
+  font-size: 12.5px;
+  line-height: 1.5;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(200, 169, 107, 0.36);
+  margin-bottom: 16px;
+}
+
+.lg-refraction-poc-back {
+  display: inline-block;
+  font-size: 13px;
+  text-decoration: underline;
+}

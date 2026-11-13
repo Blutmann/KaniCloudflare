@@ -304,4 +304,23 @@ describe('KANI Barber Studio — Liquid Glass Experience (/reservar-turno-liquid
     expect(liquidCss).toContain('@keyframes kaniLivingWaveV3');
     expect(liquidCss).toContain('@keyframes kaniLivingEdgePulseV3');
   });
+
+  it('23. Liquid Glass V11: Paleta cálida sin tonos azulados, botones inferiores unificados, calendario en 3 superficies y POC de refracción aislado', () => {
+    const bookingWrapperTsx = fs.readFileSync(
+      path.resolve(process.cwd(), 'src/components/kani/experimental/liquid-glass-booking.tsx'),
+      'utf8',
+    );
+    const pocTsx = fs.readFileSync(
+      path.resolve(process.cwd(), 'src/components/kani/experimental/refraction-poc.tsx'),
+      'utf8',
+    );
+
+    expect(bookingWrapperTsx).toContain('refraction-poc');
+    expect(pocTsx).toContain('feDisplacementMap');
+    expect(pocTsx).toContain('useReducedMotion');
+    expect(liquidCss).toContain('LIQUID GLASS V11: Modern Japanese Atelier · Warm Optical Glass · Calendar 3-Surface · Bottom CTAs · Refraction POC');
+    expect(liquidCss).toContain('rgba(226, 221, 214, 0.94)');
+    expect(liquidCss).toContain('.calendar-footer-info .calendar-note');
+    expect(liquidCss).toContain('.lg-refraction-poc-card');
+  });
 });
