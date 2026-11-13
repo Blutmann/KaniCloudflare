@@ -152,7 +152,7 @@ describe('KANI Barber Studio — Liquid Glass Experience (/reservar-turno-liquid
     expect(LIQUID_GLASS_MOTION.durations.tap).toBeLessThanOrEqual(0.22);
     expect(LIQUID_GLASS_MOTION.durations.step).toBeGreaterThanOrEqual(0.2);
     expect(LIQUID_GLASS_MOTION.durations.step).toBeLessThanOrEqual(0.3);
-    expect(LIQUID_GLASS_MOTION.springs.stepperLens.type).toBe('spring');
+    expect(LIQUID_GLASS_MOTION.springs.stepperLens.ease).toEqual([0.22, 1, 0.36, 1]);
 
     const { container, unmount } = render(<LiquidGlassBooking />);
     expect(container.querySelectorAll('.liquid-glass-stepper-lens')).toHaveLength(1);
@@ -341,7 +341,7 @@ describe('KANI Barber Studio — Liquid Glass Experience (/reservar-turno-liquid
     );
     expect(liquidCss).toContain('LIQUID GLASS V12.1 + V12.2: Servicios 96px, Barberos +12-16px e Interacción Táctil Unificada');
     expect(liquidCss).toContain('[data-services-variant="a"] .booking-page .booking-service-options > .service-option:nth-child(n)');
-    expect(liquidCss).toContain('height: 92px !important;');
+    expect(liquidCss).toContain('height: 91px !important;');
     expect(liquidCss).toContain('aspect-ratio: 11 / 16.3 !important;');
     expect(liquidCss).toContain('.calendar-panel::before');
     expect(liquidCss).toContain('content: none !important;');
@@ -431,5 +431,20 @@ describe('KANI Barber Studio — Liquid Glass Experience (/reservar-turno-liquid
     expect(liquidCss).toContain('.discount-apply-button:not(:disabled)');
     expect(liquidCss).toContain('overflow: visible !important;');
     expect(liquidCss).toContain('transition: none !important;');
+  });
+
+  it('33. Liquid Glass V12.12: Stepper sin overshoot y cápsula completa, Servicios 91px, Aplicar transparente, inputs Dark Mode y error inline alineado', () => {
+    expect(liquidCss).toContain('LIQUID GLASS V12.12 — STEPPER MOTION POLISH · MICROSPACING · FORM UX FIXES');
+    expect(liquidCss).toContain('min-height: 91px !important;');
+    expect(liquidCss).toContain('height: 91px !important;');
+    expect(liquidCss).toContain('min-height: 44px !important;');
+    expect(liquidCss).toContain('opacity: 0.56 !important;');
+    expect(liquidCss).toContain('-webkit-text-fill-color: #faf8f4 !important;');
+    expect(liquidCss).toContain('#benefit-code-error.field-validation-message');
+    expect(liquidCss).toContain('display: flex !important;');
+    expect(LIQUID_GLASS_MOTION.springs.stepperLens).toEqual({
+      duration: 0.28,
+      ease: [0.22, 1, 0.36, 1],
+    });
   });
 });

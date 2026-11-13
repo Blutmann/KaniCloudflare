@@ -1639,7 +1639,8 @@ html[data-theme] .liquid-glass-reservation .booking-page .booking-progress .liqu
   inset: 0 !important;
   width: 100% !important;
   height: 100% !important;
-  border-radius: 9999px !important;
+  box-sizing: border-box !important;
+  border-radius: 9999px;
   pointer-events: none !important;
   z-index: 0 !important;
   background: var(--cg-crystal-selected) !important;
@@ -5398,8 +5399,8 @@ html[data-theme="dark"] .site-shell .liquid-glass-reservation .booking-cta:not(.
 /* 1. Servicios — Regla única consolidada (92 px reales en mobile y consistencia en las 3 cards) */
 html[data-theme] .site-shell .liquid-glass-reservation[data-services-variant="a"] .booking-page .booking-service-options > .service-option:nth-child(n),
 html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option:nth-child(n) {
-  min-height: 92px !important;
-  height: 92px !important;
+  min-height: 91px !important;
+  height: 91px !important;
   padding: 16px 18px !important;
   box-sizing: border-box !important;
   align-items: center !important;
@@ -6693,11 +6694,17 @@ html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-pr
   z-index: 3 !important;
 }
 
-html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-progress .liquid-glass-stepper-lens {
+html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-progress .liquid-glass-stepper-lens,
+html[data-theme] .site-shell .liquid-glass-reservation .booking-page.booking-v5 .booking-progress > button > span.liquid-glass-stepper-lens {
   transition: none !important;
   will-change: transform;
-  -webkit-backdrop-filter: blur(14px) saturate(150%) !important;
-  backdrop-filter: blur(14px) saturate(150%) !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: 9999px !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -6708,4 +6715,177 @@ html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-pr
     transition: none !important;
     animation: none !important;
   }
+}
+
+/* ==============================================================================
+ * LIQUID GLASS V12.12 — STEPPER MOTION POLISH · MICROSPACING · FORM UX FIXES
+ * 1. Stepper sin rebote lateral y cápsula completa durante el desplazamiento.
+ * 2. Microajustes: Servicios 91px, stepper +2px, separación con títulos -1px.
+ * 3. Botón «Aplicar» deshabilitado verdaderamente secundario y transparente.
+ * 4. Formulario Dark Mode: texto ingresado marfil alto contraste + Safari autofill.
+ * 5. Error inline de descuento (#benefit-code-error): ícono y texto alineados.
+ * ============================================================================== */
+
+/* 1 & 2. STEPPER (+2px altura) Y SEPARACIÓN CON TÍTULOS (-1px) */
+html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-progress {
+  min-height: 44px !important;
+  margin-bottom: 19px !important;
+}
+
+html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-progress > button {
+  height: 38px !important;
+  min-height: 38px !important;
+  max-height: 38px !important;
+}
+
+@media (max-width: 767px) {
+  html[data-theme] .site-shell .liquid-glass-reservation .booking-scroll-content {
+    padding-top: 19px !important;
+  }
+
+  html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-progress {
+    min-height: 42px !important;
+    margin-bottom: 0 !important;
+  }
+
+  html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-progress > button {
+    height: 36px !important;
+    min-height: 36px !important;
+    max-height: 36px !important;
+  }
+}
+
+@media (max-width: 430px) {
+  html[data-theme] .site-shell .liquid-glass-reservation .booking-scroll-content {
+    padding-top: 17px !important;
+  }
+}
+
+@media (max-width: 360px) {
+  html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-progress {
+    height: 42px !important;
+    min-height: 42px !important;
+    max-height: 42px !important;
+  }
+
+  html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-progress > button {
+    height: 100% !important;
+    min-height: 0 !important;
+    max-height: none !important;
+  }
+}
+
+/* 3. BOTÓN «APLICAR» DESHABILITADO — BAJA DENSIDAD REAL Y TRANSPARENTE */
+html[data-theme="light"] .site-shell .liquid-glass-reservation .booking-page .booking-contact-form .discount-apply-button:disabled,
+html[data-theme="light"] .site-shell .liquid-glass-reservation .booking-page .booking-contact-form .booking-discount-field .discount-input-row button:disabled {
+  background: rgba(255, 255, 255, 0.14) !important;
+  background-color: rgba(255, 255, 255, 0.14) !important;
+  background-image: none !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(168, 164, 158, 0.22) !important;
+  color: rgba(42, 40, 38, 0.48) !important;
+  box-shadow: none !important;
+  opacity: 0.56 !important;
+  pointer-events: none !important;
+  transform: none !important;
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-reservation .booking-page .booking-contact-form .discount-apply-button:disabled,
+html[data-theme="dark"] .site-shell .liquid-glass-reservation .booking-page .booking-contact-form .booking-discount-field .discount-input-row button:disabled {
+  background: rgba(18, 18, 20, 0.16) !important;
+  background-color: rgba(18, 18, 20, 0.16) !important;
+  background-image: none !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(255, 246, 228, 0.08) !important;
+  color: rgba(244, 242, 238, 0.42) !important;
+  box-shadow: none !important;
+  opacity: 0.56 !important;
+  pointer-events: none !important;
+  transform: none !important;
+}
+
+html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-contact-form .discount-apply-button:disabled::before,
+html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-contact-form .discount-apply-button:disabled::after,
+html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-contact-form .booking-discount-field .discount-input-row button:disabled::before,
+html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-contact-form .booking-discount-field .discount-input-row button:disabled::after {
+  display: none !important;
+  content: none !important;
+}
+
+html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-contact-form .discount-apply-button:not(:disabled),
+html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-contact-form .booking-discount-field .discount-input-row button:not(:disabled) {
+  opacity: 1 !important;
+}
+
+/* 4. FORMULARIO DARK MODE — TEXTO INGRESADO, PLACEHOLDER, SELECTION, CARET Y AUTOFILL (Safari iOS) */
+html[data-theme="dark"] .site-shell .liquid-glass-reservation .booking-page .booking-contact-form :is(
+  input,
+  textarea,
+  .field-control input,
+  .notes-input,
+  .discount-input,
+  input#booking-discount-code
+) {
+  color: #faf8f4 !important;
+  -webkit-text-fill-color: #faf8f4 !important;
+  caret-color: #faf8f4 !important;
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-reservation .booking-page .booking-contact-form :is(
+  input,
+  textarea,
+  .field-control input,
+  .notes-input,
+  .discount-input,
+  input#booking-discount-code
+)::placeholder {
+  color: rgba(226, 222, 214, 0.46) !important;
+  -webkit-text-fill-color: rgba(226, 222, 214, 0.46) !important;
+  opacity: 1 !important;
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-reservation .booking-page .booking-contact-form :is(
+  input,
+  textarea,
+  .field-control input,
+  .notes-input,
+  .discount-input,
+  input#booking-discount-code
+)::selection {
+  background: rgba(200, 169, 107, 0.34) !important;
+  color: #faf8f4 !important;
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-reservation .booking-page .booking-contact-form :is(
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  textarea:-webkit-autofill
+) {
+  -webkit-text-fill-color: #faf8f4 !important;
+  caret-color: #faf8f4 !important;
+  -webkit-box-shadow: 0 0 0 1000px rgba(22, 23, 28, 0.92) inset !important;
+  box-shadow: 0 0 0 1000px rgba(22, 23, 28, 0.92) inset !important;
+  transition: background-color 9999s ease-out 0s !important;
+}
+
+/* 5. CÓDIGO DE DESCUENTO — ERROR INLINE HORIZONTAL ALINEADO ([ícono] [mensaje]) */
+html[data-theme] .site-shell .liquid-glass-reservation .booking-page.booking-v5 #benefit-code-error.field-validation-message,
+html[data-theme] .site-shell .liquid-glass-reservation .booking-page #benefit-code-error.field-validation-message,
+html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-discount-field .field-validation-message {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: flex-start !important;
+  justify-content: flex-start !important;
+  gap: 6px !important;
+  line-height: 1.35 !important;
+  margin-top: 6px !important;
+}
+
+html[data-theme] .site-shell .liquid-glass-reservation .booking-page #benefit-code-error.field-validation-message > svg,
+html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-discount-field .field-validation-message > svg {
+  flex-shrink: 0 !important;
+  margin-top: 2px !important;
 }

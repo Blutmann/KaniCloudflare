@@ -25,10 +25,8 @@ export const LIQUID_GLASS_MOTION = {
   },
   springs: {
     stepperLens: {
-      type: 'spring' as const,
-      stiffness: 400,
-      damping: 36,
-      mass: 0.85,
+      duration: 0.28,
+      ease: [0.22, 1, 0.36, 1] as const,
     },
   },
   distances: {
