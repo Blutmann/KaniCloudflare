@@ -182,4 +182,17 @@ describe('KANI Barber Studio — Liquid Glass Experience (/reservar-turno-liquid
     expect(liquidCss).toContain('background-color: #121213;');
     expect(liquidCss).toContain('html[data-theme="dark"] .liquid-glass-atmosphere');
   });
+
+  it('13. Motion V2.1: tokens y transiciones para botones CTA, calendario y horarios sin afectar el flujo tradicional', () => {
+    expect(LIQUID_GLASS_MOTION.durations.cardState).toBeGreaterThanOrEqual(0.18);
+    expect(LIQUID_GLASS_MOTION.durations.cardState).toBeLessThanOrEqual(0.26);
+    expect(LIQUID_GLASS_MOTION.scales.actionTap).toBeGreaterThanOrEqual(0.98);
+    expect(LIQUID_GLASS_MOTION.scales.slotTap).toBeGreaterThanOrEqual(0.97);
+    expect(LIQUID_GLASS_MOTION.scales.dayTap).toBeGreaterThanOrEqual(0.95);
+    expect(liquidCss).toContain('.booking-back-button:not(:disabled)');
+    expect(liquidCss).toContain('.booking-next-button:not(:disabled)');
+    expect(liquidCss).toContain('.calendar-day:not(:disabled)');
+    expect(liquidCss).toContain('.booking-time-slot:not(:disabled)');
+    expect(liquidCss).toContain('.booking-time-slot.time-unavailable');
+  });
 });

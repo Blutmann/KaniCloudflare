@@ -14,7 +14,7 @@ import type {
 export const LIQUID_GLASS_MOTION = {
   durations: {
     tap: 0.15,
-    cardState: 0.18,
+    cardState: 0.21,
     step: 0.24,
     reduced: 0.08,
   },
@@ -34,6 +34,9 @@ export const LIQUID_GLASS_MOTION = {
   },
   scales: {
     cardTap: 0.987,
+    actionTap: 0.986,
+    slotTap: 0.98,
+    dayTap: 0.96,
     avatarSelected: 1.045,
   },
 } as const;
@@ -85,6 +88,7 @@ function InteractiveCard({
   className = '',
   disabled,
   type = 'button',
+  tapScale = LIQUID_GLASS_MOTION.scales.cardTap,
   ...rest
 }: LiquidGlassInteractiveCardProps) {
   const shouldReduceMotion = useReducedMotion();
@@ -97,7 +101,7 @@ function InteractiveCard({
       whileTap={
         disabled || shouldReduceMotion
           ? undefined
-          : { scale: LIQUID_GLASS_MOTION.scales.cardTap }
+          : { scale: tapScale }
       }
       transition={
         shouldReduceMotion

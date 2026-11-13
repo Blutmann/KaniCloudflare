@@ -1,6 +1,7 @@
 import { CalendarDays, Clock3, Sun, Sunset, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { groupSlotsByPeriod, type BookingTimeSlotItem } from '@/lib/kani-booking-slots';
+import type { LiquidGlassMotionAdapter } from '@/components/kani/experimental/liquid-glass-motion.types';
 
 type BookingTimeSelectionProps = {
   slots: readonly BookingTimeSlotItem[];
@@ -17,6 +18,7 @@ type BookingTimeSelectionProps = {
   onEditDate?: (() => void) | undefined;
   useGroupRole?: boolean | undefined;
   showExtendedEmptyActions?: boolean | undefined;
+  interactiveCard?: LiquidGlassMotionAdapter['InteractiveCard'] | undefined;
 };
 
 export function BookingTimeSelection({
@@ -33,6 +35,7 @@ export function BookingTimeSelection({
   onEditDate,
   useGroupRole = true,
   showExtendedEmptyActions = false,
+  interactiveCard: InteractiveSlotButton,
 }: BookingTimeSelectionProps) {
   const periodGroups = groupSlotsByPeriod(slots);
   const availableCount = slots.filter(slot => slot.status === 'AVAILABLE').length;
@@ -92,30 +95,37 @@ export function BookingTimeSelection({
                       const isUnavailable = slot.status !== 'AVAILABLE';
                       const isSelected = !isUnavailable && selectedTime === slot.time;
 
-                      return (
-                        <Button
-                          key={slot.time}
-                          type="button"
-                          variant="outline"
-                          disabled={isUnavailable}
-                          aria-disabled={isUnavailable || undefined}
-                          aria-pressed={isUnavailable ? undefined : isSelected}
-                          aria-label={
-                            isUnavailable
-                              ? `Horario ${slot.time}, no disponible`
-                              : `Horario ${slot.time}${isSelected ? ', seleccionado' : ''}`
-                          }
-                          className={`booking-time-slot h-12 ${isSelected ? 'selected' : ''} ${isUnavailable ? 'time-unavailable' : ''}`.trim()}
-                          onClick={() => {
-                            if (!isUnavailable) onSelectTime(slot.time);
-                          }}
-                        >
+                      const slotProps = {
+                        type: 'button' as const,
+                        disabled: isUnavailable,
+                        'aria-disabled': isUnavailable || undefined,
+                        'aria-pressed': isUnavailable ? undefined : isSelected,
+                        'aria-label': isUnavailable
+                          ? `Horario ${slot.time}, no disponible`
+                          : `Horario ${slot.time}${isSelected ? ', seleccionado' : ''}`,
+                        className: `booking-time-slot h-12 ${isSelected ? 'selected' : ''} ${isUnavailable ? 'time-unavailable' : ''}`.trim(),
+                        onClick: () => {
+                          if (!isUnavailable) onSelectTime(slot.time);
+                        },
+                      };
+                      const slotBody = (
+                        <>
                           <span className="booking-time-slot-value">{slot.time}</span>
                           {isUnavailable && (
                             <span className="booking-time-slot-status" aria-hidden="true">
                               Ocupado
                             </span>
                           )}
+                        </>
+                      );
+
+                      return InteractiveSlotButton ? (
+                        <InteractiveSlotButton key={slot.time} tapScale={0.98} {...slotProps}>
+                          {slotBody}
+                        </InteractiveSlotButton>
+                      ) : (
+                        <Button key={slot.time} variant="outline" {...slotProps}>
+                          {slotBody}
                         </Button>
                       );
                     })}

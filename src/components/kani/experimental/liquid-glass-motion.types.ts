@@ -5,6 +5,7 @@ export type StepDirection = 1 | -1;
 export interface LiquidGlassInteractiveCardProps
   extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'onAnimationStart' | 'onDrag' | 'onDragStart' | 'onDragEnd'> {
   children: ReactNode;
+  tapScale?: number;
 }
 
 export interface LiquidGlassStepTransitionProps {

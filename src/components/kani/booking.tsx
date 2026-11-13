@@ -1390,16 +1390,19 @@ export function Booking({
                     const ariaLabel = isToday
                       ? `Hoy, ${dateLabel(value)}${disabled ? ', sin turnos' : ''}${date === value ? ', seleccionado' : ''}`
                       : `${dateLabel(value)}${disabled ? ', sin turnos' : ''}${date === value ? ', seleccionado' : ''}`;
-                    return (
-                      <Button
-                        key={value}
-                        variant="ghost"
-                        className={`calendar-day ${date === value ? 'selected' : ''} ${isToday ? 'today' : ''}`}
-                        disabled={disabled}
-                        aria-label={ariaLabel}
-                        aria-pressed={date === value}
-                        onClick={() => { if (isV2) { revealTimesRef.current = true; setDateSelection(current => current + 1); } if (date !== value) { setSlotConflict(null); setPendingAppointment(null); setDate(value); setTime(''); if (barberDeferred) setBarber(null); } }}
-                      >
+                    const dayProps = {
+                      className: `calendar-day ${date === value ? 'selected' : ''} ${isToday ? 'today' : ''}`,
+                      disabled,
+                      'aria-label': ariaLabel,
+                      'aria-pressed': date === value,
+                      onClick: () => { if (isV2) { revealTimesRef.current = true; setDateSelection(current => current + 1); } if (date !== value) { setSlotConflict(null); setPendingAppointment(null); setDate(value); setTime(''); if (barberDeferred) setBarber(null); } },
+                    };
+                    return MotionCardButton ? (
+                      <MotionCardButton key={value} tapScale={0.96} {...dayProps}>
+                        {i + 1}
+                      </MotionCardButton>
+                    ) : (
+                      <Button key={value} variant="ghost" {...dayProps}>
                         {i + 1}
                       </Button>
                     );
@@ -1468,6 +1471,7 @@ export function Booking({
                       onEditDate={!isV2 ? () => { void refreshAvailabilityNow(availabilityBarber).catch(() => {}); move(2); } : undefined}
                       useGroupRole={isV2 || isFiveSteps}
                       showExtendedEmptyActions={!isV2}
+                      interactiveCard={MotionCardButton}
                     />
                     {barberDeferred && time && (
                       <div ref={barberSectionRef} className="barber-choice-inline mt-4 pt-3 border-t border-border/40">
@@ -1886,11 +1890,19 @@ export function Booking({
       {(!slotConflict || isV2 || step !== 3) && (
         <div ref={ctaRef} className="booking-cta" aria-hidden={mobileMenuOpen || undefined} inert={mobileMenuOpen} style={mobileMenuOpen ? { visibility: 'hidden' } : undefined}>
           <div className="booking-cta-inner flex items-center">
-            <Button variant="outline" className="booking-back-button" onClick={() => move(isV2 && step === 4 ? 2 : step - 1)} disabled={step === 0 || submitting}>
-              <ArrowLeft size={14} aria-hidden="true" /> Volver
-            </Button>
-            <Button disabled={!canNext || submitting || isPaymentChecking} className="action-positive booking-next-button h-12 px-6" onClick={step === 5 || (isV2 || isFiveSteps) && step === 4 ? submit : next}>
-              {step === 5 || (isV2 || isFiveSteps) && step === 4
+            {MotionCardButton ? (
+              <MotionCardButton tapScale={0.986} className="booking-back-button" onClick={() => move(isV2 && step === 4 ? 2 : step - 1)} disabled={step === 0 || submitting}>
+                <ArrowLeft size={14} aria-hidden="true" /> Volver
+              </MotionCardButton>
+            ) : (
+              <Button variant="outline" className="booking-back-button" onClick={() => move(isV2 && step === 4 ? 2 : step - 1)} disabled={step === 0 || submitting}>
+                <ArrowLeft size={14} aria-hidden="true" /> Volver
+              </Button>
+            )}
+            {(() => {
+              const isFinalStep = step === 5 || (isV2 || isFiveSteps) && step === 4;
+              const nextDisabled = !canNext || submitting || isPaymentChecking;
+              const nextLabel = isFinalStep
                 ? (isPaymentChecking
                     ? 'Comprobando pago…'
                     : submitting
@@ -1898,8 +1910,18 @@ export function Booking({
                     : appliedBenefit?.skipOnlinePayment
                     ? 'Reservar turno'
                     : paymentActionLabel ?? (isV5 ? `Pagar seña ${money(depositArs)}` : 'Pagar seña'))
-                : 'Continuar'}
-            </Button>
+                : 'Continuar';
+              const nextHandler = isFinalStep ? submit : next;
+              return MotionCardButton ? (
+                <MotionCardButton tapScale={0.986} disabled={nextDisabled} className="action-positive booking-next-button h-12 px-6" onClick={nextHandler}>
+                  {nextLabel}
+                </MotionCardButton>
+              ) : (
+                <Button disabled={nextDisabled} className="action-positive booking-next-button h-12 px-6" onClick={nextHandler}>
+                  {nextLabel}
+                </Button>
+              );
+            })()}
           </div>
         </div>
       )}
