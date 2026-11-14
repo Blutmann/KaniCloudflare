@@ -210,6 +210,7 @@ html[data-theme] body[data-lg-admin="true"] :is(
   .v2-insights,
   .v2-admin-filter-panel,
   .v2-admin-filter-card,
+  .v2-client-toolbar-container,
   .v2-schedule .v2-schedule-cards-container,
   .v2-schedule .admin-schedule-cards-container,
   .v2-schedule-cards-container,
@@ -632,15 +633,218 @@ html[data-theme] body[data-lg-admin="true"] :is(
   transform: scale(0.985);
 }
 
-body[data-lg-admin="true"] :is(
-  .v2-payment-action-btn.active,
-  .v2-segmented button.v2-active,
-  .v2-segmented button.is-active
-) {
+/* Selector segmentado único Liquid Glass en Pagos (Sin turno / Con turno) */
+html[data-theme] body[data-lg-admin="true"] .v2-segmented[data-lg-segmented="true"] {
+  display: inline-grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  align-items: center !important;
+  gap: 4px !important;
+  padding: 4px !important;
+  width: fit-content;
+  max-width: 100%;
+  border-radius: 16px !important;
+  background: var(--lga-glass-structural) !important;
+  background-color: transparent !important;
+  -webkit-backdrop-filter: blur(18px) saturate(145%) !important;
+  backdrop-filter: blur(18px) saturate(145%) !important;
+  border: 1px solid var(--lga-border) !important;
+  box-shadow: var(--lga-shadow-interactive), var(--lga-specular) !important;
+  margin-bottom: 16px !important;
+}
+
+@media (max-width: 520px) {
+  html[data-theme] body[data-lg-admin="true"] .v2-segmented[data-lg-segmented="true"] {
+    display: grid !important;
+    width: 100% !important;
+  }
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-segmented[data-lg-segmented="true"] > button {
+  position: relative !important;
+  isolation: isolate !important;
+  min-height: 40px !important;
+  height: 40px !important;
+  padding: 8px 18px !important;
+  border-radius: 12px !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  border: 1px solid transparent !important;
+  box-shadow: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  color: var(--lga-text-muted) !important;
+  font-weight: 500 !important;
+  white-space: nowrap;
+  transition: color 160ms ease, transform 150ms cubic-bezier(0.22, 1, 0.36, 1) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-segmented[data-lg-segmented="true"] > button:hover:not(:disabled) {
+  color: var(--lga-text) !important;
+  background: transparent !important;
+  border-color: transparent !important;
+  transform: none !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-segmented[data-lg-segmented="true"] > button:active:not(:disabled) {
+  transform: scale(0.985) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-segmented[data-lg-segmented="true"] > button:focus-visible {
+  outline: 2px solid var(--lga-border-accent) !important;
+  outline-offset: 2px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-segmented[data-lg-segmented="true"] > button[aria-pressed="true"] {
+  color: var(--lga-text) !important;
+  font-weight: 600 !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-segmented[data-lg-segmented="true"] > button:disabled {
+  opacity: 0.48 !important;
+  cursor: not-allowed !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-segmented[data-lg-segmented="true"] .lg-segmented-pill {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: 12px;
+  background: var(--lga-accent-pill);
+  border: 1px solid var(--lga-border-accent);
+  box-shadow: var(--lga-shadow-interactive), var(--lga-specular);
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-segmented[data-lg-segmented="true"] .lg-segmented-label {
+  position: relative;
+  z-index: 1;
+}
+
+body[data-lg-admin="true"] .v2-payment-action-btn.active {
   background: var(--lga-accent-pill) !important;
   border-color: var(--lga-border-accent) !important;
   color: var(--lga-text) !important;
   font-weight: 600;
+}
+
+/* Clientes — Buscador, Ordenar por y Nuevo cliente unificados con Pagos */
+html[data-theme] body[data-lg-admin="true"] .v2-client-toolbar-container {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+  padding: 16px 18px !important;
+  margin-bottom: 18px !important;
+}
+
+@media (min-width: 768px) {
+  html[data-theme] body[data-lg-admin="true"] .v2-client-toolbar-container {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    align-items: end !important;
+    gap: 14px !important;
+    padding: 16px 18px !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-client-toolbar-container .v2-client-controls-row {
+    display: grid !important;
+    grid-template-columns: minmax(175px, 210px) auto !important;
+    align-items: end !important;
+    gap: 12px !important;
+    width: auto !important;
+  }
+}
+
+@media (max-width: 767px) {
+  html[data-theme] body[data-lg-admin="true"] .v2-client-toolbar-container {
+    padding: 14px !important;
+    gap: 12px !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-client-toolbar-container .v2-client-controls-row {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    align-items: end !important;
+    gap: 10px !important;
+    width: 100% !important;
+  }
+}
+
+@media (max-width: 379px) {
+  html[data-theme] body[data-lg-admin="true"] .v2-client-toolbar-container .v2-client-controls-row {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-client-toolbar-container .v2-client-add-btn {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-client-toolbar-container .v2-client-search-row,
+html[data-theme] body[data-lg-admin="true"] .v2-client-toolbar-container .v2-client-search-field,
+html[data-theme] body[data-lg-admin="true"] .v2-client-toolbar-container .v2-client-order {
+  min-width: 0 !important;
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-client-toolbar-container .v2-search {
+  position: relative !important;
+  display: flex !important;
+  align-items: center !important;
+  width: 100% !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-client-toolbar-container .v2-search svg {
+  position: absolute !important;
+  left: 14px !important;
+  color: var(--lga-text-muted) !important;
+  pointer-events: none;
+  z-index: 1;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-client-toolbar-container .v2-search input {
+  width: 100% !important;
+  min-height: 44px !important;
+  height: 44px !important;
+  padding-left: 40px !important;
+  padding-right: 14px !important;
+  background: var(--lga-input-bg) !important;
+  background-color: var(--lga-input-bg) !important;
+  color: var(--lga-text) !important;
+  -webkit-text-fill-color: var(--lga-text) !important;
+  caret-color: var(--lga-text) !important;
+  border: 1px solid var(--lga-border) !important;
+  border-radius: 12px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-client-toolbar-container .v2-search input::placeholder {
+  color: var(--lga-placeholder) !important;
+  -webkit-text-fill-color: var(--lga-placeholder) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-client-toolbar-container .v2-client-order select {
+  width: 100% !important;
+  min-height: 44px !important;
+  height: 44px !important;
+  background: var(--lga-input-bg) !important;
+  background-color: var(--lga-input-bg) !important;
+  color: var(--lga-text) !important;
+  -webkit-text-fill-color: var(--lga-text) !important;
+  border: 1px solid var(--lga-border) !important;
+  border-radius: 12px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-client-toolbar-container .v2-client-add-btn {
+  min-height: 44px !important;
+  height: 44px !important;
+  padding: 0 18px !important;
+  border-radius: 12px !important;
 }
 
 html[data-theme="dark"] body[data-lg-admin="true"] :is(.v2-danger, .v2-destructive, .v2-client-action-btn.delete, .v2-medit-danger-btn) {
@@ -866,20 +1070,37 @@ html[data-theme] body[data-lg-admin="true"] .v2-trend-badge {
   overflow-wrap: anywhere;
 }
 
-/* Cards de Horarios */
-html[data-theme] body[data-lg-admin="true"] .v2-schedule .v2-schedule-cards-container {
+/* Cards de Horarios (sin backdrop-filter anidado ni pseudo-capas detrás) */
+html[data-theme] body[data-lg-admin="true"] .v2-schedule :is(.v2-schedule-cards-container, .admin-schedule-cards-container) {
   padding: 14px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-schedule :is(.v2-schedule-cards-container, .admin-schedule-cards-container)::before,
+html[data-theme] body[data-lg-admin="true"] .v2-schedule :is(.v2-schedule-cards-container, .admin-schedule-cards-container)::after {
+  content: none !important;
 }
 
 html[data-theme] body[data-lg-admin="true"] .v2-schedule-cards-grid > button {
   background: var(--lga-glass-interactive) !important;
   background-color: transparent !important;
-  -webkit-backdrop-filter: blur(14px) saturate(140%) !important;
-  backdrop-filter: blur(14px) saturate(140%) !important;
-  box-shadow: var(--lga-shadow-interactive), var(--lga-specular) !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
   border-radius: 15px !important;
   color: var(--lga-text) !important;
   transition: transform 150ms cubic-bezier(0.22, 1, 0.36, 1), border-color 150ms ease, box-shadow 150ms ease;
+}
+
+html[data-theme="light"] body[data-lg-admin="true"] .v2-schedule-cards-grid > button {
+  box-shadow: 0 4px 12px rgba(24, 22, 20, 0.045), var(--lga-specular) !important;
+}
+
+html[data-theme="dark"] body[data-lg-admin="true"] .v2-schedule-cards-grid > button {
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.28), var(--lga-specular) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-schedule-cards-grid > button::before,
+html[data-theme] body[data-lg-admin="true"] .v2-schedule-cards-grid > button::after {
+  content: none !important;
 }
 
 html[data-theme] body[data-lg-admin="true"] .v2-schedule-cards-grid > button:hover:not(:disabled) {
