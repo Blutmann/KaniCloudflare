@@ -115,11 +115,16 @@ export function SiteHeader() {
     };
     window.addEventListener('kani:staff-auth-changed', handleStaffAuthEvent);
     refreshStaff();
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT') {
         if (!cancelled) setStaff(null);
       } else if (event !== 'INITIAL_SESSION') {
         window.setTimeout(refreshStaff, 0);
+      } else if (session?.user) {
+        setStaff(current => {
+          if (!current) window.setTimeout(refreshStaff, 0);
+          return current;
+        });
       }
     });
     return () => {
@@ -321,7 +326,7 @@ export function SiteHeader() {
     )
   ) : null;
   return <>
-    <div className="site-header-slot"><header className={`site-header ${menuOpen ? 'menu-open' : ''} ${isLiquidRoute ? 'liquid-glass-header' : ''}`.trim()}><div className="site-container flex items-center gap-4"><div className="admin-header-left"><Link to={logoTarget} aria-label="Kani Barber Studio, inicio" className="w-fit" onClick={closeMenu}><Wordmark /></Link></div><div className="header-controls ml-auto">{staff && (!isLiquidRoute || admin) && <Suspense fallback={<Button type="button" variant="outline" size="icon" className="notification-trigger header-control-button" aria-label="Cargando notificaciones" disabled><Bell /></Button>}><AdminActivityPopover role={staff.profile.role} userId={staff.user.id} /></Suspense>}<HeaderWhatsApp /><ThemeToggle /><Button variant="outline" size="icon" className={`mobile-menu-trigger header-control-button ${admin ? 'admin-menu-trigger' : ''}`} aria-label={menuOpen ? 'Cerrar menú' : 'Abrir menú'} aria-expanded={menuOpen} aria-controls={menuOpen ? "kani-main-menu" : undefined} ref={menuButtonRef} onClick={() => onMenuOpenChange(!menuOpen)}>{menuOpen ? <X /> : <Menu />}</Button></div></div></header></div>
+    <div className="site-header-slot"><header className={`site-header ${menuOpen ? 'menu-open' : ''} ${isLiquidRoute ? 'liquid-glass-header' : ''}`.trim()}><div className="site-container flex items-center gap-4"><div className="admin-header-left"><Link to={logoTarget} aria-label="Kani Barber Studio, inicio" className="w-fit" onClick={closeMenu}><Wordmark /></Link></div><div className="header-controls ml-auto">{staff && <Suspense fallback={<Button type="button" variant="outline" size="icon" className="notification-trigger header-control-button" aria-label="Cargando notificaciones" disabled><Bell /></Button>}><AdminActivityPopover role={staff.profile.role} userId={staff.user.id} isLiquid={isLiquidRoute} /></Suspense>}<HeaderWhatsApp /><ThemeToggle /><Button variant="outline" size="icon" className={`mobile-menu-trigger header-control-button ${admin ? 'admin-menu-trigger' : ''}`} aria-label={menuOpen ? 'Cerrar menú' : 'Abrir menú'} aria-expanded={menuOpen} aria-controls={menuOpen ? "kani-main-menu" : undefined} ref={menuButtonRef} onClick={() => onMenuOpenChange(!menuOpen)}>{menuOpen ? <X /> : <Menu />}</Button></div></div></header></div>
     {typeof document !== 'undefined' && mobileMenu ? createPortal(mobileMenu, document.body) : null}
     {typeof document !== 'undefined' && menuOpen && !isLiquidRoute ? createPortal(<MobileMenuAction />, document.body) : null}
   </>;
