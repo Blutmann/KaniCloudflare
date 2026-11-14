@@ -7,7 +7,8 @@ import { mayAccessStaffSection } from "@/lib/kani-permissions";
  * Pantalla de entrada /panel-v2: selector directo para Operación y Negocio
  * con diseño limpio y acceso discreto a Estadísticas.
  */
-export function PanelV2Home() {
+export function PanelV2Home({ basePath = "/panel-v2" }: { basePath?: string } = {}) {
+  const cleanBase = basePath.replace(/\/+$/, "");
   const { profile } = useAdminStaff();
   const canViewDiscounts = mayAccessStaffSection(profile, "descuentos");
   const canViewStats = mayAccessStaffSection(profile, "datos");
@@ -20,7 +21,7 @@ export function PanelV2Home() {
       </div>
 
       <div className="kani-panel-v2-home-grid">
-        <Link to="/panel-v2/operacion/turnos" className="kani-panel-v2-space-card">
+        <Link to={`${cleanBase}/operacion/turnos`} className="kani-panel-v2-space-card">
           <div className="kani-panel-v2-space-card-body">
             <span className="kani-panel-v2-space-icon" aria-hidden="true">
               <CalendarDays size={22} strokeWidth={1.85} />
@@ -37,7 +38,7 @@ export function PanelV2Home() {
           </span>
         </Link>
 
-        <Link to="/panel-v2/negocio/pagos" className="kani-panel-v2-space-card">
+        <Link to={`${cleanBase}/negocio/pagos`} className="kani-panel-v2-space-card">
           <div className="kani-panel-v2-space-card-body">
             <span className="kani-panel-v2-space-icon" aria-hidden="true">
               <Briefcase size={22} strokeWidth={1.85} />
@@ -61,7 +62,7 @@ export function PanelV2Home() {
 
       {canViewStats && (
         <div className="kani-panel-v2-home-footer">
-          <Link to="/panel-v2/estadisticas" className="kani-panel-v2-home-stats-link">
+          <Link to={`${cleanBase}/estadisticas`} className="kani-panel-v2-home-stats-link">
             <ChartNoAxesCombined size={15} strokeWidth={1.85} aria-hidden="true" />
             <span>Estadísticas</span>
           </Link>

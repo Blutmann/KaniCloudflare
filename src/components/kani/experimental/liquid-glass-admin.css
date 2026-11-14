@@ -1,0 +1,2507 @@
+/* ==============================================================================
+ * KANI BARBER STUDIO — V12.21
+ * ADMIN LIQUID GLASS · STRUCTURAL & VISUAL REFINEMENT
+ *
+ * Aislado exclusivamente a /admin-liquid mediante body[data-lg-admin="true"].
+ * Conserva Inter Variable (V12.20) y no altera rutas tradicionales.
+ * ============================================================================== */
+
+/* ------------------------------------------------------------------------------
+ * LAYER 0 · TOKENS ÓPTICOS (LIGHT PERLA NEUTRO / DARK OBSIDIANA + CHAMPAGNE ACENTO)
+ * ------------------------------------------------------------------------------ */
+html[data-theme="light"] body[data-lg-admin="true"] {
+  --lga-glass-structural: linear-gradient(
+    158deg,
+    rgba(255, 255, 255, 0.54) 0%,
+    rgba(245, 244, 241, 0.42) 56%,
+    rgba(252, 252, 250, 0.50) 100%
+  );
+  --lga-glass-interactive: linear-gradient(
+    154deg,
+    rgba(255, 255, 255, 0.68) 0%,
+    rgba(248, 247, 244, 0.54) 58%,
+    rgba(253, 252, 250, 0.64) 100%
+  );
+  --lga-glass-hover: linear-gradient(
+    154deg,
+    rgba(255, 255, 255, 0.82) 0%,
+    rgba(249, 248, 245, 0.68) 100%
+  );
+  --lga-glass-modal: linear-gradient(
+    156deg,
+    rgba(255, 255, 255, 0.56) 0%,
+    rgba(247, 245, 241, 0.38) 54%,
+    rgba(255, 255, 255, 0.52) 100%
+  );
+  --lga-modal-overlay: rgba(232, 229, 223, 0.22);
+  --lga-modal-border: rgba(255, 255, 255, 0.78);
+  --lga-modal-specular: inset 0 1.5px 0 rgba(255, 255, 255, 0.96), inset 0 -1px 0 rgba(28, 26, 24, 0.07);
+  --lga-btn-primary-bg: linear-gradient(
+    148deg,
+    rgba(255, 251, 242, 0.88) 0%,
+    rgba(235, 219, 184, 0.72) 56%,
+    rgba(218, 191, 138, 0.64) 100%
+  );
+  --lga-btn-primary-hover: linear-gradient(
+    148deg,
+    rgba(255, 253, 247, 0.95) 0%,
+    rgba(240, 224, 189, 0.84) 56%,
+    rgba(224, 197, 145, 0.76) 100%
+  );
+  --lga-btn-primary-active: linear-gradient(
+    148deg,
+    rgba(243, 229, 199, 0.92) 0%,
+    rgba(218, 192, 142, 0.80) 100%
+  );
+  --lga-btn-secondary-bg: rgba(255, 255, 255, 0.28);
+  --lga-btn-secondary-hover: rgba(255, 255, 255, 0.48);
+  --lga-btn-secondary-active: rgba(244, 241, 236, 0.62);
+  --lga-input-bg: rgba(255, 255, 255, 0.58);
+  --lga-input-focus-bg: rgba(255, 255, 255, 0.84);
+  --lga-accent-pill: linear-gradient(
+    148deg,
+    rgba(255, 255, 255, 0.88) 0%,
+    rgba(243, 238, 228, 0.76) 100%
+  );
+
+  --lga-border: rgba(148, 144, 138, 0.28);
+  --lga-border-strong: rgba(132, 128, 122, 0.44);
+  --lga-border-accent: rgba(178, 144, 78, 0.62);
+  --lga-specular: inset 0 1px 0 rgba(255, 255, 255, 0.92), inset 0 -1px 0 rgba(28, 26, 24, 0.04);
+  --lga-shadow-structural: 0 12px 32px rgba(24, 22, 20, 0.06), 0 2px 8px rgba(24, 22, 20, 0.03);
+  --lga-shadow-interactive: 0 8px 22px rgba(24, 22, 20, 0.055), 0 2px 6px rgba(24, 22, 20, 0.03);
+  --lga-shadow-hover: 0 14px 32px rgba(24, 22, 20, 0.085), 0 4px 10px rgba(24, 22, 20, 0.04);
+  --lga-shadow-modal: 0 26px 64px rgba(20, 18, 16, 0.16), 0 6px 18px rgba(20, 18, 16, 0.08);
+
+  --lga-text: #161513;
+  --lga-text-muted: rgba(22, 21, 19, 0.68);
+  --lga-placeholder: rgba(22, 21, 19, 0.52);
+  --lga-accent: #8f6e2e;
+  --lga-option-bg: #f6f5f2;
+  --lga-option-text: #161513;
+  color-scheme: light;
+}
+
+html[data-theme="dark"] body[data-lg-admin="true"] {
+  --lga-glass-structural: linear-gradient(
+    158deg,
+    rgba(34, 33, 38, 0.46) 0%,
+    rgba(16, 16, 20, 0.36) 56%,
+    rgba(24, 23, 28, 0.44) 100%
+  );
+  --lga-glass-interactive: linear-gradient(
+    154deg,
+    rgba(42, 40, 46, 0.56) 0%,
+    rgba(21, 21, 26, 0.46) 58%,
+    rgba(30, 29, 35, 0.54) 100%
+  );
+  --lga-glass-hover: linear-gradient(
+    154deg,
+    rgba(54, 51, 58, 0.66) 0%,
+    rgba(30, 29, 34, 0.58) 100%
+  );
+  --lga-glass-modal: linear-gradient(
+    156deg,
+    rgba(34, 34, 42, 0.52) 0%,
+    rgba(16, 16, 22, 0.42) 54%,
+    rgba(26, 26, 33, 0.48) 100%
+  );
+  --lga-modal-overlay: rgba(6, 7, 11, 0.36);
+  --lga-modal-border: rgba(255, 255, 255, 0.20);
+  --lga-modal-specular: inset 0 1.5px 0 rgba(255, 249, 236, 0.26), inset 0 -1px 0 rgba(255, 248, 232, 0.06);
+  --lga-btn-primary-bg: linear-gradient(
+    148deg,
+    rgba(224, 192, 126, 0.36) 0%,
+    rgba(154, 122, 66, 0.28) 56%,
+    rgba(82, 65, 38, 0.44) 100%
+  );
+  --lga-btn-primary-hover: linear-gradient(
+    148deg,
+    rgba(232, 201, 138, 0.48) 0%,
+    rgba(168, 134, 74, 0.38) 56%,
+    rgba(96, 76, 44, 0.54) 100%
+  );
+  --lga-btn-primary-active: linear-gradient(
+    148deg,
+    rgba(196, 164, 102, 0.42) 0%,
+    rgba(126, 98, 48, 0.48) 100%
+  );
+  --lga-btn-secondary-bg: rgba(255, 255, 255, 0.06);
+  --lga-btn-secondary-hover: rgba(255, 255, 255, 0.12);
+  --lga-btn-secondary-active: rgba(255, 255, 255, 0.16);
+  --lga-input-bg: rgba(22, 22, 27, 0.54);
+  --lga-input-focus-bg: rgba(30, 29, 36, 0.76);
+  --lga-accent-pill: linear-gradient(
+    148deg,
+    rgba(66, 60, 50, 0.72) 0%,
+    rgba(38, 34, 29, 0.74) 100%
+  );
+
+  --lga-border: rgba(255, 255, 255, 0.12);
+  --lga-border-strong: rgba(255, 255, 255, 0.22);
+  --lga-border-accent: rgba(212, 180, 114, 0.60);
+  --lga-specular: inset 0 1px 0 rgba(255, 249, 236, 0.18), inset 0 -1px 0 rgba(255, 248, 232, 0.04);
+  --lga-shadow-structural: 0 16px 40px rgba(0, 0, 0, 0.42), 0 3px 10px rgba(0, 0, 0, 0.22);
+  --lga-shadow-interactive: 0 10px 26px rgba(0, 0, 0, 0.36), 0 2px 8px rgba(0, 0, 0, 0.20);
+  --lga-shadow-hover: 0 16px 38px rgba(0, 0, 0, 0.50), 0 4px 12px rgba(0, 0, 0, 0.26);
+  --lga-shadow-modal: 0 28px 72px rgba(0, 0, 0, 0.70), 0 8px 22px rgba(0, 0, 0, 0.38);
+
+  --lga-text: #f6f4ef;
+  --lga-text-muted: rgba(244, 242, 238, 0.74);
+  --lga-placeholder: rgba(244, 242, 238, 0.54);
+  --lga-accent: #e4c98f;
+  --lga-option-bg: #17161b;
+  --lga-option-text: #f6f4ef;
+  color-scheme: dark;
+}
+
+/* ------------------------------------------------------------------------------
+ * LAYER 1 · AMBIENTE (FONDO EXPERIMENTAL CHAMPAGNE SILK / KANI INK TRANSLÚCIDO)
+ * ------------------------------------------------------------------------------ */
+html[data-theme="light"] body[data-lg-admin="true"] .liquid-glass-page[data-lg-section="admin"],
+html[data-theme="dark"] body[data-lg-admin="true"] .liquid-glass-page[data-lg-section="admin"] {
+  background: transparent;
+  background-color: transparent;
+  background-image: none;
+}
+
+body[data-lg-admin="true"] .liquid-glass-page[data-lg-section="admin"] .liquid-orb-1 { opacity: 0.62; }
+body[data-lg-admin="true"] .liquid-glass-page[data-lg-section="admin"] .liquid-orb-2 { opacity: 0.52; }
+body[data-lg-admin="true"] .liquid-glass-page[data-lg-section="admin"] .liquid-orb-3 { opacity: 0.48; }
+
+/* ------------------------------------------------------------------------------
+ * LAYER 2 · SHELL, LOGIN Y CRISTAL ESTRUCTURAL
+ * ------------------------------------------------------------------------------ */
+html:has(body[data-lg-admin="true"]) {
+  scrollbar-gutter: stable;
+}
+
+body[data-lg-admin="true"][data-scroll-locked] {
+  --removed-body-scroll-bar-size: 0px !important;
+  margin-right: 0 !important;
+  padding-right: 0 !important;
+}
+
+body[data-lg-admin="true"] .lg-admin-shell {
+  padding-top: 16px;
+  padding-bottom: 64px;
+  color: var(--lga-text);
+  overflow-x: clip;
+}
+
+/* Header Admin — Badge de notificaciones integrado al botón */
+html[data-theme] body[data-lg-admin="true"] .site-header .notification-trigger {
+  position: relative !important;
+  overflow: visible !important;
+  padding: 0 !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .site-header .notification-count {
+  position: absolute !important;
+  top: 3px !important;
+  right: 3px !important;
+  min-width: 17px !important;
+  height: 17px !important;
+  padding-inline: 4px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 999px !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+  z-index: 2 !important;
+  pointer-events: none !important;
+}
+
+html[data-theme="light"] body[data-lg-admin="true"] .site-header .notification-count {
+  background: rgba(178, 144, 78, 0.94) !important;
+  color: #ffffff !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.92) !important;
+  box-shadow: 0 2px 6px rgba(24, 22, 20, 0.18) !important;
+}
+
+html[data-theme="dark"] body[data-lg-admin="true"] .site-header .notification-count {
+  background: rgba(228, 201, 143, 0.95) !important;
+  color: #161513 !important;
+  border: 1.5px solid rgba(22, 22, 27, 0.92) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] :is(
+  .admin-login-shell,
+  .v2-access,
+  .v2-panel,
+  .v2-insights,
+  .v2-admin-filter-panel,
+  .v2-admin-filter-card,
+  .v2-client-toolbar-container,
+  .v2-schedule .v2-schedule-cards-container,
+  .v2-schedule .admin-schedule-cards-container,
+  .v2-schedule-cards-container,
+  .admin-schedule-cards-container,
+  .v2-payments-table-wrap,
+  .v2-payments-history-panel,
+  .v2-empty
+) {
+  background: var(--lga-glass-structural) !important;
+  background-color: transparent !important;
+  -webkit-backdrop-filter: blur(22px) saturate(148%) !important;
+  backdrop-filter: blur(22px) saturate(148%) !important;
+  border: 1px solid var(--lga-border) !important;
+  box-shadow: var(--lga-shadow-structural), var(--lga-specular) !important;
+  border-radius: 20px !important;
+}
+
+body[data-lg-admin="true"] .admin-login-page {
+  padding-top: 32px;
+  padding-bottom: 56px;
+}
+
+body[data-lg-admin="true"] .admin-login-shell,
+body[data-lg-admin="true"] .v2-access {
+  border-radius: 24px !important;
+  padding: 32px 26px !important;
+}
+
+/* ------------------------------------------------------------------------------
+ * LAYER 3 · NAVEGACIÓN (6 SECCIONES EN MOBILE DESPLAZABLE + CÁPSULA DESLIZANTE)
+ * ------------------------------------------------------------------------------ */
+body[data-lg-admin="true"] .v2-navigation {
+  margin-bottom: 20px;
+}
+
+body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav {
+  display: flex !important;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  max-width: 100%;
+  padding: 6px !important;
+  border-radius: 20px !important;
+  background: var(--lga-glass-structural) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(148%) !important;
+  backdrop-filter: blur(22px) saturate(148%) !important;
+  border: 1px solid var(--lga-border) !important;
+  box-shadow: var(--lga-shadow-structural), var(--lga-specular) !important;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+}
+
+body[data-lg-admin="true"] .v2-navigation .admin-section-nav::-webkit-scrollbar {
+  display: none;
+}
+
+body[data-lg-admin="true"] .v2-navigation .admin-section-nav-items {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 6px !important;
+  width: 100%;
+  min-width: max-content;
+}
+
+body[data-lg-admin="true"] .v2-navigation .admin-section-nav-link {
+  position: relative;
+  display: inline-flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex: 1 1 0;
+  width: auto !important;
+  min-height: 42px !important;
+  padding: 8px 14px !important;
+  gap: 7px !important;
+  border-radius: 14px !important;
+  border: 1px solid transparent !important;
+  background: transparent !important;
+  color: var(--lga-text-muted) !important;
+  font-size: 0.875rem !important;
+  font-weight: 500;
+  white-space: nowrap !important;
+  text-decoration: none;
+  isolation: isolate;
+  scroll-snap-align: center;
+  transition: color 160ms ease, transform 150ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav .admin-section-nav-link,
+html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav .admin-section-nav-link :is(svg, .lg-admin-nav-icon, .lg-admin-nav-label) {
+  color: var(--lga-text-muted) !important;
+}
+
+body[data-lg-admin="true"] .v2-navigation .admin-section-nav-link svg {
+  width: 16px !important;
+  height: 16px !important;
+  flex-shrink: 0;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav .admin-section-nav-link:hover,
+html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav .admin-section-nav-link:hover :is(svg, .lg-admin-nav-icon, .lg-admin-nav-label),
+html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav .admin-section-nav-link:focus-visible,
+html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav .admin-section-nav-link:focus-visible :is(svg, .lg-admin-nav-icon, .lg-admin-nav-label),
+html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav .admin-section-nav-link:active,
+html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav .admin-section-nav-link:active :is(svg, .lg-admin-nav-icon, .lg-admin-nav-label) {
+  color: var(--lga-text) !important;
+}
+
+body[data-lg-admin="true"] .v2-navigation .admin-section-nav-link:active {
+  transform: scale(0.98);
+}
+
+body[data-lg-admin="true"] .v2-navigation .admin-section-nav-link:focus-visible {
+  outline: 2px solid var(--lga-border-accent);
+  outline-offset: 2px;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav .admin-section-nav-link.is-active,
+html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav .admin-section-nav-link.is-active:hover,
+html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav .admin-section-nav-link.is-active:focus-visible,
+html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav .admin-section-nav-link.is-active:active,
+html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav .admin-section-nav-link[aria-current="page"],
+html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav .admin-section-nav-link.is-active :is(svg, .lg-admin-nav-icon, .lg-admin-nav-label),
+html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav .admin-section-nav-link.is-active:hover :is(svg, .lg-admin-nav-icon, .lg-admin-nav-label),
+html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav .admin-section-nav-link.is-active:focus-visible :is(svg, .lg-admin-nav-icon, .lg-admin-nav-label),
+html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav .admin-section-nav-link.is-active:active :is(svg, .lg-admin-nav-icon, .lg-admin-nav-label),
+html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav .admin-section-nav-link[aria-current="page"] :is(svg, .lg-admin-nav-icon, .lg-admin-nav-label) {
+  color: var(--lga-text) !important;
+  font-weight: 600 !important;
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+body[data-lg-admin="true"] .lg-admin-nav-pill {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: 14px;
+  background: var(--lga-accent-pill);
+  border: 1px solid var(--lga-border-accent);
+  box-shadow: var(--lga-shadow-interactive), var(--lga-specular);
+}
+
+body[data-lg-admin="true"] .lg-admin-nav-icon,
+body[data-lg-admin="true"] .lg-admin-nav-label {
+  position: relative;
+  z-index: 1;
+}
+
+@media (max-width: 767px) {
+  body[data-lg-admin="true"] .v2-navigation {
+    position: relative;
+  }
+
+  body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav {
+    display: block !important;
+    padding: 4px !important;
+    border-radius: 16px !important;
+    overflow-x: hidden;
+  }
+
+  body[data-lg-admin="true"] .v2-navigation .admin-section-nav-items {
+    display: grid !important;
+    grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+    align-items: stretch !important;
+    gap: 3px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  body[data-lg-admin="true"] .v2-navigation .admin-section-nav-link {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 3px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 46px !important;
+    padding: 6px 2px !important;
+    font-size: 0.65625rem !important;
+    line-height: 1.15 !important;
+    letter-spacing: -0.015em;
+    text-align: center;
+    border-radius: 12px !important;
+  }
+
+  body[data-lg-admin="true"] .v2-navigation .admin-section-nav-link svg {
+    width: 15px !important;
+    height: 15px !important;
+  }
+
+  body[data-lg-admin="true"] .lg-admin-nav-label {
+    display: block;
+    max-width: 100%;
+    white-space: nowrap;
+  }
+
+  body[data-lg-admin="true"] .lg-admin-nav-pill {
+    border-radius: 12px;
+  }
+}
+
+@media (max-width: 349px) {
+  body[data-lg-admin="true"] .v2-navigation[data-scroll-left="true"]::before,
+  body[data-lg-admin="true"] .v2-navigation[data-scroll-right="true"]::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    bottom: 2px;
+    width: 24px;
+    pointer-events: none;
+    z-index: 3;
+    border-radius: 14px;
+  }
+
+  html[data-theme="light"] body[data-lg-admin="true"] .v2-navigation[data-scroll-left="true"]::before {
+    left: 1px;
+    background: linear-gradient(90deg, rgba(240, 238, 234, 0.88) 0%, rgba(240, 238, 234, 0) 100%);
+  }
+
+  html[data-theme="light"] body[data-lg-admin="true"] .v2-navigation[data-scroll-right="true"]::after {
+    right: 1px;
+    background: linear-gradient(270deg, rgba(240, 238, 234, 0.88) 0%, rgba(240, 238, 234, 0) 100%);
+  }
+
+  html[data-theme="dark"] body[data-lg-admin="true"] .v2-navigation[data-scroll-left="true"]::before {
+    left: 1px;
+    background: linear-gradient(90deg, rgba(18, 18, 22, 0.88) 0%, rgba(18, 18, 22, 0) 100%);
+  }
+
+  html[data-theme="dark"] body[data-lg-admin="true"] .v2-navigation[data-scroll-right="true"]::after {
+    right: 1px;
+    background: linear-gradient(270deg, rgba(18, 18, 22, 0.88) 0%, rgba(18, 18, 22, 0) 100%);
+  }
+
+  body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav {
+    display: flex !important;
+    justify-content: flex-start !important;
+    overflow-x: auto !important;
+    scroll-padding-inline: 8px;
+    touch-action: pan-x;
+    overscroll-behavior-x: contain;
+  }
+
+  body[data-lg-admin="true"] .v2-navigation .admin-section-nav-items {
+    display: inline-flex !important;
+    flex-shrink: 0 !important;
+    gap: 4px !important;
+    width: max-content !important;
+    min-width: max-content !important;
+  }
+
+  body[data-lg-admin="true"] .v2-navigation .admin-section-nav-link {
+    flex: 0 0 58px !important;
+    width: 58px !important;
+  }
+}
+
+/* ------------------------------------------------------------------------------
+ * LAYER 4 · TÍTULOS DE SECCIÓN Y FILA FECHA + ACCIÓN (SIN CÁPSULA REDUNDANTE)
+ * ------------------------------------------------------------------------------ */
+body[data-lg-admin="true"] .v2-eyebrow {
+  color: var(--lga-accent) !important;
+  letter-spacing: 0.16em;
+}
+
+body[data-lg-admin="true"] .v2-page-title h1 {
+  color: var(--lga-text) !important;
+}
+
+body[data-lg-admin="true"] .v2-page-title p,
+body[data-lg-admin="true"] .v2-muted,
+body[data-lg-admin="true"] .v2-footnote {
+  color: var(--lga-text-muted) !important;
+}
+
+/* Fecha y acción: título independiente a la izquierda, botón flotante a la derecha */
+body[data-lg-admin="true"] :is(.v2-section-toolbar, .v2-appointments-header) {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  width: 100% !important;
+  padding: 2px 4px !important;
+  margin: 4px 0 14px !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  border-radius: 0 !important;
+}
+
+body[data-lg-admin="true"] :is(.v2-section-toolbar, .v2-appointments-header) .v2-toolbar-date {
+  color: var(--lga-text) !important;
+  font-size: clamp(0.95rem, 1.5vw, 1.05rem) !important;
+  font-weight: 600 !important;
+  line-height: 1.3 !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+/* ------------------------------------------------------------------------------
+ * LAYER 5 · BOTONES LIQUID GLASS (SIN NEGRO SÓLIDO NI DORADO SÓLIDO)
+ * ------------------------------------------------------------------------------ */
+html[data-theme] body[data-lg-admin="true"] :is(.v2-shell, .v2-dialog, [role="dialog"], .admin-login-page) :is(
+  .v2-primary,
+  .v2-add-manual-btn,
+  .v2-toolbar-action,
+  .v2-client-add-btn,
+  .v2-payment-submit-btn,
+  .admin-login-submit,
+  .action-positive
+):is(:not(:disabled), :disabled) {
+  background: var(--lga-btn-primary-bg) !important;
+  background-color: transparent !important;
+  color: var(--lga-text) !important;
+  -webkit-text-fill-color: var(--lga-text) !important;
+  border: 1px solid var(--lga-border-accent) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(145%) !important;
+  backdrop-filter: blur(16px) saturate(145%) !important;
+  box-shadow: var(--lga-shadow-interactive), var(--lga-specular) !important;
+  border-radius: 13px !important;
+  font-weight: 600 !important;
+  transition:
+    transform 160ms cubic-bezier(0.22, 1, 0.36, 1),
+    background 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] :is(.v2-shell, .v2-dialog, [role="dialog"], .admin-login-page) :is(
+  .v2-primary,
+  .v2-add-manual-btn,
+  .v2-toolbar-action,
+  .v2-client-add-btn,
+  .v2-payment-submit-btn,
+  .admin-login-submit,
+  .action-positive
+):not(:disabled) svg {
+  color: var(--lga-accent) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] :is(.v2-shell, .v2-dialog, [role="dialog"], .admin-login-page) :is(
+  .v2-primary,
+  .v2-add-manual-btn,
+  .v2-toolbar-action,
+  .v2-client-add-btn,
+  .v2-payment-submit-btn,
+  .admin-login-submit,
+  .action-positive
+):hover:not(:disabled) {
+  background: var(--lga-btn-primary-hover) !important;
+  border-color: var(--lga-accent) !important;
+  box-shadow: var(--lga-shadow-hover), var(--lga-specular) !important;
+  transform: translateY(-1px);
+}
+
+html[data-theme] body[data-lg-admin="true"] :is(.v2-shell, .v2-dialog, [role="dialog"], .admin-login-page) :is(
+  .v2-primary,
+  .v2-add-manual-btn,
+  .v2-toolbar-action,
+  .v2-client-add-btn,
+  .v2-payment-submit-btn,
+  .admin-login-submit,
+  .action-positive
+):active:not(:disabled) {
+  background: var(--lga-btn-primary-active) !important;
+  transform: scale(0.985) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] :is(.v2-shell, .v2-dialog, [role="dialog"], .admin-login-page) :is(
+  .v2-primary,
+  .v2-add-manual-btn,
+  .v2-toolbar-action,
+  .v2-client-add-btn,
+  .v2-payment-submit-btn,
+  .admin-login-submit,
+  .action-positive
+):focus-visible {
+  outline: 2px solid var(--lga-accent) !important;
+  outline-offset: 2px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] :is(.v2-shell, .v2-dialog, [role="dialog"], .admin-login-page) :is(
+  .v2-primary,
+  .v2-add-manual-btn,
+  .v2-toolbar-action,
+  .v2-client-add-btn,
+  .v2-payment-submit-btn,
+  .admin-login-submit,
+  .action-positive
+):disabled {
+  opacity: 0.44 !important;
+  border-color: var(--lga-border) !important;
+  box-shadow: none !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+}
+
+/* Botones secundarios y controles táctiles (incluye WhatsApp y Mail en Turnos) */
+html[data-theme] body[data-lg-admin="true"] :is(
+  .v2-secondary,
+  .v2-quiet,
+  .v2-action-btn,
+  .v2-payment-action-btn,
+  .v2-payment-toggle-btn,
+  .v2-client-action-btn,
+  .v2-client-details-btn,
+  .v2-pcm-btn,
+  .v2-action-icon-btn,
+  .v2-segmented button,
+  .v2-appointments-page .v2-whatsapp,
+  .v2-mail-btn
+) {
+  background: var(--lga-btn-secondary-bg) !important;
+  background-color: transparent !important;
+  color: var(--lga-text) !important;
+  border: 1px solid var(--lga-border) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(135%) !important;
+  backdrop-filter: blur(12px) saturate(135%) !important;
+  box-shadow: var(--lga-specular) !important;
+  border-radius: 12px !important;
+  transition:
+    transform 150ms cubic-bezier(0.22, 1, 0.36, 1),
+    background 150ms ease,
+    border-color 150ms ease;
+}
+
+html[data-theme="light"] body[data-lg-admin="true"] .v2-appointments-page .v2-whatsapp svg {
+  color: #15803d !important;
+}
+
+html[data-theme="dark"] body[data-lg-admin="true"] .v2-appointments-page .v2-whatsapp svg {
+  color: #4ade80 !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] :is(
+  .v2-secondary,
+  .v2-quiet,
+  .v2-action-btn,
+  .v2-payment-action-btn,
+  .v2-payment-toggle-btn,
+  .v2-client-action-btn,
+  .v2-client-details-btn,
+  .v2-pcm-btn,
+  .v2-action-icon-btn,
+  .v2-segmented button,
+  .v2-appointments-page .v2-whatsapp,
+  .v2-mail-btn
+):hover:not(:disabled) {
+  background: var(--lga-btn-secondary-hover) !important;
+  border-color: var(--lga-border-accent) !important;
+  color: var(--lga-text) !important;
+  transform: translateY(-1px);
+}
+
+html[data-theme] body[data-lg-admin="true"] :is(
+  .v2-secondary,
+  .v2-quiet,
+  .v2-action-btn,
+  .v2-payment-action-btn,
+  .v2-payment-toggle-btn,
+  .v2-client-action-btn,
+  .v2-client-details-btn,
+  .v2-pcm-btn,
+  .v2-action-icon-btn,
+  .v2-segmented button,
+  .v2-appointments-page .v2-whatsapp,
+  .v2-mail-btn
+):active:not(:disabled) {
+  transform: scale(0.985);
+}
+
+/* Selector segmentado único Liquid Glass en Pagos (Sin turno / Con turno) */
+html[data-theme] body[data-lg-admin="true"] .v2-segmented[data-lg-segmented="true"] {
+  display: inline-grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  align-items: center !important;
+  gap: 4px !important;
+  padding: 4px !important;
+  width: fit-content;
+  max-width: 100%;
+  border-radius: 16px !important;
+  background: var(--lga-glass-structural) !important;
+  background-color: transparent !important;
+  -webkit-backdrop-filter: blur(18px) saturate(145%) !important;
+  backdrop-filter: blur(18px) saturate(145%) !important;
+  border: 1px solid var(--lga-border) !important;
+  box-shadow: var(--lga-shadow-interactive), var(--lga-specular) !important;
+  margin-bottom: 16px !important;
+}
+
+@media (max-width: 520px) {
+  html[data-theme] body[data-lg-admin="true"] .v2-segmented[data-lg-segmented="true"] {
+    display: grid !important;
+    width: 100% !important;
+  }
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-segmented[data-lg-segmented="true"] > button {
+  position: relative !important;
+  isolation: isolate !important;
+  min-height: 40px !important;
+  height: 40px !important;
+  padding: 8px 18px !important;
+  border-radius: 12px !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  border: 1px solid transparent !important;
+  box-shadow: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  color: var(--lga-text-muted) !important;
+  font-weight: 500 !important;
+  white-space: nowrap;
+  transition: color 160ms ease, transform 150ms cubic-bezier(0.22, 1, 0.36, 1) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-segmented[data-lg-segmented="true"] > button:hover:not(:disabled) {
+  color: var(--lga-text) !important;
+  background: transparent !important;
+  border-color: transparent !important;
+  transform: none !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-segmented[data-lg-segmented="true"] > button:active:not(:disabled) {
+  transform: scale(0.985) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-segmented[data-lg-segmented="true"] > button:focus-visible {
+  outline: 2px solid var(--lga-border-accent) !important;
+  outline-offset: 2px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-segmented[data-lg-segmented="true"] > button[aria-pressed="true"] {
+  color: var(--lga-text) !important;
+  font-weight: 600 !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-segmented[data-lg-segmented="true"] > button:disabled {
+  opacity: 0.48 !important;
+  cursor: not-allowed !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-segmented[data-lg-segmented="true"] .lg-segmented-pill {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: 12px;
+  background: var(--lga-accent-pill);
+  border: 1px solid var(--lga-border-accent);
+  box-shadow: var(--lga-shadow-interactive), var(--lga-specular);
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-segmented[data-lg-segmented="true"] .lg-segmented-label {
+  position: relative;
+  z-index: 1;
+}
+
+body[data-lg-admin="true"] .v2-payment-action-btn.active {
+  background: var(--lga-accent-pill) !important;
+  border-color: var(--lga-border-accent) !important;
+  color: var(--lga-text) !important;
+  font-weight: 600;
+}
+
+/* Clientes — Buscador, Ordenar por y Nuevo cliente unificados con Pagos */
+html[data-theme] body[data-lg-admin="true"] .v2-client-toolbar-container {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+  padding: 16px 18px !important;
+  margin-bottom: 18px !important;
+}
+
+@media (min-width: 768px) {
+  html[data-theme] body[data-lg-admin="true"] .v2-client-toolbar-container {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    align-items: end !important;
+    gap: 14px !important;
+    padding: 16px 18px !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-client-toolbar-container .v2-client-controls-row {
+    display: grid !important;
+    grid-template-columns: minmax(175px, 210px) auto !important;
+    align-items: end !important;
+    gap: 12px !important;
+    width: auto !important;
+  }
+}
+
+@media (max-width: 767px) {
+  html[data-theme] body[data-lg-admin="true"] .v2-client-toolbar-container {
+    padding: 14px !important;
+    gap: 12px !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-client-toolbar-container .v2-client-controls-row {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    align-items: end !important;
+    gap: 10px !important;
+    width: 100% !important;
+  }
+}
+
+@media (max-width: 379px) {
+  html[data-theme] body[data-lg-admin="true"] .v2-client-toolbar-container .v2-client-controls-row {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-client-toolbar-container .v2-client-add-btn {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-client-toolbar-container .v2-client-search-row,
+html[data-theme] body[data-lg-admin="true"] .v2-client-toolbar-container .v2-client-search-field,
+html[data-theme] body[data-lg-admin="true"] .v2-client-toolbar-container .v2-client-order {
+  min-width: 0 !important;
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-client-toolbar-container .v2-search {
+  position: relative !important;
+  display: flex !important;
+  align-items: center !important;
+  width: 100% !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-client-toolbar-container .v2-search svg {
+  position: absolute !important;
+  left: 14px !important;
+  color: var(--lga-text-muted) !important;
+  pointer-events: none;
+  z-index: 1;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-client-toolbar-container .v2-search input {
+  width: 100% !important;
+  min-height: 44px !important;
+  height: 44px !important;
+  padding-left: 40px !important;
+  padding-right: 14px !important;
+  background: var(--lga-input-bg) !important;
+  background-color: var(--lga-input-bg) !important;
+  color: var(--lga-text) !important;
+  -webkit-text-fill-color: var(--lga-text) !important;
+  caret-color: var(--lga-text) !important;
+  border: 1px solid var(--lga-border) !important;
+  border-radius: 12px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-client-toolbar-container .v2-search input::placeholder {
+  color: var(--lga-placeholder) !important;
+  -webkit-text-fill-color: var(--lga-placeholder) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-client-toolbar-container .v2-client-order select {
+  width: 100% !important;
+  min-height: 44px !important;
+  height: 44px !important;
+  background: var(--lga-input-bg) !important;
+  background-color: var(--lga-input-bg) !important;
+  color: var(--lga-text) !important;
+  -webkit-text-fill-color: var(--lga-text) !important;
+  border: 1px solid var(--lga-border) !important;
+  border-radius: 12px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-client-toolbar-container .v2-client-add-btn {
+  min-height: 44px !important;
+  height: 44px !important;
+  padding: 0 18px !important;
+  border-radius: 12px !important;
+}
+
+html[data-theme="dark"] body[data-lg-admin="true"] :is(.v2-danger, .v2-destructive, .v2-client-action-btn.delete, .v2-medit-danger-btn) {
+  background: rgba(190, 56, 72, 0.16) !important;
+  border-color: rgba(212, 86, 102, 0.46) !important;
+  color: #f08a96 !important;
+}
+
+html[data-theme="light"] body[data-lg-admin="true"] :is(.v2-danger, .v2-destructive, .v2-client-action-btn.delete, .v2-medit-danger-btn) {
+  background: rgba(180, 44, 62, 0.10) !important;
+  border-color: rgba(180, 44, 62, 0.36) !important;
+  color: #8f2232 !important;
+}
+
+/* ------------------------------------------------------------------------------
+ * LAYER 6 · FILTROS, LEGIBILIDAD EN DARK/LIGHT MODE Y GRILLA 2x2 EN MOBILE
+ * ------------------------------------------------------------------------------ */
+body[data-lg-admin="true"] .v2-admin-filter-label,
+body[data-lg-admin="true"] .v2-field-label,
+body[data-lg-admin="true"] .v2-field {
+  color: var(--lga-text-muted) !important;
+}
+
+html[data-theme="light"] body[data-lg-admin="true"] :is(
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea,
+  output,
+  .select-control
+),
+html[data-theme="dark"] body[data-lg-admin="true"] :is(
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea,
+  output,
+  .select-control
+) {
+  background: var(--lga-input-bg) !important;
+  background-color: var(--lga-input-bg) !important;
+  color: var(--lga-text) !important;
+  -webkit-text-fill-color: var(--lga-text) !important;
+  border: 1px solid var(--lga-border) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+  border-radius: 12px !important;
+  min-height: 44px;
+  opacity: 1 !important;
+  transition: border-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
+}
+
+html[data-theme="light"] body[data-lg-admin="true"] :is(input, select, textarea, output) {
+  color-scheme: light !important;
+}
+
+html[data-theme="dark"] body[data-lg-admin="true"] :is(input, select, textarea, output) {
+  color-scheme: dark !important;
+}
+
+body[data-lg-admin="true"] :is(input, select, textarea, .select-control):focus,
+body[data-lg-admin="true"] :is(input, select, textarea, .select-control):focus-visible {
+  background: var(--lga-input-focus-bg) !important;
+  background-color: var(--lga-input-focus-bg) !important;
+  border-color: var(--lga-border-accent) !important;
+  box-shadow: 0 0 0 3px rgba(200, 169, 107, 0.20) !important;
+  outline: none !important;
+}
+
+body[data-lg-admin="true"] :is(input, textarea)::placeholder {
+  color: var(--lga-placeholder) !important;
+  -webkit-text-fill-color: var(--lga-placeholder) !important;
+  opacity: 1 !important;
+}
+
+body[data-lg-admin="true"] select option {
+  background-color: var(--lga-option-bg) !important;
+  color: var(--lga-option-text) !important;
+}
+
+html[data-theme="light"] body[data-lg-admin="true"] :is(
+  .v2-shell,
+  .v2-admin-filter-panel,
+  .v2-admin-filter-control,
+  .v2-admin-filter-card,
+  .v2-custom-range-row,
+  .v2-filters,
+  [role="dialog"]
+) :is(input[type="date"], input[type="time"]) {
+  color-scheme: light !important;
+  color: var(--lga-text) !important;
+  -webkit-text-fill-color: var(--lga-text) !important;
+  opacity: 1 !important;
+}
+
+html[data-theme="dark"] body[data-lg-admin="true"] :is(
+  .v2-shell,
+  .v2-admin-filter-panel,
+  .v2-admin-filter-control,
+  .v2-admin-filter-card,
+  .v2-custom-range-row,
+  .v2-filters,
+  [role="dialog"]
+) :is(input[type="date"], input[type="time"]) {
+  color-scheme: dark !important;
+  color: var(--lga-text) !important;
+  -webkit-text-fill-color: var(--lga-text) !important;
+  opacity: 1 !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] :is(
+  .v2-shell,
+  .v2-admin-filter-panel,
+  .v2-admin-filter-control,
+  .v2-admin-filter-card,
+  .v2-custom-range-row,
+  .v2-filters,
+  [role="dialog"]
+) :is(input[type="date"], input[type="time"]):hover:not(:disabled) {
+  border-color: var(--lga-border-strong) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] :is(
+  .v2-shell,
+  .v2-admin-filter-panel,
+  .v2-admin-filter-control,
+  .v2-admin-filter-card,
+  .v2-custom-range-row,
+  .v2-filters,
+  [role="dialog"]
+) :is(input[type="date"], input[type="time"])::-webkit-date-and-time-value,
+html[data-theme] body[data-lg-admin="true"] :is(
+  .v2-shell,
+  .v2-admin-filter-panel,
+  .v2-admin-filter-control,
+  .v2-admin-filter-card,
+  .v2-custom-range-row,
+  .v2-filters,
+  [role="dialog"]
+) :is(input[type="date"], input[type="time"])::-webkit-datetime-edit,
+html[data-theme] body[data-lg-admin="true"] :is(
+  .v2-shell,
+  .v2-admin-filter-panel,
+  .v2-admin-filter-control,
+  .v2-admin-filter-card,
+  .v2-custom-range-row,
+  .v2-filters,
+  [role="dialog"]
+) :is(input[type="date"], input[type="time"])::-webkit-datetime-edit-fields-wrapper,
+html[data-theme] body[data-lg-admin="true"] :is(
+  .v2-shell,
+  .v2-admin-filter-panel,
+  .v2-admin-filter-control,
+  .v2-admin-filter-card,
+  .v2-custom-range-row,
+  .v2-filters,
+  [role="dialog"]
+) :is(input[type="date"], input[type="time"])::-webkit-datetime-edit-text,
+html[data-theme] body[data-lg-admin="true"] :is(
+  .v2-shell,
+  .v2-admin-filter-panel,
+  .v2-admin-filter-control,
+  .v2-admin-filter-card,
+  .v2-custom-range-row,
+  .v2-filters,
+  [role="dialog"]
+) :is(input[type="date"], input[type="time"])::-webkit-datetime-edit-day-field,
+html[data-theme] body[data-lg-admin="true"] :is(
+  .v2-shell,
+  .v2-admin-filter-panel,
+  .v2-admin-filter-control,
+  .v2-admin-filter-card,
+  .v2-custom-range-row,
+  .v2-filters,
+  [role="dialog"]
+) :is(input[type="date"], input[type="time"])::-webkit-datetime-edit-month-field,
+html[data-theme] body[data-lg-admin="true"] :is(
+  .v2-shell,
+  .v2-admin-filter-panel,
+  .v2-admin-filter-control,
+  .v2-admin-filter-card,
+  .v2-custom-range-row,
+  .v2-filters,
+  [role="dialog"]
+) :is(input[type="date"], input[type="time"])::-webkit-datetime-edit-year-field,
+html[data-theme] body[data-lg-admin="true"] :is(
+  .v2-shell,
+  .v2-admin-filter-panel,
+  .v2-admin-filter-control,
+  .v2-admin-filter-card,
+  .v2-custom-range-row,
+  .v2-filters,
+  [role="dialog"]
+) input[type="time"]::-webkit-datetime-edit-hour-field,
+html[data-theme] body[data-lg-admin="true"] :is(
+  .v2-shell,
+  .v2-admin-filter-panel,
+  .v2-admin-filter-control,
+  .v2-admin-filter-card,
+  .v2-custom-range-row,
+  .v2-filters,
+  [role="dialog"]
+) input[type="time"]::-webkit-datetime-edit-minute-field,
+html[data-theme] body[data-lg-admin="true"] :is(
+  .v2-shell,
+  .v2-admin-filter-panel,
+  .v2-admin-filter-control,
+  .v2-admin-filter-card,
+  .v2-custom-range-row,
+  .v2-filters,
+  [role="dialog"]
+) input[type="time"]::-webkit-datetime-edit-ampm-field {
+  color: var(--lga-text) !important;
+  -webkit-text-fill-color: var(--lga-text) !important;
+  opacity: 1 !important;
+}
+
+html[data-theme="light"] body[data-lg-admin="true"] :is(
+  .v2-shell,
+  .v2-admin-filter-panel,
+  .v2-admin-filter-control,
+  .v2-admin-filter-card,
+  .v2-custom-range-row,
+  .v2-filters,
+  [role="dialog"]
+) :is(input[type="date"], input[type="time"])::-webkit-calendar-picker-indicator {
+  color-scheme: light !important;
+  filter: none !important;
+  opacity: 0.78 !important;
+  cursor: pointer !important;
+}
+
+html[data-theme="dark"] body[data-lg-admin="true"] :is(
+  .v2-shell,
+  .v2-admin-filter-panel,
+  .v2-admin-filter-control,
+  .v2-admin-filter-card,
+  .v2-custom-range-row,
+  .v2-filters,
+  [role="dialog"]
+) :is(input[type="date"], input[type="time"])::-webkit-calendar-picker-indicator {
+  color-scheme: dark !important;
+  filter: none !important;
+  opacity: 0.92 !important;
+  cursor: pointer !important;
+}
+
+body[data-lg-admin="true"] input:-webkit-autofill {
+  -webkit-text-fill-color: var(--lga-text) !important;
+  transition: background-color 9999s ease-out 0s;
+}
+
+@media (max-width: 767px) {
+  body[data-lg-admin="true"] .v2-admin-filter-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px 12px !important;
+  }
+
+  body[data-lg-admin="true"] .v2-admin-filter-cell-empty {
+    display: none !important;
+  }
+
+  body[data-lg-admin="true"] .v2-custom-range-row {
+    grid-column: 1 / -1;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px 12px !important;
+  }
+}
+
+/* ------------------------------------------------------------------------------
+ * LAYER 7 · CARDS DE HORARIOS, TURNOS, INICIO, PAGOS, CLIENTES Y DATOS
+ * ------------------------------------------------------------------------------ */
+body[data-lg-admin="true"] :is(
+  .v2-metric,
+  .v2-next,
+  .v2-today,
+  .v2-appointment,
+  .v2-client-card,
+  .client-card-mobile,
+  .v2-payment-card-mobile,
+  .v2-code-card,
+  .v2-callout,
+  .v2-inset,
+  .v2-payment-total-box,
+  .v2-manual-summary,
+  .v2-summary-block
+) {
+  background: var(--lga-glass-interactive) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(142%) !important;
+  backdrop-filter: blur(18px) saturate(142%) !important;
+  border: 1px solid var(--lga-border) !important;
+  box-shadow: var(--lga-shadow-interactive), var(--lga-specular) !important;
+  border-radius: 18px !important;
+  transition:
+    transform 170ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 170ms ease,
+    box-shadow 170ms ease;
+}
+
+body[data-lg-admin="true"] :is(
+  .v2-appointment,
+  .v2-client-card,
+  .client-card-mobile,
+  .v2-payment-card-mobile,
+  .v2-code-card,
+  .v2-metric
+):hover {
+  border-color: var(--lga-border-strong) !important;
+  box-shadow: var(--lga-shadow-hover), var(--lga-specular) !important;
+  transform: translateY(-1px);
+}
+
+/* Contenedores de métricas KPI sin superficie trasera sólida ni bordes pegados */
+html[data-theme] body[data-lg-admin="true"] :is(.v2-metrics, .v2-metrics-four, .v2-insights-page .v2-metrics-four) {
+  display: grid !important;
+  gap: 14px !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  border-radius: 0 !important;
+  overflow: visible !important;
+  padding: 0 !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-metrics {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-metrics-four {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+}
+
+@media (max-width: 767px) {
+  html[data-theme] body[data-lg-admin="true"] :is(.v2-metrics, .v2-metrics-four, .v2-insights-page .v2-metrics-four) {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 12px !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-metric {
+    padding: 13px 13px !important;
+    margin: 0 !important;
+  }
+
+  html[data-theme="light"] body[data-lg-admin="true"] .v2-metric {
+    box-shadow: 0 4px 12px rgba(24, 22, 20, 0.05), var(--lga-specular) !important;
+  }
+
+  html[data-theme="dark"] body[data-lg-admin="true"] .v2-metric {
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28), var(--lga-specular) !important;
+  }
+}
+
+@media (max-width: 359px) {
+  html[data-theme] body[data-lg-admin="true"] :is(.v2-metrics, .v2-metrics-four, .v2-insights-page .v2-metrics-four) {
+    gap: 10px !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-metric {
+    padding: 11px 10px !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-metric strong {
+    font-size: 18px !important;
+  }
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-metric {
+  height: 100%;
+  padding: 16px 18px !important;
+  justify-content: space-between;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-metric:nth-child(odd),
+html[data-theme] body[data-lg-admin="true"] .v2-metric:nth-last-child(-n + 2),
+html[data-theme] body[data-lg-admin="true"] .v2-metrics-four .v2-metric,
+html[data-theme] body[data-lg-admin="true"] .v2-metrics-four .v2-metric:last-child {
+  border: 1px solid var(--lga-border) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-metric small,
+html[data-theme] body[data-lg-admin="true"] .v2-trend-badge {
+  line-height: 1.45 !important;
+  overflow-wrap: anywhere;
+}
+
+/* Cards de Horarios (sin backdrop-filter anidado ni pseudo-capas detrás) */
+html[data-theme] body[data-lg-admin="true"] .v2-schedule :is(.v2-schedule-cards-container, .admin-schedule-cards-container) {
+  padding: 14px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-schedule :is(.v2-schedule-cards-container, .admin-schedule-cards-container)::before,
+html[data-theme] body[data-lg-admin="true"] .v2-schedule :is(.v2-schedule-cards-container, .admin-schedule-cards-container)::after {
+  content: none !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-schedule-cards-grid > button {
+  background: var(--lga-glass-interactive) !important;
+  background-color: transparent !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  border-radius: 15px !important;
+  color: var(--lga-text) !important;
+  transition: transform 150ms cubic-bezier(0.22, 1, 0.36, 1), border-color 150ms ease, box-shadow 150ms ease;
+}
+
+html[data-theme="light"] body[data-lg-admin="true"] .v2-schedule-cards-grid > button {
+  box-shadow: 0 4px 12px rgba(24, 22, 20, 0.045), var(--lga-specular) !important;
+}
+
+html[data-theme="dark"] body[data-lg-admin="true"] .v2-schedule-cards-grid > button {
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.28), var(--lga-specular) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-schedule-cards-grid > button::before,
+html[data-theme] body[data-lg-admin="true"] .v2-schedule-cards-grid > button::after {
+  content: none !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-schedule-cards-grid > button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: var(--lga-shadow-hover), var(--lga-specular) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-schedule-cards-grid > button.border-success\/30 {
+  border: 1px solid rgba(74, 178, 122, 0.34) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-schedule-cards-grid > button.border-amber-500\/30 {
+  border: 1px dashed rgba(212, 168, 76, 0.44) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-schedule-cards-grid > button.border-destructive\/30 {
+  border: 1px dotted rgba(206, 78, 92, 0.38) !important;
+}
+
+/* Turnos + Estados distinguibles sin depender solo del color */
+body[data-lg-admin="true"] .v2-appointment {
+  padding: 16px 18px !important;
+  gap: 14px;
+}
+
+body[data-lg-admin="true"] .v2-app-row-1 {
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--lga-border);
+}
+
+body[data-lg-admin="true"] .v2-app-time { color: var(--lga-accent) !important; }
+body[data-lg-admin="true"] .v2-app-name { color: var(--lga-text) !important; }
+
+body[data-lg-admin="true"] .v2-manual-badge {
+  background: rgba(200, 169, 107, 0.16) !important;
+  border: 1px solid rgba(200, 169, 107, 0.44) !important;
+  color: var(--lga-accent) !important;
+  border-radius: 999px !important;
+}
+
+body[data-lg-admin="true"] .v2-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: 999px !important;
+  padding: 4px 10px !important;
+  font-weight: 600;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+body[data-lg-admin="true"] .v2-badge::before {
+  font-size: 0.85em;
+  line-height: 1;
+  font-weight: 700;
+}
+
+body[data-lg-admin="true"] .v2-status-confirmed {
+  border: 1px solid rgba(74, 178, 122, 0.54) !important;
+  background: rgba(58, 156, 104, 0.14) !important;
+}
+body[data-lg-admin="true"] .v2-status-confirmed::before { content: "✓"; }
+
+body[data-lg-admin="true"] .v2-status-pending {
+  border: 1px dashed rgba(212, 168, 76, 0.70) !important;
+  background: rgba(204, 160, 72, 0.14) !important;
+}
+body[data-lg-admin="true"] .v2-status-pending::before { content: "◷"; }
+
+body[data-lg-admin="true"] .v2-status-cancelled {
+  border: 1px solid rgba(206, 78, 92, 0.58) !important;
+  background: rgba(190, 56, 72, 0.14) !important;
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+body[data-lg-admin="true"] .v2-status-cancelled::before {
+  content: "✕";
+  display: inline-block;
+  text-decoration: none;
+}
+
+body[data-lg-admin="true"] .v2-status-completed {
+  border: 1px solid rgba(200, 169, 107, 0.50) !important;
+  background: rgba(200, 169, 107, 0.12) !important;
+}
+body[data-lg-admin="true"] .v2-status-completed::before { content: "★"; }
+
+body[data-lg-admin="true"] .v2-status-no_show {
+  border: 1px dotted var(--lga-border-strong) !important;
+  background: rgba(128, 124, 118, 0.14) !important;
+}
+body[data-lg-admin="true"] .v2-status-no_show::before { content: "—"; }
+
+body[data-lg-admin="true"] .v2-notif-pill {
+  border-radius: 999px !important;
+  border: 1px solid var(--lga-border) !important;
+  background: var(--lga-btn-secondary-bg) !important;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+body[data-lg-admin="true"] .v2-appointment-actions-grid {
+  padding-top: 0;
+  border-top: none;
+}
+
+/* Pagos, Clientes y Datos */
+body[data-lg-admin="true"] .v2-client-card {
+  padding: 16px 18px !important;
+}
+body[data-lg-admin="true"] .v2-metric strong { color: var(--lga-text) !important; }
+body[data-lg-admin="true"] .v2-payments-table-wrap { overflow-x: auto; padding: 4px; }
+body[data-lg-admin="true"] .v2-payments-table thead th {
+  background: rgba(128, 124, 118, 0.08) !important;
+  color: var(--lga-text-muted) !important;
+  border-bottom: 1px solid var(--lga-border) !important;
+}
+body[data-lg-admin="true"] .v2-payments-table tbody tr { border-bottom: 1px solid var(--lga-border) !important; }
+body[data-lg-admin="true"] .v2-payments-table tbody tr:hover { background: rgba(200, 169, 107, 0.07) !important; }
+body[data-lg-admin="true"] .v2-method-badge {
+  border-radius: 999px !important;
+  border: 1px solid var(--lga-border) !important;
+  background: var(--lga-btn-secondary-bg) !important;
+}
+body[data-lg-admin="true"] .v2-track {
+  background: rgba(128, 124, 118, 0.16) !important;
+  border: 1px solid var(--lga-border) !important;
+  border-radius: 999px !important;
+  overflow: hidden;
+}
+body[data-lg-admin="true"] .v2-track > span,
+body[data-lg-admin="true"] .v2-track > i {
+  background: linear-gradient(90deg, #b8924a 0%, #e4c98f 100%) !important;
+  border-radius: 999px !important;
+}
+body[data-lg-admin="true"] .v2-bar-chart i {
+  background: linear-gradient(180deg, rgba(228, 201, 143, 0.92) 0%, rgba(178, 144, 78, 0.70) 100%) !important;
+  border-radius: 6px 6px 2px 2px !important;
+}
+body[data-lg-admin="true"] .v2-status-summary > div,
+body[data-lg-admin="true"] .v2-history-row {
+  border-bottom: 1px solid var(--lga-border) !important;
+}
+body[data-lg-admin="true"] .v2-insight-grid article > span {
+  color: var(--lga-accent) !important;
+}
+body[data-lg-admin="true"] .v2-insight-grid h3 {
+  color: var(--lga-text) !important;
+}
+body[data-lg-admin="true"] .v2-insight-grid p {
+  color: var(--lga-text-muted) !important;
+}
+
+/* ------------------------------------------------------------------------------
+ * LAYER 8 · MODALES LIQUID GLASS, JERARQUÍA DE BOTONES, POPOVERS Y REDUCED MOTION
+ * ------------------------------------------------------------------------------ */
+html[data-theme] body[data-lg-admin="true"] :is(
+  [data-slot="dialog-overlay"],
+  [data-radix-portal] > .fixed.inset-0,
+  div[data-state].fixed.inset-0,
+  .v2-client-modal-overlay
+) {
+  background: var(--lga-modal-overlay) !important;
+  background-color: var(--lga-modal-overlay) !important;
+  -webkit-backdrop-filter: blur(4px) saturate(125%) !important;
+  backdrop-filter: blur(4px) saturate(125%) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] :is(
+  [role="dialog"],
+  [role="dialog"].v2-dialog,
+  .v2-dialog.v2-manual-dialog,
+  .v2-dialog.v2-client-modal,
+  .v2-dialog.v2-client-modal.v2-client-confirm,
+  .v2-dialog.kani-medit-dialog,
+  .v2-dialog.v2-medit-modal,
+  .v2-dialog.v2-payment-edit-dialog,
+  .manual-dialog,
+  .admin-schedule-dialog,
+  .notification-popover
+) {
+  background: var(--lga-glass-modal) !important;
+  background-color: transparent !important;
+  -webkit-backdrop-filter: blur(26px) saturate(185%) !important;
+  backdrop-filter: blur(26px) saturate(185%) !important;
+  border: 1px solid var(--lga-modal-border) !important;
+  box-shadow: var(--lga-shadow-modal), var(--lga-modal-specular) !important;
+  border-radius: 22px !important;
+  color: var(--lga-text) !important;
+  isolation: isolate;
+  animation: lgaDialogFadeIn 190ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"]:not(.v2-client-modal) {
+  width: min(
+    540px,
+    calc(100vw - max(24px, env(safe-area-inset-left, 0px) + env(safe-area-inset-right, 0px)))
+  ) !important;
+  max-width: calc(100vw - 24px) !important;
+  max-height: calc(100dvh - max(24px, env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px))) !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  overscroll-behavior: contain !important;
+  padding: 22px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"]:is(.kani-medit-dialog, .v2-medit-modal) {
+  width: min(640px, calc(100vw - 24px)) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"].v2-dialog.v2-manual-dialog {
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
+/* Eliminar rectángulos sólidos heredados en cuerpos, headers y footers de modales */
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(
+  .v2-manual-form,
+  .v2-manual-dialog-body,
+  .v2-manual-dialog-header,
+  .v2-manual-dialog-actions,
+  .v2-manual-actions,
+  .v2-client-modal-header,
+  .v2-client-modal-scroll,
+  .v2-client-editor-form,
+  .v2-client-modal-footer,
+  .v2-dialog-actions,
+  .manual-dialog-footer,
+  .manual-dialog-body
+) {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea
+) {
+  -webkit-backdrop-filter: blur(10px) saturate(135%) !important;
+  backdrop-filter: blur(10px) saturate(135%) !important;
+}
+
+html[data-theme="light"] body[data-lg-admin="true"] [role="dialog"] :is(
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea
+) {
+  background: rgba(255, 255, 255, 0.44) !important;
+  background-color: rgba(255, 255, 255, 0.44) !important;
+}
+
+html[data-theme="dark"] body[data-lg-admin="true"] [role="dialog"] :is(
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea
+) {
+  background: rgba(16, 16, 22, 0.46) !important;
+  background-color: rgba(16, 16, 22, 0.46) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-dialog.v2-manual-dialog :is(.v2-manual-dialog-actions, .v2-manual-actions) {
+  position: static !important;
+  bottom: auto !important;
+  margin-top: 12px !important;
+  padding: 16px 0 calc(2px + env(safe-area-inset-bottom, 0px)) 0 !important;
+  border-top: 1px solid var(--lga-border) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(.v2-client-modal-footer, .manual-dialog-footer, .v2-dialog-actions) {
+  border-top: 1px solid var(--lga-border) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(
+  .manual-dialog-footer,
+  .v2-manual-dialog-actions,
+  .v2-manual-actions,
+  .v2-client-modal-footer,
+  .v2-dialog-actions
+) {
+  display: flex !important;
+  gap: 12px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(
+  .manual-dialog-footer,
+  .v2-manual-dialog-actions,
+  .v2-manual-actions,
+  .v2-client-modal-footer,
+  .v2-dialog-actions
+) > * {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(.manual-dialog-footer, .v2-dialog-actions) {
+  padding-top: 16px !important;
+  margin-top: 16px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] .v2-client-modal-footer {
+  padding: 16px 16px calc(16px + env(safe-area-inset-bottom, 0px)) 16px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(.v2-client-modal-header, .v2-manual-dialog-header, .v2-dialog.v2-manual-dialog > p) {
+  border-bottom: 1px solid var(--lga-border) !important;
+}
+
+/* Jerarquía clara y accesibilidad táctil de botones dentro de modales */
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(
+  .manual-dialog-footer,
+  .v2-manual-dialog-actions,
+  .v2-manual-actions,
+  .v2-client-modal-footer,
+  .v2-dialog-actions
+) > button {
+  min-height: 48px !important;
+  height: auto !important;
+  padding: 12px 22px !important;
+  border-radius: 14px !important;
+  font-size: 0.875rem !important;
+  line-height: 1.3 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  white-space: nowrap !important;
+  -webkit-backdrop-filter: blur(14px) saturate(145%) !important;
+  backdrop-filter: blur(14px) saturate(145%) !important;
+  transition:
+    transform 150ms cubic-bezier(0.22, 1, 0.36, 1),
+    background 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease !important;
+}
+
+/* Botón primario de confirmación en modal */
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(
+  .manual-dialog-footer,
+  .v2-manual-dialog-actions,
+  .v2-manual-actions,
+  .v2-client-modal-footer,
+  .v2-dialog-actions
+) > button:is(.action-positive, .v2-primary, [type="submit"]):not(.v2-destructive):not(.v2-danger):not(.action-brand) {
+  background: var(--lga-btn-primary-bg) !important;
+  background-color: transparent !important;
+  color: var(--lga-text) !important;
+  -webkit-text-fill-color: var(--lga-text) !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.005em !important;
+}
+
+html[data-theme="light"] body[data-lg-admin="true"] [role="dialog"] :is(
+  .manual-dialog-footer,
+  .v2-manual-dialog-actions,
+  .v2-manual-actions,
+  .v2-client-modal-footer,
+  .v2-dialog-actions
+) > button:is(.action-positive, .v2-primary, [type="submit"]):not(.v2-destructive):not(.v2-danger):not(.action-brand):not(:disabled) {
+  border: 1.5px solid rgba(154, 118, 48, 0.86) !important;
+  box-shadow:
+    0 10px 24px rgba(132, 98, 38, 0.16),
+    0 2px 6px rgba(20, 18, 16, 0.08),
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.96),
+    inset 0 -1px 0 rgba(142, 106, 40, 0.16) !important;
+}
+
+html[data-theme="dark"] body[data-lg-admin="true"] [role="dialog"] :is(
+  .manual-dialog-footer,
+  .v2-manual-dialog-actions,
+  .v2-manual-actions,
+  .v2-client-modal-footer,
+  .v2-dialog-actions
+) > button:is(.action-positive, .v2-primary, [type="submit"]):not(.v2-destructive):not(.v2-danger):not(.action-brand):not(:disabled) {
+  color: #fcfaf4 !important;
+  -webkit-text-fill-color: #fcfaf4 !important;
+  border: 1.5px solid rgba(228, 201, 143, 0.86) !important;
+  box-shadow:
+    0 12px 26px rgba(0, 0, 0, 0.48),
+    0 0 18px rgba(212, 180, 114, 0.16),
+    inset 0 1.5px 0 rgba(255, 248, 232, 0.42) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(
+  .manual-dialog-footer,
+  .v2-manual-dialog-actions,
+  .v2-manual-actions,
+  .v2-client-modal-footer,
+  .v2-dialog-actions
+) > button:is(.action-positive, .v2-primary, [type="submit"]):not(.v2-destructive):not(.v2-danger):not(.action-brand):hover:not(:disabled) {
+  background: var(--lga-btn-primary-hover) !important;
+  border-color: var(--lga-accent) !important;
+  transform: translateY(-1px);
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(
+  .manual-dialog-footer,
+  .v2-manual-dialog-actions,
+  .v2-manual-actions,
+  .v2-client-modal-footer,
+  .v2-dialog-actions
+) > button:is(.action-positive, .v2-primary, [type="submit"]):not(.v2-destructive):not(.v2-danger):not(.action-brand):active:not(:disabled) {
+  background: var(--lga-btn-primary-active) !important;
+  transform: scale(0.985) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(
+  .manual-dialog-footer,
+  .v2-manual-dialog-actions,
+  .v2-manual-actions,
+  .v2-client-modal-footer,
+  .v2-dialog-actions
+) > button:is(.action-positive, .v2-primary, [type="submit"]):not(.v2-destructive):not(.v2-danger):not(.action-brand):disabled {
+  background: var(--lga-btn-secondary-bg) !important;
+  background-image: none !important;
+  color: var(--lga-text-muted) !important;
+  -webkit-text-fill-color: var(--lga-text-muted) !important;
+  opacity: 0.48 !important;
+  border: 1px solid var(--lga-border) !important;
+  box-shadow: none !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+}
+
+/* Botón secundario («Cancelar», «Volver», etc.) claramente subordinado */
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(
+  .manual-dialog-footer,
+  .v2-manual-dialog-actions,
+  .v2-manual-actions,
+  .v2-client-modal-footer,
+  .v2-dialog-actions
+) > button:not(.action-positive):not(.v2-primary):not(.v2-destructive):not(.v2-danger):not(.action-brand):not(.action-confirm):not([type="submit"]) {
+  background: var(--lga-btn-secondary-bg) !important;
+  background-color: transparent !important;
+  color: var(--lga-text-muted) !important;
+  -webkit-text-fill-color: var(--lga-text-muted) !important;
+  border: 1px solid var(--lga-border) !important;
+  font-weight: 500 !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14) !important;
+}
+
+html[data-theme="light"] body[data-lg-admin="true"] [role="dialog"] :is(
+  .manual-dialog-footer,
+  .v2-manual-dialog-actions,
+  .v2-manual-actions,
+  .v2-client-modal-footer,
+  .v2-dialog-actions
+) > button:not(.action-positive):not(.v2-primary):not(.v2-destructive):not(.v2-danger):not(.action-brand):not(.action-confirm):not([type="submit"]) {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(
+  .manual-dialog-footer,
+  .v2-manual-dialog-actions,
+  .v2-manual-actions,
+  .v2-client-modal-footer,
+  .v2-dialog-actions
+) > button:not(.action-positive):not(.v2-primary):not(.v2-destructive):not(.v2-danger):not(.action-brand):not(.action-confirm):not([type="submit"]):hover:not(:disabled) {
+  background: var(--lga-btn-secondary-hover) !important;
+  color: var(--lga-text) !important;
+  -webkit-text-fill-color: var(--lga-text) !important;
+  border-color: var(--lga-border-strong) !important;
+  transform: translateY(-1px);
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(
+  .manual-dialog-footer,
+  .v2-manual-dialog-actions,
+  .v2-manual-actions,
+  .v2-client-modal-footer,
+  .v2-dialog-actions
+) > button:not(.action-positive):not(.v2-primary):not(.v2-destructive):not(.v2-danger):not(.action-brand):not(.action-confirm):not([type="submit"]):active:not(:disabled) {
+  background: var(--lga-btn-secondary-active) !important;
+  transform: scale(0.985) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(
+  .manual-dialog-footer,
+  .v2-manual-dialog-actions,
+  .v2-manual-actions,
+  .v2-client-modal-footer,
+  .v2-dialog-actions
+) > button:focus-visible {
+  outline: 2px solid var(--lga-accent) !important;
+  outline-offset: 2px !important;
+}
+
+@media (max-width: 767px) {
+  html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(
+    .manual-dialog-footer,
+    .v2-manual-dialog-actions,
+    .v2-manual-actions,
+    .v2-client-modal-footer,
+    .v2-dialog-actions
+  ) {
+    gap: 12px !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(
+    .manual-dialog-footer,
+    .v2-manual-dialog-actions,
+    .v2-manual-actions,
+    .v2-client-modal-footer,
+    .v2-dialog-actions
+  ) > button {
+    min-height: 52px !important;
+    padding: 13px 18px !important;
+    font-size: 0.9375rem !important;
+    white-space: normal !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(.v2-manual-dialog-actions, .v2-manual-actions) {
+    flex-direction: column-reverse !important;
+    align-items: stretch !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(.v2-manual-dialog-actions, .v2-manual-actions) > button {
+    width: 100% !important;
+    flex: 0 0 auto !important;
+  }
+}
+
+/* Sub-superficies y textos dentro de modales */
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(h2, h3, legend) {
+  color: var(--lga-text) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(p, dt, .text-muted-foreground) {
+  color: var(--lga-text-muted) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(label, .v2-field, dd) {
+  color: var(--lga-text) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(.v2-manual-time-section, .v2-capsules-container, .kani-medit-section) {
+  background: var(--lga-glass-structural) !important;
+  border: 1px solid var(--lga-border) !important;
+  border-radius: 14px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] > button:has(> .sr-only),
+html[data-theme] body[data-lg-admin="true"] .v2-manual-close-btn {
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  border-radius: 9999px !important;
+  color: var(--lga-text-muted) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] > button:has(> .sr-only):hover,
+html[data-theme] body[data-lg-admin="true"] .v2-manual-close-btn:hover {
+  background: var(--lga-glass-hover) !important;
+  border-color: var(--lga-border) !important;
+  color: var(--lga-text) !important;
+}
+
+@media (max-width: 420px) {
+  html[data-theme] body[data-lg-admin="true"] .v2-dialog.v2-manual-dialog .v2-manual-row {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+
+body[data-lg-admin="true"] .notification-item {
+  background: var(--lga-glass-interactive) !important;
+  border: 1px solid var(--lga-border) !important;
+  border-radius: 14px !important;
+}
+
+body[data-lg-admin="true"] .notification-item.is-unread {
+  border-color: var(--lga-border-accent) !important;
+}
+
+body[data-lg-admin="true"] :is(.v2-alert, .v2-range-warning) {
+  background: rgba(190, 56, 72, 0.14) !important;
+  border: 1px solid rgba(206, 78, 92, 0.44) !important;
+  border-radius: 14px !important;
+}
+
+body[data-lg-admin="true"] .v2-success {
+  background: rgba(58, 156, 104, 0.14) !important;
+  border: 1px solid rgba(74, 178, 122, 0.44) !important;
+  border-radius: 14px !important;
+}
+
+body[data-lg-admin="true"] .v2-loading {
+  background: var(--lga-glass-interactive) !important;
+  border: 1px solid var(--lga-border-accent) !important;
+  border-radius: 999px !important;
+  padding: 6px 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+@keyframes lgaDialogFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body[data-lg-admin="true"] *,
+  body[data-lg-admin="true"] *::before,
+  body[data-lg-admin="true"] *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ==============================================================================
+ * LAYER 9 · V12.27 COMPLEMENTO — ADAPTACIÓN «MEMBRESÍAS Y DESCUENTOS» & MODALES
+ * Adaptación visual completa de /admin-liquid/membresias y /admin-liquid/descuentos
+ * usando los tokens ópticos --lga-* existentes sin alterar rutas tradicionales.
+ * ============================================================================== */
+
+/* Pestañas Membresías | Descuentos unificadas como cápsula segmentada Liquid Glass */
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page [role="tablist"] {
+  background: var(--lga-glass-structural) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(148%) !important;
+  backdrop-filter: blur(18px) saturate(148%) !important;
+  border: 1px solid var(--lga-border) !important;
+  box-shadow: var(--lga-specular), var(--lga-shadow-structural) !important;
+  border-radius: 999px !important;
+  padding: 4px !important;
+  gap: 6px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page [role="tablist"] > button[role="tab"] {
+  min-height: 36px !important;
+  padding: 0 16px !important;
+  border-radius: 999px !important;
+  font-weight: 500 !important;
+  color: var(--lga-text-muted) !important;
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  box-shadow: none !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page [role="tablist"] > button[role="tab"][aria-selected="true"] {
+  background: var(--lga-accent-pill) !important;
+  border-color: var(--lga-border-accent) !important;
+  color: var(--lga-text) !important;
+  font-weight: 600 !important;
+  box-shadow: var(--lga-specular), 0 4px 12px rgba(24, 22, 20, 0.08) !important;
+}
+
+/* Cards de Membresías (.kani-mcard) */
+html[data-theme] body[data-lg-admin="true"] .kani-mcard {
+  background: var(--lga-glass-interactive) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(150%) !important;
+  backdrop-filter: blur(20px) saturate(150%) !important;
+  border: 1px solid var(--lga-border) !important;
+  box-shadow: var(--lga-specular), var(--lga-shadow-interactive) !important;
+  border-radius: 18px !important;
+  color: var(--lga-text) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .kani-mcard:hover {
+  border-color: var(--lga-border-accent) !important;
+  box-shadow: var(--lga-specular), var(--lga-shadow-hover) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .kani-mcard-sessions {
+  background: var(--lga-glass-structural) !important;
+  border: 1px solid var(--lga-border) !important;
+  border-radius: 12px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .kani-mcard :is(.kani-mcard-barber, .kani-mcard-sessions-label, .kani-mcard-sessions-breakdown, .kani-mcard-meta, .kani-mcard-progress-label) {
+  color: var(--lga-text-muted) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .kani-mcard :is(.kani-mcard-title, .kani-mcard-client, .kani-mcard-sessions-count, .kani-mcard-progress-value) {
+  color: var(--lga-text) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .kani-mcard-actions > :is(button, a) {
+  min-height: 40px !important;
+  border-radius: 999px !important;
+  border: 1px solid var(--lga-border) !important;
+  background: var(--lga-btn-secondary-bg) !important;
+  color: var(--lga-text) !important;
+  box-shadow: var(--lga-specular) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .kani-mcard-actions > :is(button, a):hover:not(:disabled) {
+  background: var(--lga-btn-secondary-hover) !important;
+  border-color: var(--lga-border-accent) !important;
+}
+
+/* Sección Descuentos y Beneficios (.maintenance-section dentro de /admin-liquid/membresias o descuentos) */
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section {
+  background: var(--lga-glass-structural) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(150%) !important;
+  backdrop-filter: blur(22px) saturate(150%) !important;
+  border: 1px solid var(--lga-border) !important;
+  box-shadow: var(--lga-specular), var(--lga-shadow-structural) !important;
+  border-radius: 18px !important;
+  color: var(--lga-text) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section :is(input, select) {
+  background: var(--lga-input-bg) !important;
+  border: 1px solid var(--lga-border) !important;
+  color: var(--lga-text) !important;
+  border-radius: 12px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section :is(input:focus, select:focus) {
+  background: var(--lga-input-focus-bg) !important;
+  border-color: var(--lga-border-accent) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section .space-y-3 > div {
+  background: var(--lga-glass-interactive) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(145%) !important;
+  backdrop-filter: blur(18px) saturate(145%) !important;
+  border: 1px solid var(--lga-border) !important;
+  box-shadow: var(--lga-specular), var(--lga-shadow-interactive) !important;
+  border-radius: 14px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section .action-brand {
+  background: var(--lga-btn-primary-bg) !important;
+  border: 1px solid var(--lga-border-accent) !important;
+  color: var(--lga-text) !important;
+  font-weight: 600 !important;
+  border-radius: 999px !important;
+  box-shadow: var(--lga-specular), var(--lga-shadow-interactive) !important;
+}
+
+/* Modales de Membresías y Descuentos: herencia de jerarquía y alturas táctiles V12.27 */
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(.benefit-code-dialog-footer > div, form > div[style*="justify-content: flex-end"]) {
+  display: flex !important;
+  gap: 12px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(.benefit-code-dialog-footer > div, form > div[style*="justify-content: flex-end"]) > button {
+  min-height: 48px !important;
+  padding: 12px 20px !important;
+  border-radius: 999px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(.benefit-code-dialog-footer > div, form > div[style*="justify-content: flex-end"]) > button:is(.action-positive, .v2-primary, .action-brand, [type="submit"]):not(:disabled) {
+  background: var(--lga-btn-primary-bg) !important;
+  border: 1.5px solid var(--lga-border-accent) !important;
+  color: var(--lga-text) !important;
+  font-weight: 600 !important;
+  box-shadow: var(--lga-shadow-interactive), inset 0 1.5px 0 rgba(255, 255, 255, 0.85) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(.benefit-code-dialog-footer > div, form > div[style*="justify-content: flex-end"]) > button:not(.action-positive):not(.v2-primary):not(.action-brand):not(.v2-destructive):not([type="submit"]) {
+  background: var(--lga-btn-secondary-bg) !important;
+  border: 1px solid var(--lga-border) !important;
+  color: var(--lga-text-muted) !important;
+  font-weight: 500 !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="dark"] body[data-lg-admin="true"] [role="dialog"] :is(.benefit-code-dialog-footer > div, form > div[style*="justify-content: flex-end"]) > button:is(.action-positive, .v2-primary, .action-brand, [type="submit"]):not(:disabled) {
+  color: #fcfaf4 !important;
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.48), inset 0 1.5px 0 rgba(255, 249, 236, 0.34) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] .kani-medit-row-actions > button {
+  min-height: 44px !important;
+  border-radius: 999px !important;
+}
+
+@media (max-width: 767px) {
+  html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(.benefit-code-dialog-footer > div, form > div[style*="justify-content: flex-end"]) > button {
+    min-height: 52px !important;
+    font-size: 0.9375rem !important;
+  }
+}
+
+/* ==============================================================================
+ * COMPLEMENTO V12.27 — HEADER ADMIN TRANSLÚCIDO REAL & MEMBRESÍAS/DESCUENTOS COMPLETO
+ * ============================================================================== */
+
+/* 1. Limpiar background opaco de v2.css:33 (.site-header-slot) y mobile-dark override de styles.css:5155 */
+html[data-theme] body[data-lg-admin="true"] .site-shell > .site-header-slot:not(:has(> header.menu-open)) {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 120 !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
+}
+
+/* Preservar sticky evitando overflow-x: hidden en ancestros */
+html[data-theme] body[data-lg-admin="true"] :is(.site-shell, .v2-shell, .lg-admin-shell) {
+  overflow-x: clip !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .site-shell > .site-header-slot:has(> header.menu-open),
+html[data-theme] body[data-lg-admin="true"] .site-shell:has(.v2-shell) > .site-header-slot:has(> header.menu-open) {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 145 !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
+}
+
+@media (max-width: 767px) {
+  html[data-theme="light"] body[data-lg-admin="true"] .site-header-slot[data-administrative] > header.site-header.liquid-glass-header:not(.menu-open),
+  html[data-theme="light"] body[data-lg-admin="true"] .site-header-slot > header.site-header.liquid-glass-header:not(.menu-open) {
+    background-color: transparent !important;
+    background-image: linear-gradient(156deg, rgba(255, 255, 255, 0.36) 0%, rgba(246, 244, 240, 0.22) 100%) !important;
+    -webkit-backdrop-filter: blur(22px) saturate(168%) !important;
+    backdrop-filter: blur(22px) saturate(168%) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.72) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.90), 0 8px 22px rgba(28, 26, 24, 0.06) !important;
+  }
+
+  html[data-theme="dark"] body[data-lg-admin="true"] .site-header-slot[data-administrative] > header.site-header.liquid-glass-header:not(.menu-open),
+  html[data-theme="dark"] body[data-lg-admin="true"] .site-header-slot > header.site-header.liquid-glass-header:not(.menu-open) {
+    background-color: transparent !important;
+    background-image: linear-gradient(156deg, rgba(26, 27, 33, 0.44) 0%, rgba(15, 16, 21, 0.32) 100%) !important;
+    -webkit-backdrop-filter: blur(22px) saturate(168%) !important;
+    backdrop-filter: blur(22px) saturate(168%) !important;
+    border-bottom: 1px solid rgba(255, 246, 228, 0.14) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 249, 236, 0.18), 0 10px 24px rgba(0, 0, 0, 0.34) !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .site-header-slot > header.site-header.liquid-glass-header.menu-open {
+    height: 64px !important;
+    flex: 0 0 64px !important;
+    background: transparent !important;
+    background-color: transparent !important;
+    background-image: none !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    border-bottom-color: transparent !important;
+    box-shadow: none !important;
+  }
+}
+
+/* 2. Cobertura total de «Membresías y descuentos» (.v2-memberships-page) */
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page [role="tablist"] {
+  max-width: 100% !important;
+  flex-wrap: wrap !important;
+}
+
+@media (max-width: 480px) {
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-page [role="tablist"] {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    width: 100% !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-page [role="tablist"] > button[role="tab"] {
+    min-height: 40px !important;
+    padding: 0 10px !important;
+    font-size: 0.875rem !important;
+    justify-content: center !important;
+  }
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page :is(.v2-metric, .v2-card, .v2-notice-card) {
+  background: var(--lga-glass-structural) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(150%) !important;
+  backdrop-filter: blur(20px) saturate(150%) !important;
+  border: 1px solid var(--lga-border) !important;
+  box-shadow: var(--lga-specular), var(--lga-shadow-structural) !important;
+  border-radius: 16px !important;
+  color: var(--lga-text) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page :is(.v2-metric-label, .v2-muted, .kani-mcard-meta) {
+  color: var(--lga-text-muted) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .v2-success {
+  background: rgba(16, 185, 129, 0.14) !important;
+  border: 1px solid rgba(16, 185, 129, 0.36) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(140%) !important;
+  backdrop-filter: blur(14px) saturate(140%) !important;
+  border-radius: 14px !important;
+  color: var(--lga-text) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .v2-alert {
+  background: rgba(220, 38, 38, 0.14) !important;
+  border: 1px solid rgba(239, 68, 68, 0.36) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(140%) !important;
+  backdrop-filter: blur(14px) saturate(140%) !important;
+  border-radius: 14px !important;
+  color: var(--lga-text) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page :is(input, select, textarea) {
+  background: var(--lga-input-bg) !important;
+  border: 1px solid var(--lga-border) !important;
+  color: var(--lga-text) !important;
+  border-radius: 12px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page :is(input, select, textarea):focus {
+  background: var(--lga-input-focus-bg) !important;
+  border-color: var(--lga-border-accent) !important;
+  outline: none !important;
+}
+
+/* Badges y barra de progreso en .kani-mcard */
+html[data-theme] body[data-lg-admin="true"] .kani-mcard-progress-track {
+  background: rgba(148, 144, 138, 0.20) !important;
+  border: 1px solid var(--lga-border) !important;
+  border-radius: 999px !important;
+  overflow: hidden !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .kani-mcard-progress-fill {
+  background: linear-gradient(90deg, rgba(186, 152, 86, 0.88) 0%, rgba(218, 186, 118, 0.96) 100%) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .kani-mcard-badge {
+  border-radius: 999px !important;
+  -webkit-backdrop-filter: blur(10px) saturate(140%) !important;
+  backdrop-filter: blur(10px) saturate(140%) !important;
+  font-weight: 600 !important;
+}
+
+html[data-theme="light"] body[data-lg-admin="true"] .kani-mcard-badge.is-neutral,
+html[data-theme="light"] body[data-lg-admin="true"] .kani-mcard-badge:not([class*="is-"]) {
+  background: rgba(24, 22, 20, 0.08) !important;
+  border-color: rgba(24, 22, 20, 0.16) !important;
+  color: #2c2823 !important;
+}
+
+/* Botones de acciones y BenefitCodesAdminSection (.maintenance-section) */
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section button:not([role="switch"]) {
+  min-height: 40px !important;
+  border-radius: 999px !important;
+  transition: background-color 150ms ease, border-color 150ms ease, opacity 150ms ease;
+}
+
+@media (max-width: 767px) {
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-page :is(.kani-mcard-actions > button, .kani-mcard-actions > a, .maintenance-section button:not([role="switch"])) {
+    min-height: 44px !important;
+  }
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section button:not(.action-brand):not(.action-positive):not(.v2-primary):not([aria-pressed="true"]):not(:disabled) {
+  background: var(--lga-btn-secondary-bg) !important;
+  border: 1px solid var(--lga-border) !important;
+  color: var(--lga-text) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page button:disabled {
+  opacity: 0.46 !important;
+  cursor: not-allowed !important;
+}
+
+/* Contraste Light Mode para badges Tailwind en códigos de beneficio (.text-zinc-300 -> legible) */
+html[data-theme="light"] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section :is(.text-zinc-300, .text-zinc-400) {
+  color: #3f3b35 !important;
+  background-color: rgba(24, 22, 20, 0.07) !important;
+  border-color: rgba(24, 22, 20, 0.16) !important;
+}
+
+html[data-theme="light"] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section .text-emerald-500 {
+  color: #0f6b47 !important;
+}
+
+html[data-theme="light"] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section .text-amber-500 {
+  color: #8f5608 !important;
+}
+
+/* Historial de usos expandido (.bg-muted/30) */
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section :is(.bg-muted\/30, [class*="bg-muted/"]) {
+  background: var(--lga-glass-structural) !important;
+  border: 1px solid var(--lga-border) !important;
+  border-radius: 12px !important;
+  -webkit-backdrop-filter: blur(12px) saturate(140%) !important;
+  backdrop-filter: blur(12px) saturate(140%) !important;
+}
+
+/* Modales de Membresías (.kani-medit-*) y Beneficios (.benefit-code-dialog-footer) */
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(.kani-medit-section, .kani-medit-kv-item, .kani-medit-row) {
+  background: var(--lga-glass-structural) !important;
+  border: 1px solid var(--lga-border) !important;
+  border-radius: 14px !important;
+  color: var(--lga-text) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(.kani-medit-kv-label, .kani-medit-section-title) {
+  color: var(--lga-text-muted) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] .kani-medit-row-actions > button {
+  background: var(--lga-btn-secondary-bg) !important;
+  border: 1px solid var(--lga-border) !important;
+  color: var(--lga-text) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] .benefit-code-dialog-footer {
+  background: transparent !important;
+  background-color: transparent !important;
+  border-top: 1px solid var(--lga-border) !important;
+  margin-top: 12px !important;
+  padding: 14px 0 0 !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] label:has(input[type="radio"]) {
+  background: var(--lga-glass-structural) !important;
+  border: 1px solid var(--lga-border) !important;
+  border-radius: 14px !important;
+  color: var(--lga-text) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] label:has(input[type="radio"]:checked) {
+  background: var(--lga-accent-pill) !important;
+  border-color: var(--lga-border-accent) !important;
+  box-shadow: var(--lga-specular) !important;
+}
+
+/* ==============================================================================
+ * LAYER 10 · V12.31 — TURNOS SIN LÍNEA · CONTENEDORES MEMBRESÍAS/DESCUENTOS · NAV 3 OPCIONES
+ * ============================================================================== */
+
+/* 1. Turnos: sin línea horizontal sobre WhatsApp / Mail ni subrayados heredados */
+html[data-theme] body[data-lg-admin="true"] .v2-appointments-page .v2-appointment-actions,
+html[data-theme] body[data-lg-admin="true"] .v2-appointments-page .v2-appointment-actions-grid {
+  border-top: none !important;
+  padding-top: 0 !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-appointments-page :is(.v2-whatsapp, .v2-mail-btn, .v2-action-btn) {
+  text-decoration: none !important;
+}
+
+/* 2. Membresías y Descuentos: eliminar doble contenedor externo preservando cards y controles */
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page > .v2-panel,
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  padding: 0 !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page > .v2-panel > div:first-child {
+  border-bottom: 1px solid var(--lga-border) !important;
+  padding-bottom: 12px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section > div:first-child {
+  border-bottom: 1px solid var(--lga-border) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section > div:has(#benefit-search) {
+  background: var(--lga-glass-structural) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(148%) !important;
+  backdrop-filter: blur(20px) saturate(148%) !important;
+  border: 1px solid var(--lga-border) !important;
+  box-shadow: var(--lga-specular), var(--lga-shadow-structural) !important;
+  border-radius: 16px !important;
+  padding: 14px 16px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section .border-dashed {
+  background: var(--lga-glass-structural) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(142%) !important;
+  backdrop-filter: blur(18px) saturate(142%) !important;
+  border: 1px dashed var(--lga-border-strong) !important;
+  box-shadow: var(--lga-specular), var(--lga-shadow-structural) !important;
+  border-radius: 18px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section .space-y-3 .bg-muted\/30 {
+  background: var(--lga-glass-structural) !important;
+  border-color: var(--lga-border) !important;
+  border-radius: 12px !important;
+}
+
+/* 3. Cápsula de navegación experimental 3 opciones (Membresías | Descuentos | Panel de administración) */
+@media (max-width: 767px) {
+  html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav.lg-memberships-nav {
+    display: block !important;
+    overflow-x: hidden !important;
+    padding: 4px !important;
+    border-radius: 16px !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav.lg-memberships-nav .admin-section-nav-items {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    align-items: stretch !important;
+    gap: 4px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav.lg-memberships-nav .admin-section-nav-link {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex: initial !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 50px !important;
+    padding: 7px 6px !important;
+    gap: 4px !important;
+    font-size: 0.71875rem !important;
+    line-height: 1.15 !important;
+    text-align: center !important;
+    white-space: normal !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav.lg-memberships-nav .lg-admin-nav-label {
+    white-space: normal !important;
+    text-align: center !important;
+    overflow-wrap: normal !important;
+  }
+
+  @media (max-width: 359px) {
+    html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav.lg-memberships-nav .admin-section-nav-items {
+      grid-template-columns: minmax(0, 0.9fr) minmax(0, 0.9fr) minmax(0, 1.2fr) !important;
+    }
+
+    html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav.lg-memberships-nav .admin-section-nav-link {
+      padding: 7px 4px !important;
+      font-size: 0.6875rem !important;
+    }
+  }
+}
+
+/* Evitar borde de foco rectangular del navegador al enfocar DialogContent vía onOpenAutoFocus */
+html[data-theme] body[data-lg-admin="true"] [role="dialog"]:focus {
+  outline: none !important;
+}

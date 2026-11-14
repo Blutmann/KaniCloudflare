@@ -6,6 +6,7 @@ import { AdminStaffProvider, useAdminStaff } from "@/lib/kani-admin-context";
 import { clearStaffCache, getAuthenticatedStaff, type AuthenticatedStaff } from "@/lib/kani-auth";
 import { mayAccessStaffSection } from "@/lib/kani-permissions";
 import { isV2AdminEnvironment } from "@/lib/kani-v2";
+import { LiquidGlassShell } from "@/components/kani/experimental/liquid-glass-shell";
 import { V2DataProvider, useV2 } from "@/components/kani/v2/data";
 import "@/components/kani/v2/v2.css";
 import "./panel-v2.css";
@@ -24,25 +25,27 @@ const PANEL_V2_ROUTE_SECTION_MAP: Record<string, string> = {
   "estadisticas": "datos",
 };
 
-export function resolvePanelV2Space(pathname: string): PanelV2Space {
+export function resolvePanelV2Space(pathname: string, basePath = "/panel-v2"): PanelV2Space {
+  const cleanBase = basePath.replace(/\/+$/, "");
   const clean = pathname.replace(/\/+$/, "");
-  if (clean === "/panel-v2") return "inicio";
-  if (clean === "/panel-v2/operacion" || clean.startsWith("/panel-v2/operacion/")) {
+  if (clean === cleanBase) return "inicio";
+  if (clean === `${cleanBase}/operacion` || clean.startsWith(`${cleanBase}/operacion/`)) {
     return "operacion";
   }
-  if (clean === "/panel-v2/negocio" || clean.startsWith("/panel-v2/negocio/")) {
+  if (clean === `${cleanBase}/negocio` || clean.startsWith(`${cleanBase}/negocio/`)) {
     return "negocio";
   }
-  if (clean === "/panel-v2/estadisticas") {
+  if (clean === `${cleanBase}/estadisticas`) {
     return "estadisticas";
   }
   return "inicio";
 }
 
-export function resolvePanelV2Section(pathname: string): string {
+export function resolvePanelV2Section(pathname: string, basePath = "/panel-v2"): string {
+  const cleanBase = basePath.replace(/\/+$/, "");
   const clean = pathname.replace(/\/+$/, "");
-  if (clean === "/panel-v2") return "inicio";
-  const sub = clean.startsWith("/panel-v2/") ? clean.slice("/panel-v2/".length) : "";
+  if (clean === cleanBase) return "inicio";
+  const sub = clean.startsWith(`${cleanBase}/`) ? clean.slice(`${cleanBase}/`.length) : "";
   return PANEL_V2_ROUTE_SECTION_MAP[sub] ?? "unknown";
 }
 
@@ -50,10 +53,19 @@ export function resolvePanelV2Section(pathname: string): string {
  * Shell administrativo experimental de Panel V2 (arquitectura 3 + 3).
  * Reutiliza autenticación, permisos y V2DataProvider sin alterar V2Layout ni /panel-administracion/*.
  */
-export function PanelV2Layout() {
+export function PanelV2Layout({
+  basePath = "/panel-v2",
+  liquidGlass = false,
+}: {
+  basePath?: string;
+  liquidGlass?: boolean;
+} = {}) {
+  const cleanBase = basePath.replace(/\/+$/, "");
   const location = useLocation({ select: (loc) => loc.pathname });
-  const pathname = typeof location === "string" ? location : "/panel-v2";
-  const returnTo = pathname.startsWith("/panel-v2") ? pathname : "/panel-v2";
+  const pathname = typeof location === "string" ? location : cleanBase;
+  const returnTo = pathname.startsWith(cleanBase) ? pathname : cleanBase;
+  const wrap = (node: JSX.Element) =>
+    liquidGlass ? <LiquidGlassShell section="admin">{node}</LiquidGlassShell> : node;
 
   const [state, setState] = useState<{
     loading: boolean;
@@ -116,23 +128,23 @@ export function PanelV2Layout() {
   }, []);
 
   if (state.loading) {
-    return (
+    return wrap(
       <main className="v2-access" role="status">
         Verificando acceso…
       </main>
     );
   }
   if (state.error) {
-    return (
+    return wrap(
       <main className="v2-access">
         <h1>Panel V2</h1>
         <p role="alert">{state.error}</p>
-        <a href="/panel-administracion">Ir al panel de administración</a>
+        <a href={liquidGlass ? "/admin-liquid" : "/panel-administracion"}>Ir al panel de administración</a>
       </main>
     );
   }
   if (!allowed || !state.staff) {
-    return (
+    return wrap(
       <AdminAccess
         onAuthenticated={() => {
           window.location.assign(returnTo);
@@ -141,23 +153,23 @@ export function PanelV2Layout() {
     );
   }
 
-  return (
+  return wrap(
     <AdminStaffProvider key={state.staff.user.id} staff={state.staff}>
       <V2DataProvider>
-        <PanelV2Shell />
+        <PanelV2Shell basePath={cleanBase} />
       </V2DataProvider>
     </AdminStaffProvider>
   );
 }
 
-function PanelV2Shell() {
+function PanelV2Shell({ basePath }: { basePath: string }) {
   const { loading, error, refresh } = useV2();
   const { profile } = useAdminStaff();
   const location = useLocation({ select: (loc) => loc.pathname });
-  const pathname = typeof location === "string" ? location : "/panel-v2";
+  const pathname = typeof location === "string" ? location : basePath;
 
-  const activeSpace = resolvePanelV2Space(pathname);
-  const resolvedSection = resolvePanelV2Section(pathname);
+  const activeSpace = resolvePanelV2Space(pathname, basePath);
+  const resolvedSection = resolvePanelV2Section(pathname, basePath);
   const allowedSection =
     resolvedSection === "inicio" || mayAccessStaffSection(profile, resolvedSection);
 
@@ -174,6 +186,7 @@ function PanelV2Shell() {
   return (
     <div className="site-container v2-shell kani-panel-v2">
       <PanelV2Navigation
+        basePath={basePath}
         activeSpace={activeSpace}
         loading={loading}
         onRefresh={() => void refresh()}

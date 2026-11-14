@@ -1,0 +1,180 @@
+/* ==============================================================================
+ * KANI BARBER STUDIO — LIQUID GLASS · UNIFICACIÓN TIPOGRÁFICA (INTER VARIABLE)
+ *
+ * Aplica exclusivamente a las 6 rutas experimentales Liquid Glass mediante
+ * body.liquid-glass-active:
+ *   - /reservar-turno-liquid
+ *   - /contacto-liquid
+ *   - /admin-liquid
+ *   - /admin-v2-liquid
+ *   - /politica-de-privacidad-liquid
+ *   - /terminos-y-condiciones-liquid
+ *
+ * No altera rutas tradicionales ni el logotipo KANI.
+ * ============================================================================== */
+
+body.liquid-glass-active,
+body.liquid-glass-active .liquid-glass-reservation,
+body.liquid-glass-active .liquid-glass-page {
+  --lg-font-inter: 'Inter Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-sans: var(--lg-font-inter);
+  --font-display: var(--lg-font-inter);
+  --lg-font-ui: var(--lg-font-inter);
+  --lg-font-editorial: var(--lg-font-inter);
+  font-family: var(--lg-font-inter);
+  font-optical-sizing: auto;
+}
+
+/* Unificación de toda la interfaz experimental (incluyendo header, menú, footer, modales y portales) */
+body.liquid-glass-active,
+body.liquid-glass-active :where(
+  h1, h2, h3, h4, h5, h6,
+  p, span, a, strong, small, label,
+  button, input, select, textarea, option,
+  th, td, dt, dd, li, blockquote,
+  .site-header, .mobile-menu, .mobile-menu-cta, .site-footer,
+  [role="dialog"], [data-radix-popper-content-wrapper]
+) {
+  font-family: var(--lg-font-inter);
+  font-optical-sizing: auto;
+}
+
+/* Eliminación de mezclas serif/sans-serif en títulos y encabezados */
+html[data-theme] body.liquid-glass-active :where(
+  h1, h2, h3,
+  .section-title,
+  .booking-step-heading-title,
+  .booking-confirmed-screen h1,
+  .contacto-page h1,
+  .contacto-page h2,
+  .studio-card-title,
+  .legal-page h1,
+  .legal-page h2,
+  .legal-page h3,
+  .v2-page-title h1,
+  .kani-panel-v2-topbar h1,
+  .admin-login-title,
+  .mobile-menu-session-identity strong,
+  [role="dialog"] h2,
+  [role="dialog"] [data-slot="dialog-title"]
+) {
+  font-family: var(--lg-font-inter) !important;
+  font-optical-sizing: auto;
+}
+
+/* Escala de pesos consistente (400 / 500 / 600 / 700 solo cuando corresponde) */
+html[data-theme] body.liquid-glass-active :where(
+  .booking-page .section-title,
+  .booking-step-heading-title,
+  .booking-step-heading h1,
+  .booking-confirmed-screen h1,
+  .contacto-page h1,
+  .legal-page h1,
+  .v2-page-title h1,
+  .kani-panel-v2-topbar h1
+) {
+  font-weight: 600 !important;
+  letter-spacing: -0.022em !important;
+  line-height: 1.18 !important;
+}
+
+html[data-theme] body.liquid-glass-active :where(
+  h2, h3,
+  .studio-card-title,
+  .legal-page h2,
+  .booking-option-name,
+  .booking-barber-name,
+  .booking-option-price,
+  .calendar-header h2,
+  .summary-detail-value,
+  .summary-pricing-row strong,
+  .v2-section-title,
+  .v2-app-name,
+  .v2-payments-table thead th,
+  .admin-section-nav-link.is-active,
+  .booking-next-button,
+  .v2-primary,
+  .v2-add-manual-btn,
+  .v2-client-add-btn,
+  .v2-payment-submit-btn
+) {
+  font-weight: 600;
+}
+
+html[data-theme] body.liquid-glass-active :where(
+  .booking-stepper-label,
+  .calendar-day,
+  .booking-time-slot,
+  .booking-back-button,
+  .field-label,
+  .v2-admin-filter-label,
+  .v2-field-label,
+  .admin-section-nav-link,
+  .mobile-menu a,
+  .mobile-menu button,
+  button,
+  input,
+  select,
+  textarea
+) {
+  font-weight: 500;
+}
+
+html[data-theme] body.liquid-glass-active :where(
+  p,
+  .booking-option-duration,
+  .booking-barber-handle,
+  .booking-deposit-notice,
+  .legal-page li,
+  .v2-muted,
+  .v2-footnote,
+  input::placeholder,
+  textarea::placeholder
+) {
+  font-weight: 400;
+}
+
+html[data-theme] body.liquid-glass-active :where(
+  .v2-metric strong,
+  .v2-total-box-amount,
+  .kani-panel-v2-kpi strong
+) {
+  font-weight: 700;
+}
+
+/* Números tabulares para alineación de precios, horarios, calendario y estadísticas */
+body.liquid-glass-active :where(
+  .booking-option-price,
+  .calendar-day,
+  .booking-time-slot,
+  .summary-detail-value,
+  .summary-pricing-row strong,
+  .v2-app-time,
+  .v2-app-endtime,
+  .v2-app-deposit,
+  .v2-app-price,
+  .v2-metric strong,
+  .v2-trend-badge,
+  .v2-total-box-amount,
+  .v2-table-datetime,
+  .v2-table-amount-cell,
+  .v2-pcm-amount,
+  .v2-pcm-datetime,
+  .v2-history-total,
+  .kani-panel-v2-kpi strong
+) {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Ajuste mobile 320-430px para prevenir desbordamientos */
+@media (max-width: 430px) {
+  html[data-theme] body.liquid-glass-active :where(
+    .booking-page .section-title,
+    .booking-step-heading-title,
+    .contacto-page h1,
+    .legal-page h1,
+    .v2-page-title h1
+  ) {
+    letter-spacing: -0.018em !important;
+  }
+}

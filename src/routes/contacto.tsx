@@ -38,6 +38,10 @@ function WhatsAppIcon({ className, size = 20 }: { className?: string; size?: num
 }
 
 function StudioPage() {
+  return <ContactoContent />;
+}
+
+export function ContactoContent({ bookingPath = "/reservar-turno" }: { bookingPath?: string }) {
   return (
     <main className="site-container studio-page contacto-page">
       <div className="studio-info-grid">
@@ -66,7 +70,7 @@ function StudioPage() {
         {/* 2. Horarios */}
         <Link
           className="studio-info-card studio-info-link"
-          to="/reservar-turno"
+          to={bookingPath}
           aria-label="Reservar un turno en Kani Barber Studio"
         >
           <div className="studio-card-top">

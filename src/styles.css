@@ -4669,9 +4669,15 @@ html[data-theme='light'] .booking-page .booking-contact-form :is(.field-label in
   width: 100%;
 }
 
+.discount-input-row > .field-control {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 .discount-input-row .discount-input,
 .booking-page .booking-contact-form .booking-discount-field .discount-input-row input,
 .booking-page .booking-contact-form input#booking-discount-code {
+  width: 100%;
   flex: 1 1 auto;
   min-width: 0;
   height: 44px !important;
@@ -4691,6 +4697,12 @@ html[data-theme='light'] .booking-page .booking-contact-form :is(.field-label in
   border-color: var(--kani-control-border, var(--input));
   border-radius: var(--radius-control, 0.65rem);
   color: var(--foreground);
+}
+
+.discount-input-row .field-control.invalid > input,
+.booking-page .booking-contact-form .booking-discount-field .discount-input-row .field-control.invalid > input,
+.booking-page .booking-contact-form .field-control.invalid > input#booking-discount-code {
+  padding-right: 44px !important;
 }
 
 /* Modo oscuro: mismo fondo interior, borde y estilo que "Email" y "Nombre y apellido" */

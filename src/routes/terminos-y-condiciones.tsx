@@ -13,13 +13,15 @@ export const Route = createFileRoute('/terminos-y-condiciones')({
   component: TerminosYCondicionesPage,
 });
 
-export function TerminosYCondicionesPage() {
+export function TerminosYCondicionesPage({ backTo = '/reservar-turno' }: { backTo?: string }) {
+  const isLiquid = backTo.includes('-liquid');
+  const privacyTo = isLiquid ? '/politica-de-privacidad-liquid' : '/politica-de-privacidad';
   return (
     <main className="legal-page" id="contenido-principal">
       <div className="site-container legal-container">
         {/* Navegación superior */}
         <nav className="legal-back-nav" aria-label="Navegación de retorno">
-          <Link to="/reservar-turno" className="legal-back-link">
+          <Link to={backTo} className="legal-back-link">
             <ArrowLeft size={14} aria-hidden="true" />
             <span>Volver a reservar</span>
           </Link>
@@ -325,7 +327,7 @@ export function TerminosYCondicionesPage() {
             </div>
             <p>
               La recolección, el resguardo y el tratamiento de los datos personales suministrados por los clientes se rigen en un todo de acuerdo con nuestra{' '}
-              <Link to="/politica-de-privacidad" className="font-medium text-gold underline underline-offset-2">
+              <Link to={privacyTo} className="font-medium text-gold underline underline-offset-2">
                 Política de Privacidad
               </Link>
               , la cual integra y complementa los presentes Términos y Condiciones.
@@ -400,10 +402,10 @@ export function TerminosYCondicionesPage() {
 
         {/* Navegación y enlaces cruzados al pie */}
         <footer className="legal-footer-nav">
-          <Link to="/politica-de-privacidad" className="legal-cross-link">
+          <Link to={privacyTo} className="legal-cross-link">
             <span>Consultar Política de Privacidad →</span>
           </Link>
-          <Link to="/reservar-turno" className="legal-back-link">
+          <Link to={backTo} className="legal-back-link">
             <ArrowLeft size={14} aria-hidden="true" />
             <span>Volver a reservar</span>
           </Link>

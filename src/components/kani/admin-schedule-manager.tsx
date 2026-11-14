@@ -612,7 +612,18 @@ export function AdminScheduleManager() {
           }
         }}
       >
-        <DialogContent className="manual-dialog admin-schedule-dialog">
+        <DialogContent
+          className="manual-dialog admin-schedule-dialog"
+          onOpenAutoFocus={(event) => {
+            const isLiquidGlassAdmin =
+              typeof document !== "undefined" &&
+              (document.body?.dataset?.lgAdmin === "true" ||
+                document.body?.classList?.contains("liquid-glass-active"));
+            if (!isLiquidGlassAdmin) return;
+            event.preventDefault();
+            event.currentTarget.focus({ preventScroll: true });
+          }}
+        >
           <DialogTitle>Agregar horario de disponibilidad</DialogTitle>
           <DialogDescription className="sr-only">
             Agregar horario

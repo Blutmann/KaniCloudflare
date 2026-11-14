@@ -16,6 +16,7 @@ import { useKani } from '@/components/kani/store';
 import { BookingStepHeading } from '@/components/kani/booking-step-heading';
 import { BookingTimeSelection } from '@/components/kani/booking-time-selection';
 import { BookingSlotUnavailableRecovery, type SlotUnavailableRecoveryState } from '@/components/kani/booking-slot-recovery';
+import type { LiquidGlassMotionAdapter, StepDirection } from '@/components/kani/experimental/liquid-glass-motion.types';
 import {
   buildSlotItemsForDate,
   findClosestAlternativeTimes,
@@ -131,6 +132,7 @@ function ExperimentalLayout({ enabled, className, children }: { enabled: boolean
 export function Booking({
   combinedDateTime = false,
   variant: propVariant,
+  experimentalMotion,
   onPaymentRequest,
   paymentActionLabel,
   paymentNotice,
@@ -145,6 +147,7 @@ export function Booking({
 }: {
   combinedDateTime?: boolean;
   variant?: 'v1' | 'v2' | 'v3' | 'v5';
+  experimentalMotion?: LiquidGlassMotionAdapter;
   onPaymentRequest?: (draft: BookingPaymentDraft) => Promise<void>;
   paymentActionLabel?: string;
   paymentNotice?: ReactNode;
@@ -172,6 +175,7 @@ export function Booking({
     : steps;
   const { mobileMenuOpen, setMobileMenuOpen } = useKani();
   const [step, setStep] = useState(() => initialStep ?? 0);
+  const [stepDirection, setStepDirection] = useState<StepDirection>(1);
   const [service, setService] = useState<ServiceId | null>(() => initialService ?? null);
   const [barber, setBarber] = useState<Barber | null>(() => (initialBarber && initialBarber !== 'Franco' ? initialBarber : null));
   const [barberDeferred, setBarberDeferred] = useState(false);
@@ -217,6 +221,7 @@ export function Booking({
   const [error, setError] = useState('');
   const [publicSlots, setPublicSlots] = useState<PublicAvailabilityStart[]>([]);
   const [availabilityLoading, setAvailabilityLoading] = useState(false);
+  const [availabilityRefreshing, setAvailabilityRefreshing] = useState(false);
   const [availabilityError, setAvailabilityError] = useState('');
   const [publicBarbersState, setPublicBarbers] = useState<Barber[]>(() => [...publicBarbers]);
   const [barbersLoading, setBarbersLoading] = useState(false);
@@ -238,6 +243,10 @@ export function Booking({
   const barberSectionRef = useRef<HTMLDivElement>(null);
   const revealTimesRef = useRef(false);
   const scrollAfterTimeSelectRef = useRef(false);
+  const availabilityRequestSeqRef = useRef(0);
+  const deferredVerifySeqRef = useRef(0);
+  const lastLoadedAvailabilityKeyRef = useRef<string | null>(null);
+  const inFlightAvailabilityRef = useRef<{ key: string; promise: Promise<PublicAvailabilityStart[]> } | null>(null);
   const visibleStep = isV2 && step > 2 ? step - 1 : step;
 
   useEffect(() => {
@@ -359,7 +368,14 @@ export function Booking({
   useEffect(() => {
     let cancelled = false;
     void readPublicBookingBarbers().then(rows => {
-      if (!cancelled) setPublicBarbers(rows.map(row => row.name));
+      if (!cancelled) {
+        const nextNames = rows.map(row => row.name);
+        setPublicBarbers(prev => (
+          prev.length === nextNames.length && prev.every((name, idx) => name === nextNames[idx])
+            ? prev
+            : nextNames
+        ));
+      }
     }).catch(() => {
       if (!cancelled) {
         setPublicBarbers([]);
@@ -545,31 +561,61 @@ export function Booking({
     return () => { cancelled = true; };
   }, [service, barber, selected]);
 
+  const hasBarberOrDeferred = Boolean(barber || barberDeferred);
   useEffect(() => {
     let cancelled = false;
     async function loadAvailability() {
-      if (!barber && !barberDeferred) {
+      if (!hasBarberOrDeferred) {
+        lastLoadedAvailabilityKeyRef.current = null;
         setPublicSlots([]);
         setAvailabilityError('');
+        setAvailabilityLoading(false);
+        setAvailabilityRefreshing(false);
         return;
       }
-      setAvailabilityLoading(true);
+      const queryKey = `${availabilityBarber ?? 'ANY'}|${todayValue}|${bookingEndValue}|${publicBarbersState.join(',')}`;
+      if (lastLoadedAvailabilityKeyRef.current === queryKey) {
+        return;
+      }
+      const seq = ++availabilityRequestSeqRef.current;
+      const isInitialForEmpty = lastLoadedAvailabilityKeyRef.current === null;
+      if (isInitialForEmpty) setAvailabilityLoading(true);
+      else setAvailabilityRefreshing(true);
       setAvailabilityError('');
       try {
-        const nextSlots = await readPublicAvailabilityStarts(availabilityBarber, todayValue, bookingEndValue);
-        if (!cancelled) setPublicSlots(nextSlots.filter(slot => publicBarbersState.includes(slot.barber_name)));
+        let promise: Promise<PublicAvailabilityStart[]>;
+        if (inFlightAvailabilityRef.current?.key === queryKey) {
+          promise = inFlightAvailabilityRef.current.promise;
+        } else {
+          const created = readPublicAvailabilityStarts(availabilityBarber, todayValue, bookingEndValue).finally(() => {
+            if (inFlightAvailabilityRef.current?.promise === created) {
+              inFlightAvailabilityRef.current = null;
+            }
+          });
+          inFlightAvailabilityRef.current = { key: queryKey, promise: created };
+          promise = created;
+        }
+        const nextSlots = await promise;
+        if (!cancelled && seq === availabilityRequestSeqRef.current) {
+          setPublicSlots(nextSlots.filter(slot => publicBarbersState.includes(slot.barber_name)));
+          lastLoadedAvailabilityKeyRef.current = queryKey;
+        }
       } catch (cause) {
-        if (!cancelled) {
+        if (!cancelled && seq === availabilityRequestSeqRef.current) {
           setPublicSlots([]);
+          lastLoadedAvailabilityKeyRef.current = null;
           setAvailabilityError(cause instanceof Error ? cause.message : 'No se pudo consultar la disponibilidad.');
         }
       } finally {
-        if (!cancelled) setAvailabilityLoading(false);
+        if (!cancelled && seq === availabilityRequestSeqRef.current) {
+          setAvailabilityLoading(false);
+          setAvailabilityRefreshing(false);
+        }
       }
     }
     void loadAvailability();
     return () => { cancelled = true; };
-  }, [availabilityBarber, barber, barberDeferred, bookingEndValue, todayValue, publicBarbersState]);
+  }, [availabilityBarber, hasBarberOrDeferred, barberDeferred, bookingEndValue, todayValue, publicBarbersState]);
   useEffect(() => {
     if (!service || availabilityLoading) return;
     const todayHasSlots = availableDates.includes(todayValue);
@@ -597,11 +643,76 @@ export function Booking({
 
   const refreshAvailabilityNow = useCallback(
     async (targetBarber: Barber | null = availabilityBarber) => {
-      const nextSlots = await readPublicAvailabilityStarts(targetBarber, todayValue, bookingEndValue);
-      setPublicSlots(nextSlots);
-      return nextSlots;
+      const seq = ++availabilityRequestSeqRef.current;
+      const queryKey = `${targetBarber ?? 'ANY'}|${todayValue}|${bookingEndValue}|${publicBarbersState.join(',')}`;
+      setAvailabilityRefreshing(true);
+      try {
+        const nextSlots = await readPublicAvailabilityStarts(targetBarber, todayValue, bookingEndValue);
+        if (seq === availabilityRequestSeqRef.current) {
+          setPublicSlots(nextSlots.filter(slot => publicBarbersState.includes(slot.barber_name)));
+          lastLoadedAvailabilityKeyRef.current = queryKey;
+        }
+        return nextSlots;
+      } finally {
+        if (seq === availabilityRequestSeqRef.current) {
+          setAvailabilityRefreshing(false);
+        }
+      }
     },
-    [availabilityBarber, bookingEndValue, todayValue],
+    [availabilityBarber, bookingEndValue, publicBarbersState, todayValue],
+  );
+
+  const verifyDeferredBarberCombination = useCallback(
+    async (candidate: Barber, targetDate: string, targetTime: string) => {
+      setBarber(candidate);
+      setError('');
+      if (!service || !targetDate || !targetTime) return;
+      const verifySeq = ++deferredVerifySeqRef.current;
+      const availSeq = ++availabilityRequestSeqRef.current;
+      const queryKey = `ANY|${todayValue}|${bookingEndValue}|${publicBarbersState.join(',')}`;
+      setAvailabilityRefreshing(true);
+      try {
+        let promise: Promise<PublicAvailabilityStart[]>;
+        if (inFlightAvailabilityRef.current?.key === queryKey) {
+          promise = inFlightAvailabilityRef.current.promise;
+        } else {
+          const created = readPublicAvailabilityStarts(null, todayValue, bookingEndValue).finally(() => {
+            if (inFlightAvailabilityRef.current?.promise === created) {
+              inFlightAvailabilityRef.current = null;
+            }
+          });
+          inFlightAvailabilityRef.current = { key: queryKey, promise: created };
+          promise = created;
+        }
+        const nextSlots = await promise;
+        if (verifySeq !== deferredVerifySeqRef.current) return;
+        const filtered = nextSlots.filter(slot => publicBarbersState.includes(slot.barber_name));
+        if (availSeq === availabilityRequestSeqRef.current) {
+          setPublicSlots(filtered);
+          lastLoadedAvailabilityKeyRef.current = queryKey;
+        }
+        const freshTimes = availabilityStartTimesForServiceDate(filtered, targetDate, serviceName, clock, null);
+        const eligible = eligibleBarbersForAvailabilityStart(filtered, targetDate, targetTime, serviceName, clock);
+        if (!freshTimes.includes(targetTime)) {
+          recordConflictedSlot(targetDate, candidate, targetTime);
+          setTime('');
+          setBarber(null);
+          setError(`El horario ${targetTime} hs dejó de estar disponible. Elegí uno de los horarios actualizados.`);
+        } else if (!eligible.includes(candidate)) {
+          recordConflictedSlot(targetDate, candidate, targetTime);
+          setBarber(null);
+          setError(`${candidate} dejó de estar disponible a las ${targetTime} hs. Elegí otro profesional disponible.`);
+        }
+      } catch {
+        // Si falla la revalidación en segundo plano, mantenemos el estado actual sin romper la continuidad;
+        // la validación final antes de confirmar sigue protegiendo contra reservas obsoletas.
+      } finally {
+        if (verifySeq === deferredVerifySeqRef.current) {
+          setAvailabilityRefreshing(false);
+        }
+      }
+    },
+    [bookingEndValue, clock, publicBarbersState, recordConflictedSlot, service, serviceName, todayValue],
   );
 
   function scrollToTopSmooth() {
@@ -613,8 +724,10 @@ export function Booking({
   }
 
   function move(next: number) {
+    const resolvedNext = isFiveSteps ? next : isV2 ? next === 3 ? 2 : next === 5 ? 4 : next : next;
+    setStepDirection(resolvedNext >= step ? 1 : -1);
     setSlotConflict(null);
-    setStep(isFiveSteps ? next : isV2 ? next === 3 ? 2 : next === 5 ? 4 : next : next);
+    setStep(resolvedNext);
     setError('');
     scrollToTopSmooth();
   }
@@ -718,6 +831,7 @@ export function Booking({
       verifyingAlternative: null,
       feedbackMessage: null,
     });
+    setStepDirection(-1);
     setStep(isV2 ? 2 : 3);
     scrollToTopSmooth();
 
@@ -1200,13 +1314,16 @@ export function Booking({
 
   useEffect(() => {
     if (isV5 && barberDeferred && time && candidateBarbers.length === 1 && barber !== candidateBarbers[0]) {
-      setBarber(candidateBarbers[0]);
+      void verifyDeferredBarberCombination(candidateBarbers[0], date, time);
     }
-  }, [isV5, barberDeferred, time, candidateBarbers, barber]);
+  }, [isV5, barberDeferred, time, date, candidateBarbers, barber, verifyDeferredBarberCombination]);
 
   const timeSlots = visibleSlots;
   const daysInMonth = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
   const offset = (new Date(month.getFullYear(), month.getMonth(), 1).getDay() + 6) % 7;
+  const StepTransition = experimentalMotion?.StepTransition;
+  const StepperLens = experimentalMotion?.StepperLens;
+  const MotionCardButton = experimentalMotion?.InteractiveCard;
   return (
     <main className={`site-container booking-page ${isV2 ? 'booking-v2' : ''} ${isV3 ? 'booking-v3' : ''} ${isV5 ? 'booking-v5' : ''} ${isV2 && step === 2 ? 'booking-v2-datetime' : ''} ${isFiveSteps && step === 2 ? `booking-${isV5 ? 'v5' : 'v3'}-date` : ''} ${isFiveSteps && step === 3 ? `booking-${isV5 ? 'v5' : 'v3'}-time` : ''} ${(isV2 || isFiveSteps) && step === 4 ? `booking-v2-final booking-${isV5 ? 'v5' : 'v3'}-final` : ''} ${step === 5 ? 'booking-summary-page' : ''}`}>
       <div
@@ -1225,6 +1342,7 @@ export function Booking({
             onClick={() => move(stageOrder[i] ?? 0)}
             className={i === visibleStep ? 'current' : i < visibleStep ? 'complete' : ''}
           >
+            {i === visibleStep && StepperLens ? <StepperLens /> : null}
             <span>{i < visibleStep ? <Check size={13} /> : String(i + 1).padStart(2, '0')}</span>
             <small>{isV2 && i === 2 ? <>
               <span className="sr-only">{name}</span>
@@ -1238,7 +1356,10 @@ export function Booking({
       <div ref={scrollContainerRef} className="booking-scroll-content">
         <div className="booking-layout">
           <section className="min-w-0">
-            <BookingStepHeading
+            {(() => {
+              const stepContent = (
+                <>
+                  <BookingStepHeading
               title={isV2 && step === 2 ? 'Elegir una fecha' : titles[step]}
               stepIndex={step}
               className={`${step === 0 ? 'booking-service-heading' : ''} ${step === 1 ? 'booking-barber-heading' : ''} ${step === 2 ? 'booking-date-heading' : ''} ${step === 3 ? 'booking-time-heading' : ''} ${step === 4 ? 'booking-contact-heading' : ''} ${step === 5 ? 'booking-summary-heading' : ''}`.trim()}
@@ -1254,31 +1375,38 @@ export function Booking({
 
             {step === 0 && (
               <div className="booking-service-options space-y-3">
-                {configuredServices.map(s => (
-                  <Button
-                    key={s.id}
-                    variant="outline"
-                    aria-pressed={service === s.id}
-                    aria-label={`${s.name}, ${s.duration} minutos, ${money(s.price)}${service === s.id ? ', seleccionado' : ''}`}
-                    className={`booking-option service-option ${service === s.id ? 'selected' : ''}`}
-                    onClick={() => { if (service !== s.id) chooseService(s.id) }}
-                  >
-                    <span className="option-icon">
-                      <span className="service-icon-mask service-icon-mask-light" style={{ maskImage: `url(${serviceIconById[s.id].light})`, WebkitMaskImage: `url(${serviceIconById[s.id].light})` }} aria-hidden="true" />
-                      <span className="service-icon-mask service-icon-mask-dark" style={{ maskImage: `url(${serviceIconById[s.id].dark})`, WebkitMaskImage: `url(${serviceIconById[s.id].dark})` }} aria-hidden="true" />
-                      <img className="service-icon-light" src={serviceIconById[s.id].light} alt="" aria-hidden="true" width={44} height={44} />
-                      <img className="service-icon-dark" src={serviceIconById[s.id].dark} alt="" aria-hidden="true" width={44} height={44} />
-                    </span>
-                    <span className="booking-option-copy min-w-0 flex-1 text-left">
-                      <span className="booking-option-name block text-lg font-medium">{s.name}</span>
-                      <span className="booking-option-meta">
-                        <span className="booking-option-duration block text-sm text-muted-foreground">{s.duration} minutos</span>
-                        <span className="booking-option-price block text-base">{money(s.price)}</span>
+                {configuredServices.map(s => {
+                  const isSelected = service === s.id;
+                  const cardProps = {
+                    'aria-pressed': isSelected,
+                    'aria-label': `${s.name}, ${s.duration} minutos, ${money(s.price)}${isSelected ? ', seleccionado' : ''}`,
+                    className: `booking-option service-option ${isSelected ? 'selected' : ''}`,
+                    onClick: () => { if (service !== s.id) chooseService(s.id); },
+                  };
+                  const cardBody = (
+                    <>
+                      <span className="option-icon">
+                        <span className="service-icon-mask service-icon-mask-light" style={{ maskImage: `url(${serviceIconById[s.id].light})`, WebkitMaskImage: `url(${serviceIconById[s.id].light})` }} aria-hidden="true" />
+                        <span className="service-icon-mask service-icon-mask-dark" style={{ maskImage: `url(${serviceIconById[s.id].dark})`, WebkitMaskImage: `url(${serviceIconById[s.id].dark})` }} aria-hidden="true" />
+                        <img className="service-icon-light" src={serviceIconById[s.id].light} alt="" aria-hidden="true" width={44} height={44} />
+                        <img className="service-icon-dark" src={serviceIconById[s.id].dark} alt="" aria-hidden="true" width={44} height={44} />
                       </span>
-                    </span>
-                    <span className="selection-circle">{service === s.id && <Check size={12} />}</span>
-                  </Button>
-                ))}
+                      <span className="booking-option-copy min-w-0 flex-1 text-left">
+                        <span className="booking-option-name block text-lg font-medium">{s.name}</span>
+                        <span className="booking-option-meta">
+                          <span className="booking-option-duration block text-sm text-muted-foreground">{s.duration} minutos</span>
+                          <span className="booking-option-price block text-base">{money(s.price)}</span>
+                        </span>
+                      </span>
+                      <span className="selection-circle">{isSelected && <Check size={12} />}</span>
+                    </>
+                  );
+                  return MotionCardButton ? (
+                    <MotionCardButton key={s.id} {...cardProps}>{cardBody}</MotionCardButton>
+                  ) : (
+                    <Button key={s.id} variant="outline" {...cardProps}>{cardBody}</Button>
+                  );
+                })}
               </div>
             )}
 
@@ -1287,38 +1415,54 @@ export function Booking({
                 {barbersLoading && <p role="status" className="text-sm text-muted-foreground">Consultando profesionales…</p>}
                 {barbersError && <p role="alert" className="text-sm text-destructive">{barbersError}</p>}
                 {!barbersLoading && !barbersError && !publicBarbersState.length && <p role="status" className="text-sm text-muted-foreground">No hay profesionales disponibles para reservas online.</p>}
-                {publicBarbersState.map(b => (
-                  <Button
-                    key={b}
-                    variant="outline"
-                    aria-pressed={barber === b && !barberDeferred}
-                    aria-label={`Barbero ${b}${barber === b && !barberDeferred ? ', seleccionado' : ''}`}
-                    className={`booking-option ${barber === b && !barberDeferred ? 'selected' : ''}`}
-                    onClick={() => chooseBarber(b)}
-                  >
-                    <span className={`barber-avatar avatar-${barbers.indexOf(b)}`}>{b.charAt(0)}</span>
-                    <span className={`booking-option-copy flex-1 ${isV5 ? 'text-left' : 'text-center'}`}>
-                      <span className="booking-barber-name block text-lg font-medium">{b}</span>
-                      <span className="booking-barber-handle mt-0.5 block text-sm text-muted-foreground">{barberInstagramHandles[b]}</span>
-                    </span>
-                    <span className="selection-circle">{barber === b && !barberDeferred && <Check size={12} />}</span>
-                  </Button>
-                ))}
-                <Button
-                  variant="outline"
-                  aria-pressed={barberDeferred}
-                  disabled={barbersLoading || !publicBarbersState.length}
-                  aria-label={isV5 ? `Cualquier barbero disponible, el sistema asignará según fecha y horario${barberDeferred ? ', seleccionado' : ''}` : "Elegir más adelante"}
-                  className={`booking-defer-option ${barberDeferred ? 'selected' : ''}`}
-                  onClick={() => { setBarber(null); setBarberDeferred(true); setPublicSlots([]); setAvailabilityError(''); setDate(''); setTime(''); }}
-                >
-                  <span className="barber-defer-mark" aria-hidden="true">{isV5 ? <Users size={18} /> : '?'}</span>
-                  <span className={`booking-defer-copy booking-option-copy flex-1 ${isV5 ? 'text-left' : 'text-center'}`}>
-                    <span className="block text-base font-medium">{isV5 ? 'Cualquier barbero disponible' : 'Elegir más adelante'}</span>
-                    <span className="mt-0.5 block text-xs text-muted-foreground">{isV5 ? 'El sistema asignará según fecha y horario' : 'Elegir según fecha y horario'}</span>
-                  </span>
-                  <span className="selection-circle">{barberDeferred && <Check size={12} />}</span>
-                </Button>
+                {publicBarbersState.map(b => {
+                  const isSelected = barber === b && !barberDeferred;
+                  const cardProps = {
+                    'aria-pressed': isSelected,
+                    'aria-label': `Barbero ${b}${isSelected ? ', seleccionado' : ''}`,
+                    className: `booking-option ${isSelected ? 'selected' : ''}`,
+                    onClick: () => chooseBarber(b),
+                  };
+                  const cardBody = (
+                    <>
+                      <span className={`barber-avatar avatar-${barbers.indexOf(b)}`}>{b.charAt(0)}</span>
+                      <span className={`booking-option-copy flex-1 ${isV5 ? 'text-left' : 'text-center'}`}>
+                        <span className="booking-barber-name block text-lg font-medium">{b}</span>
+                        <span className="booking-barber-handle mt-0.5 block text-sm text-muted-foreground">{barberInstagramHandles[b]}</span>
+                      </span>
+                      <span className="selection-circle">{isSelected && <Check size={12} />}</span>
+                    </>
+                  );
+                  return MotionCardButton ? (
+                    <MotionCardButton key={b} {...cardProps}>{cardBody}</MotionCardButton>
+                  ) : (
+                    <Button key={b} variant="outline" {...cardProps}>{cardBody}</Button>
+                  );
+                })}
+                {(() => {
+                  const deferProps = {
+                    'aria-pressed': barberDeferred,
+                    disabled: barbersLoading || !publicBarbersState.length,
+                    'aria-label': isV5 ? `Cualquier barbero disponible, el sistema asignará según fecha y horario${barberDeferred ? ', seleccionado' : ''}` : "Elegir más adelante",
+                    className: `booking-defer-option ${barberDeferred ? 'selected' : ''}`,
+                    onClick: () => { setBarber(null); setBarberDeferred(true); setPublicSlots([]); setAvailabilityError(''); setDate(''); setTime(''); },
+                  };
+                  const deferBody = (
+                    <>
+                      <span className="barber-defer-mark" aria-hidden="true">{isV5 ? <Users size={18} /> : '?'}</span>
+                      <span className={`booking-defer-copy booking-option-copy flex-1 ${isV5 ? 'text-left' : 'text-center'}`}>
+                        <span className="block text-base font-medium">{isV5 ? 'Cualquier barbero disponible' : 'Elegir más adelante'}</span>
+                        <span className="mt-0.5 block text-xs text-muted-foreground">{isV5 ? 'El sistema asignará según fecha y horario' : 'Elegir según fecha y horario'}</span>
+                      </span>
+                      <span className="selection-circle">{barberDeferred && <Check size={12} />}</span>
+                    </>
+                  );
+                  return MotionCardButton ? (
+                    <MotionCardButton {...deferProps}>{deferBody}</MotionCardButton>
+                  ) : (
+                    <Button variant="outline" {...deferProps}>{deferBody}</Button>
+                  );
+                })()}
               </div>
             )}
 
@@ -1326,48 +1470,62 @@ export function Booking({
             {step === 2 && (
               <ExperimentalLayout enabled={isV2}>
               <div className="calendar-panel">
-                <div className="calendar-header mb-7 flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <h2 className="capitalize">{month.toLocaleDateString('es-AR', { month: 'long' }).replace(/^./, letter => letter.toUpperCase()) + ' ' + month.getFullYear()}</h2>
-                    {isV5 && availabilityLoading && (
-                      <span className="calendar-loading-indicator text-xs font-normal text-muted-foreground flex items-center gap-1.5 animate-pulse" aria-live="polite">
-                        <Clock3 size={13} className="animate-spin text-gold" />
-                        <span>Actualizando…</span>
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex gap-2">
-                    <Button variant="ghost" size="icon" aria-label="Mes anterior" disabled={month.getFullYear() === today.getFullYear() && month.getMonth() === today.getMonth()} onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))}><ChevronLeft /></Button>
-                    <Button variant="ghost" size="icon" aria-label="Mes siguiente" disabled={month.getFullYear() === lastBookingDay.getFullYear() && month.getMonth() === lastBookingDay.getMonth()} onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))}><ChevronRight /></Button>
-                  </div>
-                </div>
-                <div className="calendar-grid">
-                  {['L', 'M', 'X', 'J', 'V', 'S', 'D'].map((d, i) => <span key={i} className="calendar-weekday">{d}</span>)}
-                  {Array.from({ length: offset }, (_, i) => <span key={`blank-${i}`} />)}
-                  {Array.from({ length: daysInMonth }, (_, i) => {
-                    const day = new Date(month.getFullYear(), month.getMonth(), i + 1);
-                    const value = isoDate(day);
-                    const isWithinBookingWindow = value >= todayValue && value <= bookingEndValue;
-                    const disabled = availabilityLoading || !service || !availabilityBarber && !barberDeferred || !isWithinBookingWindow || (!isBookingDate(value, todayValue, bookingEndValue) && !availableDatesSet.has(value)) || !availableDatesSet.has(value);
-                    const isToday = value === todayValue;
-                    const ariaLabel = isToday
-                      ? `Hoy, ${dateLabel(value)}${disabled ? ', sin turnos' : ''}${date === value ? ', seleccionado' : ''}`
-                      : `${dateLabel(value)}${disabled ? ', sin turnos' : ''}${date === value ? ', seleccionado' : ''}`;
-                    return (
-                      <Button
-                        key={value}
-                        variant="ghost"
-                        className={`calendar-day ${date === value ? 'selected' : ''} ${isToday ? 'today' : ''}`}
-                        disabled={disabled}
-                        aria-label={ariaLabel}
-                        aria-pressed={date === value}
-                        onClick={() => { if (isV2) { revealTimesRef.current = true; setDateSelection(current => current + 1); } if (date !== value) { setSlotConflict(null); setPendingAppointment(null); setDate(value); setTime(''); if (barberDeferred) setBarber(null); } }}
-                      >
-                        {i + 1}
-                      </Button>
-                    );
-                  })}
-                </div>
+                {(() => {
+                  const calendarMain = (
+                    <>
+                      <div className="calendar-header mb-7 flex items-center justify-between">
+                        <div className="flex items-center gap-2.5">
+                          <h2 className="capitalize">{month.toLocaleDateString('es-AR', { month: 'long' }).replace(/^./, letter => letter.toUpperCase()) + ' ' + month.getFullYear()}</h2>
+                          {isV5 && availabilityLoading && (
+                            <span className="calendar-loading-indicator text-xs font-normal text-muted-foreground flex items-center gap-1.5 animate-pulse" aria-live="polite">
+                              <Clock3 size={13} className="animate-spin text-gold" />
+                              <span>Actualizando…</span>
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex gap-2">
+                          <Button variant="ghost" size="icon" aria-label="Mes anterior" disabled={month.getFullYear() === today.getFullYear() && month.getMonth() === today.getMonth()} onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))}><ChevronLeft /></Button>
+                          <Button variant="ghost" size="icon" aria-label="Mes siguiente" disabled={month.getFullYear() === lastBookingDay.getFullYear() && month.getMonth() === lastBookingDay.getMonth()} onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))}><ChevronRight /></Button>
+                        </div>
+                      </div>
+                      <div className="calendar-grid">
+                        {['L', 'M', 'X', 'J', 'V', 'S', 'D'].map((d, i) => <span key={i} className="calendar-weekday">{d}</span>)}
+                        {Array.from({ length: offset }, (_, i) => <span key={`blank-${i}`} />)}
+                        {Array.from({ length: daysInMonth }, (_, i) => {
+                          const day = new Date(month.getFullYear(), month.getMonth(), i + 1);
+                          const value = isoDate(day);
+                          const isWithinBookingWindow = value >= todayValue && value <= bookingEndValue;
+                          const disabled = availabilityLoading || !service || !availabilityBarber && !barberDeferred || !isWithinBookingWindow || (!isBookingDate(value, todayValue, bookingEndValue) && !availableDatesSet.has(value)) || !availableDatesSet.has(value);
+                          const isToday = value === todayValue;
+                          const ariaLabel = isToday
+                            ? `Hoy, ${dateLabel(value)}${disabled ? ', sin turnos' : ''}${date === value ? ', seleccionado' : ''}`
+                            : `${dateLabel(value)}${disabled ? ', sin turnos' : ''}${date === value ? ', seleccionado' : ''}`;
+                          const dayProps = {
+                            className: `calendar-day ${date === value ? 'selected' : ''} ${isToday ? 'today' : ''}`,
+                            disabled,
+                            'aria-label': ariaLabel,
+                            'aria-pressed': date === value,
+                            onClick: () => { if (isV2) { revealTimesRef.current = true; setDateSelection(current => current + 1); } if (date !== value) { deferredVerifySeqRef.current++; setSlotConflict(null); setPendingAppointment(null); setDate(value); setTime(''); if (barberDeferred) setBarber(null); } },
+                          };
+                          return MotionCardButton ? (
+                            <MotionCardButton key={value} tapScale={0.94} data-past={value < todayValue ? 'true' : undefined} {...dayProps}>
+                              {i + 1}
+                            </MotionCardButton>
+                          ) : (
+                            <Button key={value} variant="ghost" {...dayProps}>
+                              {i + 1}
+                            </Button>
+                          );
+                        })}
+                      </div>
+                    </>
+                  );
+                  return experimentalMotion ? (
+                    <div className="calendar-glass-card">{calendarMain}</div>
+                  ) : (
+                    calendarMain
+                  );
+                })()}
                 {availabilityError && <p role="alert" className="mt-5 text-destructive">{availabilityError}</p>}
                 {isV5 && !availabilityLoading && availableDates.length === 0 && (barber || barberDeferred) && (
                   <p role="status" className="calendar-no-availability mt-4 p-3 rounded-md bg-muted/60 text-center text-xs text-muted-foreground">
@@ -1392,7 +1550,7 @@ export function Booking({
             )}
 
             {(step === 3 || isV2 && step === 2 && (date || Boolean(slotConflict))) && (
-              <div ref={timeSectionRef} className={isV2 ? 'booking-v2-times' : isFiveSteps ? `booking-${isV5 ? 'v5' : 'v3'}-times` : undefined} aria-busy={availabilityLoading}>
+              <div ref={timeSectionRef} className={isV2 ? 'booking-v2-times' : isFiveSteps ? `booking-${isV5 ? 'v5' : 'v3'}-times` : undefined} aria-busy={availabilityLoading || availabilityRefreshing}>
                 {isV2 && !slotConflict && <h2 className="booking-v2-choice-title">Elegir un horario</h2>}
                 {slotConflict ? (
                   <BookingSlotUnavailableRecovery
@@ -1414,6 +1572,7 @@ export function Booking({
                       slots={timeSlots}
                       selectedTime={time}
                       onSelectTime={selectedSlot => {
+                        deferredVerifySeqRef.current++;
                         setTime(selectedSlot);
                         setPendingAppointment(null);
                         setError('');
@@ -1422,7 +1581,8 @@ export function Booking({
                           scrollAfterTimeSelectRef.current = true;
                         }
                       }}
-                      availabilityLoading={availabilityLoading && isFiveSteps ? true : availabilityLoading}
+                      availabilityLoading={availabilityLoading}
+                      availabilityRefreshing={availabilityRefreshing}
                       serviceName={selected?.name ?? (service ? serviceFor(service).name : '')}
                       serviceDurationMinutes={selected?.duration}
                       barberLabel={barber ?? undefined}
@@ -1431,6 +1591,7 @@ export function Booking({
                       onEditDate={!isV2 ? () => { void refreshAvailabilityNow(availabilityBarber).catch(() => {}); move(2); } : undefined}
                       useGroupRole={isV2 || isFiveSteps}
                       showExtendedEmptyActions={!isV2}
+                      interactiveCard={MotionCardButton}
                     />
                     {barberDeferred && time && (
                       <div ref={barberSectionRef} className="barber-choice-inline mt-4 pt-3 border-t border-border/40">
@@ -1445,7 +1606,11 @@ export function Booking({
                               aria-pressed={barber === candidate}
                               aria-label={`Barbero ${candidate}${barber === candidate ? ', seleccionado' : ''}`}
                               className={`booking-candidate-barber-btn ${barber === candidate ? 'selected' : ''}`}
-                              onClick={() => setBarber(candidate)}
+                              onClick={() => {
+                                if (barber !== candidate) {
+                                  void verifyDeferredBarberCombination(candidate, date, time);
+                                }
+                              }}
                             >
                               <span className="candidate-name">{candidate}</span>
                             </Button>
@@ -1548,29 +1713,36 @@ export function Booking({
 
                   {!appliedBenefit ? (
                     <div className="discount-input-row mt-2 flex items-stretch gap-2.5 w-full">
-                      <Input
-                        id="booking-discount-code"
-                        type="text"
-                        autoCapitalize="characters"
-                        autoCorrect="off"
-                        spellCheck="false"
-                        placeholder="KANI-XXXX-XXXX-XXXX"
-                        value={benefitCodeInput}
-                        disabled={benefitValidationLoading}
-                        onChange={(e) => {
-                          setBenefitCodeInput(e.target.value.toUpperCase());
-                          setBenefitErrorMessage(null);
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            void applyBenefitCode();
-                          }
-                        }}
-                        aria-invalid={Boolean(benefitErrorMessage)}
-                        aria-describedby={benefitErrorMessage ? 'benefit-code-error' : undefined}
-                        className="discount-input font-mono tracking-wider text-xs sm:text-sm uppercase h-11 min-h-[44px] max-h-[44px] m-0"
-                      />
+                      <span className={`field-control flex-1 min-w-0 ${benefitErrorMessage ? 'invalid' : ''}`}>
+                        <Input
+                          id="booking-discount-code"
+                          type="text"
+                          autoCapitalize="characters"
+                          autoCorrect="off"
+                          spellCheck="false"
+                          placeholder="KANI-XXXX-XXXX-XXXX"
+                          value={benefitCodeInput}
+                          disabled={benefitValidationLoading}
+                          onChange={(e) => {
+                            setBenefitCodeInput(e.target.value.toUpperCase());
+                            setBenefitErrorMessage(null);
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              void applyBenefitCode();
+                            }
+                          }}
+                          aria-invalid={Boolean(benefitErrorMessage)}
+                          aria-describedby={benefitErrorMessage ? 'benefit-code-error' : undefined}
+                          className="discount-input font-mono tracking-wider text-xs sm:text-sm uppercase h-11 min-h-[44px] max-h-[44px] m-0"
+                        />
+                        {benefitErrorMessage && (
+                          <span className="field-validation-icon invalid" aria-hidden="true">
+                            <CircleAlert size={14} />
+                          </span>
+                        )}
+                      </span>
                       <Button
                         type="button"
                         onClick={applyBenefitCode}
@@ -1638,14 +1810,13 @@ export function Booking({
                   )}
 
                   {benefitErrorMessage && (
-                    <p
+                    <span
                       id="benefit-code-error"
                       role="alert"
-                      className="field-validation-message text-destructive text-xs mt-1.5 flex items-center gap-1.5"
+                      className="field-validation-message"
                     >
-                      <CircleAlert size={14} className="shrink-0" aria-hidden="true" />
-                      <span>{benefitErrorMessage}</span>
-                    </p>
+                      {benefitErrorMessage}
+                    </span>
                   )}
                 </div>
                 {isV1 && <Button type="submit" hidden className="hidden" tabIndex={-1}>Continuar</Button>}
@@ -1799,7 +1970,7 @@ export function Booking({
                 <p className="booking-summary-legal-disclaimer text-xs text-muted-foreground mt-3 px-1 text-left leading-relaxed">
                   Al confirmar tu reserva, aceptás nuestros{' '}
                   <a
-                    href="/terminos-y-condiciones"
+                    href={typeof window !== 'undefined' && window.location.pathname.includes('-liquid') ? '/terminos-y-condiciones-liquid' : '/terminos-y-condiciones'}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="underline underline-offset-2 hover:text-foreground text-gold transition-colors"
@@ -1808,7 +1979,7 @@ export function Booking({
                   </a>{' '}
                   y nuestra{' '}
                   <a
-                    href="/politica-de-privacidad"
+                    href={typeof window !== 'undefined' && window.location.pathname.includes('-liquid') ? '/politica-de-privacidad-liquid' : '/politica-de-privacidad'}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="underline underline-offset-2 hover:text-foreground text-gold transition-colors"
@@ -1832,6 +2003,16 @@ export function Booking({
               <div className="mt-4">{paymentNotice}</div>
             )}
             {error && !slotConflict && <p role="alert" className="mt-5 text-destructive">{error}</p>}
+                </>
+              );
+              return StepTransition ? (
+                <StepTransition stepKey={step} direction={stepDirection}>
+                  {stepContent}
+                </StepTransition>
+              ) : (
+                stepContent
+              );
+            })()}
           </section>
         </div>
       </div>
@@ -1839,11 +2020,19 @@ export function Booking({
       {(!slotConflict || isV2 || step !== 3) && (
         <div ref={ctaRef} className="booking-cta" aria-hidden={mobileMenuOpen || undefined} inert={mobileMenuOpen} style={mobileMenuOpen ? { visibility: 'hidden' } : undefined}>
           <div className="booking-cta-inner flex items-center">
-            <Button variant="outline" className="booking-back-button" onClick={() => move(isV2 && step === 4 ? 2 : step - 1)} disabled={step === 0 || submitting}>
-              <ArrowLeft size={14} aria-hidden="true" /> Volver
-            </Button>
-            <Button disabled={!canNext || submitting || isPaymentChecking} className="action-positive booking-next-button h-12 px-6" onClick={step === 5 || (isV2 || isFiveSteps) && step === 4 ? submit : next}>
-              {step === 5 || (isV2 || isFiveSteps) && step === 4
+            {MotionCardButton ? (
+              <MotionCardButton tapScale={0.986} className="booking-back-button" onClick={() => move(isV2 && step === 4 ? 2 : step - 1)} disabled={step === 0 || submitting}>
+                <ArrowLeft size={14} aria-hidden="true" /> Volver
+              </MotionCardButton>
+            ) : (
+              <Button variant="outline" className="booking-back-button" onClick={() => move(isV2 && step === 4 ? 2 : step - 1)} disabled={step === 0 || submitting}>
+                <ArrowLeft size={14} aria-hidden="true" /> Volver
+              </Button>
+            )}
+            {(() => {
+              const isFinalStep = step === 5 || (isV2 || isFiveSteps) && step === 4;
+              const nextDisabled = !canNext || submitting || isPaymentChecking;
+              const nextLabel = isFinalStep
                 ? (isPaymentChecking
                     ? 'Comprobando pago…'
                     : submitting
@@ -1851,8 +2040,18 @@ export function Booking({
                     : appliedBenefit?.skipOnlinePayment
                     ? 'Reservar turno'
                     : paymentActionLabel ?? (isV5 ? `Pagar seña ${money(depositArs)}` : 'Pagar seña'))
-                : 'Continuar'}
-            </Button>
+                : 'Continuar';
+              const nextHandler = isFinalStep ? submit : next;
+              return MotionCardButton ? (
+                <MotionCardButton tapScale={0.986} disabled={nextDisabled} className="action-positive booking-next-button h-12 px-6" onClick={nextHandler}>
+                  {nextLabel}
+                </MotionCardButton>
+              ) : (
+                <Button disabled={nextDisabled} className="action-positive booking-next-button h-12 px-6" onClick={nextHandler}>
+                  {nextLabel}
+                </Button>
+              );
+            })()}
           </div>
         </div>
       )}

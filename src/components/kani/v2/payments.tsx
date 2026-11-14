@@ -6,7 +6,8 @@ import {
   type DiscountKind,
 } from "@/lib/kani-payment-amounts";
 import { useRef, useState, type FormEvent } from "react";
-import { useSearch } from "@tanstack/react-router";
+import { useLocation, useSearch } from "@tanstack/react-router";
+import { MotionConfig, motion, useReducedMotion } from "motion/react";
 import { CheckCircle2, Tag, Trash2, Edit2, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminStaff } from "@/lib/kani-admin-context";
@@ -85,6 +86,9 @@ export function V2Payments() {
 
   const [deletingPayment, setDeletingPayment] = useState<ServicePayment | null>(null);
   const [actionNotice, setActionNotice] = useState("");
+  const pathname = useLocation({ select: (location) => location.pathname });
+  const isLiquidAdmin = pathname.startsWith("/admin-liquid");
+  const shouldReduceMotion = useReducedMotion();
 
   const settled = new Set(
     data.payments
@@ -316,24 +320,48 @@ export function V2Payments() {
       )}
       <div className="v2-payment-layout">
         <section className="v2-panel v2-payment-form">
-          <div className="v2-segmented" aria-label="Origen del cobro">
-            {(["walk_in", "appointment"] as const).map((value) => (
-              <button
-                type="button"
-                key={value}
-                aria-pressed={origin === value}
-                onClick={() => {
-                  setOrigin(value);
-                  setServiceName(null);
-                  setFinalOverride(null);
-                  setPriceOverride(null);
-                  setDiscount(null);
-                }}
-              >
-                {value === "walk_in" ? "Sin turno" : "Con turno"}
-              </button>
-            ))}
-          </div>
+          <MotionConfig reducedMotion="user">
+            <div
+              className="v2-segmented"
+              role="group"
+              aria-label="Origen del cobro"
+              data-lg-segmented={isLiquidAdmin ? "true" : undefined}
+            >
+              {(["walk_in", "appointment"] as const).map((value) => {
+                const isSelected = origin === value;
+                return (
+                  <button
+                    type="button"
+                    key={value}
+                    aria-pressed={isSelected}
+                    onClick={() => {
+                      setOrigin(value);
+                      setServiceName(null);
+                      setFinalOverride(null);
+                      setPriceOverride(null);
+                      setDiscount(null);
+                    }}
+                  >
+                    {isLiquidAdmin && isSelected && (
+                      <motion.span
+                        layoutId="lg-payment-origin-pill"
+                        className="lg-segmented-pill"
+                        aria-hidden="true"
+                        transition={
+                          shouldReduceMotion
+                            ? { duration: 0 }
+                            : { duration: 0.22, ease: [0.22, 1, 0.36, 1] }
+                        }
+                      />
+                    )}
+                    <span className="lg-segmented-label">
+                      {value === "walk_in" ? "Sin turno" : "Con turno"}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </MotionConfig>
           <form onSubmit={(e) => void submit(e)} className="v2-payment-compact-form">
             <fieldset disabled={busy || data.loading} className="v2-payment-form-fieldset">
               <div className="v2-payment-grid">

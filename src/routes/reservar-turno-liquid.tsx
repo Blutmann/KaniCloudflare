@@ -1,10 +1,13 @@
 import { createFileRoute } from '@tanstack/react-router';
+import '@fontsource-variable/inter';
 import { LiquidGlassBooking } from '@/components/kani/experimental/liquid-glass-booking';
 import { pageHead } from '@/lib/kani-head';
 import '@/components/kani/experimental/reserva-v2.css';
 import '@/components/kani/experimental/reserva-v3.css';
 import '@/components/kani/experimental/reserva-v4.css';
 import '@/components/kani/experimental/liquid-glass.css';
+import '@/components/kani/experimental/liquid-glass-typography.css';
+import '@/components/kani/experimental/liquid-glass-desktop-v12-22.css';
 
 export const Route = createFileRoute('/reservar-turno-liquid')({
   head: () =>

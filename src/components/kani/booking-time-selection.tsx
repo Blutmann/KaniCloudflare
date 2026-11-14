@@ -1,12 +1,14 @@
 import { CalendarDays, Clock3, Sun, Sunset, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { groupSlotsByPeriod, type BookingTimeSlotItem } from '@/lib/kani-booking-slots';
+import type { LiquidGlassMotionAdapter } from '@/components/kani/experimental/liquid-glass-motion.types';
 
 type BookingTimeSelectionProps = {
   slots: readonly BookingTimeSlotItem[];
   selectedTime: string;
   onSelectTime: (time: string) => void;
   availabilityLoading: boolean;
+  availabilityRefreshing?: boolean | undefined;
   serviceName?: string | undefined;
   serviceDurationMinutes?: number | undefined;
   barberLabel?: string | undefined;
@@ -17,6 +19,7 @@ type BookingTimeSelectionProps = {
   onEditDate?: (() => void) | undefined;
   useGroupRole?: boolean | undefined;
   showExtendedEmptyActions?: boolean | undefined;
+  interactiveCard?: LiquidGlassMotionAdapter['InteractiveCard'] | undefined;
 };
 
 export function BookingTimeSelection({
@@ -24,6 +27,7 @@ export function BookingTimeSelection({
   selectedTime,
   onSelectTime,
   availabilityLoading,
+  availabilityRefreshing = false,
   serviceName,
   serviceDurationMinutes,
   barberLabel,
@@ -33,13 +37,16 @@ export function BookingTimeSelection({
   onEditDate,
   useGroupRole = true,
   showExtendedEmptyActions = false,
+  interactiveCard: InteractiveSlotButton,
 }: BookingTimeSelectionProps) {
   const periodGroups = groupSlotsByPeriod(slots);
   const availableCount = slots.filter(slot => slot.status === 'AVAILABLE').length;
+  const showInitialSkeleton = availabilityLoading && slots.length === 0;
+  const showRefreshingIndicator = !showInitialSkeleton && (availabilityLoading || availabilityRefreshing);
 
   return (
     <div className="booking-time-selection">
-      {availabilityLoading ? (
+      {showInitialSkeleton ? (
         <div className="booking-time-loading-wrap" role="status" aria-live="polite">
           <div className="booking-time-loading py-4 text-center text-sm text-muted-foreground flex items-center justify-center gap-2">
             <Clock3 size={18} className="animate-spin text-gold" aria-hidden="true" />
@@ -58,7 +65,7 @@ export function BookingTimeSelection({
             role={useGroupRole ? 'group' : undefined}
             aria-label={useGroupRole ? 'Horarios disponibles' : undefined}
           >
-            {periodGroups.map(group => {
+            {periodGroups.map((group, groupIndex) => {
               const groupAvailableCount = group.slots.filter(s => s.status === 'AVAILABLE').length;
               return (
                 <section
@@ -80,11 +87,23 @@ export function BookingTimeSelection({
                         {group.label}
                       </h2>
                     </div>
-                    {groupAvailableCount > 0 && (
-                      <span className="booking-time-period-count">
-                        {groupAvailableCount} {groupAvailableCount === 1 ? 'turno' : 'turnos'}
-                      </span>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {groupIndex === 0 && showRefreshingIndicator && (
+                        <span
+                          className="booking-time-refresh-indicator inline-flex items-center gap-1 text-[11px] text-muted-foreground"
+                          role="status"
+                          aria-live="polite"
+                        >
+                          <Clock3 size={12} className="animate-spin text-gold" aria-hidden="true" />
+                          <span>Verificando…</span>
+                        </span>
+                      )}
+                      {groupAvailableCount > 0 && (
+                        <span className="booking-time-period-count">
+                          {groupAvailableCount} {groupAvailableCount === 1 ? 'turno' : 'turnos'}
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   <div className="booking-time-grid grid grid-cols-3 gap-2 sm:grid-cols-4">
@@ -92,30 +111,37 @@ export function BookingTimeSelection({
                       const isUnavailable = slot.status !== 'AVAILABLE';
                       const isSelected = !isUnavailable && selectedTime === slot.time;
 
-                      return (
-                        <Button
-                          key={slot.time}
-                          type="button"
-                          variant="outline"
-                          disabled={isUnavailable}
-                          aria-disabled={isUnavailable || undefined}
-                          aria-pressed={isUnavailable ? undefined : isSelected}
-                          aria-label={
-                            isUnavailable
-                              ? `Horario ${slot.time}, no disponible`
-                              : `Horario ${slot.time}${isSelected ? ', seleccionado' : ''}`
-                          }
-                          className={`booking-time-slot h-12 ${isSelected ? 'selected' : ''} ${isUnavailable ? 'time-unavailable' : ''}`.trim()}
-                          onClick={() => {
-                            if (!isUnavailable) onSelectTime(slot.time);
-                          }}
-                        >
+                      const slotProps = {
+                        type: 'button' as const,
+                        disabled: isUnavailable,
+                        'aria-disabled': isUnavailable || undefined,
+                        'aria-pressed': isUnavailable ? undefined : isSelected,
+                        'aria-label': isUnavailable
+                          ? `Horario ${slot.time}, no disponible`
+                          : `Horario ${slot.time}${isSelected ? ', seleccionado' : ''}`,
+                        className: `booking-time-slot h-12 ${isSelected ? 'selected' : ''} ${isUnavailable ? 'time-unavailable' : ''}`.trim(),
+                        onClick: () => {
+                          if (!isUnavailable) onSelectTime(slot.time);
+                        },
+                      };
+                      const slotBody = (
+                        <>
                           <span className="booking-time-slot-value">{slot.time}</span>
                           {isUnavailable && (
                             <span className="booking-time-slot-status" aria-hidden="true">
                               Ocupado
                             </span>
                           )}
+                        </>
+                      );
+
+                      return InteractiveSlotButton ? (
+                        <InteractiveSlotButton key={slot.time} tapScale={0.98} {...slotProps}>
+                          {slotBody}
+                        </InteractiveSlotButton>
+                      ) : (
+                        <Button key={slot.time} variant="outline" {...slotProps}>
+                          {slotBody}
                         </Button>
                       );
                     })}
