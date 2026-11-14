@@ -36,7 +36,7 @@ export function Wordmark() {
   );
 }
 
-export function MobileMenuAction() {
+export function MobileMenuAction({ inline = false }: { inline?: boolean } = {}) {
   const path = useRouterState({ select: s => s.location.pathname });
   const navigate = useNavigate();
   const { setMobileMenuOpen } = useKani();
@@ -49,6 +49,15 @@ export function MobileMenuAction() {
         : '/reservar-turno';
     if (path !== target) void navigate({ to: target });
   };
+  if (inline) {
+    return (
+      <div className="mobile-menu-cta--inline">
+        <Button className="action-positive booking-menu-return h-12" onClick={returnToBooking}>
+          Volver a la reserva <ArrowUpRight />
+        </Button>
+      </div>
+    );
+  }
   return <div className="booking-cta mobile-menu-cta"><div className="booking-cta-inner flex items-center"><Button className="action-positive booking-menu-return h-12" onClick={returnToBooking}>Volver a la reserva <ArrowUpRight /></Button></div></div>;
 }
 
@@ -176,8 +185,8 @@ export function SiteHeader() {
     }
   };
   const sessionRole = staff?.profile.role === 'ADMIN' ? 'Administrador' : staff?.profile.role === 'MANAGER' ? 'KANI Jefe' : staff?.profile.role === 'BARBER' ? 'Barbero' : '';
-  const mobileMenu = menuOpen ? (
-    <nav className="mobile-menu" id="kani-main-menu" aria-label="Menú principal">
+  const menuNavigationGroups = (
+    <>
       {/* Grupo usuario */}
       <div className="mobile-menu-group">
         <Link to={bookingTarget} onClick={continueBooking}>
@@ -253,39 +262,56 @@ export function SiteHeader() {
           <Scale />Términos y Condiciones
         </Link>
       </div>
-
-      {/* Grupo 4: Sesión iniciada */}
-      {staff && (
-        <>
-          <div className="mobile-menu-divider" role="separator" />
-          <div className="mobile-menu-session">
-            <div className="mobile-menu-session-identity">
-              <strong>{staff.profile.role === 'ADMIN' ? 'KANI Admin' : (staff.profile.display_name || 'Barbero')}</strong>
-              <span>{sessionRole}</span>
-            </div>
-            <button
-              type="button"
-              className="mobile-menu-signout"
-              onClick={() => {
-                closeMenu();
-                const isMp = path.includes('mercadopago');
-                void signOut().then(() => {
-                  setStaff(null);
-                  void navigate({ to: isLiquidRoute ? '/reservar-turno-liquid' : isMp ? '/reservar-turno-mercadopago' : '/reservar-turno' });
-                });
-              }}
-            >
-              <LogOut />Cerrar sesión
-            </button>
-          </div>
-        </>
-      )}
-    </nav>
+    </>
+  );
+  const menuSessionBlock = staff ? (
+    <>
+      <div className="mobile-menu-divider" role="separator" />
+      <div className="mobile-menu-session">
+        <div className="mobile-menu-session-identity">
+          <strong>{staff.profile.role === 'ADMIN' ? 'KANI Admin' : (staff.profile.display_name || 'Barbero')}</strong>
+          <span>{sessionRole}</span>
+        </div>
+        <button
+          type="button"
+          className="mobile-menu-signout"
+          onClick={() => {
+            closeMenu();
+            const isMp = path.includes('mercadopago');
+            void signOut().then(() => {
+              setStaff(null);
+              void navigate({ to: isLiquidRoute ? '/reservar-turno-liquid' : isMp ? '/reservar-turno-mercadopago' : '/reservar-turno' });
+            });
+          }}
+        >
+          <LogOut />Cerrar sesión
+        </button>
+      </div>
+    </>
+  ) : null;
+  const mobileMenu = menuOpen ? (
+    isLiquidRoute ? (
+      <nav className="mobile-menu mobile-menu--liquid" id="kani-main-menu" aria-label="Menú principal">
+        <div className="mobile-menu-scroll">
+          {menuNavigationGroups}
+        </div>
+        <div className="mobile-menu-dock">
+          {menuSessionBlock}
+          <MobileMenuAction inline />
+        </div>
+      </nav>
+    ) : (
+      <nav className="mobile-menu" id="kani-main-menu" aria-label="Menú principal">
+        {menuNavigationGroups}
+        {/* Grupo 4: Sesión iniciada */}
+        {menuSessionBlock}
+      </nav>
+    )
   ) : null;
   return <>
     <div className="site-header-slot"><header className={`site-header ${menuOpen ? 'menu-open' : ''} ${isLiquidRoute ? 'liquid-glass-header' : ''}`.trim()}><div className="site-container flex items-center gap-4"><div className="admin-header-left"><Link to={logoTarget} aria-label="Kani Barber Studio, inicio" className="w-fit" onClick={closeMenu}><Wordmark /></Link></div><div className="header-controls ml-auto">{staff && (!isLiquidRoute || admin) && <Suspense fallback={null}><AdminActivityPopover role={staff.profile.role} /></Suspense>}<HeaderWhatsApp /><ThemeToggle /><Button variant="outline" size="icon" className={`mobile-menu-trigger header-control-button ${admin ? 'admin-menu-trigger' : ''}`} aria-label={menuOpen ? 'Cerrar menú' : 'Abrir menú'} aria-expanded={menuOpen} aria-controls={menuOpen ? "kani-main-menu" : undefined} ref={menuButtonRef} onClick={() => onMenuOpenChange(!menuOpen)}>{menuOpen ? <X /> : <Menu />}</Button></div></div></header></div>
     {typeof document !== 'undefined' && mobileMenu ? createPortal(mobileMenu, document.body) : null}
-    {typeof document !== 'undefined' && menuOpen ? createPortal(<MobileMenuAction />, document.body) : null}
+    {typeof document !== 'undefined' && menuOpen && !isLiquidRoute ? createPortal(<MobileMenuAction />, document.body) : null}
   </>;
 }
 

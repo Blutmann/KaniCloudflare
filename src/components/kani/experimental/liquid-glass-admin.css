@@ -2143,3 +2143,243 @@ html[data-theme] body[data-lg-admin="true"] [role="dialog"] .kani-medit-row-acti
     font-size: 0.9375rem !important;
   }
 }
+
+/* ==============================================================================
+ * COMPLEMENTO V12.27 — HEADER ADMIN TRANSLÚCIDO REAL & MEMBRESÍAS/DESCUENTOS COMPLETO
+ * ============================================================================== */
+
+/* 1. Limpiar background opaco de v2.css:33 (.site-header-slot) y mobile-dark override de styles.css:5155 */
+html[data-theme] body[data-lg-admin="true"] .site-shell > .site-header-slot,
+html[data-theme] body[data-lg-admin="true"] .site-shell:has(.v2-shell) > .site-header-slot {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 120 !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
+}
+
+/* Preservar sticky evitando overflow-x: hidden en ancestros */
+html[data-theme] body[data-lg-admin="true"] :is(.site-shell, .v2-shell, .lg-admin-shell) {
+  overflow-x: clip !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .site-header-slot:has(> header.menu-open),
+html[data-theme] body[data-lg-admin="true"] .site-shell:has(.v2-shell) > .site-header-slot:has(> header.menu-open) {
+  z-index: 145 !important;
+}
+
+@media (max-width: 767px) {
+  html[data-theme="light"] body[data-lg-admin="true"] .site-header-slot[data-administrative] > header.site-header.liquid-glass-header:not(.menu-open),
+  html[data-theme="light"] body[data-lg-admin="true"] .site-header-slot > header.site-header.liquid-glass-header:not(.menu-open) {
+    background-color: transparent !important;
+    background-image: linear-gradient(180deg, rgba(255, 254, 251, 0.56) 0%, rgba(246, 243, 237, 0.36) 100%) !important;
+    -webkit-backdrop-filter: blur(24px) saturate(165%) !important;
+    backdrop-filter: blur(24px) saturate(165%) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.76) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.90), 0 8px 22px rgba(42, 34, 22, 0.08) !important;
+  }
+
+  html[data-theme="dark"] body[data-lg-admin="true"] .site-header-slot[data-administrative] > header.site-header.liquid-glass-header:not(.menu-open),
+  html[data-theme="dark"] body[data-lg-admin="true"] .site-header-slot > header.site-header.liquid-glass-header:not(.menu-open) {
+    background-color: transparent !important;
+    background-image: linear-gradient(180deg, rgba(20, 20, 26, 0.54) 0%, rgba(10, 10, 14, 0.36) 100%) !important;
+    -webkit-backdrop-filter: blur(24px) saturate(155%) !important;
+    backdrop-filter: blur(24px) saturate(155%) !important;
+    border-bottom: 1px solid rgba(255, 246, 228, 0.14) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 248, 232, 0.18), 0 10px 26px rgba(0, 0, 0, 0.36) !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .site-header-slot > header.site-header.liquid-glass-header.menu-open {
+    background: transparent !important;
+    background-color: transparent !important;
+    background-image: none !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    border-bottom-color: transparent !important;
+    box-shadow: none !important;
+  }
+}
+
+/* 2. Cobertura total de «Membresías y descuentos» (.v2-memberships-page) */
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page [role="tablist"] {
+  max-width: 100% !important;
+  flex-wrap: wrap !important;
+}
+
+@media (max-width: 480px) {
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-page [role="tablist"] {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    width: 100% !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-page [role="tablist"] > button[role="tab"] {
+    min-height: 40px !important;
+    padding: 0 10px !important;
+    font-size: 0.875rem !important;
+    justify-content: center !important;
+  }
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page :is(.v2-metric, .v2-card, .v2-notice-card) {
+  background: var(--lga-glass-structural) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(150%) !important;
+  backdrop-filter: blur(20px) saturate(150%) !important;
+  border: 1px solid var(--lga-border) !important;
+  box-shadow: var(--lga-specular), var(--lga-shadow-structural) !important;
+  border-radius: 16px !important;
+  color: var(--lga-text) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page :is(.v2-metric-label, .v2-muted, .kani-mcard-meta) {
+  color: var(--lga-text-muted) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .v2-success {
+  background: rgba(16, 185, 129, 0.14) !important;
+  border: 1px solid rgba(16, 185, 129, 0.36) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(140%) !important;
+  backdrop-filter: blur(14px) saturate(140%) !important;
+  border-radius: 14px !important;
+  color: var(--lga-text) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .v2-alert {
+  background: rgba(220, 38, 38, 0.14) !important;
+  border: 1px solid rgba(239, 68, 68, 0.36) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(140%) !important;
+  backdrop-filter: blur(14px) saturate(140%) !important;
+  border-radius: 14px !important;
+  color: var(--lga-text) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page :is(input, select, textarea) {
+  background: var(--lga-input-bg) !important;
+  border: 1px solid var(--lga-border) !important;
+  color: var(--lga-text) !important;
+  border-radius: 12px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page :is(input, select, textarea):focus {
+  background: var(--lga-input-focus-bg) !important;
+  border-color: var(--lga-border-accent) !important;
+  outline: none !important;
+}
+
+/* Badges y barra de progreso en .kani-mcard */
+html[data-theme] body[data-lg-admin="true"] .kani-mcard-progress-track {
+  background: rgba(148, 144, 138, 0.20) !important;
+  border: 1px solid var(--lga-border) !important;
+  border-radius: 999px !important;
+  overflow: hidden !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .kani-mcard-progress-fill {
+  background: linear-gradient(90deg, rgba(186, 152, 86, 0.88) 0%, rgba(218, 186, 118, 0.96) 100%) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .kani-mcard-badge {
+  border-radius: 999px !important;
+  -webkit-backdrop-filter: blur(10px) saturate(140%) !important;
+  backdrop-filter: blur(10px) saturate(140%) !important;
+  font-weight: 600 !important;
+}
+
+html[data-theme="light"] body[data-lg-admin="true"] .kani-mcard-badge.is-neutral,
+html[data-theme="light"] body[data-lg-admin="true"] .kani-mcard-badge:not([class*="is-"]) {
+  background: rgba(24, 22, 20, 0.08) !important;
+  border-color: rgba(24, 22, 20, 0.16) !important;
+  color: #2c2823 !important;
+}
+
+/* Botones de acciones y BenefitCodesAdminSection (.maintenance-section) */
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section button:not([role="switch"]) {
+  min-height: 40px !important;
+  border-radius: 999px !important;
+  transition: background-color 150ms ease, border-color 150ms ease, opacity 150ms ease;
+}
+
+@media (max-width: 767px) {
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-page :is(.kani-mcard-actions > button, .kani-mcard-actions > a, .maintenance-section button:not([role="switch"])) {
+    min-height: 44px !important;
+  }
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section button:not(.action-brand):not(.action-positive):not(.v2-primary):not([aria-pressed="true"]):not(:disabled) {
+  background: var(--lga-btn-secondary-bg) !important;
+  border: 1px solid var(--lga-border) !important;
+  color: var(--lga-text) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page button:disabled {
+  opacity: 0.46 !important;
+  cursor: not-allowed !important;
+}
+
+/* Contraste Light Mode para badges Tailwind en códigos de beneficio (.text-zinc-300 -> legible) */
+html[data-theme="light"] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section :is(.text-zinc-300, .text-zinc-400) {
+  color: #3f3b35 !important;
+  background-color: rgba(24, 22, 20, 0.07) !important;
+  border-color: rgba(24, 22, 20, 0.16) !important;
+}
+
+html[data-theme="light"] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section .text-emerald-500 {
+  color: #0f6b47 !important;
+}
+
+html[data-theme="light"] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section .text-amber-500 {
+  color: #8f5608 !important;
+}
+
+/* Historial de usos expandido (.bg-muted/30) */
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section :is(.bg-muted\/30, [class*="bg-muted/"]) {
+  background: var(--lga-glass-structural) !important;
+  border: 1px solid var(--lga-border) !important;
+  border-radius: 12px !important;
+  -webkit-backdrop-filter: blur(12px) saturate(140%) !important;
+  backdrop-filter: blur(12px) saturate(140%) !important;
+}
+
+/* Modales de Membresías (.kani-medit-*) y Beneficios (.benefit-code-dialog-footer) */
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(.kani-medit-section, .kani-medit-kv-item, .kani-medit-row) {
+  background: var(--lga-glass-structural) !important;
+  border: 1px solid var(--lga-border) !important;
+  border-radius: 14px !important;
+  color: var(--lga-text) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(.kani-medit-kv-label, .kani-medit-section-title) {
+  color: var(--lga-text-muted) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] .kani-medit-row-actions > button {
+  background: var(--lga-btn-secondary-bg) !important;
+  border: 1px solid var(--lga-border) !important;
+  color: var(--lga-text) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] .benefit-code-dialog-footer {
+  background: transparent !important;
+  background-color: transparent !important;
+  border-top: 1px solid var(--lga-border) !important;
+  margin-top: 12px !important;
+  padding: 14px 0 0 !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] label:has(input[type="radio"]) {
+  background: var(--lga-glass-structural) !important;
+  border: 1px solid var(--lga-border) !important;
+  border-radius: 14px !important;
+  color: var(--lga-text) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] label:has(input[type="radio"]:checked) {
+  background: var(--lga-accent-pill) !important;
+  border-color: var(--lga-border-accent) !important;
+  box-shadow: var(--lga-specular) !important;
+}
