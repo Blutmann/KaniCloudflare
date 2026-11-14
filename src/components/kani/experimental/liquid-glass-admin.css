@@ -11,22 +11,23 @@
  * ------------------------------------------------------------------------------ */
 html[data-theme="light"] body[data-lg-admin="true"] {
   --lga-glass-structural: linear-gradient(
-    158deg,
-    rgba(255, 255, 255, 0.54) 0%,
-    rgba(245, 244, 241, 0.42) 56%,
-    rgba(252, 252, 250, 0.50) 100%
+    156deg,
+    rgba(255, 255, 255, 0.34) 0%,
+    rgba(246, 244, 240, 0.18) 56%,
+    rgba(255, 255, 255, 0.28) 100%
   );
   --lga-glass-interactive: linear-gradient(
     154deg,
-    rgba(255, 255, 255, 0.68) 0%,
-    rgba(248, 247, 244, 0.54) 58%,
-    rgba(253, 252, 250, 0.64) 100%
+    rgba(255, 255, 255, 0.38) 0%,
+    rgba(248, 246, 242, 0.20) 56%,
+    rgba(255, 255, 255, 0.32) 100%
   );
   --lga-glass-hover: linear-gradient(
     154deg,
-    rgba(255, 255, 255, 0.82) 0%,
-    rgba(249, 248, 245, 0.68) 100%
+    rgba(255, 255, 255, 0.50) 0%,
+    rgba(250, 248, 244, 0.32) 100%
   );
+  --lga-glass-nested: rgba(255, 255, 255, 0.26);
   --lga-glass-modal: linear-gradient(
     156deg,
     rgba(255, 255, 255, 0.56) 0%,
@@ -84,22 +85,23 @@ html[data-theme="light"] body[data-lg-admin="true"] {
 
 html[data-theme="dark"] body[data-lg-admin="true"] {
   --lga-glass-structural: linear-gradient(
-    158deg,
-    rgba(34, 33, 38, 0.46) 0%,
-    rgba(16, 16, 20, 0.36) 56%,
-    rgba(24, 23, 28, 0.44) 100%
+    156deg,
+    rgba(255, 250, 242, 0.065) 0%,
+    rgba(16, 16, 22, 0.22) 55%,
+    rgba(34, 32, 38, 0.20) 100%
   );
   --lga-glass-interactive: linear-gradient(
     154deg,
-    rgba(42, 40, 46, 0.56) 0%,
-    rgba(21, 21, 26, 0.46) 58%,
-    rgba(30, 29, 35, 0.54) 100%
+    rgba(255, 251, 244, 0.085) 0%,
+    rgba(22, 22, 28, 0.20) 52%,
+    rgba(42, 40, 46, 0.26) 100%
   );
   --lga-glass-hover: linear-gradient(
     154deg,
-    rgba(54, 51, 58, 0.66) 0%,
-    rgba(30, 29, 34, 0.58) 100%
+    rgba(255, 251, 244, 0.13) 0%,
+    rgba(28, 28, 35, 0.26) 100%
   );
+  --lga-glass-nested: rgba(255, 250, 242, 0.055);
   --lga-glass-modal: linear-gradient(
     156deg,
     rgba(34, 34, 42, 0.52) 0%,
@@ -2526,4 +2528,208 @@ html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-se
 /* Evitar borde de foco rectangular del navegador al enfocar DialogContent vía onOpenAutoFocus */
 html[data-theme] body[data-lg-admin="true"] [role="dialog"]:focus {
   outline: none !important;
+}
+
+/* ==============================================================================
+ * LAYER 11 · V12.39 RESTAURACIÓN INTEGRAL DE CRISTAL EN CARDS ADMIN Y DESCUENTOS
+ * - Unifica saturación/luminancia por tema sobre los 4 fondos V12.37.
+ * - Evita doble backdrop-filter / doble opacidad en subcards anidadas dentro de
+ *   .v2-panel, .v2-insights, .kani-mcard y .maintenance-section.
+ * - Incluye cobertura de .v2-insight-grid article, cards de Descuentos y fallbacks.
+ * ============================================================================== */
+
+html[data-theme="light"] body[data-lg-admin="true"] {
+  --lga-input-bg: rgba(255, 255, 255, 0.42);
+  --lga-specular: inset 0 1px 0 rgba(255, 255, 255, 0.94), inset 0 -1px 0 rgba(28, 26, 24, 0.05);
+}
+
+html[data-theme="dark"] body[data-lg-admin="true"] {
+  --lga-input-bg: rgba(22, 22, 27, 0.38);
+  --lga-border: rgba(255, 255, 255, 0.15);
+  --lga-specular: inset 0 1px 0 rgba(255, 250, 238, 0.26), inset 0 -1px 0 rgba(255, 248, 232, 0.05);
+}
+
+/* Cards de primer nivel sobre fondo directo */
+html[data-theme="light"] body[data-lg-admin="true"] :is(
+  .admin-login-shell,
+  .v2-access,
+  .v2-panel,
+  .v2-insights,
+  .v2-admin-filter-panel,
+  .v2-admin-filter-card,
+  .v2-client-toolbar-container,
+  .v2-schedule-cards-container,
+  .admin-schedule-cards-container,
+  .v2-payments-table-wrap,
+  .v2-payments-history-panel,
+  .v2-empty,
+  .v2-metric,
+  .v2-next,
+  .v2-today,
+  .v2-appointment,
+  .v2-client-card,
+  .client-card-mobile,
+  .v2-payment-card-mobile,
+  .v2-code-card,
+  .v2-callout,
+  .kani-mcard,
+  .v2-memberships-page .v2-card,
+  .v2-memberships-page .v2-notice-card,
+  .v2-memberships-page .maintenance-section .space-y-3 > div,
+  .v2-memberships-page .maintenance-section > div:has([id="benefit-search"]),
+  .v2-memberships-page .maintenance-section .border-dashed
+) {
+  -webkit-backdrop-filter: blur(18px) saturate(165%) brightness(1.02) !important;
+  backdrop-filter: blur(18px) saturate(165%) brightness(1.02) !important;
+}
+
+html[data-theme="dark"] body[data-lg-admin="true"] :is(
+  .admin-login-shell,
+  .v2-access,
+  .v2-panel,
+  .v2-insights,
+  .v2-admin-filter-panel,
+  .v2-admin-filter-card,
+  .v2-client-toolbar-container,
+  .v2-schedule-cards-container,
+  .admin-schedule-cards-container,
+  .v2-payments-table-wrap,
+  .v2-payments-history-panel,
+  .v2-empty,
+  .v2-metric,
+  .v2-next,
+  .v2-today,
+  .v2-appointment,
+  .v2-client-card,
+  .client-card-mobile,
+  .v2-payment-card-mobile,
+  .v2-code-card,
+  .v2-callout,
+  .kani-mcard,
+  .v2-memberships-page .v2-card,
+  .v2-memberships-page .v2-notice-card,
+  .v2-memberships-page .maintenance-section .space-y-3 > div,
+  .v2-memberships-page .maintenance-section > div:has([id="benefit-search"]),
+  .v2-memberships-page .maintenance-section .border-dashed
+) {
+  -webkit-backdrop-filter: blur(18px) saturate(168%) brightness(1.08) !important;
+  backdrop-filter: blur(18px) saturate(168%) brightness(1.08) !important;
+}
+
+/* Contenedores wrapper transparentes (sin Backdrop Root sobre cards hijas; especificidad #_ > .maintenance-section) */
+html[data-theme] body[data-lg-admin="true"] :is(
+  #_,
+  .v2-memberships-page > .v2-panel,
+  .v2-memberships-page .maintenance-section
+) {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+/* Subcards anidadas dentro de paneles con blur: eliminan doble backdrop-filter y doble opacidad */
+html[data-theme] body[data-lg-admin="true"] :is(
+  #_,
+  .v2-panel:not(.v2-memberships-page > .v2-panel),
+  .v2-insights,
+  .v2-schedule-cards-container,
+  .admin-schedule-cards-container,
+  .v2-payments-table-wrap,
+  .v2-payments-history-panel,
+  .kani-mcard,
+  .v2-memberships-page .v2-card,
+  .v2-memberships-page .maintenance-section .space-y-3 > div
+) :is(
+  .v2-metric,
+  .v2-empty,
+  .v2-inset,
+  .v2-callout,
+  .v2-payment-total-box,
+  .v2-manual-summary,
+  .v2-summary-block,
+  .v2-code-card,
+  .kani-mcard-sessions,
+  .v2-insight-grid article,
+  .bg-muted\/30,
+  [class*="bg-muted/"]
+) {
+  background: var(--lga-glass-nested) !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  border: 1px solid var(--lga-border) !important;
+  box-shadow: var(--lga-specular) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-insight-grid article {
+  border-radius: 16px !important;
+}
+
+/* Estado de error / alerta dentro de Descuentos con material translúcido limpio */
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section :is(#_, .bg-destructive\/10, [class*="bg-destructive/"]) {
+  background: rgba(190, 56, 72, 0.12) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(150%) !important;
+  backdrop-filter: blur(16px) saturate(150%) !important;
+  border: 1px solid rgba(206, 78, 92, 0.36) !important;
+  border-radius: 18px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section :is(#_, .bg-destructive\/10, [class*="bg-destructive/"]) > div {
+  background: transparent !important;
+  background-image: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+/* Fallbacks para navegadores sin backdrop-filter y prefers-reduced-transparency */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  html[data-theme="light"] body[data-lg-admin="true"] {
+    --lga-glass-structural: linear-gradient(156deg, rgba(254, 253, 251, 0.94), rgba(246, 244, 240, 0.92));
+    --lga-glass-interactive: linear-gradient(154deg, rgba(255, 255, 255, 0.96), rgba(248, 246, 242, 0.93));
+  }
+
+  html[data-theme="dark"] body[data-lg-admin="true"] {
+    --lga-glass-structural: linear-gradient(156deg, rgba(28, 27, 33, 0.92), rgba(16, 16, 20, 0.90));
+    --lga-glass-interactive: linear-gradient(154deg, rgba(34, 33, 39, 0.94), rgba(20, 20, 25, 0.92));
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  html[data-theme="light"] body[data-lg-admin="true"] {
+    --lga-glass-structural: linear-gradient(156deg, #fcfbf9, #f5f3ef);
+    --lga-glass-interactive: linear-gradient(154deg, #ffffff, #f7f5f1);
+    --lga-glass-hover: linear-gradient(154deg, #ffffff, #faf8f5);
+    --lga-glass-nested: rgba(248, 246, 242, 0.92);
+  }
+
+  html[data-theme="dark"] body[data-lg-admin="true"] {
+    --lga-glass-structural: linear-gradient(156deg, #1d1c22, #141418);
+    --lga-glass-interactive: linear-gradient(154deg, #24232a, #18181d);
+    --lga-glass-hover: linear-gradient(154deg, #2c2b33, #1e1e24);
+    --lga-glass-nested: rgba(28, 27, 33, 0.90);
+  }
+
+  html[data-theme] body[data-lg-admin="true"] :is(
+    .v2-panel,
+    .v2-insights,
+    .v2-callout,
+    .v2-metric,
+    .v2-appointment,
+    .v2-client-card,
+    .client-card-mobile,
+    .v2-payment-card-mobile,
+    .kani-mcard,
+    .v2-memberships-page .v2-card,
+    .v2-memberships-page .maintenance-section .space-y-3 > div
+  ) {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
 }
