@@ -1363,51 +1363,62 @@ export function Booking({
             {step === 2 && (
               <ExperimentalLayout enabled={isV2}>
               <div className="calendar-panel">
-                <div className="calendar-header mb-7 flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <h2 className="capitalize">{month.toLocaleDateString('es-AR', { month: 'long' }).replace(/^./, letter => letter.toUpperCase()) + ' ' + month.getFullYear()}</h2>
-                    {isV5 && availabilityLoading && (
-                      <span className="calendar-loading-indicator text-xs font-normal text-muted-foreground flex items-center gap-1.5 animate-pulse" aria-live="polite">
-                        <Clock3 size={13} className="animate-spin text-gold" />
-                        <span>Actualizando…</span>
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex gap-2">
-                    <Button variant="ghost" size="icon" aria-label="Mes anterior" disabled={month.getFullYear() === today.getFullYear() && month.getMonth() === today.getMonth()} onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))}><ChevronLeft /></Button>
-                    <Button variant="ghost" size="icon" aria-label="Mes siguiente" disabled={month.getFullYear() === lastBookingDay.getFullYear() && month.getMonth() === lastBookingDay.getMonth()} onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))}><ChevronRight /></Button>
-                  </div>
-                </div>
-                <div className="calendar-grid">
-                  {['L', 'M', 'X', 'J', 'V', 'S', 'D'].map((d, i) => <span key={i} className="calendar-weekday">{d}</span>)}
-                  {Array.from({ length: offset }, (_, i) => <span key={`blank-${i}`} />)}
-                  {Array.from({ length: daysInMonth }, (_, i) => {
-                    const day = new Date(month.getFullYear(), month.getMonth(), i + 1);
-                    const value = isoDate(day);
-                    const isWithinBookingWindow = value >= todayValue && value <= bookingEndValue;
-                    const disabled = availabilityLoading || !service || !availabilityBarber && !barberDeferred || !isWithinBookingWindow || (!isBookingDate(value, todayValue, bookingEndValue) && !availableDatesSet.has(value)) || !availableDatesSet.has(value);
-                    const isToday = value === todayValue;
-                    const ariaLabel = isToday
-                      ? `Hoy, ${dateLabel(value)}${disabled ? ', sin turnos' : ''}${date === value ? ', seleccionado' : ''}`
-                      : `${dateLabel(value)}${disabled ? ', sin turnos' : ''}${date === value ? ', seleccionado' : ''}`;
-                    const dayProps = {
-                      className: `calendar-day ${date === value ? 'selected' : ''} ${isToday ? 'today' : ''}`,
-                      disabled,
-                      'aria-label': ariaLabel,
-                      'aria-pressed': date === value,
-                      onClick: () => { if (isV2) { revealTimesRef.current = true; setDateSelection(current => current + 1); } if (date !== value) { setSlotConflict(null); setPendingAppointment(null); setDate(value); setTime(''); if (barberDeferred) setBarber(null); } },
-                    };
-                    return MotionCardButton ? (
-                      <MotionCardButton key={value} tapScale={0.94} data-past={value < todayValue ? 'true' : undefined} {...dayProps}>
-                        {i + 1}
-                      </MotionCardButton>
-                    ) : (
-                      <Button key={value} variant="ghost" {...dayProps}>
-                        {i + 1}
-                      </Button>
-                    );
-                  })}
-                </div>
+                {(() => {
+                  const calendarMain = (
+                    <>
+                      <div className="calendar-header mb-7 flex items-center justify-between">
+                        <div className="flex items-center gap-2.5">
+                          <h2 className="capitalize">{month.toLocaleDateString('es-AR', { month: 'long' }).replace(/^./, letter => letter.toUpperCase()) + ' ' + month.getFullYear()}</h2>
+                          {isV5 && availabilityLoading && (
+                            <span className="calendar-loading-indicator text-xs font-normal text-muted-foreground flex items-center gap-1.5 animate-pulse" aria-live="polite">
+                              <Clock3 size={13} className="animate-spin text-gold" />
+                              <span>Actualizando…</span>
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex gap-2">
+                          <Button variant="ghost" size="icon" aria-label="Mes anterior" disabled={month.getFullYear() === today.getFullYear() && month.getMonth() === today.getMonth()} onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))}><ChevronLeft /></Button>
+                          <Button variant="ghost" size="icon" aria-label="Mes siguiente" disabled={month.getFullYear() === lastBookingDay.getFullYear() && month.getMonth() === lastBookingDay.getMonth()} onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))}><ChevronRight /></Button>
+                        </div>
+                      </div>
+                      <div className="calendar-grid">
+                        {['L', 'M', 'X', 'J', 'V', 'S', 'D'].map((d, i) => <span key={i} className="calendar-weekday">{d}</span>)}
+                        {Array.from({ length: offset }, (_, i) => <span key={`blank-${i}`} />)}
+                        {Array.from({ length: daysInMonth }, (_, i) => {
+                          const day = new Date(month.getFullYear(), month.getMonth(), i + 1);
+                          const value = isoDate(day);
+                          const isWithinBookingWindow = value >= todayValue && value <= bookingEndValue;
+                          const disabled = availabilityLoading || !service || !availabilityBarber && !barberDeferred || !isWithinBookingWindow || (!isBookingDate(value, todayValue, bookingEndValue) && !availableDatesSet.has(value)) || !availableDatesSet.has(value);
+                          const isToday = value === todayValue;
+                          const ariaLabel = isToday
+                            ? `Hoy, ${dateLabel(value)}${disabled ? ', sin turnos' : ''}${date === value ? ', seleccionado' : ''}`
+                            : `${dateLabel(value)}${disabled ? ', sin turnos' : ''}${date === value ? ', seleccionado' : ''}`;
+                          const dayProps = {
+                            className: `calendar-day ${date === value ? 'selected' : ''} ${isToday ? 'today' : ''}`,
+                            disabled,
+                            'aria-label': ariaLabel,
+                            'aria-pressed': date === value,
+                            onClick: () => { if (isV2) { revealTimesRef.current = true; setDateSelection(current => current + 1); } if (date !== value) { setSlotConflict(null); setPendingAppointment(null); setDate(value); setTime(''); if (barberDeferred) setBarber(null); } },
+                          };
+                          return MotionCardButton ? (
+                            <MotionCardButton key={value} tapScale={0.94} data-past={value < todayValue ? 'true' : undefined} {...dayProps}>
+                              {i + 1}
+                            </MotionCardButton>
+                          ) : (
+                            <Button key={value} variant="ghost" {...dayProps}>
+                              {i + 1}
+                            </Button>
+                          );
+                        })}
+                      </div>
+                    </>
+                  );
+                  return experimentalMotion ? (
+                    <div className="calendar-glass-card">{calendarMain}</div>
+                  ) : (
+                    calendarMain
+                  );
+                })()}
                 {availabilityError && <p role="alert" className="mt-5 text-destructive">{availabilityError}</p>}
                 {isV5 && !availabilityLoading && availableDates.length === 0 && (barber || barberDeferred) && (
                   <p role="status" className="calendar-no-availability mt-4 p-3 rounded-md bg-muted/60 text-center text-xs text-muted-foreground">

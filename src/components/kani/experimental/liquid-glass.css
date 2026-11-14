@@ -7037,3 +7037,71 @@ html[data-theme] body.liquid-glass-active .site-header.liquid-glass-header.menu-
     box-shadow: none !important;
   }
 }
+
+/* ==============================================================================
+ * LIQUID GLASS V12.14 — CALENDARIO EN UNA ÚNICA SUPERFICIE LIQUID GLASS
+ * Unifica .calendar-header («Noviembre 2026» + flechas) y .calendar-grid
+ * dentro de .calendar-glass-card sin uniones, bordes ni sombras duplicadas.
+ * ============================================================================== */
+
+html[data-theme] .site-shell .liquid-glass-reservation .calendar-panel {
+  gap: 12px !important;
+}
+
+html[data-theme] .site-shell .liquid-glass-reservation .calendar-glass-card {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0 !important;
+  border-radius: 22px !important;
+  overflow: hidden !important;
+  -webkit-backdrop-filter: blur(18px) saturate(140%) !important;
+  backdrop-filter: blur(18px) saturate(140%) !important;
+}
+
+html[data-theme="light"] .site-shell .liquid-glass-reservation .calendar-glass-card {
+  background: linear-gradient(
+    148deg,
+    rgba(254, 253, 250, 0.56) 0%,
+    rgba(249, 247, 243, 0.34) 56%,
+    rgba(245, 242, 237, 0.44) 100%
+  ) !important;
+  border: 1px solid rgba(206, 199, 189, 0.58) !important;
+  box-shadow:
+    0 6px 18px rgba(34, 28, 22, 0.045),
+    inset 0 1px 0 rgba(255, 253, 249, 0.90) !important;
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-reservation .calendar-glass-card {
+  background: linear-gradient(
+    150deg,
+    rgba(16, 16, 18, 0.68) 0%,
+    rgba(11, 11, 13, 0.54) 56%,
+    rgba(14, 14, 16, 0.62) 100%
+  ) !important;
+  border: 1px solid rgba(255, 255, 255, 0.085) !important;
+  box-shadow:
+    0 10px 24px rgba(0, 0, 0, 0.38),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+}
+
+html[data-theme] .site-shell .liquid-glass-reservation .calendar-glass-card > .calendar-header,
+html[data-theme] .site-shell .liquid-glass-reservation .calendar-glass-card > .calendar-grid {
+  background: transparent !important;
+  background-image: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  border-radius: 0 !important;
+}
+
+html[data-theme] .site-shell .liquid-glass-reservation .calendar-glass-card > .calendar-header {
+  height: 50px !important;
+  min-height: 48px !important;
+  padding: 6px 8px 0 16px !important;
+  margin-bottom: 0 !important;
+}
+
+html[data-theme] .site-shell .liquid-glass-reservation .calendar-glass-card > .calendar-grid {
+  padding: 8px 12px 14px !important;
+}

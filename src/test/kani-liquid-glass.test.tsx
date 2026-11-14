@@ -460,4 +460,17 @@ describe('KANI Barber Studio — Liquid Glass Experience (/reservar-turno-liquid
     expect(liquidCss).toContain('scrollbar-gutter: stable;');
     expect(liquidCss).toContain('body.liquid-glass-active .site-header.liquid-glass-header.menu-open');
   });
+
+  it('35. Liquid Glass V12.14: Calendario unificado en una única superficie .calendar-glass-card sin uniones ni divisores', () => {
+    const bookingTsx = fs.readFileSync(
+      path.join(process.cwd(), 'src/components/kani/booking.tsx'),
+      'utf8',
+    );
+    expect(bookingTsx).toContain('experimentalMotion ? (');
+    expect(bookingTsx).toContain('<div className="calendar-glass-card">{calendarMain}</div>');
+    expect(liquidCss).toContain('LIQUID GLASS V12.14 — CALENDARIO EN UNA ÚNICA SUPERFICIE LIQUID GLASS');
+    expect(liquidCss).toContain('.calendar-glass-card');
+    expect(liquidCss).toContain('.calendar-glass-card > .calendar-header');
+    expect(liquidCss).toContain('.calendar-glass-card > .calendar-grid');
+  });
 });
