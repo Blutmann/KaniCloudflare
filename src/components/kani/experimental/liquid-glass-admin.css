@@ -419,10 +419,12 @@ body[data-lg-admin="true"] .lg-admin-nav-label {
     gap: 3px !important;
     width: 100% !important;
     min-width: 0 !important;
-    min-height: 46px !important;
-    padding: 6px 2px !important;
+    height: 48px !important;
+    min-height: 48px !important;
+    max-height: 48px !important;
+    padding: 5px 2px !important;
     font-size: 0.65625rem !important;
-    line-height: 1.15 !important;
+    line-height: 1.12 !important;
     letter-spacing: -0.015em;
     text-align: center;
     border-radius: 12px !important;
@@ -2448,8 +2450,34 @@ html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-se
   border-radius: 12px !important;
 }
 
-/* 3. Cápsula de navegación experimental 3 opciones (Membresías | Descuentos | Panel de administración) */
+/* 3. Cápsula de navegación experimental 3 opciones (Membresías | Descuentos | Panel de administración) y espaciado mobile compacto */
 @media (max-width: 767px) {
+  html[data-theme] body[data-lg-admin="true"] .lg-admin-shell:has(.v2-memberships-page) .v2-navigation {
+    margin-bottom: 10px !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-page.v2-memberships-page {
+    padding-top: 0 !important;
+    gap: 12px !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-page > .v2-panel > div:first-child {
+    padding-bottom: 8px !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-page > .v2-panel > div:first-child + div {
+    margin-top: 10px !important;
+    gap: 12px !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section > div:first-child {
+    padding-bottom: 8px !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 10px !important;
+  }
+
   html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav.lg-memberships-nav {
     display: block !important;
     overflow-x: hidden !important;
@@ -2461,7 +2489,7 @@ html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-se
     display: grid !important;
     grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
     align-items: stretch !important;
-    gap: 4px !important;
+    gap: 3px !important;
     width: 100% !important;
     min-width: 0 !important;
   }
@@ -2474,13 +2502,23 @@ html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-se
     flex: initial !important;
     width: 100% !important;
     min-width: 0 !important;
-    min-height: 50px !important;
-    padding: 7px 6px !important;
-    gap: 4px !important;
-    font-size: 0.71875rem !important;
-    line-height: 1.15 !important;
+    height: 48px !important;
+    min-height: 48px !important;
+    max-height: 48px !important;
+    padding: 4px 4px !important;
+    gap: 2px !important;
+    font-size: 0.65625rem !important;
+    line-height: 1.08 !important;
+    letter-spacing: -0.015em !important;
     text-align: center !important;
     white-space: normal !important;
+    border-radius: 12px !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav.lg-memberships-nav .admin-section-nav-link svg {
+    width: 15px !important;
+    height: 15px !important;
+    flex-shrink: 0 !important;
   }
 
   html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav.lg-memberships-nav .lg-admin-nav-label {
@@ -2495,8 +2533,9 @@ html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-se
     }
 
     html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav.lg-memberships-nav .admin-section-nav-link {
-      padding: 7px 4px !important;
-      font-size: 0.6875rem !important;
+      padding: 4px 2px !important;
+      font-size: 0.625rem !important;
+      line-height: 1.06 !important;
     }
   }
 }
