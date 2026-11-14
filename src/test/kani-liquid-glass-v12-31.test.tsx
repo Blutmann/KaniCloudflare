@@ -142,8 +142,7 @@ describe('Liquid Glass V12.31 — Correcciones de interfaz, modales y navegació
     expect(v1231).toContain('margin-top: -64px !important;');
     expect(v1231).toContain('padding-top: 135px !important;');
 
-    expect(adminCss).toContain('rgba(255, 255, 255, 0.36) 0%, rgba(246, 244, 240, 0.22) 100%');
-    expect(adminCss).toContain('rgba(26, 27, 33, 0.44) 0%, rgba(15, 16, 21, 0.32) 100%');
+    expect(adminCss).toContain('.site-header.liquid-glass-header:not(.liquid-glass-header--scrolled)');
     expect(adminCss).toContain('height: 64px !important;');
   });
 
