@@ -388,21 +388,34 @@ export function ManualAppointmentDialog({
     }
   }
 
+  const isLiquidGlassAdmin =
+    typeof document !== "undefined" &&
+    (document.body?.dataset?.lgAdmin === "true" ||
+      document.body?.classList?.contains("liquid-glass-active"));
+  const showDialogDescription = !isLiquidGlassAdmin || mode === "EDIT";
+
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
       <DialogContent
         className="v2-dialog v2-manual-dialog"
         aria-labelledby={titleId}
-        aria-describedby={descId}
+        aria-describedby={showDialogDescription ? descId : undefined}
+        onOpenAutoFocus={(event) => {
+          if (!isLiquidGlassAdmin) return;
+          event.preventDefault();
+          event.currentTarget.focus({ preventScroll: true });
+        }}
       >
         <DialogTitle id={titleId}>
           {mode === "CREATE" ? "Nuevo turno manual" : "Editar turno manual"}
         </DialogTitle>
-        <DialogDescription id={descId}>
-          {mode === "CREATE"
-            ? "Crea un turno operativo directamente confirmado sin limitaciones de horario comercial."
-            : "Modifica los datos del turno manual seleccionado."}
-        </DialogDescription>
+        {showDialogDescription && (
+          <DialogDescription id={descId}>
+            {mode === "CREATE"
+              ? "Crea un turno operativo directamente confirmado sin limitaciones de horario comercial."
+              : "Modifica los datos del turno manual seleccionado."}
+          </DialogDescription>
+        )}
 
         <form onSubmit={handleSubmit} className="v2-form v2-manual-form">
           {formError && (

@@ -2,10 +2,13 @@ import { useEffect, useRef, useState } from "react";
 import { Link, Outlet, useLocation } from "@tanstack/react-router";
 import { MotionConfig, motion } from "motion/react";
 import {
+  CalendarClock,
   CalendarDays,
   Clock3,
   CreditCard,
   Home,
+  PackageCheck,
+  Tag,
   Users,
   ChartNoAxesCombined,
   RefreshCw,
@@ -196,7 +199,49 @@ function V2Shell({ basePath, liquidGlass = false }: { basePath: string; liquidGl
     }
   }, []);
 
-  const navContent = (
+  const isMembershipsNav =
+    liquidGlass && (activeSlug === "membresias" || activeSlug === "descuentos");
+
+  const membershipsNavDefs = [
+    { slug: "membresias", to: `${cleanBase}/membresias`, title: "Membresías", icon: PackageCheck },
+    { slug: "descuentos", to: `${cleanBase}/descuentos`, title: "Descuentos", icon: Tag },
+    { slug: "panel", to: cleanBase, title: "Panel de administración", icon: CalendarClock },
+  ] as const;
+
+  const navContent = isMembershipsNav ? (
+    <nav
+      className="admin-section-nav v2-nav lg-memberships-nav"
+      data-lg-nav-variant="memberships"
+      ref={navScrollRef}
+      aria-label="Membresías y descuentos"
+    >
+      <div className="admin-section-nav-items" ref={navItemsRef}>
+        {membershipsNavDefs.map(({ slug, to, title, icon: Icon }) => {
+          const isActive = activeSlug === slug;
+          return (
+            <Link
+              key={slug}
+              to={to}
+              data-nav-slug={slug}
+              className={`admin-section-nav-link ${isActive ? "is-active" : ""}`.trim()}
+              aria-current={isActive ? "page" : undefined}
+            >
+              {isActive && (
+                <motion.span
+                  layoutId="lg-admin-memberships-nav-pill"
+                  className="lg-admin-nav-pill"
+                  aria-hidden="true"
+                  transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+                />
+              )}
+              <Icon size={16} aria-hidden="true" className="lg-admin-nav-icon" />
+              <span className="lg-admin-nav-label">{title}</span>
+            </Link>
+          );
+        })}
+      </div>
+    </nav>
+  ) : (
     <nav className="admin-section-nav v2-nav" ref={navScrollRef} aria-label="Administración">
       <div className="admin-section-nav-items" ref={navItemsRef}>
         {sectionDefs
