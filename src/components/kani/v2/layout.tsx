@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, Outlet, useLocation } from "@tanstack/react-router";
 import { MotionConfig, motion } from "motion/react";
 import {
@@ -53,6 +53,7 @@ export function V2Layout({
     error: string;
   }>({ loading: true, staff: null, error: "" });
   const [allowed, setAllowed] = useState(false);
+
   useEffect(() => {
     const supabaseUrl =
       import.meta.env["VITE_SUPABASE_URL"] ||
@@ -147,6 +148,22 @@ function V2Shell({ basePath, liquidGlass = false }: { basePath: string; liquidGl
         : "turnos"
       : section;
 
+  const navItemsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!liquidGlass || typeof window === "undefined") return;
+    const container = navItemsRef.current;
+    if (!container) return;
+    const activeEl = container.querySelector<HTMLElement>(`[data-nav-slug="${activeSlug}"]`);
+    if (!activeEl || typeof activeEl.scrollIntoView !== "function") return;
+    const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+    activeEl.scrollIntoView({
+      behavior: reduced ? "auto" : "smooth",
+      block: "nearest",
+      inline: "center",
+    });
+  }, [liquidGlass, activeSlug]);
+
   useEffect(() => {
     if (typeof document !== 'undefined') {
       document.body.dataset.adminInternal = 'true';
@@ -158,7 +175,7 @@ function V2Shell({ basePath, liquidGlass = false }: { basePath: string; liquidGl
 
   const navContent = (
     <nav className="admin-section-nav v2-nav" aria-label="Administración">
-      <div className="admin-section-nav-items">
+      <div className="admin-section-nav-items" ref={navItemsRef}>
         {sectionDefs
           .filter(({ slug }) => mayAccessStaffSection(profile, slug) && (profile.role === 'ADMIN' || slug !== 'inicio'))
           .map(({ slug, title, icon: Icon }) => {
@@ -167,6 +184,7 @@ function V2Shell({ basePath, liquidGlass = false }: { basePath: string; liquidGl
               <Link
                 key={slug}
                 to={`${cleanBase}/${slug}`}
+                data-nav-slug={slug}
                 className="admin-section-nav-link"
                 activeProps={{ className: "is-active", "aria-current": "page" }}
               >
