@@ -26,56 +26,39 @@ html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .cont
 
 html[data-theme="light"] .site-shell .liquid-glass-page[data-lg-section="contact"] .studio-info-card,
 html[data-theme="light"] .site-shell .liquid-glass-page[data-lg-section="contact"] .studio-map-card {
-  background: var(--cg-crystal-rest) !important;
-  -webkit-backdrop-filter: blur(20px) saturate(140%) !important;
-  backdrop-filter: blur(20px) saturate(140%) !important;
-  border: 1px solid rgba(168, 164, 158, 0.38) !important;
-  box-shadow:
-    0 12px 28px rgba(28, 26, 24, 0.065),
-    inset 0 1px 0 rgba(255, 255, 255, 0.88) !important;
+  background: var(--lg-sys-glass-card, var(--cg-crystal-rest)) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(148%) !important;
+  backdrop-filter: blur(20px) saturate(148%) !important;
+  border: 1px solid var(--lg-sys-border, rgba(148, 144, 138, 0.28)) !important;
+  box-shadow: var(--lg-sys-shadow-card, 0 10px 26px rgba(24, 22, 20, 0.055)), var(--lg-sys-specular, inset 0 1px 0 rgba(255, 255, 255, 0.94)) !important;
   border-radius: 20px !important;
   transition: transform 180ms ease, background 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
 }
 
 html[data-theme="light"] .site-shell .liquid-glass-page[data-lg-section="contact"] .studio-info-link:hover,
 html[data-theme="light"] .site-shell .liquid-glass-page[data-lg-section="contact"] .studio-info-link:focus-visible {
-  background: var(--cg-crystal-selected) !important;
-  border-color: rgba(196, 164, 102, 0.72) !important;
-  box-shadow: var(--cg-crystal-shadow-selected) !important;
+  background: var(--lg-sys-glass-hover, var(--cg-crystal-hover)) !important;
+  border-color: var(--lg-sys-border-champagne, rgba(178, 144, 78, 0.68)) !important;
+  box-shadow: var(--lg-sys-shadow-selected, var(--cg-crystal-shadow-selected)) !important;
   transform: translateY(-2px);
 }
 
 html[data-theme="dark"] .site-shell .liquid-glass-page[data-lg-section="contact"] .studio-info-card,
 html[data-theme="dark"] .site-shell .liquid-glass-page[data-lg-section="contact"] .studio-map-card {
-  background: linear-gradient(
-    158deg,
-    rgba(22, 21, 20, 0.76) 0%,
-    rgba(11, 11, 13, 0.62) 56%,
-    rgba(16, 15, 16, 0.72) 100%
-  ) !important;
-  -webkit-backdrop-filter: blur(20px) saturate(135%) !important;
-  backdrop-filter: blur(20px) saturate(135%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.11) !important;
-  box-shadow:
-    0 14px 32px rgba(0, 0, 0, 0.52),
-    inset 0 1px 0 rgba(255, 248, 232, 0.14),
-    inset 0 -1px 0 rgba(255, 246, 228, 0.03) !important;
+  background: var(--lg-sys-glass-card, linear-gradient(158deg, rgba(36, 35, 42, 0.54) 0%, rgba(16, 16, 21, 0.42) 56%, rgba(24, 23, 29, 0.50) 100%)) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(145%) !important;
+  backdrop-filter: blur(20px) saturate(145%) !important;
+  border: 1px solid var(--lg-sys-border, rgba(255, 255, 255, 0.12)) !important;
+  box-shadow: var(--lg-sys-shadow-card, 0 14px 34px rgba(0, 0, 0, 0.40)), var(--lg-sys-specular, inset 0 1px 0 rgba(255, 249, 236, 0.18)) !important;
   border-radius: 20px !important;
   transition: transform 180ms ease, background 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
 }
 
 html[data-theme="dark"] .site-shell .liquid-glass-page[data-lg-section="contact"] .studio-info-link:hover,
 html[data-theme="dark"] .site-shell .liquid-glass-page[data-lg-section="contact"] .studio-info-link:focus-visible {
-  background: linear-gradient(
-    152deg,
-    rgba(42, 39, 36, 0.86) 0%,
-    rgba(26, 23, 24, 0.78) 56%,
-    rgba(34, 28, 30, 0.84) 100%
-  ) !important;
-  border-color: rgba(200, 169, 107, 0.62) !important;
-  box-shadow:
-    0 16px 34px rgba(0, 0, 0, 0.62),
-    inset 0 1px 0 rgba(255, 248, 236, 0.30) !important;
+  background: var(--lg-sys-glass-hover, linear-gradient(154deg, rgba(50, 48, 56, 0.66) 0%, rgba(28, 27, 33, 0.56) 100%)) !important;
+  border-color: var(--lg-sys-border-champagne, rgba(212, 180, 114, 0.62)) !important;
+  box-shadow: var(--lg-sys-shadow-selected, 0 16px 34px rgba(0, 0, 0, 0.52)) !important;
   transform: translateY(-2px);
 }
 
@@ -186,13 +169,11 @@ html[data-theme="light"] .site-shell .liquid-glass-page[data-lg-section="legal"]
   .legal-callout,
   .legal-back-link
 ) {
-  background: rgba(255, 255, 255, 0.72) !important;
-  -webkit-backdrop-filter: blur(14px) saturate(125%) !important;
-  backdrop-filter: blur(14px) saturate(125%) !important;
-  border-color: rgba(168, 164, 158, 0.36) !important;
-  box-shadow:
-    0 8px 20px rgba(28, 26, 24, 0.045),
-    inset 0 1px 0 rgba(255, 255, 255, 0.88) !important;
+  background: var(--lg-sys-glass-card, rgba(255, 255, 255, 0.56)) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(140%) !important;
+  backdrop-filter: blur(18px) saturate(140%) !important;
+  border-color: var(--lg-sys-border, rgba(148, 144, 138, 0.28)) !important;
+  box-shadow: var(--lg-sys-shadow-card, 0 8px 20px rgba(28, 26, 24, 0.045)), var(--lg-sys-specular, inset 0 1px 0 rgba(255, 255, 255, 0.88)) !important;
 }
 
 html[data-theme="dark"] .site-shell .liquid-glass-page[data-lg-section="legal"] :is(
@@ -200,21 +181,19 @@ html[data-theme="dark"] .site-shell .liquid-glass-page[data-lg-section="legal"] 
   .legal-callout,
   .legal-back-link
 ) {
-  background: rgba(16, 16, 19, 0.76) !important;
-  -webkit-backdrop-filter: blur(14px) saturate(125%) !important;
-  backdrop-filter: blur(14px) saturate(125%) !important;
-  border-color: rgba(255, 255, 255, 0.11) !important;
-  box-shadow:
-    0 10px 24px rgba(0, 0, 0, 0.42),
-    inset 0 1px 0 rgba(255, 248, 232, 0.10) !important;
+  background: var(--lg-sys-glass-card, rgba(22, 22, 27, 0.54)) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(140%) !important;
+  backdrop-filter: blur(18px) saturate(140%) !important;
+  border-color: var(--lg-sys-border, rgba(255, 255, 255, 0.12)) !important;
+  box-shadow: var(--lg-sys-shadow-card, 0 10px 24px rgba(0, 0, 0, 0.42)), var(--lg-sys-specular, inset 0 1px 0 rgba(255, 248, 232, 0.14)) !important;
 }
 
 html[data-theme="light"] .site-shell .liquid-glass-page[data-lg-section="legal"] .legal-back-link:hover {
-  border-color: rgba(196, 164, 102, 0.68) !important;
-  background: rgba(255, 255, 255, 0.90) !important;
+  border-color: var(--lg-sys-border-champagne, rgba(178, 144, 78, 0.68)) !important;
+  background: var(--lg-sys-glass-hover, rgba(255, 255, 255, 0.84)) !important;
 }
 
 html[data-theme="dark"] .site-shell .liquid-glass-page[data-lg-section="legal"] .legal-back-link:hover {
-  border-color: rgba(200, 169, 107, 0.62) !important;
-  background: rgba(30, 29, 32, 0.88) !important;
+  border-color: var(--lg-sys-border-champagne, rgba(212, 180, 114, 0.62)) !important;
+  background: var(--lg-sys-glass-hover, rgba(40, 39, 46, 0.72)) !important;
 }
