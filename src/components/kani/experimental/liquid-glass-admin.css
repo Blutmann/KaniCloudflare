@@ -161,6 +161,46 @@ body[data-lg-admin="true"] .lg-admin-shell {
   padding-top: 16px;
   padding-bottom: 64px;
   color: var(--lga-text);
+  overflow-x: clip;
+}
+
+/* Header Admin — Badge de notificaciones integrado al botón */
+html[data-theme] body[data-lg-admin="true"] .site-header .notification-trigger {
+  position: relative !important;
+  overflow: visible !important;
+  padding: 0 !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .site-header .notification-count {
+  position: absolute !important;
+  top: 3px !important;
+  right: 3px !important;
+  min-width: 17px !important;
+  height: 17px !important;
+  padding-inline: 4px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 999px !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+  z-index: 2 !important;
+  pointer-events: none !important;
+}
+
+html[data-theme="light"] body[data-lg-admin="true"] .site-header .notification-count {
+  background: rgba(178, 144, 78, 0.94) !important;
+  color: #ffffff !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.92) !important;
+  box-shadow: 0 2px 6px rgba(24, 22, 20, 0.18) !important;
+}
+
+html[data-theme="dark"] body[data-lg-admin="true"] .site-header .notification-count {
+  background: rgba(228, 201, 143, 0.95) !important;
+  color: #161513 !important;
+  border: 1.5px solid rgba(22, 22, 27, 0.92) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45) !important;
 }
 
 html[data-theme] body[data-lg-admin="true"] :is(
@@ -307,14 +347,58 @@ body[data-lg-admin="true"] .lg-admin-nav-label {
 }
 
 @media (max-width: 767px) {
+  body[data-lg-admin="true"] .v2-navigation {
+    position: relative;
+  }
+
+  body[data-lg-admin="true"] .v2-navigation[data-scroll-left="true"]::before,
+  body[data-lg-admin="true"] .v2-navigation[data-scroll-right="true"]::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    bottom: 2px;
+    width: 24px;
+    pointer-events: none;
+    z-index: 3;
+    border-radius: 14px;
+  }
+
+  html[data-theme="light"] body[data-lg-admin="true"] .v2-navigation[data-scroll-left="true"]::before {
+    left: 1px;
+    background: linear-gradient(90deg, rgba(240, 238, 234, 0.88) 0%, rgba(240, 238, 234, 0) 100%);
+  }
+
+  html[data-theme="light"] body[data-lg-admin="true"] .v2-navigation[data-scroll-right="true"]::after {
+    right: 1px;
+    background: linear-gradient(270deg, rgba(240, 238, 234, 0.88) 0%, rgba(240, 238, 234, 0) 100%);
+  }
+
+  html[data-theme="dark"] body[data-lg-admin="true"] .v2-navigation[data-scroll-left="true"]::before {
+    left: 1px;
+    background: linear-gradient(90deg, rgba(18, 18, 22, 0.88) 0%, rgba(18, 18, 22, 0) 100%);
+  }
+
+  html[data-theme="dark"] body[data-lg-admin="true"] .v2-navigation[data-scroll-right="true"]::after {
+    right: 1px;
+    background: linear-gradient(270deg, rgba(18, 18, 22, 0.88) 0%, rgba(18, 18, 22, 0) 100%);
+  }
+
   body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav {
+    display: flex !important;
+    justify-content: flex-start !important;
     padding: 5px !important;
     border-radius: 16px !important;
+    scroll-padding-inline: 8px;
+    touch-action: pan-x;
+    overscroll-behavior-x: contain;
   }
 
   body[data-lg-admin="true"] .v2-navigation .admin-section-nav-items {
+    display: inline-flex !important;
+    flex-shrink: 0 !important;
     gap: 4px !important;
     width: max-content !important;
+    min-width: max-content !important;
   }
 
   body[data-lg-admin="true"] .v2-navigation .admin-section-nav-link {
@@ -732,11 +816,34 @@ html[data-theme] body[data-lg-admin="true"] .v2-metrics-four {
 @media (max-width: 767px) {
   html[data-theme] body[data-lg-admin="true"] :is(.v2-metrics, .v2-metrics-four, .v2-insights-page .v2-metrics-four) {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 12px !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-metric {
+    padding: 13px 13px !important;
+    margin: 0 !important;
+  }
+
+  html[data-theme="light"] body[data-lg-admin="true"] .v2-metric {
+    box-shadow: 0 4px 12px rgba(24, 22, 20, 0.05), var(--lga-specular) !important;
+  }
+
+  html[data-theme="dark"] body[data-lg-admin="true"] .v2-metric {
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28), var(--lga-specular) !important;
+  }
+}
+
+@media (max-width: 359px) {
+  html[data-theme] body[data-lg-admin="true"] :is(.v2-metrics, .v2-metrics-four, .v2-insights-page .v2-metrics-four) {
     gap: 10px !important;
   }
 
   html[data-theme] body[data-lg-admin="true"] .v2-metric {
-    padding: 12px 13px !important;
+    padding: 11px 10px !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-metric strong {
+    font-size: 18px !important;
   }
 }
 

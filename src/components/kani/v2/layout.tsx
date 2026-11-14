@@ -148,20 +148,43 @@ function V2Shell({ basePath, liquidGlass = false }: { basePath: string; liquidGl
         : "turnos"
       : section;
 
+  const navScrollRef = useRef<HTMLElement>(null);
   const navItemsRef = useRef<HTMLDivElement>(null);
+  const [navCue, setNavCue] = useState<{ left: boolean; right: boolean }>({ left: false, right: false });
 
   useEffect(() => {
     if (!liquidGlass || typeof window === "undefined") return;
-    const container = navItemsRef.current;
-    if (!container) return;
-    const activeEl = container.querySelector<HTMLElement>(`[data-nav-slug="${activeSlug}"]`);
-    if (!activeEl || typeof activeEl.scrollIntoView !== "function") return;
-    const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
-    activeEl.scrollIntoView({
-      behavior: reduced ? "auto" : "smooth",
-      block: "nearest",
-      inline: "center",
-    });
+    const navEl = navScrollRef.current;
+    if (!navEl) return;
+
+    const updateCue = () => {
+      const maxScroll = Math.max(0, navEl.scrollWidth - navEl.clientWidth);
+      setNavCue({
+        left: navEl.scrollLeft > 4,
+        right: maxScroll > 4 && navEl.scrollLeft < maxScroll - 4,
+      });
+    };
+
+    const activeEl = navEl.querySelector<HTMLElement>(`[data-nav-slug="${activeSlug}"]`);
+    if (activeEl && navEl.scrollWidth > navEl.clientWidth + 2) {
+      const maxScroll = navEl.scrollWidth - navEl.clientWidth;
+      const desiredLeft = activeEl.offsetLeft - (navEl.clientWidth - activeEl.offsetWidth) / 2;
+      const targetLeft = Math.max(0, Math.min(maxScroll, desiredLeft));
+      const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+      if (typeof navEl.scrollTo === "function") {
+        navEl.scrollTo({ left: targetLeft, behavior: reduced ? "auto" : "smooth" });
+      } else {
+        navEl.scrollLeft = targetLeft;
+      }
+    }
+
+    updateCue();
+    navEl.addEventListener("scroll", updateCue, { passive: true });
+    window.addEventListener("resize", updateCue);
+    return () => {
+      navEl.removeEventListener("scroll", updateCue);
+      window.removeEventListener("resize", updateCue);
+    };
   }, [liquidGlass, activeSlug]);
 
   useEffect(() => {
@@ -174,7 +197,7 @@ function V2Shell({ basePath, liquidGlass = false }: { basePath: string; liquidGl
   }, []);
 
   const navContent = (
-    <nav className="admin-section-nav v2-nav" aria-label="Administración">
+    <nav className="admin-section-nav v2-nav" ref={navScrollRef} aria-label="Administración">
       <div className="admin-section-nav-items" ref={navItemsRef}>
         {sectionDefs
           .filter(({ slug }) => mayAccessStaffSection(profile, slug) && (profile.role === 'ADMIN' || slug !== 'inicio'))
@@ -232,7 +255,11 @@ function V2Shell({ basePath, liquidGlass = false }: { basePath: string; liquidGl
       className={`site-container v2-shell ${liquidGlass ? "lg-admin-shell" : ""}`.trim()}
       data-lg-admin={liquidGlass ? "true" : undefined}
     >
-      <header className="v2-navigation">
+      <header
+        className="v2-navigation"
+        data-scroll-left={liquidGlass && navCue.left ? "true" : undefined}
+        data-scroll-right={liquidGlass && navCue.right ? "true" : undefined}
+      >
         {liquidGlass ? <MotionConfig reducedMotion="user">{navContent}</MotionConfig> : navContent}
       </header>
       <div className="v2-workspace">
