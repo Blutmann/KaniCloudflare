@@ -6,137 +6,53 @@ export type AdminActivityEvent = Tables<'admin_activity_notifications'>;
 const activityFields =
   'id, event_type, actor_user_id, actor_display_name, barber_id, appointment_id, availability_slot_id, barber_name, client_name, event_date, event_time, created_at, read_at';
 
-// Keys for persistent browser storage
-const DISMISSED_STORAGE_KEY = 'kani_admin_activity_dismissed_v1';
-const READ_STORAGE_KEY = 'kani_admin_activity_read_v1';
-
-// In-memory fallbacks if localStorage is unavailable
-const memoryDismissed = new Set<string>();
-const memoryRead = new Map<string, string | null>();
-
 /**
- * Resetea el almacenamiento en memoria y localStorage (usado en tests).
+ * Conservado solo por compatibilidad con tests existentes; el estado de notificaciones
+ * no utiliza localStorage ni memoria global compartida como fuente de verdad.
  */
 export function _resetNotificationStorageForTesting(): void {
-  memoryDismissed.clear();
-  memoryRead.clear();
-  if (typeof window !== 'undefined' && window.localStorage) {
-    try {
-      window.localStorage.removeItem(DISMISSED_STORAGE_KEY);
-      window.localStorage.removeItem(READ_STORAGE_KEY);
-    } catch {}
+  // No-op: la fuente de verdad es exclusivamente la base de datos por usuario autenticado.
+}
+
+function dedupeActivityEvents(events: AdminActivityEvent[]): AdminActivityEvent[] {
+  const seen = new Set<string>();
+  const result: AdminActivityEvent[] = [];
+  for (const event of events) {
+    if (!event?.id || seen.has(event.id)) continue;
+    seen.add(event.id);
+    result.push(event);
+  }
+  return result;
+}
+
+async function resolveAuthenticatedUserId(): Promise<string | undefined> {
+  try {
+    const { data, error } = await supabase.auth.getUser();
+    if (error) return undefined;
+    return data?.user?.id;
+  } catch {
+    return undefined;
   }
 }
 
-function getDismissedSet(userId?: string): Set<string> {
-  const set = new Set<string>(memoryDismissed);
-  if (typeof window !== 'undefined' && window.localStorage) {
-    try {
-      const rawGlobal = window.localStorage.getItem(DISMISSED_STORAGE_KEY);
-      if (rawGlobal) {
-        const parsed = JSON.parse(rawGlobal);
-        if (Array.isArray(parsed)) {
-          parsed.forEach(id => typeof id === 'string' && set.add(id));
-        }
-      }
-      if (userId) {
-        const rawUser = window.localStorage.getItem(`${DISMISSED_STORAGE_KEY}_${userId}`);
-        if (rawUser) {
-          const parsed = JSON.parse(rawUser);
-          if (Array.isArray(parsed)) {
-            parsed.forEach(id => typeof id === 'string' && set.add(id));
-          }
-        }
-      }
-    } catch {}
+async function requireAuthenticatedUserId(): Promise<string> {
+  const userId = await resolveAuthenticatedUserId();
+  if (!userId) {
+    throw new Error('Tu sesión expiró. Volvé a iniciar sesión para actualizar las notificaciones.');
   }
-  return set;
-}
-
-function addDismissedIds(ids: string[], userId?: string): void {
-  ids.forEach(id => memoryDismissed.add(id));
-  if (typeof window !== 'undefined' && window.localStorage) {
-    try {
-      const current = getDismissedSet(userId);
-      ids.forEach(id => current.add(id));
-      const serialized = JSON.stringify([...current]);
-      window.localStorage.setItem(DISMISSED_STORAGE_KEY, serialized);
-      if (userId) {
-        window.localStorage.setItem(`${DISMISSED_STORAGE_KEY}_${userId}`, serialized);
-      }
-    } catch {}
-  }
-}
-
-function getReadMap(userId?: string): Map<string, string | null> {
-  const map = new Map<string, string | null>(memoryRead);
-  if (typeof window !== 'undefined' && window.localStorage) {
-    try {
-      const rawGlobal = window.localStorage.getItem(READ_STORAGE_KEY);
-      if (rawGlobal) {
-        const parsed = JSON.parse(rawGlobal);
-        if (typeof parsed === 'object' && parsed !== null) {
-          Object.entries(parsed).forEach(([id, val]) =>
-            map.set(id, typeof val === 'string' ? val : null),
-          );
-        }
-      }
-      if (userId) {
-        const rawUser = window.localStorage.getItem(`${READ_STORAGE_KEY}_${userId}`);
-        if (rawUser) {
-          const parsed = JSON.parse(rawUser);
-          if (typeof parsed === 'object' && parsed !== null) {
-            Object.entries(parsed).forEach(([id, val]) =>
-              map.set(id, typeof val === 'string' ? val : null),
-            );
-          }
-        }
-      }
-    } catch {}
-  }
-  return map;
-}
-
-function setReadState(id: string, readAt: string | null, userId?: string): void {
-  memoryRead.set(id, readAt);
-  if (typeof window !== 'undefined' && window.localStorage) {
-    try {
-      const current = getReadMap(userId);
-      current.set(id, readAt);
-      const serialized = JSON.stringify(Object.fromEntries(current.entries()));
-      window.localStorage.setItem(READ_STORAGE_KEY, serialized);
-      if (userId) {
-        window.localStorage.setItem(`${READ_STORAGE_KEY}_${userId}`, serialized);
-      }
-    } catch {}
-  }
-}
-
-function setMultipleReadStates(ids: string[], readAt: string | null, userId?: string): void {
-  ids.forEach(id => memoryRead.set(id, readAt));
-  if (typeof window !== 'undefined' && window.localStorage) {
-    try {
-      const current = getReadMap(userId);
-      ids.forEach(id => current.set(id, readAt));
-      const serialized = JSON.stringify(Object.fromEntries(current.entries()));
-      window.localStorage.setItem(READ_STORAGE_KEY, serialized);
-      if (userId) {
-        window.localStorage.setItem(`${READ_STORAGE_KEY}_${userId}`, serialized);
-      }
-    } catch {}
-  }
+  return userId;
 }
 
 /**
- * Detecta si un error corresponde a una tabla/función inexistente, fallo de caché de esquema de PostgREST
- * o rechazo de privilegios a nivel de tabla sobre las entidades de notificaciones de actividad.
+ * Detecta si un error corresponde a una función/tabla inexistente o desincronización
+ * de schema cache de PostgREST para habilitar fallback controlado sobre `admin_activity_user_state`.
  */
 export function isTableMissingOrSchemaCacheError(error: unknown): boolean {
   if (!error) return false;
   if (typeof error === 'object' && error !== null) {
     const code = (error as any).code;
     const msg = (error as any).message || (error as any).error_description || (error as any).details || '';
-    if (code === 'PGRST205' || code === 'PGRST202' || code === '42P01' || code === '42883' || code === '42501') return true;
+    if (code === 'PGRST205' || code === 'PGRST202' || code === '42P01' || code === '42883') return true;
     if (typeof msg === 'string') {
       const lower = msg.toLowerCase();
       if (
@@ -145,12 +61,7 @@ export function isTableMissingOrSchemaCacheError(error: unknown): boolean {
         lower.includes('could not find table') ||
         lower.includes('could not find the function') ||
         lower.includes('could not find function') ||
-        lower.includes('function does not exist') ||
-        lower.includes('permission denied for table admin_activity_notifications') ||
-        lower.includes('permission denied for table "admin_activity_notifications"') ||
-        lower.includes('permission denied for table') ||
-        (lower.includes('admin_activity_user_state') &&
-          (lower.includes('does not exist') || lower.includes('not found') || lower.includes('cache') || lower.includes('permission denied')))
+        lower.includes('function does not exist')
       ) {
         return true;
       }
@@ -164,12 +75,7 @@ export function isTableMissingOrSchemaCacheError(error: unknown): boolean {
       lower.includes('could not find table') ||
       lower.includes('could not find the function') ||
       lower.includes('could not find function') ||
-      lower.includes('function does not exist') ||
-      lower.includes('permission denied for table admin_activity_notifications') ||
-      lower.includes('permission denied for table "admin_activity_notifications"') ||
-      lower.includes('permission denied for table') ||
-      (lower.includes('admin_activity_user_state') &&
-        (lower.includes('does not exist') || lower.includes('not found') || lower.includes('cache') || lower.includes('permission denied')))
+      lower.includes('function does not exist')
     ) {
       return true;
     }
@@ -179,7 +85,7 @@ export function isTableMissingOrSchemaCacheError(error: unknown): boolean {
 
 /**
  * Extrae un mensaje de error legible a partir de un error desconocido de Supabase o JavaScript.
- * Sanitiza los mensajes técnicos internos de caché de esquema y permisos de tabla para presentar texto claro y comprensible.
+ * Sanitiza los mensajes técnicos internos de caché de esquema y nombres de tabla.
  */
 export function extractErrorMessage(error: unknown, fallback = 'Ocurrió un error inesperado.'): string {
   if (!error) return fallback;
@@ -202,7 +108,6 @@ export function extractErrorMessage(error: unknown, fallback = 'Ocurrió un erro
 
   if (!raw) return fallback;
 
-  // Sanitizar mensajes técnicos de PostgreSQL / PostgREST para no exponer detalles de esquema ni nombres de tabla
   if (
     raw.includes('admin_activity_user_state') ||
     raw.includes('admin_activity_notifications') ||
@@ -217,66 +122,50 @@ export function extractErrorMessage(error: unknown, fallback = 'Ocurrió un erro
 }
 
 /**
- * Consulta las novedades y notificaciones administrativas.
- * Prioriza la función RPC `read_staff_activity_notifications` que aplica
- * el alcance por rol y filtra descartes.
- * En fallback, consulta `admin_activity_notifications` y aplica los descartes y estados
- * de lectura persistidos.
+ * Consulta las novedades y notificaciones del usuario autenticado desde Supabase.
+ * Cada usuario recibe únicamente sus eventos autorizados, excluyendo sus descartes
+ * individuales y aplicando su propio estado de lectura (`read_at`).
  */
-export async function readAdminActivityNotifications(knownUserId?: string): Promise<AdminActivityEvent[]> {
-  let currentUserId: string | undefined = knownUserId;
+export async function readAdminActivityNotifications(_knownUserId?: string): Promise<AdminActivityEvent[]> {
+  // 1. Priorizar RPC oficial `read_staff_activity_notifications` (aplica auth.uid() y admin_activity_user_state)
+  const { data: rpcData, error: rpcError } = await supabase.rpc('read_staff_activity_notifications');
+  if (!rpcError && Array.isArray(rpcData)) {
+    return dedupeActivityEvents(rpcData as AdminActivityEvent[]);
+  }
+
+  if (rpcError && !isTableMissingOrSchemaCacheError(rpcError)) {
+    throw new Error(extractErrorMessage(rpcError, 'No se pudieron cargar las notificaciones.'));
+  }
+
+  // 2. Fallback controlado únicamente si el RPC aún no está disponible en schema cache
+  const currentUserId = await resolveAuthenticatedUserId();
   if (!currentUserId) {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      currentUserId = user?.id;
-    } catch {}
+    return [];
   }
 
-  const persistentDismissed = getDismissedSet(currentUserId);
-  const persistentReadMap = getReadMap(currentUserId);
-
-  // 1. Intentar RPC oficial si existe en base de datos
-  try {
-    const { data, error } = await supabase.rpc('read_staff_activity_notifications');
-    if (!error && Array.isArray(data)) {
-      return (data as AdminActivityEvent[])
-        .filter(event => !persistentDismissed.has(event.id))
-        .map(event => {
-          const customReadAt = persistentReadMap.get(event.id);
-          return customReadAt !== undefined ? { ...event, read_at: customReadAt } : event;
-        });
-    }
-  } catch {
-    // Continuar a fallback controlado
-  }
-
-  // 2. Fallback: consultar descartes y estado en admin_activity_user_state si la tabla existe
   const dbDismissedIds = new Set<string>();
   const dbUserReadMap = new Map<string, string | null>();
 
-  if (currentUserId) {
-    try {
-      const { data: userState, error: userStateErr } = await supabase
-        .from('admin_activity_user_state' as any)
-        .select('notification_id, dismissed_at, read_at')
-        .eq('user_id', currentUserId);
+  const { data: userState, error: userStateErr } = await supabase
+    .from('admin_activity_user_state' as any)
+    .select('notification_id, dismissed_at, read_at')
+    .eq('user_id', currentUserId);
 
-      if (!userStateErr && userState && Array.isArray(userState)) {
-        for (const row of userState) {
-          if (row.dismissed_at) {
-            dbDismissedIds.add(row.notification_id);
-          }
-          if (row.read_at !== undefined) {
-            dbUserReadMap.set(row.notification_id, row.read_at);
-          }
-        }
+  if (userStateErr) {
+    throw new Error(extractErrorMessage(userStateErr, 'No se pudo consultar el estado de tus notificaciones.'));
+  }
+
+  if (Array.isArray(userState)) {
+    for (const row of userState) {
+      if (row.dismissed_at) {
+        dbDismissedIds.add(row.notification_id);
       }
-    } catch {
-      // Si la tabla no existe en la base remota, continuar con lectura directa
+      if (row.read_at !== undefined) {
+        dbUserReadMap.set(row.notification_id, row.read_at);
+      }
     }
   }
 
-  // 3. Consulta directa sobre admin_activity_notifications (tiene GRANT SELECT para authenticated)
   const { data, error } = await supabase
     .from('admin_activity_notifications')
     .select(activityFields)
@@ -284,545 +173,233 @@ export async function readAdminActivityNotifications(knownUserId?: string): Prom
     .limit(50);
 
   if (error) {
-    const msg = extractErrorMessage(error);
-    if (msg.includes('permission denied')) {
-      console.warn('[KANI activity] Aviso de permisos de lectura en tabla:', msg);
-      return [];
-    }
-    throw error;
+    throw new Error(extractErrorMessage(error, 'No se pudieron cargar las notificaciones.'));
   }
 
-  const rawList = (data ?? []) as AdminActivityEvent[];
+  const rawList = dedupeActivityEvents((data ?? []) as AdminActivityEvent[]);
   return rawList
-    .filter(event => !persistentDismissed.has(event.id) && !dbDismissedIds.has(event.id))
+    .filter(event => !dbDismissedIds.has(event.id))
     .slice(0, 40)
-    .map(event => {
-      const persistentReadAt = persistentReadMap.get(event.id);
-      if (persistentReadAt !== undefined) {
-        return { ...event, read_at: persistentReadAt };
-      }
-      const dbReadAt = dbUserReadMap.get(event.id);
-      if (dbReadAt !== undefined) {
-        return { ...event, read_at: dbReadAt };
-      }
-      return event;
-    });
+    .map(event => ({
+      ...event,
+      read_at: dbUserReadMap.get(event.id) ?? null,
+    }));
 }
 
 /**
- * Marca o desmarca una notificación individual como leída.
- * Persiste de forma inmediata y robusta el estado sin arrojar errores de permisos.
+ * Marca o desmarca una notificación individual como leída/no leída exclusivamente
+ * para el usuario autenticado actual. Nunca altera los estados de otros usuarios.
  */
 export async function setAdminActivityNotificationRead(id: string, readAt: string | null): Promise<void> {
-  let currentUserId: string | undefined;
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    currentUserId = user?.id;
-  } catch {}
+  const { error: rpcError } = await supabase.rpc('set_staff_activity_notification_read', {
+    p_notification_id: id,
+    p_read_at: readAt,
+  });
 
-  // 1. Persistir inmediatamente en almacenamiento del navegador
-  setReadState(id, readAt, currentUserId);
+  if (!rpcError) return;
 
-  let updated = false;
-
-  // 2. Intentar RPC si está disponible
-  try {
-    const { error } = await supabase.rpc('set_staff_activity_notification_read', {
-      p_notification_id: id,
-      p_read_at: readAt,
-    });
-    if (!error) updated = true;
-  } catch {}
-
-  // 3. Intentar UPDATE directo en admin_activity_notifications
-  if (!updated) {
-    try {
-      const { error } = await supabase
-        .from('admin_activity_notifications')
-        .update({ read_at: readAt })
-        .eq('id', id);
-      if (!error) updated = true;
-    } catch {}
+  if (!isTableMissingOrSchemaCacheError(rpcError)) {
+    throw new Error(extractErrorMessage(rpcError, 'No se pudo actualizar el estado de lectura.'));
   }
 
-  // 4. Intentar persistir en admin_activity_user_state si existe
-  if (currentUserId) {
-    try {
-      const { error } = await supabase
-        .from('admin_activity_user_state' as any)
-        .upsert({
-          notification_id: id,
-          user_id: currentUserId,
-          read_at: readAt,
-          updated_at: new Date().toISOString(),
-        });
-      if (!error) updated = true;
-    } catch {}
+  const currentUserId = await requireAuthenticatedUserId();
+  const now = new Date().toISOString();
+  const { error: upsertErr } = await supabase
+    .from('admin_activity_user_state' as any)
+    .upsert(
+      {
+        notification_id: id,
+        user_id: currentUserId,
+        read_at: readAt,
+        updated_at: now,
+      },
+      { onConflict: 'notification_id,user_id' },
+    );
+
+  if (upsertErr) {
+    throw new Error(extractErrorMessage(upsertErr, 'No se pudo guardar el estado de lectura.'));
   }
 }
 
 /**
- * Marca todas las notificaciones como leídas.
- * Acepta opcionalmente los IDs de las notificaciones visibles para asegurar
- * persistencia inmediata de todas ellas.
+ * Marca como leídas todas las notificaciones visibles del usuario autenticado actual.
+ * Nunca modifica el estado de lectura de otros usuarios.
  */
 export async function markAllAdminActivityNotificationsRead(ids?: string[]): Promise<void> {
-  let currentUserId: string | undefined;
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    currentUserId = user?.id;
-  } catch {}
+  const { error: rpcError } = await supabase.rpc('mark_all_staff_activity_notifications_read');
 
+  if (!rpcError) return;
+
+  if (!isTableMissingOrSchemaCacheError(rpcError)) {
+    throw new Error(extractErrorMessage(rpcError, 'No se pudieron marcar todas las notificaciones como leídas.'));
+  }
+
+  const currentUserId = await requireAuthenticatedUserId();
   const now = new Date().toISOString();
   let targetIds = ids && ids.length > 0 ? [...ids] : [];
 
   if (targetIds.length === 0) {
-    try {
-      const { data: notifs } = await supabase
-        .from('admin_activity_notifications')
-        .select('id')
-        .limit(50);
-      if (notifs && notifs.length > 0) {
-        targetIds = notifs.map(n => n.id);
-      }
-    } catch {}
+    const { data: notifs, error: listErr } = await supabase
+      .from('admin_activity_notifications')
+      .select('id')
+      .limit(50);
+    if (listErr) {
+      throw new Error(extractErrorMessage(listErr, 'No se pudieron obtener las notificaciones para marcar como leídas.'));
+    }
+    if (notifs && notifs.length > 0) {
+      targetIds = notifs.map(n => n.id);
+    }
   }
 
-  // 1. Persistir inmediatamente en almacenamiento
-  if (targetIds.length > 0) {
-    setMultipleReadStates(targetIds, now, currentUserId);
-  }
+  if (targetIds.length === 0) return;
 
-  let updated = false;
+  const rows = targetIds.map(id => ({
+    notification_id: id,
+    user_id: currentUserId,
+    read_at: now,
+    updated_at: now,
+  }));
 
-  // 2. Intentar RPC
-  try {
-    const { error } = await supabase.rpc('mark_all_staff_activity_notifications_read');
-    if (!error) updated = true;
-  } catch {}
+  const { error: upsertErr } = await supabase
+    .from('admin_activity_user_state' as any)
+    .upsert(rows, { onConflict: 'notification_id,user_id' });
 
-  // 3. Intentar UPDATE masivo en tabla
-  if (!updated) {
-    try {
-      const { error } = await supabase
-        .from('admin_activity_notifications')
-        .update({ read_at: now })
-        .is('read_at', null);
-      if (!error) updated = true;
-    } catch {}
-  }
-
-  // 4. Intentar admin_activity_user_state
-  if (currentUserId) {
-    try {
-      const rows = targetIds.map(id => ({
-        notification_id: id,
-        user_id: currentUserId!,
-        read_at: now,
-        updated_at: now,
-      }));
-      if (rows.length > 0) {
-        await supabase.from('admin_activity_user_state' as any).upsert(rows);
-      }
-    } catch {}
+  if (upsertErr) {
+    throw new Error(extractErrorMessage(upsertErr, 'No se pudieron marcar las notificaciones como leídas.'));
   }
 }
 
 /**
- * Marca todas las notificaciones como no leídas (bulk unread).
+ * Marca como no leídas todas las notificaciones visibles del usuario autenticado actual.
+ * Nunca modifica el estado de lectura de otros usuarios.
  */
 export async function markAllAdminActivityNotificationsUnread(ids?: string[]): Promise<void> {
-  let currentUserId: string | undefined;
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    currentUserId = user?.id;
-  } catch {}
+  const { error: rpcError } = await supabase.rpc('mark_all_staff_activity_notifications_unread');
 
-  let targetIds = ids && ids.length > 0 ? [...ids] : [];
+  if (!rpcError) return;
 
-  if (targetIds.length === 0) {
-    try {
-      const { data: notifs } = await supabase
-        .from('admin_activity_notifications')
-        .select('id')
-        .limit(50);
-      if (notifs && notifs.length > 0) {
-        targetIds = notifs.map(n => n.id);
-      }
-    } catch {}
+  if (!isTableMissingOrSchemaCacheError(rpcError)) {
+    throw new Error(extractErrorMessage(rpcError, 'No se pudieron marcar todas las notificaciones como no leídas.'));
   }
 
-  // 1. Persistir inmediatamente en almacenamiento
-  if (targetIds.length > 0) {
-    setMultipleReadStates(targetIds, null, currentUserId);
+  const currentUserId = await requireAuthenticatedUserId();
+  const now = new Date().toISOString();
+
+  let query = supabase
+    .from('admin_activity_user_state' as any)
+    .update({ read_at: null, updated_at: now })
+    .eq('user_id', currentUserId);
+
+  if (ids && ids.length > 0) {
+    query = query.in('notification_id', ids);
   }
 
-  let updated = false;
-
-  // 2. Intentar RPC
-  try {
-    const { error } = await supabase.rpc('mark_all_staff_activity_notifications_unread');
-    if (!error) updated = true;
-  } catch {}
-
-  // 3. Intentar UPDATE masivo en tabla
-  if (!updated) {
-    try {
-      const { error } = await supabase
-        .from('admin_activity_notifications')
-        .update({ read_at: null })
-        .neq('id', '00000000-0000-0000-0000-000000000000');
-      if (!error) updated = true;
-    } catch {}
-  }
-
-  // 4. Intentar admin_activity_user_state
-  if (currentUserId) {
-    try {
-      await supabase
-        .from('admin_activity_user_state' as any)
-        .update({ read_at: null, updated_at: new Date().toISOString() })
-        .eq('user_id', currentUserId);
-    } catch {}
+  const { error: updateErr } = await query;
+  if (updateErr) {
+    throw new Error(extractErrorMessage(updateErr, 'No se pudieron marcar las notificaciones como no leídas.'));
   }
 }
 
 /**
- * Borra una notificación individual globalmente (para ADMIN).
- * Intenta eliminarla de forma persistente en la base de datos (RPC o DELETE directo en tabla).
- * Si la base de datos falla por error de schema cache o tabla faltante, recurre al almacenamiento
- * persistente local para no bloquear la operación y garantizar que no vuelva a aparecer al recargar.
- */
-export async function deleteAdminActivityNotificationGlobal(id: string): Promise<void> {
-  let currentUserId: string | undefined;
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    currentUserId = user?.id;
-  } catch {}
-
-  // 1. Inmediatamente registrar en persistencia local para garantizar que la notificación
-  // desaparezca de la vista y no vuelva a aparecer al recargar la página ni tras reiniciar sesión
-  addDismissedIds([id], currentUserId);
-
-  let persisted = false;
-  let lastError: unknown = null;
-
-  // 2. Intentar RPC oficial
-  try {
-    const { error } = await supabase.rpc('delete_staff_activity_notification_global', {
-      p_notification_id: id,
-    });
-    if (!error) {
-      persisted = true;
-    } else {
-      lastError = error;
-    }
-  } catch (err) {
-    lastError = err;
-  }
-
-  // 3. Intentar DELETE directo en tabla admin_activity_notifications
-  if (!persisted) {
-    try {
-      const deleteOp = supabase
-        .from('admin_activity_notifications')
-        .delete()
-        .eq('id', id);
-      const res = await deleteOp;
-      if (!res?.error) {
-        persisted = true;
-      } else {
-        lastError = res.error;
-      }
-    } catch (err) {
-      lastError = err;
-    }
-  }
-
-  // 4. Fallback de persistencia en admin_activity_user_state si existe la tabla
-  if (!persisted && currentUserId) {
-    try {
-      const { error } = await supabase
-        .from('admin_activity_user_state' as any)
-        .upsert({
-          notification_id: id,
-          user_id: currentUserId,
-          dismissed_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        });
-      if (!error) {
-        persisted = true;
-      } else if (!isTableMissingOrSchemaCacheError(error)) {
-        lastError = error;
-      }
-    } catch (err) {
-      if (!isTableMissingOrSchemaCacheError(err)) {
-        lastError = err;
-      }
-    }
-  }
-
-  // 5. Si falló por error de caché de esquema o ausencia de privilegios de tabla en el backend remoto,
-  // el almacenamiento local persistente garantiza la eliminación sin romper la interfaz
-  if (!persisted && (isTableMissingOrSchemaCacheError(lastError) || !lastError)) {
-    persisted = true;
-  }
-
-  // 6. Si falló en todos los medios y no fue un problema de caché ni de permisos de tabla, arrojar error
-  if (!persisted) {
-    throw new Error(
-      extractErrorMessage(lastError, 'No se pudo eliminar la notificación de forma persistente.')
-    );
-  }
-}
-
-/**
- * Elimina una notificación individual de la vista personal (BARBER).
- * Persiste el descarte en la base de datos (o localmente si la tabla no está en el schema cache)
- * y garantiza que no reaparezca al recargar la página.
+ * Elimina (descarta) una notificación individual exclusivamente de la vista del usuario
+ * autenticado actual en Supabase (`admin_activity_user_state`). Nunca elimina para otros usuarios.
  */
 export async function dismissAdminActivityNotificationPersonal(id: string): Promise<void> {
-  let currentUserId: string | undefined;
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    currentUserId = user?.id;
-  } catch {}
+  const { error: rpcError } = await supabase.rpc('dismiss_staff_activity_notification_personal', {
+    p_notification_id: id,
+  });
 
-  // Inmediatamente registrar en persistencia local
-  addDismissedIds([id], currentUserId);
+  if (!rpcError) return;
 
-  let persisted = false;
-  let lastError: unknown = null;
-
-  // 1. Intentar RPC oficial
-  try {
-    const { error } = await supabase.rpc('dismiss_staff_activity_notification_personal', {
-      p_notification_id: id,
-    });
-    if (!error) {
-      persisted = true;
-    } else {
-      lastError = error;
-    }
-  } catch (err) {
-    lastError = err;
+  if (!isTableMissingOrSchemaCacheError(rpcError)) {
+    throw new Error(extractErrorMessage(rpcError, 'No se pudo eliminar la notificación de tu cuenta.'));
   }
 
-  // 2. Intentar user_state
-  if (!persisted && currentUserId) {
-    try {
-      const { error } = await supabase
-        .from('admin_activity_user_state' as any)
-        .upsert({
-          notification_id: id,
-          user_id: currentUserId,
-          dismissed_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        });
-      if (!error) {
-        persisted = true;
-      } else if (!isTableMissingOrSchemaCacheError(error)) {
-        lastError = error;
-      }
-    } catch (err) {
-      if (!isTableMissingOrSchemaCacheError(err)) {
-        lastError = err;
-      }
-    }
-  }
-
-  // 3. Fallback de schema cache / tabla faltante: persistir localmente
-  if (!persisted && (isTableMissingOrSchemaCacheError(lastError) || !lastError)) {
-    persisted = true;
-  }
-
-  if (!persisted) {
-    throw new Error(
-      extractErrorMessage(lastError, 'No se pudo eliminar la notificación de tu vista.')
+  const currentUserId = await requireAuthenticatedUserId();
+  const now = new Date().toISOString();
+  const { error: upsertErr } = await supabase
+    .from('admin_activity_user_state' as any)
+    .upsert(
+      {
+        notification_id: id,
+        user_id: currentUserId,
+        dismissed_at: now,
+        updated_at: now,
+      },
+      { onConflict: 'notification_id,user_id' },
     );
+
+  if (upsertErr) {
+    throw new Error(extractErrorMessage(upsertErr, 'No se pudo eliminar la notificación de tu cuenta.'));
   }
 }
 
 /**
- * Borra todas las notificaciones globalmente (para ADMIN).
- * Utiliza el RPC seguro delete_all_staff_activity_notifications_global con fallback directo
- * en tabla admin_activity_notifications y persistencia local ante errores de schema cache.
+ * Elimina (descarta) todas las notificaciones del usuario autenticado actual en Supabase
+ * (`admin_activity_user_state`). Nunca borra notificaciones de otros usuarios.
+ */
+export async function dismissAllAdminActivityNotificationsPersonal(ids: string[] = []): Promise<number> {
+  const { data, error: rpcError } = await supabase.rpc('dismiss_all_staff_activity_notifications_personal');
+
+  if (!rpcError) {
+    return typeof data === 'number' ? data : ids.length;
+  }
+
+  if (!isTableMissingOrSchemaCacheError(rpcError)) {
+    throw new Error(extractErrorMessage(rpcError, 'No se pudieron eliminar tus notificaciones.'));
+  }
+
+  const currentUserId = await requireAuthenticatedUserId();
+  let targetIds = [...ids];
+
+  if (targetIds.length === 0) {
+    const { data: notifs, error: listErr } = await supabase
+      .from('admin_activity_notifications')
+      .select('id')
+      .limit(100);
+    if (listErr) {
+      throw new Error(extractErrorMessage(listErr, 'No se pudieron listar las notificaciones a eliminar.'));
+    }
+    if (notifs && notifs.length > 0) {
+      targetIds = notifs.map(n => n.id);
+    }
+  }
+
+  if (targetIds.length === 0) return 0;
+
+  const now = new Date().toISOString();
+  const rows = targetIds.map(id => ({
+    notification_id: id,
+    user_id: currentUserId,
+    dismissed_at: now,
+    updated_at: now,
+  }));
+
+  const { error: upsertErr } = await supabase
+    .from('admin_activity_user_state' as any)
+    .upsert(rows, { onConflict: 'notification_id,user_id' });
+
+  if (upsertErr) {
+    throw new Error(extractErrorMessage(upsertErr, 'No se pudieron eliminar tus notificaciones.'));
+  }
+
+  return targetIds.length;
+}
+
+/**
+ * Wrapper seguro de compatibilidad: redirige cualquier invocación heredada hacia el descarte
+ * personal por usuario autenticado para garantizar aislamiento entre cuentas.
+ */
+export async function deleteAdminActivityNotificationGlobal(id: string): Promise<void> {
+  await dismissAdminActivityNotificationPersonal(id);
+}
+
+/**
+ * Wrapper seguro de compatibilidad: redirige cualquier invocación heredada hacia el descarte
+ * masivo personal por usuario autenticado para garantizar aislamiento entre cuentas.
  */
 export async function deleteAllAdminActivityNotificationsGlobal(knownIds: string[] = []): Promise<number> {
-  let currentUserId: string | undefined;
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    currentUserId = user?.id;
-  } catch {}
-
-  let idsToDismiss = [...knownIds];
-  if (idsToDismiss.length === 0) {
-    try {
-      const { data: notifs } = await supabase
-        .from('admin_activity_notifications')
-        .select('id')
-        .limit(100);
-      if (notifs && notifs.length > 0) {
-        idsToDismiss = notifs.map(n => n.id);
-      }
-    } catch {}
-  }
-
-  // 1. Inmediatamente registrar los IDs en la persistencia local para asegurar
-  // que al recargar la página o reiniciar sesión no vuelvan a aparecer
-  if (idsToDismiss.length > 0) {
-    addDismissedIds(idsToDismiss, currentUserId);
-  }
-
-  let persisted = false;
-  let deletedCount = idsToDismiss.length;
-  let lastError: unknown = null;
-
-  // 2. Intentar RPC oficial
-  try {
-    const { data, error } = await supabase.rpc('delete_all_staff_activity_notifications_global');
-    if (!error) {
-      persisted = true;
-      deletedCount = typeof data === 'number' ? data : idsToDismiss.length;
-    } else {
-      lastError = error;
-    }
-  } catch (err) {
-    lastError = err;
-  }
-
-  // 3. Intentar DELETE directo en tabla
-  if (!persisted) {
-    try {
-      let query = supabase.from('admin_activity_notifications').delete();
-      if (idsToDismiss.length > 0) {
-        query = (query as any).in('id', idsToDismiss);
-      } else {
-        query = (query as any).neq('id', '00000000-0000-0000-0000-000000000000');
-      }
-      const res = await query;
-      if (!res?.error) {
-        persisted = true;
-        deletedCount = idsToDismiss.length;
-      } else {
-        lastError = res.error;
-      }
-    } catch (err) {
-      lastError = err;
-    }
-  }
-
-  // 4. Intentar descarte masivo en user_state
-  if (!persisted && currentUserId && idsToDismiss.length > 0) {
-    try {
-      const rows = idsToDismiss.map(id => ({
-        notification_id: id,
-        user_id: currentUserId!,
-        dismissed_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      }));
-      const { error: upsertErr } = await supabase
-        .from('admin_activity_user_state' as any)
-        .upsert(rows);
-      if (!upsertErr) {
-        persisted = true;
-        deletedCount = idsToDismiss.length;
-      } else if (!isTableMissingOrSchemaCacheError(upsertErr)) {
-        lastError = upsertErr;
-      }
-    } catch (err) {
-      if (!isTableMissingOrSchemaCacheError(err)) {
-        lastError = err;
-      }
-    }
-  }
-
-  // 5. Si falló por falta de tabla en schema cache o error de permisos de tabla, persistir localmente
-  if (!persisted && (isTableMissingOrSchemaCacheError(lastError) || !lastError)) {
-    persisted = true;
-    deletedCount = idsToDismiss.length;
-  }
-
-  // 6. Si falló en backend por una causa real ajena a permisos/esquema, arrojar error
-  if (!persisted) {
-    throw new Error(
-      extractErrorMessage(lastError, 'No se pudieron eliminar las notificaciones en el almacenamiento.')
-    );
-  }
-
-  return deletedCount;
-}
-
-/**
- * Descarta todas las notificaciones de la vista del usuario (BARBER).
- * Persiste el descarte en admin_activity_user_state (o localmente ante schema cache) y arroja error si falla.
- */
-export async function dismissAllAdminActivityNotificationsPersonal(ids: string[]): Promise<number> {
-  let currentUserId: string | undefined;
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    currentUserId = user?.id;
-  } catch {}
-
-  // Inmediatamente registrar en persistencia local
-  if (ids.length > 0) {
-    addDismissedIds(ids, currentUserId);
-  }
-
-  let persisted = false;
-  let dismissedCount = ids.length;
-  let lastError: unknown = null;
-
-  try {
-    const { data, error } = await supabase.rpc('dismiss_all_staff_activity_notifications_personal');
-    if (!error) {
-      persisted = true;
-      dismissedCount = typeof data === 'number' ? data : ids.length;
-    } else {
-      lastError = error;
-    }
-  } catch (err) {
-    lastError = err;
-  }
-
-  if (!persisted && currentUserId && ids.length > 0) {
-    try {
-      const rows = ids.map(id => ({
-        notification_id: id,
-        user_id: currentUserId!,
-        dismissed_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      }));
-      const { error: upsertErr } = await supabase
-        .from('admin_activity_user_state' as any)
-        .upsert(rows);
-      if (!upsertErr) {
-        persisted = true;
-        dismissedCount = ids.length;
-      } else if (!isTableMissingOrSchemaCacheError(upsertErr)) {
-        lastError = upsertErr;
-      }
-    } catch (err) {
-      if (!isTableMissingOrSchemaCacheError(err)) {
-        lastError = err;
-      }
-    }
-  }
-
-  // Fallback si la tabla no está en el schema cache: persistir en almacenamiento local
-  if (!persisted && (isTableMissingOrSchemaCacheError(lastError) || !lastError)) {
-    persisted = true;
-    dismissedCount = ids.length;
-  }
-
-  if (!persisted) {
-    if (ids.length === 0) return 0;
-    throw new Error(
-      extractErrorMessage(lastError, 'No se pudieron descartar las notificaciones de tu vista.')
-    );
-  }
-
-  return dismissedCount;
+  return dismissAllAdminActivityNotificationsPersonal(knownIds);
 }
 
 export function notifyActivityChanged() {
