@@ -9342,3 +9342,127 @@ html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation 
     backdrop-filter: none !important;
   }
 }
+
+/* ==============================================================================
+ * LIQUID GLASS V12.38 — HEADER ADAPTATIVO (TRANSPARENTE EN REPOSO / CRISTAL CON SCROLL)
+ * - En reposo: header 100% transparente (sin fondo, borde ni sombra), fondo KANI visible.
+ * - Con scroll: transición suave (~220ms) a cristal esmerilado Light (perla) / Dark (obsidiana).
+ * - Preserva altura, controles individuales, menú desplegable y centro de notificaciones.
+ * ============================================================================== */
+html[data-theme] body.liquid-glass-active .site-shell > .site-header-slot,
+html[data-theme] body[data-lg-admin="true"] .site-shell > .site-header-slot,
+html[data-theme] .site-shell:has(.liquid-glass-header, .liquid-glass-reservation, .liquid-glass-page) > .site-header-slot {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+html[data-theme] body.liquid-glass-active .site-shell > .site-header-slot > header.site-header.liquid-glass-header,
+html[data-theme] body[data-lg-admin="true"] .site-shell > .site-header-slot > header.site-header.liquid-glass-header,
+html[data-theme] .site-shell:has(.liquid-glass-header) > .site-header-slot > header.site-header.liquid-glass-header {
+  isolation: isolate;
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  border-bottom: 1px solid transparent !important;
+  box-shadow: none !important;
+  transition:
+    border-color 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 220ms cubic-bezier(0.22, 1, 0.36, 1) !important;
+}
+
+html[data-theme] body.liquid-glass-active .site-shell > .site-header-slot > header.site-header.liquid-glass-header::before,
+html[data-theme] body[data-lg-admin="true"] .site-shell > .site-header-slot > header.site-header.liquid-glass-header::before,
+html[data-theme] .site-shell:has(.liquid-glass-header) > .site-header-slot > header.site-header.liquid-glass-header::before {
+  content: '' !important;
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: -1 !important;
+  pointer-events: none !important;
+  opacity: 0;
+  transition: opacity 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Estado con scroll — Light Mode (cristal perla esmerilado) */
+html[data-theme="light"] body.liquid-glass-active .site-shell > .site-header-slot > header.site-header.liquid-glass-header.liquid-glass-header--scrolled:not(.menu-open),
+html[data-theme="light"] body[data-lg-admin="true"] .site-shell > .site-header-slot > header.site-header.liquid-glass-header.liquid-glass-header--scrolled:not(.menu-open),
+html[data-theme="light"] .site-shell:has(.liquid-glass-header) > .site-header-slot > header.site-header.liquid-glass-header.liquid-glass-header--scrolled:not(.menu-open) {
+  border-bottom-color: rgba(255, 255, 255, 0.68) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.88),
+    0 8px 22px rgba(24, 22, 20, 0.05) !important;
+}
+
+html[data-theme="light"] body.liquid-glass-active .site-shell > .site-header-slot > header.site-header.liquid-glass-header.liquid-glass-header--scrolled:not(.menu-open)::before,
+html[data-theme="light"] body[data-lg-admin="true"] .site-shell > .site-header-slot > header.site-header.liquid-glass-header.liquid-glass-header--scrolled:not(.menu-open)::before,
+html[data-theme="light"] .site-shell:has(.liquid-glass-header) > .site-header-slot > header.site-header.liquid-glass-header.liquid-glass-header--scrolled:not(.menu-open)::before {
+  opacity: 1;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.56) 0%, rgba(246, 244, 240, 0.38) 100%) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(168%) !important;
+  backdrop-filter: blur(22px) saturate(168%) !important;
+}
+
+/* Estado con scroll — Dark Mode (cristal obsidiana translúcido, cercano al negro) */
+html[data-theme="dark"] body.liquid-glass-active .site-shell > .site-header-slot > header.site-header.liquid-glass-header.liquid-glass-header--scrolled:not(.menu-open),
+html[data-theme="dark"] body[data-lg-admin="true"] .site-shell > .site-header-slot > header.site-header.liquid-glass-header.liquid-glass-header--scrolled:not(.menu-open),
+html[data-theme="dark"] .site-shell:has(.liquid-glass-header) > .site-header-slot > header.site-header.liquid-glass-header.liquid-glass-header--scrolled:not(.menu-open) {
+  border-bottom-color: rgba(255, 246, 228, 0.12) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 249, 236, 0.14),
+    0 10px 24px rgba(0, 0, 0, 0.30) !important;
+}
+
+html[data-theme="dark"] body.liquid-glass-active .site-shell > .site-header-slot > header.site-header.liquid-glass-header.liquid-glass-header--scrolled:not(.menu-open)::before,
+html[data-theme="dark"] body[data-lg-admin="true"] .site-shell > .site-header-slot > header.site-header.liquid-glass-header.liquid-glass-header--scrolled:not(.menu-open)::before,
+html[data-theme="dark"] .site-shell:has(.liquid-glass-header) > .site-header-slot > header.site-header.liquid-glass-header.liquid-glass-header--scrolled:not(.menu-open)::before {
+  opacity: 1;
+  background: linear-gradient(180deg, rgba(8, 8, 12, 0.72) 0%, rgba(4, 4, 7, 0.52) 100%) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(152%) !important;
+  backdrop-filter: blur(22px) saturate(152%) !important;
+}
+
+/* Fallback sin soporte de backdrop-filter (solo cuando hay scroll) */
+@supports not (backdrop-filter: blur(1px)) {
+  html[data-theme="light"] body.liquid-glass-active .site-shell > .site-header-slot > header.site-header.liquid-glass-header.liquid-glass-header--scrolled:not(.menu-open)::before,
+  html[data-theme="light"] body[data-lg-admin="true"] .site-shell > .site-header-slot > header.site-header.liquid-glass-header.liquid-glass-header--scrolled:not(.menu-open)::before {
+    background: rgba(248, 246, 242, 0.90) !important;
+  }
+
+  html[data-theme="dark"] body.liquid-glass-active .site-shell > .site-header-slot > header.site-header.liquid-glass-header.liquid-glass-header--scrolled:not(.menu-open)::before,
+  html[data-theme="dark"] body[data-lg-admin="true"] .site-shell > .site-header-slot > header.site-header.liquid-glass-header.liquid-glass-header--scrolled:not(.menu-open)::before {
+    background: rgba(8, 8, 12, 0.90) !important;
+  }
+}
+
+/* Accesibilidad: prefers-reduced-transparency (solo aplica superficie sólida al hacer scroll) */
+@media (prefers-reduced-transparency: reduce) {
+  html[data-theme="light"] body.liquid-glass-active .site-shell > .site-header-slot > header.site-header.liquid-glass-header.liquid-glass-header--scrolled:not(.menu-open)::before,
+  html[data-theme="light"] body[data-lg-admin="true"] .site-shell > .site-header-slot > header.site-header.liquid-glass-header.liquid-glass-header--scrolled:not(.menu-open)::before {
+    background: #f7f5f0 !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+
+  html[data-theme="dark"] body.liquid-glass-active .site-shell > .site-header-slot > header.site-header.liquid-glass-header.liquid-glass-header--scrolled:not(.menu-open)::before,
+  html[data-theme="dark"] body[data-lg-admin="true"] .site-shell > .site-header-slot > header.site-header.liquid-glass-header.liquid-glass-header--scrolled:not(.menu-open)::before {
+    background: #0a0a0e !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+}
+
+/* Accesibilidad: prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  html[data-theme] body.liquid-glass-active .site-shell > .site-header-slot > header.site-header.liquid-glass-header,
+  html[data-theme] body.liquid-glass-active .site-shell > .site-header-slot > header.site-header.liquid-glass-header::before,
+  html[data-theme] body[data-lg-admin="true"] .site-shell > .site-header-slot > header.site-header.liquid-glass-header,
+  html[data-theme] body[data-lg-admin="true"] .site-shell > .site-header-slot > header.site-header.liquid-glass-header::before {
+    transition: none !important;
+  }
+}

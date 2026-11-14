@@ -92,13 +92,121 @@ export function ThemeToggle() {
   return <Button type="button" variant="outline" size="icon" className="theme-toggle header-control-button" onClick={toggleTheme} aria-label={label} aria-pressed={light} title={label}>{light ? <Moon /> : <Sun />}</Button>;
 }
 
+const LIQUID_HEADER_SCROLL_ENTER_PX = 8;
+const LIQUID_HEADER_SCROLL_EXIT_PX = 3;
+
+function getVerticalScrollOffset(scrolledContainers: Set<Element>): number {
+  let maxScroll = Math.max(
+    0,
+    window.scrollY || 0,
+    window.pageYOffset || 0,
+    document.documentElement?.scrollTop || 0,
+    document.scrollingElement?.scrollTop || 0,
+    document.body?.scrollTop || 0,
+  );
+
+  const bodyTop = Number.parseFloat(document.body?.style.top || '0');
+  if (Number.isFinite(bodyTop) && bodyTop < 0) {
+    maxScroll = Math.max(maxScroll, Math.abs(bodyTop));
+  }
+
+  for (const el of Array.from(scrolledContainers)) {
+    if (!el.isConnected || el.scrollTop <= 0) {
+      scrolledContainers.delete(el);
+      continue;
+    }
+    maxScroll = Math.max(maxScroll, el.scrollTop);
+  }
+
+  const bookingScroll = document.querySelector<HTMLElement>(
+    '.site-shell .liquid-glass-reservation .booking-scroll-content',
+  );
+  if (bookingScroll && bookingScroll.scrollTop > 0) {
+    scrolledContainers.add(bookingScroll);
+    maxScroll = Math.max(maxScroll, bookingScroll.scrollTop);
+  }
+
+  return maxScroll;
+}
+
 export function SiteHeader() {
   const path = useRouterState({ select: s => s.location.pathname });
   const isLiquidRoute = isLiquidGlassPath(path);
   const admin = path.startsWith('/admin') || path.startsWith('/panel-administracion') || path.startsWith('/panel-v2');
   const { mobileMenuOpen: menuOpen, setMobileMenuOpen: onMenuOpenChange } = useKani();
   const [staff, setStaff] = useState<AuthenticatedStaff | null>(null);
+  const [headerScrolled, setHeaderScrolled] = useState(false);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!isLiquidRoute || typeof window === 'undefined' || typeof document === 'undefined') {
+      setHeaderScrolled(false);
+      return;
+    }
+
+    const scrolledContainers = new Set<Element>();
+    let rafId = 0;
+
+    const evaluate = () => {
+      rafId = 0;
+      const offset = getVerticalScrollOffset(scrolledContainers);
+      setHeaderScrolled((prev) =>
+        prev ? offset > LIQUID_HEADER_SCROLL_EXIT_PX : offset >= LIQUID_HEADER_SCROLL_ENTER_PX,
+      );
+    };
+
+    const scheduleEvaluate = () => {
+      if (!rafId) {
+        rafId = window.requestAnimationFrame(evaluate);
+      }
+    };
+
+    const onScrollCapture = (event: Event) => {
+      const target = event.target;
+      if (target instanceof Element) {
+        if (
+          target.closest(
+            '.mobile-menu, .notification-popover, [role="dialog"], .v2-dialog, [data-radix-popper-content-wrapper]',
+          )
+        ) {
+          return;
+        }
+        const siteShell = document.querySelector('.site-shell');
+        if (
+          siteShell &&
+          !siteShell.contains(target) &&
+          target !== document.documentElement &&
+          target !== document.body
+        ) {
+          return;
+        }
+        if (target.scrollTop > 0) {
+          scrolledContainers.add(target);
+        } else {
+          scrolledContainers.delete(target);
+        }
+      }
+      scheduleEvaluate();
+    };
+
+    setHeaderScrolled(false);
+    scheduleEvaluate();
+
+    window.addEventListener('scroll', scheduleEvaluate, { passive: true });
+    document.addEventListener('scroll', onScrollCapture, { passive: true, capture: true });
+    window.addEventListener('resize', scheduleEvaluate, { passive: true });
+    window.addEventListener('orientationchange', scheduleEvaluate, { passive: true });
+
+    return () => {
+      if (rafId) {
+        window.cancelAnimationFrame(rafId);
+      }
+      window.removeEventListener('scroll', scheduleEvaluate);
+      document.removeEventListener('scroll', onScrollCapture, true);
+      window.removeEventListener('resize', scheduleEvaluate);
+      window.removeEventListener('orientationchange', scheduleEvaluate);
+    };
+  }, [isLiquidRoute, path]);
   useEffect(() => {
     let cancelled = false;
     const refreshStaff = () => {
@@ -325,8 +433,16 @@ export function SiteHeader() {
       </nav>
     )
   ) : null;
+  const headerClass = [
+    'site-header',
+    menuOpen ? 'menu-open' : '',
+    isLiquidRoute ? 'liquid-glass-header' : '',
+    isLiquidRoute && headerScrolled && !menuOpen ? 'liquid-glass-header--scrolled' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
   return <>
-    <div className="site-header-slot"><header className={`site-header ${menuOpen ? 'menu-open' : ''} ${isLiquidRoute ? 'liquid-glass-header' : ''}`.trim()}><div className="site-container flex items-center gap-4"><div className="admin-header-left"><Link to={logoTarget} aria-label="Kani Barber Studio, inicio" className="w-fit" onClick={closeMenu}><Wordmark /></Link></div><div className="header-controls ml-auto">{staff && <Suspense fallback={<Button type="button" variant="outline" size="icon" className="notification-trigger header-control-button" aria-label="Cargando notificaciones" disabled><Bell /></Button>}><AdminActivityPopover role={staff.profile.role} userId={staff.user.id} isLiquid={isLiquidRoute} /></Suspense>}<HeaderWhatsApp /><ThemeToggle /><Button variant="outline" size="icon" className={`mobile-menu-trigger header-control-button ${admin ? 'admin-menu-trigger' : ''}`} aria-label={menuOpen ? 'Cerrar menú' : 'Abrir menú'} aria-expanded={menuOpen} aria-controls={menuOpen ? "kani-main-menu" : undefined} ref={menuButtonRef} onClick={() => onMenuOpenChange(!menuOpen)}>{menuOpen ? <X /> : <Menu />}</Button></div></div></header></div>
+    <div className="site-header-slot"><header className={headerClass} data-scrolled={isLiquidRoute ? String(headerScrolled && !menuOpen) : undefined}><div className="site-container flex items-center gap-4"><div className="admin-header-left"><Link to={logoTarget} aria-label="Kani Barber Studio, inicio" className="w-fit" onClick={closeMenu}><Wordmark /></Link></div><div className="header-controls ml-auto">{staff && <Suspense fallback={<Button type="button" variant="outline" size="icon" className="notification-trigger header-control-button" aria-label="Cargando notificaciones" disabled><Bell /></Button>}><AdminActivityPopover role={staff.profile.role} userId={staff.user.id} isLiquid={isLiquidRoute} /></Suspense>}<HeaderWhatsApp /><ThemeToggle /><Button variant="outline" size="icon" className={`mobile-menu-trigger header-control-button ${admin ? 'admin-menu-trigger' : ''}`} aria-label={menuOpen ? 'Cerrar menú' : 'Abrir menú'} aria-expanded={menuOpen} aria-controls={menuOpen ? "kani-main-menu" : undefined} ref={menuButtonRef} onClick={() => onMenuOpenChange(!menuOpen)}>{menuOpen ? <X /> : <Menu />}</Button></div></div></header></div>
     {typeof document !== 'undefined' && mobileMenu ? createPortal(mobileMenu, document.body) : null}
     {typeof document !== 'undefined' && menuOpen && !isLiquidRoute ? createPortal(<MobileMenuAction />, document.body) : null}
   </>;
