@@ -9,6 +9,7 @@ import { getAuthenticatedStaff, signOut, type AuthenticatedStaff } from '@/lib/k
 import { supabase } from '@/integrations/supabase/client';
 import { useKani } from '@/components/kani/store';
 import { KANI_PUBLIC_WHATSAPP_URL } from '@/lib/kani-constants';
+import { isLiquidGlassPath } from '@/components/kani/experimental/liquid-glass-shell';
 
 const AdminActivityPopover = lazy(() =>
   import('@/components/kani/admin-activity-popover').then(m => ({ default: m.AdminActivityPopover }))
@@ -41,7 +42,11 @@ export function MobileMenuAction() {
   const { setMobileMenuOpen } = useKani();
   const returnToBooking = () => {
     setMobileMenuOpen(false);
-    const target = path.includes('mercadopago') ? '/reservar-turno-mercadopago' : '/reservar-turno';
+    const target = isLiquidGlassPath(path)
+      ? '/reservar-turno-liquid'
+      : path.includes('mercadopago')
+        ? '/reservar-turno-mercadopago'
+        : '/reservar-turno';
     if (path !== target) void navigate({ to: target });
   };
   return <div className="booking-cta mobile-menu-cta"><div className="booking-cta-inner flex items-center"><Button className="action-positive booking-menu-return h-12" onClick={returnToBooking}>Volver a la reserva <ArrowUpRight /></Button></div></div>;
@@ -80,7 +85,7 @@ export function ThemeToggle() {
 
 export function SiteHeader() {
   const path = useRouterState({ select: s => s.location.pathname });
-  const isLiquidRoute = path === '/reservar-turno-liquid' || path.startsWith('/reservar-turno-liquid/');
+  const isLiquidRoute = isLiquidGlassPath(path);
   const admin = path.startsWith('/admin') || path.startsWith('/panel-administracion') || path.startsWith('/panel-v2');
   const { mobileMenuOpen: menuOpen, setMobileMenuOpen: onMenuOpenChange } = useKani();
   const [staff, setStaff] = useState<AuthenticatedStaff | null>(null);
@@ -146,8 +151,26 @@ export function SiteHeader() {
   }, [menuOpen]);
 
   const closeMenu = () => onMenuOpenChange(false);
+  const bookingTarget = isLiquidRoute
+    ? '/reservar-turno-liquid'
+    : path.includes('mercadopago')
+      ? '/reservar-turno-mercadopago'
+      : '/reservar-turno';
+  const contactTarget = isLiquidRoute ? '/contacto-liquid' : '/contacto';
+  const adminBase = isLiquidRoute ? '/admin-liquid' : '/panel-administracion';
+  const panelV2Target = isLiquidRoute ? '/admin-v2-liquid' : '/panel-v2';
+  const privacyTarget = isLiquidRoute ? '/politica-de-privacidad-liquid' : '/politica-de-privacidad';
+  const termsTarget = isLiquidRoute ? '/terminos-y-condiciones-liquid' : '/terminos-y-condiciones';
+  const logoTarget = path.startsWith('/admin-v2-liquid')
+    ? '/admin-v2-liquid'
+    : isLiquidRoute
+      ? '/reservar-turno-liquid'
+      : path.startsWith('/panel-v2')
+        ? '/panel-v2'
+        : '/';
+
   const continueBooking = (event: MouseEvent<HTMLAnchorElement>) => {
-    if (path === '/reservar-turno' || path === '/reservar-turno-mercadopago' || path === '/reservar' || path === '/reserva-v4' || path === '/reserva-v2') {
+    if (path === '/reservar-turno' || path === '/reservar-turno-liquid' || path === '/reservar-turno-mercadopago' || path === '/reservar' || path === '/reserva-v4' || path === '/reserva-v2') {
       event.preventDefault();
       closeMenu();
     }
@@ -157,10 +180,10 @@ export function SiteHeader() {
     <nav className="mobile-menu" id="kani-main-menu" aria-label="Menú principal">
       {/* Grupo usuario */}
       <div className="mobile-menu-group">
-        <Link to={path.includes('mercadopago') ? '/reservar-turno-mercadopago' : '/reservar-turno'} onClick={continueBooking}>
+        <Link to={bookingTarget} onClick={continueBooking}>
           <ArrowUpRight />Reservar turno
         </Link>
-        <Link to="/contacto" onClick={closeMenu}>
+        <Link to={contactTarget} onClick={closeMenu}>
           <Building2 />Contacto
         </Link>
       </div>
@@ -169,28 +192,28 @@ export function SiteHeader() {
 
       {/* Grupo barbero */}
       <div className="mobile-menu-group">
-        <Link to="/panel-administracion" onClick={closeMenu}>
+        <Link to={adminBase} onClick={closeMenu}>
           <CalendarClock />Panel de administración
         </Link>
-        <Link to="/panel-v2" onClick={closeMenu}>
+        <Link to={panelV2Target} onClick={closeMenu}>
           <LayoutGrid />Panel V2
         </Link>
 
         {staff?.profile.role === 'BARBER' && (
           <>
-            <Link to="/panel-administracion/turnos" onClick={closeMenu}>
+            <Link to={`${adminBase}/turnos`} onClick={closeMenu}>
               <CalendarDays />Turnos
             </Link>
-            <Link to="/panel-administracion/horarios" onClick={closeMenu}>
+            <Link to={`${adminBase}/horarios`} onClick={closeMenu}>
               <Clock3 />Horarios
             </Link>
-            <Link to="/panel-administracion/pagos" onClick={closeMenu}>
+            <Link to={`${adminBase}/pagos`} onClick={closeMenu}>
               <CreditCard />Pagos
             </Link>
-            <Link to="/panel-administracion/clientes" onClick={closeMenu}>
+            <Link to={`${adminBase}/clientes`} onClick={closeMenu}>
               <Users />Clientes
             </Link>
-            <Link to="/panel-administracion/datos" onClick={closeMenu}>
+            <Link to={`${adminBase}/datos`} onClick={closeMenu}>
               <ChartNoAxesCombined />Datos
             </Link>
           </>
@@ -199,7 +222,7 @@ export function SiteHeader() {
 
       {staff && ['ADMIN', 'MANAGER', 'BARBER'].includes(staff.profile.role) && (
         <div className="mobile-menu-group">
-          <Link to="/panel-administracion/membresias" onClick={closeMenu}>
+          <Link to={`${adminBase}/membresias`} onClick={closeMenu}>
             <Tag />Membresías y descuentos
           </Link>
         </div>
@@ -210,7 +233,7 @@ export function SiteHeader() {
         <>
           <div className="mobile-menu-divider" role="separator" />
           <div className="mobile-menu-group">
-            <Link to="/panel-administracion/mantenimiento" onClick={closeMenu}>
+            <Link to={`${adminBase}/mantenimiento`} onClick={closeMenu}>
               <Wrench />Panel de mantenimiento
             </Link>
           </div>
@@ -221,10 +244,10 @@ export function SiteHeader() {
 
       {/* Grupo legales */}
       <div className="mobile-menu-group">
-        <Link to="/politica-de-privacidad" onClick={closeMenu}>
+        <Link to={privacyTarget} onClick={closeMenu}>
           <ShieldCheck />Política de Privacidad
         </Link>
-        <Link to="/terminos-y-condiciones" onClick={closeMenu}>
+        <Link to={termsTarget} onClick={closeMenu}>
           <Scale />Términos y Condiciones
         </Link>
       </div>
@@ -246,7 +269,7 @@ export function SiteHeader() {
                 const isMp = path.includes('mercadopago');
                 void signOut().then(() => {
                   setStaff(null);
-                  void navigate({ to: isMp ? '/reservar-turno-mercadopago' : '/reservar-turno' });
+                  void navigate({ to: isLiquidRoute ? '/reservar-turno-liquid' : isMp ? '/reservar-turno-mercadopago' : '/reservar-turno' });
                 });
               }}
             >
@@ -258,13 +281,15 @@ export function SiteHeader() {
     </nav>
   ) : null;
   return <>
-    <div className="site-header-slot"><header className={`site-header ${menuOpen ? 'menu-open' : ''} ${isLiquidRoute ? 'liquid-glass-header' : ''}`.trim()}><div className="site-container flex items-center gap-4"><div className="admin-header-left"><Link to={path.startsWith('/panel-v2') ? '/panel-v2' : '/'} aria-label="Kani Barber Studio, inicio" className="w-fit" onClick={closeMenu}><Wordmark /></Link></div><div className="header-controls ml-auto">{staff && !isLiquidRoute && <Suspense fallback={null}><AdminActivityPopover role={staff.profile.role} /></Suspense>}<HeaderWhatsApp /><ThemeToggle /><Button variant="outline" size="icon" className={`mobile-menu-trigger header-control-button ${admin ? 'admin-menu-trigger' : ''}`} aria-label={menuOpen ? 'Cerrar menú' : 'Abrir menú'} aria-expanded={menuOpen} aria-controls={menuOpen ? "kani-main-menu" : undefined} ref={menuButtonRef} onClick={() => onMenuOpenChange(!menuOpen)}>{menuOpen ? <X /> : <Menu />}</Button></div></div></header></div>
+    <div className="site-header-slot"><header className={`site-header ${menuOpen ? 'menu-open' : ''} ${isLiquidRoute ? 'liquid-glass-header' : ''}`.trim()}><div className="site-container flex items-center gap-4"><div className="admin-header-left"><Link to={logoTarget} aria-label="Kani Barber Studio, inicio" className="w-fit" onClick={closeMenu}><Wordmark /></Link></div><div className="header-controls ml-auto">{staff && !isLiquidRoute && <Suspense fallback={null}><AdminActivityPopover role={staff.profile.role} /></Suspense>}<HeaderWhatsApp /><ThemeToggle /><Button variant="outline" size="icon" className={`mobile-menu-trigger header-control-button ${admin ? 'admin-menu-trigger' : ''}`} aria-label={menuOpen ? 'Cerrar menú' : 'Abrir menú'} aria-expanded={menuOpen} aria-controls={menuOpen ? "kani-main-menu" : undefined} ref={menuButtonRef} onClick={() => onMenuOpenChange(!menuOpen)}>{menuOpen ? <X /> : <Menu />}</Button></div></div></header></div>
     {typeof document !== 'undefined' && mobileMenu ? createPortal(mobileMenu, document.body) : null}
     {typeof document !== 'undefined' && menuOpen ? createPortal(<MobileMenuAction />, document.body) : null}
   </>;
 }
 
 export function SiteFooter() {
+  const path = useRouterState({ select: s => s.location.pathname });
+  const isLiquidRoute = isLiquidGlassPath(path);
   const footerRef = useRef<HTMLElement>(null);
   useLayoutEffect(() => {
     const footer = footerRef.current;
@@ -276,5 +301,5 @@ export function SiteFooter() {
     window.addEventListener('resize', updateHeight);
     return () => { observer?.disconnect(); window.removeEventListener('resize', updateHeight); document.documentElement.style.removeProperty('--site-footer-height'); };
   }, []);
-  return <footer ref={footerRef} className="site-footer border-t text-xs text-muted-foreground"><div className="site-container site-footer-inner"><div className="site-footer-study"><p>San Isidro Labrador 7, Martínez, Provincia de Buenos Aires</p><p>Lunes a sábados de 10:00 a 20:00 hs</p></div><div className="site-footer-links"><div className="site-footer-link-row"><Link to="/contacto" className="inline-flex items-center gap-2 hover:text-foreground"><Building2 size={14} /> Contacto</Link><a href="https://www.google.com/maps/place/KANI+BARBER+STUDIO/data=!4m2!3m1!1s0x0:0x48bcfe7b2ea7ba60" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 hover:text-foreground"><MapPin size={14} /> Ver ubicación</a><a href="https://www.instagram.com/kanibarberstudio/" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 hover:text-foreground"><Instagram size={14} /> Instagram</a><Link to="/terminos-y-condiciones" className="hover:text-foreground">Términos y Condiciones</Link><Link to="/politica-de-privacidad" className="hover:text-foreground">Política de Privacidad</Link></div><span className="site-footer-copyright">© 2026 Kani Barber Studio</span></div></div></footer>;
+  return <footer ref={footerRef} className="site-footer border-t text-xs text-muted-foreground"><div className="site-container site-footer-inner"><div className="site-footer-study"><p>San Isidro Labrador 7, Martínez, Provincia de Buenos Aires</p><p>Lunes a sábados de 10:00 a 20:00 hs</p></div><div className="site-footer-links"><div className="site-footer-link-row"><Link to={isLiquidRoute ? "/contacto-liquid" : "/contacto"} className="inline-flex items-center gap-2 hover:text-foreground"><Building2 size={14} /> Contacto</Link><a href="https://www.google.com/maps/place/KANI+BARBER+STUDIO/data=!4m2!3m1!1s0x0:0x48bcfe7b2ea7ba60" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 hover:text-foreground"><MapPin size={14} /> Ver ubicación</a><a href="https://www.instagram.com/kanibarberstudio/" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 hover:text-foreground"><Instagram size={14} /> Instagram</a><Link to={isLiquidRoute ? "/terminos-y-condiciones-liquid" : "/terminos-y-condiciones"} className="hover:text-foreground">Términos y Condiciones</Link><Link to={isLiquidRoute ? "/politica-de-privacidad-liquid" : "/politica-de-privacidad"} className="hover:text-foreground">Política de Privacidad</Link></div><span className="site-footer-copyright">© 2026 Kani Barber Studio</span></div></div></footer>;
 }

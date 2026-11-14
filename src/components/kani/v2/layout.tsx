@@ -15,19 +15,28 @@ import { mayAccessStaffSection } from "@/lib/kani-permissions";
 import { clearStaffCache, getAuthenticatedStaff, type AuthenticatedStaff } from "@/lib/kani-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { isV2AdminEnvironment } from "@/lib/kani-v2";
+import { LiquidGlassShell } from "@/components/kani/experimental/liquid-glass-shell";
 import { V2DataProvider, useV2 } from "./data";
 import "./v2.css";
 
-const sections = [
-  { to: "/panel-administracion/inicio", title: "Inicio", icon: Home },
-  { to: "/panel-administracion/turnos", title: "Turnos", icon: CalendarDays },
-  { to: "/panel-administracion/horarios", title: "Horarios", icon: Clock3 },
-  { to: "/panel-administracion/pagos", title: "Pagos", icon: CreditCard },
-  { to: "/panel-administracion/clientes", title: "Clientes", icon: Users },
-  { to: "/panel-administracion/datos", title: "Datos", icon: ChartNoAxesCombined },
+const sectionDefs = [
+  { slug: "inicio", title: "Inicio", icon: Home },
+  { slug: "turnos", title: "Turnos", icon: CalendarDays },
+  { slug: "horarios", title: "Horarios", icon: Clock3 },
+  { slug: "pagos", title: "Pagos", icon: CreditCard },
+  { slug: "clientes", title: "Clientes", icon: Users },
+  { slug: "datos", title: "Datos", icon: ChartNoAxesCombined },
 ] as const;
 
-export function V2Layout() {
+export function V2Layout({
+  basePath = "/panel-administracion",
+  liquidGlass = false,
+}: {
+  basePath?: string;
+  liquidGlass?: boolean;
+} = {}) {
+  const wrap = (node: JSX.Element) =>
+    liquidGlass ? <LiquidGlassShell section="admin">{node}</LiquidGlassShell> : node;
   const [state, setState] = useState<{
     loading: boolean;
     staff: AuthenticatedStaff | null;
@@ -82,42 +91,45 @@ export function V2Layout() {
     };
   }, []);
   if (state.loading)
-    return (
+    return wrap(
       <main className="v2-access" role="status">
         Verificando acceso…
       </main>
     );
   if (state.error)
-    return (
+    return wrap(
       <main className="v2-access">
         <h1>Administración</h1>
         <p role="alert">{state.error}</p>
-        <a href="/panel-administracion">Volver al panel actual</a>
+        <a href={basePath}>Volver al panel actual</a>
       </main>
     );
   if (!allowed || !state.staff)
-    return (
+    return wrap(
       <AdminAccess
         onAuthenticated={() => {
-          window.location.assign("/panel-administracion");
+          window.location.assign(basePath);
         }}
       />
     );
-  return (
+  return wrap(
     <AdminStaffProvider key={state.staff.user.id} staff={state.staff}>
       <V2DataProvider>
-        <V2Shell />
+        <V2Shell basePath={basePath} />
       </V2DataProvider>
     </AdminStaffProvider>
   );
 }
 
-function V2Shell() {
+function V2Shell({ basePath }: { basePath: string }) {
   const { loading, error, refresh } = useV2();
   const { profile } = useAdminStaff();
   const pathname = useLocation({ select: (location) => location.pathname });
-  const section = pathname.split('/').filter(Boolean).at(-1) ?? 'inicio';
-  const allowedSection = section === 'panel-administracion' || mayAccessStaffSection(profile, section);
+  const cleanBase = basePath.replace(/\/+$/, "");
+  const cleanPath = pathname.replace(/\/+$/, "");
+  const rootSlug = cleanBase.split("/").filter(Boolean).at(-1) ?? "panel-administracion";
+  const section = cleanPath.split("/").filter(Boolean).at(-1) ?? "inicio";
+  const allowedSection = cleanPath === cleanBase || section === rootSlug || mayAccessStaffSection(profile, section);
 
   useEffect(() => {
     if (typeof document !== 'undefined') {
@@ -132,10 +144,12 @@ function V2Shell() {
       <header className="v2-navigation">
         <nav className="admin-section-nav v2-nav" aria-label="Administración">
           <div className="admin-section-nav-items">
-            {sections.filter(({ to }) => mayAccessStaffSection(profile, to.split('/').at(-1)!) && (profile.role === 'ADMIN' || !to.endsWith('/inicio'))).map(({ to, title, icon: Icon }) => (
+            {sectionDefs
+              .filter(({ slug }) => mayAccessStaffSection(profile, slug) && (profile.role === 'ADMIN' || slug !== 'inicio'))
+              .map(({ slug, title, icon: Icon }) => (
               <Link
-                key={to}
-                to={to}
+                key={slug}
+                to={`${cleanBase}/${slug}`}
                 className="admin-section-nav-link"
                 activeProps={{ className: "is-active", "aria-current": "page" }}
               >

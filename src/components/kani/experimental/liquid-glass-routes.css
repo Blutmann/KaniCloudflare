@@ -1,0 +1,220 @@
+/* ==============================================================================
+ * LIQUID GLASS V12.17 — PARALLEL ROUTES VISUAL SYSTEM
+ * Extiende los materiales aprobados de Liquid Glass (Light perla neutro / Dark
+ * obsidiana profundo + champagne y bordó) a Contacto, Administración y Legales.
+ * Aislado exclusivamente bajo .liquid-glass-page / [data-lg-section].
+ * ============================================================================== */
+
+.liquid-glass-page {
+  position: relative;
+  min-height: calc(100dvh - 64px);
+  overflow-x: clip;
+}
+
+.liquid-glass-page-content {
+  position: relative;
+  z-index: 1;
+}
+
+/* ------------------------------------------------------------------------------
+ * 1. CONTACTO — Superficies ópticas y cards con protagonismo
+ * ------------------------------------------------------------------------------ */
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .contacto-page {
+  padding-top: 28px;
+  padding-bottom: 56px;
+}
+
+html[data-theme="light"] .site-shell .liquid-glass-page[data-lg-section="contact"] .studio-info-card,
+html[data-theme="light"] .site-shell .liquid-glass-page[data-lg-section="contact"] .studio-map-card {
+  background: var(--cg-crystal-rest) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(140%) !important;
+  backdrop-filter: blur(20px) saturate(140%) !important;
+  border: 1px solid rgba(168, 164, 158, 0.38) !important;
+  box-shadow:
+    0 12px 28px rgba(28, 26, 24, 0.065),
+    inset 0 1px 0 rgba(255, 255, 255, 0.88) !important;
+  border-radius: 20px !important;
+  transition: transform 180ms ease, background 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+
+html[data-theme="light"] .site-shell .liquid-glass-page[data-lg-section="contact"] .studio-info-link:hover,
+html[data-theme="light"] .site-shell .liquid-glass-page[data-lg-section="contact"] .studio-info-link:focus-visible {
+  background: var(--cg-crystal-selected) !important;
+  border-color: rgba(196, 164, 102, 0.72) !important;
+  box-shadow: var(--cg-crystal-shadow-selected) !important;
+  transform: translateY(-2px);
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-page[data-lg-section="contact"] .studio-info-card,
+html[data-theme="dark"] .site-shell .liquid-glass-page[data-lg-section="contact"] .studio-map-card {
+  background: linear-gradient(
+    158deg,
+    rgba(22, 21, 20, 0.76) 0%,
+    rgba(11, 11, 13, 0.62) 56%,
+    rgba(16, 15, 16, 0.72) 100%
+  ) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(135%) !important;
+  backdrop-filter: blur(20px) saturate(135%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.11) !important;
+  box-shadow:
+    0 14px 32px rgba(0, 0, 0, 0.52),
+    inset 0 1px 0 rgba(255, 248, 232, 0.14),
+    inset 0 -1px 0 rgba(255, 246, 228, 0.03) !important;
+  border-radius: 20px !important;
+  transition: transform 180ms ease, background 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-page[data-lg-section="contact"] .studio-info-link:hover,
+html[data-theme="dark"] .site-shell .liquid-glass-page[data-lg-section="contact"] .studio-info-link:focus-visible {
+  background: linear-gradient(
+    152deg,
+    rgba(42, 39, 36, 0.86) 0%,
+    rgba(26, 23, 24, 0.78) 56%,
+    rgba(34, 28, 30, 0.84) 100%
+  ) !important;
+  border-color: rgba(200, 169, 107, 0.62) !important;
+  box-shadow:
+    0 16px 34px rgba(0, 0, 0, 0.62),
+    inset 0 1px 0 rgba(255, 248, 236, 0.30) !important;
+  transform: translateY(-2px);
+}
+
+html[data-theme="light"] .site-shell .liquid-glass-page[data-lg-section="contact"] .studio-card-icon-wrap {
+  background: linear-gradient(152deg, rgba(255, 255, 255, 0.86) 0%, rgba(244, 242, 238, 0.64) 100%) !important;
+  border: 1px solid rgba(196, 164, 102, 0.45) !important;
+  color: #2c2823 !important;
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-page[data-lg-section="contact"] .studio-card-icon-wrap {
+  background: linear-gradient(152deg, rgba(38, 34, 31, 0.88) 0%, rgba(18, 17, 18, 0.82) 100%) !important;
+  border: 1px solid rgba(200, 169, 107, 0.42) !important;
+  color: #e4c98f !important;
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-page[data-lg-section="contact"] .studio-card-title {
+  color: #faf8f4 !important;
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-page[data-lg-section="contact"] .studio-card-desc {
+  color: rgba(244, 242, 238, 0.78) !important;
+}
+
+html[data-theme="light"] .site-shell .liquid-glass-page[data-lg-section="contact"] .studio-card-action {
+  color: #702b3a !important;
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-page[data-lg-section="contact"] .studio-card-action {
+  color: #e4c98f !important;
+}
+
+/* ------------------------------------------------------------------------------
+ * 2. ADMINISTRACIÓN Y PANEL V2 — Legibilidad, rendimiento y productividad
+ * ------------------------------------------------------------------------------ */
+html[data-theme="light"] .site-shell .liquid-glass-page[data-lg-section="admin"] :is(
+  .v2-navigation .admin-section-nav,
+  .kani-panel-v2-topbar,
+  .kani-panel-v2-tabs,
+  .kani-panel-v2-space-card,
+  .v2-card,
+  .v2-stat,
+  .v2-access-card
+) {
+  background: rgba(255, 255, 255, 0.72) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(130%) !important;
+  backdrop-filter: blur(14px) saturate(130%) !important;
+  border-color: rgba(168, 164, 158, 0.36) !important;
+  box-shadow:
+    0 8px 20px rgba(28, 26, 24, 0.055),
+    inset 0 1px 0 rgba(255, 255, 255, 0.88) !important;
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-page[data-lg-section="admin"] :is(
+  .v2-navigation .admin-section-nav,
+  .kani-panel-v2-topbar,
+  .kani-panel-v2-tabs,
+  .kani-panel-v2-space-card,
+  .v2-card,
+  .v2-stat,
+  .v2-access-card
+) {
+  background: rgba(16, 16, 19, 0.78) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(130%) !important;
+  backdrop-filter: blur(14px) saturate(130%) !important;
+  border-color: rgba(255, 255, 255, 0.10) !important;
+  box-shadow:
+    0 10px 24px rgba(0, 0, 0, 0.44),
+    inset 0 1px 0 rgba(255, 248, 232, 0.10) !important;
+}
+
+html[data-theme="light"] .site-shell .liquid-glass-page[data-lg-section="admin"] :is(
+  .admin-section-nav-link.is-active,
+  .kani-panel-v2-space-option.is-selected,
+  .kani-panel-v2-tab.is-selected
+) {
+  background: var(--cg-crystal-selected) !important;
+  border: 1px solid rgba(196, 164, 102, 0.68) !important;
+  color: #141311 !important;
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-page[data-lg-section="admin"] :is(
+  .admin-section-nav-link.is-active,
+  .kani-panel-v2-space-option.is-selected,
+  .kani-panel-v2-tab.is-selected
+) {
+  background: linear-gradient(148deg, rgba(108, 102, 96, 0.90) 0%, rgba(76, 62, 66, 0.88) 100%) !important;
+  border: 1px solid rgba(200, 169, 107, 0.65) !important;
+  color: #faf8f4 !important;
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-page[data-lg-section="admin"] .kani-panel-v2-space-card:hover {
+  border-color: rgba(200, 169, 107, 0.56) !important;
+}
+
+html[data-theme="light"] .site-shell .liquid-glass-page[data-lg-section="admin"] .kani-panel-v2-space-card:hover {
+  border-color: rgba(196, 164, 102, 0.68) !important;
+}
+
+/* ------------------------------------------------------------------------------
+ * 3. DOCUMENTOS LEGALES — Lectura, contraste, accesibilidad y estructura
+ * ------------------------------------------------------------------------------ */
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="legal"] .legal-page {
+  background: transparent !important;
+}
+
+html[data-theme="light"] .site-shell .liquid-glass-page[data-lg-section="legal"] :is(
+  .legal-toc,
+  .legal-callout,
+  .legal-back-link
+) {
+  background: rgba(255, 255, 255, 0.72) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(125%) !important;
+  backdrop-filter: blur(14px) saturate(125%) !important;
+  border-color: rgba(168, 164, 158, 0.36) !important;
+  box-shadow:
+    0 8px 20px rgba(28, 26, 24, 0.045),
+    inset 0 1px 0 rgba(255, 255, 255, 0.88) !important;
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-page[data-lg-section="legal"] :is(
+  .legal-toc,
+  .legal-callout,
+  .legal-back-link
+) {
+  background: rgba(16, 16, 19, 0.76) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(125%) !important;
+  backdrop-filter: blur(14px) saturate(125%) !important;
+  border-color: rgba(255, 255, 255, 0.11) !important;
+  box-shadow:
+    0 10px 24px rgba(0, 0, 0, 0.42),
+    inset 0 1px 0 rgba(255, 248, 232, 0.10) !important;
+}
+
+html[data-theme="light"] .site-shell .liquid-glass-page[data-lg-section="legal"] .legal-back-link:hover {
+  border-color: rgba(196, 164, 102, 0.68) !important;
+  background: rgba(255, 255, 255, 0.90) !important;
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-page[data-lg-section="legal"] .legal-back-link:hover {
+  border-color: rgba(200, 169, 107, 0.62) !important;
+  background: rgba(30, 29, 32, 0.88) !important;
+}

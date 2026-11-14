@@ -1970,7 +1970,7 @@ export function Booking({
                 <p className="booking-summary-legal-disclaimer text-xs text-muted-foreground mt-3 px-1 text-left leading-relaxed">
                   Al confirmar tu reserva, aceptás nuestros{' '}
                   <a
-                    href="/terminos-y-condiciones"
+                    href={typeof window !== 'undefined' && window.location.pathname.includes('-liquid') ? '/terminos-y-condiciones-liquid' : '/terminos-y-condiciones'}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="underline underline-offset-2 hover:text-foreground text-gold transition-colors"
@@ -1979,7 +1979,7 @@ export function Booking({
                   </a>{' '}
                   y nuestra{' '}
                   <a
-                    href="/politica-de-privacidad"
+                    href={typeof window !== 'undefined' && window.location.pathname.includes('-liquid') ? '/politica-de-privacidad-liquid' : '/politica-de-privacidad'}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="underline underline-offset-2 hover:text-foreground text-gold transition-colors"

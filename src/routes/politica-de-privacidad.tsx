@@ -13,13 +13,13 @@ export const Route = createFileRoute('/politica-de-privacidad')({
   component: PoliticaDePrivacidadPage,
 });
 
-export function PoliticaDePrivacidadPage() {
+export function PoliticaDePrivacidadPage({ backTo = '/reservar-turno' }: { backTo?: string }) {
   return (
     <main className="legal-page" id="contenido-principal">
       <div className="site-container legal-container">
         {/* Navegación superior */}
         <nav className="legal-back-nav" aria-label="Navegación de retorno">
-          <Link to="/reservar-turno" className="legal-back-link">
+          <Link to={backTo} className="legal-back-link">
             <ArrowLeft size={14} aria-hidden="true" />
             <span>Volver a reservar</span>
           </Link>
