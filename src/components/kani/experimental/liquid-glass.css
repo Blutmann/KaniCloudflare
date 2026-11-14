@@ -7100,3 +7100,155 @@ html[data-theme] .site-shell .liquid-glass-reservation .calendar-glass-card > .c
 html[data-theme] .site-shell .liquid-glass-reservation .calendar-glass-card > .calendar-grid {
   padding: 8px 12px 14px !important;
 }
+
+/* ==============================================================================
+ * LIQUID GLASS V12.16 — VERTICAL RHYTHM & DEFERRED BARBER SELECTION
+ * 1. Token compartido de ritmo vertical entre Stepper -> Título -> Contenido
+ * 2. Selector de barbero diferido unificado con Calendario y Horarios
+ * ============================================================================== */
+
+html[data-theme] .site-shell .liquid-glass-reservation {
+  --lg-rhythm-stepper-to-title: 2px;
+  --lg-rhythm-title-to-content: 16px;
+}
+
+@media (max-width: 767px) {
+  html[data-theme] .site-shell .liquid-glass-reservation {
+    --lg-rhythm-stepper-to-title: 22px;
+    --lg-rhythm-title-to-content: 21px;
+  }
+}
+
+html[data-theme] .site-shell .liquid-glass-reservation .booking-scroll-content {
+  padding-top: var(--lg-rhythm-stepper-to-title) !important;
+}
+
+html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-step-heading {
+  margin-bottom: var(--lg-rhythm-title-to-content) !important;
+}
+
+html[data-theme] .site-shell .liquid-glass-reservation .booking-page .section-title,
+html[data-theme] .site-shell .liquid-glass-reservation .booking-step-heading-title {
+  margin-bottom: 0 !important;
+}
+
+/* Selector de barbero diferido — Dark Mode (unificado con Calendario y Horarios) */
+html[data-theme="dark"] .site-shell .liquid-glass-reservation :is(
+  .barber-choice-list > button:not(:disabled):not(.selected),
+  .booking-candidate-barber-btn:not(:disabled):not(.selected)
+) {
+  background: linear-gradient(
+    164deg,
+    rgba(14, 14, 16, 0.68) 0%,
+    rgba(9, 9, 11, 0.50) 58%,
+    rgba(12, 12, 14, 0.62) 100%
+  ) !important;
+  border: 1px solid rgba(255, 255, 255, 0.085) !important;
+  box-shadow:
+    0 8px 22px rgba(0, 0, 0, 0.44),
+    inset 0 1px 0 rgba(255, 248, 232, 0.12),
+    inset 0 -1px 0 rgba(255, 246, 228, 0.03) !important;
+  color: rgba(244, 242, 238, 0.90) !important;
+  font-weight: 500 !important;
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-reservation :is(
+  .barber-choice-list > button:not(:disabled):not(.selected):hover,
+  .booking-candidate-barber-btn:not(:disabled):not(.selected):hover
+) {
+  background: linear-gradient(
+    160deg,
+    rgba(24, 24, 28, 0.78) 0%,
+    rgba(16, 16, 19, 0.62) 58%,
+    rgba(20, 20, 24, 0.72) 100%
+  ) !important;
+  border-color: rgba(255, 255, 255, 0.16) !important;
+  color: rgba(250, 248, 244, 0.96) !important;
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-reservation :is(
+  .barber-choice-list > button.selected,
+  .barber-choice-list > button.selected:hover:not(:disabled),
+  .barber-choice-list > button.selected:focus,
+  .barber-choice-list > button.selected:focus-visible,
+  .barber-choice-list > button.selected:active,
+  .barber-choice-list > button[aria-pressed="true"],
+  .booking-candidate-barber-btn.selected,
+  .booking-candidate-barber-btn.selected:hover:not(:disabled),
+  .booking-candidate-barber-btn.selected:focus,
+  .booking-candidate-barber-btn.selected:focus-visible,
+  .booking-candidate-barber-btn.selected:active,
+  .booking-candidate-barber-btn[aria-pressed="true"]
+) {
+  background: linear-gradient(
+    148deg,
+    rgba(108, 102, 96, 0.90) 0%,
+    rgba(88, 78, 76, 0.86) 54%,
+    rgba(76, 62, 66, 0.88) 100%
+  ) !important;
+  border: 1.5px solid rgba(200, 169, 107, 0.68) !important;
+  box-shadow:
+    0 10px 22px rgba(0, 0, 0, 0.56),
+    inset 0 1px 0 rgba(255, 248, 236, 0.42),
+    inset 0 -1px 0 rgba(112, 43, 58, 0.24) !important;
+  color: #faf8f4 !important;
+  font-weight: 600 !important;
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-reservation :is(
+  .barber-choice-list > button:focus-visible,
+  .booking-candidate-barber-btn:focus-visible
+) {
+  outline: 2px solid rgba(228, 201, 143, 0.90) !important;
+  outline-offset: 2px !important;
+}
+
+/* Selector de barbero diferido — Light Mode (unificado con Calendario y Horarios) */
+html[data-theme="light"] body.liquid-glass-active .site-shell .liquid-glass-reservation :is(
+  .barber-choice-list > button:not(:disabled):not(.selected),
+  .booking-candidate-barber-btn:not(:disabled):not(.selected)
+) {
+  background: var(--cg-crystal-rest) !important;
+  border: 1px solid rgba(168, 164, 158, 0.38) !important;
+  box-shadow: var(--lg-glass-shadow) !important;
+  color: #1e1d1b !important;
+  font-weight: 500 !important;
+}
+
+html[data-theme="light"] body.liquid-glass-active .site-shell .liquid-glass-reservation :is(
+  .barber-choice-list > button:not(:disabled):not(.selected):hover,
+  .booking-candidate-barber-btn:not(:disabled):not(.selected):hover
+) {
+  background: var(--cg-crystal-hover) !important;
+  border-color: rgba(168, 164, 158, 0.58) !important;
+  color: #141311 !important;
+}
+
+html[data-theme="light"] body.liquid-glass-active .site-shell .liquid-glass-reservation :is(
+  .barber-choice-list > button.selected,
+  .barber-choice-list > button.selected:hover:not(:disabled),
+  .barber-choice-list > button.selected:focus,
+  .barber-choice-list > button.selected:focus-visible,
+  .barber-choice-list > button.selected:active,
+  .barber-choice-list > button[aria-pressed="true"],
+  .booking-candidate-barber-btn.selected,
+  .booking-candidate-barber-btn.selected:hover:not(:disabled),
+  .booking-candidate-barber-btn.selected:focus,
+  .booking-candidate-barber-btn.selected:focus-visible,
+  .booking-candidate-barber-btn.selected:active,
+  .booking-candidate-barber-btn[aria-pressed="true"]
+) {
+  background: var(--cg-crystal-selected) !important;
+  border: 1.5px solid rgba(196, 164, 102, 0.72) !important;
+  box-shadow: var(--cg-crystal-shadow-selected) !important;
+  color: #141311 !important;
+  font-weight: 600 !important;
+}
+
+html[data-theme="light"] .site-shell .liquid-glass-reservation :is(
+  .barber-choice-list > button:focus-visible,
+  .booking-candidate-barber-btn:focus-visible
+) {
+  outline: 2px solid rgba(169, 132, 64, 0.90) !important;
+  outline-offset: 2px !important;
+}
