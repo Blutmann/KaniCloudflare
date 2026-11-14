@@ -7463,3 +7463,63 @@ html[data-theme="light"] .site-shell .liquid-glass-reservation :is(
     border-radius: 14px !important;
   }
 }
+
+/* ==============================================================================
+ * LIQUID GLASS V12.25 COMPLEMENT — STEPPER VISUAL PARITY WITH ADMIN SELECTOR
+ * Adopta la materialidad, borde champagne y profundidad del selector /admin-liquid
+ * preservando la lógica funcional y estados propios del flujo de reserva.
+ * ============================================================================== */
+
+html[data-theme="light"] .site-shell .liquid-glass-reservation .booking-page .booking-progress {
+  background: linear-gradient(156deg, rgba(255, 255, 255, 0.42) 0%, rgba(246, 244, 240, 0.28) 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.72) !important;
+  box-shadow:
+    0 8px 24px rgba(28, 26, 24, 0.055),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    inset 0 -1px 0 rgba(28, 26, 24, 0.04) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(148%) !important;
+  backdrop-filter: blur(22px) saturate(148%) !important;
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-reservation .booking-page .booking-progress {
+  background: linear-gradient(156deg, rgba(28, 29, 34, 0.52) 0%, rgba(18, 19, 23, 0.42) 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.10) !important;
+  box-shadow:
+    0 12px 28px rgba(0, 0, 0, 0.34),
+    inset 0 1px 0 rgba(255, 249, 236, 0.18),
+    inset 0 -1px 0 rgba(255, 248, 232, 0.04) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(148%) !important;
+  backdrop-filter: blur(22px) saturate(148%) !important;
+}
+
+html[data-theme="light"] .site-shell .liquid-glass-reservation .booking-page .booking-progress .liquid-glass-stepper-lens,
+html[data-theme="light"] .site-shell .liquid-glass-reservation .booking-page.booking-v5 .booking-progress > button > span.liquid-glass-stepper-lens {
+  background: linear-gradient(148deg, rgba(255, 255, 255, 0.88) 0%, rgba(243, 238, 228, 0.76) 100%) !important;
+  border: 1px solid rgba(178, 144, 78, 0.62) !important;
+  box-shadow:
+    0 4px 12px rgba(28, 26, 24, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    inset 0 -1px 0 rgba(28, 26, 24, 0.04) !important;
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-reservation .booking-page .booking-progress .liquid-glass-stepper-lens,
+html[data-theme="dark"] .site-shell .liquid-glass-reservation .booking-page.booking-v5 .booking-progress > button > span.liquid-glass-stepper-lens {
+  background: linear-gradient(148deg, rgba(66, 60, 50, 0.72) 0%, rgba(38, 34, 29, 0.74) 100%) !important;
+  border: 1px solid rgba(212, 180, 114, 0.60) !important;
+  box-shadow:
+    0 4px 14px rgba(0, 0, 0, 0.32),
+    inset 0 1px 0 rgba(255, 249, 236, 0.18),
+    inset 0 -1px 0 rgba(255, 248, 232, 0.04) !important;
+}
+
+html[data-theme="light"] .site-shell .liquid-glass-reservation .booking-page .booking-progress > button.current small,
+html[data-theme="light"] .site-shell .liquid-glass-reservation .booking-page .booking-progress > button[aria-current="step"] small {
+  color: #1c1a18 !important;
+  font-weight: 600 !important;
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-reservation .booking-page .booking-progress > button.current small,
+html[data-theme="dark"] .site-shell .liquid-glass-reservation .booking-page .booking-progress > button[aria-current="step"] small {
+  color: #f4f1ea !important;
+  font-weight: 600 !important;
+}

@@ -352,6 +352,56 @@ body[data-lg-admin="true"] .lg-admin-nav-label {
     position: relative;
   }
 
+  body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav {
+    display: block !important;
+    padding: 4px !important;
+    border-radius: 16px !important;
+    overflow-x: hidden;
+  }
+
+  body[data-lg-admin="true"] .v2-navigation .admin-section-nav-items {
+    display: grid !important;
+    grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+    align-items: stretch !important;
+    gap: 3px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  body[data-lg-admin="true"] .v2-navigation .admin-section-nav-link {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 3px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 46px !important;
+    padding: 6px 2px !important;
+    font-size: 0.65625rem !important;
+    line-height: 1.15 !important;
+    letter-spacing: -0.015em;
+    text-align: center;
+    border-radius: 12px !important;
+  }
+
+  body[data-lg-admin="true"] .v2-navigation .admin-section-nav-link svg {
+    width: 15px !important;
+    height: 15px !important;
+  }
+
+  body[data-lg-admin="true"] .lg-admin-nav-label {
+    display: block;
+    max-width: 100%;
+    white-space: nowrap;
+  }
+
+  body[data-lg-admin="true"] .lg-admin-nav-pill {
+    border-radius: 12px;
+  }
+}
+
+@media (max-width: 349px) {
   body[data-lg-admin="true"] .v2-navigation[data-scroll-left="true"]::before,
   body[data-lg-admin="true"] .v2-navigation[data-scroll-right="true"]::after {
     content: "";
@@ -387,8 +437,7 @@ body[data-lg-admin="true"] .lg-admin-nav-label {
   body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav {
     display: flex !important;
     justify-content: flex-start !important;
-    padding: 5px !important;
-    border-radius: 16px !important;
+    overflow-x: auto !important;
     scroll-padding-inline: 8px;
     touch-action: pan-x;
     overscroll-behavior-x: contain;
@@ -403,16 +452,8 @@ body[data-lg-admin="true"] .lg-admin-nav-label {
   }
 
   body[data-lg-admin="true"] .v2-navigation .admin-section-nav-link {
-    flex: 0 0 auto !important;
-    width: auto !important;
-    min-height: 40px !important;
-    padding: 8px 13px !important;
-    font-size: 0.84rem !important;
-    border-radius: 12px !important;
-  }
-
-  body[data-lg-admin="true"] .lg-admin-nav-pill {
-    border-radius: 12px;
+    flex: 0 0 58px !important;
+    width: 58px !important;
   }
 }
 
