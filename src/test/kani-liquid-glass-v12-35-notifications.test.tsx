@@ -58,6 +58,7 @@ const activityMocks = vi.hoisted(() => ({
   dismissAdminActivityNotificationPersonal: vi.fn(),
   deleteAllAdminActivityNotificationsGlobal: vi.fn(),
   dismissAllAdminActivityNotificationsPersonal: vi.fn(),
+  subscribeAdminActivityChanges: vi.fn(() => vi.fn()),
   extractErrorMessage: vi.fn((err: any, fallback: string) =>
     err instanceof Error ? err.message : fallback,
   ),

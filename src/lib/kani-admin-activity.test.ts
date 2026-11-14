@@ -259,4 +259,33 @@ describe('kani-admin-activity V12.39 per-user DB persistence', () => {
       expect(msg).toContain('No se pudo actualizar el almacenamiento');
     });
   });
+
+  describe('V12.40 cutoff snapshot and backward-compatible RPC fallback', () => {
+    it('passes p_before cutoff to dismiss_all_staff_activity_notifications_personal and retries 0-arg if legacy signature exists', async () => {
+      const cutoff = '2026-11-14T18:00:00Z';
+      mockRpc
+        .mockResolvedValueOnce({
+          data: null,
+          error: { code: 'PGRST202', message: 'Could not find the function with p_before' },
+        })
+        .mockResolvedValueOnce({ data: 2, error: null });
+
+      const count = await dismissAllAdminActivityNotificationsPersonal(['id-1', 'id-2'], cutoff);
+      expect(mockRpc).toHaveBeenNthCalledWith(1, 'dismiss_all_staff_activity_notifications_personal', {
+        p_before: cutoff,
+      });
+      expect(mockRpc).toHaveBeenNthCalledWith(2, 'dismiss_all_staff_activity_notifications_personal');
+      expect(count).toBe(2);
+    });
+
+    it('passes p_before cutoff to mark_all_staff_activity_notifications_read when provided', async () => {
+      const cutoff = '2026-11-14T18:05:00Z';
+      mockRpc.mockResolvedValueOnce({ error: null });
+
+      await markAllAdminActivityNotificationsRead(['id-1'], cutoff);
+      expect(mockRpc).toHaveBeenCalledWith('mark_all_staff_activity_notifications_read', {
+        p_before: cutoff,
+      });
+    });
+  });
 });
