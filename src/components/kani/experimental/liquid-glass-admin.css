@@ -2149,8 +2149,7 @@ html[data-theme] body[data-lg-admin="true"] [role="dialog"] .kani-medit-row-acti
  * ============================================================================== */
 
 /* 1. Limpiar background opaco de v2.css:33 (.site-header-slot) y mobile-dark override de styles.css:5155 */
-html[data-theme] body[data-lg-admin="true"] .site-shell > .site-header-slot,
-html[data-theme] body[data-lg-admin="true"] .site-shell:has(.v2-shell) > .site-header-slot {
+html[data-theme] body[data-lg-admin="true"] .site-shell > .site-header-slot:not(:has(> header.menu-open)) {
   position: sticky !important;
   top: 0 !important;
   z-index: 120 !important;
@@ -2168,9 +2167,18 @@ html[data-theme] body[data-lg-admin="true"] :is(.site-shell, .v2-shell, .lg-admi
   overflow-x: clip !important;
 }
 
-html[data-theme] body[data-lg-admin="true"] .site-header-slot:has(> header.menu-open),
+html[data-theme] body[data-lg-admin="true"] .site-shell > .site-header-slot:has(> header.menu-open),
 html[data-theme] body[data-lg-admin="true"] .site-shell:has(.v2-shell) > .site-header-slot:has(> header.menu-open) {
+  position: sticky !important;
+  top: 0 !important;
   z-index: 145 !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
 }
 
 @media (max-width: 767px) {
