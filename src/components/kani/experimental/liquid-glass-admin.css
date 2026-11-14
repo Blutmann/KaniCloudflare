@@ -29,8 +29,8 @@ html[data-theme="light"] body[data-lg-admin="true"] {
   );
   --lga-glass-modal: linear-gradient(
     156deg,
-    rgba(255, 255, 255, 0.82) 0%,
-    rgba(245, 244, 241, 0.72) 100%
+    rgba(255, 255, 255, 0.74) 0%,
+    rgba(245, 243, 239, 0.62) 100%
   );
   --lga-btn-primary-bg: linear-gradient(
     150deg,
@@ -90,8 +90,8 @@ html[data-theme="dark"] body[data-lg-admin="true"] {
   );
   --lga-glass-modal: linear-gradient(
     156deg,
-    rgba(34, 33, 39, 0.78) 0%,
-    rgba(16, 16, 21, 0.74) 100%
+    rgba(30, 30, 36, 0.72) 0%,
+    rgba(14, 14, 19, 0.66) 100%
   );
   --lga-btn-primary-bg: linear-gradient(
     150deg,
@@ -303,13 +303,23 @@ body[data-lg-admin="true"] .v2-navigation .admin-section-nav-link {
   transition: color 160ms ease, transform 150ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav .admin-section-nav-link,
+html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav .admin-section-nav-link :is(svg, .lg-admin-nav-icon, .lg-admin-nav-label) {
+  color: var(--lga-text-muted) !important;
+}
+
 body[data-lg-admin="true"] .v2-navigation .admin-section-nav-link svg {
   width: 16px !important;
   height: 16px !important;
   flex-shrink: 0;
 }
 
-body[data-lg-admin="true"] .v2-navigation .admin-section-nav-link:hover {
+html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav .admin-section-nav-link:hover,
+html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav .admin-section-nav-link:hover :is(svg, .lg-admin-nav-icon, .lg-admin-nav-label),
+html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav .admin-section-nav-link:focus-visible,
+html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav .admin-section-nav-link:focus-visible :is(svg, .lg-admin-nav-icon, .lg-admin-nav-label),
+html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav .admin-section-nav-link:active,
+html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav .admin-section-nav-link:active :is(svg, .lg-admin-nav-icon, .lg-admin-nav-label) {
   color: var(--lga-text) !important;
 }
 
@@ -322,8 +332,16 @@ body[data-lg-admin="true"] .v2-navigation .admin-section-nav-link:focus-visible 
   outline-offset: 2px;
 }
 
-body[data-lg-admin="true"] .v2-navigation .admin-section-nav-link.is-active,
-body[data-lg-admin="true"] .v2-navigation .admin-section-nav-link.is-active:hover {
+html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav .admin-section-nav-link.is-active,
+html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav .admin-section-nav-link.is-active:hover,
+html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav .admin-section-nav-link.is-active:focus-visible,
+html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav .admin-section-nav-link.is-active:active,
+html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav .admin-section-nav-link[aria-current="page"],
+html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav .admin-section-nav-link.is-active :is(svg, .lg-admin-nav-icon, .lg-admin-nav-label),
+html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav .admin-section-nav-link.is-active:hover :is(svg, .lg-admin-nav-icon, .lg-admin-nav-label),
+html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav .admin-section-nav-link.is-active:focus-visible :is(svg, .lg-admin-nav-icon, .lg-admin-nav-label),
+html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav .admin-section-nav-link.is-active:active :is(svg, .lg-admin-nav-icon, .lg-admin-nav-label),
+html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav .admin-section-nav-link[aria-current="page"] :is(svg, .lg-admin-nav-icon, .lg-admin-nav-label) {
   color: var(--lga-text) !important;
   font-weight: 600 !important;
   background: transparent !important;
@@ -508,7 +526,7 @@ body[data-lg-admin="true"] :is(.v2-section-toolbar, .v2-appointments-header) .v2
 /* ------------------------------------------------------------------------------
  * LAYER 5 · BOTONES LIQUID GLASS (SIN NEGRO SÓLIDO NI DORADO SÓLIDO)
  * ------------------------------------------------------------------------------ */
-html[data-theme] body[data-lg-admin="true"] :is(.v2-shell, .v2-dialog, .admin-login-page) :is(
+html[data-theme] body[data-lg-admin="true"] :is(.v2-shell, .v2-dialog, [role="dialog"], .admin-login-page) :is(
   .v2-primary,
   .v2-add-manual-btn,
   .v2-toolbar-action,
@@ -534,7 +552,7 @@ html[data-theme] body[data-lg-admin="true"] :is(.v2-shell, .v2-dialog, .admin-lo
     box-shadow 160ms ease !important;
 }
 
-html[data-theme] body[data-lg-admin="true"] :is(.v2-shell, .v2-dialog, .admin-login-page) :is(
+html[data-theme] body[data-lg-admin="true"] :is(.v2-shell, .v2-dialog, [role="dialog"], .admin-login-page) :is(
   .v2-primary,
   .v2-add-manual-btn,
   .v2-toolbar-action,
@@ -546,7 +564,7 @@ html[data-theme] body[data-lg-admin="true"] :is(.v2-shell, .v2-dialog, .admin-lo
   color: var(--lga-accent) !important;
 }
 
-html[data-theme] body[data-lg-admin="true"] :is(.v2-shell, .v2-dialog, .admin-login-page) :is(
+html[data-theme] body[data-lg-admin="true"] :is(.v2-shell, .v2-dialog, [role="dialog"], .admin-login-page) :is(
   .v2-primary,
   .v2-add-manual-btn,
   .v2-toolbar-action,
@@ -963,9 +981,171 @@ body[data-lg-admin="true"] select option {
   color: var(--lga-option-text) !important;
 }
 
-body[data-lg-admin="true"] input[type="date"]::-webkit-calendar-picker-indicator {
-  opacity: 0.85;
-  cursor: pointer;
+html[data-theme="light"] body[data-lg-admin="true"] :is(
+  .v2-shell,
+  .v2-admin-filter-panel,
+  .v2-admin-filter-control,
+  .v2-admin-filter-card,
+  .v2-custom-range-row,
+  .v2-filters,
+  [role="dialog"]
+) :is(input[type="date"], input[type="time"]) {
+  color-scheme: light !important;
+  color: var(--lga-text) !important;
+  -webkit-text-fill-color: var(--lga-text) !important;
+  opacity: 1 !important;
+}
+
+html[data-theme="dark"] body[data-lg-admin="true"] :is(
+  .v2-shell,
+  .v2-admin-filter-panel,
+  .v2-admin-filter-control,
+  .v2-admin-filter-card,
+  .v2-custom-range-row,
+  .v2-filters,
+  [role="dialog"]
+) :is(input[type="date"], input[type="time"]) {
+  color-scheme: dark !important;
+  color: var(--lga-text) !important;
+  -webkit-text-fill-color: var(--lga-text) !important;
+  opacity: 1 !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] :is(
+  .v2-shell,
+  .v2-admin-filter-panel,
+  .v2-admin-filter-control,
+  .v2-admin-filter-card,
+  .v2-custom-range-row,
+  .v2-filters,
+  [role="dialog"]
+) :is(input[type="date"], input[type="time"]):hover:not(:disabled) {
+  border-color: var(--lga-border-strong) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] :is(
+  .v2-shell,
+  .v2-admin-filter-panel,
+  .v2-admin-filter-control,
+  .v2-admin-filter-card,
+  .v2-custom-range-row,
+  .v2-filters,
+  [role="dialog"]
+) :is(input[type="date"], input[type="time"])::-webkit-date-and-time-value,
+html[data-theme] body[data-lg-admin="true"] :is(
+  .v2-shell,
+  .v2-admin-filter-panel,
+  .v2-admin-filter-control,
+  .v2-admin-filter-card,
+  .v2-custom-range-row,
+  .v2-filters,
+  [role="dialog"]
+) :is(input[type="date"], input[type="time"])::-webkit-datetime-edit,
+html[data-theme] body[data-lg-admin="true"] :is(
+  .v2-shell,
+  .v2-admin-filter-panel,
+  .v2-admin-filter-control,
+  .v2-admin-filter-card,
+  .v2-custom-range-row,
+  .v2-filters,
+  [role="dialog"]
+) :is(input[type="date"], input[type="time"])::-webkit-datetime-edit-fields-wrapper,
+html[data-theme] body[data-lg-admin="true"] :is(
+  .v2-shell,
+  .v2-admin-filter-panel,
+  .v2-admin-filter-control,
+  .v2-admin-filter-card,
+  .v2-custom-range-row,
+  .v2-filters,
+  [role="dialog"]
+) :is(input[type="date"], input[type="time"])::-webkit-datetime-edit-text,
+html[data-theme] body[data-lg-admin="true"] :is(
+  .v2-shell,
+  .v2-admin-filter-panel,
+  .v2-admin-filter-control,
+  .v2-admin-filter-card,
+  .v2-custom-range-row,
+  .v2-filters,
+  [role="dialog"]
+) :is(input[type="date"], input[type="time"])::-webkit-datetime-edit-day-field,
+html[data-theme] body[data-lg-admin="true"] :is(
+  .v2-shell,
+  .v2-admin-filter-panel,
+  .v2-admin-filter-control,
+  .v2-admin-filter-card,
+  .v2-custom-range-row,
+  .v2-filters,
+  [role="dialog"]
+) :is(input[type="date"], input[type="time"])::-webkit-datetime-edit-month-field,
+html[data-theme] body[data-lg-admin="true"] :is(
+  .v2-shell,
+  .v2-admin-filter-panel,
+  .v2-admin-filter-control,
+  .v2-admin-filter-card,
+  .v2-custom-range-row,
+  .v2-filters,
+  [role="dialog"]
+) :is(input[type="date"], input[type="time"])::-webkit-datetime-edit-year-field,
+html[data-theme] body[data-lg-admin="true"] :is(
+  .v2-shell,
+  .v2-admin-filter-panel,
+  .v2-admin-filter-control,
+  .v2-admin-filter-card,
+  .v2-custom-range-row,
+  .v2-filters,
+  [role="dialog"]
+) input[type="time"]::-webkit-datetime-edit-hour-field,
+html[data-theme] body[data-lg-admin="true"] :is(
+  .v2-shell,
+  .v2-admin-filter-panel,
+  .v2-admin-filter-control,
+  .v2-admin-filter-card,
+  .v2-custom-range-row,
+  .v2-filters,
+  [role="dialog"]
+) input[type="time"]::-webkit-datetime-edit-minute-field,
+html[data-theme] body[data-lg-admin="true"] :is(
+  .v2-shell,
+  .v2-admin-filter-panel,
+  .v2-admin-filter-control,
+  .v2-admin-filter-card,
+  .v2-custom-range-row,
+  .v2-filters,
+  [role="dialog"]
+) input[type="time"]::-webkit-datetime-edit-ampm-field {
+  color: var(--lga-text) !important;
+  -webkit-text-fill-color: var(--lga-text) !important;
+  opacity: 1 !important;
+}
+
+html[data-theme="light"] body[data-lg-admin="true"] :is(
+  .v2-shell,
+  .v2-admin-filter-panel,
+  .v2-admin-filter-control,
+  .v2-admin-filter-card,
+  .v2-custom-range-row,
+  .v2-filters,
+  [role="dialog"]
+) :is(input[type="date"], input[type="time"])::-webkit-calendar-picker-indicator {
+  color-scheme: light !important;
+  filter: none !important;
+  opacity: 0.78 !important;
+  cursor: pointer !important;
+}
+
+html[data-theme="dark"] body[data-lg-admin="true"] :is(
+  .v2-shell,
+  .v2-admin-filter-panel,
+  .v2-admin-filter-control,
+  .v2-admin-filter-card,
+  .v2-custom-range-row,
+  .v2-filters,
+  [role="dialog"]
+) :is(input[type="date"], input[type="time"])::-webkit-calendar-picker-indicator {
+  color-scheme: dark !important;
+  filter: none !important;
+  opacity: 0.92 !important;
+  cursor: pointer !important;
 }
 
 body[data-lg-admin="true"] input:-webkit-autofill {
@@ -1298,29 +1478,154 @@ body[data-lg-admin="true"] .v2-insight-grid p {
 /* ------------------------------------------------------------------------------
  * LAYER 8 · MODALES, POPOVERS, ALERTAS Y REDUCED MOTION
  * ------------------------------------------------------------------------------ */
-body[data-lg-admin="true"] [data-slot="dialog-overlay"] {
-  background: rgba(10, 10, 12, 0.46) !important;
-  -webkit-backdrop-filter: blur(8px) !important;
-  backdrop-filter: blur(8px) !important;
+html[data-theme="light"] body[data-lg-admin="true"] :is(
+  [data-slot="dialog-overlay"],
+  [data-radix-portal] > .fixed.inset-0,
+  .v2-client-modal-overlay
+) {
+  background: rgba(236, 234, 230, 0.40) !important;
+  background-color: rgba(236, 234, 230, 0.40) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(138%) !important;
+  backdrop-filter: blur(12px) saturate(138%) !important;
 }
 
-body[data-lg-admin="true"] :is(
+html[data-theme="dark"] body[data-lg-admin="true"] :is(
+  [data-slot="dialog-overlay"],
+  [data-radix-portal] > .fixed.inset-0,
+  .v2-client-modal-overlay
+) {
+  background: rgba(8, 8, 12, 0.54) !important;
+  background-color: rgba(8, 8, 12, 0.54) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(138%) !important;
+  backdrop-filter: blur(12px) saturate(138%) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] :is(
+  [role="dialog"],
   [role="dialog"].v2-dialog,
-  .v2-manual-dialog,
-  .v2-client-dialog,
-  .client-dialog,
-  .v2-medit-modal,
+  .v2-dialog.v2-manual-dialog,
+  .v2-dialog.v2-client-modal,
+  .v2-dialog.v2-client-modal.v2-client-confirm,
+  .v2-dialog.kani-medit-dialog,
+  .v2-dialog.v2-medit-modal,
+  .v2-dialog.v2-payment-edit-dialog,
+  .manual-dialog,
   .admin-schedule-dialog,
   .notification-popover
 ) {
   background: var(--lga-glass-modal) !important;
-  -webkit-backdrop-filter: blur(28px) saturate(155%) !important;
-  backdrop-filter: blur(28px) saturate(155%) !important;
+  background-color: transparent !important;
+  -webkit-backdrop-filter: blur(28px) saturate(160%) !important;
+  backdrop-filter: blur(28px) saturate(160%) !important;
   border: 1px solid var(--lga-border-strong) !important;
   box-shadow: var(--lga-shadow-modal), var(--lga-specular) !important;
   border-radius: 22px !important;
   color: var(--lga-text) !important;
-  animation: lgaDialogIn 200ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: lgaDialogFadeIn 190ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"]:not(.v2-client-modal) {
+  width: min(
+    540px,
+    calc(100vw - max(24px, env(safe-area-inset-left, 0px) + env(safe-area-inset-right, 0px)))
+  ) !important;
+  max-width: calc(100vw - 24px) !important;
+  max-height: calc(100dvh - max(24px, env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px))) !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+  padding: 20px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"]:is(.kani-medit-dialog, .v2-medit-modal) {
+  width: min(640px, calc(100vw - 24px)) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"].v2-dialog.v2-manual-dialog {
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
+/* Eliminar rectángulos sólidos heredados en headers y footers de modales */
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(
+  .v2-manual-dialog-header,
+  .v2-manual-dialog-actions,
+  .v2-manual-actions,
+  .v2-client-modal-header,
+  .v2-client-modal-footer,
+  .v2-dialog-actions,
+  .manual-dialog-footer
+) {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-dialog.v2-manual-dialog :is(.v2-manual-dialog-actions, .v2-manual-actions) {
+  position: static !important;
+  bottom: auto !important;
+  margin-top: 10px !important;
+  padding: 14px 0 calc(2px + env(safe-area-inset-bottom, 0px)) 0 !important;
+  border-top: 1px solid var(--lga-border) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(.v2-client-modal-footer, .manual-dialog-footer, .v2-dialog-actions) {
+  border-top: 1px solid var(--lga-border) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(.manual-dialog-footer, .v2-dialog-actions) {
+  padding-top: 14px !important;
+  margin-top: 14px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] .v2-client-modal-footer {
+  padding: 14px 16px calc(14px + env(safe-area-inset-bottom, 0px)) 16px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(.v2-client-modal-header, .v2-manual-dialog-header, .v2-dialog.v2-manual-dialog > p) {
+  border-bottom: 1px solid var(--lga-border) !important;
+}
+
+/* Sub-superficies y textos dentro de modales */
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(h2, h3, legend) {
+  color: var(--lga-text) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(p, dt, .text-muted-foreground) {
+  color: var(--lga-text-muted) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(label, .v2-field, dd) {
+  color: var(--lga-text) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(.v2-manual-time-section, .v2-capsules-container, .kani-medit-section) {
+  background: var(--lga-glass-structural) !important;
+  border: 1px solid var(--lga-border) !important;
+  border-radius: 14px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] > button:has(> .sr-only),
+html[data-theme] body[data-lg-admin="true"] .v2-manual-close-btn {
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  border-radius: 9999px !important;
+  color: var(--lga-text-muted) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] > button:has(> .sr-only):hover,
+html[data-theme] body[data-lg-admin="true"] .v2-manual-close-btn:hover {
+  background: var(--lga-glass-hover) !important;
+  border-color: var(--lga-border) !important;
+  color: var(--lga-text) !important;
+}
+
+@media (max-width: 420px) {
+  html[data-theme] body[data-lg-admin="true"] .v2-dialog.v2-manual-dialog .v2-manual-row {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
 }
 
 body[data-lg-admin="true"] .notification-item {
@@ -1355,14 +1660,12 @@ body[data-lg-admin="true"] .v2-loading {
   gap: 8px;
 }
 
-@keyframes lgaDialogIn {
+@keyframes lgaDialogFadeIn {
   from {
     opacity: 0;
-    transform: translateY(6px) scale(0.985);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
   }
 }
 

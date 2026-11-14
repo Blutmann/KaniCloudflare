@@ -1622,6 +1622,10 @@ html[data-theme="dark"] .site-shell .liquid-glass-reservation .booking-option.se
 /* =========================================================
  * MOTION V1 — Lente deslizante, tarjetas y transiciones
  * ========================================================= */
+html[data-theme] .liquid-glass-reservation .booking-page .booking-progress:has(.liquid-glass-stepper-lens) {
+  overflow: visible !important;
+}
+
 html[data-theme] .liquid-glass-reservation .booking-page .booking-progress:has(.liquid-glass-stepper-lens)::before {
   display: none !important;
   content: none !important;
