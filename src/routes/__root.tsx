@@ -107,9 +107,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="es" data-theme="light">
-        <head>
-          <HeadContent />
+    <html lang="es" data-theme="light" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "try{var t=window.localStorage.getItem('kani-theme');if(t==='dark'||t==='light'){document.documentElement.dataset.theme=t;}}catch(e){}",
+          }}
+        />
+        <HeadContent />
       </head>
       <body>
         {children}
