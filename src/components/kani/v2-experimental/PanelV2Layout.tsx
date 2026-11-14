@@ -92,10 +92,12 @@ export function PanelV2Layout({
 
     let cancelled = false;
     let refreshRevision = 0;
-    async function refreshStaff() {
+    async function refreshStaff(options?: { bypassCache?: boolean }) {
       const revision = ++refreshRevision;
       try {
-        const staff = await getAuthenticatedStaff({ bypassCache: true });
+        const staff = await getAuthenticatedStaff(
+          options?.bypassCache ? { bypassCache: true } : undefined,
+        );
         if (!cancelled && revision === refreshRevision) {
           setState({ loading: false, staff, error: "" });
         }
@@ -113,11 +115,21 @@ export function PanelV2Layout({
     void refreshStaff();
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(() => {
+    } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "INITIAL_SESSION") return;
+      if (event === "SIGNED_OUT") {
+        clearStaffCache();
+        if (!cancelled) setState({ loading: false, staff: null, error: "" });
+        return;
+      }
+      if (event === "TOKEN_REFRESHED") {
+        void refreshStaff({ bypassCache: true });
+        return;
+      }
       clearStaffCache();
       if (!cancelled) setState({ loading: true, staff: null, error: "" });
       window.setTimeout(() => {
-        if (!cancelled) void refreshStaff();
+        if (!cancelled) void refreshStaff({ bypassCache: true });
       }, 0);
     });
 

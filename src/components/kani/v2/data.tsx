@@ -73,34 +73,43 @@ export function V2DataProvider({ children }: { children: ReactNode }) {
       if (staff.profile.role === "BARBER")
         capabilityQuery = capabilityQuery.eq("barber_id", staff.profile.barber_id!);
 
-      let loadedMemberships: ClientMembershipRecord[] = [];
-      let membershipsErrorMsg: string | null = null;
-      try {
-        loadedMemberships = await fetchClientMemberships(staff);
-      } catch (memCause) {
-        console.warn("[V2DataProvider] Error al cargar membresías desde Supabase:", memCause);
-        membershipsErrorMsg =
-          memCause instanceof Error
-            ? memCause.message
-            : "No se pudieron cargar las membresías.";
-      }
-
-      const [appointments, payments, starts, services, clientResult, capability] =
-        await Promise.all([
-          readStaffAppointments(staff),
-          fetchServicePayments({}, staff),
-          Promise.all(
-            barbers.map((b) =>
-              readAvailabilityStartsForRange(b.id, {
-                start: today,
-                end: addCalendarDays(today, 7),
-              }),
-            ),
-          ).then((rows) => rows.flat()),
-          readConfiguredServices(),
-          supabase.from("clients").select("*").order("name"),
-          capabilityQuery,
-        ]);
+      const [
+        appointments,
+        payments,
+        starts,
+        services,
+        clientResult,
+        capability,
+        membershipOutcome,
+      ] = await Promise.all([
+        readStaffAppointments(staff),
+        fetchServicePayments({}, staff),
+        Promise.all(
+          barbers.map((b) =>
+            readAvailabilityStartsForRange(b.id, {
+              start: today,
+              end: addCalendarDays(today, 7),
+            }),
+          ),
+        ).then((rows) => rows.flat()),
+        readConfiguredServices(),
+        supabase.from("clients").select("*").order("name"),
+        capabilityQuery,
+        fetchClientMemberships(staff)
+          .then((list) => ({ list, error: null as string | null }))
+          .catch((memCause) => {
+            console.warn("[V2DataProvider] Error al cargar membresías desde Supabase:", memCause);
+            return {
+              list: [] as ClientMembershipRecord[],
+              error:
+                memCause instanceof Error
+                  ? memCause.message
+                  : "No se pudieron cargar las membresías.",
+            };
+          }),
+      ]);
+      const loadedMemberships = membershipOutcome.list;
+      const membershipsErrorMsg = membershipOutcome.error;
       if (clientResult.error) throw clientResult.error;
       const loadedClients = ((clientResult.data ?? []) as V2Client[]).filter(
         (c) => !(c as any).deleted_at,

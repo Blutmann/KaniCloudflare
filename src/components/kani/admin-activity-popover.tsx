@@ -60,8 +60,9 @@ function toAdminNotification(event: AdminActivityEvent): AdminNotification {
   };
 }
 
-export function AdminActivityPopover({ role = 'ADMIN' }: { role?: 'ADMIN' | 'BARBER' }) {
+export function AdminActivityPopover({ role = 'ADMIN', userId }: { role?: 'ADMIN' | 'BARBER'; userId?: string }) {
   const [notifications, setNotifications] = useState<AdminNotification[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmDeleteAllOpen, setConfirmDeleteAllOpen] = useState(false);
@@ -70,15 +71,17 @@ export function AdminActivityPopover({ role = 'ADMIN' }: { role?: 'ADMIN' | 'BAR
 
   function reload() {
     let cancelled = false;
-    readAdminActivityNotifications()
+    setLoading(true);
+    readAdminActivityNotifications(userId)
       .then(events => { if (!cancelled) setNotifications(events.map(toAdminNotification)); })
-      .catch(cause => { if (!cancelled) setError(extractErrorMessage(cause, 'No se pudieron cargar las novedades.')); });
+      .catch(cause => { if (!cancelled) setError(extractErrorMessage(cause, 'No se pudieron cargar las novedades.')); })
+      .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }
 
   useEffect(() => {
     return reload();
-  }, [role]);
+  }, [role, userId]);
 
   async function toggleNotificationRead(notification: AdminNotification) {
     const readAt = notification.readAt ? null : new Date().toISOString();
@@ -169,7 +172,13 @@ export function AdminActivityPopover({ role = 'ADMIN' }: { role?: 'ADMIN' | 'BAR
             <div>
               <span className="eyebrow">ACTIVIDAD</span>
               <h2 className="mt-1 text-lg">Notificaciones</h2>
-              <p className="notification-unread-summary">{unreadNotifications.length ? `${unreadNotifications.length} sin leer` : 'Todas leídas'}</p>
+              <p className="notification-unread-summary">
+                {loading
+                  ? 'Cargando novedades...'
+                  : unreadNotifications.length
+                    ? `${unreadNotifications.length} sin leer`
+                    : 'Todas leídas'}
+              </p>
             </div>
           </div>
           {error && <p role="alert" className="mt-3 text-xs text-destructive">{error}</p>}
@@ -205,7 +214,12 @@ export function AdminActivityPopover({ role = 'ADMIN' }: { role?: 'ADMIN' | 'BAR
               </Button>
             )}
           </div>
-          {notifications.length === 0 ? (
+          {loading && notifications.length === 0 ? (
+            <div className="notification-empty" role="status">
+              <Bell size={24} />
+              <p>Cargando novedades...</p>
+            </div>
+          ) : notifications.length === 0 ? (
             <div className="notification-empty">
               <Bell size={24} />
               <p>No hay novedades recientes.</p>

@@ -74,10 +74,12 @@ export function V2Layout({
     }
     let cancelled = false;
     let refreshRevision = 0;
-    async function refresh() {
+    async function refresh(options?: { bypassCache?: boolean }) {
       const revision = ++refreshRevision;
       try {
-        const staff = await getAuthenticatedStaff({ bypassCache: true });
+        const staff = await getAuthenticatedStaff(
+          options?.bypassCache ? { bypassCache: true } : undefined,
+        );
         if (!cancelled && revision === refreshRevision) setState({ loading: false, staff, error: "" });
       } catch {
         if (!cancelled && revision === refreshRevision)
@@ -91,12 +93,22 @@ export function V2Layout({
     void refresh();
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(() => {
+    } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "INITIAL_SESSION") return;
+      if (event === "SIGNED_OUT") {
+        clearStaffCache();
+        if (!cancelled) setState({ loading: false, staff: null, error: "" });
+        return;
+      }
+      if (event === "TOKEN_REFRESHED") {
+        void refresh({ bypassCache: true });
+        return;
+      }
       clearStaffCache();
       // Hide stale data immediately, including during account switching.
       if (!cancelled) setState({ loading: true, staff: null, error: "" });
       window.setTimeout(() => {
-        if (!cancelled) void refresh();
+        if (!cancelled) void refresh({ bypassCache: true });
       }, 0);
     });
     return () => {
@@ -310,7 +322,7 @@ function V2Shell({ basePath, liquidGlass = false }: { basePath: string; liquidGl
       <div className="v2-workspace">
         {error && (
           <div role="alert" className="v2-alert">
-            {error} <button onClick={() => void refresh()}>Reintentar</button>
+            {error} <button onClick={() => void refresh({ bypassCache: true })}>Reintentar</button>
           </div>
         )}
         {loading && (

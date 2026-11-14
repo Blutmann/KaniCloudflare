@@ -223,12 +223,14 @@ export function extractErrorMessage(error: unknown, fallback = 'Ocurrió un erro
  * En fallback, consulta `admin_activity_notifications` y aplica los descartes y estados
  * de lectura persistidos.
  */
-export async function readAdminActivityNotifications(): Promise<AdminActivityEvent[]> {
-  let currentUserId: string | undefined;
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    currentUserId = user?.id;
-  } catch {}
+export async function readAdminActivityNotifications(knownUserId?: string): Promise<AdminActivityEvent[]> {
+  let currentUserId: string | undefined = knownUserId;
+  if (!currentUserId) {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      currentUserId = user?.id;
+    } catch {}
+  }
 
   const persistentDismissed = getDismissedSet(currentUserId);
   const persistentReadMap = getReadMap(currentUserId);

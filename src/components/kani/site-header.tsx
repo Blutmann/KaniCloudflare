@@ -1,7 +1,7 @@
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router';
 import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState, type MouseEvent } from 'react';
 import { createPortal } from 'react-dom';
-import { ArrowUpRight, Building2, CalendarClock, CalendarDays, ChartNoAxesCombined, Clock3, CreditCard, Instagram, LayoutGrid, LogIn, LogOut, MapPin, Menu, Moon, Scale, ShieldCheck, Sun, Tag, Users, Wrench, X } from 'lucide-react';
+import { ArrowUpRight, Bell, Building2, CalendarClock, CalendarDays, ChartNoAxesCombined, Clock3, CreditCard, Instagram, LayoutGrid, LogIn, LogOut, MapPin, Menu, Moon, Scale, ShieldCheck, Sun, Tag, Users, Wrench, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import kaniLogoLight from '@/assets/kani-logo-light.webp';
 import kaniLogoDark from '@/assets/kani-logo-dark.webp';
@@ -106,15 +106,27 @@ export function SiteHeader() {
         if (!cancelled) setStaff(next);
       });
     };
+    const handleStaffAuthEvent = (event: Event) => {
+      if (cancelled) return;
+      const custom = event as CustomEvent<{ staff?: AuthenticatedStaff | null }>;
+      if (custom.detail && 'staff' in custom.detail) {
+        setStaff(custom.detail.staff ?? null);
+      }
+    };
+    window.addEventListener('kani:staff-auth-changed', handleStaffAuthEvent);
     refreshStaff();
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'SIGNED_OUT') {
         if (!cancelled) setStaff(null);
-      } else {
+      } else if (event !== 'INITIAL_SESSION') {
         window.setTimeout(refreshStaff, 0);
       }
     });
-    return () => { cancelled = true; subscription.unsubscribe(); };
+    return () => {
+      cancelled = true;
+      window.removeEventListener('kani:staff-auth-changed', handleStaffAuthEvent);
+      subscription.unsubscribe();
+    };
   }, []);
   useEffect(() => { onMenuOpenChange(false); }, [path, onMenuOpenChange]);
   useEffect(() => {
@@ -309,7 +321,7 @@ export function SiteHeader() {
     )
   ) : null;
   return <>
-    <div className="site-header-slot"><header className={`site-header ${menuOpen ? 'menu-open' : ''} ${isLiquidRoute ? 'liquid-glass-header' : ''}`.trim()}><div className="site-container flex items-center gap-4"><div className="admin-header-left"><Link to={logoTarget} aria-label="Kani Barber Studio, inicio" className="w-fit" onClick={closeMenu}><Wordmark /></Link></div><div className="header-controls ml-auto">{staff && (!isLiquidRoute || admin) && <Suspense fallback={null}><AdminActivityPopover role={staff.profile.role} /></Suspense>}<HeaderWhatsApp /><ThemeToggle /><Button variant="outline" size="icon" className={`mobile-menu-trigger header-control-button ${admin ? 'admin-menu-trigger' : ''}`} aria-label={menuOpen ? 'Cerrar menú' : 'Abrir menú'} aria-expanded={menuOpen} aria-controls={menuOpen ? "kani-main-menu" : undefined} ref={menuButtonRef} onClick={() => onMenuOpenChange(!menuOpen)}>{menuOpen ? <X /> : <Menu />}</Button></div></div></header></div>
+    <div className="site-header-slot"><header className={`site-header ${menuOpen ? 'menu-open' : ''} ${isLiquidRoute ? 'liquid-glass-header' : ''}`.trim()}><div className="site-container flex items-center gap-4"><div className="admin-header-left"><Link to={logoTarget} aria-label="Kani Barber Studio, inicio" className="w-fit" onClick={closeMenu}><Wordmark /></Link></div><div className="header-controls ml-auto">{staff && (!isLiquidRoute || admin) && <Suspense fallback={<Button type="button" variant="outline" size="icon" className="notification-trigger header-control-button" aria-label="Cargando notificaciones" disabled><Bell /></Button>}><AdminActivityPopover role={staff.profile.role} userId={staff.user.id} /></Suspense>}<HeaderWhatsApp /><ThemeToggle /><Button variant="outline" size="icon" className={`mobile-menu-trigger header-control-button ${admin ? 'admin-menu-trigger' : ''}`} aria-label={menuOpen ? 'Cerrar menú' : 'Abrir menú'} aria-expanded={menuOpen} aria-controls={menuOpen ? "kani-main-menu" : undefined} ref={menuButtonRef} onClick={() => onMenuOpenChange(!menuOpen)}>{menuOpen ? <X /> : <Menu />}</Button></div></div></header></div>
     {typeof document !== 'undefined' && mobileMenu ? createPortal(mobileMenu, document.body) : null}
     {typeof document !== 'undefined' && menuOpen && !isLiquidRoute ? createPortal(<MobileMenuAction />, document.body) : null}
   </>;
