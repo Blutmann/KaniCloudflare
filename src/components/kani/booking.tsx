@@ -1713,29 +1713,36 @@ export function Booking({
 
                   {!appliedBenefit ? (
                     <div className="discount-input-row mt-2 flex items-stretch gap-2.5 w-full">
-                      <Input
-                        id="booking-discount-code"
-                        type="text"
-                        autoCapitalize="characters"
-                        autoCorrect="off"
-                        spellCheck="false"
-                        placeholder="KANI-XXXX-XXXX-XXXX"
-                        value={benefitCodeInput}
-                        disabled={benefitValidationLoading}
-                        onChange={(e) => {
-                          setBenefitCodeInput(e.target.value.toUpperCase());
-                          setBenefitErrorMessage(null);
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            void applyBenefitCode();
-                          }
-                        }}
-                        aria-invalid={Boolean(benefitErrorMessage)}
-                        aria-describedby={benefitErrorMessage ? 'benefit-code-error' : undefined}
-                        className="discount-input font-mono tracking-wider text-xs sm:text-sm uppercase h-11 min-h-[44px] max-h-[44px] m-0"
-                      />
+                      <span className={`field-control flex-1 min-w-0 ${benefitErrorMessage ? 'invalid' : ''}`}>
+                        <Input
+                          id="booking-discount-code"
+                          type="text"
+                          autoCapitalize="characters"
+                          autoCorrect="off"
+                          spellCheck="false"
+                          placeholder="KANI-XXXX-XXXX-XXXX"
+                          value={benefitCodeInput}
+                          disabled={benefitValidationLoading}
+                          onChange={(e) => {
+                            setBenefitCodeInput(e.target.value.toUpperCase());
+                            setBenefitErrorMessage(null);
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              void applyBenefitCode();
+                            }
+                          }}
+                          aria-invalid={Boolean(benefitErrorMessage)}
+                          aria-describedby={benefitErrorMessage ? 'benefit-code-error' : undefined}
+                          className="discount-input font-mono tracking-wider text-xs sm:text-sm uppercase h-11 min-h-[44px] max-h-[44px] m-0"
+                        />
+                        {benefitErrorMessage && (
+                          <span className="field-validation-icon invalid" aria-hidden="true">
+                            <CircleAlert size={14} />
+                          </span>
+                        )}
+                      </span>
                       <Button
                         type="button"
                         onClick={applyBenefitCode}
@@ -1803,14 +1810,13 @@ export function Booking({
                   )}
 
                   {benefitErrorMessage && (
-                    <p
+                    <span
                       id="benefit-code-error"
                       role="alert"
-                      className="field-validation-message text-destructive text-xs mt-1.5 flex items-center gap-1.5"
+                      className="field-validation-message"
                     >
-                      <CircleAlert size={14} className="shrink-0" aria-hidden="true" />
-                      <span>{benefitErrorMessage}</span>
-                    </p>
+                      {benefitErrorMessage}
+                    </span>
                   )}
                 </div>
                 {isV1 && <Button type="submit" hidden className="hidden" tabIndex={-1}>Continuar</Button>}

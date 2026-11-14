@@ -6871,23 +6871,18 @@ html[data-theme="dark"] .site-shell .liquid-glass-reservation .booking-page .boo
   transition: background-color 9999s ease-out 0s !important;
 }
 
-/* 5. CÓDIGO DE DESCUENTO — ERROR INLINE HORIZONTAL ALINEADO ([ícono] [mensaje]) */
+/* 5. CÓDIGO DE DESCUENTO — ERROR UNIFICADO CON EMAIL (ícono dentro del campo, mensaje limpio debajo) */
+html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-discount-field .discount-input-row .field-control.invalid > input,
+html[data-theme] .site-shell .liquid-glass-reservation .booking-page .field-control.invalid > input#booking-discount-code {
+  padding-right: 44px !important;
+}
+
 html[data-theme] .site-shell .liquid-glass-reservation .booking-page.booking-v5 #benefit-code-error.field-validation-message,
 html[data-theme] .site-shell .liquid-glass-reservation .booking-page #benefit-code-error.field-validation-message,
 html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-discount-field .field-validation-message {
-  display: flex !important;
-  flex-direction: row !important;
-  align-items: flex-start !important;
-  justify-content: flex-start !important;
-  gap: 6px !important;
+  display: block !important;
   line-height: 1.35 !important;
   margin-top: 6px !important;
-}
-
-html[data-theme] .site-shell .liquid-glass-reservation .booking-page #benefit-code-error.field-validation-message > svg,
-html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-discount-field .field-validation-message > svg {
-  flex-shrink: 0 !important;
-  margin-top: 2px !important;
 }
 
 /* ==============================================================================
