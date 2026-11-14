@@ -1,6 +1,8 @@
 import { useEffect, type ReactNode } from 'react';
+import '@fontsource-variable/inter';
 import '@/components/kani/experimental/liquid-glass.css';
 import '@/components/kani/experimental/liquid-glass-routes.css';
+import '@/components/kani/experimental/liquid-glass-typography.css';
 
 export type LiquidGlassSection = 'booking' | 'contact' | 'admin' | 'legal';
 

@@ -162,14 +162,11 @@ describe('KANI Barber Studio — Liquid Glass Experience (/reservar-turno-liquid
     unmount();
   });
 
-  it('11. Tipografía híbrida V1: Zen Antique editorial + Geist Sans funcional aislados en /reservar-turno-liquid', () => {
-    expect(routeCode).toContain("@fontsource/geist-sans/400.css");
-    expect(routeCode).toContain("@fontsource/geist-sans/500.css");
-    expect(routeCode).toContain("@fontsource/geist-sans/600.css");
-    expect(liquidCss).toContain("--lg-font-editorial: 'Zen Antique', serif;");
-    expect(liquidCss).toContain("--lg-font-ui: 'Geist Sans'");
-    expect(liquidCss).not.toMatch(/^body\s*\{[^}]*Geist/m);
-    expect(liquidCss).not.toMatch(/^html\s*\{[^}]*Geist/m);
+  it('11. Unificación tipográfica: Inter Variable local en toda la experiencia Liquid Glass y aislada de rutas tradicionales', () => {
+    expect(routeCode).toContain("@fontsource-variable/inter");
+    expect(liquidCss).toContain("--lg-font-ui: 'Inter Variable'");
+    expect(liquidCss).not.toMatch(/^body\s*\{[^}]*Inter Variable/m);
+    expect(liquidCss).not.toMatch(/^html\s*\{[^}]*Inter Variable/m);
   });
 
   it('12. Fondos KANI Signature Glass (Claro/Oscuro, Mobile/Desktop) con fallbacks y contraste Dark Mode', () => {
