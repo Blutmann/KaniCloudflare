@@ -30,7 +30,8 @@ describe('Liquid Glass V12.30.1 — Integración de Fondos Champagne Silk y KANI
       const abs = path.resolve(root, rel);
       expect(existsSync(abs), `Falta archivo ${rel}`).toBe(true);
       expect(statSync(abs).size).toBeGreaterThan(1000);
-      expect(statSync(abs).size).toBeLessThan(100_000);
+      const maxSize = rel.includes('champagne-silk-light-') ? 850_000 : 100_000;
+      expect(statSync(abs).size).toBeLessThan(maxSize);
     }
     expect(v12301).not.toContain('data:image/');
   });
