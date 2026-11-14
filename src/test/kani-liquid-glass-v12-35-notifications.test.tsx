@@ -190,11 +190,12 @@ describe('Liquid Glass V12.35 — Notifications Center & Header Bell Persistence
     activityMocks.markAllAdminActivityNotificationsUnread.mockImplementation(async () => {
       currentItems = currentItems.map((item) => ({ ...item, read_at: null }));
     });
-    activityMocks.deleteAdminActivityNotificationGlobal.mockImplementation(async (id: string) => {
+    activityMocks.dismissAdminActivityNotificationPersonal.mockImplementation(async (id: string) => {
       currentItems = currentItems.filter((item) => item.id !== id);
     });
-    activityMocks.deleteAllAdminActivityNotificationsGlobal.mockImplementation(async () => {
+    activityMocks.dismissAllAdminActivityNotificationsPersonal.mockImplementation(async () => {
       currentItems = [];
+      return 0;
     });
 
     render(<AdminActivityPopover role="ADMIN" userId="admin-1" isLiquid={true} />);
@@ -232,11 +233,11 @@ describe('Liquid Glass V12.35 — Notifications Center & Header Bell Persistence
       expect(screen.getByText('Todas leídas')).toBeTruthy();
     });
 
-    // Delete single notification
+    // Delete single notification (personal dismissal even for ADMIN in V12.39)
     const deleteButtons = screen.getAllByRole('button', { name: 'Eliminar' });
     fireEvent.click(deleteButtons[0]);
     await waitFor(() => {
-      expect(activityMocks.deleteAdminActivityNotificationGlobal).toHaveBeenCalledWith('n-1');
+      expect(activityMocks.dismissAdminActivityNotificationPersonal).toHaveBeenCalledWith('n-1');
     });
 
     // Delete all remaining notifications via confirmation modal
@@ -245,7 +246,7 @@ describe('Liquid Glass V12.35 — Notifications Center & Header Bell Persistence
     const confirmBtn = within(confirmDialog).getByRole('button', { name: 'Eliminar notificaciones' });
     fireEvent.click(confirmBtn);
     await waitFor(() => {
-      expect(activityMocks.deleteAllAdminActivityNotificationsGlobal).toHaveBeenCalled();
+      expect(activityMocks.dismissAllAdminActivityNotificationsPersonal).toHaveBeenCalled();
       expect(screen.getByText('No hay novedades recientes.')).toBeTruthy();
     });
 

@@ -772,3 +772,211 @@ html[data-theme] body .liquid-glass-notification-popover .notification-meta .not
     animation: none !important;
   }
 }
+
+/* ------------------------------------------------------------------------------
+ * 6. V12.39 — JERARQUÍA REAL DE CAPAS: POPOVER VS DIÁLOGO DE CONFIRMACIÓN
+ * Escala oficial de capas:
+ *   Header sticky:            z-index 120 (menu abierto 140 / 145)
+ *   Popover notificaciones:   z-index 125 desktop / 130 mobile
+ *   Backdrop modal (overlay): z-index 190
+ *   Diálogo confirmación:     z-index 200
+ *   Menús/selects en modal:   z-index 210
+ * ------------------------------------------------------------------------------ */
+@media (min-width: 768px) {
+  [data-radix-popper-content-wrapper]:has(> .notification-popover) {
+    z-index: 125 !important;
+  }
+}
+
+@media (max-width: 767px) {
+  [data-radix-popper-content-wrapper]:has(> .notification-popover) {
+    z-index: 130 !important;
+  }
+}
+
+.notification-popover[data-confirm-open="true"] {
+  pointer-events: none !important;
+  filter: saturate(0.88);
+  transition: filter 160ms ease, opacity 160ms ease;
+}
+
+html[data-theme] body .kani-notif-confirm-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 190 !important;
+  background: rgba(8, 8, 12, 0.58) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
+  backdrop-filter: blur(4px) !important;
+}
+
+html[data-theme="light"] body .kani-notif-confirm-overlay.liquid-glass-confirm-overlay {
+  background: rgba(18, 16, 14, 0.42) !important;
+  -webkit-backdrop-filter: blur(7px) saturate(125%) !important;
+  backdrop-filter: blur(7px) saturate(125%) !important;
+}
+
+html[data-theme="dark"] body .kani-notif-confirm-overlay.liquid-glass-confirm-overlay {
+  background: rgba(2, 2, 5, 0.72) !important;
+  -webkit-backdrop-filter: blur(7px) saturate(135%) !important;
+  backdrop-filter: blur(7px) saturate(135%) !important;
+}
+
+html[data-theme] body .kani-notif-confirm-dialog[role="dialog"] {
+  position: fixed !important;
+  inset: 50% auto auto 50% !important;
+  left: 50% !important;
+  top: 50% !important;
+  --tw-translate-x: 0px !important;
+  --tw-translate-y: 0px !important;
+  translate: 0px 0px !important;
+  transform: translate(-50%, -50%) !important;
+  margin: 0 !important;
+  z-index: 200 !important;
+  width: min(440px, calc(100vw - 28px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px))) !important;
+  max-width: min(440px, calc(100vw - 28px)) !important;
+  max-height: calc(100dvh - 32px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  box-sizing: border-box !important;
+  padding: 22px !important;
+  border-radius: 22px !important;
+}
+
+html[data-theme="light"] body .kani-notif-confirm-dialog.liquid-glass-confirm-dialog[role="dialog"] {
+  background-color: transparent !important;
+  background-image: linear-gradient(
+    158deg,
+    rgba(255, 255, 255, 0.88) 0%,
+    rgba(247, 245, 240, 0.78) 54%,
+    rgba(255, 255, 255, 0.84) 100%
+  ) !important;
+  -webkit-backdrop-filter: blur(26px) saturate(180%) !important;
+  backdrop-filter: blur(26px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.86) !important;
+  box-shadow:
+    0 28px 72px rgba(20, 18, 16, 0.24),
+    0 8px 22px rgba(20, 18, 16, 0.12),
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.96),
+    inset 0 -1px 0 rgba(28, 26, 24, 0.06) !important;
+  color: #161513 !important;
+}
+
+html[data-theme="dark"] body .kani-notif-confirm-dialog.liquid-glass-confirm-dialog[role="dialog"] {
+  background-color: transparent !important;
+  background-image: linear-gradient(
+    158deg,
+    rgba(20, 20, 26, 0.90) 0%,
+    rgba(10, 10, 14, 0.84) 54%,
+    rgba(16, 16, 22, 0.88) 100%
+  ) !important;
+  -webkit-backdrop-filter: blur(26px) saturate(175%) !important;
+  backdrop-filter: blur(26px) saturate(175%) !important;
+  border: 1px solid rgba(255, 248, 232, 0.20) !important;
+  box-shadow:
+    0 32px 80px rgba(0, 0, 0, 0.78),
+    0 10px 26px rgba(0, 0, 0, 0.48),
+    inset 0 1.5px 0 rgba(255, 249, 236, 0.22),
+    inset 0 -1px 0 rgba(255, 248, 232, 0.06) !important;
+  color: #f6f4ef !important;
+}
+
+@supports not (backdrop-filter: blur(1px)) {
+  html[data-theme="light"] body .kani-notif-confirm-dialog.liquid-glass-confirm-dialog[role="dialog"] {
+    background: #f8f6f1 !important;
+    background-image: none !important;
+  }
+
+  html[data-theme="dark"] body .kani-notif-confirm-dialog.liquid-glass-confirm-dialog[role="dialog"] {
+    background: #121216 !important;
+    background-image: none !important;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  html[data-theme="light"] body .kani-notif-confirm-dialog.liquid-glass-confirm-dialog[role="dialog"] {
+    background: #f8f6f1 !important;
+    background-image: none !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+
+  html[data-theme="dark"] body .kani-notif-confirm-dialog.liquid-glass-confirm-dialog[role="dialog"] {
+    background: #121216 !important;
+    background-image: none !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+}
+
+.kani-notif-confirm-dialog .kani-notif-confirm-footer {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 10px !important;
+  margin-top: 18px !important;
+}
+
+.kani-notif-confirm-dialog .kani-notif-confirm-cancel,
+.kani-notif-confirm-dialog .kani-notif-confirm-destructive {
+  min-height: 40px !important;
+  height: auto !important;
+  width: auto !important;
+  padding: 8px 16px !important;
+  border-radius: 12px !important;
+  font-size: 0.84375rem !important;
+  font-weight: 580 !important;
+  line-height: 1.2 !important;
+  white-space: nowrap !important;
+  cursor: pointer;
+}
+
+html[data-theme="light"] .kani-notif-confirm-dialog.liquid-glass-confirm-dialog .kani-notif-confirm-cancel {
+  background: rgba(255, 255, 255, 0.72) !important;
+  border: 1px solid rgba(148, 144, 138, 0.36) !important;
+  color: #161513 !important;
+  -webkit-text-fill-color: #161513 !important;
+}
+
+html[data-theme="light"] .kani-notif-confirm-dialog.liquid-glass-confirm-dialog .kani-notif-confirm-cancel:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.94) !important;
+  border-color: rgba(148, 144, 138, 0.56) !important;
+}
+
+html[data-theme="dark"] .kani-notif-confirm-dialog.liquid-glass-confirm-dialog .kani-notif-confirm-cancel {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 248, 232, 0.22) !important;
+  color: #f6f4ef !important;
+  -webkit-text-fill-color: #f6f4ef !important;
+}
+
+html[data-theme="dark"] .kani-notif-confirm-dialog.liquid-glass-confirm-dialog .kani-notif-confirm-cancel:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.14) !important;
+  border-color: rgba(255, 248, 232, 0.34) !important;
+}
+
+html[data-theme] body .kani-notif-confirm-dialog[role="dialog"] button.kani-notif-confirm-destructive:is(:not(:disabled), :disabled) {
+  background: #9f2636 !important;
+  background-color: #9f2636 !important;
+  background-image: none !important;
+  border: 1px solid #b52f40 !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  box-shadow: 0 8px 20px rgba(159, 38, 54, 0.30) !important;
+}
+
+html[data-theme] body .kani-notif-confirm-dialog[role="dialog"] button.kani-notif-confirm-destructive:hover:not(:disabled),
+html[data-theme] body .kani-notif-confirm-dialog[role="dialog"] button.kani-notif-confirm-destructive:focus-visible:not(:disabled) {
+  background: #b52c3e !important;
+  background-color: #b52c3e !important;
+  background-image: none !important;
+  border-color: #cf3b4e !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+html[data-theme] body .kani-notif-confirm-dialog[role="dialog"] button.kani-notif-confirm-destructive:disabled {
+  opacity: 0.6 !important;
+  cursor: not-allowed !important;
+}

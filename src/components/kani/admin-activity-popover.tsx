@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Bell, CalendarDays, CheckCheck, Mail, MailOpen, SlidersHorizontal, Trash2, X } from 'lucide-react';
 import { Link } from '@tanstack/react-router';
 import { Button } from '@/components/ui/button';
@@ -12,8 +12,6 @@ import {
 } from '@/components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
-  deleteAllAdminActivityNotificationsGlobal,
-  deleteAdminActivityNotificationGlobal,
   dismissAllAdminActivityNotificationsPersonal,
   dismissAdminActivityNotificationPersonal,
   extractErrorMessage,
@@ -34,6 +32,17 @@ type AdminNotification = {
   readAt: string | null;
   href: NotificationHref;
 };
+
+function dedupeActivityEvents(events: AdminActivityEvent[]): AdminActivityEvent[] {
+  const seen = new Set<string>();
+  const unique: AdminActivityEvent[] = [];
+  for (const event of events) {
+    if (!event?.id || seen.has(event.id)) continue;
+    seen.add(event.id);
+    unique.push(event);
+  }
+  return unique;
+}
 
 function toAdminNotification(event: AdminActivityEvent, useLiquidPaths: boolean): AdminNotification {
   const date = new Date(`${event.event_date}T12:00:00`).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' });
@@ -79,11 +88,19 @@ export function AdminActivityPopover({
   const [error, setError] = useState('');
   const [open, setOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [readingId, setReadingId] = useState<string | null>(null);
   const [confirmDeleteAllOpen, setConfirmDeleteAllOpen] = useState(false);
   const [isDeletingAll, setIsDeletingAll] = useState(false);
+  const [isBulkReading, setIsBulkReading] = useState(false);
   const [desktopAlignOffset, setDesktopAlignOffset] = useState(0);
   const [desktopSideOffset, setDesktopSideOffset] = useState(10);
+
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const mountedRef = useRef(true);
+  const fetchEpochRef = useRef(0);
+  const deletingIdsRef = useRef(new Set<string>());
+  const readingIdsRef = useRef(new Set<string>());
+  const bulkBusyRef = useRef(false);
 
   const effectiveLiquid =
     isLiquid ||
@@ -94,19 +111,72 @@ export function AdminActivityPopover({
   const notifications = events.map(event => toAdminNotification(event, effectiveLiquid));
   const unreadNotifications = notifications.filter(notification => !notification.readAt);
 
-  function reload() {
-    let cancelled = false;
-    setLoading(true);
-    readAdminActivityNotifications(userId)
-      .then(loaded => { if (!cancelled) setEvents(loaded); })
-      .catch(cause => { if (!cancelled) setError(extractErrorMessage(cause, 'No se pudieron cargar las novedades.')); })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
-  }
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  const loadNotifications = useCallback(
+    async ({
+      showLoading = false,
+      preserveError = false,
+    }: { showLoading?: boolean; preserveError?: boolean } = {}) => {
+      const epoch = ++fetchEpochRef.current;
+      if (showLoading) {
+        setLoading(true);
+      }
+      if (!preserveError) {
+        setError('');
+      }
+      try {
+        const loaded = await readAdminActivityNotifications(userId);
+        if (!mountedRef.current || epoch !== fetchEpochRef.current) return;
+        setEvents(dedupeActivityEvents(loaded));
+      } catch (cause) {
+        if (!mountedRef.current || epoch !== fetchEpochRef.current) return;
+        if (!preserveError) {
+          setError(extractErrorMessage(cause, 'No se pudieron cargar las novedades.'));
+        }
+      } finally {
+        if (mountedRef.current && epoch === fetchEpochRef.current) {
+          setLoading(false);
+        }
+      }
+    },
+    [userId],
+  );
 
   useEffect(() => {
-    return reload();
-  }, [role, userId]);
+    // Al cambiar de cuenta/usuario, reiniciar estado local y recargar desde la base de datos
+    fetchEpochRef.current += 1;
+    deletingIdsRef.current.clear();
+    readingIdsRef.current.clear();
+    bulkBusyRef.current = false;
+    setEvents([]);
+    setError('');
+    setConfirmDeleteAllOpen(false);
+    setOpen(false);
+    void loadNotifications({ showLoading: true });
+  }, [role, userId, loadNotifications]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handleActivityChanged = () => {
+      void loadNotifications({ showLoading: false });
+    };
+    window.addEventListener('kani-activity-changed', handleActivityChanged);
+    return () => {
+      window.removeEventListener('kani-activity-changed', handleActivityChanged);
+    };
+  }, [loadNotifications]);
+
+  useEffect(() => {
+    if (open) {
+      void loadNotifications({ showLoading: false });
+    }
+  }, [open, loadNotifications]);
 
   useEffect(() => {
     if (!open || !effectiveLiquid || typeof window === 'undefined' || typeof document === 'undefined') {
@@ -149,82 +219,126 @@ export function AdminActivityPopover({
   }, [open, effectiveLiquid]);
 
   async function toggleNotificationRead(notification: AdminNotification) {
+    if (readingIdsRef.current.has(notification.id) || bulkBusyRef.current) return;
+    readingIdsRef.current.add(notification.id);
+    setReadingId(notification.id);
+    setError('');
+    // Invalidar lecturas previas en vuelo para evitar que sobreescriban esta mutación
+    fetchEpochRef.current += 1;
+
     const readAt = notification.readAt ? null : new Date().toISOString();
     try {
       await setAdminActivityNotificationRead(notification.id, readAt);
-      setEvents(current => current.map(item => item.id === notification.id ? { ...item, read_at: readAt } : item));
+      fetchEpochRef.current += 1;
+      setEvents(current => current.map(item => (item.id === notification.id ? { ...item, read_at: readAt } : item)));
     } catch (cause) {
       setError(extractErrorMessage(cause, 'No se pudo actualizar la notificación.'));
+      void loadNotifications({ showLoading: false, preserveError: true });
+    } finally {
+      readingIdsRef.current.delete(notification.id);
+      setReadingId(current => (current === notification.id ? null : current));
     }
   }
 
   async function markAllNotificationsRead() {
-    if (!unreadNotifications.length) return;
+    if (!unreadNotifications.length || bulkBusyRef.current) return;
+    bulkBusyRef.current = true;
+    setIsBulkReading(true);
+    setError('');
+    fetchEpochRef.current += 1;
+
     try {
       await markAllAdminActivityNotificationsRead(events.map(n => n.id));
+      fetchEpochRef.current += 1;
       const readAt = new Date().toISOString();
-      setEvents(current => current.map(item => ({ ...item, read_at: readAt })));
+      setEvents(current => current.map(item => ({ ...item, read_at: item.read_at ?? readAt })));
     } catch (cause) {
       setError(extractErrorMessage(cause, 'No se pudieron marcar las notificaciones.'));
+      void loadNotifications({ showLoading: false, preserveError: true });
+    } finally {
+      bulkBusyRef.current = false;
+      setIsBulkReading(false);
     }
   }
 
   async function markAllNotificationsUnread() {
     const hasRead = notifications.some(item => Boolean(item.readAt));
-    if (!hasRead) return;
+    if (!hasRead || bulkBusyRef.current) return;
+    bulkBusyRef.current = true;
+    setIsBulkReading(true);
+    setError('');
+    fetchEpochRef.current += 1;
+
     try {
       await markAllAdminActivityNotificationsUnread(events.map(n => n.id));
+      fetchEpochRef.current += 1;
       setEvents(current => current.map(item => ({ ...item, read_at: null })));
     } catch (cause) {
       setError(extractErrorMessage(cause, 'No se pudieron marcar las notificaciones como no leídas.'));
+      void loadNotifications({ showLoading: false, preserveError: true });
+    } finally {
+      bulkBusyRef.current = false;
+      setIsBulkReading(false);
     }
   }
 
   async function handleDeleteNotification(notification: AdminNotification) {
-    const isGlobal = role === 'ADMIN';
-    const confirmMessage = isGlobal
-      ? '¿Eliminar notificación globalmente? Esta acción borrará el registro de forma permanente para todos los usuarios.'
-      : '¿Eliminar notificación de tu vista? La notificación ya no se mostrará en tu cuenta, pero seguirá visible para el Administrador.';
+    if (deletingIdsRef.current.has(notification.id) || bulkBusyRef.current) return;
 
+    const confirmMessage =
+      '¿Eliminar esta notificación de tu cuenta? Ya no volverá a mostrarse en tu sesión, sin afectar a otros usuarios.';
     if (!window.confirm(confirmMessage)) return;
 
+    deletingIdsRef.current.add(notification.id);
+    setDeletingId(notification.id);
+    setError('');
+    fetchEpochRef.current += 1;
+
     try {
-      setDeletingId(notification.id);
-      if (isGlobal) {
-        await deleteAdminActivityNotificationGlobal(notification.id);
-      } else {
-        await dismissAdminActivityNotificationPersonal(notification.id);
-      }
+      await dismissAdminActivityNotificationPersonal(notification.id);
+      fetchEpochRef.current += 1;
       setEvents(current => current.filter(item => item.id !== notification.id));
     } catch (cause) {
       setError(extractErrorMessage(cause, 'No se pudo eliminar la notificación.'));
+      void loadNotifications({ showLoading: false, preserveError: true });
     } finally {
-      setDeletingId(null);
+      deletingIdsRef.current.delete(notification.id);
+      setDeletingId(current => (current === notification.id ? null : current));
     }
   }
 
   async function handleConfirmDeleteAll() {
+    if (bulkBusyRef.current || isDeletingAll) return;
+    bulkBusyRef.current = true;
+    setIsDeletingAll(true);
+    setError('');
+    fetchEpochRef.current += 1;
+
     try {
-      setIsDeletingAll(true);
-      setError('');
       const ids = events.map(n => n.id);
-      if (role === 'ADMIN') {
-        await deleteAllAdminActivityNotificationsGlobal(ids);
-      } else {
-        await dismissAllAdminActivityNotificationsPersonal(ids);
-      }
-      setEvents([]);
+      await dismissAllAdminActivityNotificationsPersonal(ids);
+      fetchEpochRef.current += 1;
+      const dismissedSet = new Set(ids);
+      setEvents(current => current.filter(item => !dismissedSet.has(item.id)));
       setConfirmDeleteAllOpen(false);
     } catch (cause) {
       setError(extractErrorMessage(cause, 'No se pudieron eliminar las notificaciones.'));
+      void loadNotifications({ showLoading: false, preserveError: true });
     } finally {
+      bulkBusyRef.current = false;
       setIsDeletingAll(false);
     }
   }
 
   return (
     <>
-      <Popover open={open} onOpenChange={setOpen}>
+      <Popover
+        open={open}
+        onOpenChange={nextOpen => {
+          if (confirmDeleteAllOpen && !nextOpen) return;
+          setOpen(nextOpen);
+        }}
+      >
         <PopoverTrigger asChild>
           <Button
             ref={triggerRef}
@@ -248,7 +362,17 @@ export function AdminActivityPopover({
           align="end"
           alignOffset={effectiveLiquid ? desktopAlignOffset : 0}
           collisionPadding={{ top: 12, right: 16, bottom: 16, left: 16 }}
+          data-confirm-open={confirmDeleteAllOpen ? 'true' : 'false'}
           onInteractOutside={event => {
+            if (confirmDeleteAllOpen) event.preventDefault();
+          }}
+          onPointerDownOutside={event => {
+            if (confirmDeleteAllOpen) event.preventDefault();
+          }}
+          onFocusOutside={event => {
+            if (confirmDeleteAllOpen) event.preventDefault();
+          }}
+          onEscapeKeyDown={event => {
             if (confirmDeleteAllOpen) event.preventDefault();
           }}
           className={effectiveLiquid ? 'notification-popover liquid-glass-notification-popover' : 'notification-popover'}
@@ -283,7 +407,11 @@ export function AdminActivityPopover({
             </button>
           </div>
 
-          {error && <p role="alert" className="notification-error text-xs text-destructive">{error}</p>}
+          {error && !confirmDeleteAllOpen && (
+            <p role="alert" className="notification-error text-xs text-destructive">
+              {error}
+            </p>
+          )}
 
           {notifications.length > 0 && (
             <div className="notification-bulk-bar">
@@ -291,6 +419,7 @@ export function AdminActivityPopover({
                 <button
                   type="button"
                   className="notification-mark-all"
+                  disabled={isBulkReading || isDeletingAll}
                   onClick={() => void markAllNotificationsRead()}
                 >
                   <CheckCheck size={14} aria-hidden="true" />
@@ -300,6 +429,7 @@ export function AdminActivityPopover({
                 <button
                   type="button"
                   className="notification-mark-all"
+                  disabled={isBulkReading || isDeletingAll}
                   onClick={() => void markAllNotificationsUnread()}
                 >
                   <Mail size={14} aria-hidden="true" />
@@ -309,7 +439,11 @@ export function AdminActivityPopover({
               <button
                 type="button"
                 className="notification-delete-all"
-                onClick={() => setConfirmDeleteAllOpen(true)}
+                disabled={isDeletingAll || isBulkReading}
+                onClick={() => {
+                  setError('');
+                  setConfirmDeleteAllOpen(true);
+                }}
               >
                 <Trash2 size={13} aria-hidden="true" />
                 <span>Eliminar notificaciones</span>
@@ -349,7 +483,12 @@ export function AdminActivityPopover({
                       </div>
                     </Link>
                     <div className="notification-meta">
-                      <button type="button" className="notification-toggle" onClick={() => void toggleNotificationRead(notification)}>
+                      <button
+                        type="button"
+                        className="notification-toggle"
+                        disabled={readingId === notification.id || deletingId === notification.id || isDeletingAll}
+                        onClick={() => void toggleNotificationRead(notification)}
+                      >
                         {notification.readAt ? (
                           <>
                             <Mail size={12} aria-hidden="true" />
@@ -365,8 +504,8 @@ export function AdminActivityPopover({
                       <button
                         type="button"
                         className="notification-delete"
-                        title={role === 'ADMIN' ? 'Eliminar notificación globalmente' : 'Eliminar de mi vista'}
-                        disabled={deletingId === notification.id}
+                        title="Eliminar de mi vista"
+                        disabled={deletingId === notification.id || isDeletingAll}
                         onClick={() => void handleDeleteNotification(notification)}
                       >
                         <Trash2 size={12} aria-hidden="true" />
@@ -381,22 +520,35 @@ export function AdminActivityPopover({
         </PopoverContent>
       </Popover>
 
-      <Dialog open={confirmDeleteAllOpen} onOpenChange={openState => {
-        setConfirmDeleteAllOpen(openState);
-        if (!openState) setError('');
-      }}>
-        <DialogContent className="sm:max-w-md kani-notif-confirm-dialog">
+      <Dialog
+        open={confirmDeleteAllOpen}
+        modal={true}
+        onOpenChange={openState => {
+          if (isDeletingAll && !openState) return;
+          setConfirmDeleteAllOpen(openState);
+          if (!openState) setError('');
+        }}
+      >
+        <DialogContent
+          overlayClassName={effectiveLiquid ? 'kani-notif-confirm-overlay liquid-glass-confirm-overlay' : 'kani-notif-confirm-overlay'}
+          className={
+            effectiveLiquid
+              ? 'sm:max-w-md translate-x-0 translate-y-0 kani-notif-confirm-dialog liquid-glass-confirm-dialog'
+              : 'sm:max-w-md translate-x-0 translate-y-0 kani-notif-confirm-dialog'
+          }
+        >
           <DialogHeader>
             <DialogTitle>Eliminar notificaciones</DialogTitle>
             <DialogDescription className="text-sm pt-2 text-foreground font-normal">
-              ¿Estás seguro que deseas eliminar todas las notificaciones?
+              ¿Estás seguro que deseas eliminar todas tus notificaciones? Dejarán de mostrarse en tu cuenta sin afectar a otros usuarios.
             </DialogDescription>
           </DialogHeader>
           {error && <p role="alert" className="mt-2 text-xs text-destructive">{error}</p>}
-          <DialogFooter className="flex flex-row justify-end gap-2 mt-4">
+          <DialogFooter className="kani-notif-confirm-footer flex flex-row justify-end gap-2.5 mt-4">
             <Button
               type="button"
               variant="outline"
+              className="kani-notif-confirm-cancel"
               onClick={() => setConfirmDeleteAllOpen(false)}
               disabled={isDeletingAll}
             >
@@ -405,6 +557,7 @@ export function AdminActivityPopover({
             <Button
               type="button"
               variant="destructive"
+              className="kani-notif-confirm-destructive v2-destructive"
               onClick={() => void handleConfirmDeleteAll()}
               disabled={isDeletingAll}
             >

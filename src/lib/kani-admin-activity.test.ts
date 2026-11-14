@@ -26,590 +26,237 @@ import {
   setAdminActivityNotificationRead,
 } from './kani-admin-activity';
 
-describe('kani-admin-activity bulk notifications management', () => {
+describe('kani-admin-activity V12.39 per-user DB persistence', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockGetUser.mockResolvedValue({
+      data: { user: { id: 'user-default-uuid' } },
+      error: null,
+    });
   });
 
-  describe('deleteAllAdminActivityNotificationsGlobal', () => {
-    it('uses delete_all_staff_activity_notifications_global RPC when available', async () => {
+  describe('readAdminActivityNotifications', () => {
+    it('reads directly from read_staff_activity_notifications RPC and deduplicates duplicate IDs', async () => {
       mockRpc.mockResolvedValue({
-        data: 5,
+        data: [
+          { id: 'n-1', event_type: 'APPOINTMENT_REQUESTED', created_at: '2026-11-14T10:00:00Z', read_at: null },
+          { id: 'n-1', event_type: 'APPOINTMENT_REQUESTED', created_at: '2026-11-14T10:00:00Z', read_at: null },
+          { id: 'n-2', event_type: 'APPOINTMENT_CONFIRMED', created_at: '2026-11-14T09:00:00Z', read_at: '2026-11-14T09:05:00Z' },
+        ],
         error: null,
       });
 
-      const count = await deleteAllAdminActivityNotificationsGlobal();
-      expect(mockRpc).toHaveBeenCalledWith('delete_all_staff_activity_notifications_global');
-      expect(count).toBe(5);
+      const list = await readAdminActivityNotifications();
+      expect(mockRpc).toHaveBeenCalledWith('read_staff_activity_notifications');
+      expect(list.map(item => item.id)).toEqual(['n-1', 'n-2']);
     });
 
-    it('falls back to direct table delete when RPC fails', async () => {
+    it('falls back to admin_activity_user_state when RPC is missing in schema cache and applies per-user read_at/dismissed_at only', async () => {
       mockRpc.mockResolvedValue({
         data: null,
-        error: { message: 'function does not exist' },
+        error: { code: 'PGRST202', message: 'Could not find the function public.read_staff_activity_notifications' },
       });
 
-      const mockDelete = vi.fn().mockReturnValue({
-        neq: vi.fn().mockResolvedValue({ error: null }),
-      });
-      mockFrom.mockReturnValue({
-        delete: mockDelete,
+      mockGetUser.mockResolvedValue({
+        data: { user: { id: 'lautaro-uuid' } },
+        error: null,
       });
 
-      const count = await deleteAllAdminActivityNotificationsGlobal();
-      expect(mockRpc).toHaveBeenCalledWith('delete_all_staff_activity_notifications_global');
-      expect(mockFrom).toHaveBeenCalledWith('admin_activity_notifications');
-      expect(mockDelete).toHaveBeenCalled();
-      expect(count).toBe(0);
+      mockFrom.mockImplementation((table: string) => {
+        if (table === 'admin_activity_user_state') {
+          return {
+            select: () => ({
+              eq: () =>
+                Promise.resolve({
+                  data: [
+                    { notification_id: 'n-dismissed', dismissed_at: '2026-11-14T12:00:00Z', read_at: null },
+                    { notification_id: 'n-read-by-me', dismissed_at: null, read_at: '2026-11-14T11:00:00Z' },
+                  ],
+                  error: null,
+                }),
+            }),
+          };
+        }
+        if (table === 'admin_activity_notifications') {
+          return {
+            select: () => ({
+              order: () => ({
+                limit: () =>
+                  Promise.resolve({
+                    data: [
+                      // Shared read_at left non-null on legacy table must NOT mark Lautaro's notification as read
+                      { id: 'n-dismissed', event_type: 'APPOINTMENT_REQUESTED', created_at: '2026-11-14T10:00:00Z', read_at: null },
+                      { id: 'n-unread', event_type: 'APPOINTMENT_REQUESTED', created_at: '2026-11-14T09:30:00Z', read_at: '2026-11-14T09:31:00Z' },
+                      { id: 'n-read-by-me', event_type: 'APPOINTMENT_CONFIRMED', created_at: '2026-11-14T09:00:00Z', read_at: null },
+                    ],
+                    error: null,
+                  }),
+              }),
+            }),
+          };
+        }
+        return {};
+      });
+
+      const list = await readAdminActivityNotifications('spoofed-other-user');
+      expect(list.map(i => i.id)).toEqual(['n-unread', 'n-read-by-me']);
+      expect(list.find(i => i.id === 'n-unread')?.read_at).toBeNull();
+      expect(list.find(i => i.id === 'n-read-by-me')?.read_at).toBe('2026-11-14T11:00:00Z');
     });
 
-    it('throws error when both RPC and fallback fail', async () => {
+    it('throws server errors instead of hiding them', async () => {
       mockRpc.mockResolvedValue({
         data: null,
-        error: { message: 'RPC failure' },
+        error: { code: '42501', message: 'permission denied' },
       });
 
-      mockFrom.mockReturnValue({
-        delete: vi.fn().mockReturnValue({
-          neq: vi.fn().mockResolvedValue({ error: new Error('RLS check failed') }),
+      await expect(readAdminActivityNotifications()).rejects.toThrow('permission denied');
+    });
+  });
+
+  describe('setAdminActivityNotificationRead / bulk read & unread', () => {
+    it('uses set_staff_activity_notification_read RPC and never mutates shared admin_activity_notifications', async () => {
+      mockRpc.mockResolvedValue({ data: null, error: null });
+
+      await setAdminActivityNotificationRead('notif-1', '2026-11-14T12:00:00Z');
+      expect(mockRpc).toHaveBeenCalledWith('set_staff_activity_notification_read', {
+        p_notification_id: 'notif-1',
+        p_read_at: '2026-11-14T12:00:00Z',
+      });
+      expect(mockFrom).not.toHaveBeenCalledWith('admin_activity_notifications');
+    });
+
+    it('falls back strictly to admin_activity_user_state upsert when set read RPC is missing', async () => {
+      mockRpc.mockResolvedValue({
+        data: null,
+        error: { code: 'PGRST202', message: 'function does not exist' },
+      });
+      mockGetUser.mockResolvedValue({ data: { user: { id: 'admin-uuid' } }, error: null });
+
+      const mockUpsert = vi.fn().mockResolvedValue({ error: null });
+      mockFrom.mockImplementation((table: string) => {
+        if (table === 'admin_activity_user_state') return { upsert: mockUpsert };
+        throw new Error(`Unexpected write to ${table}`);
+      });
+
+      await setAdminActivityNotificationRead('notif-1', '2026-11-14T12:00:00Z');
+      expect(mockUpsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          notification_id: 'notif-1',
+          user_id: 'admin-uuid',
+          read_at: '2026-11-14T12:00:00Z',
         }),
+        { onConflict: 'notification_id,user_id' },
+      );
+    });
+
+    it('uses mark_all_staff_activity_notifications_read RPC when available', async () => {
+      mockRpc.mockResolvedValue({ data: null, error: null });
+      await markAllAdminActivityNotificationsRead(['n-1']);
+      expect(mockRpc).toHaveBeenCalledWith('mark_all_staff_activity_notifications_read');
+    });
+
+    it('uses mark_all_staff_activity_notifications_unread RPC and falls back strictly to admin_activity_user_state', async () => {
+      mockRpc.mockResolvedValueOnce({ data: null, error: null });
+      await markAllAdminActivityNotificationsUnread(['n-1']);
+      expect(mockRpc).toHaveBeenCalledWith('mark_all_staff_activity_notifications_unread');
+
+      mockRpc.mockResolvedValueOnce({
+        data: null,
+        error: { code: 'PGRST202', message: 'function does not exist' },
+      });
+      mockGetUser.mockResolvedValue({ data: { user: { id: 'barber-uuid' } }, error: null });
+
+      const mockIn = vi.fn().mockResolvedValue({ error: null });
+      const mockEq = vi.fn().mockReturnValue({ in: mockIn });
+      const mockUpdate = vi.fn().mockReturnValue({ eq: mockEq });
+      mockFrom.mockImplementation((table: string) => {
+        if (table === 'admin_activity_user_state') return { update: mockUpdate };
+        throw new Error(`Unexpected write to ${table}`);
       });
 
-      await expect(deleteAllAdminActivityNotificationsGlobal()).rejects.toThrow('RLS check failed');
+      await markAllAdminActivityNotificationsUnread(['n-1', 'n-2']);
+      expect(mockUpdate).toHaveBeenCalledWith(expect.objectContaining({ read_at: null }));
+      expect(mockEq).toHaveBeenCalledWith('user_id', 'barber-uuid');
+      expect(mockIn).toHaveBeenCalledWith('notification_id', ['n-1', 'n-2']);
     });
   });
 
-  describe('dismissAllAdminActivityNotificationsPersonal', () => {
-    it('uses dismiss_all_staff_activity_notifications_personal RPC when available', async () => {
-      mockRpc.mockResolvedValue({
-        data: 3,
-        error: null,
-      });
+  describe('personal dismissal (ADMIN, MANAGER and BARBER isolation)', () => {
+    it('dismisses individually via dismiss_staff_activity_notification_personal RPC', async () => {
+      mockRpc.mockResolvedValue({ data: null, error: null });
 
-      const count = await dismissAllAdminActivityNotificationsPersonal(['id-1', 'id-2']);
+      await dismissAdminActivityNotificationPersonal('notif-123');
+      expect(mockRpc).toHaveBeenCalledWith('dismiss_staff_activity_notification_personal', {
+        p_notification_id: 'notif-123',
+      });
+      expect(mockFrom).not.toHaveBeenCalled();
+    });
+
+    it('dismisses all via dismiss_all_staff_activity_notifications_personal RPC', async () => {
+      mockRpc.mockResolvedValue({ data: 3, error: null });
+
+      const count = await dismissAllAdminActivityNotificationsPersonal(['id-1', 'id-2', 'id-3']);
       expect(mockRpc).toHaveBeenCalledWith('dismiss_all_staff_activity_notifications_personal');
       expect(count).toBe(3);
     });
 
-    it('falls back to admin_activity_user_state upsert when RPC fails', async () => {
+    it('redirects deprecated global delete wrappers to personal dismissal so shared rows are never deleted', async () => {
+      mockRpc.mockResolvedValue({ data: 2, error: null });
+
+      await deleteAdminActivityNotificationGlobal('notif-x');
+      expect(mockRpc).toHaveBeenCalledWith('dismiss_staff_activity_notification_personal', {
+        p_notification_id: 'notif-x',
+      });
+
+      await deleteAllAdminActivityNotificationsGlobal(['notif-x', 'notif-y']);
+      expect(mockRpc).toHaveBeenCalledWith('dismiss_all_staff_activity_notifications_personal');
+    });
+
+    it('throws error (never swallows into localStorage) when DB persistence fails', async () => {
       mockRpc.mockResolvedValue({
         data: null,
-        error: { message: 'RPC failure' },
+        error: { code: '42501', message: 'RLS policy violation' },
       });
 
-      mockGetUser.mockResolvedValue({
-        data: { user: { id: 'user-barber-uuid' } },
-        error: null,
+      await expect(dismissAdminActivityNotificationPersonal('notif-1')).rejects.toThrow('RLS policy violation');
+      await expect(dismissAllAdminActivityNotificationsPersonal(['notif-1'])).rejects.toThrow('RLS policy violation');
+    });
+
+    it('falls back strictly to admin_activity_user_state upsert when dismiss RPC is missing', async () => {
+      mockRpc.mockResolvedValue({
+        data: null,
+        error: { code: 'PGRST202', message: 'function does not exist' },
       });
+      mockGetUser.mockResolvedValue({ data: { user: { id: 'admin-uuid' } }, error: null });
 
       const mockUpsert = vi.fn().mockResolvedValue({ error: null });
-      mockFrom.mockReturnValue({
-        upsert: mockUpsert,
+      mockFrom.mockImplementation((table: string) => {
+        if (table === 'admin_activity_user_state') return { upsert: mockUpsert };
+        throw new Error(`Unexpected touch on ${table}`);
       });
 
       const count = await dismissAllAdminActivityNotificationsPersonal(['id-1', 'id-2']);
-      expect(mockFrom).toHaveBeenCalledWith('admin_activity_user_state');
       expect(mockUpsert).toHaveBeenCalledWith(
         expect.arrayContaining([
-          expect.objectContaining({ notification_id: 'id-1', user_id: 'user-barber-uuid' }),
-          expect.objectContaining({ notification_id: 'id-2', user_id: 'user-barber-uuid' }),
-        ])
+          expect.objectContaining({ notification_id: 'id-1', user_id: 'admin-uuid', dismissed_at: expect.any(String) }),
+          expect.objectContaining({ notification_id: 'id-2', user_id: 'admin-uuid', dismissed_at: expect.any(String) }),
+        ]),
+        { onConflict: 'notification_id,user_id' },
       );
       expect(count).toBe(2);
     });
   });
 
-  describe('markAllAdminActivityNotificationsUnread', () => {
-    it('uses mark_all_staff_activity_notifications_unread RPC when available', async () => {
-      mockRpc.mockResolvedValue({
-        data: 4,
-        error: null,
-      });
-
-      await markAllAdminActivityNotificationsUnread();
-      expect(mockRpc).toHaveBeenCalledWith('mark_all_staff_activity_notifications_unread');
-    });
-
-    it('falls back to admin_activity_user_state update when RPC fails', async () => {
-      mockRpc.mockResolvedValue({
-        data: null,
-        error: { message: 'RPC not found' },
-      });
-
-      mockGetUser.mockResolvedValue({
-        data: { user: { id: 'test-user-id' } },
-        error: null,
-      });
-
-      const mockUpdate = vi.fn().mockReturnValue({
-        eq: vi.fn().mockResolvedValue({ error: null }),
-        neq: vi.fn().mockResolvedValue({ error: null }),
-      });
-      mockFrom.mockReturnValue({
-        update: mockUpdate,
-      });
-
-      await markAllAdminActivityNotificationsUnread();
-      expect(mockFrom).toHaveBeenCalledWith('admin_activity_user_state');
-    });
-  });
-
-  describe('deleteAdminActivityNotificationGlobal', () => {
-    it('uses delete_staff_activity_notification_global RPC when available', async () => {
-      mockRpc.mockResolvedValue({
-        data: true,
-        error: null,
-      });
-
-      await deleteAdminActivityNotificationGlobal('notif-123');
-      expect(mockRpc).toHaveBeenCalledWith('delete_staff_activity_notification_global', {
-        p_notification_id: 'notif-123',
-      });
-    });
-
-    it('falls back to direct table delete when RPC fails', async () => {
-      mockRpc.mockResolvedValue({
-        data: null,
-        error: { message: 'RPC failure' },
-      });
-
-      const mockDelete = vi.fn().mockReturnValue({
-        eq: vi.fn().mockResolvedValue({ error: null }),
-      });
-      mockFrom.mockReturnValue({
-        delete: mockDelete,
-      });
-
-      await deleteAdminActivityNotificationGlobal('notif-123');
-      expect(mockFrom).toHaveBeenCalledWith('admin_activity_notifications');
-      expect(mockDelete).toHaveBeenCalled();
-    });
-
-    it('falls back to personal dismissal in user_state if table delete fails with RLS/permissions', async () => {
-      mockRpc.mockResolvedValue({
-        data: null,
-        error: { message: 'RPC failure' },
-      });
-
-      mockFrom.mockImplementation((tableName: string) => {
-        if (tableName === 'admin_activity_notifications') {
-          return {
-            delete: vi.fn().mockReturnValue({
-              eq: vi.fn().mockResolvedValue({ error: { message: 'permission denied', code: '42501' } }),
-            }),
-          };
-        }
-        if (tableName === 'admin_activity_user_state') {
-          return {
-            upsert: vi.fn().mockResolvedValue({ error: null }),
-          };
-        }
-        return {};
-      });
-
-      mockGetUser.mockResolvedValue({
-        data: { user: { id: 'user-uuid' } },
-        error: null,
-      });
-
-      // Should succeed via secondary fallback
-      await expect(deleteAdminActivityNotificationGlobal('notif-123')).resolves.not.toThrow();
-    });
-  });
-
-  describe('setAdminActivityNotificationRead', () => {
-    it('uses set_staff_activity_notification_read RPC when available', async () => {
-      mockRpc.mockResolvedValue({
-        data: null,
-        error: null,
-      });
-
-      await setAdminActivityNotificationRead('notif-1', '2026-10-18T12:00:00Z');
-      expect(mockRpc).toHaveBeenCalledWith('set_staff_activity_notification_read', {
-        p_notification_id: 'notif-1',
-        p_read_at: '2026-10-18T12:00:00Z',
-      });
-    });
-
-    it('falls back to direct table update and user_state upsert when RPC fails', async () => {
-      mockRpc.mockResolvedValue({
-        data: null,
-        error: { message: 'RPC not found' },
-      });
-
-      const mockUpdate = vi.fn().mockReturnValue({
-        eq: vi.fn().mockResolvedValue({ error: null }),
-      });
-      mockFrom.mockReturnValue({
-        update: mockUpdate,
-      });
-
-      await setAdminActivityNotificationRead('notif-1', '2026-10-18T12:00:00Z');
-      expect(mockFrom).toHaveBeenCalledWith('admin_activity_notifications');
-      expect(mockUpdate).toHaveBeenCalledWith({ read_at: '2026-10-18T12:00:00Z' });
-    });
-  });
-
-  describe('markAllAdminActivityNotificationsRead', () => {
-    it('uses mark_all_staff_activity_notifications_read RPC when available', async () => {
-      mockRpc.mockResolvedValue({
-        data: null,
-        error: null,
-      });
-
-      await markAllAdminActivityNotificationsRead();
-      expect(mockRpc).toHaveBeenCalledWith('mark_all_staff_activity_notifications_read');
-    });
-
-    it('falls back to bulk table update when RPC fails', async () => {
-      mockRpc.mockResolvedValue({
-        data: null,
-        error: { message: 'RPC not found' },
-      });
-
-      const mockUpdate = vi.fn().mockReturnValue({
-        is: vi.fn().mockResolvedValue({ error: null }),
-      });
-      mockFrom.mockReturnValue({
-        update: mockUpdate,
-      });
-
-      await markAllAdminActivityNotificationsRead();
-      expect(mockFrom).toHaveBeenCalledWith('admin_activity_notifications');
-      expect(mockUpdate).toHaveBeenCalledWith(expect.objectContaining({ read_at: expect.any(String) }));
-    });
-  });
-
   describe('extractErrorMessage', () => {
-    it('extracts error from Error object', () => {
-      expect(extractErrorMessage(new Error('Test error message'))).toBe('Test error message');
-    });
-
-    it('extracts message from PostgREST-like error object', () => {
-      expect(extractErrorMessage({ message: 'permission denied for table', code: '42501' })).toBe('permission denied for table');
-    });
-
-    it('extracts details or hint when available', () => {
-      expect(extractErrorMessage({ details: 'Key (id)=(1) not found' })).toBe('Key (id)=(1) not found');
-    });
-
-    it('returns string input directly', () => {
-      expect(extractErrorMessage('Direct string error')).toBe('Direct string error');
-    });
-
-    it('returns fallback for unknown or empty input', () => {
-      expect(extractErrorMessage(null, 'Fallback error')).toBe('Fallback error');
-      expect(extractErrorMessage({}, 'Fallback error')).toBe('Fallback error');
-    });
-  });
-
-  describe('Persistent storage error handling and fallback resilience', () => {
-    it('successfully persists deletion via admin_activity_user_state when direct table delete fails with 42501', async () => {
-      // Mock RPC missing
-      mockRpc.mockResolvedValue({
-        data: null,
-        error: { message: 'function does not exist', code: 'PGRST202' },
+    it('sanitizes internal schema cache / table errors', () => {
+      const msg = extractErrorMessage({
+        code: 'PGRST205',
+        message: "Could not find the table 'public.admin_activity_user_state' in the schema cache",
       });
-
-      // Mock table delete returning 42501
-      mockFrom.mockImplementation((table: string) => {
-        if (table === 'admin_activity_notifications') {
-          return {
-            delete: () => ({
-              eq: () => Promise.resolve({
-                error: { message: 'permission denied for table admin_activity_notifications', code: '42501' },
-              }),
-            }),
-            select: () => ({
-              order: () => ({
-                limit: () => Promise.resolve({
-                  data: [
-                    { id: 'notif-perm-1', event_type: 'APPOINTMENT_REQUESTED', created_at: new Date().toISOString(), read_at: null },
-                    { id: 'notif-perm-2', event_type: 'APPOINTMENT_CONFIRMED', created_at: new Date().toISOString(), read_at: null },
-                  ],
-                  error: null,
-                }),
-              }),
-            }),
-          };
-        }
-        if (table === 'admin_activity_user_state') {
-          return {
-            select: () => ({
-              eq: () => Promise.resolve({
-                data: [{ notification_id: 'notif-perm-1', dismissed_at: new Date().toISOString(), read_at: null }],
-                error: null,
-              }),
-            }),
-            upsert: () => Promise.resolve({
-              error: null,
-            }),
-          };
-        }
-        return {};
-      });
-
-      mockGetUser.mockResolvedValue({
-        data: { user: { id: 'admin-user-uuid' } },
-        error: null,
-      });
-
-      // Delete notif-perm-1
-      await expect(deleteAdminActivityNotificationGlobal('notif-perm-1')).resolves.not.toThrow();
-
-      // Read notifications should filter out notif-perm-1 based on user_state dismissal in DB
-      const result = await readAdminActivityNotifications();
-      expect(result.some(n => n.id === 'notif-perm-1')).toBe(false);
-      expect(result.some(n => n.id === 'notif-perm-2')).toBe(true);
-    });
-
-    it('gracefully handles backend permission denial and missing tables by persisting locally without crashing the interface', async () => {
-      mockRpc.mockResolvedValue({
-        data: null,
-        error: { message: 'function does not exist', code: 'PGRST202' },
-      });
-
-      mockFrom.mockImplementation((table: string) => {
-        if (table === 'admin_activity_notifications') {
-          return {
-            delete: () => ({
-              eq: () => Promise.resolve({
-                error: { message: 'permission denied for table admin_activity_notifications', code: '42501' },
-              }),
-              in: () => Promise.resolve({
-                error: { message: 'permission denied for table admin_activity_notifications', code: '42501' },
-              }),
-              neq: () => Promise.resolve({
-                error: { message: 'permission denied for table admin_activity_notifications', code: '42501' },
-              }),
-            }),
-            select: () => ({
-              order: () => ({
-                limit: () => Promise.resolve({
-                  data: [
-                    { id: 'notif-failed', event_type: 'APPOINTMENT_REQUESTED', created_at: new Date().toISOString(), read_at: null },
-                    { id: 'notif-keep', event_type: 'APPOINTMENT_CONFIRMED', created_at: new Date().toISOString(), read_at: null },
-                  ],
-                  error: null,
-                }),
-              }),
-            }),
-          };
-        }
-        if (table === 'admin_activity_user_state') {
-          return {
-            upsert: () => Promise.resolve({
-              error: { message: "Could not find table 'public.admin_activity_user_state'", code: 'PGRST205' },
-            }),
-          };
-        }
-        return {};
-      });
-
-      mockGetUser.mockResolvedValue({
-        data: { user: { id: 'admin-user-uuid' } },
-        error: null,
-      });
-
-      // Individual deletion must not crash the interface; local persistence handles it
-      await expect(deleteAdminActivityNotificationGlobal('notif-failed')).resolves.not.toThrow();
-
-      // Bulk deletion must not crash the interface; local persistence handles it
-      await expect(deleteAllAdminActivityNotificationsGlobal(['notif-failed'])).resolves.not.toThrow();
-
-      // Reading notifications must filter out notif-failed via persistent storage
-      const notifications = await readAdminActivityNotifications();
-      expect(notifications.some(n => n.id === 'notif-failed')).toBe(false);
-      expect(notifications.some(n => n.id === 'notif-keep')).toBe(true);
-    });
-
-    it('persists deletion across page reload and re-login even when local storage is wiped', async () => {
-      // Setup: DB has notification 1 and 2, and RPC delete works
-      mockRpc.mockImplementation((rpcName: string) => {
-        if (rpcName === 'delete_staff_activity_notification_global') {
-          return Promise.resolve({ error: null });
-        }
-        if (rpcName === 'read_staff_activity_notifications') {
-          // DB only returns notif-2 because notif-1 was deleted in database
-          return Promise.resolve({
-            data: [
-              { id: 'notif-2', event_type: 'APPOINTMENT_REQUESTED', created_at: new Date().toISOString(), read_at: null },
-            ],
-            error: null,
-          });
-        }
-        return Promise.resolve({ data: null, error: null });
-      });
-
-      mockGetUser.mockResolvedValue({
-        data: { user: { id: 'admin-user-uuid' } },
-        error: null,
-      });
-
-      // 1. Delete notification
-      await deleteAdminActivityNotificationGlobal('notif-1');
-
-      // 2. Simulate complete browser restart, cache clear, or re-login
-      const { _resetNotificationStorageForTesting } = await import('./kani-admin-activity');
-      _resetNotificationStorageForTesting();
-
-      // 3. Read notifications after reload/re-login: notif-1 does not reappear because DB persisted the deletion
-      const notificationsAfterReload = await readAdminActivityNotifications();
-      expect(notificationsAfterReload.some(n => n.id === 'notif-1')).toBe(false);
-      expect(notificationsAfterReload.some(n => n.id === 'notif-2')).toBe(true);
-    });
-
-    it('personal barber dismissal applies only to user_state and never modifies operational tables', async () => {
-      const touchedTables: string[] = [];
-
-      mockRpc.mockResolvedValue({
-        data: null,
-        error: { message: 'RPC not found', code: 'PGRST202' },
-      });
-
-      mockFrom.mockImplementation((table: string) => {
-        touchedTables.push(table);
-        if (table === 'admin_activity_user_state') {
-          return {
-            upsert: () => Promise.resolve({ error: null }),
-          };
-        }
-        return {};
-      });
-
-      mockGetUser.mockResolvedValue({
-        data: { user: { id: 'barber-user-uuid' } },
-        error: null,
-      });
-
-      await dismissAdminActivityNotificationPersonal('notif-barber-1');
-
-      // Must only touch admin_activity_user_state, never appointments or clients
-      expect(touchedTables).toContain('admin_activity_user_state');
-      expect(touchedTables).not.toContain('appointments');
-      expect(touchedTables).not.toContain('clients');
-      expect(touchedTables).not.toContain('availability_slots');
-    });
-
-    describe('Handling of missing admin_activity_user_state or schema cache error', () => {
-      it('never exposes raw "Could not find table public.admin_activity_user_state in schema cache" error in UI messages', () => {
-        const errorWithSchemaCache = {
-          code: 'PGRST205',
-          message: "Could not find the table 'public.admin_activity_user_state' in the schema cache",
-        };
-        const message = extractErrorMessage(errorWithSchemaCache);
-        expect(message).not.toContain('admin_activity_user_state');
-        expect(message).not.toContain('schema cache');
-        expect(message).toContain('No se pudo actualizar el almacenamiento');
-      });
-
-      it('safely handles ADMIN bulk deletion when admin_activity_user_state is missing from schema cache', async () => {
-        mockRpc.mockResolvedValue({
-          data: null,
-          error: { message: 'function delete_all_staff_activity_notifications_global does not exist', code: 'PGRST202' },
-        });
-
-        // Direct delete on notifications succeeds or is handled
-        mockFrom.mockImplementation((table: string) => {
-          if (table === 'admin_activity_notifications') {
-            return {
-              delete: () => ({
-                in: () => Promise.resolve({ error: null }),
-                neq: () => Promise.resolve({ error: null }),
-              }),
-              select: () => ({
-                order: () => ({
-                  limit: () => Promise.resolve({
-                    data: [
-                      { id: 'notif-1', event_type: 'APPOINTMENT_REQUESTED', created_at: new Date().toISOString(), read_at: null },
-                    ],
-                    error: null,
-                  }),
-                }),
-              }),
-            };
-          }
-          if (table === 'admin_activity_user_state') {
-            return {
-              upsert: () => Promise.resolve({
-                error: { message: "Could not find the table 'public.admin_activity_user_state' in the schema cache", code: 'PGRST205' },
-              }),
-              select: () => ({
-                eq: () => Promise.resolve({
-                  error: { message: "Could not find the table 'public.admin_activity_user_state' in the schema cache", code: 'PGRST205' },
-                  data: null,
-                }),
-              }),
-            };
-          }
-          return {};
-        });
-
-        mockGetUser.mockResolvedValue({
-          data: { user: { id: 'admin-user-uuid' } },
-          error: null,
-        });
-
-        // Bulk delete should not throw schema cache error
-        await expect(deleteAllAdminActivityNotificationsGlobal(['notif-1'])).resolves.not.toThrow();
-
-        // Reading notifications should filter out notif-1 via persistentDismissed set
-        const notifications = await readAdminActivityNotifications();
-        expect(notifications.some(n => n.id === 'notif-1')).toBe(false);
-      });
-
-      it('safely handles BARBER dismissal when admin_activity_user_state is missing from schema cache', async () => {
-        mockRpc.mockResolvedValue({
-          data: null,
-          error: { message: 'function dismiss_staff_activity_notification_personal does not exist', code: 'PGRST202' },
-        });
-
-        mockFrom.mockImplementation((table: string) => {
-          if (table === 'admin_activity_notifications') {
-            return {
-              select: () => ({
-                order: () => ({
-                  limit: () => Promise.resolve({
-                    data: [
-                      { id: 'notif-barber-cache', event_type: 'APPOINTMENT_REQUESTED', created_at: new Date().toISOString(), read_at: null },
-                      { id: 'notif-barber-keep', event_type: 'APPOINTMENT_CONFIRMED', created_at: new Date().toISOString(), read_at: null },
-                    ],
-                    error: null,
-                  }),
-                }),
-              }),
-            };
-          }
-          if (table === 'admin_activity_user_state') {
-            return {
-              upsert: () => Promise.resolve({
-                error: { message: "Could not find the table 'public.admin_activity_user_state' in the schema cache", code: 'PGRST205' },
-              }),
-              select: () => ({
-                eq: () => Promise.resolve({
-                  error: { message: "Could not find the table 'public.admin_activity_user_state' in the schema cache", code: 'PGRST205' },
-                  data: null,
-                }),
-              }),
-            };
-          }
-          return {};
-        });
-
-        mockGetUser.mockResolvedValue({
-          data: { user: { id: 'barber-user-uuid' } },
-          error: null,
-        });
-
-        // Barber dismissal should not throw schema cache error
-        await expect(dismissAdminActivityNotificationPersonal('notif-barber-cache')).resolves.not.toThrow();
-
-        // Reading notifications filters out the dismissed notification
-        const notifications = await readAdminActivityNotifications();
-        expect(notifications.some(n => n.id === 'notif-barber-cache')).toBe(false);
-        expect(notifications.some(n => n.id === 'notif-barber-keep')).toBe(true);
-      });
+      expect(msg).not.toContain('admin_activity_user_state');
+      expect(msg).not.toContain('schema cache');
+      expect(msg).toContain('No se pudo actualizar el almacenamiento');
     });
   });
 });
-
