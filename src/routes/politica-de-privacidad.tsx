@@ -14,6 +14,8 @@ export const Route = createFileRoute('/politica-de-privacidad')({
 });
 
 export function PoliticaDePrivacidadPage({ backTo = '/reservar-turno' }: { backTo?: string }) {
+  const isLiquid = backTo.includes('-liquid');
+  const termsTo = isLiquid ? '/terminos-y-condiciones-liquid' : '/terminos-y-condiciones';
   return (
     <main className="legal-page" id="contenido-principal">
       <div className="site-container legal-container">
@@ -334,10 +336,10 @@ export function PoliticaDePrivacidadPage({ backTo = '/reservar-turno' }: { backT
 
         {/* Navegación y enlaces cruzados al pie */}
         <footer className="legal-footer-nav">
-          <Link to="/terminos-y-condiciones" className="legal-cross-link">
+          <Link to={termsTo} className="legal-cross-link">
             <span>Consultar Términos y Condiciones →</span>
           </Link>
-          <Link to="/reservar-turno" className="legal-back-link">
+          <Link to={backTo} className="legal-back-link">
             <ArrowLeft size={14} aria-hidden="true" />
             <span>Volver a reservar</span>
           </Link>

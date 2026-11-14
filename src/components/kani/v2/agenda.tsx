@@ -32,7 +32,13 @@ import {
 } from "./shared";
 import { ManualAppointmentDialog } from "./manual-appointment-dialog";
 
-export function V2Home() {
+export function V2Home({
+  basePath = "/panel-administracion",
+}: { basePath?: "/panel-administracion" | "/admin-liquid" } = {}) {
+  const isLiquid = basePath === "/admin-liquid";
+  const turnosTo = isLiquid ? "/admin-liquid/turnos" : "/panel-administracion/turnos";
+  const horariosTo = isLiquid ? "/admin-liquid/horarios" : "/panel-administracion/horarios";
+  const pagosTo = isLiquid ? "/admin-liquid/pagos" : "/panel-administracion/pagos";
   const data = useV2();
   const staff = useAdminStaff();
   const today = businessDateToday();
@@ -81,7 +87,7 @@ export function V2Home() {
               <p>No hay próximos turnos pendientes o confirmados.</p>
             </>
           )}
-          <Link className="v2-primary" to="/panel-administracion/turnos">
+          <Link className="v2-primary" to={turnosTo}>
             Ver agenda <ArrowRight size={17} />
           </Link>
         </article>
@@ -92,7 +98,7 @@ export function V2Home() {
             {nextSpace ? dateLabel(nextSpace.slot_date) : "En los próximos 7 días"}
           </p>
           {nextSpace && <p>{staff.barbers.find((b) => b.id === nextSpace.barber_id)?.name}</p>}
-          <Link className="v2-secondary" to="/panel-administracion/horarios">
+          <Link className="v2-secondary" to={horariosTo}>
             Ver horarios
           </Link>
         </article>
@@ -113,7 +119,7 @@ export function V2Home() {
               value={money(paymentSummary(payments).collected)}
             />
           </div>
-          <Link className="v2-text-link" to="/panel-administracion/pagos">
+          <Link className="v2-text-link" to={pagosTo}>
             Registrar un cobro <ArrowRight size={16} />
           </Link>
         </div>
@@ -121,7 +127,7 @@ export function V2Home() {
       <section className="v2-panel">
         <div className="v2-section-title">
           <h2>El equipo hoy</h2>
-          <Link to="/panel-administracion/horarios">
+          <Link to={horariosTo}>
             Organizar horarios <ArrowRight size={16} />
           </Link>
         </div>
@@ -162,7 +168,7 @@ export function V2Home() {
               : "No encontramos próximos espacios habilitados en los siguientes 7 días. Revisá la jornada en Horarios."}
           </p>
         </div>
-        <Link to="/panel-administracion/horarios">Ver disponibilidad</Link>
+        <Link to={horariosTo}>Ver disponibilidad</Link>
       </div>
     </main>
   );
@@ -174,7 +180,11 @@ export type AgendaPeriodFilter = AgendaPeriodPreset | "DATE";
 export function V2Appointments({
   paymentsTo = "/panel-administracion/pagos",
 }: {
-  paymentsTo?: "/panel-administracion/pagos" | "/panel-v2/negocio/pagos";
+  paymentsTo?:
+    | "/panel-administracion/pagos"
+    | "/panel-v2/negocio/pagos"
+    | "/admin-liquid/pagos"
+    | "/admin-v2-liquid/negocio/pagos";
 } = {}) {
   const data = useV2();
   const staff = useAdminStaff();
@@ -657,25 +667,14 @@ export function V2Appointments({
                 }
                 if (a.statusCode === "CONFIRMED") {
                   actionNodes.push(
-                    paymentsTo === "/panel-v2/negocio/pagos" ? (
-                      <Link
-                        key="cobrar"
-                        className="v2-secondary v2-action-btn v2-cobrar-btn"
-                        to="/panel-v2/negocio/pagos"
-                        search={{ turno: a.id }}
-                      >
-                        Cobrar
-                      </Link>
-                    ) : (
-                      <Link
-                        key="cobrar"
-                        className="v2-secondary v2-action-btn v2-cobrar-btn"
-                        to="/panel-administracion/pagos"
-                        search={{ turno: a.id }}
-                      >
-                        Cobrar
-                      </Link>
-                    ),
+                    <Link
+                      key="cobrar"
+                      className="v2-secondary v2-action-btn v2-cobrar-btn"
+                      to={paymentsTo}
+                      search={{ turno: a.id }}
+                    >
+                      Cobrar
+                    </Link>,
                   );
                 }
                 if (

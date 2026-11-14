@@ -169,6 +169,9 @@ export function PaywayBooking({
   homeUrl?: string;
   experimentalMotion?: LiquidGlassMotionAdapter;
 } = {}) {
+  const isLiquid = homeUrl.includes('-liquid');
+  const termsUrl = isLiquid ? '/terminos-y-condiciones-liquid' : '/terminos-y-condiciones';
+  const privacyUrl = isLiquid ? '/politica-de-privacidad-liquid' : '/politica-de-privacidad';
   const [open, setOpen] = useState(false);
   const [preparing, setPreparing] = useState(false);
   const [checkout, setCheckout] = useState<PaywayCheckout | null>(null);
@@ -1176,7 +1179,7 @@ export function PaywayBooking({
                 <p className="payway-legal-disclaimer text-xs text-muted-foreground text-left my-3 leading-relaxed">
                   Al confirmar tu reserva, aceptás nuestros{' '}
                   <a
-                    href="/terminos-y-condiciones"
+                    href={termsUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="underline underline-offset-2 hover:text-foreground text-gold transition-colors"
@@ -1185,7 +1188,7 @@ export function PaywayBooking({
                   </a>{' '}
                   y nuestra{' '}
                   <a
-                    href="/politica-de-privacidad"
+                    href={privacyUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="underline underline-offset-2 hover:text-foreground text-gold transition-colors"
