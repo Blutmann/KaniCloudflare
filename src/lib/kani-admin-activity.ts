@@ -223,10 +223,18 @@ export async function setAdminActivityNotificationRead(id: string, readAt: strin
 
 /**
  * Marca como leídas todas las notificaciones visibles del usuario autenticado actual.
+ * Opcionalmente recibe un corte temporal (`beforeIso`) para no marcar notificaciones recién llegadas.
  * Nunca modifica el estado de lectura de otros usuarios.
  */
-export async function markAllAdminActivityNotificationsRead(ids?: string[]): Promise<void> {
-  const { error: rpcError } = await supabase.rpc('mark_all_staff_activity_notifications_read');
+export async function markAllAdminActivityNotificationsRead(ids?: string[], beforeIso?: string): Promise<void> {
+  let { error: rpcError } = beforeIso
+    ? await supabase.rpc('mark_all_staff_activity_notifications_read', { p_before: beforeIso } as any)
+    : await supabase.rpc('mark_all_staff_activity_notifications_read');
+
+  if (rpcError && beforeIso && isTableMissingOrSchemaCacheError(rpcError)) {
+    const legacyRes = await supabase.rpc('mark_all_staff_activity_notifications_read');
+    rpcError = legacyRes.error;
+  }
 
   if (!rpcError) return;
 
@@ -239,10 +247,13 @@ export async function markAllAdminActivityNotificationsRead(ids?: string[]): Pro
   let targetIds = ids && ids.length > 0 ? [...ids] : [];
 
   if (targetIds.length === 0) {
-    const { data: notifs, error: listErr } = await supabase
+    let query = supabase
       .from('admin_activity_notifications')
-      .select('id')
-      .limit(50);
+      .select('id');
+    if (beforeIso) {
+      query = query.lte('created_at', beforeIso);
+    }
+    const { data: notifs, error: listErr } = await query.limit(1000);
     if (listErr) {
       throw new Error(extractErrorMessage(listErr, 'No se pudieron obtener las notificaciones para marcar como leídas.'));
     }
@@ -336,10 +347,22 @@ export async function dismissAdminActivityNotificationPersonal(id: string): Prom
 
 /**
  * Elimina (descarta) todas las notificaciones del usuario autenticado actual en Supabase
- * (`admin_activity_user_state`). Nunca borra notificaciones de otros usuarios.
+ * (`admin_activity_user_state`) hasta `beforeIso` (si se indica), preservando notificaciones posteriores.
+ * Nunca borra notificaciones de otros usuarios.
  */
-export async function dismissAllAdminActivityNotificationsPersonal(ids: string[] = []): Promise<number> {
-  const { data, error: rpcError } = await supabase.rpc('dismiss_all_staff_activity_notifications_personal');
+export async function dismissAllAdminActivityNotificationsPersonal(
+  ids: string[] = [],
+  beforeIso?: string,
+): Promise<number> {
+  let { data, error: rpcError } = beforeIso
+    ? await supabase.rpc('dismiss_all_staff_activity_notifications_personal', { p_before: beforeIso } as any)
+    : await supabase.rpc('dismiss_all_staff_activity_notifications_personal');
+
+  if (rpcError && beforeIso && isTableMissingOrSchemaCacheError(rpcError)) {
+    const legacyRes = await supabase.rpc('dismiss_all_staff_activity_notifications_personal');
+    data = legacyRes.data;
+    rpcError = legacyRes.error;
+  }
 
   if (!rpcError) {
     return typeof data === 'number' ? data : ids.length;
@@ -353,10 +376,13 @@ export async function dismissAllAdminActivityNotificationsPersonal(ids: string[]
   let targetIds = [...ids];
 
   if (targetIds.length === 0) {
-    const { data: notifs, error: listErr } = await supabase
+    let query = supabase
       .from('admin_activity_notifications')
-      .select('id')
-      .limit(100);
+      .select('id');
+    if (beforeIso) {
+      query = query.lte('created_at', beforeIso);
+    }
+    const { data: notifs, error: listErr } = await query.limit(1000);
     if (listErr) {
       throw new Error(extractErrorMessage(listErr, 'No se pudieron listar las notificaciones a eliminar.'));
     }
@@ -384,6 +410,42 @@ export async function dismissAllAdminActivityNotificationsPersonal(ids: string[]
   }
 
   return targetIds.length;
+}
+
+/**
+ * Suscribe en tiempo real a cambios de notificaciones y estado propio del usuario
+ * para reflejar actualizaciones entre pestañas y dispositivos.
+ */
+export function subscribeAdminActivityChanges(userId: string, onChange: () => void): () => void {
+  const clientAny = supabase as any;
+  if (!userId || typeof clientAny?.channel !== 'function') {
+    return () => {};
+  }
+
+  const channel = clientAny
+    .channel(`kani-admin-activity:${userId}`)
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'admin_activity_notifications' },
+      () => onChange(),
+    )
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'admin_activity_user_state',
+        filter: `user_id=eq.${userId}`,
+      },
+      () => onChange(),
+    )
+    .subscribe();
+
+  return () => {
+    if (typeof clientAny?.removeChannel === 'function') {
+      void clientAny.removeChannel(channel);
+    }
+  };
 }
 
 /**

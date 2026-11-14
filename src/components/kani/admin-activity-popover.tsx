@@ -19,6 +19,7 @@ import {
   markAllAdminActivityNotificationsUnread,
   readAdminActivityNotifications,
   setAdminActivityNotificationRead,
+  subscribeAdminActivityChanges,
   type AdminActivityEvent,
 } from '@/lib/kani-admin-activity';
 import '@/components/kani/experimental/liquid-glass-notifications.css';
@@ -101,6 +102,18 @@ export function AdminActivityPopover({
   const deletingIdsRef = useRef(new Set<string>());
   const readingIdsRef = useRef(new Set<string>());
   const bulkBusyRef = useRef(false);
+  const confirmDeleteCutoffRef = useRef<string | null>(null);
+  const lastSyncAtRef = useRef(0);
+
+  function getLatestNotificationTimestamp(list: AdminActivityEvent[]): string | undefined {
+    let latest: string | undefined;
+    for (const item of list) {
+      if (item.created_at && (!latest || item.created_at > latest)) {
+        latest = item.created_at;
+      }
+    }
+    return latest;
+  }
 
   const effectiveLiquid =
     isLiquid ||
@@ -154,6 +167,7 @@ export function AdminActivityPopover({
     deletingIdsRef.current.clear();
     readingIdsRef.current.clear();
     bulkBusyRef.current = false;
+    confirmDeleteCutoffRef.current = null;
     setEvents([]);
     setError('');
     setConfirmDeleteAllOpen(false);
@@ -166,11 +180,29 @@ export function AdminActivityPopover({
     const handleActivityChanged = () => {
       void loadNotifications({ showLoading: false });
     };
+    const handleForegroundSync = () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+      const now = Date.now();
+      if (now - lastSyncAtRef.current < 1500) return;
+      lastSyncAtRef.current = now;
+      void loadNotifications({ showLoading: false, preserveError: true });
+    };
     window.addEventListener('kani-activity-changed', handleActivityChanged);
+    window.addEventListener('focus', handleForegroundSync);
+    document.addEventListener('visibilitychange', handleForegroundSync);
+    const unsubscribeRealtime =
+      userId && typeof subscribeAdminActivityChanges === 'function'
+        ? subscribeAdminActivityChanges(userId, () => {
+            void loadNotifications({ showLoading: false, preserveError: true });
+          })
+        : () => {};
     return () => {
       window.removeEventListener('kani-activity-changed', handleActivityChanged);
+      window.removeEventListener('focus', handleForegroundSync);
+      document.removeEventListener('visibilitychange', handleForegroundSync);
+      unsubscribeRealtime();
     };
-  }, [loadNotifications]);
+  }, [userId, loadNotifications]);
 
   useEffect(() => {
     if (open) {
@@ -247,11 +279,18 @@ export function AdminActivityPopover({
     setError('');
     fetchEpochRef.current += 1;
 
+    const cutoff = getLatestNotificationTimestamp(events);
     try {
-      await markAllAdminActivityNotificationsRead(events.map(n => n.id));
+      await markAllAdminActivityNotificationsRead(events.map(n => n.id), cutoff);
       fetchEpochRef.current += 1;
       const readAt = new Date().toISOString();
-      setEvents(current => current.map(item => ({ ...item, read_at: item.read_at ?? readAt })));
+      setEvents(current =>
+        current.map(item =>
+          !cutoff || !item.created_at || item.created_at <= cutoff
+            ? { ...item, read_at: item.read_at ?? readAt }
+            : item,
+        ),
+      );
     } catch (cause) {
       setError(extractErrorMessage(cause, 'No se pudieron marcar las notificaciones.'));
       void loadNotifications({ showLoading: false, preserveError: true });
@@ -314,13 +353,24 @@ export function AdminActivityPopover({
     setError('');
     fetchEpochRef.current += 1;
 
+    const cutoff = confirmDeleteCutoffRef.current ?? getLatestNotificationTimestamp(events);
     try {
       const ids = events.map(n => n.id);
-      await dismissAllAdminActivityNotificationsPersonal(ids);
+      await dismissAllAdminActivityNotificationsPersonal(ids, cutoff);
       fetchEpochRef.current += 1;
       const dismissedSet = new Set(ids);
-      setEvents(current => current.filter(item => !dismissedSet.has(item.id)));
+      setEvents(current =>
+        current.filter(item => {
+          if (cutoff && item.created_at) {
+            return item.created_at > cutoff;
+          }
+          return !dismissedSet.has(item.id);
+        }),
+      );
+      confirmDeleteCutoffRef.current = null;
       setConfirmDeleteAllOpen(false);
+      // Resincronizar con servidor para mostrar inmediatamente notificaciones generadas tras `cutoff`
+      void loadNotifications({ showLoading: false, preserveError: true });
     } catch (cause) {
       setError(extractErrorMessage(cause, 'No se pudieron eliminar las notificaciones.'));
       void loadNotifications({ showLoading: false, preserveError: true });
@@ -442,6 +492,7 @@ export function AdminActivityPopover({
                 disabled={isDeletingAll || isBulkReading}
                 onClick={() => {
                   setError('');
+                  confirmDeleteCutoffRef.current = getLatestNotificationTimestamp(events) ?? new Date().toISOString();
                   setConfirmDeleteAllOpen(true);
                 }}
               >

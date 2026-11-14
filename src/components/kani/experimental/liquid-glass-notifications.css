@@ -821,7 +821,7 @@ html[data-theme="dark"] body .kani-notif-confirm-overlay.liquid-glass-confirm-ov
   backdrop-filter: blur(7px) saturate(135%) !important;
 }
 
-html[data-theme] body .kani-notif-confirm-dialog[role="dialog"] {
+html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) .kani-notif-confirm-dialog[role="dialog"] {
   position: fixed !important;
   inset: 50% auto auto 50% !important;
   left: 50% !important;
@@ -842,7 +842,7 @@ html[data-theme] body .kani-notif-confirm-dialog[role="dialog"] {
   border-radius: 22px !important;
 }
 
-html[data-theme="light"] body .kani-notif-confirm-dialog.liquid-glass-confirm-dialog[role="dialog"] {
+html[data-theme="light"] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) .kani-notif-confirm-dialog.liquid-glass-confirm-dialog[role="dialog"] {
   background-color: transparent !important;
   background-image: linear-gradient(
     158deg,
@@ -861,7 +861,7 @@ html[data-theme="light"] body .kani-notif-confirm-dialog.liquid-glass-confirm-di
   color: #161513 !important;
 }
 
-html[data-theme="dark"] body .kani-notif-confirm-dialog.liquid-glass-confirm-dialog[role="dialog"] {
+html[data-theme="dark"] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) .kani-notif-confirm-dialog.liquid-glass-confirm-dialog[role="dialog"] {
   background-color: transparent !important;
   background-image: linear-gradient(
     158deg,
@@ -932,28 +932,34 @@ html[data-theme="dark"] body .kani-notif-confirm-dialog.liquid-glass-confirm-dia
   cursor: pointer;
 }
 
-html[data-theme="light"] .kani-notif-confirm-dialog.liquid-glass-confirm-dialog .kani-notif-confirm-cancel {
+html[data-theme="light"] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) .kani-notif-confirm-dialog.liquid-glass-confirm-dialog[role="dialog"] .kani-notif-confirm-footer button.kani-notif-confirm-cancel {
   background: rgba(255, 255, 255, 0.72) !important;
+  background-color: rgba(255, 255, 255, 0.72) !important;
+  background-image: none !important;
   border: 1px solid rgba(148, 144, 138, 0.36) !important;
   color: #161513 !important;
   -webkit-text-fill-color: #161513 !important;
 }
 
-html[data-theme="light"] .kani-notif-confirm-dialog.liquid-glass-confirm-dialog .kani-notif-confirm-cancel:hover:not(:disabled) {
+html[data-theme="light"] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) .kani-notif-confirm-dialog.liquid-glass-confirm-dialog[role="dialog"] .kani-notif-confirm-footer button.kani-notif-confirm-cancel:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.94) !important;
+  background-color: rgba(255, 255, 255, 0.94) !important;
   border-color: rgba(148, 144, 138, 0.56) !important;
 }
 
-html[data-theme="dark"] .kani-notif-confirm-dialog.liquid-glass-confirm-dialog .kani-notif-confirm-cancel {
-  background: rgba(255, 255, 255, 0.08) !important;
-  border: 1px solid rgba(255, 248, 232, 0.22) !important;
+html[data-theme="dark"] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) .kani-notif-confirm-dialog.liquid-glass-confirm-dialog[role="dialog"] .kani-notif-confirm-footer button.kani-notif-confirm-cancel {
+  background: rgba(255, 255, 255, 0.09) !important;
+  background-color: rgba(255, 255, 255, 0.09) !important;
+  background-image: none !important;
+  border: 1px solid rgba(255, 248, 232, 0.24) !important;
   color: #f6f4ef !important;
   -webkit-text-fill-color: #f6f4ef !important;
 }
 
-html[data-theme="dark"] .kani-notif-confirm-dialog.liquid-glass-confirm-dialog .kani-notif-confirm-cancel:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.14) !important;
-  border-color: rgba(255, 248, 232, 0.34) !important;
+html[data-theme="dark"] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) .kani-notif-confirm-dialog.liquid-glass-confirm-dialog[role="dialog"] .kani-notif-confirm-footer button.kani-notif-confirm-cancel:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.15) !important;
+  background-color: rgba(255, 255, 255, 0.15) !important;
+  border-color: rgba(255, 248, 232, 0.36) !important;
 }
 
 html[data-theme] body .kani-notif-confirm-dialog[role="dialog"] button.kani-notif-confirm-destructive:is(:not(:disabled), :disabled) {
