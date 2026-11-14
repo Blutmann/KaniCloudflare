@@ -100,7 +100,7 @@ describe('Liquid Glass V12.19 — Admin Visual Transformation & Isolation', () =
     expect(container.querySelector('.lg-admin-nav-pill')).toBeNull();
   });
 
-  it('conserva la campanita de notificaciones en el header de /admin-liquid y la oculta en /reservar-turno-liquid', async () => {
+  it('conserva la campanita de notificaciones en el header de /admin-liquid y persiste en /reservar-turno-liquid cuando hay sesión activa', async () => {
     mockPathname = '/admin-liquid/turnos';
     const { unmount } = render(
       <KaniProvider>
@@ -119,9 +119,8 @@ describe('Liquid Glass V12.19 — Admin Visual Transformation & Isolation', () =
       </KaniProvider>,
     );
 
-    await waitFor(() => {
-      expect(screen.queryByTestId('admin-notification-bell')).toBeNull();
-    });
+    const bellBooking = await screen.findByTestId('admin-notification-bell');
+    expect(bellBooking.getAttribute('data-role')).toBe('ADMIN');
   });
 
   it('aisla los estilos de V12.19 bajo body[data-lg-admin="true"] con soporte Light/Dark, estados no solo por color y reduced-motion', () => {

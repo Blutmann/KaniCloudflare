@@ -73,10 +73,11 @@ describe('KANI Barber Studio — Liquid Glass Experience (/reservar-turno-liquid
     expect(document.body.classList.contains('liquid-glass-active')).toBe(false);
   });
 
-  it('3. SiteHeader habilita ThemeToggle para modos Claro/Oscuro y excluye campana de notificaciones en /reservar-turno-liquid', () => {
+  it('3. SiteHeader habilita ThemeToggle para modos Claro/Oscuro y mantiene la campana de notificaciones para staff autenticado en /reservar-turno-liquid', () => {
     expect(siteHeaderCode).toContain("path === '/reservar-turno-liquid'");
     expect(siteHeaderCode).toContain('<ThemeToggle />');
-    expect(siteHeaderCode).toContain('{staff && (!isLiquidRoute || admin) &&');
+    expect(siteHeaderCode).toContain('{staff && <Suspense');
+    expect(siteHeaderCode).toContain('isLiquid={isLiquidRoute}');
   });
 
   it('4. Define una única identidad visual Liquid Glass V9 blanco perla (#FCFCFD) monocromática grafito suave (#34383E) inmune al tema global', () => {

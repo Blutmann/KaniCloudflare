@@ -1521,7 +1521,7 @@ html[data-theme] body[data-lg-admin="true"] :is(
 }
 
 html[data-theme] body[data-lg-admin="true"] :is(
-  [role="dialog"],
+  [role="dialog"]:not(.notification-popover),
   [role="dialog"].v2-dialog,
   .v2-dialog.v2-manual-dialog,
   .v2-dialog.v2-client-modal,
@@ -1530,8 +1530,7 @@ html[data-theme] body[data-lg-admin="true"] :is(
   .v2-dialog.v2-medit-modal,
   .v2-dialog.v2-payment-edit-dialog,
   .manual-dialog,
-  .admin-schedule-dialog,
-  .notification-popover
+  .admin-schedule-dialog
 ) {
   background: var(--lga-glass-modal) !important;
   background-color: transparent !important;
@@ -1545,7 +1544,7 @@ html[data-theme] body[data-lg-admin="true"] :is(
   animation: lgaDialogFadeIn 190ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-html[data-theme] body[data-lg-admin="true"] [role="dialog"]:not(.v2-client-modal) {
+html[data-theme] body[data-lg-admin="true"] [role="dialog"]:not(.v2-client-modal):not(.notification-popover) {
   width: min(
     540px,
     calc(100vw - max(24px, env(safe-area-inset-left, 0px) + env(safe-area-inset-right, 0px)))
@@ -1917,16 +1916,6 @@ html[data-theme] body[data-lg-admin="true"] .v2-manual-close-btn:hover {
   html[data-theme] body[data-lg-admin="true"] .v2-dialog.v2-manual-dialog .v2-manual-row {
     grid-template-columns: minmax(0, 1fr) !important;
   }
-}
-
-body[data-lg-admin="true"] .notification-item {
-  background: var(--lga-glass-interactive) !important;
-  border: 1px solid var(--lga-border) !important;
-  border-radius: 14px !important;
-}
-
-body[data-lg-admin="true"] .notification-item.is-unread {
-  border-color: var(--lga-border-accent) !important;
 }
 
 body[data-lg-admin="true"] :is(.v2-alert, .v2-range-warning) {
