@@ -195,9 +195,11 @@ export function SiteHeader() {
         <Link to={adminBase} onClick={closeMenu}>
           <CalendarClock />Panel de administración
         </Link>
-        <Link to={panelV2Target} onClick={closeMenu}>
-          <LayoutGrid />Panel V2
-        </Link>
+        {!isLiquidRoute && (
+          <Link to={panelV2Target} onClick={closeMenu}>
+            <LayoutGrid />Panel V2
+          </Link>
+        )}
 
         {staff?.profile.role === 'BARBER' && (
           <>

@@ -29,21 +29,33 @@ html[data-theme="light"] body[data-lg-admin="true"] {
   );
   --lga-glass-modal: linear-gradient(
     156deg,
-    rgba(255, 255, 255, 0.74) 0%,
-    rgba(245, 243, 239, 0.62) 100%
+    rgba(255, 255, 255, 0.56) 0%,
+    rgba(247, 245, 241, 0.38) 54%,
+    rgba(255, 255, 255, 0.52) 100%
   );
+  --lga-modal-overlay: rgba(232, 229, 223, 0.22);
+  --lga-modal-border: rgba(255, 255, 255, 0.78);
+  --lga-modal-specular: inset 0 1.5px 0 rgba(255, 255, 255, 0.96), inset 0 -1px 0 rgba(28, 26, 24, 0.07);
   --lga-btn-primary-bg: linear-gradient(
-    150deg,
-    rgba(255, 255, 255, 0.78) 0%,
-    rgba(244, 241, 235, 0.66) 100%
+    148deg,
+    rgba(255, 251, 242, 0.88) 0%,
+    rgba(235, 219, 184, 0.72) 56%,
+    rgba(218, 191, 138, 0.64) 100%
   );
   --lga-btn-primary-hover: linear-gradient(
-    150deg,
-    rgba(255, 255, 255, 0.90) 0%,
-    rgba(247, 243, 234, 0.78) 100%
+    148deg,
+    rgba(255, 253, 247, 0.95) 0%,
+    rgba(240, 224, 189, 0.84) 56%,
+    rgba(224, 197, 145, 0.76) 100%
   );
-  --lga-btn-secondary-bg: rgba(255, 255, 255, 0.50);
-  --lga-btn-secondary-hover: rgba(255, 255, 255, 0.72);
+  --lga-btn-primary-active: linear-gradient(
+    148deg,
+    rgba(243, 229, 199, 0.92) 0%,
+    rgba(218, 192, 142, 0.80) 100%
+  );
+  --lga-btn-secondary-bg: rgba(255, 255, 255, 0.28);
+  --lga-btn-secondary-hover: rgba(255, 255, 255, 0.48);
+  --lga-btn-secondary-active: rgba(244, 241, 236, 0.62);
   --lga-input-bg: rgba(255, 255, 255, 0.58);
   --lga-input-focus-bg: rgba(255, 255, 255, 0.84);
   --lga-accent-pill: linear-gradient(
@@ -90,21 +102,33 @@ html[data-theme="dark"] body[data-lg-admin="true"] {
   );
   --lga-glass-modal: linear-gradient(
     156deg,
-    rgba(30, 30, 36, 0.72) 0%,
-    rgba(14, 14, 19, 0.66) 100%
+    rgba(34, 34, 42, 0.52) 0%,
+    rgba(16, 16, 22, 0.42) 54%,
+    rgba(26, 26, 33, 0.48) 100%
   );
+  --lga-modal-overlay: rgba(6, 7, 11, 0.36);
+  --lga-modal-border: rgba(255, 255, 255, 0.20);
+  --lga-modal-specular: inset 0 1.5px 0 rgba(255, 249, 236, 0.26), inset 0 -1px 0 rgba(255, 248, 232, 0.06);
   --lga-btn-primary-bg: linear-gradient(
-    150deg,
-    rgba(58, 53, 46, 0.62) 0%,
-    rgba(28, 26, 25, 0.56) 100%
+    148deg,
+    rgba(224, 192, 126, 0.36) 0%,
+    rgba(154, 122, 66, 0.28) 56%,
+    rgba(82, 65, 38, 0.44) 100%
   );
   --lga-btn-primary-hover: linear-gradient(
-    150deg,
-    rgba(72, 65, 56, 0.74) 0%,
-    rgba(38, 34, 31, 0.66) 100%
+    148deg,
+    rgba(232, 201, 138, 0.48) 0%,
+    rgba(168, 134, 74, 0.38) 56%,
+    rgba(96, 76, 44, 0.54) 100%
   );
-  --lga-btn-secondary-bg: rgba(30, 29, 35, 0.48);
-  --lga-btn-secondary-hover: rgba(46, 44, 52, 0.62);
+  --lga-btn-primary-active: linear-gradient(
+    148deg,
+    rgba(196, 164, 102, 0.42) 0%,
+    rgba(126, 98, 48, 0.48) 100%
+  );
+  --lga-btn-secondary-bg: rgba(255, 255, 255, 0.06);
+  --lga-btn-secondary-hover: rgba(255, 255, 255, 0.12);
+  --lga-btn-secondary-active: rgba(255, 255, 255, 0.16);
   --lga-input-bg: rgba(22, 22, 27, 0.54);
   --lga-input-focus-bg: rgba(30, 29, 36, 0.76);
   --lga-accent-pill: linear-gradient(
@@ -157,6 +181,16 @@ body[data-lg-admin="true"] .liquid-glass-page[data-lg-section="admin"] .liquid-o
 /* ------------------------------------------------------------------------------
  * LAYER 2 · SHELL, LOGIN Y CRISTAL ESTRUCTURAL
  * ------------------------------------------------------------------------------ */
+html:has(body[data-lg-admin="true"]) {
+  scrollbar-gutter: stable;
+}
+
+body[data-lg-admin="true"][data-scroll-locked] {
+  --removed-body-scroll-bar-size: 0px !important;
+  margin-right: 0 !important;
+  padding-right: 0 !important;
+}
+
 body[data-lg-admin="true"] .lg-admin-shell {
   padding-top: 16px;
   padding-bottom: 64px;
@@ -579,7 +613,7 @@ html[data-theme] body[data-lg-admin="true"] :is(.v2-shell, .v2-dialog, [role="di
   transform: translateY(-1px);
 }
 
-html[data-theme] body[data-lg-admin="true"] :is(.v2-shell, .v2-dialog, .admin-login-page) :is(
+html[data-theme] body[data-lg-admin="true"] :is(.v2-shell, .v2-dialog, [role="dialog"], .admin-login-page) :is(
   .v2-primary,
   .v2-add-manual-btn,
   .v2-toolbar-action,
@@ -588,10 +622,11 @@ html[data-theme] body[data-lg-admin="true"] :is(.v2-shell, .v2-dialog, .admin-lo
   .admin-login-submit,
   .action-positive
 ):active:not(:disabled) {
-  transform: scale(0.985);
+  background: var(--lga-btn-primary-active) !important;
+  transform: scale(0.985) !important;
 }
 
-html[data-theme] body[data-lg-admin="true"] :is(.v2-shell, .v2-dialog, .admin-login-page) :is(
+html[data-theme] body[data-lg-admin="true"] :is(.v2-shell, .v2-dialog, [role="dialog"], .admin-login-page) :is(
   .v2-primary,
   .v2-add-manual-btn,
   .v2-toolbar-action,
@@ -600,11 +635,11 @@ html[data-theme] body[data-lg-admin="true"] :is(.v2-shell, .v2-dialog, .admin-lo
   .admin-login-submit,
   .action-positive
 ):focus-visible {
-  outline: 2px solid var(--lga-border-accent) !important;
+  outline: 2px solid var(--lga-accent) !important;
   outline-offset: 2px !important;
 }
 
-html[data-theme] body[data-lg-admin="true"] :is(.v2-shell, .v2-dialog, .admin-login-page) :is(
+html[data-theme] body[data-lg-admin="true"] :is(.v2-shell, .v2-dialog, [role="dialog"], .admin-login-page) :is(
   .v2-primary,
   .v2-add-manual-btn,
   .v2-toolbar-action,
@@ -613,7 +648,9 @@ html[data-theme] body[data-lg-admin="true"] :is(.v2-shell, .v2-dialog, .admin-lo
   .admin-login-submit,
   .action-positive
 ):disabled {
-  opacity: 0.48 !important;
+  opacity: 0.44 !important;
+  border-color: var(--lga-border) !important;
+  box-shadow: none !important;
   cursor: not-allowed !important;
   transform: none !important;
 }
@@ -1476,28 +1513,18 @@ body[data-lg-admin="true"] .v2-insight-grid p {
 }
 
 /* ------------------------------------------------------------------------------
- * LAYER 8 · MODALES, POPOVERS, ALERTAS Y REDUCED MOTION
+ * LAYER 8 · MODALES LIQUID GLASS, JERARQUÍA DE BOTONES, POPOVERS Y REDUCED MOTION
  * ------------------------------------------------------------------------------ */
-html[data-theme="light"] body[data-lg-admin="true"] :is(
+html[data-theme] body[data-lg-admin="true"] :is(
   [data-slot="dialog-overlay"],
   [data-radix-portal] > .fixed.inset-0,
+  div[data-state].fixed.inset-0,
   .v2-client-modal-overlay
 ) {
-  background: rgba(236, 234, 230, 0.40) !important;
-  background-color: rgba(236, 234, 230, 0.40) !important;
-  -webkit-backdrop-filter: blur(12px) saturate(138%) !important;
-  backdrop-filter: blur(12px) saturate(138%) !important;
-}
-
-html[data-theme="dark"] body[data-lg-admin="true"] :is(
-  [data-slot="dialog-overlay"],
-  [data-radix-portal] > .fixed.inset-0,
-  .v2-client-modal-overlay
-) {
-  background: rgba(8, 8, 12, 0.54) !important;
-  background-color: rgba(8, 8, 12, 0.54) !important;
-  -webkit-backdrop-filter: blur(12px) saturate(138%) !important;
-  backdrop-filter: blur(12px) saturate(138%) !important;
+  background: var(--lga-modal-overlay) !important;
+  background-color: var(--lga-modal-overlay) !important;
+  -webkit-backdrop-filter: blur(4px) saturate(125%) !important;
+  backdrop-filter: blur(4px) saturate(125%) !important;
 }
 
 html[data-theme] body[data-lg-admin="true"] :is(
@@ -1515,12 +1542,13 @@ html[data-theme] body[data-lg-admin="true"] :is(
 ) {
   background: var(--lga-glass-modal) !important;
   background-color: transparent !important;
-  -webkit-backdrop-filter: blur(28px) saturate(160%) !important;
-  backdrop-filter: blur(28px) saturate(160%) !important;
-  border: 1px solid var(--lga-border-strong) !important;
-  box-shadow: var(--lga-shadow-modal), var(--lga-specular) !important;
+  -webkit-backdrop-filter: blur(26px) saturate(185%) !important;
+  backdrop-filter: blur(26px) saturate(185%) !important;
+  border: 1px solid var(--lga-modal-border) !important;
+  box-shadow: var(--lga-shadow-modal), var(--lga-modal-specular) !important;
   border-radius: 22px !important;
   color: var(--lga-text) !important;
+  isolation: isolate;
   animation: lgaDialogFadeIn 190ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
@@ -1532,8 +1560,9 @@ html[data-theme] body[data-lg-admin="true"] [role="dialog"]:not(.v2-client-modal
   max-width: calc(100vw - 24px) !important;
   max-height: calc(100dvh - max(24px, env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px))) !important;
   overflow-y: auto !important;
+  overflow-x: hidden !important;
   overscroll-behavior: contain !important;
-  padding: 20px !important;
+  padding: 22px !important;
 }
 
 html[data-theme] body[data-lg-admin="true"] [role="dialog"]:is(.kani-medit-dialog, .v2-medit-modal) {
@@ -1545,15 +1574,20 @@ html[data-theme] body[data-lg-admin="true"] [role="dialog"].v2-dialog.v2-manual-
   overflow: hidden !important;
 }
 
-/* Eliminar rectángulos sólidos heredados en headers y footers de modales */
+/* Eliminar rectángulos sólidos heredados en cuerpos, headers y footers de modales */
 html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(
+  .v2-manual-form,
+  .v2-manual-dialog-body,
   .v2-manual-dialog-header,
   .v2-manual-dialog-actions,
   .v2-manual-actions,
   .v2-client-modal-header,
+  .v2-client-modal-scroll,
+  .v2-client-editor-form,
   .v2-client-modal-footer,
   .v2-dialog-actions,
-  .manual-dialog-footer
+  .manual-dialog-footer,
+  .manual-dialog-body
 ) {
   background: transparent !important;
   background-color: transparent !important;
@@ -1563,11 +1597,38 @@ html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(
   backdrop-filter: none !important;
 }
 
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea
+) {
+  -webkit-backdrop-filter: blur(10px) saturate(135%) !important;
+  backdrop-filter: blur(10px) saturate(135%) !important;
+}
+
+html[data-theme="light"] body[data-lg-admin="true"] [role="dialog"] :is(
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea
+) {
+  background: rgba(255, 255, 255, 0.44) !important;
+  background-color: rgba(255, 255, 255, 0.44) !important;
+}
+
+html[data-theme="dark"] body[data-lg-admin="true"] [role="dialog"] :is(
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea
+) {
+  background: rgba(16, 16, 22, 0.46) !important;
+  background-color: rgba(16, 16, 22, 0.46) !important;
+}
+
 html[data-theme] body[data-lg-admin="true"] .v2-dialog.v2-manual-dialog :is(.v2-manual-dialog-actions, .v2-manual-actions) {
   position: static !important;
   bottom: auto !important;
-  margin-top: 10px !important;
-  padding: 14px 0 calc(2px + env(safe-area-inset-bottom, 0px)) 0 !important;
+  margin-top: 12px !important;
+  padding: 16px 0 calc(2px + env(safe-area-inset-bottom, 0px)) 0 !important;
   border-top: 1px solid var(--lga-border) !important;
 }
 
@@ -1575,17 +1636,254 @@ html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(.v2-client-modal
   border-top: 1px solid var(--lga-border) !important;
 }
 
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(
+  .manual-dialog-footer,
+  .v2-manual-dialog-actions,
+  .v2-manual-actions,
+  .v2-client-modal-footer,
+  .v2-dialog-actions
+) {
+  display: flex !important;
+  gap: 12px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(
+  .manual-dialog-footer,
+  .v2-manual-dialog-actions,
+  .v2-manual-actions,
+  .v2-client-modal-footer,
+  .v2-dialog-actions
+) > * {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
 html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(.manual-dialog-footer, .v2-dialog-actions) {
-  padding-top: 14px !important;
-  margin-top: 14px !important;
+  padding-top: 16px !important;
+  margin-top: 16px !important;
 }
 
 html[data-theme] body[data-lg-admin="true"] [role="dialog"] .v2-client-modal-footer {
-  padding: 14px 16px calc(14px + env(safe-area-inset-bottom, 0px)) 16px !important;
+  padding: 16px 16px calc(16px + env(safe-area-inset-bottom, 0px)) 16px !important;
 }
 
 html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(.v2-client-modal-header, .v2-manual-dialog-header, .v2-dialog.v2-manual-dialog > p) {
   border-bottom: 1px solid var(--lga-border) !important;
+}
+
+/* Jerarquía clara y accesibilidad táctil de botones dentro de modales */
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(
+  .manual-dialog-footer,
+  .v2-manual-dialog-actions,
+  .v2-manual-actions,
+  .v2-client-modal-footer,
+  .v2-dialog-actions
+) > button {
+  min-height: 48px !important;
+  height: auto !important;
+  padding: 12px 22px !important;
+  border-radius: 14px !important;
+  font-size: 0.875rem !important;
+  line-height: 1.3 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  white-space: nowrap !important;
+  -webkit-backdrop-filter: blur(14px) saturate(145%) !important;
+  backdrop-filter: blur(14px) saturate(145%) !important;
+  transition:
+    transform 150ms cubic-bezier(0.22, 1, 0.36, 1),
+    background 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease !important;
+}
+
+/* Botón primario de confirmación en modal */
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(
+  .manual-dialog-footer,
+  .v2-manual-dialog-actions,
+  .v2-manual-actions,
+  .v2-client-modal-footer,
+  .v2-dialog-actions
+) > button:is(.action-positive, .v2-primary, [type="submit"]):not(.v2-destructive):not(.v2-danger):not(.action-brand) {
+  background: var(--lga-btn-primary-bg) !important;
+  background-color: transparent !important;
+  color: var(--lga-text) !important;
+  -webkit-text-fill-color: var(--lga-text) !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.005em !important;
+}
+
+html[data-theme="light"] body[data-lg-admin="true"] [role="dialog"] :is(
+  .manual-dialog-footer,
+  .v2-manual-dialog-actions,
+  .v2-manual-actions,
+  .v2-client-modal-footer,
+  .v2-dialog-actions
+) > button:is(.action-positive, .v2-primary, [type="submit"]):not(.v2-destructive):not(.v2-danger):not(.action-brand):not(:disabled) {
+  border: 1.5px solid rgba(154, 118, 48, 0.86) !important;
+  box-shadow:
+    0 10px 24px rgba(132, 98, 38, 0.16),
+    0 2px 6px rgba(20, 18, 16, 0.08),
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.96),
+    inset 0 -1px 0 rgba(142, 106, 40, 0.16) !important;
+}
+
+html[data-theme="dark"] body[data-lg-admin="true"] [role="dialog"] :is(
+  .manual-dialog-footer,
+  .v2-manual-dialog-actions,
+  .v2-manual-actions,
+  .v2-client-modal-footer,
+  .v2-dialog-actions
+) > button:is(.action-positive, .v2-primary, [type="submit"]):not(.v2-destructive):not(.v2-danger):not(.action-brand):not(:disabled) {
+  color: #fcfaf4 !important;
+  -webkit-text-fill-color: #fcfaf4 !important;
+  border: 1.5px solid rgba(228, 201, 143, 0.86) !important;
+  box-shadow:
+    0 12px 26px rgba(0, 0, 0, 0.48),
+    0 0 18px rgba(212, 180, 114, 0.16),
+    inset 0 1.5px 0 rgba(255, 248, 232, 0.42) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(
+  .manual-dialog-footer,
+  .v2-manual-dialog-actions,
+  .v2-manual-actions,
+  .v2-client-modal-footer,
+  .v2-dialog-actions
+) > button:is(.action-positive, .v2-primary, [type="submit"]):not(.v2-destructive):not(.v2-danger):not(.action-brand):hover:not(:disabled) {
+  background: var(--lga-btn-primary-hover) !important;
+  border-color: var(--lga-accent) !important;
+  transform: translateY(-1px);
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(
+  .manual-dialog-footer,
+  .v2-manual-dialog-actions,
+  .v2-manual-actions,
+  .v2-client-modal-footer,
+  .v2-dialog-actions
+) > button:is(.action-positive, .v2-primary, [type="submit"]):not(.v2-destructive):not(.v2-danger):not(.action-brand):active:not(:disabled) {
+  background: var(--lga-btn-primary-active) !important;
+  transform: scale(0.985) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(
+  .manual-dialog-footer,
+  .v2-manual-dialog-actions,
+  .v2-manual-actions,
+  .v2-client-modal-footer,
+  .v2-dialog-actions
+) > button:is(.action-positive, .v2-primary, [type="submit"]):not(.v2-destructive):not(.v2-danger):not(.action-brand):disabled {
+  background: var(--lga-btn-secondary-bg) !important;
+  background-image: none !important;
+  color: var(--lga-text-muted) !important;
+  -webkit-text-fill-color: var(--lga-text-muted) !important;
+  opacity: 0.48 !important;
+  border: 1px solid var(--lga-border) !important;
+  box-shadow: none !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+}
+
+/* Botón secundario («Cancelar», «Volver», etc.) claramente subordinado */
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(
+  .manual-dialog-footer,
+  .v2-manual-dialog-actions,
+  .v2-manual-actions,
+  .v2-client-modal-footer,
+  .v2-dialog-actions
+) > button:not(.action-positive):not(.v2-primary):not(.v2-destructive):not(.v2-danger):not(.action-brand):not(.action-confirm):not([type="submit"]) {
+  background: var(--lga-btn-secondary-bg) !important;
+  background-color: transparent !important;
+  color: var(--lga-text-muted) !important;
+  -webkit-text-fill-color: var(--lga-text-muted) !important;
+  border: 1px solid var(--lga-border) !important;
+  font-weight: 500 !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14) !important;
+}
+
+html[data-theme="light"] body[data-lg-admin="true"] [role="dialog"] :is(
+  .manual-dialog-footer,
+  .v2-manual-dialog-actions,
+  .v2-manual-actions,
+  .v2-client-modal-footer,
+  .v2-dialog-actions
+) > button:not(.action-positive):not(.v2-primary):not(.v2-destructive):not(.v2-danger):not(.action-brand):not(.action-confirm):not([type="submit"]) {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(
+  .manual-dialog-footer,
+  .v2-manual-dialog-actions,
+  .v2-manual-actions,
+  .v2-client-modal-footer,
+  .v2-dialog-actions
+) > button:not(.action-positive):not(.v2-primary):not(.v2-destructive):not(.v2-danger):not(.action-brand):not(.action-confirm):not([type="submit"]):hover:not(:disabled) {
+  background: var(--lga-btn-secondary-hover) !important;
+  color: var(--lga-text) !important;
+  -webkit-text-fill-color: var(--lga-text) !important;
+  border-color: var(--lga-border-strong) !important;
+  transform: translateY(-1px);
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(
+  .manual-dialog-footer,
+  .v2-manual-dialog-actions,
+  .v2-manual-actions,
+  .v2-client-modal-footer,
+  .v2-dialog-actions
+) > button:not(.action-positive):not(.v2-primary):not(.v2-destructive):not(.v2-danger):not(.action-brand):not(.action-confirm):not([type="submit"]):active:not(:disabled) {
+  background: var(--lga-btn-secondary-active) !important;
+  transform: scale(0.985) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(
+  .manual-dialog-footer,
+  .v2-manual-dialog-actions,
+  .v2-manual-actions,
+  .v2-client-modal-footer,
+  .v2-dialog-actions
+) > button:focus-visible {
+  outline: 2px solid var(--lga-accent) !important;
+  outline-offset: 2px !important;
+}
+
+@media (max-width: 767px) {
+  html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(
+    .manual-dialog-footer,
+    .v2-manual-dialog-actions,
+    .v2-manual-actions,
+    .v2-client-modal-footer,
+    .v2-dialog-actions
+  ) {
+    gap: 12px !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(
+    .manual-dialog-footer,
+    .v2-manual-dialog-actions,
+    .v2-manual-actions,
+    .v2-client-modal-footer,
+    .v2-dialog-actions
+  ) > button {
+    min-height: 52px !important;
+    padding: 13px 18px !important;
+    font-size: 0.9375rem !important;
+    white-space: normal !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(.v2-manual-dialog-actions, .v2-manual-actions) {
+    flex-direction: column-reverse !important;
+    align-items: stretch !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(.v2-manual-dialog-actions, .v2-manual-actions) > button {
+    width: 100% !important;
+    flex: 0 0 auto !important;
+  }
 }
 
 /* Sub-superficies y textos dentro de modales */
@@ -1676,5 +1974,172 @@ body[data-lg-admin="true"] .v2-loading {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+/* ==============================================================================
+ * LAYER 9 · V12.27 COMPLEMENTO — ADAPTACIÓN «MEMBRESÍAS Y DESCUENTOS» & MODALES
+ * Adaptación visual completa de /admin-liquid/membresias y /admin-liquid/descuentos
+ * usando los tokens ópticos --lga-* existentes sin alterar rutas tradicionales.
+ * ============================================================================== */
+
+/* Pestañas Membresías | Descuentos unificadas como cápsula segmentada Liquid Glass */
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page [role="tablist"] {
+  background: var(--lga-glass-structural) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(148%) !important;
+  backdrop-filter: blur(18px) saturate(148%) !important;
+  border: 1px solid var(--lga-border) !important;
+  box-shadow: var(--lga-specular), var(--lga-shadow-structural) !important;
+  border-radius: 999px !important;
+  padding: 4px !important;
+  gap: 6px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page [role="tablist"] > button[role="tab"] {
+  min-height: 36px !important;
+  padding: 0 16px !important;
+  border-radius: 999px !important;
+  font-weight: 500 !important;
+  color: var(--lga-text-muted) !important;
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  box-shadow: none !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page [role="tablist"] > button[role="tab"][aria-selected="true"] {
+  background: var(--lga-accent-pill) !important;
+  border-color: var(--lga-border-accent) !important;
+  color: var(--lga-text) !important;
+  font-weight: 600 !important;
+  box-shadow: var(--lga-specular), 0 4px 12px rgba(24, 22, 20, 0.08) !important;
+}
+
+/* Cards de Membresías (.kani-mcard) */
+html[data-theme] body[data-lg-admin="true"] .kani-mcard {
+  background: var(--lga-glass-interactive) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(150%) !important;
+  backdrop-filter: blur(20px) saturate(150%) !important;
+  border: 1px solid var(--lga-border) !important;
+  box-shadow: var(--lga-specular), var(--lga-shadow-interactive) !important;
+  border-radius: 18px !important;
+  color: var(--lga-text) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .kani-mcard:hover {
+  border-color: var(--lga-border-accent) !important;
+  box-shadow: var(--lga-specular), var(--lga-shadow-hover) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .kani-mcard-sessions {
+  background: var(--lga-glass-structural) !important;
+  border: 1px solid var(--lga-border) !important;
+  border-radius: 12px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .kani-mcard :is(.kani-mcard-barber, .kani-mcard-sessions-label, .kani-mcard-sessions-breakdown, .kani-mcard-meta, .kani-mcard-progress-label) {
+  color: var(--lga-text-muted) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .kani-mcard :is(.kani-mcard-title, .kani-mcard-client, .kani-mcard-sessions-count, .kani-mcard-progress-value) {
+  color: var(--lga-text) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .kani-mcard-actions > :is(button, a) {
+  min-height: 40px !important;
+  border-radius: 999px !important;
+  border: 1px solid var(--lga-border) !important;
+  background: var(--lga-btn-secondary-bg) !important;
+  color: var(--lga-text) !important;
+  box-shadow: var(--lga-specular) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .kani-mcard-actions > :is(button, a):hover:not(:disabled) {
+  background: var(--lga-btn-secondary-hover) !important;
+  border-color: var(--lga-border-accent) !important;
+}
+
+/* Sección Descuentos y Beneficios (.maintenance-section dentro de /admin-liquid/membresias o descuentos) */
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section {
+  background: var(--lga-glass-structural) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(150%) !important;
+  backdrop-filter: blur(22px) saturate(150%) !important;
+  border: 1px solid var(--lga-border) !important;
+  box-shadow: var(--lga-specular), var(--lga-shadow-structural) !important;
+  border-radius: 18px !important;
+  color: var(--lga-text) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section :is(input, select) {
+  background: var(--lga-input-bg) !important;
+  border: 1px solid var(--lga-border) !important;
+  color: var(--lga-text) !important;
+  border-radius: 12px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section :is(input:focus, select:focus) {
+  background: var(--lga-input-focus-bg) !important;
+  border-color: var(--lga-border-accent) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section .space-y-3 > div {
+  background: var(--lga-glass-interactive) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(145%) !important;
+  backdrop-filter: blur(18px) saturate(145%) !important;
+  border: 1px solid var(--lga-border) !important;
+  box-shadow: var(--lga-specular), var(--lga-shadow-interactive) !important;
+  border-radius: 14px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section .action-brand {
+  background: var(--lga-btn-primary-bg) !important;
+  border: 1px solid var(--lga-border-accent) !important;
+  color: var(--lga-text) !important;
+  font-weight: 600 !important;
+  border-radius: 999px !important;
+  box-shadow: var(--lga-specular), var(--lga-shadow-interactive) !important;
+}
+
+/* Modales de Membresías y Descuentos: herencia de jerarquía y alturas táctiles V12.27 */
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(.benefit-code-dialog-footer > div, form > div[style*="justify-content: flex-end"]) {
+  display: flex !important;
+  gap: 12px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(.benefit-code-dialog-footer > div, form > div[style*="justify-content: flex-end"]) > button {
+  min-height: 48px !important;
+  padding: 12px 20px !important;
+  border-radius: 999px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(.benefit-code-dialog-footer > div, form > div[style*="justify-content: flex-end"]) > button:is(.action-positive, .v2-primary, .action-brand, [type="submit"]):not(:disabled) {
+  background: var(--lga-btn-primary-bg) !important;
+  border: 1.5px solid var(--lga-border-accent) !important;
+  color: var(--lga-text) !important;
+  font-weight: 600 !important;
+  box-shadow: var(--lga-shadow-interactive), inset 0 1.5px 0 rgba(255, 255, 255, 0.85) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(.benefit-code-dialog-footer > div, form > div[style*="justify-content: flex-end"]) > button:not(.action-positive):not(.v2-primary):not(.action-brand):not(.v2-destructive):not([type="submit"]) {
+  background: var(--lga-btn-secondary-bg) !important;
+  border: 1px solid var(--lga-border) !important;
+  color: var(--lga-text-muted) !important;
+  font-weight: 500 !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="dark"] body[data-lg-admin="true"] [role="dialog"] :is(.benefit-code-dialog-footer > div, form > div[style*="justify-content: flex-end"]) > button:is(.action-positive, .v2-primary, .action-brand, [type="submit"]):not(:disabled) {
+  color: #fcfaf4 !important;
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.48), inset 0 1.5px 0 rgba(255, 249, 236, 0.34) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] .kani-medit-row-actions > button {
+  min-height: 44px !important;
+  border-radius: 999px !important;
+}
+
+@media (max-width: 767px) {
+  html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(.benefit-code-dialog-footer > div, form > div[style*="justify-content: flex-end"]) > button {
+    min-height: 52px !important;
+    font-size: 0.9375rem !important;
   }
 }

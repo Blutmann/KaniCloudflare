@@ -87,10 +87,20 @@ describe('Liquid Glass V12.17 — Parallel Routes & Menu Isolation', () => {
       '/reservar-turno-liquid',
       '/contacto-liquid',
       '/admin-liquid',
-      '/admin-v2-liquid',
       '/politica-de-privacidad-liquid',
       '/terminos-y-condiciones-liquid',
     ]);
+    expect(screen.queryByRole('link', { name: /Panel V2/i })).toBeNull();
+
+    // En /admin-liquid tampoco se muestra «Panel V2»
+    mockPathname = '/admin-liquid';
+    const adminHeader = render(
+      <KaniProvider>
+        <SiteHeader />
+      </KaniProvider>,
+    );
+    expect(screen.queryByRole('link', { name: /Panel V2/i })).toBeNull();
+    adminHeader.unmount();
 
     fireEvent.click(screen.getByRole('button', { name: /Volver a la reserva/i }));
     expect(mockNavigate).not.toHaveBeenCalled();

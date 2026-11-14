@@ -7527,3 +7527,247 @@ html[data-theme="dark"] .site-shell .liquid-glass-reservation .booking-page .boo
   color: #f4f1ea !important;
   font-weight: 600 !important;
 }
+
+/* ==============================================================================
+ * LIQUID GLASS V12.27 — HEADER MÓVIL TRANSLÚCIDO · MENÚ DESPLEGABLE · MODALES
+ * Aislado exclusivamente bajo body.liquid-glass-active.
+ * ============================================================================== */
+
+/* 1. HEADER MÓVIL TRANSLÚCIDO (<= 767px) & BOTONES ÓPTICOS CERRADOS */
+@media (max-width: 767px) {
+  html[data-theme="light"] body.liquid-glass-active .site-header.liquid-glass-header:not(.menu-open) {
+    background-color: transparent !important;
+    background-image:
+      radial-gradient(65% 130% at 14% 0%, rgba(255, 253, 248, 0.62) 0%, rgba(255, 253, 248, 0) 68%),
+      radial-gradient(50% 120% at 88% 0%, rgba(246, 238, 224, 0.34) 0%, rgba(246, 238, 224, 0) 68%),
+      linear-gradient(180deg, rgba(252, 250, 246, 0.66) 0%, rgba(247, 244, 238, 0.44) 100%) !important;
+    -webkit-backdrop-filter: blur(20px) saturate(148%) !important;
+    backdrop-filter: blur(20px) saturate(148%) !important;
+    border-bottom: 1px solid rgba(255, 252, 245, 0.72) !important;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 254, 250, 0.88),
+      0 8px 22px rgba(42, 34, 22, 0.06) !important;
+  }
+
+  html[data-theme="dark"] body.liquid-glass-active .site-header.liquid-glass-header:not(.menu-open) {
+    background-color: transparent !important;
+    background-image:
+      radial-gradient(62% 130% at 14% 0%, rgba(255, 246, 228, 0.09) 0%, rgba(255, 246, 228, 0) 68%),
+      radial-gradient(48% 120% at 88% 0%, rgba(200, 169, 107, 0.06) 0%, rgba(200, 169, 107, 0) 68%),
+      linear-gradient(180deg, rgba(16, 16, 18, 0.68) 0%, rgba(10, 10, 12, 0.48) 100%) !important;
+    -webkit-backdrop-filter: blur(20px) saturate(140%) !important;
+    backdrop-filter: blur(20px) saturate(140%) !important;
+    border-bottom: 1px solid rgba(255, 246, 228, 0.14) !important;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 248, 232, 0.18),
+      0 10px 26px rgba(0, 0, 0, 0.36) !important;
+  }
+}
+
+html[data-theme="light"] body.liquid-glass-active:not(:has(.payway-checkout)):not([data-payway-modal-open='true']) .site-header.liquid-glass-header .header-control-button {
+  background-color: transparent !important;
+  background-image: linear-gradient(148deg, rgba(255, 255, 255, 0.66) 0%, rgba(244, 241, 236, 0.44) 100%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(145%) !important;
+  backdrop-filter: blur(16px) saturate(145%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.78) !important;
+  color: #1c1a18 !important;
+  box-shadow:
+    0 4px 12px rgba(24, 22, 20, 0.07),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92) !important;
+}
+
+html[data-theme="dark"] body.liquid-glass-active:not(:has(.payway-checkout)):not([data-payway-modal-open='true']) .site-header.liquid-glass-header .header-control-button {
+  background-color: transparent !important;
+  background-image: linear-gradient(148deg, rgba(36, 35, 42, 0.62) 0%, rgba(16, 16, 21, 0.50) 100%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(140%) !important;
+  backdrop-filter: blur(16px) saturate(140%) !important;
+  border: 1px solid rgba(255, 246, 228, 0.16) !important;
+  color: #f4f2ee !important;
+  box-shadow:
+    0 6px 16px rgba(0, 0, 0, 0.38),
+    inset 0 1px 0 rgba(255, 248, 232, 0.20) !important;
+}
+
+/* 2. MENÚ DESPLEGABLE TRANSLÚCIDO (.mobile-menu & .mobile-menu-cta) */
+html[data-theme="light"] body.liquid-glass-active :is(.mobile-menu, nav.mobile-menu) {
+  background-color: transparent !important;
+  background-image:
+    radial-gradient(92% 48% at 18% 6%, rgba(255, 253, 248, 0.52) 0%, rgba(255, 253, 248, 0) 64%),
+    radial-gradient(76% 42% at 86% 18%, rgba(224, 202, 156, 0.14) 0%, rgba(224, 202, 156, 0) 68%),
+    linear-gradient(172deg, rgba(255, 254, 252, 0.62) 0%, rgba(246, 243, 237, 0.48) 54%, rgba(250, 248, 244, 0.58) 100%) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(160%) !important;
+  backdrop-filter: blur(28px) saturate(160%) !important;
+  border-top: 1px solid rgba(255, 252, 245, 0.72) !important;
+  color: #181614 !important;
+}
+
+html[data-theme="dark"] body.liquid-glass-active :is(.mobile-menu, nav.mobile-menu) {
+  background-color: transparent !important;
+  background-image:
+    radial-gradient(90% 44% at 16% 6%, rgba(255, 246, 228, 0.08) 0%, rgba(255, 246, 228, 0) 62%),
+    radial-gradient(72% 38% at 86% 20%, rgba(200, 169, 107, 0.07) 0%, rgba(200, 169, 107, 0) 66%),
+    linear-gradient(172deg, rgba(22, 22, 28, 0.68) 0%, rgba(12, 12, 16, 0.54) 52%, rgba(16, 16, 22, 0.64) 100%) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(150%) !important;
+  backdrop-filter: blur(28px) saturate(150%) !important;
+  border-top: 1px solid rgba(255, 246, 228, 0.14) !important;
+  color: #f4f2ee !important;
+}
+
+html[data-theme="light"] body.liquid-glass-active .mobile-menu-session-identity strong,
+html[data-theme="light"] body.liquid-glass-active .mobile-menu-signout {
+  color: #181614 !important;
+}
+
+html[data-theme="light"] body.liquid-glass-active .mobile-menu-session-identity span {
+  color: rgba(24, 22, 20, 0.64) !important;
+}
+
+html[data-theme="dark"] body.liquid-glass-active .mobile-menu-session-identity strong,
+html[data-theme="dark"] body.liquid-glass-active .mobile-menu-signout {
+  color: #f6f4ef !important;
+}
+
+html[data-theme="dark"] body.liquid-glass-active .mobile-menu-session-identity span {
+  color: rgba(244, 242, 238, 0.68) !important;
+}
+
+html[data-theme] body.liquid-glass-active .mobile-menu-signout {
+  min-height: 40px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 144, 138, 0.30) !important;
+  background: rgba(255, 255, 255, 0.34) !important;
+  transition: background-color 150ms ease, border-color 150ms ease, transform 150ms ease;
+}
+
+html[data-theme="dark"] body.liquid-glass-active .mobile-menu-signout {
+  border-color: rgba(255, 255, 255, 0.16) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  @media (max-width: 767px) {
+    html[data-theme="light"] body.liquid-glass-active .site-header.liquid-glass-header:not(.menu-open) {
+      background: #f5f2eb !important;
+      -webkit-backdrop-filter: none !important;
+      backdrop-filter: none !important;
+    }
+
+    html[data-theme="dark"] body.liquid-glass-active .site-header.liquid-glass-header:not(.menu-open) {
+      background: #0e0e10 !important;
+      -webkit-backdrop-filter: none !important;
+      backdrop-filter: none !important;
+    }
+  }
+}
+
+/* 3. MODALES PAYWAY Y DIÁLOGOS EN RUTAS LIQUID NO-ADMIN (Light y Dark Mode translúcido real) */
+html[data-theme="light"] body.liquid-glass-active:not([data-lg-admin="true"]) :is(.fixed.inset-0[data-state], div[data-state="open"].fixed.inset-0) {
+  background: rgba(232, 229, 223, 0.24) !important;
+  -webkit-backdrop-filter: blur(4px) saturate(125%) !important;
+  backdrop-filter: blur(4px) saturate(125%) !important;
+}
+
+html[data-theme="dark"] body.liquid-glass-active:not([data-lg-admin="true"]) :is(.fixed.inset-0[data-state], div[data-state="open"].fixed.inset-0) {
+  background: rgba(6, 7, 11, 0.38) !important;
+  -webkit-backdrop-filter: blur(4px) saturate(125%) !important;
+  backdrop-filter: blur(4px) saturate(125%) !important;
+}
+
+html[data-theme="light"] body.liquid-glass-active:not([data-lg-admin="true"]) :is([role="dialog"], .payway-checkout) {
+  background-color: transparent !important;
+  background-image: linear-gradient(156deg, rgba(255, 255, 255, 0.60) 0%, rgba(247, 245, 241, 0.42) 54%, rgba(255, 255, 255, 0.54) 100%) !important;
+  -webkit-backdrop-filter: blur(26px) saturate(180%) !important;
+  backdrop-filter: blur(26px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.78) !important;
+  box-shadow:
+    0 26px 64px rgba(20, 18, 16, 0.16),
+    0 6px 18px rgba(20, 18, 16, 0.08),
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.96),
+    inset 0 -1px 0 rgba(28, 26, 24, 0.07) !important;
+  color: #161513 !important;
+  border-radius: 22px !important;
+}
+
+html[data-theme="dark"] body.liquid-glass-active:not([data-lg-admin="true"]) :is([role="dialog"], .payway-checkout) {
+  background-color: transparent !important;
+  background-image: linear-gradient(156deg, rgba(34, 34, 42, 0.58) 0%, rgba(16, 16, 22, 0.46) 54%, rgba(26, 26, 33, 0.54) 100%) !important;
+  -webkit-backdrop-filter: blur(26px) saturate(175%) !important;
+  backdrop-filter: blur(26px) saturate(175%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.20) !important;
+  box-shadow:
+    0 28px 72px rgba(0, 0, 0, 0.70),
+    0 8px 22px rgba(0, 0, 0, 0.38),
+    inset 0 1.5px 0 rgba(255, 249, 236, 0.26),
+    inset 0 -1px 0 rgba(255, 248, 232, 0.06) !important;
+  color: #f6f4ef !important;
+  border-radius: 22px !important;
+}
+
+html[data-theme="light"] body.liquid-glass-active:not([data-lg-admin="true"]) .payway-checkout :is(.payway-checkout-title, .payway-field-label, .payway-field-label-text, label) {
+  color: #161513 !important;
+}
+
+html[data-theme="dark"] body.liquid-glass-active:not([data-lg-admin="true"]) .payway-checkout :is(.payway-checkout-title, .payway-field-label, .payway-field-label-text, label) {
+  color: #f6f4ef !important;
+}
+
+html[data-theme="light"] body.liquid-glass-active:not([data-lg-admin="true"]) .payway-checkout :is(.payway-checkout-subtitle, .payway-legal-disclaimer, p) {
+  color: rgba(22, 21, 19, 0.72) !important;
+}
+
+html[data-theme="dark"] body.liquid-glass-active:not([data-lg-admin="true"]) .payway-checkout :is(.payway-checkout-subtitle, .payway-legal-disclaimer, p) {
+  color: rgba(244, 242, 238, 0.76) !important;
+}
+
+html[data-theme="light"] body.liquid-glass-active:not([data-lg-admin="true"]) .payway-checkout :is(input, select) {
+  background: rgba(255, 255, 255, 0.62) !important;
+  border: 1px solid rgba(148, 144, 138, 0.34) !important;
+  color: #161513 !important;
+}
+
+html[data-theme="dark"] body.liquid-glass-active:not([data-lg-admin="true"]) .payway-checkout :is(input, select) {
+  background: rgba(22, 22, 28, 0.62) !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  color: #f6f4ef !important;
+}
+
+html[data-theme="dark"] body.liquid-glass-active:not([data-lg-admin="true"]) .payway-checkout :is(input::placeholder) {
+  color: rgba(244, 242, 238, 0.52) !important;
+}
+
+html[data-theme] body.liquid-glass-active:not([data-lg-admin="true"]) .payway-checkout .payway-submit-btn {
+  min-height: 48px !important;
+  height: auto !important;
+  border-radius: 9999px !important;
+}
+
+html[data-theme="dark"] body.liquid-glass-active:not([data-lg-admin="true"]) .payway-checkout .payway-submit-btn:not(:disabled) {
+  background: linear-gradient(148deg, rgba(224, 192, 126, 0.36) 0%, rgba(154, 122, 66, 0.28) 56%, rgba(82, 65, 38, 0.44) 100%) !important;
+  border: 1.5px solid rgba(228, 201, 143, 0.86) !important;
+  color: #fcfaf4 !important;
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.48), inset 0 1.5px 0 rgba(255, 249, 236, 0.34) !important;
+}
+
+html[data-theme="dark"] body.liquid-glass-active:not([data-lg-admin="true"]) .payway-checkout .payway-submit-btn:disabled {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  color: rgba(244, 242, 238, 0.48) !important;
+}
+
+@media (max-width: 767px) {
+  html[data-theme] body.liquid-glass-active:not([data-lg-admin="true"]) .payway-checkout {
+    max-width: calc(100vw - 24px) !important;
+    max-height: calc(100dvh - 32px) !important;
+  }
+
+  html[data-theme] body.liquid-glass-active:not([data-lg-admin="true"]) .payway-checkout .payway-submit-btn {
+    min-height: 52px !important;
+  }
+}
+
+/* V12.27 — Evitar superposición entre el título y el botón cerrar (×) en móviles compactos */
+body.liquid-glass-active [role="dialog"].payway-checkout h2 {
+  padding-right: 2.5rem;
+  line-height: 1.25;
+}
