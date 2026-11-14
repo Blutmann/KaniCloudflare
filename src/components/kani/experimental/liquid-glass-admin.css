@@ -156,22 +156,13 @@ html[data-theme="dark"] body[data-lg-admin="true"] {
 }
 
 /* ------------------------------------------------------------------------------
- * LAYER 1 · AMBIENTE (VARIACIONES TONALES SUTILES PARA TRANSLUCIDEZ PERCEPTIBLE)
+ * LAYER 1 · AMBIENTE (FONDO EXPERIMENTAL CHAMPAGNE SILK / KANI INK TRANSLÚCIDO)
  * ------------------------------------------------------------------------------ */
-html[data-theme="light"] body[data-lg-admin="true"] .liquid-glass-page[data-lg-section="admin"] {
-  background:
-    radial-gradient(58% 44% at 12% 10%, rgba(208, 203, 195, 0.58) 0%, rgba(208, 203, 195, 0) 72%),
-    radial-gradient(50% 42% at 88% 18%, rgba(204, 192, 172, 0.38) 0%, rgba(204, 192, 172, 0) 68%),
-    radial-gradient(62% 50% at 50% 78%, rgba(212, 208, 202, 0.52) 0%, rgba(212, 208, 202, 0) 72%),
-    linear-gradient(180deg, #ecebe8 0%, #e4e2dd 52%, #ebeae6 100%);
-}
-
+html[data-theme="light"] body[data-lg-admin="true"] .liquid-glass-page[data-lg-section="admin"],
 html[data-theme="dark"] body[data-lg-admin="true"] .liquid-glass-page[data-lg-section="admin"] {
-  background:
-    radial-gradient(56% 44% at 14% 10%, rgba(124, 104, 70, 0.24) 0%, rgba(124, 104, 70, 0) 70%),
-    radial-gradient(52% 44% at 86% 20%, rgba(92, 54, 62, 0.20) 0%, rgba(92, 54, 62, 0) 68%),
-    radial-gradient(62% 48% at 48% 82%, rgba(84, 78, 72, 0.26) 0%, rgba(84, 78, 72, 0) 72%),
-    linear-gradient(180deg, #0a0a0c 0%, #111116 50%, #09090b 100%);
+  background: transparent;
+  background-color: transparent;
+  background-image: none;
 }
 
 body[data-lg-admin="true"] .liquid-glass-page[data-lg-section="admin"] .liquid-orb-1 { opacity: 0.62; }

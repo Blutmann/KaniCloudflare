@@ -8677,39 +8677,57 @@ html[data-theme] .site-shell .liquid-glass-reservation .confirmation-mark {
   box-shadow: var(--lg-sys-shadow-card), var(--lg-sys-specular) !important;
 }
 
-/* Lienzo base y footer en rutas Liquid Glass (evita fondo claro bajo el footer fijo en Dark Mode) */
-html[data-theme="light"]:has(.liquid-glass-header, .liquid-glass-reservation, .liquid-glass-page),
-html[data-theme="light"] :is(
-  body.liquid-glass-active,
-  body:has(.liquid-glass-header, .liquid-glass-reservation, .liquid-glass-page),
-  .site-shell:has(.liquid-glass-header, .liquid-glass-reservation, .liquid-glass-page)
-),
-html[data-theme="light"] .liquid-glass-page {
-  background-color: #f4f5f7 !important;
-  --background: #f4f5f7;
+/* Lienzo base y transparencia de contenedores en rutas Liquid Glass (V12.30.1) */
+html[data-theme="light"]:has(.liquid-glass-header, .liquid-glass-reservation, .liquid-glass-page) {
+  background-color: #f4f3ef !important;
+  --background: #f4f3ef;
+  transition: background-color 180ms ease;
 }
 
-html[data-theme="dark"]:has(.liquid-glass-header, .liquid-glass-reservation, .liquid-glass-page),
-html[data-theme="dark"] :is(
+html[data-theme="dark"]:has(.liquid-glass-header, .liquid-glass-reservation, .liquid-glass-page) {
+  background-color: #040507 !important;
+  --background: #040507;
+  transition: background-color 180ms ease;
+}
+
+html[data-theme] :is(
   body.liquid-glass-active,
   body:has(.liquid-glass-header, .liquid-glass-reservation, .liquid-glass-page),
-  .site-shell:has(.liquid-glass-header, .liquid-glass-reservation, .liquid-glass-page)
-),
-html[data-theme="dark"] .liquid-glass-page {
-  background-color: #0b0b0e !important;
-  --background: #0b0b0e;
+  .site-shell:has(.liquid-glass-header, .liquid-glass-reservation, .liquid-glass-page),
+  .liquid-glass-page,
+  body[data-lg-admin="true"] .liquid-glass-page[data-lg-section="admin"]
+) {
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+/* Evita que las rutas Liquid Glass descarguen o superpongan el wallpaper tradicional de body::before */
+body.liquid-glass-active::before,
+body.liquid-glass-active::after,
+body:has(.liquid-glass-header, .liquid-glass-reservation, .liquid-glass-page)::before,
+body:has(.liquid-glass-header, .liquid-glass-reservation, .liquid-glass-page)::after {
+  content: none !important;
+  display: none !important;
+  background-image: none !important;
+}
+
+/* En admin móvil heredado de V2, preserva header translucido */
+@media (max-width: 767px) {
+  .site-shell:has(.liquid-glass-header) > .site-header-slot {
+    background: transparent !important;
+  }
 }
 
 /* Footer y barra de header en rutas Liquid Glass */
 html[data-theme="light"] :is(body.liquid-glass-active, body:has(.liquid-glass-header, .liquid-glass-reservation, .liquid-glass-page)) .site-footer {
-  background-color: rgba(250, 249, 246, 0.56) !important;
+  background-color: rgba(248, 247, 243, 0.56) !important;
   border-top: 1px solid rgba(148, 144, 138, 0.22) !important;
   -webkit-backdrop-filter: blur(18px) saturate(140%) !important;
   backdrop-filter: blur(18px) saturate(140%) !important;
 }
 
 html[data-theme="dark"] :is(body.liquid-glass-active, body:has(.liquid-glass-header, .liquid-glass-reservation, .liquid-glass-page)) .site-footer {
-  background-color: rgba(14, 14, 18, 0.62) !important;
+  background-color: rgba(8, 9, 12, 0.58) !important;
   border-top: 1px solid rgba(255, 255, 255, 0.10) !important;
   -webkit-backdrop-filter: blur(18px) saturate(140%) !important;
   backdrop-filter: blur(18px) saturate(140%) !important;
@@ -8738,6 +8756,122 @@ html[data-theme="dark"] :is(body.liquid-glass-active, body:has(.liquid-glass-hea
 
   html[data-theme="dark"] :is(body.liquid-glass-active, body:has(.liquid-glass-header, .liquid-glass-reservation)) .booking-back-button:not(:disabled) {
     background: #1b1c22 !important;
+  }
+}
+
+/* ==============================================================================
+ * LIQUID GLASS V12.30.1 — FONDOS CHAMPAGNE SILK (LIGHT) Y KANI INK (DARK)
+ * - AVIF optimizado con fallback WebP vía image-set (descarga exclusiva 1 activo).
+ * - Adaptación multi-aspecto para preservar el Kanji sin recortes ni saltos en iOS/Android.
+ * - Aislado bajo .liquid-glass-atmosphere; rutas tradicionales sin cambios.
+ * ============================================================================== */
+html[data-theme] .liquid-glass-atmosphere {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100%;
+  height: 100vh;
+  height: 100lvh;
+  min-height: 100dvh;
+  z-index: -1 !important;
+  pointer-events: none !important;
+  overflow: hidden !important;
+  background-repeat: no-repeat !important;
+  background-size: cover !important;
+  transform: translate3d(0, 0, 0);
+  -webkit-transform: translate3d(0, 0, 0);
+  transition: background-color 180ms ease;
+}
+
+/* Light Mode — Champagne Silk (Mobile / Retrato por defecto) */
+html[data-theme="light"] .liquid-glass-atmosphere {
+  background-color: #f4f3ef !important;
+  background-position: 94% 86% !important;
+  background-image: url('/backgrounds/champagne-silk-light-mobile.webp') !important;
+  background-image: image-set(
+    url('/backgrounds/champagne-silk-light-mobile.avif') type('image/avif') 1x,
+    url('/backgrounds/champagne-silk-light-mobile.webp') type('image/webp') 1x
+  ) !important;
+}
+
+/* Dark Mode — KANI Ink (Mobile / Retrato por defecto) */
+html[data-theme="dark"] .liquid-glass-atmosphere {
+  background-color: #040507 !important;
+  background-position: 94% 86% !important;
+  background-image: url('/backgrounds/kani-ink-dark-mobile.webp') !important;
+  background-image: image-set(
+    url('/backgrounds/kani-ink-dark-mobile.avif') type('image/avif') 1x,
+    url('/backgrounds/kani-ink-dark-mobile.webp') type('image/webp') 1x
+  ) !important;
+}
+
+/* Tablet retrato (60:100 .. 1:1): protege margen inferior del Kanji arriba del footer/CTA */
+@media (min-aspect-ratio: 60/100) and (max-aspect-ratio: 1/1) {
+  html[data-theme] .liquid-glass-atmosphere {
+    background-position: 92% 100% !important;
+  }
+}
+
+/* Landscape & Desktop (aspect > 1:1) */
+@media (min-aspect-ratio: 1001/1000) {
+  html[data-theme="light"] .liquid-glass-atmosphere {
+    background-position: 90% 88% !important;
+    background-image: url('/backgrounds/champagne-silk-light-desktop.webp') !important;
+    background-image: image-set(
+      url('/backgrounds/champagne-silk-light-desktop.avif') type('image/avif') 1x,
+      url('/backgrounds/champagne-silk-light-desktop.webp') type('image/webp') 1x
+    ) !important;
+  }
+
+  html[data-theme="dark"] .liquid-glass-atmosphere {
+    background-position: 90% 88% !important;
+    background-image: url('/backgrounds/kani-ink-dark-desktop.webp') !important;
+    background-image: image-set(
+      url('/backgrounds/kani-ink-dark-desktop.avif') type('image/avif') 1x,
+      url('/backgrounds/kani-ink-dark-desktop.webp') type('image/webp') 1x
+    ) !important;
+  }
+}
+
+/* Tablet landscape / ventanas anchas 4:3 (~1.01 .. 1.45): protege borde derecho del Kanji */
+@media (min-aspect-ratio: 1001/1000) and (max-aspect-ratio: 145/100) {
+  html[data-theme] .liquid-glass-atmosphere {
+    background-position: 95% 92% !important;
+  }
+}
+
+/* Ultrawide & mobile horizontal (aspect >= 1.90): protege margen inferior del Kanji */
+@media (min-aspect-ratio: 190/100) {
+  html[data-theme] .liquid-glass-atmosphere {
+    background-position: 92% 98% !important;
+  }
+}
+
+/* Preserva la nitidez natural de Champagne Silk y KANI Ink sin velos opacos ni grano artificial */
+html[data-theme="light"] .liquid-glass-atmosphere::after {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.03) 0%,
+    rgba(244, 243, 239, 0.05) 100%
+  ) !important;
+}
+
+html[data-theme="dark"] .liquid-glass-atmosphere::after {
+  background: linear-gradient(
+    180deg,
+    rgba(4, 5, 7, 0.04) 0%,
+    rgba(4, 5, 7, 0.08) 100%
+  ) !important;
+}
+
+html[data-theme] .liquid-glass-atmosphere .liquid-grain {
+  opacity: 0 !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-theme]:has(.liquid-glass-header, .liquid-glass-reservation, .liquid-glass-page),
+  html[data-theme] .liquid-glass-atmosphere {
+    transition: none !important;
   }
 }
 
