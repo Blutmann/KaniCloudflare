@@ -59,8 +59,8 @@
     display: flex !important;
     flex-direction: column !important;
     justify-content: flex-start !important;
-    width: min(calc(100vw - 64px), clamp(960px, 78vw, 1340px)) !important;
-    max-width: min(calc(100vw - 64px), clamp(960px, 78vw, 1340px)) !important;
+    width: min(var(--lg-global-w, min(calc(100vw - 64px), 1920px)), clamp(980px, 80vw, 1560px)) !important;
+    max-width: min(var(--lg-global-w, min(calc(100vw - 64px), 1920px)), clamp(980px, 80vw, 1560px)) !important;
     min-height: 100% !important;
     height: auto !important;
     max-height: none !important;
@@ -83,6 +83,7 @@
   html[data-theme] .site-shell .liquid-glass-reservation .booking-layout > section,
   html[data-theme] .site-shell .liquid-glass-reservation .liquid-glass-step-stage {
     width: 100% !important;
+    max-width: none !important;
   }
 
   /* --------------------------------------------------------------------------
