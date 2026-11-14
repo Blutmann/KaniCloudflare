@@ -76,7 +76,7 @@ describe('KANI Barber Studio — Liquid Glass Experience (/reservar-turno-liquid
   it('3. SiteHeader habilita ThemeToggle para modos Claro/Oscuro y excluye campana de notificaciones en /reservar-turno-liquid', () => {
     expect(siteHeaderCode).toContain("path === '/reservar-turno-liquid'");
     expect(siteHeaderCode).toContain('<ThemeToggle />');
-    expect(siteHeaderCode).toContain('{staff && !isLiquidRoute &&');
+    expect(siteHeaderCode).toContain('{staff && (!isLiquidRoute || admin) &&');
   });
 
   it('4. Define una única identidad visual Liquid Glass V9 blanco perla (#FCFCFD) monocromática grafito suave (#34383E) inmune al tema global', () => {

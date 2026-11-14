@@ -1,0 +1,766 @@
+/* ==============================================================================
+ * KANI BARBER STUDIO — V12.19
+ * ADMIN LIQUID GLASS · COMPLETE VISUAL TRANSFORMATION
+ *
+ * Aislado exclusivamente a /admin-liquid mediante body[data-lg-admin="true"].
+ * No altera /panel-administracion, /admin-v2, /admin-v2-liquid,
+ * /reservar-turno, /reservar-turno-liquid, /contacto ni rutas legales.
+ * ============================================================================== */
+
+/* ------------------------------------------------------------------------------
+ * 0. TOKENS ÓPTICOS EXCLUSIVOS DE /admin-liquid
+ * ------------------------------------------------------------------------------ */
+html[data-theme="light"] body[data-lg-admin="true"] {
+  --lga-surface-1: linear-gradient(
+    158deg,
+    rgba(255, 255, 255, 0.62) 0%,
+    rgba(246, 245, 242, 0.50) 56%,
+    rgba(252, 252, 250, 0.58) 100%
+  );
+  --lga-surface-2: linear-gradient(
+    154deg,
+    rgba(255, 255, 255, 0.72) 0%,
+    rgba(248, 247, 244, 0.58) 58%,
+    rgba(253, 252, 250, 0.68) 100%
+  );
+  --lga-surface-3: rgba(255, 255, 255, 0.64);
+  --lga-surface-hover: linear-gradient(
+    154deg,
+    rgba(255, 255, 255, 0.84) 0%,
+    rgba(249, 248, 245, 0.72) 100%
+  );
+  --lga-surface-modal: linear-gradient(
+    156deg,
+    rgba(255, 255, 255, 0.84) 0%,
+    rgba(245, 244, 241, 0.76) 100%
+  );
+  --lga-border: rgba(152, 148, 142, 0.30);
+  --lga-border-strong: rgba(138, 134, 128, 0.44);
+  --lga-border-accent: rgba(186, 152, 88, 0.64);
+  --lga-specular: inset 0 1px 0 rgba(255, 255, 255, 0.92), inset 0 -1px 0 rgba(28, 26, 24, 0.04);
+  --lga-shadow-1: 0 12px 32px rgba(24, 22, 20, 0.065), 0 2px 8px rgba(24, 22, 20, 0.035);
+  --lga-shadow-2: 0 10px 26px rgba(24, 22, 20, 0.055), 0 2px 6px rgba(24, 22, 20, 0.03);
+  --lga-shadow-hover: 0 16px 36px rgba(24, 22, 20, 0.09), 0 4px 10px rgba(24, 22, 20, 0.045);
+  --lga-shadow-modal: 0 26px 64px rgba(20, 18, 16, 0.16), 0 6px 18px rgba(20, 18, 16, 0.08);
+  --lga-text: #161513;
+  --lga-text-muted: rgba(22, 21, 19, 0.66);
+  --lga-accent: #9a7836;
+  --lga-accent-bg: linear-gradient(148deg, rgba(255, 255, 255, 0.92) 0%, rgba(244, 239, 229, 0.82) 100%);
+  --lga-cta-bg: linear-gradient(148deg, rgba(32, 30, 28, 0.90) 0%, rgba(18, 17, 16, 0.94) 100%);
+  --lga-cta-text: #faf8f4;
+  --lga-input-bg: rgba(255, 255, 255, 0.66);
+  --lga-input-focus-bg: rgba(255, 255, 255, 0.88);
+  --lga-option-bg: #f6f5f2;
+  --lga-option-text: #161513;
+  color-scheme: light;
+}
+
+html[data-theme="dark"] body[data-lg-admin="true"] {
+  --lga-surface-1: linear-gradient(
+    158deg,
+    rgba(30, 29, 33, 0.56) 0%,
+    rgba(15, 15, 18, 0.46) 56%,
+    rgba(22, 21, 25, 0.54) 100%
+  );
+  --lga-surface-2: linear-gradient(
+    154deg,
+    rgba(36, 35, 39, 0.64) 0%,
+    rgba(19, 19, 23, 0.52) 58%,
+    rgba(28, 27, 31, 0.60) 100%
+  );
+  --lga-surface-3: rgba(34, 33, 38, 0.58);
+  --lga-surface-hover: linear-gradient(
+    154deg,
+    rgba(46, 44, 49, 0.72) 0%,
+    rgba(26, 25, 29, 0.64) 100%
+  );
+  --lga-surface-modal: linear-gradient(
+    156deg,
+    rgba(32, 31, 36, 0.82) 0%,
+    rgba(16, 16, 20, 0.78) 100%
+  );
+  --lga-border: rgba(255, 255, 255, 0.11);
+  --lga-border-strong: rgba(255, 255, 255, 0.19);
+  --lga-border-accent: rgba(200, 169, 107, 0.62);
+  --lga-specular: inset 0 1px 0 rgba(255, 249, 236, 0.16), inset 0 -1px 0 rgba(255, 248, 232, 0.03);
+  --lga-shadow-1: 0 16px 40px rgba(0, 0, 0, 0.44), 0 3px 10px rgba(0, 0, 0, 0.24);
+  --lga-shadow-2: 0 12px 30px rgba(0, 0, 0, 0.38), 0 2px 8px rgba(0, 0, 0, 0.22);
+  --lga-shadow-hover: 0 18px 42px rgba(0, 0, 0, 0.54), 0 4px 12px rgba(0, 0, 0, 0.28);
+  --lga-shadow-modal: 0 28px 72px rgba(0, 0, 0, 0.70), 0 8px 22px rgba(0, 0, 0, 0.38);
+  --lga-text: #f6f4ef;
+  --lga-text-muted: rgba(244, 242, 238, 0.70);
+  --lga-accent: #e4c98f;
+  --lga-accent-bg: linear-gradient(148deg, rgba(64, 58, 49, 0.74) 0%, rgba(42, 37, 32, 0.78) 100%);
+  --lga-cta-bg: linear-gradient(148deg, rgba(214, 184, 122, 0.92) 0%, rgba(182, 148, 86, 0.94) 100%);
+  --lga-cta-text: #14120e;
+  --lga-input-bg: rgba(16, 16, 20, 0.54);
+  --lga-input-focus-bg: rgba(24, 23, 28, 0.76);
+  --lga-option-bg: #17161a;
+  --lga-option-text: #f6f4ef;
+  color-scheme: dark;
+}
+
+/* ------------------------------------------------------------------------------
+ * 1. ATMÓSFERA ÓPTICA DE FONDO PARA QUE LA TRANSLUCIDEZ SEA PERCEPTIBLE
+ * ------------------------------------------------------------------------------ */
+html[data-theme="light"] body[data-lg-admin="true"] .liquid-glass-page[data-lg-section="admin"] {
+  background:
+    radial-gradient(62% 48% at 14% 8%, rgba(218, 214, 208, 0.52) 0%, rgba(218, 214, 208, 0) 70%),
+    radial-gradient(54% 46% at 88% 16%, rgba(206, 198, 184, 0.32) 0%, rgba(206, 198, 184, 0) 68%),
+    radial-gradient(64% 52% at 50% 82%, rgba(214, 210, 204, 0.45) 0%, rgba(214, 210, 204, 0) 72%),
+    linear-gradient(180deg, #eeedea 0%, #e7e5e1 52%, #ecebe7 100%);
+}
+
+html[data-theme="dark"] body[data-lg-admin="true"] .liquid-glass-page[data-lg-section="admin"] {
+  background:
+    radial-gradient(58% 46% at 14% 8%, rgba(112, 96, 68, 0.20) 0%, rgba(112, 96, 68, 0) 70%),
+    radial-gradient(52% 44% at 86% 18%, rgba(86, 48, 58, 0.16) 0%, rgba(86, 48, 58, 0) 68%),
+    radial-gradient(64% 50% at 48% 84%, rgba(74, 70, 66, 0.22) 0%, rgba(74, 70, 66, 0) 72%),
+    linear-gradient(180deg, #0b0b0d 0%, #101014 50%, #09090b 100%);
+}
+
+body[data-lg-admin="true"] .liquid-glass-page[data-lg-section="admin"] .liquid-orb-1 {
+  opacity: 0.52;
+}
+
+body[data-lg-admin="true"] .liquid-glass-page[data-lg-section="admin"] .liquid-orb-2 {
+  opacity: 0.44;
+}
+
+body[data-lg-admin="true"] .liquid-glass-page[data-lg-section="admin"] .liquid-orb-3 {
+  opacity: 0.42;
+}
+
+/* ------------------------------------------------------------------------------
+ * 2. SHELL, LOGIN Y PANTALLA DE ACCESO
+ * ------------------------------------------------------------------------------ */
+body[data-lg-admin="true"] .lg-admin-shell {
+  padding-top: 18px;
+  padding-bottom: 64px;
+  color: var(--lga-text);
+}
+
+body[data-lg-admin="true"] .admin-login-page {
+  padding-top: 32px;
+  padding-bottom: 56px;
+}
+
+body[data-lg-admin="true"] .admin-login-shell,
+body[data-lg-admin="true"] .v2-access {
+  background: var(--lga-surface-2) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(145%) !important;
+  backdrop-filter: blur(22px) saturate(145%) !important;
+  border: 1px solid var(--lga-border) !important;
+  box-shadow: var(--lga-shadow-1), var(--lga-specular) !important;
+  border-radius: 24px !important;
+  padding: 32px 26px !important;
+}
+
+body[data-lg-admin="true"] .admin-login-submit {
+  background: var(--lga-cta-bg) !important;
+  color: var(--lga-cta-text) !important;
+  border: 1px solid var(--lga-border-accent) !important;
+  border-radius: 14px !important;
+  box-shadow: var(--lga-shadow-2), var(--lga-specular) !important;
+  transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1), filter 180ms ease, box-shadow 180ms ease;
+}
+
+body[data-lg-admin="true"] .admin-login-submit:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(1.04);
+  box-shadow: var(--lga-shadow-hover), var(--lga-specular) !important;
+}
+
+/* ------------------------------------------------------------------------------
+ * 3. NAVEGACIÓN DE SECCIONES (SIN BOTÓN ACTUALIZAR · CÁPSULA DESLIZANTE)
+ * ------------------------------------------------------------------------------ */
+body[data-lg-admin="true"] .v2-navigation {
+  margin-bottom: 22px;
+}
+
+body[data-lg-admin="true"] .v2-navigation .admin-section-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 6px !important;
+  border-radius: 20px !important;
+  background: var(--lga-surface-1) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(145%) !important;
+  backdrop-filter: blur(20px) saturate(145%) !important;
+  border: 1px solid var(--lga-border) !important;
+  box-shadow: var(--lga-shadow-1), var(--lga-specular) !important;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+body[data-lg-admin="true"] .v2-navigation .admin-section-nav::-webkit-scrollbar {
+  display: none;
+}
+
+body[data-lg-admin="true"] .v2-navigation .admin-section-nav-items {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  width: 100%;
+  min-width: max-content;
+}
+
+body[data-lg-admin="true"] .v2-navigation .admin-section-nav-link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1 1 0;
+  gap: 8px;
+  min-height: 42px;
+  padding: 9px 14px !important;
+  border-radius: 14px !important;
+  border: 1px solid transparent !important;
+  background: transparent !important;
+  color: var(--lga-text-muted) !important;
+  font-weight: 500;
+  white-space: nowrap;
+  text-decoration: none;
+  isolation: isolate;
+  transition: color 180ms ease, transform 160ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+body[data-lg-admin="true"] .v2-navigation .admin-section-nav-link:hover {
+  color: var(--lga-text) !important;
+}
+
+body[data-lg-admin="true"] .v2-navigation .admin-section-nav-link:active {
+  transform: scale(0.985);
+}
+
+body[data-lg-admin="true"] .v2-navigation .admin-section-nav-link:focus-visible {
+  outline: 2px solid var(--lga-border-accent);
+  outline-offset: 2px;
+}
+
+body[data-lg-admin="true"] .v2-navigation .admin-section-nav-link.is-active {
+  color: var(--lga-text) !important;
+  font-weight: 600;
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+body[data-lg-admin="true"] .lg-admin-nav-pill {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: 14px;
+  background: var(--lga-accent-bg);
+  border: 1px solid var(--lga-border-accent);
+  box-shadow: var(--lga-shadow-2), var(--lga-specular);
+}
+
+body[data-lg-admin="true"] .lg-admin-nav-icon,
+body[data-lg-admin="true"] .lg-admin-nav-label {
+  position: relative;
+  z-index: 1;
+}
+
+@media (max-width: 767px) {
+  body[data-lg-admin="true"] .v2-navigation .admin-section-nav {
+    justify-content: flex-start;
+    padding: 5px !important;
+    border-radius: 16px !important;
+  }
+
+  body[data-lg-admin="true"] .v2-navigation .admin-section-nav-items {
+    justify-content: flex-start;
+    gap: 4px;
+  }
+
+  body[data-lg-admin="true"] .v2-navigation .admin-section-nav-link {
+    flex: 0 0 auto;
+    min-height: 38px;
+    padding: 7px 12px !important;
+    font-size: 0.84rem;
+    border-radius: 12px !important;
+  }
+
+  body[data-lg-admin="true"] .lg-admin-nav-pill {
+    border-radius: 12px;
+  }
+}
+
+/* ------------------------------------------------------------------------------
+ * 4. TÍTULOS, TOOLBOX Y SUPERFICIES BASE (LEVEL 1 & LEVEL 2)
+ * ------------------------------------------------------------------------------ */
+body[data-lg-admin="true"] .v2-eyebrow {
+  color: var(--lga-accent) !important;
+  letter-spacing: 0.16em;
+}
+
+body[data-lg-admin="true"] .v2-page-title h1 {
+  color: var(--lga-text) !important;
+}
+
+body[data-lg-admin="true"] .v2-page-title p,
+body[data-lg-admin="true"] .v2-muted,
+body[data-lg-admin="true"] .v2-footnote {
+  color: var(--lga-text-muted) !important;
+}
+
+body[data-lg-admin="true"] :is(
+  .v2-panel,
+  .v2-admin-filter-panel,
+  .v2-payments-table-wrap,
+  .v2-payments-history-panel,
+  .v2-section-toolbar
+) {
+  background: var(--lga-surface-1) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(140%) !important;
+  backdrop-filter: blur(20px) saturate(140%) !important;
+  border: 1px solid var(--lga-border) !important;
+  box-shadow: var(--lga-shadow-1), var(--lga-specular) !important;
+  border-radius: 20px !important;
+}
+
+body[data-lg-admin="true"] :is(
+  .v2-metric,
+  .v2-next,
+  .v2-today,
+  .v2-appointment,
+  .v2-client-card,
+  .client-card-mobile,
+  .v2-payment-card-mobile,
+  .v2-code-card,
+  .v2-callout,
+  .v2-inset,
+  .admin-schedule-card,
+  .v2-payment-total-box,
+  .v2-manual-summary,
+  .v2-summary-block
+) {
+  background: var(--lga-surface-2) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(140%) !important;
+  backdrop-filter: blur(18px) saturate(140%) !important;
+  border: 1px solid var(--lga-border) !important;
+  box-shadow: var(--lga-shadow-2), var(--lga-specular) !important;
+  border-radius: 18px !important;
+  transition:
+    transform 180ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+body[data-lg-admin="true"] :is(
+  .v2-appointment,
+  .v2-client-card,
+  .client-card-mobile,
+  .v2-payment-card-mobile,
+  .v2-code-card,
+  .v2-metric,
+  .admin-schedule-card
+):hover {
+  border-color: var(--lga-border-strong) !important;
+  box-shadow: var(--lga-shadow-hover), var(--lga-specular) !important;
+  transform: translateY(-1px);
+}
+
+/* ------------------------------------------------------------------------------
+ * 5. CONTROLES, FILTROS, INPUTS, SELECTS Y BOTONES
+ * ------------------------------------------------------------------------------ */
+body[data-lg-admin="true"] :is(
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea,
+  .select-control
+) {
+  background: var(--lga-input-bg) !important;
+  color: var(--lga-text) !important;
+  border: 1px solid var(--lga-border) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+  border-radius: 12px !important;
+  transition: border-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
+}
+
+body[data-lg-admin="true"] :is(
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea,
+  .select-control
+):focus,
+body[data-lg-admin="true"] :is(
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea,
+  .select-control
+):focus-visible {
+  background: var(--lga-input-focus-bg) !important;
+  border-color: var(--lga-border-accent) !important;
+  box-shadow: 0 0 0 3px rgba(200, 169, 107, 0.18) !important;
+  outline: none !important;
+}
+
+body[data-lg-admin="true"] select option {
+  background-color: var(--lga-option-bg) !important;
+  color: var(--lga-option-text) !important;
+}
+
+body[data-lg-admin="true"] .v2-admin-filter-label,
+body[data-lg-admin="true"] .v2-field-label,
+body[data-lg-admin="true"] .v2-field {
+  color: var(--lga-text-muted) !important;
+}
+
+/* Botones principales y secundarios */
+body[data-lg-admin="true"] :is(
+  .v2-primary,
+  .v2-add-manual-btn,
+  .v2-client-add-btn,
+  .v2-payment-submit-btn
+) {
+  background: var(--lga-cta-bg) !important;
+  color: var(--lga-cta-text) !important;
+  border: 1px solid var(--lga-border-accent) !important;
+  border-radius: 13px !important;
+  box-shadow: var(--lga-shadow-2), var(--lga-specular) !important;
+  font-weight: 600;
+  transition: transform 160ms cubic-bezier(0.22, 1, 0.36, 1), filter 160ms ease, box-shadow 160ms ease;
+}
+
+body[data-lg-admin="true"] :is(
+  .v2-primary,
+  .v2-add-manual-btn,
+  .v2-client-add-btn,
+  .v2-payment-submit-btn
+):hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(1.06);
+  box-shadow: var(--lga-shadow-hover), var(--lga-specular) !important;
+}
+
+body[data-lg-admin="true"] :is(
+  .v2-secondary,
+  .v2-quiet,
+  .v2-action-btn,
+  .v2-payment-action-btn,
+  .v2-payment-toggle-btn,
+  .v2-client-action-btn,
+  .v2-client-details-btn,
+  .v2-pcm-btn,
+  .v2-action-icon-btn,
+  .v2-segmented button
+) {
+  background: var(--lga-surface-3) !important;
+  color: var(--lga-text) !important;
+  border: 1px solid var(--lga-border) !important;
+  border-radius: 12px !important;
+  box-shadow: var(--lga-specular) !important;
+  transition:
+    transform 150ms cubic-bezier(0.22, 1, 0.36, 1),
+    background 150ms ease,
+    border-color 150ms ease;
+}
+
+body[data-lg-admin="true"] :is(
+  .v2-secondary,
+  .v2-quiet,
+  .v2-action-btn,
+  .v2-payment-action-btn,
+  .v2-payment-toggle-btn,
+  .v2-client-action-btn,
+  .v2-client-details-btn,
+  .v2-pcm-btn,
+  .v2-action-icon-btn,
+  .v2-segmented button
+):hover:not(:disabled) {
+  background: var(--lga-surface-hover) !important;
+  border-color: var(--lga-border-accent) !important;
+  transform: translateY(-1px);
+}
+
+body[data-lg-admin="true"] :is(
+  .v2-payment-action-btn.active,
+  .v2-segmented button.v2-active,
+  .v2-segmented button.is-active
+) {
+  background: var(--lga-accent-bg) !important;
+  border-color: var(--lga-border-accent) !important;
+  color: var(--lga-text) !important;
+  font-weight: 600;
+}
+
+body[data-lg-admin="true"] :is(.v2-danger, .v2-destructive, .v2-client-action-btn.delete, .v2-medit-danger-btn) {
+  background: rgba(190, 56, 72, 0.14) !important;
+  border-color: rgba(212, 86, 102, 0.44) !important;
+  color: #e87a87 !important;
+}
+
+html[data-theme="light"] body[data-lg-admin="true"] :is(.v2-danger, .v2-destructive, .v2-client-action-btn.delete, .v2-medit-danger-btn) {
+  background: rgba(180, 44, 62, 0.10) !important;
+  border-color: rgba(180, 44, 62, 0.36) !important;
+  color: #8f2232 !important;
+}
+
+/* ------------------------------------------------------------------------------
+ * 6. CARDS DE TURNOS Y ESTADOS DISTINGUIBLES SIN DEPENDER SOLO DEL COLOR
+ * ------------------------------------------------------------------------------ */
+body[data-lg-admin="true"] .v2-appointment {
+  padding: 16px 18px !important;
+  gap: 14px;
+}
+
+body[data-lg-admin="true"] .v2-app-row-1 {
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--lga-border);
+}
+
+body[data-lg-admin="true"] .v2-app-time {
+  color: var(--lga-accent) !important;
+  font-variant-numeric: tabular-nums;
+}
+
+body[data-lg-admin="true"] .v2-app-name {
+  color: var(--lga-text) !important;
+}
+
+body[data-lg-admin="true"] .v2-manual-badge {
+  background: rgba(200, 169, 107, 0.16) !important;
+  border: 1px solid rgba(200, 169, 107, 0.42) !important;
+  color: var(--lga-accent) !important;
+  border-radius: 999px !important;
+}
+
+/* Badges de estado con símbolo + borde diferenciado (no dependen solo del color) */
+body[data-lg-admin="true"] .v2-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: 999px !important;
+  padding: 4px 10px !important;
+  font-weight: 600;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+body[data-lg-admin="true"] .v2-badge::before {
+  font-size: 0.85em;
+  line-height: 1;
+  font-weight: 700;
+}
+
+body[data-lg-admin="true"] .v2-status-confirmed {
+  border: 1px solid rgba(74, 178, 122, 0.52) !important;
+  background: rgba(58, 156, 104, 0.14) !important;
+}
+body[data-lg-admin="true"] .v2-status-confirmed::before {
+  content: "✓";
+}
+
+body[data-lg-admin="true"] .v2-status-pending {
+  border: 1px dashed rgba(212, 168, 76, 0.68) !important;
+  background: rgba(204, 160, 72, 0.14) !important;
+}
+body[data-lg-admin="true"] .v2-status-pending::before {
+  content: "◷";
+}
+
+body[data-lg-admin="true"] .v2-status-cancelled {
+  border: 1px solid rgba(206, 78, 92, 0.56) !important;
+  background: rgba(190, 56, 72, 0.14) !important;
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+body[data-lg-admin="true"] .v2-status-cancelled::before {
+  content: "✕";
+  display: inline-block;
+  text-decoration: none;
+}
+
+body[data-lg-admin="true"] .v2-status-completed {
+  border: 1px solid rgba(200, 169, 107, 0.48) !important;
+  background: rgba(200, 169, 107, 0.12) !important;
+}
+body[data-lg-admin="true"] .v2-status-completed::before {
+  content: "★";
+}
+
+body[data-lg-admin="true"] .v2-status-no_show {
+  border: 1px dotted var(--lga-border-strong) !important;
+  background: rgba(128, 124, 118, 0.14) !important;
+}
+body[data-lg-admin="true"] .v2-status-no_show::before {
+  content: "—";
+}
+
+/* Pills de notificación WhatsApp / Email en Turnos */
+body[data-lg-admin="true"] .v2-notif-pill {
+  border-radius: 999px !important;
+  border: 1px solid var(--lga-border) !important;
+  background: var(--lga-surface-3) !important;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  transition: border-color 150ms ease, transform 150ms ease;
+}
+
+body[data-lg-admin="true"] .v2-notif-pill:hover {
+  border-color: var(--lga-border-accent) !important;
+  transform: translateY(-1px);
+}
+
+body[data-lg-admin="true"] .v2-appointment-actions-grid {
+  padding-top: 8px;
+  border-top: 1px solid var(--lga-border);
+}
+
+/* ------------------------------------------------------------------------------
+ * 7. INICIO, PAGOS (TABLA + MOBILE), CLIENTES Y DATOS
+ * ------------------------------------------------------------------------------ */
+body[data-lg-admin="true"] .v2-metric strong {
+  color: var(--lga-text) !important;
+}
+
+body[data-lg-admin="true"] .v2-trend-badge.positive {
+  background: rgba(58, 156, 104, 0.16) !important;
+  border: 1px solid rgba(74, 178, 122, 0.42);
+}
+
+body[data-lg-admin="true"] .v2-trend-badge.negative {
+  background: rgba(190, 56, 72, 0.14) !important;
+  border: 1px solid rgba(206, 78, 92, 0.42);
+}
+
+body[data-lg-admin="true"] .v2-payments-table-wrap {
+  overflow-x: auto;
+  padding: 4px;
+}
+
+body[data-lg-admin="true"] .v2-payments-table thead th {
+  background: rgba(128, 124, 118, 0.08) !important;
+  color: var(--lga-text-muted) !important;
+  border-bottom: 1px solid var(--lga-border) !important;
+}
+
+body[data-lg-admin="true"] .v2-payments-table tbody tr {
+  border-bottom: 1px solid var(--lga-border) !important;
+  transition: background-color 150ms ease;
+}
+
+body[data-lg-admin="true"] .v2-payments-table tbody tr:hover {
+  background: rgba(200, 169, 107, 0.07) !important;
+}
+
+body[data-lg-admin="true"] .v2-method-badge {
+  border-radius: 999px !important;
+  border: 1px solid var(--lga-border) !important;
+  background: var(--lga-surface-3) !important;
+}
+
+body[data-lg-admin="true"] .v2-track {
+  background: rgba(128, 124, 118, 0.18) !important;
+  border: 1px solid var(--lga-border) !important;
+  border-radius: 999px !important;
+  overflow: hidden;
+}
+
+body[data-lg-admin="true"] .v2-track > span {
+  background: linear-gradient(90deg, #b8924a 0%, #e4c98f 100%) !important;
+  border-radius: 999px !important;
+}
+
+/* ------------------------------------------------------------------------------
+ * 8. MODALES, DIALOGS Y POPOVER DE NOTIFICACIONES (PORTALS EN BODY)
+ * ------------------------------------------------------------------------------ */
+body[data-lg-admin="true"] [data-slot="dialog-overlay"] {
+  background: rgba(10, 10, 12, 0.48) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+body[data-lg-admin="true"] :is(
+  [role="dialog"].v2-dialog,
+  .v2-manual-dialog,
+  .v2-client-dialog,
+  .client-dialog,
+  .v2-medit-modal,
+  .admin-schedule-dialog,
+  .notification-popover
+) {
+  background: var(--lga-surface-modal) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(155%) !important;
+  backdrop-filter: blur(28px) saturate(155%) !important;
+  border: 1px solid var(--lga-border-strong) !important;
+  box-shadow: var(--lga-shadow-modal), var(--lga-specular) !important;
+  border-radius: 22px !important;
+  color: var(--lga-text) !important;
+  animation: lgaDialogIn 200ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+body[data-lg-admin="true"] .notification-item {
+  background: var(--lga-surface-2) !important;
+  border: 1px solid var(--lga-border) !important;
+  border-radius: 14px !important;
+}
+
+body[data-lg-admin="true"] .notification-item.is-unread {
+  border-color: var(--lga-border-accent) !important;
+}
+
+/* ------------------------------------------------------------------------------
+ * 9. ESTADOS VACÍOS, ALERTAS Y MENSAJES DE ESTADO
+ * ------------------------------------------------------------------------------ */
+body[data-lg-admin="true"] .v2-empty {
+  background: var(--lga-surface-1) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(135%) !important;
+  backdrop-filter: blur(18px) saturate(135%) !important;
+  border: 1px dashed var(--lga-border-strong) !important;
+  border-radius: 18px !important;
+  color: var(--lga-text-muted) !important;
+}
+
+body[data-lg-admin="true"] :is(.v2-alert, .v2-range-warning) {
+  background: rgba(190, 56, 72, 0.14) !important;
+  border: 1px solid rgba(206, 78, 92, 0.44) !important;
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border-radius: 14px !important;
+}
+
+body[data-lg-admin="true"] .v2-success {
+  background: rgba(58, 156, 104, 0.14) !important;
+  border: 1px solid rgba(74, 178, 122, 0.44) !important;
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border-radius: 14px !important;
+}
+
+body[data-lg-admin="true"] .v2-loading {
+  background: var(--lga-surface-2) !important;
+  border: 1px solid var(--lga-border-accent) !important;
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border-radius: 999px !important;
+  padding: 6px 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+@keyframes lgaDialogIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body[data-lg-admin="true"] *,
+  body[data-lg-admin="true"] *::before,
+  body[data-lg-admin="true"] *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

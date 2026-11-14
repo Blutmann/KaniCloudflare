@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, Outlet, useLocation } from "@tanstack/react-router";
+import { MotionConfig, motion } from "motion/react";
 import {
   CalendarDays,
   Clock3,
@@ -16,6 +17,7 @@ import { clearStaffCache, getAuthenticatedStaff, type AuthenticatedStaff } from 
 import { supabase } from "@/integrations/supabase/client";
 import { isV2AdminEnvironment } from "@/lib/kani-v2";
 import { LiquidGlassShell } from "@/components/kani/experimental/liquid-glass-shell";
+import "@/components/kani/experimental/liquid-glass-admin.css";
 import { V2DataProvider, useV2 } from "./data";
 import "./v2.css";
 
@@ -37,6 +39,14 @@ export function V2Layout({
 } = {}) {
   const wrap = (node: JSX.Element) =>
     liquidGlass ? <LiquidGlassShell section="admin">{node}</LiquidGlassShell> : node;
+
+  useEffect(() => {
+    if (!liquidGlass || typeof document === "undefined") return;
+    document.body.dataset.lgAdmin = "true";
+    return () => {
+      delete document.body.dataset.lgAdmin;
+    };
+  }, [liquidGlass]);
   const [state, setState] = useState<{
     loading: boolean;
     staff: AuthenticatedStaff | null;
@@ -115,13 +125,13 @@ export function V2Layout({
   return wrap(
     <AdminStaffProvider key={state.staff.user.id} staff={state.staff}>
       <V2DataProvider>
-        <V2Shell basePath={basePath} />
+        <V2Shell basePath={basePath} liquidGlass={liquidGlass} />
       </V2DataProvider>
     </AdminStaffProvider>
   );
 }
 
-function V2Shell({ basePath }: { basePath: string }) {
+function V2Shell({ basePath, liquidGlass = false }: { basePath: string; liquidGlass?: boolean }) {
   const { loading, error, refresh } = useV2();
   const { profile } = useAdminStaff();
   const pathname = useLocation({ select: (location) => location.pathname });
@@ -130,6 +140,12 @@ function V2Shell({ basePath }: { basePath: string }) {
   const rootSlug = cleanBase.split("/").filter(Boolean).at(-1) ?? "panel-administracion";
   const section = cleanPath.split("/").filter(Boolean).at(-1) ?? "inicio";
   const allowedSection = cleanPath === cleanBase || section === rootSlug || mayAccessStaffSection(profile, section);
+  const activeSlug =
+    cleanPath === cleanBase || section === rootSlug
+      ? profile.role === "ADMIN"
+        ? "inicio"
+        : "turnos"
+      : section;
 
   useEffect(() => {
     if (typeof document !== 'undefined') {
@@ -139,25 +155,37 @@ function V2Shell({ basePath }: { basePath: string }) {
       };
     }
   }, []);
-  return (
-    <div className="site-container v2-shell">
-      <header className="v2-navigation">
-        <nav className="admin-section-nav v2-nav" aria-label="Administración">
-          <div className="admin-section-nav-items">
-            {sectionDefs
-              .filter(({ slug }) => mayAccessStaffSection(profile, slug) && (profile.role === 'ADMIN' || slug !== 'inicio'))
-              .map(({ slug, title, icon: Icon }) => (
+
+  const navContent = (
+    <nav className="admin-section-nav v2-nav" aria-label="Administración">
+      <div className="admin-section-nav-items">
+        {sectionDefs
+          .filter(({ slug }) => mayAccessStaffSection(profile, slug) && (profile.role === 'ADMIN' || slug !== 'inicio'))
+          .map(({ slug, title, icon: Icon }) => {
+            const isActive = activeSlug === slug;
+            return (
               <Link
                 key={slug}
                 to={`${cleanBase}/${slug}`}
                 className="admin-section-nav-link"
                 activeProps={{ className: "is-active", "aria-current": "page" }}
               >
-                <Icon size={16} aria-hidden="true" />
-                <span>{title}</span>
+                {liquidGlass && isActive && (
+                  <motion.span
+                    layoutId="lg-admin-nav-pill"
+                    className="lg-admin-nav-pill"
+                    aria-hidden="true"
+                    transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+                  />
+                )}
+                <Icon size={16} aria-hidden="true" className="lg-admin-nav-icon" />
+                <span className="lg-admin-nav-label">{title}</span>
               </Link>
-            ))}
-          </div>
+            );
+          })}
+      </div>
+      {!liquidGlass && (
+        <>
           <div className="admin-section-nav-divider" aria-hidden="true" />
           <button
             type="button"
@@ -168,7 +196,26 @@ function V2Shell({ basePath }: { basePath: string }) {
           >
             <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
           </button>
-        </nav>
+        </>
+      )}
+    </nav>
+  );
+
+  const outletContent = allowedSection ? (
+    <Outlet />
+  ) : (
+    <p role="alert" className="v2-alert">
+      No tenés permisos para acceder a esta sección.
+    </p>
+  );
+
+  return (
+    <div
+      className={`site-container v2-shell ${liquidGlass ? "lg-admin-shell" : ""}`.trim()}
+      data-lg-admin={liquidGlass ? "true" : undefined}
+    >
+      <header className="v2-navigation">
+        {liquidGlass ? <MotionConfig reducedMotion="user">{navContent}</MotionConfig> : navContent}
       </header>
       <div className="v2-workspace">
         {error && (
@@ -181,7 +228,21 @@ function V2Shell({ basePath }: { basePath: string }) {
             Actualizando información…
           </p>
         )}
-        {allowedSection ? <Outlet /> : <p role="alert" className="v2-alert">No tenés permisos para acceder a esta sección.</p>}
+        {liquidGlass ? (
+          <MotionConfig reducedMotion="user">
+            <motion.div
+              key={activeSlug}
+              className="lg-admin-section-stage"
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+            >
+              {outletContent}
+            </motion.div>
+          </MotionConfig>
+        ) : (
+          outletContent
+        )}
       </div>
     </div>
   );
