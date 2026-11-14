@@ -1,0 +1,264 @@
+/* ==============================================================================
+ * KANI BARBER STUDIO — LIQUID GLASS V12.22
+ * ADAPTIVE DESKTOP LAYOUT & SPATIAL REFINEMENT (>= 1024px)
+ *
+ * Exclusivo para /reservar-turno-liquid.
+ * Preserva intacto mobile (< 1024px), materialidad Liquid Glass, Inter Variable
+ * y rutas tradicionales. Responde a ancho y altura real (dvh) del viewport.
+ * ============================================================================== */
+
+@media (min-width: 1024px) {
+  /* --------------------------------------------------------------------------
+   * 1. VARIABLES FLUIDAS SEGÚN VIEWPORT REAL (ANCHO + dvh)
+   * -------------------------------------------------------------------------- */
+  html[data-theme] .site-shell:has(.liquid-glass-reservation) {
+    --lg-header-h: clamp(76px, 8.2dvh, 96px);
+    padding-top: var(--lg-header-h) !important;
+  }
+
+  /* --------------------------------------------------------------------------
+   * 2. HEADER DESKTOP ADAPTATIVO (ESTABLE AL ABRIR/CERRAR MENÚ)
+   * -------------------------------------------------------------------------- */
+  html[data-theme] .site-shell:has(.liquid-glass-reservation) .site-header.liquid-glass-header,
+  html[data-theme] .site-shell:has(.liquid-glass-reservation) .site-header.liquid-glass-header.menu-open {
+    height: var(--lg-header-h, 88px) !important;
+    min-height: var(--lg-header-h, 88px) !important;
+    max-height: var(--lg-header-h, 88px) !important;
+  }
+
+  html[data-theme] .site-shell:has(.liquid-glass-reservation) .site-header.liquid-glass-header .wordmark-img {
+    height: clamp(54px, 5.8dvh, 70px) !important;
+    width: auto !important;
+    top: 2px !important;
+  }
+
+  html[data-theme] .site-shell:has(.liquid-glass-reservation) .site-header.liquid-glass-header .header-controls .header-control-button {
+    width: clamp(42px, 4.6dvh, 48px) !important;
+    height: clamp(42px, 4.6dvh, 48px) !important;
+    flex: 0 0 clamp(42px, 4.6dvh, 48px) !important;
+  }
+
+  /* --------------------------------------------------------------------------
+   * 3. CONTENEDOR PRINCIPAL FLUIDO Y ANCHOS ADAPTADOS POR ETAPA
+   * -------------------------------------------------------------------------- */
+  html[data-theme] .site-shell .liquid-glass-reservation {
+    --lg-stage-gap: clamp(18px, 2.4dvh, 28px);
+    --lg-heading-gap: clamp(16px, 2dvh, 24px);
+    --lg-option-gap: clamp(12px, 1.3dvh, 16px);
+  }
+
+  html[data-theme] .site-shell .liquid-glass-reservation .booking-page {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-start !important;
+    width: min(92vw, clamp(960px, 76vw, 1280px)) !important;
+    max-width: clamp(960px, 76vw, 1280px) !important;
+    min-height: calc(100dvh - var(--lg-header-h, 88px)) !important;
+    height: auto !important;
+    max-height: none !important;
+    margin-inline: auto !important;
+    padding-top: clamp(18px, 2.8dvh, 36px) !important;
+    padding-bottom: clamp(24px, 3.6dvh, 48px) !important;
+    padding-inline: 0 !important;
+  }
+
+  /* Anchos cómodos según etapa */
+  html[data-theme] .site-shell .liquid-glass-reservation .booking-page:has(.booking-service-options) {
+    max-width: clamp(780px, 60vw, 960px) !important;
+  }
+
+  html[data-theme] .site-shell .liquid-glass-reservation .booking-page:has(.booking-barber-options) {
+    max-width: clamp(920px, 72vw, 1140px) !important;
+  }
+
+  html[data-theme] .site-shell .liquid-glass-reservation .booking-page:has(.calendar-glass-card) {
+    max-width: clamp(820px, 64vw, 1020px) !important;
+  }
+
+  html[data-theme] .site-shell .liquid-glass-reservation .booking-page:has(.booking-time-period-section) {
+    max-width: clamp(860px, 68vw, 1080px) !important;
+  }
+
+  html[data-theme] .site-shell .liquid-glass-reservation .booking-page:has(.booking-summary-card),
+  html[data-theme] .site-shell .liquid-glass-reservation .booking-page:has(.booking-details-layout) {
+    max-width: clamp(920px, 74vw, 1180px) !important;
+  }
+
+  html[data-theme] .site-shell .liquid-glass-reservation .booking-scroll-content {
+    flex: 0 0 auto !important;
+    overflow: visible !important;
+    padding: 0 !important;
+  }
+
+  /* En pantallas altas (>= 780px), centrar suavemente el bloque sin crear vacío artificial */
+  @media (min-height: 780px) {
+    html[data-theme] .site-shell .liquid-glass-reservation .booking-page {
+      justify-content: center !important;
+    }
+  }
+
+  /* --------------------------------------------------------------------------
+   * 4. STEPPER Y JERARQUÍA VERTICAL
+   * -------------------------------------------------------------------------- */
+  html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-progress {
+    margin: 0 0 var(--lg-stage-gap) 0 !important;
+    padding: 4px !important;
+  }
+
+  html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-progress > button {
+    height: clamp(44px, 4.8dvh, 52px) !important;
+    min-height: clamp(44px, 4.8dvh, 52px) !important;
+  }
+
+  html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-progress > button small {
+    font-size: clamp(13px, 1vw, 14.5px) !important;
+  }
+
+  html[data-theme] .site-shell .liquid-glass-reservation .booking-page .section-title,
+  html[data-theme] .site-shell .liquid-glass-reservation .booking-step-heading-title {
+    font-size: clamp(24px, 1.8vw, 30px) !important;
+    margin: 0 0 var(--lg-heading-gap) 2px !important;
+  }
+
+  /* --------------------------------------------------------------------------
+   * 5. SERVICIOS
+   * -------------------------------------------------------------------------- */
+  html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-service-options {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: var(--lg-option-gap) !important;
+  }
+
+  html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .booking-option {
+    min-height: clamp(90px, 9.4dvh, 108px) !important;
+    height: auto !important;
+    padding: clamp(16px, 1.8dvh, 22px) clamp(20px, 2vw, 28px) !important;
+    margin: 0 !important;
+  }
+
+  html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-service-options .booking-option-name {
+    font-size: clamp(16px, 1.15vw, 18px) !important;
+  }
+
+  html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-service-options .booking-option-duration {
+    font-size: clamp(13px, 0.95vw, 14.5px) !important;
+  }
+
+  html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-service-options .booking-option-price {
+    font-size: clamp(17px, 1.25vw, 19.5px) !important;
+  }
+
+  /* --------------------------------------------------------------------------
+   * 6. BARBEROS (3 COLUMNAS EQUILIBRADAS + ELEGIR MÁS ADELANTE ABAJO)
+   * -------------------------------------------------------------------------- */
+  html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-barber-options {
+    gap: clamp(16px, 1.5vw, 22px) !important;
+  }
+
+  html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-barber-options > .booking-option:not(.booking-defer-option) {
+    min-height: clamp(216px, 22.5dvh, 264px) !important;
+    padding: clamp(22px, 2.5dvh, 30px) 20px !important;
+    gap: clamp(12px, 1.4dvh, 16px) !important;
+  }
+
+  html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-barber-options > .booking-option:not(.booking-defer-option) .barber-avatar {
+    width: clamp(68px, 6.8dvh, 84px) !important;
+    height: clamp(68px, 6.8dvh, 84px) !important;
+    flex: 0 0 clamp(68px, 6.8dvh, 84px) !important;
+    font-size: clamp(24px, 2.2dvh, 28px) !important;
+  }
+
+  html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-barber-options > .booking-option:not(.booking-defer-option) .booking-barber-name {
+    font-size: clamp(16.5px, 1.2vw, 18.5px) !important;
+  }
+
+  html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-barber-options > .booking-option:not(.booking-defer-option) .booking-barber-handle {
+    font-size: clamp(13px, 0.95vw, 14px) !important;
+  }
+
+  html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-barber-options > .booking-defer-option {
+    min-height: clamp(72px, 7.4dvh, 84px) !important;
+    padding: 16px 22px !important;
+  }
+
+  /* --------------------------------------------------------------------------
+   * 7. CALENDARIO DESKTOP (SUPERFICIE ÚNICA + RITMO VERTICAL CÓMODO)
+   * -------------------------------------------------------------------------- */
+  html[data-theme] .site-shell .liquid-glass-reservation .calendar-glass-card > .calendar-header {
+    height: clamp(54px, 5.8dvh, 64px) !important;
+    padding: 10px 14px 4px 22px !important;
+  }
+
+  html[data-theme] .site-shell .liquid-glass-reservation .calendar-glass-card > .calendar-header h2 {
+    font-size: clamp(15px, 1.1vw, 17px) !important;
+  }
+
+  html[data-theme] .site-shell .liquid-glass-reservation .calendar-glass-card > .calendar-grid {
+    row-gap: clamp(8px, 1dvh, 12px) !important;
+    column-gap: clamp(8px, 0.9vw, 14px) !important;
+    padding: 10px 22px 22px !important;
+  }
+
+  html[data-theme] .site-shell .liquid-glass-reservation .calendar-glass-card .calendar-day {
+    height: clamp(50px, 5.6dvh, 64px) !important;
+    min-height: clamp(50px, 5.6dvh, 64px) !important;
+    font-size: clamp(15px, 1.05vw, 16.5px) !important;
+  }
+
+  /* --------------------------------------------------------------------------
+   * 8. HORARIOS Y DATOS
+   * -------------------------------------------------------------------------- */
+  html[data-theme] .site-shell .liquid-glass-reservation .booking-time-grid {
+    gap: clamp(10px, 1vw, 14px) !important;
+  }
+
+  html[data-theme] .site-shell .liquid-glass-reservation .booking-time-slot {
+    min-height: clamp(46px, 5dvh, 54px) !important;
+    font-size: clamp(14.5px, 1vw, 16px) !important;
+  }
+
+  html[data-theme] .site-shell .liquid-glass-reservation .booking-page :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
+    min-height: clamp(46px, 5dvh, 52px) !important;
+  }
+
+  /* --------------------------------------------------------------------------
+   * 9. ACCIONES INFERIORES ADAPTATIVAS (EN FLUJO, SIN VACÍO EXCESIVO)
+   * -------------------------------------------------------------------------- */
+  html[data-theme] .site-shell .liquid-glass-reservation .booking-cta:not(.mobile-menu-cta) {
+    position: static !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    width: 100% !important;
+    margin-top: clamp(20px, 3dvh, 34px) !important;
+    padding: 0 !important;
+    background: transparent !important;
+    background-image: none !important;
+    border-top: none !important;
+    box-shadow: none !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+
+  html[data-theme] .site-shell .liquid-glass-reservation .booking-cta:not(.mobile-menu-cta) .booking-cta-inner {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 16px !important;
+  }
+
+  html[data-theme] .site-shell .liquid-glass-reservation .booking-cta:not(.mobile-menu-cta) .booking-back-button {
+    min-width: 140px !important;
+    height: clamp(46px, 5dvh, 52px) !important;
+  }
+
+  html[data-theme] .site-shell .liquid-glass-reservation .booking-cta:not(.mobile-menu-cta) .booking-next-button,
+  html[data-theme] .site-shell .liquid-glass-reservation .booking-cta:not(.mobile-menu-cta) .payway-submit-btn {
+    min-width: 220px !important;
+    height: clamp(46px, 5dvh, 52px) !important;
+  }
+}

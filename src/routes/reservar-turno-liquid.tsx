@@ -7,6 +7,7 @@ import '@/components/kani/experimental/reserva-v3.css';
 import '@/components/kani/experimental/reserva-v4.css';
 import '@/components/kani/experimental/liquid-glass.css';
 import '@/components/kani/experimental/liquid-glass-typography.css';
+import '@/components/kani/experimental/liquid-glass-desktop-v12-22.css';
 
 export const Route = createFileRoute('/reservar-turno-liquid')({
   head: () =>
