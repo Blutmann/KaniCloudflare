@@ -221,6 +221,7 @@ export function Booking({
   const [error, setError] = useState('');
   const [publicSlots, setPublicSlots] = useState<PublicAvailabilityStart[]>([]);
   const [availabilityLoading, setAvailabilityLoading] = useState(false);
+  const [availabilityRefreshing, setAvailabilityRefreshing] = useState(false);
   const [availabilityError, setAvailabilityError] = useState('');
   const [publicBarbersState, setPublicBarbers] = useState<Barber[]>(() => [...publicBarbers]);
   const [barbersLoading, setBarbersLoading] = useState(false);
@@ -242,6 +243,10 @@ export function Booking({
   const barberSectionRef = useRef<HTMLDivElement>(null);
   const revealTimesRef = useRef(false);
   const scrollAfterTimeSelectRef = useRef(false);
+  const availabilityRequestSeqRef = useRef(0);
+  const deferredVerifySeqRef = useRef(0);
+  const lastLoadedAvailabilityKeyRef = useRef<string | null>(null);
+  const inFlightAvailabilityRef = useRef<{ key: string; promise: Promise<PublicAvailabilityStart[]> } | null>(null);
   const visibleStep = isV2 && step > 2 ? step - 1 : step;
 
   useEffect(() => {
@@ -363,7 +368,14 @@ export function Booking({
   useEffect(() => {
     let cancelled = false;
     void readPublicBookingBarbers().then(rows => {
-      if (!cancelled) setPublicBarbers(rows.map(row => row.name));
+      if (!cancelled) {
+        const nextNames = rows.map(row => row.name);
+        setPublicBarbers(prev => (
+          prev.length === nextNames.length && prev.every((name, idx) => name === nextNames[idx])
+            ? prev
+            : nextNames
+        ));
+      }
     }).catch(() => {
       if (!cancelled) {
         setPublicBarbers([]);
@@ -549,31 +561,61 @@ export function Booking({
     return () => { cancelled = true; };
   }, [service, barber, selected]);
 
+  const hasBarberOrDeferred = Boolean(barber || barberDeferred);
   useEffect(() => {
     let cancelled = false;
     async function loadAvailability() {
-      if (!barber && !barberDeferred) {
+      if (!hasBarberOrDeferred) {
+        lastLoadedAvailabilityKeyRef.current = null;
         setPublicSlots([]);
         setAvailabilityError('');
+        setAvailabilityLoading(false);
+        setAvailabilityRefreshing(false);
         return;
       }
-      setAvailabilityLoading(true);
+      const queryKey = `${availabilityBarber ?? 'ANY'}|${todayValue}|${bookingEndValue}|${publicBarbersState.join(',')}`;
+      if (lastLoadedAvailabilityKeyRef.current === queryKey) {
+        return;
+      }
+      const seq = ++availabilityRequestSeqRef.current;
+      const isInitialForEmpty = lastLoadedAvailabilityKeyRef.current === null;
+      if (isInitialForEmpty) setAvailabilityLoading(true);
+      else setAvailabilityRefreshing(true);
       setAvailabilityError('');
       try {
-        const nextSlots = await readPublicAvailabilityStarts(availabilityBarber, todayValue, bookingEndValue);
-        if (!cancelled) setPublicSlots(nextSlots.filter(slot => publicBarbersState.includes(slot.barber_name)));
+        let promise: Promise<PublicAvailabilityStart[]>;
+        if (inFlightAvailabilityRef.current?.key === queryKey) {
+          promise = inFlightAvailabilityRef.current.promise;
+        } else {
+          const created = readPublicAvailabilityStarts(availabilityBarber, todayValue, bookingEndValue).finally(() => {
+            if (inFlightAvailabilityRef.current?.promise === created) {
+              inFlightAvailabilityRef.current = null;
+            }
+          });
+          inFlightAvailabilityRef.current = { key: queryKey, promise: created };
+          promise = created;
+        }
+        const nextSlots = await promise;
+        if (!cancelled && seq === availabilityRequestSeqRef.current) {
+          setPublicSlots(nextSlots.filter(slot => publicBarbersState.includes(slot.barber_name)));
+          lastLoadedAvailabilityKeyRef.current = queryKey;
+        }
       } catch (cause) {
-        if (!cancelled) {
+        if (!cancelled && seq === availabilityRequestSeqRef.current) {
           setPublicSlots([]);
+          lastLoadedAvailabilityKeyRef.current = null;
           setAvailabilityError(cause instanceof Error ? cause.message : 'No se pudo consultar la disponibilidad.');
         }
       } finally {
-        if (!cancelled) setAvailabilityLoading(false);
+        if (!cancelled && seq === availabilityRequestSeqRef.current) {
+          setAvailabilityLoading(false);
+          setAvailabilityRefreshing(false);
+        }
       }
     }
     void loadAvailability();
     return () => { cancelled = true; };
-  }, [availabilityBarber, barber, barberDeferred, bookingEndValue, todayValue, publicBarbersState]);
+  }, [availabilityBarber, hasBarberOrDeferred, barberDeferred, bookingEndValue, todayValue, publicBarbersState]);
   useEffect(() => {
     if (!service || availabilityLoading) return;
     const todayHasSlots = availableDates.includes(todayValue);
@@ -601,11 +643,76 @@ export function Booking({
 
   const refreshAvailabilityNow = useCallback(
     async (targetBarber: Barber | null = availabilityBarber) => {
-      const nextSlots = await readPublicAvailabilityStarts(targetBarber, todayValue, bookingEndValue);
-      setPublicSlots(nextSlots);
-      return nextSlots;
+      const seq = ++availabilityRequestSeqRef.current;
+      const queryKey = `${targetBarber ?? 'ANY'}|${todayValue}|${bookingEndValue}|${publicBarbersState.join(',')}`;
+      setAvailabilityRefreshing(true);
+      try {
+        const nextSlots = await readPublicAvailabilityStarts(targetBarber, todayValue, bookingEndValue);
+        if (seq === availabilityRequestSeqRef.current) {
+          setPublicSlots(nextSlots.filter(slot => publicBarbersState.includes(slot.barber_name)));
+          lastLoadedAvailabilityKeyRef.current = queryKey;
+        }
+        return nextSlots;
+      } finally {
+        if (seq === availabilityRequestSeqRef.current) {
+          setAvailabilityRefreshing(false);
+        }
+      }
     },
-    [availabilityBarber, bookingEndValue, todayValue],
+    [availabilityBarber, bookingEndValue, publicBarbersState, todayValue],
+  );
+
+  const verifyDeferredBarberCombination = useCallback(
+    async (candidate: Barber, targetDate: string, targetTime: string) => {
+      setBarber(candidate);
+      setError('');
+      if (!service || !targetDate || !targetTime) return;
+      const verifySeq = ++deferredVerifySeqRef.current;
+      const availSeq = ++availabilityRequestSeqRef.current;
+      const queryKey = `ANY|${todayValue}|${bookingEndValue}|${publicBarbersState.join(',')}`;
+      setAvailabilityRefreshing(true);
+      try {
+        let promise: Promise<PublicAvailabilityStart[]>;
+        if (inFlightAvailabilityRef.current?.key === queryKey) {
+          promise = inFlightAvailabilityRef.current.promise;
+        } else {
+          const created = readPublicAvailabilityStarts(null, todayValue, bookingEndValue).finally(() => {
+            if (inFlightAvailabilityRef.current?.promise === created) {
+              inFlightAvailabilityRef.current = null;
+            }
+          });
+          inFlightAvailabilityRef.current = { key: queryKey, promise: created };
+          promise = created;
+        }
+        const nextSlots = await promise;
+        if (verifySeq !== deferredVerifySeqRef.current) return;
+        const filtered = nextSlots.filter(slot => publicBarbersState.includes(slot.barber_name));
+        if (availSeq === availabilityRequestSeqRef.current) {
+          setPublicSlots(filtered);
+          lastLoadedAvailabilityKeyRef.current = queryKey;
+        }
+        const freshTimes = availabilityStartTimesForServiceDate(filtered, targetDate, serviceName, clock, null);
+        const eligible = eligibleBarbersForAvailabilityStart(filtered, targetDate, targetTime, serviceName, clock);
+        if (!freshTimes.includes(targetTime)) {
+          recordConflictedSlot(targetDate, candidate, targetTime);
+          setTime('');
+          setBarber(null);
+          setError(`El horario ${targetTime} hs dejó de estar disponible. Elegí uno de los horarios actualizados.`);
+        } else if (!eligible.includes(candidate)) {
+          recordConflictedSlot(targetDate, candidate, targetTime);
+          setBarber(null);
+          setError(`${candidate} dejó de estar disponible a las ${targetTime} hs. Elegí otro profesional disponible.`);
+        }
+      } catch {
+        // Si falla la revalidación en segundo plano, mantenemos el estado actual sin romper la continuidad;
+        // la validación final antes de confirmar sigue protegiendo contra reservas obsoletas.
+      } finally {
+        if (verifySeq === deferredVerifySeqRef.current) {
+          setAvailabilityRefreshing(false);
+        }
+      }
+    },
+    [bookingEndValue, clock, publicBarbersState, recordConflictedSlot, service, serviceName, todayValue],
   );
 
   function scrollToTopSmooth() {
@@ -1207,9 +1314,9 @@ export function Booking({
 
   useEffect(() => {
     if (isV5 && barberDeferred && time && candidateBarbers.length === 1 && barber !== candidateBarbers[0]) {
-      setBarber(candidateBarbers[0]);
+      void verifyDeferredBarberCombination(candidateBarbers[0], date, time);
     }
-  }, [isV5, barberDeferred, time, candidateBarbers, barber]);
+  }, [isV5, barberDeferred, time, date, candidateBarbers, barber, verifyDeferredBarberCombination]);
 
   const timeSlots = visibleSlots;
   const daysInMonth = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
@@ -1398,7 +1505,7 @@ export function Booking({
                             disabled,
                             'aria-label': ariaLabel,
                             'aria-pressed': date === value,
-                            onClick: () => { if (isV2) { revealTimesRef.current = true; setDateSelection(current => current + 1); } if (date !== value) { setSlotConflict(null); setPendingAppointment(null); setDate(value); setTime(''); if (barberDeferred) setBarber(null); } },
+                            onClick: () => { if (isV2) { revealTimesRef.current = true; setDateSelection(current => current + 1); } if (date !== value) { deferredVerifySeqRef.current++; setSlotConflict(null); setPendingAppointment(null); setDate(value); setTime(''); if (barberDeferred) setBarber(null); } },
                           };
                           return MotionCardButton ? (
                             <MotionCardButton key={value} tapScale={0.94} data-past={value < todayValue ? 'true' : undefined} {...dayProps}>
@@ -1443,7 +1550,7 @@ export function Booking({
             )}
 
             {(step === 3 || isV2 && step === 2 && (date || Boolean(slotConflict))) && (
-              <div ref={timeSectionRef} className={isV2 ? 'booking-v2-times' : isFiveSteps ? `booking-${isV5 ? 'v5' : 'v3'}-times` : undefined} aria-busy={availabilityLoading}>
+              <div ref={timeSectionRef} className={isV2 ? 'booking-v2-times' : isFiveSteps ? `booking-${isV5 ? 'v5' : 'v3'}-times` : undefined} aria-busy={availabilityLoading || availabilityRefreshing}>
                 {isV2 && !slotConflict && <h2 className="booking-v2-choice-title">Elegir un horario</h2>}
                 {slotConflict ? (
                   <BookingSlotUnavailableRecovery
@@ -1465,6 +1572,7 @@ export function Booking({
                       slots={timeSlots}
                       selectedTime={time}
                       onSelectTime={selectedSlot => {
+                        deferredVerifySeqRef.current++;
                         setTime(selectedSlot);
                         setPendingAppointment(null);
                         setError('');
@@ -1473,7 +1581,8 @@ export function Booking({
                           scrollAfterTimeSelectRef.current = true;
                         }
                       }}
-                      availabilityLoading={availabilityLoading && isFiveSteps ? true : availabilityLoading}
+                      availabilityLoading={availabilityLoading}
+                      availabilityRefreshing={availabilityRefreshing}
                       serviceName={selected?.name ?? (service ? serviceFor(service).name : '')}
                       serviceDurationMinutes={selected?.duration}
                       barberLabel={barber ?? undefined}
@@ -1497,7 +1606,11 @@ export function Booking({
                               aria-pressed={barber === candidate}
                               aria-label={`Barbero ${candidate}${barber === candidate ? ', seleccionado' : ''}`}
                               className={`booking-candidate-barber-btn ${barber === candidate ? 'selected' : ''}`}
-                              onClick={() => setBarber(candidate)}
+                              onClick={() => {
+                                if (barber !== candidate) {
+                                  void verifyDeferredBarberCombination(candidate, date, time);
+                                }
+                              }}
                             >
                               <span className="candidate-name">{candidate}</span>
                             </Button>

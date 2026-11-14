@@ -8,6 +8,7 @@ type BookingTimeSelectionProps = {
   selectedTime: string;
   onSelectTime: (time: string) => void;
   availabilityLoading: boolean;
+  availabilityRefreshing?: boolean | undefined;
   serviceName?: string | undefined;
   serviceDurationMinutes?: number | undefined;
   barberLabel?: string | undefined;
@@ -26,6 +27,7 @@ export function BookingTimeSelection({
   selectedTime,
   onSelectTime,
   availabilityLoading,
+  availabilityRefreshing = false,
   serviceName,
   serviceDurationMinutes,
   barberLabel,
@@ -39,10 +41,12 @@ export function BookingTimeSelection({
 }: BookingTimeSelectionProps) {
   const periodGroups = groupSlotsByPeriod(slots);
   const availableCount = slots.filter(slot => slot.status === 'AVAILABLE').length;
+  const showInitialSkeleton = availabilityLoading && slots.length === 0;
+  const showRefreshingIndicator = !showInitialSkeleton && (availabilityLoading || availabilityRefreshing);
 
   return (
     <div className="booking-time-selection">
-      {availabilityLoading ? (
+      {showInitialSkeleton ? (
         <div className="booking-time-loading-wrap" role="status" aria-live="polite">
           <div className="booking-time-loading py-4 text-center text-sm text-muted-foreground flex items-center justify-center gap-2">
             <Clock3 size={18} className="animate-spin text-gold" aria-hidden="true" />
@@ -61,7 +65,7 @@ export function BookingTimeSelection({
             role={useGroupRole ? 'group' : undefined}
             aria-label={useGroupRole ? 'Horarios disponibles' : undefined}
           >
-            {periodGroups.map(group => {
+            {periodGroups.map((group, groupIndex) => {
               const groupAvailableCount = group.slots.filter(s => s.status === 'AVAILABLE').length;
               return (
                 <section
@@ -83,11 +87,23 @@ export function BookingTimeSelection({
                         {group.label}
                       </h2>
                     </div>
-                    {groupAvailableCount > 0 && (
-                      <span className="booking-time-period-count">
-                        {groupAvailableCount} {groupAvailableCount === 1 ? 'turno' : 'turnos'}
-                      </span>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {groupIndex === 0 && showRefreshingIndicator && (
+                        <span
+                          className="booking-time-refresh-indicator inline-flex items-center gap-1 text-[11px] text-muted-foreground"
+                          role="status"
+                          aria-live="polite"
+                        >
+                          <Clock3 size={12} className="animate-spin text-gold" aria-hidden="true" />
+                          <span>Verificando…</span>
+                        </span>
+                      )}
+                      {groupAvailableCount > 0 && (
+                        <span className="booking-time-period-count">
+                          {groupAvailableCount} {groupAvailableCount === 1 ? 'turno' : 'turnos'}
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   <div className="booking-time-grid grid grid-cols-3 gap-2 sm:grid-cols-4">
