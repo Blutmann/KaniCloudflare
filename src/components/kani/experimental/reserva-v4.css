@@ -2,7 +2,8 @@
 
 /* Payway Checkout Modal: Typography, Spacing, and Responsive Geometry */
 .payway-checkout {
-  z-index: 140;
+  /* Must remain above DialogOverlay (z-[190]) and match DialogContent (z-[200]) */
+  z-index: 200;
   width: calc(100% - 32px);
   max-width: 440px;
   max-height: calc(100dvh - 32px);
