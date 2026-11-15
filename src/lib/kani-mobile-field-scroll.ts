@@ -1,12 +1,16 @@
 /**
- * V12.47.12.2 · Corrección definitiva del scroll anticipativo en iOS (/reservar).
+ * V12.47.12.3 · Ajuste final de scroll anticipativo en iOS (/reservar).
  *
  * Considera:
  * 1. Área realmente visible en `window.visualViewport` (teclado virtual abierto).
- * 2. Obstrucción visual de la barra inferior fija (`.booking-cta` / «Volver» / «Pagar seña»).
- * 3. Límite máximo de scroll disponible del contenedor real (agregando padding temporal al form
- *    solo mientras el teclado/foco está activo si falta espacio desplazable al final).
- * 4. Reajuste único tras el scroll nativo de iOS Safari si el campo siguiente aún queda obstruido.
+ * 2. Límite superior real: `.site-header` y `.booking-progress` (stepper cuando es sticky/fixed).
+ * 3. Obstrucción visual de la barra inferior fija (`.booking-cta` / «Volver» / «Pagar seña»).
+ * 4. Bloque objetivo completo: al enfocar Celular o Email, anticipa los campos posteriores
+ *    (incluyendo mensajes de validación y el bloque de Código de descuento + botón Aplicar)
+ *    aprovechando el espacio disponible debajo del header/stepper sin ocultar el campo enfocado.
+ * 5. Recálculo acotado ante aparición/desaparición de mensajes de validación, sin bucles.
+ * 6. Límite máximo de scroll disponible del contenedor real (padding inferior temporal mientras
+ *    el teclado/foco está activo) y reajuste único tras el scroll nativo de iOS Safari.
  */
 
 export interface ProgressiveScrollHandle {
@@ -46,13 +50,30 @@ export function findRealScrollContainer(element: HTMLElement): HTMLElement | Win
   return window;
 }
 
-function getHeaderBottomInset(): number {
+function getTopSafeInset(visibleTopOffset: number): number {
   if (typeof document === 'undefined') return 16;
+  let inset = 16;
+
   const header = document.querySelector('.site-header');
-  if (!header) return 16;
-  const rect = header.getBoundingClientRect();
-  if (rect.height <= 0 || rect.bottom <= 0) return 16;
-  return Math.min(Math.max(rect.bottom, 0), 112) + 8;
+  if (header) {
+    const rect = header.getBoundingClientRect();
+    if (rect.height > 0 && rect.bottom > visibleTopOffset) {
+      inset = Math.max(inset, Math.min(rect.bottom - visibleTopOffset, 112) + 8);
+    }
+  }
+
+  const stepper = document.querySelector('.booking-progress') as HTMLElement | null;
+  if (stepper) {
+    const stepperStyle = window.getComputedStyle(stepper);
+    if (stepperStyle.position === 'fixed' || stepperStyle.position === 'sticky') {
+      const rect = stepper.getBoundingClientRect();
+      if (rect.height > 0 && rect.bottom > visibleTopOffset) {
+        inset = Math.max(inset, Math.min(rect.bottom - visibleTopOffset, 160) + 8);
+      }
+    }
+  }
+
+  return inset;
 }
 
 function getFixedBottomBarTop(visibleBottom: number, safeTop: number): number {
@@ -91,24 +112,32 @@ function getFocusAnchorElement(target: HTMLElement): HTMLElement {
   );
 }
 
-function getNextSequenceAnchor(target: HTMLElement, formElement?: HTMLFormElement | null): HTMLElement | null {
+function getTargetSequenceAnchors(target: HTMLElement, formElement?: HTMLFormElement | null): HTMLElement[] {
+  const currentAnchor = getFocusAnchorElement(target);
   const form = formElement ?? (target.closest('form') as HTMLFormElement | null);
-  if (!form) return null;
+  if (!form) return [currentAnchor];
 
-  const fieldOrder: Array<{ match: string; nextSelector: string }> = [
-    { match: 'input[name="name"]', nextSelector: 'input[name="phone"]' },
-    { match: 'input[name="phone"]', nextSelector: 'input[name="email"]' },
-    { match: 'input[name="email"]', nextSelector: '#booking-discount-code, .booking-discount-field' },
+  const fieldOrder: Array<{ match: string; nextSelectors: string[] }> = [
+    { match: 'input[name="name"]', nextSelectors: ['input[name="phone"]'] },
+    { match: 'input[name="phone"]', nextSelectors: ['input[name="email"]', '#booking-discount-code, .booking-discount-field'] },
+    { match: 'input[name="email"]', nextSelectors: ['#booking-discount-code, .booking-discount-field'] },
   ];
 
+  const anchors: HTMLElement[] = [currentAnchor];
   for (const step of fieldOrder) {
     if (target.matches(step.match)) {
-      const nextEl = form.querySelector(step.nextSelector) as HTMLElement | null;
-      return nextEl ? getFocusAnchorElement(nextEl) : null;
+      for (const selector of step.nextSelectors) {
+        const nextEl = form.querySelector(selector) as HTMLElement | null;
+        const anchor = nextEl ? getFocusAnchorElement(nextEl) : null;
+        if (anchor && !anchors.includes(anchor)) {
+          anchors.push(anchor);
+        }
+      }
+      break;
     }
   }
 
-  return null;
+  return anchors;
 }
 
 export function computeProgressiveScrollDelta(target: HTMLElement, formElement?: HTMLFormElement | null): number {
@@ -119,48 +148,45 @@ export function computeProgressiveScrollDelta(target: HTMLElement, formElement?:
   if (visibleHeight <= 0) return 0;
 
   const visibleBottom = visibleTopOffset + visibleHeight;
-  const safeTop = visibleTopOffset + getHeaderBottomInset();
+  const safeTop = visibleTopOffset + getTopSafeInset(visibleTopOffset);
   const unobstructedBottom = getFixedBottomBarTop(visibleBottom, safeTop);
   const safeBottom = unobstructedBottom - SAFE_BOTTOM_MARGIN_PX;
 
   if (safeBottom <= safeTop + 24) return 0;
 
-  const currentAnchor = getFocusAnchorElement(target);
+  const anchors = getTargetSequenceAnchors(target, formElement);
+  const currentAnchor = anchors[0];
   const currentRect = currentAnchor.getBoundingClientRect();
-  const nextAnchor = getNextSequenceAnchor(target, formElement);
-  const nextRect = nextAnchor ? nextAnchor.getBoundingClientRect() : null;
 
-  // If current is above safeTop, scroll up enough to keep current visible
+  // If current focused block is above safeTop, scroll up enough to keep it visible below header/stepper
   if (currentRect.top < safeTop) {
     return currentRect.top - safeTop;
   }
 
-  // Check if both current and next (when present) are already comfortably visible above fixed CTA
-  const bottomBoundaryToCheck = nextRect ? Math.max(currentRect.bottom, nextRect.bottom) : currentRect.bottom;
-  if (currentRect.top >= safeTop && bottomBoundaryToCheck <= safeBottom) {
+  const desiredBottom = anchors.reduce(
+    (maxBottom, anchor) => Math.max(maxBottom, anchor.getBoundingClientRect().bottom),
+    currentRect.bottom,
+  );
+
+  // Already fits comfortably between safeTop and safeBottom
+  if (desiredBottom <= safeBottom) {
     return 0;
   }
 
-  // Scroll down enough to reveal the next field completely above keyboard + fixed CTA,
-  // while prioritizing keeping the current focused field visible below the header.
-  const neededForCurrent = Math.max(0, currentRect.bottom - safeBottom);
-  if (nextRect && nextRect.bottom > safeBottom) {
-    const neededForNext = nextRect.bottom - safeBottom;
-    const maxKeepingCurrentVisible = Math.max(0, currentRect.top - safeTop);
+  const neededForTargetArea = Math.max(0, desiredBottom - safeBottom);
+  const maxKeepingCurrentVisible = Math.max(0, currentRect.top - safeTop);
+
+  if (anchors.length > 1) {
+    const neededForCurrent = Math.max(0, currentRect.bottom - safeBottom);
     if (neededForCurrent > 0) {
-      return Math.max(neededForCurrent, Math.min(neededForNext, maxKeepingCurrentVisible));
+      return Math.max(neededForCurrent, Math.min(neededForTargetArea, maxKeepingCurrentVisible));
     }
-    return Math.min(neededForNext, maxKeepingCurrentVisible);
+    return Math.min(neededForTargetArea, maxKeepingCurrentVisible);
   }
 
-  if (neededForCurrent > 0) {
-    const maxKeepingCurrentTopVisible = Math.max(0, currentRect.top - safeTop);
-    return currentRect.height <= safeBottom - safeTop
-      ? neededForCurrent
-      : Math.min(neededForCurrent, maxKeepingCurrentTopVisible);
-  }
-
-  return 0;
+  return currentRect.height <= safeBottom - safeTop
+    ? neededForTargetArea
+    : Math.min(neededForTargetArea, maxKeepingCurrentVisible);
 }
 
 function ensureScrollRoom(
@@ -202,6 +228,7 @@ export function attachMobileProgressiveFieldScroll(formElement: HTMLFormElement)
   let primaryTimer: number | null = null;
   let settleVerifyTimer: number | null = null;
   let maxWaitTimer: number | null = null;
+  let validationGeometryTimer: number | null = null;
   let activeTarget: HTMLElement | null = null;
   let lastFocusedTarget: HTMLElement | null = null;
   let userScrolledManually = false;
@@ -221,6 +248,10 @@ export function attachMobileProgressiveFieldScroll(formElement: HTMLFormElement)
     if (maxWaitTimer !== null) {
       window.clearTimeout(maxWaitTimer);
       maxWaitTimer = null;
+    }
+    if (validationGeometryTimer !== null) {
+      window.clearTimeout(validationGeometryTimer);
+      validationGeometryTimer = null;
     }
   };
 
@@ -331,6 +362,30 @@ export function attachMobileProgressiveFieldScroll(formElement: HTMLFormElement)
     }
   };
 
+  const handleValidationGeometryChange = () => {
+    if (!activeTarget || userScrolledManually || document.activeElement !== activeTarget) return;
+    if (!isMobileOrTouchViewport() || isPaywayModalOpen()) return;
+    if (validationGeometryTimer !== null) {
+      window.clearTimeout(validationGeometryTimer);
+    }
+    validationGeometryTimer = window.setTimeout(() => {
+      validationGeometryTimer = null;
+      if (!activeTarget || userScrolledManually || document.activeElement !== activeTarget) return;
+      const deltaY = computeProgressiveScrollDelta(activeTarget, formElement);
+      if (Math.abs(deltaY) >= 8) {
+        scheduleScrollSequence(20);
+      }
+    }, 60);
+  };
+
+  const mutationObserver =
+    typeof MutationObserver !== 'undefined'
+      ? new MutationObserver(() => {
+          handleValidationGeometryChange();
+        })
+      : null;
+  mutationObserver?.observe(formElement, { childList: true, subtree: true });
+
   formElement.addEventListener('focusin', handleFocusIn);
   formElement.addEventListener('focusout', handleFocusOut);
   vv?.addEventListener('resize', handleViewportResize);
@@ -341,6 +396,7 @@ export function attachMobileProgressiveFieldScroll(formElement: HTMLFormElement)
     destroy: () => {
       clearTimers();
       resetTemporaryPadding();
+      mutationObserver?.disconnect();
       formElement.removeEventListener('focusin', handleFocusIn);
       formElement.removeEventListener('focusout', handleFocusOut);
       vv?.removeEventListener('resize', handleViewportResize);

@@ -136,7 +136,7 @@ describe('KANI V12.47.12.2 — Scroll anticipativo iOS considerando barra fija .
     document.body.innerHTML = '';
   });
 
-  it('1. Al enfocar Celular con teclado abierto, evita que Email quede detrás de «Volver» / «Pagar seña» (.booking-cta)', () => {
+  it('1. Al enfocar Celular con teclado abierto, anticipa Email y Código de descuento por encima de .booking-cta sin ocultar Celular', () => {
     const { form, nameInput, phoneInput, emailInput, emailLabel, discountField, applyScroll } =
       createMockBookingForm({ withBottomCta: true });
 
@@ -151,24 +151,25 @@ describe('KANI V12.47.12.2 — Scroll anticipativo iOS considerando barra fija .
     });
     expect(scrollBySpy).not.toHaveBeenCalled();
 
-    // Celular: Email (335..425) queda parcialmente detrás de .booking-cta (396)!
-    // safeBottom = 396 - 20 = 376 -> delta = 425 - 376 = 49px
+    // Celular: anticipa Email (335..425) + Código de descuento (440..530) -> safeBottom = 376 -> delta = 530 - 376 = 154px
+    // (Celular queda en 235 - 154 = 81 >= safeTop 72)
     phoneInput.focus();
     form.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
     act(() => {
       vi.advanceTimersByTime(60);
     });
     expect(scrollBySpy).toHaveBeenCalledTimes(1);
-    expect(scrollBySpy.mock.calls[0][0].top).toBe(49);
+    expect(scrollBySpy.mock.calls[0][0].top).toBe(154);
     expect(emailLabel.getBoundingClientRect().bottom).toBeLessThanOrEqual(396 - 20);
+    expect(discountField.getBoundingClientRect().bottom).toBeLessThanOrEqual(396 - 20);
 
-    // Email: anticipa Código de descuento (440..530 => actual 391..481 > safeBottom 376)
+    // Email: Código de descuento ya está visible arriba de .booking-cta -> no scrollea de más
     emailInput.focus();
     form.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
     act(() => {
       vi.advanceTimersByTime(60);
     });
-    expect(scrollBySpy).toHaveBeenCalledTimes(2);
+    expect(scrollBySpy).toHaveBeenCalledTimes(1);
     expect(discountField.getBoundingClientRect().bottom).toBeLessThanOrEqual(396 - 20);
 
     handle.destroy();
@@ -198,7 +199,7 @@ describe('KANI V12.47.12.2 — Scroll anticipativo iOS considerando barra fija .
   });
 
   it('3. Respeta scroll manual y compensa si el navegador hace un scroll nativo posterior antes de estabilizarse', () => {
-    const { form, phoneInput, emailInput, emailLabel, applyScroll } = createMockBookingForm({ withBottomCta: true });
+    const { form, phoneInput, emailInput, discountField, applyScroll } = createMockBookingForm({ withBottomCta: true });
     scrollBySpy.mockImplementation(({ top }: { top: number }) => applyScroll(top));
     const handle = attachMobileProgressiveFieldScroll(form);
 
@@ -207,18 +208,19 @@ describe('KANI V12.47.12.2 — Scroll anticipativo iOS considerando barra fija .
     act(() => {
       vi.advanceTimersByTime(60);
     });
-    expect(emailLabel.getBoundingClientRect().bottom).toBe(376);
+    expect(discountField.getBoundingClientRect().bottom).toBe(376);
 
     // Simular scroll nativo de iOS Safari que retrocede 25px antes de la segunda pasada (+190ms)
     applyScroll(-25);
-    expect(emailLabel.getBoundingClientRect().bottom).toBe(401);
+    expect(discountField.getBoundingClientRect().bottom).toBe(401);
 
     act(() => {
       vi.advanceTimersByTime(200);
     });
-    expect(emailLabel.getBoundingClientRect().bottom).toBe(376);
+    expect(discountField.getBoundingClientRect().bottom).toBe(376);
 
     // Si el usuario hace scroll manual, se cancela cualquier ajuste pendiente
+    applyScroll(-80);
     emailInput.focus();
     form.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
     window.dispatchEvent(new Event('touchmove'));
@@ -229,6 +231,68 @@ describe('KANI V12.47.12.2 — Scroll anticipativo iOS considerando barra fija .
     expect(scrollBySpy.mock.calls.length).toBe(callsBefore);
 
     handle.destroy();
-    expect(computeProgressiveScrollDelta(phoneInput, form)).toBe(0);
+    expect(computeProgressiveScrollDelta(phoneInput, form)).toBe(80);
+  });
+
+  it('4. Con stepper sticky y mensajes de validación en Celular y Email, posiciona Celular debajo del stepper y muestra Email + Código de descuento + Aplicar sin bucles', async () => {
+    const { form, phoneInput, emailLabel, discountField, applyScroll } = createMockBookingForm({ withBottomCta: true });
+    const stepper = document.createElement('div');
+    stepper.className = 'booking-progress';
+    stepper.style.position = 'sticky';
+    stepper.getBoundingClientRect = () =>
+      ({ top: 64, bottom: 108, left: 0, right: 390, width: 390, height: 44, x: 0, y: 64, toJSON: () => {} }) as DOMRect;
+    document.body.insertBefore(stepper, form);
+
+    const phoneLabel = form.querySelectorAll('.field-label')[1] as HTMLElement;
+    let hasValidationErrors = false;
+    let extraOffset = 0;
+
+    const refreshRects = () => {
+      const scrollY = window.scrollY;
+      const errExtra = hasValidationErrors ? 28 : 0;
+      phoneLabel.getBoundingClientRect = () =>
+        ({ top: 235 - scrollY, bottom: 325 + errExtra - scrollY, left: 16, right: 374, width: 358, height: 90 + errExtra, x: 16, y: 235 - scrollY, toJSON: () => {} }) as DOMRect;
+      emailLabel.getBoundingClientRect = () =>
+        ({ top: 335 + errExtra - scrollY, bottom: 425 + errExtra * 2 - scrollY, left: 16, right: 374, width: 358, height: 90 + errExtra, x: 16, y: 335 + errExtra - scrollY, toJSON: () => {} }) as DOMRect;
+      discountField.getBoundingClientRect = () =>
+        ({ top: 440 + errExtra * 2 - scrollY, bottom: 530 + errExtra * 2 - scrollY, left: 16, right: 374, width: 358, height: 90, x: 16, y: 440 + errExtra * 2 - scrollY, toJSON: () => {} }) as DOMRect;
+      extraOffset = errExtra;
+    };
+
+    scrollBySpy.mockImplementation(({ top }: { top: number }) => {
+      applyScroll(top);
+      refreshRects();
+    });
+
+    const handle = attachMobileProgressiveFieldScroll(form);
+
+    // 1) Enfocar Celular sin errores: no se pasa del límite del stepper (108 + 8 = 116)
+    phoneInput.focus();
+    form.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+    act(() => {
+      vi.advanceTimersByTime(260);
+    });
+    // safeTop = 116 -> maxKeepingCurrentVisible = 235 - 116 = 119; desiredBottom 530 - 376 = 154 -> capped at 119!
+    expect(phoneLabel.getBoundingClientRect().top).toBeGreaterThanOrEqual(116);
+    expect(scrollBySpy).toHaveBeenCalledTimes(1);
+
+    // 2) Aparecen mensajes de validación dinámicamente (p. ej. al validar Celular y Email)
+    hasValidationErrors = true;
+    refreshRects();
+    const errSpan = document.createElement('span');
+    errSpan.className = 'field-validation-message';
+    errSpan.textContent = 'Ingresá un celular válido';
+    phoneLabel.appendChild(errSpan);
+
+    // Esperar MutationObserver + debounce; no debe entrar en bucle ni ocultar Celular bajo el stepper
+    await act(async () => {
+      await Promise.resolve();
+      vi.advanceTimersByTime(300);
+    });
+    expect(extraOffset).toBe(28);
+    expect(phoneLabel.getBoundingClientRect().top).toBeGreaterThanOrEqual(116);
+    expect(scrollBySpy.mock.calls.length).toBeLessThanOrEqual(2);
+
+    handle.destroy();
   });
 });
