@@ -8,8 +8,9 @@ import type {
 } from './liquid-glass-motion.types';
 
 /**
- * Sistema centralizado de parámetros Motion V4 / Living Surface V8 / Motion System V12.46 para /reservar-turno-liquid.
- * Prioriza materialidad óptica, diferenciación Servicio/Barbero, física sin transforms persistentes y prefers-reduced-motion.
+ * Sistema centralizado de parámetros Motion V4 / Living Surface V8 / Motion System V12.46.1 para /reservar-turno-liquid.
+ * Prioriza materialidad óptica, coreografías diferenciadas (Servicio, Barbero, Fecha, Horario),
+ * física sin transforms persistentes y prefers-reduced-motion.
  */
 export const LIQUID_GLASS_MOTION = {
   durations: {
@@ -34,7 +35,7 @@ export const LIQUID_GLASS_MOTION = {
   },
   scales: {
     cardTap: 0.985,
-    serviceCardTap: 0.986,
+    serviceCardTap: 0.966,
     barberCardTap: 0.994,
     actionTap: 0.982,
     slotTap: 0.972,
@@ -43,10 +44,20 @@ export const LIQUID_GLASS_MOTION = {
   },
   v46: {
     servicePressMs: 85,
-    serviceRecoverMs: 340,
-    serviceMotionMs: 580,
-    serviceOvershootScale: 1.004,
+    serviceRecoverMs: 420,
+    serviceMotionMs: 680,
+    serviceOvershootScale: 1.008,
     barberMotionMs: 640,
+    dayTapScale: 0.94,
+    dayPressMs: 65,
+    dayPulseMs: 320,
+    dayMotionMs: 520,
+    dayOvershootScale: 1.032,
+    slotTapScale: 0.952,
+    slotPressMs: 65,
+    slotRecoverMs: 280,
+    slotMotionMs: 500,
+    slotOvershootScale: 1.022,
   },
 } as const;
 
@@ -105,6 +116,15 @@ function StepperLens() {
   );
 }
 
+type TactileMotionSpec = {
+  motionTag: 'service-select' | 'day-select' | 'slot-select';
+  tapScale: number;
+  pressMs: number;
+  overshootScale: number;
+  recoverMs: number;
+  motionMs: number;
+};
+
 function InteractiveCard({
   children,
   className = '',
@@ -123,65 +143,139 @@ function InteractiveCard({
   const waveRef = useRef<HTMLSpanElement | null>(null);
   const rippleTimerRef = useRef<number | null>(null);
   const motionTimerRef = useRef<number | null>(null);
-  const servicePressAnimRef = useRef<Animation | null>(null);
-  const serviceRecoverAnimRef = useRef<Animation | null>(null);
-  const isPressingServiceRef = useRef(false);
-  const lastServiceRecoverAtRef = useRef(0);
+  const pressAnimRef = useRef<Animation | null>(null);
+  const recoverAnimRef = useRef<Animation | null>(null);
+  const isPressingRef = useRef(false);
+  const pressStartedAtRef = useRef(0);
+  const lastRecoverAtRef = useRef(0);
 
   const isSelected = className.includes('selected');
   const prevSelectedRef = useRef(isSelected);
   const isCalendarDay = className.includes('calendar-day');
+  const isTimeSlot = className.includes('booking-time-slot');
   const isServiceOption = className.includes('service-option');
   const isBarberOption =
     className.includes('booking-option') &&
     !isServiceOption &&
     !className.includes('booking-defer-option');
   const isLargeCard = isServiceOption || isBarberOption;
-  const effectiveTapScale =
-    tapScale !== LIQUID_GLASS_MOTION.scales.cardTap
-      ? tapScale
-      : isServiceOption
-        ? LIQUID_GLASS_MOTION.scales.serviceCardTap
-        : isBarberOption
-          ? LIQUID_GLASS_MOTION.scales.barberCardTap
-          : tapScale;
+  const isMotionControlledTarget = isLargeCard || isCalendarDay || isTimeSlot;
 
-  const triggerServiceElasticRecovery = (fromScale: number) => {
+  const tactileSpec: TactileMotionSpec | null = isServiceOption
+    ? {
+        motionTag: 'service-select',
+        tapScale: LIQUID_GLASS_MOTION.scales.serviceCardTap,
+        pressMs: LIQUID_GLASS_MOTION.v46.servicePressMs,
+        overshootScale: LIQUID_GLASS_MOTION.v46.serviceOvershootScale,
+        recoverMs: LIQUID_GLASS_MOTION.v46.serviceRecoverMs,
+        motionMs: LIQUID_GLASS_MOTION.v46.serviceMotionMs,
+      }
+    : isCalendarDay
+      ? {
+          motionTag: 'day-select',
+          tapScale: LIQUID_GLASS_MOTION.v46.dayTapScale,
+          pressMs: LIQUID_GLASS_MOTION.v46.dayPressMs,
+          overshootScale: LIQUID_GLASS_MOTION.v46.dayOvershootScale,
+          recoverMs: LIQUID_GLASS_MOTION.v46.dayPulseMs,
+          motionMs: LIQUID_GLASS_MOTION.v46.dayMotionMs,
+        }
+      : isTimeSlot
+        ? {
+            motionTag: 'slot-select',
+            tapScale: LIQUID_GLASS_MOTION.v46.slotTapScale,
+            pressMs: LIQUID_GLASS_MOTION.v46.slotPressMs,
+            overshootScale: LIQUID_GLASS_MOTION.v46.slotOvershootScale,
+            recoverMs: LIQUID_GLASS_MOTION.v46.slotRecoverMs,
+            motionMs: LIQUID_GLASS_MOTION.v46.slotMotionMs,
+          }
+        : null;
+
+  const effectiveTapScale = tactileSpec
+    ? tactileSpec.tapScale
+    : tapScale !== LIQUID_GLASS_MOTION.scales.cardTap
+      ? tapScale
+      : isBarberOption
+        ? LIQUID_GLASS_MOTION.scales.barberCardTap
+        : tapScale;
+
+  const cancelTactileAnims = () => {
+    pressAnimRef.current?.cancel();
+    pressAnimRef.current = null;
+    recoverAnimRef.current?.cancel();
+    recoverAnimRef.current = null;
+  };
+
+  const clearMotionState = () => {
+    if (motionTimerRef.current !== null && typeof window !== 'undefined') {
+      window.clearTimeout(motionTimerRef.current);
+      motionTimerRef.current = null;
+    }
+    buttonRef.current?.removeAttribute('data-lg-motion');
+    buttonRef.current?.removeAttribute('data-lg-pressing');
+  };
+
+  const triggerTactileRecover = (spec: TactileMotionSpec, ensureTapVisible: boolean) => {
     const el = buttonRef.current;
     if (!el || shouldReduceMotion || typeof el.animate !== 'function') return;
 
-    servicePressAnimRef.current?.cancel();
-    servicePressAnimRef.current = null;
-    serviceRecoverAnimRef.current?.cancel();
-    lastServiceRecoverAtRef.current = Date.now();
+    cancelTactileAnims();
+    const now = Date.now();
+    const elapsedMs = pressStartedAtRef.current > 0 ? now - pressStartedAtRef.current : 999;
+    lastRecoverAtRef.current = now;
 
-    serviceRecoverAnimRef.current = el.animate(
-      [
-        { transform: `scale(${fromScale})` },
-        { transform: `scale(${LIQUID_GLASS_MOTION.v46.serviceOvershootScale})`, offset: 0.56 },
-        { transform: 'scale(1)' },
-      ],
-      {
-        duration: LIQUID_GLASS_MOTION.v46.serviceRecoverMs,
-        easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
-        fill: 'none',
-      },
-    );
+    // En taps rápidos (< 75ms) o teclado, completa un micro-hundimiento breve antes del retorno elástico para que sea perceptible en mobile y desktop.
+    const keyframes =
+      ensureTapVisible && elapsedMs < 75
+        ? [
+            { transform: 'scale(0.992)' },
+            { transform: `scale(${spec.tapScale})`, offset: 0.2 },
+            { transform: `scale(${spec.overshootScale})`, offset: 0.6 },
+            { transform: 'scale(1)' },
+          ]
+        : [
+            { transform: `scale(${spec.tapScale})` },
+            { transform: `scale(${spec.overshootScale})`, offset: 0.54 },
+            { transform: 'scale(1)' },
+          ];
+
+    const duration =
+      ensureTapVisible && elapsedMs < 75 ? spec.recoverMs : Math.round(spec.recoverMs * 0.86);
+
+    recoverAnimRef.current = el.animate(keyframes, {
+      duration,
+      easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+      fill: 'none',
+    });
   };
 
   useEffect(() => {
     const el = buttonRef.current;
-    const becameSelected = !prevSelectedRef.current && isSelected;
+    const wasSelected = prevSelectedRef.current;
+    const becameSelected = !wasSelected && isSelected;
     prevSelectedRef.current = isSelected;
 
-    if (!becameSelected || !el || disabled || shouldReduceMotion || typeof window === 'undefined') {
+    if (!el || typeof window === 'undefined') return;
+
+    if (!isSelected) {
+      if (wasSelected) {
+        clearMotionState();
+        cancelTactileAnims();
+      }
       return;
     }
 
-    if (isServiceOption) {
-      el.setAttribute('data-lg-motion', 'service-select');
-      if (Date.now() - lastServiceRecoverAtRef.current > 180) {
-        triggerServiceElasticRecovery(LIQUID_GLASS_MOTION.scales.serviceCardTap);
+    if (!becameSelected || disabled || shouldReduceMotion) {
+      return;
+    }
+
+    if (tactileSpec) {
+      if (el.getAttribute('data-lg-motion') === tactileSpec.motionTag) {
+        el.removeAttribute('data-lg-motion');
+        void el.offsetWidth;
+      }
+      el.setAttribute('data-lg-motion', tactileSpec.motionTag);
+      if (Date.now() - lastRecoverAtRef.current > 180) {
+        triggerTactileRecover(tactileSpec, true);
       }
       if (motionTimerRef.current !== null) {
         window.clearTimeout(motionTimerRef.current);
@@ -189,10 +283,11 @@ function InteractiveCard({
       motionTimerRef.current = window.setTimeout(() => {
         el.removeAttribute('data-lg-motion');
         motionTimerRef.current = null;
-      }, LIQUID_GLASS_MOTION.v46.serviceMotionMs);
+      }, tactileSpec.motionMs);
       return;
     }
 
+    // Barbero V12.46: conservado intacto como referencia visual aprobada.
     if (isBarberOption) {
       el.setAttribute('data-lg-motion', 'barber-select');
       if (motionTimerRef.current !== null) {
@@ -203,7 +298,17 @@ function InteractiveCard({
         motionTimerRef.current = null;
       }, LIQUID_GLASS_MOTION.v46.barberMotionMs);
     }
-  }, [isSelected, disabled, shouldReduceMotion, isServiceOption, isBarberOption]);
+  }, [
+    isSelected,
+    disabled,
+    shouldReduceMotion,
+    isBarberOption,
+    tactileSpec?.motionTag,
+    tactileSpec?.motionMs,
+    tactileSpec?.tapScale,
+    tactileSpec?.overshootScale,
+    tactileSpec?.recoverMs,
+  ]);
 
   useEffect(() => {
     return () => {
@@ -211,12 +316,8 @@ function InteractiveCard({
         window.clearTimeout(rippleTimerRef.current);
         rippleTimerRef.current = null;
       }
-      if (motionTimerRef.current !== null && typeof window !== 'undefined') {
-        window.clearTimeout(motionTimerRef.current);
-        motionTimerRef.current = null;
-      }
-      servicePressAnimRef.current?.cancel();
-      serviceRecoverAnimRef.current?.cancel();
+      clearMotionState();
+      cancelTactileAnims();
     };
   }, []);
 
@@ -236,7 +337,7 @@ function InteractiveCard({
       Math.max(localY, rect.height - localY),
     );
     const waveSize = isServiceOption
-      ? Math.min(Math.max(Math.ceil(maxRadius * 1.15), 240), 380)
+      ? Math.min(Math.max(Math.ceil(maxRadius * 2.1), 280), 540)
       : isBarberOption
         ? Math.min(Math.max(Math.ceil(maxRadius * 1.35), 180), 260)
         : Math.max(Math.ceil(maxRadius * 2), 96);
@@ -247,20 +348,20 @@ function InteractiveCard({
     el.style.setProperty('--lg-touch-y-pct', `${((localY / Math.max(rect.height, 1)) * 100).toFixed(1)}%`);
     el.style.setProperty('--lg-wave-size', `${waveSize}px`);
 
-    // Servicio V12.46: compresión táctil inmediata sin onda circular genérica; el destello y borde corren en selección.
-    if (isServiceOption) {
-      isPressingServiceRef.current = true;
+    // V12.46.1 (Servicio, Fecha, Horario): compresión táctil inmediata via WAAPI sin ripple genérico; la expansión óptica inicia al seleccionar.
+    if (tactileSpec) {
+      isPressingRef.current = true;
+      pressStartedAtRef.current = Date.now();
       el.setAttribute('data-lg-pressing', 'true');
-      serviceRecoverAnimRef.current?.cancel();
-      servicePressAnimRef.current?.cancel();
+      cancelTactileAnims();
       if (typeof el.animate === 'function') {
-        servicePressAnimRef.current = el.animate(
+        pressAnimRef.current = el.animate(
           [
             { transform: 'scale(1)' },
-            { transform: `scale(${LIQUID_GLASS_MOTION.scales.serviceCardTap})` },
+            { transform: `scale(${tactileSpec.tapScale})` },
           ],
           {
-            duration: LIQUID_GLASS_MOTION.v46.servicePressMs,
+            duration: tactileSpec.pressMs,
             easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
             fill: 'forwards',
           },
@@ -334,28 +435,30 @@ function InteractiveCard({
     }, LIQUID_GLASS_MOTION.durations.livingSettleMs);
   };
 
-  const releaseServicePress = () => {
+  const releaseTactilePress = (cancelled: boolean) => {
     const el = buttonRef.current;
-    if (!isPressingServiceRef.current) return;
-    isPressingServiceRef.current = false;
+    if (!isPressingRef.current) return;
+    isPressingRef.current = false;
     el?.removeAttribute('data-lg-pressing');
-    triggerServiceElasticRecovery(LIQUID_GLASS_MOTION.scales.serviceCardTap);
+    if (tactileSpec) {
+      triggerTactileRecover(tactileSpec, !cancelled);
+    }
   };
 
   const handlePointerUp = (event: PointerEvent<HTMLButtonElement>) => {
     onPointerUp?.(event);
-    if (isServiceOption) releaseServicePress();
+    if (tactileSpec) releaseTactilePress(false);
   };
 
   const handlePointerCancel = (event: PointerEvent<HTMLButtonElement>) => {
     onPointerCancel?.(event);
-    if (isServiceOption) releaseServicePress();
+    if (tactileSpec) releaseTactilePress(true);
   };
 
   const handlePointerLeave = (event: PointerEvent<HTMLButtonElement>) => {
     onPointerLeave?.(event);
-    if (isServiceOption && isPressingServiceRef.current) {
-      releaseServicePress();
+    if (tactileSpec && isPressingRef.current) {
+      releaseTactilePress(true);
     }
   };
 
@@ -377,12 +480,12 @@ function InteractiveCard({
       onPointerCancel={handlePointerCancel}
       onPointerLeave={handlePointerLeave}
       whileHover={
-        disabled || shouldReduceMotion || isActionButton || isLargeCard
+        disabled || shouldReduceMotion || isActionButton || isMotionControlledTarget
           ? undefined
           : { y: isSelected ? -2 : -1 }
       }
       whileTap={
-        disabled || shouldReduceMotion || isLargeCard
+        disabled || shouldReduceMotion || isMotionControlledTarget
           ? undefined
           : { scale: effectiveTapScale }
       }
