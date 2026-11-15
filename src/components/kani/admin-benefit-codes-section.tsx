@@ -57,10 +57,89 @@ import {
   adminUpdateBenefitCodeValidityFn,
 } from '@/lib/kani-benefit-codes.functions';
 import { money, formatServiceName } from '@/lib/kani-model';
+import '@/components/kani/v2/discount-card.css';
 
 export type BenefitCodeSortOption = 'RECENT' | 'OLDEST' | 'CODE_ASC' | 'CODE_DESC' | 'MOST_USED';
 
-export function BenefitCodesAdminSection() {
+function getBenefitHeadline(type: BenefitCodeType): string {
+  switch (type) {
+    case 'PERCENT_10':
+      return '10% de descuento';
+    case 'PERCENT_50':
+      return '50% de descuento';
+    case 'FREE_SERVICE':
+      return 'Servicio gratuito';
+    case 'NO_DEPOSIT':
+      return 'Reserva sin seña';
+    default:
+      return BENEFIT_TYPE_DEFINITIONS[type]?.label ?? type;
+  }
+}
+
+function getStatusDisplay(status: BenefitCodeStatus): {
+  badgeLabel: string;
+  badgeClass: string;
+  fullDescription: string;
+} {
+  switch (status) {
+    case 'ACTIVE':
+      return {
+        badgeLabel: 'Activo',
+        badgeClass: 'is-active',
+        fullDescription: 'Activo y disponible para reservas',
+      };
+    case 'SCHEDULED':
+      return {
+        badgeLabel: 'Programado',
+        badgeClass: 'is-scheduled',
+        fullDescription: 'Programado para habilitarse en su fecha de inicio',
+      };
+    case 'DISABLED':
+      return {
+        badgeLabel: 'Inactivo',
+        badgeClass: 'is-inactive',
+        fullDescription: 'Inactivo · Desactivado manualmente por un administrador',
+      };
+    case 'EXPIRED':
+      return {
+        badgeLabel: 'Vencido',
+        badgeClass: 'is-expired',
+        fullDescription: 'Vencido · Fuera de su período de vigencia',
+      };
+    case 'CONSUMED':
+      return {
+        badgeLabel: 'Consumido',
+        badgeClass: 'is-consumed',
+        fullDescription: 'Consumido · Código de un solo uso ya utilizado',
+      };
+    case 'DELETED':
+      return {
+        badgeLabel: 'Eliminado',
+        badgeClass: 'is-deleted',
+        fullDescription: 'Eliminado · Retirado de uso (conservado para auditoría)',
+      };
+    default:
+      return {
+        badgeLabel: 'Inactivo',
+        badgeClass: 'is-inactive',
+        fullDescription: 'En proceso de checkout',
+      };
+  }
+}
+
+function getCompactValidityText(item: BenefitCodeItem): string {
+  if (item.status === 'SCHEDULED' && item.validFrom) {
+    return item.validUntil
+      ? `Desde ${formatBuenosAiresDate(item.validFrom)} · Hasta ${formatBuenosAiresDate(item.validUntil)}`
+      : `Desde ${formatBuenosAiresDate(item.validFrom)}`;
+  }
+  if (item.validityType === 'NO_EXPIRATION' || !item.validUntil) {
+    return 'Sin vencimiento';
+  }
+  return `Hasta ${formatBuenosAiresDate(item.validUntil)}`;
+}
+
+export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?: boolean } = {}) {
   const [items, setItems] = useState<BenefitCodeItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -396,56 +475,61 @@ export function BenefitCodesAdminSection() {
     });
   }, [items, statusFilter, searchTerm, sortBy]);
 
+  const openCreateDialog = () => {
+    setCreateOpen(true);
+    setCreatedItem(null);
+    setCreateError('');
+    setSelectedUsageMode('SINGLE_USE');
+    setSelectedValidityType('NO_EXPIRATION');
+    setCreateStartDate(getBuenosAiresTodayDateString());
+    setCreateEndDate('');
+    setCreateDurationValue(7);
+    setCreateDurationUnit('DAYS');
+  };
+
   return (
     <section
       className="maintenance-section w-full p-5 sm:p-6 rounded-[var(--radius-card)] border border-border bg-card space-y-5"
-      aria-labelledby="discounts-title"
+      aria-labelledby={hideHeading ? undefined : 'discounts-title'}
+      aria-label={hideHeading ? 'Códigos de descuento y beneficio' : undefined}
     >
-      {/* Cabecera de la tarjeta */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-border">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <Tag size={20} className="text-gold shrink-0" />
-            <h2 id="discounts-title" className="text-lg font-semibold tracking-tight text-foreground">
-              Descuentos y Beneficios
-            </h2>
+      {/* Cabecera opcional (se oculta en /admin-liquid/descuentos por V12.43) */}
+      {!hideHeading && (
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-border">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <Tag size={20} className="text-gold shrink-0" />
+              <h2 id="discounts-title" className="text-lg font-semibold tracking-tight text-foreground">
+                Descuentos y Beneficios
+              </h2>
+            </div>
+            <p className="text-xs sm:text-sm text-muted-foreground">
+              Gestión integral de códigos de beneficio para reservas: un solo uso y reutilizables, vigencias configurables y auditoría.
+            </p>
           </div>
-          <p className="text-xs sm:text-sm text-muted-foreground">
-            Gestión integral de códigos de beneficio para reservas: un solo uso y reutilizables, vigencias configurables y auditoría.
-          </p>
+          <div className="flex items-center gap-2 shrink-0">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => void loadCodes()}
+              disabled={loading}
+              className="v2-secondary min-h-[38px] text-xs"
+              aria-label="Actualizar códigos"
+            >
+              <RefreshCw size={14} className={loading ? 'animate-spin shrink-0' : 'shrink-0'} />
+              <span className="hidden sm:inline">Actualizar</span>
+            </Button>
+            <Button
+              size="sm"
+              onClick={openCreateDialog}
+              className="action-brand min-h-[38px] text-xs font-semibold"
+            >
+              <Plus size={16} className="shrink-0" />
+              <span>Generar código</span>
+            </Button>
+          </div>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => void loadCodes()}
-            disabled={loading}
-            className="v2-secondary min-h-[38px] text-xs"
-            aria-label="Actualizar códigos"
-          >
-            <RefreshCw size={14} className={loading ? 'animate-spin shrink-0' : 'shrink-0'} />
-            <span className="hidden sm:inline">Actualizar</span>
-          </Button>
-          <Button
-            size="sm"
-            onClick={() => {
-              setCreateOpen(true);
-              setCreatedItem(null);
-              setCreateError('');
-              setSelectedUsageMode('SINGLE_USE');
-              setSelectedValidityType('NO_EXPIRATION');
-              setCreateStartDate(getBuenosAiresTodayDateString());
-              setCreateEndDate('');
-              setCreateDurationValue(7);
-              setCreateDurationUnit('DAYS');
-            }}
-            className="action-brand min-h-[38px] text-xs font-semibold"
-          >
-            <Plus size={16} className="shrink-0" />
-            <span>Generar código</span>
-          </Button>
-        </div>
-      </div>
+      )}
 
       {/* Manejo de estado de error */}
       {error ? (
@@ -473,7 +557,7 @@ export function BenefitCodesAdminSection() {
       ) : (
         <>
           {/* Barra de herramientas: Buscador + Filtro Estado + Orden */}
-          <div className="flex flex-col lg:flex-row items-stretch lg:items-end gap-3 w-full">
+          <div className="kani-dfilters flex flex-col lg:flex-row items-stretch lg:items-end gap-3 w-full">
             {/* Buscador de texto */}
             <div className="flex-1 min-w-0">
               <label htmlFor="benefit-search" className="block text-xs font-medium text-muted-foreground mb-1.5">
@@ -525,12 +609,44 @@ export function BenefitCodesAdminSection() {
               >
                 <option value="RECENT">Más recientes</option>
                 <option value="OLDEST">Más antiguos</option>
-                <option value="MOST_USED">Más utilizados</option>
                 <option value="CODE_ASC">Nombre A-Z</option>
                 <option value="CODE_DESC">Nombre Z-A</option>
+                <option value="MOST_USED">Más utilizados</option>
               </select>
             </div>
           </div>
+
+          {/* Barra compacta de resultados y acciones principales (estilo Membresías) */}
+          {hideHeading && (
+            <div className="kani-dtoolbar">
+              <span className="kani-dtoolbar-count">
+                {filteredAndSortedItems.length === 1
+                  ? '1 descuento encontrado'
+                  : `${filteredAndSortedItems.length} descuentos encontrados`}
+              </span>
+              <div className="kani-dtoolbar-actions">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => void loadCodes()}
+                  disabled={loading}
+                  className="v2-secondary min-h-[38px] text-xs"
+                  aria-label="Actualizar códigos"
+                >
+                  <RefreshCw size={14} className={loading ? 'animate-spin shrink-0' : 'shrink-0'} />
+                  <span>Actualizar</span>
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={openCreateDialog}
+                  className="action-brand min-h-[38px] text-xs font-semibold"
+                >
+                  <Plus size={16} className="shrink-0" />
+                  <span>Generar código</span>
+                </Button>
+              </div>
+            </div>
+          )}
 
           {/* Lista de Códigos / Estado de Carga / Estado Vacío */}
           {loading ? (
@@ -549,414 +665,366 @@ export function BenefitCodesAdminSection() {
               </p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className={`kani-dgrid${filteredAndSortedItems.length === 1 ? ' is-single' : ''}`}>
               {filteredAndSortedItems.map((item) => {
                 const def = BENEFIT_TYPE_DEFINITIONS[item.type];
-                const isReusable = item.usageMode === 'REUSABLE';
+                const usageMode = item.usageMode || 'SINGLE_USE';
+                const usageDef = BENEFIT_USAGE_MODE_DEFINITIONS[usageMode];
+                const isReusable = usageMode === 'REUSABLE';
                 const status = item.status;
+                const statusDisplay = getStatusDisplay(status);
                 const isCopied = copiedCode === item.code;
                 const isExpanded = expandedCodeIds.has(item.id);
-
-                // Conteo de reservas asociadas
                 const usagesList = item.usages || [];
                 const usageCount = item.timesUsed ?? usagesList.length;
+                const hasLegacyUsage =
+                  !isReusable &&
+                  (usageCount > 0 ||
+                    status === 'CONSUMED' ||
+                    !!item.clientName ||
+                    !!item.consumedAt ||
+                    !!item.appointmentRequestNumber);
+                const extraAuditItem = item as BenefitCodeItem & {
+                  changeReason?: string | null;
+                  reason?: string | null;
+                  lastEditedReason?: string | null;
+                };
+                const changeReason =
+                  extraAuditItem.changeReason?.trim() ||
+                  extraAuditItem.reason?.trim() ||
+                  extraAuditItem.lastEditedReason?.trim() ||
+                  null;
+                const deactivationOrDeletionInfo =
+                  status === 'DELETED' || item.deletedAt || item.deletedByDisplayName
+                    ? `Eliminado${item.deletedByDisplayName ? ` por ${item.deletedByDisplayName}` : ''}${
+                        item.deletedAt ? ` el ${formatBuenosAiresDateTime(item.deletedAt)}` : ''
+                      }`
+                    : status === 'DISABLED'
+                    ? `Desactivado manualmente${
+                        item.lastEditedByDisplayName ? ` por ${item.lastEditedByDisplayName}` : ''
+                      }${item.lastEditedAt ? ` el ${formatBuenosAiresDateTime(item.lastEditedAt)}` : ''}`
+                    : null;
 
                 return (
-                  <div
+                  <article
                     key={item.id}
-                    className={`p-4 rounded-lg border transition-colors space-y-3 ${
-                      status === 'DELETED'
-                        ? 'bg-muted/30 border-dashed border-border/80 opacity-75'
-                        : 'bg-background/50 hover:bg-background/80 border-border'
-                    }`}
+                    className="kani-dcard"
+                    data-testid={`discount-card-${item.id}`}
+                    data-status={status}
                   >
-                    {/* Barra superior de la tarjeta */}
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5">
-                      <div className="flex items-center gap-2.5 flex-wrap">
-                        <span
-                          className={`font-mono text-base font-bold tracking-wider select-all px-2.5 py-1 rounded border ${
-                            status === 'DELETED'
-                              ? 'line-through text-muted-foreground bg-muted border-border'
-                              : 'text-foreground bg-muted/50 border-border/80'
-                          }`}
-                        >
-                          {item.code}
-                        </span>
-
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => void handleCopy(item.code)}
-                          className="h-8 px-2 text-xs text-gold hover:text-gold/80"
-                          title="Copiar código"
-                        >
-                          {isCopied ? (
-                            <>
-                              <Check size={14} className="text-green-500 mr-1" />
-                              <span className="text-green-500 font-semibold">¡Copiado!</span>
-                            </>
-                          ) : (
-                            <>
-                              <Copy size={14} className="mr-1" />
-                              <span>Copiar</span>
-                            </>
-                          )}
-                        </Button>
-
-                        {/* Badge de Modalidad de Uso */}
-                        <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold border ${
-                            isReusable
-                              ? 'bg-blue-500/10 text-blue-400 border-blue-500/30'
-                              : 'bg-zinc-500/10 text-zinc-300 border-zinc-500/30'
-                          }`}
-                        >
-                          {isReusable ? 'Reutilizable' : 'Un solo uso'}
-                        </span>
-
-                        {/* Badge de Tipo de Beneficio */}
-                        <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold border ${
-                            item.type === 'FREE_SERVICE'
-                              ? 'bg-purple-500/10 text-purple-400 border-purple-500/30'
-                              : item.type === 'NO_DEPOSIT'
-                              ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
-                              : 'bg-gold/10 text-gold border-gold/30'
-                          }`}
-                        >
-                          {def.shortLabel}
-                        </span>
-                      </div>
-
-                      {/* Badge de Estado y Acciones Rápidas */}
-                      <div className="flex items-center gap-2 flex-wrap">
-                        {/* Estado Administrativo */}
-                        <span
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${
-                            status === 'ACTIVE'
-                              ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30'
-                              : status === 'SCHEDULED'
-                              ? 'bg-sky-500/10 text-sky-400 border-sky-500/30'
-                              : status === 'EXPIRED'
-                              ? 'bg-amber-500/10 text-amber-500 border-amber-500/30'
-                              : status === 'CONSUMED'
-                              ? 'bg-muted text-muted-foreground border-border'
-                              : status === 'DELETED'
-                              ? 'bg-destructive/10 text-destructive/80 border-destructive/20'
-                              : 'bg-destructive/10 text-destructive border-destructive/30'
-                          }`}
-                        >
-                          {status === 'ACTIVE' && <Check size={12} />}
-                          {status === 'SCHEDULED' && <Clock size={12} />}
-                          {status === 'EXPIRED' && <AlertTriangle size={12} />}
-                          {status === 'CONSUMED' && <UserCheck size={12} />}
-                          {status === 'DISABLED' && <Ban size={12} />}
-                          {status === 'DELETED' && <Trash2 size={12} />}
-                          <span>
-                            {status === 'ACTIVE'
-                              ? 'Activo'
-                              : status === 'SCHEDULED'
-                              ? 'Programado'
-                              : status === 'EXPIRED'
-                              ? 'Vencido'
-                              : status === 'CONSUMED'
-                              ? 'Consumido'
-                              : status === 'DELETED'
-                              ? 'Eliminado'
-                              : 'Desactivado'}
-                          </span>
-                        </span>
-
-                        {/* Indicador transitorio si un código de un solo uso está en checkout */}
-                        {item.isLockedInCheckout && status === 'ACTIVE' && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/30 animate-pulse">
-                            En checkout
-                          </span>
-                        )}
-
-                        {/* Botones de Gestión (solo códigos no eliminados) */}
-                        {status !== 'DELETED' && (
-                          <div className="flex items-center gap-1.5">
-                            {/* Activar / Desactivar */}
-                            {status === 'ACTIVE' || status === 'SCHEDULED' ? (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setCodeToToggle({ item, targetActive: false })}
-                                className="h-8 text-xs text-destructive hover:text-destructive/80 hover:bg-destructive/10"
-                                title="Desactivar este código"
-                              >
-                                <XCircle size={14} className="mr-1" />
-                                <span>Desactivar</span>
-                              </Button>
-                            ) : status === 'DISABLED' ? (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => {
-                                  // Si venció, advertir al usuario que primero debe actualizar la vigencia
-                                  if (item.validUntil && new Date(item.validUntil).getTime() < Date.now()) {
-                                    setCodeToToggle({ item, targetActive: true });
-                                    setToggleStatusError(
-                                      'Este código se encuentra vencido. Para activarlo nuevamente, primero debés actualizar su vigencia.'
-                                    );
-                                  } else {
-                                    setCodeToToggle({ item, targetActive: true });
-                                    setToggleStatusError('');
-                                  }
-                                }}
-                                className="h-8 text-xs text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10"
-                                title="Activar este código"
-                              >
-                                <Check size={14} className="mr-1" />
-                                <span>Activar</span>
-                              </Button>
-                            ) : null}
-
-                            {/* Editar vigencia (para reutilizables o para reactivar vencidos) */}
-                            {isReusable && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleEditValidityOpen(item)}
-                                className="h-8 text-xs text-gold hover:text-gold/80 hover:bg-gold/10"
-                                title="Editar vigencia del código reutilizable"
-                              >
-                                <Edit2 size={13} className="mr-1" />
-                                <span>Editar vigencia</span>
-                              </Button>
+                    <div className="kani-dcard-body">
+                      {/* Nivel 1: Código + Copiar (ícono) + Estado único */}
+                      <header className="kani-dcard-header">
+                        <div className="kani-dcard-code-group">
+                          <h3
+                            className={`kani-dcard-code select-all${
+                              status === 'DELETED' ? ' is-deleted' : ''
+                            }`}
+                          >
+                            {item.code}
+                          </h3>
+                          <button
+                            type="button"
+                            className={`v2-secondary kani-dcard-btn-copy${isCopied ? ' is-copied' : ''}`}
+                            aria-label={`Copiar código ${item.code}`}
+                            title={
+                              status === 'DELETED'
+                                ? 'Código eliminado'
+                                : isCopied
+                                ? '¡Código copiado!'
+                                : 'Copiar código'
+                            }
+                            disabled={status === 'DELETED'}
+                            onClick={() => void handleCopy(item.code)}
+                          >
+                            {isCopied ? (
+                              <Check size={14} aria-hidden="true" />
+                            ) : (
+                              <Copy size={14} aria-hidden="true" />
                             )}
+                          </button>
+                        </div>
 
-                            {/* Eliminar (Soft delete) */}
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                setCodeToDelete(item);
-                                setDeleteError('');
-                              }}
-                              className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                              title="Eliminar código (conserva historial)"
-                              aria-label={`Eliminar código ${item.code}`}
-                            >
-                              <Trash2 size={14} />
-                            </Button>
-                          </div>
-                        )}
+                        <span className={`kani-dcard-badge ${statusDisplay.badgeClass}`}>
+                          {statusDisplay.badgeLabel}
+                        </span>
+                      </header>
+
+                      {/* Nivel 2: Beneficio principal sin repeticiones */}
+                      <div className="kani-dcard-benefit">{getBenefitHeadline(item.type)}</div>
+
+                      {/* Nivel 3: Vigencia y Cantidad de usos */}
+                      <div className="kani-dcard-meta">
+                        <span className="kani-dcard-meta-item">
+                          <Calendar size={14} aria-hidden="true" />
+                          <span>{getCompactValidityText(item)}</span>
+                        </span>
+                        <span className="kani-dcard-meta-item">
+                          <Users size={14} aria-hidden="true" />
+                          <strong>{usageCount === 1 ? '1 uso' : `${usageCount} usos`}</strong>
+                        </span>
                       </div>
                     </div>
 
-                    {/* Fila de detalles: Tipo, Vigencia, Contador de usos y Auditoría */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 text-xs text-muted-foreground pt-1 border-t border-border/50">
-                      <div>
-                        <span className="block font-medium text-foreground">{def.label}</span>
-                        <span className="text-[11px] text-muted-foreground">{def.description}</span>
-                      </div>
-
-                      {/* Vigencia */}
-                      <div>
-                        <span className="block text-muted-foreground">Vigencia:</span>
-                        <span className="text-foreground font-medium block">
-                          {item.validityType === 'NO_EXPIRATION' || !item.validUntil
-                            ? 'Sin vencimiento'
-                            : `Hasta ${formatBuenosAiresDate(item.validUntil)} (23:59 hs)`}
-                        </span>
-                        {item.validFrom && new Date(item.validFrom).getTime() > Date.now() && (
-                          <span className="text-[11px] text-sky-400 block">
-                            Inicia el {formatBuenosAiresDate(item.validFrom)}
-                          </span>
+                    {/* Nivel 4: Acciones */}
+                    <div className="kani-dcard-actions">
+                      <button
+                        type="button"
+                        className="v2-secondary kani-dcard-btn-details"
+                        aria-expanded={isExpanded}
+                        onClick={() => toggleAccordion(item.id)}
+                      >
+                        <span>Detalles</span>
+                        {isExpanded ? (
+                          <ChevronUp size={14} aria-hidden="true" />
+                        ) : (
+                          <ChevronDown size={14} aria-hidden="true" />
                         )}
-                      </div>
+                      </button>
 
-                      {/* Contador de usos */}
-                      <div>
-                        <span className="block text-muted-foreground">Cantidad de usos:</span>
-                        <span className="text-foreground font-semibold flex items-center gap-1.5">
-                          <Users size={13} className="text-gold" />
-                          <span>
-                            {usageCount === 1 ? '1 reserva' : `${usageCount} reservas`}
-                          </span>
-                        </span>
-                      </div>
+                      {status !== 'DELETED' && (
+                        <>
+                          {isReusable && (
+                            <button
+                              type="button"
+                              className="v2-secondary kani-dcard-btn-action"
+                              onClick={() => handleEditValidityOpen(item)}
+                              title="Editar vigencia"
+                            >
+                              <Edit2 size={13} aria-hidden="true" />
+                              <span>Editar</span>
+                            </button>
+                          )}
 
-                      {/* Auditoría */}
-                      <div>
-                        <span className="block text-muted-foreground">Auditoría:</span>
-                        <span className="text-foreground text-[11px] block">
-                          Creado por {item.createdByDisplayName || 'Administrador'} el {formatBuenosAiresDate(item.createdAt)}
-                        </span>
-                        {item.lastEditedAt && (
-                          <span className="text-muted-foreground text-[10px] block">
-                            Modificado por {item.lastEditedByDisplayName || 'Administrador'} el {formatBuenosAiresDate(item.lastEditedAt)}
-                          </span>
-                        )}
-                        {item.deletedAt && (
-                          <span className="text-destructive text-[10px] block font-medium">
-                            Eliminado por {item.deletedByDisplayName || 'Administrador'} el {formatBuenosAiresDate(item.deletedAt)}
-                          </span>
-                        )}
-                      </div>
+                          {status === 'ACTIVE' || status === 'SCHEDULED' ? (
+                            <button
+                              type="button"
+                              className="v2-secondary kani-dcard-btn-action kani-dcard-btn-warning"
+                              onClick={() => {
+                                setToggleStatusError('');
+                                setCodeToToggle({ item, targetActive: false });
+                              }}
+                              title="Desactivar este código"
+                            >
+                              <XCircle size={13} aria-hidden="true" />
+                              <span>Desactivar</span>
+                            </button>
+                          ) : status === 'DISABLED' ? (
+                            <button
+                              type="button"
+                              className="v2-secondary kani-dcard-btn-action kani-dcard-btn-activate"
+                              onClick={() => {
+                                if (item.validUntil && new Date(item.validUntil).getTime() < Date.now()) {
+                                  setCodeToToggle({ item, targetActive: true });
+                                  setToggleStatusError(
+                                    'Este código se encuentra vencido. Para activarlo nuevamente, primero debés actualizar su vigencia.'
+                                  );
+                                } else {
+                                  setCodeToToggle({ item, targetActive: true });
+                                  setToggleStatusError('');
+                                }
+                              }}
+                              title="Activar este código"
+                            >
+                              <Check size={13} aria-hidden="true" />
+                              <span>Activar</span>
+                            </button>
+                          ) : null}
 
-                      {item.internalNote && (
-                        <div className="sm:col-span-2 lg:col-span-4 pt-1">
-                          <span className="text-muted-foreground text-[11px]">Nota interna: </span>
-                          <span className="text-foreground italic text-[11px]">{item.internalNote}</span>
-                        </div>
+                          <button
+                            type="button"
+                            className="v2-secondary kani-dcard-btn-delete is-destructive"
+                            onClick={() => {
+                              setCodeToDelete(item);
+                              setDeleteError('');
+                            }}
+                            title="Eliminar código (conserva historial)"
+                            aria-label={`Eliminar código ${item.code}`}
+                          >
+                            <Trash2 size={14} aria-hidden="true" />
+                          </button>
+                        </>
                       )}
                     </div>
 
-                    {/* Detalle directo de consumo para códigos de Un solo uso */}
-                    {!isReusable && (usageCount > 0 || status === 'CONSUMED' || !!item.clientName || !!item.consumedAt) && (
-                      <div className="mt-2 pt-2 border-t border-border/40">
-                        {usagesList.length > 0 ? (
-                          <div className="p-3 rounded-md bg-muted/30 border border-border text-xs space-y-1.5">
-                            <div className="flex flex-wrap items-center justify-between gap-2">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <UserCheck size={14} className="text-gold shrink-0" />
-                                <strong className="text-foreground">{usagesList[0].clientName || 'Cliente'}</strong>
-                                {usagesList[0].clientPhone && <span>· {usagesList[0].clientPhone}</span>}
-                                {usagesList[0].clientEmail && <span className="text-muted-foreground">({usagesList[0].clientEmail})</span>}
-                              </div>
-                              <div className="flex items-center gap-2">
-                                {usagesList[0].requestNumber && (
-                                  <span className="text-muted-foreground font-mono">
-                                    Turno #{usagesList[0].requestNumber}
-                                  </span>
-                                )}
-                                <span className="text-muted-foreground">
-                                  ({usagesList[0].bookingDate} {usagesList[0].bookingTime})
-                                </span>
-                              </div>
-                            </div>
-
-                            <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-muted-foreground pt-1 border-t border-border/40">
-                              <span>
-                                Servicio: <strong className="text-foreground">{formatServiceName(usagesList[0].serviceName)}</strong> con{' '}
-                                <strong className="text-foreground">{usagesList[0].barberName}</strong>
-                              </span>
-                              {usagesList[0].isAppointmentCancelled && (
-                                <span className="px-1.5 py-0.5 rounded bg-destructive/15 text-destructive border border-destructive/30 font-semibold">
-                                  Reserva cancelada
-                                </span>
-                              )}
-                            </div>
-
-                            {usagesList[0].finalPriceArs !== null && usagesList[0].finalPriceArs !== undefined && (
-                              <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-[11px] text-muted-foreground pt-0.5">
-                                <span>Original: <strong className="text-foreground">{money(usagesList[0].originalPriceArs ?? 0)}</strong></span>
-                                {item.type !== 'NO_DEPOSIT' && (
-                                  <span>Descuento: <strong className="text-gold">−{money(usagesList[0].discountAmountArs ?? 0)}</strong></span>
-                                )}
-                                <span>Total final: <strong className="text-foreground">{money(usagesList[0].finalPriceArs)}</strong></span>
-                                <span>Seña: <strong className="text-gold">{money(usagesList[0].onlineDepositArs ?? 0)}</strong></span>
-                                <span>Saldo local: <strong className="text-foreground">{money(usagesList[0].inPersonBalanceArs ?? 0)}</strong></span>
-                              </div>
-                            )}
+                    {/* Nivel 5: Sección expandible "Detalles" */}
+                    {isExpanded && (
+                      <div className="kani-dcard-details" data-testid={`discount-details-${item.id}`}>
+                        <dl className="kani-dcard-kv-grid">
+                          <div className="kani-dcard-kv is-full">
+                            <dt className="kani-dcard-kv-label">Estado completo</dt>
+                            <dd className="kani-dcard-kv-value">
+                              {statusDisplay.fullDescription}
+                              {item.isLockedInCheckout && status === 'ACTIVE'
+                                ? ' (en proceso de checkout)'
+                                : ''}
+                            </dd>
                           </div>
-                        ) : (
-                          // Fallback de snapshot compatible para códigos previos
-                          <div className="p-3 rounded-md bg-muted/30 border border-border text-xs space-y-1.5">
-                            <div className="flex flex-wrap items-center justify-between gap-2">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <UserCheck size={14} className="text-gold shrink-0" />
-                                <strong className="text-foreground">{item.clientName || 'Cliente'}</strong>
-                                {item.clientPhone && <span>· {item.clientPhone}</span>}
-                              </div>
-                              {item.appointmentRequestNumber && (
-                                <span className="text-muted-foreground font-mono">
-                                  Turno #{item.appointmentRequestNumber} ({item.appointmentDate} {item.appointmentTime})
-                                </span>
-                              )}
-                            </div>
-                            {item.finalPriceArs !== null && item.finalPriceArs !== undefined && (
-                              <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-[11px] text-muted-foreground pt-1 border-t border-border/40">
-                                <span>Original: <strong className="text-foreground">{money(item.originalPriceArs ?? 0)}</strong></span>
-                                <span>Total: <strong className="text-foreground">{money(item.finalPriceArs)}</strong></span>
-                                <span>Seña: <strong className="text-gold">{money(item.onlineDepositArs ?? 0)}</strong></span>
-                                <span>Saldo: <strong className="text-foreground">{money(item.inPersonBalanceArs ?? 0)}</strong></span>
-                              </div>
-                            )}
+
+                          <div className="kani-dcard-kv is-full">
+                            <dt className="kani-dcard-kv-label">Tipo de código y condiciones de utilización</dt>
+                            <dd className="kani-dcard-kv-value">
+                              {usageDef.label} · {def.description}{' '}
+                              {item.validityType === 'NO_EXPIRATION' || !item.validUntil
+                                ? 'Sin fecha de vencimiento.'
+                                : `Vigencia hasta ${formatBuenosAiresDate(item.validUntil)} (23:59 hs).`}
+                            </dd>
                           </div>
-                        )}
-                      </div>
-                    )}
 
-                    {/* Acordeón / Historial detallado de turnos asociados para códigos Reutilizables */}
-                    {isReusable && usageCount > 0 && (
-                      <div className="mt-2 pt-2 border-t border-border/40">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => toggleAccordion(item.id)}
-                          className="h-8 text-xs text-gold hover:text-gold/80 px-2 py-1 flex items-center gap-1.5"
-                        >
-                          <Users size={13} />
-                          <span>
-                            {isExpanded
-                              ? `Ocultar reservas asociadas (${usageCount})`
-                              : `Ver reservas asociadas (${usageCount})`}
-                          </span>
-                          {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                        </Button>
+                          <div className="kani-dcard-kv">
+                            <dt className="kani-dcard-kv-label">Fecha de creación</dt>
+                            <dd className="kani-dcard-kv-value">
+                              {item.createdAt ? formatBuenosAiresDateTime(item.createdAt) : 'Sin registro'}
+                            </dd>
+                          </div>
 
-                        {isExpanded && (
-                          <div className="mt-2 space-y-2">
+                          <div className="kani-dcard-kv">
+                            <dt className="kani-dcard-kv-label">Usuario que lo creó</dt>
+                            <dd className="kani-dcard-kv-value">
+                              {item.createdByDisplayName || 'Sin registro'}
+                            </dd>
+                          </div>
+
+                          <div className="kani-dcard-kv">
+                            <dt className="kani-dcard-kv-label">Fecha de última modificación</dt>
+                            <dd className="kani-dcard-kv-value">
+                              {item.lastEditedAt
+                                ? formatBuenosAiresDateTime(item.lastEditedAt)
+                                : 'Sin modificaciones registradas'}
+                            </dd>
+                          </div>
+
+                          <div className="kani-dcard-kv">
+                            <dt className="kani-dcard-kv-label">Usuario que realizó la modificación</dt>
+                            <dd className="kani-dcard-kv-value">
+                              {item.lastEditedByDisplayName ||
+                                (item.lastEditedAt ? 'Sin registro' : 'Sin modificaciones registradas')}
+                            </dd>
+                          </div>
+
+                          {changeReason && (
+                            <div className="kani-dcard-kv is-full">
+                              <dt className="kani-dcard-kv-label">Motivo de los cambios</dt>
+                              <dd className="kani-dcard-kv-value">{changeReason}</dd>
+                            </div>
+                          )}
+
+                          {deactivationOrDeletionInfo && (
+                            <div className="kani-dcard-kv is-full">
+                              <dt className="kani-dcard-kv-label">
+                                {status === 'DELETED' || item.deletedAt
+                                  ? 'Información de eliminación'
+                                  : 'Información de desactivación'}
+                              </dt>
+                              <dd className="kani-dcard-kv-value">{deactivationOrDeletionInfo}</dd>
+                            </div>
+                          )}
+
+                          <div className="kani-dcard-kv is-full">
+                            <dt className="kani-dcard-kv-label">Notas internas</dt>
+                            <dd className="kani-dcard-kv-value">
+                              {item.internalNote || 'Sin notas internas'}
+                            </dd>
+                          </div>
+                        </dl>
+
+                        {(usagesList.length > 0 || hasLegacyUsage) && (
+                          <div className="kani-dcard-usages">
+                            <h4 className="kani-dcard-usages-title">
+                              Reservas asociadas e historial de utilización ({usageCount})
+                            </h4>
+
                             {usagesList.length > 0 ? (
                               usagesList.map((u) => (
-                                <div
-                                  key={u.id}
-                                  className="p-3 rounded-md bg-muted/30 border border-border text-xs space-y-1.5"
-                                >
-                                  <div className="flex flex-wrap items-center justify-between gap-2">
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                      <UserCheck size={14} className="text-gold shrink-0" />
-                                      <strong className="text-foreground">{u.clientName || 'Cliente'}</strong>
-                                      {u.clientPhone && <span>· {u.clientPhone}</span>}
-                                      {u.clientEmail && <span className="text-muted-foreground">({u.clientEmail})</span>}
+                                <div key={u.id} className="kani-dcard-usage-row">
+                                  <div className="kani-dcard-usage-top">
+                                    <div>
+                                      <strong>{u.clientName || 'Cliente'}</strong>
+                                      {u.clientPhone ? ` · ${u.clientPhone}` : ''}
+                                      {u.clientEmail ? ` (${u.clientEmail})` : ''}
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                      {u.requestNumber && (
-                                        <span className="text-muted-foreground font-mono">
-                                          Turno #{u.requestNumber}
+                                    <div className="kani-dcard-usage-meta">
+                                      {u.requestNumber ? `Turno #${u.requestNumber} · ` : ''}
+                                      {u.bookingDate} {u.bookingTime}
+                                    </div>
+                                  </div>
+
+                                  {(u.serviceName || u.barberName || u.isAppointmentCancelled) && (
+                                    <div className="kani-dcard-usage-top">
+                                      <span className="kani-dcard-usage-meta">
+                                        {u.serviceName ? formatServiceName(u.serviceName) : 'Servicio'}
+                                        {u.barberName ? ` con ${u.barberName}` : ''}
+                                      </span>
+                                      {u.isAppointmentCancelled && (
+                                        <span className="kani-dcard-usage-cancelled">
+                                          Reserva cancelada
                                         </span>
                                       )}
-                                      <span className="text-muted-foreground">
-                                        ({u.bookingDate} {u.bookingTime})
-                                      </span>
                                     </div>
-                                  </div>
-
-                                  <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-muted-foreground pt-1 border-t border-border/40">
-                                    <span>
-                                      Servicio: <strong className="text-foreground">{formatServiceName(u.serviceName)}</strong> con{' '}
-                                      <strong className="text-foreground">{u.barberName}</strong>
-                                    </span>
-                                    {u.isAppointmentCancelled && (
-                                      <span className="px-1.5 py-0.5 rounded bg-destructive/15 text-destructive border border-destructive/30 font-semibold">
-                                        Reserva cancelada
-                                      </span>
-                                    )}
-                                  </div>
+                                  )}
 
                                   {u.finalPriceArs !== null && u.finalPriceArs !== undefined && (
-                                    <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-[11px] text-muted-foreground pt-0.5">
-                                      <span>Original: <strong className="text-foreground">{money(u.originalPriceArs ?? 0)}</strong></span>
+                                    <div className="kani-dcard-usage-amounts">
+                                      <span>
+                                        Original: <strong>{money(u.originalPriceArs ?? 0)}</strong>
+                                      </span>
                                       {item.type !== 'NO_DEPOSIT' && (
-                                        <span>Descuento: <strong className="text-gold">−{money(u.discountAmountArs ?? 0)}</strong></span>
+                                        <span>
+                                          Descuento: <strong>−{money(u.discountAmountArs ?? 0)}</strong>
+                                        </span>
                                       )}
-                                      <span>Total final: <strong className="text-foreground">{money(u.finalPriceArs)}</strong></span>
-                                      <span>Seña: <strong className="text-gold">{money(u.onlineDepositArs ?? 0)}</strong></span>
-                                      <span>Saldo local: <strong className="text-foreground">{money(u.inPersonBalanceArs ?? 0)}</strong></span>
+                                      <span>
+                                        Total: <strong>{money(u.finalPriceArs)}</strong>
+                                      </span>
+                                      <span>
+                                        Seña: <strong>{money(u.onlineDepositArs ?? 0)}</strong>
+                                      </span>
+                                      <span>
+                                        Saldo: <strong>{money(u.inPersonBalanceArs ?? 0)}</strong>
+                                      </span>
                                     </div>
                                   )}
                                 </div>
                               ))
-                            ) : null}
+                            ) : (
+                              <div className="kani-dcard-usage-row">
+                                <div className="kani-dcard-usage-top">
+                                  <div>
+                                    <strong>{item.clientName || 'Cliente'}</strong>
+                                    {item.clientPhone ? ` · ${item.clientPhone}` : ''}
+                                    {item.clientEmail ? ` (${item.clientEmail})` : ''}
+                                  </div>
+                                  {item.appointmentRequestNumber && (
+                                    <div className="kani-dcard-usage-meta">
+                                      Turno #{item.appointmentRequestNumber}
+                                      {item.appointmentDate ? ` · ${item.appointmentDate}` : ''}
+                                      {item.appointmentTime ? ` ${item.appointmentTime}` : ''}
+                                    </div>
+                                  )}
+                                </div>
+                                {item.finalPriceArs !== null && item.finalPriceArs !== undefined && (
+                                  <div className="kani-dcard-usage-amounts">
+                                    <span>
+                                      Original: <strong>{money(item.originalPriceArs ?? 0)}</strong>
+                                    </span>
+                                    <span>
+                                      Total: <strong>{money(item.finalPriceArs)}</strong>
+                                    </span>
+                                    <span>
+                                      Seña: <strong>{money(item.onlineDepositArs ?? 0)}</strong>
+                                    </span>
+                                    <span>
+                                      Saldo: <strong>{money(item.inPersonBalanceArs ?? 0)}</strong>
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
                     )}
-                  </div>
+                  </article>
                 );
               })}
             </div>

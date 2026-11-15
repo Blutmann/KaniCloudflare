@@ -2507,14 +2507,25 @@ html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-se
   }
 
   html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav.lg-memberships-nav .lg-admin-nav-label {
-    white-space: normal !important;
+    white-space: nowrap !important;
     text-align: center !important;
     overflow-wrap: normal !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav.lg-memberships-nav .lg-admin-nav-label--desktop {
+    display: none !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav.lg-memberships-nav .lg-admin-nav-label--mobile {
+    display: inline !important;
   }
 
   @media (max-width: 359px) {
     html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav.lg-memberships-nav .admin-section-nav-items {
-      grid-template-columns: minmax(0, 0.9fr) minmax(0, 0.9fr) minmax(0, 1.2fr) !important;
+      grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
     }
 
     html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav.lg-memberships-nav .admin-section-nav-link {
@@ -2794,5 +2805,181 @@ html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-se
     max-height: 0 !important;
     flex: 0 0 0px !important;
     overflow: visible !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav.lg-memberships-nav .lg-admin-nav-label--mobile {
+    display: none !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav.lg-memberships-nav .lg-admin-nav-label--desktop {
+    display: inline !important;
+  }
+}
+
+/* ==============================================================================
+ * LAYER 13 · V12.43 REDISEÑO DE DESCUENTOS LIQUID GLASS + NAVEGACIÓN COMPACTA
+ * - Mantiene intactas las cards y estética de Membresías (.kani-mcard).
+ * - Evita el borde inferior artificial de > div:first-child en /admin-liquid/descuentos
+ *   cuando el encabezado redundante fue eliminado (.v2-discounts-stage).
+ * - Aplica tokens ópticos reales de Liquid Glass a .kani-dfilters, .kani-dcard y
+ *   subsuperficies anidadas (.kani-dcard-usage-row, .kani-dcard-details-alert).
+ * ============================================================================== */
+
+.lg-memberships-nav .lg-admin-nav-label--mobile {
+  display: none;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page > .v2-panel > .v2-discounts-stage {
+  border-bottom: none !important;
+  padding-bottom: 0 !important;
+  margin-top: 0 !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section > .kani-dfilters {
+  background: var(--lga-glass-structural) !important;
+  backdrop-filter: blur(20px) saturate(145%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(145%) !important;
+  border: 1px solid var(--lga-border) !important;
+  border-radius: 16px !important;
+  padding: 14px 16px !important;
+  box-shadow: var(--lga-specular), var(--lga-shadow-card) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .kani-dtoolbar {
+  padding: 2px 2px 4px;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .kani-dtoolbar-count {
+  color: var(--lga-text-muted) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .kani-dcard {
+  --dc-bg: var(--lga-glass-interactive);
+  --dc-border: var(--lga-border);
+  --dc-shadow: var(--lga-specular), var(--lga-shadow-card);
+  --dc-inset-bg: var(--lga-glass-nested);
+  --dc-inset-border: var(--lga-border-nested);
+  --dc-text: var(--lga-text);
+  --dc-muted: var(--lga-text-muted);
+
+  background: var(--lga-glass-interactive) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(150%) !important;
+  backdrop-filter: blur(20px) saturate(150%) !important;
+  border: 1px solid var(--lga-border) !important;
+  border-radius: 18px !important;
+  box-shadow: var(--lga-specular), var(--lga-shadow-card) !important;
+  isolation: isolate;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .kani-dcard:hover {
+  background: var(--lga-glass-hover) !important;
+  border-color: var(--lga-border-accent) !important;
+  box-shadow: var(--lga-specular), var(--lga-shadow-elevated) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .kani-dcard[data-status="DISABLED"] {
+  border-color: var(--lga-border-nested) !important;
+  opacity: 0.9;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .kani-dcard[data-status="EXPIRED"],
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .kani-dcard[data-status="CONSUMED"] {
+  border-color: var(--lga-border-nested) !important;
+  opacity: 0.88;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .kani-dcard[data-status="DELETED"] {
+  border-style: dashed !important;
+  border-color: rgba(220, 38, 38, 0.34) !important;
+  opacity: 0.74;
+}
+
+html[data-theme="dark"] body[data-lg-admin="true"] .v2-memberships-page .kani-dcard[data-status="DELETED"] {
+  border-color: rgba(248, 113, 113, 0.36) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .kani-dcard-btn-copy {
+  background: var(--lga-glass-nested) !important;
+  border: 1px solid var(--lga-border-nested) !important;
+  color: var(--lga-text-muted) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .kani-dcard-btn-copy:hover:not(:disabled) {
+  border-color: var(--lga-border-accent) !important;
+  color: var(--lga-accent) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .kani-dcard-actions > button {
+  border-radius: 9999px !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .kani-dcard-btn-details,
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .kani-dcard-btn-action,
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .kani-dcard-btn-delete {
+  background: var(--lga-glass-nested) !important;
+  border: 1px solid var(--lga-border-nested) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .kani-dcard-btn-details:hover,
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .kani-dcard-btn-action:hover {
+  border-color: var(--lga-border-accent) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .kani-dcard-btn-warning,
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .kani-dcard-btn-delete.is-destructive {
+  border-color: rgba(220, 38, 38, 0.34) !important;
+}
+
+html[data-theme="dark"] body[data-lg-admin="true"] .v2-memberships-page .kani-dcard-btn-warning,
+html[data-theme="dark"] body[data-lg-admin="true"] .v2-memberships-page .kani-dcard-btn-delete.is-destructive {
+  border-color: rgba(248, 113, 113, 0.36) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .kani-dcard-details {
+  border-top-color: var(--lga-border-nested) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .kani-dcard-usage-row,
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .kani-dcard-details-note,
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .kani-dcard-details-alert {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .kani-dcard-empty {
+  background: var(--lga-glass-interactive) !important;
+  border: 1px dashed var(--lga-border) !important;
+  border-radius: 18px !important;
+  -webkit-backdrop-filter: blur(18px) saturate(140%) !important;
+  backdrop-filter: blur(18px) saturate(140%) !important;
+}
+
+@supports not ((backdrop-filter: blur(2px)) or (-webkit-backdrop-filter: blur(2px))) {
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .kani-dcard,
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section > .kani-dfilters,
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .kani-dcard-empty {
+    background: var(--lga-glass-interactive) !important;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .kani-dcard,
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section > .kani-dfilters,
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .kani-dcard-empty {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
   }
 }

@@ -34,7 +34,7 @@ function metadata(row: Code): Record<string, unknown> {
   }
 }
 
-export function V2Discounts() {
+export function V2Discounts({ hideHeading = false }: { hideHeading?: boolean } = {}) {
   const { profile } = useAdminStaff();
   const [rows, setRows] = useState<Code[]>([]);
   const [error, setError] = useState("");
@@ -60,8 +60,12 @@ export function V2Discounts() {
     return <p role="alert">No tenés permisos para consultar descuentos.</p>;
   return (
     <main className="v2-page">
-      <h1>Descuentos</h1>
-      <p>Consulta de códigos y sus utilizaciones.</p>
+      {!hideHeading && (
+        <>
+          <h1>Descuentos</h1>
+          <p>Consulta de códigos y sus utilizaciones.</p>
+        </>
+      )}
       {error && (
         <p role="alert" className="v2-alert">
           {error}

@@ -293,9 +293,9 @@ function V2Shell({ basePath, liquidGlass = false }: { basePath: string; liquidGl
     liquidGlass && (activeSlug === "membresias" || activeSlug === "descuentos");
 
   const membershipsNavDefs = [
-    { slug: "membresias", to: `${cleanBase}/membresias`, title: "Membresías", icon: PackageCheck },
-    { slug: "descuentos", to: `${cleanBase}/descuentos`, title: "Descuentos", icon: Tag },
-    { slug: "panel", to: cleanBase, title: "Panel de administración", icon: CalendarClock },
+    { slug: "membresias", to: `${cleanBase}/membresias`, title: "Membresías", mobileTitle: "Membresías", icon: PackageCheck },
+    { slug: "descuentos", to: `${cleanBase}/descuentos`, title: "Descuentos", mobileTitle: "Descuentos", icon: Tag },
+    { slug: "panel", to: cleanBase, title: "Panel de administración", mobileTitle: "Administración", icon: CalendarClock },
   ] as const;
 
   const navContent = isMembershipsNav ? (
@@ -306,7 +306,7 @@ function V2Shell({ basePath, liquidGlass = false }: { basePath: string; liquidGl
       aria-label="Membresías y descuentos"
     >
       <div className="admin-section-nav-items" ref={navItemsRef}>
-        {membershipsNavDefs.map(({ slug, to, title, icon: Icon }) => {
+        {membershipsNavDefs.map(({ slug, to, title, mobileTitle, icon: Icon }) => {
           const isActive = activeSlug === slug;
           return (
             <Link
@@ -315,6 +315,7 @@ function V2Shell({ basePath, liquidGlass = false }: { basePath: string; liquidGl
               data-nav-slug={slug}
               className={`admin-section-nav-link ${isActive ? "is-active" : ""}`.trim()}
               aria-current={isActive ? "page" : undefined}
+              aria-label={mobileTitle !== title ? title : undefined}
             >
               {isActive && (
                 <motion.span
@@ -325,7 +326,16 @@ function V2Shell({ basePath, liquidGlass = false }: { basePath: string; liquidGl
                 />
               )}
               <Icon size={16} aria-hidden="true" className="lg-admin-nav-icon" />
-              <span className="lg-admin-nav-label">{title}</span>
+              {mobileTitle !== title ? (
+                <>
+                  <span className="lg-admin-nav-label lg-admin-nav-label--desktop">{title}</span>
+                  <span className="lg-admin-nav-label lg-admin-nav-label--mobile" aria-hidden="true">
+                    {mobileTitle}
+                  </span>
+                </>
+              ) : (
+                <span className="lg-admin-nav-label">{title}</span>
+              )}
             </Link>
           );
         })}

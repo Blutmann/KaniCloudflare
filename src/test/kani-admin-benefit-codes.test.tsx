@@ -98,12 +98,21 @@ describe('BenefitCodesAdminSection Component', () => {
       expect(screen.getByText('KANI-ZETA-5555')).toBeInTheDocument();
     });
 
-    // Check badges
-    expect(screen.getByText('Sin seña')).toBeInTheDocument();
-    expect(screen.getByText('100% bonificado')).toBeInTheDocument();
-    expect(screen.getByText('50% OFF')).toBeInTheDocument();
+    // Check simplified benefit headlines & status badges
+    expect(screen.getByText('Reserva sin seña')).toBeInTheDocument();
+    expect(screen.getByText('Servicio gratuito')).toBeInTheDocument();
+    expect(screen.getByText('50% de descuento')).toBeInTheDocument();
 
-    // Check consumed details
+    expect(screen.getByText('Activo')).toBeInTheDocument();
+    expect(screen.getByText('Consumido')).toBeInTheDocument();
+    expect(screen.getByText('Inactivo')).toBeInTheDocument();
+
+    // Associated reservation details live inside the expandable "Detalles" section
+    expect(screen.queryByText(/Juan Pérez/i)).not.toBeInTheDocument();
+    const detailButtons = screen.getAllByRole('button', { name: /Detalles/i });
+    expect(detailButtons).toHaveLength(3);
+    fireEvent.click(detailButtons[0]);
+
     expect(screen.getByText(/Juan Pérez/i)).toBeInTheDocument();
     expect(screen.getByText(/Turno #1042/i)).toBeInTheDocument();
 

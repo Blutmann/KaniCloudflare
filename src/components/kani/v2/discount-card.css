@@ -1,0 +1,469 @@
+/* Isolated styles for V12.43 Discount Card grid, visual hierarchy, and expandable Details.
+ * Modeled after membership-card.css (.kani-mgrid / .kani-mcard*) and overridden cleanly by
+ * Liquid Glass admin tokens in liquid-glass-admin.css without affecting traditional surfaces.
+ */
+
+.kani-dtoolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 12px;
+}
+
+.kani-dtoolbar-count {
+  font-size: 13px;
+  color: var(--muted-foreground);
+}
+
+.kani-dtoolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.kani-dgrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+  gap: 14px;
+  align-items: start;
+  width: 100%;
+  min-width: 0;
+}
+
+.kani-dgrid.is-single {
+  grid-template-columns: minmax(0, 480px);
+}
+
+.kani-dcard {
+  --dc-bg: var(--surface, #ffffff);
+  --dc-border: color-mix(in srgb, var(--border, #e5e0d8) 88%, transparent);
+  --dc-shadow: 0 2px 10px rgb(0 0 0 / 5%);
+  --dc-inset-bg: color-mix(in srgb, var(--background, #f6f3ee) 72%, var(--surface, #ffffff));
+  --dc-inset-border: color-mix(in srgb, var(--border, #e5e0d8) 70%, transparent);
+  --dc-text: var(--foreground, #1e1b18);
+  --dc-muted: var(--muted-foreground, #6e675f);
+
+  background: var(--dc-bg);
+  color: var(--dc-text);
+  border: 1px solid var(--dc-border);
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: var(--dc-shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  transition: border-color 140ms ease, box-shadow 140ms ease, opacity 140ms ease;
+}
+
+html[data-theme="dark"] .kani-dcard {
+  --dc-bg: color-mix(in srgb, var(--surface, #1d1b19) 92%, #ffffff 8%);
+  --dc-border: color-mix(in srgb, var(--border, #35302a) 90%, transparent);
+  --dc-shadow: 0 2px 12px rgb(0 0 0 / 26%);
+  --dc-inset-bg: rgb(255 255 255 / 4.5%);
+  --dc-inset-border: rgb(255 255 255 / 9%);
+}
+
+.kani-dcard:hover {
+  border-color: color-mix(in srgb, var(--gold, #c9a15d) 45%, var(--dc-border));
+}
+
+.kani-dcard[data-status="DISABLED"] {
+  opacity: 0.92;
+}
+
+.kani-dcard[data-status="EXPIRED"],
+.kani-dcard[data-status="CONSUMED"] {
+  opacity: 0.9;
+}
+
+.kani-dcard[data-status="DELETED"] {
+  border-style: dashed;
+  opacity: 0.74;
+}
+
+.kani-dcard-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+/* Nivel 1: Código promocional + botón copiar compacto + única etiqueta de estado */
+.kani-dcard-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+
+.kani-dcard-code-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.kani-dcard-code {
+  margin: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: 0.04em;
+  color: var(--dc-text);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.kani-dcard-code.is-deleted {
+  text-decoration: line-through;
+  color: var(--dc-muted);
+}
+
+.kani-dcard-btn-copy {
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  padding: 0 !important;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--dc-border);
+  background: transparent;
+  color: var(--dc-muted);
+  cursor: pointer;
+  transition: color 140ms ease, border-color 140ms ease, background-color 140ms ease;
+}
+
+.kani-dcard-btn-copy:hover:not(:disabled) {
+  color: var(--dc-text);
+  border-color: color-mix(in srgb, var(--gold, #c9a15d) 55%, var(--dc-border));
+}
+
+.kani-dcard-btn-copy.is-copied {
+  border-color: rgba(16, 185, 129, 0.5) !important;
+  color: #047857 !important;
+}
+
+html[data-theme="dark"] .kani-dcard-btn-copy.is-copied {
+  color: #34d399 !important;
+}
+
+.kani-dcard-btn-copy:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.kani-dcard-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+
+.kani-dcard-badge.is-active {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.28);
+  color: #047857;
+}
+
+.kani-dcard-badge.is-scheduled {
+  background: rgba(14, 165, 233, 0.12);
+  border-color: rgba(14, 165, 233, 0.28);
+  color: #0369a1;
+}
+
+.kani-dcard-badge.is-inactive,
+.kani-dcard-badge.is-consumed {
+  background: rgba(100, 116, 139, 0.12);
+  border-color: rgba(100, 116, 139, 0.24);
+  color: #475569;
+}
+
+.kani-dcard-badge.is-expired {
+  background: rgba(217, 119, 6, 0.13);
+  border-color: rgba(217, 119, 6, 0.3);
+  color: #92400e;
+}
+
+.kani-dcard-badge.is-deleted {
+  background: rgba(220, 38, 38, 0.1);
+  border-color: rgba(220, 38, 38, 0.24);
+  color: #b91c1c;
+}
+
+html[data-theme="dark"] .kani-dcard-badge.is-active {
+  background: rgba(16, 185, 129, 0.16);
+  border-color: rgba(52, 211, 153, 0.32);
+  color: #34d399;
+}
+
+html[data-theme="dark"] .kani-dcard-badge.is-scheduled {
+  background: rgba(56, 189, 248, 0.16);
+  border-color: rgba(56, 189, 248, 0.32);
+  color: #38bdf8;
+}
+
+html[data-theme="dark"] .kani-dcard-badge.is-inactive,
+html[data-theme="dark"] .kani-dcard-badge.is-consumed {
+  background: rgba(148, 163, 184, 0.16);
+  border-color: rgba(148, 163, 184, 0.28);
+  color: #cbd5e1;
+}
+
+html[data-theme="dark"] .kani-dcard-badge.is-expired {
+  background: rgba(245, 158, 11, 0.16);
+  border-color: rgba(251, 191, 36, 0.34);
+  color: #fbbf24;
+}
+
+html[data-theme="dark"] .kani-dcard-badge.is-deleted {
+  background: rgba(248, 113, 113, 0.14);
+  border-color: rgba(248, 113, 113, 0.3);
+  color: #fca5a5;
+}
+
+/* Nivel 2: Beneficio ofrecido (sin duplicaciones ni badges redundantes) */
+.kani-dcard-benefit {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--dc-text);
+}
+
+/* Nivel 3: Vigencia y cantidad de usos en línea limpia */
+.kani-dcard-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  font-size: 12.5px;
+  line-height: 1.35;
+  color: var(--dc-muted);
+}
+
+.kani-dcard-meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.kani-dcard-meta-item strong {
+  color: var(--dc-text);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Nivel 4: Acciones con jerarquía tipo Membresías */
+.kani-dcard-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--dc-border);
+  min-width: 0;
+}
+
+.kani-dcard-btn-details,
+.kani-dcard-btn-action {
+  min-height: 36px;
+  padding: 0 12px;
+  font-size: 12.5px !important;
+  font-weight: 600;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.kani-dcard-btn-details {
+  flex: 1 1 auto;
+}
+
+.kani-dcard-btn-delete {
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
+  padding: 0 !important;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.kani-dcard-btn-warning {
+  color: #b91c1c !important;
+  border-color: rgba(220, 38, 38, 0.28) !important;
+}
+
+html[data-theme="dark"] .kani-dcard-btn-warning {
+  color: #fca5a5 !important;
+  border-color: rgba(248, 113, 113, 0.32) !important;
+}
+
+.kani-dcard-btn-activate {
+  color: #047857 !important;
+  border-color: rgba(16, 185, 129, 0.32) !important;
+}
+
+html[data-theme="dark"] .kani-dcard-btn-activate {
+  color: #34d399 !important;
+  border-color: rgba(52, 211, 153, 0.35) !important;
+}
+
+.kani-dcard-btn-delete.is-destructive {
+  color: #b91c1c !important;
+  border-color: rgba(220, 38, 38, 0.32) !important;
+}
+
+html[data-theme="dark"] .kani-dcard-btn-delete.is-destructive {
+  color: #fca5a5 !important;
+  border-color: rgba(248, 113, 113, 0.35) !important;
+}
+
+/* Nivel 5: Panel expandible "Detalles" */
+.kani-dcard-details {
+  border-top: 1px solid var(--dc-border);
+  padding-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.kani-dcard-kv-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 14px;
+  margin: 0;
+}
+
+.kani-dcard-kv {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.kani-dcard-kv.is-full {
+  grid-column: 1 / -1;
+}
+
+.kani-dcard-kv-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--dc-muted);
+  margin: 0;
+}
+
+.kani-dcard-kv-value {
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--dc-text);
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.kani-dcard-usages {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--dc-border);
+}
+
+.kani-dcard-usages-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--dc-muted);
+}
+
+.kani-dcard-usage-row {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--dc-inset-bg);
+  border: 1px solid var(--dc-inset-border);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+}
+
+.kani-dcard-usage-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 10px;
+}
+
+.kani-dcard-usage-meta {
+  font-size: 11.5px;
+  color: var(--dc-muted);
+}
+
+.kani-dcard-usage-amounts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  font-size: 11.5px;
+  color: var(--dc-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.kani-dcard-usage-amounts strong {
+  color: var(--dc-text);
+}
+
+.kani-dcard-usage-cancelled {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 600;
+  background: rgba(220, 38, 38, 0.12);
+  border: 1px solid rgba(220, 38, 38, 0.26);
+  color: #b91c1c;
+}
+
+html[data-theme="dark"] .kani-dcard-usage-cancelled {
+  color: #fca5a5;
+}
+
+@media (max-width: 520px) {
+  .kani-dcard {
+    padding: 14px 13px;
+    gap: 10px;
+  }
+
+  .kani-dcard-kv-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+}

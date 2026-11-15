@@ -428,77 +428,78 @@ export function V2MembershipsAndDiscounts({
     }
   }
 
+  const hideHeaderBlock = standaloneTab === "DESCUENTOS";
+
   return (
     <main className="v2-page v2-memberships-page">
       <section className="v2-panel" style={{ padding: "16px 18px" }}>
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: "12px",
-            borderBottom: "1px solid var(--border)",
-            paddingBottom: "12px",
-          }}
-        >
-          <div>
-            <h1 style={{ fontSize: "18px", fontWeight: 700, margin: 0 }}>
-              {standaloneTab === "DESCUENTOS"
-                ? "Descuentos"
-                : standaloneTab === "MEMBRESIAS"
+        {!hideHeaderBlock && (
+          <div
+            className="v2-memberships-header"
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "12px",
+              borderBottom: "1px solid var(--border)",
+              paddingBottom: "12px",
+            }}
+          >
+            <div>
+              <h1 style={{ fontSize: "18px", fontWeight: 700, margin: 0 }}>
+                {standaloneTab === "MEMBRESIAS"
                   ? "Membresías"
                   : "Membresías y descuentos"}
-            </h1>
-            <p style={{ fontSize: "12.5px", color: "var(--muted-foreground)", margin: "2px 0 0" }}>
-              {standaloneTab === "DESCUENTOS"
-                ? "Administración de códigos promocionales y beneficios."
-                : standaloneTab === "MEMBRESIAS"
+              </h1>
+              <p style={{ fontSize: "12.5px", color: "var(--muted-foreground)", margin: "2px 0 0" }}>
+                {standaloneTab === "MEMBRESIAS"
                   ? "Gestión integral de paquetes prepagados de 4 y 10 servicios, sesiones y tarjetas."
                   : "Gestión integral de paquetes prepagados de 4 y 10 servicios, sesiones y códigos de beneficio."}
-            </p>
-          </div>
+              </p>
+            </div>
 
-          {!standaloneTab && (
-            <div
-              role="tablist"
-              aria-label="Pestañas de Membresías y descuentos"
-              style={{
-                display: "inline-flex",
-                gap: "6px",
-                padding: "4px",
-                borderRadius: "10px",
-                background: "var(--v2-inset, rgba(255,255,255,0.04))",
-                border: "1px solid var(--border)",
-              }}
-            >
-              <button
-                type="button"
-                role="tab"
-                aria-selected={activeTab === "MEMBRESIAS"}
-                className={activeTab === "MEMBRESIAS" ? "v2-primary" : "v2-secondary"}
-                style={{ minHeight: "34px", padding: "0 14px", fontSize: "12.5px" }}
-                onClick={() => setActiveTab("MEMBRESIAS")}
+            {!standaloneTab && (
+              <div
+                role="tablist"
+                aria-label="Pestañas de Membresías y descuentos"
+                style={{
+                  display: "inline-flex",
+                  gap: "6px",
+                  padding: "4px",
+                  borderRadius: "10px",
+                  background: "var(--v2-inset, rgba(255,255,255,0.04))",
+                  border: "1px solid var(--border)",
+                }}
               >
-                <PackageCheck size={15} />
-                <span>Membresías</span>
-              </button>
-              {isOperator && (
                 <button
                   type="button"
                   role="tab"
-                  aria-selected={activeTab === "DESCUENTOS"}
-                  className={activeTab === "DESCUENTOS" ? "v2-primary" : "v2-secondary"}
+                  aria-selected={activeTab === "MEMBRESIAS"}
+                  className={activeTab === "MEMBRESIAS" ? "v2-primary" : "v2-secondary"}
                   style={{ minHeight: "34px", padding: "0 14px", fontSize: "12.5px" }}
-                  onClick={() => setActiveTab("DESCUENTOS")}
+                  onClick={() => setActiveTab("MEMBRESIAS")}
                 >
-                  <Tag size={15} />
-                  <span>Descuentos</span>
+                  <PackageCheck size={15} />
+                  <span>Membresías</span>
                 </button>
-              )}
-            </div>
-          )}
-        </div>
+                {isOperator && (
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={activeTab === "DESCUENTOS"}
+                    className={activeTab === "DESCUENTOS" ? "v2-primary" : "v2-secondary"}
+                    style={{ minHeight: "34px", padding: "0 14px", fontSize: "12.5px" }}
+                    onClick={() => setActiveTab("DESCUENTOS")}
+                  >
+                    <Tag size={15} />
+                    <span>Descuentos</span>
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {notice && (
           <p role="status" className="v2-success" style={{ marginTop: "12px" }}>
@@ -698,12 +699,12 @@ export function V2MembershipsAndDiscounts({
             No tenés permisos para consultar ni gestionar códigos de descuento.
           </p>
         ) : isAdmin ? (
-          <div style={{ marginTop: "16px" }}>
-            <BenefitCodesAdminSection />
+          <div className="v2-discounts-stage" style={hideHeaderBlock ? undefined : { marginTop: "16px" }}>
+            <BenefitCodesAdminSection hideHeading={hideHeaderBlock} />
           </div>
         ) : (
-          <div style={{ marginTop: "16px" }}>
-            <V2Discounts />
+          <div className="v2-discounts-stage" style={hideHeaderBlock ? undefined : { marginTop: "16px" }}>
+            <V2Discounts hideHeading={hideHeaderBlock} />
           </div>
         )}
       </section>

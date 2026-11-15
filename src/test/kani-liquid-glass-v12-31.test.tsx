@@ -219,11 +219,19 @@ describe('Liquid Glass V12.31 — Correcciones de interfaz, modales y navegació
       container.querySelectorAll<HTMLAnchorElement>('.lg-memberships-nav .admin-section-nav-link'),
     );
     expect(membershipsLinks).toHaveLength(3);
-    expect(membershipsLinks.map((a) => a.textContent?.trim())).toEqual([
+    expect(
+      membershipsLinks.map((a) => {
+        const desktopLabel = a.querySelector('.lg-admin-nav-label--desktop');
+        return (desktopLabel ? desktopLabel.textContent : a.textContent)?.trim();
+      }),
+    ).toEqual([
       'Membresías',
       'Descuentos',
       'Panel de administración',
     ]);
+    expect(
+      membershipsLinks[2].querySelector('.lg-admin-nav-label--mobile')?.textContent?.trim(),
+    ).toBe('Administración');
     expect(membershipsLinks.map((a) => a.getAttribute('href'))).toEqual([
       '/admin-liquid/membresias',
       '/admin-liquid/descuentos',
