@@ -279,7 +279,84 @@ export default {
             );
           }
 
-          // 1. Consultar estado del dominio en Resend
+          // 1. Verificación de Seguridad y Autenticación del lado del servidor para operaciones privilegiadas
+          const isSendRequested =
+            url.searchParams.get("send_test") === "true" ||
+            url.searchParams.get("send_test") === "1";
+
+          let isAuthorizedAdmin = false;
+          const authHeader = request.headers.get("authorization") || request.headers.get("Authorization");
+          const cookieHeader = request.headers.get("cookie") || request.headers.get("Cookie");
+          const customAdminKey = request.headers.get("x-admin-key");
+
+          let token: string | null = null;
+          if (authHeader?.startsWith("Bearer ")) {
+            token = authHeader.slice(7).trim();
+          } else if (customAdminKey) {
+            token = customAdminKey.trim();
+          } else if (cookieHeader) {
+            const extractCookie = (c: string, name: string) => {
+              const match = c.match(new RegExp(`(?:^|;\\s*)${name}=([^;]*)`));
+              return match ? decodeURIComponent(match[1]) : null;
+            };
+            const sbTokenCookie =
+              extractCookie(cookieHeader, "sb-access-token") ||
+              extractCookie(cookieHeader, "sb-iockpxtkflyjfagkvgnr-auth-token");
+            if (sbTokenCookie) {
+              try {
+                const parsed = JSON.parse(sbTokenCookie);
+                token = Array.isArray(parsed) ? parsed[0] : parsed?.access_token || sbTokenCookie;
+              } catch {
+                token = sbTokenCookie;
+              }
+            }
+          }
+
+          const serviceRoleKey = (
+            process.env.SUPABASE_SERVICE_ROLE_KEY ||
+            (globalThis as any).__KANI_RUNTIME_ENV?.SUPABASE_SERVICE_ROLE_KEY
+          )?.trim();
+          const diagnosticsKey = (
+            process.env.KANI_DIAGNOSTICS_KEY ||
+            (globalThis as any).__KANI_RUNTIME_ENV?.KANI_DIAGNOSTICS_KEY
+          )?.trim();
+
+          if (token) {
+            if ((diagnosticsKey && token === diagnosticsKey) || (serviceRoleKey && token === serviceRoleKey)) {
+              isAuthorizedAdmin = true;
+            } else {
+              try {
+                const { createPaymentSupabaseClient } = await import("./lib/kani-payment-db.server");
+                const db = await createPaymentSupabaseClient();
+                const { data: { user }, error: userError } = await db.auth.getUser(token);
+                if (!userError && user) {
+                  const { data: profile } = await db
+                    .from("staff_profiles")
+                    .select("role, active")
+                    .eq("user_id", user.id)
+                    .maybeSingle();
+                  if (profile && profile.active && profile.role === "ADMIN") {
+                    isAuthorizedAdmin = true;
+                  }
+                }
+              } catch (authErr) {
+                console.warn("[Diagnostics Auth Error]:", authErr);
+              }
+            }
+          }
+
+          // Si el usuario intenta ejecutar un envío transaccional sin autenticación ADMIN, rechazar inmediatamente
+          if (isSendRequested && !isAuthorizedAdmin) {
+            return new Response(
+              JSON.stringify({
+                error: "AUTH_REQUIRED",
+                message: "Acceso denegado. Se requiere autenticación del lado del servidor y rol de administrador para realizar pruebas de envío.",
+              }),
+              { status: 401, headers: { "content-type": "application/json", "cache-control": "no-store" } }
+            );
+          }
+
+          // 2. Consultar estado del dominio en Resend
           let domainInfo: any = null;
           try {
             const domainRes = await fetch("https://api.resend.com/domains", {
@@ -306,53 +383,57 @@ export default {
             domainInfo = { status: "FETCH_ERROR", error: String(dErr) };
           }
 
-          // 2. Prueba controlada de envío transaccional (destinatario autorizado)
+          // 3. Prueba controlada de envío transaccional (destinatario autorizado y único)
           let testSendResult: any = null;
-          if (
-            url.searchParams.get("send_test") === "true" ||
-            url.searchParams.get("send_test") === "1"
-          ) {
-            const allowedRecipients = [
-              "kanibarberstudio@gmail.com",
-              "tomasblutmannliriumprive@gmail.com",
-            ];
-            const requestedTo = url.searchParams.get("to")?.trim();
-            const recipient =
-              requestedTo && allowedRecipients.includes(requestedTo)
-                ? requestedTo
-                : "kanibarberstudio@gmail.com";
+          if (isSendRequested && isAuthorizedAdmin) {
+            const authorizedRecipient = "tomas.harispe@hotmail.com";
+            const requestedTo = url.searchParams.get("to")?.trim().toLowerCase();
+            if (requestedTo && requestedTo !== authorizedRecipient) {
+              return new Response(
+                JSON.stringify({
+                  error: "UNAUTHORIZED_RECIPIENT",
+                  message: "Destinatario no autorizado. El único destinatario expresamente autorizado es tomas.harispe@hotmail.com.",
+                }),
+                { status: 403, headers: { "content-type": "application/json", "cache-control": "no-store" } }
+              );
+            }
+            const recipient = authorizedRecipient;
 
-            const testSubject =
-              "KANI BARBER STUDIO — Verificación definitiva de correo transaccional V12.47.4";
+            const testSubject = "KANI Barber Studio — Prueba de correo transaccional";
             const testHtml = `
               <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 32px 24px; background: #0B0B0D; color: #FFFFFF; border-radius: 12px; border: 1px solid rgba(212, 178, 114, 0.3);">
                 <div style="text-align: center; margin-bottom: 24px;">
                   <h1 style="color: #D4B272; font-size: 20px; font-weight: 600; margin: 0 0 8px; letter-spacing: 0.05em;">KANI BARBER STUDIO</h1>
-                  <p style="color: #A1A1AA; font-size: 13px; margin: 0;">Verificación definitiva de entrega transaccional · V12.47.4</p>
+                  <p style="color: #A1A1AA; font-size: 13px; margin: 0;">Prueba técnica de entrega transaccional · V12.47.4</p>
                 </div>
                 <div style="background: rgba(255, 255, 255, 0.04); border-radius: 8px; padding: 20px; border: 1px solid rgba(255, 255, 255, 0.08); margin-bottom: 20px;">
-                  <p style="margin: 0 0 8px; font-size: 14px; color: #E4E4E7;"><strong>Dominio verificado:</strong> kanibarber.com (Resend Forge · DKIM activo)</p>
-                  <p style="margin: 0 0 8px; font-size: 14px; color: #E4E4E7;"><strong>Remitente oficial:</strong> ${fromEmail}</p>
-                  <p style="margin: 0 0 8px; font-size: 14px; color: #E4E4E7;"><strong>Destinatario:</strong> ${recipient}</p>
-                  <p style="margin: 0; font-size: 14px; color: #E4E4E7;"><strong>Timestamp:</strong> ${new Date().toISOString()}</p>
+                  <p style="margin: 0 0 12px; font-size: 14px; color: #E4E4E7;">
+                    <strong>AVISO IMPORTANTE:</strong> Este es un correo de prueba técnica transaccional para verificar la configuración de Resend y la entrega de notificaciones en Producción. <em>No representa una reserva real ni requiere acción alguna.</em>
+                  </p>
+                  <hr style="border: none; border-top: 1px solid rgba(255, 255, 255, 0.1); margin: 16px 0;" />
+                  <p style="margin: 0 0 8px; font-size: 13px; color: #A1A1AA;"><strong>Dominio verificado:</strong> kanibarber.com (DKIM verificado)</p>
+                  <p style="margin: 0 0 8px; font-size: 13px; color: #A1A1AA;"><strong>Remitente oficial:</strong> ${fromEmail}</p>
+                  <p style="margin: 0 0 8px; font-size: 13px; color: #A1A1AA;"><strong>Destinatario autorizado:</strong> ${recipient}</p>
+                  <p style="margin: 0; font-size: 13px; color: #A1A1AA;"><strong>Timestamp:</strong> ${new Date().toISOString()}</p>
                 </div>
                 <p style="color: #71717A; font-size: 11px; text-align: center; margin: 0;">San Isidro Labrador 7, Martínez · turnos@kanibarber.com</p>
               </div>
             `;
+            const testText = "KANI BARBER STUDIO — Prueba de correo transaccional.\n\nAVISO: Este correo es una prueba técnica transaccional para verificar la configuración de Resend y la entrega en Producción. No representa una reserva real ni requiere acción alguna.\n\nRemitente: " + fromEmail + "\nDestinatario: " + recipient + "\nTimestamp: " + new Date().toISOString();
 
             const sendRes = await fetch("https://api.resend.com/emails", {
               method: "POST",
               headers: {
                 Authorization: `Bearer ${apiKey}`,
                 "Content-Type": "application/json",
-                "Idempotency-Key": `kani-diag-v12-47-4-${Date.now()}`,
+                "Idempotency-Key": "kani-v12-47-4-test-tomas-harispe-single-send",
               },
               body: JSON.stringify({
                 from: fromEmail,
                 to: [recipient],
                 subject: testSubject,
                 html: testHtml,
-                text: "KANI BARBER STUDIO — Verificación definitiva de correo transaccional V12.47.4 desde turnos@kanibarber.com.",
+                text: testText,
               }),
             });
 
@@ -1582,6 +1663,7 @@ function mirrorRuntimeBindings(bindings: unknown): void {
     "RESEND_API_KEY",
     "RESEND_FROM_EMAIL",
     "RESEND_WEBHOOK_SECRET",
+    "KANI_DIAGNOSTICS_KEY",
     "KANI_ENVIRONMENT",
     "WHATSAPP_PHONE_NUMBER_ID",
     "WHATSAPP_ACCESS_TOKEN",

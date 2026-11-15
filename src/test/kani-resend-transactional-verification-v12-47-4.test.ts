@@ -242,16 +242,35 @@ describe("KANI V12.47.4 — Verificación definitiva de correos transaccionales"
     const jsonStr = JSON.stringify(bodyInfo);
     expect(jsonStr).not.toContain("re_live_test_secret");
 
-    // Diagnóstico en modo prueba de envío transaccional controlada
-    const reqTest = new Request("https://www.kanibarber.com/api/diagnostics/resend?send_test=1");
-    const resTest = await worker.fetch(reqTest, {}, {});
-    expect(resTest.status).toBe(200);
+    // 1. Intento de envío no autenticado: DEBE ser rechazado con 401 AUTH_REQUIRED
+    const reqUnauth = new Request("https://www.kanibarber.com/api/diagnostics/resend?send_test=1");
+    const resUnauth = await worker.fetch(reqUnauth, {}, {});
+    expect(resUnauth.status).toBe(401);
+    const bodyUnauth = await resUnauth.json() as any;
+    expect(bodyUnauth.error).toBe("AUTH_REQUIRED");
 
-    const bodyTest = await resTest.json() as any;
+    // 2. Intento de envío a destinatario no autorizado: DEBE ser rechazado con 403 UNAUTHORIZED_RECIPIENT
+    process.env.KANI_DIAGNOSTICS_KEY = "test-diag-key-12345";
+    const reqForbiddenTo = new Request("https://www.kanibarber.com/api/diagnostics/resend?send_test=1&to=random@attacker.com", {
+      headers: { "x-admin-key": "test-diag-key-12345" },
+    });
+    const resForbiddenTo = await worker.fetch(reqForbiddenTo, {}, {});
+    expect(resForbiddenTo.status).toBe(403);
+    const bodyForbiddenTo = await resForbiddenTo.json() as any;
+    expect(bodyForbiddenTo.error).toBe("UNAUTHORIZED_RECIPIENT");
+
+    // 3. Envío transaccional controlado autorizado: tomas.harispe@hotmail.com
+    const reqAuth = new Request("https://www.kanibarber.com/api/diagnostics/resend?send_test=1&to=tomas.harispe@hotmail.com", {
+      headers: { "x-admin-key": "test-diag-key-12345" },
+    });
+    const resAuth = await worker.fetch(reqAuth, {}, {});
+    expect(resAuth.status).toBe(200);
+
+    const bodyTest = await resAuth.json() as any;
     expect(bodyTest.testSend.success).toBe(true);
     expect(bodyTest.testSend.statusCode).toBe(200);
     expect(bodyTest.testSend.id).toBe("resend_diag_test_id_777");
     expect(bodyTest.testSend.from).toBe("Kani Barber <turnos@kanibarber.com>");
-    expect(bodyTest.testSend.recipient).toBe("kanibarberstudio@gmail.com");
+    expect(bodyTest.testSend.recipient).toBe("tomas.harispe@hotmail.com");
   });
 });
