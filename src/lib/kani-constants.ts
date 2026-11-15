@@ -34,7 +34,7 @@ export const KANI_STANDARD_DEPOSIT_ARS = 5000;
 /**
  * WhatsApp oficial de contacto público de Kani Barber Studio.
  */
-export const KANI_PUBLIC_WHATSAPP_NUMBER = "5491155616438";
+export const KANI_PUBLIC_WHATSAPP_NUMBER = "5491162840974";
 
 /**
  * URL canónica de WhatsApp para contacto público con Kani Barber Studio.

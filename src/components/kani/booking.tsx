@@ -206,6 +206,7 @@ export function Booking({
     : steps;
   const { mobileMenuOpen, setMobileMenuOpen } = useKani();
   const [step, setStep] = useState(() => initialStep ?? 0);
+  const [transitionFromStep, setTransitionFromStep] = useState(() => initialStep ?? 0);
   const [stepDirection, setStepDirection] = useState<StepDirection>(1);
   const [service, setService] = useState<ServiceId | null>(() => initialService ?? null);
   const [barber, setBarber] = useState<Barber | null>(() => (initialBarber && initialBarber !== 'Franco' ? initialBarber : null));
@@ -928,6 +929,8 @@ export function Booking({
 
   function scrollToTopSmooth() {
     if (typeof window === 'undefined' || typeof window.scrollTo !== 'function') return;
+    const currentScrollY = Math.max(window.scrollY || 0, document.documentElement?.scrollTop || 0);
+    if (isLiquidBooking && currentScrollY <= 40) return;
     window.scrollTo({
       top: 0,
       behavior: (isV2 || isFiveSteps) && window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
@@ -936,6 +939,7 @@ export function Booking({
 
   function move(next: number) {
     const resolvedNext = isFiveSteps ? next : isV2 ? next === 3 ? 2 : next === 5 ? 4 : next : next;
+    setTransitionFromStep(step);
     setStepDirection(resolvedNext >= step ? 1 : -1);
     setSlotConflict(null);
     setStep(resolvedNext);
@@ -1042,6 +1046,7 @@ export function Booking({
       verifyingAlternative: null,
       feedbackMessage: null,
     });
+    setTransitionFromStep(step);
     setStepDirection(-1);
     setStep(isV2 ? 2 : 3);
     scrollToTopSmooth();
@@ -1577,13 +1582,18 @@ export function Booking({
   const StepTransition = experimentalMotion?.StepTransition;
   const StepperLens = experimentalMotion?.StepperLens;
   const MotionCardButton = experimentalMotion?.InteractiveCard;
+  const stepSyncMs = experimentalMotion?.getStepTransitionDurationMs?.(transitionFromStep, step, stepDirection);
   return (
     <main className={`site-container booking-page ${isV2 ? 'booking-v2' : ''} ${isV3 ? 'booking-v3' : ''} ${isV5 ? 'booking-v5' : ''} ${isV2 && step === 2 ? 'booking-v2-datetime' : ''} ${isFiveSteps && step === 2 ? `booking-${isV5 ? 'v5' : 'v3'}-date` : ''} ${isFiveSteps && step === 3 ? `booking-${isV5 ? 'v5' : 'v3'}-time` : ''} ${(isV2 || isFiveSteps) && step === 4 ? `booking-v2-final booking-${isV5 ? 'v5' : 'v3'}-final` : ''} ${step === 5 ? 'booking-summary-page' : ''}`}>
       <div
         ref={progressRef}
         className="booking-progress"
         role={isV2 || isFiveSteps ? "group" : undefined}
-        style={{ '--progress-start': `${progressStart}px`, '--progress-width': `${progressWidth}px` } as CSSProperties}
+        style={{
+          '--progress-start': `${progressStart}px`,
+          '--progress-width': `${progressWidth}px`,
+          ...(stepSyncMs ? { '--lg-step-sync-ms': `${stepSyncMs}ms` } : {}),
+        } as CSSProperties}
         aria-label={`Paso ${visibleStep + 1} de ${visibleSteps.length}: ${visibleSteps[visibleStep]}`}
       >
         {visibleSteps.map((name, i) => (
@@ -1595,7 +1605,9 @@ export function Booking({
             onClick={() => move(stageOrder[i] ?? 0)}
             className={i === visibleStep ? 'current' : i < visibleStep ? 'complete' : ''}
           >
-            {i === visibleStep && StepperLens ? <StepperLens /> : null}
+            {i === visibleStep && StepperLens ? (
+              <StepperLens stepKey={step} previousStep={transitionFromStep} direction={stepDirection} />
+            ) : null}
             <span>{i < visibleStep ? <Check size={13} /> : String(i + 1).padStart(2, '0')}</span>
             <small>{isV2 && i === 2 ? <>
               <span className="sr-only">{name}</span>
@@ -2355,7 +2367,7 @@ export function Booking({
                 </>
               );
               return StepTransition ? (
-                <StepTransition stepKey={step} direction={stepDirection}>
+                <StepTransition stepKey={step} previousStep={transitionFromStep} direction={stepDirection}>
                   {stepContent}
                 </StepTransition>
               ) : (

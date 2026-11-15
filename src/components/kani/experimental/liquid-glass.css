@@ -7927,8 +7927,16 @@ html[data-theme="dark"] body.liquid-glass-active:not([data-lg-admin="true"]) .pa
 
 @media (max-width: 767px) {
   html[data-theme] body.liquid-glass-active:not([data-lg-admin="true"]) .payway-checkout {
-    max-width: calc(100vw - 24px) !important;
-    max-height: calc(100dvh - 32px) !important;
+    position: fixed !important;
+    left: 50% !important;
+    top: 50% !important;
+    translate: none !important;
+    transform: translate3d(-50%, -50%, 0) !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+    width: min(calc(100% - 32px), calc(100vw - 32px), 440px) !important;
+    max-width: min(calc(100% - 32px), calc(100vw - 32px), 440px) !important;
+    max-height: min(88dvh, calc(100vh - 32px), calc(100% - 32px)) !important;
   }
 
   html[data-theme] body.liquid-glass-active:not([data-lg-admin="true"]) .payway-checkout .payway-submit-btn {
@@ -10167,6 +10175,36 @@ html[data-theme] :is(
 }
 
 
+/* 3. Estados de Carga Orgánicos (Disponibilidad y Pagos) */
+html[data-theme] body.liquid-glass-active .calendar-loading-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(212, 178, 114, 0.3);
+  animation: lgPulsingGlass 1400ms ease-in-out infinite;
+  transition: opacity 180ms ease;
+}
+
+html[data-theme="dark"] body.liquid-glass-active .calendar-loading-indicator {
+  background: rgba(30, 32, 40, 0.6);
+  border: 1px solid rgba(212, 178, 114, 0.22);
+}
+
+@keyframes lgPulsingGlass {
+  0%, 100% {
+    opacity: 0.85;
+    box-shadow: 0 0 0 0 rgba(212, 178, 114, 0);
+  }
+  50% {
+    opacity: 1;
+    box-shadow: 0 0 12px 2px rgba(212, 178, 114, 0.2);
+  }
+}
+
+
 /* ==============================================================================
  * LIQUID GLASS V12.46.1 — LIQUID GLASS MOTION SYSTEM (SERVICIO, BARBERO, FECHA, HORARIO)
  * Coreografías ópticas diferenciadas para /reservar-turno-liquid (Desktop & Mobile):
@@ -11327,4 +11365,565 @@ body.liquid-glass-active .payway-checkout .payway-benefit-warning-amount {
   margin: 4px 0 0;
   font-size: 12px;
   opacity: 0.92;
+}
+
+/* ==============================================================================
+ * LIQUID GLASS V12.47.2 — MOTION SYSTEM II (REFINED STEP TRANSITIONS & OPTICAL CHOREOGRAPHY)
+ * Coreografías Optical Glass diferenciadas por transición de paso (0..4),
+ * sincronizadas con la lente del stepper, entrada y salida superpuestas sin pausas
+ * y libres de compositing residual en reposo.
+ * ============================================================================== */
+
+body.liquid-glass-active .liquid-glass-reservation .booking-layout > section {
+  position: relative;
+}
+
+@media (min-width: 1024px) {
+  body.liquid-glass-active .liquid-glass-reservation .booking-scroll-content {
+    overflow-x: clip !important;
+  }
+}
+
+body.liquid-glass-active .liquid-glass-step-stage {
+  position: relative;
+}
+
+body.liquid-glass-active .liquid-glass-step-stage[data-lg-step-exiting="true"],
+body.liquid-glass-active .liquid-glass-step-stage[data-lg-step-state="exiting"] {
+  pointer-events: none !important;
+  user-select: none !important;
+  z-index: 1;
+}
+
+body.liquid-glass-active .liquid-glass-step-stage[data-lg-step-state="settled"]:not([data-lg-step-exiting="true"]),
+body.liquid-glass-active .liquid-glass-step-stage[data-lg-step-state="reduced"]:not([data-lg-step-exiting="true"]) {
+  transform: none !important;
+  filter: none !important;
+  will-change: auto !important;
+  opacity: 1 !important;
+}
+
+/* Sincronización de botones del stepper con la duración de transición del escenario */
+body.liquid-glass-active .liquid-glass-reservation .booking-progress > button {
+  transition:
+    color var(--lg-step-sync-ms, 280ms) cubic-bezier(0.22, 1, 0.36, 1),
+    background-color var(--lg-step-sync-ms, 280ms) cubic-bezier(0.22, 1, 0.36, 1),
+    border-color var(--lg-step-sync-ms, 280ms) cubic-bezier(0.22, 1, 0.36, 1) !important;
+}
+
+body.liquid-glass-active .liquid-glass-reservation .booking-progress > button > span,
+body.liquid-glass-active .liquid-glass-reservation .booking-progress > button > small {
+  transition:
+    color var(--lg-step-sync-ms, 280ms) cubic-bezier(0.22, 1, 0.36, 1),
+    opacity var(--lg-step-sync-ms, 280ms) cubic-bezier(0.22, 1, 0.36, 1),
+    background-color var(--lg-step-sync-ms, 280ms) cubic-bezier(0.22, 1, 0.36, 1),
+    border-color var(--lg-step-sync-ms, 280ms) cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Sutil halo refractivo óptico durante la entrada del paso */
+body.liquid-glass-active .liquid-glass-step-stage[data-lg-step-state="entering"] > .lg-step-optical-veil {
+  position: absolute;
+  inset: 0 4px auto 4px;
+  height: 24px;
+  border-radius: 20px 20px 0 0;
+  pointer-events: none;
+  z-index: 3;
+  animation: lgStepOpticalHorizon var(--lg-step-enter-ms, 280ms) cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+
+html[data-theme="light"] body.liquid-glass-active .liquid-glass-step-stage[data-lg-step-state="entering"] > .lg-step-optical-veil {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.35) 0%,
+    rgba(255, 255, 255, 0.08) 40%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  border-top: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+html[data-theme="dark"] body.liquid-glass-active .liquid-glass-step-stage[data-lg-step-state="entering"] > .lg-step-optical-veil {
+  background: linear-gradient(
+    180deg,
+    rgba(240, 214, 162, 0.10) 0%,
+    rgba(212, 178, 114, 0.03) 40%,
+    rgba(0, 0, 0, 0) 100%
+  );
+  border-top: 1px solid rgba(232, 200, 140, 0.16);
+}
+
+@keyframes lgStepOpticalHorizon {
+  0% {
+    opacity: 0;
+  }
+  30% {
+    opacity: 0.28;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Sutil asentamiento del título del paso (sin retrasos ni saltos de layout) */
+body.liquid-glass-active .liquid-glass-step-stage[data-lg-step-state="entering"] .booking-step-heading {
+  animation: lgStepHeadingCrystal var(--lg-step-enter-ms, 280ms) cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+
+@keyframes lgStepHeadingCrystal {
+  0% {
+    opacity: 0.88;
+    transform: translateY(3px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 1. Servicio <-> Barbero: profundidad óptica contenida y continuidad horizontal */
+body.liquid-glass-active .liquid-glass-step-stage[data-lg-step-state="entering"][data-lg-step-pair="service-barber"][data-lg-step-dir="forward"] .booking-barber-options > .booking-option {
+  animation: lgStepBarberEmerge var(--lg-step-enter-ms, 280ms) cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+
+@keyframes lgStepBarberEmerge {
+  0% {
+    opacity: 0.88;
+    transform: translate3d(6px, 0, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+body.liquid-glass-active .liquid-glass-step-stage[data-lg-step-state="entering"][data-lg-step-pair="service-barber"][data-lg-step-dir="backward"] .booking-service-options > .booking-option {
+  animation: lgStepServiceReturn var(--lg-step-enter-ms, 260ms) cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+
+@keyframes lgStepServiceReturn {
+  0% {
+    opacity: 0.88;
+    transform: translate3d(-6px, 0, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/* 2. Barbero <-> Fecha: revelación unificada del calendario (sin animar individualmente celdas) */
+body.liquid-glass-active .liquid-glass-step-stage[data-lg-step-state="entering"][data-lg-step-pair="barber-date"][data-lg-step-dir="forward"] .calendar-glass-card {
+  animation: lgStepCalendarUnfold var(--lg-step-enter-ms, 280ms) cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+
+@keyframes lgStepCalendarUnfold {
+  0% {
+    opacity: 0.88;
+    transform: translate3d(0, 6px, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+body.liquid-glass-active .liquid-glass-step-stage[data-lg-step-state="entering"][data-lg-step-pair="barber-date"][data-lg-step-dir="backward"] .booking-barber-options {
+  animation: lgStepBarberQuietReturn var(--lg-step-enter-ms, 260ms) cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+
+@keyframes lgStepBarberQuietReturn {
+  0% {
+    opacity: 0.88;
+    transform: translate3d(0, -5px, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/* 3. Fecha <-> Horario: continuidad causa -> consecuencia (fecha ancla + horarios disponibles inmediatos) */
+body.liquid-glass-active .liquid-glass-step-stage[data-lg-step-state="entering"][data-lg-step-pair="date-time"][data-lg-step-dir="forward"] .booking-time-heading-date {
+  animation: lgStepDateAnchorGlow var(--lg-step-enter-ms, 260ms) cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+
+body.liquid-glass-active .liquid-glass-step-stage[data-lg-step-state="entering"][data-lg-step-pair="date-time"][data-lg-step-dir="forward"] :is(.booking-v3-times, .booking-v5-times, .booking-times-card) {
+  animation: lgStepTimePanelReveal var(--lg-step-enter-ms, 260ms) cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+
+body.liquid-glass-active .liquid-glass-step-stage[data-lg-step-state="entering"][data-lg-step-pair="date-time"][data-lg-step-dir="backward"] .calendar-glass-card {
+  animation: lgStepCalendarReturn var(--lg-step-enter-ms, 250ms) cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+
+@keyframes lgStepDateAnchorGlow {
+  0% {
+    opacity: 0.85;
+    transform: translate3d(-3px, 3px, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes lgStepTimePanelReveal {
+  0% {
+    opacity: 0.88;
+    transform: translate3d(0, 4px, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes lgStepCalendarReturn {
+  0% {
+    opacity: 0.88;
+    transform: translate3d(0, -4px, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/* 4. Horario <-> Datos: máxima serenidad y enfoque de lectura / formulario */
+body.liquid-glass-active .liquid-glass-step-stage[data-lg-step-state="entering"][data-lg-step-pair="time-contact"] .booking-contact-summary,
+body.liquid-glass-active .liquid-glass-step-stage[data-lg-step-state="entering"][data-lg-step-pair="time-contact"] .booking-summary-card {
+  animation: lgStepContactQuiet var(--lg-step-enter-ms, 240ms) cubic-bezier(0.25, 0.96, 0.36, 1) backwards;
+}
+
+@keyframes lgStepContactQuiet {
+  0% {
+    opacity: 0.92;
+    transform: translate3d(0, 2px, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.liquid-glass-active .liquid-glass-step-stage > .lg-step-optical-veil {
+    display: none !important;
+    animation: none !important;
+  }
+
+  body.liquid-glass-active .liquid-glass-step-stage[data-lg-step-state] .booking-step-heading,
+  body.liquid-glass-active .liquid-glass-step-stage[data-lg-step-state] .booking-barber-options,
+  body.liquid-glass-active .liquid-glass-step-stage[data-lg-step-state] .booking-barber-options > .booking-option,
+  body.liquid-glass-active .liquid-glass-step-stage[data-lg-step-state] .booking-service-options > .booking-option,
+  body.liquid-glass-active .liquid-glass-step-stage[data-lg-step-state] .calendar-glass-card,
+  body.liquid-glass-active .liquid-glass-step-stage[data-lg-step-state] .booking-time-heading-date,
+  body.liquid-glass-active .liquid-glass-step-stage[data-lg-step-state] :is(.booking-v3-times, .booking-v5-times, .booking-times-card),
+  body.liquid-glass-active .liquid-glass-step-stage[data-lg-step-state] .booking-contact-summary,
+  body.liquid-glass-active .liquid-glass-step-stage[data-lg-step-state] .booking-summary-card {
+    animation: none !important;
+  }
+
+  body.liquid-glass-active .liquid-glass-reservation .booking-progress > button,
+  body.liquid-glass-active .liquid-glass-reservation .booking-progress > button > span,
+  body.liquid-glass-active .liquid-glass-reservation .booking-progress > button > small {
+    transition-duration: 80ms !important;
+  }
+}
+
+
+/* ==============================================================================
+ * LIQUID GLASS V12.47.3 — MOTION SYSTEM II (MODALS, LOADING STATES & CONFIRMATION)
+ * 1. Modales ópticos nítidos (Payway, confirmación, avisos) con desenfoque de fondo progresivo
+ * 2. Protección absoluta de nitidez en Payway (filter: none, isolation: isolate, z-index: 200)
+ * 3. Estados de carga orgánicos y fluidos sin saltos de layout
+ * 4. Mensajes informativos y de error discretos, accesibles y estables
+ * 5. Confirmación final con revelación progresiva, pulso champagne y campanilla cristalina
+ * ============================================================================== */
+
+/* 1 & 2. Modales Ópticos Nítidos (Payway y Diálogos) — Geometría Responsive y Centrado Robusto iOS */
+html[data-theme] body.liquid-glass-active [data-slot="dialog-overlay"] {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 190 !important;
+  background: rgba(18, 20, 24, 0.48) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(140%) !important;
+  backdrop-filter: blur(14px) saturate(140%) !important;
+  transition: opacity 220ms cubic-bezier(0.22, 1, 0.36, 1) !important;
+}
+
+html[data-theme="light"] body.liquid-glass-active [data-slot="dialog-overlay"] {
+  background: rgba(244, 245, 248, 0.52) !important;
+}
+
+/* Base de centrado óptico: position fixed, coordenadas ancladas, translate: none (neutraliza Tailwind v4), transform 3D síncrono y anulación estricta de margin */
+html[data-theme] body.liquid-glass-active :is([data-slot="dialog-content"], .payway-checkout) {
+  position: fixed !important;
+  left: 50% !important;
+  top: 50% !important;
+  right: auto !important;
+  bottom: auto !important;
+  translate: none !important;
+  transform: translate3d(-50%, -50%, 0) !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+  z-index: 200 !important;
+  width: min(calc(100% - 32px), calc(100vw - 32px), 440px) !important;
+  max-width: min(calc(100% - 32px), calc(100vw - 32px), 440px) !important;
+  min-width: 0 !important;
+  max-height: min(88dvh, calc(100vh - 32px), calc(100% - 32px)) !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  padding: 24px 20px !important;
+  padding-bottom: max(24px, env(safe-area-inset-bottom, 24px)) !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+  isolation: isolate !important;
+  border-radius: 24px !important;
+}
+
+html[data-theme] body.liquid-glass-active :is([data-slot="dialog-content"], .payway-checkout)[data-state="open"] {
+  animation: lgModalOpticalEnter 240ms cubic-bezier(0.22, 1, 0.36, 1) forwards !important;
+}
+
+html[data-theme] body.liquid-glass-active :is([data-slot="dialog-content"], .payway-checkout)[data-state="closed"] {
+  animation: lgModalOpticalExit 190ms cubic-bezier(0.25, 1, 0.5, 1) forwards !important;
+}
+
+@keyframes lgModalOpticalEnter {
+  0% {
+    opacity: 0;
+    transform: translate3d(-50%, -48%, 0) scale(0.982);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(-50%, -50%, 0) scale(1);
+    box-shadow: 0 28px 72px rgba(18, 22, 28, 0.18), 0 0 0 1px rgba(255, 255, 255, 0.4);
+  }
+}
+
+@keyframes lgModalOpticalExit {
+  0% {
+    opacity: 1;
+    transform: translate3d(-50%, -50%, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(-50%, -49%, 0) scale(0.985);
+  }
+}
+
+/* Mobile iOS / Chrome iOS: Viewports compactos (360px, 375px, 390px, 430px) y teclado virtual */
+@media (max-width: 640px) {
+  html[data-theme] body.liquid-glass-active :is([data-slot="dialog-content"], .payway-checkout) {
+    position: fixed !important;
+    left: 50% !important;
+    top: 50% !important;
+    right: auto !important;
+    bottom: auto !important;
+    translate: none !important;
+    transform: translate3d(-50%, -50%, 0) !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+    width: min(calc(100% - 32px), calc(100vw - 32px), 440px) !important;
+    max-width: min(calc(100% - 32px), calc(100vw - 32px), 440px) !important;
+    min-width: 0 !important;
+    max-height: min(88dvh, calc(100vh - 32px), calc(100% - 32px)) !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+    padding: 20px 16px !important;
+    padding-bottom: max(20px, env(safe-area-inset-bottom, 20px)) !important;
+  }
+}
+
+@media (max-width: 380px) {
+  html[data-theme] body.liquid-glass-active :is([data-slot="dialog-content"], .payway-checkout) {
+    width: min(calc(100% - 24px), calc(100vw - 24px), 440px) !important;
+    max-width: min(calc(100% - 24px), calc(100vw - 24px), 440px) !important;
+    padding: 18px 14px !important;
+    padding-bottom: max(18px, env(safe-area-inset-bottom, 18px)) !important;
+  }
+}
+
+/* Estilo nítido y contenedor para avisos de error en modales (ej. Payway rechazo/error) */
+html[data-theme] body.liquid-glass-active .payway-checkout .payway-result {
+  line-height: 1.5 !important;
+  overflow-wrap: anywhere !important;
+  word-break: break-word !important;
+  font-family: var(--font-sans) !important;
+  font-size: 13.5px !important;
+  margin: 8px 0 16px 0 !important;
+  box-sizing: border-box !important;
+}
+
+html[data-theme] body.liquid-glass-active .payway-checkout .payway-result[role="alert"] {
+  display: block !important;
+  padding: 12px 14px !important;
+  border-radius: 12px !important;
+  text-align: left !important;
+}
+
+html[data-theme="light"] body.liquid-glass-active .payway-checkout .payway-result[role="alert"] {
+  background: rgba(220, 38, 38, 0.08) !important;
+  border: 1px solid rgba(220, 38, 38, 0.22) !important;
+  color: #991b1b !important;
+}
+
+html[data-theme="dark"] body.liquid-glass-active .payway-checkout .payway-result[role="alert"] {
+  background: rgba(239, 68, 68, 0.12) !important;
+  border: 1px solid rgba(239, 68, 68, 0.28) !important;
+  color: #fca5a5 !important;
+}
+
+/* 4. Mensajes Informativos y de Error (Sin Saltos de Layout) */
+html[data-theme] body.liquid-glass-active .discount-applied-card {
+  animation: lgFeedbackEmerge 240ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  transition: box-shadow 200ms ease, border-color 200ms ease;
+}
+
+html[data-theme] body.liquid-glass-active .discount-error-feedback {
+  animation: lgErrorFeedbackFade 200ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+
+@keyframes lgFeedbackEmerge {
+  0% {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.99);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes lgErrorFeedbackFade {
+  0% {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 5. Coreografía Especial de Confirmación Final */
+html[data-theme] body.liquid-glass-active .liquid-glass-confirmed-stage {
+  animation: lgConfirmedPageReveal 420ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+
+@keyframes lgConfirmedPageReveal {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+html[data-theme] body.liquid-glass-active .liquid-glass-confirmation-mark {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 16px auto;
+  border-radius: 9999px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.82) 0%, rgba(246, 244, 238, 0.6) 100%) !important;
+  border: 1.5px solid rgba(212, 178, 114, 0.45) !important;
+  color: #c9a45c !important;
+  box-shadow: 0 12px 32px rgba(212, 178, 114, 0.18), inset 0 1.5px 0 rgba(255, 255, 255, 0.95) !important;
+  animation: lgConfirmedMarkPulse 680ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+
+html[data-theme="dark"] body.liquid-glass-active .liquid-glass-confirmation-mark {
+  background: linear-gradient(145deg, rgba(38, 38, 48, 0.8) 0%, rgba(24, 24, 30, 0.6) 100%) !important;
+  border: 1.5px solid rgba(212, 178, 114, 0.36) !important;
+  color: #dfbf78 !important;
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.6), inset 0 1.5px 0 rgba(255, 248, 232, 0.3) !important;
+}
+
+html[data-theme] body.liquid-glass-active .liquid-glass-confirmation-mark .lg-mark-aura {
+  position: absolute;
+  inset: -6px;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(218, 182, 108, 0.32) 0%, rgba(218, 182, 108, 0) 70%);
+  pointer-events: none;
+  animation: lgConfirmedAuraPulse 880ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+
+@keyframes lgConfirmedMarkPulse {
+  0% {
+    transform: scale(0.85);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.04);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes lgConfirmedAuraPulse {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  40% {
+    transform: scale(1.25);
+    opacity: 0.85;
+  }
+  100% {
+    transform: scale(1.4);
+    opacity: 0;
+  }
+}
+
+html[data-theme] body.liquid-glass-active .liquid-glass-confirmed-stage .confirmation-details {
+  animation: lgConfirmedSectionReveal 400ms cubic-bezier(0.22, 1, 0.36, 1) 90ms backwards;
+}
+
+html[data-theme] body.liquid-glass-active .liquid-glass-confirmed-stage :is(.confirmation-place, .confirmation-map-wrap) {
+  animation: lgConfirmedSectionReveal 400ms cubic-bezier(0.22, 1, 0.36, 1) 160ms backwards;
+}
+
+html[data-theme] body.liquid-glass-active .liquid-glass-confirmed-stage .confirmation-cta {
+  animation: lgConfirmedSectionReveal 400ms cubic-bezier(0.22, 1, 0.36, 1) 220ms backwards;
+}
+
+@keyframes lgConfirmedSectionReveal {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-theme] body.liquid-glass-active :is([data-slot="dialog-content"], .payway-checkout)[data-state] {
+    animation: none !important;
+    transform: translate3d(-50%, -50%, 0) !important;
+  }
+  html[data-theme] body.liquid-glass-active .liquid-glass-confirmed-stage,
+  html[data-theme] body.liquid-glass-active .liquid-glass-confirmation-mark,
+  html[data-theme] body.liquid-glass-active .liquid-glass-confirmation-mark .lg-mark-aura,
+  html[data-theme] body.liquid-glass-active .liquid-glass-confirmed-stage .confirmation-details,
+  html[data-theme] body.liquid-glass-active .liquid-glass-confirmed-stage :is(.confirmation-place, .confirmation-map-wrap),
+  html[data-theme] body.liquid-glass-active .liquid-glass-confirmed-stage .confirmation-cta,
+  html[data-theme] body.liquid-glass-active .discount-applied-card,
+  html[data-theme] body.liquid-glass-active .discount-error-feedback,
+  html[data-theme] body.liquid-glass-active .calendar-loading-indicator {
+    animation: none !important;
+    transform: none !important;
+  }
 }

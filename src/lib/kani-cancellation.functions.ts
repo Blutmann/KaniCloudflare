@@ -4,6 +4,37 @@ import { createRequestSupabaseClient } from "./kani-notifications.server";
 import { dispatchAppointmentNotification } from "./kani-notifications.functions";
 import { isAppointmentPast } from "./kani-mobile-appointments";
 
+/**
+ * Retorna las horas restantes entre el momento actual (o fecha dada) y la cita,
+ * respetando el huso de Argentina (UTC-3).
+ */
+export function getHoursUntilAppointment(
+  bookingDate?: string | null,
+  startTime?: string | null,
+  now = new Date()
+): number {
+  if (!bookingDate || !startTime) return -1;
+  const dateParts = bookingDate.trim().split('-');
+  if (dateParts.length !== 3) return -1;
+  const year = parseInt(dateParts[0], 10);
+  const month = parseInt(dateParts[1], 10);
+  const day = parseInt(dateParts[2], 10);
+
+  const timeClean = startTime.trim().slice(0, 5);
+  const [hourStr, minStr] = timeClean.split(':');
+  const hour = parseInt(hourStr, 10);
+  const min = parseInt(minStr, 10);
+
+  if (isNaN(year) || isNaN(month) || isNaN(day) || isNaN(hour) || isNaN(min)) {
+    return -1;
+  }
+
+  // Argentina: UTC-3 fijo (sin horario de verano). Hora local + 3 = UTC.
+  const apptUtc = Date.UTC(year, month - 1, day, hour + 3, min, 0);
+  const nowUtc = now.getTime();
+  return (apptUtc - nowUtc) / (1000 * 60 * 60);
+}
+
 export type CancellationDetailsResult = {
   ok: boolean;
   error?: "INVALID_TOKEN" | "NOT_FOUND" | "SERVER_ERROR";
@@ -15,13 +46,16 @@ export type CancellationDetailsResult = {
     startTime: string;
     status: string;
     isPast: boolean;
+    isWithin24Hours: boolean;
+    canCancel: boolean;
+    hoursUntil: number;
     cancellationReason?: string | null;
   };
 };
 
 export type CancellationConfirmResult = {
   ok: boolean;
-  error?: "INVALID_TOKEN" | "NOT_FOUND" | "APPOINTMENT_PAST" | "NOT_CANCELABLE" | "SERVER_ERROR";
+  error?: "INVALID_TOKEN" | "NOT_FOUND" | "APPOINTMENT_PAST" | "WITHIN_24_HOURS" | "NOT_CANCELABLE" | "SERVER_ERROR";
   message?: string;
   alreadyCancelled?: boolean;
 };
@@ -57,7 +91,10 @@ export async function handleGetCancellationDetails(data: {
 
     const barberName = (apt.barber as any)?.name || "Barbero";
     const serviceName = (apt.service as any)?.name || "Servicio Kani";
-    const isPast = isAppointmentPast(apt.booking_date, apt.start_time);
+    const hoursUntil = getHoursUntilAppointment(apt.booking_date, apt.start_time);
+    const isPast = isAppointmentPast(apt.booking_date, apt.start_time) || hoursUntil < 0;
+    const isWithin24Hours = !isPast && hoursUntil < 24;
+    const canCancel = !isPast && !isWithin24Hours && apt.status === 'CONFIRMED';
 
     return {
       ok: true,
@@ -69,6 +106,9 @@ export async function handleGetCancellationDetails(data: {
         startTime: apt.start_time,
         status: apt.status,
         isPast,
+        isWithin24Hours,
+        canCancel,
+        hoursUntil,
         cancellationReason: apt.cancellation_reason,
       },
     };
@@ -119,6 +159,15 @@ export async function handleConfirmCancellation(data: {
         ok: false,
         error: "APPOINTMENT_PAST",
         message: "El turno ya transcurrió y no puede ser cancelado.",
+      };
+    }
+
+    const hoursUntil = getHoursUntilAppointment(apt.booking_date, apt.start_time);
+    if (hoursUntil < 24) {
+      return {
+        ok: false,
+        error: "WITHIN_24_HOURS",
+        message: "No es posible cancelar el turno de forma online con menos de 24 horas de anticipación. Por favor comunicate con el estudio por WhatsApp.",
       };
     }
 

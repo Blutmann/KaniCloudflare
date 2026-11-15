@@ -107,12 +107,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="es" data-theme="light" suppressHydrationWarning>
+    <html lang="es" suppressHydrationWarning>
       <head>
         <script
           dangerouslySetInnerHTML={{
             __html:
-              "try{var t=window.localStorage.getItem('kani-theme');if(t==='dark'||t==='light'){document.documentElement.dataset.theme=t;}}catch(e){}",
+              "try{var t=window.localStorage.getItem('kani-theme');if(t==='dark'||t==='light'){document.documentElement.dataset.theme=t;}else if(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches){document.documentElement.dataset.theme='dark';}else{document.documentElement.dataset.theme='light';}}catch(e){}",
           }}
         />
         <HeadContent />

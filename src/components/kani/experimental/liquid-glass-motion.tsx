@@ -1,16 +1,28 @@
 import {
+  forwardRef,
   useEffect,
   useRef,
+  useState,
   type MouseEvent,
   type PointerEvent,
   type ReactNode,
 } from 'react';
-import { AnimatePresence, LayoutGroup, MotionConfig, motion, useReducedMotion } from 'motion/react';
+import {
+  AnimatePresence,
+  LayoutGroup,
+  MotionConfig,
+  motion,
+  useIsPresent,
+  useReducedMotion,
+  type MotionStyle,
+} from 'motion/react';
 import { triggerSelectionHaptic } from './liquid-glass-feedback';
 import type {
   LiquidGlassInteractiveCardProps,
   LiquidGlassMotionAdapter,
+  LiquidGlassStepPair,
   LiquidGlassStepTransitionProps,
+  LiquidGlassStepperLensProps,
   StepDirection,
 } from './liquid-glass-motion.types';
 
@@ -74,35 +86,228 @@ export const LIQUID_GLASS_MOTION = {
     slotReconfirmScale: 0.974,
     slotReconfirmMs: 250,
   },
-} as const;
-
-const stepVariants = {
-  enter: (direction: StepDirection) => ({
-    opacity: 0,
-    x: direction * LIQUID_GLASS_MOTION.distances.stepShiftPx,
-  }),
-  center: {
-    opacity: 1,
-    x: 0,
-    transition: {
-      duration: LIQUID_GLASS_MOTION.durations.step,
-      ease: LIQUID_GLASS_MOTION.easings.crystal,
+  stepTransitions: {
+    'service-barber': {
+      forward: {
+        enterDuration: 0.3,
+        exitDuration: 0.22,
+        ease: [0.22, 1, 0.36, 1] as const,
+        enterX: 12,
+        enterY: 0,
+        enterScale: 0.992,
+        exitX: -10,
+        exitY: 0,
+        exitScale: 0.992,
+      },
+      backward: {
+        enterDuration: 0.28,
+        exitDuration: 0.2,
+        ease: [0.22, 1, 0.36, 1] as const,
+        enterX: -10,
+        enterY: 0,
+        enterScale: 0.992,
+        exitX: 10,
+        exitY: 0,
+        exitScale: 0.992,
+      },
+    },
+    'barber-date': {
+      forward: {
+        enterDuration: 0.28,
+        exitDuration: 0.2,
+        ease: [0.22, 1, 0.36, 1] as const,
+        enterX: 0,
+        enterY: 8,
+        enterScale: 0.994,
+        exitX: 0,
+        exitY: -6,
+        exitScale: 0.994,
+      },
+      backward: {
+        enterDuration: 0.26,
+        exitDuration: 0.19,
+        ease: [0.22, 1, 0.36, 1] as const,
+        enterX: 0,
+        enterY: -6,
+        enterScale: 0.994,
+        exitX: 0,
+        exitY: 6,
+        exitScale: 0.994,
+      },
+    },
+    'date-time': {
+      forward: {
+        enterDuration: 0.26,
+        exitDuration: 0.19,
+        ease: [0.22, 1, 0.36, 1] as const,
+        enterX: 4,
+        enterY: 5,
+        enterScale: 0.996,
+        exitX: -4,
+        exitY: -4,
+        exitScale: 0.996,
+      },
+      backward: {
+        enterDuration: 0.25,
+        exitDuration: 0.18,
+        ease: [0.22, 1, 0.36, 1] as const,
+        enterX: -4,
+        enterY: -5,
+        enterScale: 0.996,
+        exitX: 4,
+        exitY: 5,
+        exitScale: 0.996,
+      },
+    },
+    'time-contact': {
+      forward: {
+        enterDuration: 0.24,
+        exitDuration: 0.18,
+        ease: [0.25, 0.96, 0.36, 1] as const,
+        enterX: 0,
+        enterY: 3,
+        enterScale: 0.998,
+        exitX: 0,
+        exitY: -2,
+        exitScale: 0.998,
+      },
+      backward: {
+        enterDuration: 0.23,
+        exitDuration: 0.17,
+        ease: [0.25, 0.96, 0.36, 1] as const,
+        enterX: 0,
+        enterY: -3,
+        enterScale: 0.998,
+        exitX: 0,
+        exitY: 2,
+        exitScale: 0.998,
+      },
+    },
+    jump: {
+      forward: {
+        enterDuration: 0.27,
+        exitDuration: 0.19,
+        ease: [0.22, 1, 0.36, 1] as const,
+        enterX: 8,
+        enterY: 3,
+        enterScale: 0.994,
+        exitX: -8,
+        exitY: -3,
+        exitScale: 0.994,
+      },
+      backward: {
+        enterDuration: 0.26,
+        exitDuration: 0.18,
+        ease: [0.22, 1, 0.36, 1] as const,
+        enterX: -8,
+        enterY: -3,
+        enterScale: 0.994,
+        exitX: 8,
+        exitY: 3,
+        exitScale: 0.994,
+      },
     },
   },
-  exit: (direction: StepDirection) => ({
+} as const;
+
+export interface ResolvedStepTransitionSpec {
+  pair: LiquidGlassStepPair;
+  enterDuration: number;
+  exitDuration: number;
+  ease: readonly [number, number, number, number];
+  enterX: number;
+  enterY: number;
+  enterScale: number;
+  exitX: number;
+  exitY: number;
+  exitScale: number;
+}
+
+export function resolveStepTransitionPair(
+  previousStep: number | undefined,
+  stepKey: number,
+  direction: StepDirection,
+): LiquidGlassStepPair {
+  const inferredPrev =
+    typeof previousStep === 'number' && previousStep !== stepKey
+      ? previousStep
+      : direction === 1
+      ? Math.max(0, stepKey - 1)
+      : Math.min(4, stepKey + 1);
+  const low = Math.min(inferredPrev, stepKey);
+  const high = Math.max(inferredPrev, stepKey);
+
+  if (low === 0 && high === 1) return 'service-barber';
+  if (low === 1 && high === 2) return 'barber-date';
+  if (low === 2 && high === 3) return 'date-time';
+  if (high === 4 && low >= 2) return 'time-contact';
+  return 'jump';
+}
+
+export function resolveStepTransitionSpec(
+  previousStep: number | undefined,
+  stepKey: number,
+  direction: StepDirection,
+): ResolvedStepTransitionSpec {
+  const pair = resolveStepTransitionPair(previousStep, stepKey, direction);
+  const dirKey = direction === 1 ? 'forward' : 'backward';
+  const entry = LIQUID_GLASS_MOTION.stepTransitions[pair][dirKey];
+  return {
+    pair,
+    ...entry,
+  };
+}
+
+interface StepStageMotionCustom {
+  direction: StepDirection;
+  spec: ResolvedStepTransitionSpec;
+}
+
+const stepVariants = {
+  enter: (custom: StepStageMotionCustom) => ({
     opacity: 0,
-    x: -direction * LIQUID_GLASS_MOTION.distances.stepShiftPx,
+    x: custom.spec.enterX,
+    y: custom.spec.enterY,
+    scale: custom.spec.enterScale,
+  }),
+  center: (custom: StepStageMotionCustom) => ({
+    opacity: 1,
+    x: 0,
+    y: 0,
+    scale: 1,
     transition: {
-      duration: LIQUID_GLASS_MOTION.durations.stepExit,
-      ease: LIQUID_GLASS_MOTION.easings.crystal,
+      duration: custom.spec.enterDuration,
+      ease: custom.spec.ease,
+    },
+  }),
+  exit: (custom: StepStageMotionCustom) => ({
+    opacity: 0,
+    x: custom.spec.exitX,
+    y: custom.spec.exitY,
+    scale: custom.spec.exitScale,
+    transition: {
+      duration: custom.spec.exitDuration,
+      ease: custom.spec.ease,
     },
   }),
 };
 
 const reducedStepVariants = {
-  enter: { opacity: 0, x: 0 },
-  center: { opacity: 1, x: 0 },
-  exit: { opacity: 0, x: 0 },
+  enter: { opacity: 0, x: 0, y: 0, scale: 1 },
+  center: {
+    opacity: 1,
+    x: 0,
+    y: 0,
+    scale: 1,
+    transition: { duration: LIQUID_GLASS_MOTION.durations.reduced },
+  },
+  exit: {
+    opacity: 0,
+    x: 0,
+    y: 0,
+    scale: 1,
+    transition: { duration: LIQUID_GLASS_MOTION.durations.reduced },
+  },
 };
 
 export function LiquidGlassMotionProvider({ children }: { children: ReactNode }) {
@@ -113,19 +318,27 @@ export function LiquidGlassMotionProvider({ children }: { children: ReactNode })
   );
 }
 
-function StepperLens() {
+function StepperLens({ stepKey, previousStep, direction = 1 }: LiquidGlassStepperLensProps = {}) {
   const shouldReduceMotion = useReducedMotion();
+  const hasExplicitStep = typeof stepKey === 'number' && typeof previousStep === 'number' && previousStep !== stepKey;
+  const spec = hasExplicitStep
+    ? resolveStepTransitionSpec(previousStep, stepKey, direction)
+    : null;
+  const lensTransition = spec
+    ? { duration: spec.enterDuration, ease: spec.ease }
+    : LIQUID_GLASS_MOTION.springs.stepperLens;
 
   return (
     <motion.span
       layoutId="liquid-glass-stepper-lens"
       className="liquid-glass-stepper-lens"
+      data-lg-step-pair={spec?.pair}
       aria-hidden="true"
       style={{ borderRadius: 9999 }}
       transition={
         shouldReduceMotion
           ? { duration: 0.01 }
-          : { layout: LIQUID_GLASS_MOTION.springs.stepperLens }
+          : { layout: lensTransition }
       }
     />
   );
@@ -647,30 +860,146 @@ function InteractiveCard({
   );
 }
 
-function StepTransition({ stepKey, direction, children }: LiquidGlassStepTransitionProps) {
-  const shouldReduceMotion = useReducedMotion();
+interface StepStageFrameProps {
+  stepKey: number;
+  direction: StepDirection;
+  spec: ResolvedStepTransitionSpec;
+  shouldReduceMotion: boolean;
+  animateOnEnter: boolean;
+  children: ReactNode;
+}
 
-  return (
-    <AnimatePresence mode="popLayout" initial={false} custom={direction}>
+const StepStageFrame = forwardRef<HTMLDivElement, StepStageFrameProps>(
+  function StepStageFrame(
+    { stepKey, direction, spec, shouldReduceMotion, animateOnEnter, children },
+    forwardedRef,
+  ) {
+    const isPresent = useIsPresent();
+    const localRef = useRef<HTMLDivElement | null>(null);
+    const [settled, setSettled] = useState(!animateOnEnter || shouldReduceMotion);
+    const motionCustom: StepStageMotionCustom = { direction, spec };
+
+    const clearResidualTransform = () => {
+      const el = localRef.current;
+      if (!el) return;
+      el.style.removeProperty('transform');
+      el.style.removeProperty('will-change');
+    };
+
+    useEffect(() => {
+      if (!isPresent) {
+        return;
+      }
+      if (shouldReduceMotion || !animateOnEnter) {
+        setSettled(true);
+        clearResidualTransform();
+        return;
+      }
+      setSettled(false);
+      const settleMs = Math.round(spec.enterDuration * 1000) + 40;
+      const timer = window.setTimeout(() => {
+        setSettled(true);
+        clearResidualTransform();
+      }, settleMs);
+      return () => window.clearTimeout(timer);
+    }, [animateOnEnter, isPresent, shouldReduceMotion, spec.enterDuration, stepKey]);
+
+    const setRefs = (node: HTMLDivElement | null) => {
+      localRef.current = node;
+      if (typeof forwardedRef === 'function') {
+        forwardedRef(node);
+      } else if (forwardedRef) {
+        forwardedRef.current = node;
+      }
+    };
+
+    const enterMs = Math.round((shouldReduceMotion ? LIQUID_GLASS_MOTION.durations.reduced : spec.enterDuration) * 1000);
+    const stageState = shouldReduceMotion
+      ? 'reduced'
+      : !isPresent
+      ? 'exiting'
+      : settled
+      ? 'settled'
+      : 'entering';
+
+    return (
       <motion.div
-        key={stepKey}
-        custom={direction}
+        ref={setRefs}
+        custom={motionCustom}
         variants={shouldReduceMotion ? reducedStepVariants : stepVariants}
         initial="enter"
         animate="center"
         exit="exit"
-        transition={
-          shouldReduceMotion
-            ? { duration: LIQUID_GLASS_MOTION.durations.reduced }
-            : {
-                duration: LIQUID_GLASS_MOTION.durations.step,
-                ease: LIQUID_GLASS_MOTION.easings.crystal,
-              }
+        onAnimationComplete={(definition) => {
+          if (definition === 'center' && isPresent) {
+            setSettled(true);
+            clearResidualTransform();
+          }
+        }}
+        data-lg-step={stepKey}
+        data-lg-step-pair={spec.pair}
+        data-lg-step-dir={direction === 1 ? 'forward' : 'backward'}
+        data-lg-step-state={stageState}
+        data-lg-step-exiting={!isPresent ? 'true' : undefined}
+        aria-hidden={!isPresent || undefined}
+        style={
+          {
+            '--lg-step-enter-ms': `${enterMs}ms`,
+            ...(isPresent ? {} : { pointerEvents: 'none' }),
+          } as MotionStyle
         }
         className="liquid-glass-step-stage"
       >
+        {!shouldReduceMotion && animateOnEnter && !settled && isPresent && (
+          <span className="lg-step-optical-veil" aria-hidden="true" />
+        )}
         {children}
       </motion.div>
+    );
+  },
+);
+
+function StepTransition({
+  stepKey,
+  previousStep,
+  direction,
+  children,
+}: LiquidGlassStepTransitionProps) {
+  const shouldReduceMotion = Boolean(useReducedMotion());
+  const prevStepTrackingRef = useRef<number>(previousStep ?? stepKey);
+  const stableFromRef = useRef<number>(previousStep ?? stepKey);
+  const hasNavigatedRef = useRef(false);
+
+  if (prevStepTrackingRef.current !== stepKey) {
+    stableFromRef.current =
+      typeof previousStep === 'number' && previousStep !== stepKey
+        ? previousStep
+        : prevStepTrackingRef.current;
+    hasNavigatedRef.current = true;
+    prevStepTrackingRef.current = stepKey;
+  } else if (typeof previousStep === 'number' && previousStep !== stepKey) {
+    stableFromRef.current = previousStep;
+  }
+
+  const animateOnEnter =
+    hasNavigatedRef.current ||
+    (typeof previousStep === 'number' && previousStep !== stepKey);
+
+  const spec = resolveStepTransitionSpec(stableFromRef.current, stepKey, direction);
+  const motionCustom: StepStageMotionCustom = { direction, spec };
+
+  return (
+    <AnimatePresence mode="popLayout" initial={false} custom={motionCustom}>
+      <StepStageFrame
+        key={stepKey}
+        stepKey={stepKey}
+        direction={direction}
+        spec={spec}
+        shouldReduceMotion={shouldReduceMotion}
+        animateOnEnter={animateOnEnter}
+      >
+        {children}
+      </StepStageFrame>
     </AnimatePresence>
   );
 }
@@ -679,4 +1008,6 @@ export const liquidGlassMotionAdapter: LiquidGlassMotionAdapter = {
   StepperLens,
   InteractiveCard,
   StepTransition,
+  getStepTransitionDurationMs: (previousStep, stepKey, direction) =>
+    Math.round(resolveStepTransitionSpec(previousStep, stepKey, direction).enterDuration * 1000),
 };

@@ -4,12 +4,13 @@ import '@/components/kani/experimental/liquid-glass.css';
 import '@/components/kani/experimental/liquid-glass-routes.css';
 import '@/components/kani/experimental/liquid-glass-typography.css';
 
-export type LiquidGlassSection = 'booking' | 'contact' | 'admin' | 'legal';
+export type LiquidGlassSection = 'booking' | 'contact' | 'admin' | 'legal' | 'cancellation';
 
 const LIQUID_GLASS_PREFIXES = [
   '/',
   '/reservar',
   '/contacto',
+  '/cancelar-turno',
   '/panel-administracion',
   '/panel-membresias',
   '/panel-descuentos',

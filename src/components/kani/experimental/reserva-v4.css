@@ -4,10 +4,17 @@
 .payway-checkout {
   /* Must remain above DialogOverlay (z-[190]) and match DialogContent (z-[200]) */
   z-index: 200;
-  width: calc(100% - 32px);
-  max-width: 440px;
-  max-height: calc(100dvh - 32px);
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  translate: none !important;
+  transform: translate3d(-50%, -50%, 0);
+  margin: 0 !important;
+  width: min(calc(100% - 32px), calc(100vw - 32px), 440px);
+  max-width: min(calc(100% - 32px), calc(100vw - 32px), 440px);
+  max-height: min(88dvh, calc(100vh - 32px), calc(100% - 32px));
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   border-radius: var(--radius-control, .65rem);
   padding: 20px 22px;
   font-family: var(--font-sans);
@@ -17,7 +24,9 @@
 @media (max-width: 400px) {
   .payway-checkout {
     padding: 16px 16px;
-    width: calc(100% - 20px);
+    width: min(calc(100% - 24px), calc(100vw - 24px), 440px);
+    max-width: min(calc(100% - 24px), calc(100vw - 24px), 440px);
+    margin: 0 !important;
   }
 }
 

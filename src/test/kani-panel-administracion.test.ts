@@ -63,7 +63,7 @@ describe('Kani Barber Studio — Panel de Administración & Refinamiento de Pago
   });
 
   it('4. SiteHeader integra /panel-administracion, rutas oficiales Liquid Glass y logout contextual', () => {
-    const headerCode = fs.readFileSync(path.join(rootDir, 'components', 'kani', 'site-header.tsx'), 'utf8');
+    const headerCode = fs.readFileSync(path.join(rootDir, 'components', 'kani', 'site-header.tsx'), 'utf8').replace(/\r\n/g, '\n');
 
     // Admin detection
     expect(headerCode).toContain("path.startsWith('/panel-administracion')");

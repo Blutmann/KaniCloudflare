@@ -1,7 +1,9 @@
+import { useEffect } from 'react';
 import { Check, Instagram, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { dateLabel, money, formatServiceName } from '@/lib/kani-model';
 import { KANI_MAPS_URL, KANI_MAPS_EMBED_URL } from '@/lib/kani-constants';
+import { playConfirmationChime } from './experimental/liquid-glass-feedback';
 
 export type ConfirmedBookingData = {
   appointmentId?: string;
@@ -40,11 +42,20 @@ export function BookingConfirmedScreen({
 }: BookingConfirmedScreenProps) {
   const remainingArs = Math.max(0, confirmed.servicePriceArs - confirmed.depositArs);
 
+  useEffect(() => {
+    if (confirmed?.appointmentId) {
+      playConfirmationChime(confirmed.appointmentId, { enabled: true });
+    }
+  }, [confirmed?.appointmentId]);
+
   return (
-    <div className="payway-reservation mercadopago-reservation">
-      <main className="site-container confirmation">
-        <div className="confirmation-mark"><Check size={28} /></div>
-        <h1>Turno confirmado</h1>
+    <div className="payway-reservation mercadopago-reservation liquid-glass-confirmed-stage" data-lg-confirmed="true">
+      <main className="site-container confirmation liquid-glass-confirmation">
+        <div className="confirmation-mark liquid-glass-confirmation-mark">
+          <span className="lg-mark-aura" aria-hidden="true" />
+          <Check size={28} />
+        </div>
+        <h1 className="confirmation-title">Turno confirmado</h1>
         <p className="text-sm text-muted-foreground confirmation-subtitle">Te enviamos la confirmación por mail.</p>
         <div className="confirmation-grid">
           {/* Columna izquierda: Encabezado del Resumen */}

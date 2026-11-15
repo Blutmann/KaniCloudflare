@@ -15,7 +15,9 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AdminLiquidRouteImport } from './routes/admin-liquid'
 import { Route as AdminV2RouteImport } from './routes/admin-v2'
 import { Route as AdminV2LiquidRouteImport } from './routes/admin-v2-liquid'
+import { Route as CancelarRouteImport } from './routes/cancelar'
 import { Route as CancelarTurnoRouteImport } from './routes/cancelar-turno'
+import { Route as CancelarTurnoOldRouteImport } from './routes/cancelar-turno-old'
 import { Route as CaseStudyRouteImport } from './routes/case-study'
 import { Route as ContactoRouteImport } from './routes/contacto'
 import { Route as ContactoLiquidRouteImport } from './routes/contacto-liquid'
@@ -146,9 +148,19 @@ const AdminV2LiquidRoute = AdminV2LiquidRouteImport.update({
   path: '/admin-v2-liquid',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CancelarRoute = CancelarRouteImport.update({
+  id: '/cancelar',
+  path: '/cancelar',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CancelarTurnoRoute = CancelarTurnoRouteImport.update({
   id: '/cancelar-turno',
   path: '/cancelar-turno',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CancelarTurnoOldRoute = CancelarTurnoOldRouteImport.update({
+  id: '/cancelar-turno-old',
+  path: '/cancelar-turno-old',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CaseStudyRoute = CaseStudyRouteImport.update({
@@ -691,7 +703,9 @@ export interface FileRoutesByFullPath {
   '/admin-liquid': typeof AdminLiquidRouteWithChildren
   '/admin-v2': typeof AdminV2RouteWithChildren
   '/admin-v2-liquid': typeof AdminV2LiquidRouteWithChildren
+  '/cancelar': typeof CancelarRoute
   '/cancelar-turno': typeof CancelarTurnoRoute
+  '/cancelar-turno-old': typeof CancelarTurnoOldRoute
   '/case-study': typeof CaseStudyRoute
   '/contacto': typeof ContactoRoute
   '/contacto-liquid': typeof ContactoLiquidRoute
@@ -795,7 +809,9 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/activar-cuenta': typeof ActivarCuentaRoute
+  '/cancelar': typeof CancelarRoute
   '/cancelar-turno': typeof CancelarTurnoRoute
+  '/cancelar-turno-old': typeof CancelarTurnoOldRoute
   '/case-study': typeof CaseStudyRoute
   '/contacto': typeof ContactoRoute
   '/contacto-liquid': typeof ContactoLiquidRoute
@@ -901,7 +917,9 @@ export interface FileRoutesById {
   '/admin-liquid': typeof AdminLiquidRouteWithChildren
   '/admin-v2': typeof AdminV2RouteWithChildren
   '/admin-v2-liquid': typeof AdminV2LiquidRouteWithChildren
+  '/cancelar': typeof CancelarRoute
   '/cancelar-turno': typeof CancelarTurnoRoute
+  '/cancelar-turno-old': typeof CancelarTurnoOldRoute
   '/case-study': typeof CaseStudyRoute
   '/contacto': typeof ContactoRoute
   '/contacto-liquid': typeof ContactoLiquidRoute
@@ -1011,7 +1029,9 @@ export interface FileRouteTypes {
     | '/admin-liquid'
     | '/admin-v2'
     | '/admin-v2-liquid'
+    | '/cancelar'
     | '/cancelar-turno'
+    | '/cancelar-turno-old'
     | '/case-study'
     | '/contacto'
     | '/contacto-liquid'
@@ -1115,7 +1135,9 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/activar-cuenta'
+    | '/cancelar'
     | '/cancelar-turno'
+    | '/cancelar-turno-old'
     | '/case-study'
     | '/contacto'
     | '/contacto-liquid'
@@ -1220,7 +1242,9 @@ export interface FileRouteTypes {
     | '/admin-liquid'
     | '/admin-v2'
     | '/admin-v2-liquid'
+    | '/cancelar'
     | '/cancelar-turno'
+    | '/cancelar-turno-old'
     | '/case-study'
     | '/contacto'
     | '/contacto-liquid'
@@ -1329,7 +1353,9 @@ export interface RootRouteChildren {
   AdminLiquidRoute: typeof AdminLiquidRouteWithChildren
   AdminV2Route: typeof AdminV2RouteWithChildren
   AdminV2LiquidRoute: typeof AdminV2LiquidRouteWithChildren
+  CancelarRoute: typeof CancelarRoute
   CancelarTurnoRoute: typeof CancelarTurnoRoute
+  CancelarTurnoOldRoute: typeof CancelarTurnoOldRoute
   CaseStudyRoute: typeof CaseStudyRoute
   ContactoRoute: typeof ContactoRoute
   ContactoLiquidRoute: typeof ContactoLiquidRoute
@@ -1409,11 +1435,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminV2LiquidRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/cancelar': {
+      id: '/cancelar'
+      path: '/cancelar'
+      fullPath: '/cancelar'
+      preLoaderRoute: typeof CancelarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/cancelar-turno': {
       id: '/cancelar-turno'
       path: '/cancelar-turno'
       fullPath: '/cancelar-turno'
       preLoaderRoute: typeof CancelarTurnoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cancelar-turno-old': {
+      id: '/cancelar-turno-old'
+      path: '/cancelar-turno-old'
+      fullPath: '/cancelar-turno-old'
+      preLoaderRoute: typeof CancelarTurnoOldRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/case-study': {
@@ -2321,7 +2361,9 @@ const rootRouteChildren: RootRouteChildren = {
   AdminLiquidRoute: AdminLiquidRouteWithChildren,
   AdminV2Route: AdminV2RouteWithChildren,
   AdminV2LiquidRoute: AdminV2LiquidRouteWithChildren,
+  CancelarRoute: CancelarRoute,
   CancelarTurnoRoute: CancelarTurnoRoute,
+  CancelarTurnoOldRoute: CancelarTurnoOldRoute,
   CaseStudyRoute: CaseStudyRoute,
   ContactoRoute: ContactoRoute,
   ContactoLiquidRoute: ContactoLiquidRoute,

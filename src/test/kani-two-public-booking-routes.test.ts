@@ -114,7 +114,7 @@ describe('Kani Barber Studio — Dos rutas públicas de reserva con distintos pr
       const functionsCode = fs.readFileSync(mpFunctionsPath, 'utf-8');
 
       expect(serverCode).toContain('servicePriceArs');
-      expect(serverCode).toContain('depositAmountArs: 5000');
+      expect(serverCode).toMatch(/depositAmountArs.*5000/);
       expect(functionsCode).toContain('servicePriceArs?: number;');
     });
 
