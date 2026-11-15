@@ -3067,10 +3067,11 @@ html[data-theme] body[data-lg-admin="true"] .site-shell:has(.v2-shell) > .site-f
     font-size: 12px !important;
   }
 
-  /* Fila 3: Código promocional | Botón copiar | Botón eliminar */
+  /* Fila 3: Código promocional | Botón Copiar (agrupados visualmente, sin botón Eliminar) */
   html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section .kani-dcard-code-group {
     order: 4 !important;
-    flex: 1 1 calc(100% - 56px) !important;
+    flex: 0 0 100% !important;
+    width: 100% !important;
     min-width: 0 !important;
     display: flex !important;
     align-items: center !important;
@@ -3078,36 +3079,34 @@ html[data-theme] body[data-lg-admin="true"] .site-shell:has(.v2-shell) > .site-f
     gap: 8px !important;
   }
 
-  html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section .kani-dcard[data-status="DELETED"] .kani-dcard-code-group {
-    flex: 1 1 100% !important;
-  }
-
   html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section .kani-dcard-code {
     flex: 0 1 auto !important;
     min-width: 0 !important;
-    max-width: 100% !important;
-    font-size: 14px !important;
+    max-width: calc(100% - 46px) !important;
+    font-size: 14.5px !important;
     line-height: 1.25 !important;
     letter-spacing: 0.025em !important;
     overflow-wrap: anywhere !important;
+    word-break: break-word !important;
   }
 
-  html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section .kani-dcard :is(.kani-dcard-btn-copy, .kani-dcard-btn-delete) {
-    flex: 0 0 40px !important;
-    width: 40px !important;
-    height: 40px !important;
-    min-height: 40px !important;
-    max-height: 40px !important;
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section .kani-dcard .kani-dcard-btn-copy {
+    flex: 0 0 38px !important;
+    width: 38px !important;
+    height: 38px !important;
+    min-height: 38px !important;
+    max-height: 38px !important;
     padding: 0 !important;
-    border-radius: 12px !important;
+    margin-left: 0 !important;
+    border-radius: 11px !important;
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
   }
 
-  html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section .kani-dcard .kani-dcard-btn-delete {
-    order: 5 !important;
-    margin-left: auto !important;
+  /* V12.43.2: quitar Eliminar de la vista principal mobile (vive al final de Detalles) */
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section .kani-dcard .kani-dcard-actions > .kani-dcard-btn-delete {
+    display: none !important;
   }
 
   /* Fila 4: Botón Detalles | Botón Editar | Botón Desactivar (o Activar) */
@@ -3144,18 +3143,53 @@ html[data-theme] body[data-lg-admin="true"] .site-shell:has(.v2-shell) > .site-f
     flex: 0 0 13px !important;
   }
 
-  /* Detalles expandido por debajo de las 4 filas */
+  /* Detalles expandido por debajo de las 4 filas + acción destructiva Eliminar al final */
   html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section .kani-dcard-details {
     order: 9 !important;
     flex: 0 0 100% !important;
     width: 100% !important;
     margin-top: 2px !important;
   }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section .kani-dcard-details-danger {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: stretch !important;
+    padding-top: 12px !important;
+    margin-top: 2px !important;
+    border-top: 1px solid var(--lga-border-nested) !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section .kani-dcard-details-delete-btn.is-destructive {
+    width: 100% !important;
+    min-height: 42px !important;
+    height: 42px !important;
+    padding: 0 14px !important;
+    border-radius: 9999px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 7px !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    color: #b91c1c !important;
+    background: rgba(220, 38, 38, 0.08) !important;
+    border: 1px solid rgba(220, 38, 38, 0.34) !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    cursor: pointer !important;
+  }
+
+  html[data-theme="dark"] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section .kani-dcard-details-delete-btn.is-destructive {
+    color: #fca5a5 !important;
+    background: rgba(248, 113, 113, 0.12) !important;
+    border-color: rgba(248, 113, 113, 0.36) !important;
+  }
 }
 
 @media (max-width: 380px) {
   html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section .kani-dcard-code {
-    font-size: 13px !important;
+    font-size: 13.5px !important;
     letter-spacing: 0.015em !important;
   }
 

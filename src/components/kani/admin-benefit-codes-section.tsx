@@ -396,6 +396,11 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
     }
   };
 
+  const openDeleteConfirm = (item: BenefitCodeItem) => {
+    setCodeToDelete(item);
+    setDeleteError('');
+  };
+
   const handleDeleteConfirm = async () => {
     if (!codeToDelete) return;
     setDeleting(true);
@@ -834,10 +839,7 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                           <button
                             type="button"
                             className="v2-secondary kani-dcard-btn-delete is-destructive"
-                            onClick={() => {
-                              setCodeToDelete(item);
-                              setDeleteError('');
-                            }}
+                            onClick={() => openDeleteConfirm(item)}
                             title="Eliminar código (conserva historial)"
                             aria-label={`Eliminar código ${item.code}`}
                           >
@@ -1020,6 +1022,20 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                                 )}
                               </div>
                             )}
+                          </div>
+                        )}
+
+                        {status !== 'DELETED' && (
+                          <div className="kani-dcard-details-danger">
+                            <button
+                              type="button"
+                              className="v2-secondary kani-dcard-details-delete-btn is-destructive"
+                              onClick={() => openDeleteConfirm(item)}
+                              title="Eliminar código (conserva historial)"
+                            >
+                              <Trash2 size={14} aria-hidden="true" />
+                              <span>Eliminar código</span>
+                            </button>
                           </div>
                         )}
                       </div>

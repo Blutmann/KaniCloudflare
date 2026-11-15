@@ -359,9 +359,16 @@ describe('V12.43 — Rediseño de Descuentos Liquid Glass y navegación compacta
     expect(css).toContain('.v2-memberships-page .kani-dcard[data-status="DELETED"]');
   });
 
-  it('6. V12.43.1 — Reorganiza tarjetas mobile de Descuentos en 4 filas estrictas sin tocar desktop y corrige footer admin', () => {
+  it('6. V12.43.1 / V12.43.2 — Reorganiza tarjetas mobile de Descuentos en 4 filas estrictas (Código | Copiar y Eliminar dentro de Detalles) sin tocar desktop', () => {
     const cssPath = path.resolve(process.cwd(), 'src/components/kani/experimental/liquid-glass-admin.css');
     const css = fs.readFileSync(cssPath, 'utf8');
+    const baseCss = fs.readFileSync(
+      path.resolve(process.cwd(), 'src/components/kani/v2/discount-card.css'),
+      'utf8',
+    );
+
+    // En desktop / ruta tradicional, el bloque destructivo dentro de Detalles permanece oculto
+    expect(baseCss).toMatch(/\.kani-dcard-details-danger\s*\{\s*display:\s*none;\s*\}/);
 
     const layer14Idx = css.indexOf('LAYER 14 · V12.43.1');
     expect(layer14Idx).toBeGreaterThan(-1);
@@ -380,10 +387,10 @@ describe('V12.43 — Rediseño de Descuentos Liquid Glass y navegación compacta
     expect(mobileIdx).toBeGreaterThan(-1);
     const mobileBlock = layer14.slice(mobileIdx);
 
-    // Orden obligatorio de las 4 filas:
+    // Orden obligatorio de las 4 filas mobile:
     // Fila 1: beneficio (1) | estado (2)
     // Fila 2: vigencia | usos (3)
-    // Fila 3: código + copiar (4) | eliminar (5)
+    // Fila 3: código + copiar agrupados (4), sin botón Eliminar en la vista principal
     // Fila 4: Detalles (6) | Editar | Desactivar (7)
     expect(mobileBlock).toContain('.kani-dcard-benefit');
     expect(mobileBlock).toContain('order: 1 !important;');
@@ -393,17 +400,48 @@ describe('V12.43 — Rediseño de Descuentos Liquid Glass y navegación compacta
     expect(mobileBlock).toContain('order: 3 !important;');
     expect(mobileBlock).toContain('.kani-dcard-code-group');
     expect(mobileBlock).toContain('order: 4 !important;');
-    expect(mobileBlock).toContain('.kani-dcard-btn-delete');
-    expect(mobileBlock).toContain('order: 5 !important;');
+    expect(mobileBlock).toContain('flex: 0 0 100% !important;');
+    expect(mobileBlock).toContain('.kani-dcard-actions > .kani-dcard-btn-delete');
+    expect(mobileBlock).toContain('display: none !important;');
     expect(mobileBlock).toContain('.kani-dcard-btn-details');
     expect(mobileBlock).toContain('order: 6 !important;');
     expect(mobileBlock).toContain('.kani-dcard-btn-action');
     expect(mobileBlock).toContain('order: 7 !important;');
 
-    // Estado DELETED sin botón eliminar no deja hueco ni 5ta fila
-    expect(mobileBlock).toContain('.kani-dcard[data-status="DELETED"] .kani-dcard-code-group');
-    // Tres botones alineados con altura consistente (44px)
+    // Eliminar reubicado al final de Detalles en mobile
+    expect(mobileBlock).toContain('.kani-dcard-details-danger');
+    expect(mobileBlock).toContain('.kani-dcard-details-delete-btn.is-destructive');
+
+    // Tres botones inferiores alineados con altura consistente (44px)
     expect(mobileBlock).toContain('flex: 1 1 calc((100% - 14px) / 3) !important;');
     expect(mobileBlock).toContain('height: 44px !important;');
+  });
+
+  it('7. V12.43.2 — Detalles muestra la acción destructiva "Eliminar código" al final salvo en DELETED y abre el modal de confirmación existente', async () => {
+    render(<V2MembershipsAndDiscounts initialTab="DESCUENTOS" standaloneTab="DESCUENTOS" />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('discount-card-disc-active')).toBeInTheDocument();
+    });
+
+    const activeCard = screen.getByTestId('discount-card-disc-active');
+    fireEvent.click(within(activeCard).getByRole('button', { name: /Detalles/i }));
+    const activeDetails = screen.getByTestId('discount-details-disc-active');
+    const dangerBtn = within(activeDetails).getByRole('button', { name: /Eliminar código/i });
+    expect(dangerBtn).toBeInTheDocument();
+    expect(dangerBtn.className).toContain('is-destructive');
+
+    // El último hijo de Detalles es el contenedor separador de acción destructiva
+    expect(activeDetails.lastElementChild?.className).toContain('kani-dcard-details-danger');
+
+    // Códigos ya eliminados no muestran botón Eliminar dentro de Detalles
+    const deletedCard = screen.getByTestId('discount-card-disc-deleted');
+    fireEvent.click(within(deletedCard).getByRole('button', { name: /Detalles/i }));
+    const deletedDetails = screen.getByTestId('discount-details-disc-deleted');
+    expect(within(deletedDetails).queryByRole('button', { name: /Eliminar/i })).not.toBeInTheDocument();
+
+    // Al hacer clic en "Eliminar código" de una tarjeta activa, abre el modal de confirmación existente
+    fireEvent.click(dangerBtn);
+    expect(await screen.findByText('¿Eliminar código KANI-10-ACTIVE?')).toBeInTheDocument();
   });
 });

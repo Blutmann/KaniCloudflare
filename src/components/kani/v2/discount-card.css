@@ -354,6 +354,10 @@ html[data-theme="dark"] .kani-dcard-btn-delete.is-destructive {
   gap: 12px;
 }
 
+.kani-dcard-details-danger {
+  display: none;
+}
+
 .kani-dcard-kv-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
