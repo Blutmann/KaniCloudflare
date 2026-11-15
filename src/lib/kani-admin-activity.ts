@@ -84,6 +84,26 @@ export function isTableMissingOrSchemaCacheError(error: unknown): boolean {
 }
 
 /**
+ * Registra en consola el diagnóstico técnico real de Supabase (`code`, `message`, `details`, `hint`)
+ * para evitar ocultar fallas de RPC, RLS o caché de esquema durante diagnóstico.
+ */
+function logNotificationError(operation: string, error: unknown): void {
+  if (!error) return;
+  if (typeof error === 'object' && error !== null) {
+    const errObj = error as Record<string, unknown>;
+    console.error('[KaniNotifications]', {
+      operation,
+      code: errObj['code'] ?? null,
+      message: errObj['message'] ?? errObj['error_description'] ?? String(error),
+      details: errObj['details'] ?? null,
+      hint: errObj['hint'] ?? null,
+    });
+    return;
+  }
+  console.error('[KaniNotifications]', { operation, message: String(error) });
+}
+
+/**
  * Extrae un mensaje de error legible a partir de un error desconocido de Supabase o JavaScript.
  * Sanitiza los mensajes técnicos internos de caché de esquema y nombres de tabla.
  */
@@ -133,6 +153,10 @@ export async function readAdminActivityNotifications(_knownUserId?: string): Pro
     return dedupeActivityEvents(rpcData as AdminActivityEvent[]);
   }
 
+  if (rpcError) {
+    logNotificationError('rpc:read_staff_activity_notifications', rpcError);
+  }
+
   if (rpcError && !isTableMissingOrSchemaCacheError(rpcError)) {
     throw new Error(extractErrorMessage(rpcError, 'No se pudieron cargar las notificaciones.'));
   }
@@ -152,6 +176,7 @@ export async function readAdminActivityNotifications(_knownUserId?: string): Pro
     .eq('user_id', currentUserId);
 
   if (userStateErr) {
+    logNotificationError('select:admin_activity_user_state', userStateErr);
     throw new Error(extractErrorMessage(userStateErr, 'No se pudo consultar el estado de tus notificaciones.'));
   }
 
@@ -173,6 +198,7 @@ export async function readAdminActivityNotifications(_knownUserId?: string): Pro
     .limit(50);
 
   if (error) {
+    logNotificationError('select:admin_activity_notifications', error);
     throw new Error(extractErrorMessage(error, 'No se pudieron cargar las notificaciones.'));
   }
 
@@ -198,6 +224,8 @@ export async function setAdminActivityNotificationRead(id: string, readAt: strin
 
   if (!rpcError) return;
 
+  logNotificationError('rpc:set_staff_activity_notification_read', rpcError);
+
   if (!isTableMissingOrSchemaCacheError(rpcError)) {
     throw new Error(extractErrorMessage(rpcError, 'No se pudo actualizar el estado de lectura.'));
   }
@@ -217,6 +245,7 @@ export async function setAdminActivityNotificationRead(id: string, readAt: strin
     );
 
   if (upsertErr) {
+    logNotificationError('upsert:admin_activity_user_state:setRead', upsertErr);
     throw new Error(extractErrorMessage(upsertErr, 'No se pudo guardar el estado de lectura.'));
   }
 }
@@ -238,6 +267,8 @@ export async function markAllAdminActivityNotificationsRead(ids?: string[], befo
 
   if (!rpcError) return;
 
+  logNotificationError('rpc:mark_all_staff_activity_notifications_read', rpcError);
+
   if (!isTableMissingOrSchemaCacheError(rpcError)) {
     throw new Error(extractErrorMessage(rpcError, 'No se pudieron marcar todas las notificaciones como leídas.'));
   }
@@ -255,6 +286,7 @@ export async function markAllAdminActivityNotificationsRead(ids?: string[], befo
     }
     const { data: notifs, error: listErr } = await query.limit(1000);
     if (listErr) {
+      logNotificationError('select:admin_activity_notifications:markAllRead', listErr);
       throw new Error(extractErrorMessage(listErr, 'No se pudieron obtener las notificaciones para marcar como leídas.'));
     }
     if (notifs && notifs.length > 0) {
@@ -276,6 +308,7 @@ export async function markAllAdminActivityNotificationsRead(ids?: string[], befo
     .upsert(rows, { onConflict: 'notification_id,user_id' });
 
   if (upsertErr) {
+    logNotificationError('upsert:admin_activity_user_state:markAllRead', upsertErr);
     throw new Error(extractErrorMessage(upsertErr, 'No se pudieron marcar las notificaciones como leídas.'));
   }
 }
@@ -288,6 +321,8 @@ export async function markAllAdminActivityNotificationsUnread(ids?: string[]): P
   const { error: rpcError } = await supabase.rpc('mark_all_staff_activity_notifications_unread');
 
   if (!rpcError) return;
+
+  logNotificationError('rpc:mark_all_staff_activity_notifications_unread', rpcError);
 
   if (!isTableMissingOrSchemaCacheError(rpcError)) {
     throw new Error(extractErrorMessage(rpcError, 'No se pudieron marcar todas las notificaciones como no leídas.'));
@@ -307,6 +342,7 @@ export async function markAllAdminActivityNotificationsUnread(ids?: string[]): P
 
   const { error: updateErr } = await query;
   if (updateErr) {
+    logNotificationError('update:admin_activity_user_state:markAllUnread', updateErr);
     throw new Error(extractErrorMessage(updateErr, 'No se pudieron marcar las notificaciones como no leídas.'));
   }
 }
@@ -321,6 +357,8 @@ export async function dismissAdminActivityNotificationPersonal(id: string): Prom
   });
 
   if (!rpcError) return;
+
+  logNotificationError('rpc:dismiss_staff_activity_notification_personal', rpcError);
 
   if (!isTableMissingOrSchemaCacheError(rpcError)) {
     throw new Error(extractErrorMessage(rpcError, 'No se pudo eliminar la notificación de tu cuenta.'));
@@ -341,6 +379,7 @@ export async function dismissAdminActivityNotificationPersonal(id: string): Prom
     );
 
   if (upsertErr) {
+    logNotificationError('upsert:admin_activity_user_state:dismissOne', upsertErr);
     throw new Error(extractErrorMessage(upsertErr, 'No se pudo eliminar la notificación de tu cuenta.'));
   }
 }
@@ -368,6 +407,8 @@ export async function dismissAllAdminActivityNotificationsPersonal(
     return typeof data === 'number' ? data : ids.length;
   }
 
+  logNotificationError('rpc:dismiss_all_staff_activity_notifications_personal', rpcError);
+
   if (!isTableMissingOrSchemaCacheError(rpcError)) {
     throw new Error(extractErrorMessage(rpcError, 'No se pudieron eliminar tus notificaciones.'));
   }
@@ -384,6 +425,7 @@ export async function dismissAllAdminActivityNotificationsPersonal(
     }
     const { data: notifs, error: listErr } = await query.limit(1000);
     if (listErr) {
+      logNotificationError('select:admin_activity_notifications:dismissAll', listErr);
       throw new Error(extractErrorMessage(listErr, 'No se pudieron listar las notificaciones a eliminar.'));
     }
     if (notifs && notifs.length > 0) {
@@ -406,6 +448,7 @@ export async function dismissAllAdminActivityNotificationsPersonal(
     .upsert(rows, { onConflict: 'notification_id,user_id' });
 
   if (upsertErr) {
+    logNotificationError('upsert:admin_activity_user_state:dismissAll', upsertErr);
     throw new Error(extractErrorMessage(upsertErr, 'No se pudieron eliminar tus notificaciones.'));
   }
 
