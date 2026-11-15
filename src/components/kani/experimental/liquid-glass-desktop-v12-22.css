@@ -130,15 +130,16 @@
   }
 
   /* --------------------------------------------------------------------------
-   * 5. SERVICIOS
+   * 5. SERVICIOS (V12.42: ritmo vertical alineado con Barbero)
    * -------------------------------------------------------------------------- */
   html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-service-options {
     display: flex !important;
     flex-direction: column !important;
-    gap: var(--lg-option-gap) !important;
+    gap: clamp(20px, 1.55vw, 24px) !important;
   }
 
-  html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .booking-option {
+  html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .booking-option,
+  html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option {
     min-height: clamp(90px, 9.4dvh, 108px) !important;
     height: auto !important;
     padding: clamp(16px, 1.8dvh, 22px) clamp(20px, 2vw, 28px) !important;
@@ -271,6 +272,96 @@
   html[data-theme] .site-shell .liquid-glass-reservation .booking-cta:not(.mobile-menu-cta) .payway-submit-btn {
     min-width: 220px !important;
     height: clamp(46px, 5dvh, 52px) !important;
+  }
+
+  /* --------------------------------------------------------------------------
+   * 10. V12.42: LEGIBILIDAD DE MENSAJES INFORMATIVOS (SERVICIO, FECHA Y DATOS)
+   * -------------------------------------------------------------------------- */
+  html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-deposit-notice {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    margin-top: clamp(18px, 2dvh, 24px) !important;
+    padding: clamp(14px, 1.5dvh, 18px) clamp(18px, 1.8vw, 24px) !important;
+    min-height: clamp(54px, 5.6dvh, 64px) !important;
+    height: auto !important;
+    max-height: none !important;
+    font-size: clamp(14.5px, 1.05vw, 16px) !important;
+    line-height: 1.5 !important;
+    white-space: normal !important;
+  }
+
+  html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-deposit-notice > span {
+    font-size: inherit !important;
+    line-height: inherit !important;
+    white-space: normal !important;
+  }
+
+  html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-deposit-notice svg {
+    width: 20px !important;
+    height: 20px !important;
+    flex: 0 0 20px !important;
+    margin-right: 0 !important;
+    align-self: center !important;
+  }
+
+  html[data-theme] .site-shell .liquid-glass-reservation .booking-page .calendar-footer-info {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    padding: clamp(14px, 1.5dvh, 18px) clamp(18px, 1.8vw, 24px) !important;
+    min-height: clamp(54px, 5.6dvh, 64px) !important;
+    height: auto !important;
+    max-height: none !important;
+  }
+
+  html[data-theme] .site-shell .liquid-glass-reservation .booking-page .calendar-footer-info .calendar-note {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 12px !important;
+    margin: 0 !important;
+    font-size: clamp(14.5px, 1.05vw, 16px) !important;
+    line-height: 1.5 !important;
+    white-space: normal !important;
+    text-align: left !important;
+  }
+
+  html[data-theme] .site-shell .liquid-glass-reservation .booking-page .calendar-footer-info .calendar-note > span:first-child {
+    width: 18px !important;
+    height: 18px !important;
+    flex: 0 0 18px !important;
+  }
+
+  html[data-theme] .site-shell .liquid-glass-reservation .booking-page .calendar-footer-info .calendar-note > span:first-child::after {
+    font-size: 11px !important;
+  }
+
+  html[data-theme] .site-shell .liquid-glass-reservation .booking-page .summary-pending-notice {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    padding: clamp(14px, 1.5dvh, 18px) clamp(18px, 1.8vw, 24px) !important;
+    min-height: clamp(54px, 5.6dvh, 64px) !important;
+    height: auto !important;
+    max-height: none !important;
+    font-size: clamp(14.5px, 1.05vw, 16px) !important;
+    line-height: 1.5 !important;
+    white-space: normal !important;
+  }
+
+  html[data-theme] .site-shell .liquid-glass-reservation .booking-page .summary-pending-notice p {
+    margin: 0 !important;
+    font-size: inherit !important;
+    line-height: inherit !important;
+    white-space: normal !important;
+  }
+
+  html[data-theme] .site-shell .liquid-glass-reservation .booking-page .summary-pending-notice svg {
+    width: 19px !important;
+    height: 19px !important;
+    flex: 0 0 19px !important;
+    align-self: center !important;
   }
 }
 
