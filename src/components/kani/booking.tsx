@@ -12,6 +12,7 @@ import { appointmentErrorMessage, createRealAppointment } from '@/lib/kani-appoi
 import { getDynamicDownPayment } from '@/lib/kani-down-payment';
 import { createBookingOrderFn } from '@/lib/kani-mercadopago.functions';
 import { normalizePhone, type PhoneCountry } from '@/lib/kani-phone';
+import { attachMobileProgressiveFieldScroll } from '@/lib/kani-mobile-field-scroll';
 const PhoneInput = lazy(() => import('@/components/kani/phone-input').then(m => ({ default: m.PhoneInput })));
 import { useKani } from '@/components/kani/store';
 import { BookingStepHeading } from '@/components/kani/booking-step-heading';
@@ -502,6 +503,15 @@ export function Booking({
       });
     }
   }, []);
+
+  useEffect(() => {
+    if (step !== 4) return;
+    const formEl = formRef.current;
+    if (!formEl) return;
+    const handle = attachMobileProgressiveFieldScroll(formEl);
+    return () => handle.destroy();
+  }, [step]);
+
   const normalDepositArs = 5000;
   const effectiveServicePrice = selected ? getEffectiveServicePrice(selected.id, barber) : 0;
   const depositArs = appliedBenefit ? appliedBenefit.onlineDepositArs : normalDepositArs;
