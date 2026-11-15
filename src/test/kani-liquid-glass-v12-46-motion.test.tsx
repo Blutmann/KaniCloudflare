@@ -310,7 +310,7 @@ describe('Liquid Glass V12.46.1 — Liquid Glass Motion System (Servicio, Barber
     expect(bookingTsx).toContain("experimentalMotion && barber && !barberDeferred ? ' has-selected-barber' : ''");
     expect(bookingTsx).toContain('if (!isSelected) chooseBarber(b)');
     expect(bookingTsx).toContain('if (selectedSlot === time) return');
-    expect(paywayTsx).toContain('if (!isLiquid || !soundEnabledRef.current) return');
+    expect(paywayTsx).toContain('if (!isLiquid || !readConfirmationSoundEnabled()) return');
   });
 
   it('V12.46.2: ejecuta microinteracción de confirmación al repulsar opciones ya seleccionadas en Servicio, Barbero, Fecha y Horario sin acumular animaciones', () => {

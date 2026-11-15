@@ -1,6 +1,11 @@
-import { createFileRoute } from '@tanstack/react-router';
-import { AdminMaintenance } from '@/components/kani/admin-maintenance';
+import { createFileRoute, redirect, Navigate } from '@tanstack/react-router';
 
 export const Route = createFileRoute('/admin-liquid/mantenimiento')({
-  component: AdminMaintenance,
+  beforeLoad: ({ search }) => {
+    throw redirect({
+      to: '/panel-administracion/mantenimiento',
+      search: (search as Record<string, unknown>) || {},
+    });
+  },
+  component: () => <Navigate to="/panel-administracion/mantenimiento" replace />,
 });

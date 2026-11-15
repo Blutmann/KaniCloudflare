@@ -151,7 +151,7 @@ export function PanelV2Layout({
       <main className="v2-access">
         <h1>Panel V2</h1>
         <p role="alert">{state.error}</p>
-        <a href={liquidGlass ? "/admin-liquid" : "/panel-administracion"}>Ir al panel de administración</a>
+        <a href="/panel-administracion">Ir al panel de administración</a>
       </main>
     );
   }

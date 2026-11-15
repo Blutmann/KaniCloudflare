@@ -30,9 +30,9 @@ describe('Kani — Contacto, Botones del Header y Menú por Rol', () => {
       expect(serverCode).toContain('Response.redirect(url.toString(), 301)');
     });
 
-    it('enlaces internos de menú y footer actualizados hacia /contacto', () => {
-      expect(headerCode).toMatch(/<Link to="\/contacto" onClick=\{closeMenu\}>\s*<Building2 \/>\s*Contacto\s*<\/Link>/);
-      expect(headerCode).toContain('<Link to="/contacto" className="inline-flex items-center gap-2 hover:text-foreground"><Building2 size={14} /> Contacto</Link>');
+    it('enlaces internos de menú y footer actualizados hacia /contacto (y /contacto-old en clásico)', () => {
+      expect(headerCode).toMatch(/<Link to=\{contactTarget\} onClick=\{closeMenu\}>\s*<Building2 \/>\s*Contacto\s*<\/Link>/);
+      expect(headerCode).toContain('<Link to={isLiquidRoute ? "/contacto" : "/contacto-old"} className="inline-flex items-center gap-2 hover:text-foreground"><Building2 size={14} /> Contacto</Link>');
       expect(headerCode).not.toContain('to="/estudio"');
     });
 
@@ -71,7 +71,7 @@ describe('Kani — Contacto, Botones del Header y Menú por Rol', () => {
 
   describe('3. Menú desplegable por rol y división visual', () => {
     const menuSection = headerCode.substring(
-      headerCode.indexOf('const mobileMenu = menuOpen'),
+      headerCode.indexOf('const menuNavigationGroups = ('),
       headerCode.indexOf('return <>')
     );
 

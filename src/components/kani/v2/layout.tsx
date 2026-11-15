@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, Outlet, useLocation } from "@tanstack/react-router";
 import { MotionConfig, motion } from "motion/react";
 import {
@@ -35,10 +35,14 @@ const sectionDefs = [
 
 export function V2Layout({
   basePath = "/panel-administracion",
-  liquidGlass = false,
+  liquidGlass = !basePath.includes("-old"),
+  forcedSectionSlug,
+  children,
 }: {
   basePath?: string;
   liquidGlass?: boolean;
+  forcedSectionSlug?: string;
+  children?: ReactNode;
 } = {}) {
   const wrap = (node: JSX.Element) =>
     liquidGlass ? <LiquidGlassShell section="admin">{node}</LiquidGlassShell> : node;
@@ -208,38 +212,70 @@ export function V2Layout({
         <a href={basePath}>Volver al panel actual</a>
       </main>
     );
-  if (!allowed || !state.staff)
+  if (!allowed || !state.staff) {
+    const pathname = typeof window !== "undefined" ? (window.location?.pathname ?? "") : "";
+    const search = typeof window !== "undefined" ? (window.location?.search ?? "") : "";
+    const returnTo =
+      pathname.startsWith("/panel-") || pathname.startsWith("/admin")
+        ? `${pathname}${search}`
+        : basePath;
     return wrap(
       <AdminAccess
         onAuthenticated={() => {
-          window.location.assign(basePath);
+          window.location.assign(returnTo);
         }}
       />
     );
+  }
   return wrap(
     <AdminStaffProvider key={state.staff.user.id} staff={state.staff}>
       <V2DataProvider>
-        <V2Shell basePath={basePath} liquidGlass={liquidGlass} />
+        <V2Shell
+          basePath={basePath}
+          liquidGlass={liquidGlass}
+          forcedSectionSlug={forcedSectionSlug}
+        >
+          {children}
+        </V2Shell>
       </V2DataProvider>
     </AdminStaffProvider>
   );
 }
 
-function V2Shell({ basePath, liquidGlass = false }: { basePath: string; liquidGlass?: boolean }) {
+function V2Shell({
+  basePath,
+  liquidGlass = false,
+  forcedSectionSlug,
+  children,
+}: {
+  basePath: string;
+  liquidGlass?: boolean;
+  forcedSectionSlug?: string;
+  children?: ReactNode;
+}) {
   const { loading, error, refresh } = useV2();
   const { profile } = useAdminStaff();
   const pathname = useLocation({ select: (location) => location.pathname });
   const cleanBase = basePath.replace(/\/+$/, "");
   const cleanPath = pathname.replace(/\/+$/, "");
   const rootSlug = cleanBase.split("/").filter(Boolean).at(-1) ?? "panel-administracion";
-  const section = cleanPath.split("/").filter(Boolean).at(-1) ?? "inicio";
-  const allowedSection = cleanPath === cleanBase || section === rootSlug || mayAccessStaffSection(profile, section);
-  const activeSlug =
-    cleanPath === cleanBase || section === rootSlug
-      ? profile.role === "ADMIN"
-        ? "inicio"
-        : "turnos"
-      : section;
+  const rawSlug = cleanPath.split("/").filter(Boolean).at(-1) ?? "inicio";
+  const standaloneSlug =
+    rawSlug.startsWith("panel-") &&
+    rawSlug !== "panel-administracion" &&
+    rawSlug !== "panel-administracion-old"
+      ? rawSlug.replace(/^panel-/, "")
+      : rawSlug;
+  const section = forcedSectionSlug || standaloneSlug;
+  const isRootOfBase = !forcedSectionSlug && (cleanPath === cleanBase || section === rootSlug);
+  const allowedSection = forcedSectionSlug
+    ? mayAccessStaffSection(profile, forcedSectionSlug)
+    : isRootOfBase || mayAccessStaffSection(profile, section);
+  const activeSlug = isRootOfBase
+    ? profile.role === "ADMIN"
+      ? "inicio"
+      : "turnos"
+    : section;
 
   const navScrollRef = useRef<HTMLElement>(null);
   const navItemsRef = useRef<HTMLDivElement>(null);
@@ -290,12 +326,32 @@ function V2Shell({ basePath, liquidGlass = false }: { basePath: string; liquidGl
   }, []);
 
   const isMembershipsNav =
-    liquidGlass && (activeSlug === "membresias" || activeSlug === "descuentos");
+    liquidGlass &&
+    allowedSection &&
+    (activeSlug === "membresias" || activeSlug === "descuentos");
 
   const membershipsNavDefs = [
-    { slug: "membresias", to: `${cleanBase}/membresias`, title: "Membresías", mobileTitle: "Membresías", icon: PackageCheck },
-    { slug: "descuentos", to: `${cleanBase}/descuentos`, title: "Descuentos", mobileTitle: "Descuentos", icon: Tag },
-    { slug: "panel", to: cleanBase, title: "Panel de administración", mobileTitle: "Administración", icon: CalendarClock },
+    {
+      slug: "membresias",
+      to: cleanBase.includes("-old") ? `${cleanBase}/membresias` : "/panel-membresias",
+      title: "Membresías",
+      mobileTitle: "Membresías",
+      icon: PackageCheck,
+    },
+    {
+      slug: "descuentos",
+      to: cleanBase.includes("-old") ? `${cleanBase}/descuentos` : "/panel-descuentos",
+      title: "Descuentos",
+      mobileTitle: "Descuentos",
+      icon: Tag,
+    },
+    {
+      slug: "panel",
+      to: cleanBase,
+      title: "Panel de administración",
+      mobileTitle: "Administración",
+      icon: CalendarClock,
+    },
   ] as const;
 
   const navContent = isMembershipsNav ? (
@@ -306,7 +362,9 @@ function V2Shell({ basePath, liquidGlass = false }: { basePath: string; liquidGl
       aria-label="Membresías y descuentos"
     >
       <div className="admin-section-nav-items" ref={navItemsRef}>
-        {membershipsNavDefs.map(({ slug, to, title, mobileTitle, icon: Icon }) => {
+        {membershipsNavDefs
+          .filter(({ slug }) => slug === "panel" || mayAccessStaffSection(profile, slug))
+          .map(({ slug, to, title, mobileTitle, icon: Icon }) => {
           const isActive = activeSlug === slug;
           return (
             <Link
@@ -355,7 +413,8 @@ function V2Shell({ basePath, liquidGlass = false }: { basePath: string; liquidGl
                 to={`${cleanBase}/${slug}`}
                 activeOptions={{ exact: true }}
                 data-nav-slug={slug}
-                className="admin-section-nav-link"
+                className={`admin-section-nav-link ${isActive ? "is-active" : ""}`.trim()}
+                aria-current={isActive ? "page" : undefined}
                 activeProps={{ className: "is-active", "aria-current": "page" }}
               >
                 {liquidGlass && isActive && (
@@ -390,7 +449,7 @@ function V2Shell({ basePath, liquidGlass = false }: { basePath: string; liquidGl
   );
 
   const outletContent = allowedSection ? (
-    <Outlet />
+    children ?? <Outlet />
   ) : (
     <p role="alert" className="v2-alert">
       No tenés permisos para acceder a esta sección.

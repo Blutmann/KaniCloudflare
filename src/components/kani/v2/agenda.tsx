@@ -34,11 +34,11 @@ import { ManualAppointmentDialog } from "./manual-appointment-dialog";
 
 export function V2Home({
   basePath = "/panel-administracion",
-}: { basePath?: "/panel-administracion" | "/admin-liquid" } = {}) {
-  const isLiquid = basePath === "/admin-liquid";
-  const turnosTo = isLiquid ? "/admin-liquid/turnos" : "/panel-administracion/turnos";
-  const horariosTo = isLiquid ? "/admin-liquid/horarios" : "/panel-administracion/horarios";
-  const pagosTo = isLiquid ? "/admin-liquid/pagos" : "/panel-administracion/pagos";
+}: { basePath?: "/panel-administracion" | "/panel-administracion-old" | "/admin-liquid" } = {}) {
+  const isOld = basePath === "/panel-administracion-old";
+  const turnosTo = isOld ? "/panel-administracion-old/turnos" : "/panel-administracion/turnos";
+  const horariosTo = isOld ? "/panel-administracion-old/horarios" : "/panel-administracion/horarios";
+  const pagosTo = isOld ? "/panel-administracion-old/pagos" : "/panel-administracion/pagos";
   const data = useV2();
   const staff = useAdminStaff();
   const today = businessDateToday();
@@ -182,6 +182,7 @@ export function V2Appointments({
 }: {
   paymentsTo?:
     | "/panel-administracion/pagos"
+    | "/panel-administracion-old/pagos"
     | "/panel-v2/negocio/pagos"
     | "/admin-liquid/pagos"
     | "/admin-v2-liquid/negocio/pagos";

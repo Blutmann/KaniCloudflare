@@ -199,7 +199,7 @@ function CancelarTurnoPage() {
 
             <div className="space-y-3 pt-2">
               <Button asChild className="w-full h-12 rounded-xl text-sm font-semibold bg-[#B99A5B] text-black hover:bg-[#A8894A]">
-                <Link to="/reservar-turno">
+                <Link to="/reservar">
                   Reservar un nuevo turno
                 </Link>
               </Button>
@@ -228,7 +228,7 @@ function CancelarTurnoPage() {
             </div>
             <div className="pt-2">
               <Button asChild className="w-full h-12 rounded-xl text-sm font-semibold bg-[#B99A5B] text-black hover:bg-[#A8894A]">
-                <Link to="/reservar-turno">
+                <Link to="/reservar">
                   Reservar nuevo turno
                 </Link>
               </Button>

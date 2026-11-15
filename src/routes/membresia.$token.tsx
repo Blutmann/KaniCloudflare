@@ -582,7 +582,7 @@ export function PublicMembershipCardPage() {
       {/* Acción superior izquierda fuera de la credencial */}
       <div className="w-full flex items-center justify-start pb-3 sm:pb-3.5 shrink-0">
         <a
-          href="https://www.kanibarber.com/reservar-turno"
+          href="https://www.kanibarber.com/reservar"
           className="inline-flex items-center gap-2 sm:gap-2.5 min-h-[42px] sm:min-h-[44px] md:min-h-[46px] px-4 py-2.5 sm:px-5 md:px-6 md:py-3 rounded-full bg-[#08080A]/95 hover:bg-[#141418] border border-[#D4B475]/60 hover:border-[#F0D9A3] text-[#F0D9A3] hover:text-white transition-all text-[11.5px] sm:text-xs md:text-[13px] font-mono font-semibold tracking-[0.16em] uppercase shadow-[0_8px_24px_rgba(0,0,0,0.65),0_0_14px_rgba(212,180,117,0.10)] backdrop-blur-sm whitespace-nowrap"
         >
           <Calendar className="w-4 h-4 md:w-[18px] md:h-[18px] text-[#D4B475] shrink-0" />

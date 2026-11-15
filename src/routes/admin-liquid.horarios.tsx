@@ -1,10 +1,11 @@
-import { createFileRoute } from '@tanstack/react-router';
-import { AdminScheduleManager } from '@/components/kani/admin-schedule-manager';
+import { createFileRoute, redirect, Navigate } from '@tanstack/react-router';
 
 export const Route = createFileRoute('/admin-liquid/horarios')({
-  component: () => (
-    <main className="v2-page v2-schedule">
-      <AdminScheduleManager />
-    </main>
-  ),
+  beforeLoad: ({ search }) => {
+    throw redirect({
+      to: '/panel-administracion/horarios',
+      search: (search as Record<string, unknown>) || {},
+    });
+  },
+  component: () => <Navigate to="/panel-administracion/horarios" replace />,
 });

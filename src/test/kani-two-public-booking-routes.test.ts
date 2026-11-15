@@ -6,7 +6,8 @@ describe('Kani Barber Studio — Dos rutas públicas de reserva con distintos pr
   const rootRoutePath = path.resolve(__dirname, '../routes/index.tsx');
   const reservaV4RoutePath = path.resolve(__dirname, '../routes/reserva-v4.tsx');
   const reservarTurnoRoutePath = path.resolve(__dirname, '../routes/reservar-turno.tsx');
-  const reservarTurnoMpRoutePath = path.resolve(__dirname, '../routes/reservar-turno-mercadopago.tsx');
+  const reservarOldRoutePath = path.resolve(__dirname, '../routes/reservar-turno-old.tsx');
+  const reservarMpRoutePath = path.resolve(__dirname, '../routes/reservar-turno-mercadopago.tsx');
   const reservaV5RoutePath = path.resolve(__dirname, '../routes/reserva-v5.tsx');
   const sharedConfirmationPath = path.resolve(__dirname, '../components/kani/booking-confirmed-screen.tsx');
   const paywayBookingPath = path.resolve(__dirname, '../components/kani/experimental/payway-booking.tsx');
@@ -16,29 +17,32 @@ describe('Kani Barber Studio — Dos rutas públicas de reserva con distintos pr
   const cssV4Path = path.resolve(__dirname, '../components/kani/experimental/reserva-v4.css');
 
   describe('1. Redirecciones y rutas públicas', () => {
-    it('/ redirige limpiamente a /reservar-turno preservando query params', () => {
+    it('/ redirige limpiamente a /reservar preservando query params', () => {
       const code = fs.readFileSync(rootRoutePath, 'utf-8');
       expect(code).toContain("throw redirect({");
-      expect(code).toContain("to: '/reservar-turno'");
+      expect(code).toContain("to: '/reservar'");
       expect(code).toContain("search: (search as Record<string, unknown>) || {}");
     });
 
-    it('/reserva-v4 redirige a /reservar-turno preservando query params', () => {
+    it('/reserva-v4 redirige a /reservar preservando query params', () => {
       const code = fs.readFileSync(reservaV4RoutePath, 'utf-8');
       expect(code).toContain("throw redirect({");
-      expect(code).toContain("to: '/reservar-turno'");
+      expect(code).toContain("to: '/reservar'");
       expect(code).toContain("search: (search as Record<string, unknown>) || {}");
     });
 
-    it('/reservar-turno monta PaywayBooking con estilos de Reserva V4', () => {
+    it('/reservar-turno redirige a /reservar y /reservar-turno-old monta PaywayBooking clásico', () => {
       const code = fs.readFileSync(reservarTurnoRoutePath, 'utf-8');
+      const oldCode = fs.readFileSync(reservarOldRoutePath, 'utf-8');
       expect(code).toContain("createFileRoute('/reservar-turno')");
-      expect(code).toContain("component: PaywayBooking");
-      expect(code).toContain("import '@/components/kani/experimental/reserva-v4.css'");
+      expect(code).toContain("to: '/reservar'");
+      expect(oldCode).toContain("createFileRoute('/reservar-turno-old')");
+      expect(oldCode).toContain("PaywayBooking");
+      expect(oldCode).toContain("import '@/components/kani/experimental/reserva-v4.css'");
     });
 
     it('/reservar-turno-mercadopago monta MercadoPagoBooking con estilos de Reserva V4', () => {
-      const code = fs.readFileSync(reservarTurnoMpRoutePath, 'utf-8');
+      const code = fs.readFileSync(reservarMpRoutePath, 'utf-8');
       expect(code).toContain("createFileRoute('/reservar-turno-mercadopago')");
       expect(code).toContain("component: MercadoPagoBooking");
       expect(code).toContain("import '@/components/kani/experimental/reserva-v4.css'");

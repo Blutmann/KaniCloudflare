@@ -9,7 +9,7 @@ describe('Liquid Glass — Unificación Tipográfica con Inter Variable', () => 
     'utf8',
   );
   const bookingRoute = readFileSync(
-    path.resolve(root, 'src/routes/reservar-turno-liquid.tsx'),
+    path.resolve(root, 'src/routes/reservar.tsx'),
     'utf8',
   );
   const shellCode = readFileSync(

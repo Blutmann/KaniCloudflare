@@ -43,10 +43,10 @@ export function MobileMenuAction({ inline = false }: { inline?: boolean } = {}) 
   const returnToBooking = () => {
     setMobileMenuOpen(false);
     const target = isLiquidGlassPath(path)
-      ? '/reservar-turno-liquid'
+      ? '/reservar'
       : path.includes('mercadopago')
         ? '/reservar-turno-mercadopago'
-        : '/reservar-turno';
+        : '/reservar-turno-old';
     if (path !== target) void navigate({ to: target });
   };
   if (inline) {
@@ -148,7 +148,14 @@ function getVerticalScrollOffset(scrolledContainers: Set<Element>): number {
 export function SiteHeader() {
   const path = useRouterState({ select: s => s.location.pathname });
   const isLiquidRoute = isLiquidGlassPath(path);
-  const admin = path.startsWith('/admin') || path.startsWith('/panel-administracion') || path.startsWith('/panel-v2');
+  const admin =
+    path.startsWith('/admin') ||
+    path.startsWith('/panel-administracion') ||
+    path.startsWith('/panel-membresias') ||
+    path.startsWith('/panel-descuentos') ||
+    path.startsWith('/panel-turnos') ||
+    path.startsWith('/panel-horarios') ||
+    path.startsWith('/panel-v2');
   const { mobileMenuOpen: menuOpen, setMobileMenuOpen: onMenuOpenChange } = useKani();
   const [staff, setStaff] = useState<AuthenticatedStaff | null>(null);
   const [headerScrolled, setHeaderScrolled] = useState(false);
@@ -328,25 +335,36 @@ export function SiteHeader() {
 
   const closeMenu = () => onMenuOpenChange(false);
   const bookingTarget = isLiquidRoute
-    ? '/reservar-turno-liquid'
+    ? '/reservar'
     : path.includes('mercadopago')
       ? '/reservar-turno-mercadopago'
-      : '/reservar-turno';
-  const contactTarget = isLiquidRoute ? '/contacto-liquid' : '/contacto';
-  const adminBase = isLiquidRoute ? '/admin-liquid' : '/panel-administracion';
+      : '/reservar-turno-old';
+  const contactTarget = isLiquidRoute ? '/contacto' : '/contacto-old';
+  const adminBase = isLiquidRoute ? '/panel-administracion' : '/panel-administracion-old';
+  const turnosLinkTarget = isLiquidRoute ? '/panel-turnos' : `${adminBase}/turnos`;
+  const horariosLinkTarget = isLiquidRoute ? '/panel-horarios' : `${adminBase}/horarios`;
+  const membershipsLinkTarget = isLiquidRoute ? '/panel-membresias' : `${adminBase}/membresias`;
   const panelV2Target = isLiquidRoute ? '/admin-v2-liquid' : '/panel-v2';
-  const privacyTarget = isLiquidRoute ? '/politica-de-privacidad-liquid' : '/politica-de-privacidad';
-  const termsTarget = isLiquidRoute ? '/terminos-y-condiciones-liquid' : '/terminos-y-condiciones';
+  const privacyTarget = isLiquidRoute ? '/politica-de-privacidad' : '/politica-de-privacidad-old';
+  const termsTarget = isLiquidRoute ? '/terminos-y-condiciones' : '/terminos-y-condiciones-old';
   const logoTarget = path.startsWith('/admin-v2-liquid')
     ? '/admin-v2-liquid'
     : isLiquidRoute
-      ? '/reservar-turno-liquid'
+      ? '/reservar'
       : path.startsWith('/panel-v2')
         ? '/panel-v2'
-        : '/';
+        : '/reservar-turno-old';
 
   const continueBooking = (event: MouseEvent<HTMLAnchorElement>) => {
-    if (path === '/reservar-turno' || path === '/reservar-turno-liquid' || path === '/reservar-turno-mercadopago' || path === '/reservar' || path === '/reserva-v4' || path === '/reserva-v2') {
+    if (
+      path === '/reservar' ||
+      path === '/reservar-turno-old' ||
+      path === '/reservar-turno' ||
+      path === '/reservar-turno-liquid' ||
+      path === '/reservar-turno-mercadopago' ||
+      path === '/reserva-v4' ||
+      path === '/reserva-v2'
+    ) {
       event.preventDefault();
       closeMenu();
     }
@@ -379,10 +397,10 @@ export function SiteHeader() {
 
         {staff?.profile.role === 'BARBER' && (
           <>
-            <Link to={`${adminBase}/turnos`} onClick={closeMenu}>
+            <Link to={turnosLinkTarget} onClick={closeMenu}>
               <CalendarDays />Turnos
             </Link>
-            <Link to={`${adminBase}/horarios`} onClick={closeMenu}>
+            <Link to={horariosLinkTarget} onClick={closeMenu}>
               <Clock3 />Horarios
             </Link>
             <Link to={`${adminBase}/pagos`} onClick={closeMenu}>
@@ -400,7 +418,7 @@ export function SiteHeader() {
 
       {staff && ['ADMIN', 'MANAGER', 'BARBER'].includes(staff.profile.role) && (
         <div className="mobile-menu-group">
-          <Link to={`${adminBase}/membresias`} onClick={closeMenu}>
+          <Link to={membershipsLinkTarget} onClick={closeMenu}>
             <Tag />Membresías y descuentos
           </Link>
         </div>
@@ -447,7 +465,7 @@ export function SiteHeader() {
             const isMp = path.includes('mercadopago');
             void signOut().then(() => {
               setStaff(null);
-              void navigate({ to: isLiquidRoute ? '/reservar-turno-liquid' : isMp ? '/reservar-turno-mercadopago' : '/reservar-turno' });
+              void navigate({ to: isLiquidRoute ? '/reservar' : isMp ? '/reservar-turno-mercadopago' : '/reservar-turno-old' });
             });
           }}
         >
@@ -504,5 +522,5 @@ export function SiteFooter() {
     window.addEventListener('resize', updateHeight);
     return () => { observer?.disconnect(); window.removeEventListener('resize', updateHeight); document.documentElement.style.removeProperty('--site-footer-height'); };
   }, []);
-  return <footer ref={footerRef} className="site-footer border-t text-xs text-muted-foreground"><div className="site-container site-footer-inner"><div className="site-footer-study"><p>San Isidro Labrador 7, Martínez, Provincia de Buenos Aires</p><p>Lunes a sábados de 10:00 a 20:00 hs</p></div><div className="site-footer-links"><div className="site-footer-link-row"><Link to={isLiquidRoute ? "/contacto-liquid" : "/contacto"} className="inline-flex items-center gap-2 hover:text-foreground"><Building2 size={14} /> Contacto</Link><a href="https://www.google.com/maps/place/KANI+BARBER+STUDIO/data=!4m2!3m1!1s0x0:0x48bcfe7b2ea7ba60" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 hover:text-foreground"><MapPin size={14} /> Ver ubicación</a><a href="https://www.instagram.com/kanibarberstudio/" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 hover:text-foreground"><Instagram size={14} /> Instagram</a><Link to={isLiquidRoute ? "/terminos-y-condiciones-liquid" : "/terminos-y-condiciones"} className="hover:text-foreground">Términos y Condiciones</Link><Link to={isLiquidRoute ? "/politica-de-privacidad-liquid" : "/politica-de-privacidad"} className="hover:text-foreground">Política de Privacidad</Link></div><span className="site-footer-copyright">© 2026 Kani Barber Studio</span></div></div></footer>;
+  return <footer ref={footerRef} className="site-footer border-t text-xs text-muted-foreground"><div className="site-container site-footer-inner"><div className="site-footer-study"><p>San Isidro Labrador 7, Martínez, Provincia de Buenos Aires</p><p>Lunes a sábados de 10:00 a 20:00 hs</p></div><div className="site-footer-links"><div className="site-footer-link-row"><Link to={isLiquidRoute ? "/contacto" : "/contacto-old"} className="inline-flex items-center gap-2 hover:text-foreground"><Building2 size={14} /> Contacto</Link><a href="https://www.google.com/maps/place/KANI+BARBER+STUDIO/data=!4m2!3m1!1s0x0:0x48bcfe7b2ea7ba60" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 hover:text-foreground"><MapPin size={14} /> Ver ubicación</a><a href="https://www.instagram.com/kanibarberstudio/" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 hover:text-foreground"><Instagram size={14} /> Instagram</a><Link to={isLiquidRoute ? "/terminos-y-condiciones" : "/terminos-y-condiciones-old"} className="hover:text-foreground">Términos y Condiciones</Link><Link to={isLiquidRoute ? "/politica-de-privacidad" : "/politica-de-privacidad-old"} className="hover:text-foreground">Política de Privacidad</Link></div><span className="site-footer-copyright">© 2026 Kani Barber Studio</span></div></div></footer>;
 }

@@ -1,6 +1,11 @@
-import { createFileRoute } from '@tanstack/react-router';
-import { V2MembershipsAndDiscounts } from '@/components/kani/v2/memberships-discounts';
+import { createFileRoute, redirect, Navigate } from '@tanstack/react-router';
 
 export const Route = createFileRoute('/admin-liquid/descuentos')({
-  component: () => <V2MembershipsAndDiscounts initialTab="DESCUENTOS" standaloneTab="DESCUENTOS" />,
+  beforeLoad: ({ search }) => {
+    throw redirect({
+      to: '/panel-administracion/descuentos',
+      search: (search as Record<string, unknown>) || {},
+    });
+  },
+  component: () => <Navigate to="/panel-administracion/descuentos" replace />,
 });

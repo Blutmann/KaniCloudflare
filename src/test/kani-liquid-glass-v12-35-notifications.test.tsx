@@ -210,8 +210,8 @@ describe('Liquid Glass V12.35 — Notifications Center & Header Bell Persistence
 
     const bookingLink = screen.getByRole('link', { name: /Juan Pérez reservó un turno con Lautaro/i });
     const schedulesLink = screen.getByRole('link', { name: /Kani Admin bloqueó el horario/i });
-    expect(bookingLink.getAttribute('href')).toBe('/admin-liquid');
-    expect(schedulesLink.getAttribute('href')).toBe('/admin-liquid/horarios');
+    expect(bookingLink.getAttribute('href')).toBe('/panel-administracion');
+    expect(schedulesLink.getAttribute('href')).toBe('/panel-horarios');
 
     // Toggle individual item read
     fireEvent.click(screen.getByRole('button', { name: 'Marcar como leída' }));
@@ -270,8 +270,8 @@ describe('Liquid Glass V12.35 — Notifications Center & Header Bell Persistence
 
     const bookingLink = await screen.findByRole('link', { name: /Juan Pérez reservó un turno con Lautaro/i });
     const schedulesLink = screen.getByRole('link', { name: /Kani Admin bloqueó el horario/i });
-    expect(bookingLink.getAttribute('href')).toBe('/admin');
-    expect(schedulesLink.getAttribute('href')).toBe('/admin/horarios');
+    expect(bookingLink.getAttribute('href')).toBe('/panel-administracion-old');
+    expect(schedulesLink.getAttribute('href')).toBe('/panel-administracion-old/horarios');
 
     fireEvent.click(screen.getByRole('button', { name: 'Marcar todas como leídas' }));
     expect(await screen.findByText('No se pudo actualizar')).toBeTruthy();

@@ -44,64 +44,64 @@ import { PoliticaDePrivacidadPage } from '@/routes/politica-de-privacidad';
 import { TerminosYCondicionesPage } from '@/routes/terminos-y-condiciones';
 import { V2Home } from '@/components/kani/v2/agenda';
 
-describe('Liquid Glass V12.28 — Isolation of internal -liquid links', () => {
-  it('mantiene enlaces legales y de retorno dentro de -liquid cuando backTo termina en -liquid', () => {
-    const privLiquid = render(<PoliticaDePrivacidadPage backTo="/reservar-turno-liquid" />);
-    const privHrefs = [...privLiquid.container.querySelectorAll('a')].map((a) =>
+describe('Liquid Glass V12.28 — Isolation of internal -old vs official links (V12.47)', () => {
+  it('mantiene enlaces legales y de retorno oficiales cuando no es ruta -old', () => {
+    const privOfficial = render(<PoliticaDePrivacidadPage backTo="/reservar" />);
+    const privHrefs = [...privOfficial.container.querySelectorAll('a')].map((a) =>
       a.getAttribute('href'),
     );
-    expect(privHrefs).toContain('/reservar-turno-liquid');
-    expect(privHrefs).toContain('/terminos-y-condiciones-liquid');
-    expect(privHrefs).not.toContain('/reservar-turno');
-    expect(privHrefs).not.toContain('/terminos-y-condiciones');
-    privLiquid.unmount();
-
-    const termsLiquid = render(<TerminosYCondicionesPage backTo="/reservar-turno-liquid" />);
-    const termsHrefs = [...termsLiquid.container.querySelectorAll('a')].map((a) =>
-      a.getAttribute('href'),
-    );
-    expect(termsHrefs).toContain('/reservar-turno-liquid');
-    expect(termsHrefs).toContain('/politica-de-privacidad-liquid');
-    expect(termsHrefs).not.toContain('/reservar-turno');
-    expect(termsHrefs).not.toContain('/politica-de-privacidad');
-    termsLiquid.unmount();
-  });
-
-  it('preserva los enlaces legales y de retorno tradicionales intactos', () => {
-    const privStd = render(<PoliticaDePrivacidadPage />);
-    const privHrefs = [...privStd.container.querySelectorAll('a')].map((a) =>
-      a.getAttribute('href'),
-    );
-    expect(privHrefs).toContain('/reservar-turno');
+    expect(privHrefs).toContain('/reservar');
     expect(privHrefs).toContain('/terminos-y-condiciones');
-    privStd.unmount();
+    expect(privHrefs).not.toContain('/reservar-turno-old');
+    expect(privHrefs).not.toContain('/terminos-y-condiciones-old');
+    privOfficial.unmount();
 
-    const termsStd = render(<TerminosYCondicionesPage />);
-    const termsHrefs = [...termsStd.container.querySelectorAll('a')].map((a) =>
+    const termsOfficial = render(<TerminosYCondicionesPage backTo="/reservar" />);
+    const termsHrefs = [...termsOfficial.container.querySelectorAll('a')].map((a) =>
       a.getAttribute('href'),
     );
-    expect(termsHrefs).toContain('/reservar-turno');
+    expect(termsHrefs).toContain('/reservar');
     expect(termsHrefs).toContain('/politica-de-privacidad');
-    termsStd.unmount();
+    expect(termsHrefs).not.toContain('/reservar-turno-old');
+    expect(termsHrefs).not.toContain('/politica-de-privacidad-old');
+    termsOfficial.unmount();
   });
 
-  it('mantiene los accesos directos de V2Home dentro de /admin-liquid y conserva /panel-administracion por defecto', () => {
-    const liquidHome = render(<V2Home basePath="/admin-liquid" />);
-    const liquidHrefs = [...liquidHome.container.querySelectorAll('a')].map((a) =>
+  it('preserva los enlaces legales y de retorno clásicos bajo rutas -old aisladas', () => {
+    const privOld = render(<PoliticaDePrivacidadPage backTo="/reservar-turno-old" />);
+    const privHrefs = [...privOld.container.querySelectorAll('a')].map((a) =>
       a.getAttribute('href'),
     );
-    expect(liquidHrefs).toContain('/admin-liquid/turnos');
-    expect(liquidHome.container.querySelectorAll('a[href="/panel-administracion/turnos"]')).toHaveLength(0);
-    expect(liquidHome.container.querySelectorAll('a[href="/panel-administracion/horarios"]')).toHaveLength(0);
-    expect(liquidHome.container.querySelectorAll('a[href="/panel-administracion/pagos"]')).toHaveLength(0);
-    liquidHome.unmount();
+    expect(privHrefs).toContain('/reservar-turno-old');
+    expect(privHrefs).toContain('/terminos-y-condiciones-old');
+    privOld.unmount();
 
-    const stdHome = render(<V2Home />);
-    const stdHrefs = [...stdHome.container.querySelectorAll('a')].map((a) =>
+    const termsOld = render(<TerminosYCondicionesPage backTo="/reservar-turno-old" />);
+    const termsHrefs = [...termsOld.container.querySelectorAll('a')].map((a) =>
       a.getAttribute('href'),
     );
-    expect(stdHrefs).toContain('/panel-administracion/turnos');
-    expect(stdHrefs).toContain('/panel-administracion/pagos');
-    stdHome.unmount();
+    expect(termsHrefs).toContain('/reservar-turno-old');
+    expect(termsHrefs).toContain('/politica-de-privacidad-old');
+    termsOld.unmount();
+  });
+
+  it('mantiene los accesos directos de V2Home en /panel-administracion oficial y aísla /panel-administracion-old', () => {
+    const officialHome = render(<V2Home />);
+    const officialHrefs = [...officialHome.container.querySelectorAll('a')].map((a) =>
+      a.getAttribute('href'),
+    );
+    expect(officialHrefs).toContain('/panel-administracion/turnos');
+    expect(officialHrefs).toContain('/panel-administracion/pagos');
+    officialHome.unmount();
+
+    const oldHome = render(<V2Home basePath="/panel-administracion-old" />);
+    const oldHrefs = [...oldHome.container.querySelectorAll('a')].map((a) =>
+      a.getAttribute('href'),
+    );
+    expect(oldHrefs).toContain('/panel-administracion-old/turnos');
+    expect(oldHome.container.querySelectorAll('a[href="/panel-administracion/turnos"]')).toHaveLength(0);
+    expect(oldHome.container.querySelectorAll('a[href="/panel-administracion/horarios"]')).toHaveLength(0);
+    expect(oldHome.container.querySelectorAll('a[href="/panel-administracion/pagos"]')).toHaveLength(0);
+    oldHome.unmount();
   });
 });

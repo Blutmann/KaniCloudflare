@@ -67,9 +67,9 @@ describe('Liquid Glass V12.19 — Admin Visual Transformation & Isolation', () =
     delete document.body.dataset.adminInternal;
   });
 
-  it('elimina el botón Actualizar y renderiza la cápsula deslizante en /admin-liquid', async () => {
-    mockPathname = '/admin-liquid/turnos';
-    const { container, unmount } = render(<V2Layout basePath="/admin-liquid" liquidGlass />);
+  it('elimina el botón Actualizar y renderiza la cápsula deslizante en /panel-administracion', async () => {
+    mockPathname = '/panel-administracion/turnos';
+    const { container, unmount } = render(<V2Layout basePath="/panel-administracion" />);
 
     await waitFor(() => {
       expect(screen.getByTestId('v2-outlet')).toBeTruthy();
@@ -85,9 +85,9 @@ describe('Liquid Glass V12.19 — Admin Visual Transformation & Isolation', () =
     expect(document.body.dataset.lgAdmin).toBeUndefined();
   });
 
-  it('preserva el botón Actualizar y no activa data-lg-admin en /panel-administracion', async () => {
-    mockPathname = '/panel-administracion/turnos';
-    const { container } = render(<V2Layout />);
+  it('preserva el botón Actualizar y no activa data-lg-admin en /panel-administracion-old', async () => {
+    mockPathname = '/panel-administracion-old/turnos';
+    const { container } = render(<V2Layout basePath="/panel-administracion-old" />);
 
     await waitFor(() => {
       expect(screen.getByTestId('v2-outlet')).toBeTruthy();
@@ -100,8 +100,8 @@ describe('Liquid Glass V12.19 — Admin Visual Transformation & Isolation', () =
     expect(container.querySelector('.lg-admin-nav-pill')).toBeNull();
   });
 
-  it('conserva la campanita de notificaciones en el header de /admin-liquid y persiste en /reservar-turno-liquid cuando hay sesión activa', async () => {
-    mockPathname = '/admin-liquid/turnos';
+  it('conserva la campanita de notificaciones en el header de /panel-administracion y persiste en /reservar cuando hay sesión activa', async () => {
+    mockPathname = '/panel-administracion/turnos';
     const { unmount } = render(
       <KaniProvider>
         <SiteHeader />
@@ -112,7 +112,7 @@ describe('Liquid Glass V12.19 — Admin Visual Transformation & Isolation', () =
     expect(bell.getAttribute('data-role')).toBe('ADMIN');
     unmount();
 
-    mockPathname = '/reservar-turno-liquid';
+    mockPathname = '/reservar';
     render(
       <KaniProvider>
         <SiteHeader />

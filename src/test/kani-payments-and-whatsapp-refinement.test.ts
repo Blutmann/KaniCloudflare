@@ -12,7 +12,7 @@ describe('Kani Barber Studio — Refinamiento de Pagos y unificación de WhatsAp
   const v2Css = fs.readFileSync(path.join(root, 'components/kani/v2/v2.css'), 'utf-8');
   const paymentsTsx = fs.readFileSync(path.join(root, 'components/kani/v2/payments.tsx'), 'utf-8');
   const siteHeaderTsx = fs.readFileSync(path.join(root, 'components/kani/site-header.tsx'), 'utf-8');
-  const estudioTsx = fs.readFileSync(path.join(root, 'routes/estudio.tsx'), 'utf-8');
+  const estudioTsx = fs.readFileSync(path.join(root, 'routes/contacto.tsx'), 'utf-8');
 
   describe('1. WhatsApp público oficial unificado', () => {
     it('define la constante oficial KANI_PUBLIC_WHATSAPP_NUMBER como 5491155616438', () => {

@@ -25,6 +25,7 @@ import {
   type ServicePaymentType,
 } from "@/lib/kani-payments";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { isLiquidGlassPath } from "@/components/kani/experimental/liquid-glass-shell";
 import { BarberFilter, Empty } from "./shared";
 import { useV2 } from "./data";
 import './payment-amount-alignment.css';
@@ -87,7 +88,7 @@ export function V2Payments() {
   const [deletingPayment, setDeletingPayment] = useState<ServicePayment | null>(null);
   const [actionNotice, setActionNotice] = useState("");
   const pathname = useLocation({ select: (location) => location.pathname });
-  const isLiquidAdmin = pathname.startsWith("/admin-liquid");
+  const isLiquidAdmin = isLiquidGlassPath(pathname);
   const shouldReduceMotion = useReducedMotion();
 
   const settled = new Set(

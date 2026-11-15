@@ -133,11 +133,11 @@ describe('Liquid Glass V12.31 — Correcciones de interfaz, modales y navegació
     'utf8',
   );
   const membresiasRoute = fs.readFileSync(
-    path.resolve(root, 'src/routes/admin-liquid.membresias.tsx'),
+    path.resolve(root, 'src/routes/panel-membresias.tsx'),
     'utf8',
   );
   const descuentosRoute = fs.readFileSync(
-    path.resolve(root, 'src/routes/admin-liquid.descuentos.tsx'),
+    path.resolve(root, 'src/routes/panel-descuentos.tsx'),
     'utf8',
   );
 
@@ -232,9 +232,9 @@ describe('Liquid Glass V12.31 — Correcciones de interfaz, modales y navegació
     expect(layer10).toContain('padding: 0 !important;');
   });
 
-  it('5. En /admin-liquid/membresias y /admin-liquid/descuentos muestra cápsula de 3 opciones y restaura 6 en /admin-liquid', async () => {
-    mockPathname = '/admin-liquid/membresias';
-    const { container, rerender } = render(<V2Layout basePath="/admin-liquid" liquidGlass />);
+  it('5. En /panel-membresias y /panel-descuentos muestra cápsula de 3 opciones y restaura 6 en /panel-administracion', async () => {
+    mockPathname = '/panel-membresias';
+    const { container, rerender } = render(<V2Layout basePath="/panel-administracion" liquidGlass />);
 
     await waitFor(() => {
       expect(container.querySelector('.lg-memberships-nav')).not.toBeNull();
@@ -258,16 +258,16 @@ describe('Liquid Glass V12.31 — Correcciones de interfaz, modales y navegació
       membershipsLinks[2].querySelector('.lg-admin-nav-label--mobile')?.textContent?.trim(),
     ).toBe('Administración');
     expect(membershipsLinks.map((a) => a.getAttribute('href'))).toEqual([
-      '/admin-liquid/membresias',
-      '/admin-liquid/descuentos',
-      '/admin-liquid',
+      '/panel-membresias',
+      '/panel-descuentos',
+      '/panel-administracion',
     ]);
     expect(membershipsLinks[0].getAttribute('aria-current')).toBe('page');
     expect(membershipsLinks[2].getAttribute('aria-current')).toBeNull();
 
     // Descuentos activo
-    mockPathname = '/admin-liquid/descuentos';
-    rerender(<V2Layout basePath="/admin-liquid" liquidGlass />);
+    mockPathname = '/panel-descuentos';
+    rerender(<V2Layout basePath="/panel-administracion" forcedSectionSlug="descuentos" liquidGlass />);
     await waitFor(() => {
       const links = container.querySelectorAll('.lg-memberships-nav .admin-section-nav-link');
       expect(links[1].getAttribute('aria-current')).toBe('page');
@@ -275,8 +275,8 @@ describe('Liquid Glass V12.31 — Correcciones de interfaz, modales y navegació
     });
 
     // Regreso a Panel de administración -> 6 secciones habituales
-    mockPathname = '/admin-liquid';
-    rerender(<V2Layout basePath="/admin-liquid" liquidGlass />);
+    mockPathname = '/panel-administracion';
+    rerender(<V2Layout basePath="/panel-administracion" liquidGlass />);
     await waitFor(() => {
       expect(container.querySelector('.lg-memberships-nav')).toBeNull();
     });
@@ -310,8 +310,8 @@ describe('Liquid Glass V12.31 — Correcciones de interfaz, modales y navegació
   });
 
   it('8. V12.43.3 — Las tres pestañas inactivas mantienen jerarquía tipográfica uniforme sin negrita permanente en Administración', async () => {
-    mockPathname = '/admin-liquid/membresias';
-    const { container, rerender } = render(<V2Layout basePath="/admin-liquid" liquidGlass />);
+    mockPathname = '/panel-administracion/membresias';
+    const { container, rerender } = render(<V2Layout basePath="/panel-administracion" liquidGlass />);
 
     await waitFor(() => {
       expect(container.querySelector('.lg-memberships-nav')).not.toBeNull();
@@ -339,8 +339,8 @@ describe('Liquid Glass V12.31 — Correcciones de interfaz, modales y navegació
 
     checkInactiveUniformity('membresias');
 
-    mockPathname = '/admin-liquid/descuentos';
-    rerender(<V2Layout basePath="/admin-liquid" liquidGlass />);
+    mockPathname = '/panel-administracion/descuentos';
+    rerender(<V2Layout basePath="/panel-administracion" liquidGlass />);
     await waitFor(() => {
       expect(
         container

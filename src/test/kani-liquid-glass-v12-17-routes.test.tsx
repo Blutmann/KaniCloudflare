@@ -52,27 +52,33 @@ describe('Liquid Glass V12.17 — Parallel Routes & Menu Isolation', () => {
     document.body.className = '';
   });
 
-  it('identifica correctamente rutas Liquid Glass vs rutas tradicionales', () => {
-    expect(isLiquidGlassPath('/reservar-turno-liquid')).toBe(true);
-    expect(isLiquidGlassPath('/contacto-liquid')).toBe(true);
-    expect(isLiquidGlassPath('/admin-liquid')).toBe(true);
-    expect(isLiquidGlassPath('/admin-liquid/turnos')).toBe(true);
+  it('identifica correctamente rutas Liquid Glass oficiales vs rutas tradicionales -old', () => {
+    expect(isLiquidGlassPath('/')).toBe(true);
+    expect(isLiquidGlassPath('/reservar')).toBe(true);
+    expect(isLiquidGlassPath('/contacto')).toBe(true);
+    expect(isLiquidGlassPath('/panel-administracion')).toBe(true);
+    expect(isLiquidGlassPath('/panel-administracion/turnos')).toBe(true);
+    expect(isLiquidGlassPath('/panel-membresias')).toBe(true);
+    expect(isLiquidGlassPath('/panel-descuentos')).toBe(true);
+    expect(isLiquidGlassPath('/panel-turnos')).toBe(true);
+    expect(isLiquidGlassPath('/panel-horarios')).toBe(true);
     expect(isLiquidGlassPath('/admin-v2-liquid')).toBe(true);
     expect(isLiquidGlassPath('/admin-v2-liquid/operacion/turnos')).toBe(true);
-    expect(isLiquidGlassPath('/politica-de-privacidad-liquid')).toBe(true);
-    expect(isLiquidGlassPath('/terminos-y-condiciones-liquid')).toBe(true);
+    expect(isLiquidGlassPath('/politica-de-privacidad')).toBe(true);
+    expect(isLiquidGlassPath('/terminos-y-condiciones')).toBe(true);
 
-    expect(isLiquidGlassPath('/')).toBe(false);
-    expect(isLiquidGlassPath('/reservar-turno')).toBe(false);
-    expect(isLiquidGlassPath('/contacto')).toBe(false);
-    expect(isLiquidGlassPath('/panel-administracion')).toBe(false);
+    expect(isLiquidGlassPath('/reservar-turno-old')).toBe(false);
+    expect(isLiquidGlassPath('/contacto-old')).toBe(false);
+    expect(isLiquidGlassPath('/panel-administracion-old')).toBe(false);
+    expect(isLiquidGlassPath('/panel-administracion-old/turnos')).toBe(false);
     expect(isLiquidGlassPath('/panel-v2')).toBe(false);
-    expect(isLiquidGlassPath('/politica-de-privacidad')).toBe(false);
-    expect(isLiquidGlassPath('/terminos-y-condiciones')).toBe(false);
+    expect(isLiquidGlassPath('/politica-de-privacidad-old')).toBe(false);
+    expect(isLiquidGlassPath('/terminos-y-condiciones-old')).toBe(false);
+    expect(isLiquidGlassPath('/reservar-turno-mercadopago')).toBe(false);
   });
 
-  it('el menú de /reservar-turno-liquid enlaza exclusivamente a rutas Liquid Glass', () => {
-    mockPathname = '/reservar-turno-liquid';
+  it('el menú de /reservar enlaza exclusivamente a rutas oficiales Liquid Glass', () => {
+    mockPathname = '/reservar';
     render(
       <KaniProvider>
         <SiteHeader />
@@ -84,16 +90,16 @@ describe('Liquid Glass V12.17 — Parallel Routes & Menu Isolation', () => {
     const hrefs = [...nav.querySelectorAll('a')].map((a) => a.getAttribute('href'));
 
     expect(hrefs).toEqual([
-      '/reservar-turno-liquid',
-      '/contacto-liquid',
-      '/admin-liquid',
-      '/politica-de-privacidad-liquid',
-      '/terminos-y-condiciones-liquid',
+      '/reservar',
+      '/contacto',
+      '/panel-administracion',
+      '/politica-de-privacidad',
+      '/terminos-y-condiciones',
     ]);
     expect(screen.queryByRole('link', { name: /Panel V2/i })).toBeNull();
 
-    // En /admin-liquid tampoco se muestra «Panel V2»
-    mockPathname = '/admin-liquid';
+    // En /panel-administracion tampoco se muestra «Panel V2»
+    mockPathname = '/panel-administracion';
     const adminHeader = render(
       <KaniProvider>
         <SiteHeader />
@@ -105,7 +111,7 @@ describe('Liquid Glass V12.17 — Parallel Routes & Menu Isolation', () => {
     fireEvent.click(screen.getByRole('button', { name: /Volver a la reserva/i }));
     expect(mockNavigate).not.toHaveBeenCalled();
 
-    mockPathname = '/contacto-liquid';
+    mockPathname = '/contacto';
     render(
       <KaniProvider>
         <MobileMenuAction />
@@ -113,11 +119,11 @@ describe('Liquid Glass V12.17 — Parallel Routes & Menu Isolation', () => {
     );
     const returnButtons = screen.getAllByRole('button', { name: /Volver a la reserva/i });
     fireEvent.click(returnButtons[returnButtons.length - 1]);
-    expect(mockNavigate).toHaveBeenCalledWith({ to: '/reservar-turno-liquid' });
+    expect(mockNavigate).toHaveBeenCalledWith({ to: '/reservar' });
   });
 
-  it('el menú tradicional en /reservar-turno mantiene sus rutas originales intactas', () => {
-    mockPathname = '/reservar-turno';
+  it('el menú clásico en /reservar-turno-old mantiene sus rutas -old intactas', () => {
+    mockPathname = '/reservar-turno-old';
     render(
       <KaniProvider>
         <SiteHeader />
@@ -129,18 +135,18 @@ describe('Liquid Glass V12.17 — Parallel Routes & Menu Isolation', () => {
     const hrefs = [...nav.querySelectorAll('a')].map((a) => a.getAttribute('href'));
 
     expect(hrefs).toEqual([
-      '/reservar-turno',
-      '/contacto',
-      '/panel-administracion',
+      '/reservar-turno-old',
+      '/contacto-old',
+      '/panel-administracion-old',
       '/panel-v2',
-      '/politica-de-privacidad',
-      '/terminos-y-condiciones',
+      '/politica-de-privacidad-old',
+      '/terminos-y-condiciones-old',
     ]);
   });
 
-  it('bloquea acceso sin sesión administrativa en /admin-liquid y /admin-v2-liquid', async () => {
-    mockPathname = '/admin-liquid';
-    const { unmount } = render(<V2Layout basePath="/admin-liquid" liquidGlass />);
+  it('bloquea acceso sin sesión administrativa en /panel-administracion y /panel-administracion-old', async () => {
+    mockPathname = '/panel-administracion';
+    const { unmount } = render(<V2Layout basePath="/panel-administracion" liquidGlass />);
     await waitFor(() => {
       expect(screen.getByTestId('admin-access-gate')).toBeTruthy();
     });

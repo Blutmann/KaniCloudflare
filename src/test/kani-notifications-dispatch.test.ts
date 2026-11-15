@@ -10,6 +10,7 @@ const {
   mockFromAppointments,
   mockFromDispatches,
   mockFromClients,
+  mockCreateClient,
 } = vi.hoisted(() => ({
   mockClaim: vi.fn(),
   mockComplete: vi.fn(),
@@ -20,10 +21,13 @@ const {
   mockFromAppointments: vi.fn(),
   mockFromDispatches: vi.fn(),
   mockFromClients: vi.fn(),
+  mockCreateClient: vi.fn(),
 }));
 
 vi.mock("@supabase/supabase-js", () => ({
-  createClient: () => ({
+  createClient: (...args: any[]) => {
+    mockCreateClient(...args);
+    return {
     rpc: (fn: string, params: any) => {
       if (fn === "claim_appointment_notification") return mockClaim(params);
       if (fn === "complete_appointment_notification") return mockComplete(params);
@@ -77,7 +81,8 @@ vi.mock("@supabase/supabase-js", () => ({
         select: () => ({ eq: () => ({ maybeSingle: () => Promise.resolve({ data: null, error: null }) }) }),
       };
     },
-  }),
+  };
+  },
 }));
 
 import {
@@ -510,5 +515,41 @@ describe("dispatchAppointmentNotification Matrix", () => {
     expect(recovery.failed).toBe(0);
     expect(fetchSpy).not.toHaveBeenCalled();
     expect(mockClaim).not.toHaveBeenCalled();
+  });
+
+  it("V12.47: createNotificationSupabaseClient utiliza SUPABASE_SERVICE_ROLE_KEY cuando está disponible (con fallback a request client) y envía enlaces a /reservar", async () => {
+    mockCreateClient.mockClear();
+    process.env.SUPABASE_SERVICE_ROLE_KEY = "service-role-v12-47";
+
+    const { createNotificationSupabaseClient } = await import("../lib/kani-notifications.server");
+    const { buildCancelledEmail } = await import("../lib/kani-notifications.functions");
+
+    createNotificationSupabaseClient();
+    expect(mockCreateClient).toHaveBeenCalledWith(
+      "https://iockpxtkflyjfagkvgnr.supabase.co",
+      "service-role-v12-47",
+      expect.any(Object),
+    );
+
+    const cancelled = buildCancelledEmail({
+      appointmentId: baseAppointmentId,
+      barberId: "lautaro",
+      barberName: "Lautaro",
+      clientName: "Cliente Test",
+      clientEmail: "cliente@test.com",
+      clientPhone: "+5491155551234",
+      serviceId: "corte",
+      serviceName: "Corte",
+      servicePriceArs: 20000,
+      downPaymentArs: 0,
+      bookingDate: "2026-11-20",
+      startTime: "15:00:00",
+      endTime: "15:45:00",
+    });
+
+    expect(cancelled.html).toContain("https://www.kanibarber.com/reservar");
+    expect(cancelled.html).not.toContain("/reservar-turno");
+    expect(cancelled.text).toContain("https://www.kanibarber.com/reservar");
+    expect(cancelled.text).not.toContain("/reservar-turno");
   });
 });
