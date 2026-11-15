@@ -95,6 +95,22 @@ export function ThemeToggle() {
 const LIQUID_HEADER_SCROLL_ENTER_PX = 8;
 const LIQUID_HEADER_SCROLL_EXIT_PX = 3;
 
+function isVerticallyScrollableElement(el: Element): boolean {
+  if (el === document.documentElement || el === document.body) {
+    return true;
+  }
+  if (el.scrollHeight <= el.clientHeight + 2) {
+    return false;
+  }
+  if (typeof window !== 'undefined' && typeof window.getComputedStyle === 'function') {
+    const overflowY = window.getComputedStyle(el).overflowY;
+    if (overflowY === 'hidden' || overflowY === 'clip' || overflowY === 'visible') {
+      return false;
+    }
+  }
+  return true;
+}
+
 function getVerticalScrollOffset(scrolledContainers: Set<Element>): number {
   let maxScroll = Math.max(
     0,
@@ -111,7 +127,7 @@ function getVerticalScrollOffset(scrolledContainers: Set<Element>): number {
   }
 
   for (const el of Array.from(scrolledContainers)) {
-    if (!el.isConnected || el.scrollTop <= 0) {
+    if (!el.isConnected || el.scrollTop <= 0 || !isVerticallyScrollableElement(el)) {
       scrolledContainers.delete(el);
       continue;
     }
@@ -180,7 +196,7 @@ export function SiteHeader() {
         ) {
           return;
         }
-        if (target.scrollTop > 0) {
+        if (target.scrollTop > 0 && isVerticallyScrollableElement(target)) {
           scrolledContainers.add(target);
         } else {
           scrolledContainers.delete(target);
@@ -189,24 +205,50 @@ export function SiteHeader() {
       scheduleEvaluate();
     };
 
-    setHeaderScrolled(false);
+    // Sincronizar inmediatamente en montaje/navegación/restauración y tras el primer frame
+    evaluate();
     scheduleEvaluate();
 
     window.addEventListener('scroll', scheduleEvaluate, { passive: true });
     document.addEventListener('scroll', onScrollCapture, { passive: true, capture: true });
     window.addEventListener('resize', scheduleEvaluate, { passive: true });
     window.addEventListener('orientationchange', scheduleEvaluate, { passive: true });
+    window.addEventListener('pageshow', scheduleEvaluate, { passive: true });
+    window.addEventListener('popstate', scheduleEvaluate, { passive: true });
+
+    const vv = window.visualViewport;
+    if (vv) {
+      vv.addEventListener('resize', scheduleEvaluate, { passive: true });
+      vv.addEventListener('scroll', scheduleEvaluate, { passive: true });
+    }
+
+    let resizeObserver: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== 'undefined') {
+      resizeObserver = new ResizeObserver(scheduleEvaluate);
+      resizeObserver.observe(document.documentElement);
+      const siteShell = document.querySelector('.site-shell');
+      if (siteShell) {
+        resizeObserver.observe(siteShell);
+      }
+    }
 
     return () => {
       if (rafId) {
         window.cancelAnimationFrame(rafId);
       }
+      resizeObserver?.disconnect();
       window.removeEventListener('scroll', scheduleEvaluate);
       document.removeEventListener('scroll', onScrollCapture, true);
       window.removeEventListener('resize', scheduleEvaluate);
       window.removeEventListener('orientationchange', scheduleEvaluate);
+      window.removeEventListener('pageshow', scheduleEvaluate);
+      window.removeEventListener('popstate', scheduleEvaluate);
+      if (vv) {
+        vv.removeEventListener('resize', scheduleEvaluate);
+        vv.removeEventListener('scroll', scheduleEvaluate);
+      }
     };
-  }, [isLiquidRoute, path]);
+  }, [isLiquidRoute, path, menuOpen]);
   useEffect(() => {
     let cancelled = false;
     const refreshStaff = () => {

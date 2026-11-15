@@ -50,11 +50,89 @@ export function V2Layout({
       delete document.body.dataset.lgAdmin;
     };
   }, [liquidGlass]);
+
   const [state, setState] = useState<{
     loading: boolean;
     staff: AuthenticatedStaff | null;
     error: string;
   }>({ loading: true, staff: null, error: "" });
+
+  // Evita que la restauración nativa o de router tras reload/carga asíncrona deje el scroll clavado ocultando el stepper bajo el header
+  useEffect(() => {
+    if (!liquidGlass || typeof window === "undefined" || typeof document === "undefined") return;
+
+    const historyObj = window.history;
+    const prevRestoration =
+      "scrollRestoration" in historyObj ? historyObj.scrollRestoration : undefined;
+    const navEntries =
+      typeof window.performance?.getEntriesByType === "function"
+        ? (window.performance.getEntriesByType("navigation") as PerformanceNavigationTiming[])
+        : [];
+    const isReload = navEntries[0]?.type === "reload";
+
+    const resetTop = () => {
+      if (typeof window.scrollTo === "function") {
+        window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+      }
+      if (document.documentElement) document.documentElement.scrollTop = 0;
+      if (document.body) document.body.scrollTop = 0;
+    };
+
+    if (isReload && !window.location.hash) {
+      if ("scrollRestoration" in historyObj) {
+        try {
+          historyObj.scrollRestoration = "manual";
+        } catch {
+          // ignorar si el navegador restringe history.scrollRestoration
+        }
+      }
+      resetTop();
+      const rafId =
+        typeof window.requestAnimationFrame === "function"
+          ? window.requestAnimationFrame(resetTop)
+          : 0;
+      return () => {
+        if (rafId && typeof window.cancelAnimationFrame === "function") {
+          window.cancelAnimationFrame(rafId);
+        }
+        if ("scrollRestoration" in historyObj && prevRestoration) {
+          try {
+            historyObj.scrollRestoration = prevRestoration;
+          } catch {
+            // ignorar
+          }
+        }
+      };
+    }
+    return undefined;
+  }, [liquidGlass]);
+
+  useEffect(() => {
+    if (!liquidGlass || state.loading || typeof window === "undefined" || window.location.hash) return;
+    const navEntries =
+      typeof window.performance?.getEntriesByType === "function"
+        ? (window.performance.getEntriesByType("navigation") as PerformanceNavigationTiming[])
+        : [];
+    if (navEntries[0]?.type !== "reload") return;
+
+    const resetAfterAsyncHydration = () => {
+      if (typeof window.scrollTo === "function") {
+        window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+      }
+      if (document.documentElement) document.documentElement.scrollTop = 0;
+      if (document.body) document.body.scrollTop = 0;
+    };
+    resetAfterAsyncHydration();
+    const rafId =
+      typeof window.requestAnimationFrame === "function"
+        ? window.requestAnimationFrame(resetAfterAsyncHydration)
+        : 0;
+    return () => {
+      if (rafId && typeof window.cancelAnimationFrame === "function") {
+        window.cancelAnimationFrame(rafId);
+      }
+    };
+  }, [liquidGlass, state.loading]);
   const [allowed, setAllowed] = useState(false);
 
   useEffect(() => {
