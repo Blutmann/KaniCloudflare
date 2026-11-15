@@ -2733,3 +2733,66 @@ html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-se
     backdrop-filter: none !important;
   }
 }
+
+/* ==============================================================================
+ * LAYER 12 · V12.40 ESTABILIDAD DE SCROLL Y HEADER EN /admin-liquid (MOBILE Y DESKTOP)
+ * - Elimina position: sticky de .site-header-slot en ancestros con overflow-x: clip
+ *   (tanto en mobile <= 767px como el slot de 0px en tablet/desktop >= 768px).
+ * - Fija header.site-header.liquid-glass-header arriba (top: 0, height: 64px) con
+ *   espaciador estático de 64px para que el stepper .v2-navigation nunca quede recortado.
+ * ============================================================================== */
+@media (max-width: 767px) {
+  html[data-theme] body[data-lg-admin="true"] .site-shell > .site-header-slot,
+  html[data-theme] body[data-lg-admin="true"] .site-shell > .site-header-slot:not(:has(> header.menu-open)),
+  html[data-theme] body[data-lg-admin="true"] .site-shell:has(.v2-shell) > .site-header-slot:has(> header.menu-open) {
+    position: static !important;
+    top: auto !important;
+    z-index: auto !important;
+    height: 64px !important;
+    min-height: 64px !important;
+    max-height: 64px !important;
+    flex: 0 0 64px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    pointer-events: none !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .site-shell > .site-header-slot > header.site-header.liquid-glass-header {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: auto !important;
+    width: 100% !important;
+    height: 64px !important;
+    min-height: 64px !important;
+    max-height: 64px !important;
+    flex: none !important;
+    z-index: 120 !important;
+    transform: none !important;
+    pointer-events: auto !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .site-shell > .site-header-slot > header.site-header.liquid-glass-header.menu-open {
+    z-index: 145 !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .lg-admin-shell :is(.v2-navigation, .v2-workspace) {
+    scroll-margin-top: 84px !important;
+  }
+}
+
+@media (min-width: 768px) {
+  html[data-theme] body[data-lg-admin="true"] .site-shell > .site-header-slot,
+  html[data-theme] body[data-lg-admin="true"] .site-shell > .site-header-slot:not(:has(> header.menu-open)),
+  html[data-theme] body[data-lg-admin="true"] .site-shell:has(.v2-shell) > .site-header-slot:has(> header.menu-open) {
+    position: static !important;
+    top: auto !important;
+    z-index: auto !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    max-height: 0 !important;
+    flex: 0 0 0px !important;
+    overflow: visible !important;
+  }
+}
