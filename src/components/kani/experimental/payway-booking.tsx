@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Check, CircleAlert, HelpCircle, Instagram, Loader2, MapPin } from 'lucide-react';
+import { Check, CircleAlert, HelpCircle, Instagram, Loader2, MapPin, Volume2, VolumeX } from 'lucide-react';
 import { Booking, type BookingPaymentDraft } from '@/components/kani/booking';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,6 +26,12 @@ import { KANI_MAPS_URL, KANI_MAPS_EMBED_URL } from '@/lib/kani-constants';
 import { BookingConfirmedScreen } from '@/components/kani/booking-confirmed-screen';
 import { CardBrandBadge } from './card-brand-badges';
 import type { LiquidGlassMotionAdapter } from './liquid-glass-motion.types';
+import {
+  playConfirmationChime,
+  readConfirmationSoundEnabled,
+  unlockConfirmationAudio,
+  writeConfirmationSoundEnabled,
+} from './liquid-glass-feedback';
 
 const CONFIRMED_STORAGE_KEY = 'kani:payway:confirmed-booking';
 const PAID_APPOINTMENTS_STORAGE_KEY = 'kani:payway:paid-appointments';
@@ -217,6 +223,49 @@ export function PaywayBooking({
   const paidAppointmentsRef = useRef<Set<string>>(readPaidAppointments());
   const opening = useRef(false);
   const paying = useRef(false);
+  const [soundEnabled, setSoundEnabled] = useState(() => (isLiquid ? readConfirmationSoundEnabled() : false));
+  const soundEnabledRef = useRef(soundEnabled);
+  soundEnabledRef.current = soundEnabled;
+
+  function toggleConfirmationSound() {
+    if (!isLiquid) return;
+    const next = !soundEnabled;
+    setSoundEnabled(next);
+    soundEnabledRef.current = next;
+    writeConfirmationSoundEnabled(next);
+    if (next) {
+      unlockConfirmationAudio();
+    }
+  }
+
+  function notifyVerifiedConfirmationSound(appointmentId: string) {
+    if (!isLiquid || !soundEnabledRef.current) return;
+    playConfirmationChime(appointmentId, { enabled: soundEnabledRef.current });
+  }
+
+  const soundPreferenceControl = isLiquid ? (
+    <div className="lg-sound-preference-wrap">
+      <button
+        type="button"
+        role="switch"
+        aria-checked={soundEnabled}
+        aria-label={soundEnabled ? 'Desactivar sonido al confirmar reserva' : 'Activar sonido al confirmar reserva'}
+        className={`lg-sound-toggle ${soundEnabled ? 'is-enabled' : ''}`}
+        onClick={toggleConfirmationSound}
+      >
+        <span className="lg-sound-toggle-icon" aria-hidden="true">
+          {soundEnabled ? <Volume2 size={15} /> : <VolumeX size={15} />}
+        </span>
+        <span className="lg-sound-toggle-copy">
+          <span className="lg-sound-toggle-title">Sonido al confirmar</span>
+          <span className="lg-sound-toggle-state">{soundEnabled ? 'Activado' : 'Desactivado'}</span>
+        </span>
+        <span className="lg-sound-toggle-pill" aria-hidden="true">
+          <span className="lg-sound-toggle-thumb" />
+        </span>
+      </button>
+    </div>
+  ) : undefined;
   const isApprovedConfirmed = Boolean(confirmed) || (result?.state === 'approved' && result?.appointmentConfirmed === true);
   const hasPendingPayment = Boolean(pendingCheck) && !isApprovedConfirmed && result?.state !== 'rejected';
   const hasReviewNotice = result?.state === 'review';
@@ -259,6 +308,7 @@ export function PaywayBooking({
           persistConfirmedBooking(confirmedBooking);
           setResult(statusRes);
           setConfirmed(confirmedBooking);
+          notifyVerifiedConfirmationSound(confirmedBooking.appointmentId);
           setOpen(false);
           if (typeof window !== 'undefined' && typeof window.scrollTo === 'function') {
             window.scrollTo({ top: 0, behavior: 'instant' });
@@ -345,6 +395,7 @@ export function PaywayBooking({
           persistConfirmedBooking(confirmedBooking);
           setResult(statusRes);
           setConfirmed(confirmedBooking);
+          notifyVerifiedConfirmationSound(confirmedBooking.appointmentId);
           setOpen(false);
         } else if (statusRes.state === 'rejected') {
           clearActiveAttempt();
@@ -401,6 +452,7 @@ export function PaywayBooking({
           persistConfirmedBooking(confirmedBooking);
           setResult(statusRes);
           setConfirmed(confirmedBooking);
+          notifyVerifiedConfirmationSound(confirmedBooking.appointmentId);
           setOpen(false);
           setPendingCheck(null);
         } else if (statusRes.state === 'rejected') {
@@ -563,6 +615,9 @@ export function PaywayBooking({
   async function begin(draft: BookingPaymentDraft) {
     if (isApprovedConfirmed) return;
     if (opening.current || hasPendingPayment || result?.state === 'unknown' || result?.state === 'review') { setOpen(true); return; }
+    if (isLiquid && soundEnabledRef.current) {
+      unlockConfirmationAudio();
+    }
     draftRef.current = draft;
 
     // Flujo de confirmación directa sin seña (NO_DEPOSIT / FREE_SERVICE)
@@ -609,6 +664,7 @@ export function PaywayBooking({
           paidAppointmentsRef.current.add(confirmedResult.appointmentId);
           persistConfirmedBooking(confirmedBooking);
           setConfirmed(confirmedBooking);
+          notifyVerifiedConfirmationSound(confirmedBooking.appointmentId);
           setOpen(false);
           if (typeof window !== 'undefined' && typeof window.scrollTo === 'function') {
             window.scrollTo({ top: 0, behavior: 'instant' });
@@ -699,6 +755,9 @@ export function PaywayBooking({
   async function pay(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (paying.current || terminal || !checkout || paidAppointmentsRef.current.has(checkout.appointmentId)) return;
+    if (isLiquid && soundEnabledRef.current) {
+      unlockConfirmationAudio();
+    }
     const form = event.currentTarget;
 
     setSubmitAttempted(true);
@@ -768,6 +827,7 @@ export function PaywayBooking({
         persistConfirmedBooking(confirmedBooking);
         setResult(response);
         setConfirmed(confirmedBooking);
+        notifyVerifiedConfirmationSound(confirmedBooking.appointmentId);
         setOpen(false);
         if (typeof window !== 'undefined' && typeof window.scrollTo === 'function') {
           window.scrollTo({ top: 0, behavior: 'instant' });
@@ -892,6 +952,7 @@ export function PaywayBooking({
         confirmed={confirmed}
         onHomeClick={startNewReservation}
         homeUrl={homeUrl}
+        soundPreferenceControl={soundPreferenceControl}
       />
     );
   }
@@ -901,6 +962,7 @@ export function PaywayBooking({
       <Booking
         variant="v3"
         experimentalMotion={experimentalMotion}
+        soundPreferenceControl={soundPreferenceControl}
         onPaymentRequest={begin}
         paymentActionLabel={hasReviewNotice ? 'Ver detalle de revisión' : hasPendingPayment ? 'Ver estado del pago' : undefined}
         paymentNotice={

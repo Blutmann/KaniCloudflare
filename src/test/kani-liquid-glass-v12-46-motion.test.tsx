@@ -22,6 +22,14 @@ import {
   LiquidGlassMotionProvider,
   liquidGlassMotionAdapter,
 } from '@/components/kani/experimental/liquid-glass-motion';
+import {
+  __resetLiquidGlassFeedbackForTests,
+  hasPlayedConfirmationSound,
+  playConfirmationChime,
+  readConfirmationSoundEnabled,
+  triggerSelectionHaptic,
+  writeConfirmationSoundEnabled,
+} from '@/components/kani/experimental/liquid-glass-feedback';
 
 function BookingMotionHarness() {
   const [selectedService, setSelectedService] = useState<string>('corte');
@@ -93,6 +101,9 @@ describe('Liquid Glass V12.46.1 — Liquid Glass Motion System (Servicio, Barber
   beforeEach(() => {
     vi.useFakeTimers();
     motionMock.reduced = false;
+    window.localStorage.clear();
+    window.sessionStorage.clear();
+    __resetLiquidGlassFeedbackForTests();
   });
 
   afterEach(() => {
@@ -292,9 +303,172 @@ describe('Liquid Glass V12.46.1 — Liquid Glass Motion System (Servicio, Barber
   it('mantiene aislada la ruta tradicional sin reglas V12.46 ni has-selected-barber fuera de experimentalMotion', () => {
     const stylesCss = fs.readFileSync(path.resolve(process.cwd(), 'src/styles.css'), 'utf8');
     const bookingTsx = fs.readFileSync(path.resolve(process.cwd(), 'src/components/kani/booking.tsx'), 'utf8');
+    const paywayTsx = fs.readFileSync(path.resolve(process.cwd(), 'src/components/kani/experimental/payway-booking.tsx'), 'utf8');
 
     expect(stylesCss).not.toContain('LIQUID GLASS V12.46');
     expect(stylesCss).not.toContain('has-selected-barber');
     expect(bookingTsx).toContain("experimentalMotion && barber && !barberDeferred ? ' has-selected-barber' : ''");
+    expect(bookingTsx).toContain('if (!isSelected) chooseBarber(b)');
+    expect(bookingTsx).toContain('if (selectedSlot === time) return');
+    expect(paywayTsx).toContain('if (!isLiquid || !soundEnabledRef.current) return');
+  });
+
+  it('V12.46.2: ejecuta microinteracción de confirmación al repulsar opciones ya seleccionadas en Servicio, Barbero, Fecha y Horario sin acumular animaciones', () => {
+    const cancelSpy = vi.fn();
+    const animateMock = vi.fn(() => ({
+      cancel: cancelSpy,
+      finished: Promise.resolve(),
+    }));
+    Object.defineProperty(HTMLElement.prototype, 'animate', {
+      configurable: true,
+      writable: true,
+      value: animateMock,
+    });
+
+    const vibrateMock = vi.fn(() => true);
+    Object.defineProperty(navigator, 'vibrate', {
+      configurable: true,
+      writable: true,
+      value: vibrateMock,
+    });
+
+    render(<BookingMotionHarness />);
+
+    const corteBtn = screen.getByRole('button', { name: 'corte' });
+    const lautaroBtn = screen.getByRole('button', { name: 'L Lautaro' });
+    const day16Btn = screen.getByRole('button', { name: '16' });
+    const slot1000Btn = screen.getByRole('button', { name: '10:00' });
+
+    // Seleccionar Barbero, Fecha y Horario primero (corte ya arranca seleccionado)
+    fireEvent.click(lautaroBtn);
+    fireEvent.click(day16Btn);
+    fireEvent.click(slot1000Btn);
+    act(() => {
+      vi.advanceTimersByTime(800);
+    });
+
+    const targets = [
+      { btn: corteBtn, tag: 'service-reconfirm', scale: LIQUID_GLASS_MOTION.v46.serviceReconfirmScale, ms: LIQUID_GLASS_MOTION.v46.serviceReconfirmMs },
+      { btn: lautaroBtn, tag: 'barber-reconfirm', scale: LIQUID_GLASS_MOTION.v46.barberReconfirmScale, ms: LIQUID_GLASS_MOTION.v46.barberReconfirmMs },
+      { btn: day16Btn, tag: 'day-reconfirm', scale: LIQUID_GLASS_MOTION.v46.dayReconfirmScale, ms: LIQUID_GLASS_MOTION.v46.dayReconfirmMs },
+      { btn: slot1000Btn, tag: 'slot-reconfirm', scale: LIQUID_GLASS_MOTION.v46.slotReconfirmScale, ms: LIQUID_GLASS_MOTION.v46.slotReconfirmMs },
+    ] as const;
+
+    for (const target of targets) {
+      animateMock.mockClear();
+      vibrateMock.mockClear();
+      fireEvent.pointerDown(target.btn, { clientX: 24, clientY: 18 });
+      expect(animateMock).toHaveBeenCalledWith(
+        [{ transform: 'scale(1)' }, { transform: `scale(${target.scale})` }],
+        expect.objectContaining({ fill: 'forwards' }),
+      );
+      fireEvent.pointerUp(target.btn);
+      fireEvent.click(target.btn);
+      expect(target.btn.getAttribute('data-lg-motion')).toBe(target.tag);
+      expect(vibrateMock).toHaveBeenCalledWith(6);
+
+      // Repetición rápida cancela animación previa sin acumular
+      fireEvent.pointerDown(target.btn, { clientX: 24, clientY: 18 });
+      expect(cancelSpy).toHaveBeenCalled();
+      fireEvent.pointerUp(target.btn);
+      fireEvent.click(target.btn);
+      expect(target.btn.getAttribute('data-lg-motion')).toBe(target.tag);
+
+      act(() => {
+        vi.advanceTimersByTime(target.ms + 20);
+      });
+      expect(target.btn.getAttribute('data-lg-motion')).toBeNull();
+    }
+  });
+
+  it('V12.46.2: limpia artefactos de arranque en Horario Dark Mode y aplica háptica y sonido opt-in solo en confirmación verificada', () => {
+    const css = fs.readFileSync(
+      path.resolve(process.cwd(), 'src/components/kani/experimental/liquid-glass.css'),
+      'utf8',
+    );
+    const v46Css = css.slice(css.indexOf('LIQUID GLASS V12.46.1'));
+    expect(v46Css).toContain('--lg-v46-slot-core');
+    expect(v46Css).toContain('@keyframes kaniReconfirmEdgeV462');
+    expect(v46Css).toContain('@keyframes kaniDayReconfirmContourV462');
+    expect(v46Css).not.toContain('inset(0 46% 0 46% round 12px)');
+    const slotCoreMatch = v46Css.match(/@keyframes kaniSlotCenterCoreV461\s*\{\s*0%\s*\{\s*opacity:\s*0;/);
+    expect(slotCoreMatch).not.toBeNull();
+
+    // Háptica respeta reduced motion
+    const vibrateMock = vi.fn(() => true);
+    Object.defineProperty(navigator, 'vibrate', {
+      configurable: true,
+      writable: true,
+      value: vibrateMock,
+    });
+    expect(triggerSelectionHaptic('select', true)).toBe(false);
+    expect(vibrateMock).not.toHaveBeenCalled();
+    expect(triggerSelectionHaptic('select', false)).toBe(true);
+    expect(vibrateMock).toHaveBeenCalledWith(10);
+
+    // Sonido desactivado por defecto y sintetizado suave (~250ms) solo al activarse + 1 vez por reserva
+    const createdOscillators: Array<{ duration: number }> = [];
+    class FakeAudioContext {
+      state = 'running';
+      currentTime = 1.0;
+      destination = {};
+      resume = vi.fn().mockResolvedValue(undefined);
+      createBiquadFilter() {
+        return {
+          type: 'lowpass',
+          frequency: { setValueAtTime: vi.fn() },
+          Q: { setValueAtTime: vi.fn() },
+          connect: vi.fn(),
+        };
+      }
+      createGain() {
+        return {
+          gain: {
+            setValueAtTime: vi.fn(),
+            linearRampToValueAtTime: vi.fn(),
+            exponentialRampToValueAtTime: vi.fn(),
+          },
+          connect: vi.fn(),
+        };
+      }
+      createOscillator() {
+        let started = 0;
+        return {
+          type: 'sine',
+          frequency: { setValueAtTime: vi.fn() },
+          connect: vi.fn(),
+          start: (when = 0) => {
+            started = when;
+          },
+          stop: (when = 0) => {
+            createdOscillators.push({ duration: when - started });
+          },
+        };
+      }
+    }
+    Object.defineProperty(window, 'AudioContext', {
+      configurable: true,
+      writable: true,
+      value: FakeAudioContext,
+    });
+
+    expect(readConfirmationSoundEnabled()).toBe(false);
+    expect(playConfirmationChime('apt-1')).toBe(false);
+    expect(createdOscillators).toHaveLength(0);
+
+    writeConfirmationSoundEnabled(true);
+    expect(readConfirmationSoundEnabled()).toBe(true);
+    expect(playConfirmationChime('apt-1')).toBe(true);
+    expect(createdOscillators.length).toBeGreaterThanOrEqual(2);
+    for (const osc of createdOscillators) {
+      expect(osc.duration).toBeGreaterThanOrEqual(0.15);
+      expect(osc.duration).toBeLessThanOrEqual(0.3);
+    }
+
+    // Nunca se repite para una reserva ya confirmada
+    expect(hasPlayedConfirmationSound('apt-1')).toBe(true);
+    const countBeforeRepeat = createdOscillators.length;
+    expect(playConfirmationChime('apt-1')).toBe(false);
+    expect(createdOscillators).toHaveLength(countBeforeRepeat);
   });
 });

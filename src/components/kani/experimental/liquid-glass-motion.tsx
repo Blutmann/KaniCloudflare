@@ -1,5 +1,12 @@
-import { useEffect, useRef, type PointerEvent, type ReactNode } from 'react';
+import {
+  useEffect,
+  useRef,
+  type MouseEvent,
+  type PointerEvent,
+  type ReactNode,
+} from 'react';
 import { AnimatePresence, LayoutGroup, MotionConfig, motion, useReducedMotion } from 'motion/react';
+import { triggerSelectionHaptic } from './liquid-glass-feedback';
 import type {
   LiquidGlassInteractiveCardProps,
   LiquidGlassMotionAdapter,
@@ -47,17 +54,25 @@ export const LIQUID_GLASS_MOTION = {
     serviceRecoverMs: 420,
     serviceMotionMs: 680,
     serviceOvershootScale: 1.008,
+    serviceReconfirmScale: 0.986,
+    serviceReconfirmMs: 280,
     barberMotionMs: 640,
+    barberReconfirmScale: 0.988,
+    barberReconfirmMs: 280,
     dayTapScale: 0.94,
     dayPressMs: 65,
     dayPulseMs: 320,
     dayMotionMs: 520,
     dayOvershootScale: 1.032,
+    dayReconfirmScale: 0.964,
+    dayReconfirmMs: 260,
     slotTapScale: 0.952,
     slotPressMs: 65,
     slotRecoverMs: 280,
     slotMotionMs: 500,
     slotOvershootScale: 1.022,
+    slotReconfirmScale: 0.974,
+    slotReconfirmMs: 250,
   },
 } as const;
 
@@ -125,12 +140,21 @@ type TactileMotionSpec = {
   motionMs: number;
 };
 
+type ReconfirmMotionSpec = {
+  motionTag: 'service-reconfirm' | 'barber-reconfirm' | 'day-reconfirm' | 'slot-reconfirm';
+  tapScale: number;
+  pressMs: number;
+  recoverMs: number;
+  motionMs: number;
+};
+
 function InteractiveCard({
   children,
   className = '',
   disabled,
   type = 'button',
   tapScale = LIQUID_GLASS_MOTION.scales.cardTap,
+  onClick,
   onPointerDown,
   onPointerUp,
   onPointerCancel,
@@ -146,6 +170,7 @@ function InteractiveCard({
   const pressAnimRef = useRef<Animation | null>(null);
   const recoverAnimRef = useRef<Animation | null>(null);
   const isPressingRef = useRef(false);
+  const pressedWhileSelectedRef = useRef<boolean | null>(null);
   const pressStartedAtRef = useRef(0);
   const lastRecoverAtRef = useRef(0);
 
@@ -190,6 +215,40 @@ function InteractiveCard({
           }
         : null;
 
+  const reconfirmSpec: ReconfirmMotionSpec | null = isServiceOption
+    ? {
+        motionTag: 'service-reconfirm',
+        tapScale: LIQUID_GLASS_MOTION.v46.serviceReconfirmScale,
+        pressMs: 65,
+        recoverMs: 210,
+        motionMs: LIQUID_GLASS_MOTION.v46.serviceReconfirmMs,
+      }
+    : isBarberOption
+      ? {
+          motionTag: 'barber-reconfirm',
+          tapScale: LIQUID_GLASS_MOTION.v46.barberReconfirmScale,
+          pressMs: 65,
+          recoverMs: 210,
+          motionMs: LIQUID_GLASS_MOTION.v46.barberReconfirmMs,
+        }
+      : isCalendarDay
+        ? {
+            motionTag: 'day-reconfirm',
+            tapScale: LIQUID_GLASS_MOTION.v46.dayReconfirmScale,
+            pressMs: 55,
+            recoverMs: 190,
+            motionMs: LIQUID_GLASS_MOTION.v46.dayReconfirmMs,
+          }
+        : isTimeSlot
+          ? {
+              motionTag: 'slot-reconfirm',
+              tapScale: LIQUID_GLASS_MOTION.v46.slotReconfirmScale,
+              pressMs: 55,
+              recoverMs: 185,
+              motionMs: LIQUID_GLASS_MOTION.v46.slotReconfirmMs,
+            }
+          : null;
+
   const effectiveTapScale = tactileSpec
     ? tactileSpec.tapScale
     : tapScale !== LIQUID_GLASS_MOTION.scales.cardTap
@@ -212,6 +271,23 @@ function InteractiveCard({
     }
     buttonRef.current?.removeAttribute('data-lg-motion');
     buttonRef.current?.removeAttribute('data-lg-pressing');
+  };
+
+  const triggerMotionAttribute = (motionTag: string, durationMs: number) => {
+    const el = buttonRef.current;
+    if (!el || typeof window === 'undefined') return;
+    if (el.getAttribute('data-lg-motion') === motionTag) {
+      el.removeAttribute('data-lg-motion');
+      void el.offsetWidth;
+    }
+    el.setAttribute('data-lg-motion', motionTag);
+    if (motionTimerRef.current !== null) {
+      window.clearTimeout(motionTimerRef.current);
+    }
+    motionTimerRef.current = window.setTimeout(() => {
+      el.removeAttribute('data-lg-motion');
+      motionTimerRef.current = null;
+    }, durationMs);
   };
 
   const triggerTactileRecover = (spec: TactileMotionSpec, ensureTapVisible: boolean) => {
@@ -248,6 +324,30 @@ function InteractiveCard({
     });
   };
 
+  const triggerReconfirmRecover = (spec: ReconfirmMotionSpec, includePressKeyframe: boolean) => {
+    const el = buttonRef.current;
+    if (!el || shouldReduceMotion || typeof el.animate !== 'function') return;
+
+    cancelTactileAnims();
+    lastRecoverAtRef.current = Date.now();
+    const keyframes = includePressKeyframe
+      ? [
+          { transform: 'scale(1)' },
+          { transform: `scale(${spec.tapScale})`, offset: 0.32 },
+          { transform: 'scale(1)' },
+        ]
+      : [
+          { transform: `scale(${spec.tapScale})` },
+          { transform: 'scale(1)' },
+        ];
+
+    recoverAnimRef.current = el.animate(keyframes, {
+      duration: spec.recoverMs,
+      easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+      fill: 'none',
+    });
+  };
+
   useEffect(() => {
     const el = buttonRef.current;
     const wasSelected = prevSelectedRef.current;
@@ -269,34 +369,16 @@ function InteractiveCard({
     }
 
     if (tactileSpec) {
-      if (el.getAttribute('data-lg-motion') === tactileSpec.motionTag) {
-        el.removeAttribute('data-lg-motion');
-        void el.offsetWidth;
-      }
-      el.setAttribute('data-lg-motion', tactileSpec.motionTag);
+      triggerMotionAttribute(tactileSpec.motionTag, tactileSpec.motionMs);
       if (Date.now() - lastRecoverAtRef.current > 180) {
         triggerTactileRecover(tactileSpec, true);
       }
-      if (motionTimerRef.current !== null) {
-        window.clearTimeout(motionTimerRef.current);
-      }
-      motionTimerRef.current = window.setTimeout(() => {
-        el.removeAttribute('data-lg-motion');
-        motionTimerRef.current = null;
-      }, tactileSpec.motionMs);
       return;
     }
 
     // Barbero V12.46: conservado intacto como referencia visual aprobada.
     if (isBarberOption) {
-      el.setAttribute('data-lg-motion', 'barber-select');
-      if (motionTimerRef.current !== null) {
-        window.clearTimeout(motionTimerRef.current);
-      }
-      motionTimerRef.current = window.setTimeout(() => {
-        el.removeAttribute('data-lg-motion');
-        motionTimerRef.current = null;
-      }, LIQUID_GLASS_MOTION.v46.barberMotionMs);
+      triggerMotionAttribute('barber-select', LIQUID_GLASS_MOTION.v46.barberMotionMs);
     }
   }, [
     isSelected,
@@ -328,6 +410,8 @@ function InteractiveCard({
     const el = buttonRef.current;
     if (!el || typeof window === 'undefined') return;
 
+    pressedWhileSelectedRef.current = isSelected;
+
     const rect = el.getBoundingClientRect();
     const hasCoords = rect.width > 0 && rect.height > 0 && (event.clientX !== 0 || event.clientY !== 0);
     const localX = hasCoords ? Math.min(Math.max(event.clientX - rect.left, 0), rect.width) : rect.width / 2;
@@ -347,6 +431,28 @@ function InteractiveCard({
     el.style.setProperty('--lg-touch-x-pct', `${((localX / Math.max(rect.width, 1)) * 100).toFixed(1)}%`);
     el.style.setProperty('--lg-touch-y-pct', `${((localY / Math.max(rect.height, 1)) * 100).toFixed(1)}%`);
     el.style.setProperty('--lg-wave-size', `${waveSize}px`);
+
+    // V12.46.2: Re-pulsación sobre opción ya seleccionada -> compresión sutil de confirmación sin expandir núcleo óptico.
+    if (isSelected && reconfirmSpec) {
+      isPressingRef.current = true;
+      pressStartedAtRef.current = Date.now();
+      el.setAttribute('data-lg-pressing', 'true');
+      cancelTactileAnims();
+      if (typeof el.animate === 'function') {
+        pressAnimRef.current = el.animate(
+          [
+            { transform: 'scale(1)' },
+            { transform: `scale(${reconfirmSpec.tapScale})` },
+          ],
+          {
+            duration: reconfirmSpec.pressMs,
+            easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+            fill: 'forwards',
+          },
+        );
+      }
+      return;
+    }
 
     // V12.46.1 (Servicio, Fecha, Horario): compresión táctil inmediata via WAAPI sin ripple genérico; la expansión óptica inicia al seleccionar.
     if (tactileSpec) {
@@ -440,6 +546,12 @@ function InteractiveCard({
     if (!isPressingRef.current) return;
     isPressingRef.current = false;
     el?.removeAttribute('data-lg-pressing');
+
+    if (pressedWhileSelectedRef.current && reconfirmSpec) {
+      triggerReconfirmRecover(reconfirmSpec, false);
+      return;
+    }
+
     if (tactileSpec) {
       triggerTactileRecover(tactileSpec, !cancelled);
     }
@@ -447,18 +559,37 @@ function InteractiveCard({
 
   const handlePointerUp = (event: PointerEvent<HTMLButtonElement>) => {
     onPointerUp?.(event);
-    if (tactileSpec) releaseTactilePress(false);
+    if (tactileSpec || isBarberOption) releaseTactilePress(false);
   };
 
   const handlePointerCancel = (event: PointerEvent<HTMLButtonElement>) => {
+    pressedWhileSelectedRef.current = null;
     onPointerCancel?.(event);
-    if (tactileSpec) releaseTactilePress(true);
+    if (tactileSpec || isBarberOption) releaseTactilePress(true);
   };
 
   const handlePointerLeave = (event: PointerEvent<HTMLButtonElement>) => {
     onPointerLeave?.(event);
-    if (tactileSpec && isPressingRef.current) {
+    if ((tactileSpec || isBarberOption) && isPressingRef.current) {
       releaseTactilePress(true);
+    }
+  };
+
+  const handleClick = (event: MouseEvent<HTMLButtonElement>) => {
+    const wasSelectedAtTap = pressedWhileSelectedRef.current ?? isSelected;
+    pressedWhileSelectedRef.current = null;
+    onClick?.(event);
+
+    if (disabled || shouldReduceMotion || !reconfirmSpec) return;
+
+    if (wasSelectedAtTap) {
+      triggerMotionAttribute(reconfirmSpec.motionTag, reconfirmSpec.motionMs);
+      if (Date.now() - lastRecoverAtRef.current > 180) {
+        triggerReconfirmRecover(reconfirmSpec, true);
+      }
+      triggerSelectionHaptic('reconfirm', Boolean(shouldReduceMotion));
+    } else {
+      triggerSelectionHaptic('select', Boolean(shouldReduceMotion));
     }
   };
 
@@ -475,6 +606,7 @@ function InteractiveCard({
       disabled={disabled}
       className={className}
       animate={animateState}
+      onClick={handleClick}
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerCancel}

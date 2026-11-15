@@ -133,6 +133,7 @@ export function Booking({
   combinedDateTime = false,
   variant: propVariant,
   experimentalMotion,
+  soundPreferenceControl,
   onPaymentRequest,
   paymentActionLabel,
   paymentNotice,
@@ -148,6 +149,7 @@ export function Booking({
   combinedDateTime?: boolean;
   variant?: 'v1' | 'v2' | 'v3' | 'v5';
   experimentalMotion?: LiquidGlassMotionAdapter;
+  soundPreferenceControl?: ReactNode;
   onPaymentRequest?: (draft: BookingPaymentDraft) => Promise<void>;
   paymentActionLabel?: string;
   paymentNotice?: ReactNode;
@@ -1421,7 +1423,7 @@ export function Booking({
                     'aria-pressed': isSelected,
                     'aria-label': `Barbero ${b}${isSelected ? ', seleccionado' : ''}`,
                     className: `booking-option ${isSelected ? 'selected' : ''}`,
-                    onClick: () => chooseBarber(b),
+                    onClick: () => { if (!isSelected) chooseBarber(b); },
                   };
                   const cardBody = (
                     <>
@@ -1445,7 +1447,15 @@ export function Booking({
                     disabled: barbersLoading || !publicBarbersState.length,
                     'aria-label': isV5 ? `Cualquier barbero disponible, el sistema asignará según fecha y horario${barberDeferred ? ', seleccionado' : ''}` : "Elegir más adelante",
                     className: `booking-defer-option ${barberDeferred ? 'selected' : ''}`,
-                    onClick: () => { setBarber(null); setBarberDeferred(true); setPublicSlots([]); setAvailabilityError(''); setDate(''); setTime(''); },
+                    onClick: () => {
+                      if (barberDeferred) return;
+                      setBarber(null);
+                      setBarberDeferred(true);
+                      setPublicSlots([]);
+                      setAvailabilityError('');
+                      setDate('');
+                      setTime('');
+                    },
                   };
                   const deferBody = (
                     <>
@@ -1572,6 +1582,7 @@ export function Booking({
                       slots={timeSlots}
                       selectedTime={time}
                       onSelectTime={selectedSlot => {
+                        if (selectedSlot === time) return;
                         deferredVerifySeqRef.current++;
                         setTime(selectedSlot);
                         setPendingAppointment(null);
@@ -1965,6 +1976,8 @@ export function Booking({
                   <Clock3 size={15} className="shrink-0" aria-hidden="true" />
                   <p className="m-0 leading-normal">{appliedBenefit?.skipOnlinePayment ? "Tu turno se confirma directamente. No requiere pago de seña online." : "Tu turno se confirma cuando se acredita la seña."}</p>
                 </div>
+
+                {soundPreferenceControl}
 
                 {/* Texto legal informativo antes del pago */}
                 <p className="booking-summary-legal-disclaimer text-xs text-muted-foreground mt-3 px-1 text-left leading-relaxed">
