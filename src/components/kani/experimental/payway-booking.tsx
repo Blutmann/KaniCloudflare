@@ -1308,7 +1308,8 @@ export function PaywayBooking({
                     <div className="payway-field-group payway-cvv-col">
                       <div className="payway-col-label-row">
                         <label htmlFor="card-security-code" className="payway-field-label-text">
-                          Código de seguridad (CVV)
+                          <span className="payway-cvv-label-desktop">Código de seguridad (CVV)</span>
+                          <span className="payway-cvv-label-mobile" aria-hidden="true">CVV</span>
                         </label>
                         <div className="payway-help-wrapper" ref={cvvHelpRef}>
                           <button

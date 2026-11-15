@@ -8468,8 +8468,8 @@ html[data-theme] :is(body.liquid-glass-active, body:has(.liquid-glass-header, .l
   .liquid-glass-reservation .booking-cta:not(.mobile-menu-cta) .booking-back-button:not(:disabled),
   .liquid-glass-reservation .confirmation-secondary:not(:disabled),
   .liquid-glass-reservation .confirmation a[class*="border"]:not(.action-brand):not(.action-positive),
-  .payway-checkout button[type="button"]:not(:disabled):not(.right-4):not(.v2-dialog-close):not(.payway-modal-close),
-  [role="dialog"]:not(.notification-popover) button:not(:disabled):not(.action-positive):not(.v2-primary):not(.v2-destructive):not(.v2-danger):not(.action-brand):not(.action-confirm):not([type="submit"]):not(.right-4):not(.v2-dialog-close):not(.kani-notif-confirm-cancel)
+  .payway-checkout button[type="button"]:not(:disabled):not(.right-4):not(.v2-dialog-close):not(.payway-modal-close):not(.payway-help-trigger),
+  [role="dialog"]:not(.notification-popover) button:not(:disabled):not(.action-positive):not(.v2-primary):not(.v2-destructive):not(.v2-danger):not(.action-brand):not(.action-confirm):not([type="submit"]):not(.right-4):not(.v2-dialog-close):not(.kani-notif-confirm-cancel):not(.payway-help-trigger)
 ) {
   background: var(--lg-sys-btn-secondary-bg) !important;
   background-color: transparent !important;
@@ -8500,8 +8500,8 @@ html[data-theme] :is(body.liquid-glass-active, body:has(.liquid-glass-header, .l
   .liquid-glass-reservation .booking-cta:not(.mobile-menu-cta) .booking-back-button:not(:disabled),
   .liquid-glass-reservation .confirmation-secondary:not(:disabled),
   .liquid-glass-reservation .confirmation a[class*="border"]:not(.action-brand):not(.action-positive),
-  .payway-checkout button[type="button"]:not(:disabled):not(.right-4):not(.v2-dialog-close):not(.payway-modal-close),
-  [role="dialog"]:not(.notification-popover) button:not(:disabled):not(.action-positive):not(.v2-primary):not(.v2-destructive):not(.v2-danger):not(.action-brand):not(.action-confirm):not([type="submit"]):not(.right-4):not(.v2-dialog-close):not(.kani-notif-confirm-cancel)
+  .payway-checkout button[type="button"]:not(:disabled):not(.right-4):not(.v2-dialog-close):not(.payway-modal-close):not(.payway-help-trigger),
+  [role="dialog"]:not(.notification-popover) button:not(:disabled):not(.action-positive):not(.v2-primary):not(.v2-destructive):not(.v2-danger):not(.action-brand):not(.action-confirm):not([type="submit"]):not(.right-4):not(.v2-dialog-close):not(.kani-notif-confirm-cancel):not(.payway-help-trigger)
 ):hover {
   background: var(--lg-sys-btn-secondary-hover) !important;
   border-color: var(--lg-sys-border-strong) !important;
@@ -8511,8 +8511,8 @@ html[data-theme] :is(body.liquid-glass-active, body:has(.liquid-glass-header, .l
 html[data-theme] :is(body.liquid-glass-active, body:has(.liquid-glass-header, .liquid-glass-reservation)) :is(
   .liquid-glass-reservation .booking-back-button:not(:disabled),
   .liquid-glass-reservation .confirmation-secondary:not(:disabled),
-  .payway-checkout button[type="button"]:not(:disabled):not(.right-4):not(.v2-dialog-close):not(.payway-modal-close),
-  [role="dialog"]:not(.notification-popover) button:not(:disabled):not(.action-positive):not(.v2-primary):not(.v2-destructive):not(.v2-danger):not(.action-brand):not(.action-confirm):not([type="submit"]):not(.right-4):not(.v2-dialog-close):not(.kani-notif-confirm-cancel)
+  .payway-checkout button[type="button"]:not(:disabled):not(.right-4):not(.v2-dialog-close):not(.payway-modal-close):not(.payway-help-trigger),
+  [role="dialog"]:not(.notification-popover) button:not(:disabled):not(.action-positive):not(.v2-primary):not(.v2-destructive):not(.v2-danger):not(.action-brand):not(.action-confirm):not([type="submit"]):not(.right-4):not(.v2-dialog-close):not(.kani-notif-confirm-cancel):not(.payway-help-trigger)
 ):active {
   background: var(--lg-sys-btn-secondary-active) !important;
   transform: scale(0.985) !important;
@@ -8521,7 +8521,7 @@ html[data-theme] :is(body.liquid-glass-active, body:has(.liquid-glass-header, .l
 html[data-theme] :is(body.liquid-glass-active, body:has(.liquid-glass-header, .liquid-glass-reservation)) :is(
   .liquid-glass-reservation .booking-back-button,
   .liquid-glass-reservation .confirmation-secondary,
-  .payway-checkout button[type="button"]:not(.right-4):not(.v2-dialog-close):not(.payway-modal-close)
+  .payway-checkout button[type="button"]:not(.right-4):not(.v2-dialog-close):not(.payway-modal-close):not(.payway-help-trigger)
 ):focus-visible {
   outline: 2px solid var(--lg-sys-border-champagne) !important;
   outline-offset: 2px !important;
@@ -12066,26 +12066,49 @@ html[data-theme] body.liquid-glass-active .payway-checkout:has(.payway-card-form
 }
 
 /* ==============================================================================
- * LIQUID GLASS V12.47.10 / V12.47.11 · PAYWAY CVV/DNI ALIGNMENT & RETRY DE DESCUENTOS
+ * LIQUID GLASS V12.47.10 / V12.47.11.1 · PAYWAY CVV/DNI ALIGNMENT & RETRY DE DESCUENTOS
  * ============================================================================== */
 html[data-theme] body.liquid-glass-active .payway-checkout .payway-cvv-dni-row .payway-col-label-row {
-  flex: 1 1 auto !important;
   min-height: 20px !important;
   display: flex !important;
-  align-items: flex-end !important;
+  align-items: center !important;
   justify-content: flex-start !important;
   gap: 5px !important;
 }
 
 html[data-theme] body.liquid-glass-active .payway-checkout .payway-cvv-dni-row .payway-help-trigger {
-  width: 18px !important;
-  height: 18px !important;
-  min-width: 18px !important;
-  min-height: 18px !important;
-  max-width: 18px !important;
-  max-height: 18px !important;
+  width: 20px !important;
+  height: 20px !important;
+  min-width: 20px !important;
+  min-height: 20px !important;
+  max-width: 20px !important;
+  max-height: 20px !important;
   padding: 0 !important;
-  flex: 0 0 18px !important;
+  margin: 0 !important;
+  flex: 0 0 20px !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+@media (max-width: 640px) {
+  html[data-theme] body.liquid-glass-active .payway-checkout .payway-cvv-dni-row .payway-cvv-col,
+  html[data-theme] body.liquid-glass-active .payway-checkout .payway-cvv-dni-row .payway-dni-col,
+  html[data-theme] body.liquid-glass-active .payway-checkout .payway-cvv-dni-row .payway-cvv-col .payway-col-label-row {
+    display: contents !important;
+  }
+
+  html[data-theme] body.liquid-glass-active .payway-checkout .payway-cvv-dni-row .payway-help-trigger {
+    width: 26px !important;
+    height: 42px !important;
+    min-width: 26px !important;
+    min-height: 42px !important;
+    max-width: 26px !important;
+    max-height: 42px !important;
+  }
 }
 
 html[data-theme] body.liquid-glass-active .payway-checkout .payway-cvv-dni-row .field-control,

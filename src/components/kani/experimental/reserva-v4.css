@@ -276,11 +276,19 @@
   border-top: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
 }
 
+.payway-cvv-label-desktop {
+  display: inline;
+}
+
+.payway-cvv-label-mobile {
+  display: none;
+}
+
 .payway-cvv-dni-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 8px;
-  align-items: stretch;
+  gap: 10px;
+  align-items: start;
   min-width: 0;
 }
 
@@ -293,10 +301,9 @@
 }
 
 .payway-cvv-dni-row .payway-col-label-row {
-  flex: 1 1 auto;
   min-height: 20px;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: flex-start;
   gap: 5px;
   margin: 0;
@@ -316,18 +323,26 @@
 }
 
 .payway-help-trigger {
-  width: 18px !important;
-  height: 18px !important;
-  min-width: 18px !important;
-  min-height: 18px !important;
-  max-width: 18px !important;
-  max-height: 18px !important;
-  flex: 0 0 18px !important;
+  width: 20px !important;
+  height: 20px !important;
+  min-width: 20px !important;
+  min-height: 20px !important;
+  max-width: 20px !important;
+  max-height: 20px !important;
+  flex: 0 0 20px !important;
   padding: 0 !important;
+  margin: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border-radius: 999px;
+  color: var(--muted-foreground);
+  cursor: pointer;
 }
 
 .payway-cvv-dni-row .field-control,
@@ -337,6 +352,91 @@
   min-height: 42px !important;
   max-height: 42px !important;
   box-sizing: border-box;
+}
+
+@media (max-width: 640px) {
+  .payway-cvv-label-desktop {
+    display: none;
+  }
+
+  .payway-cvv-label-mobile {
+    display: inline;
+  }
+
+  .payway-cvv-dni-row {
+    grid-template-columns: minmax(0, 0.35fr) 26px minmax(0, 0.65fr);
+    grid-template-rows: auto 42px auto;
+    column-gap: 6px;
+    row-gap: 5px;
+    align-items: stretch;
+  }
+
+  .payway-cvv-col,
+  .payway-dni-col,
+  .payway-cvv-col .payway-col-label-row {
+    display: contents;
+  }
+
+  .payway-cvv-col .payway-field-label-text {
+    grid-column: 1;
+    grid-row: 1;
+    align-self: end;
+    white-space: nowrap;
+  }
+
+  .payway-cvv-col > .field-control {
+    grid-column: 1;
+    grid-row: 2;
+    align-self: stretch;
+  }
+
+  .payway-help-wrapper {
+    grid-column: 2;
+    grid-row: 2;
+    align-self: center;
+    justify-self: center;
+    width: 26px;
+    height: 42px;
+    justify-content: center;
+  }
+
+  .payway-help-trigger {
+    width: 26px !important;
+    height: 42px !important;
+    min-width: 26px !important;
+    min-height: 42px !important;
+    max-width: 26px !important;
+    max-height: 42px !important;
+  }
+
+  .payway-cvv-dni-row .payway-help-bubble {
+    left: 50%;
+    transform: translateX(-50%);
+    right: auto;
+  }
+
+  #cvv-error {
+    grid-column: 1 / 3;
+    grid-row: 3;
+  }
+
+  .payway-dni-col .payway-col-label-row {
+    grid-column: 3;
+    grid-row: 1;
+    align-self: end;
+    min-height: 0;
+  }
+
+  .payway-dni-col > .field-control {
+    grid-column: 3;
+    grid-row: 2;
+    align-self: stretch;
+  }
+
+  #dni-error {
+    grid-column: 3;
+    grid-row: 3;
+  }
 }
 
 /* V12.47.10 · Discount retry block inside Payway modal */

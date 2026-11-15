@@ -118,7 +118,10 @@ describe('KANI v12.47.10 — Alineación CVV/DNI y Reintento de Descuentos en Pa
     expect(reservaV4Css).toMatch(/\.payway-cvv-dni-row\s+\.payway-col-label-row\s*\{[\s\S]*?min-height:\s*20px;/);
     expect(reservaV4Css).toMatch(/\.payway-checkout\s*\{[\s\S]*?500px[\s\S]*?92dvh/);
     expect(liquidCss).toMatch(/\.payway-checkout\)\s*\{[\s\S]*?500px\)\s*!important;[\s\S]*?92dvh/);
-    expect(reservaV4Css).toMatch(/\.payway-help-trigger\s*\{[\s\S]*?width:\s*18px\s*!important;[\s\S]*?height:\s*18px\s*!important;/);
+    expect(reservaV4Css).toMatch(/\.payway-help-trigger\s*\{[\s\S]*?width:\s*20px\s*!important;[\s\S]*?height:\s*20px\s*!important;[\s\S]*?background:\s*transparent\s*!important;/);
+    expect(reservaV4Css).toMatch(/grid-template-columns:\s*minmax\(0,\s*0\.35fr\)\s+26px\s+minmax\(0,\s*0\.65fr\);/);
+    expect(liquidCss).toContain(':not(.payway-help-trigger)');
+    expect(paywayCode).toContain('payway-cvv-label-mobile');
     expect(reservaV4Css).toMatch(/#card-holder-dni\s*\{[\s\S]*?height:\s*42px\s*!important;/);
     expect(liquidCss).toMatch(/\.payway-discount-retry-input\s*\{[\s\S]*?font-size:\s*16px\s*!important;/);
   });
