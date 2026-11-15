@@ -14,10 +14,10 @@ describe('Liquid Glass V12.37 — Integración definitiva de los cuatro fondos r
   const section = v1237Idx >= 0 ? liquidCss.slice(v1237Idx) : '';
 
   const variants = [
-    'light-mode-desktop-3840x2160-v12-37',
-    'light-mode-mobile-1440x2560-v12-37',
-    'dark-mode-desktop-3840x2160-v12-37',
-    'dark-mode-mobile-1440x2560-v12-37',
+    'light-mode-desktop-3840x2160-v12-41',
+    'light-mode-mobile-1440x2560-v12-41',
+    'dark-mode-desktop-3840x2160-v12-41',
+    'dark-mode-mobile-1440x2560-v12-41',
   ];
 
   it('1. Integra los 4 fondos en AVIF, WebP y JPG con nombres versionados y elimina los fondos obsoletos', () => {
@@ -34,6 +34,10 @@ describe('Liquid Glass V12.37 — Integración definitiva de los cuatro fondos r
       'champagne-silk-light-mobile.avif',
       'kani-ink-dark-desktop.avif',
       'kani-ink-dark-mobile.avif',
+      'light-mode-desktop-3840x2160-v12-37.avif',
+      'light-mode-mobile-1440x2560-v12-37.avif',
+      'dark-mode-desktop-3840x2160-v12-37.avif',
+      'dark-mode-mobile-1440x2560-v12-37.avif',
     ];
     for (const legacy of legacyNames) {
       expect(existsSync(path.resolve(root, `public/backgrounds/${legacy}`))).toBe(false);
@@ -75,7 +79,7 @@ describe('Liquid Glass V12.37 — Integración definitiva de los cuatro fondos r
   });
 
   it('5. Mantiene intactas las rutas tradicionales en src/styles.css sin dependencias de Liquid Glass V12.37', () => {
-    expect(stylesCss).not.toContain('-v12-37');
+    expect(stylesCss).not.toContain('-v12-41');
     expect(stylesCss).not.toContain('.liquid-glass-atmosphere');
   });
 });

@@ -17,18 +17,18 @@ describe('Liquid Glass V12.30.1 — Integración de Fondos Champagne Silk y KANI
 
   it('incluye los cuatro activos AVIF maestros y sus fallbacks WebP y JPG versionados en public/backgrounds sin Base64', () => {
     const assets = [
-      'public/backgrounds/light-mode-desktop-3840x2160-v12-37.avif',
-      'public/backgrounds/light-mode-mobile-1440x2560-v12-37.avif',
-      'public/backgrounds/dark-mode-desktop-3840x2160-v12-37.avif',
-      'public/backgrounds/dark-mode-mobile-1440x2560-v12-37.avif',
-      'public/backgrounds/light-mode-desktop-3840x2160-v12-37.webp',
-      'public/backgrounds/light-mode-mobile-1440x2560-v12-37.webp',
-      'public/backgrounds/dark-mode-desktop-3840x2160-v12-37.webp',
-      'public/backgrounds/dark-mode-mobile-1440x2560-v12-37.webp',
-      'public/backgrounds/light-mode-desktop-3840x2160-v12-37.jpg',
-      'public/backgrounds/light-mode-mobile-1440x2560-v12-37.jpg',
-      'public/backgrounds/dark-mode-desktop-3840x2160-v12-37.jpg',
-      'public/backgrounds/dark-mode-mobile-1440x2560-v12-37.jpg',
+      'public/backgrounds/light-mode-desktop-3840x2160-v12-41.avif',
+      'public/backgrounds/light-mode-mobile-1440x2560-v12-41.avif',
+      'public/backgrounds/dark-mode-desktop-3840x2160-v12-41.avif',
+      'public/backgrounds/dark-mode-mobile-1440x2560-v12-41.avif',
+      'public/backgrounds/light-mode-desktop-3840x2160-v12-41.webp',
+      'public/backgrounds/light-mode-mobile-1440x2560-v12-41.webp',
+      'public/backgrounds/dark-mode-desktop-3840x2160-v12-41.webp',
+      'public/backgrounds/dark-mode-mobile-1440x2560-v12-41.webp',
+      'public/backgrounds/light-mode-desktop-3840x2160-v12-41.jpg',
+      'public/backgrounds/light-mode-mobile-1440x2560-v12-41.jpg',
+      'public/backgrounds/dark-mode-desktop-3840x2160-v12-41.jpg',
+      'public/backgrounds/dark-mode-mobile-1440x2560-v12-41.jpg',
     ];
     for (const rel of assets) {
       const abs = path.resolve(root, rel);
@@ -41,10 +41,10 @@ describe('Liquid Glass V12.30.1 — Integración de Fondos Champagne Silk y KANI
 
   it('selecciona los fondos por tema y relación de aspecto mediante image-set con fallback WebP y JPG', () => {
     expect(v12301Idx).toBeGreaterThan(-1);
-    expect(v12301).toContain("url('/backgrounds/light-mode-mobile-1440x2560-v12-37.avif') type('image/avif')");
-    expect(v12301).toContain("url('/backgrounds/light-mode-desktop-3840x2160-v12-37.avif') type('image/avif')");
-    expect(v12301).toContain("url('/backgrounds/dark-mode-mobile-1440x2560-v12-37.avif') type('image/avif')");
-    expect(v12301).toContain("url('/backgrounds/dark-mode-desktop-3840x2160-v12-37.avif') type('image/avif')");
+    expect(v12301).toContain("url('/backgrounds/light-mode-mobile-1440x2560-v12-41.avif') type('image/avif')");
+    expect(v12301).toContain("url('/backgrounds/light-mode-desktop-3840x2160-v12-41.avif') type('image/avif')");
+    expect(v12301).toContain("url('/backgrounds/dark-mode-mobile-1440x2560-v12-41.avif') type('image/avif')");
+    expect(v12301).toContain("url('/backgrounds/dark-mode-desktop-3840x2160-v12-41.avif') type('image/avif')");
     expect(v12301).toContain('min-aspect-ratio: 1001/1000');
     expect(v12301).toContain('min-aspect-ratio: 620/1000');
     expect(v12301).toContain('min-aspect-ratio: 1950/1000');
