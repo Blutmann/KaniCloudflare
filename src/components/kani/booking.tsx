@@ -805,7 +805,7 @@ export function Booking({
         return;
       }
       const seq = ++availabilityRequestSeqRef.current;
-      const isInitialForEmpty = lastLoadedAvailabilityKeyRef.current === null;
+      const isInitialForEmpty = lastLoadedAvailabilityKeyRef.current === null || publicSlots.length === 0;
       if (isInitialForEmpty) setAvailabilityLoading(true);
       else setAvailabilityRefreshing(true);
       setAvailabilityError('');
@@ -987,15 +987,24 @@ export function Booking({
     if (!date || (time && !compatibleTimes.includes(time))) setTime('');
     if (!date || compatibleTimes.length === 0) setDate('');
   }
+  function resetAvailabilityForBarberChange() {
+    lastLoadedAvailabilityKeyRef.current = null;
+    deferredVerifySeqRef.current++;
+    setPublicSlots([]);
+    setAvailabilityLoading(true);
+    setAvailabilityRefreshing(false);
+    setAvailabilityError('');
+    setTime('');
+    setPendingAppointment(null);
+    setSlotConflict(null);
+    setError('');
+  }
   function chooseBarber(nextBarber: Barber) {
     if (!publicBarbersState.includes(nextBarber)) return;
+    if (barber === nextBarber && !barberDeferred) return;
     setBarber(nextBarber);
     setBarberDeferred(false);
-    setPublicSlots([]);
-    setAvailabilityError('');
-    const compatibleTimes = service && date ? availabilityStartTimesForServiceDate(availabilityStartsByDate.get(date) ?? [], date, serviceName, clock, nextBarber) : [];
-    if (!date || compatibleTimes.length === 0) { setDate(''); setTime(''); return; }
-    if (time && !compatibleTimes.includes(time)) setTime('');
+    resetAvailabilityForBarberChange();
   }
   function next() {
     if (step === 1 && !barber && !barberDeferred) { setError('Elegí un barbero o seleccioná “Elegir más adelante”.'); return; }
@@ -1743,10 +1752,7 @@ export function Booking({
                       if (barberDeferred) return;
                       setBarber(null);
                       setBarberDeferred(true);
-                      setPublicSlots([]);
-                      setAvailabilityError('');
-                      setDate('');
-                      setTime('');
+                      resetAvailabilityForBarberChange();
                     },
                   };
                   const deferBody = (
@@ -1829,9 +1835,14 @@ export function Booking({
                   );
                 })()}
                 {availabilityError && <p role="alert" className="mt-5 text-destructive">{availabilityError}</p>}
-                {isV5 && !availabilityLoading && availableDates.length === 0 && (barber || barberDeferred) && (
+                {!availabilityLoading && !availabilityError && availableDates.length === 0 && (barber || barberDeferred) && (
                   <p role="status" className="calendar-no-availability mt-4 p-3 rounded-md bg-muted/60 text-center text-xs text-muted-foreground">
                     No encontramos turnos disponibles para los próximos días con esta combinación. Probá cambiando de barbero o servicio.
+                  </p>
+                )}
+                {!availabilityLoading && !availabilityError && availableDates.length > 0 && date && !availableDatesSet.has(date) && (barber || barberDeferred) && (
+                  <p role="status" className="calendar-no-availability mt-4 p-3 rounded-md bg-muted/60 text-center text-xs text-muted-foreground">
+                    La fecha seleccionada no tiene horarios disponibles para este barbero. Elegí otra fecha.
                   </p>
                 )}
                 {!isV2 && (
@@ -1886,6 +1897,7 @@ export function Booking({
                       }}
                       availabilityLoading={availabilityLoading}
                       availabilityRefreshing={availabilityRefreshing}
+                      availabilityError={availabilityError}
                       serviceName={selected?.name ?? (service ? serviceFor(service).name : '')}
                       serviceDurationMinutes={selected?.duration}
                       barberLabel={barber ?? undefined}

@@ -9,6 +9,7 @@ type BookingTimeSelectionProps = {
   onSelectTime: (time: string) => void;
   availabilityLoading: boolean;
   availabilityRefreshing?: boolean | undefined;
+  availabilityError?: string | undefined;
   serviceName?: string | undefined;
   serviceDurationMinutes?: number | undefined;
   barberLabel?: string | undefined;
@@ -28,6 +29,7 @@ export function BookingTimeSelection({
   onSelectTime,
   availabilityLoading,
   availabilityRefreshing = false,
+  availabilityError = '',
   serviceName,
   serviceDurationMinutes,
   barberLabel,
@@ -151,7 +153,7 @@ export function BookingTimeSelection({
             })}
           </div>
 
-          {availableCount === 0 && (
+          {!availabilityError && availableCount === 0 && (
             <div className="booking-time-empty py-8 text-center text-muted-foreground space-y-3" role="status">
               <div className="space-y-1">
                 <p className="text-sm font-medium text-foreground">No hay horarios disponibles para esta fecha.</p>
