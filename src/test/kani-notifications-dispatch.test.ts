@@ -1,10 +1,25 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-const { mockClaim, mockComplete, mockFail, mockRecordError } = vi.hoisted(() => ({
+const {
+  mockClaim,
+  mockComplete,
+  mockFail,
+  mockRecordError,
+  mockRecordChannelDispatchStatus,
+  mockFromEvents,
+  mockFromAppointments,
+  mockFromDispatches,
+  mockFromClients,
+} = vi.hoisted(() => ({
   mockClaim: vi.fn(),
   mockComplete: vi.fn(),
   mockFail: vi.fn(),
   mockRecordError: vi.fn(),
+  mockRecordChannelDispatchStatus: vi.fn(),
+  mockFromEvents: vi.fn(),
+  mockFromAppointments: vi.fn(),
+  mockFromDispatches: vi.fn(),
+  mockFromClients: vi.fn(),
 }));
 
 vi.mock("@supabase/supabase-js", () => ({
@@ -14,12 +29,61 @@ vi.mock("@supabase/supabase-js", () => ({
       if (fn === "complete_appointment_notification") return mockComplete(params);
       if (fn === "fail_appointment_notification") return mockFail(params);
       if (fn === "record_appointment_notification_dispatch_error") return mockRecordError(params);
+      if (fn === "record_channel_dispatch_status") return mockRecordChannelDispatchStatus(params);
       return Promise.resolve({ data: null, error: null });
+    },
+    from: (table: string) => {
+      if (table === "appointment_notification_events") {
+        return {
+          select: () => ({
+            in: () => ({
+              lt: () => ({
+                gte: () => ({
+                  order: () => ({
+                    limit: (lim: number) => mockFromEvents(lim),
+                  }),
+                }),
+              }),
+            }),
+          }),
+        };
+      }
+      if (table === "appointments") {
+        return {
+          select: () => ({
+            eq: (_col: string, id: string) => ({
+              maybeSingle: () => mockFromAppointments(id),
+            }),
+          }),
+        };
+      }
+      if (table === "appointment_notification_dispatches") {
+        return {
+          select: () => ({
+            eq: (_col: string, eventId: string) => mockFromDispatches(eventId),
+          }),
+        };
+      }
+      if (table === "clients") {
+        return {
+          select: () => ({
+            eq: (_col: string, clientId: string) => ({
+              maybeSingle: () => mockFromClients(clientId),
+            }),
+          }),
+        };
+      }
+      return {
+        select: () => ({ eq: () => ({ maybeSingle: () => Promise.resolve({ data: null, error: null }) }) }),
+      };
     },
   }),
 }));
 
-import { dispatchAppointmentNotification } from "../lib/kani-notifications.functions";
+import {
+  dispatchAppointmentNotification,
+  recoverPendingNotificationEvents,
+} from "../lib/kani-notifications.functions";
 
 describe("dispatchAppointmentNotification Matrix", () => {
   const baseAppointmentId = "28aced18-7987-4dc0-9dda-2ea352149575";
@@ -33,14 +97,19 @@ describe("dispatchAppointmentNotification Matrix", () => {
     process.env.RESEND_API_KEY = "re_test_key";
     process.env.RESEND_FROM_EMAIL = "Kani Barber <turnos@kanibarber.com>";
     process.env.PONTIUN_API_KEY = "pk_live_test";
-    process.env.PONTIUN_PHONE_NUMBER_ID = "1391432264052937";
-    process.env.PONTIUN_TEMPLATE_NAME = "confirmacion_turno_kani";
+    process.env.PONTIUN_PHONE_NUMBER_ID = "1443960902134586";
+    process.env.PONTIUN_TEMPLATE_NAME = "kani_barber_confirmacion_turno";
     process.env.PONTIUN_TEMPLATE_LANGUAGE = "es_AR";
 
     mockClaim.mockReset();
     mockComplete.mockReset().mockResolvedValue({ data: true, error: null });
     mockFail.mockReset().mockResolvedValue({ data: true, error: null });
     mockRecordError.mockReset().mockResolvedValue({ data: true, error: null });
+    mockRecordChannelDispatchStatus.mockReset().mockResolvedValue({ data: true, error: null });
+    mockFromEvents.mockReset().mockResolvedValue({ data: [], error: null });
+    mockFromAppointments.mockReset().mockResolvedValue({ data: null, error: null });
+    mockFromDispatches.mockReset().mockResolvedValue({ data: [], error: null });
+    mockFromClients.mockReset().mockResolvedValue({ data: null, error: null });
   });
 
   afterEach(() => {
@@ -62,7 +131,7 @@ describe("dispatchAppointmentNotification Matrix", () => {
     attempts: 1,
   };
 
-  it("Full Success: RPC returns recipient_phone (no clientPhone passed in input) -> passes phone to Pontiun with template confirmacion_turno_kani and language es_AR, marks SENT with both provider IDs", async () => {
+  it("Full Success: RPC returns recipient_phone (no clientPhone passed in input) -> passes phone to Pontiun with template kani_barber_confirmacion_turno and language es_AR, marks SENT with both provider IDs", async () => {
     mockClaim.mockResolvedValue({ data: [baseEvent], error: null });
 
     let capturedPontiunBody: any = null;
@@ -101,9 +170,9 @@ describe("dispatchAppointmentNotification Matrix", () => {
 
     // Verify Pontiun contract: template name and language
     expect(capturedPontiunBody).toBeDefined();
-    expect(capturedPontiunBody.pageId).toBe("1391432264052937");
+    expect(capturedPontiunBody.pageId).toBe("1443960902134586");
     expect(capturedPontiunBody.recipientId).toBe("5491128436014");
-    expect(capturedPontiunBody.template.name).toBe("confirmacion_turno_kani");
+    expect(capturedPontiunBody.template.name).toBe("kani_barber_confirmacion_turno");
     expect(capturedPontiunBody.template.language).toBe("es_AR");
 
     // Verify idempotency keys per channel
@@ -331,5 +400,115 @@ describe("dispatchAppointmentNotification Matrix", () => {
     expect(result.status).toBe("ALREADY_SENT");
     expect(fetchSpy).not.toHaveBeenCalled();
     expect(mockComplete).not.toHaveBeenCalled();
+  });
+
+  it("Template pending (409 template_not_approved): records TEMPLATE_NOT_APPROVED for WHATSAPP while Email dispatches independently", async () => {
+    mockClaim.mockResolvedValue({
+      data: [
+        {
+          event_id: "evt-pending-tpl-1",
+          appointment_id: baseAppointmentId,
+          notification_type: "CONFIRMED",
+          recipient_email: "cliente@kanibarber.com",
+          recipient_phone: "+5491128436014",
+          client_name: "Mateo",
+          booking_date: "2026-11-20",
+          start_time: "16:00:00",
+          service_name: "Corte + barba",
+          barber_name: "Franco",
+          dispatch_status: "CLAIMED",
+          attempts: 1,
+        },
+      ],
+      error: null,
+    });
+
+    const fetchSpy = vi.fn().mockImplementation(async (url: string) => {
+      if (url.includes("pontiun.com")) {
+        return {
+          ok: false,
+          status: 409,
+          json: async () => ({
+            code: "template_not_approved",
+            templateStatus: "PENDING",
+            error: "Template kani_barber_confirmacion_turno is pending",
+          }),
+        };
+      }
+      if (url.includes("resend.com")) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ id: "resend_msg_indep_001" }),
+        };
+      }
+      return { ok: false, status: 500 };
+    });
+    globalThis.fetch = fetchSpy as any;
+
+    const result = await dispatchAppointmentNotification({
+      appointmentId: baseAppointmentId,
+      claimToken: baseClaimToken,
+    });
+
+    expect(result.sent).toBe(false);
+    expect(result.status).toBe("FAILED");
+    expect(result.errorCode).toContain("PARTIAL_DISPATCH_FAILURE");
+    expect(mockRecordChannelDispatchStatus).toHaveBeenCalledWith(
+      expect.objectContaining({
+        p_channel: "EMAIL",
+        p_status: "SENT",
+        p_provider_message_id: "resend_msg_indep_001",
+      }),
+    );
+    expect(mockRecordChannelDispatchStatus).toHaveBeenCalledWith(
+      expect.objectContaining({
+        p_channel: "WHATSAPP",
+        p_status: "FAILED",
+        p_error_code: "TEMPLATE_NOT_APPROVED",
+      }),
+    );
+    expect(mockFail).toHaveBeenCalledTimes(1);
+  });
+
+  it("Cron recovery skips re-sending when WHATSAPP failed with TEMPLATE_NOT_APPROVED and EMAIL is already resolved", async () => {
+    process.env.SUPABASE_SERVICE_ROLE_KEY = "service-role-test-key";
+
+    mockFromEvents.mockResolvedValue({
+      data: [
+        {
+          id: "evt-cron-skip-1",
+          appointment_id: baseAppointmentId,
+          notification_type: "CONFIRMED",
+          status: "FAILED",
+          attempts: 1,
+          created_at: new Date().toISOString(),
+        },
+      ],
+      error: null,
+    });
+    mockFromAppointments.mockResolvedValue({
+      data: { id: baseAppointmentId, status: "CONFIRMED", client_id: "c-1" },
+      error: null,
+    });
+    mockFromDispatches.mockResolvedValue({
+      data: [
+        { channel: "WHATSAPP", status: "FAILED", error_code: "TEMPLATE_NOT_APPROVED" },
+        { channel: "EMAIL", status: "PROVIDER_ACCEPTED", error_code: null },
+      ],
+      error: null,
+    });
+
+    const fetchSpy = vi.fn();
+    globalThis.fetch = fetchSpy as any;
+
+    const recovery = await recoverPendingNotificationEvents({ limit: 10 });
+
+    expect(recovery.processed).toBe(1);
+    expect(recovery.skipped).toBe(1);
+    expect(recovery.recovered).toBe(0);
+    expect(recovery.failed).toBe(0);
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(mockClaim).not.toHaveBeenCalled();
   });
 });

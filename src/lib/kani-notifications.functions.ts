@@ -113,6 +113,7 @@ export const dispatchAppointmentNotification = createServerOnlyFn(async (data: {
         let whatsappErrorDesc: string | null = null;
         let whatsappIncrement = false;
 
+        let whatsappMetaMessageId: string | null = null;
         if (clientHasRegisteredPhone) {
           try {
             const { sendPontiunAppointmentConfirmation } = await import("./kani-pontiun");
@@ -129,6 +130,7 @@ export const dispatchAppointmentNotification = createServerOnlyFn(async (data: {
             if (pontiunResult.success) {
               pontiunSuccess = true;
               pontiunMessageId = pontiunResult.messageId;
+              whatsappMetaMessageId = pontiunResult.metaMessageId ?? null;
               whatsappStatus = "PROVIDER_ACCEPTED";
               whatsappIncrement = true;
               console.log(
@@ -145,10 +147,18 @@ export const dispatchAppointmentNotification = createServerOnlyFn(async (data: {
               whatsappStatus = "FAILED";
               whatsappErrorDesc = pontiunResult.error ?? null;
               whatsappIncrement = true;
-              if (pontiunResult.error?.includes("131042")) {
+              if (pontiunResult.error?.includes("131042") || pontiunResult.errorCode === "131042") {
                 whatsappErrorCode = "131042";
-              } else if (pontiunResult.error?.includes("TEMPLATE_NOT_APPROVED")) {
+              } else if (
+                pontiunResult.templatePendingOrUnapproved ||
+                pontiunResult.errorCode === "TEMPLATE_NOT_APPROVED" ||
+                pontiunResult.error?.includes("TEMPLATE_NOT_APPROVED")
+              ) {
                 whatsappErrorCode = "TEMPLATE_NOT_APPROVED";
+              } else if (pontiunResult.error === "INVALID_PHONE_NUMBER") {
+                whatsappErrorCode = "INVALID_PHONE_NUMBER";
+              } else if (pontiunResult.error === "BARBER_MISSING") {
+                whatsappErrorCode = "BARBER_MISSING";
               } else {
                 whatsappErrorCode = "PONTIUN_ERROR";
               }
@@ -194,6 +204,7 @@ export const dispatchAppointmentNotification = createServerOnlyFn(async (data: {
             p_error_code: whatsappErrorCode,
             p_error_description: whatsappErrorDesc,
             p_increment_attempt: whatsappIncrement,
+            p_meta_message_id: whatsappMetaMessageId,
           });
         } catch (rpcErr) {
           console.warn("[KANI notification] Error registrando estado de canal WHATSAPP:", rpcErr);
@@ -773,6 +784,7 @@ export async function retryNotificationChannel(input: {
         console.warn("[KANI notification] Advertencia registrando PROCESSING para WhatsApp:", procErr);
       }
 
+      const attemptNumber = (relevantDispatch?.attempts ?? dispatches?.attempts ?? 0) + 1;
       const { sendPontiunAppointmentConfirmation } = await import("./kani-pontiun");
       const pontiunResult = await sendPontiunAppointmentConfirmation({
         appointmentId: input.appointmentId,
@@ -782,15 +794,21 @@ export async function retryNotificationChannel(input: {
         serviceName: formatServiceNameForChannel((aptData as any).custom_service_name || service?.name || "Corte", 'whatsapp'),
         bookingDate: aptData.booking_date,
         startTime: aptData.start_time,
+        // Solo diferenciar clave en reintento manual tras fallo previo (p. ej. tras aprobar plantilla en Meta)
+        idempotencySuffix: dispatches?.status === "FAILED" && attemptNumber >= 2 ? `retry-${attemptNumber}` : undefined,
       });
 
       const newStatus = pontiunResult.success
         ? "PROVIDER_ACCEPTED"
         : (pontiunResult.skipped ? "SKIPPED" : "FAILED");
 
-      const errCode = pontiunResult.error?.includes("131042")
+      const errCode = pontiunResult.error?.includes("131042") || pontiunResult.errorCode === "131042"
         ? "131042"
-        : (pontiunResult.error ? "PONTIUN_RETRY_ERROR" : null);
+        : (pontiunResult.templatePendingOrUnapproved || pontiunResult.errorCode === "TEMPLATE_NOT_APPROVED" || pontiunResult.error?.includes("TEMPLATE_NOT_APPROVED"))
+          ? "TEMPLATE_NOT_APPROVED"
+          : (pontiunResult.error === "INVALID_PHONE_NUMBER" || pontiunResult.error === "BARBER_MISSING")
+            ? pontiunResult.error
+            : (pontiunResult.error ? "PONTIUN_RETRY_ERROR" : null);
 
       await supabase.rpc("record_channel_dispatch_status", {
         p_appointment_id: input.appointmentId,
@@ -803,6 +821,7 @@ export async function retryNotificationChannel(input: {
         p_error_code: errCode,
         p_error_description: pontiunResult.error ?? null,
         p_increment_attempt: false,
+        p_meta_message_id: pontiunResult.metaMessageId ?? null,
       });
 
       return {
@@ -2503,6 +2522,32 @@ export async function recoverPendingNotificationEvents(options: { limit?: number
       if (ev.notification_type === "CANCELLED" && appt.status !== "CANCELLED") {
         skipped++;
         continue;
+      }
+
+      // Evitar reintentos automáticos en bucle cada minuto cuando WhatsApp falló por estado no transitorio
+      // (ej: plantilla pendiente de aprobación en Meta o error 131042/teléfono inválido) y Email ya está resuelto.
+      try {
+        const { data: channelDispatches } = await (db as any)
+          .from("appointment_notification_dispatches")
+          .select("channel, status, error_code")
+          .eq("notification_event_id", ev.id);
+        if (Array.isArray(channelDispatches) && channelDispatches.length > 0) {
+          const wa = channelDispatches.find((d: any) => d.channel === "WHATSAPP");
+          const email = channelDispatches.find((d: any) => d.channel === "EMAIL");
+          const waBlockedNonTransient =
+            wa?.status === "FAILED" &&
+            ["TEMPLATE_NOT_APPROVED", "131042", "INVALID_PHONE_NUMBER", "BARBER_MISSING"].includes(
+              String(wa?.error_code || ""),
+            );
+          const emailNeedsRecovery =
+            email && (email.status === "FAILED" || email.status === "PENDING");
+          if (waBlockedNonTransient && !emailNeedsRecovery) {
+            skipped++;
+            continue;
+          }
+        }
+      } catch {
+        // Best-effort guard: si no hay tabla/mocks en entorno de prueba, continuar normalmente
       }
 
       let clientPhone: string | null = null;

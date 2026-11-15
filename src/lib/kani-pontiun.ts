@@ -1,5 +1,8 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
+export const DEFAULT_PONTIUN_TEMPLATE_NAME = "kani_barber_confirmacion_turno";
+export const DEFAULT_PONTIUN_TEMPLATE_LANGUAGE = "es_AR";
+
 export type PontiunAppointmentPayload = {
   appointmentId: string;
   clientName: string;
@@ -8,12 +11,17 @@ export type PontiunAppointmentPayload = {
   serviceName?: string | null;
   bookingDate?: string | null;
   startTime?: string | null;
+  idempotencySuffix?: string | null;
 };
 
 export type PontiunSendResult = {
   success: boolean;
   messageId?: string;
+  metaMessageId?: string;
   error?: string;
+  errorCode?: string;
+  templatePendingOrUnapproved?: boolean;
+  templateStatus?: string;
   skipped?: boolean;
   idempotentReplay?: boolean;
   retryable?: boolean;
@@ -343,7 +351,40 @@ export async function handlePontiunWebhookRequest(request: Request): Promise<Res
     if (rawBody && rawBody.trim()) {
       const payload = JSON.parse(rawBody) as any;
 
-      // Extraer todas las actualizaciones de estado de mensajes
+      // Ecos Coexistence de la app nativa de WhatsApp Business: ignorar siempre para evitar bucles
+      if (
+        payload.type === "message" &&
+        payload.message?.direction === "outbound" &&
+        payload.message?.origin === "business_app"
+      ) {
+        console.log("[Pontiun Webhook] Eco outbound de WhatsApp Business ignorado:", {
+          eventId: eventId ?? "none",
+          channel: payload.page?.channel ?? "whatsapp",
+          origin: payload.message?.origin,
+        });
+        return new Response(
+          JSON.stringify({
+            received: true,
+            eventId: eventId ?? null,
+            ignored: "outbound_business_app_echo",
+          }),
+          {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          },
+        );
+      }
+
+      // Mensajes entrantes de clientes: registrar diagnóstico mínimo sin PII, sin disparar confirmaciones ni respuestas
+      if (payload.type === "message" && payload.message?.direction === "inbound") {
+        console.log("[Pontiun Webhook] Mensaje entrante recibido de cliente:", {
+          eventId: eventId ?? "none",
+          channel: payload.page?.channel ?? "whatsapp",
+          conversationId: payload.conversation?.id ?? "none",
+        });
+      }
+
+      // Extraer actualizaciones de estado de mensajes salientes únicamente
       const statusUpdates: Array<{
         providerMessageId?: string;
         metaMessageId?: string;
@@ -352,32 +393,68 @@ export async function handlePontiunWebhookRequest(request: Request): Promise<Res
         errorDescription?: string;
       }> = [];
 
-      // Formato 1: Pontiun resender callback { type: "message.status", message: { id, status, error: { code, message } }, meta: { id } }
-      if (
-        payload.type === "message.status" ||
-        payload.type === "message_status" ||
-        (payload.message && payload.message.status)
-      ) {
+      // Formato 1: Callback explícito { type: "message.status" | "message_status", message: { id, status, error }, meta: { id } }
+      if (payload.type === "message.status" || payload.type === "message_status") {
         const msg = payload.message || payload;
         const err = msg.error || payload.error;
-        statusUpdates.push({
-          providerMessageId: msg.id || payload.id,
-          metaMessageId: payload.meta?.id || payload.meta?.messages?.[0]?.id,
-          status: msg.status || payload.status,
-          errorCode: err
-            ? typeof err === "object"
-              ? String(err.code || err.error_code || "")
-              : String(err)
-            : undefined,
-          errorDescription: err
-            ? typeof err === "object"
-              ? String(err.message || err.description || JSON.stringify(err))
-              : String(err)
-            : undefined,
-        });
+        const statusValue = msg.deliveryStatus || msg.status || payload.status;
+        if (statusValue) {
+          statusUpdates.push({
+            providerMessageId: msg.id || payload.id,
+            metaMessageId: msg.metaMessageId || payload.meta?.id || payload.meta?.messages?.[0]?.id,
+            status: statusValue,
+            errorCode: err
+              ? typeof err === "object"
+                ? String(err.code || err.error_code || "")
+                : String(err)
+              : undefined,
+            errorDescription: err
+              ? typeof err === "object"
+                ? String(err.message || err.description || JSON.stringify(err))
+                : String(err)
+              : undefined,
+          });
+        }
       }
 
-      // Formato 2: Meta Cloud API webhook estándar { entry: [ { changes: [ { value: { statuses: [...] } } ] } ] }
+      // Formato 2: Evento oficial Pontiun whatsappEvents { type: "message", message: { id, metaMessageId, direction: "outbound", status, deliveryStatus } }
+      // Solo procesar salientes reales (nunca inbound "received" ni ecos business_app ya filtrados arriba).
+      if (
+        payload.type === "message" &&
+        payload.message &&
+        payload.message.direction === "outbound"
+      ) {
+        const msg = payload.message;
+        const rawDelivery = typeof msg.deliveryStatus === "string" ? msg.deliveryStatus.toLowerCase() : undefined;
+        const rawMsgStatus = typeof msg.status === "string" ? msg.status.toLowerCase() : undefined;
+        const resolvedStatus =
+          rawDelivery && ["sent", "delivered", "read", "failed"].includes(rawDelivery)
+            ? rawDelivery
+            : rawMsgStatus && ["sent", "delivered", "read", "failed"].includes(rawMsgStatus)
+              ? rawMsgStatus
+              : undefined;
+
+        if (resolvedStatus) {
+          const err = msg.error || payload.error;
+          statusUpdates.push({
+            providerMessageId: msg.id,
+            metaMessageId: msg.metaMessageId || payload.meta?.id || payload.meta?.messages?.[0]?.id,
+            status: resolvedStatus,
+            errorCode: err
+              ? typeof err === "object"
+                ? String(err.code || err.error_code || "")
+                : String(err)
+              : undefined,
+            errorDescription: err
+              ? typeof err === "object"
+                ? String(err.message || err.description || JSON.stringify(err))
+                : String(err)
+              : undefined,
+          });
+        }
+      }
+
+      // Formato 3: Meta Cloud API webhook estándar { entry: [ { changes: [ { value: { statuses: [...] } } ] } ] }
       if (Array.isArray(payload.entry)) {
         for (const ent of payload.entry) {
           for (const ch of ent.changes || []) {
@@ -400,7 +477,7 @@ export async function handlePontiunWebhookRequest(request: Request): Promise<Res
         }
       }
 
-      // Formato 3: Direct array { statuses: [...] }
+      // Formato 4: Direct array { statuses: [...] }
       if (Array.isArray(payload.statuses)) {
         for (const st of payload.statuses) {
           const firstErr =
@@ -471,15 +548,6 @@ export async function handlePontiunWebhookRequest(request: Request): Promise<Res
           );
         }
       }
-
-      // Si es un mensaje entrante de un cliente, registrar diagnóstico mínimo sin exponer PII
-      if (payload.type === "message" && payload.message?.direction === "inbound") {
-        console.log("[Pontiun Webhook] Mensaje entrante recibido de cliente:", {
-          eventId: eventId ?? "none",
-          channel: payload.page?.channel ?? "whatsapp",
-          conversationId: payload.conversation?.id ?? "none",
-        });
-      }
     }
   } catch {
     // Si no es JSON estándar (ej: ping de prueba), ignorar error de parseo
@@ -523,11 +591,11 @@ export async function sendPontiunAppointmentConfirmation(
   const templateName =
     getPontiunRuntimeEnv("PONTIUN_TEMPLATE_NAME") ??
     getPontiunRuntimeEnv("PONTIUN_WHATSAPP_CONFIRMATION_TEMPLATE") ??
-    "confirmacion_turno_kani";
+    DEFAULT_PONTIUN_TEMPLATE_NAME;
   const templateLanguage =
     getPontiunRuntimeEnv("PONTIUN_TEMPLATE_LANGUAGE") ??
     getPontiunRuntimeEnv("PONTIUN_WHATSAPP_TEMPLATE_LANGUAGE") ??
-    "es_AR";
+    DEFAULT_PONTIUN_TEMPLATE_LANGUAGE;
   const apiBaseUrl =
     getPontiunRuntimeEnv("PONTIUN_API_BASE_URL") ?? "https://pontiun.com";
 
@@ -616,8 +684,12 @@ export async function sendPontiunAppointmentConfirmation(
     serviceName = "Corte de cabello";
   }
 
-  // Clave de idempotencia única por turno confirmado según ADR Pontiun
-  const idempotencyKey = `kani-appointment-${params.appointmentId}-confirmed`;
+  // Clave de idempotencia única por turno confirmado según ADR Pontiun (1-200 chars)
+  const baseIdempotencyKey = `kani-appointment-${params.appointmentId}-confirmed`;
+  const cleanSuffix = params.idempotencySuffix?.trim();
+  const idempotencyKey = (
+    cleanSuffix ? `${baseIdempotencyKey}-${cleanSuffix}` : baseIdempotencyKey
+  ).slice(0, 200);
 
   const requestBody = {
     pageId: phoneNumberId.trim(),
@@ -666,9 +738,13 @@ export async function sendPontiunAppointmentConfirmation(
         message?: string | { id?: string; message?: string };
         id?: string;
         resender?: { messageId?: string; status?: string; idempotentReplay?: boolean };
-        meta?: { messages?: Array<{ id: string; message_status?: string }> };
+        meta?: {
+          messages?: Array<{ id: string; message_status?: string }>;
+          error?: { message?: string; type?: string; code?: number };
+        };
         error?: string | { message?: string; type?: string; code?: number };
         code?: string;
+        templateStatus?: string;
       } | null;
 
       if (response.ok) {
@@ -688,9 +764,10 @@ export async function sendPontiunAppointmentConfirmation(
         }
 
         const isReplay = Boolean(responseJson?.resender?.idempotentReplay);
+        const metaMessageId = responseJson?.meta?.messages?.[0]?.id;
         const messageId =
           responseJson?.resender?.messageId ??
-          responseJson?.meta?.messages?.[0]?.id ??
+          metaMessageId ??
           (typeof responseJson?.message === "object" ? responseJson?.message?.id : undefined) ??
           responseJson?.id ??
           "sent";
@@ -708,6 +785,7 @@ export async function sendPontiunAppointmentConfirmation(
         return {
           success: true,
           messageId,
+          metaMessageId,
           idempotentReplay: isReplay,
           attempts: attempt,
         };
@@ -718,22 +796,54 @@ export async function sendPontiunAppointmentConfirmation(
         typeof rawDetails === "object" && rawDetails !== null
           ? ((rawDetails as any).message ?? JSON.stringify(rawDetails))
           : String(rawDetails ?? `HTTP_${response.status}`);
+      const metaErrorCode = responseJson?.meta?.error?.code;
 
-      // Errores permanentes Meta / Pontiun
+      // Plantilla pendiente / no aprobada en Pontiun o Meta (sin reintentar en bucle)
       if (
         response.status === 409 &&
-        (errorDetails === "template_not_approved" || responseJson?.code === "template_not_approved")
+        (errorDetails === "template_not_approved" ||
+          responseJson?.code === "template_not_approved" ||
+          Boolean(responseJson?.templateStatus))
       ) {
+        const tplStatus = responseJson?.templateStatus || "PENDING";
         console.warn(
-          `[Pontiun WhatsApp] Plantilla '${templateName}' no aprobada en el catálogo de Pontiun / Meta (HTTP 409).`,
+          `[Pontiun WhatsApp] Plantilla '${templateName}' (${templateLanguage}) en estado ${tplStatus}, aún no aprobada en Pontiun / Meta (HTTP 409).`,
         );
         return {
           success: false,
           error: "TEMPLATE_NOT_APPROVED",
+          errorCode: "TEMPLATE_NOT_APPROVED",
+          templatePendingOrUnapproved: true,
+          templateStatus: tplStatus,
           retryable: false,
           attempts: attempt,
         };
       }
+
+      const lowerDetails = errorDetails.toLowerCase();
+      const isMetaTemplateUnapproved =
+        metaErrorCode === 132001 ||
+        lowerDetails.includes("isn't approved yet") ||
+        lowerDetails.includes("not approved") ||
+        lowerDetails.includes("does not exist in the requested language") ||
+        lowerDetails.includes("template name does not exist");
+
+      if (isMetaTemplateUnapproved) {
+        console.warn(
+          `[Pontiun WhatsApp] Plantilla '${templateName}' (${templateLanguage}) reportada como pendiente/inexistente por Meta/Pontiun (HTTP ${response.status}): ${errorDetails}`,
+        );
+        return {
+          success: false,
+          error: `PONTIUN_${response.status}: ${errorDetails}`,
+          errorCode: "TEMPLATE_NOT_APPROVED",
+          templatePendingOrUnapproved: true,
+          templateStatus: responseJson?.templateStatus || "PENDING",
+          retryable: false,
+          attempts: attempt,
+        };
+      }
+
+      const isBilling131042 = metaErrorCode === 131042 || errorDetails.includes("131042");
 
       if (response.status >= 400 && response.status < 500 && response.status !== 408 && response.status !== 429) {
         console.warn(
@@ -742,6 +852,7 @@ export async function sendPontiunAppointmentConfirmation(
         return {
           success: false,
           error: `PONTIUN_${response.status}: ${errorDetails}`,
+          errorCode: isBilling131042 ? "131042" : undefined,
           retryable: false,
           attempts: attempt,
         };

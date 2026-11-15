@@ -831,7 +831,7 @@ export function V2Appointments({
             <>
               <DialogTitle>¿Reenviar confirmación por WhatsApp?</DialogTitle>
               <DialogDescription>
-                Se enviará la plantilla oficial confirmacion_turno_kani a {whatsAppModal.appointment.name} ({whatsAppModal.appointment.phone}) mediante Pontiun. No se reenviará correo electrónico por Resend.
+                Se enviará la plantilla oficial kani_barber_confirmacion_turno a {whatsAppModal.appointment.name} ({whatsAppModal.appointment.phone}) mediante Pontiun. No se reenviará correo electrónico por Resend.
               </DialogDescription>
               <div className="v2-dialog-actions" style={{ display: "flex", justifyContent: "flex-end", gap: "8px", marginTop: "16px" }}>
                 <button className="v2-secondary" disabled={busy} onClick={() => setWhatsAppModal(null)}>
@@ -965,6 +965,12 @@ export function V2Appointments({
             );
           })()}
 
+          {selectedNotifDetail?.channel === "WhatsApp" && selectedNotifDetail.dispatch?.errorCode === "TEMPLATE_NOT_APPROVED" && (
+            <div className="v2-note" style={{ marginTop: "12px", borderLeftColor: "#eab308" }}>
+              ⏳ <strong>Plantilla pendiente en Meta:</strong> la plantilla oficial (<code>kani_barber_confirmacion_turno</code>) aún no está aprobada o sincronizada en Meta/Pontiun. El turno sigue confirmado y no se reintenta automáticamente en bucle. Una vez aprobada, podés reenviar manualmente desde el botón WhatsApp del turno sin duplicar correos ni envíos ya aceptados.
+            </div>
+          )}
+
           {/* Banner de retroalimentación de reintento */}
           {retryFeedback && (
             <div
@@ -1042,6 +1048,9 @@ function formatWhatsAppStatus(dispatch?: NotificationChannelDispatch): string {
     case "FAILED":
       if (dispatch.errorCode === "131042") {
         return "WhatsApp: Error 131042";
+      }
+      if (dispatch.errorCode === "TEMPLATE_NOT_APPROVED") {
+        return "WhatsApp: Plantilla pendiente";
       }
       return `WhatsApp: Error ${dispatch.errorCode || ""}`.trim();
     case "SKIPPED":

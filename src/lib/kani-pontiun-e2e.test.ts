@@ -9,8 +9,8 @@ describe("Pontiun E2E Matrix — 10 Required Scenarios", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     process.env.PONTIUN_API_KEY = "pk_live_test_secret";
-    process.env.PONTIUN_PHONE_NUMBER_ID = "1391432264052937";
-    process.env.PONTIUN_TEMPLATE_NAME = "confirmacion_turno_kani";
+    process.env.PONTIUN_PHONE_NUMBER_ID = "1443960902134586";
+    process.env.PONTIUN_TEMPLATE_NAME = "kani_barber_confirmacion_turno";
     process.env.PONTIUN_TEMPLATE_LANGUAGE = "es_AR";
   });
 
@@ -180,7 +180,7 @@ describe("Pontiun E2E Matrix — 10 Required Scenarios", () => {
     await sendPontiunAppointmentConfirmation(baseAppointment);
 
     expect(capturedBody).toBeDefined();
-    expect(capturedBody.template.name).toBe("confirmacion_turno_kani");
+    expect(capturedBody.template.name).toBe("kani_barber_confirmacion_turno");
     expect(capturedBody.template.language).toBe("es_AR");
 
     const params = capturedBody.template.components[0].parameters;

@@ -58,7 +58,7 @@ export async function sendWhatsAppNotification({
   payload,
   phoneNumberId,
   accessToken,
-  templateName = "confirmacion_turno_kani",
+  templateName = "kani_barber_confirmacion_turno",
   templateLanguage = "es_AR",
 }: {
   payload: WhatsAppMessagePayload;

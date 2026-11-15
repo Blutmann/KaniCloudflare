@@ -102,8 +102,8 @@ describe("Consolidación integral de notificaciones — Seguridad, RLS y Autoriz
     process.env.RESEND_API_KEY = "re_test_key";
     process.env.RESEND_FROM_EMAIL = "Kani Barber <turnos@kanibarber.com>";
     process.env.PONTIUN_API_KEY = "pk_live_test";
-    process.env.PONTIUN_PHONE_NUMBER_ID = "1391432264052937";
-    process.env.PONTIUN_TEMPLATE_NAME = "confirmacion_turno_kani";
+    process.env.PONTIUN_PHONE_NUMBER_ID = "1443960902134586";
+    process.env.PONTIUN_TEMPLATE_NAME = "kani_barber_confirmacion_turno";
     process.env.PONTIUN_TEMPLATE_LANGUAGE = "es_AR";
     process.env.PONTIUN_WEBHOOK_SECRET = "whsec_test_secret_1234567890";
 
@@ -649,5 +649,228 @@ describe("Consolidación integral de notificaciones — Seguridad, RLS y Autoriz
 
     expect(result.success).toBe(true);
     expect(result.status).toBe("PROVIDER_ACCEPTED");
+  });
+
+  it("17. Webhook oficial whatsappEvents (outbound deliveryStatus delivered) extrae metaMessageId", async () => {
+    const rawPayload = JSON.stringify({
+      type: "message",
+      page: { id: "1443960902134586", channel: "whatsapp" },
+      message: {
+        id: "pontiun-msg-wa-events-001",
+        metaMessageId: "wamid.HBgLMTEyODQzNjAxNBUC_OFFICIAL",
+        direction: "outbound",
+        origin: "resender_api",
+        deliveryStatus: "delivered",
+      },
+    });
+
+    const eventId = "evt_official_wa_delivered_001";
+    const timestamp = String(Math.floor(Date.now() / 1000));
+    const hmac = createHmac("sha256", process.env.PONTIUN_WEBHOOK_SECRET!)
+      .update(`${eventId}.${timestamp}.${rawPayload}`)
+      .digest("hex");
+
+    const req = new Request("https://www.kanibarber.com/api/webhook/pontiun", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "resender-event-id": eventId,
+        "resender-timestamp": timestamp,
+        "resender-signature": `v1=${hmac}`,
+      },
+      body: rawPayload,
+    });
+
+    const resp = await handlePontiunWebhookRequest(req);
+    expect(resp.status).toBe(200);
+    expect(mockUpdatePontiunWebhookStatus).toHaveBeenCalledTimes(1);
+    expect(mockUpdatePontiunWebhookStatus).toHaveBeenCalledWith({
+      p_provider_message_id: "pontiun-msg-wa-events-001",
+      p_meta_message_id: "wamid.HBgLMTEyODQzNjAxNBUC_OFFICIAL",
+      p_status: "delivered",
+      p_error_code: null,
+      p_error_description: null,
+    });
+  });
+
+  it("18. Webhook inbound y outbound deliveryStatus accepted / business_app echo NO disparan updates ni respuestas", async () => {
+    const payloads = [
+      {
+        eventId: "evt_inbound_client_msg_001",
+        body: {
+          type: "message",
+          page: { id: "1443960902134586", channel: "whatsapp" },
+          conversation: { id: "conv-1" },
+          message: {
+            id: "msg-in-1",
+            direction: "inbound",
+            origin: "customer",
+            status: "received",
+          },
+        },
+      },
+      {
+        eventId: "evt_outbound_business_app_001",
+        body: {
+          type: "message",
+          page: { id: "1443960902134586", channel: "whatsapp" },
+          message: {
+            id: "msg-echo-1",
+            direction: "outbound",
+            origin: "business_app",
+            deliveryStatus: "sent",
+          },
+        },
+      },
+      {
+        eventId: "evt_outbound_accepted_001",
+        body: {
+          type: "message",
+          page: { id: "1443960902134586", channel: "whatsapp" },
+          message: {
+            id: "msg-acc-1",
+            direction: "outbound",
+            origin: "resender_api",
+            deliveryStatus: "accepted",
+          },
+        },
+      },
+    ];
+
+    const timestamp = String(Math.floor(Date.now() / 1000));
+    for (const item of payloads) {
+      const raw = JSON.stringify(item.body);
+      const hmac = createHmac("sha256", process.env.PONTIUN_WEBHOOK_SECRET!)
+        .update(`${item.eventId}.${timestamp}.${raw}`)
+        .digest("hex");
+      const req = new Request("https://www.kanibarber.com/api/webhook/pontiun", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "resender-event-id": item.eventId,
+          "resender-timestamp": timestamp,
+          "resender-signature": `v1=${hmac}`,
+        },
+        body: raw,
+      });
+      const resp = await handlePontiunWebhookRequest(req);
+      expect(resp.status).toBe(200);
+    }
+
+    expect(mockUpdatePontiunWebhookStatus).not.toHaveBeenCalled();
+  });
+
+  it("19. Reintento manual post-aprobación usa Idempotency-Key retry-2 y captura metaMessageId sin tocar Email", async () => {
+    mockGetUser.mockResolvedValue({
+      data: { user: { id: "admin-user-uuid", email: "admin@kanibarber.com" } },
+      error: null,
+    });
+    mockSelectFromStaffProfiles.mockResolvedValue({
+      data: { role: "ADMIN", barber_id: null, active: true },
+      error: null,
+    });
+    mockSelectFromDispatches.mockResolvedValue({
+      data: {
+        id: "disp-failed-wa",
+        appointment_id: baseAppointmentId,
+        channel: "WHATSAPP",
+        status: "FAILED",
+        attempts: 1,
+        error_code: "TEMPLATE_NOT_APPROVED",
+      },
+      error: null,
+    });
+    mockSelectFromAppointments.mockResolvedValue({
+      data: {
+        id: baseAppointmentId,
+        barber_id: "b-1",
+        booking_date: "2026-11-20",
+        start_time: "17:00:00",
+        client_id: "c-1",
+        clients: { id: "c-1", name: "Mateo", phone: "+5491128436014" },
+        barbers: { id: "b-1", name: "Franco" },
+        services: { id: "s-1", name: "Corte + barba" },
+      },
+      error: null,
+    });
+
+    let capturedPontiunHeaders: any = null;
+    let capturedPontiunBody: any = null;
+    const fetchSpy = vi.fn().mockImplementation(async (url: string, init: any) => {
+      if (url.includes("pontiun.com")) {
+        capturedPontiunHeaders = init.headers;
+        capturedPontiunBody = JSON.parse(init.body);
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            resender: { messageId: "pontiun-retry-ok-2", status: "sent" },
+            meta: { messages: [{ id: "wamid.RETRY_2_OK", message_status: "accepted" }] },
+          }),
+        };
+      }
+      throw new Error(`No debería llamarse otro proveedor en reintento WHATSAPP: ${url}`);
+    });
+    globalThis.fetch = fetchSpy as any;
+
+    const result = await retryNotificationChannel({
+      appointmentId: baseAppointmentId,
+      channel: "WHATSAPP",
+      token: "valid.admin.jwt",
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.status).toBe("PROVIDER_ACCEPTED");
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(capturedPontiunHeaders["Idempotency-Key"]).toBe(
+      `kani-appointment-${baseAppointmentId}-confirmed-retry-2`,
+    );
+    expect(capturedPontiunBody.pageId).toBe("1443960902134586");
+    expect(capturedPontiunBody.template.name).toBe("kani_barber_confirmacion_turno");
+    expect(mockRecordChannelDispatchStatus).toHaveBeenCalledWith(
+      expect.objectContaining({
+        p_channel: "WHATSAPP",
+        p_status: "PROVIDER_ACCEPTED",
+        p_provider_message_id: "pontiun-retry-ok-2",
+        p_meta_message_id: "wamid.RETRY_2_OK",
+      }),
+    );
+  });
+
+  it("20. Bloquea reintentos manuales duplicados cuando WHATSAPP ya está en PROVIDER_ACCEPTED, DELIVERED o READ", async () => {
+    mockGetUser.mockResolvedValue({
+      data: { user: { id: "admin-user-uuid", email: "admin@kanibarber.com" } },
+      error: null,
+    });
+    mockSelectFromStaffProfiles.mockResolvedValue({
+      data: { role: "ADMIN", barber_id: null, active: true },
+      error: null,
+    });
+
+    for (const status of ["PROVIDER_ACCEPTED", "DELIVERED", "READ"]) {
+      mockSelectFromDispatches.mockResolvedValueOnce({
+        data: {
+          id: `disp-${status}`,
+          appointment_id: baseAppointmentId,
+          channel: "WHATSAPP",
+          status,
+          attempt_count: 1,
+        },
+        error: null,
+      });
+
+      const fetchSpy = vi.fn();
+      globalThis.fetch = fetchSpy as any;
+
+      const result = await retryNotificationChannel({
+        appointmentId: baseAppointmentId,
+        channel: "WHATSAPP",
+        token: "valid.admin.jwt",
+      });
+
+      expect(result.success).toBe(false);
+      expect(fetchSpy).not.toHaveBeenCalled();
+      expect(mockRecordChannelDispatchStatus).not.toHaveBeenCalled();
+    }
   });
 });
