@@ -11927,3 +11927,51 @@ html[data-theme] body.liquid-glass-active .liquid-glass-confirmed-stage .confirm
     transform: none !important;
   }
 }
+
+/* ==========================================================================
+   LIQUID GLASS V12.47.8.1 · ESTABILIDAD DEL FONDO CON TECLADO VIRTUAL iOS
+   - Ancla .liquid-glass-atmosphere a 100lvh (bottom: auto) en mobile/touch para
+     evitar que inset: 0 recalcule y reescale background-size: cover al abrir teclado.
+   - Bloquea los saltos de media queries por aspect-ratio en teléfonos portrait
+     (max-width: 539px) cuando el teclado reduce la altura del viewport.
+   ========================================================================== */
+@media (max-width: 767px), (hover: none) and (pointer: coarse) {
+  html[data-theme] .liquid-glass-atmosphere {
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: auto !important;
+    width: 100% !important;
+    height: 100vh;
+    height: 100lvh !important;
+    min-height: 100lvh !important;
+  }
+}
+
+@media (max-width: 539px) {
+  html[data-theme="light"] .liquid-glass-atmosphere {
+    background-position: 58% 52% !important;
+    background-image: url('/backgrounds/light-mode-mobile-1440x2560-v12-41.jpg') !important;
+    background-image: -webkit-image-set(
+      url('/backgrounds/light-mode-mobile-1440x2560-v12-41.webp') 1x
+    ) !important;
+    background-image: image-set(
+      url('/backgrounds/light-mode-mobile-1440x2560-v12-41.avif') type('image/avif') 1x,
+      url('/backgrounds/light-mode-mobile-1440x2560-v12-41.webp') type('image/webp') 1x,
+      url('/backgrounds/light-mode-mobile-1440x2560-v12-41.jpg') type('image/jpeg') 1x
+    ) !important;
+  }
+
+  html[data-theme="dark"] .liquid-glass-atmosphere {
+    background-position: 58% 52% !important;
+    background-image: url('/backgrounds/dark-mode-mobile-1440x2560-v12-41.jpg') !important;
+    background-image: -webkit-image-set(
+      url('/backgrounds/dark-mode-mobile-1440x2560-v12-41.webp') 1x
+    ) !important;
+    background-image: image-set(
+      url('/backgrounds/dark-mode-mobile-1440x2560-v12-41.avif') type('image/avif') 1x,
+      url('/backgrounds/dark-mode-mobile-1440x2560-v12-41.webp') type('image/webp') 1x,
+      url('/backgrounds/dark-mode-mobile-1440x2560-v12-41.jpg') type('image/jpeg') 1x
+    ) !important;
+  }
+}

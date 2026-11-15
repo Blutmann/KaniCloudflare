@@ -5244,24 +5244,58 @@ body[data-membership-page="true"] .site-header-slot {
 }
 
 /* ==========================================================================
-   V12.47.8 · ELIMINAR ZOOM AUTOMÁTICO EN FORMULARIOS MOBILE (iOS / TOUCH)
-   - Garantiza font-size >= 16px en todos los campos editables en mobile y
-     dispositivos táctiles (hover: none and pointer: coarse), evitando el
-     auto-zoom de Safari/Chrome en iOS sin bloquear el zoom manual (pinch).
-   - No altera desktop con mouse ni dimensiones de header, stepper o modales.
+   V12.47.8 / V12.47.8.1 · ELIMINAR ZOOM AUTOMÁTICO Y REFINAR TIPOGRAFÍA MOBILE
+   - Garantiza font-size >= 16px en controles editables nativos (input, textarea,
+     select) en mobile y dispositivos táctiles, sin afectar <output class="select-control">.
+   - Restaura placeholders discretos (13px Inter), peso visual equilibrado en
+     descuento/Payway y estabilidad de body::before con 100lvh al abrir teclado.
    ========================================================================== */
 @media (max-width: 767px), (hover: none) and (pointer: coarse) {
   html body :is(
     input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="hidden"]):not([type="file"]),
     textarea,
-    select,
-    .select-control
+    select
   ) {
     font-size: max(16px, 1rem) !important;
   }
 
-  html body .booking-page .booking-contact-form input#booking-discount-code {
+  /* Refinamiento óptico: mantener 16px anti-zoom con proporción Inter y placeholders discretos */
+  html body .booking-page .booking-contact-form input#booking-discount-code,
+  html body .booking-page .booking-contact-form .discount-input {
+    font-family: var(--font-sans) !important;
     font-size: max(16px, 1rem) !important;
+    font-weight: 400 !important;
+    letter-spacing: 0.01em !important;
+  }
+
+  html body .payway-card-form :is(input, select),
+  html body .payway-card-pan-input,
+  html body .payway-select {
+    font-family: var(--font-sans) !important;
+    font-weight: 400 !important;
+    letter-spacing: -0.01em !important;
+  }
+
+  html body :is(
+    .booking-page .booking-contact-form input,
+    .booking-page .booking-contact-form textarea,
+    .payway-card-form input,
+    .v2-search input,
+    .v2-client-quick-search input,
+    .v2-field input
+  )::placeholder {
+    font-family: var(--font-sans) !important;
+    font-size: 13px !important;
+    font-weight: 400 !important;
+    letter-spacing: normal !important;
+  }
+}
+
+@media (max-width: 767px) {
+  body::before {
+    bottom: auto;
+    height: 100vh;
+    height: 100lvh;
   }
 }
 
