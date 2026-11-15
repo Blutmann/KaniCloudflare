@@ -235,7 +235,7 @@ describe('Liquid Glass V12.35 — Notifications Center & Header Bell Persistence
     });
 
     // Delete single notification (personal dismissal even for ADMIN in V12.39)
-    const deleteButtons = screen.getAllByRole('button', { name: 'Eliminar' });
+    const deleteButtons = screen.getAllByRole('button', { name: 'Eliminar notificación' });
     fireEvent.click(deleteButtons[0]);
     await waitFor(() => {
       expect(activityMocks.dismissAdminActivityNotificationPersonal).toHaveBeenCalledWith('n-1');

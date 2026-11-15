@@ -260,7 +260,7 @@ describe('Liquid Glass V12.39 — Confirmation Dialog Layering & Per-User Notifi
     });
 
     // Delete notif-shared-2 individually as Admin
-    const deleteBtns = screen.getAllByRole('button', { name: 'Eliminar' });
+    const deleteBtns = screen.getAllByRole('button', { name: 'Eliminar notificación' });
     fireEvent.click(deleteBtns[1]);
     await waitFor(() => {
       expect(screen.queryByText(/Kani Admin bloqueó el horario/i)).toBeNull();
@@ -279,7 +279,7 @@ describe('Liquid Glass V12.39 — Confirmation Dialog Layering & Per-User Notifi
     expect(screen.getByText('2 sin leer')).toBeTruthy();
 
     // Lautaro deletes notif-shared-1 individually -> disappears ONLY for Lautaro
-    const lautaroDeleteBtns = screen.getAllByRole('button', { name: 'Eliminar' });
+    const lautaroDeleteBtns = screen.getAllByRole('button', { name: 'Eliminar notificación' });
     fireEvent.click(lautaroDeleteBtns[0]);
     await waitFor(() => {
       expect(screen.queryByText(/Carlos reservó un turno con Lautaro/i)).toBeNull();
@@ -353,7 +353,7 @@ describe('Liquid Glass V12.39 — Confirmation Dialog Layering & Per-User Notifi
 
     simDb.readDelayMs = 80;
     fireEvent.click(screen.getByRole('button', { name: /2 notificaciones sin leer/i }));
-    const deleteBtns = await screen.findAllByRole('button', { name: 'Eliminar' });
+    const deleteBtns = await screen.findAllByRole('button', { name: 'Eliminar notificación' });
     fireEvent.click(deleteBtns[0]);
 
     await waitFor(() => {

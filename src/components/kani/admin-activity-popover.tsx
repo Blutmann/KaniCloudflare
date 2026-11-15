@@ -555,12 +555,13 @@ export function AdminActivityPopover({
                       <button
                         type="button"
                         className="notification-delete"
+                        aria-label="Eliminar notificación"
                         title="Eliminar de mi vista"
                         disabled={deletingId === notification.id || isDeletingAll}
                         onClick={() => void handleDeleteNotification(notification)}
                       >
-                        <Trash2 size={12} aria-hidden="true" />
-                        <span>Eliminar</span>
+                        <Trash2 size={13} aria-hidden="true" className="notification-delete-icon" />
+                        <span className="notification-delete-label">Eliminar</span>
                       </button>
                     </div>
                   </div>

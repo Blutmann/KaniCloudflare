@@ -222,13 +222,19 @@ html[data-theme] .liquid-glass-notification-popover {
 /* Light Mode — Cristal perla translúcido + acentos Champagne */
 html[data-theme="light"] .liquid-glass-notification-popover {
   --lg-notif-text: #161513;
+  --lg-notif-unread-text: #12110f;
+  --lg-notif-unread-time: rgba(22, 21, 19, 0.72);
+  --lg-notif-read-text: rgba(22, 21, 19, 0.70);
+  --lg-notif-read-time: rgba(22, 21, 19, 0.48);
   --lg-notif-muted: rgba(22, 21, 19, 0.62);
   --lg-notif-subtle: rgba(22, 21, 19, 0.48);
   --lg-notif-divider: rgba(148, 144, 138, 0.22);
   --lg-notif-accent: #8a6829;
   --lg-notif-accent-soft: rgba(178, 144, 78, 0.14);
-  --lg-notif-unread-bg: rgba(255, 252, 245, 0.38);
-  --lg-notif-row-hover: rgba(255, 255, 255, 0.42);
+  --lg-notif-unread-bg: linear-gradient(135deg, rgba(192, 156, 82, 0.16) 0%, rgba(218, 188, 120, 0.08) 100%);
+  --lg-notif-unread-hover: linear-gradient(135deg, rgba(192, 156, 82, 0.22) 0%, rgba(218, 188, 120, 0.13) 100%);
+  --lg-notif-unread-bar: rgba(164, 126, 54, 0.62);
+  --lg-notif-row-hover: rgba(255, 255, 255, 0.40);
   --lg-notif-danger: #a62c3a;
   --lg-notif-danger-hover: rgba(190, 56, 72, 0.10);
   --lg-notif-chip-bg: rgba(178, 144, 78, 0.14);
@@ -255,12 +261,18 @@ html[data-theme="light"] .liquid-glass-notification-popover {
 /* Dark Mode — Cristal obsidiana profundo (sin grises lavados) + Champagne */
 html[data-theme="dark"] .liquid-glass-notification-popover {
   --lg-notif-text: #f6f4ef;
+  --lg-notif-unread-text: #fcfaf5;
+  --lg-notif-unread-time: rgba(246, 244, 239, 0.78);
+  --lg-notif-read-text: rgba(244, 242, 238, 0.66);
+  --lg-notif-read-time: rgba(244, 242, 238, 0.44);
   --lg-notif-muted: rgba(244, 242, 238, 0.68);
   --lg-notif-subtle: rgba(244, 242, 238, 0.50);
   --lg-notif-divider: rgba(255, 255, 255, 0.10);
   --lg-notif-accent: #e4c98f;
   --lg-notif-accent-soft: rgba(212, 180, 114, 0.16);
-  --lg-notif-unread-bg: rgba(212, 180, 114, 0.09);
+  --lg-notif-unread-bg: linear-gradient(135deg, rgba(228, 201, 143, 0.16) 0%, rgba(196, 162, 92, 0.08) 100%);
+  --lg-notif-unread-hover: linear-gradient(135deg, rgba(228, 201, 143, 0.22) 0%, rgba(196, 162, 92, 0.13) 100%);
+  --lg-notif-unread-bar: rgba(228, 201, 143, 0.56);
   --lg-notif-row-hover: rgba(255, 255, 255, 0.05);
   --lg-notif-danger: #f08a96;
   --lg-notif-danger-hover: rgba(220, 76, 92, 0.14);
@@ -478,18 +490,26 @@ html[data-theme] .liquid-glass-notification-popover .notification-item:last-chil
 
 html[data-theme] .liquid-glass-notification-popover .notification-item.is-unread {
   background: var(--lg-notif-unread-bg) !important;
+  box-shadow: inset 2.5px 0 0 var(--lg-notif-unread-bar) !important;
+  opacity: 1 !important;
 }
 
-html[data-theme] .liquid-glass-notification-popover .notification-item:hover {
-  background: var(--lg-notif-row-hover) !important;
+html[data-theme] .liquid-glass-notification-popover .notification-item.is-unread:hover {
+  background: var(--lg-notif-unread-hover) !important;
 }
 
 html[data-theme] .liquid-glass-notification-popover .notification-item.is-read {
-  opacity: 0.74;
+  background: transparent !important;
+  box-shadow: none !important;
+  opacity: 1 !important;
 }
 
 html[data-theme] .liquid-glass-notification-popover .notification-item.is-read:hover {
-  opacity: 0.94;
+  background: var(--lg-notif-row-hover) !important;
+}
+
+html[data-theme] .liquid-glass-notification-popover .notification-item.is-read .notification-kind {
+  opacity: 0.78;
 }
 
 /* Badge de tipo de evento */
@@ -528,15 +548,16 @@ html[data-theme] .liquid-glass-notification-popover .notification-link {
 }
 
 html[data-theme] .liquid-glass-notification-popover .notification-message {
-  color: var(--lg-notif-text) !important;
+  color: var(--lg-notif-read-text) !important;
   font-size: 0.8125rem !important;
   line-height: 1.38 !important;
-  font-weight: 430 !important;
+  font-weight: 400 !important;
   letter-spacing: -0.005em;
 }
 
 html[data-theme] .liquid-glass-notification-popover .notification-item.is-unread .notification-message {
-  font-weight: 590 !important;
+  color: var(--lg-notif-unread-text) !important;
+  font-weight: 600 !important;
 }
 
 html[data-theme] .liquid-glass-notification-popover .notification-link:hover .notification-message {
@@ -547,13 +568,20 @@ html[data-theme] .liquid-glass-notification-popover .notification-link:hover .no
 
 /* Nivel 2 — Fecha, hora e indicador no leído */
 html[data-theme] .liquid-glass-notification-popover .notification-time-row {
-  color: var(--lg-notif-muted) !important;
+  color: var(--lg-notif-read-time) !important;
 }
 
 html[data-theme] .liquid-glass-notification-popover .notification-time-row time {
-  color: var(--lg-notif-muted) !important;
+  color: var(--lg-notif-read-time) !important;
   font-size: 0.6875rem !important;
+  font-weight: 400 !important;
   font-variant-numeric: tabular-nums;
+}
+
+html[data-theme] .liquid-glass-notification-popover .notification-item.is-unread .notification-time-row,
+html[data-theme] .liquid-glass-notification-popover .notification-item.is-unread .notification-time-row time {
+  color: var(--lg-notif-unread-time) !important;
+  font-weight: 500 !important;
 }
 
 html[data-theme] .liquid-glass-notification-popover .notification-unread-dot {
@@ -695,6 +723,51 @@ html[data-theme] body .liquid-glass-notification-popover .notification-meta .not
 
   html[data-theme] .liquid-glass-notification-popover .notification-item {
     padding: 10px 14px !important;
+  }
+
+  /* V12.45 — Eliminar individual en mobile: solo ícono papelera 44x44 alineado con Marcar como leída/no leída */
+  .notification-popover .notification-meta,
+  html[data-theme] .liquid-glass-notification-popover .notification-meta {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    flex-wrap: nowrap !important;
+    gap: 10px !important;
+    margin-top: 6px !important;
+  }
+
+  .notification-popover .notification-meta .notification-toggle,
+  html[data-theme] body .liquid-glass-notification-popover .notification-meta .notification-toggle {
+    min-height: 36px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+  }
+
+  .notification-popover .notification-meta .notification-delete,
+  html[data-theme] body .liquid-glass-notification-popover .notification-meta .notification-delete {
+    min-width: 44px !important;
+    width: 44px !important;
+    min-height: 44px !important;
+    height: 44px !important;
+    flex: 0 0 44px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 12px !important;
+  }
+
+  .notification-popover .notification-meta .notification-delete .notification-delete-icon,
+  html[data-theme] body .liquid-glass-notification-popover .notification-meta .notification-delete .notification-delete-icon {
+    width: 15px !important;
+    height: 15px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .notification-popover .notification-meta .notification-delete .notification-delete-label,
+  html[data-theme] body .liquid-glass-notification-popover .notification-meta .notification-delete .notification-delete-label {
+    display: none !important;
   }
 }
 

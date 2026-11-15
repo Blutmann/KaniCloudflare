@@ -293,7 +293,7 @@ describe('Liquid Glass V12.40 — Complete Scenarios A–G Verification', () => 
     await waitFor(() => {
       expect(screen.getByText('1 sin leer')).toBeTruthy();
     });
-    fireEvent.click(screen.getAllByRole('button', { name: 'Eliminar' })[0]);
+    fireEvent.click(screen.getAllByRole('button', { name: 'Eliminar notificación' })[0]);
     await waitFor(() => {
       expect(screen.queryByText(/Kani Admin bloqueó el horario/i)).toBeNull();
     });
