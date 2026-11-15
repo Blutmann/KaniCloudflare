@@ -62,6 +62,9 @@ describe('V12.47.3.1 — Liquid Glass Dialogs & Modals Responsive Centering', ()
       /html\[data-theme\] body\.liquid-glass-active :is\(\[data-slot="dialog-content"\], \.payway-checkout\)[\s\S]*?top:\s*50%\s*!important/,
     );
     expect(liquidGlassCss).toMatch(
+      /html\[data-theme\] body\.liquid-glass-active :is\(\[data-slot="dialog-content"\], \.payway-checkout\)[\s\S]*?translate:\s*none\s*!important/,
+    );
+    expect(liquidGlassCss).toMatch(
       /html\[data-theme\] body\.liquid-glass-active :is\(\[data-slot="dialog-content"\], \.payway-checkout\)[\s\S]*?transform:\s*translate3d\(-50%,\s*-50%,\s*0\)\s*!important/,
     );
   });

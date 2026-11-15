@@ -7930,6 +7930,7 @@ html[data-theme="dark"] body.liquid-glass-active:not([data-lg-admin="true"]) .pa
     position: fixed !important;
     left: 50% !important;
     top: 50% !important;
+    translate: none !important;
     transform: translate3d(-50%, -50%, 0) !important;
     margin: 0 !important;
     box-sizing: border-box !important;
@@ -11653,13 +11654,14 @@ html[data-theme="light"] body.liquid-glass-active [data-slot="dialog-overlay"] {
   background: rgba(244, 245, 248, 0.52) !important;
 }
 
-/* Base de centrado óptico: position fixed, coordenadas ancladas, transform 3D síncrono y anulación estricta de margin */
+/* Base de centrado óptico: position fixed, coordenadas ancladas, translate: none (neutraliza Tailwind v4), transform 3D síncrono y anulación estricta de margin */
 html[data-theme] body.liquid-glass-active :is([data-slot="dialog-content"], .payway-checkout) {
   position: fixed !important;
   left: 50% !important;
   top: 50% !important;
   right: auto !important;
   bottom: auto !important;
+  translate: none !important;
   transform: translate3d(-50%, -50%, 0) !important;
   margin: 0 !important;
   box-sizing: border-box !important;
@@ -11719,6 +11721,7 @@ html[data-theme] body.liquid-glass-active :is([data-slot="dialog-content"], .pay
     top: 50% !important;
     right: auto !important;
     bottom: auto !important;
+    translate: none !important;
     transform: translate3d(-50%, -50%, 0) !important;
     margin: 0 !important;
     box-sizing: border-box !important;
