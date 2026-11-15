@@ -11,13 +11,35 @@ export function KaniProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<KaniTheme>('light');
   const [themeReady, setThemeReady] = useState(false);
   useEffect(() => {
-    let saved: KaniTheme = 'light';
+    let initial: KaniTheme = 'light';
+    let hasSaved = false;
     try {
-      saved = window.localStorage.getItem('kani-theme') === 'dark' ? 'dark' : 'light';
+      const saved = window.localStorage.getItem('kani-theme');
+      if (saved === 'dark' || saved === 'light') {
+        initial = saved;
+        hasSaved = true;
+      } else if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        initial = 'dark';
+      }
     } catch { /* storage may be unavailable */ }
-    document.documentElement.dataset['theme'] = saved;
-    setTheme(saved);
+    document.documentElement.dataset['theme'] = initial;
+    setTheme(initial);
     setThemeReady(true);
+
+    if (!hasSaved && typeof window !== 'undefined' && window.matchMedia) {
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      const handler = (e: MediaQueryListEvent) => {
+        try {
+          if (!window.localStorage.getItem('kani-theme')) {
+            const nextTheme: KaniTheme = e.matches ? 'dark' : 'light';
+            document.documentElement.dataset['theme'] = nextTheme;
+            setTheme(nextTheme);
+          }
+        } catch { /* ignore */ }
+      };
+      mediaQuery.addEventListener?.('change', handler);
+      return () => mediaQuery.removeEventListener?.('change', handler);
+    }
   }, []);
   useEffect(() => {
     if (!themeReady) return;

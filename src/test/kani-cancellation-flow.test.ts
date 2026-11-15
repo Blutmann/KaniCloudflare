@@ -117,12 +117,48 @@ describe('Flujo de Cancelación desde Enlace Único de Kani Barber Studio', () =
         startTime: '14:00:00',
         status: 'CONFIRMED',
         isPast: false,
+        isWithin24Hours: false,
+        canCancel: true,
+        hoursUntil: expect.any(Number),
         cancellationReason: null,
       });
 
       // Asegura que no se haya llamado a update ni a dispatch de cancelación
       expect(mocks.supabaseUpdate).not.toHaveBeenCalled();
       expect(mocks.dispatchNotification).not.toHaveBeenCalled();
+    });
+
+    it('identifica cuando faltan menos de 24 horas y no permite cancelación autónoma', async () => {
+      // Mock de fecha cercana (hoy + 2 horas)
+      const now = new Date();
+      const todayIso = now.toISOString().slice(0, 10);
+      const apptHour = String((now.getUTCHours() - 3 + 2 + 24) % 24).padStart(2, '0');
+
+      mocks.supabaseSelect.mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          maybeSingle: vi.fn().mockResolvedValue({
+            data: {
+              id: appointmentId,
+              booking_date: todayIso,
+              start_time: `${apptHour}:00:00`,
+              status: 'CONFIRMED',
+              cancellation_reason: null,
+              barber: { name: 'Lautaro' },
+              service: { name: 'Corte' },
+            },
+            error: null,
+          }),
+        }),
+      });
+
+      const result = await handleGetCancellationDetails({
+        appointmentId,
+        token: validToken,
+      });
+
+      expect(result.ok).toBe(true);
+      expect(result.appointment?.isWithin24Hours).toBe(true);
+      expect(result.appointment?.canCancel).toBe(false);
     });
   });
 
@@ -187,6 +223,38 @@ describe('Flujo de Cancelación desde Enlace Único de Kani Barber Studio', () =
 
       expect(result.ok).toBe(false);
       expect(result.error).toBe('APPOINTMENT_PAST');
+      expect(mocks.supabaseUpdate).not.toHaveBeenCalled();
+    });
+
+    it('no permite confirmar cancelación con menos de 24 horas de anticipación', async () => {
+      // Mock de turno hoy dentro de 3 horas
+      const now = new Date();
+      const todayIso = now.toISOString().slice(0, 10);
+      const apptHour = String((now.getUTCHours() - 3 + 3 + 24) % 24).padStart(2, '0');
+
+      mocks.supabaseSelect.mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          maybeSingle: vi.fn().mockResolvedValue({
+            data: {
+              id: appointmentId,
+              status: 'CONFIRMED',
+              booking_date: todayIso,
+              start_time: `${apptHour}:00:00`,
+              client_phone: '+5491112345678',
+            },
+            error: null,
+          }),
+        }),
+      });
+
+      const result = await handleConfirmCancellation({
+        appointmentId,
+        token: validToken,
+      });
+
+      expect(result.ok).toBe(false);
+      expect(result.error).toBe('WITHIN_24_HOURS');
+      expect(result.message).toContain('24 horas');
       expect(mocks.supabaseUpdate).not.toHaveBeenCalled();
     });
 

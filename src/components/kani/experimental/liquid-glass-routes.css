@@ -197,3 +197,75 @@ html[data-theme="dark"] .site-shell .liquid-glass-page[data-lg-section="legal"] 
   border-color: var(--lg-sys-border-champagne, rgba(212, 180, 114, 0.62)) !important;
   background: var(--lg-sys-glass-hover, rgba(40, 39, 46, 0.72)) !important;
 }
+
+/* ------------------------------------------------------------------------------
+ * 4. CANCELACIÓN DE TURNOS — Liquid Glass Optical Experience
+ * ------------------------------------------------------------------------------ */
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="cancellation"] .cancellation-page-wrap {
+  min-height: calc(88dvh - 64px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 36px 16px 56px;
+}
+
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="cancellation"] .cancellation-card {
+  width: 100%;
+  max-width: 540px;
+  border-radius: 28px;
+  padding: 32px 28px;
+  position: relative;
+  overflow: hidden;
+  transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 220ms ease;
+}
+
+@media (min-width: 640px) {
+  html[data-theme] .site-shell .liquid-glass-page[data-lg-section="cancellation"] .cancellation-card {
+    padding: 40px 36px;
+  }
+}
+
+html[data-theme="light"] .site-shell .liquid-glass-page[data-lg-section="cancellation"] .cancellation-card {
+  background: var(--lg-sys-glass-card, rgba(255, 255, 255, 0.78)) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(145%) !important;
+  backdrop-filter: blur(24px) saturate(145%) !important;
+  border: 1px solid var(--lg-sys-border, rgba(148, 144, 138, 0.28)) !important;
+  box-shadow:
+    var(--lg-sys-shadow-card, 0 16px 40px rgba(24, 22, 20, 0.07)),
+    var(--lg-sys-specular, inset 0 1px 0 rgba(255, 255, 255, 0.95)) !important;
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-page[data-lg-section="cancellation"] .cancellation-card {
+  background: var(--lg-sys-glass-card, linear-gradient(158deg, rgba(34, 33, 40, 0.70) 0%, rgba(18, 17, 23, 0.62) 100%)) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(145%) !important;
+  backdrop-filter: blur(24px) saturate(145%) !important;
+  border: 1px solid var(--lg-sys-border, rgba(255, 255, 255, 0.12)) !important;
+  box-shadow:
+    var(--lg-sys-shadow-card, 0 20px 48px rgba(0, 0, 0, 0.50)),
+    var(--lg-sys-specular, inset 0 1px 0 rgba(255, 248, 232, 0.15)) !important;
+}
+
+/* Detalles del turno */
+html[data-theme="light"] .site-shell .liquid-glass-page[data-lg-section="cancellation"] .cancellation-details-box {
+  background: rgba(244, 242, 238, 0.68) !important;
+  border: 1px solid rgba(148, 144, 138, 0.22) !important;
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-page[data-lg-section="cancellation"] .cancellation-details-box {
+  background: rgba(18, 18, 24, 0.60) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Callout de políticas */
+html[data-theme="light"] .site-shell .liquid-glass-page[data-lg-section="cancellation"] .cancellation-policy-box {
+  background: rgba(185, 154, 91, 0.08) !important;
+  border: 1px solid rgba(185, 154, 91, 0.24) !important;
+  color: #3b3528 !important;
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-page[data-lg-section="cancellation"] .cancellation-policy-box {
+  background: rgba(185, 154, 91, 0.10) !important;
+  border: 1px solid rgba(185, 154, 91, 0.28) !important;
+  color: #e4c98f !important;
+}
+
