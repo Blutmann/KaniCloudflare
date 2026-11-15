@@ -4691,7 +4691,7 @@ html[data-theme='light'] .booking-page .booking-contact-form :is(.field-label in
   line-height: 44px !important;
   font-family: var(--font-mono, monospace);
   letter-spacing: 0.05em;
-  font-size: 13px;
+  font-size: 16px;
   box-sizing: border-box !important;
   background: var(--kani-surface-inset, var(--surface)) !important;
   border-color: var(--kani-control-border, var(--input));
@@ -4845,7 +4845,6 @@ html[data-theme='light'] .discount-apply-button:disabled,
     font-size: 12px;
   }
   .discount-input-row .discount-input {
-    font-size: 12px;
     padding-left: 8px;
     padding-right: 8px;
   }
@@ -5242,4 +5241,34 @@ body[data-membership-page="true"] .site-header-slot {
   opacity: 1;
   visibility: visible;
   transform: none;
+}
+
+/* ==========================================================================
+   V12.47.8 · ELIMINAR ZOOM AUTOMÁTICO EN FORMULARIOS MOBILE (iOS / TOUCH)
+   - Garantiza font-size >= 16px en todos los campos editables en mobile y
+     dispositivos táctiles (hover: none and pointer: coarse), evitando el
+     auto-zoom de Safari/Chrome en iOS sin bloquear el zoom manual (pinch).
+   - No altera desktop con mouse ni dimensiones de header, stepper o modales.
+   ========================================================================== */
+@media (max-width: 767px), (hover: none) and (pointer: coarse) {
+  html body :is(
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="hidden"]):not([type="file"]),
+    textarea,
+    select,
+    .select-control
+  ) {
+    font-size: max(16px, 1rem) !important;
+  }
+
+  html body .booking-page .booking-contact-form input#booking-discount-code {
+    font-size: max(16px, 1rem) !important;
+  }
+}
+
+@media (min-width: 768px) and (hover: hover) and (pointer: fine) {
+  .discount-input-row .discount-input,
+  .booking-page .booking-contact-form .booking-discount-field .discount-input-row input,
+  .booking-page .booking-contact-form input#booking-discount-code {
+    font-size: 13px;
+  }
 }
