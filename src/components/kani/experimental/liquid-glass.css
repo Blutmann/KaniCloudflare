@@ -8784,36 +8784,38 @@ html[data-theme] .liquid-glass-atmosphere {
   background-size: cover !important;
   transform: translate3d(0, 0, 0);
   -webkit-transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
   transition: background-color 180ms ease;
 }
 
-/* Light Mode — V12.37 Mobile / Portrait 1440x2560 */
+/* Light Mode — V12.41 Mobile / Portrait 1440x2560 */
 html[data-theme="light"] .liquid-glass-atmosphere {
   background-color: #f4f5f7 !important;
-  background-position: 56% 52% !important;
-  background-image: url('/backgrounds/light-mode-mobile-1440x2560-v12-37.jpg') !important;
+  background-position: 58% 52% !important;
+  background-image: url('/backgrounds/light-mode-mobile-1440x2560-v12-41.jpg') !important;
   background-image: -webkit-image-set(
-    url('/backgrounds/light-mode-mobile-1440x2560-v12-37.webp') 1x
+    url('/backgrounds/light-mode-mobile-1440x2560-v12-41.webp') 1x
   ) !important;
   background-image: image-set(
-    url('/backgrounds/light-mode-mobile-1440x2560-v12-37.avif') type('image/avif') 1x,
-    url('/backgrounds/light-mode-mobile-1440x2560-v12-37.webp') type('image/webp') 1x,
-    url('/backgrounds/light-mode-mobile-1440x2560-v12-37.jpg') type('image/jpeg') 1x
+    url('/backgrounds/light-mode-mobile-1440x2560-v12-41.avif') type('image/avif') 1x,
+    url('/backgrounds/light-mode-mobile-1440x2560-v12-41.webp') type('image/webp') 1x,
+    url('/backgrounds/light-mode-mobile-1440x2560-v12-41.jpg') type('image/jpeg') 1x
   ) !important;
 }
 
-/* Dark Mode — V12.37 Mobile / Portrait 1440x2560 */
+/* Dark Mode — V12.41 Mobile / Portrait 1440x2560 */
 html[data-theme="dark"] .liquid-glass-atmosphere {
   background-color: #050507 !important;
-  background-position: 56% 52% !important;
-  background-image: url('/backgrounds/dark-mode-mobile-1440x2560-v12-37.jpg') !important;
+  background-position: 58% 52% !important;
+  background-image: url('/backgrounds/dark-mode-mobile-1440x2560-v12-41.jpg') !important;
   background-image: -webkit-image-set(
-    url('/backgrounds/dark-mode-mobile-1440x2560-v12-37.webp') 1x
+    url('/backgrounds/dark-mode-mobile-1440x2560-v12-41.webp') 1x
   ) !important;
   background-image: image-set(
-    url('/backgrounds/dark-mode-mobile-1440x2560-v12-37.avif') type('image/avif') 1x,
-    url('/backgrounds/dark-mode-mobile-1440x2560-v12-37.webp') type('image/webp') 1x,
-    url('/backgrounds/dark-mode-mobile-1440x2560-v12-37.jpg') type('image/jpeg') 1x
+    url('/backgrounds/dark-mode-mobile-1440x2560-v12-41.avif') type('image/avif') 1x,
+    url('/backgrounds/dark-mode-mobile-1440x2560-v12-41.webp') type('image/webp') 1x,
+    url('/backgrounds/dark-mode-mobile-1440x2560-v12-41.jpg') type('image/jpeg') 1x
   ) !important;
 }
 
@@ -8825,31 +8827,31 @@ html[data-theme="dark"] .liquid-glass-atmosphere {
   }
 }
 
-/* Landscape & Desktop (aspect > 1:1) — V12.37 Desktop 3840x2160 */
+/* Landscape & Desktop (aspect > 1:1) — V12.41 Desktop 3840x2160 */
 @media (min-aspect-ratio: 1001/1000) {
   html[data-theme="light"] .liquid-glass-atmosphere {
     background-position: 50% 50% !important;
-    background-image: url('/backgrounds/light-mode-desktop-3840x2160-v12-37.jpg') !important;
+    background-image: url('/backgrounds/light-mode-desktop-3840x2160-v12-41.jpg') !important;
     background-image: -webkit-image-set(
-      url('/backgrounds/light-mode-desktop-3840x2160-v12-37.webp') 1x
+      url('/backgrounds/light-mode-desktop-3840x2160-v12-41.webp') 1x
     ) !important;
     background-image: image-set(
-      url('/backgrounds/light-mode-desktop-3840x2160-v12-37.avif') type('image/avif') 1x,
-      url('/backgrounds/light-mode-desktop-3840x2160-v12-37.webp') type('image/webp') 1x,
-      url('/backgrounds/light-mode-desktop-3840x2160-v12-37.jpg') type('image/jpeg') 1x
+      url('/backgrounds/light-mode-desktop-3840x2160-v12-41.avif') type('image/avif') 1x,
+      url('/backgrounds/light-mode-desktop-3840x2160-v12-41.webp') type('image/webp') 1x,
+      url('/backgrounds/light-mode-desktop-3840x2160-v12-41.jpg') type('image/jpeg') 1x
     ) !important;
   }
 
   html[data-theme="dark"] .liquid-glass-atmosphere {
     background-position: 50% 50% !important;
-    background-image: url('/backgrounds/dark-mode-desktop-3840x2160-v12-37.jpg') !important;
+    background-image: url('/backgrounds/dark-mode-desktop-3840x2160-v12-41.jpg') !important;
     background-image: -webkit-image-set(
-      url('/backgrounds/dark-mode-desktop-3840x2160-v12-37.webp') 1x
+      url('/backgrounds/dark-mode-desktop-3840x2160-v12-41.webp') 1x
     ) !important;
     background-image: image-set(
-      url('/backgrounds/dark-mode-desktop-3840x2160-v12-37.avif') type('image/avif') 1x,
-      url('/backgrounds/dark-mode-desktop-3840x2160-v12-37.webp') type('image/webp') 1x,
-      url('/backgrounds/dark-mode-desktop-3840x2160-v12-37.jpg') type('image/jpeg') 1x
+      url('/backgrounds/dark-mode-desktop-3840x2160-v12-41.avif') type('image/avif') 1x,
+      url('/backgrounds/dark-mode-desktop-3840x2160-v12-41.webp') type('image/webp') 1x,
+      url('/backgrounds/dark-mode-desktop-3840x2160-v12-41.jpg') type('image/jpeg') 1x
     ) !important;
   }
 }
