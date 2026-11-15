@@ -428,7 +428,7 @@ export function V2MembershipsAndDiscounts({
     }
   }
 
-  const hideHeaderBlock = standaloneTab === "DESCUENTOS";
+  const hideHeaderBlock = standaloneTab === "DESCUENTOS" || standaloneTab === "MEMBRESIAS";
 
   return (
     <main className="v2-page v2-memberships-page">
@@ -448,14 +448,10 @@ export function V2MembershipsAndDiscounts({
           >
             <div>
               <h1 style={{ fontSize: "18px", fontWeight: 700, margin: 0 }}>
-                {standaloneTab === "MEMBRESIAS"
-                  ? "Membresías"
-                  : "Membresías y descuentos"}
+                Membresías y descuentos
               </h1>
               <p style={{ fontSize: "12.5px", color: "var(--muted-foreground)", margin: "2px 0 0" }}>
-                {standaloneTab === "MEMBRESIAS"
-                  ? "Gestión integral de paquetes prepagados de 4 y 10 servicios, sesiones y tarjetas."
-                  : "Gestión integral de paquetes prepagados de 4 y 10 servicios, sesiones y códigos de beneficio."}
+                Gestión integral de paquetes prepagados de 4 y 10 servicios, sesiones y códigos de beneficio.
               </p>
             </div>
 
@@ -502,18 +498,26 @@ export function V2MembershipsAndDiscounts({
         )}
 
         {notice && (
-          <p role="status" className="v2-success" style={{ marginTop: "12px" }}>
+          <p role="status" className="v2-success" style={{ marginTop: hideHeaderBlock ? 0 : "12px" }}>
             {notice}
           </p>
         )}
         {errorNotice && (
-          <p role="alert" className="v2-alert" style={{ marginTop: "12px" }}>
+          <p role="alert" className="v2-alert" style={{ marginTop: hideHeaderBlock && !notice ? 0 : "12px" }}>
             {errorNotice}
           </p>
         )}
 
         {activeTab === "MEMBRESIAS" ? (
-          <div style={{ marginTop: "16px", display: "flex", flexDirection: "column", gap: "16px" }}>
+          <div
+            className="v2-memberships-stage"
+            style={{
+              marginTop: hideHeaderBlock && !notice && !errorNotice ? 0 : "16px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "16px",
+            }}
+          >
             {data.membershipsError && (
               <div
                 role="alert"

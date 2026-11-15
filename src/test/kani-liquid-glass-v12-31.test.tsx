@@ -118,6 +118,7 @@ vi.mock('@/lib/kani-availability', async (importOriginal) => {
 });
 
 import { V2Layout } from '@/components/kani/v2/layout';
+import { V2Clients } from '@/components/kani/v2/clients';
 import { ManualAppointmentDialog } from '@/components/kani/v2/manual-appointment-dialog';
 import { AdminScheduleManager } from '@/components/kani/admin-schedule-manager';
 
@@ -216,6 +217,7 @@ describe('Liquid Glass V12.31 — Correcciones de interfaz, modales y navegació
     expect(document.activeElement).toBe(dialog);
     expect(document.activeElement).not.toBe(agendaSelect);
     expect(agendaSelect.disabled).toBe(false);
+    expect(screen.queryByText(/Se habilitará el tramo de 45 minutos/i)).toBeNull();
   });
 
   it('4. Simplifica contenedores externos en Membresías y Descuentos y elimina tablist duplicada en rutas experimentales', () => {
@@ -359,5 +361,20 @@ describe('Liquid Glass V12.31 — Correcciones de interfaz, modales y navegació
     );
     expect(adminCss).toMatch(/\.lg-memberships-nav \.lg-admin-nav-label\s*\{[\s\S]*?font-weight:\s*inherit !important;/);
     expect(adminCss).toMatch(/\.lg-memberships-nav \.admin-section-nav-items\s*\{[\s\S]*?grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\) !important;/);
+  });
+
+  it('9. Modal de cliente en Clientes elimina el texto "Los datos se guardan de forma permanente en Supabase." conservando campos', async () => {
+    render(<V2Clients />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Nuevo cliente/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('dialog')).toBeTruthy();
+    });
+
+    expect(screen.getByRole('heading', { name: 'Nuevo cliente' })).toBeTruthy();
+    expect(screen.queryByText(/Los datos se guardan de forma permanente en Supabase\./i)).toBeNull();
+    expect(screen.getByLabelText(/Nombre/i)).toBeTruthy();
+    expect(screen.getByLabelText(/Celular/i)).toBeTruthy();
   });
 });

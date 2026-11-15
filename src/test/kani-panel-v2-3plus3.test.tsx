@@ -371,9 +371,10 @@ describe("KANI Panel V2 — Implementación experimental aislada 3 + 3 y protecc
     expect(screen.getByText(/Registrar consumo de sesión/i)).toBeInTheDocument();
     unmount();
 
-    // 6.4 En Panel V2 Membresías se presenta aislada sin pestañas duplicadas
+    // 6.4 En Panel V2 Membresías se presenta aislada sin encabezado ni pestañas duplicadas
     render(<V2MembershipsAndDiscounts initialTab="MEMBRESIAS" standaloneTab="MEMBRESIAS" />);
-    expect(screen.getByRole("heading", { name: "Membresías" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Membresías" })).toBeNull();
+    expect(screen.getByText("Membresías activas")).toBeInTheDocument();
     expect(screen.queryByRole("tablist", { name: "Pestañas de Membresías y descuentos" })).toBeNull();
   });
 });

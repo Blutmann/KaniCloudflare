@@ -340,9 +340,19 @@ describe('V12.43 — Rediseño de Descuentos Liquid Glass y navegación compacta
     expect(within(deletedCard).getByText(/Eliminado por Admin Root el/i)).toBeInTheDocument();
   });
 
-  it('4. Membresías sigue intacta en standaloneTab=MEMBRESIAS', () => {
-    render(<V2MembershipsAndDiscounts initialTab="MEMBRESIAS" standaloneTab="MEMBRESIAS" />);
-    expect(screen.getByRole('heading', { name: /^Membresías$/i })).toBeInTheDocument();
+  it('4. Membresías en standaloneTab=MEMBRESIAS elimina encabezado/descripción redundantes y conserva KPIs y tarjetas', () => {
+    const { container } = render(
+      <V2MembershipsAndDiscounts initialTab="MEMBRESIAS" standaloneTab="MEMBRESIAS" />,
+    );
+    expect(screen.queryByRole('heading', { name: /^Membresías$/i })).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/Gestión integral de paquetes prepagados de 4 y 10 servicios, sesiones y tarjetas\./i),
+    ).not.toBeInTheDocument();
+    expect(container.querySelector('.v2-memberships-header')).toBeNull();
+    const stage = container.querySelector<HTMLElement>('.v2-memberships-stage');
+    expect(stage).not.toBeNull();
+    expect(stage?.style.marginTop).toBe('0px');
+    expect(screen.getByText('Membresías activas')).toBeInTheDocument();
     expect(screen.getByText('Membresía 4 servicios')).toBeInTheDocument();
     expect(screen.getByText('Sofía Tester')).toBeInTheDocument();
   });
@@ -354,6 +364,7 @@ describe('V12.43 — Rediseño de Descuentos Liquid Glass y navegación compacta
     expect(css).toContain('.lg-memberships-nav .lg-admin-nav-label--mobile');
     expect(css).toContain('.lg-admin-nav-label--desktop');
     expect(css).toContain('.v2-memberships-page > .v2-panel > .v2-discounts-stage');
+    expect(css).toContain('.v2-memberships-page > .v2-panel > .v2-memberships-stage');
     expect(css).toContain('.v2-memberships-page .kani-dcard');
     expect(css).toContain('--dc-bg: var(--lga-glass-interactive)');
     expect(css).toContain('.v2-memberships-page .kani-dcard[data-status="DELETED"]');

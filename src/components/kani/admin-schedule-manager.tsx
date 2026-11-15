@@ -688,9 +688,6 @@ export function AdminScheduleManager() {
               <span>Verificando disponibilidad…</span>
             </p>
           )}
-          <p className="manual-dialog-date text-xs text-muted-foreground">
-            Se habilitará el tramo de 45 minutos ({manualTime} a {defaultSlotEndTime(manualTime)} hs). La fecha debe ser igual o posterior a {businessToday}.
-          </p>
           <DialogFooter className="manual-dialog-footer">
             <Button
               variant="outline"

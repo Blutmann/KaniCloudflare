@@ -2835,7 +2835,8 @@ html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-se
   display: none;
 }
 
-html[data-theme] body[data-lg-admin="true"] .v2-memberships-page > .v2-panel > .v2-discounts-stage {
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page > .v2-panel > .v2-discounts-stage,
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page > .v2-panel > .v2-memberships-stage {
   border-bottom: none !important;
   padding-bottom: 0 !important;
   margin-top: 0 !important;

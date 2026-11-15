@@ -508,12 +508,10 @@ export function V2Clients() {
           className="v2-dialog v2-client-modal v2-client-editor"
           style={dialogViewport}
           overlayClassName="v2-client-modal-overlay"
+          aria-describedby={undefined}
         >
           <div className="v2-client-modal-header">
             <DialogTitle>{editing === "new" ? "Nuevo cliente" : "Editar cliente"}</DialogTitle>
-            <DialogDescription>
-              Los datos se guardan de forma permanente en Supabase.
-            </DialogDescription>
           </div>
           <form onSubmit={save} className="v2-client-editor-form">
             <div className="v2-client-modal-scroll">
