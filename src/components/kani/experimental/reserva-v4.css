@@ -10,22 +10,22 @@
   translate: none !important;
   transform: translate3d(-50%, -50%, 0);
   margin: 0 !important;
-  width: min(calc(100% - 32px), calc(100vw - 32px), 440px);
-  max-width: min(calc(100% - 32px), calc(100vw - 32px), 440px);
-  max-height: min(88dvh, calc(100vh - 32px), calc(100% - 32px));
+  width: min(calc(100% - 32px), calc(100vw - 32px), 500px);
+  max-width: min(calc(100% - 32px), calc(100vw - 32px), 500px);
+  max-height: min(92dvh, calc(100vh - 32px), calc(100% - 32px));
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   border-radius: var(--radius-control, .65rem);
-  padding: 20px 22px;
+  padding: 24px 26px;
   font-family: var(--font-sans);
   box-sizing: border-box;
 }
 
 @media (max-width: 400px) {
   .payway-checkout {
-    padding: 16px 16px;
-    width: min(calc(100% - 24px), calc(100vw - 24px), 440px);
-    max-width: min(calc(100% - 24px), calc(100vw - 24px), 440px);
+    padding: 18px 16px;
+    width: min(calc(100% - 24px), calc(100vw - 24px), 500px);
+    max-width: min(calc(100% - 24px), calc(100vw - 24px), 500px);
     margin: 0 !important;
   }
 }
@@ -46,10 +46,12 @@
   color: var(--muted-foreground) !important;
   margin-top: 4px !important;
   line-height: 1.4 !important;
+  white-space: normal;
+  overflow-wrap: break-word;
 }
 
-.payway-card-form { margin-top: 12px; }
-.payway-card-form fieldset { display: grid; gap: 10px; min-width: 0; border: 0; padding: 0; margin: 0; }
+.payway-card-form { margin-top: 14px; }
+.payway-card-form fieldset { display: grid; gap: 12px; min-width: 0; border: 0; padding: 0; margin: 0; }
 .payway-card-form label, .payway-field-label, .payway-field-group {
   display: grid;
   gap: 5px;
@@ -278,7 +280,7 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 8px;
-  align-items: start;
+  align-items: stretch;
   min-width: 0;
 }
 
@@ -291,11 +293,10 @@
 }
 
 .payway-cvv-dni-row .payway-col-label-row {
-  height: 20px;
+  flex: 1 1 auto;
   min-height: 20px;
-  max-height: 20px;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: flex-start;
   gap: 5px;
   margin: 0;
@@ -303,9 +304,8 @@
 }
 
 .payway-cvv-dni-row .payway-field-label-text {
-  line-height: 1.2;
+  line-height: 1.25;
   margin: 0;
-  white-space: nowrap;
 }
 
 .payway-help-wrapper {

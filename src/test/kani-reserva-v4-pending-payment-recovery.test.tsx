@@ -87,7 +87,7 @@ async function reachDataStep() {
 }
 
 async function fillAndSubmitCard() {
-  await waitFor(() => expect(screen.getByRole('heading', { name: /Pagá la seña a Kani con Payway/i })).toBeInTheDocument());
+  await waitFor(() => expect(screen.getByRole('heading', { name: /Pagá la seña con Payway/i })).toBeInTheDocument());
   const panInput = screen.getByRole('textbox', { name: 'Número de tarjeta' });
   fireEvent.change(panInput, { target: { value: '4507990000004905' } });
   fireEvent.change(screen.getByLabelText('Mes de vencimiento'), { target: { value: '12' } });

@@ -1135,9 +1135,11 @@ export function PaywayBooking({
           onPointerDownOutside={e => { if (paying.current) e.preventDefault(); }}
         >
           <div className="payway-checkout-header">
-            <DialogTitle className="payway-checkout-title">Pagá la seña a Kani con Payway</DialogTitle>
+            <DialogTitle className="payway-checkout-title">Pagá la seña con Payway</DialogTitle>
             <DialogDescription className="payway-checkout-subtitle">
-              {checkout ? `Seña: ${money(checkout.depositArs ?? 0)} · Pago seguro` : 'Pago seguro de seña'}
+              {checkout
+                ? `Seña: ${money(checkout.depositArs ?? 0)} · Pago seguro · Kani Barber Studio`
+                : 'Pago seguro de seña · Kani Barber Studio'}
             </DialogDescription>
           </div>
           {preparing && <p role="status">Preparando pago seguro…</p>}
@@ -1306,7 +1308,7 @@ export function PaywayBooking({
                     <div className="payway-field-group payway-cvv-col">
                       <div className="payway-col-label-row">
                         <label htmlFor="card-security-code" className="payway-field-label-text">
-                          Código CVV
+                          Código de seguridad (CVV)
                         </label>
                         <div className="payway-help-wrapper" ref={cvvHelpRef}>
                           <button

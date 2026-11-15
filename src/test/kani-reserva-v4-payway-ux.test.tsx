@@ -314,8 +314,8 @@ describe('Payway V4 Modern Checkout UX/UI', () => {
     await reachCardModal();
 
     // Title and supporting text hierarchy
-    expect(screen.getByRole('heading', { name: 'Pagá la seña a Kani con Payway' })).toBeInTheDocument();
-    expect(screen.getByText('Seña: $5.000 · Pago seguro')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Pagá la seña con Payway' })).toBeInTheDocument();
+    expect(screen.getByText('Seña: $5.000 · Pago seguro · Kani Barber Studio')).toBeInTheDocument();
 
     // CTA button text is dynamic and compact ("Pagar seña $5.000" without space after $)
     const cta = screen.getByRole('button', { name: 'Pagar seña $5.000' });
@@ -329,7 +329,7 @@ describe('Payway V4 Modern Checkout UX/UI', () => {
     expect(screen.getByText('Vencimiento de tarjeta')).toBeInTheDocument();
 
     // CVV label in 50/50 row with DNI
-    expect(screen.getByText('Código CVV')).toBeInTheDocument();
+    expect(screen.getByText('Código de seguridad (CVV)')).toBeInTheDocument();
 
     // Contextual help button exists and is accessible
     const helpBtn = screen.getByRole('button', { name: 'Ayuda sobre el CVV' });

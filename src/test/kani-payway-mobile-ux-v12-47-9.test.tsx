@@ -70,7 +70,7 @@ describe('KANI — Optimización UX Mobile del Modal Payway (Footer Sticky, CVV/
 
   it('4. Aprovecha altura útil con dvh y safe areas en mobile y conserva >= 16px en inputs de Payway para evitar zoom en iOS', () => {
     expect(liquidCss).toMatch(
-      /@media\s*\(max-width:\s*640px\)[\s\S]*?\.payway-checkout:has\(\.payway-card-form\)[\s\S]*?max-height:\s*calc\(100dvh\s*-\s*max\(16px,\s*env\(safe-area-inset-top,\s*8px\)\)\s*-\s*max\(16px,\s*env\(safe-area-inset-bottom,\s*8px\)\)\)\s*!important;/,
+      /@media\s*\(max-width:\s*640px\)[\s\S]*?\.payway-checkout:has\(\.payway-card-form\)[\s\S]*?max-height:\s*min\(92dvh,\s*calc\(100dvh\s*-\s*max\(18px,\s*env\(safe-area-inset-top,\s*10px\)\)\s*-\s*max\(18px,\s*env\(safe-area-inset-bottom,\s*10px\)\)\)\)\s*!important;/,
     );
     expect(stylesCss).toMatch(
       /@media\s*\(max-width:\s*767px\),\s*\(hover:\s*none\)\s*and\s*\(pointer:\s*coarse\)[\s\S]*?font-size:\s*max\(16px,\s*1rem\)\s*!important;/,
