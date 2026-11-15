@@ -106,10 +106,10 @@ import { V2MembershipsAndDiscounts } from '@/components/kani/v2/memberships-disc
 describe('KANI — Regresión de navegación en panel original y hamburguesa', () => {
   const rootDir = path.resolve(__dirname, '..');
 
-  it('1. La barra de navegación de /panel-administracion/* contiene exactamente 6 enlaces más Actualizar', async () => {
+  it('1. La barra de navegación de /panel-administracion/* contiene exactamente 6 enlaces (Liquid Glass) y /panel-administracion-old/* conserva Actualizar', async () => {
     state.role = 'ADMIN';
     state.path = '/panel-administracion/inicio';
-    const { container } = render(<V2Layout />);
+    const { container, unmount } = render(<V2Layout />);
     await screen.findByTestId('private-child');
 
     const nav = container.querySelector('nav.admin-section-nav');
@@ -122,10 +122,14 @@ describe('KANI — Regresión de navegación en panel original y hamburguesa', (
     links.forEach((link, idx) => {
       expect(link.textContent).toContain(expectedSections[idx]);
     });
+    unmount();
 
-    // Botón actualizar presente
-    const refreshBtn = nav!.querySelector('.admin-section-nav-refresh-btn');
-    expect(refreshBtn).not.toBeNull();
+    // La versión clásica -old conserva el botón Actualizar en la barra
+    state.path = '/panel-administracion-old/inicio';
+    const oldView = render(<V2Layout basePath="/panel-administracion-old" liquidGlass={false} />);
+    await screen.findByTestId('private-child');
+    const oldNav = oldView.container.querySelector('nav.admin-section-nav');
+    expect(oldNav!.querySelector('.admin-section-nav-refresh-btn')).not.toBeNull();
   });
 
   it('2. «Descuentos» está absolutamente ausente de la barra de navegación de /panel-administracion/*', async () => {
@@ -155,13 +159,14 @@ describe('KANI — Regresión de navegación en panel original y hamburguesa', (
 
   it('4. Menú desplegable (hamburguesa) recupera «Membresías y descuentos» para ADMIN, MANAGER y BARBER', async () => {
     state.role = 'ADMIN';
+    state.path = '/panel-administracion/inicio';
     state.menuOpen = true;
     const { unmount } = render(<SiteHeader />);
     await screen.findByText('Panel de administración');
 
     const linkAdmin = screen.getByRole('link', { name: 'Membresías y descuentos' });
     expect(linkAdmin).toBeInTheDocument();
-    expect(linkAdmin).toHaveAttribute('href', '/panel-administracion/membresias');
+    expect(linkAdmin).toHaveAttribute('href', '/panel-membresias');
     expect(screen.queryByRole('link', { name: /^Descuentos$/ })).toBeNull();
     unmount();
 
@@ -170,7 +175,7 @@ describe('KANI — Regresión de navegación en panel original y hamburguesa', (
     await screen.findByText('Panel de administración');
     const linkManager = screen.getByRole('link', { name: 'Membresías y descuentos' });
     expect(linkManager).toBeInTheDocument();
-    expect(linkManager).toHaveAttribute('href', '/panel-administracion/membresias');
+    expect(linkManager).toHaveAttribute('href', '/panel-membresias');
     resManager.unmount();
 
     state.role = 'BARBER';
@@ -178,7 +183,7 @@ describe('KANI — Regresión de navegación en panel original y hamburguesa', (
     await screen.findByText('Panel de administración');
     const linkBarber = screen.getByRole('link', { name: 'Membresías y descuentos' });
     expect(linkBarber).toBeInTheDocument();
-    expect(linkBarber).toHaveAttribute('href', '/panel-administracion/membresias');
+    expect(linkBarber).toHaveAttribute('href', '/panel-membresias');
   });
 
   it('5. mayAccessStaffSection autoriza «membresias» para todos los roles y restringe «descuentos» a operadores', () => {

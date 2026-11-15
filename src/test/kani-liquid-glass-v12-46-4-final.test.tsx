@@ -398,7 +398,7 @@ describe('Kani — V12.46.4 Finalización: validación automática debounced, Pa
     ).toBeNull();
   });
 
-  it('5. "Sonido al confirmar" activo por defecto en Liquid Glass, persistente al silenciar y tolerante si AudioContext está bloqueado', async () => {
+  it('5. Sonido al confirmar activo por defecto en Liquid Glass sin switch visible y tolerante si AudioContext está bloqueado', async () => {
     expect(readConfirmationSoundEnabled()).toBe(true);
 
     mocks.readPublicAvailabilityStarts.mockResolvedValue([
@@ -414,7 +414,7 @@ describe('Kani — V12.46.4 Finalización: validación automática debounced, Pa
 
     render(
       <KaniProvider>
-        <PaywayBooking homeUrl="/reservar-turno-liquid" experimentalMotion={liquidGlassMotionAdapter} />
+        <PaywayBooking homeUrl="/reservar" experimentalMotion={liquidGlassMotionAdapter} />
       </KaniProvider>,
     );
 
@@ -430,12 +430,11 @@ describe('Kani — V12.46.4 Finalización: validación automática debounced, Pa
     fireEvent.click(await screen.findByRole('button', { name: /14:30/i }));
     fireEvent.click(screen.getByRole('button', { name: /Continuar/i }));
 
-    const soundSwitch = await screen.findByRole('switch', { name: /sonido al confirmar/i });
-    expect(soundSwitch).toHaveAttribute('aria-checked', 'true');
-
-    fireEvent.click(soundSwitch);
-    expect(soundSwitch).toHaveAttribute('aria-checked', 'false');
-    expect(readConfirmationSoundEnabled()).toBe(false);
+    await screen.findByPlaceholderText('Tu nombre completo');
+    // V12.47 FASE 2: El control visual «Sonido al confirmar» ya no se renderiza en la UI
+    expect(screen.queryByRole('switch', { name: /sonido al confirmar/i })).toBeNull();
+    expect(screen.queryByText(/Sonido al confirmar/i)).toBeNull();
+    expect(readConfirmationSoundEnabled()).toBe(true);
 
     // Simula bloqueo de AudioContext en navegador estricto: jamás lanza ni rompe confirmación
     Object.defineProperty(window, 'AudioContext', {

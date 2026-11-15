@@ -1,6 +1,11 @@
-import { createFileRoute } from '@tanstack/react-router';
-import { V2Appointments } from '@/components/kani/v2/agenda';
+import { createFileRoute, redirect, Navigate } from '@tanstack/react-router';
 
 export const Route = createFileRoute('/admin-liquid/turnos')({
-  component: () => <V2Appointments paymentsTo="/admin-liquid/pagos" />,
+  beforeLoad: ({ search }) => {
+    throw redirect({
+      to: '/panel-administracion/turnos',
+      search: (search as Record<string, unknown>) || {},
+    });
+  },
+  component: () => <Navigate to="/panel-administracion/turnos" replace />,
 });

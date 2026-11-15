@@ -33,33 +33,33 @@ describe('Kani Barber Studio - Menú y Autenticación', () => {
   it('2. Menú desplegable define exactamente el orden y permisos requeridos por rol', () => {
     const code = fs.readFileSync(siteHeaderPath, 'utf-8');
 
-    // Grupo 1: Reservar turno y Contacto (apuntando a /contacto)
+    // Grupo 1: Reservar turno y Contacto (apuntando a bookingTarget y contactTarget)
     expect(code).toContain('Reservar turno');
-    expect(code).toMatch(/<Link to=\{path\.includes\('mercadopago'\) \? '\/reservar-turno-mercadopago' : '\/reservar-turno'\}[^>]*>[^<]*<ArrowUpRight \/>\s*Reservar turno\s*<\/Link>/);
-    expect(code).toMatch(/<Link to="\/contacto"[^>]*>[^<]*<Building2 \/>\s*Contacto\s*<\/Link>/);
+    expect(code).toMatch(/<Link to=\{bookingTarget\}[^>]*>[^<]*<ArrowUpRight \/>\s*Reservar turno\s*<\/Link>/);
+    expect(code).toMatch(/<Link to=\{contactTarget\}[^>]*>[^<]*<Building2 \/>\s*Contacto\s*<\/Link>/);
 
     // Ocultar entradas de Instagram y Ubicación en el menú
-    const menuSection = code.substring(code.indexOf('mobileMenu = menuOpen'), code.indexOf('return <>'));
+    const menuSection = code.substring(code.indexOf('const menuNavigationGroups = ('), code.indexOf('return <>'));
     expect(menuSection).not.toContain('<MapPin />Ubicación');
     expect(menuSection).not.toContain('<Instagram />Instagram');
 
     // Grupo barbero: Panel de administración visible en todos los roles (con o sin sesión)
-    expect(menuSection).toMatch(/<Link to="\/panel-administracion"[^>]*>[^<]*<CalendarClock \/>\s*Panel de administración\s*<\/Link>/);
+    expect(menuSection).toMatch(/<Link to=\{adminBase\}[^>]*>[^<]*<CalendarClock \/>\s*Panel de administración\s*<\/Link>/);
 
     // Grupo admin: Panel de mantenimiento — Solo ADMIN
-    expect(menuSection).toMatch(/staff\?\.profile\.role === 'ADMIN' && \([\s\S]*?<Link to="\/panel-administracion\/mantenimiento"[^>]*>[^<]*<Wrench \/>\s*Panel de mantenimiento\s*<\/Link>/);
+    expect(menuSection).toMatch(/staff\?\.profile\.role === 'ADMIN' && \([\s\S]*?<Link to=\{`\$\{adminBase\}\/mantenimiento`\}[^>]*>[^<]*<Wrench \/>\s*Panel de mantenimiento\s*<\/Link>/);
 
     // Opciones operativas (Turnos, Horarios, Pagos, Clientes, Datos) — Solo BARBER
     expect(menuSection).toMatch(/staff\?\.profile\.role === 'BARBER' && \(/);
-    expect(menuSection).toContain('to="/panel-administracion/turnos"');
-    expect(menuSection).toContain('to="/panel-administracion/horarios"');
-    expect(menuSection).toContain('to="/panel-administracion/pagos"');
-    expect(menuSection).toContain('to="/panel-administracion/clientes"');
-    expect(menuSection).toContain('to="/panel-administracion/datos"');
+    expect(menuSection).toContain('to={turnosLinkTarget}');
+    expect(menuSection).toContain('to={horariosLinkTarget}');
+    expect(menuSection).toContain('to={`${adminBase}/pagos`}');
+    expect(menuSection).toContain('to={`${adminBase}/clientes`}');
+    expect(menuSection).toContain('to={`${adminBase}/datos`}');
 
     // Grupo legales: Legal — Política de privacidad y Términos y condiciones
-    expect(menuSection).toContain('to="/politica-de-privacidad"');
-    expect(menuSection).toContain('to="/terminos-y-condiciones"');
+    expect(menuSection).toContain('to={privacyTarget}');
+    expect(menuSection).toContain('to={termsTarget}');
 
     // Bloque de cuenta con Cerrar sesión
     expect(menuSection).toMatch(/<LogOut \/>\s*Cerrar sesión\s*<\/button>/);

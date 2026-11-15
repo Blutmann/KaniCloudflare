@@ -31,10 +31,10 @@ vi.mock('@/lib/kani-down-payment', () => ({
   getDynamicDownPayment: async () => 5000,
 }));
 
-describe('KANI Barber Studio — Liquid Glass Experience (/reservar-turno-liquid)', () => {
+describe('KANI Barber Studio — Liquid Glass Experience (/reservar)', () => {
   const liquidCssPath = path.resolve(__dirname, '../components/kani/experimental/liquid-glass.css');
   const liquidCss = fs.readFileSync(liquidCssPath, 'utf-8');
-  const routePath = path.resolve(__dirname, '../routes/reservar-turno-liquid.tsx');
+  const routePath = path.resolve(__dirname, '../routes/reservar.tsx');
   const routeCode = fs.readFileSync(routePath, 'utf-8');
   const siteHeaderPath = path.resolve(__dirname, '../components/kani/site-header.tsx');
   const siteHeaderCode = fs.readFileSync(siteHeaderPath, 'utf-8');
@@ -50,8 +50,8 @@ describe('KANI Barber Studio — Liquid Glass Experience (/reservar-turno-liquid
     document.body.classList.remove('liquid-glass-active');
   });
 
-  it('1. La ruta /reservar-turno-liquid existe, monta LiquidGlassBooking e importa liquid-glass.css de forma aislada', () => {
-    expect(routeCode).toContain("createFileRoute('/reservar-turno-liquid')");
+  it('1. La ruta oficial /reservar existe, monta LiquidGlassBooking e importa liquid-glass.css de forma aislada', () => {
+    expect(routeCode).toContain("createFileRoute('/reservar')");
     expect(routeCode).toContain('LiquidGlassBooking');
     expect(routeCode).toContain("@/components/kani/experimental/liquid-glass.css");
   });

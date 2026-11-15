@@ -1,6 +1,11 @@
-import { createFileRoute } from '@tanstack/react-router';
-import { V2Insights } from '@/components/kani/v2/insights';
+import { createFileRoute, redirect, Navigate } from '@tanstack/react-router';
 
 export const Route = createFileRoute('/admin-liquid/datos')({
-  component: V2Insights,
+  beforeLoad: ({ search }) => {
+    throw redirect({
+      to: '/panel-administracion/datos',
+      search: (search as Record<string, unknown>) || {},
+    });
+  },
+  component: () => <Navigate to="/panel-administracion/datos" replace />,
 });

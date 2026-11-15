@@ -162,7 +162,6 @@ export function Booking({
   combinedDateTime = false,
   variant: propVariant,
   experimentalMotion,
-  soundPreferenceControl,
   onPaymentRequest,
   paymentActionLabel,
   paymentNotice,
@@ -828,7 +827,19 @@ export function Booking({
       }
     }
   }, [availabilityLoading, availableDates, barberDeferred, date, service, todayValue]);
-  const homeLink = isV5 ? "/reserva-v5" : isV3 ? "/reserva-v3" : isV2 ? "/reserva-v2" : "/reservar-turno";
+  const isOldClassic =
+    !isLiquidBooking &&
+    typeof window !== 'undefined' &&
+    (window.location.pathname.endsWith('-old') || window.location.pathname.includes('-old/'));
+  const homeLink = isV5
+    ? "/reserva-v5"
+    : isV3
+    ? "/reserva-v3"
+    : isV2
+    ? "/reserva-v2"
+    : isOldClassic
+    ? "/reservar-turno-old"
+    : "/reservar";
 
   const recordConflictedSlot = useCallback((slotDate: string, slotBarber: Barber | string | null, slotTime: string) => {
     const cleanTime = normalizeSlotTime(slotTime);
@@ -2304,13 +2315,11 @@ export function Booking({
                   <p className="m-0 leading-normal">{appliedBenefit?.skipOnlinePayment ? "Tu turno se confirma directamente. No requiere pago de seña online." : "Tu turno se confirma cuando se acredita la seña."}</p>
                 </div>
 
-                {soundPreferenceControl}
-
                 {/* Texto legal informativo antes del pago */}
                 <p className="booking-summary-legal-disclaimer text-xs text-muted-foreground mt-3 px-1 text-left leading-relaxed">
                   Al confirmar tu reserva, aceptás nuestros{' '}
                   <a
-                    href={typeof window !== 'undefined' && window.location.pathname.includes('-liquid') ? '/terminos-y-condiciones-liquid' : '/terminos-y-condiciones'}
+                    href={isOldClassic ? '/terminos-y-condiciones-old' : '/terminos-y-condiciones'}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="underline underline-offset-2 hover:text-foreground text-gold transition-colors"
@@ -2319,7 +2328,7 @@ export function Booking({
                   </a>{' '}
                   y nuestra{' '}
                   <a
-                    href={typeof window !== 'undefined' && window.location.pathname.includes('-liquid') ? '/politica-de-privacidad-liquid' : '/politica-de-privacidad'}
+                    href={isOldClassic ? '/politica-de-privacidad-old' : '/politica-de-privacidad'}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="underline underline-offset-2 hover:text-foreground text-gold transition-colors"

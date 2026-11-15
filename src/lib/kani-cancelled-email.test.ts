@@ -148,7 +148,7 @@ describe('Kani — Rediseño del correo de cancelación', () => {
     expect(result.text).toContain('Lautaro');
     expect(result.text).toContain('Corte de cabello');
     expect(result.text).toContain('16:00 hs');
-    expect(result.text).toContain('Reservar otro turno: https://www.kanibarber.com/reservar-turno');
+    expect(result.text).toContain('Reservar otro turno: https://www.kanibarber.com/reservar');
     expect(result.text).toContain('Contactar por WhatsApp: https://wa.me/5491155616438');
   });
 

@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, Instagram, MapPin, Clock3 } from "lucide-react";
 import { pageHead } from "@/lib/kani-head";
+import { LiquidGlassShell } from "@/components/kani/experimental/liquid-glass-shell";
 import { KANI_MAPS_URL, KANI_MAPS_EMBED_URL, KANI_PUBLIC_WHATSAPP_URL } from "@/lib/kani-constants";
 
 const mapsUrl = KANI_MAPS_URL;
@@ -38,10 +39,14 @@ function WhatsAppIcon({ className, size = 20 }: { className?: string; size?: num
 }
 
 function StudioPage() {
-  return <ContactoContent />;
+  return (
+    <LiquidGlassShell section="contact">
+      <ContactoContent bookingPath="/reservar" />
+    </LiquidGlassShell>
+  );
 }
 
-export function ContactoContent({ bookingPath = "/reservar-turno" }: { bookingPath?: string }) {
+export function ContactoContent({ bookingPath = "/reservar" }: { bookingPath?: string }) {
   return (
     <main className="site-container studio-page contacto-page">
       <div className="studio-info-grid">

@@ -227,8 +227,8 @@ export function RefractionPoc() {
           mantiene aislado el flujo real de reservas con Living Surface V3.
         </div>
 
-        <a className="lg-refraction-poc-back" href="/reservar-turno-liquid">
-          Volver a /reservar-turno-liquid
+        <a className="lg-refraction-poc-back" href="/reservar">
+          Volver a /reservar
         </a>
       </div>
     </section>

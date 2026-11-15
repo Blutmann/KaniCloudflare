@@ -94,7 +94,7 @@ describe("KANI Barber Studio — Restauración Black Card Premium (/membresia/:t
     // Elementos externos
     expect(screen.getByRole("link", { name: /RESERVAR TURNO/i })).toHaveAttribute(
       "href",
-      "https://www.kanibarber.com/reservar-turno",
+      "https://www.kanibarber.com/reservar",
     );
     expect(screen.getByText("DESLIZÁ HORIZONTALMENTE PARA GIRAR")).toBeInTheDocument();
     expect(screen.getByText("HISTORIAL DE VISITAS")).toBeInTheDocument();

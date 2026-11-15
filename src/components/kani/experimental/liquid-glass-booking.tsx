@@ -12,11 +12,11 @@ function isRefractionPocRoute(): boolean {
 }
 
 /**
- * LiquidGlassBooking — Experiencia experimental Liquid Glass aislada para /reservar-turno-liquid.
+ * LiquidGlassBooking — Experiencia principal Liquid Glass para /reservar.
  * Reutiliza íntegramente el flujo de negocio, disponibilidad, exclusión de Franco y pasarela Payway
- * sin duplicar reglas ni alterar las rutas existentes.
+ * sin duplicar reglas ni alterar la lógica de confirmación.
  */
-export function LiquidGlassBooking() {
+export function LiquidGlassBooking({ homeUrl = '/reservar' }: { homeUrl?: string } = {}) {
   const [showRefractionPoc] = useState(isRefractionPocRoute);
 
   useEffect(() => {
@@ -40,7 +40,7 @@ export function LiquidGlassBooking() {
         {showRefractionPoc ? (
           <RefractionPoc />
         ) : (
-          <PaywayBooking homeUrl="/reservar-turno-liquid" experimentalMotion={liquidGlassMotionAdapter} />
+          <PaywayBooking homeUrl={homeUrl} experimentalMotion={liquidGlassMotionAdapter} />
         )}
       </div>
     </LiquidGlassMotionProvider>

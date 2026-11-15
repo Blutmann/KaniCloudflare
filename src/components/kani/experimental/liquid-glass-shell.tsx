@@ -7,18 +7,50 @@ import '@/components/kani/experimental/liquid-glass-typography.css';
 export type LiquidGlassSection = 'booking' | 'contact' | 'admin' | 'legal';
 
 const LIQUID_GLASS_PREFIXES = [
+  '/',
+  '/reservar',
+  '/contacto',
+  '/panel-administracion',
+  '/panel-membresias',
+  '/panel-descuentos',
+  '/panel-turnos',
+  '/panel-horarios',
+  '/politica-de-privacidad',
+  '/terminos-y-condiciones',
+  '/admin-v2-liquid',
+  // Rutas heredadas que redirigen a oficiales
+  '/reservar-turno',
   '/reservar-turno-liquid',
   '/contacto-liquid',
   '/admin-liquid',
-  '/admin-v2-liquid',
   '/politica-de-privacidad-liquid',
   '/terminos-y-condiciones-liquid',
 ] as const;
 
+export function isClassicLegacyPath(pathname: string): boolean {
+  const clean = pathname.replace(/\/+$/, '') || '/';
+  return (
+    clean.endsWith('-old') ||
+    clean.includes('-old/') ||
+    clean === '/reservar-turno-mercadopago' ||
+    clean === '/reservar-mercadopago' ||
+    clean === '/panel-v2' ||
+    clean.startsWith('/panel-v2/') ||
+    clean === '/reserva-v2' ||
+    clean === '/reserva-v3' ||
+    clean === '/reserva-v5' ||
+    clean === '/admin' ||
+    clean.startsWith('/admin/') ||
+    clean === '/admin-v2' ||
+    clean.startsWith('/admin-v2/')
+  );
+}
+
 export function isLiquidGlassPath(pathname: string): boolean {
   const clean = pathname.replace(/\/+$/, '') || '/';
-  return LIQUID_GLASS_PREFIXES.some(
-    (prefix) => clean === prefix || clean.startsWith(`${prefix}/`),
+  if (isClassicLegacyPath(clean)) return false;
+  return LIQUID_GLASS_PREFIXES.some((prefix) =>
+    prefix === '/' ? clean === '/' : clean === prefix || clean.startsWith(`${prefix}/`),
   );
 }
 

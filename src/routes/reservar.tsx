@@ -1,8 +1,20 @@
-import { createFileRoute, redirect, Navigate } from '@tanstack/react-router';
+import { createFileRoute } from '@tanstack/react-router';
+import '@fontsource-variable/inter';
+import { LiquidGlassBooking } from '@/components/kani/experimental/liquid-glass-booking';
+import { pageHead } from '@/lib/kani-head';
+import '@/components/kani/experimental/reserva-v2.css';
+import '@/components/kani/experimental/reserva-v3.css';
+import '@/components/kani/experimental/reserva-v4.css';
+import '@/components/kani/experimental/liquid-glass.css';
+import '@/components/kani/experimental/liquid-glass-typography.css';
+import '@/components/kani/experimental/liquid-glass-desktop-v12-22.css';
 
 export const Route = createFileRoute('/reservar')({
-  beforeLoad: ({ search }) => {
-    throw redirect({ to: '/reservar-turno', search });
-  },
-  component: () => <Navigate to="/reservar-turno" />,
+  head: () =>
+    pageHead(
+      'Reservá tu turno',
+      'Reservá tu turno en Kani Barber Studio.',
+      'Kani Barber Studio - Reservar turno',
+    ),
+  component: () => <LiquidGlassBooking homeUrl="/reservar" />,
 });

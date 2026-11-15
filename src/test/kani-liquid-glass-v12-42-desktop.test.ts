@@ -9,7 +9,7 @@ describe('Liquid Glass V12.42.1 — Jerarquía visual Desktop (Servicios, Avisos
     'utf8',
   );
   const liquidRoute = readFileSync(
-    path.resolve(root, 'src/routes/reservar-turno-liquid.tsx'),
+    path.resolve(root, 'src/routes/reservar.tsx'),
     'utf8',
   );
 

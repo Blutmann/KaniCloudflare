@@ -24,7 +24,11 @@ import {
 } from '@/lib/kani-admin-activity';
 import '@/components/kani/experimental/liquid-glass-notifications.css';
 
-type NotificationHref = '/admin' | '/admin/horarios' | '/admin-liquid' | '/admin-liquid/horarios';
+type NotificationHref =
+  | '/panel-administracion'
+  | '/panel-horarios'
+  | '/panel-administracion-old'
+  | '/panel-administracion-old/horarios';
 type AdminNotification = {
   id: string;
   type: 'availability' | 'appointment';
@@ -62,8 +66,8 @@ function toAdminNotification(event: AdminActivityEvent, useLiquidPaths: boolean)
           : `${actor} rechazó el turno de ${client}`;
 
   const href: NotificationHref = useLiquidPaths
-    ? (isAvailability ? '/admin-liquid/horarios' : '/admin-liquid')
-    : (isAvailability ? '/admin/horarios' : '/admin');
+    ? (isAvailability ? '/panel-horarios' : '/panel-administracion')
+    : (isAvailability ? '/panel-administracion-old/horarios' : '/panel-administracion-old');
 
   return {
     id: event.id,

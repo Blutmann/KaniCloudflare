@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { ArrowLeft, Building2, Calendar, Mail, MapPin, Scale, ShieldAlert } from 'lucide-react';
 import { pageHead } from '@/lib/kani-head';
+import { LiquidGlassShell } from '@/components/kani/experimental/liquid-glass-shell';
 import '@/legal-pages.css';
 
 export const Route = createFileRoute('/terminos-y-condiciones')({
@@ -10,12 +11,22 @@ export const Route = createFileRoute('/terminos-y-condiciones')({
       'Términos y Condiciones generales de contratación de servicios y reservas en Kani Barber Studio.',
       'Términos y Condiciones · Kani Barber Studio',
     ),
-  component: TerminosYCondicionesPage,
+  component: () => (
+    <LiquidGlassShell section="legal">
+      <TerminosYCondicionesPage backTo="/reservar" privacyTo="/politica-de-privacidad" />
+    </LiquidGlassShell>
+  ),
 });
 
-export function TerminosYCondicionesPage({ backTo = '/reservar-turno' }: { backTo?: string }) {
-  const isLiquid = backTo.includes('-liquid');
-  const privacyTo = isLiquid ? '/politica-de-privacidad-liquid' : '/politica-de-privacidad';
+export function TerminosYCondicionesPage({
+  backTo = '/reservar',
+  privacyTo: explicitPrivacyTo,
+}: {
+  backTo?: string;
+  privacyTo?: string;
+}) {
+  const isOld = backTo.endsWith('-old');
+  const privacyTo = explicitPrivacyTo ?? (isOld ? '/politica-de-privacidad-old' : '/politica-de-privacidad');
   return (
     <main className="legal-page" id="contenido-principal">
       <div className="site-container legal-container">

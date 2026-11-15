@@ -16,9 +16,15 @@ export function getRequestAuthToken(): string | undefined {
 }
 
 export function getRuntimeEnv(name: string): string | undefined {
-  const globalEnv = (globalThis as any)?.__ENV__;
+  const globalObj = globalThis as typeof globalThis & {
+    __ENV__?: Record<string, unknown>;
+    __env__?: Record<string, unknown>;
+    __KANI_RUNTIME_ENV?: Record<string, unknown>;
+  };
   const runtimeValue =
-    (globalEnv && typeof globalEnv === 'object' ? globalEnv[name] : undefined) ??
+    globalObj.__ENV__?.[name] ??
+    globalObj.__env__?.[name] ??
+    globalObj.__KANI_RUNTIME_ENV?.[name] ??
     (typeof process !== 'undefined' ? process.env[name] : undefined);
 
   const buildValue =
@@ -32,6 +38,36 @@ export function getRuntimeEnv(name: string): string | undefined {
   return typeof value === 'string' && value.trim() ? value : undefined;
 }
 
+function getSupabaseUrl(): string {
+  return (
+    getRuntimeEnv('SUPABASE_URL') ??
+    getRuntimeEnv('VITE_SUPABASE_URL') ??
+    'https://iockpxtkflyjfagkvgnr.supabase.co'
+  );
+}
+
+function createServerSupabaseClientWithHeaders(
+  supabaseUrl: string,
+  supabaseKey: string,
+  authorization?: string,
+) {
+  return createClient<Database>(supabaseUrl, supabaseKey, {
+    global: {
+      fetch: (input, init) => {
+        const headers = new Headers(
+          typeof Request !== 'undefined' && input instanceof Request ? input.headers : undefined,
+        );
+        if (init?.headers)
+          new Headers(init.headers).forEach((value, key) => headers.set(key, value));
+        headers.set('apikey', supabaseKey);
+        if (authorization) headers.set('Authorization', authorization);
+        return fetch(input, { ...init, headers });
+      },
+    },
+    auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
+  });
+}
+
 export async function createRequestSupabaseClient(explicitAuthToken?: string) {
   let request: Request | undefined;
   try {
@@ -40,10 +76,7 @@ export async function createRequestSupabaseClient(explicitAuthToken?: string) {
     /* Raw Worker webhook has no TanStack request. */
   }
 
-  const supabaseUrl =
-    getRuntimeEnv('SUPABASE_URL') ??
-    getRuntimeEnv('VITE_SUPABASE_URL') ??
-    'https://iockpxtkflyjfagkvgnr.supabase.co';
+  const supabaseUrl = getSupabaseUrl();
   const supabaseKey =
     getRuntimeEnv('SUPABASE_ANON_KEY') ??
     getRuntimeEnv('SUPABASE_PUBLISHABLE_KEY') ??
@@ -60,19 +93,22 @@ export async function createRequestSupabaseClient(explicitAuthToken?: string) {
   }
 
   const authorization = token ? `Bearer ${token}` : undefined;
-  return createClient<Database>(supabaseUrl, supabaseKey, {
-    global: {
-      fetch: (input, init) => {
-        const headers = new Headers(
-          typeof Request !== 'undefined' && input instanceof Request ? input.headers : undefined,
-        );
-        if (init?.headers)
-          new Headers(init.headers).forEach((value, key) => headers.set(key, value));
-        headers.set('apikey', supabaseKey);
-        if (authorization) headers.set('Authorization', authorization);
-        return fetch(input, { ...init, headers });
-      },
-    },
-    auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
-  });
+  return createServerSupabaseClientWithHeaders(supabaseUrl, supabaseKey, authorization);
+}
+
+/**
+ * Cliente privilegiado para despachos automáticos de notificaciones iniciados por reservas públicas.
+ * Usa SUPABASE_SERVICE_ROLE_KEY para registrar telemetría por canal (record_channel_dispatch_status)
+ * y leer metadata de reservas aún sin sesión de operador autenticado.
+ */
+export async function createNotificationSupabaseClient(explicitAuthToken?: string) {
+  const serviceRoleKey = getRuntimeEnv('SUPABASE_SERVICE_ROLE_KEY');
+  if (!serviceRoleKey) {
+    return createRequestSupabaseClient(explicitAuthToken);
+  }
+  return createServerSupabaseClientWithHeaders(
+    getSupabaseUrl(),
+    serviceRoleKey,
+    `Bearer ${serviceRoleKey}`,
+  );
 }

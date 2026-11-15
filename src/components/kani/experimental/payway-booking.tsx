@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Check, CircleAlert, HelpCircle, Instagram, Loader2, MapPin, Volume2, VolumeX } from 'lucide-react';
+import { Check, CircleAlert, HelpCircle, Instagram, Loader2, MapPin } from 'lucide-react';
 import { Booking, type BookingPaymentDraft } from '@/components/kani/booking';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,11 +26,11 @@ import { KANI_MAPS_URL, KANI_MAPS_EMBED_URL } from '@/lib/kani-constants';
 import { BookingConfirmedScreen } from '@/components/kani/booking-confirmed-screen';
 import { CardBrandBadge } from './card-brand-badges';
 import type { LiquidGlassMotionAdapter } from './liquid-glass-motion.types';
+import { isLiquidGlassPath } from './liquid-glass-shell';
 import {
   playConfirmationChime,
   readConfirmationSoundEnabled,
   unlockConfirmationAudio,
-  writeConfirmationSoundEnabled,
 } from './liquid-glass-feedback';
 
 const CONFIRMED_STORAGE_KEY = 'kani:payway:confirmed-booking';
@@ -169,15 +169,16 @@ function resolveServicePrice(serviceName: string, configured: ConfiguredService[
 }
 
 export function PaywayBooking({
-  homeUrl = '/reservar-turno',
+  homeUrl = '/reservar',
   experimentalMotion,
 }: {
   homeUrl?: string;
   experimentalMotion?: LiquidGlassMotionAdapter;
 } = {}) {
-  const isLiquid = homeUrl.includes('-liquid');
-  const termsUrl = isLiquid ? '/terminos-y-condiciones-liquid' : '/terminos-y-condiciones';
-  const privacyUrl = isLiquid ? '/politica-de-privacidad-liquid' : '/politica-de-privacidad';
+  const isOldClassic = homeUrl.endsWith('-old') || homeUrl.includes('-old/');
+  const isLiquid = Boolean(experimentalMotion) || (!isOldClassic && isLiquidGlassPath(homeUrl));
+  const termsUrl = isOldClassic ? '/terminos-y-condiciones-old' : '/terminos-y-condiciones';
+  const privacyUrl = isOldClassic ? '/politica-de-privacidad-old' : '/politica-de-privacidad';
   const [open, setOpen] = useState(false);
   const [preparing, setPreparing] = useState(false);
   const [checkout, setCheckout] = useState<PaywayCheckout | null>(null);
@@ -224,56 +225,11 @@ export function PaywayBooking({
   const paidAppointmentsRef = useRef<Set<string>>(readPaidAppointments());
   const opening = useRef(false);
   const paying = useRef(false);
-  const [soundEnabled, setSoundEnabled] = useState(() => isLiquid);
-  const soundEnabledRef = useRef(soundEnabled);
-  soundEnabledRef.current = soundEnabled;
-
-  useEffect(() => {
-    if (!isLiquid) return;
-    const storedEnabled = readConfirmationSoundEnabled();
-    setSoundEnabled(storedEnabled);
-    soundEnabledRef.current = storedEnabled;
-  }, [isLiquid]);
-
-  function toggleConfirmationSound() {
-    if (!isLiquid) return;
-    const next = !soundEnabled;
-    setSoundEnabled(next);
-    soundEnabledRef.current = next;
-    writeConfirmationSoundEnabled(next);
-    if (next) {
-      unlockConfirmationAudio();
-    }
-  }
 
   function notifyVerifiedConfirmationSound(appointmentId: string) {
-    if (!isLiquid || !soundEnabledRef.current) return;
-    playConfirmationChime(appointmentId, { enabled: soundEnabledRef.current });
+    if (!isLiquid || !readConfirmationSoundEnabled()) return;
+    playConfirmationChime(appointmentId, { enabled: true });
   }
-
-  const soundPreferenceControl = isLiquid ? (
-    <div className="lg-sound-preference-wrap">
-      <button
-        type="button"
-        role="switch"
-        aria-checked={soundEnabled}
-        aria-label={soundEnabled ? 'Desactivar sonido al confirmar reserva' : 'Activar sonido al confirmar reserva'}
-        className={`lg-sound-toggle ${soundEnabled ? 'is-enabled' : ''}`}
-        onClick={toggleConfirmationSound}
-      >
-        <span className="lg-sound-toggle-icon" aria-hidden="true">
-          {soundEnabled ? <Volume2 size={15} /> : <VolumeX size={15} />}
-        </span>
-        <span className="lg-sound-toggle-copy">
-          <span className="lg-sound-toggle-title">Sonido al confirmar</span>
-          <span className="lg-sound-toggle-state">{soundEnabled ? 'Activado' : 'Desactivado'}</span>
-        </span>
-        <span className="lg-sound-toggle-pill" aria-hidden="true">
-          <span className="lg-sound-toggle-thumb" />
-        </span>
-      </button>
-    </div>
-  ) : undefined;
   const isApprovedConfirmed = Boolean(confirmed) || (result?.state === 'approved' && result?.appointmentConfirmed === true);
   const hasPendingPayment = Boolean(pendingCheck) && !isApprovedConfirmed && result?.state !== 'rejected';
   const hasReviewNotice = result?.state === 'review';
@@ -623,7 +579,7 @@ export function PaywayBooking({
   async function begin(draft: BookingPaymentDraft) {
     if (isApprovedConfirmed) return;
     if (opening.current || hasPendingPayment || result?.state === 'unknown' || result?.state === 'review') { setOpen(true); return; }
-    if (isLiquid && soundEnabledRef.current) {
+    if (isLiquid && readConfirmationSoundEnabled()) {
       unlockConfirmationAudio();
     }
     draftRef.current = draft;
@@ -764,7 +720,7 @@ export function PaywayBooking({
   async function pay(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (paying.current || terminal || !checkout || paidAppointmentsRef.current.has(checkout.appointmentId)) return;
-    if (isLiquid && soundEnabledRef.current) {
+    if (isLiquid && readConfirmationSoundEnabled()) {
       unlockConfirmationAudio();
     }
     const form = event.currentTarget;
@@ -962,7 +918,6 @@ export function PaywayBooking({
         confirmed={confirmed}
         onHomeClick={startNewReservation}
         homeUrl={homeUrl}
-        soundPreferenceControl={soundPreferenceControl}
       />
     );
   }
@@ -972,7 +927,6 @@ export function PaywayBooking({
       <Booking
         variant="v3"
         experimentalMotion={experimentalMotion}
-        soundPreferenceControl={soundPreferenceControl}
         onPaymentRequest={begin}
         paymentActionLabel={hasReviewNotice ? 'Ver detalle de revisión' : hasPendingPayment ? 'Ver estado del pago' : undefined}
         paymentNotice={

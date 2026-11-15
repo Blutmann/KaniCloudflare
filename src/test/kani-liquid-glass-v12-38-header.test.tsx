@@ -73,11 +73,12 @@ describe('Liquid Glass V12.38 — Header adaptativo (transparente en reposo / cr
 
   it('1. Inicia transparente en todas las rutas Liquid Glass cuando el desplazamiento está en reposo', async () => {
     const liquidRoutes = [
-      '/reservar-turno-liquid',
-      '/admin-liquid/inicio',
-      '/contacto-liquid',
-      '/politica-de-privacidad-liquid',
-      '/terminos-y-condiciones-liquid',
+      '/reservar',
+      '/panel-administracion/inicio',
+      '/panel-membresias',
+      '/contacto',
+      '/politica-de-privacidad',
+      '/terminos-y-condiciones',
     ];
 
     for (const route of liquidRoutes) {
@@ -202,8 +203,8 @@ describe('Liquid Glass V12.38 — Header adaptativo (transparente en reposo / cr
       expect(header.classList.contains('liquid-glass-header--scrolled')).toBe(false);
     });
 
-    // Ruta tradicional sin clase ni listeners Liquid Glass
-    mockPathname = '/reservar-turno';
+    // Ruta tradicional (-old) sin clase ni listeners Liquid Glass
+    mockPathname = '/reservar-turno-old';
     rerender(
       <KaniProvider>
         <div className="site-shell">

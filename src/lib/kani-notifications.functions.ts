@@ -77,7 +77,7 @@ export const sendAppointmentNotification = createServerFn({ method: "POST" })
 export const dispatchAppointmentNotification = createServerOnlyFn(async (data: { appointmentId: string; claimToken: string; clientPhone?: string | null }): Promise<DispatchResult> => {
     let notificationId: string | undefined;
     try {
-      const supabase = await createRequestSupabaseClient();
+      const supabase = await createNotificationSupabaseClient();
       const { data: claimed, error: claimError } = await supabase.rpc(
         "claim_appointment_notification",
         {
@@ -415,7 +415,7 @@ export const dispatchAppointmentNotification = createServerOnlyFn(async (data: {
       const safeMessage = safeErrorMessage(error);
       console.error(`[KANI notification] ${safeMessage}`);
       try {
-        const supabase = await createRequestSupabaseClient();
+        const supabase = await createNotificationSupabaseClient();
         if (notificationId) {
           const { error: recordError } = await supabase.rpc("fail_appointment_notification", {
             p_notification_id: notificationId,
@@ -1071,6 +1071,11 @@ function getRuntimeEnv(name: string): string | undefined {
 
 async function createRequestSupabaseClient(explicitAuthToken?: string) {
   const { createRequestSupabaseClient: createClient } = await import("./kani-notifications.server");
+  return createClient(explicitAuthToken);
+}
+
+async function createNotificationSupabaseClient(explicitAuthToken?: string) {
+  const { createNotificationSupabaseClient: createClient } = await import("./kani-notifications.server");
   return createClient(explicitAuthToken);
 }
 
@@ -1948,7 +1953,7 @@ function buildEmail(payload: NotificationPayload) {
     getRuntimeEnv('APP_URL') ||
     'https://www.kanibarber.com'
   ).replace(/\/$/, '');
-  return buildCancelledEmail(payload, `${baseUrl}/reservar-turno`);
+  return buildCancelledEmail(payload, `${baseUrl}/reservar`);
 }
 
 export function buildCancelledEmail(payload: NotificationPayload, bookingUrl?: string) {
@@ -1957,7 +1962,7 @@ export function buildCancelledEmail(payload: NotificationPayload, bookingUrl?: s
     getRuntimeEnv('APP_URL') ||
     'https://www.kanibarber.com'
   ).replace(/\/$/, '');
-  const finalBookingUrl = bookingUrl || `${appUrl}/reservar-turno`;
+  const finalBookingUrl = bookingUrl || `${appUrl}/reservar`;
   const logoUrl = `${appUrl}/kani-email-logo.png`;
   const instagramUrl = "https://www.instagram.com/kanibarberstudio/";
 

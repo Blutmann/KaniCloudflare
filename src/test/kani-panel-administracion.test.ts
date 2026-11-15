@@ -51,48 +51,52 @@ describe('Kani Barber Studio — Panel de Administración & Refinamiento de Pago
     expect(adminIndex).toMatch(/to:\s*['"]\/panel-administracion['"]/);
   });
 
-  it('3. Redirige /reservar hacia /reservar-turno preservando search params', () => {
+  it('3. /reservar es la ruta oficial Liquid Glass y rutas legadas redirigen preservando search params', () => {
     const reservarCode = fs.readFileSync(path.join(rootDir, 'routes', 'reservar.tsx'), 'utf8');
-    expect(reservarCode).toMatch(/to:\s*['"]\/reservar-turno['"]/);
-    expect(reservarCode).toContain('search');
+    const reservarTurnoCode = fs.readFileSync(path.join(rootDir, 'routes', 'reservar-turno.tsx'), 'utf8');
+    const reservarLiquidCode = fs.readFileSync(path.join(rootDir, 'routes', 'reservar-turno-liquid.tsx'), 'utf8');
+    expect(reservarCode).toContain('<LiquidGlassBooking homeUrl="/reservar" />');
+    expect(reservarTurnoCode).toMatch(/to:\s*['"]\/reservar['"]/);
+    expect(reservarTurnoCode).toContain('search');
+    expect(reservarLiquidCode).toMatch(/to:\s*['"]\/reservar['"]/);
+    expect(reservarLiquidCode).toContain('search');
   });
 
-  it('4. SiteHeader integra /panel-administracion, rutas unificadas de reserva y logout contextual', () => {
+  it('4. SiteHeader integra /panel-administracion, rutas oficiales Liquid Glass y logout contextual', () => {
     const headerCode = fs.readFileSync(path.join(rootDir, 'components', 'kani', 'site-header.tsx'), 'utf8');
 
     // Admin detection
     expect(headerCode).toContain("path.startsWith('/panel-administracion')");
+    expect(headerCode).toContain("path.startsWith('/panel-membresias')");
 
-    // Reservar turno link contextual
-    expect(headerCode).toContain("path.includes('mercadopago') ? '/reservar-turno-mercadopago' : '/reservar-turno'");
+    // Reservar turno link contextual (Liquid Glass oficial vs Mercado Pago vs clásico -old)
+    expect(headerCode).toContain("isLiquidRoute\n    ? '/reservar'");
+    expect(headerCode).toContain("'/reservar-turno-mercadopago'");
+    expect(headerCode).toContain("'/reservar-turno-old'");
 
     // Panel de administración link
-    expect(headerCode).toContain('to="/panel-administracion"');
-
-    // Iniciar sesión link
-    expect(headerCode).toContain('<Link to="/panel-administracion" onClick={closeMenu}><LogIn />Iniciar sesión</Link>');
+    expect(headerCode).toContain('to={adminBase}');
+    expect(headerCode).toContain('<CalendarClock />Panel de administración');
 
     // Cerrar sesión con redirección a la ruta de reserva correcta
     expect(headerCode).toContain("const isMp = path.includes('mercadopago');");
-    expect(headerCode).toContain("navigate({ to: isMp ? '/reservar-turno-mercadopago' : '/reservar-turno' })");
+    expect(headerCode).toContain("to: isLiquidRoute ? '/reservar' : isMp ? '/reservar-turno-mercadopago' : '/reservar-turno-old'");
   });
 
-  it('5. layout.tsx de Admin V2 utiliza enlaces a /panel-administracion/*', () => {
+  it('5. layout.tsx de Admin V2 utiliza enlaces oficiales /panel-administracion/* y tabs de Membresías/Descuentos', () => {
     const layoutCode = fs.readFileSync(path.join(rootDir, 'components', 'kani', 'v2', 'layout.tsx'), 'utf8');
-    expect(layoutCode).toContain('/panel-administracion/inicio');
-    expect(layoutCode).toContain('/panel-administracion/turnos');
-    expect(layoutCode).toContain('/panel-administracion/horarios');
-    expect(layoutCode).toContain('/panel-administracion/pagos');
-    expect(layoutCode).toContain('/panel-administracion/clientes');
-    expect(layoutCode).toContain('/panel-administracion/datos');
-    expect(layoutCode).toContain('href="/panel-administracion"');
+    expect(layoutCode).toContain('to={`${cleanBase}/${slug}`}');
+    expect(layoutCode).toContain('"/panel-membresias"');
+    expect(layoutCode).toContain('"/panel-descuentos"');
+    expect(layoutCode).toContain('basePath = "/panel-administracion"');
+    expect(layoutCode).toContain('href={basePath}');
   });
 
-  it('6. agenda.tsx de Admin V2 utiliza enlaces a /panel-administracion/*', () => {
+  it('6. agenda.tsx de Admin V2 utiliza enlaces a /panel-administracion/* (y -old para clásico)', () => {
     const agendaCode = fs.readFileSync(path.join(rootDir, 'components', 'kani', 'v2', 'agenda.tsx'), 'utf8');
-    expect(agendaCode).toContain('to="/panel-administracion/turnos"');
-    expect(agendaCode).toContain('to="/panel-administracion/horarios"');
-    expect(agendaCode).toContain('to="/panel-administracion/pagos"');
+    expect(agendaCode).toContain('"/panel-administracion/turnos"');
+    expect(agendaCode).toContain('"/panel-administracion/horarios"');
+    expect(agendaCode).toContain('"/panel-administracion/pagos"');
     expect(agendaCode).not.toContain('to="/admin-v2/turnos"');
     expect(agendaCode).not.toContain('to="/admin-v2/horarios"');
     expect(agendaCode).not.toContain('to="/admin-v2/pagos"');
