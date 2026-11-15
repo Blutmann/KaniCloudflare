@@ -6,11 +6,34 @@ import path from 'node:path';
 let mockPathname = '/admin-liquid/membresias';
 
 vi.mock('@tanstack/react-router', () => ({
-  Link: ({ to, children, onClick, activeProps: _ap, ...props }: any) => (
-    <a href={typeof to === 'string' ? to : '#'} onClick={onClick} {...props}>
-      {children}
-    </a>
-  ),
+  Link: ({ to, children, onClick, activeProps, inactiveProps: _ip, activeOptions, className, ...props }: any) => {
+    const href = typeof to === 'string' ? to : '#';
+    const current = mockPathname.replace(/\/+$/, '') || '/';
+    const target = href.replace(/\/+$/, '') || '/';
+    const routerIsActive = activeOptions?.exact
+      ? current === target
+      : current === target || (target !== '/' && current.startsWith(`${target}/`));
+    const mergedClassName = [className, routerIsActive ? activeProps?.className : undefined]
+      .filter(Boolean)
+      .join(' ');
+    const routerActiveProps = routerIsActive
+      ? {
+          'data-status': 'active',
+          'aria-current': activeProps?.['aria-current'] ?? 'page',
+        }
+      : {};
+    return (
+      <a
+        href={href}
+        onClick={onClick}
+        className={mergedClassName || undefined}
+        {...props}
+        {...routerActiveProps}
+      >
+        {children}
+      </a>
+    );
+  },
   Outlet: () => <div data-testid="v2-outlet" />,
   useNavigate: () => vi.fn(),
   useRouterState: ({ select }: any) => select({ location: { pathname: mockPathname } }),
@@ -282,5 +305,59 @@ describe('Liquid Glass V12.31 — Correcciones de interfaz, modales y navegació
     expect(
       screen.getByText(/Crea un turno operativo directamente confirmado sin limitaciones de horario comercial/i),
     ).toBeTruthy();
+  });
+
+  it('8. V12.43.3 — Las tres pestañas inactivas mantienen jerarquía tipográfica uniforme sin negrita permanente en Administración', async () => {
+    mockPathname = '/admin-liquid/membresias';
+    const { container, rerender } = render(<V2Layout basePath="/admin-liquid" liquidGlass />);
+
+    await waitFor(() => {
+      expect(container.querySelector('.lg-memberships-nav')).not.toBeNull();
+    });
+
+    const checkInactiveUniformity = (expectedActiveSlug: string) => {
+      const links = Array.from(
+        container.querySelectorAll<HTMLAnchorElement>('.lg-memberships-nav .admin-section-nav-link'),
+      );
+      expect(links).toHaveLength(3);
+      links.forEach((link) => {
+        const slug = link.getAttribute('data-nav-slug');
+        if (slug === expectedActiveSlug) {
+          expect(link.classList.contains('is-active')).toBe(true);
+          expect(link.getAttribute('aria-current')).toBe('page');
+          expect(link.querySelector('.lg-admin-nav-pill')).not.toBeNull();
+        } else {
+          expect(link.classList.contains('is-active')).toBe(false);
+          expect(link.getAttribute('aria-current')).toBeNull();
+          expect(link.getAttribute('data-status')).toBeNull();
+          expect(link.querySelector('.lg-admin-nav-pill')).toBeNull();
+        }
+      });
+    };
+
+    checkInactiveUniformity('membresias');
+
+    mockPathname = '/admin-liquid/descuentos';
+    rerender(<V2Layout basePath="/admin-liquid" liquidGlass />);
+    await waitFor(() => {
+      expect(
+        container
+          .querySelector('.lg-memberships-nav .admin-section-nav-link[data-nav-slug="descuentos"]')
+          ?.classList.contains('is-active'),
+      ).toBe(true);
+    });
+
+    checkInactiveUniformity('descuentos');
+
+    const adminCss = fs.readFileSync(
+      path.resolve(process.cwd(), 'src/components/kani/experimental/liquid-glass-admin.css'),
+      'utf8',
+    );
+    expect(adminCss).toMatch(/\.admin-section-nav-link\s*\{[\s\S]*?font-weight:\s*500 !important;/);
+    expect(adminCss).toMatch(
+      /\.admin-section-nav-link :is\(svg, \.lg-admin-nav-icon, \.lg-admin-nav-label\)\s*\{[\s\S]*?font-weight:\s*500 !important;[\s\S]*?opacity:\s*1 !important;/,
+    );
+    expect(adminCss).toMatch(/\.lg-memberships-nav \.lg-admin-nav-label\s*\{[\s\S]*?font-weight:\s*inherit !important;/);
+    expect(adminCss).toMatch(/\.lg-memberships-nav \.admin-section-nav-items\s*\{[\s\S]*?grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\) !important;/);
   });
 });

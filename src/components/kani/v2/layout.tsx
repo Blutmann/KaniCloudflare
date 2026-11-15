@@ -312,6 +312,7 @@ function V2Shell({ basePath, liquidGlass = false }: { basePath: string; liquidGl
             <Link
               key={slug}
               to={to}
+              activeOptions={{ exact: true }}
               data-nav-slug={slug}
               className={`admin-section-nav-link ${isActive ? "is-active" : ""}`.trim()}
               aria-current={isActive ? "page" : undefined}
@@ -352,6 +353,7 @@ function V2Shell({ basePath, liquidGlass = false }: { basePath: string; liquidGl
               <Link
                 key={slug}
                 to={`${cleanBase}/${slug}`}
+                activeOptions={{ exact: true }}
                 data-nav-slug={slug}
                 className="admin-section-nav-link"
                 activeProps={{ className: "is-active", "aria-current": "page" }}

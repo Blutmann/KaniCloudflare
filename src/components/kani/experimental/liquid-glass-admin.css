@@ -322,7 +322,8 @@ body[data-lg-admin="true"] .v2-navigation .admin-section-nav-link {
   background: transparent !important;
   color: var(--lga-text-muted) !important;
   font-size: 0.875rem !important;
-  font-weight: 500;
+  font-weight: 500 !important;
+  opacity: 1 !important;
   white-space: nowrap !important;
   text-decoration: none;
   isolation: isolate;
@@ -333,6 +334,8 @@ body[data-lg-admin="true"] .v2-navigation .admin-section-nav-link {
 html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav .admin-section-nav-link,
 html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav .admin-section-nav-link :is(svg, .lg-admin-nav-icon, .lg-admin-nav-label) {
   color: var(--lga-text-muted) !important;
+  font-weight: 500 !important;
+  opacity: 1 !important;
 }
 
 body[data-lg-admin="true"] .v2-navigation .admin-section-nav-link svg {
@@ -2507,6 +2510,9 @@ html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-se
   }
 
   html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav.lg-memberships-nav .lg-admin-nav-label {
+    font-size: inherit !important;
+    font-weight: inherit !important;
+    opacity: 1 !important;
     white-space: nowrap !important;
     text-align: center !important;
     overflow-wrap: normal !important;
