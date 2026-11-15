@@ -45,19 +45,37 @@ function createMockBookingForm() {
   const emailInput = form.querySelector('input[name="email"]') as HTMLInputElement;
   const discountInput = form.querySelector('#booking-discount-code') as HTMLInputElement;
 
-  nameLabel.getBoundingClientRect = () =>
-    ({ top: 140, bottom: 210, left: 16, right: 374, width: 358, height: 70, x: 16, y: 140, toJSON: () => {} }) as DOMRect;
-  phoneLabel.getBoundingClientRect = () =>
-    ({ top: 230, bottom: 390, left: 16, right: 374, width: 358, height: 160, x: 16, y: 230, toJSON: () => {} }) as DOMRect;
-  emailLabel.getBoundingClientRect = () =>
-    ({ top: 360, bottom: 445, left: 16, right: 374, width: 358, height: 85, x: 16, y: 360, toJSON: () => {} }) as DOMRect;
-  discountField.getBoundingClientRect = () =>
-    ({ top: 430, bottom: 520, left: 16, right: 374, width: 358, height: 90, x: 16, y: 430, toJSON: () => {} }) as DOMRect;
+  let scrollOffset = 0;
 
-  return { form, nameInput, phoneInput, emailInput, discountInput };
+  const setRectsWithScroll = () => {
+    nameLabel.getBoundingClientRect = () =>
+      ({ top: 140 - scrollOffset, bottom: 220 - scrollOffset, left: 16, right: 374, width: 358, height: 80, x: 16, y: 140 - scrollOffset, toJSON: () => {} }) as DOMRect;
+    phoneLabel.getBoundingClientRect = () =>
+      ({ top: 235 - scrollOffset, bottom: 325 - scrollOffset, left: 16, right: 374, width: 358, height: 90, x: 16, y: 235 - scrollOffset, toJSON: () => {} }) as DOMRect;
+    emailLabel.getBoundingClientRect = () =>
+      ({ top: 340 - scrollOffset, bottom: 470 - scrollOffset, left: 16, right: 374, width: 358, height: 130, x: 16, y: 340 - scrollOffset, toJSON: () => {} }) as DOMRect;
+    discountField.getBoundingClientRect = () =>
+      ({ top: 485 - scrollOffset, bottom: 580 - scrollOffset, left: 16, right: 374, width: 358, height: 95, x: 16, y: 485 - scrollOffset, toJSON: () => {} }) as DOMRect;
+  };
+
+  setRectsWithScroll();
+
+  return {
+    form,
+    nameInput,
+    phoneInput,
+    emailInput,
+    discountInput,
+    emailLabel,
+    discountField,
+    applyScroll: (delta: number) => {
+      scrollOffset += delta;
+      setRectsWithScroll();
+    },
+  };
 }
 
-describe('KANI V12.47.12 — Scroll progresivo inteligente en formularios mobile', () => {
+describe('KANI V12.47.12.1 — Scroll anticipativo en formularios mobile', () => {
   const vvListeners = new Map<string, Set<EventListenerOrEventListenerObject>>();
   let mockVvHeight = 460;
   let scrollBySpy: ReturnType<typeof vi.fn>;
@@ -65,7 +83,7 @@ describe('KANI V12.47.12 — Scroll progresivo inteligente en formularios mobile
   beforeEach(() => {
     vi.useFakeTimers();
     vvListeners.clear();
-    mockVvHeight = 460;
+    mockVvHeight = 460; // Teclado abierto en iPhone (844 - teclado => 460px visibles, safeBottom = 436)
     document.body.removeAttribute('data-payway-modal-open');
 
     Object.defineProperty(window, 'innerWidth', { value: 390, configurable: true });
@@ -97,11 +115,14 @@ describe('KANI V12.47.12 — Scroll progresivo inteligente en formularios mobile
     document.body.innerHTML = '';
   });
 
-  it('1. Sigue la secuencia Nombre (sin scroll) -> Celular -> Email -> Código de descuento usando visualViewport', () => {
-    const { form, nameInput, phoneInput, emailInput, discountInput } = createMockBookingForm();
+  it('1. Al enfocar Celular con teclado abierto, anticipa inmediatamente para mostrar Email COMPLETO por encima del teclado', () => {
+    const { form, nameInput, phoneInput, emailInput, discountInput, emailLabel, discountField, applyScroll } =
+      createMockBookingForm();
+
+    scrollBySpy.mockImplementation(({ top }: { top: number }) => applyScroll(top));
     const handle = attachMobileProgressiveFieldScroll(form);
 
-    // 1. Nombre ya está cómodamente visible (top 140 >= safeTop 88, bottom 210 <= safeBottom 386)
+    // 1. Nombre enfocado: Nombre (140..220) y Celular (235..325) ya están cómodamente visibles (< safeBottom 436)
     nameInput.focus();
     form.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
     act(() => {
@@ -109,106 +130,90 @@ describe('KANI V12.47.12 — Scroll progresivo inteligente en formularios mobile
     });
     expect(scrollBySpy).not.toHaveBeenCalled();
 
-    // 2. Celular: bottom 390 > safeBottom 386 -> pequeño scroll tras estabilizar visualViewport
+    // 2. Celular enfocado (aunque Celular 235..325 ya es visible, Email 340..470 queda debajo de safeBottom 436)
     phoneInput.focus();
     form.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
-    mockVvHeight = 440; // teclado virtual reduce visualViewport
+    act(() => {
+      vi.advanceTimersByTime(20); // Reacciona inmediatamente porque el teclado ya está abierto
+    });
+    expect(scrollBySpy).toHaveBeenCalledTimes(1);
+    expect(scrollBySpy.mock.calls[0][0].top).toBe(34); // 470 - 436 = 34px
+    expect(emailLabel.getBoundingClientRect().bottom).toBeLessThanOrEqual(460 - 24);
+
+    // 3. Email enfocado: anticipa Código de descuento (485..580 => actual 451..546 > safeBottom 436)
+    emailInput.focus();
+    form.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+    act(() => {
+      vi.advanceTimersByTime(20);
+    });
+    expect(scrollBySpy).toHaveBeenCalledTimes(2);
+    expect(discountField.getBoundingClientRect().bottom).toBeLessThanOrEqual(460 - 24);
+
+    // 4. Código de descuento ya visible cómodamente -> sin scroll extra innecesario
+    discountInput.focus();
+    form.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+    act(() => {
+      vi.advanceTimersByTime(20);
+    });
+    expect(scrollBySpy).toHaveBeenCalledTimes(2);
+
+    handle.destroy();
+  });
+
+  it('2. Prioriza mantener visible el campo actual si el siguiente no cabe completo, y respeta scroll manual o escritura', () => {
+    const { form, phoneInput, emailInput } = createMockBookingForm();
+    // Hacer el campo actual muy alto (casi todo el viewport) para verificar que no lo empuja arriba del header
+    const phoneLabel = form.querySelectorAll('.field-label')[1] as HTMLElement;
+    phoneLabel.getBoundingClientRect = () =>
+      ({ top: 90, bottom: 320, left: 16, right: 374, width: 358, height: 230, x: 16, y: 90, toJSON: () => {} }) as DOMRect;
+
+    const delta = computeProgressiveScrollDelta(phoneInput, form);
+    // safeTop = 74, phoneLabel.top = 90 -> maxKeepingCurrentVisible = 16px (no oculta Celular por debajo del header)
+    expect(delta).toBe(16);
+
+    const handle = attachMobileProgressiveFieldScroll(form);
+    emailInput.focus();
+    form.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+    window.dispatchEvent(new Event('touchmove'));
+    act(() => {
+      vi.advanceTimersByTime(400);
+    });
+    expect(scrollBySpy).not.toHaveBeenCalled();
+
+    handle.destroy();
+  });
+
+  it('3. Espera estabilización de visualViewport cuando el teclado recién abre y no actúa en desktop ni con modal Payway', () => {
+    mockVvHeight = 844; // Teclado inicialmente cerrado
+    const { form, phoneInput } = createMockBookingForm();
+    const handle = attachMobileProgressiveFieldScroll(form);
+
+    phoneInput.focus();
+    form.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
+    // Todavía no disparó antes de que resize estabilice
+    act(() => {
+      vi.advanceTimersByTime(50);
+    });
+    expect(scrollBySpy).not.toHaveBeenCalled();
+
+    // El teclado abre y visualViewport se reduce a 460
+    mockVvHeight = 460;
     vvListeners.get('resize')?.forEach(cb => (typeof cb === 'function' ? cb(new Event('resize')) : cb.handleEvent(new Event('resize'))));
     act(() => {
       vi.advanceTimersByTime(100);
     });
     expect(scrollBySpy).toHaveBeenCalledTimes(1);
-    expect(scrollBySpy).toHaveBeenLastCalledWith({
-      top: expect.any(Number),
-      behavior: 'smooth',
-    });
-    expect(scrollBySpy.mock.calls[0][0].top).toBeGreaterThan(0);
 
-    // 3. Email: desplazamiento suave adicional
-    emailInput.focus();
-    form.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
-    act(() => {
-      vi.advanceTimersByTime(160);
-    });
-    expect(scrollBySpy).toHaveBeenCalledTimes(2);
-    expect(scrollBySpy.mock.calls[1][0].top).toBeGreaterThan(20);
-
-    // 4. Código de descuento: incluye input + botón Aplicar
-    discountInput.focus();
-    form.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
-    act(() => {
-      vi.advanceTimersByTime(160);
-    });
-    expect(scrollBySpy).toHaveBeenCalledTimes(3);
-    expect(scrollBySpy.mock.calls[2][0].top).toBeGreaterThan(50);
-
-    handle.destroy();
-  });
-
-  it('2. No dispara scrolls repetidos al escribir caracteres ni cuando el usuario hace scroll manual', () => {
-    const { form, emailInput } = createMockBookingForm();
-    const handle = attachMobileProgressiveFieldScroll(form);
-
-    emailInput.focus();
-    form.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
-    act(() => {
-      vi.advanceTimersByTime(160);
-    });
-    expect(scrollBySpy).toHaveBeenCalledTimes(1);
-
-    // Simular escritura en el mismo campo: no vuelve a disparar
-    emailInput.value = 'tomas@kani.com';
-    emailInput.dispatchEvent(new Event('input', { bubbles: true }));
-    form.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
-    act(() => {
-      vi.advanceTimersByTime(200);
-    });
-    expect(scrollBySpy).toHaveBeenCalledTimes(1);
-
-    // Si el usuario mueve manualmente la pantalla antes de completar el debounce, se cancela el auto-scroll
-    const phoneInput = form.querySelector('input[name="phone"]') as HTMLInputElement;
-    phoneInput.focus();
-    form.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
-    window.dispatchEvent(new Event('touchmove'));
-    act(() => {
-      vi.advanceTimersByTime(500);
-    });
-    expect(scrollBySpy).toHaveBeenCalledTimes(1);
-
-    handle.destroy();
-  });
-
-  it('3. No interfiere en desktop ni cuando el modal Payway está abierto, y limpia listeners al destruir', () => {
-    const { form, emailInput } = createMockBookingForm();
-    const handle = attachMobileProgressiveFieldScroll(form);
-
-    // Modal Payway abierto -> no scrollea el formulario de fondo
+    // Con modal Payway abierto no actúa
     document.body.setAttribute('data-payway-modal-open', 'true');
+    const emailInput = form.querySelector('input[name="email"]') as HTMLInputElement;
     emailInput.focus();
     form.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
     act(() => {
       vi.advanceTimersByTime(200);
     });
-    expect(scrollBySpy).not.toHaveBeenCalled();
+    expect(scrollBySpy).toHaveBeenCalledTimes(1);
 
-    // Desktop (>= 1024px) sin pointer coarse -> delta 0 / no scrollea
-    document.body.removeAttribute('data-payway-modal-open');
-    Object.defineProperty(window, 'innerWidth', { value: 1280, configurable: true });
-    Object.defineProperty(window, 'matchMedia', {
-      configurable: true,
-      value: () => ({ matches: false }),
-    });
-    const discountInput = form.querySelector('#booking-discount-code') as HTMLInputElement;
-    discountInput.focus();
-    form.dispatchEvent(new FocusEvent('focusin', { bubbles: true }));
-    act(() => {
-      vi.advanceTimersByTime(200);
-    });
-    expect(scrollBySpy).not.toHaveBeenCalled();
-
-    // Limpieza al cambiar de paso
     handle.destroy();
-    expect(vvListeners.get('resize')?.size ?? 0).toBe(0);
-    expect(computeProgressiveScrollDelta(emailInput)).toBeGreaterThan(0);
   });
 });

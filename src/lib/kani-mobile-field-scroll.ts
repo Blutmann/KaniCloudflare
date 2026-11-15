@@ -1,14 +1,17 @@
 /**
- * V12.47.12 · Scroll progresivo inteligente en formularios mobile (/reservar).
+ * V12.47.12.1 · Scroll anticipativo en formularios mobile (/reservar).
  *
- * Ajusta suavemente el contenedor de scroll real cuando un campo recibe foco en mobile,
- * esperando a que `window.visualViewport` estabilice el teclado virtual y respetando
- * siempre el scroll manual del usuario.
+ * Anticipa el siguiente campo de la secuencia (Nombre -> Celular -> Email -> Código de descuento)
+ * usando `window.visualViewport` para que el siguiente campo quede completamente visible
+ * por encima del teclado virtual con un margen de seguridad de 24px, priorizando siempre
+ * mantener visible y utilizable el campo enfocado y respetando el scroll manual del usuario.
  */
 
 export interface ProgressiveScrollHandle {
   destroy: () => void;
 }
+
+const SAFE_BOTTOM_MARGIN_PX = 24;
 
 function isMobileOrTouchViewport(): boolean {
   if (typeof window === 'undefined') return false;
@@ -20,6 +23,11 @@ function isPaywayModalOpen(): boolean {
   if (typeof document === 'undefined') return false;
   if (document.body?.getAttribute('data-payway-modal-open') === 'true') return true;
   return Boolean(document.querySelector('[role="dialog"].payway-checkout'));
+}
+
+function isVirtualKeyboardAlreadyOpen(): boolean {
+  if (typeof window === 'undefined' || !window.visualViewport) return false;
+  return window.visualViewport.height < window.innerHeight - 100;
 }
 
 export function findRealScrollContainer(element: HTMLElement): HTMLElement | Window {
@@ -42,7 +50,7 @@ function getHeaderBottomInset(): number {
   if (!header) return 16;
   const rect = header.getBoundingClientRect();
   if (rect.height <= 0 || rect.bottom <= 0) return 16;
-  return Math.min(Math.max(rect.bottom, 0), 112) + 12;
+  return Math.min(Math.max(rect.bottom, 0), 112) + 10;
 }
 
 function getFocusAnchorElement(target: HTMLElement): HTMLElement {
@@ -54,7 +62,27 @@ function getFocusAnchorElement(target: HTMLElement): HTMLElement {
   );
 }
 
-export function computeProgressiveScrollDelta(target: HTMLElement): number {
+function getNextSequenceAnchor(target: HTMLElement, formElement?: HTMLFormElement | null): HTMLElement | null {
+  const form = formElement ?? (target.closest('form') as HTMLFormElement | null);
+  if (!form) return null;
+
+  const fieldOrder: Array<{ match: string; nextSelector: string }> = [
+    { match: 'input[name="name"]', nextSelector: 'input[name="phone"]' },
+    { match: 'input[name="phone"]', nextSelector: 'input[name="email"]' },
+    { match: 'input[name="email"]', nextSelector: '#booking-discount-code, .booking-discount-field' },
+  ];
+
+  for (const step of fieldOrder) {
+    if (target.matches(step.match)) {
+      const nextEl = form.querySelector(step.nextSelector) as HTMLElement | null;
+      return nextEl ? getFocusAnchorElement(nextEl) : null;
+    }
+  }
+
+  return null;
+}
+
+export function computeProgressiveScrollDelta(target: HTMLElement, formElement?: HTMLFormElement | null): number {
   if (typeof window === 'undefined') return 0;
   const vv = window.visualViewport;
   const visibleTopOffset = vv?.offsetTop ?? 0;
@@ -63,27 +91,43 @@ export function computeProgressiveScrollDelta(target: HTMLElement): number {
 
   const visibleBottom = visibleTopOffset + visibleHeight;
   const safeTop = visibleTopOffset + getHeaderBottomInset();
-  const bottomMargin = Math.round(Math.min(Math.max(visibleHeight * 0.16, 56), 112));
-  const safeBottom = visibleBottom - bottomMargin;
+  const safeBottom = visibleBottom - SAFE_BOTTOM_MARGIN_PX;
 
   if (safeBottom <= safeTop + 24) return 0;
 
-  const anchor = getFocusAnchorElement(target);
-  const rect = anchor.getBoundingClientRect();
+  const currentAnchor = getFocusAnchorElement(target);
+  const currentRect = currentAnchor.getBoundingClientRect();
+  const nextAnchor = getNextSequenceAnchor(target, formElement);
+  const nextRect = nextAnchor ? nextAnchor.getBoundingClientRect() : null;
 
-  // Already comfortably visible: avoid unnecessary scroll
-  if (rect.top >= safeTop && rect.bottom <= safeBottom) {
+  // If current is above safeTop, scroll up enough to keep current visible
+  if (currentRect.top < safeTop) {
+    return currentRect.top - safeTop;
+  }
+
+  // Check if both current and next (when present) are already comfortably visible
+  const bottomBoundaryToCheck = nextRect ? Math.max(currentRect.bottom, nextRect.bottom) : currentRect.bottom;
+  if (currentRect.top >= safeTop && bottomBoundaryToCheck <= safeBottom) {
     return 0;
   }
 
-  if (rect.bottom > safeBottom) {
-    const neededDown = rect.bottom - safeBottom;
-    const maxWithoutHidingTop = Math.max(0, rect.top - safeTop);
-    return Math.min(neededDown, maxWithoutHidingTop);
+  // Scroll down enough to reveal the next field completely, while prioritizing keeping currentRect visible
+  const neededForCurrent = Math.max(0, currentRect.bottom - safeBottom);
+  if (nextRect && nextRect.bottom > safeBottom) {
+    const neededForNext = nextRect.bottom - safeBottom;
+    const maxKeepingCurrentVisible = Math.max(0, currentRect.top - safeTop);
+    if (neededForCurrent > 0) {
+      // Current itself is below safeBottom: ensure current fits first, plus any remaining room up to nextRect
+      return Math.max(neededForCurrent, Math.min(neededForNext, maxKeepingCurrentVisible));
+    }
+    return Math.min(neededForNext, maxKeepingCurrentVisible);
   }
 
-  if (rect.top < safeTop) {
-    return rect.top - safeTop;
+  if (neededForCurrent > 0) {
+    const maxKeepingCurrentTopVisible = Math.max(0, currentRect.top - safeTop);
+    return currentRect.height <= safeBottom - safeTop
+      ? neededForCurrent
+      : Math.min(neededForCurrent, maxKeepingCurrentTopVisible);
   }
 
   return 0;
@@ -121,8 +165,8 @@ export function attachMobileProgressiveFieldScroll(formElement: HTMLFormElement)
     if (document.activeElement !== target) return;
     if (!isMobileOrTouchViewport() || isPaywayModalOpen()) return;
 
-    const deltaY = computeProgressiveScrollDelta(target);
-    if (Math.abs(deltaY) < 6) return;
+    const deltaY = computeProgressiveScrollDelta(target, formElement);
+    if (Math.abs(deltaY) < 4) return;
 
     const container = findRealScrollContainer(target);
     if (typeof container.scrollBy === 'function') {
@@ -145,14 +189,21 @@ export function attachMobileProgressiveFieldScroll(formElement: HTMLFormElement)
 
     // Avoid repeating scroll adjustments while staying inside the same control
     if (lastFocusedTarget === target && activeTarget === null) return;
+    const movingBetweenFormFields = Boolean(lastFocusedTarget && formElement.contains(lastFocusedTarget));
     lastFocusedTarget = target;
     activeTarget = target;
     userScrolledManually = false;
     clearTimers();
 
-    // Give visualViewport time to report keyboard resize if it opens, or settle quickly if already open
+    if (movingBetweenFormFields || isVirtualKeyboardAlreadyOpen()) {
+      // Keyboard already open: react immediately to focus change with a single smooth scroll
+      scheduleEvaluation(16);
+      return;
+    }
+
+    // Keyboard opening: wait for visualViewport resize to stabilize before computing scroll
     scheduleEvaluation(140);
-    maxWaitTimer = window.setTimeout(applyScrollForTarget, 420);
+    maxWaitTimer = window.setTimeout(applyScrollForTarget, 380);
   };
 
   const handleFocusOut = (event: FocusEvent) => {
@@ -166,7 +217,7 @@ export function attachMobileProgressiveFieldScroll(formElement: HTMLFormElement)
 
   const handleViewportResize = () => {
     if (!activeTarget || userScrolledManually) return;
-    scheduleEvaluation(90);
+    scheduleEvaluation(85);
   };
 
   const handleManualUserScroll = () => {
