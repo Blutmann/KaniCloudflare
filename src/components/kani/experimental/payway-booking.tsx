@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Check, CheckCircle2, CircleAlert, HelpCircle, Instagram, Loader2, MapPin } from 'lucide-react';
+import { Check, CheckCircle2, CircleAlert, HelpCircle, Instagram, Loader2, MapPin, X } from 'lucide-react';
 import { Booking, mapBenefitErrorMessage, type BookingPaymentDraft } from '@/components/kani/booking';
 import { validateBenefitCodeQuoteFn } from '@/lib/kani-benefit-codes.functions';
 import { normalizeBenefitCode, type BenefitQuote } from '@/lib/kani-benefit-codes';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { preparePaywayCheckoutFn, payPaywayDepositFn, checkPaywayPaymentStatusFn } from '@/lib/kani-payway.functions';
 import { tokenizePaywayForm } from '@/lib/kani-payway.browser';
 import { PAYWAY_MESSAGES, type PaywayCheckout, type PaywayResult } from '@/lib/kani-payway';
@@ -1131,11 +1131,19 @@ export function PaywayBooking({
       >
         <DialogContent
           className="payway-checkout"
+          showCloseButton={false}
           onEscapeKeyDown={e => { if (paying.current) e.preventDefault(); }}
           onPointerDownOutside={e => { if (paying.current) e.preventDefault(); }}
         >
           <div className="payway-checkout-header">
             <DialogTitle className="payway-checkout-title">Pagá la seña con Payway</DialogTitle>
+            <DialogClose
+              className="payway-modal-close"
+              aria-label="Cerrar"
+              disabled={paying.current}
+            >
+              <X size={16} aria-hidden="true" />
+            </DialogClose>
             <DialogDescription className="payway-checkout-subtitle">
               {checkout
                 ? `Seña: ${money(checkout.depositArs ?? 0)} · Pago seguro · Kani Barber Studio`

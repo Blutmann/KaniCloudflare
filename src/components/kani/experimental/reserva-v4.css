@@ -249,8 +249,58 @@
 }
 
 .payway-checkout-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  column-gap: 12px;
+  row-gap: 5px;
+  align-items: center;
   flex: 0 0 auto;
   min-width: 0;
+}
+
+.payway-checkout-header .payway-checkout-title {
+  grid-column: 1;
+  grid-row: 1;
+  padding-right: 0 !important;
+  margin: 0 !important;
+}
+
+.payway-checkout-header .payway-modal-close {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: center;
+  justify-self: end;
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--border) 65%, transparent);
+  background: transparent;
+  color: var(--muted-foreground);
+  cursor: pointer;
+  padding: 0;
+  transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease, transform 150ms ease;
+}
+
+.payway-checkout-header .payway-modal-close:hover:not(:disabled) {
+  color: var(--foreground);
+  background: color-mix(in srgb, var(--accent) 55%, transparent);
+}
+
+.payway-checkout-header .payway-modal-close:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.payway-checkout-header .payway-checkout-subtitle {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  margin-top: 0 !important;
 }
 
 .payway-card-form {
@@ -505,26 +555,29 @@
 
 @media (max-width: 640px) {
   .payway-checkout:has(.payway-card-form) {
-    max-height: calc(100dvh - max(16px, env(safe-area-inset-top, 8px)) - max(16px, env(safe-area-inset-bottom, 8px)));
-    padding: 14px 14px max(12px, env(safe-area-inset-bottom, 12px));
+    max-height: min(94dvh, calc(100dvh - max(16px, env(safe-area-inset-top, 8px)) - max(16px, env(safe-area-inset-bottom, 8px))));
+    padding: 18px 16px max(14px, env(safe-area-inset-bottom, 14px));
+  }
+  .payway-checkout-header {
+    row-gap: 4px;
   }
   .payway-checkout-title {
     font-size: 17.5px !important;
   }
   .payway-checkout-subtitle {
     font-size: 12.5px !important;
-    margin-top: 2px !important;
+    margin-top: 0 !important;
   }
   .payway-card-form {
-    margin-top: 8px;
+    margin-top: 14px;
   }
   .payway-card-form fieldset {
-    gap: 8px;
+    gap: 11px;
   }
   .payway-card-form label,
   .payway-field-label,
   .payway-field-group {
-    gap: 4px;
+    gap: 5px;
     font-size: 12.5px;
   }
   .payway-field-label-text {
@@ -533,10 +586,10 @@
   .payway-legal-disclaimer {
     margin: 4px 0 2px !important;
     font-size: 11px !important;
-    line-height: 1.35 !important;
+    line-height: 1.4 !important;
   }
   .payway-checkout-footer {
-    padding-top: 8px;
+    padding-top: 12px;
   }
   .payway-submit-btn {
     min-height: 46px;

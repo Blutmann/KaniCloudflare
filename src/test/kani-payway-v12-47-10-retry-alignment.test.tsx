@@ -122,6 +122,9 @@ describe('KANI v12.47.10 — Alineación CVV/DNI y Reintento de Descuentos en Pa
     expect(reservaV4Css).toMatch(/grid-template-columns:\s*minmax\(0,\s*0\.35fr\)\s+26px\s+minmax\(0,\s*0\.65fr\);/);
     expect(liquidCss).toContain(':not(.payway-help-trigger)');
     expect(paywayCode).toContain('payway-cvv-label-mobile');
+    expect(paywayCode).toContain('showCloseButton={false}');
+    expect(paywayCode).toContain('className="payway-modal-close"');
+    expect(reservaV4Css).toMatch(/\.payway-checkout-header\s*\{[\s\S]*?display:\s*grid;[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\)\s+auto;/);
     expect(reservaV4Css).toMatch(/#card-holder-dni\s*\{[\s\S]*?height:\s*42px\s*!important;/);
     expect(liquidCss).toMatch(/\.payway-discount-retry-input\s*\{[\s\S]*?font-size:\s*16px\s*!important;/);
   });
@@ -142,6 +145,7 @@ describe('KANI v12.47.10 — Alineación CVV/DNI y Reintento de Descuentos en Pa
 
     const { dialog } = await navigateToStepDatosAndOpenPayway();
     expect(within(dialog).getByRole('heading', { name: 'Pagá la seña con Payway' })).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: 'Cerrar' })).toBeInTheDocument();
     expect(within(dialog).getByText('Seña: $5.000 · Pago seguro · Kani Barber Studio')).toBeInTheDocument();
     expect(within(dialog).getByText('Código de seguridad (CVV)')).toBeInTheDocument();
     expect(
