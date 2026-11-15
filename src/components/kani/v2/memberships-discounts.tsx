@@ -720,12 +720,9 @@ export function V2MembershipsAndDiscounts({
           if (!open && !busy) setCreateOpen(false);
         }}
       >
-        <DialogContent className="v2-dialog" style={{ maxWidth: "540px" }}>
+        <DialogContent className="v2-dialog" style={{ maxWidth: "540px" }} aria-describedby={undefined}>
           <DialogTitle>Nueva membresía prepagada</DialogTitle>
-          <DialogDescription>
-            Configurá la combinación de servicios. Los precios actuales quedan congelados en la membresía al crearse.
-          </DialogDescription>
-          <form onSubmit={handleCreateSubmit} style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "8px" }}>
+          <form onSubmit={handleCreateSubmit} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
               <label className="v2-field">
                 <span className="v2-field-label">Cliente titular (individual)</span>
