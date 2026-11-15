@@ -1,17 +1,19 @@
 /**
- * V12.47.12.1 · Scroll anticipativo en formularios mobile (/reservar).
+ * V12.47.12.2 · Corrección definitiva del scroll anticipativo en iOS (/reservar).
  *
- * Anticipa el siguiente campo de la secuencia (Nombre -> Celular -> Email -> Código de descuento)
- * usando `window.visualViewport` para que el siguiente campo quede completamente visible
- * por encima del teclado virtual con un margen de seguridad de 24px, priorizando siempre
- * mantener visible y utilizable el campo enfocado y respetando el scroll manual del usuario.
+ * Considera:
+ * 1. Área realmente visible en `window.visualViewport` (teclado virtual abierto).
+ * 2. Obstrucción visual de la barra inferior fija (`.booking-cta` / «Volver» / «Pagar seña»).
+ * 3. Límite máximo de scroll disponible del contenedor real (agregando padding temporal al form
+ *    solo mientras el teclado/foco está activo si falta espacio desplazable al final).
+ * 4. Reajuste único tras el scroll nativo de iOS Safari si el campo siguiente aún queda obstruido.
  */
 
 export interface ProgressiveScrollHandle {
   destroy: () => void;
 }
 
-const SAFE_BOTTOM_MARGIN_PX = 24;
+const SAFE_BOTTOM_MARGIN_PX = 20;
 
 function isMobileOrTouchViewport(): boolean {
   if (typeof window === 'undefined') return false;
@@ -50,7 +52,34 @@ function getHeaderBottomInset(): number {
   if (!header) return 16;
   const rect = header.getBoundingClientRect();
   if (rect.height <= 0 || rect.bottom <= 0) return 16;
-  return Math.min(Math.max(rect.bottom, 0), 112) + 10;
+  return Math.min(Math.max(rect.bottom, 0), 112) + 8;
+}
+
+function getFixedBottomBarTop(visibleBottom: number, safeTop: number): number {
+  if (typeof document === 'undefined') return visibleBottom;
+  const ctaRoot = document.querySelector('.booking-cta:not(.mobile-menu-cta)') as HTMLElement | null;
+  if (!ctaRoot) return visibleBottom;
+
+  const ctaStyle = window.getComputedStyle(ctaRoot);
+  if (ctaStyle.display === 'none' || ctaStyle.visibility === 'hidden') {
+    return visibleBottom;
+  }
+
+  const ctaVisualTarget =
+    (ctaRoot.querySelector('.booking-cta-inner') as HTMLElement | null) ?? ctaRoot;
+  const rect = ctaVisualTarget.getBoundingClientRect();
+  if (rect.height <= 0 || rect.top <= safeTop + 24) {
+    return visibleBottom;
+  }
+
+  // On iOS Safari, a fixed bottom bar can sit either at the bottom of visualViewport
+  // or slightly above the keyboard; whenever it overlaps the visible viewport,
+  // treat its top edge as the real unobstructed bottom boundary.
+  if (rect.top < visibleBottom) {
+    return Math.min(visibleBottom, rect.top);
+  }
+
+  return visibleBottom;
 }
 
 function getFocusAnchorElement(target: HTMLElement): HTMLElement {
@@ -91,7 +120,8 @@ export function computeProgressiveScrollDelta(target: HTMLElement, formElement?:
 
   const visibleBottom = visibleTopOffset + visibleHeight;
   const safeTop = visibleTopOffset + getHeaderBottomInset();
-  const safeBottom = visibleBottom - SAFE_BOTTOM_MARGIN_PX;
+  const unobstructedBottom = getFixedBottomBarTop(visibleBottom, safeTop);
+  const safeBottom = unobstructedBottom - SAFE_BOTTOM_MARGIN_PX;
 
   if (safeBottom <= safeTop + 24) return 0;
 
@@ -105,19 +135,19 @@ export function computeProgressiveScrollDelta(target: HTMLElement, formElement?:
     return currentRect.top - safeTop;
   }
 
-  // Check if both current and next (when present) are already comfortably visible
+  // Check if both current and next (when present) are already comfortably visible above fixed CTA
   const bottomBoundaryToCheck = nextRect ? Math.max(currentRect.bottom, nextRect.bottom) : currentRect.bottom;
   if (currentRect.top >= safeTop && bottomBoundaryToCheck <= safeBottom) {
     return 0;
   }
 
-  // Scroll down enough to reveal the next field completely, while prioritizing keeping currentRect visible
+  // Scroll down enough to reveal the next field completely above keyboard + fixed CTA,
+  // while prioritizing keeping the current focused field visible below the header.
   const neededForCurrent = Math.max(0, currentRect.bottom - safeBottom);
   if (nextRect && nextRect.bottom > safeBottom) {
     const neededForNext = nextRect.bottom - safeBottom;
     const maxKeepingCurrentVisible = Math.max(0, currentRect.top - safeTop);
     if (neededForCurrent > 0) {
-      // Current itself is below safeBottom: ensure current fits first, plus any remaining room up to nextRect
       return Math.max(neededForCurrent, Math.min(neededForNext, maxKeepingCurrentVisible));
     }
     return Math.min(neededForNext, maxKeepingCurrentVisible);
@@ -133,23 +163,60 @@ export function computeProgressiveScrollDelta(target: HTMLElement, formElement?:
   return 0;
 }
 
+function ensureScrollRoom(
+  container: HTMLElement | Window,
+  formElement: HTMLFormElement,
+  neededDeltaY: number,
+  currentTempPadding: number,
+): number {
+  if (neededDeltaY <= 0) return currentTempPadding;
+
+  const vvHeight = window.visualViewport?.height ?? window.innerHeight;
+  let availableRoom = 0;
+
+  if (container === window) {
+    const docEl = document.scrollingElement ?? document.documentElement;
+    const scrollHeight = docEl?.scrollHeight ?? 0;
+    const scrollTop = window.scrollY ?? docEl?.scrollTop ?? 0;
+    availableRoom = Math.max(0, scrollHeight - vvHeight - scrollTop);
+  } else {
+    const el = container as HTMLElement;
+    availableRoom = Math.max(0, el.scrollHeight - el.clientHeight - el.scrollTop);
+  }
+
+  if (neededDeltaY <= availableRoom) {
+    return currentTempPadding;
+  }
+
+  const extraNeeded = Math.ceil(neededDeltaY - availableRoom + 24);
+  const nextPadding = currentTempPadding + extraNeeded;
+  formElement.style.paddingBottom = `${nextPadding}px`;
+  return nextPadding;
+}
+
 export function attachMobileProgressiveFieldScroll(formElement: HTMLFormElement): ProgressiveScrollHandle {
   if (typeof window === 'undefined') {
     return { destroy: () => {} };
   }
 
-  let debounceTimer: number | null = null;
+  let primaryTimer: number | null = null;
+  let settleVerifyTimer: number | null = null;
   let maxWaitTimer: number | null = null;
   let activeTarget: HTMLElement | null = null;
   let lastFocusedTarget: HTMLElement | null = null;
   let userScrolledManually = false;
+  let tempBottomPaddingPx = 0;
 
   const vv = window.visualViewport;
 
   const clearTimers = () => {
-    if (debounceTimer !== null) {
-      window.clearTimeout(debounceTimer);
-      debounceTimer = null;
+    if (primaryTimer !== null) {
+      window.clearTimeout(primaryTimer);
+      primaryTimer = null;
+    }
+    if (settleVerifyTimer !== null) {
+      window.clearTimeout(settleVerifyTimer);
+      settleVerifyTimer = null;
     }
     if (maxWaitTimer !== null) {
       window.clearTimeout(maxWaitTimer);
@@ -157,28 +224,60 @@ export function attachMobileProgressiveFieldScroll(formElement: HTMLFormElement)
     }
   };
 
-  const applyScrollForTarget = () => {
-    clearTimers();
-    const target = activeTarget;
-    activeTarget = null;
-    if (!target || userScrolledManually || !target.isConnected) return;
-    if (document.activeElement !== target) return;
-    if (!isMobileOrTouchViewport() || isPaywayModalOpen()) return;
-
-    const deltaY = computeProgressiveScrollDelta(target, formElement);
-    if (Math.abs(deltaY) < 4) return;
-
-    const container = findRealScrollContainer(target);
-    if (typeof container.scrollBy === 'function') {
-      container.scrollBy({ top: deltaY, behavior: 'smooth' });
+  const resetTemporaryPadding = () => {
+    if (tempBottomPaddingPx > 0) {
+      formElement.style.removeProperty('padding-bottom');
+      formElement.style.paddingBottom = '';
+      tempBottomPaddingPx = 0;
     }
   };
 
-  const scheduleEvaluation = (delayMs: number) => {
-    if (debounceTimer !== null) {
-      window.clearTimeout(debounceTimer);
+  const runScrollPass = (isVerificationPass: boolean) => {
+    const target = activeTarget;
+    if (!target || userScrolledManually || !target.isConnected) {
+      if (!isVerificationPass) activeTarget = null;
+      return;
     }
-    debounceTimer = window.setTimeout(applyScrollForTarget, delayMs);
+    if (document.activeElement !== target) {
+      activeTarget = null;
+      return;
+    }
+    if (!isMobileOrTouchViewport() || isPaywayModalOpen()) {
+      activeTarget = null;
+      return;
+    }
+
+    const deltaY = computeProgressiveScrollDelta(target, formElement);
+    if (Math.abs(deltaY) < (isVerificationPass ? 8 : 4)) {
+      if (isVerificationPass) activeTarget = null;
+      return;
+    }
+
+    const container = findRealScrollContainer(target);
+    tempBottomPaddingPx = ensureScrollRoom(container, formElement, deltaY, tempBottomPaddingPx);
+
+    if (typeof container.scrollBy === 'function') {
+      container.scrollBy({ top: deltaY, behavior: 'smooth' });
+    }
+
+    if (isVerificationPass) {
+      activeTarget = null;
+    }
+  };
+
+  const scheduleScrollSequence = (initialDelayMs: number) => {
+    clearTimers();
+    primaryTimer = window.setTimeout(() => {
+      primaryTimer = null;
+      runScrollPass(false);
+    }, initialDelayMs);
+
+    // Single post-native-scroll verification pass for iOS Safari, which can scroll
+    // natively after focusin and leave the next field behind the fixed bottom bar.
+    settleVerifyTimer = window.setTimeout(() => {
+      settleVerifyTimer = null;
+      runScrollPass(true);
+    }, initialDelayMs + 190);
   };
 
   const handleFocusIn = (event: FocusEvent) => {
@@ -187,23 +286,22 @@ export function attachMobileProgressiveFieldScroll(formElement: HTMLFormElement)
     if (!target.matches('input, textarea, select')) return;
     if (!isMobileOrTouchViewport() || isPaywayModalOpen()) return;
 
-    // Avoid repeating scroll adjustments while staying inside the same control
     if (lastFocusedTarget === target && activeTarget === null) return;
     const movingBetweenFormFields = Boolean(lastFocusedTarget && formElement.contains(lastFocusedTarget));
     lastFocusedTarget = target;
     activeTarget = target;
     userScrolledManually = false;
-    clearTimers();
 
     if (movingBetweenFormFields || isVirtualKeyboardAlreadyOpen()) {
-      // Keyboard already open: react immediately to focus change with a single smooth scroll
-      scheduleEvaluation(16);
+      scheduleScrollSequence(50);
       return;
     }
 
-    // Keyboard opening: wait for visualViewport resize to stabilize before computing scroll
-    scheduleEvaluation(140);
-    maxWaitTimer = window.setTimeout(applyScrollForTarget, 380);
+    scheduleScrollSequence(140);
+    maxWaitTimer = window.setTimeout(() => {
+      maxWaitTimer = null;
+      runScrollPass(true);
+    }, 420);
   };
 
   const handleFocusOut = (event: FocusEvent) => {
@@ -212,12 +310,18 @@ export function attachMobileProgressiveFieldScroll(formElement: HTMLFormElement)
       lastFocusedTarget = null;
       activeTarget = null;
       clearTimers();
+      resetTemporaryPadding();
     }
   };
 
   const handleViewportResize = () => {
+    if (!isVirtualKeyboardAlreadyOpen()) {
+      clearTimers();
+      resetTemporaryPadding();
+      return;
+    }
     if (!activeTarget || userScrolledManually) return;
-    scheduleEvaluation(85);
+    scheduleScrollSequence(90);
   };
 
   const handleManualUserScroll = () => {
@@ -236,6 +340,7 @@ export function attachMobileProgressiveFieldScroll(formElement: HTMLFormElement)
   return {
     destroy: () => {
       clearTimers();
+      resetTemporaryPadding();
       formElement.removeEventListener('focusin', handleFocusIn);
       formElement.removeEventListener('focusout', handleFocusOut);
       vv?.removeEventListener('resize', handleViewportResize);
