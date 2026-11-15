@@ -212,15 +212,8 @@ function InteractiveCard({
     }, LIQUID_GLASS_MOTION.durations.livingSettleMs);
   };
 
-  const animateState = shouldReduceMotion
-    ? undefined
-    : isCalendarDay
-      ? { scale: isSelected ? 1.03 : 1 }
-      : isLargeCard
-        ? { scale: isSelected ? 1.012 : 1, y: isSelected ? -1.5 : 0 }
-        : isActionButton
-          ? undefined
-          : { y: isSelected ? -1.5 : 0 };
+  // No dejar transform persistente en reposo/selección para no aislar backdrop-filter en Safari iOS/WebKit.
+  const animateState = undefined;
 
   return (
     <motion.button
