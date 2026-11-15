@@ -1,7 +1,8 @@
 import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { Check, Clock3, Coffee, CalendarDays, UserRound, Users, ChevronLeft, ChevronRight, ArrowLeft, CircleAlert, MapPin, Instagram, Tag, Loader2, X } from 'lucide-react';
 import { validateBenefitCodeQuoteFn } from '@/lib/kani-benefit-codes.functions';
-import type { BenefitQuote } from '@/lib/kani-benefit-codes';
+import { normalizeBenefitCode, type BenefitQuote } from '@/lib/kani-benefit-codes';
+import { readConfirmationSoundEnabled, unlockConfirmationAudio } from '@/components/kani/experimental/liquid-glass-feedback';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { services, barbers, publicBarbers, isPublicBookingBarber, serviceFor, money, bookingEndDateFor, parseDate, isoDate, dateLabel, isBookingDate, getEffectiveServicePrice, barberInstagramHandles, type ServiceId, type Barber, type Appointment } from '@/lib/kani-model';
@@ -36,7 +37,23 @@ export type BookingPaymentDraft = {
   name: string; email: string; phone: string; notes: string;
   benefitCode?: string;
   benefitQuote?: BenefitQuote;
+  invalidBenefitNotice?: string;
 };
+const BENEFIT_AUTO_DEBOUNCE_MS = 600;
+const BENEFIT_CLIENT_CACHE_TTL_MS = 20_000;
+const BENEFIT_AUTO_WINDOW_MS = 30_000;
+const BENEFIT_AUTO_MAX_CALLS = 10;
+const INVALID_BENEFIT_PAYWAY_NOTICE =
+  'No pudimos aplicar el código de descuento. Podés continuar con el importe habitual.';
+
+function isAutoValidatableBenefitCode(rawCode: string): boolean {
+  const normalized = normalizeBenefitCode(rawCode);
+  if (!normalized || normalized.length < 5 || normalized.length > 32) return false;
+  if (!/^[A-Z0-9-]+$/.test(normalized)) return false;
+  if (normalized.startsWith('-') || normalized.endsWith('-') || normalized.includes('--')) return false;
+  if (/^KANI-?$/i.test(normalized)) return false;
+  return normalized.replace(/-/g, '').length >= 5;
+}
 type FieldStatus = 'idle' | 'valid' | 'invalid';
 
 function fieldStatus(field: ContactField, values: ContactValues, country: PhoneCountry, touched: boolean): FieldStatus {
@@ -97,6 +114,11 @@ function mapBenefitErrorMessage(rawError: unknown): string {
     lower.includes('bloque')
   ) {
     return 'Este código está en uso. Intentá nuevamente más tarde.';
+  }
+
+  // Límite de frecuencia
+  if (lower.includes('demasiados intentos') || lower.includes('rate_limit')) {
+    return 'Demasiados intentos en poco tiempo. Esperá unos segundos e intentá nuevamente.';
   }
 
   // Inválido o inexistente
@@ -205,11 +227,16 @@ export function Booking({
   const [successAlertVisible, setSuccessAlertVisible] = useState(false);
   const successTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const benefitValidationSeqRef = useRef(0);
+  const benefitDebounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const benefitQuoteCacheRef = useRef<
+    Map<string, { valid: boolean; quote: BenefitQuote | null; errorMessage: string | null; at: number }>
+  >(new Map());
+  const benefitAutoTimestampsRef = useRef<number[]>([]);
   const benefitValidationPromiseRef = useRef<{
     key: string;
     promise: Promise<{ valid: boolean; quote: BenefitQuote | null; errorMessage: string | null }>;
   } | null>(null);
-  const normalizedBenefitInput = benefitCodeInput.trim().toUpperCase();
+  const normalizedBenefitInput = normalizeBenefitCode(benefitCodeInput);
   const hasBypassedInvalidCode = Boolean(
     isLiquidBooking &&
       normalizedBenefitInput &&
@@ -512,10 +539,10 @@ export function Booking({
   const validateBenefitCodeNow = useCallback(
     async (
       rawCode: string,
-      options?: { showSuccessBanner?: boolean },
+      options?: { showSuccessBanner?: boolean; autoTyping?: boolean; forceFresh?: boolean },
     ): Promise<{ valid: boolean; quote: BenefitQuote | null; errorMessage: string | null }> => {
       const cleanCode = rawCode.trim();
-      const normalizedCode = cleanCode.toUpperCase();
+      const normalizedCode = normalizeBenefitCode(cleanCode);
       if (!normalizedCode) {
         return { valid: false, quote: null, errorMessage: null };
       }
@@ -524,13 +551,48 @@ export function Booking({
       const targetBarber = barber ?? undefined;
       const requestKey = `${normalizedCode}|${targetServiceName}|${targetBarber ?? ''}`;
 
+      // Deduplicar consultas idénticas recientes dentro de la ventana segura de caché cliente
+      const cached = benefitQuoteCacheRef.current.get(requestKey);
+      const cacheTtlMs = options?.forceFresh ? 2_500 : BENEFIT_CLIENT_CACHE_TTL_MS;
+      if (cached && Date.now() - cached.at < cacheTtlMs) {
+        if (cached.valid && cached.quote) {
+          setAppliedBenefit(cached.quote);
+          setBenefitErrorMessage(null);
+          setBypassedInvalidCode(null);
+        } else {
+          setAppliedBenefit(null);
+          if (!options?.autoTyping) {
+            setBenefitErrorMessage(cached.errorMessage);
+          }
+        }
+        return { valid: cached.valid, quote: cached.quote, errorMessage: cached.errorMessage };
+      }
+
       if (benefitValidationPromiseRef.current?.key === requestKey) {
-        return benefitValidationPromiseRef.current.promise;
+        const inFlightResult = await benefitValidationPromiseRef.current.promise;
+        if (!options?.autoTyping && !inFlightResult.valid && inFlightResult.errorMessage) {
+          setAppliedBenefit(null);
+          setBenefitErrorMessage(inFlightResult.errorMessage);
+        }
+        return inFlightResult;
+      }
+
+      // Límite razonable de frecuencia para validación automática mientras se escribe
+      if (options?.autoTyping) {
+        const nowTs = Date.now();
+        const recentAuto = benefitAutoTimestampsRef.current.filter((ts) => nowTs - ts < BENEFIT_AUTO_WINDOW_MS);
+        benefitAutoTimestampsRef.current = recentAuto;
+        if (recentAuto.length >= BENEFIT_AUTO_MAX_CALLS) {
+          return { valid: false, quote: null, errorMessage: null };
+        }
+        recentAuto.push(nowTs);
       }
 
       const seq = ++benefitValidationSeqRef.current;
       setBenefitValidationLoading(true);
-      setBenefitErrorMessage(null);
+      if (!options?.autoTyping) {
+        setBenefitErrorMessage(null);
+      }
       setBypassedInvalidCode(null);
 
       const promise = (async (): Promise<{ valid: boolean; quote: BenefitQuote | null; errorMessage: string | null }> => {
@@ -546,6 +608,12 @@ export function Booking({
             return { valid: false, quote: null, errorMessage: null };
           }
           if (quote.valid) {
+            benefitQuoteCacheRef.current.set(requestKey, {
+              valid: true,
+              quote,
+              errorMessage: null,
+              at: Date.now(),
+            });
             setAppliedBenefit(quote);
             setBenefitErrorMessage(null);
             setBypassedInvalidCode(null);
@@ -559,8 +627,16 @@ export function Booking({
             return { valid: true, quote, errorMessage: null };
           }
           const friendly = mapBenefitErrorMessage(quote.message || quote.error);
+          benefitQuoteCacheRef.current.set(requestKey, {
+            valid: false,
+            quote: null,
+            errorMessage: friendly,
+            at: Date.now(),
+          });
           setAppliedBenefit(null);
-          setBenefitErrorMessage(friendly);
+          if (!options?.autoTyping) {
+            setBenefitErrorMessage(friendly);
+          }
           return { valid: false, quote: null, errorMessage: friendly };
         } catch (err: unknown) {
           if (seq !== benefitValidationSeqRef.current) {
@@ -568,10 +644,12 @@ export function Booking({
           }
           const friendly = mapBenefitErrorMessage(err);
           setAppliedBenefit(null);
-          setBenefitErrorMessage(friendly);
+          if (!options?.autoTyping) {
+            setBenefitErrorMessage(friendly);
+          }
           return { valid: false, quote: null, errorMessage: friendly };
         } finally {
-          if (benefitValidationPromiseRef.current?.key === requestKey) {
+          if (benefitValidationPromiseRef.current?.promise === promise) {
             benefitValidationPromiseRef.current = null;
           }
           if (seq === benefitValidationSeqRef.current) {
@@ -588,11 +666,23 @@ export function Booking({
 
   const applyBenefitCode = useCallback(async () => {
     const raw = benefitCodeInput.trim();
-    if (!raw || benefitValidationLoading) return;
-    await validateBenefitCodeNow(raw, { showSuccessBanner: !isLiquidBooking });
-  }, [benefitCodeInput, benefitValidationLoading, isLiquidBooking, validateBenefitCodeNow]);
+    if (!raw) return;
+    if (benefitDebounceTimerRef.current) {
+      clearTimeout(benefitDebounceTimerRef.current);
+      benefitDebounceTimerRef.current = null;
+    }
+    await validateBenefitCodeNow(raw, {
+      showSuccessBanner: !isLiquidBooking,
+      autoTyping: false,
+      forceFresh: true,
+    });
+  }, [benefitCodeInput, isLiquidBooking, validateBenefitCodeNow]);
 
   const removeBenefitCode = useCallback(() => {
+    if (benefitDebounceTimerRef.current) {
+      clearTimeout(benefitDebounceTimerRef.current);
+      benefitDebounceTimerRef.current = null;
+    }
     benefitValidationSeqRef.current += 1;
     benefitValidationPromiseRef.current = null;
     setBenefitValidationLoading(false);
@@ -607,8 +697,38 @@ export function Booking({
   useEffect(() => {
     return () => {
       if (successTimeoutRef.current) clearTimeout(successTimeoutRef.current);
+      if (benefitDebounceTimerRef.current) clearTimeout(benefitDebounceTimerRef.current);
     };
   }, []);
+
+  // V12.46.4: Validación automática debounced (~600ms) en /reservar-turno-liquid sin errores prematuros al escribir
+  useEffect(() => {
+    if (benefitDebounceTimerRef.current) {
+      clearTimeout(benefitDebounceTimerRef.current);
+      benefitDebounceTimerRef.current = null;
+    }
+    if (!isLiquidBooking || step !== 4 || appliedBenefit) {
+      return;
+    }
+    if (!isAutoValidatableBenefitCode(benefitCodeInput)) {
+      return;
+    }
+    const pendingCode = benefitCodeInput;
+    benefitDebounceTimerRef.current = setTimeout(() => {
+      benefitDebounceTimerRef.current = null;
+      void validateBenefitCodeNow(pendingCode, {
+        showSuccessBanner: false,
+        autoTyping: true,
+      });
+    }, BENEFIT_AUTO_DEBOUNCE_MS);
+
+    return () => {
+      if (benefitDebounceTimerRef.current) {
+        clearTimeout(benefitDebounceTimerRef.current);
+        benefitDebounceTimerRef.current = null;
+      }
+    };
+  }, [appliedBenefit, barber, benefitCodeInput, isLiquidBooking, selected, service, step, validateBenefitCodeNow]);
 
   // Revalidar y recalcular si cambia el servicio o el barbero
   useEffect(() => {
@@ -1036,7 +1156,14 @@ export function Booking({
       return;
     }
 
+    if (benefitDebounceTimerRef.current) {
+      clearTimeout(benefitDebounceTimerRef.current);
+      benefitDebounceTimerRef.current = null;
+    }
+
     let resolvedBenefitForSubmit: BenefitQuote | null = appliedBenefit;
+    let invalidBenefitNotice: string | undefined;
+
     if (isLiquidBooking && normalizedBenefitInput) {
       const shouldBypass = Boolean(options?.bypassInvalidBenefit) || hasBypassedInvalidCode;
       if (shouldBypass) {
@@ -1050,12 +1177,20 @@ export function Booking({
           setError('');
           const validation = await validateBenefitCodeNow(benefitCodeInput.trim(), {
             showSuccessBanner: false,
+            autoTyping: false,
           });
-          if (!validation.valid || !validation.quote) {
-            setSubmitting(false);
-            return;
+          if (validation.valid && validation.quote) {
+            resolvedBenefitForSubmit = validation.quote;
+          } else {
+            resolvedBenefitForSubmit = null;
+            if (onPaymentRequest) {
+              // V12.46.4: Conservar código original en el formulario y abrir Payway con importe habitual + aviso visible.
+              invalidBenefitNotice = INVALID_BENEFIT_PAYWAY_NOTICE;
+            } else {
+              setSubmitting(false);
+              return;
+            }
           }
-          resolvedBenefitForSubmit = validation.quote;
         }
       }
     }
@@ -1126,7 +1261,8 @@ export function Booking({
           date, time, name: contact.name.trim(), phone: normalizedPhone.e164,
           email: contact.email.trim(), notes: contact.notes,
           benefitCode: resolvedBenefitForSubmit?.code,
-          benefitQuote: resolvedBenefitForSubmit ?? undefined });
+          benefitQuote: resolvedBenefitForSubmit ?? undefined,
+          ...(invalidBenefitNotice ? { invalidBenefitNotice } : {}) });
       } catch (cause: any) {
         if (isAvailabilityConflictError(cause)) {
           openSlotUnavailableRecovery({
@@ -1837,8 +1973,15 @@ export function Booking({
                           spellCheck="false"
                           placeholder="KANI-XXXX-XXXX-XXXX"
                           value={benefitCodeInput}
-                          disabled={benefitValidationLoading}
+                          disabled={!isLiquidBooking && benefitValidationLoading}
                           onChange={(e) => {
+                            if (benefitDebounceTimerRef.current) {
+                              clearTimeout(benefitDebounceTimerRef.current);
+                              benefitDebounceTimerRef.current = null;
+                            }
+                            benefitValidationSeqRef.current += 1;
+                            benefitValidationPromiseRef.current = null;
+                            setBenefitValidationLoading(false);
                             setBenefitCodeInput(e.target.value.toUpperCase());
                             setBenefitErrorMessage(null);
                             setBypassedInvalidCode(null);
@@ -2242,7 +2385,14 @@ export function Booking({
                     ? 'Reservar turno'
                     : paymentActionLabel ?? (isV5 ? `Pagar seña ${money(depositArs)}` : 'Pagar seña'))
                 : 'Continuar';
-              const nextHandler = isFinalStep ? () => { void submit(); } : next;
+              const nextHandler = isFinalStep
+                ? () => {
+                    if (isLiquidBooking && readConfirmationSoundEnabled()) {
+                      unlockConfirmationAudio();
+                    }
+                    void submit();
+                  }
+                : next;
               return MotionCardButton ? (
                 <MotionCardButton tapScale={0.986} disabled={nextDisabled} className="action-positive booking-next-button h-12 px-6" onClick={nextHandler}>
                   {nextLabel}

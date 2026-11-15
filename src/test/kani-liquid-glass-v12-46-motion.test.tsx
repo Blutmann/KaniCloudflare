@@ -406,8 +406,8 @@ describe('Liquid Glass V12.46.1 — Liquid Glass Motion System (Servicio, Barber
     expect(triggerSelectionHaptic('select', false)).toBe(true);
     expect(vibrateMock).toHaveBeenCalledWith(10);
 
-    // Sonido desactivado por defecto y sintetizado cálido/extendido (~515ms) solo al activarse + 1 vez por reserva
-    const createdOscillators: Array<{ duration: number }> = [];
+    // V12.46.4: Sonido activo por defecto en Liquid Glass, persistencia al silenciar y resonancia cálida de ~890ms (800–950ms)
+    const createdOscillators: Array<{ startOffset: number; duration: number; endOffset: number }> = [];
     const lowpassFreqCalls: Array<{ fn: string; value: number }> = [];
     class FakeAudioContext {
       state = 'running';
@@ -445,7 +445,11 @@ describe('Liquid Glass V12.46.1 — Liquid Glass Motion System (Servicio, Barber
             started = when;
           },
           stop: (when = 0) => {
-            createdOscillators.push({ duration: when - started });
+            createdOscillators.push({
+              startOffset: started - 1.0,
+              duration: when - started,
+              endOffset: when - 1.0,
+            });
           },
         };
       }
@@ -456,6 +460,8 @@ describe('Liquid Glass V12.46.1 — Liquid Glass Motion System (Servicio, Barber
       value: FakeAudioContext,
     });
 
+    expect(readConfirmationSoundEnabled()).toBe(true);
+    writeConfirmationSoundEnabled(false);
     expect(readConfirmationSoundEnabled()).toBe(false);
     expect(playConfirmationChime('apt-1')).toBe(false);
     expect(createdOscillators).toHaveLength(0);
@@ -463,14 +469,13 @@ describe('Liquid Glass V12.46.1 — Liquid Glass Motion System (Servicio, Barber
     writeConfirmationSoundEnabled(true);
     expect(readConfirmationSoundEnabled()).toBe(true);
     expect(playConfirmationChime('apt-1')).toBe(true);
-    expect(createdOscillators).toHaveLength(3);
-    for (const osc of createdOscillators) {
-      expect(osc.duration).toBeGreaterThanOrEqual(0.34);
-      expect(osc.duration).toBeLessThanOrEqual(0.52);
-    }
+    expect(createdOscillators).toHaveLength(4);
+    const maxEndMs = Math.max(...createdOscillators.map(o => o.endOffset * 1000));
+    expect(maxEndMs).toBeGreaterThanOrEqual(800);
+    expect(maxEndMs).toBeLessThanOrEqual(950);
     expect(lowpassFreqCalls).toEqual([
-      { fn: 'set', value: 2600 },
-      { fn: 'ramp', value: 1400 },
+      { fn: 'set', value: 2400 },
+      { fn: 'ramp', value: 1150 },
     ]);
 
     // Nunca se repite para una reserva ya confirmada

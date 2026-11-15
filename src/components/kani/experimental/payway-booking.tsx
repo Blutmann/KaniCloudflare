@@ -195,6 +195,7 @@ export function PaywayBooking({
   const [pollExhausted, setPollExhausted] = useState(false);
   const initialAttempt = useMemo(() => readActiveAttempt(), []);
   const [isPaymentChecking, setIsPaymentChecking] = useState(() => Boolean(initialAttempt));
+  const [invalidBenefitNotice, setInvalidBenefitNotice] = useState<string | null>(null);
 
   // Modern Payway Form State
   const [cardNumber, setCardNumber] = useState('');
@@ -223,9 +224,16 @@ export function PaywayBooking({
   const paidAppointmentsRef = useRef<Set<string>>(readPaidAppointments());
   const opening = useRef(false);
   const paying = useRef(false);
-  const [soundEnabled, setSoundEnabled] = useState(() => (isLiquid ? readConfirmationSoundEnabled() : false));
+  const [soundEnabled, setSoundEnabled] = useState(() => isLiquid);
   const soundEnabledRef = useRef(soundEnabled);
   soundEnabledRef.current = soundEnabled;
+
+  useEffect(() => {
+    if (!isLiquid) return;
+    const storedEnabled = readConfirmationSoundEnabled();
+    setSoundEnabled(storedEnabled);
+    soundEnabledRef.current = storedEnabled;
+  }, [isLiquid]);
 
   function toggleConfirmationSound() {
     if (!isLiquid) return;
@@ -619,6 +627,7 @@ export function PaywayBooking({
       unlockConfirmationAudio();
     }
     draftRef.current = draft;
+    setInvalidBenefitNotice(draft.benefitCode ? null : (draft.invalidBenefitNotice ?? null));
 
     // Flujo de confirmación directa sin seña (NO_DEPOSIT / FREE_SERVICE)
     if (draft.benefitQuote?.skipOnlinePayment && draft.benefitCode) {
@@ -911,6 +920,7 @@ export function PaywayBooking({
     setConfirmed(null);
     setResult(null);
     setCheckout(null);
+    setInvalidBenefitNotice(null);
     setOpen(false);
   }
 
@@ -1018,6 +1028,17 @@ export function PaywayBooking({
           <DialogDescription className="payway-checkout-subtitle">
             {checkout ? `Seña: ${money(checkout.depositArs ?? 0)} · Pago seguro` : 'Pago seguro de seña'}
           </DialogDescription>
+          {invalidBenefitNotice && !isApprovedConfirmed && (
+            <div className="payway-benefit-warning" role="status" aria-live="polite">
+              <CircleAlert size={16} className="payway-benefit-warning-icon shrink-0" aria-hidden="true" />
+              <div className="payway-benefit-warning-body">
+                <p className="payway-benefit-warning-title">{invalidBenefitNotice}</p>
+                <p className="payway-benefit-warning-amount">
+                  Importe a pagar: <strong>{money(checkout?.depositArs ?? 5000)}</strong>
+                </p>
+              </div>
+            </div>
+          )}
           {preparing && <p role="status">Preparando pago seguro…</p>}
           {result && !isVerifying && !pollExhausted && result.state !== 'unknown' && result.state !== 'review' && (
             <p role={result.state === 'approved' ? 'status' : 'alert'} className="payway-result">{result.message}</p>

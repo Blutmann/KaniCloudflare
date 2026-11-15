@@ -41,14 +41,14 @@ export function triggerSelectionHaptic(kind: HapticKind, reducedMotion = false):
 }
 
 /**
- * Desactivado por defecto hasta que el usuario habilite la experiencia sonora.
+ * Activado por defecto en Liquid Glass salvo que el usuario elija silenciarlo explícitamente.
  */
 export function readConfirmationSoundEnabled(): boolean {
-  if (typeof window === 'undefined') return false;
+  if (typeof window === 'undefined') return true;
   try {
-    return window.localStorage.getItem(CONFIRMATION_SOUND_STORAGE_KEY) === 'true';
+    return window.localStorage.getItem(CONFIRMATION_SOUND_STORAGE_KEY) !== 'false';
   } catch {
-    return false;
+    return true;
   }
 }
 
@@ -141,21 +141,22 @@ function scheduleCrystallineChime(ctx: AudioContext): void {
 
   if (filter) {
     filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(2600, now);
+    filter.frequency.setValueAtTime(2400, now);
     if (typeof filter.frequency.exponentialRampToValueAtTime === 'function') {
-      filter.frequency.exponentialRampToValueAtTime(1400, now + 0.48);
+      filter.frequency.exponentialRampToValueAtTime(1150, now + 0.86);
     }
-    filter.Q.setValueAtTime(0.65, now);
+    filter.Q.setValueAtTime(0.55, now);
     filter.connect(masterGain);
   }
   masterGain.connect(ctx.destination);
-  masterGain.gain.setValueAtTime(1, now);
+  masterGain.gain.setValueAtTime(0.88, now);
 
-  // Tres parciales cálidos y suaves (~515 ms totales): ataque sedoso y caída cristalina extendida sin estridencias.
+  // Resonancia cristalina cálida (~890 ms totales): ataque sedoso, cuerpo aterciopelado y cola armónica suave.
   const partials = [
-    { freq: 587.33, startOffset: 0, attack: 0.022, peakGain: 0.036, duration: 0.44 }, // D5 fundamental cálido
-    { freq: 880.0, startOffset: 0.065, attack: 0.024, peakGain: 0.03, duration: 0.45 }, // A5 quinta cristalina suave
-    { freq: 1174.66, startOffset: 0.075, attack: 0.026, peakGain: 0.008, duration: 0.34 }, // D6 halo sutil
+    { freq: 293.66, startOffset: 0, attack: 0.034, peakGain: 0.012, duration: 0.72 }, // D4 cuerpo cálido sutil
+    { freq: 587.33, startOffset: 0, attack: 0.028, peakGain: 0.034, duration: 0.84 }, // D5 fundamental sereno
+    { freq: 880.0, startOffset: 0.075, attack: 0.032, peakGain: 0.028, duration: 0.815 }, // A5 quinta cristalina (finaliza ~890 ms)
+    { freq: 1174.66, startOffset: 0.095, attack: 0.036, peakGain: 0.0075, duration: 0.62 }, // D6 halo etéreo contenido
   ] as const;
 
   for (const partial of partials) {
@@ -181,8 +182,8 @@ function scheduleCrystallineChime(ctx: AudioContext): void {
 }
 
 /**
- * Reproduce una campanilla cristalina suave de ~515 ms exclusivamente tras confirmar una reserva real.
- * Respeta la preferencia opt-in (desactivada por defecto) y evita repeticiones para la misma reserva.
+ * Reproduce una campanilla cristalina cálida y suave (~890 ms) exclusivamente tras confirmar una reserva real.
+ * Activa por defecto en Liquid Glass con opción de silencio persistida y sin interferir si el navegador bloquea el audio.
  */
 export function playConfirmationChime(
   appointmentId?: string | null,
@@ -196,15 +197,12 @@ export function playConfirmationChime(
   if (!ctx) return false;
 
   try {
-    if (appointmentId) {
-      markConfirmationSoundPlayed(appointmentId);
-    }
-
     if (ctx.state === 'suspended' && typeof ctx.resume === 'function') {
       void ctx
         .resume()
         .then(() => {
-          if (ctx.state === 'running') {
+          if (ctx.state === 'running' && (!appointmentId || !hasPlayedConfirmationSound(appointmentId))) {
+            if (appointmentId) markConfirmationSoundPlayed(appointmentId);
             scheduleCrystallineChime(ctx);
           }
         })
@@ -212,6 +210,9 @@ export function playConfirmationChime(
       return true;
     }
 
+    if (appointmentId) {
+      markConfirmationSoundPlayed(appointmentId);
+    }
     scheduleCrystallineChime(ctx);
     return true;
   } catch {

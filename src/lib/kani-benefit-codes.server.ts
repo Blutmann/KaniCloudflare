@@ -1,3 +1,4 @@
+import { getRequest } from '@tanstack/react-start/server';
 import { createPaymentSupabaseClient } from './kani-payment-db.server';
 import { createRequestSupabaseClient, getRequestAuthToken } from './kani-notifications.server';
 import {
@@ -12,6 +13,7 @@ import {
   calculateBenefitAmounts,
   calculateValidityDates,
   generateBenefitCodeString,
+  isValidBenefitCodeFormat,
   normalizeBenefitCode,
 } from './kani-benefit-codes';
 import { formatServiceName } from './kani-model';
@@ -856,6 +858,44 @@ export async function adminDeleteBenefitCode(codeId: string, authToken?: string)
   throw new Error(error.message || 'Error al eliminar el código');
 }
 
+const BENEFIT_QUOTE_RATE_WINDOW_MS = 60_000;
+const BENEFIT_QUOTE_MAX_ATTEMPTS_PER_WINDOW = 24;
+const benefitQuoteAttemptsByClient = new Map<string, number[]>();
+
+function resolveQuoteClientKey(): string {
+  try {
+    const req = getRequest();
+    const cfIp = req?.headers?.get('cf-connecting-ip')?.trim();
+    if (cfIp) return `ip:${cfIp}`;
+    const forwarded = req?.headers?.get('x-forwarded-for')?.split(',')[0]?.trim();
+    if (forwarded) return `ip:${forwarded}`;
+  } catch {
+    // Call outside active HTTP request (e.g. direct invocation in tests).
+  }
+  return 'default';
+}
+
+function checkBenefitQuoteRateLimit(clientKey: string): boolean {
+  const now = Date.now();
+  const existing = benefitQuoteAttemptsByClient.get(clientKey) ?? [];
+  const activeWindow = existing.filter((ts) => now - ts < BENEFIT_QUOTE_RATE_WINDOW_MS);
+  if (activeWindow.length >= BENEFIT_QUOTE_MAX_ATTEMPTS_PER_WINDOW) {
+    benefitQuoteAttemptsByClient.set(clientKey, activeWindow);
+    return false;
+  }
+  activeWindow.push(now);
+  if (benefitQuoteAttemptsByClient.size > 500 && !benefitQuoteAttemptsByClient.has(clientKey)) {
+    const oldestKey = benefitQuoteAttemptsByClient.keys().next().value;
+    if (oldestKey) benefitQuoteAttemptsByClient.delete(oldestKey);
+  }
+  benefitQuoteAttemptsByClient.set(clientKey, activeWindow);
+  return true;
+}
+
+export function __resetBenefitQuoteRateLimitForTests(): void {
+  benefitQuoteAttemptsByClient.clear();
+}
+
 /**
  * Validates and quotes a benefit code in the public booking flow.
  * Recalculates all pricing and invariants strictly on the server.
@@ -869,6 +909,14 @@ export async function validateBenefitCodeQuote(params: {
   const normalized = normalizeBenefitCode(params.code);
   if (!normalized) {
     return { valid: false, message: 'Ingresá un código de beneficio.', error: 'Ingresá un código de beneficio.' };
+  }
+  if (!isValidBenefitCodeFormat(normalized)) {
+    const msg = 'Código no válido o no disponible.';
+    return { valid: false, message: msg, error: msg };
+  }
+  if (!checkBenefitQuoteRateLimit(resolveQuoteClientKey())) {
+    const msg = 'Demasiados intentos en poco tiempo. Esperá unos segundos e intentá nuevamente.';
+    return { valid: false, message: msg, error: 'RATE_LIMITED' };
   }
 
   const db = await createPaymentSupabaseClient();

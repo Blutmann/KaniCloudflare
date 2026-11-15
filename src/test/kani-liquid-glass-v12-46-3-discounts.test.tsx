@@ -181,7 +181,7 @@ describe('Kani — V12.46.3 Descuentos sin fricción y estética champagne en /r
     expect(screen.getByText('Servicio 100% bonificado. Total a abonar: $0.')).toHaveClass('summary-free-service-note');
   });
 
-  it('4. Código vencido o inválido muestra motivo, conserva texto, bloquea Payway y ofrece "Quitar", corrección y "Continuar sin descuento"', async () => {
+  it('4. Código vencido o inválido en /reservar-turno-liquid continúa directo a Payway con importe habitual, aviso y conserva el código', async () => {
     const validateSpy = vi
       .spyOn(benefitFunctions, 'validateBenefitCodeQuoteFn')
       .mockResolvedValueOnce({
@@ -211,64 +211,58 @@ describe('Kani — V12.46.3 Descuentos sin fricción y estética champagne en /r
     fireEvent.click(screen.getByRole('button', { name: /Pagar seña/i }));
 
     await waitFor(() => {
-      expect(screen.getByRole('alert')).toHaveTextContent('Este código se encuentra vencido.');
+      expect(onPaymentRequest).toHaveBeenCalledTimes(1);
     });
-    // Payway no se abre y jamás muestra tarjeta aplicada
-    expect(onPaymentRequest).not.toHaveBeenCalled();
+    // Abre Payway sin aplicar descuento y con aviso breve para el modal
+    expect(onPaymentRequest).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        benefitCode: undefined,
+        benefitQuote: undefined,
+        invalidBenefitNotice: 'No pudimos aplicar el código de descuento. Podés continuar con el importe habitual.',
+      }),
+    );
     expect(container.querySelector('.discount-applied-card')).toBeNull();
-    // Conserva el texto para que el usuario detecte errores
+    // Conserva el código escrito por si vuelve atrás para corregirlo
     expect(input.value).toBe('KANI-VENCIDO');
 
-    const continueWithoutBtn = screen.getByRole('button', { name: 'Continuar sin descuento' });
-    const removeBtn = screen.getByRole('button', { name: 'Quitar' });
-    expect(continueWithoutBtn).toBeInTheDocument();
-    expect(removeBtn).toBeInTheDocument();
-
-    // Corregir el código y volver a pulsar "Pagar seña" valida el nuevo código y aplica el descuento
+    // Al corregir el código y volver a pulsar "Pagar seña", aplica el nuevo código válido sin aviso
     fireEvent.change(input, { target: { value: 'KANI-CORREGIDO' } });
     expect(screen.queryByRole('alert')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: /Pagar seña/i }));
 
     await waitFor(() => {
       expect(validateSpy).toHaveBeenCalledTimes(2);
-      expect(onPaymentRequest).toHaveBeenCalledWith(
-        expect.objectContaining({
-          benefitCode: 'KANI-CORREGIDO',
-        }),
-      );
+      expect(onPaymentRequest).toHaveBeenCalledTimes(2);
     });
+    expect(onPaymentRequest).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        benefitCode: 'KANI-CORREGIDO',
+        benefitQuote: expect.objectContaining({
+          type: 'PERCENT_10',
+          finalPriceArs: 22500,
+        }),
+      }),
+    );
   });
 
-  it('5. "Continuar sin descuento" prosigue con el importe normal sin obligar a borrar el código ni enviar un beneficio inválido', async () => {
+  it('5. Reserva sin Payway ante código inválido muestra advertencia visible, "Quitar" y permite "Continuar sin descuento"', async () => {
     vi.spyOn(benefitFunctions, 'validateBenefitCodeQuoteFn').mockResolvedValue({
       valid: false,
       message: 'El código de beneficio no existe o es inválido.',
     });
-    const onPaymentRequest = vi.fn().mockResolvedValue(undefined);
 
-    renderLiquidBooking({ onPaymentRequest });
+    const { container } = renderLiquidBooking({ onPaymentRequest: undefined });
 
     const input = screen.getByPlaceholderText('KANI-XXXX-XXXX-XXXX') as HTMLInputElement;
     fireEvent.change(input, { target: { value: 'MAL-ESCRITO' } });
     fireEvent.click(screen.getByRole('button', { name: /Pagar seña/i }));
 
     await waitFor(() => {
+      expect(screen.getByRole('alert')).toHaveTextContent('Código inválido');
       expect(screen.getByRole('button', { name: 'Continuar sin descuento' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Quitar' })).toBeInTheDocument();
     });
-    expect(onPaymentRequest).not.toHaveBeenCalled();
-
-    fireEvent.click(screen.getByRole('button', { name: 'Continuar sin descuento' }));
-
-    await waitFor(() => {
-      expect(onPaymentRequest).toHaveBeenCalledTimes(1);
-    });
-    // El texto permanece visible y el draft no lleva ningún benefitCode/benefitQuote inválido
+    expect(container.querySelector('.discount-applied-card')).toBeNull();
     expect(input.value).toBe('MAL-ESCRITO');
-    expect(onPaymentRequest).toHaveBeenCalledWith(
-      expect.objectContaining({
-        benefitCode: undefined,
-        benefitQuote: undefined,
-      }),
-    );
   });
 });
