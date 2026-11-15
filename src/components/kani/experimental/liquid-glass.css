@@ -2935,7 +2935,6 @@ html[data-theme] .site-shell .liquid-glass-reservation :is(
 ) {
   background: var(--cg-crystal-selected) !important;
   box-shadow: var(--cg-crystal-shadow-selected) !important;
-  transform: translate3d(0, -1px, 0) !important;
 }
 
 html[data-theme="light"] .site-shell .liquid-glass-reservation :is(
@@ -10165,4 +10164,281 @@ html[data-theme] :is(
   z-index: 200 !important;
   filter: none !important;
   isolation: isolate;
+}
+
+
+/* ==============================================================================
+ * LIQUID GLASS V12.46 — LIQUID GLASS MOTION SYSTEM (SERVICIOS & BARBEROS)
+ * Coreografías diferenciadas para /reservar-turno-liquid (Desktop & Mobile):
+ * 1. Servicio: compresión táctil inmediata (0.986) + recuperación elástica controlada
+ *    via WAAPI sin transforms persistentes, borde champagne progresivo y reflejo
+ *    luminoso breve (.lg-optical-sheen::after) una sola vez al seleccionar.
+ * 2. Barbero: iluminación suave y progresiva de la tarjeta, halo sutil alrededor
+ *    de .barber-avatar, transición editorial de borde/superficie y atenuación
+ *    discreta de tarjetas no seleccionadas preservando backdrop-filter real.
+ * 3. Respeta prefers-reduced-motion y conserva desenfoque V12.40.1 e íconos/medidas.
+ * ============================================================================== */
+
+/* --- Tokens V12.46 Light & Dark --- */
+html[data-theme="light"] .site-shell .liquid-glass-reservation {
+  --lg-v46-service-sheen: linear-gradient(
+    112deg,
+    rgba(255, 255, 255, 0) 20%,
+    rgba(255, 255, 255, 0.68) 44%,
+    rgba(218, 186, 118, 0.30) 52%,
+    rgba(255, 255, 255, 0.48) 60%,
+    rgba(255, 255, 255, 0) 78%
+  );
+  --lg-v46-barber-bloom: radial-gradient(
+    78% 72% at 50% 34%,
+    rgba(222, 190, 122, 0.26) 0%,
+    rgba(255, 252, 244, 0.34) 40%,
+    rgba(255, 255, 255, 0) 76%
+  );
+  --lg-v46-avatar-halo-rest:
+    0 6px 16px rgba(28, 26, 24, 0.11),
+    0 0 0 3px rgba(196, 164, 102, 0.22),
+    0 0 18px rgba(196, 164, 102, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98),
+    inset 0 -1px 0 rgba(178, 144, 78, 0.16);
+  --lg-v46-avatar-ring: rgba(186, 150, 82, 0.62);
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-reservation {
+  --lg-v46-service-sheen: linear-gradient(
+    112deg,
+    rgba(255, 255, 255, 0) 20%,
+    rgba(255, 249, 236, 0.16) 44%,
+    rgba(224, 192, 122, 0.26) 52%,
+    rgba(255, 249, 236, 0.12) 60%,
+    rgba(255, 255, 255, 0) 80%
+  );
+  --lg-v46-barber-bloom: radial-gradient(
+    78% 72% at 50% 34%,
+    rgba(224, 192, 122, 0.22) 0%,
+    rgba(255, 246, 224, 0.10) 42%,
+    rgba(255, 255, 255, 0) 76%
+  );
+  --lg-v46-avatar-halo-rest:
+    0 8px 20px rgba(0, 0, 0, 0.56),
+    0 0 0 3px rgba(218, 186, 120, 0.24),
+    0 0 22px rgba(218, 186, 120, 0.28),
+    inset 0 1px 0 rgba(255, 253, 249, 0.88),
+    inset 0 -1px 0 rgba(178, 144, 78, 0.22);
+  --lg-v46-avatar-ring: rgba(224, 192, 122, 0.68);
+}
+
+/* ------------------------------------------------------------------------------
+ * 1. TARJETAS DE SERVICIO — Respuesta táctil + borde champagne + reflejo parcial
+ * ------------------------------------------------------------------------------ */
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option:not(:disabled) {
+  transition:
+    background-image 320ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 340ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 360ms cubic-bezier(0.22, 1, 0.36, 1) !important;
+}
+
+/* Destello luminoso diagonal parcial (solo activo brevemente al seleccionar servicio) */
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option > .lg-optical-sheen {
+  position: absolute !important;
+  inset: 0 !important;
+  border-radius: inherit !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+  background: none !important;
+  transform: none !important;
+  opacity: 0 !important;
+  z-index: 1 !important;
+}
+
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option > .lg-optical-sheen::after {
+  content: "" !important;
+  position: absolute !important;
+  inset: -20% -35% !important;
+  background: var(--lg-v46-service-sheen) !important;
+  opacity: 0;
+  transform: translate3d(-58%, 0, 0);
+  pointer-events: none !important;
+}
+
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option[data-lg-motion="service-select"] > .lg-optical-sheen {
+  opacity: 1 !important;
+}
+
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option[data-lg-motion="service-select"] > .lg-optical-sheen::after {
+  animation: kaniServiceSheenV46 540ms cubic-bezier(0.22, 1, 0.36, 1) 1 forwards !important;
+}
+
+/* Iluminación progresiva breve del borde champagne en Servicio (sin pulso permanente) */
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option > .lg-living-surface > .lg-living-edge {
+  padding: 1.5px !important;
+  background: linear-gradient(
+    126deg,
+    rgba(224, 192, 122, 0.92) 0%,
+    rgba(255, 250, 236, 0.78) 38%,
+    rgba(196, 164, 102, 0.64) 72%,
+    rgba(224, 192, 122, 0.88) 100%
+  ) !important;
+  opacity: 0;
+}
+
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option[data-lg-motion="service-select"] > .lg-living-surface > .lg-living-edge {
+  animation: kaniServiceBorderGlowV46 520ms cubic-bezier(0.22, 1, 0.36, 1) 1 forwards !important;
+}
+
+@keyframes kaniServiceSheenV46 {
+  0% {
+    opacity: 0;
+    transform: translate3d(-54%, 0, 0);
+  }
+  28% {
+    opacity: 0.94;
+  }
+  72% {
+    opacity: 0.62;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(42%, 0, 0);
+  }
+}
+
+@keyframes kaniServiceBorderGlowV46 {
+  0% {
+    opacity: 0;
+  }
+  32% {
+    opacity: 0.92;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* ------------------------------------------------------------------------------
+ * 2. TARJETAS DE BARBERO — Iluminación editorial, halo de avatar y jerarquía
+ * ------------------------------------------------------------------------------ */
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .booking-barber-options > .booking-option:not(.booking-defer-option):not(:disabled) {
+  transition:
+    background-image 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 460ms cubic-bezier(0.22, 1, 0.36, 1) !important;
+}
+
+/* Barbero no usa reflejo barrido de Servicio; usa iluminación radial suave centrada */
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .booking-barber-options > .booking-option:not(.booking-defer-option) > .lg-optical-sheen {
+  opacity: 0 !important;
+}
+
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .booking-barber-options > .booking-option:not(.booking-defer-option) > .lg-living-surface > .lg-living-refraction {
+  inset: 0 !important;
+  left: 0 !important;
+  top: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: inherit !important;
+  transform: none !important;
+  background: var(--lg-v46-barber-bloom) !important;
+  opacity: 0;
+}
+
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .booking-barber-options > .booking-option:not(.booking-defer-option)[data-lg-motion="barber-select"] > .lg-living-surface > .lg-living-refraction {
+  animation: kaniBarberLuminescenceV46 580ms cubic-bezier(0.22, 1, 0.36, 1) 1 forwards !important;
+}
+
+/* Halo sutil alrededor del avatar al seleccionar profesional (Desktop & Mobile) */
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .booking-barber-options > .booking-option:not(.booking-defer-option) .barber-avatar {
+  position: relative !important;
+  transition:
+    border-color 400ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 440ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 360ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 360ms cubic-bezier(0.22, 1, 0.36, 1) !important;
+}
+
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .booking-barber-options > .booking-option:not(.booking-defer-option) .barber-avatar::after {
+  content: "" !important;
+  position: absolute !important;
+  inset: -6px !important;
+  border-radius: 9999px !important;
+  border: 1.5px solid var(--lg-v46-avatar-ring) !important;
+  box-shadow: 0 0 14px rgba(212, 180, 114, 0.32) !important;
+  opacity: 0;
+  transform: scale(0.92);
+  pointer-events: none !important;
+}
+
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .booking-barber-options > .booking-option:not(.booking-defer-option).selected .barber-avatar {
+  box-shadow: var(--lg-v46-avatar-halo-rest) !important;
+}
+
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .booking-barber-options > .booking-option:not(.booking-defer-option)[data-lg-motion="barber-select"] .barber-avatar::after {
+  animation: kaniBarberAvatarHaloV46 600ms cubic-bezier(0.22, 1, 0.36, 1) 1 forwards !important;
+}
+
+/* Reducción sutil de protagonismo en barberos no seleccionados (preserva blur del cristal) */
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .booking-barber-options > .booking-option:not(.booking-defer-option) :is(.booking-option-copy, .selection-circle) {
+  transition:
+    opacity 360ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 360ms cubic-bezier(0.22, 1, 0.36, 1) !important;
+}
+
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .booking-barber-options:is(.has-selected-barber, :has(> .booking-option:not(.booking-defer-option).selected)) > .booking-option:not(.booking-defer-option):not(.selected) :is(.barber-avatar, .booking-option-copy, .selection-circle) {
+  opacity: 0.72 !important;
+  filter: saturate(0.86);
+}
+
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .booking-barber-options:is(.has-selected-barber, :has(> .booking-option:not(.booking-defer-option).selected)) > .booking-option:not(.booking-defer-option):not(.selected):is(:hover, :focus-visible) :is(.barber-avatar, .booking-option-copy, .selection-circle) {
+  opacity: 0.96 !important;
+  filter: none;
+}
+
+@keyframes kaniBarberLuminescenceV46 {
+  0% {
+    opacity: 0;
+  }
+  38% {
+    opacity: 0.92;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes kaniBarberAvatarHaloV46 {
+  0% {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  34% {
+    opacity: 0.88;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.24);
+  }
+}
+
+/* ------------------------------------------------------------------------------
+ * 3. ACCESIBILIDAD Y RENDIMIENTO (prefers-reduced-motion)
+ * ------------------------------------------------------------------------------ */
+@media (prefers-reduced-motion: reduce) {
+  html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page :is(
+    .booking-service-options > .service-option,
+    .booking-barber-options > .booking-option:not(.booking-defer-option),
+    .booking-barber-options > .booking-option:not(.booking-defer-option) .barber-avatar,
+    .booking-barber-options > .booking-option:not(.booking-defer-option) :is(.booking-option-copy, .selection-circle)
+  ) {
+    transition: none !important;
+  }
+
+  html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page :is(
+    .service-option[data-lg-motion] > .lg-optical-sheen::after,
+    .service-option[data-lg-motion] > .lg-living-surface > .lg-living-edge,
+    .booking-option[data-lg-motion] > .lg-living-surface > .lg-living-refraction,
+    .booking-option[data-lg-motion] .barber-avatar::after
+  ) {
+    animation: none !important;
+    opacity: 0 !important;
+  }
 }

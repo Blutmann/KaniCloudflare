@@ -8,8 +8,8 @@ import type {
 } from './liquid-glass-motion.types';
 
 /**
- * Sistema centralizado de parámetros Motion V4 / Living Surface V8 para /reservar-turno-liquid.
- * Prioriza transform/opacity, física de contacto en coordenadas reales y prefers-reduced-motion.
+ * Sistema centralizado de parámetros Motion V4 / Living Surface V8 / Motion System V12.46 para /reservar-turno-liquid.
+ * Prioriza materialidad óptica, diferenciación Servicio/Barbero, física sin transforms persistentes y prefers-reduced-motion.
  */
 export const LIQUID_GLASS_MOTION = {
   durations: {
@@ -34,12 +34,19 @@ export const LIQUID_GLASS_MOTION = {
   },
   scales: {
     cardTap: 0.985,
-    serviceCardTap: 0.968,
-    barberCardTap: 0.958,
+    serviceCardTap: 0.986,
+    barberCardTap: 0.994,
     actionTap: 0.982,
     slotTap: 0.972,
     dayTap: 0.952,
     avatarSelected: 1.045,
+  },
+  v46: {
+    servicePressMs: 85,
+    serviceRecoverMs: 340,
+    serviceMotionMs: 580,
+    serviceOvershootScale: 1.004,
+    barberMotionMs: 640,
   },
 } as const;
 
@@ -105,6 +112,9 @@ function InteractiveCard({
   type = 'button',
   tapScale = LIQUID_GLASS_MOTION.scales.cardTap,
   onPointerDown,
+  onPointerUp,
+  onPointerCancel,
+  onPointerLeave,
   ...rest
 }: LiquidGlassInteractiveCardProps) {
   const shouldReduceMotion = useReducedMotion();
@@ -112,8 +122,14 @@ function InteractiveCard({
   const coreRef = useRef<HTMLSpanElement | null>(null);
   const waveRef = useRef<HTMLSpanElement | null>(null);
   const rippleTimerRef = useRef<number | null>(null);
+  const motionTimerRef = useRef<number | null>(null);
+  const servicePressAnimRef = useRef<Animation | null>(null);
+  const serviceRecoverAnimRef = useRef<Animation | null>(null);
+  const isPressingServiceRef = useRef(false);
+  const lastServiceRecoverAtRef = useRef(0);
 
   const isSelected = className.includes('selected');
+  const prevSelectedRef = useRef(isSelected);
   const isCalendarDay = className.includes('calendar-day');
   const isServiceOption = className.includes('service-option');
   const isBarberOption =
@@ -121,8 +137,6 @@ function InteractiveCard({
     !isServiceOption &&
     !className.includes('booking-defer-option');
   const isLargeCard = isServiceOption || isBarberOption;
-  const isActionButton =
-    className.includes('booking-back-button') || className.includes('booking-next-button');
   const effectiveTapScale =
     tapScale !== LIQUID_GLASS_MOTION.scales.cardTap
       ? tapScale
@@ -132,12 +146,77 @@ function InteractiveCard({
           ? LIQUID_GLASS_MOTION.scales.barberCardTap
           : tapScale;
 
+  const triggerServiceElasticRecovery = (fromScale: number) => {
+    const el = buttonRef.current;
+    if (!el || shouldReduceMotion || typeof el.animate !== 'function') return;
+
+    servicePressAnimRef.current?.cancel();
+    servicePressAnimRef.current = null;
+    serviceRecoverAnimRef.current?.cancel();
+    lastServiceRecoverAtRef.current = Date.now();
+
+    serviceRecoverAnimRef.current = el.animate(
+      [
+        { transform: `scale(${fromScale})` },
+        { transform: `scale(${LIQUID_GLASS_MOTION.v46.serviceOvershootScale})`, offset: 0.56 },
+        { transform: 'scale(1)' },
+      ],
+      {
+        duration: LIQUID_GLASS_MOTION.v46.serviceRecoverMs,
+        easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+        fill: 'none',
+      },
+    );
+  };
+
+  useEffect(() => {
+    const el = buttonRef.current;
+    const becameSelected = !prevSelectedRef.current && isSelected;
+    prevSelectedRef.current = isSelected;
+
+    if (!becameSelected || !el || disabled || shouldReduceMotion || typeof window === 'undefined') {
+      return;
+    }
+
+    if (isServiceOption) {
+      el.setAttribute('data-lg-motion', 'service-select');
+      if (Date.now() - lastServiceRecoverAtRef.current > 180) {
+        triggerServiceElasticRecovery(LIQUID_GLASS_MOTION.scales.serviceCardTap);
+      }
+      if (motionTimerRef.current !== null) {
+        window.clearTimeout(motionTimerRef.current);
+      }
+      motionTimerRef.current = window.setTimeout(() => {
+        el.removeAttribute('data-lg-motion');
+        motionTimerRef.current = null;
+      }, LIQUID_GLASS_MOTION.v46.serviceMotionMs);
+      return;
+    }
+
+    if (isBarberOption) {
+      el.setAttribute('data-lg-motion', 'barber-select');
+      if (motionTimerRef.current !== null) {
+        window.clearTimeout(motionTimerRef.current);
+      }
+      motionTimerRef.current = window.setTimeout(() => {
+        el.removeAttribute('data-lg-motion');
+        motionTimerRef.current = null;
+      }, LIQUID_GLASS_MOTION.v46.barberMotionMs);
+    }
+  }, [isSelected, disabled, shouldReduceMotion, isServiceOption, isBarberOption]);
+
   useEffect(() => {
     return () => {
       if (rippleTimerRef.current !== null && typeof window !== 'undefined') {
         window.clearTimeout(rippleTimerRef.current);
         rippleTimerRef.current = null;
       }
+      if (motionTimerRef.current !== null && typeof window !== 'undefined') {
+        window.clearTimeout(motionTimerRef.current);
+        motionTimerRef.current = null;
+      }
+      servicePressAnimRef.current?.cancel();
+      serviceRecoverAnimRef.current?.cancel();
     };
   }, []);
 
@@ -167,6 +246,49 @@ function InteractiveCard({
     el.style.setProperty('--lg-touch-x-pct', `${((localX / Math.max(rect.width, 1)) * 100).toFixed(1)}%`);
     el.style.setProperty('--lg-touch-y-pct', `${((localY / Math.max(rect.height, 1)) * 100).toFixed(1)}%`);
     el.style.setProperty('--lg-wave-size', `${waveSize}px`);
+
+    // Servicio V12.46: compresión táctil inmediata sin onda circular genérica; el destello y borde corren en selección.
+    if (isServiceOption) {
+      isPressingServiceRef.current = true;
+      el.setAttribute('data-lg-pressing', 'true');
+      serviceRecoverAnimRef.current?.cancel();
+      servicePressAnimRef.current?.cancel();
+      if (typeof el.animate === 'function') {
+        servicePressAnimRef.current = el.animate(
+          [
+            { transform: 'scale(1)' },
+            { transform: `scale(${LIQUID_GLASS_MOTION.scales.serviceCardTap})` },
+          ],
+          {
+            duration: LIQUID_GLASS_MOTION.v46.servicePressMs,
+            easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+            fill: 'forwards',
+          },
+        );
+      }
+      return;
+    }
+
+    // Barbero V12.46: luminiscencia cálida sutil sin rebote elástico ni onda expansiva mecánica.
+    if (isBarberOption) {
+      const coreEl = coreRef.current;
+      if (typeof coreEl?.animate === 'function') {
+        coreEl.getAnimations?.().forEach((anim) => anim.cancel());
+        coreEl.animate(
+          [
+            { opacity: 0, transform: 'translate3d(-50%, -50%, 0) scale(0.58)' },
+            { opacity: 0.38, transform: 'translate3d(-50%, -50%, 0) scale(0.95)', offset: 0.42 },
+            { opacity: 0, transform: 'translate3d(-50%, -50%, 0) scale(1.16)' },
+          ],
+          {
+            duration: 380,
+            easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+            fill: 'none',
+          },
+        );
+      }
+      return;
+    }
 
     const coreEl = coreRef.current;
     const waveEl = waveRef.current;
@@ -212,6 +334,34 @@ function InteractiveCard({
     }, LIQUID_GLASS_MOTION.durations.livingSettleMs);
   };
 
+  const releaseServicePress = () => {
+    const el = buttonRef.current;
+    if (!isPressingServiceRef.current) return;
+    isPressingServiceRef.current = false;
+    el?.removeAttribute('data-lg-pressing');
+    triggerServiceElasticRecovery(LIQUID_GLASS_MOTION.scales.serviceCardTap);
+  };
+
+  const handlePointerUp = (event: PointerEvent<HTMLButtonElement>) => {
+    onPointerUp?.(event);
+    if (isServiceOption) releaseServicePress();
+  };
+
+  const handlePointerCancel = (event: PointerEvent<HTMLButtonElement>) => {
+    onPointerCancel?.(event);
+    if (isServiceOption) releaseServicePress();
+  };
+
+  const handlePointerLeave = (event: PointerEvent<HTMLButtonElement>) => {
+    onPointerLeave?.(event);
+    if (isServiceOption && isPressingServiceRef.current) {
+      releaseServicePress();
+    }
+  };
+
+  const isActionButton =
+    className.includes('booking-back-button') || className.includes('booking-next-button');
+
   // No dejar transform persistente en reposo/selección para no aislar backdrop-filter en Safari iOS/WebKit.
   const animateState = undefined;
 
@@ -223,13 +373,16 @@ function InteractiveCard({
       className={className}
       animate={animateState}
       onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerCancel}
+      onPointerLeave={handlePointerLeave}
       whileHover={
-        disabled || shouldReduceMotion || isActionButton
+        disabled || shouldReduceMotion || isActionButton || isLargeCard
           ? undefined
           : { y: isSelected ? -2 : -1 }
       }
       whileTap={
-        disabled || shouldReduceMotion
+        disabled || shouldReduceMotion || isLargeCard
           ? undefined
           : { scale: effectiveTapScale }
       }

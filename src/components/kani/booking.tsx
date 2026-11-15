@@ -1411,7 +1411,7 @@ export function Booking({
             )}
 
             {step === 1 && (
-              <div className="booking-barber-options space-y-3">
+              <div className={`booking-barber-options space-y-3${experimentalMotion && barber && !barberDeferred ? ' has-selected-barber' : ''}`}>
                 {barbersLoading && <p role="status" className="text-sm text-muted-foreground">Consultando profesionales…</p>}
                 {barbersError && <p role="alert" className="text-sm text-destructive">{barbersError}</p>}
                 {!barbersLoading && !barbersError && !publicBarbersState.length && <p role="status" className="text-sm text-muted-foreground">No hay profesionales disponibles para reservas online.</p>}
