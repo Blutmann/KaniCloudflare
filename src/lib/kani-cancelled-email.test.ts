@@ -83,7 +83,8 @@ describe('Kani — Rediseño del correo de cancelación', () => {
     expect(result.html).toContain('Contactar por WhatsApp');
     expect(result.html).toContain('background-color: #128C4A');
     expect(result.html).toContain('color: #FFFFFF');
-    expect(result.html).toContain('5491155616438');
+    expect(result.html).toContain('5491162840974');
+    expect(result.html).not.toContain('5491155616438');
     expect(result.html).toContain(encodeURIComponent('Hola, quisiera consultar por mi turno cancelado.'));
 
     // Altura táctil mínima de 44px
@@ -149,7 +150,8 @@ describe('Kani — Rediseño del correo de cancelación', () => {
     expect(result.text).toContain('Corte de cabello');
     expect(result.text).toContain('16:00 hs');
     expect(result.text).toContain('Reservar otro turno: https://www.kanibarber.com/reservar');
-    expect(result.text).toContain('Contactar por WhatsApp: https://wa.me/5491155616438');
+    expect(result.text).toContain('Contactar por WhatsApp: https://wa.me/5491162840974');
+    expect(result.text).not.toContain('https://wa.me/5491155616438');
   });
 
   it('7. Escapa correctamente caracteres especiales en nombres', () => {

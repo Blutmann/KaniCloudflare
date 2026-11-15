@@ -23,9 +23,9 @@ describe('KANI BARBER STUDIO — V12.47.5: Cancelación Liquid Glass y Actualiza
   const routesCss = fs.readFileSync(path.join(root, 'src/components/kani/experimental/liquid-glass-routes.css'), 'utf-8');
 
   describe('1. Fuente Única de Verdad de WhatsApp y Presencia Global', () => {
-    it('define la constante oficial internacional como 5491155616438 y URL canónica https://wa.me/5491155616438', () => {
-      expect(KANI_PUBLIC_WHATSAPP_NUMBER).toBe('5491155616438');
-      expect(KANI_PUBLIC_WHATSAPP_URL).toBe('https://wa.me/5491155616438');
+    it('define la constante oficial internacional como 5491162840974 y URL canónica https://wa.me/5491162840974', () => {
+      expect(KANI_PUBLIC_WHATSAPP_NUMBER).toBe('5491162840974');
+      expect(KANI_PUBLIC_WHATSAPP_URL).toBe('https://wa.me/5491162840974');
       // No contiene caracteres especiales, espacios, guiones ni símbolo +
       expect(KANI_PUBLIC_WHATSAPP_NUMBER).toMatch(/^[0-9]+$/);
     });
@@ -53,7 +53,7 @@ describe('KANI BARBER STUDIO — V12.47.5: Cancelación Liquid Glass y Actualiza
       expect(contactoTsx).toContain('rel="noreferrer"');
     });
 
-    it('Plantilla de email de confirmación incluye el WhatsApp oficial 5491155616438', () => {
+    it('Plantilla de email de confirmación incluye el WhatsApp oficial 5491162840974', () => {
       const email = buildConfirmedEmail({
         barberName: 'Lautaro',
         clientName: 'Martín',
@@ -65,12 +65,13 @@ describe('KANI BARBER STUDIO — V12.47.5: Cancelación Liquid Glass y Actualiza
         downPaymentArs: 5000,
       } as any);
 
-      expect(email.html).toContain('https://wa.me/5491155616438');
-      expect(email.text).toContain('https://wa.me/5491155616438');
+      expect(email.html).toContain('https://wa.me/5491162840974');
+      expect(email.text).toContain('https://wa.me/5491162840974');
       expect(email.html).not.toContain('https://wa.me/5491128436014');
+      expect(email.html).not.toContain('https://wa.me/5491155616438');
     });
 
-    it('Plantilla de email de turno cancelado incluye el WhatsApp oficial 5491155616438', () => {
+    it('Plantilla de email de turno cancelado incluye el WhatsApp oficial 5491162840974', () => {
       const email = buildCancelledEmail({
         barberName: 'Lautaro',
         clientName: 'Martín',
@@ -81,9 +82,10 @@ describe('KANI BARBER STUDIO — V12.47.5: Cancelación Liquid Glass y Actualiza
         downPaymentArs: 5000,
       } as any);
 
-      expect(email.html).toContain('https://wa.me/5491155616438');
-      expect(email.text).toContain('https://wa.me/5491155616438');
+      expect(email.html).toContain('https://wa.me/5491162840974');
+      expect(email.text).toContain('https://wa.me/5491162840974');
       expect(email.html).not.toContain('https://wa.me/5491128436014');
+      expect(email.html).not.toContain('https://wa.me/5491155616438');
     });
 
     it('Interfaz de cancelación de turnos ofrece enlace a WhatsApp ante restricciones o consultas', () => {

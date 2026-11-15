@@ -15,9 +15,9 @@ describe('Kani Barber Studio — Refinamiento de Pagos y unificación de WhatsAp
   const estudioTsx = fs.readFileSync(path.join(root, 'routes/contacto.tsx'), 'utf-8');
 
   describe('1. WhatsApp público oficial unificado', () => {
-    it('define la constante oficial KANI_PUBLIC_WHATSAPP_NUMBER como 5491155616438', () => {
-      expect(KANI_PUBLIC_WHATSAPP_NUMBER).toBe('5491155616438');
-      expect(KANI_PUBLIC_WHATSAPP_URL).toBe('https://wa.me/5491155616438');
+    it('define la constante oficial KANI_PUBLIC_WHATSAPP_NUMBER como 5491162840974', () => {
+      expect(KANI_PUBLIC_WHATSAPP_NUMBER).toBe('5491162840974');
+      expect(KANI_PUBLIC_WHATSAPP_URL).toBe('https://wa.me/5491162840974');
     });
 
     it('utiliza KANI_PUBLIC_WHATSAPP_URL en el Header para consultas públicas', () => {
@@ -42,9 +42,10 @@ describe('Kani Barber Studio — Refinamiento de Pagos y unificación de WhatsAp
         downPaymentArs: 5000,
       } as any);
 
-      expect(email.html).toContain('https://wa.me/5491155616438');
-      expect(email.text).toContain('https://wa.me/5491155616438');
+      expect(email.html).toContain('https://wa.me/5491162840974');
+      expect(email.text).toContain('https://wa.me/5491162840974');
       expect(email.html).not.toContain('https://wa.me/5491128436014');
+      expect(email.html).not.toContain('https://wa.me/5491155616438');
     });
   });
 

@@ -72,7 +72,7 @@ describe('Kani Barber Studio - Ajustes en Contacto e integración de Google Maps
     expect(estudioCode).toContain('WhatsApp');
     expect(estudioCode).toContain('Escribinos para realizar tu consulta.');
     expect(estudioCode).toContain('Contactar por WhatsApp');
-    expect(estudioCode).toMatch(/KANI_PUBLIC_WHATSAPP_URL|https:\/\/wa\.me\/5491155616438/);
+    expect(estudioCode).toMatch(/KANI_PUBLIC_WHATSAPP_URL|https:\/\/wa\.me\/5491162840974/);
 
     // 2 columnas en mobile y desktop
     expect(css).toMatch(/\.studio-info-grid\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/);
