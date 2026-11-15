@@ -220,7 +220,10 @@ export const dispatchAppointmentNotification = createServerOnlyFn(async (data: {
       if (event.recipient_email && event.recipient_email.trim()) {
         try {
           const apiKey = getRuntimeEnv("RESEND_API_KEY")?.trim();
-          const fromEmail = getRuntimeEnv("RESEND_FROM_EMAIL")?.trim();
+          const rawFrom = getRuntimeEnv("RESEND_FROM_EMAIL")?.trim();
+          const fromEmail = (rawFrom && !rawFrom.includes("noresponder"))
+            ? rawFrom
+            : "Kani Barber <turnos@kanibarber.com>";
           if (apiKey && fromEmail) {
             let apptBenefit: any = null;
             try {
@@ -847,7 +850,10 @@ export async function retryNotificationChannel(input: {
       }
 
       const apiKey = getRuntimeEnv("RESEND_API_KEY")?.trim();
-      const fromEmail = getRuntimeEnv("RESEND_FROM_EMAIL")?.trim();
+      const rawFrom = getRuntimeEnv("RESEND_FROM_EMAIL")?.trim();
+      const fromEmail = (rawFrom && !rawFrom.includes("noresponder"))
+        ? rawFrom
+        : "Kani Barber <turnos@kanibarber.com>";
       if (!apiKey || !fromEmail) {
         return {
           success: false,

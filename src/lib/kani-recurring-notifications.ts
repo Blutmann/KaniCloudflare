@@ -333,7 +333,10 @@ export async function sendRecurringSeriesGroupedEmailOnServer(
   }
 
   const apiKey = getRuntimeEnv("RESEND_API_KEY")?.trim();
-  const fromEmail = getRuntimeEnv("RESEND_FROM_EMAIL")?.trim();
+  const rawFrom = getRuntimeEnv("RESEND_FROM_EMAIL")?.trim();
+  const fromEmail = (rawFrom && !rawFrom.includes("noresponder"))
+    ? rawFrom
+    : "Kani Barber <turnos@kanibarber.com>";
   if (!apiKey || !fromEmail) {
     return { sent: false, skippedReason: "RESEND_NOT_CONFIGURED" };
   }
@@ -525,7 +528,10 @@ export async function runScheduledRecurrencesAndReminders(): Promise<{
       .limit(50);
 
     const apiKey = getRuntimeEnv("RESEND_API_KEY")?.trim();
-    const fromEmail = getRuntimeEnv("RESEND_FROM_EMAIL")?.trim();
+    const rawFrom = getRuntimeEnv("RESEND_FROM_EMAIL")?.trim();
+    const fromEmail = (rawFrom && !rawFrom.includes("noresponder"))
+      ? rawFrom
+      : "Kani Barber <turnos@kanibarber.com>";
 
     if (tomorrowAppointments && tomorrowAppointments.length > 0 && apiKey && fromEmail) {
       for (const apt of tomorrowAppointments) {

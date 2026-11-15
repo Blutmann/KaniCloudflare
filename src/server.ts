@@ -260,6 +260,134 @@ export default {
         }
       }
 
+      if (url.pathname === "/api/diagnostics/resend") {
+        try {
+          const apiKey = (process.env.RESEND_API_KEY || (globalThis as any).__KANI_RUNTIME_ENV?.RESEND_API_KEY)?.trim();
+          const rawFrom = process.env.RESEND_FROM_EMAIL || (globalThis as any).__KANI_RUNTIME_ENV?.RESEND_FROM_EMAIL;
+          const fromEmail = (rawFrom && !rawFrom.includes("noresponder"))
+            ? rawFrom
+            : "Kani Barber <turnos@kanibarber.com>";
+
+          if (!apiKey) {
+            return new Response(
+              JSON.stringify({
+                configured: false,
+                error: "RESEND_API_KEY_MISSING",
+                sender: fromEmail,
+              }),
+              { status: 503, headers: { "content-type": "application/json", "cache-control": "no-store" } },
+            );
+          }
+
+          // 1. Consultar estado del dominio en Resend
+          let domainInfo: any = null;
+          try {
+            const domainRes = await fetch("https://api.resend.com/domains", {
+              headers: { Authorization: `Bearer ${apiKey}` },
+            });
+            const domainData = (await domainRes.json().catch(() => null)) as any;
+            if (domainRes.ok && Array.isArray(domainData?.data)) {
+              const kaniDomain =
+                domainData.data.find((d: any) => d.name === "kanibarber.com") ||
+                domainData.data[0];
+              domainInfo = kaniDomain
+                ? {
+                    id: kaniDomain.id,
+                    name: kaniDomain.name,
+                    status: kaniDomain.status,
+                    createdAt: kaniDomain.created_at,
+                    region: kaniDomain.region,
+                  }
+                : { status: "NOT_FOUND" };
+            } else {
+              domainInfo = { status: `HTTP_${domainRes.status}`, error: domainData?.message };
+            }
+          } catch (dErr) {
+            domainInfo = { status: "FETCH_ERROR", error: String(dErr) };
+          }
+
+          // 2. Prueba controlada de envío transaccional (destinatario autorizado)
+          let testSendResult: any = null;
+          if (
+            url.searchParams.get("send_test") === "true" ||
+            url.searchParams.get("send_test") === "1"
+          ) {
+            const allowedRecipients = [
+              "kanibarberstudio@gmail.com",
+              "tomasblutmannliriumprive@gmail.com",
+            ];
+            const requestedTo = url.searchParams.get("to")?.trim();
+            const recipient =
+              requestedTo && allowedRecipients.includes(requestedTo)
+                ? requestedTo
+                : "kanibarberstudio@gmail.com";
+
+            const testSubject =
+              "KANI BARBER STUDIO — Verificación definitiva de correo transaccional V12.47.4";
+            const testHtml = `
+              <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 32px 24px; background: #0B0B0D; color: #FFFFFF; border-radius: 12px; border: 1px solid rgba(212, 178, 114, 0.3);">
+                <div style="text-align: center; margin-bottom: 24px;">
+                  <h1 style="color: #D4B272; font-size: 20px; font-weight: 600; margin: 0 0 8px; letter-spacing: 0.05em;">KANI BARBER STUDIO</h1>
+                  <p style="color: #A1A1AA; font-size: 13px; margin: 0;">Verificación definitiva de entrega transaccional · V12.47.4</p>
+                </div>
+                <div style="background: rgba(255, 255, 255, 0.04); border-radius: 8px; padding: 20px; border: 1px solid rgba(255, 255, 255, 0.08); margin-bottom: 20px;">
+                  <p style="margin: 0 0 8px; font-size: 14px; color: #E4E4E7;"><strong>Dominio verificado:</strong> kanibarber.com (Resend Forge · DKIM activo)</p>
+                  <p style="margin: 0 0 8px; font-size: 14px; color: #E4E4E7;"><strong>Remitente oficial:</strong> ${fromEmail}</p>
+                  <p style="margin: 0 0 8px; font-size: 14px; color: #E4E4E7;"><strong>Destinatario:</strong> ${recipient}</p>
+                  <p style="margin: 0; font-size: 14px; color: #E4E4E7;"><strong>Timestamp:</strong> ${new Date().toISOString()}</p>
+                </div>
+                <p style="color: #71717A; font-size: 11px; text-align: center; margin: 0;">San Isidro Labrador 7, Martínez · turnos@kanibarber.com</p>
+              </div>
+            `;
+
+            const sendRes = await fetch("https://api.resend.com/emails", {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${apiKey}`,
+                "Content-Type": "application/json",
+                "Idempotency-Key": `kani-diag-v12-47-4-${Date.now()}`,
+              },
+              body: JSON.stringify({
+                from: fromEmail,
+                to: [recipient],
+                subject: testSubject,
+                html: testHtml,
+                text: "KANI BARBER STUDIO — Verificación definitiva de correo transaccional V12.47.4 desde turnos@kanibarber.com.",
+              }),
+            });
+
+            const sendData = (await sendRes.json().catch(() => null)) as any;
+            testSendResult = {
+              success: sendRes.ok && Boolean(sendData?.id),
+              statusCode: sendRes.status,
+              id: sendData?.id || null,
+              error: sendRes.ok ? null : (sendData?.message || `RESEND_${sendRes.status}`),
+              recipient,
+              from: fromEmail,
+            };
+          }
+
+          return new Response(
+            JSON.stringify({
+              configured: true,
+              sender: fromEmail,
+              domain: domainInfo,
+              testSend: testSendResult,
+            }),
+            {
+              status: 200,
+              headers: { "content-type": "application/json", "cache-control": "no-store" },
+            },
+          );
+        } catch (diagErr) {
+          const msg = diagErr instanceof Error ? diagErr.message : String(diagErr);
+          return new Response(JSON.stringify({ error: msg }), {
+            status: 500,
+            headers: { "content-type": "application/json", "cache-control": "no-store" },
+          });
+        }
+      }
+
       // Central gate also covers diagnostics and maintenance routes that use privileged clients.
       let verifiedStaff: Awaited<ReturnType<typeof import('./lib/kani-staff-request.server').authenticateStaffRequest>> | undefined;
       if (url.pathname.startsWith('/api/admin/') || (url.pathname.startsWith('/api/integrations/google-calendar/') && !url.pathname.endsWith('/callback'))) {
