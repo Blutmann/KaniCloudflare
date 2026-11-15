@@ -2935,7 +2935,6 @@ html[data-theme] .site-shell .liquid-glass-reservation :is(
 ) {
   background: var(--cg-crystal-selected) !important;
   box-shadow: var(--cg-crystal-shadow-selected) !important;
-  transform: translate3d(0, -1px, 0) !important;
 }
 
 html[data-theme="light"] .site-shell .liquid-glass-reservation :is(
@@ -10165,4 +10164,1167 @@ html[data-theme] :is(
   z-index: 200 !important;
   filter: none !important;
   isolation: isolate;
+}
+
+
+/* ==============================================================================
+ * LIQUID GLASS V12.46.1 — LIQUID GLASS MOTION SYSTEM (SERVICIO, BARBERO, FECHA, HORARIO)
+ * Coreografías ópticas diferenciadas para /reservar-turno-liquid (Desktop & Mobile):
+ * 1. Servicio: compresión táctil perceptible (0.966) + expansión óptica multicapa
+ *    desde el punto de toque + activación progresiva del borde champagne radial.
+ * 2. Barbero (CONSERVADO V12.46): iluminación suave, halo orbital alrededor de
+ *    .barber-avatar y atenuación discreta de tarjetas no seleccionadas.
+ * 3. Fecha: pulso breve y preciso de celda + expansión luminosa controlada desde
+ *    su contorno + activación champagne del borde + transición suave de selección.
+ * 4. Horario: compresión breve + expansión luminosa desde el centro + iluminación
+ *    progresiva del borde centro-afuera más ágil y enérgica que Servicio.
+ * 5. Respeta prefers-reduced-motion y conserva desenfoque real V12.40.1 sin transforms persistentes.
+ * ============================================================================== */
+
+/* --- Tokens V12.46.1 Light & Dark --- */
+html[data-theme="light"] .site-shell .liquid-glass-reservation {
+  --lg-v46-service-caustic: radial-gradient(
+    ellipse 62% 54% at 50% 50%,
+    rgba(255, 254, 249, 0.88) 0%,
+    rgba(255, 249, 232, 0.54) 36%,
+    rgba(218, 182, 108, 0.22) 64%,
+    rgba(255, 255, 255, 0) 86%
+  );
+  --lg-v46-service-core-glow: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.92) 0%,
+    rgba(222, 186, 114, 0.36) 52%,
+    rgba(255, 255, 255, 0) 82%
+  );
+  --lg-v46-service-ambient: radial-gradient(
+    115% 125% at var(--lg-touch-x-pct, 50%) var(--lg-touch-y-pct, 50%),
+    rgba(255, 253, 246, 0.64) 0%,
+    rgba(218, 182, 108, 0.16) 46%,
+    rgba(255, 255, 255, 0) 78%
+  );
+  --lg-v46-edge-champagne-gradient: radial-gradient(
+    circle at var(--lg-touch-x-pct, 50%) var(--lg-touch-y-pct, 50%),
+    rgba(255, 253, 244, 0.98) 0%,
+    rgba(212, 172, 92, 0.96) 36%,
+    rgba(192, 150, 74, 0.82) 70%,
+    rgba(224, 192, 122, 0.92) 100%
+  );
+  --lg-v46-barber-bloom: radial-gradient(
+    78% 72% at 50% 34%,
+    rgba(222, 190, 122, 0.26) 0%,
+    rgba(255, 252, 244, 0.34) 40%,
+    rgba(255, 255, 255, 0) 76%
+  );
+  --lg-v46-avatar-halo-rest:
+    0 6px 16px rgba(28, 26, 24, 0.11),
+    0 0 0 3px rgba(196, 164, 102, 0.22),
+    0 0 18px rgba(196, 164, 102, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98),
+    inset 0 -1px 0 rgba(178, 144, 78, 0.16);
+  --lg-v46-avatar-ring: rgba(186, 150, 82, 0.62);
+  --lg-v46-contour-border: rgba(182, 138, 58, 0.96);
+  --lg-v46-contour-glow: rgba(206, 168, 92, 0.48);
+  --lg-v46-day-core: radial-gradient(
+    circle,
+    rgba(255, 253, 246, 0.94) 0%,
+    rgba(218, 182, 108, 0.42) 52%,
+    rgba(255, 255, 255, 0) 80%
+  );
+  --lg-v46-slot-core: radial-gradient(
+    circle,
+    rgba(255, 254, 248, 0.86) 0%,
+    rgba(222, 186, 114, 0.36) 50%,
+    rgba(255, 255, 255, 0) 82%
+  );
+  --lg-v46-slot-bloom: radial-gradient(
+    circle,
+    rgba(255, 254, 248, 0.92) 0%,
+    rgba(222, 186, 114, 0.44) 48%,
+    rgba(255, 255, 255, 0) 82%
+  );
+  --lg-v46-slot-ambient: radial-gradient(
+    95% 110% at 50% 50%,
+    rgba(255, 253, 246, 0.68) 0%,
+    rgba(218, 182, 108, 0.22) 50%,
+    rgba(255, 255, 255, 0) 82%
+  );
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-reservation {
+  --lg-v46-service-caustic: radial-gradient(
+    ellipse 62% 54% at 50% 50%,
+    rgba(255, 250, 236, 0.34) 0%,
+    rgba(228, 196, 126, 0.26) 40%,
+    rgba(212, 176, 102, 0.12) 66%,
+    rgba(255, 255, 255, 0) 86%
+  );
+  --lg-v46-service-core-glow: radial-gradient(
+    circle,
+    rgba(255, 250, 238, 0.62) 0%,
+    rgba(224, 190, 118, 0.34) 52%,
+    rgba(255, 255, 255, 0) 82%
+  );
+  --lg-v46-service-ambient: radial-gradient(
+    115% 125% at var(--lg-touch-x-pct, 50%) var(--lg-touch-y-pct, 50%),
+    rgba(255, 248, 228, 0.22) 0%,
+    rgba(224, 190, 118, 0.18) 46%,
+    rgba(255, 255, 255, 0) 80%
+  );
+  --lg-v46-edge-champagne-gradient: radial-gradient(
+    circle at var(--lg-touch-x-pct, 50%) var(--lg-touch-y-pct, 50%),
+    rgba(255, 252, 240, 0.96) 0%,
+    rgba(228, 194, 122, 0.94) 38%,
+    rgba(202, 166, 94, 0.74) 72%,
+    rgba(228, 194, 122, 0.88) 100%
+  );
+  --lg-v46-barber-bloom: radial-gradient(
+    78% 72% at 50% 34%,
+    rgba(224, 192, 122, 0.22) 0%,
+    rgba(255, 246, 224, 0.10) 42%,
+    rgba(255, 255, 255, 0) 76%
+  );
+  --lg-v46-avatar-halo-rest:
+    0 8px 20px rgba(0, 0, 0, 0.56),
+    0 0 0 3px rgba(218, 186, 120, 0.24),
+    0 0 22px rgba(218, 186, 120, 0.28),
+    inset 0 1px 0 rgba(255, 253, 249, 0.88),
+    inset 0 -1px 0 rgba(178, 144, 78, 0.22);
+  --lg-v46-avatar-ring: rgba(224, 192, 122, 0.68);
+  --lg-v46-contour-border: rgba(232, 198, 126, 0.96);
+  --lg-v46-contour-glow: rgba(224, 190, 118, 0.48);
+  --lg-v46-day-core: radial-gradient(
+    circle,
+    rgba(255, 250, 238, 0.62) 0%,
+    rgba(224, 190, 118, 0.38) 52%,
+    rgba(255, 255, 255, 0) 82%
+  );
+  --lg-v46-slot-core: radial-gradient(
+    circle,
+    rgba(255, 248, 228, 0.44) 0%,
+    rgba(224, 190, 118, 0.26) 48%,
+    rgba(255, 255, 255, 0) 82%
+  );
+  --lg-v46-slot-bloom: radial-gradient(
+    circle,
+    rgba(244, 218, 162, 0.28) 0%,
+    rgba(218, 182, 108, 0.22) 48%,
+    rgba(255, 255, 255, 0) 84%
+  );
+  --lg-v46-slot-ambient: radial-gradient(
+    95% 110% at 50% 50%,
+    rgba(255, 248, 228, 0.14) 0%,
+    rgba(224, 190, 118, 0.16) 50%,
+    rgba(255, 255, 255, 0) 82%
+  );
+}
+
+/* ------------------------------------------------------------------------------
+ * 1. TARJETAS DE SERVICIO — Compresión táctil perceptible + expansión óptica desde toque + borde progresivo
+ * ------------------------------------------------------------------------------ */
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option:not(:disabled) {
+  transition:
+    background-image 360ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 360ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 400ms cubic-bezier(0.22, 1, 0.36, 1) !important;
+}
+
+/* Ancla desde el punto de contacto real (--lg-touch-x, --lg-touch-y) sin ripple genérico ni anillos duros */
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option > .lg-living-surface > .lg-living-core {
+  left: var(--lg-touch-x, 50%) !important;
+  top: var(--lg-touch-y, 50%) !important;
+  width: 120px !important;
+  height: 120px !important;
+  background: var(--lg-v46-service-core-glow) !important;
+  filter: blur(10px);
+  opacity: 0;
+  transform: translate3d(-50%, -50%, 0) scale(0.24);
+}
+
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option > .lg-living-surface > .lg-living-refraction {
+  left: var(--lg-touch-x, 50%) !important;
+  top: var(--lg-touch-y, 50%) !important;
+  width: var(--lg-wave-size, 420px) !important;
+  height: var(--lg-wave-size, 420px) !important;
+  border-radius: 50% !important;
+  background: var(--lg-v46-service-caustic) !important;
+  filter: blur(18px);
+  opacity: 0;
+  transform: translate3d(-50%, -50%, 0) scale(0.18);
+}
+
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option > .lg-optical-sheen {
+  position: absolute !important;
+  inset: 0 !important;
+  border-radius: inherit !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+  background: none !important;
+  transform: none !important;
+  animation: none !important;
+  opacity: 0 !important;
+  z-index: 1 !important;
+}
+
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option > .lg-optical-sheen::after {
+  content: "" !important;
+  position: absolute !important;
+  inset: 0 !important;
+  border-radius: inherit !important;
+  background: var(--lg-v46-service-ambient) !important;
+  opacity: 0;
+  pointer-events: none !important;
+}
+
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option[data-lg-motion="service-select"] > .lg-optical-sheen {
+  opacity: 1 !important;
+}
+
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option > .lg-living-surface > .lg-living-edge {
+  padding: 2px !important;
+  background: var(--lg-v46-edge-champagne-gradient) !important;
+  opacity: 0;
+}
+
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option[data-lg-motion="service-select"] > .lg-living-surface > .lg-living-core {
+  animation: kaniServiceCoreV461 480ms cubic-bezier(0.22, 1, 0.36, 1) 1 forwards !important;
+}
+
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option[data-lg-motion="service-select"] > .lg-living-surface > .lg-living-refraction {
+  animation: kaniServiceRefractionV461 640ms cubic-bezier(0.22, 1, 0.36, 1) 1 forwards !important;
+}
+
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option[data-lg-motion="service-select"] > .lg-optical-sheen::after {
+  animation: kaniServiceAmbientBloomV461 620ms cubic-bezier(0.22, 1, 0.36, 1) 1 forwards !important;
+}
+
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .booking-service-options > .service-option[data-lg-motion="service-select"] > .lg-living-surface > .lg-living-edge {
+  animation: kaniServiceEdgeRevealV461 620ms cubic-bezier(0.22, 1, 0.36, 1) 1 forwards !important;
+}
+
+@keyframes kaniServiceCoreV461 {
+  0% {
+    opacity: 0.92;
+    transform: translate3d(-50%, -50%, 0) scale(0.24);
+  }
+  35% {
+    opacity: 0.78;
+    transform: translate3d(-50%, -50%, 0) scale(1.04);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(-50%, -50%, 0) scale(1.55);
+  }
+}
+
+@keyframes kaniServiceRefractionV461 {
+  0% {
+    opacity: 0;
+    transform: translate3d(-50%, -50%, 0) scale(0.16);
+  }
+  20% {
+    opacity: 0.96;
+  }
+  60% {
+    opacity: 0.62;
+    transform: translate3d(-50%, -50%, 0) scale(0.92);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(-50%, -50%, 0) scale(1.18);
+  }
+}
+
+@keyframes kaniServiceAmbientBloomV461 {
+  0% {
+    opacity: 0;
+  }
+  28% {
+    opacity: 0.92;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes kaniServiceEdgeRevealV461 {
+  0% {
+    opacity: 0.25;
+    clip-path: circle(8% at var(--lg-touch-x-pct, 50%) var(--lg-touch-y-pct, 50%));
+  }
+  42% {
+    opacity: 1;
+    clip-path: circle(135% at var(--lg-touch-x-pct, 50%) var(--lg-touch-y-pct, 50%));
+  }
+  100% {
+    opacity: 0;
+    clip-path: circle(155% at var(--lg-touch-x-pct, 50%) var(--lg-touch-y-pct, 50%));
+  }
+}
+
+/* ------------------------------------------------------------------------------
+ * 2. TARJETAS DE BARBERO — Conservado intacto V12.46 (referencia aprobada)
+ * ------------------------------------------------------------------------------ */
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .booking-barber-options > .booking-option:not(.booking-defer-option):not(:disabled) {
+  transition:
+    background-image 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 460ms cubic-bezier(0.22, 1, 0.36, 1) !important;
+}
+
+/* Barbero no usa reflejo barrido de Servicio; usa iluminación radial suave centrada */
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .booking-barber-options > .booking-option:not(.booking-defer-option) > .lg-optical-sheen {
+  opacity: 0 !important;
+}
+
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .booking-barber-options > .booking-option:not(.booking-defer-option) > .lg-living-surface > .lg-living-refraction {
+  inset: 0 !important;
+  left: 0 !important;
+  top: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: inherit !important;
+  transform: none !important;
+  background: var(--lg-v46-barber-bloom) !important;
+  opacity: 0;
+}
+
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .booking-barber-options > .booking-option:not(.booking-defer-option)[data-lg-motion="barber-select"] > .lg-living-surface > .lg-living-refraction {
+  animation: kaniBarberLuminescenceV46 580ms cubic-bezier(0.22, 1, 0.36, 1) 1 forwards !important;
+}
+
+/* Halo sutil alrededor del avatar al seleccionar profesional (Desktop & Mobile) */
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .booking-barber-options > .booking-option:not(.booking-defer-option) .barber-avatar {
+  position: relative !important;
+  transition:
+    border-color 400ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 440ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 360ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 360ms cubic-bezier(0.22, 1, 0.36, 1) !important;
+}
+
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .booking-barber-options > .booking-option:not(.booking-defer-option) .barber-avatar::after {
+  content: "" !important;
+  position: absolute !important;
+  inset: -6px !important;
+  border-radius: 9999px !important;
+  border: 1.5px solid var(--lg-v46-avatar-ring) !important;
+  box-shadow: 0 0 14px rgba(212, 180, 114, 0.32) !important;
+  opacity: 0;
+  transform: scale(0.92);
+  pointer-events: none !important;
+}
+
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .booking-barber-options > .booking-option:not(.booking-defer-option).selected .barber-avatar {
+  box-shadow: var(--lg-v46-avatar-halo-rest) !important;
+}
+
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .booking-barber-options > .booking-option:not(.booking-defer-option)[data-lg-motion="barber-select"] .barber-avatar::after {
+  animation: kaniBarberAvatarHaloV46 600ms cubic-bezier(0.22, 1, 0.36, 1) 1 forwards !important;
+}
+
+/* Reducción sutil de protagonismo en barberos no seleccionados (preserva blur del cristal) */
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .booking-barber-options > .booking-option:not(.booking-defer-option) :is(.booking-option-copy, .selection-circle) {
+  transition:
+    opacity 360ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 360ms cubic-bezier(0.22, 1, 0.36, 1) !important;
+}
+
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .booking-barber-options:is(.has-selected-barber, :has(> .booking-option:not(.booking-defer-option).selected)) > .booking-option:not(.booking-defer-option):not(.selected) :is(.barber-avatar, .booking-option-copy, .selection-circle) {
+  opacity: 0.72 !important;
+  filter: saturate(0.86);
+}
+
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .booking-barber-options:is(.has-selected-barber, :has(> .booking-option:not(.booking-defer-option).selected)) > .booking-option:not(.booking-defer-option):not(.selected):is(:hover, :focus-visible) :is(.barber-avatar, .booking-option-copy, .selection-circle) {
+  opacity: 0.96 !important;
+  filter: none;
+}
+
+@keyframes kaniBarberLuminescenceV46 {
+  0% {
+    opacity: 0;
+  }
+  38% {
+    opacity: 0.92;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes kaniBarberAvatarHaloV46 {
+  0% {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  34% {
+    opacity: 0.88;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.24);
+  }
+}
+
+/* ------------------------------------------------------------------------------
+ * 3. FECHA (.calendar-day) — Pulso preciso + contorno expansivo + activación champagne
+ * ------------------------------------------------------------------------------ */
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .calendar-glass-card .calendar-day:not(:disabled) {
+  overflow: visible !important;
+  transition:
+    background-image 280ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 280ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 300ms cubic-bezier(0.22, 1, 0.36, 1),
+    color 220ms cubic-bezier(0.22, 1, 0.36, 1) !important;
+}
+
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .calendar-glass-card .calendar-day:not(:disabled):hover {
+  transform: none;
+}
+
+/* Onda óptica controlada desde el contorno de la celda (evita ser recortada por la celda) */
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .calendar-glass-card .calendar-day::after {
+  content: "" !important;
+  position: absolute !important;
+  inset: -1px !important;
+  border-radius: inherit !important;
+  border: 1.5px solid var(--lg-v46-contour-border) !important;
+  box-shadow: 0 0 12px var(--lg-v46-contour-glow) !important;
+  opacity: 0;
+  transform: scale(0.96);
+  pointer-events: none !important;
+}
+
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .calendar-glass-card .calendar-day[data-lg-motion="day-select"]::after {
+  animation: kaniDayContourPulseV461 480ms cubic-bezier(0.22, 1, 0.36, 1) 1 forwards !important;
+}
+
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .calendar-glass-card .calendar-day > .lg-living-surface > .lg-living-core {
+  left: 50% !important;
+  top: 50% !important;
+  width: 72px !important;
+  height: 72px !important;
+  background: var(--lg-v46-day-core) !important;
+  opacity: 0;
+  transform: translate3d(-50%, -50%, 0) scale(0.32);
+}
+
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .calendar-glass-card .calendar-day > .lg-living-surface > .lg-living-edge {
+  padding: 1.75px !important;
+  background: linear-gradient(
+    138deg,
+    rgba(255, 253, 244, 0.96) 0%,
+    rgba(218, 182, 108, 0.95) 52%,
+    rgba(196, 158, 86, 0.88) 100%
+  ) !important;
+  opacity: 0;
+}
+
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .calendar-glass-card .calendar-day[data-lg-motion="day-select"] > .lg-living-surface > .lg-living-core {
+  animation: kaniDayCoreGlowV461 380ms cubic-bezier(0.22, 1, 0.36, 1) 1 forwards !important;
+}
+
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .calendar-glass-card .calendar-day[data-lg-motion="day-select"] > .lg-living-surface > .lg-living-edge {
+  animation: kaniDayEdgeFlashV461 440ms cubic-bezier(0.22, 1, 0.36, 1) 1 forwards !important;
+}
+
+@keyframes kaniDayContourPulseV461 {
+  0% {
+    opacity: 0.92;
+    transform: scale(0.96);
+  }
+  42% {
+    opacity: 0.72;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.22);
+  }
+}
+
+@keyframes kaniDayCoreGlowV461 {
+  0% {
+    opacity: 0.86;
+    transform: translate3d(-50%, -50%, 0) scale(0.32);
+  }
+  45% {
+    opacity: 0.64;
+    transform: translate3d(-50%, -50%, 0) scale(0.96);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(-50%, -50%, 0) scale(1.25);
+  }
+}
+
+@keyframes kaniDayEdgeFlashV461 {
+  0% {
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* ------------------------------------------------------------------------------
+ * 4. HORARIO (.booking-time-slot) — Compresión ágil + expansión desde centro + borde progresivo
+ * ------------------------------------------------------------------------------ */
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .booking-time-slot:not(:disabled):not(.time-unavailable) {
+  transition:
+    background-image 240ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 240ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    color 200ms cubic-bezier(0.22, 1, 0.36, 1) !important;
+}
+
+/* Origen estrictamente centrado para distinguirse de Servicio (anclado al toque) */
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .booking-time-slot > .lg-living-surface > .lg-living-core {
+  left: 50% !important;
+  top: 50% !important;
+  width: 92px !important;
+  height: 92px !important;
+  background: var(--lg-v46-slot-core) !important;
+  filter: blur(10px);
+  opacity: 0;
+  transform: translate3d(-50%, -50%, 0) scale(0.24);
+}
+
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .booking-time-slot > .lg-living-surface > .lg-living-refraction {
+  left: 50% !important;
+  top: 50% !important;
+  width: 170px !important;
+  height: 170px !important;
+  border-radius: 50% !important;
+  background: var(--lg-v46-slot-bloom) !important;
+  filter: blur(14px);
+  opacity: 0;
+  transform: translate3d(-50%, -50%, 0) scale(0.22);
+}
+
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .booking-time-slot > .lg-optical-sheen {
+  position: absolute !important;
+  inset: 0 !important;
+  border-radius: inherit !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+  background: none !important;
+  transform: none !important;
+  animation: none !important;
+  opacity: 0 !important;
+  z-index: 1 !important;
+}
+
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .booking-time-slot > .lg-optical-sheen::after {
+  content: "" !important;
+  position: absolute !important;
+  inset: 0 !important;
+  border-radius: inherit !important;
+  background: var(--lg-v46-slot-ambient) !important;
+  opacity: 0;
+  pointer-events: none !important;
+}
+
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .booking-time-slot[data-lg-motion="slot-select"] > .lg-optical-sheen {
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .booking-time-slot > .lg-living-surface > .lg-living-edge {
+  padding: 1.75px !important;
+  background: linear-gradient(
+    90deg,
+    rgba(218, 182, 108, 0.86) 0%,
+    rgba(255, 249, 232, 0.94) 50%,
+    rgba(218, 182, 108, 0.86) 100%
+  ) !important;
+  opacity: 0;
+}
+
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .booking-time-slot[data-lg-motion="slot-select"] > .lg-living-surface > .lg-living-core {
+  animation: kaniSlotCenterCoreV461 360ms cubic-bezier(0.22, 1, 0.36, 1) 1 forwards !important;
+}
+
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .booking-time-slot[data-lg-motion="slot-select"] > .lg-living-surface > .lg-living-refraction {
+  animation: kaniSlotCenterExpandV461 450ms cubic-bezier(0.22, 1, 0.36, 1) 1 forwards !important;
+}
+
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .booking-time-slot[data-lg-motion="slot-select"] > .lg-optical-sheen::after {
+  animation: kaniSlotAmbientV461 440ms cubic-bezier(0.22, 1, 0.36, 1) 1 forwards !important;
+}
+
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .booking-time-slot[data-lg-motion="slot-select"] > .lg-living-surface > .lg-living-edge {
+  animation: kaniSlotEdgeSpreadV461 440ms cubic-bezier(0.22, 1, 0.36, 1) 1 forwards !important;
+}
+
+@keyframes kaniSlotCenterCoreV461 {
+  0% {
+    opacity: 0;
+    transform: translate3d(-50%, -50%, 0) scale(0.24);
+  }
+  20% {
+    opacity: 0.78;
+  }
+  48% {
+    opacity: 0.60;
+    transform: translate3d(-50%, -50%, 0) scale(1.02);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(-50%, -50%, 0) scale(1.48);
+  }
+}
+
+@keyframes kaniSlotCenterExpandV461 {
+  0% {
+    opacity: 0;
+    transform: translate3d(-50%, -50%, 0) scale(0.22);
+  }
+  28% {
+    opacity: 0.88;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(-50%, -50%, 0) scale(1.22);
+  }
+}
+
+@keyframes kaniSlotAmbientV461 {
+  0% {
+    opacity: 0;
+  }
+  30% {
+    opacity: 0.88;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes kaniSlotEdgeSpreadV461 {
+  0% {
+    opacity: 0;
+    clip-path: ellipse(14% 130% at 50% 50%);
+  }
+  22% {
+    opacity: 0.94;
+  }
+  48% {
+    opacity: 0.92;
+    clip-path: ellipse(125% 155% at 50% 50%);
+  }
+  100% {
+    opacity: 0;
+    clip-path: ellipse(135% 165% at 50% 50%);
+  }
+}
+
+/* ------------------------------------------------------------------------------
+ * 5. V12.46.2 — MICROINTERACCIONES DE CONFIRMACIÓN POR RE-PULSACIÓN + PREFERENCIA SONORA
+ * ------------------------------------------------------------------------------ */
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .booking-barber-options > .booking-option:not(.booking-defer-option) > .lg-living-surface > .lg-living-edge {
+  padding: 2px !important;
+  background: var(--lg-v46-edge-champagne-gradient) !important;
+  opacity: 0;
+}
+
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page :is(
+  .booking-service-options > .service-option[data-lg-motion="service-reconfirm"],
+  .booking-barber-options > .booking-option:not(.booking-defer-option)[data-lg-motion="barber-reconfirm"]
+) > .lg-living-surface > .lg-living-edge {
+  animation: kaniReconfirmEdgeV462 280ms cubic-bezier(0.22, 1, 0.36, 1) 1 forwards !important;
+}
+
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page :is(
+  .calendar-glass-card .calendar-day[data-lg-motion="day-reconfirm"],
+  .booking-time-slot[data-lg-motion="slot-reconfirm"]
+) > .lg-living-surface > .lg-living-edge {
+  animation: kaniReconfirmEdgeV462 250ms cubic-bezier(0.22, 1, 0.36, 1) 1 forwards !important;
+}
+
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .calendar-glass-card .calendar-day[data-lg-motion="day-reconfirm"]::after {
+  animation: kaniDayReconfirmContourV462 250ms cubic-bezier(0.22, 1, 0.36, 1) 1 forwards !important;
+}
+
+@keyframes kaniReconfirmEdgeV462 {
+  0% {
+    opacity: 0;
+  }
+  32% {
+    opacity: 0.86;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes kaniDayReconfirmContourV462 {
+  0% {
+    opacity: 0;
+    transform: scale(0.99);
+  }
+  34% {
+    opacity: 0.52;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.08);
+  }
+}
+
+/* Preferencia sonora accesible (desactivada por defecto, integrada al cristal V12.46.2) */
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .lg-sound-preference-wrap {
+  margin-top: 10px;
+  display: flex;
+  justify-content: flex-start;
+}
+
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .confirmation .lg-sound-preference-wrap {
+  margin: 12px auto 4px;
+  justify-content: center;
+}
+
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .lg-sound-toggle {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  min-height: 40px !important;
+  padding: 7px 12px !important;
+  border-radius: 9999px !important;
+  background-color: transparent !important;
+  background-image: var(--lg-v36-card-bg) !important;
+  -webkit-backdrop-filter: blur(11px) saturate(165%) !important;
+  backdrop-filter: blur(11px) saturate(165%) !important;
+  border: 1px solid var(--lg-v36-border) !important;
+  box-shadow: var(--lg-v36-specular) !important;
+  font-size: 12.5px !important;
+  line-height: 1.2 !important;
+  cursor: pointer !important;
+  transition:
+    border-color 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    background-image 220ms cubic-bezier(0.22, 1, 0.36, 1) !important;
+}
+
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .lg-sound-toggle.is-enabled {
+  border-color: var(--lg-v36-border-selected) !important;
+  background-image: var(--lg-v36-card-selected-bg) !important;
+}
+
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .lg-sound-toggle:focus-visible {
+  outline: 2px solid var(--lg-v36-border-selected) !important;
+  outline-offset: 2px !important;
+}
+
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .lg-sound-toggle-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.78;
+}
+
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .lg-sound-toggle.is-enabled .lg-sound-toggle-icon {
+  color: #c8a96b;
+  opacity: 1;
+}
+
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .lg-sound-toggle-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .lg-sound-toggle-title {
+  font-weight: 500;
+}
+
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .lg-sound-toggle-state {
+  font-size: 11px;
+  opacity: 0.68;
+}
+
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .lg-sound-toggle-pill {
+  position: relative;
+  width: 30px;
+  height: 17px;
+  border-radius: 9999px;
+  background: rgba(148, 152, 160, 0.32);
+  border: 1px solid rgba(180, 184, 194, 0.34);
+  transition: background-color 200ms cubic-bezier(0.22, 1, 0.36, 1), border-color 200ms cubic-bezier(0.22, 1, 0.36, 1);
+  flex-shrink: 0;
+}
+
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .lg-sound-toggle.is-enabled .lg-sound-toggle-pill {
+  background: rgba(200, 169, 107, 0.42);
+  border-color: rgba(212, 180, 114, 0.85);
+}
+
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .lg-sound-toggle-thumb {
+  position: absolute;
+  top: 1.5px;
+  left: 1.5px;
+  width: 12px;
+  height: 12px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.28);
+  transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .lg-sound-toggle.is-enabled .lg-sound-toggle-thumb {
+  transform: translate3d(13px, 0, 0);
+}
+
+/* ------------------------------------------------------------------------------
+ * 6. ACCESIBILIDAD Y RENDIMIENTO (prefers-reduced-motion)
+ * ------------------------------------------------------------------------------ */
+@media (prefers-reduced-motion: reduce) {
+  html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page :is(
+    .booking-service-options > .service-option,
+    .booking-barber-options > .booking-option:not(.booking-defer-option),
+    .booking-barber-options > .booking-option:not(.booking-defer-option) .barber-avatar,
+    .booking-barber-options > .booking-option:not(.booking-defer-option) :is(.booking-option-copy, .selection-circle),
+    .calendar-glass-card .calendar-day,
+    .booking-time-slot
+  ),
+  html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation :is(
+    .lg-sound-toggle,
+    .lg-sound-toggle-pill,
+    .lg-sound-toggle-thumb,
+    .discount-applied-card,
+    .discount-remove-button,
+    .discount-error-action-btn
+  ) {
+    transition: none !important;
+  }
+
+  html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page :is(
+    .service-option[data-lg-motion] > .lg-optical-sheen::after,
+    .service-option[data-lg-motion] > .lg-living-surface > .lg-living-core,
+    .service-option[data-lg-motion] > .lg-living-surface > .lg-living-refraction,
+    .service-option[data-lg-motion] > .lg-living-surface > .lg-living-edge,
+    .booking-option[data-lg-motion] > .lg-living-surface > .lg-living-refraction,
+    .booking-option[data-lg-motion] > .lg-living-surface > .lg-living-edge,
+    .booking-option[data-lg-motion] .barber-avatar::after,
+    .calendar-day[data-lg-motion]::after,
+    .calendar-day[data-lg-motion] > .lg-living-surface > .lg-living-core,
+    .calendar-day[data-lg-motion] > .lg-living-surface > .lg-living-edge,
+    .booking-time-slot[data-lg-motion] > .lg-optical-sheen::after,
+    .booking-time-slot[data-lg-motion] > .lg-living-surface > .lg-living-core,
+    .booking-time-slot[data-lg-motion] > .lg-living-surface > .lg-living-refraction,
+    .booking-time-slot[data-lg-motion] > .lg-living-surface > .lg-living-edge
+  ) {
+    animation: none !important;
+    opacity: 0 !important;
+  }
+}
+
+/* ==============================================================================
+ * LIQUID GLASS V12.46.3 — TARJETA DE DESCUENTO CHAMPAGNE Y RECUPERACIÓN SIN FRICCIÓN
+ * Estética champagne/dorado suave en una única tarjeta con backdrop-filter real,
+ * alto contraste Light/Dark sobre los 4 fondos atmosféricos y acciones accesibles.
+ * ============================================================================== */
+html[data-theme="light"] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .booking-contact-form .discount-applied-card {
+  background-color: transparent !important;
+  background-image: linear-gradient(154deg, rgba(255, 251, 241, 0.74) 0%, rgba(246, 238, 218, 0.56) 100%) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(145%) !important;
+  backdrop-filter: blur(18px) saturate(145%) !important;
+  border: 1.5px solid rgba(196, 164, 102, 0.62) !important;
+  box-shadow:
+    0 8px 22px rgba(28, 26, 24, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    inset 0 -1px 0 rgba(196, 164, 102, 0.14) !important;
+}
+
+html[data-theme="dark"] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .booking-contact-form .discount-applied-card {
+  background-color: transparent !important;
+  background-image: linear-gradient(154deg, rgba(56, 49, 39, 0.62) 0%, rgba(25, 23, 24, 0.50) 58%, rgba(40, 35, 29, 0.58) 100%) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(145%) !important;
+  backdrop-filter: blur(18px) saturate(145%) !important;
+  border: 1.5px solid rgba(212, 180, 114, 0.62) !important;
+  box-shadow:
+    0 12px 26px rgba(0, 0, 0, 0.38),
+    inset 0 1px 0 rgba(255, 248, 232, 0.24),
+    inset 0 -1px 0 rgba(212, 180, 114, 0.14) !important;
+}
+
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .discount-applied-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+html[data-theme="light"] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .discount-applied-icon {
+  background: rgba(196, 164, 102, 0.18);
+  border: 1px solid rgba(186, 149, 78, 0.42);
+  color: #6E5018;
+}
+
+html[data-theme="dark"] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .discount-applied-icon {
+  background: rgba(212, 180, 114, 0.16);
+  border: 1px solid rgba(212, 180, 114, 0.38);
+  color: #E7C986;
+}
+
+html[data-theme="light"] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .discount-applied-code {
+  color: #161513 !important;
+}
+
+html[data-theme="dark"] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .discount-applied-code {
+  color: #FAF8F4 !important;
+}
+
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .discount-applied-pill {
+  font-size: 11px;
+  line-height: 1;
+  font-weight: 600;
+  padding: 3.5px 8px;
+  border-radius: 9999px;
+  letter-spacing: 0.01em;
+  flex-shrink: 0;
+}
+
+html[data-theme="light"] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .discount-applied-pill {
+  background: rgba(196, 164, 102, 0.20);
+  border: 1px solid rgba(175, 138, 66, 0.40);
+  color: #6A4D16;
+}
+
+html[data-theme="dark"] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .discount-applied-pill {
+  background: rgba(212, 180, 114, 0.18);
+  border: 1px solid rgba(212, 180, 114, 0.42);
+  color: #EED49A;
+}
+
+html[data-theme="light"] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .discount-applied-label {
+  color: rgba(30, 27, 23, 0.84) !important;
+}
+
+html[data-theme="dark"] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .discount-applied-label {
+  color: rgba(244, 240, 232, 0.84) !important;
+}
+
+html[data-theme="light"] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .discount-remove-button {
+  background: rgba(255, 255, 255, 0.62) !important;
+  border: 1px solid rgba(28, 26, 24, 0.18) !important;
+  border-radius: 10px !important;
+  color: #1F1C18 !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.88) !important;
+}
+
+html[data-theme="light"] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .discount-remove-button:hover {
+  background: rgba(255, 255, 255, 0.86) !important;
+  border-color: rgba(178, 52, 52, 0.42) !important;
+  color: #9A2020 !important;
+}
+
+html[data-theme="dark"] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .discount-remove-button {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 246, 228, 0.24) !important;
+  border-radius: 10px !important;
+  color: #F5F2EB !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14) !important;
+}
+
+html[data-theme="dark"] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .discount-remove-button:hover {
+  background: rgba(255, 255, 255, 0.14) !important;
+  border-color: rgba(240, 110, 110, 0.50) !important;
+  color: #FFB6B6 !important;
+}
+
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .discount-error-action-btn {
+  min-height: 40px !important;
+  height: auto !important;
+  padding: 8px 13px !important;
+  border-radius: 10px !important;
+  font-size: 12.5px !important;
+  font-weight: 500 !important;
+  line-height: 1.2 !important;
+  -webkit-backdrop-filter: blur(12px) saturate(135%) !important;
+  backdrop-filter: blur(12px) saturate(135%) !important;
+}
+
+html[data-theme="light"] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .discount-error-remove-btn {
+  background: rgba(255, 255, 255, 0.56) !important;
+  border: 1px solid rgba(28, 26, 24, 0.18) !important;
+  color: #1F1C18 !important;
+}
+
+html[data-theme="light"] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .discount-error-continue-btn {
+  background: rgba(255, 251, 241, 0.72) !important;
+  border: 1px solid rgba(196, 164, 102, 0.56) !important;
+  color: #5E4414 !important;
+}
+
+html[data-theme="dark"] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .discount-error-remove-btn {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 246, 228, 0.22) !important;
+  color: #F4F1EA !important;
+}
+
+html[data-theme="dark"] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .discount-error-continue-btn {
+  background: rgba(212, 180, 114, 0.14) !important;
+  border: 1px solid rgba(212, 180, 114, 0.48) !important;
+  color: #EED49A !important;
+}
+
+html[data-theme="light"] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page :is(.summary-discount-row, .summary-free-service-note, .discount-bypass-clear-link) {
+  color: #6E5018 !important;
+}
+
+html[data-theme="dark"] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page :is(.summary-discount-row, .summary-free-service-note, .discount-bypass-clear-link) {
+  color: #E7C986 !important;
+}
+
+html[data-theme="light"] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .discount-bypass-note {
+  color: rgba(34, 31, 27, 0.80);
+}
+
+html[data-theme="dark"] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .discount-bypass-note {
+  color: rgba(244, 240, 232, 0.80);
+}
+
+@media (max-width: 400px) {
+  html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .booking-contact-form .discount-applied-card {
+    gap: 10px;
+    padding: 10px 12px;
+  }
+
+  html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .discount-remove-button {
+    padding-left: 11px !important;
+    padding-right: 11px !important;
+  }
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  html[data-theme="light"] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .booking-contact-form .discount-applied-card {
+    background-image: linear-gradient(154deg, #fdfaf2, #f5eedb) !important;
+  }
+
+  html[data-theme="dark"] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .booking-contact-form .discount-applied-card {
+    background-image: linear-gradient(154deg, #2e2922, #1e1b17) !important;
+  }
+}
+
+/* ==============================================================================
+ * LIQUID GLASS V12.46.4 — AVISO BREVE EN MODAL PAYWAY POR CÓDIGO INVÁLIDO
+ * ============================================================================== */
+body.liquid-glass-active .payway-checkout .payway-benefit-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 11px 13px;
+  margin-top: 2px;
+  margin-bottom: 6px;
+  border-radius: 12px;
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+
+html[data-theme="light"] body.liquid-glass-active .payway-checkout .payway-benefit-warning {
+  background: rgba(255, 249, 236, 0.88);
+  border: 1px solid rgba(196, 152, 72, 0.48);
+  color: #4b3812;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+
+html[data-theme="dark"] body.liquid-glass-active .payway-checkout .payway-benefit-warning {
+  background: rgba(62, 48, 28, 0.62);
+  border: 1px solid rgba(224, 188, 114, 0.44);
+  color: #f4e6c7;
+  box-shadow: inset 0 1px 0 rgba(255, 244, 218, 0.14);
+}
+
+body.liquid-glass-active .payway-checkout .payway-benefit-warning-icon {
+  margin-top: 2px;
+  color: #c89d4c;
+}
+
+body.liquid-glass-active .payway-checkout .payway-benefit-warning-body {
+  min-width: 0;
+  flex: 1;
+}
+
+body.liquid-glass-active .payway-checkout .payway-benefit-warning-title {
+  margin: 0;
+  font-weight: 500;
+}
+
+body.liquid-glass-active .payway-checkout .payway-benefit-warning-amount {
+  margin: 4px 0 0;
+  font-size: 12px;
+  opacity: 0.92;
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page :is(
+    .discount-applied-card,
+    .discount-error-action-btn
+  ) {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+
+  html[data-theme="light"] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .booking-contact-form .discount-applied-card {
+    background-image: linear-gradient(154deg, #fdfaf2, #f5eedb) !important;
+  }
+
+  html[data-theme="dark"] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .booking-contact-form .discount-applied-card {
+    background-image: linear-gradient(154deg, #2e2922, #1e1b17) !important;
+  }
+}
+
+/* ==============================================================================
+ * LIQUID GLASS V12.46.4 — AVISO BREVE EN MODAL PAYWAY POR CÓDIGO INVÁLIDO
+ * ============================================================================== */
+body.liquid-glass-active .payway-checkout .payway-benefit-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 11px 13px;
+  margin-top: 2px;
+  margin-bottom: 6px;
+  border-radius: 12px;
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+
+html[data-theme="light"] body.liquid-glass-active .payway-checkout .payway-benefit-warning {
+  background: rgba(255, 249, 236, 0.88);
+  border: 1px solid rgba(196, 152, 72, 0.48);
+  color: #4b3812;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+
+html[data-theme="dark"] body.liquid-glass-active .payway-checkout .payway-benefit-warning {
+  background: rgba(62, 48, 28, 0.62);
+  border: 1px solid rgba(224, 188, 114, 0.44);
+  color: #f4e6c7;
+  box-shadow: inset 0 1px 0 rgba(255, 244, 218, 0.14);
+}
+
+body.liquid-glass-active .payway-checkout .payway-benefit-warning-icon {
+  margin-top: 2px;
+  color: #c89d4c;
+}
+
+body.liquid-glass-active .payway-checkout .payway-benefit-warning-body {
+  min-width: 0;
+  flex: 1;
+}
+
+body.liquid-glass-active .payway-checkout .payway-benefit-warning-title {
+  margin: 0;
+  font-weight: 500;
+}
+
+body.liquid-glass-active .payway-checkout .payway-benefit-warning-amount {
+  margin: 4px 0 0;
+  font-size: 12px;
+  opacity: 0.92;
 }

@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Check, Instagram, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { dateLabel, money, formatServiceName } from '@/lib/kani-model';
@@ -26,6 +27,7 @@ export interface BookingConfirmedScreenProps {
   onHomeClick?: () => void;
   homeUrl?: string;
   homeLabel?: string;
+  soundPreferenceControl?: ReactNode;
 }
 
 /**
@@ -37,6 +39,7 @@ export function BookingConfirmedScreen({
   onHomeClick,
   homeUrl = '/reservar-turno',
   homeLabel = 'Volver al inicio',
+  soundPreferenceControl,
 }: BookingConfirmedScreenProps) {
   const remainingArs = Math.max(0, confirmed.servicePriceArs - confirmed.depositArs);
 
@@ -46,6 +49,7 @@ export function BookingConfirmedScreen({
         <div className="confirmation-mark"><Check size={28} /></div>
         <h1>Turno confirmado</h1>
         <p className="text-sm text-muted-foreground confirmation-subtitle">Te enviamos la confirmación por mail.</p>
+        {soundPreferenceControl}
         <div className="confirmation-grid">
           {/* Columna izquierda: Encabezado del Resumen */}
           <div className="confirmation-header-summary">
