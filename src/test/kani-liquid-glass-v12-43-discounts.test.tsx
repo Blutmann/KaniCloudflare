@@ -358,4 +358,52 @@ describe('V12.43 — Rediseño de Descuentos Liquid Glass y navegación compacta
     expect(css).toContain('--dc-bg: var(--lga-glass-interactive)');
     expect(css).toContain('.v2-memberships-page .kani-dcard[data-status="DELETED"]');
   });
+
+  it('6. V12.43.1 — Reorganiza tarjetas mobile de Descuentos en 4 filas estrictas sin tocar desktop y corrige footer admin', () => {
+    const cssPath = path.resolve(process.cwd(), 'src/components/kani/experimental/liquid-glass-admin.css');
+    const css = fs.readFileSync(cssPath, 'utf8');
+
+    const layer14Idx = css.indexOf('LAYER 14 · V12.43.1');
+    expect(layer14Idx).toBeGreaterThan(-1);
+    const layer14 = css.slice(layer14Idx);
+
+    // Fix del footer en /admin-liquid (sin padding-bottom residual ni altura artificial)
+    expect(layer14).toContain('body[data-lg-admin="true"] .site-shell:has(.v2-shell)');
+    expect(layer14).toContain('padding-bottom: 0 !important;');
+    expect(layer14).toContain('data-lg-section="admin"');
+    expect(layer14).toContain('min-height: 0 !important;');
+    expect(layer14).toContain('position: static !important;');
+    expect(layer14).toContain('margin-top: auto !important;');
+
+    // Toda la reorganización de tarjetas debe vivir estrictamente dentro de @media (max-width: 767px)
+    const mobileIdx = layer14.indexOf('@media (max-width: 767px)');
+    expect(mobileIdx).toBeGreaterThan(-1);
+    const mobileBlock = layer14.slice(mobileIdx);
+
+    // Orden obligatorio de las 4 filas:
+    // Fila 1: beneficio (1) | estado (2)
+    // Fila 2: vigencia | usos (3)
+    // Fila 3: código + copiar (4) | eliminar (5)
+    // Fila 4: Detalles (6) | Editar | Desactivar (7)
+    expect(mobileBlock).toContain('.kani-dcard-benefit');
+    expect(mobileBlock).toContain('order: 1 !important;');
+    expect(mobileBlock).toContain('.kani-dcard-badge');
+    expect(mobileBlock).toContain('order: 2 !important;');
+    expect(mobileBlock).toContain('.kani-dcard-meta');
+    expect(mobileBlock).toContain('order: 3 !important;');
+    expect(mobileBlock).toContain('.kani-dcard-code-group');
+    expect(mobileBlock).toContain('order: 4 !important;');
+    expect(mobileBlock).toContain('.kani-dcard-btn-delete');
+    expect(mobileBlock).toContain('order: 5 !important;');
+    expect(mobileBlock).toContain('.kani-dcard-btn-details');
+    expect(mobileBlock).toContain('order: 6 !important;');
+    expect(mobileBlock).toContain('.kani-dcard-btn-action');
+    expect(mobileBlock).toContain('order: 7 !important;');
+
+    // Estado DELETED sin botón eliminar no deja hueco ni 5ta fila
+    expect(mobileBlock).toContain('.kani-dcard[data-status="DELETED"] .kani-dcard-code-group');
+    // Tres botones alineados con altura consistente (44px)
+    expect(mobileBlock).toContain('flex: 1 1 calc((100% - 14px) / 3) !important;');
+    expect(mobileBlock).toContain('height: 44px !important;');
+  });
 });

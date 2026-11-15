@@ -2983,3 +2983,185 @@ html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .kani-dcard-emp
     backdrop-filter: none !important;
   }
 }
+
+/* ==============================================================================
+ * LAYER 14 · V12.43.1 — TARJETAS DESCUENTOS MOBILE (4 FILAS) + FOOTER DESKTOP
+ * - Mobile (<= 767px): reordena cada .kani-dcard de /admin-liquid/descuentos en
+ *   4 filas estrictas sin alterar desktop (> 767px) ni lógica/acciones.
+ * - Admin Desktop/Shell: anula el padding-bottom heredado de .site-shell en
+ *   rutas con .v2-shell y el min-height artificial de .liquid-glass-page para
+ *   que .site-footer quede al pie del viewport en contenido corto o tras scroll
+ *   en contenido largo, sin franja de fondo debajo.
+ * ============================================================================== */
+
+html[data-theme] body[data-lg-admin="true"] .site-shell:has(.v2-shell) {
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 100dvh !important;
+  padding-bottom: 0 !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .site-shell:has(.v2-shell) > .liquid-glass-page[data-lg-section="admin"] {
+  flex: 1 0 auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 0 !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .site-shell:has(.v2-shell) > .liquid-glass-page[data-lg-section="admin"] > .liquid-glass-page-content {
+  flex: 1 0 auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 0 !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .site-shell:has(.v2-shell) > .site-footer {
+  position: static !important;
+  inset: auto !important;
+  margin-top: auto !important;
+  margin-bottom: 0 !important;
+}
+
+@media (max-width: 767px) {
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section .kani-dcard {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    row-gap: 10px !important;
+    column-gap: 6px !important;
+    padding: 14px 13px !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section .kani-dcard-body,
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section .kani-dcard-header,
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section .kani-dcard-actions {
+    display: contents !important;
+  }
+
+  /* Fila 1: Nombre del beneficio | Estado */
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section .kani-dcard-benefit {
+    order: 1 !important;
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    font-size: 14.5px !important;
+    line-height: 1.3 !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section .kani-dcard-badge {
+    order: 2 !important;
+    flex: 0 0 auto !important;
+    align-self: center !important;
+  }
+
+  /* Fila 2: Vigencia | Cantidad de usos */
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section .kani-dcard-meta {
+    order: 3 !important;
+    flex: 0 0 100% !important;
+    width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    flex-wrap: wrap !important;
+    gap: 4px 10px !important;
+    font-size: 12px !important;
+  }
+
+  /* Fila 3: Código promocional | Botón copiar | Botón eliminar */
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section .kani-dcard-code-group {
+    order: 4 !important;
+    flex: 1 1 calc(100% - 56px) !important;
+    min-width: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 8px !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section .kani-dcard[data-status="DELETED"] .kani-dcard-code-group {
+    flex: 1 1 100% !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section .kani-dcard-code {
+    flex: 0 1 auto !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    font-size: 14px !important;
+    line-height: 1.25 !important;
+    letter-spacing: 0.025em !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section .kani-dcard :is(.kani-dcard-btn-copy, .kani-dcard-btn-delete) {
+    flex: 0 0 40px !important;
+    width: 40px !important;
+    height: 40px !important;
+    min-height: 40px !important;
+    max-height: 40px !important;
+    padding: 0 !important;
+    border-radius: 12px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section .kani-dcard .kani-dcard-btn-delete {
+    order: 5 !important;
+    margin-left: auto !important;
+  }
+
+  /* Fila 4: Botón Detalles | Botón Editar | Botón Desactivar (o Activar) */
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section .kani-dcard .kani-dcard-btn-details {
+    order: 6 !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section .kani-dcard .kani-dcard-btn-action {
+    order: 7 !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section .kani-dcard :is(.kani-dcard-btn-details, .kani-dcard-btn-action) {
+    flex: 1 1 calc((100% - 14px) / 3) !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    height: 44px !important;
+    min-height: 44px !important;
+    max-height: 44px !important;
+    padding: 0 8px !important;
+    margin-top: 2px !important;
+    gap: 4px !important;
+    font-size: 12px !important;
+    line-height: 1.15 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    white-space: nowrap !important;
+    box-sizing: border-box !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section .kani-dcard :is(.kani-dcard-btn-details, .kani-dcard-btn-action) svg {
+    width: 13px !important;
+    height: 13px !important;
+    flex: 0 0 13px !important;
+  }
+
+  /* Detalles expandido por debajo de las 4 filas */
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section .kani-dcard-details {
+    order: 9 !important;
+    flex: 0 0 100% !important;
+    width: 100% !important;
+    margin-top: 2px !important;
+  }
+}
+
+@media (max-width: 380px) {
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section .kani-dcard-code {
+    font-size: 13px !important;
+    letter-spacing: 0.015em !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section .kani-dcard :is(.kani-dcard-btn-details, .kani-dcard-btn-action) {
+    padding: 0 6px !important;
+    gap: 3px !important;
+    font-size: 11.5px !important;
+  }
+}
