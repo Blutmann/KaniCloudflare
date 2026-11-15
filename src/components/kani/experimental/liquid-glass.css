@@ -11330,9 +11330,10 @@ body.liquid-glass-active .payway-checkout .payway-benefit-warning-amount {
 }
 
 /* ==============================================================================
- * LIQUID GLASS V12.47.1 — MOTION SYSTEM II (STEP TRANSITIONS & STEPPER COORDINATION)
+ * LIQUID GLASS V12.47.2 — MOTION SYSTEM II (REFINED STEP TRANSITIONS & OPTICAL CHOREOGRAPHY)
  * Coreografías Optical Glass diferenciadas por transición de paso (0..4),
- * sincronizadas con la lente del stepper y libres de compositing residual en reposo.
+ * sincronizadas con la lente del stepper, entrada y salida superpuestas sin pausas
+ * y libres de compositing residual en reposo.
  * ============================================================================== */
 
 body.liquid-glass-active .liquid-glass-reservation .booking-layout > section {
@@ -11349,13 +11350,15 @@ body.liquid-glass-active .liquid-glass-step-stage {
   position: relative;
 }
 
-body.liquid-glass-active .liquid-glass-step-stage[data-lg-step-exiting="true"] {
+body.liquid-glass-active .liquid-glass-step-stage[data-lg-step-exiting="true"],
+body.liquid-glass-active .liquid-glass-step-stage[data-lg-step-state="exiting"] {
   pointer-events: none !important;
-  user-select: none;
+  user-select: none !important;
+  z-index: 1;
 }
 
-body.liquid-glass-active .liquid-glass-step-stage[data-lg-step-state="settled"],
-body.liquid-glass-active .liquid-glass-step-stage[data-lg-step-state="reduced"] {
+body.liquid-glass-active .liquid-glass-step-stage[data-lg-step-state="settled"]:not([data-lg-step-exiting="true"]),
+body.liquid-glass-active .liquid-glass-step-stage[data-lg-step-state="reduced"]:not([data-lg-step-exiting="true"]) {
   transform: none !important;
   filter: none !important;
   will-change: auto !important;
@@ -11379,60 +11382,58 @@ body.liquid-glass-active .liquid-glass-reservation .booking-progress > button > 
     border-color var(--lg-step-sync-ms, 280ms) cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* Horizonte luminoso óptico finito durante la entrada del paso */
+/* Sutil halo refractivo óptico durante la entrada del paso */
 body.liquid-glass-active .liquid-glass-step-stage[data-lg-step-state="entering"] > .lg-step-optical-veil {
   position: absolute;
-  inset: -4px 4px auto 4px;
-  height: 54px;
-  border-radius: 22px 22px 0 0;
+  inset: 0 4px auto 4px;
+  height: 24px;
+  border-radius: 20px 20px 0 0;
   pointer-events: none;
   z-index: 3;
-  animation: lgStepOpticalHorizon var(--lg-step-enter-ms, 320ms) cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  animation: lgStepOpticalHorizon var(--lg-step-enter-ms, 280ms) cubic-bezier(0.22, 1, 0.36, 1) backwards;
 }
 
 html[data-theme="light"] body.liquid-glass-active .liquid-glass-step-stage[data-lg-step-state="entering"] > .lg-step-optical-veil {
   background: linear-gradient(
     180deg,
-    rgba(255, 250, 240, 0.38) 0%,
-    rgba(218, 189, 134, 0.14) 24%,
+    rgba(255, 255, 255, 0.35) 0%,
+    rgba(255, 255, 255, 0.08) 40%,
     rgba(255, 255, 255, 0) 100%
   );
-  border-top: 1px solid rgba(212, 178, 114, 0.34);
+  border-top: 1px solid rgba(255, 255, 255, 0.5);
 }
 
 html[data-theme="dark"] body.liquid-glass-active .liquid-glass-step-stage[data-lg-step-state="entering"] > .lg-step-optical-veil {
   background: linear-gradient(
     180deg,
-    rgba(240, 214, 162, 0.16) 0%,
-    rgba(212, 178, 114, 0.06) 26%,
+    rgba(240, 214, 162, 0.10) 0%,
+    rgba(212, 178, 114, 0.03) 40%,
     rgba(0, 0, 0, 0) 100%
   );
-  border-top: 1px solid rgba(232, 200, 140, 0.24);
+  border-top: 1px solid rgba(232, 200, 140, 0.16);
 }
 
 @keyframes lgStepOpticalHorizon {
   0% {
     opacity: 0;
-    transform: translateY(-4px) scaleX(0.94);
   }
-  38% {
-    opacity: 0.92;
+  30% {
+    opacity: 0.28;
   }
   100% {
     opacity: 0;
-    transform: translateY(0) scaleX(1);
   }
 }
 
-/* Sutil asentamiento del título del paso (sin afectar layout) */
+/* Sutil asentamiento del título del paso (sin retrasos ni saltos de layout) */
 body.liquid-glass-active .liquid-glass-step-stage[data-lg-step-state="entering"] .booking-step-heading {
-  animation: lgStepHeadingCrystal var(--lg-step-enter-ms, 300ms) cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  animation: lgStepHeadingCrystal var(--lg-step-enter-ms, 280ms) cubic-bezier(0.22, 1, 0.36, 1) backwards;
 }
 
 @keyframes lgStepHeadingCrystal {
   0% {
-    opacity: 0.65;
-    transform: translateY(4px);
+    opacity: 0.88;
+    transform: translateY(3px);
   }
   100% {
     opacity: 1;
@@ -11440,80 +11441,60 @@ body.liquid-glass-active .liquid-glass-step-stage[data-lg-step-state="entering"]
   }
 }
 
-/* 1. Servicio <-> Barbero: profundidad y entrada progresiva ordenada */
+/* 1. Servicio <-> Barbero: profundidad óptica contenida y continuidad horizontal */
 body.liquid-glass-active .liquid-glass-step-stage[data-lg-step-state="entering"][data-lg-step-pair="service-barber"][data-lg-step-dir="forward"] .booking-barber-options > .booking-option {
-  animation: lgStepBarberEmerge 290ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
-}
-
-body.liquid-glass-active .liquid-glass-step-stage[data-lg-step-state="entering"][data-lg-step-pair="service-barber"][data-lg-step-dir="forward"] .booking-barber-options > .booking-option:nth-child(2) {
-  animation-delay: 28ms;
-}
-
-body.liquid-glass-active .liquid-glass-step-stage[data-lg-step-state="entering"][data-lg-step-pair="service-barber"][data-lg-step-dir="forward"] .booking-barber-options > .booking-option:nth-child(3) {
-  animation-delay: 56ms;
-}
-
-body.liquid-glass-active .liquid-glass-step-stage[data-lg-step-state="entering"][data-lg-step-pair="service-barber"][data-lg-step-dir="forward"] .booking-barber-options > .booking-option:nth-child(n+4) {
-  animation-delay: 82ms;
+  animation: lgStepBarberEmerge var(--lg-step-enter-ms, 280ms) cubic-bezier(0.22, 1, 0.36, 1) backwards;
 }
 
 @keyframes lgStepBarberEmerge {
   0% {
-    opacity: 0;
-    transform: translate3d(10px, 0, 0) scale(0.99);
+    opacity: 0.88;
+    transform: translate3d(6px, 0, 0);
   }
   100% {
     opacity: 1;
-    transform: translate3d(0, 0, 0) scale(1);
+    transform: translate3d(0, 0, 0);
   }
 }
 
 body.liquid-glass-active .liquid-glass-step-stage[data-lg-step-state="entering"][data-lg-step-pair="service-barber"][data-lg-step-dir="backward"] .booking-service-options > .booking-option {
-  animation: lgStepServiceReturn 270ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
-}
-
-body.liquid-glass-active .liquid-glass-step-stage[data-lg-step-state="entering"][data-lg-step-pair="service-barber"][data-lg-step-dir="backward"] .booking-service-options > .booking-option:nth-child(2) {
-  animation-delay: 22ms;
-}
-
-body.liquid-glass-active .liquid-glass-step-stage[data-lg-step-state="entering"][data-lg-step-pair="service-barber"][data-lg-step-dir="backward"] .booking-service-options > .booking-option:nth-child(n+3) {
-  animation-delay: 44ms;
+  animation: lgStepServiceReturn var(--lg-step-enter-ms, 260ms) cubic-bezier(0.22, 1, 0.36, 1) backwards;
 }
 
 @keyframes lgStepServiceReturn {
   0% {
-    opacity: 0.72;
-    transform: translate3d(-8px, 0, 0) scale(0.994);
+    opacity: 0.88;
+    transform: translate3d(-6px, 0, 0);
   }
   100% {
     opacity: 1;
-    transform: translate3d(0, 0, 0) scale(1);
+    transform: translate3d(0, 0, 0);
   }
 }
 
-/* 2. Barbero <-> Fecha: revelación unificada del calendario (sin animar días individuales) */
+/* 2. Barbero <-> Fecha: revelación unificada del calendario (sin animar individualmente celdas) */
 body.liquid-glass-active .liquid-glass-step-stage[data-lg-step-state="entering"][data-lg-step-pair="barber-date"][data-lg-step-dir="forward"] .calendar-glass-card {
-  animation: lgStepCalendarUnfold 300ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  animation: lgStepCalendarUnfold var(--lg-step-enter-ms, 280ms) cubic-bezier(0.22, 1, 0.36, 1) backwards;
 }
 
 @keyframes lgStepCalendarUnfold {
   0% {
-    opacity: 0.76;
-    transform: translate3d(0, 8px, 0) scale(0.993);
+    opacity: 0.88;
+    transform: translate3d(0, 6px, 0);
   }
   100% {
     opacity: 1;
-    transform: translate3d(0, 0, 0) scale(1);
+    transform: translate3d(0, 0, 0);
   }
 }
 
 body.liquid-glass-active .liquid-glass-step-stage[data-lg-step-state="entering"][data-lg-step-pair="barber-date"][data-lg-step-dir="backward"] .booking-barber-options {
-  animation: lgStepBarberQuietReturn 260ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  animation: lgStepBarberQuietReturn var(--lg-step-enter-ms, 260ms) cubic-bezier(0.22, 1, 0.36, 1) backwards;
 }
 
 @keyframes lgStepBarberQuietReturn {
   0% {
-    opacity: 0.82;
+    opacity: 0.88;
     transform: translate3d(0, -5px, 0);
   }
   100% {
@@ -11522,62 +11503,62 @@ body.liquid-glass-active .liquid-glass-step-stage[data-lg-step-state="entering"]
   }
 }
 
-/* 3. Fecha <-> Horario: continuidad causa -> consecuencia (fecha ancla + grilla horaria) */
+/* 3. Fecha <-> Horario: continuidad causa -> consecuencia (fecha ancla + horarios disponibles inmediatos) */
 body.liquid-glass-active .liquid-glass-step-stage[data-lg-step-state="entering"][data-lg-step-pair="date-time"][data-lg-step-dir="forward"] .booking-time-heading-date {
-  animation: lgStepDateAnchorGlow 270ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  animation: lgStepDateAnchorGlow var(--lg-step-enter-ms, 260ms) cubic-bezier(0.22, 1, 0.36, 1) backwards;
 }
 
 body.liquid-glass-active .liquid-glass-step-stage[data-lg-step-state="entering"][data-lg-step-pair="date-time"][data-lg-step-dir="forward"] :is(.booking-v3-times, .booking-v5-times, .booking-times-card) {
-  animation: lgStepTimePanelReveal 260ms cubic-bezier(0.22, 1, 0.36, 1) 36ms backwards;
+  animation: lgStepTimePanelReveal var(--lg-step-enter-ms, 260ms) cubic-bezier(0.22, 1, 0.36, 1) backwards;
 }
 
 body.liquid-glass-active .liquid-glass-step-stage[data-lg-step-state="entering"][data-lg-step-pair="date-time"][data-lg-step-dir="backward"] .calendar-glass-card {
-  animation: lgStepCalendarReturn 250ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  animation: lgStepCalendarReturn var(--lg-step-enter-ms, 250ms) cubic-bezier(0.22, 1, 0.36, 1) backwards;
 }
 
 @keyframes lgStepDateAnchorGlow {
   0% {
-    opacity: 0.55;
-    transform: translate3d(-4px, 4px, 0) scale(0.975);
+    opacity: 0.85;
+    transform: translate3d(-3px, 3px, 0);
   }
   100% {
     opacity: 1;
-    transform: translate3d(0, 0, 0) scale(1);
+    transform: translate3d(0, 0, 0);
   }
 }
 
 @keyframes lgStepTimePanelReveal {
   0% {
-    opacity: 0.78;
-    transform: translate3d(0, 7px, 0) scale(0.995);
+    opacity: 0.88;
+    transform: translate3d(0, 4px, 0);
   }
   100% {
     opacity: 1;
-    transform: translate3d(0, 0, 0) scale(1);
+    transform: translate3d(0, 0, 0);
   }
 }
 
 @keyframes lgStepCalendarReturn {
   0% {
-    opacity: 0.8;
-    transform: translate3d(0, -6px, 0) scale(0.995);
+    opacity: 0.88;
+    transform: translate3d(0, -4px, 0);
   }
   100% {
     opacity: 1;
-    transform: translate3d(0, 0, 0) scale(1);
+    transform: translate3d(0, 0, 0);
   }
 }
 
 /* 4. Horario <-> Datos: máxima serenidad y enfoque de lectura / formulario */
 body.liquid-glass-active .liquid-glass-step-stage[data-lg-step-state="entering"][data-lg-step-pair="time-contact"] .booking-contact-summary,
 body.liquid-glass-active .liquid-glass-step-stage[data-lg-step-state="entering"][data-lg-step-pair="time-contact"] .booking-summary-card {
-  animation: lgStepContactQuiet 220ms cubic-bezier(0.25, 0.96, 0.36, 1) backwards;
+  animation: lgStepContactQuiet var(--lg-step-enter-ms, 240ms) cubic-bezier(0.25, 0.96, 0.36, 1) backwards;
 }
 
 @keyframes lgStepContactQuiet {
   0% {
-    opacity: 0.88;
-    transform: translate3d(0, 3px, 0);
+    opacity: 0.92;
+    transform: translate3d(0, 2px, 0);
   }
   100% {
     opacity: 1;

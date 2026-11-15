@@ -89,122 +89,122 @@ export const LIQUID_GLASS_MOTION = {
   stepTransitions: {
     'service-barber': {
       forward: {
-        enterDuration: 0.36,
-        exitDuration: 0.19,
+        enterDuration: 0.3,
+        exitDuration: 0.22,
         ease: [0.22, 1, 0.36, 1] as const,
-        enterX: 18,
+        enterX: 12,
         enterY: 0,
-        enterScale: 0.986,
-        exitX: -16,
+        enterScale: 0.992,
+        exitX: -10,
         exitY: 0,
-        exitScale: 0.982,
+        exitScale: 0.992,
       },
       backward: {
-        enterDuration: 0.33,
-        exitDuration: 0.175,
+        enterDuration: 0.28,
+        exitDuration: 0.2,
         ease: [0.22, 1, 0.36, 1] as const,
-        enterX: -16,
+        enterX: -10,
         enterY: 0,
-        enterScale: 0.985,
-        exitX: 16,
+        enterScale: 0.992,
+        exitX: 10,
         exitY: 0,
-        exitScale: 0.986,
+        exitScale: 0.992,
       },
     },
     'barber-date': {
       forward: {
-        enterDuration: 0.32,
-        exitDuration: 0.17,
+        enterDuration: 0.28,
+        exitDuration: 0.2,
         ease: [0.22, 1, 0.36, 1] as const,
         enterX: 0,
-        enterY: 11,
+        enterY: 8,
         enterScale: 0.994,
         exitX: 0,
-        exitY: -8,
-        exitScale: 0.992,
+        exitY: -6,
+        exitScale: 0.994,
       },
       backward: {
-        enterDuration: 0.3,
-        exitDuration: 0.16,
+        enterDuration: 0.26,
+        exitDuration: 0.19,
         ease: [0.22, 1, 0.36, 1] as const,
         enterX: 0,
-        enterY: -9,
+        enterY: -6,
         enterScale: 0.994,
         exitX: 0,
-        exitY: 9,
-        exitScale: 0.992,
+        exitY: 6,
+        exitScale: 0.994,
       },
     },
     'date-time': {
       forward: {
-        enterDuration: 0.29,
-        exitDuration: 0.155,
+        enterDuration: 0.26,
+        exitDuration: 0.19,
         ease: [0.22, 1, 0.36, 1] as const,
-        enterX: 6,
-        enterY: 8,
-        enterScale: 0.995,
-        exitX: -6,
-        exitY: -6,
-        exitScale: 0.995,
+        enterX: 4,
+        enterY: 5,
+        enterScale: 0.996,
+        exitX: -4,
+        exitY: -4,
+        exitScale: 0.996,
       },
       backward: {
-        enterDuration: 0.275,
-        exitDuration: 0.145,
+        enterDuration: 0.25,
+        exitDuration: 0.18,
         ease: [0.22, 1, 0.36, 1] as const,
-        enterX: -6,
-        enterY: -8,
-        enterScale: 0.995,
-        exitX: 6,
-        exitY: 6,
-        exitScale: 0.995,
+        enterX: -4,
+        enterY: -5,
+        enterScale: 0.996,
+        exitX: 4,
+        exitY: 5,
+        exitScale: 0.996,
       },
     },
     'time-contact': {
       forward: {
-        enterDuration: 0.26,
-        exitDuration: 0.14,
+        enterDuration: 0.24,
+        exitDuration: 0.18,
         ease: [0.25, 0.96, 0.36, 1] as const,
         enterX: 0,
-        enterY: 4,
+        enterY: 3,
         enterScale: 0.998,
         exitX: 0,
-        exitY: -3,
+        exitY: -2,
         exitScale: 0.998,
       },
       backward: {
-        enterDuration: 0.25,
-        exitDuration: 0.14,
+        enterDuration: 0.23,
+        exitDuration: 0.17,
         ease: [0.25, 0.96, 0.36, 1] as const,
         enterX: 0,
-        enterY: -4,
+        enterY: -3,
         enterScale: 0.998,
         exitX: 0,
-        exitY: 3,
+        exitY: 2,
         exitScale: 0.998,
       },
     },
     jump: {
       forward: {
-        enterDuration: 0.3,
-        exitDuration: 0.15,
+        enterDuration: 0.27,
+        exitDuration: 0.19,
         ease: [0.22, 1, 0.36, 1] as const,
-        enterX: 12,
-        enterY: 4,
-        enterScale: 0.992,
-        exitX: -12,
-        exitY: -4,
-        exitScale: 0.992,
+        enterX: 8,
+        enterY: 3,
+        enterScale: 0.994,
+        exitX: -8,
+        exitY: -3,
+        exitScale: 0.994,
       },
       backward: {
-        enterDuration: 0.285,
-        exitDuration: 0.15,
+        enterDuration: 0.26,
+        exitDuration: 0.18,
         ease: [0.22, 1, 0.36, 1] as const,
-        enterX: -12,
-        enterY: -4,
-        enterScale: 0.992,
-        exitX: 12,
-        exitY: 4,
-        exitScale: 0.992,
+        enterX: -8,
+        enterY: -3,
+        enterScale: 0.994,
+        exitX: 8,
+        exitY: 3,
+        exitScale: 0.994,
       },
     },
   },
@@ -888,7 +888,6 @@ const StepStageFrame = forwardRef<HTMLDivElement, StepStageFrameProps>(
 
     useEffect(() => {
       if (!isPresent) {
-        setSettled(true);
         return;
       }
       if (shouldReduceMotion || !animateOnEnter) {
@@ -897,7 +896,7 @@ const StepStageFrame = forwardRef<HTMLDivElement, StepStageFrameProps>(
         return;
       }
       setSettled(false);
-      const settleMs = Math.round(spec.enterDuration * 1000) + 90;
+      const settleMs = Math.round(spec.enterDuration * 1000) + 40;
       const timer = window.setTimeout(() => {
         setSettled(true);
         clearResidualTransform();
@@ -915,7 +914,13 @@ const StepStageFrame = forwardRef<HTMLDivElement, StepStageFrameProps>(
     };
 
     const enterMs = Math.round((shouldReduceMotion ? LIQUID_GLASS_MOTION.durations.reduced : spec.enterDuration) * 1000);
-    const stageState = shouldReduceMotion ? 'reduced' : settled ? 'settled' : 'entering';
+    const stageState = shouldReduceMotion
+      ? 'reduced'
+      : !isPresent
+      ? 'exiting'
+      : settled
+      ? 'settled'
+      : 'entering';
 
     return (
       <motion.div

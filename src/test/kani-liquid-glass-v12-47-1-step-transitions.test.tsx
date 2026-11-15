@@ -71,7 +71,7 @@ function renderLiquidFlow(props: Partial<ComponentProps<typeof Booking>> = {}) {
   );
 }
 
-describe('KANI Liquid Glass V12.47.1 — Motion System II (Step Transitions & Stepper Sync)', () => {
+describe('KANI Liquid Glass V12.47.2 — Motion System II (Refined Transitions & Overlap)', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     motionMock.reduced = false;
@@ -122,7 +122,7 @@ describe('KANI Liquid Glass V12.47.1 — Motion System II (Step Transitions & St
     vi.clearAllMocks();
   });
 
-  it('1. Especifica coreografías diferenciadas por transición (0↔1, 1↔2, 2↔3, 3↔4) en rangos 250–360ms', () => {
+  it('1. Especifica coreografías diferenciadas por transición (0↔1, 1↔2, 2↔3, 3↔4) en rangos 220–300ms', () => {
     const p01 = resolveStepTransitionSpec(0, 1, 1);
     const p12 = resolveStepTransitionSpec(1, 2, 1);
     const p23 = resolveStepTransitionSpec(2, 3, 1);
@@ -139,10 +139,10 @@ describe('KANI Liquid Glass V12.47.1 — Motion System II (Step Transitions & St
     expect(p34.enterDuration).toBeLessThan(p01.enterDuration);
 
     for (const spec of [p01, p12, p23, p34]) {
-      expect(spec.enterDuration).toBeGreaterThanOrEqual(0.25);
-      expect(spec.enterDuration).toBeLessThanOrEqual(0.45);
-      expect(spec.exitDuration).toBeGreaterThanOrEqual(0.12);
-      expect(spec.exitDuration).toBeLessThanOrEqual(0.22);
+      expect(spec.enterDuration).toBeGreaterThanOrEqual(0.22);
+      expect(spec.enterDuration).toBeLessThanOrEqual(0.35);
+      expect(spec.exitDuration).toBeGreaterThanOrEqual(0.15);
+      expect(spec.exitDuration).toBeLessThanOrEqual(0.25);
     }
 
     // Regreso con dirección inversa coherente y levemente más ágil
@@ -160,10 +160,10 @@ describe('KANI Liquid Glass V12.47.1 — Motion System II (Step Transitions & St
     expect(b10.enterDuration).toBeLessThan(p01.enterDuration);
 
     // El adaptador sincroniza exactamente en milisegundos con resolveStepTransitionSpec
-    expect(liquidGlassMotionAdapter.getStepTransitionDurationMs?.(0, 1, 1)).toBe(360);
-    expect(liquidGlassMotionAdapter.getStepTransitionDurationMs?.(1, 2, 1)).toBe(320);
-    expect(liquidGlassMotionAdapter.getStepTransitionDurationMs?.(2, 3, 1)).toBe(290);
-    expect(liquidGlassMotionAdapter.getStepTransitionDurationMs?.(3, 4, 1)).toBe(260);
+    expect(liquidGlassMotionAdapter.getStepTransitionDurationMs?.(0, 1, 1)).toBe(300);
+    expect(liquidGlassMotionAdapter.getStepTransitionDurationMs?.(1, 2, 1)).toBe(280);
+    expect(liquidGlassMotionAdapter.getStepTransitionDurationMs?.(2, 3, 1)).toBe(260);
+    expect(liquidGlassMotionAdapter.getStepTransitionDurationMs?.(3, 4, 1)).toBe(240);
 
     // No modifica las constantes V12.46 aprobadas
     expect(LIQUID_GLASS_MOTION.v46.barberMotionMs).toBe(640);
@@ -190,7 +190,7 @@ describe('KANI Liquid Glass V12.47.1 — Motion System II (Step Transitions & St
     fireEvent.click(screen.getByRole('button', { name: /Continuar/i }));
 
     const progress = container.querySelector('.booking-progress') as HTMLElement;
-    expect(progress.style.getPropertyValue('--lg-step-sync-ms')).toBe('360ms');
+    expect(progress.style.getPropertyValue('--lg-step-sync-ms')).toBe('300ms');
 
     const lens = container.querySelector('.liquid-glass-stepper-lens') as HTMLElement;
     expect(lens).toBeTruthy();
@@ -205,7 +205,7 @@ describe('KANI Liquid Glass V12.47.1 — Motion System II (Step Transitions & St
 
     // Asentamiento limpia veil y cualquier transform inline residual
     act(() => {
-      vi.advanceTimersByTime(460);
+      vi.advanceTimersByTime(400);
     });
     expect(stage1.getAttribute('data-lg-step-state')).toBe('settled');
     expect(stage1.style.transform).toBe('');
@@ -213,7 +213,7 @@ describe('KANI Liquid Glass V12.47.1 — Motion System II (Step Transitions & St
 
     // Regreso Paso 1 -> 0 («Volver») manteniendo el servicio seleccionado sin re-disparar V12.46
     fireEvent.click(screen.getByRole('button', { name: /Volver/i }));
-    expect(progress.style.getPropertyValue('--lg-step-sync-ms')).toBe('330ms');
+    expect(progress.style.getPropertyValue('--lg-step-sync-ms')).toBe('280ms');
 
     const stage0Back = container.querySelector('.liquid-glass-step-stage[data-lg-step="0"]') as HTMLElement;
     expect(stage0Back.getAttribute('data-lg-step-pair')).toBe('service-barber');
@@ -242,29 +242,29 @@ describe('KANI Liquid Glass V12.47.1 — Motion System II (Step Transitions & St
     // Avanzar 1 -> 2 (Barbero -> Fecha)
     fireEvent.click(screen.getByRole('button', { name: /Continuar/i }));
     const progress = container.querySelector('.booking-progress') as HTMLElement;
-    expect(progress.style.getPropertyValue('--lg-step-sync-ms')).toBe('320ms');
+    expect(progress.style.getPropertyValue('--lg-step-sync-ms')).toBe('280ms');
 
     const stage2 = container.querySelector('.liquid-glass-step-stage[data-lg-step="2"]') as HTMLElement;
     expect(stage2.getAttribute('data-lg-step-pair')).toBe('barber-date');
 
     act(() => {
-      vi.advanceTimersByTime(420);
+      vi.advanceTimersByTime(360);
     });
 
     // Avanzar 2 -> 3 (Fecha -> Horario)
     fireEvent.click(screen.getByRole('button', { name: /Continuar/i }));
-    expect(progress.style.getPropertyValue('--lg-step-sync-ms')).toBe('290ms');
+    expect(progress.style.getPropertyValue('--lg-step-sync-ms')).toBe('260ms');
     const stage3 = container.querySelector('.liquid-glass-step-stage[data-lg-step="3"]') as HTMLElement;
     expect(stage3.getAttribute('data-lg-step-pair')).toBe('date-time');
     expect(stage3.querySelector('.booking-time-heading-date')).toBeTruthy();
 
     act(() => {
-      vi.advanceTimersByTime(390);
+      vi.advanceTimersByTime(340);
     });
 
     // Avanzar 3 -> 4 (Horario -> Datos)
     fireEvent.click(screen.getByRole('button', { name: /Continuar/i }));
-    expect(progress.style.getPropertyValue('--lg-step-sync-ms')).toBe('260ms');
+    expect(progress.style.getPropertyValue('--lg-step-sync-ms')).toBe('240ms');
     const stage4 = container.querySelector('.liquid-glass-step-stage[data-lg-step="4"]') as HTMLElement;
     expect(stage4.getAttribute('data-lg-step-pair')).toBe('time-contact');
 
@@ -275,11 +275,11 @@ describe('KANI Liquid Glass V12.47.1 — Motion System II (Step Transitions & St
 
     // Volver hasta Barbero (4 -> 3 -> 2 -> 1) preservando datos y sin data-lg-motion en barbero seleccionado
     fireEvent.click(screen.getByRole('button', { name: /Volver/i }));
+    expect(progress.style.getPropertyValue('--lg-step-sync-ms')).toBe('230ms');
+    fireEvent.click(screen.getByRole('button', { name: /Volver/i }));
     expect(progress.style.getPropertyValue('--lg-step-sync-ms')).toBe('250ms');
     fireEvent.click(screen.getByRole('button', { name: /Volver/i }));
-    expect(progress.style.getPropertyValue('--lg-step-sync-ms')).toBe('275ms');
-    fireEvent.click(screen.getByRole('button', { name: /Volver/i }));
-    expect(progress.style.getPropertyValue('--lg-step-sync-ms')).toBe('300ms');
+    expect(progress.style.getPropertyValue('--lg-step-sync-ms')).toBe('260ms');
 
     const lautaroCard = screen.getByRole('button', { name: /Barbero Lautaro, seleccionado/i });
     expect(lautaroCard.getAttribute('data-lg-motion')).toBeNull();
@@ -347,7 +347,7 @@ describe('KANI Liquid Glass V12.47.1 — Motion System II (Step Transitions & St
       'utf8',
     );
 
-    expect(css).toContain('LIQUID GLASS V12.47.1 — MOTION SYSTEM II (STEP TRANSITIONS & STEPPER COORDINATION)');
+    expect(css).toContain('LIQUID GLASS V12.47.2 — MOTION SYSTEM II (REFINED STEP TRANSITIONS & OPTICAL CHOREOGRAPHY)');
     expect(css).toContain('.liquid-glass-step-stage[data-lg-step-state="settled"]');
     expect(css).toContain('.liquid-glass-step-stage[data-lg-step-exiting="true"]');
     expect(css).toContain('var(--lg-step-sync-ms, 280ms)');

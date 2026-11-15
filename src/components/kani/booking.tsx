@@ -930,7 +930,7 @@ export function Booking({
   function scrollToTopSmooth() {
     if (typeof window === 'undefined' || typeof window.scrollTo !== 'function') return;
     const currentScrollY = Math.max(window.scrollY || 0, document.documentElement?.scrollTop || 0);
-    if (isLiquidBooking && currentScrollY <= 4) return;
+    if (isLiquidBooking && currentScrollY <= 40) return;
     window.scrollTo({
       top: 0,
       behavior: (isV2 || isFiveSteps) && window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
