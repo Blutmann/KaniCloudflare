@@ -1,22 +1,22 @@
 -- Migration: 20261116000100_kani_notifications_persistence_hotfix.sql
 -- KANI Barber Studio — Hotfix integral de persistencia de notificaciones por usuario en Supabase
+-- Compatible con el esquema productivo actual (`20261106122621_kani_account_notification_inbox` y posteriores)
 --
--- Problema observado en producción:
---   Los RPCs de notificaciones (`read_staff_activity_notifications`, etc.) no estaban presentes en Postgres /
---   PostgREST schema cache (404 PGRST202) y el fallback directo sobre `public.admin_activity_user_state`
---   fallaba con `42501 permission denied` o ciclo potencial entre políticas RLS al faltar grants/políticas
---   actualizadas de V12.39/V12.40.
---
--- Garantías de esta migración (100% autocontenida e idempotente):
---   1. Crea/repara `public.admin_activity_user_state`, sus columnas e índices si faltan.
---   2. Elimina cualquier sobrecarga legada de 0 argumentos en `mark_all_*` / `dismiss_all_*`.
---   3. Elimina el ciclo RLS entre `admin_activity_notifications` y `admin_activity_user_state` usando
---      un helper `SECURITY DEFINER` privado (`kani_private.staff_can_access_activity_notification`).
---   4. Restaura `GRANT`s explícitos para `authenticated` y `service_role`, revoca `anon`/`public`,
---      backfillea estado heredado sin sobrescribir estados por usuario existentes y recarga PostgREST.
+-- Garantías de esta migración:
+--   1. Conserva íntegramente las 17 columnas actuales de `public.admin_activity_notifications`
+--      (`event_key`, `feed_sequence`, `deleted_at`, `deleted_by` incluidos) y los 31/184 registros existentes.
+--   2. Conserva la política `notification_visible_appointment` (solo `APPOINTMENT_CONFIRMED` / `APPOINTMENT_CANCELLED`
+--      activas con `event_key is not null and deleted_at is null`), además de `staff_notification_inbox`,
+--      `staff_set_notification_reads` y `staff_delete_notifications` sin romper contratos existentes.
+--   3. Completa `public.admin_activity_user_state` agregando `dismissed_at` y `created_at` sin alterar estados previos.
+--   4. Implementa RLS no recursivo por comando (`SELECT`, `INSERT`, `UPDATE`, `DELETE`) mediante
+--      `kani_private.staff_can_access_activity_notification(uuid)` (`SECURITY DEFINER`).
+--   5. Crea/actualiza los 8 RPCs `*_staff_activity_*` devolviendo el rowtype real de 17 columnas de
+--      `public.admin_activity_notifications` con aislamiento estricto por `(select auth.uid())`, recarga PostgREST
+--      y habilita publicación Realtime.
 
 -- ==============================================================================
--- 1. Schema privado e infraestructura base
+-- 1. Schema privado e infraestructura de estado por usuario
 -- ==============================================================================
 create schema if not exists kani_private;
 revoke all on schema kani_private from public, anon;
@@ -54,9 +54,7 @@ create index if not exists admin_activity_user_state_user_active_idx
   on public.admin_activity_user_state (user_id, notification_id)
   where dismissed_at is null;
 
--- ==============================================================================
--- 2. Backfill idempotente desde filas heredadas (sin pisar estado existente)
--- ==============================================================================
+-- Backfill idempotente únicamente para eventos activos del inbox que tuvieran read_at heredado
 insert into public.admin_activity_user_state (
   notification_id,
   user_id,
@@ -73,17 +71,25 @@ select
   coalesce(n.read_at, now()),
   now()
 from public.admin_activity_notifications n
+join public.appointments a
+  on a.id = n.appointment_id
 join public.staff_profiles sp
   on sp.active = true
  and (
    sp.role in ('ADMIN', 'MANAGER')
-   or (n.barber_id is not null and sp.barber_id = n.barber_id)
+   or (sp.role = 'BARBER' and sp.barber_id = a.barber_id)
  )
 where n.read_at is not null
+  and n.event_key is not null
+  and n.deleted_at is null
+  and n.event_type in (
+    'APPOINTMENT_CONFIRMED'::public.admin_activity_event_type,
+    'APPOINTMENT_CANCELLED'::public.admin_activity_event_type
+  )
 on conflict (notification_id, user_id) do nothing;
 
 -- ==============================================================================
--- 3. Helper de alcance sin recursión RLS + permisos y políticas no cíclicas
+-- 2. Helper de alcance sin recursión RLS y políticas por comando
 -- ==============================================================================
 create or replace function kani_private.staff_can_access_activity_notification(
   p_notification_id uuid
@@ -92,17 +98,25 @@ returns boolean
 language sql
 stable
 security definer
-set search_path = pg_catalog, public
+set search_path = ''
 as $$
   select exists (
     select 1
     from public.admin_activity_notifications n
+    join public.appointments a
+      on a.id = n.appointment_id
     where n.id = p_notification_id
+      and n.event_key is not null
+      and n.deleted_at is null
+      and n.event_type in (
+        'APPOINTMENT_CONFIRMED'::public.admin_activity_event_type,
+        'APPOINTMENT_CANCELLED'::public.admin_activity_event_type
+      )
       and (
         public.is_operator()
         or (
-          n.barber_id is not null
-          and n.barber_id = public.current_staff_barber_id()
+          public.current_staff_barber_id() is not null
+          and a.barber_id = public.current_staff_barber_id()
         )
       )
   );
@@ -111,7 +125,7 @@ $$;
 revoke all on function kani_private.staff_can_access_activity_notification(uuid) from public, anon;
 grant execute on function kani_private.staff_can_access_activity_notification(uuid) to authenticated, service_role;
 
--- 3a. Tabla compartida de notificaciones: append-only desde triggers, solo SELECT desde clientes
+-- 2a. `public.admin_activity_notifications`: conservar política `notification_visible_appointment` y solo SELECT cliente
 revoke all on table public.admin_activity_notifications from anon, public;
 revoke insert, update, delete on table public.admin_activity_notifications from authenticated;
 grant select on table public.admin_activity_notifications to authenticated;
@@ -119,39 +133,16 @@ grant all on table public.admin_activity_notifications to service_role;
 
 alter table public.admin_activity_notifications enable row level security;
 
-drop policy if exists admin_can_delete_activity_notifications on public.admin_activity_notifications;
-drop policy if exists admin_can_update_activity_notifications on public.admin_activity_notifications;
-drop policy if exists admin_can_update_activity_read_state on public.admin_activity_notifications;
-drop policy if exists admin_can_read_activity_notifications on public.admin_activity_notifications;
-drop policy if exists staff_can_read_activity_notifications on public.admin_activity_notifications;
-
-create policy staff_can_read_activity_notifications
-  on public.admin_activity_notifications
-  for select to authenticated
-  using (
-    (
-      (select public.is_operator())
-      or (
-        barber_id is not null
-        and barber_id = (select public.current_staff_barber_id())
-      )
-    )
-    and not exists (
-      select 1
-      from public.admin_activity_user_state us
-      where us.notification_id = admin_activity_notifications.id
-        and us.user_id = (select auth.uid())
-        and us.dismissed_at is not null
-    )
-  );
-
--- 3b. Estado por usuario: aislamiento estricto por auth.uid() sin ciclo hacia admin_activity_notifications
+-- 2b. `public.admin_activity_user_state`: aislamiento estricto por auth.uid() sin ciclo RLS
 revoke all on table public.admin_activity_user_state from anon, public;
 grant select, insert, update, delete on table public.admin_activity_user_state to authenticated;
 grant all on table public.admin_activity_user_state to service_role;
 
 alter table public.admin_activity_user_state enable row level security;
 
+drop policy if exists notification_account_select on public.admin_activity_user_state;
+drop policy if exists notification_account_insert on public.admin_activity_user_state;
+drop policy if exists notification_account_update on public.admin_activity_user_state;
 drop policy if exists user_can_manage_own_notification_state on public.admin_activity_user_state;
 drop policy if exists user_can_select_own_notification_state on public.admin_activity_user_state;
 drop policy if exists user_can_insert_own_notification_state on public.admin_activity_user_state;
@@ -195,18 +186,18 @@ create policy user_can_delete_own_notification_state
   );
 
 -- ==============================================================================
--- 4. Limpieza de sobrecargas previas y recreación idempotente de RPCs
+-- 3. Limpieza de sobrecargas previas y creación de los 8 RPCs compatibles (17 cols)
 -- ==============================================================================
 drop function if exists public.mark_all_staff_activity_notifications_read();
 drop function if exists public.dismiss_all_staff_activity_notifications_personal();
 
--- 4a. read_staff_activity_notifications
+-- 3a. read_staff_activity_notifications
 create or replace function public.read_staff_activity_notifications()
 returns setof public.admin_activity_notifications
 language plpgsql
 stable
 security definer
-set search_path = pg_catalog, public
+set search_path = ''
 as $$
 declare
   v_uid uuid := (select auth.uid());
@@ -231,29 +222,40 @@ begin
     n.appointment_id,
     n.availability_slot_id,
     n.barber_name,
-    n.client_name,
-    n.event_date,
-    n.event_time,
+    coalesce(nullif(a.booking_client_name, ''), c.name, n.client_name) as client_name,
+    coalesce(a.booking_date, n.event_date) as event_date,
+    coalesce(a.start_time, n.event_time) as event_time,
     n.created_at,
-    us.read_at as read_at
+    us.read_at as read_at,
+    n.event_key,
+    n.feed_sequence,
+    n.deleted_at,
+    n.deleted_by
   from public.admin_activity_notifications n
+  join public.appointments a
+    on a.id = n.appointment_id
+  left join public.clients c
+    on c.id = a.client_id
   left join public.admin_activity_user_state us
     on us.notification_id = n.id
    and us.user_id = v_uid
-  where (
-      v_is_operator
-      or (
-        n.barber_id is not null
-        and n.barber_id = v_barber_id
-      )
+  where n.event_key is not null
+    and n.deleted_at is null
+    and n.event_type in (
+      'APPOINTMENT_CONFIRMED'::public.admin_activity_event_type,
+      'APPOINTMENT_CANCELLED'::public.admin_activity_event_type
     )
-    and (us.dismissed_at is null)
-  order by n.created_at desc
+    and (
+      v_is_operator
+      or a.barber_id = v_barber_id
+    )
+    and us.dismissed_at is null
+  order by n.feed_sequence desc, n.created_at desc
   limit 80;
 end;
 $$;
 
--- 4b. set_staff_activity_notification_read
+-- 3b. set_staff_activity_notification_read
 create or replace function public.set_staff_activity_notification_read(
   p_notification_id uuid,
   p_read_at timestamptz default now()
@@ -261,7 +263,7 @@ create or replace function public.set_staff_activity_notification_read(
 returns void
 language plpgsql
 security definer
-set search_path = pg_catalog, public
+set search_path = ''
 as $$
 declare
   v_uid uuid := (select auth.uid());
@@ -275,13 +277,18 @@ begin
   if not exists (
     select 1
     from public.admin_activity_notifications n
+    join public.appointments a
+      on a.id = n.appointment_id
     where n.id = p_notification_id
+      and n.event_key is not null
+      and n.deleted_at is null
+      and n.event_type in (
+        'APPOINTMENT_CONFIRMED'::public.admin_activity_event_type,
+        'APPOINTMENT_CANCELLED'::public.admin_activity_event_type
+      )
       and (
         v_is_operator
-        or (
-          n.barber_id is not null
-          and n.barber_id = v_barber_id
-        )
+        or (v_barber_id is not null and a.barber_id = v_barber_id)
       )
   ) then
     raise exception 'Notificación no encontrada o fuera de alcance para este usuario.' using errcode = '42501';
@@ -307,14 +314,14 @@ begin
 end;
 $$;
 
--- 4c. mark_all_staff_activity_notifications_read (con p_before opcional)
+-- 3c. mark_all_staff_activity_notifications_read (con p_before opcional)
 create or replace function public.mark_all_staff_activity_notifications_read(
   p_before timestamptz default null
 )
 returns void
 language plpgsql
 security definer
-set search_path = pg_catalog, public
+set search_path = ''
 as $$
 declare
   v_uid uuid := (select auth.uid());
@@ -344,12 +351,17 @@ begin
     v_now,
     v_now
   from public.admin_activity_notifications n
-  where (
+  join public.appointments a
+    on a.id = n.appointment_id
+  where n.event_key is not null
+    and n.deleted_at is null
+    and n.event_type in (
+      'APPOINTMENT_CONFIRMED'::public.admin_activity_event_type,
+      'APPOINTMENT_CANCELLED'::public.admin_activity_event_type
+    )
+    and (
       v_is_operator
-      or (
-        n.barber_id is not null
-        and n.barber_id = v_barber_id
-      )
+      or a.barber_id = v_barber_id
     )
     and (p_before is null or n.created_at <= p_before)
     and not exists (
@@ -366,12 +378,12 @@ begin
 end;
 $$;
 
--- 4d. mark_all_staff_activity_notifications_unread
+-- 3d. mark_all_staff_activity_notifications_unread
 create or replace function public.mark_all_staff_activity_notifications_unread()
 returns void
 language plpgsql
 security definer
-set search_path = pg_catalog, public
+set search_path = ''
 as $$
 declare
   v_uid uuid := (select auth.uid());
@@ -395,26 +407,31 @@ begin
      and exists (
        select 1
        from public.admin_activity_notifications n
+       join public.appointments a
+         on a.id = n.appointment_id
        where n.id = us.notification_id
+         and n.event_key is not null
+         and n.deleted_at is null
+         and n.event_type in (
+           'APPOINTMENT_CONFIRMED'::public.admin_activity_event_type,
+           'APPOINTMENT_CANCELLED'::public.admin_activity_event_type
+         )
          and (
            v_is_operator
-           or (
-             n.barber_id is not null
-             and n.barber_id = v_barber_id
-           )
+           or a.barber_id = v_barber_id
          )
      );
 end;
 $$;
 
--- 4e. dismiss_staff_activity_notification_personal
+-- 3e. dismiss_staff_activity_notification_personal
 create or replace function public.dismiss_staff_activity_notification_personal(
   p_notification_id uuid
 )
 returns void
 language plpgsql
 security definer
-set search_path = pg_catalog, public
+set search_path = ''
 as $$
 declare
   v_uid uuid := (select auth.uid());
@@ -428,13 +445,18 @@ begin
   if not exists (
     select 1
     from public.admin_activity_notifications n
+    join public.appointments a
+      on a.id = n.appointment_id
     where n.id = p_notification_id
+      and n.event_key is not null
+      and n.deleted_at is null
+      and n.event_type in (
+        'APPOINTMENT_CONFIRMED'::public.admin_activity_event_type,
+        'APPOINTMENT_CANCELLED'::public.admin_activity_event_type
+      )
       and (
         v_is_operator
-        or (
-          n.barber_id is not null
-          and n.barber_id = v_barber_id
-        )
+        or (v_barber_id is not null and a.barber_id = v_barber_id)
       )
   ) then
     raise exception 'Notificación no encontrada o fuera de alcance para este usuario.' using errcode = '42501';
@@ -460,14 +482,14 @@ begin
 end;
 $$;
 
--- 4f. dismiss_all_staff_activity_notifications_personal (con p_before opcional)
+-- 3f. dismiss_all_staff_activity_notifications_personal (con p_before opcional)
 create or replace function public.dismiss_all_staff_activity_notifications_personal(
   p_before timestamptz default null
 )
 returns integer
 language plpgsql
 security definer
-set search_path = pg_catalog, public
+set search_path = ''
 as $$
 declare
   v_uid uuid := (select auth.uid());
@@ -499,12 +521,17 @@ begin
       v_now,
       v_now
     from public.admin_activity_notifications n
-    where (
+    join public.appointments a
+      on a.id = n.appointment_id
+    where n.event_key is not null
+      and n.deleted_at is null
+      and n.event_type in (
+        'APPOINTMENT_CONFIRMED'::public.admin_activity_event_type,
+        'APPOINTMENT_CANCELLED'::public.admin_activity_event_type
+      )
+      and (
         v_is_operator
-        or (
-          n.barber_id is not null
-          and n.barber_id = v_barber_id
-        )
+        or a.barber_id = v_barber_id
       )
       and (p_before is null or n.created_at <= p_before)
       and not exists (
@@ -526,14 +553,14 @@ begin
 end;
 $$;
 
--- 4g. Wrappers legados de compatibilidad -> solo descarte personal (nunca borrado global)
+-- 3g. Wrappers legados de compatibilidad -> solo descarte personal
 create or replace function public.delete_staff_activity_notification_global(
   p_notification_id uuid
 )
 returns void
 language plpgsql
 security definer
-set search_path = pg_catalog, public
+set search_path = ''
 as $$
 begin
   perform public.dismiss_staff_activity_notification_personal(p_notification_id);
@@ -544,7 +571,7 @@ create or replace function public.delete_all_staff_activity_notifications_global
 returns integer
 language plpgsql
 security definer
-set search_path = pg_catalog, public
+set search_path = ''
 as $$
 begin
   return public.dismiss_all_staff_activity_notifications_personal(null);
@@ -552,7 +579,7 @@ end;
 $$;
 
 -- ==============================================================================
--- 5. Permisos explícitos sobre RPCs, publicación Realtime y recarga PostgREST
+-- 4. Permisos explícitos, Realtime y recarga de PostgREST schema cache
 -- ==============================================================================
 revoke all on function public.read_staff_activity_notifications() from public, anon;
 revoke all on function public.set_staff_activity_notification_read(uuid, timestamptz) from public, anon;
