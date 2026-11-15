@@ -406,8 +406,9 @@ describe('Liquid Glass V12.46.1 — Liquid Glass Motion System (Servicio, Barber
     expect(triggerSelectionHaptic('select', false)).toBe(true);
     expect(vibrateMock).toHaveBeenCalledWith(10);
 
-    // Sonido desactivado por defecto y sintetizado suave (~250ms) solo al activarse + 1 vez por reserva
+    // Sonido desactivado por defecto y sintetizado cálido/extendido (~515ms) solo al activarse + 1 vez por reserva
     const createdOscillators: Array<{ duration: number }> = [];
+    const lowpassFreqCalls: Array<{ fn: string; value: number }> = [];
     class FakeAudioContext {
       state = 'running';
       currentTime = 1.0;
@@ -416,7 +417,10 @@ describe('Liquid Glass V12.46.1 — Liquid Glass Motion System (Servicio, Barber
       createBiquadFilter() {
         return {
           type: 'lowpass',
-          frequency: { setValueAtTime: vi.fn() },
+          frequency: {
+            setValueAtTime: (value: number) => lowpassFreqCalls.push({ fn: 'set', value }),
+            exponentialRampToValueAtTime: (value: number) => lowpassFreqCalls.push({ fn: 'ramp', value }),
+          },
           Q: { setValueAtTime: vi.fn() },
           connect: vi.fn(),
         };
@@ -459,11 +463,15 @@ describe('Liquid Glass V12.46.1 — Liquid Glass Motion System (Servicio, Barber
     writeConfirmationSoundEnabled(true);
     expect(readConfirmationSoundEnabled()).toBe(true);
     expect(playConfirmationChime('apt-1')).toBe(true);
-    expect(createdOscillators.length).toBeGreaterThanOrEqual(2);
+    expect(createdOscillators).toHaveLength(3);
     for (const osc of createdOscillators) {
-      expect(osc.duration).toBeGreaterThanOrEqual(0.15);
-      expect(osc.duration).toBeLessThanOrEqual(0.3);
+      expect(osc.duration).toBeGreaterThanOrEqual(0.34);
+      expect(osc.duration).toBeLessThanOrEqual(0.52);
     }
+    expect(lowpassFreqCalls).toEqual([
+      { fn: 'set', value: 2600 },
+      { fn: 'ramp', value: 1400 },
+    ]);
 
     // Nunca se repite para una reserva ya confirmada
     expect(hasPlayedConfirmationSound('apt-1')).toBe(true);

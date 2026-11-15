@@ -73,11 +73,18 @@ function mapBenefitErrorMessage(rawError: unknown): string {
     return 'Este código ya fue utilizado.';
   }
 
-  // Desactivado o vencido
+  // Vencido o fuera de vigencia
+  if (lower.includes('vencid') || lower.includes('expir')) {
+    return 'Este código se encuentra vencido.';
+  }
+  if (lower.includes('aún no se encuentra vigente') || lower.includes('vigente')) {
+    return 'Este código aún no se encuentra vigente.';
+  }
+
+  // Desactivado o eliminado
   if (
     lower.includes('desactiv') ||
-    lower.includes('vencid') ||
-    lower.includes('expir') ||
+    lower.includes('ya no está disponible') ||
     lower.includes('disabled')
   ) {
     return 'Este código ya no está disponible.';
@@ -165,6 +172,7 @@ export function Booking({
   const isV5 = propVariant === 'v5';
   const isV3 = propVariant === 'v3';
   const isFiveSteps = isV3 || isV5;
+  const isLiquidBooking = Boolean(experimentalMotion);
   const isV2 = propVariant === 'v2' || (!propVariant && combinedDateTime);
   const isV1 = !isV2 && !isV3 && !isV5;
 
@@ -193,10 +201,24 @@ export function Booking({
   const [appliedBenefit, setAppliedBenefit] = useState<BenefitQuote | null>(null);
   const [benefitValidationLoading, setBenefitValidationLoading] = useState(false);
   const [benefitErrorMessage, setBenefitErrorMessage] = useState<string | null>(null);
+  const [bypassedInvalidCode, setBypassedInvalidCode] = useState<string | null>(null);
   const [successAlertVisible, setSuccessAlertVisible] = useState(false);
   const successTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const benefitValidationSeqRef = useRef(0);
+  const benefitValidationPromiseRef = useRef<{
+    key: string;
+    promise: Promise<{ valid: boolean; quote: BenefitQuote | null; errorMessage: string | null }>;
+  } | null>(null);
+  const normalizedBenefitInput = benefitCodeInput.trim().toUpperCase();
+  const hasBypassedInvalidCode = Boolean(
+    isLiquidBooking &&
+      normalizedBenefitInput &&
+      bypassedInvalidCode &&
+      bypassedInvalidCode === normalizedBenefitInput,
+  );
   const hasUnappliedBenefitCode = Boolean(
-    benefitCodeInput.trim() && (!appliedBenefit || benefitCodeInput.trim().toUpperCase() !== appliedBenefit.code.toUpperCase())
+    normalizedBenefitInput &&
+      (!appliedBenefit || normalizedBenefitInput !== appliedBenefit.code.toUpperCase()),
   );
 
   const [pendingAppointment, setPendingAppointment] = useState<{ id: string; requestNumber: number; expiresAt: number } | null>(null);
@@ -487,41 +509,97 @@ export function Booking({
   }, [availabilityBarber, availabilityStartsByDate, barberDeferred, clock, service, serviceName]);
   const availableDatesSet = useMemo(() => new Set(availableDates), [availableDates]);
 
+  const validateBenefitCodeNow = useCallback(
+    async (
+      rawCode: string,
+      options?: { showSuccessBanner?: boolean },
+    ): Promise<{ valid: boolean; quote: BenefitQuote | null; errorMessage: string | null }> => {
+      const cleanCode = rawCode.trim();
+      const normalizedCode = cleanCode.toUpperCase();
+      if (!normalizedCode) {
+        return { valid: false, quote: null, errorMessage: null };
+      }
+
+      const targetServiceName = selected?.name ?? (service ? serviceFor(service).name : 'Corte');
+      const targetBarber = barber ?? undefined;
+      const requestKey = `${normalizedCode}|${targetServiceName}|${targetBarber ?? ''}`;
+
+      if (benefitValidationPromiseRef.current?.key === requestKey) {
+        return benefitValidationPromiseRef.current.promise;
+      }
+
+      const seq = ++benefitValidationSeqRef.current;
+      setBenefitValidationLoading(true);
+      setBenefitErrorMessage(null);
+      setBypassedInvalidCode(null);
+
+      const promise = (async (): Promise<{ valid: boolean; quote: BenefitQuote | null; errorMessage: string | null }> => {
+        try {
+          const quote = await validateBenefitCodeQuoteFn({
+            data: {
+              code: cleanCode,
+              serviceName: targetServiceName,
+              barber: targetBarber,
+            },
+          });
+          if (seq !== benefitValidationSeqRef.current) {
+            return { valid: false, quote: null, errorMessage: null };
+          }
+          if (quote.valid) {
+            setAppliedBenefit(quote);
+            setBenefitErrorMessage(null);
+            setBypassedInvalidCode(null);
+            if (options?.showSuccessBanner) {
+              setSuccessAlertVisible(true);
+              if (successTimeoutRef.current) clearTimeout(successTimeoutRef.current);
+              successTimeoutRef.current = setTimeout(() => {
+                setSuccessAlertVisible(false);
+              }, 5000);
+            }
+            return { valid: true, quote, errorMessage: null };
+          }
+          const friendly = mapBenefitErrorMessage(quote.message || quote.error);
+          setAppliedBenefit(null);
+          setBenefitErrorMessage(friendly);
+          return { valid: false, quote: null, errorMessage: friendly };
+        } catch (err: unknown) {
+          if (seq !== benefitValidationSeqRef.current) {
+            return { valid: false, quote: null, errorMessage: null };
+          }
+          const friendly = mapBenefitErrorMessage(err);
+          setAppliedBenefit(null);
+          setBenefitErrorMessage(friendly);
+          return { valid: false, quote: null, errorMessage: friendly };
+        } finally {
+          if (benefitValidationPromiseRef.current?.key === requestKey) {
+            benefitValidationPromiseRef.current = null;
+          }
+          if (seq === benefitValidationSeqRef.current) {
+            setBenefitValidationLoading(false);
+          }
+        }
+      })();
+
+      benefitValidationPromiseRef.current = { key: requestKey, promise };
+      return promise;
+    },
+    [barber, selected, service],
+  );
+
   const applyBenefitCode = useCallback(async () => {
     const raw = benefitCodeInput.trim();
     if (!raw || benefitValidationLoading) return;
-    setBenefitValidationLoading(true);
-    setBenefitErrorMessage(null);
-    try {
-      const quote = await validateBenefitCodeQuoteFn({
-        data: {
-          code: raw,
-          serviceName: selected?.name ?? (service ? serviceFor(service).name : 'Corte'),
-          barber: barber ?? undefined,
-        },
-      });
-      if (quote.valid) {
-        setAppliedBenefit(quote);
-        setBenefitErrorMessage(null);
-        setSuccessAlertVisible(true);
-        if (successTimeoutRef.current) clearTimeout(successTimeoutRef.current);
-        successTimeoutRef.current = setTimeout(() => {
-          setSuccessAlertVisible(false);
-        }, 5000);
-      } else {
-        setBenefitErrorMessage(mapBenefitErrorMessage(quote.message || quote.error));
-      }
-    } catch (err: unknown) {
-      setBenefitErrorMessage(mapBenefitErrorMessage(err));
-    } finally {
-      setBenefitValidationLoading(false);
-    }
-  }, [benefitCodeInput, benefitValidationLoading, selected, service, barber]);
+    await validateBenefitCodeNow(raw, { showSuccessBanner: !isLiquidBooking });
+  }, [benefitCodeInput, benefitValidationLoading, isLiquidBooking, validateBenefitCodeNow]);
 
   const removeBenefitCode = useCallback(() => {
+    benefitValidationSeqRef.current += 1;
+    benefitValidationPromiseRef.current = null;
+    setBenefitValidationLoading(false);
     setAppliedBenefit(null);
     setBenefitCodeInput('');
     setBenefitErrorMessage(null);
+    setBypassedInvalidCode(null);
     setSuccessAlertVisible(false);
     if (successTimeoutRef.current) clearTimeout(successTimeoutRef.current);
   }, []);
@@ -940,9 +1018,9 @@ export function Booking({
     }
   }
 
-  async function submit() {
+  async function submit(options?: { bypassInvalidBenefit?: boolean }) {
     if (!service || !barber || !date || !time || submitting) return;
-    if (hasUnappliedBenefitCode) {
+    if (!isLiquidBooking && hasUnappliedBenefitCode) {
       move(4);
       setBenefitErrorMessage('Tenés un código ingresado sin aplicar. Aplicá el código o borralo para continuar.');
       return;
@@ -957,6 +1035,31 @@ export function Booking({
       setError('Ingresá un número de teléfono válido para el país seleccionado.');
       return;
     }
+
+    let resolvedBenefitForSubmit: BenefitQuote | null = appliedBenefit;
+    if (isLiquidBooking && normalizedBenefitInput) {
+      const shouldBypass = Boolean(options?.bypassInvalidBenefit) || hasBypassedInvalidCode;
+      if (shouldBypass) {
+        resolvedBenefitForSubmit = null;
+      } else {
+        const matchesApplied = Boolean(
+          appliedBenefit && appliedBenefit.code.toUpperCase() === normalizedBenefitInput,
+        );
+        if (!matchesApplied || benefitValidationLoading) {
+          setSubmitting(true);
+          setError('');
+          const validation = await validateBenefitCodeNow(benefitCodeInput.trim(), {
+            showSuccessBanner: false,
+          });
+          if (!validation.valid || !validation.quote) {
+            setSubmitting(false);
+            return;
+          }
+          resolvedBenefitForSubmit = validation.quote;
+        }
+      }
+    }
+
     if (
       !hasActivePaymentAttempt &&
       !pendingAppointment &&
@@ -972,6 +1075,7 @@ export function Booking({
                 clock,
               ).includes(barber)))))
     ) {
+      setSubmitting(false);
       openSlotUnavailableRecovery({
         requestedDate: date,
         requestedTime: time,
@@ -1021,8 +1125,8 @@ export function Booking({
         await onPaymentRequest({ barber, serviceName: selected?.name ?? serviceFor(service).name,
           date, time, name: contact.name.trim(), phone: normalizedPhone.e164,
           email: contact.email.trim(), notes: contact.notes,
-          benefitCode: appliedBenefit?.code,
-          benefitQuote: appliedBenefit ?? undefined });
+          benefitCode: resolvedBenefitForSubmit?.code,
+          benefitQuote: resolvedBenefitForSubmit ?? undefined });
       } catch (cause: any) {
         if (isAvailabilityConflictError(cause)) {
           openSlotUnavailableRecovery({
@@ -1737,6 +1841,7 @@ export function Booking({
                           onChange={(e) => {
                             setBenefitCodeInput(e.target.value.toUpperCase());
                             setBenefitErrorMessage(null);
+                            setBypassedInvalidCode(null);
                           }}
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') {
@@ -1770,6 +1875,41 @@ export function Booking({
                         )}
                       </Button>
                     </div>
+                  ) : isLiquidBooking ? (
+                    <div
+                      className="discount-applied-card mt-2.5 flex items-center justify-between gap-3 rounded-xl p-3 sm:p-3.5"
+                      role="status"
+                      aria-live="polite"
+                    >
+                      <div className="discount-applied-main flex items-center gap-2.5 min-w-0">
+                        <span className="discount-applied-icon" aria-hidden="true">
+                          <Tag size={15} />
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <div className="discount-applied-header flex flex-wrap items-center gap-1.5 sm:gap-2 min-w-0">
+                            <span className="discount-applied-code font-mono font-semibold text-xs sm:text-sm tracking-wider truncate">
+                              {appliedBenefit.code}
+                            </span>
+                            <span className="discount-applied-pill inline-flex items-center gap-1">
+                              <Check size={11} aria-hidden="true" />
+                              <span>Aplicado</span>
+                            </span>
+                          </div>
+                          <span className="discount-applied-label text-xs block truncate mt-0.5">
+                            {appliedBenefit.label}
+                          </span>
+                        </div>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={removeBenefitCode}
+                        className="discount-remove-button min-h-[44px] h-11 px-3.5 text-xs font-medium transition-colors shrink-0"
+                      >
+                        Quitar
+                      </Button>
+                    </div>
                   ) : (
                     <div className="discount-applied-card mt-2.5 flex items-center justify-between gap-2.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-2.5 sm:p-3">
                       <div className="flex items-center gap-2 min-w-0">
@@ -1795,7 +1935,7 @@ export function Booking({
                     </div>
                   )}
 
-                  {successAlertVisible && (
+                  {!isLiquidBooking && successAlertVisible && (
                     <div
                       role="status"
                       aria-live="polite"
@@ -1821,13 +1961,57 @@ export function Booking({
                   )}
 
                   {benefitErrorMessage && (
-                    <span
-                      id="benefit-code-error"
-                      role="alert"
-                      className="field-validation-message"
-                    >
-                      {benefitErrorMessage}
-                    </span>
+                    <div className="discount-error-feedback mt-1.5">
+                      <span
+                        id="benefit-code-error"
+                        role="alert"
+                        className="field-validation-message"
+                      >
+                        {benefitErrorMessage}
+                      </span>
+                      {isLiquidBooking && (
+                        <div className="discount-error-actions flex flex-wrap items-center gap-2 mt-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={removeBenefitCode}
+                            className="discount-error-action-btn discount-error-remove-btn"
+                          >
+                            Quitar
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              if (normalizedBenefitInput) {
+                                setBypassedInvalidCode(normalizedBenefitInput);
+                              }
+                              setBenefitErrorMessage(null);
+                              void submit({ bypassInvalidBenefit: true });
+                            }}
+                            className="discount-error-action-btn discount-error-continue-btn"
+                          >
+                            Continuar sin descuento
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {!benefitErrorMessage && hasBypassedInvalidCode && !appliedBenefit && (
+                    <p className="discount-bypass-note mt-1.5 text-xs" role="status">
+                      Se aplicará el importe normal sin descuento. Podés corregir o{' '}
+                      <button
+                        type="button"
+                        onClick={removeBenefitCode}
+                        className="discount-bypass-clear-link underline underline-offset-2 font-medium"
+                      >
+                        quitar el código
+                      </button>
+                      .
+                    </p>
                   )}
                 </div>
                 {isV1 && <Button type="submit" hidden className="hidden" tabIndex={-1}>Continuar</Button>}
@@ -1836,7 +2020,7 @@ export function Booking({
 
             {(step === 5 || (isV2 || isFiveSteps) && step === 4) && (
               <div className="booking-summary-cards space-y-2 sm:space-y-3.5">
-                {appliedBenefit && (
+                {appliedBenefit && !isLiquidBooking && (
                   <div className="booking-summary-card booking-benefit-badge rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-2.5 flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
                       <Tag size={14} className="text-emerald-400 shrink-0" />
@@ -1920,7 +2104,7 @@ export function Booking({
                     </div>
 
                     {appliedBenefit && appliedBenefit.discountAmountArs > 0 && (
-                      <div className="summary-pricing-row flex justify-between items-baseline gap-3 sm:gap-4 text-emerald-500">
+                      <div className={`summary-pricing-row flex justify-between items-baseline gap-3 sm:gap-4 ${isLiquidBooking ? 'summary-discount-row' : 'text-emerald-500'}`}>
                         <dt className="summary-pricing-label font-medium">Descuento ({appliedBenefit.label})</dt>
                         <dd className="summary-pricing-value font-semibold text-right">
                           −{money(appliedBenefit.discountAmountArs)}
@@ -1960,7 +2144,7 @@ export function Booking({
                     </p>
                   )}
                   {appliedBenefit?.type === 'FREE_SERVICE' && (
-                    <p className="summary-payment-note mt-2 text-xs text-emerald-400 font-medium">
+                    <p className={`summary-payment-note mt-2 text-xs font-medium ${isLiquidBooking ? 'summary-free-service-note' : 'text-emerald-400'}`}>
                       Servicio 100% bonificado. Total a abonar: $0.
                     </p>
                   )}
@@ -2049,12 +2233,16 @@ export function Booking({
                 ? (isPaymentChecking
                     ? 'Comprobando pago…'
                     : submitting
-                    ? (appliedBenefit?.skipOnlinePayment ? 'Confirmando reserva…' : 'Preparando pago seguro…')
+                    ? (benefitValidationLoading
+                        ? 'Validando descuento…'
+                        : appliedBenefit?.skipOnlinePayment
+                        ? 'Confirmando reserva…'
+                        : 'Preparando pago seguro…')
                     : appliedBenefit?.skipOnlinePayment
                     ? 'Reservar turno'
                     : paymentActionLabel ?? (isV5 ? `Pagar seña ${money(depositArs)}` : 'Pagar seña'))
                 : 'Continuar';
-              const nextHandler = isFinalStep ? submit : next;
+              const nextHandler = isFinalStep ? () => { void submit(); } : next;
               return MotionCardButton ? (
                 <MotionCardButton tapScale={0.986} disabled={nextDisabled} className="action-positive booking-next-button h-12 px-6" onClick={nextHandler}>
                   {nextLabel}

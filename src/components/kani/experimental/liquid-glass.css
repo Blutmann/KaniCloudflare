@@ -10991,7 +10991,10 @@ html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation 
   html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation :is(
     .lg-sound-toggle,
     .lg-sound-toggle-pill,
-    .lg-sound-toggle-thumb
+    .lg-sound-toggle-thumb,
+    .discount-applied-card,
+    .discount-remove-button,
+    .discount-error-action-btn
   ) {
     transition: none !important;
   }
@@ -11014,5 +11017,214 @@ html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation 
   ) {
     animation: none !important;
     opacity: 0 !important;
+  }
+}
+
+/* ==============================================================================
+ * LIQUID GLASS V12.46.3 — TARJETA DE DESCUENTO CHAMPAGNE Y RECUPERACIÓN SIN FRICCIÓN
+ * Estética champagne/dorado suave en una única tarjeta con backdrop-filter real,
+ * alto contraste Light/Dark sobre los 4 fondos atmosféricos y acciones accesibles.
+ * ============================================================================== */
+html[data-theme="light"] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .booking-contact-form .discount-applied-card {
+  background-color: transparent !important;
+  background-image: linear-gradient(154deg, rgba(255, 251, 241, 0.74) 0%, rgba(246, 238, 218, 0.56) 100%) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(145%) !important;
+  backdrop-filter: blur(18px) saturate(145%) !important;
+  border: 1.5px solid rgba(196, 164, 102, 0.62) !important;
+  box-shadow:
+    0 8px 22px rgba(28, 26, 24, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    inset 0 -1px 0 rgba(196, 164, 102, 0.14) !important;
+}
+
+html[data-theme="dark"] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .booking-contact-form .discount-applied-card {
+  background-color: transparent !important;
+  background-image: linear-gradient(154deg, rgba(56, 49, 39, 0.62) 0%, rgba(25, 23, 24, 0.50) 58%, rgba(40, 35, 29, 0.58) 100%) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(145%) !important;
+  backdrop-filter: blur(18px) saturate(145%) !important;
+  border: 1.5px solid rgba(212, 180, 114, 0.62) !important;
+  box-shadow:
+    0 12px 26px rgba(0, 0, 0, 0.38),
+    inset 0 1px 0 rgba(255, 248, 232, 0.24),
+    inset 0 -1px 0 rgba(212, 180, 114, 0.14) !important;
+}
+
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .discount-applied-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+html[data-theme="light"] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .discount-applied-icon {
+  background: rgba(196, 164, 102, 0.18);
+  border: 1px solid rgba(186, 149, 78, 0.42);
+  color: #6E5018;
+}
+
+html[data-theme="dark"] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .discount-applied-icon {
+  background: rgba(212, 180, 114, 0.16);
+  border: 1px solid rgba(212, 180, 114, 0.38);
+  color: #E7C986;
+}
+
+html[data-theme="light"] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .discount-applied-code {
+  color: #161513 !important;
+}
+
+html[data-theme="dark"] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .discount-applied-code {
+  color: #FAF8F4 !important;
+}
+
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .discount-applied-pill {
+  font-size: 11px;
+  line-height: 1;
+  font-weight: 600;
+  padding: 3.5px 8px;
+  border-radius: 9999px;
+  letter-spacing: 0.01em;
+  flex-shrink: 0;
+}
+
+html[data-theme="light"] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .discount-applied-pill {
+  background: rgba(196, 164, 102, 0.20);
+  border: 1px solid rgba(175, 138, 66, 0.40);
+  color: #6A4D16;
+}
+
+html[data-theme="dark"] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .discount-applied-pill {
+  background: rgba(212, 180, 114, 0.18);
+  border: 1px solid rgba(212, 180, 114, 0.42);
+  color: #EED49A;
+}
+
+html[data-theme="light"] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .discount-applied-label {
+  color: rgba(30, 27, 23, 0.84) !important;
+}
+
+html[data-theme="dark"] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .discount-applied-label {
+  color: rgba(244, 240, 232, 0.84) !important;
+}
+
+html[data-theme="light"] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .discount-remove-button {
+  background: rgba(255, 255, 255, 0.62) !important;
+  border: 1px solid rgba(28, 26, 24, 0.18) !important;
+  border-radius: 10px !important;
+  color: #1F1C18 !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.88) !important;
+}
+
+html[data-theme="light"] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .discount-remove-button:hover {
+  background: rgba(255, 255, 255, 0.86) !important;
+  border-color: rgba(178, 52, 52, 0.42) !important;
+  color: #9A2020 !important;
+}
+
+html[data-theme="dark"] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .discount-remove-button {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 246, 228, 0.24) !important;
+  border-radius: 10px !important;
+  color: #F5F2EB !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14) !important;
+}
+
+html[data-theme="dark"] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .discount-remove-button:hover {
+  background: rgba(255, 255, 255, 0.14) !important;
+  border-color: rgba(240, 110, 110, 0.50) !important;
+  color: #FFB6B6 !important;
+}
+
+html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .discount-error-action-btn {
+  min-height: 40px !important;
+  height: auto !important;
+  padding: 8px 13px !important;
+  border-radius: 10px !important;
+  font-size: 12.5px !important;
+  font-weight: 500 !important;
+  line-height: 1.2 !important;
+  -webkit-backdrop-filter: blur(12px) saturate(135%) !important;
+  backdrop-filter: blur(12px) saturate(135%) !important;
+}
+
+html[data-theme="light"] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .discount-error-remove-btn {
+  background: rgba(255, 255, 255, 0.56) !important;
+  border: 1px solid rgba(28, 26, 24, 0.18) !important;
+  color: #1F1C18 !important;
+}
+
+html[data-theme="light"] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .discount-error-continue-btn {
+  background: rgba(255, 251, 241, 0.72) !important;
+  border: 1px solid rgba(196, 164, 102, 0.56) !important;
+  color: #5E4414 !important;
+}
+
+html[data-theme="dark"] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .discount-error-remove-btn {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 246, 228, 0.22) !important;
+  color: #F4F1EA !important;
+}
+
+html[data-theme="dark"] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .discount-error-continue-btn {
+  background: rgba(212, 180, 114, 0.14) !important;
+  border: 1px solid rgba(212, 180, 114, 0.48) !important;
+  color: #EED49A !important;
+}
+
+html[data-theme="light"] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page :is(.summary-discount-row, .summary-free-service-note, .discount-bypass-clear-link) {
+  color: #6E5018 !important;
+}
+
+html[data-theme="dark"] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page :is(.summary-discount-row, .summary-free-service-note, .discount-bypass-clear-link) {
+  color: #E7C986 !important;
+}
+
+html[data-theme="light"] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .discount-bypass-note {
+  color: rgba(34, 31, 27, 0.80);
+}
+
+html[data-theme="dark"] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .discount-bypass-note {
+  color: rgba(244, 240, 232, 0.80);
+}
+
+@media (max-width: 400px) {
+  html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .booking-contact-form .discount-applied-card {
+    gap: 10px;
+    padding: 10px 12px;
+  }
+
+  html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .discount-remove-button {
+    padding-left: 11px !important;
+    padding-right: 11px !important;
+  }
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  html[data-theme="light"] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .booking-contact-form .discount-applied-card {
+    background-image: linear-gradient(154deg, #fdfaf2, #f5eedb) !important;
+  }
+
+  html[data-theme="dark"] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .booking-contact-form .discount-applied-card {
+    background-image: linear-gradient(154deg, #2e2922, #1e1b17) !important;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page :is(
+    .discount-applied-card,
+    .discount-error-action-btn
+  ) {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+
+  html[data-theme="light"] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .booking-contact-form .discount-applied-card {
+    background-image: linear-gradient(154deg, #fdfaf2, #f5eedb) !important;
+  }
+
+  html[data-theme="dark"] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .booking-contact-form .discount-applied-card {
+    background-image: linear-gradient(154deg, #2e2922, #1e1b17) !important;
   }
 }

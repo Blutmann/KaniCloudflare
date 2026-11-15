@@ -141,22 +141,26 @@ function scheduleCrystallineChime(ctx: AudioContext): void {
 
   if (filter) {
     filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(3200, now);
-    filter.Q.setValueAtTime(0.7, now);
+    filter.frequency.setValueAtTime(2600, now);
+    if (typeof filter.frequency.exponentialRampToValueAtTime === 'function') {
+      filter.frequency.exponentialRampToValueAtTime(1400, now + 0.48);
+    }
+    filter.Q.setValueAtTime(0.65, now);
     filter.connect(masterGain);
   }
   masterGain.connect(ctx.destination);
   masterGain.gain.setValueAtTime(1, now);
 
-  // Dos parciales armónicos puros y suaves (~250 ms totales): calidez + cristal sin estridencias.
+  // Tres parciales cálidos y suaves (~515 ms totales): ataque sedoso y caída cristalina extendida sin estridencias.
   const partials = [
-    { freq: 659.25, startOffset: 0, peakGain: 0.042, duration: 0.21 }, // E5 fundamental suave
-    { freq: 987.77, startOffset: 0.045, peakGain: 0.036, duration: 0.215 }, // B5 quinta cristalina
-    { freq: 1318.51, startOffset: 0.055, peakGain: 0.012, duration: 0.205 }, // E6 armónico sutil
+    { freq: 587.33, startOffset: 0, attack: 0.022, peakGain: 0.036, duration: 0.44 }, // D5 fundamental cálido
+    { freq: 880.0, startOffset: 0.065, attack: 0.024, peakGain: 0.03, duration: 0.45 }, // A5 quinta cristalina suave
+    { freq: 1174.66, startOffset: 0.075, attack: 0.026, peakGain: 0.008, duration: 0.34 }, // D6 halo sutil
   ] as const;
 
   for (const partial of partials) {
     const start = now + partial.startOffset;
+    const peakAt = start + partial.attack;
     const end = start + partial.duration;
     const osc = ctx.createOscillator();
     const env = ctx.createGain();
@@ -165,19 +169,19 @@ function scheduleCrystallineChime(ctx: AudioContext): void {
     osc.frequency.setValueAtTime(partial.freq, start);
 
     env.gain.setValueAtTime(0.0001, start);
-    env.gain.linearRampToValueAtTime(partial.peakGain, start + 0.014);
+    env.gain.linearRampToValueAtTime(partial.peakGain, peakAt);
     env.gain.exponentialRampToValueAtTime(0.0001, end);
 
     osc.connect(env);
     env.connect(filter ?? masterGain);
 
     osc.start(start);
-    osc.stop(end + 0.01);
+    osc.stop(end + 0.02);
   }
 }
 
 /**
- * Reproduce un destello sonoro cristalino de ~250 ms exclusivamente tras confirmar una reserva real.
+ * Reproduce una campanilla cristalina suave de ~515 ms exclusivamente tras confirmar una reserva real.
  * Respeta la preferencia opt-in (desactivada por defecto) y evita repeticiones para la misma reserva.
  */
 export function playConfirmationChime(
