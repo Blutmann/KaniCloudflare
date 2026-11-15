@@ -328,8 +328,8 @@ describe('Payway V4 Modern Checkout UX/UI', () => {
     // General expiration label
     expect(screen.getByText('Vencimiento de tarjeta')).toBeInTheDocument();
 
-    // CVV label in independent row
-    expect(screen.getByText('Código de seguridad (CVV)')).toBeInTheDocument();
+    // CVV label in 50/50 row with DNI
+    expect(screen.getByText('Código CVV')).toBeInTheDocument();
 
     // Contextual help button exists and is accessible
     const helpBtn = screen.getByRole('button', { name: 'Ayuda sobre el CVV' });

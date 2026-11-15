@@ -43,8 +43,7 @@ const BENEFIT_AUTO_DEBOUNCE_MS = 600;
 const BENEFIT_CLIENT_CACHE_TTL_MS = 20_000;
 const BENEFIT_AUTO_WINDOW_MS = 30_000;
 const BENEFIT_AUTO_MAX_CALLS = 10;
-const INVALID_BENEFIT_PAYWAY_NOTICE =
-  'No pudimos aplicar el código de descuento. Podés continuar con el importe habitual.';
+const INVALID_BENEFIT_PAYWAY_NOTICE = 'Descuento no aplicado.';
 
 function isAutoValidatableBenefitCode(rawCode: string): boolean {
   const normalized = normalizeBenefitCode(rawCode);

@@ -978,19 +978,18 @@ export function PaywayBooking({
           onEscapeKeyDown={e => { if (paying.current) e.preventDefault(); }}
           onPointerDownOutside={e => { if (paying.current) e.preventDefault(); }}
         >
-          <DialogTitle className="payway-checkout-title">Pagá la seña a Kani con Payway</DialogTitle>
-          <DialogDescription className="payway-checkout-subtitle">
-            {checkout ? `Seña: ${money(checkout.depositArs ?? 0)} · Pago seguro` : 'Pago seguro de seña'}
-          </DialogDescription>
+          <div className="payway-checkout-header">
+            <DialogTitle className="payway-checkout-title">Pagá la seña a Kani con Payway</DialogTitle>
+            <DialogDescription className="payway-checkout-subtitle">
+              {checkout ? `Seña: ${money(checkout.depositArs ?? 0)} · Pago seguro` : 'Pago seguro de seña'}
+            </DialogDescription>
+          </div>
           {invalidBenefitNotice && !isApprovedConfirmed && (
             <div className="payway-benefit-warning" role="status" aria-live="polite">
-              <CircleAlert size={16} className="payway-benefit-warning-icon shrink-0" aria-hidden="true" />
-              <div className="payway-benefit-warning-body">
-                <p className="payway-benefit-warning-title">{invalidBenefitNotice}</p>
-                <p className="payway-benefit-warning-amount">
-                  Importe a pagar: <strong>{money(checkout?.depositArs ?? 5000)}</strong>
-                </p>
-              </div>
+              <CircleAlert size={14} className="payway-benefit-warning-icon shrink-0" aria-hidden="true" />
+              <p className="payway-benefit-warning-text">
+                {invalidBenefitNotice} Seña: <strong>{money(checkout?.depositArs ?? 5000)}</strong>
+              </p>
             </div>
           )}
           {preparing && <p role="status">Preparando pago seguro…</p>}
@@ -1000,240 +999,248 @@ export function PaywayBooking({
           {checkout && !terminal && (
             <form onSubmit={pay} autoComplete="off" noValidate data-private="redact" data-sensitive="true" className="payway-card-form">
               <input type="hidden" name="paymentMethod" value={detected.methodId ?? ''} />
-              <fieldset disabled={stage !== 'idle'}>
-                {/* Card Number with integrated network badge */}
-                <label className="payway-field-label">
-                  <span>Número de tarjeta</span>
-                  <div className={`field-control payway-card-pan-control ${panStatus}`}>
-                    <div className="payway-card-brand-slot">
-                      <CardBrandBadge brand={detected.brand} />
+              <div className="payway-checkout-body">
+                <fieldset disabled={stage !== 'idle'}>
+                  {/* Card Number with integrated network badge (100%) */}
+                  <label className="payway-field-label">
+                    <span>Número de tarjeta</span>
+                    <div className={`field-control payway-card-pan-control ${panStatus}`}>
+                      <div className="payway-card-brand-slot">
+                        <CardBrandBadge brand={detected.brand} />
+                      </div>
+                      <Input
+                        name="card_number"
+                        aria-label="Número de tarjeta"
+                        inputMode="numeric"
+                        autoComplete="cc-number"
+                        maxLength={23}
+                        placeholder="0000 0000 0000 0000"
+                        className="payway-card-pan-input"
+                        value={cardNumber}
+                        onChange={handleCardNumberChange}
+                        onBlur={() => markTouched('cardNumber')}
+                        aria-invalid={panStatus === 'invalid'}
+                        aria-describedby={panError ? 'card-number-error' : undefined}
+                        required
+                      />
+                      {renderFeedback(panStatus)}
                     </div>
-                    <Input
-                      name="card_number"
-                      aria-label="Número de tarjeta"
-                      inputMode="numeric"
-                      autoComplete="cc-number"
-                      maxLength={23}
-                      placeholder="0000 0000 0000 0000"
-                      className="payway-card-pan-input"
-                      value={cardNumber}
-                      onChange={handleCardNumberChange}
-                      onBlur={() => markTouched('cardNumber')}
-                      aria-invalid={panStatus === 'invalid'}
-                      aria-describedby={panError ? 'card-number-error' : undefined}
-                      required
-                    />
-                    {renderFeedback(panStatus)}
-                  </div>
-                  {panError && (
-                    <span id="card-number-error" className="field-validation-message" role="alert">
-                      {panError}
-                    </span>
-                  )}
-                </label>
-
-                {/* Expiry Month (70%) | Expiry Year (30%) */}
-                <div className="payway-field-group">
-                  <span className="payway-field-label-text">Vencimiento de tarjeta</span>
-                  <div className="payway-expiry-row">
-                    <div className="payway-expiry-month-col">
-                      <span className={`payway-select-control ${expiryStatus === 'valid' ? 'valid' : monthInvalid ? 'invalid' : ''}`}>
-                        <select
-                          name="card_expiration_month"
-                          aria-label="Mes de vencimiento"
-                          value={month}
-                          onChange={e => {
-                            const val = e.target.value;
-                            setMonth(val);
-                            if (year || !val || month) markTouched('expiry');
-                          }}
-                          onBlur={() => markTouched('expiry')}
-                          className="payway-select"
-                          required
-                        >
-                          <option value="">Mes</option>
-                          {MONTH_OPTIONS.map(m => (
-                            <option key={m.value} value={m.value} disabled={isCurrentYearSelected && m.num < currentMonth}>
-                              {m.label}
-                            </option>
-                          ))}
-                        </select>
+                    {panError && (
+                      <span id="card-number-error" className="field-validation-message" role="alert">
+                        {panError}
                       </span>
-                    </div>
+                    )}
+                  </label>
 
-                    <div className="payway-expiry-year-col">
-                      <span className={`payway-select-control ${expiryStatus === 'valid' ? 'valid' : yearInvalid ? 'invalid' : ''}`}>
-                        <select
-                          name="card_expiration_year"
-                          aria-label="Año de vencimiento"
-                          value={year}
-                          onChange={e => {
-                            const val = e.target.value;
-                            setYear(val);
-                            if (month || !val || year) markTouched('expiry');
-                          }}
-                          onBlur={() => markTouched('expiry')}
-                          className="payway-select"
-                          required
-                        >
-                          <option value="">Año</option>
-                          {yearOptions.map(y => (
-                            <option key={y.value} value={y.value}>
-                              {y.label}
-                            </option>
-                          ))}
-                        </select>
-                        {expiryStatus === 'valid' && (
-                          <span className="field-validation-icon valid" style={{ right: '28px' }} aria-hidden="true">
-                            <Check size={14} />
-                          </span>
-                        )}
+                  {/* Expiry Month (70%) | Expiry Year (30%) */}
+                  <div className="payway-field-group">
+                    <span className="payway-field-label-text">Vencimiento de tarjeta</span>
+                    <div className="payway-expiry-row">
+                      <div className="payway-expiry-month-col">
+                        <span className={`payway-select-control ${expiryStatus === 'valid' ? 'valid' : monthInvalid ? 'invalid' : ''}`}>
+                          <select
+                            name="card_expiration_month"
+                            aria-label="Mes de vencimiento"
+                            value={month}
+                            onChange={e => {
+                              const val = e.target.value;
+                              setMonth(val);
+                              if (year || !val || month) markTouched('expiry');
+                            }}
+                            onBlur={() => markTouched('expiry')}
+                            className="payway-select"
+                            required
+                          >
+                            <option value="">Mes</option>
+                            {MONTH_OPTIONS.map(m => (
+                              <option key={m.value} value={m.value} disabled={isCurrentYearSelected && m.num < currentMonth}>
+                                {m.label}
+                              </option>
+                            ))}
+                          </select>
+                        </span>
+                      </div>
+
+                      <div className="payway-expiry-year-col">
+                        <span className={`payway-select-control ${expiryStatus === 'valid' ? 'valid' : yearInvalid ? 'invalid' : ''}`}>
+                          <select
+                            name="card_expiration_year"
+                            aria-label="Año de vencimiento"
+                            value={year}
+                            onChange={e => {
+                              const val = e.target.value;
+                              setYear(val);
+                              if (month || !val || year) markTouched('expiry');
+                            }}
+                            onBlur={() => markTouched('expiry')}
+                            className="payway-select"
+                            required
+                          >
+                            <option value="">Año</option>
+                            {yearOptions.map(y => (
+                              <option key={y.value} value={y.value}>
+                                {y.label}
+                              </option>
+                            ))}
+                          </select>
+                          {expiryStatus === 'valid' && (
+                            <span className="field-validation-icon valid" style={{ right: '28px' }} aria-hidden="true">
+                              <Check size={14} />
+                            </span>
+                          )}
+                        </span>
+                      </div>
+                    </div>
+                    {expiryError && (
+                      <span id="expiry-error" className="field-validation-message" role="alert">
+                        {expiryError}
                       </span>
-                    </div>
+                    )}
                   </div>
-                  {expiryError && (
-                    <span id="expiry-error" className="field-validation-message" role="alert">
-                      {expiryError}
-                    </span>
-                  )}
-                </div>
 
-                {/* Security Code (CVV) in independent row with contextual help */}
-                <div className="payway-field-group">
-                  <div className="payway-label-with-help">
-                    <label htmlFor="card-security-code" className="payway-field-label-text">
-                      Código de seguridad (CVV)
-                    </label>
-                    <div className="payway-help-wrapper">
-                      <button
-                        type="button"
-                        className="payway-help-trigger"
-                        aria-label="Ayuda sobre el CVV"
-                        aria-expanded={showCvvHelp}
-                        aria-controls="cvv-help-bubble"
-                        onClick={() => setShowCvvHelp(prev => !prev)}
-                        onKeyDown={e => {
-                          if (e.key === 'Escape') setShowCvvHelp(false);
-                        }}
-                      >
-                        <HelpCircle size={14} aria-hidden="true" />
-                      </button>
-                      {showCvvHelp && (
-                        <div
-                          id="cvv-help-bubble"
-                          role="tooltip"
-                          className="payway-help-bubble"
-                        >
-                          {detected.brand === 'american-express'
-                            ? '4 dígitos del frente de la tarjeta.'
-                            : '3 dígitos del reverso de la tarjeta.'}
+                  {/* Security Code (CVV) 50% | DNI of Cardholder 50% */}
+                  <div className="payway-cvv-dni-row">
+                    <div className="payway-field-group payway-cvv-col">
+                      <div className="payway-label-with-help">
+                        <label htmlFor="card-security-code" className="payway-field-label-text">
+                          Código CVV
+                        </label>
+                        <div className="payway-help-wrapper">
+                          <button
+                            type="button"
+                            className="payway-help-trigger"
+                            aria-label="Ayuda sobre el CVV"
+                            aria-expanded={showCvvHelp}
+                            aria-controls="cvv-help-bubble"
+                            onClick={() => setShowCvvHelp(prev => !prev)}
+                            onKeyDown={e => {
+                              if (e.key === 'Escape') setShowCvvHelp(false);
+                            }}
+                          >
+                            <HelpCircle size={14} aria-hidden="true" />
+                          </button>
+                          {showCvvHelp && (
+                            <div
+                              id="cvv-help-bubble"
+                              role="tooltip"
+                              className="payway-help-bubble"
+                            >
+                              {detected.brand === 'american-express'
+                                ? '4 dígitos del frente de la tarjeta.'
+                                : '3 dígitos del reverso de la tarjeta.'}
+                            </div>
+                          )}
                         </div>
+                      </div>
+                      <span className={`field-control ${cvvStatus}`}>
+                        <Input
+                          id="card-security-code"
+                          name="security_code"
+                          aria-label="Código de seguridad (CVV)"
+                          type="password"
+                          inputMode="numeric"
+                          autoComplete="cc-csc"
+                          maxLength={detected.codeSize}
+                          placeholder={detected.codeSize === 4 ? '1234' : '123'}
+                          value={cvv}
+                          onChange={handleCvvChange}
+                          onBlur={() => markTouched('cvv')}
+                          aria-invalid={cvvStatus === 'invalid'}
+                          aria-describedby={cvvError ? 'cvv-error' : undefined}
+                          required
+                        />
+                        {renderFeedback(cvvStatus)}
+                      </span>
+                      {cvvError && (
+                        <span id="cvv-error" className="field-validation-message" role="alert">
+                          {cvvError}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="payway-field-group payway-dni-col">
+                      <label htmlFor="card-holder-dni" className="payway-field-label-text">
+                        DNI del titular
+                      </label>
+                      <span className={`field-control ${dniStatus}`}>
+                        <Input
+                          id="card-holder-dni"
+                          name="card_holder_doc_number"
+                          aria-label="DNI del titular"
+                          inputMode="numeric"
+                          autoComplete="off"
+                          maxLength={12}
+                          placeholder="12.345.678"
+                          value={dni}
+                          onChange={handleDniChange}
+                          onBlur={() => markTouched('dni')}
+                          aria-invalid={dniStatus === 'invalid'}
+                          aria-describedby={dniError ? 'dni-error' : undefined}
+                          required
+                        />
+                        {renderFeedback(dniStatus)}
+                      </span>
+                      {dniError && (
+                        <span id="dni-error" className="field-validation-message" role="alert">
+                          {dniError}
+                        </span>
                       )}
                     </div>
                   </div>
-                  <span className={`field-control ${cvvStatus}`}>
-                    <Input
-                      id="card-security-code"
-                      name="security_code"
-                      aria-label="Código de seguridad (CVV)"
-                      type="password"
-                      inputMode="numeric"
-                      autoComplete="cc-csc"
-                      maxLength={detected.codeSize}
-                      placeholder={detected.codeSize === 4 ? '1234' : '123'}
-                      value={cvv}
-                      onChange={handleCvvChange}
-                      onBlur={() => markTouched('cvv')}
-                      aria-invalid={cvvStatus === 'invalid'}
-                      aria-describedby={cvvError ? 'cvv-error' : undefined}
-                      required
-                    />
-                    {renderFeedback(cvvStatus)}
-                  </span>
-                  {cvvError && (
-                    <span id="cvv-error" className="field-validation-message" role="alert">
-                      {cvvError}
+
+                  {/* Cardholder Name (100%) */}
+                  <label className="payway-field-label">
+                    <span>Titular de la tarjeta</span>
+                    <span className={`field-control ${holderStatus}`}>
+                      <Input
+                        name="card_holder_name"
+                        aria-label="Titular de la tarjeta"
+                        autoComplete="cc-name"
+                        maxLength={60}
+                        placeholder="Como figura en la tarjeta"
+                        value={cardHolder}
+                        onChange={e => {
+                          setCardHolder(e.target.value);
+                          markTouched('cardHolder');
+                        }}
+                        onBlur={() => markTouched('cardHolder')}
+                        aria-invalid={holderStatus === 'invalid'}
+                        aria-describedby={holderError ? 'holder-error' : undefined}
+                        required
+                      />
+                      {renderFeedback(holderStatus)}
                     </span>
-                  )}
-                </div>
+                    {holderError && (
+                      <span id="holder-error" className="field-validation-message" role="alert">
+                        {holderError}
+                      </span>
+                    )}
+                  </label>
 
-                {/* Cardholder Name */}
-                <label className="payway-field-label">
-                  <span>Titular de la tarjeta</span>
-                  <span className={`field-control ${holderStatus}`}>
-                    <Input
-                      name="card_holder_name"
-                      aria-label="Titular de la tarjeta"
-                      autoComplete="cc-name"
-                      maxLength={60}
-                      placeholder="Como figura en la tarjeta"
-                      value={cardHolder}
-                      onChange={e => {
-                        setCardHolder(e.target.value);
-                        markTouched('cardHolder');
-                      }}
-                      onBlur={() => markTouched('cardHolder')}
-                      aria-invalid={holderStatus === 'invalid'}
-                      aria-describedby={holderError ? 'holder-error' : undefined}
-                      required
-                    />
-                    {renderFeedback(holderStatus)}
-                  </span>
-                  {holderError && (
-                    <span id="holder-error" className="field-validation-message" role="alert">
-                      {holderError}
-                    </span>
-                  )}
-                </label>
+                  <p className="payway-legal-disclaimer text-xs text-muted-foreground text-left my-2 leading-relaxed">
+                    Al confirmar tu reserva, aceptás nuestros{' '}
+                    <a
+                      href={termsUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline underline-offset-2 hover:text-foreground text-gold transition-colors"
+                    >
+                      Términos y Condiciones
+                    </a>{' '}
+                    y nuestra{' '}
+                    <a
+                      href={privacyUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline underline-offset-2 hover:text-foreground text-gold transition-colors"
+                    >
+                      Política de Privacidad
+                    </a>.
+                  </p>
+                </fieldset>
+              </div>
 
-                {/* DNI of Cardholder */}
-                <label className="payway-field-label">
-                  <span>DNI del titular</span>
-                  <span className={`field-control ${dniStatus}`}>
-                    <Input
-                      name="card_holder_doc_number"
-                      aria-label="DNI del titular"
-                      inputMode="numeric"
-                      autoComplete="off"
-                      maxLength={12}
-                      placeholder="12.345.678"
-                      value={dni}
-                      onChange={handleDniChange}
-                      onBlur={() => markTouched('dni')}
-                      aria-invalid={dniStatus === 'invalid'}
-                      aria-describedby={dniError ? 'dni-error' : undefined}
-                      required
-                    />
-                    {renderFeedback(dniStatus)}
-                  </span>
-                  {dniError && (
-                    <span id="dni-error" className="field-validation-message" role="alert">
-                      {dniError}
-                    </span>
-                  )}
-                </label>
-
-                <p className="payway-legal-disclaimer text-xs text-muted-foreground text-left my-3 leading-relaxed">
-                  Al confirmar tu reserva, aceptás nuestros{' '}
-                  <a
-                    href={termsUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="underline underline-offset-2 hover:text-foreground text-gold transition-colors"
-                  >
-                    Términos y Condiciones
-                  </a>{' '}
-                  y nuestra{' '}
-                  <a
-                    href={privacyUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="underline underline-offset-2 hover:text-foreground text-gold transition-colors"
-                  >
-                    Política de Privacidad
-                  </a>.
-                </p>
-
+              <div className="payway-checkout-footer">
                 <Button type="submit" className="action-positive payway-submit-btn" disabled={!isCardFormValid || stage !== 'idle'}>
                   {stage === 'tokenizing'
                     ? 'Validando tarjeta…'
@@ -1241,7 +1248,7 @@ export function PaywayBooking({
                       ? 'Procesando pago…'
                       : `Pagar seña ${checkout ? money(checkout.depositArs) : '$5.000'}`}
                 </Button>
-              </fieldset>
+              </div>
             </form>
           )}
           {isVerifying && (

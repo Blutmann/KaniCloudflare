@@ -218,7 +218,7 @@ describe('Kani — V12.46.3 Descuentos sin fricción y estética champagne en /r
       expect.objectContaining({
         benefitCode: undefined,
         benefitQuote: undefined,
-        invalidBenefitNotice: 'No pudimos aplicar el código de descuento. Podés continuar con el importe habitual.',
+        invalidBenefitNotice: 'Descuento no aplicado.',
       }),
     );
     expect(container.querySelector('.discount-applied-card')).toBeNull();

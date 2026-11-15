@@ -214,7 +214,7 @@
 }
 
 .payway-submit-btn {
-  margin-top: 4px;
+  margin-top: 0;
   min-height: 46px;
   height: 46px;
   font-size: 15px;
@@ -224,6 +224,117 @@
   letter-spacing: 0.01em;
 }
 .payway-result { line-height: 1.5; overflow-wrap: anywhere; font-family: var(--font-sans); font-size: 13px; }
+
+/* ==========================================================================
+   V12.47.9 · Payway Mobile UX Optimization
+   - CVV (50%) + DNI (50%) shared row with aligned labels and integrated help
+   - Scrollable body + sticky footer so "Pagar seña" remains always visible
+   ========================================================================== */
+.payway-checkout:has(.payway-card-form) {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.payway-checkout-header {
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+.payway-card-form {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.payway-checkout-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+}
+
+.payway-checkout-footer {
+  flex: 0 0 auto;
+  padding-top: 10px;
+  padding-bottom: max(2px, env(safe-area-inset-bottom, 2px));
+  border-top: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+}
+
+.payway-cvv-dni-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+  min-width: 0;
+}
+
+.payway-cvv-col,
+.payway-dni-col {
+  min-width: 0;
+}
+
+.payway-cvv-dni-row .payway-label-with-help,
+.payway-cvv-dni-row .payway-dni-col > .payway-field-label-text {
+  min-height: 20px;
+  display: flex;
+  align-items: center;
+}
+
+.payway-cvv-dni-row .payway-help-bubble {
+  left: 0;
+  right: auto;
+}
+
+@media (max-width: 640px) {
+  .payway-checkout:has(.payway-card-form) {
+    max-height: calc(100dvh - max(16px, env(safe-area-inset-top, 8px)) - max(16px, env(safe-area-inset-bottom, 8px)));
+    padding: 14px 14px max(12px, env(safe-area-inset-bottom, 12px));
+  }
+  .payway-checkout-title {
+    font-size: 17.5px !important;
+  }
+  .payway-checkout-subtitle {
+    font-size: 12.5px !important;
+    margin-top: 2px !important;
+  }
+  .payway-card-form {
+    margin-top: 8px;
+  }
+  .payway-card-form fieldset {
+    gap: 8px;
+  }
+  .payway-card-form label,
+  .payway-field-label,
+  .payway-field-group {
+    gap: 4px;
+    font-size: 12.5px;
+  }
+  .payway-field-label-text {
+    font-size: 12.5px;
+  }
+  .payway-legal-disclaimer {
+    margin: 4px 0 2px !important;
+    font-size: 11px !important;
+    line-height: 1.35 !important;
+  }
+  .payway-checkout-footer {
+    padding-top: 8px;
+  }
+  .payway-submit-btn {
+    min-height: 46px;
+    height: 46px;
+  }
+}
+
+@media (max-width: 360px) {
+  .payway-cvv-dni-row {
+    gap: 6px;
+  }
+}
 
 /* ==========================================================================
    Reserva V4 / Payway Modal: Header Icons High-Contrast Under Overlay
