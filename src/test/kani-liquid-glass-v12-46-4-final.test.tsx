@@ -362,10 +362,10 @@ describe('Kani — V12.46.4 Finalización: validación automática debounced, Pa
     });
     expect(prepareSpy.mock.calls[0]?.[0]?.data).not.toHaveProperty('benefitCode');
 
-    // Dentro del modal Payway se ve el aviso compacto y el importe habitual ($5.000)
+    // Dentro del modal Payway se ve el aviso compacto de reintento y el importe habitual ($5.000)
     await waitFor(() => {
       expect(
-        screen.getByText(/Descuento no aplicado\.\s*Seña:/i),
+        screen.getByText(/No pudimos aplicar el descuento\. Revisá el código o continuá con la seña habitual\./i),
       ).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /Pagar seña \$5\.000/i })).toBeInTheDocument();
     });
@@ -374,7 +374,7 @@ describe('Kani — V12.46.4 Finalización: validación automática debounced, Pa
     fireEvent.keyDown(document, { key: 'Escape' });
     await waitFor(() => {
       expect(
-        screen.queryByText(/Descuento no aplicado\.\s*Seña:/i),
+        screen.queryByText(/No pudimos aplicar el descuento\. Revisá el código o continuá con la seña habitual\./i),
       ).toBeNull();
     });
     expect(discountInput.value).toBe('KANI-NO-SIRVE');

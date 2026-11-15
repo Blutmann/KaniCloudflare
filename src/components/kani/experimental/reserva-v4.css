@@ -196,11 +196,13 @@
 .payway-help-bubble {
   position: absolute;
   bottom: calc(100% + 6px);
-  right: 0;
-  z-index: 10;
-  min-width: 210px;
-  max-width: 270px;
-  padding: 8px 12px;
+  left: 0;
+  right: auto;
+  z-index: 30;
+  width: max-content;
+  min-width: 170px;
+  max-width: min(215px, calc(100vw - 56px));
+  padding: 8px 11px;
   font-size: 11.5px;
   font-weight: 400;
   line-height: 1.35;
@@ -209,8 +211,16 @@
   background-color: var(--popover);
   border: 1px solid var(--border);
   border-radius: var(--radius-control, .5rem);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22);
   pointer-events: auto;
+}
+.payway-help-bubble.is-top {
+  bottom: calc(100% + 6px);
+  top: auto;
+}
+.payway-help-bubble.is-bottom {
+  top: calc(100% + 6px);
+  bottom: auto;
 }
 
 .payway-submit-btn {
@@ -275,18 +285,122 @@
 .payway-cvv-col,
 .payway-dni-col {
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
-.payway-cvv-dni-row .payway-label-with-help,
-.payway-cvv-dni-row .payway-dni-col > .payway-field-label-text {
+.payway-cvv-dni-row .payway-col-label-row {
+  height: 20px;
   min-height: 20px;
+  max-height: 20px;
   display: flex;
   align-items: center;
+  justify-content: flex-start;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
 }
 
-.payway-cvv-dni-row .payway-help-bubble {
-  left: 0;
-  right: auto;
+.payway-cvv-dni-row .payway-field-label-text {
+  line-height: 1.2;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.payway-help-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+}
+
+.payway-help-trigger {
+  width: 18px !important;
+  height: 18px !important;
+  min-width: 18px !important;
+  min-height: 18px !important;
+  max-width: 18px !important;
+  max-height: 18px !important;
+  flex: 0 0 18px !important;
+  padding: 0 !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+}
+
+.payway-cvv-dni-row .field-control,
+.payway-cvv-dni-row #card-security-code,
+.payway-cvv-dni-row #card-holder-dni {
+  height: 42px !important;
+  min-height: 42px !important;
+  max-height: 42px !important;
+  box-sizing: border-box;
+}
+
+/* V12.47.10 · Discount retry block inside Payway modal */
+.payway-discount-retry-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(196, 152, 72, 0.34);
+  background: rgba(255, 249, 236, 0.72);
+}
+
+.payway-discount-retry-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+}
+
+.payway-discount-retry-text {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.35;
+  min-width: 0;
+}
+
+.payway-discount-retry-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.payway-discount-retry-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 38px;
+  min-height: 38px;
+  text-transform: uppercase;
+}
+
+.payway-discount-retry-btn {
+  flex: 0 0 auto;
+  height: 38px;
+  min-height: 38px;
+  padding: 0 14px;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.payway-discount-retry-error {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--destructive, #dc2626);
+}
+
+.payway-discount-applied-inline {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12.5px;
+  line-height: 1.35;
 }
 
 @media (max-width: 640px) {

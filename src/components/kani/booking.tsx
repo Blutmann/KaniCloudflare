@@ -38,6 +38,7 @@ export type BookingPaymentDraft = {
   benefitCode?: string;
   benefitQuote?: BenefitQuote;
   invalidBenefitNotice?: string;
+  rejectedBenefitCode?: string;
 };
 const BENEFIT_AUTO_DEBOUNCE_MS = 600;
 const BENEFIT_CLIENT_CACHE_TTL_MS = 20_000;
@@ -63,7 +64,7 @@ function fieldStatus(field: ContactField, values: ContactValues, country: PhoneC
   return normalizePhone(values.phone, country) ? 'valid' : 'invalid';
 }
 
-function mapBenefitErrorMessage(rawError: unknown): string {
+export function mapBenefitErrorMessage(rawError: unknown): string {
   const msg = rawError instanceof Error ? rawError.message : String(rawError || '');
   const lower = msg.toLowerCase();
 
@@ -172,6 +173,7 @@ export function Booking({
   initialDate,
   initialTime,
   initialContact,
+  externalBenefitSync,
 }: {
   combinedDateTime?: boolean;
   variant?: 'v1' | 'v2' | 'v3' | 'v5';
@@ -188,6 +190,7 @@ export function Booking({
   initialDate?: string;
   initialTime?: string;
   initialContact?: { name: string; email: string; phone: string; notes: string };
+  externalBenefitSync?: { version: number; code: string; quote: BenefitQuote | null } | null;
 } = {}) {
   const isV5 = propVariant === 'v5';
   const isV3 = propVariant === 'v3';
@@ -226,6 +229,21 @@ export function Booking({
   const [successAlertVisible, setSuccessAlertVisible] = useState(false);
   const successTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const benefitValidationSeqRef = useRef(0);
+  const lastExternalBenefitVersionRef = useRef(0);
+
+  useEffect(() => {
+    if (!externalBenefitSync || externalBenefitSync.version === lastExternalBenefitVersionRef.current) return;
+    lastExternalBenefitVersionRef.current = externalBenefitSync.version;
+    if (externalBenefitSync.quote && externalBenefitSync.quote.valid) {
+      setBenefitCodeInput(externalBenefitSync.quote.code);
+      setAppliedBenefit(externalBenefitSync.quote);
+      setBenefitErrorMessage(null);
+      setBypassedInvalidCode(null);
+    } else {
+      setBenefitCodeInput(externalBenefitSync.code);
+      setAppliedBenefit(null);
+    }
+  }, [externalBenefitSync]);
   const benefitDebounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const benefitQuoteCacheRef = useRef<
     Map<string, { valid: boolean; quote: BenefitQuote | null; errorMessage: string | null; at: number }>
@@ -1277,7 +1295,9 @@ export function Booking({
           email: contact.email.trim(), notes: contact.notes,
           benefitCode: resolvedBenefitForSubmit?.code,
           benefitQuote: resolvedBenefitForSubmit ?? undefined,
-          ...(invalidBenefitNotice ? { invalidBenefitNotice } : {}) });
+          ...(invalidBenefitNotice
+            ? { invalidBenefitNotice, rejectedBenefitCode: benefitCodeInput.trim() }
+            : {}) });
       } catch (cause: any) {
         if (isAvailabilityConflictError(cause)) {
           openSlotUnavailableRecovery({

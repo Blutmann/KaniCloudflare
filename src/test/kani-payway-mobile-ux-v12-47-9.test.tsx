@@ -15,10 +15,11 @@ describe('KANI — Optimización UX Mobile del Modal Payway (Footer Sticky, CVV/
   const bookingCode = fs.readFileSync(bookingPath, 'utf-8');
   const stylesCss = fs.readFileSync(stylesPath, 'utf-8');
 
-  it('1. Mensaje de descuento no aplicado reducido a «Descuento no aplicado. Seña: $X» con ícono de advertencia y padding compacto', () => {
+  it('1. Mensaje de descuento no aplicado compacto con ícono de advertencia y bloque de reintento integrado', () => {
     expect(bookingCode).toContain("const INVALID_BENEFIT_PAYWAY_NOTICE = 'Descuento no aplicado.';");
-    expect(paywayCode).toContain('{invalidBenefitNotice} Seña: <strong>{money(checkout?.depositArs ?? 5000)}</strong>');
+    expect(paywayCode).toContain('No pudimos aplicar el descuento. Revisá el código o continuá con la seña habitual.');
     expect(paywayCode).toContain('payway-benefit-warning-icon');
+    expect(paywayCode).toContain('payway-discount-retry-box');
     expect(liquidCss).toMatch(/\.payway-benefit-warning\s*\{[\s\S]*?padding:\s*6px 10px\s*!important;/);
   });
 

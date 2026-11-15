@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Check, CircleAlert, HelpCircle, Instagram, Loader2, MapPin } from 'lucide-react';
-import { Booking, type BookingPaymentDraft } from '@/components/kani/booking';
+import { Check, CheckCircle2, CircleAlert, HelpCircle, Instagram, Loader2, MapPin } from 'lucide-react';
+import { Booking, mapBenefitErrorMessage, type BookingPaymentDraft } from '@/components/kani/booking';
+import { validateBenefitCodeQuoteFn } from '@/lib/kani-benefit-codes.functions';
+import { normalizeBenefitCode, type BenefitQuote } from '@/lib/kani-benefit-codes';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
@@ -197,6 +199,17 @@ export function PaywayBooking({
   const initialAttempt = useMemo(() => readActiveAttempt(), []);
   const [isPaymentChecking, setIsPaymentChecking] = useState(() => Boolean(initialAttempt));
   const [invalidBenefitNotice, setInvalidBenefitNotice] = useState<string | null>(null);
+  const [modalDiscountOpen, setModalDiscountOpen] = useState(false);
+  const [modalDiscountCode, setModalDiscountCode] = useState('');
+  const [modalDiscountLoading, setModalDiscountLoading] = useState(false);
+  const [modalDiscountError, setModalDiscountError] = useState<string | null>(null);
+  const [modalDiscountApplied, setModalDiscountApplied] = useState<BenefitQuote | null>(null);
+  const [externalBenefitSync, setExternalBenefitSync] = useState<{
+    version: number;
+    code: string;
+    quote: BenefitQuote | null;
+  } | null>(null);
+  const modalDiscountInFlightRef = useRef(false);
 
   // Modern Payway Form State
   const [cardNumber, setCardNumber] = useState('');
@@ -208,6 +221,28 @@ export function PaywayBooking({
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [submitAttempted, setSubmitAttempted] = useState(false);
   const [showCvvHelp, setShowCvvHelp] = useState(false);
+  const [cvvHelpPlacement, setCvvHelpPlacement] = useState<'top' | 'bottom'>('top');
+  const cvvHelpRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!showCvvHelp) return;
+    const handlePointerDown = (event: PointerEvent) => {
+      if (cvvHelpRef.current && !cvvHelpRef.current.contains(event.target as Node)) {
+        setShowCvvHelp(false);
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setShowCvvHelp(false);
+      }
+    };
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [showCvvHelp]);
 
   useEffect(() => {
     if (typeof document === 'undefined') return;
@@ -583,7 +618,13 @@ export function PaywayBooking({
       unlockConfirmationAudio();
     }
     draftRef.current = draft;
+    const hasRejectedDiscount = Boolean(!draft.benefitCode && draft.invalidBenefitNotice);
     setInvalidBenefitNotice(draft.benefitCode ? null : (draft.invalidBenefitNotice ?? null));
+    setModalDiscountOpen(hasRejectedDiscount);
+    setModalDiscountCode(hasRejectedDiscount ? (draft.rejectedBenefitCode ?? '') : '');
+    setModalDiscountLoading(false);
+    setModalDiscountError(null);
+    setModalDiscountApplied(null);
 
     // Flujo de confirmación directa sin seña (NO_DEPOSIT / FREE_SERVICE)
     if (draft.benefitQuote?.skipOnlinePayment && draft.benefitCode) {
@@ -714,6 +755,120 @@ export function PaywayBooking({
     finally { opening.current = false; setPreparing(false); }
     if (slotConflictToThrow) {
       throw slotConflictToThrow;
+    }
+  }
+
+  async function handleModalApplyDiscount() {
+    const activeDraft = draftRef.current;
+    const cleanCode = modalDiscountCode.trim();
+    if (!activeDraft || modalDiscountInFlightRef.current || stage !== 'idle') return;
+    if (!normalizeBenefitCode(cleanCode)) {
+      setModalDiscountError('Ingresá un código de descuento válido.');
+      return;
+    }
+    modalDiscountInFlightRef.current = true;
+    setModalDiscountLoading(true);
+    setModalDiscountError(null);
+    try {
+      const quote = await validateBenefitCodeQuoteFn({
+        data: {
+          code: cleanCode,
+          serviceName: activeDraft.serviceName,
+          barber: activeDraft.barber,
+        },
+      });
+      if (!quote.valid) {
+        setModalDiscountApplied(null);
+        setModalDiscountError(mapBenefitErrorMessage(quote.message || quote.error));
+        return;
+      }
+
+      // Sincronizar descuento válido con el paso «Datos»
+      setExternalBenefitSync({
+        version: Date.now(),
+        code: quote.code,
+        quote,
+      });
+
+      if (quote.skipOnlinePayment) {
+        const { confirmZeroDepositBookingFn } = await import('@/lib/kani-benefit-codes.functions');
+        const confirmedResult = await confirmZeroDepositBookingFn({
+          data: {
+            benefitCode: quote.code,
+            barberName: activeDraft.barber,
+            serviceName: activeDraft.serviceName,
+            bookingDate: activeDraft.date,
+            startTime: activeDraft.time,
+            clientName: activeDraft.name,
+            clientPhone: activeDraft.phone,
+            clientEmail: activeDraft.email,
+            notes: activeDraft.notes,
+          },
+        });
+        if (confirmedResult.success) {
+          const confirmedBooking: ConfirmedPaywayBooking = {
+            appointmentId: confirmedResult.appointmentId,
+            attemptId: 'zero-deposit',
+            serviceName: activeDraft.serviceName,
+            barber: activeDraft.barber,
+            date: activeDraft.date,
+            time: activeDraft.time,
+            clientName: activeDraft.name,
+            depositArs: 0,
+            servicePriceArs: confirmedResult.calculation.originalPriceArs,
+            benefitType: confirmedResult.calculation.benefitType,
+            benefitCode: confirmedResult.calculation.code,
+            originalPriceArs: confirmedResult.calculation.originalPriceArs,
+            discountAmountArs: confirmedResult.calculation.discountAmountArs,
+            finalPriceArs: confirmedResult.calculation.finalPriceArs,
+            onlineDepositArs: confirmedResult.calculation.onlineDepositArs,
+            inPersonBalanceArs: confirmedResult.calculation.inPersonBalanceArs,
+          };
+          paidAppointmentsRef.current.add(confirmedResult.appointmentId);
+          persistConfirmedBooking(confirmedBooking);
+          setConfirmed(confirmedBooking);
+          notifyVerifiedConfirmationSound(confirmedBooking.appointmentId);
+          setOpen(false);
+          return;
+        }
+        setModalDiscountError('No pudimos confirmar el turno con el beneficio. Intentá nuevamente.');
+        return;
+      }
+
+      const sanitizedDraft: PaywayDraft = {
+        barber: activeDraft.barber,
+        serviceName: activeDraft.serviceName,
+        date: activeDraft.date,
+        time: activeDraft.time,
+        name: activeDraft.name,
+        email: activeDraft.email,
+        phone: activeDraft.phone,
+        notes: activeDraft.notes ?? '',
+        benefitCode: quote.code,
+      };
+      const response = await preparePaywayCheckoutFn({ data: sanitizedDraft });
+      if (response.ready) {
+        draftRef.current = {
+          ...activeDraft,
+          benefitCode: quote.code,
+          benefitQuote: quote,
+          invalidBenefitNotice: undefined,
+        };
+        setCheckout(response.checkout);
+        setModalDiscountApplied(quote);
+        setModalDiscountCode(quote.code);
+        setInvalidBenefitNotice(null);
+        setModalDiscountError(null);
+      } else {
+        setModalDiscountApplied(null);
+        setModalDiscountError(response.message || 'No pudimos actualizar el importe con el descuento.');
+      }
+    } catch (err: unknown) {
+      setModalDiscountApplied(null);
+      setModalDiscountError(mapBenefitErrorMessage(err));
+    } finally {
+      modalDiscountInFlightRef.current = false;
+      setModalDiscountLoading(false);
     }
   }
 
@@ -963,6 +1118,7 @@ export function PaywayBooking({
         initialDate={initialAttempt?.date}
         initialTime={initialAttempt?.time}
         initialContact={initialAttempt?.clientName ? { name: initialAttempt.clientName, email: '', phone: '', notes: '' } : undefined}
+        externalBenefitSync={externalBenefitSync}
       />
       <Dialog
         open={open}
@@ -984,14 +1140,6 @@ export function PaywayBooking({
               {checkout ? `Seña: ${money(checkout.depositArs ?? 0)} · Pago seguro` : 'Pago seguro de seña'}
             </DialogDescription>
           </div>
-          {invalidBenefitNotice && !isApprovedConfirmed && (
-            <div className="payway-benefit-warning" role="status" aria-live="polite">
-              <CircleAlert size={14} className="payway-benefit-warning-icon shrink-0" aria-hidden="true" />
-              <p className="payway-benefit-warning-text">
-                {invalidBenefitNotice} Seña: <strong>{money(checkout?.depositArs ?? 5000)}</strong>
-              </p>
-            </div>
-          )}
           {preparing && <p role="status">Preparando pago seguro…</p>}
           {result && !isVerifying && !pollExhausted && result.state !== 'unknown' && result.state !== 'review' && (
             <p role={result.state === 'approved' ? 'status' : 'alert'} className="payway-result">{result.message}</p>
@@ -1000,6 +1148,61 @@ export function PaywayBooking({
             <form onSubmit={pay} autoComplete="off" noValidate data-private="redact" data-sensitive="true" className="payway-card-form">
               <input type="hidden" name="paymentMethod" value={detected.methodId ?? ''} />
               <div className="payway-checkout-body">
+                {modalDiscountOpen && !isApprovedConfirmed && (
+                  <div className="payway-discount-retry-box" role="region" aria-label="Código de descuento">
+                    {!modalDiscountApplied ? (
+                      <>
+                        <div className="payway-discount-retry-notice" role="status" aria-live="polite">
+                          <CircleAlert size={14} className="payway-benefit-warning-icon shrink-0" aria-hidden="true" />
+                          <p className="payway-discount-retry-text">
+                            No pudimos aplicar el descuento. Revisá el código o continuá con la seña habitual.
+                          </p>
+                        </div>
+                        <div className="payway-discount-retry-row">
+                          <Input
+                            type="text"
+                            aria-label="Código de descuento"
+                            placeholder="Código de descuento"
+                            value={modalDiscountCode}
+                            disabled={modalDiscountLoading || stage !== 'idle'}
+                            className="payway-discount-retry-input"
+                            onChange={e => {
+                              setModalDiscountCode(e.target.value.toUpperCase());
+                              if (modalDiscountError) setModalDiscountError(null);
+                            }}
+                            onKeyDown={e => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                void handleModalApplyDiscount();
+                              }
+                            }}
+                          />
+                          <Button
+                            type="button"
+                            className="payway-discount-retry-btn"
+                            disabled={modalDiscountLoading || stage !== 'idle' || !modalDiscountCode.trim()}
+                            onClick={() => void handleModalApplyDiscount()}
+                          >
+                            {modalDiscountLoading ? 'Validando…' : 'Aplicar'}
+                          </Button>
+                        </div>
+                        {modalDiscountError && (
+                          <p className="payway-discount-retry-error" role="alert">
+                            {modalDiscountError}
+                          </p>
+                        )}
+                      </>
+                    ) : (
+                      <div className="payway-discount-applied-inline" role="status" aria-live="polite">
+                        <CheckCircle2 size={14} className="shrink-0" aria-hidden="true" />
+                        <span>
+                          Descuento <strong>{modalDiscountApplied.code}</strong> aplicado · Seña:{' '}
+                          <strong>{money(checkout.depositArs ?? modalDiscountApplied.onlineDepositArs)}</strong>
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
                 <fieldset disabled={stage !== 'idle'}>
                   {/* Card Number with integrated network badge (100%) */}
                   <label className="payway-field-label">
@@ -1101,29 +1304,43 @@ export function PaywayBooking({
                   {/* Security Code (CVV) 50% | DNI of Cardholder 50% */}
                   <div className="payway-cvv-dni-row">
                     <div className="payway-field-group payway-cvv-col">
-                      <div className="payway-label-with-help">
+                      <div className="payway-col-label-row">
                         <label htmlFor="card-security-code" className="payway-field-label-text">
                           Código CVV
                         </label>
-                        <div className="payway-help-wrapper">
+                        <div className="payway-help-wrapper" ref={cvvHelpRef}>
                           <button
                             type="button"
                             className="payway-help-trigger"
                             aria-label="Ayuda sobre el CVV"
                             aria-expanded={showCvvHelp}
                             aria-controls="cvv-help-bubble"
-                            onClick={() => setShowCvvHelp(prev => !prev)}
+                            onClick={() => {
+                              setShowCvvHelp(prev => {
+                                const next = !prev;
+                                if (next && cvvHelpRef.current) {
+                                  const triggerRect = cvvHelpRef.current.getBoundingClientRect();
+                                  const scrollBody = cvvHelpRef.current.closest('.payway-checkout-body');
+                                  const topBoundary = scrollBody
+                                    ? scrollBody.getBoundingClientRect().top
+                                    : 0;
+                                  const spaceAbove = triggerRect.top - topBoundary;
+                                  setCvvHelpPlacement(spaceAbove < 68 ? 'bottom' : 'top');
+                                }
+                                return next;
+                              });
+                            }}
                             onKeyDown={e => {
                               if (e.key === 'Escape') setShowCvvHelp(false);
                             }}
                           >
-                            <HelpCircle size={14} aria-hidden="true" />
+                            <HelpCircle size={13} aria-hidden="true" />
                           </button>
                           {showCvvHelp && (
                             <div
                               id="cvv-help-bubble"
                               role="tooltip"
-                              className="payway-help-bubble"
+                              className={`payway-help-bubble is-${cvvHelpPlacement}`}
                             >
                               {detected.brand === 'american-express'
                                 ? '4 dígitos del frente de la tarjeta.'
@@ -1159,9 +1376,11 @@ export function PaywayBooking({
                     </div>
 
                     <div className="payway-field-group payway-dni-col">
-                      <label htmlFor="card-holder-dni" className="payway-field-label-text">
-                        DNI del titular
-                      </label>
+                      <div className="payway-col-label-row">
+                        <label htmlFor="card-holder-dni" className="payway-field-label-text">
+                          DNI del titular
+                        </label>
+                      </div>
                       <span className={`field-control ${dniStatus}`}>
                         <Input
                           id="card-holder-dni"
