@@ -576,6 +576,26 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
 .v2-field :is(input[type="date"], input[type="time"])::-webkit-date-and-time-value {
   text-align: left;
 }
+.v2-field select {
+  -webkit-appearance: none;
+  appearance: none;
+  padding-right: 34px;
+  padding-left: 11px;
+  line-height: 1.45;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+  text-align: left;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2352525b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-position: right 11px center;
+  background-size: 16px 16px;
+  background-repeat: no-repeat;
+}
+
+html[data-theme="dark"] .v2-field select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23d4d4d8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
+
 .v2-field select option {
   background: var(--background);
   color: var(--foreground);
@@ -1099,8 +1119,12 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
 .v2-search svg {
   position: absolute;
   left: 12px;
+  top: 22px;
+  transform: translateY(-50%);
+  pointer-events: none;
   color: var(--muted-foreground);
   width: 16px;
+  height: 16px;
 }
 .v2-search input {
   padding-left: 38px;
@@ -3144,7 +3168,7 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
 }
 
 .v2-manual-dialog .v2-client-quick-search input {
-  padding-left: 36px !important;
+  padding-left: 38px !important;
 }
 
 .v2-manual-row {

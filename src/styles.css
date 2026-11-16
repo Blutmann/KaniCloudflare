@@ -4997,6 +4997,24 @@ input[placeholder="Nombre, celular o email"]::placeholder {
   overscroll-behavior: contain;
 }
 
+.benefit-code-dialog-content select {
+  -webkit-appearance: none;
+  appearance: none;
+  padding-left: 12px;
+  padding-right: 34px;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2352525b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-position: right 11px center;
+  background-size: 16px 16px;
+  background-repeat: no-repeat;
+}
+
+html[data-theme="dark"] .benefit-code-dialog-content select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23d4d4d8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
+
 .benefit-code-dialog-footer {
   flex-shrink: 0;
   padding: 14px 20px;

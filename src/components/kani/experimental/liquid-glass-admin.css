@@ -896,9 +896,11 @@ html[data-theme] body[data-lg-admin="true"] .v2-client-toolbar-container .v2-sea
 
 html[data-theme] body[data-lg-admin="true"] .v2-client-toolbar-container .v2-search svg {
   position: absolute !important;
-  left: 14px !important;
+  left: 13px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
   color: var(--lga-text-muted) !important;
-  pointer-events: none;
+  pointer-events: none !important;
   z-index: 1;
 }
 
@@ -1014,6 +1016,49 @@ body[data-lg-admin="true"] :is(input, textarea)::placeholder {
 body[data-lg-admin="true"] select option {
   background-color: var(--lga-option-bg) !important;
   color: var(--lga-option-text) !important;
+}
+
+/* V12.47.19 · Alineación óptica unificada de chevrons en <select> nativos (Light & Dark) */
+html[data-theme] body[data-lg-admin="true"] :is(select:not([multiple]):not(.payway-select), select.select-control) {
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  padding-left: 12px !important;
+  padding-right: 34px !important;
+  line-height: 1.45 !important;
+  text-overflow: ellipsis !important;
+  overflow: hidden !important;
+  white-space: nowrap !important;
+  text-align: left !important;
+  background-position: right 11px center !important;
+  background-size: 16px 16px !important;
+  background-repeat: no-repeat !important;
+}
+
+html[data-theme="light"] body[data-lg-admin="true"] :is(select:not([multiple]):not(.payway-select), select.select-control) {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%231f2430' stroke-opacity='0.72' stroke-width='1.85' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") !important;
+}
+
+html[data-theme="dark"] body[data-lg-admin="true"] :is(select:not([multiple]):not(.payway-select), select.select-control) {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23f1f3f7' stroke-opacity='0.76' stroke-width='1.85' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") !important;
+}
+
+/* V12.47.19 · Alineación vertical de indicadores de fecha/hora en todos los modales y filtros */
+html[data-theme] body[data-lg-admin="true"] :is(.v2-shell, [role="dialog"]) :is(input[type="date"], input[type="time"]) {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 0 11px !important;
+  line-height: normal !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] :is(.v2-shell, [role="dialog"]) :is(input[type="date"], input[type="time"])::-webkit-calendar-picker-indicator {
+  width: 16px !important;
+  height: 16px !important;
+  margin: 0 0 0 auto !important;
+  padding: 0 !important;
+  align-self: center !important;
+  flex-shrink: 0 !important;
 }
 
 html[data-theme="light"] body[data-lg-admin="true"] :is(
