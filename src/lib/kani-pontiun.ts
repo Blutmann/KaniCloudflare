@@ -1,6 +1,10 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
 export const DEFAULT_PONTIUN_TEMPLATE_NAME = "kani_barber_confirmacion_turno";
+export const DEFAULT_PONTIUN_CLIENT_CONFIRMED_V2_TEMPLATE_NAME = "kani_cliente_turno_confirmado_v2";
+export const DEFAULT_PONTIUN_BARBER_CONFIRMED_TEMPLATE_NAME = "kani_barbero_turno_confirmado";
+export const DEFAULT_PONTIUN_CLIENT_CANCELLED_TEMPLATE_NAME = "kani_cliente_turno_cancelado";
+export const DEFAULT_PONTIUN_BARBER_CANCELLED_TEMPLATE_NAME = "kani_barbero_turno_cancelado";
 export const DEFAULT_PONTIUN_TEMPLATE_LANGUAGE = "es_AR";
 
 export type PontiunAppointmentPayload = {
@@ -11,6 +15,45 @@ export type PontiunAppointmentPayload = {
   serviceName?: string | null;
   bookingDate?: string | null;
   startTime?: string | null;
+  idempotencySuffix?: string | null;
+};
+
+export type PontiunBarberConfirmationPayload = {
+  appointmentId: string;
+  barberName?: string | null;
+  barberPhone?: string | null;
+  clientName: string;
+  bookingDate?: string | null;
+  startTime?: string | null;
+  serviceName?: string | null;
+  clientWhatsApp?: string | null;
+  clientEmail?: string | null;
+  totalPriceArs: number;
+  accreditedAmountArs: number;
+  accreditedPaymentMethod?: string | null;
+  remainingBalanceArs: number;
+  idempotencySuffix?: string | null;
+};
+
+export type PontiunClientCancellationPayload = {
+  appointmentId: string;
+  clientName: string;
+  clientPhone?: string | null;
+  barberName?: string | null;
+  bookingDate?: string | null;
+  startTime?: string | null;
+  idempotencySuffix?: string | null;
+};
+
+export type PontiunBarberCancellationPayload = {
+  appointmentId: string;
+  barberName?: string | null;
+  barberPhone?: string | null;
+  clientName: string;
+  bookingDate?: string | null;
+  startTime?: string | null;
+  clientWhatsApp?: string | null;
+  clientEmail?: string | null;
   idempotencySuffix?: string | null;
 };
 
@@ -580,19 +623,66 @@ export async function handlePontiunWebhookRequest(request: Request): Promise<Res
  * - Si Pontiun falla (5xx, timeout, template_not_approved), NUNCA compromete el estado CONFIRMED del turno.
  * - Reintento controlado con retroceso exponencial solo ante errores transitorios (red, 408, 429, 5xx).
  */
-export async function sendPontiunAppointmentConfirmation(
-  params: PontiunAppointmentPayload,
-): Promise<PontiunSendResult> {
+export function formatPontiunBookingDate(bookingDate: string | null | undefined): string {
+  const raw = (bookingDate ?? "").trim();
+  if (raw && /^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+    try {
+      return new Date(`${raw}T12:00:00Z`).toLocaleDateString("es-AR", {
+        timeZone: "America/Argentina/Buenos_Aires",
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      });
+    } catch {
+      return raw;
+    }
+  }
+  return raw || "-";
+}
+
+export function formatPontiunStartTime(startTime: string | null | undefined): string {
+  const raw = (startTime ?? "").trim();
+  return raw ? raw.slice(0, 5) : "-";
+}
+
+export function normalizePontiunServiceName(serviceName: string | null | undefined): string {
+  const raw = (serviceName ?? "").trim() || "Servicio Kani";
+  const lower = raw.toLowerCase();
+  if (lower === "corte + barba" || lower === "corte +barba") {
+    return "Corte y barba";
+  }
+  if (lower === "corte") {
+    return "Corte de cabello";
+  }
+  return raw;
+}
+
+export function formatPontiunArsAmount(amount: number | null | undefined): string {
+  const safe = Number.isFinite(Number(amount)) ? Math.max(0, Math.round(Number(amount))) : 0;
+  return `$${safe.toLocaleString("es-AR")}`;
+}
+
+function sanitizePontiunParam(value: string | null | undefined, fallback = "-"): string {
+  const collapsed = (value ?? "").replace(/[\r\n\t]+/g, " ").replace(/\s{2,}/g, " ").trim();
+  return collapsed || fallback;
+}
+
+async function sendPontiunTemplateMessage(options: {
+  appointmentId: string;
+  recipientPhone: string | null | undefined;
+  templateName: string;
+  templateLanguage?: string;
+  parameters: string[];
+  idempotencyKey: string;
+  logContext: string;
+}): Promise<PontiunSendResult> {
   const apiKey = getPontiunRuntimeEnv("PONTIUN_API_KEY");
   const phoneNumberId =
     getPontiunRuntimeEnv("PONTIUN_PHONE_NUMBER_ID") ??
     getPontiunRuntimeEnv("PONTIUN_WHATSAPP_PHONE_NUMBER_ID") ??
     getPontiunRuntimeEnv("PONTIUN_PAGE_ID");
-  const templateName =
-    getPontiunRuntimeEnv("PONTIUN_TEMPLATE_NAME") ??
-    getPontiunRuntimeEnv("PONTIUN_WHATSAPP_CONFIRMATION_TEMPLATE") ??
-    DEFAULT_PONTIUN_TEMPLATE_NAME;
   const templateLanguage =
+    options.templateLanguage ??
     getPontiunRuntimeEnv("PONTIUN_TEMPLATE_LANGUAGE") ??
     getPontiunRuntimeEnv("PONTIUN_WHATSAPP_TEMPLATE_LANGUAGE") ??
     DEFAULT_PONTIUN_TEMPLATE_LANGUAGE;
@@ -625,10 +715,10 @@ export async function sendPontiunAppointmentConfirmation(
     };
   }
 
-  const recipientPhone = normalizePhoneForPontiun(params.clientPhone);
+  const recipientPhone = normalizePhoneForPontiun(options.recipientPhone);
   if (!recipientPhone) {
     console.warn(
-      `[Pontiun WhatsApp] Teléfono inválido o ausente para turno ${params.appointmentId}; no se pudo normalizar.`,
+      `[Pontiun WhatsApp] Teléfono inválido o ausente (${options.logContext}) para turno ${options.appointmentId}; no se pudo normalizar.`,
     );
     return {
       success: false,
@@ -638,75 +728,21 @@ export async function sendPontiunAppointmentConfirmation(
     };
   }
 
-  // Barbero es obligatorio en el contrato oficial de Kani Studio. No inventar nombres si no está asignado.
-  const barberName = params.barberName?.trim();
-  if (!barberName) {
-    console.warn(
-      `[Pontiun WhatsApp] Turno ${params.appointmentId} no tiene barbero asignado; no se inventa nombre y se cancela el envío.`,
-    );
-    return {
-      success: false,
-      error: "BARBER_MISSING",
-      retryable: false,
-      attempts: 0,
-    };
-  }
-
-  // 1. Nombre del cliente
-  const clientName = params.clientName?.trim() || "Cliente";
-
-  // 2. Fecha (DD/MM/YYYY)
-  let formattedDate = params.bookingDate ?? "";
-  if (formattedDate && /^\d{4}-\d{2}-\d{2}$/.test(formattedDate)) {
-    try {
-      formattedDate = new Date(`${formattedDate}T12:00:00Z`).toLocaleDateString("es-AR", {
-        timeZone: "America/Argentina/Buenos_Aires",
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      });
-    } catch {
-      // conservar original
-    }
-  }
-
-  // 3. Horario (HH:MM estricto según tabla oficial)
-  let formattedTime = params.startTime ?? "";
-  if (formattedTime) {
-    formattedTime = formattedTime.slice(0, 5);
-  }
-
-  // 4. Servicio (normalizar 'Corte + barba' a 'Corte y barba')
-  let serviceName = params.serviceName?.trim() || "Servicio Kani";
-  if (serviceName.toLowerCase() === "corte + barba" || serviceName.toLowerCase() === "corte +barba") {
-    serviceName = "Corte y barba";
-  } else if (serviceName.toLowerCase() === "corte") {
-    serviceName = "Corte de cabello";
-  }
-
-  // Clave de idempotencia única por turno confirmado según ADR Pontiun (1-200 chars)
-  const baseIdempotencyKey = `kani-appointment-${params.appointmentId}-confirmed`;
-  const cleanSuffix = params.idempotencySuffix?.trim();
-  const idempotencyKey = (
-    cleanSuffix ? `${baseIdempotencyKey}-${cleanSuffix}` : baseIdempotencyKey
-  ).slice(0, 200);
-
+  const normalizedTemplateName = options.templateName.trim();
+  const normalizedIdempotencyKey = options.idempotencyKey.trim().slice(0, 200);
   const requestBody = {
     pageId: phoneNumberId.trim(),
     recipientId: recipientPhone,
     template: {
-      name: templateName.trim(),
+      name: normalizedTemplateName,
       language: templateLanguage.trim(), // string per Pontiun OpenAPI schema!
       components: [
         {
           type: "body",
-          parameters: [
-            { type: "text", text: clientName },
-            { type: "text", text: formattedDate },
-            { type: "text", text: formattedTime },
-            { type: "text", text: serviceName },
-            { type: "text", text: barberName },
-          ],
+          parameters: options.parameters.map((text) => ({
+            type: "text",
+            text: sanitizePontiunParam(text),
+          })),
         },
       ],
     },
@@ -721,7 +757,7 @@ export async function sendPontiunAppointmentConfirmation(
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
       console.log(
-        `[Pontiun WhatsApp] Enviando confirmación (intento ${attempt}/${maxAttempts}) para turno ${params.appointmentId} al destinatario ${maskedPhone} con idempotencyKey ${idempotencyKey}`,
+        `[Pontiun WhatsApp] Enviando ${options.logContext} (plantilla ${normalizedTemplateName}, intento ${attempt}/${maxAttempts}) para turno ${options.appointmentId} al destinatario ${maskedPhone} con idempotencyKey ${normalizedIdempotencyKey}`,
       );
 
       const response = await fetch(endpoint, {
@@ -729,7 +765,7 @@ export async function sendPontiunAppointmentConfirmation(
         headers: {
           Authorization: `Bearer ${apiKey.trim()}`,
           "Content-Type": "application/json",
-          "Idempotency-Key": idempotencyKey,
+          "Idempotency-Key": normalizedIdempotencyKey,
         },
         body: JSON.stringify(requestBody),
       });
@@ -774,11 +810,11 @@ export async function sendPontiunAppointmentConfirmation(
 
         if (isReplay) {
           console.log(
-            `[Pontiun WhatsApp] Reenvío idempotente detectado para turno ${params.appointmentId} (messageId: ${messageId})`,
+            `[Pontiun WhatsApp] Reenvío idempotente detectado (${options.logContext}) para turno ${options.appointmentId} (messageId: ${messageId})`,
           );
         } else {
           console.log(
-            `[Pontiun WhatsApp] Confirmación aceptada por Pontiun para turno ${params.appointmentId} (messageId: ${messageId})`,
+            `[Pontiun WhatsApp] ${options.logContext} aceptado por Pontiun para turno ${options.appointmentId} (messageId: ${messageId})`,
           );
         }
 
@@ -807,7 +843,7 @@ export async function sendPontiunAppointmentConfirmation(
       ) {
         const tplStatus = responseJson?.templateStatus || "PENDING";
         console.warn(
-          `[Pontiun WhatsApp] Plantilla '${templateName}' (${templateLanguage}) en estado ${tplStatus}, aún no aprobada en Pontiun / Meta (HTTP 409).`,
+          `[Pontiun WhatsApp] Plantilla '${normalizedTemplateName}' (${templateLanguage}) en estado ${tplStatus}, aún no aprobada en Pontiun / Meta (HTTP 409).`,
         );
         return {
           success: false,
@@ -830,7 +866,7 @@ export async function sendPontiunAppointmentConfirmation(
 
       if (isMetaTemplateUnapproved) {
         console.warn(
-          `[Pontiun WhatsApp] Plantilla '${templateName}' (${templateLanguage}) reportada como pendiente/inexistente por Meta/Pontiun (HTTP ${response.status}): ${errorDetails}`,
+          `[Pontiun WhatsApp] Plantilla '${normalizedTemplateName}' (${templateLanguage}) reportada como pendiente/inexistente por Meta/Pontiun (HTTP ${response.status}): ${errorDetails}`,
         );
         return {
           success: false,
@@ -886,4 +922,179 @@ export async function sendPontiunAppointmentConfirmation(
     retryable: lastRetryable,
     attempts: maxAttempts,
   };
+}
+
+function resolveClientConfirmedTemplateName(): string {
+  return (
+    getPontiunRuntimeEnv("PONTIUN_CLIENT_CONFIRMED_TEMPLATE_NAME") ??
+    getPontiunRuntimeEnv("PONTIUN_TEMPLATE_NAME") ??
+    getPontiunRuntimeEnv("PONTIUN_WHATSAPP_CONFIRMATION_TEMPLATE") ??
+    DEFAULT_PONTIUN_TEMPLATE_NAME
+  );
+}
+
+function buildPontiunIdempotencyKey(base: string, suffix?: string | null): string {
+  const cleanSuffix = suffix?.trim();
+  return (cleanSuffix ? `${base}-${cleanSuffix}` : base).slice(0, 200);
+}
+
+/**
+ * Envía el WhatsApp de confirmación de turno al CLIENTE (5 parámetros).
+ */
+export async function sendPontiunAppointmentConfirmation(
+  params: PontiunAppointmentPayload,
+): Promise<PontiunSendResult> {
+  const barberName = params.barberName?.trim();
+  if (!barberName) {
+    console.warn(
+      `[Pontiun WhatsApp] Turno ${params.appointmentId} no tiene barbero asignado; no se inventa nombre y se cancela el envío.`,
+    );
+    return {
+      success: false,
+      error: "BARBER_MISSING",
+      retryable: false,
+      attempts: 0,
+    };
+  }
+
+  return sendPontiunTemplateMessage({
+    appointmentId: params.appointmentId,
+    recipientPhone: params.clientPhone,
+    templateName: resolveClientConfirmedTemplateName(),
+    parameters: [
+      params.clientName?.trim() || "Cliente",
+      formatPontiunBookingDate(params.bookingDate),
+      formatPontiunStartTime(params.startTime),
+      normalizePontiunServiceName(params.serviceName),
+      barberName,
+    ],
+    idempotencyKey: buildPontiunIdempotencyKey(
+      `kani-appointment-${params.appointmentId}-confirmed`,
+      params.idempotencySuffix,
+    ),
+    logContext: "confirmación al cliente",
+  });
+}
+
+/**
+ * Envía el WhatsApp de confirmación de turno al BARBERO asignado (11 parámetros).
+ */
+export async function sendPontiunBarberAppointmentConfirmation(
+  params: PontiunBarberConfirmationPayload,
+): Promise<PontiunSendResult> {
+  const barberName = params.barberName?.trim();
+  if (!barberName) {
+    return {
+      success: false,
+      error: "BARBER_MISSING",
+      retryable: false,
+      attempts: 0,
+    };
+  }
+
+  const templateName =
+    getPontiunRuntimeEnv("PONTIUN_BARBER_CONFIRMED_TEMPLATE_NAME") ??
+    DEFAULT_PONTIUN_BARBER_CONFIRMED_TEMPLATE_NAME;
+
+  return sendPontiunTemplateMessage({
+    appointmentId: params.appointmentId,
+    recipientPhone: params.barberPhone,
+    templateName,
+    parameters: [
+      barberName,
+      params.clientName?.trim() || "Cliente",
+      formatPontiunBookingDate(params.bookingDate),
+      formatPontiunStartTime(params.startTime),
+      normalizePontiunServiceName(params.serviceName),
+      params.clientWhatsApp?.trim() || "No informado",
+      params.clientEmail?.trim() || "No informado",
+      formatPontiunArsAmount(params.totalPriceArs),
+      formatPontiunArsAmount(params.accreditedAmountArs),
+      params.accreditedPaymentMethod?.trim() || "Sin seña acreditada",
+      formatPontiunArsAmount(params.remainingBalanceArs),
+    ],
+    idempotencyKey: buildPontiunIdempotencyKey(
+      `kani-appointment-${params.appointmentId}-confirmed-barber`,
+      params.idempotencySuffix,
+    ),
+    logContext: "confirmación al barbero",
+  });
+}
+
+/**
+ * Envía el WhatsApp de cancelación de turno al CLIENTE (4 parámetros).
+ */
+export async function sendPontiunClientAppointmentCancellation(
+  params: PontiunClientCancellationPayload,
+): Promise<PontiunSendResult> {
+  const barberName = params.barberName?.trim();
+  if (!barberName) {
+    return {
+      success: false,
+      error: "BARBER_MISSING",
+      retryable: false,
+      attempts: 0,
+    };
+  }
+
+  const templateName =
+    getPontiunRuntimeEnv("PONTIUN_CLIENT_CANCELLED_TEMPLATE_NAME") ??
+    DEFAULT_PONTIUN_CLIENT_CANCELLED_TEMPLATE_NAME;
+
+  return sendPontiunTemplateMessage({
+    appointmentId: params.appointmentId,
+    recipientPhone: params.clientPhone,
+    templateName,
+    parameters: [
+      params.clientName?.trim() || "Cliente",
+      barberName,
+      formatPontiunBookingDate(params.bookingDate),
+      formatPontiunStartTime(params.startTime),
+    ],
+    idempotencyKey: buildPontiunIdempotencyKey(
+      `kani-appointment-${params.appointmentId}-cancelled-client`,
+      params.idempotencySuffix,
+    ),
+    logContext: "cancelación al cliente",
+  });
+}
+
+/**
+ * Envía el WhatsApp de cancelación de turno al BARBERO asignado (6 parámetros).
+ */
+export async function sendPontiunBarberAppointmentCancellation(
+  params: PontiunBarberCancellationPayload,
+): Promise<PontiunSendResult> {
+  const barberName = params.barberName?.trim();
+  if (!barberName) {
+    return {
+      success: false,
+      error: "BARBER_MISSING",
+      retryable: false,
+      attempts: 0,
+    };
+  }
+
+  const templateName =
+    getPontiunRuntimeEnv("PONTIUN_BARBER_CANCELLED_TEMPLATE_NAME") ??
+    DEFAULT_PONTIUN_BARBER_CANCELLED_TEMPLATE_NAME;
+
+  return sendPontiunTemplateMessage({
+    appointmentId: params.appointmentId,
+    recipientPhone: params.barberPhone,
+    templateName,
+    parameters: [
+      barberName,
+      params.clientName?.trim() || "Cliente",
+      formatPontiunBookingDate(params.bookingDate),
+      formatPontiunStartTime(params.startTime),
+      params.clientWhatsApp?.trim() || "No informado",
+      params.clientEmail?.trim() || "No informado",
+    ],
+    idempotencyKey: buildPontiunIdempotencyKey(
+      `kani-appointment-${params.appointmentId}-cancelled-barber`,
+      params.idempotencySuffix,
+    ),
+    logContext: "cancelación al barbero",
+  });
 }

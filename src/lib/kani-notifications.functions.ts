@@ -6,6 +6,7 @@ import { buildTurnoIcsUrl } from './kani-calendar-ics';
 import { buildCancellationUrl } from './kani-cancellation-token';
 import { isAppointmentPast } from './kani-mobile-appointments';
 import { formatServiceName, formatServiceNameForEmail, formatServiceNameForChannel } from './kani-model';
+import { resolveBarberContact } from './kani-barber-contacts';
 
 import type { Database } from "@/integrations/supabase/types";
 
@@ -73,6 +74,243 @@ export const sendAppointmentNotification = createServerFn({ method: "POST" })
   })
   .handler(async ({ data }): Promise<DispatchResult> => dispatchAppointmentNotification(data));
 
+export type NotificationRecipientRole = "CLIENT" | "BARBER";
+
+type DispatchContextSnapshot = {
+  appointmentStatus: string | null;
+  barberId: string | null;
+  barberName: string;
+  barberPhone: string | null;
+  barberEmail: string | null;
+  clientEmail: string | null;
+  clientPhone: string | null;
+  totalPriceArs: number;
+  accreditedAmountArs: number;
+  accreditedPaymentMethod: string;
+  remainingBalanceArs: number;
+  apptBenefit: Record<string, any> | null;
+};
+
+function mapPaymentMethodDisplayName(rawMethod: string | null | undefined): string {
+  const normalized = (rawMethod ?? "").trim().toUpperCase();
+  if (normalized === "PAYWAY") return "Payway";
+  if (normalized === "MERCADOPAGO" || normalized === "MERCADO_PAGO" || normalized === "MERCADO PAGO") return "Mercado Pago";
+  if (normalized === "TRANSFER" || normalized === "TRANSFERENCIA") return "Transferencia";
+  if (normalized === "CASH" || normalized === "EFECTIVO") return "Efectivo";
+  if (normalized === "CARD" || normalized === "TARJETA") return "Tarjeta";
+  return rawMethod?.trim() || "Seña acreditada";
+}
+
+function mapPontiunErrorCode(pontiunResult: { error?: string; errorCode?: string; templatePendingOrUnapproved?: boolean }): string {
+  if (pontiunResult.error?.includes("131042") || pontiunResult.errorCode === "131042") {
+    return "131042";
+  }
+  if (
+    pontiunResult.templatePendingOrUnapproved ||
+    pontiunResult.errorCode === "TEMPLATE_NOT_APPROVED" ||
+    pontiunResult.error?.includes("TEMPLATE_NOT_APPROVED")
+  ) {
+    return "TEMPLATE_NOT_APPROVED";
+  }
+  if (pontiunResult.error === "INVALID_PHONE_NUMBER") return "INVALID_PHONE_NUMBER";
+  if (pontiunResult.error === "BARBER_MISSING") return "BARBER_MISSING";
+  return "PONTIUN_ERROR";
+}
+
+async function safeRecordChannelDispatchStatus(
+  supabase: any,
+  params: {
+    appointmentId: string;
+    notificationEventId: string | null;
+    recipientRole: NotificationRecipientRole;
+    channel: "WHATSAPP" | "EMAIL";
+    provider: "PONTIUN" | "RESEND";
+    recipient: string | null;
+    providerMessageId: string | null;
+    status: string;
+    errorCode?: string | null;
+    errorDescription?: string | null;
+    incrementAttempt?: boolean;
+    metaMessageId?: string | null;
+  },
+) {
+  try {
+    const rpcPayload: Record<string, any> = {
+      p_appointment_id: params.appointmentId,
+      p_notification_event_id: params.notificationEventId,
+      p_channel: params.channel,
+      p_provider: params.provider,
+      p_recipient: params.recipient,
+      p_provider_message_id: params.providerMessageId,
+      p_status: params.status,
+      p_error_code: params.errorCode ?? null,
+      p_error_description: params.errorDescription ?? null,
+      p_increment_attempt: Boolean(params.incrementAttempt),
+      p_recipient_role: params.recipientRole,
+    };
+    if (params.metaMessageId) {
+      rpcPayload.p_meta_message_id = params.metaMessageId;
+    }
+    const { error } = await supabase.rpc("record_channel_dispatch_status", rpcPayload);
+    if (error && (String(error.message || "").includes("p_recipient_role") || error.code === "PGRST202")) {
+      if (params.recipientRole === "CLIENT") {
+        delete rpcPayload.p_recipient_role;
+        await supabase.rpc("record_channel_dispatch_status", rpcPayload);
+      } else {
+        console.warn("[KANI notification] record_channel_dispatch_status aún no soporta p_recipient_role en DB; ejecutá la migración pendiente.");
+      }
+    }
+  } catch (rpcErr) {
+    console.warn(`[KANI notification] Error registrando estado de canal ${params.recipientRole}/${params.channel}:`, rpcErr);
+  }
+}
+
+async function resolveAppointmentDispatchSnapshot(
+  supabase: any,
+  appointmentId: string,
+  fallback: {
+    barberName?: string | null;
+    servicePriceArs?: number | null;
+    clientEmail?: string | null;
+    clientPhone?: string | null;
+  },
+): Promise<DispatchContextSnapshot> {
+  let apptRow: Record<string, any> | null = null;
+  try {
+    const { data: fullAppt, error: fullErr } = await supabase
+      .from("appointments")
+      .select(
+        "id, status, barber_id, service_price_ars, deposit_required, deposit_paid, deposit_amount_ars, balance_paid, benefit_code, benefit_type, benefit_usage_mode, benefit_original_price_ars, benefit_discount_amount_ars, benefit_final_price_ars, benefit_online_deposit_ars, benefit_in_person_balance_ars, barbers(id, name), services(id, name, price_ars), clients(id, name, email, phone)",
+      )
+      .eq("id", appointmentId)
+      .maybeSingle();
+
+    if (!fullErr && fullAppt) {
+      apptRow = fullAppt as Record<string, any>;
+    } else {
+      const { data: basicAppt } = await supabase
+        .from("appointments")
+        .select(
+          "id, status, barber_id, service_price_ars, deposit_paid, deposit_amount_ars, balance_paid, benefit_code, benefit_type, benefit_original_price_ars, benefit_discount_amount_ars, benefit_final_price_ars, benefit_online_deposit_ars, benefit_in_person_balance_ars",
+        )
+        .eq("id", appointmentId)
+        .maybeSingle();
+      if (basicAppt) apptRow = basicAppt as Record<string, any>;
+    }
+  } catch {
+    // best effort
+  }
+
+  let approvedAttempt: { provider?: string | null; amount_ars?: number | null } | null = null;
+  let confirmedMpOrder: { paid_amount_ars?: number | null } | null = null;
+  let accreditedServicePayments: Array<{ amount_ars?: number | null; payment_method?: string | null }> = [];
+
+  try {
+    const [attRes, mpRes, spRes] = await Promise.all([
+      supabase
+        .from("payment_attempts")
+        .select("provider, amount_ars, state, created_at")
+        .eq("appointment_id", appointmentId)
+        .eq("state", "APPROVED")
+        .order("created_at", { ascending: false })
+        .limit(1),
+      supabase
+        .from("mercadopago_orders")
+        .select("paid_amount_ars, status")
+        .eq("appointment_id", appointmentId)
+        .eq("status", "CONFIRMED")
+        .limit(1),
+      supabase
+        .from("service_payments")
+        .select("amount_ars, payment_method")
+        .eq("appointment_id", appointmentId)
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false }),
+    ]);
+    if (Array.isArray(attRes?.data) && attRes.data.length > 0) {
+      approvedAttempt = attRes.data[0];
+    }
+    if (Array.isArray(mpRes?.data) && mpRes.data.length > 0) {
+      confirmedMpOrder = mpRes.data[0];
+    }
+    if (Array.isArray(spRes?.data)) {
+      accreditedServicePayments = spRes.data;
+    }
+  } catch {
+    // best effort
+  }
+
+  const barberRel = Array.isArray(apptRow?.barbers) ? apptRow?.barbers[0] : apptRow?.barbers;
+  const serviceRel = Array.isArray(apptRow?.services) ? apptRow?.services[0] : apptRow?.services;
+  const clientRel = Array.isArray(apptRow?.clients) ? apptRow?.clients[0] : apptRow?.clients;
+
+  const barberNameRaw = barberRel?.name ?? fallback.barberName ?? "";
+  const barberContact = resolveBarberContact({
+    barberId: apptRow?.barber_id ?? barberRel?.id ?? null,
+    barberName: barberNameRaw,
+  });
+
+  const baseServicePrice = Number(
+    apptRow?.benefit_final_price_ars ??
+      apptRow?.service_price_ars ??
+      serviceRel?.price_ars ??
+      fallback.servicePriceArs ??
+      0,
+  );
+  const totalPriceArs = Number.isFinite(baseServicePrice) ? Math.max(0, Math.round(baseServicePrice)) : 0;
+
+  let accreditedAmountArs = 0;
+  let accreditedPaymentMethod = "Sin seña acreditada";
+
+  if (approvedAttempt) {
+    accreditedAmountArs = Math.max(
+      0,
+      Math.round(Number(approvedAttempt.amount_ars ?? apptRow?.deposit_amount_ars ?? 0)),
+    );
+    accreditedPaymentMethod = mapPaymentMethodDisplayName(approvedAttempt.provider);
+  } else if (confirmedMpOrder) {
+    accreditedAmountArs = Math.max(
+      0,
+      Math.round(Number(confirmedMpOrder.paid_amount_ars ?? apptRow?.deposit_amount_ars ?? 0)),
+    );
+    accreditedPaymentMethod = "Mercado Pago";
+  } else if (accreditedServicePayments.length > 0) {
+    accreditedAmountArs = accreditedServicePayments.reduce(
+      (sum, row) => sum + Math.max(0, Math.round(Number(row.amount_ars ?? 0))),
+      0,
+    );
+    accreditedPaymentMethod = mapPaymentMethodDisplayName(accreditedServicePayments[0]?.payment_method);
+  } else if (Boolean(apptRow?.deposit_paid) && Number(apptRow?.deposit_amount_ars ?? 0) > 0) {
+    accreditedAmountArs = Math.max(0, Math.round(Number(apptRow?.deposit_amount_ars ?? 0)));
+    accreditedPaymentMethod = "Transferencia";
+  }
+
+  const remainingBalanceArs = apptRow?.balance_paid
+    ? 0
+    : Math.max(0, totalPriceArs - accreditedAmountArs);
+
+  return {
+    appointmentStatus: apptRow?.status ?? null,
+    barberId: apptRow?.barber_id ?? barberRel?.id ?? null,
+    barberName: barberContact.barberName,
+    barberPhone: barberContact.whatsapp,
+    barberEmail: barberContact.email,
+    clientEmail: (fallback.clientEmail ?? clientRel?.email ?? "").trim() || null,
+    clientPhone: (fallback.clientPhone ?? clientRel?.phone ?? "").trim() || null,
+    totalPriceArs,
+    accreditedAmountArs,
+    accreditedPaymentMethod,
+    remainingBalanceArs,
+    apptBenefit: apptRow,
+  };
+}
+
+function isDispatchAlreadyDelivered(row: { status?: string | null } | undefined): boolean {
+  return Boolean(
+    row && (row.status === "SENT" || row.status === "PROVIDER_ACCEPTED" || row.status === "DELIVERED" || row.status === "READ"),
+  );
+}
+
 // Plain server dispatcher also works from the raw Worker webhook (no TanStack request context).
 export const dispatchAppointmentNotification = createServerOnlyFn(async (data: { appointmentId: string; claimToken: string; clientPhone?: string | null }): Promise<DispatchResult> => {
     let notificationId: string | undefined;
@@ -96,270 +334,476 @@ export const dispatchAppointmentNotification = createServerOnlyFn(async (data: {
       }
       if (event.dispatch_status === "ALREADY_SENT") return { sent: true, status: "ALREADY_SENT" };
       if (event.dispatch_status === "IN_PROGRESS") return { sent: false, status: "IN_PROGRESS" };
-      const recipientPhone = event.recipient_phone ?? data.clientPhone ?? null;
-      let emailSuccess = false;
-      let emailMessageId: string | undefined;
-      let emailError: string | undefined;
-      let pontiunSuccess = false;
-      let pontiunMessageId: string | undefined;
-      let pontiunError: string | undefined;
 
-      // 1. Despacho de WhatsApp vía Pontiun (prioritario para turnos CONFIRMED)
-      if (event.notification_type === "CONFIRMED") {
+      const snapshot = await resolveAppointmentDispatchSnapshot(supabase, data.appointmentId, {
+        barberName: event.barber_name,
+        servicePriceArs: event.service_price_ars,
+        clientEmail: event.recipient_email,
+        clientPhone: event.recipient_phone ?? data.clientPhone ?? null,
+      });
+
+      // Protección contra race conditions y anuncios falsos de turnos PENDING / CANCELLED:
+      if (event.notification_type === "CONFIRMED" && snapshot.appointmentStatus && snapshot.appointmentStatus !== "CONFIRMED") {
+        console.warn(
+          `[KANI notification] Turno ${data.appointmentId} tiene estado actual '${snapshot.appointmentStatus}' (no CONFIRMED); se aborta notificación de confirmación obsoleta.`,
+        );
+        return { sent: false, status: "SKIPPED", errorCode: "STALE_CONFIRMED_EVENT" };
+      }
+      if (event.notification_type === "CANCELLED" && snapshot.appointmentStatus && snapshot.appointmentStatus !== "CANCELLED") {
+        console.warn(
+          `[KANI notification] Turno ${data.appointmentId} tiene estado actual '${snapshot.appointmentStatus}' (no CANCELLED); se aborta notificación de cancelación obsoleta.`,
+        );
+        return { sent: false, status: "SKIPPED", errorCode: "STALE_CANCELLED_EVENT" };
+      }
+
+      // Consultar despachos existentes de este evento para no reenviar canales/roles ya entregados en recuperaciones parciales
+      const existingByKey = new Map<string, { status?: string | null; provider_message_id?: string | null }>();
+      try {
+        const { data: existingRows } = await (supabase as any)
+          .from("appointment_notification_dispatches")
+          .select("recipient_role, channel, status, provider_message_id")
+          .eq("notification_event_id", event.notification_id);
+        if (Array.isArray(existingRows)) {
+          for (const row of existingRows) {
+            const role = row.recipient_role === "BARBER" ? "BARBER" : "CLIENT";
+            existingByKey.set(`${role}:${row.channel}`, row);
+          }
+        }
+      } catch {
+        // best effort
+      }
+
+      const recipientPhone = event.recipient_phone ?? data.clientPhone ?? snapshot.clientPhone ?? null;
+      const clientEmailAddress = (event.recipient_email ?? snapshot.clientEmail ?? "").trim() || null;
+
+      let anySuccess = false;
+      const failureDetails: string[] = [];
+      let clientWaMsgId: string | undefined;
+      let clientEmailMsgId: string | undefined;
+
+      // =========================================================================
+      // 1A. WHATSAPP -> CLIENTE (CONFIRMED o CANCELLED)
+      // =========================================================================
+      const existingClientWa = existingByKey.get("CLIENT:WHATSAPP");
+      if (isDispatchAlreadyDelivered(existingClientWa)) {
+        anySuccess = true;
+        clientWaMsgId = existingClientWa?.provider_message_id ?? undefined;
+      } else {
         const hasRecipientPhoneKey = "recipient_phone" in event;
         const clientHasRegisteredPhone = Boolean(recipientPhone && recipientPhone.trim());
         let whatsappStatus = "SKIPPED";
         let whatsappErrorCode: string | null = null;
         let whatsappErrorDesc: string | null = null;
         let whatsappIncrement = false;
-
         let whatsappMetaMessageId: string | null = null;
+        let pontiunMessageId: string | null = null;
+
         if (clientHasRegisteredPhone) {
           try {
-            const { sendPontiunAppointmentConfirmation } = await import("./kani-pontiun");
-            const pontiunResult = await sendPontiunAppointmentConfirmation({
-              appointmentId: data.appointmentId,
-              clientName: event.client_name,
-              clientPhone: recipientPhone,
-              barberName: event.barber_name,
-              serviceName: event.service_name,
-              bookingDate: event.booking_date,
-              startTime: event.start_time,
-            });
+            const pontiunModule = await import("./kani-pontiun");
+            const pontiunResult =
+              event.notification_type === "CANCELLED"
+                ? await pontiunModule.sendPontiunClientAppointmentCancellation({
+                    appointmentId: data.appointmentId,
+                    clientName: event.client_name,
+                    clientPhone: recipientPhone,
+                    barberName: snapshot.barberName,
+                    bookingDate: event.booking_date,
+                    startTime: event.start_time,
+                  })
+                : await pontiunModule.sendPontiunAppointmentConfirmation({
+                    appointmentId: data.appointmentId,
+                    clientName: event.client_name,
+                    clientPhone: recipientPhone,
+                    barberName: snapshot.barberName,
+                    serviceName: event.service_name,
+                    bookingDate: event.booking_date,
+                    startTime: event.start_time,
+                  });
 
             if (pontiunResult.success) {
-              pontiunSuccess = true;
-              pontiunMessageId = pontiunResult.messageId;
+              anySuccess = true;
+              clientWaMsgId = pontiunResult.messageId;
+              pontiunMessageId = pontiunResult.messageId ?? null;
               whatsappMetaMessageId = pontiunResult.metaMessageId ?? null;
               whatsappStatus = "PROVIDER_ACCEPTED";
               whatsappIncrement = true;
-              console.log(
-                `[Pontiun WhatsApp] Confirmación enviada/aceptada para turno ${data.appointmentId} (id: ${pontiunResult.messageId})`,
-              );
             } else if (pontiunResult.skipped) {
               whatsappStatus = "SKIPPED";
               whatsappErrorDesc = pontiunResult.error ?? "Envío omitido";
-              console.info(
-                `[Pontiun WhatsApp] Envío omitido de forma segura para turno ${data.appointmentId}: ${pontiunResult.error}`,
-              );
             } else {
-              pontiunError = pontiunResult.error;
               whatsappStatus = "FAILED";
+              whatsappErrorCode = mapPontiunErrorCode(pontiunResult);
               whatsappErrorDesc = pontiunResult.error ?? null;
               whatsappIncrement = true;
-              if (pontiunResult.error?.includes("131042") || pontiunResult.errorCode === "131042") {
-                whatsappErrorCode = "131042";
-              } else if (
-                pontiunResult.templatePendingOrUnapproved ||
-                pontiunResult.errorCode === "TEMPLATE_NOT_APPROVED" ||
-                pontiunResult.error?.includes("TEMPLATE_NOT_APPROVED")
-              ) {
-                whatsappErrorCode = "TEMPLATE_NOT_APPROVED";
-              } else if (pontiunResult.error === "INVALID_PHONE_NUMBER") {
-                whatsappErrorCode = "INVALID_PHONE_NUMBER";
-              } else if (pontiunResult.error === "BARBER_MISSING") {
-                whatsappErrorCode = "BARBER_MISSING";
-              } else {
-                whatsappErrorCode = "PONTIUN_ERROR";
-              }
-              console.warn(
-                `[Pontiun WhatsApp] No se pudo enviar confirmación para turno ${data.appointmentId}: ${pontiunResult.error}`,
-              );
+              failureDetails.push(`Cliente WhatsApp: ${pontiunResult.error ?? whatsappErrorCode}`);
             }
           } catch (pontiunErr) {
-            pontiunError = pontiunErr instanceof Error ? pontiunErr.message : String(pontiunErr);
+            const msg = pontiunErr instanceof Error ? pontiunErr.message : String(pontiunErr);
             whatsappStatus = "FAILED";
             whatsappErrorCode = "PONTIUN_EXCEPTION";
-            whatsappErrorDesc = pontiunError;
+            whatsappErrorDesc = msg;
             whatsappIncrement = true;
-            console.warn("[Pontiun WhatsApp] Error durante el despacho:", pontiunError);
+            failureDetails.push(`Cliente WhatsApp: ${msg}`);
           }
         } else if (!hasRecipientPhoneKey && !data.clientPhone) {
-          // Error estructural: El RPC no proyectó la columna recipient_phone
-          pontiunError = "RPC_STRUCTURAL_ERROR: la función claim_appointment_notification no devolvió la columna recipient_phone";
           whatsappStatus = "FAILED";
           whatsappErrorCode = "RPC_STRUCTURAL_ERROR";
-          whatsappErrorDesc = pontiunError;
-          console.error(
-            `[Pontiun WhatsApp] ${pontiunError} para turno ${data.appointmentId}.`,
-          );
+          whatsappErrorDesc = "RPC_STRUCTURAL_ERROR: la función claim_appointment_notification no devolvió la columna recipient_phone";
+          failureDetails.push(`Cliente WhatsApp: ${whatsappErrorDesc}`);
         } else {
-          // Omisión válida: El cliente genuinamente no registró teléfono
           whatsappStatus = "SKIPPED";
           whatsappErrorDesc = "Cliente sin teléfono registrado";
-          console.info(
-            `[Pontiun WhatsApp] Turno ${data.appointmentId} no posee teléfono registrado; WhatsApp omitido de forma válida.`,
-          );
         }
 
-        try {
-          await supabase.rpc("record_channel_dispatch_status", {
-            p_appointment_id: data.appointmentId,
-            p_notification_event_id: event.notification_id,
-            p_channel: "WHATSAPP",
-            p_provider: "PONTIUN",
-            p_recipient: recipientPhone,
-            p_provider_message_id: pontiunMessageId ?? null,
-            p_status: whatsappStatus,
-            p_error_code: whatsappErrorCode,
-            p_error_description: whatsappErrorDesc,
-            p_increment_attempt: whatsappIncrement,
-            p_meta_message_id: whatsappMetaMessageId,
-          });
-        } catch (rpcErr) {
-          console.warn("[KANI notification] Error registrando estado de canal WHATSAPP:", rpcErr);
-        }
+        await safeRecordChannelDispatchStatus(supabase, {
+          appointmentId: data.appointmentId,
+          notificationEventId: event.notification_id,
+          recipientRole: "CLIENT",
+          channel: "WHATSAPP",
+          provider: "PONTIUN",
+          recipient: recipientPhone,
+          providerMessageId: pontiunMessageId,
+          status: whatsappStatus,
+          errorCode: whatsappErrorCode,
+          errorDescription: whatsappErrorDesc,
+          incrementAttempt: whatsappIncrement,
+          metaMessageId: whatsappMetaMessageId,
+        });
       }
 
-      // 2. Despacho de Email vía Resend (aislado para no bloquear WhatsApp)
-      let emailStatus = "SKIPPED";
-      let emailErrorCode: string | null = null;
-      let emailErrorDesc: string | null = null;
-      let emailIncrement = false;
+      // =========================================================================
+      // 1B. WHATSAPP -> BARBERO ASIGNADO (CONFIRMED o CANCELLED)
+      // =========================================================================
+      const existingBarberWa = existingByKey.get("BARBER:WHATSAPP");
+      if (isDispatchAlreadyDelivered(existingBarberWa)) {
+        anySuccess = true;
+      } else {
+        let barberWaStatus = "SKIPPED";
+        let barberWaErrorCode: string | null = null;
+        let barberWaErrorDesc: string | null = null;
+        let barberWaIncrement = false;
+        let barberWaMessageId: string | null = null;
+        let barberWaMetaMessageId: string | null = null;
 
-      if (event.recipient_email && event.recipient_email.trim()) {
-        try {
-          const apiKey = getRuntimeEnv("RESEND_API_KEY")?.trim();
-          const rawFrom = getRuntimeEnv("RESEND_FROM_EMAIL")?.trim();
-          const fromEmail = (rawFrom && !rawFrom.includes("noresponder"))
-            ? rawFrom
-            : "Kani Barber <turnos@kanibarber.com>";
-          if (apiKey && fromEmail) {
-            let apptBenefit: any = null;
-            try {
-              const { data: bData, error: bErr } = await supabase
-                .from('appointments')
-                .select('deposit_amount_ars, benefit_code, benefit_type, benefit_usage_mode, benefit_original_price_ars, benefit_discount_amount_ars, benefit_final_price_ars, benefit_online_deposit_ars, benefit_in_person_balance_ars')
-                .eq('id', data.appointmentId)
-                .maybeSingle();
-              if (!bErr && bData) {
-                apptBenefit = bData;
-              } else if (bErr) {
-                const { data: fallbackData } = await supabase
-                  .from('appointments')
-                  .select('deposit_amount_ars, benefit_code, benefit_type, benefit_original_price_ars, benefit_discount_amount_ars, benefit_final_price_ars, benefit_online_deposit_ars, benefit_in_person_balance_ars')
-                  .eq('id', data.appointmentId)
-                  .maybeSingle();
-                apptBenefit = fallbackData;
-              }
-            } catch { /* best effort */ }
+        if (!snapshot.barberPhone) {
+          barberWaStatus = "SKIPPED";
+          barberWaErrorDesc = `Barbero '${snapshot.barberName}' sin WhatsApp configurado`;
+          console.warn(`[Pontiun WhatsApp] ${barberWaErrorDesc} para turno ${data.appointmentId}`);
+        } else {
+          try {
+            const pontiunModule = await import("./kani-pontiun");
+            const barberWaResult =
+              event.notification_type === "CANCELLED"
+                ? await pontiunModule.sendPontiunBarberAppointmentCancellation({
+                    appointmentId: data.appointmentId,
+                    barberName: snapshot.barberName,
+                    barberPhone: snapshot.barberPhone,
+                    clientName: event.client_name,
+                    bookingDate: event.booking_date,
+                    startTime: event.start_time,
+                    clientWhatsApp: recipientPhone,
+                    clientEmail: clientEmailAddress,
+                  })
+                : await pontiunModule.sendPontiunBarberAppointmentConfirmation({
+                    appointmentId: data.appointmentId,
+                    barberName: snapshot.barberName,
+                    barberPhone: snapshot.barberPhone,
+                    clientName: event.client_name,
+                    bookingDate: event.booking_date,
+                    startTime: event.start_time,
+                    serviceName: event.service_name,
+                    clientWhatsApp: recipientPhone,
+                    clientEmail: clientEmailAddress,
+                    totalPriceArs: snapshot.totalPriceArs,
+                    accreditedAmountArs: snapshot.accreditedAmountArs,
+                    accreditedPaymentMethod: snapshot.accreditedPaymentMethod,
+                    remainingBalanceArs: snapshot.remainingBalanceArs,
+                  });
 
-            const rawEventDeposit = apptBenefit?.deposit_amount_ars ?? event.down_payment_ars;
-            const effectiveDownPayment = typeof rawEventDeposit === 'number' && rawEventDeposit !== 10000
-              ? rawEventDeposit
-              : (apptBenefit?.benefit_online_deposit_ars ?? KANI_STANDARD_DEPOSIT_ARS);
-
-            const payload: NotificationPayload = {
-              notificationId: event.notification_id,
-              appointmentId: data.appointmentId,
-              notificationType: event.notification_type,
-              recipientEmail: event.recipient_email,
-              recipientPhone,
-              clientName: event.client_name,
-              barberName: event.barber_name,
-              serviceName: event.service_name,
-              bookingDate: event.booking_date,
-              startTime: event.start_time,
-              endTime: event.end_time,
-              clientNotes: event.client_notes,
-              servicePriceArs: event.service_price_ars,
-              serviceDurationMinutes: event.service_duration_minutes,
-              downPaymentArs: effectiveDownPayment,
-              transferAlias: event.transfer_alias,
-              transferCuit: event.transfer_cuit,
-              transferHolderName: event.transfer_holder_name,
-              benefitCode: apptBenefit?.benefit_code ?? (event as any).benefit_code ?? null,
-              benefitType: apptBenefit?.benefit_type ?? (event as any).benefit_type ?? null,
-              benefitUsageMode: apptBenefit?.benefit_usage_mode ?? (event as any).benefit_usage_mode ?? null,
-              benefitOriginalPriceArs: apptBenefit?.benefit_original_price_ars ?? null,
-              benefitDiscountAmountArs: apptBenefit?.benefit_discount_amount_ars ?? null,
-              benefitFinalPriceArs: apptBenefit?.benefit_final_price_ars ?? null,
-              benefitOnlineDepositArs: apptBenefit?.benefit_online_deposit_ars ?? null,
-              benefitInPersonBalanceArs: apptBenefit?.benefit_in_person_balance_ars ?? null,
-            };
-            const email = buildEmail(payload);
-            const subject = notificationSubject(
-              email.subject,
-              getRuntimeEnv("KANI_ENVIRONMENT"),
-              getRuntimeEnv("SUPABASE_URL") ?? getRuntimeEnv("VITE_SUPABASE_URL"),
-            );
-            const response = await fetch("https://api.resend.com/emails", {
-              method: "POST",
-              headers: {
-                Authorization: `Bearer ${apiKey}`,
-                "Content-Type": "application/json",
-                "Idempotency-Key": event.notification_id,
-              },
-              body: JSON.stringify({
-                from: fromEmail,
-                to: [event.recipient_email],
-                subject,
-                html: email.html,
-                text: email.text,
-              }),
-            });
-            const result = (await response.json().catch(() => null)) as {
-              id?: string;
-              message?: string;
-            } | null;
-            if (response.ok && result?.id) {
-              emailSuccess = true;
-              emailMessageId = result.id;
-              emailStatus = "SENT";
-              emailIncrement = true;
-              console.log(`[KANI notification] Email enviado exitosamente para turno ${data.appointmentId} (id: ${result.id})`);
+            if (barberWaResult.success) {
+              anySuccess = true;
+              barberWaMessageId = barberWaResult.messageId ?? null;
+              barberWaMetaMessageId = barberWaResult.metaMessageId ?? null;
+              barberWaStatus = "PROVIDER_ACCEPTED";
+              barberWaIncrement = true;
+            } else if (barberWaResult.skipped) {
+              barberWaStatus = "SKIPPED";
+              barberWaErrorDesc = barberWaResult.error ?? "Envío omitido";
             } else {
-              emailError = `RESEND_${response.status}: ${result?.message ?? "SEND_FAILED"}`;
+              barberWaStatus = "FAILED";
+              barberWaErrorCode = mapPontiunErrorCode(barberWaResult);
+              barberWaErrorDesc = barberWaResult.error ?? null;
+              barberWaIncrement = true;
+              failureDetails.push(`Barbero WhatsApp: ${barberWaResult.error ?? barberWaErrorCode}`);
+            }
+          } catch (barberWaErr) {
+            const msg = barberWaErr instanceof Error ? barberWaErr.message : String(barberWaErr);
+            barberWaStatus = "FAILED";
+            barberWaErrorCode = "PONTIUN_EXCEPTION";
+            barberWaErrorDesc = msg;
+            barberWaIncrement = true;
+            failureDetails.push(`Barbero WhatsApp: ${msg}`);
+          }
+        }
+
+        await safeRecordChannelDispatchStatus(supabase, {
+          appointmentId: data.appointmentId,
+          notificationEventId: event.notification_id,
+          recipientRole: "BARBER",
+          channel: "WHATSAPP",
+          provider: "PONTIUN",
+          recipient: snapshot.barberPhone,
+          providerMessageId: barberWaMessageId,
+          status: barberWaStatus,
+          errorCode: barberWaErrorCode,
+          errorDescription: barberWaErrorDesc,
+          incrementAttempt: barberWaIncrement,
+          metaMessageId: barberWaMetaMessageId,
+        });
+      }
+
+      // =========================================================================
+      // 2. PREPARAR PAYLOAD COMPARTIDO DE EMAIL (RESEND)
+      // =========================================================================
+      const apptBenefit = snapshot.apptBenefit;
+      const rawEventDeposit = apptBenefit?.deposit_amount_ars ?? event.down_payment_ars;
+      const effectiveDownPayment =
+        typeof rawEventDeposit === "number" && rawEventDeposit !== 10000
+          ? rawEventDeposit
+          : (apptBenefit?.benefit_online_deposit_ars ?? snapshot.accreditedAmountArs);
+
+      const baseEmailPayload: NotificationPayload = {
+        notificationId: event.notification_id,
+        appointmentId: data.appointmentId,
+        notificationType: event.notification_type,
+        recipientEmail: clientEmailAddress ?? "",
+        recipientPhone,
+        clientName: event.client_name,
+        barberName: snapshot.barberName,
+        serviceName: event.service_name,
+        bookingDate: event.booking_date,
+        startTime: event.start_time,
+        endTime: event.end_time,
+        clientNotes: event.client_notes,
+        servicePriceArs: snapshot.totalPriceArs || event.service_price_ars,
+        serviceDurationMinutes: event.service_duration_minutes,
+        downPaymentArs: effectiveDownPayment,
+        transferAlias: event.transfer_alias,
+        transferCuit: event.transfer_cuit,
+        transferHolderName: event.transfer_holder_name,
+        benefitCode: apptBenefit?.benefit_code ?? (event as any).benefit_code ?? null,
+        benefitType: apptBenefit?.benefit_type ?? (event as any).benefit_type ?? null,
+        benefitUsageMode: apptBenefit?.benefit_usage_mode ?? (event as any).benefit_usage_mode ?? null,
+        benefitOriginalPriceArs: apptBenefit?.benefit_original_price_ars ?? null,
+        benefitDiscountAmountArs: apptBenefit?.benefit_discount_amount_ars ?? null,
+        benefitFinalPriceArs: apptBenefit?.benefit_final_price_ars ?? null,
+        benefitOnlineDepositArs: apptBenefit?.benefit_online_deposit_ars ?? null,
+        benefitInPersonBalanceArs: apptBenefit?.benefit_in_person_balance_ars ?? null,
+      };
+
+      const resendApiKey = getRuntimeEnv("RESEND_API_KEY")?.trim();
+      const rawFrom = getRuntimeEnv("RESEND_FROM_EMAIL")?.trim();
+      const fromEmail =
+        rawFrom && !rawFrom.includes("noresponder")
+          ? rawFrom
+          : "Kani Barber <turnos@kanibarber.com>";
+
+      // =========================================================================
+      // 2A. EMAIL -> CLIENTE (Resend)
+      // =========================================================================
+      const existingClientEmail = existingByKey.get("CLIENT:EMAIL");
+      if (isDispatchAlreadyDelivered(existingClientEmail)) {
+        anySuccess = true;
+        clientEmailMsgId = existingClientEmail?.provider_message_id ?? undefined;
+      } else {
+        let emailStatus = "SKIPPED";
+        let emailErrorCode: string | null = null;
+        let emailErrorDesc: string | null = null;
+        let emailIncrement = false;
+        let emailMessageId: string | null = null;
+
+        if (clientEmailAddress) {
+          if (resendApiKey && fromEmail) {
+            try {
+              const email = buildEmail(baseEmailPayload);
+              const subject = notificationSubject(
+                email.subject,
+                getRuntimeEnv("KANI_ENVIRONMENT"),
+                getRuntimeEnv("SUPABASE_URL") ?? getRuntimeEnv("VITE_SUPABASE_URL"),
+              );
+              const response = await fetch("https://api.resend.com/emails", {
+                method: "POST",
+                headers: {
+                  Authorization: `Bearer ${resendApiKey}`,
+                  "Content-Type": "application/json",
+                  "Idempotency-Key": event.notification_id,
+                },
+                body: JSON.stringify({
+                  from: fromEmail,
+                  to: [clientEmailAddress],
+                  subject,
+                  html: email.html,
+                  text: email.text,
+                }),
+              });
+              const result = (await response.json().catch(() => null)) as {
+                id?: string;
+                message?: string;
+              } | null;
+              if (response.ok && result?.id) {
+                anySuccess = true;
+                clientEmailMsgId = result.id;
+                emailMessageId = result.id;
+                emailStatus = "SENT";
+                emailIncrement = true;
+              } else {
+                const err = `RESEND_${response.status}: ${result?.message ?? "SEND_FAILED"}`;
+                emailStatus = "FAILED";
+                emailErrorCode = `RESEND_${response.status}`;
+                emailErrorDesc = result?.message ?? "SEND_FAILED";
+                emailIncrement = true;
+                failureDetails.push(`Cliente Email: ${err}`);
+              }
+            } catch (emailErr) {
+              const err = emailErr instanceof Error ? emailErr.message : String(emailErr);
               emailStatus = "FAILED";
-              emailErrorCode = `RESEND_${response.status}`;
-              emailErrorDesc = result?.message ?? "SEND_FAILED";
+              emailErrorCode = "RESEND_EXCEPTION";
+              emailErrorDesc = err;
               emailIncrement = true;
-              console.warn(`[KANI notification] Resend HTTP ${response.status}: ${result?.message ?? "SEND_FAILED"}`);
+              failureDetails.push(`Cliente Email: ${err}`);
             }
           } else {
             emailStatus = "SKIPPED";
             emailErrorDesc = "Credenciales de Resend no configuradas";
-            console.info("[KANI notification] Credenciales de Resend no configuradas; omitiendo email.");
           }
-        } catch (emailErr) {
-          emailError = emailErr instanceof Error ? emailErr.message : String(emailErr);
-          emailStatus = "FAILED";
-          emailErrorCode = "RESEND_EXCEPTION";
-          emailErrorDesc = emailError;
-          emailIncrement = true;
-          console.warn("[KANI notification] Error enviando email vía Resend:", emailErr);
+        } else {
+          emailStatus = "SKIPPED";
+          emailErrorDesc = "Cliente sin correo registrado";
         }
-      } else {
-        emailStatus = "SKIPPED";
-        emailErrorDesc = "Cliente sin correo registrado";
-        console.log(`[KANI notification] Turno ${data.appointmentId} no posee email registrado; email omitido.`);
-      }
 
-      try {
-        await supabase.rpc("record_channel_dispatch_status", {
-          p_appointment_id: data.appointmentId,
-          p_notification_event_id: event.notification_id,
-          p_channel: "EMAIL",
-          p_provider: "RESEND",
-          p_recipient: event.recipient_email,
-          p_provider_message_id: emailMessageId ?? null,
-          p_status: emailStatus,
-          p_error_code: emailErrorCode,
-          p_error_description: emailErrorDesc,
-          p_increment_attempt: emailIncrement,
+        await safeRecordChannelDispatchStatus(supabase, {
+          appointmentId: data.appointmentId,
+          notificationEventId: event.notification_id,
+          recipientRole: "CLIENT",
+          channel: "EMAIL",
+          provider: "RESEND",
+          recipient: clientEmailAddress,
+          providerMessageId: emailMessageId,
+          status: emailStatus,
+          errorCode: emailErrorCode,
+          errorDescription: emailErrorDesc,
+          incrementAttempt: emailIncrement,
         });
-      } catch (rpcErr) {
-        console.warn("[KANI notification] Error registrando estado de canal EMAIL:", rpcErr);
       }
 
-      const hasSuccess = Boolean(pontiunSuccess || emailSuccess);
-      const hasErrors = Boolean(pontiunError || emailError);
+      // =========================================================================
+      // 2B. EMAIL -> BARBERO ASIGNADO (Resend)
+      // =========================================================================
+      const existingBarberEmail = existingByKey.get("BARBER:EMAIL");
+      if (isDispatchAlreadyDelivered(existingBarberEmail)) {
+        anySuccess = true;
+      } else {
+        let barberEmailStatus = "SKIPPED";
+        let barberEmailErrorCode: string | null = null;
+        let barberEmailErrorDesc: string | null = null;
+        let barberEmailIncrement = false;
+        let barberEmailMessageId: string | null = null;
+
+        if (snapshot.barberEmail) {
+          if (resendApiKey && fromEmail) {
+            try {
+              const barberEmail =
+                event.notification_type === "CANCELLED"
+                  ? buildBarberCancelledEmail({
+                      ...baseEmailPayload,
+                      recipientEmail: snapshot.barberEmail,
+                    })
+                  : buildBarberConfirmedEmail({
+                      ...baseEmailPayload,
+                      recipientEmail: snapshot.barberEmail,
+                      totalPriceArs: snapshot.totalPriceArs,
+                      accreditedAmountArs: snapshot.accreditedAmountArs,
+                      accreditedPaymentMethod: snapshot.accreditedPaymentMethod,
+                      remainingBalanceArs: snapshot.remainingBalanceArs,
+                    });
+              const subject = notificationSubject(
+                barberEmail.subject,
+                getRuntimeEnv("KANI_ENVIRONMENT"),
+                getRuntimeEnv("SUPABASE_URL") ?? getRuntimeEnv("VITE_SUPABASE_URL"),
+              );
+              const response = await fetch("https://api.resend.com/emails", {
+                method: "POST",
+                headers: {
+                  Authorization: `Bearer ${resendApiKey}`,
+                  "Content-Type": "application/json",
+                  "Idempotency-Key": `${event.notification_id}-barber-email`,
+                },
+                body: JSON.stringify({
+                  from: fromEmail,
+                  to: [snapshot.barberEmail],
+                  subject,
+                  html: barberEmail.html,
+                  text: barberEmail.text,
+                }),
+              });
+              const result = (await response.json().catch(() => null)) as {
+                id?: string;
+                message?: string;
+              } | null;
+              if (response.ok && result?.id) {
+                anySuccess = true;
+                barberEmailMessageId = result.id;
+                barberEmailStatus = "SENT";
+                barberEmailIncrement = true;
+              } else {
+                const err = `RESEND_${response.status}: ${result?.message ?? "SEND_FAILED"}`;
+                barberEmailStatus = "FAILED";
+                barberEmailErrorCode = `RESEND_${response.status}`;
+                barberEmailErrorDesc = result?.message ?? "SEND_FAILED";
+                barberEmailIncrement = true;
+                failureDetails.push(`Barbero Email: ${err}`);
+              }
+            } catch (emailErr) {
+              const err = emailErr instanceof Error ? emailErr.message : String(emailErr);
+              barberEmailStatus = "FAILED";
+              barberEmailErrorCode = "RESEND_EXCEPTION";
+              barberEmailErrorDesc = err;
+              barberEmailIncrement = true;
+              failureDetails.push(`Barbero Email: ${err}`);
+            }
+          } else {
+            barberEmailStatus = "SKIPPED";
+            barberEmailErrorDesc = "Credenciales de Resend no configuradas";
+          }
+        } else {
+          barberEmailStatus = "SKIPPED";
+          barberEmailErrorDesc = `Barbero '${snapshot.barberName}' sin email configurado`;
+          console.warn(`[KANI notification] ${barberEmailErrorDesc} para turno ${data.appointmentId}`);
+        }
+
+        await safeRecordChannelDispatchStatus(supabase, {
+          appointmentId: data.appointmentId,
+          notificationEventId: event.notification_id,
+          recipientRole: "BARBER",
+          channel: "EMAIL",
+          provider: "RESEND",
+          recipient: snapshot.barberEmail,
+          providerMessageId: barberEmailMessageId,
+          status: barberEmailStatus,
+          errorCode: barberEmailErrorCode,
+          errorDescription: barberEmailErrorDesc,
+          incrementAttempt: barberEmailIncrement,
+        });
+      }
+
+      const hasErrors = failureDetails.length > 0;
 
       // Caso 1: Despacho completo exitoso (todos los canales aplicables tuvieron éxito, sin fallas)
-      if (hasSuccess && !hasErrors) {
+      if (anySuccess && !hasErrors) {
         const providerMessageId = [
-          pontiunMessageId ? `pontiun:${pontiunMessageId}` : null,
-          emailMessageId ? `resend:${emailMessageId}` : null,
+          clientWaMsgId ? `pontiun:${clientWaMsgId}` : null,
+          clientEmailMsgId ? `resend:${clientEmailMsgId}` : null,
         ]
           .filter(Boolean)
           .join("|");
@@ -373,34 +817,10 @@ export const dispatchAppointmentNotification = createServerOnlyFn(async (data: {
         return { sent: true, status: "SENT" };
       }
 
-      // Caso 2: Falla parcial (un canal tuvo éxito pero otro falló)
-      // Se registra FAILED con detalle explicativo para diagnóstico futuro, sin marcar erróneamente SENT.
-      if (hasSuccess && hasErrors) {
-        const partialParts = [
-          pontiunError ? `WhatsApp falló (${pontiunError})` : (pontiunSuccess ? `WhatsApp enviado (pontiun:${pontiunMessageId})` : null),
-          emailError ? `Email falló (${emailError})` : (emailSuccess ? `Email enviado (resend:${emailMessageId})` : null),
-        ].filter(Boolean).join(" | ");
-
-        const partialError = `PARTIAL_DISPATCH_FAILURE: ${partialParts}`;
-        console.error(`[KANI notification] ${partialError}`);
-
-        const { error: recordError } = await supabase.rpc("fail_appointment_notification", {
-          p_notification_id: event.notification_id,
-          p_claim_token: data.claimToken,
-          p_error: partialError,
-        });
-        if (recordError) throw recordError;
-        return { sent: false, status: "FAILED", errorCode: partialError };
-      }
-
-      // Caso 3: Falla total (ningún canal tuvo éxito y se registraron errores)
+      // Caso 2: Falla parcial o total
       if (hasErrors) {
-        const errorParts = [
-          pontiunError ? `WhatsApp: ${pontiunError}` : null,
-          emailError ? `Email: ${emailError}` : null,
-        ].filter(Boolean).join(" | ");
-
-        const failureMessage = `NOTIFICATION_DISPATCH_FAILED: ${errorParts}`;
+        const prefix = anySuccess ? "PARTIAL_DISPATCH_FAILURE" : "NOTIFICATION_DISPATCH_FAILED";
+        const failureMessage = `${prefix}: ${failureDetails.join(" | ")}`;
         console.error(`[KANI notification] ${failureMessage}`);
 
         const { error: recordError } = await supabase.rpc("fail_appointment_notification", {
@@ -412,7 +832,7 @@ export const dispatchAppointmentNotification = createServerOnlyFn(async (data: {
         return { sent: false, status: "FAILED", errorCode: failureMessage };
       }
 
-      // Caso 4: Ambos canales fueron omitidos por falta de destinatario o configuración
+      // Caso 4: Todos los canales fueron omitidos por falta de destinatario o configuración
       return { sent: false, status: "SKIPPED" };
     } catch (error) {
       const safeMessage = safeErrorMessage(error);
@@ -449,6 +869,7 @@ export type ChannelDispatchRecord = {
   id: string;
   appointmentId: string;
   notificationEventId: string | null;
+  recipientRole?: NotificationRecipientRole;
   channel: "WHATSAPP" | "EMAIL";
   provider: "PONTIUN" | "RESEND";
   recipient: string | null;
@@ -467,6 +888,7 @@ export type ChannelDispatchRecord = {
 export type RetryChannelResult = {
   success: boolean;
   channel: "WHATSAPP" | "EMAIL";
+  recipientRole?: NotificationRecipientRole;
   status: string;
   error?: string;
   blockedByAdminConfig?: boolean;
@@ -477,7 +899,17 @@ export type RetryChannelResult = {
 
 export async function fetchAppointmentNotificationDispatches(
   appointmentIds: string[],
-): Promise<Record<string, { whatsapp?: ChannelDispatchRecord; email?: ChannelDispatchRecord }>> {
+): Promise<
+  Record<
+    string,
+    {
+      whatsapp?: ChannelDispatchRecord;
+      email?: ChannelDispatchRecord;
+      barberWhatsapp?: ChannelDispatchRecord;
+      barberEmail?: ChannelDispatchRecord;
+    }
+  >
+> {
   if (!appointmentIds || !appointmentIds.length) return {};
   try {
     const supabase = await createRequestSupabaseClient();
@@ -489,15 +921,25 @@ export async function fetchAppointmentNotificationDispatches(
       console.warn("[KANI notification] Error al consultar dispatches:", error);
       return {};
     }
-    const result: Record<string, { whatsapp?: ChannelDispatchRecord; email?: ChannelDispatchRecord }> = {};
+    const result: Record<
+      string,
+      {
+        whatsapp?: ChannelDispatchRecord;
+        email?: ChannelDispatchRecord;
+        barberWhatsapp?: ChannelDispatchRecord;
+        barberEmail?: ChannelDispatchRecord;
+      }
+    > = {};
     for (const row of (data ?? [])) {
       if (!result[row.appointment_id]) {
         result[row.appointment_id] = {};
       }
+      const role: NotificationRecipientRole = row.recipient_role === "BARBER" ? "BARBER" : "CLIENT";
       const record: ChannelDispatchRecord = {
         id: row.id,
         appointmentId: row.appointment_id,
         notificationEventId: row.notification_event_id,
+        recipientRole: role,
         channel: row.channel,
         provider: row.provider,
         recipient: row.recipient,
@@ -512,10 +954,12 @@ export async function fetchAppointmentNotificationDispatches(
         createdAt: row.created_at,
         updatedAt: row.updated_at,
       };
-      if (row.channel === "WHATSAPP") {
-        result[row.appointment_id].whatsapp = record;
-      } else if (row.channel === "EMAIL") {
-        result[row.appointment_id].email = record;
+      if (role === "BARBER") {
+        if (row.channel === "WHATSAPP") result[row.appointment_id].barberWhatsapp = record;
+        else if (row.channel === "EMAIL") result[row.appointment_id].barberEmail = record;
+      } else {
+        if (row.channel === "WHATSAPP") result[row.appointment_id].whatsapp = record;
+        else if (row.channel === "EMAIL") result[row.appointment_id].email = record;
       }
     }
     return result;
@@ -525,19 +969,22 @@ export async function fetchAppointmentNotificationDispatches(
   }
 }
 
-// Candado en memoria para evitar ejecuciones concurrentes / doble clic en el mismo turno y canal
+// Candado en memoria para evitar ejecuciones concurrentes / doble clic en el mismo turno, rol y canal
 const activeChannelRetries = new Set<string>();
 
 export async function retryNotificationChannel(input: {
   appointmentId: string;
   channel: "WHATSAPP" | "EMAIL";
+  recipientRole?: NotificationRecipientRole;
   token?: string;
 }): Promise<RetryChannelResult> {
-  const lockKey = `${input.appointmentId}:${input.channel}`;
+  const recipientRole: NotificationRecipientRole = input.recipientRole === "BARBER" ? "BARBER" : "CLIENT";
+  const lockKey = `${input.appointmentId}:${recipientRole}:${input.channel}`;
   if (activeChannelRetries.has(lockKey)) {
     return {
       success: false,
       channel: input.channel,
+      recipientRole,
       status: "PROCESSING",
       error: "RETRY_NOT_ALLOWED: Existe una operación de notificación en curso para este canal.",
     };
@@ -554,6 +1001,7 @@ export async function retryNotificationChannel(input: {
       return {
         success: false,
         channel: input.channel,
+        recipientRole,
         status: "FAILED",
         error: isExpired
           ? "SESSION_EXPIRED: Su sesión ha expirado. Por favor, vuelva a iniciar sesión."
@@ -574,18 +1022,22 @@ export async function retryNotificationChannel(input: {
       return {
         success: false,
         channel: input.channel,
+        recipientRole,
         status: "FAILED",
         error: "ACCESS_DENIED: No posee permisos de staff para reintentar notificaciones.",
       };
     }
 
-    // 2. Consultar estado previo del despacho para este turno y canal
-    const { data: dispatches } = await (supabase as any)
+    // 2. Consultar estado previo del despacho para este turno, destinatario y canal
+    const { data: allDispatchesForChannel } = await (supabase as any)
       .from("appointment_notification_dispatches")
       .select("*")
       .eq("appointment_id", input.appointmentId)
-      .eq("channel", input.channel)
-      .maybeSingle();
+      .eq("channel", input.channel);
+
+    const dispatches = Array.isArray(allDispatchesForChannel)
+      ? allDispatchesForChannel.find((d: any) => (d.recipient_role ?? "CLIENT") === recipientRole) ?? null
+      : (allDispatchesForChannel ?? null);
 
     // Validaciones rápidas de estado para reintento seguro
     if (dispatches) {
@@ -762,74 +1214,121 @@ export async function retryNotificationChannel(input: {
     const service = (aptData as any).services;
 
     if (input.channel === "WHATSAPP") {
-      if (!client?.phone || !client.phone.trim()) {
+      const snapshot = await resolveAppointmentDispatchSnapshot(supabase, input.appointmentId, {
+        barberName: barber?.name,
+        servicePriceArs: (aptData as any).service_price_ars ?? service?.price_ars ?? 0,
+        clientEmail: client?.email,
+        clientPhone: client?.phone,
+      });
+
+      const targetPhone = recipientRole === "BARBER" ? snapshot.barberPhone : client?.phone;
+      if (!targetPhone || !targetPhone.trim()) {
         return {
           success: false,
           channel: "WHATSAPP",
+          recipientRole,
           status: "SKIPPED",
-          error: "CLIENT_HAS_NO_PHONE",
+          error: recipientRole === "BARBER" ? "BARBER_HAS_NO_PHONE" : "CLIENT_HAS_NO_PHONE",
         };
       }
 
       // Registrar estado PROCESSING atómicamente antes del envío
-      try {
-        await supabase.rpc("record_channel_dispatch_status", {
-          p_appointment_id: input.appointmentId,
-          p_notification_event_id: relevantDispatch?.notification_event_id ?? null,
-          p_channel: "WHATSAPP",
-          p_provider: "PONTIUN",
-          p_recipient: client.phone,
-          p_provider_message_id: relevantDispatch?.provider_message_id ?? null,
-          p_status: "PROCESSING",
-          p_increment_attempt: true,
-        });
-      } catch (procErr) {
-        console.warn("[KANI notification] Advertencia registrando PROCESSING para WhatsApp:", procErr);
-      }
+      await safeRecordChannelDispatchStatus(supabase, {
+        appointmentId: input.appointmentId,
+        notificationEventId: relevantDispatch?.notification_event_id ?? null,
+        recipientRole,
+        channel: "WHATSAPP",
+        provider: "PONTIUN",
+        recipient: targetPhone,
+        providerMessageId: relevantDispatch?.provider_message_id ?? null,
+        status: "PROCESSING",
+        incrementAttempt: true,
+      });
 
       const attemptNumber = (relevantDispatch?.attempts ?? dispatches?.attempts ?? 0) + 1;
-      const { sendPontiunAppointmentConfirmation } = await import("./kani-pontiun");
-      const pontiunResult = await sendPontiunAppointmentConfirmation({
-        appointmentId: input.appointmentId,
-        clientName: client.name || "Cliente",
-        clientPhone: client.phone,
-        barberName: barber?.name || "Lautaro",
-        serviceName: formatServiceNameForChannel((aptData as any).custom_service_name || service?.name || "Corte", 'whatsapp'),
-        bookingDate: aptData.booking_date,
-        startTime: aptData.start_time,
-        // Solo diferenciar clave en reintento manual tras fallo previo (p. ej. tras aprobar plantilla en Meta)
-        idempotencySuffix: dispatches?.status === "FAILED" && attemptNumber >= 2 ? `retry-${attemptNumber}` : undefined,
-      });
+      const retrySuffix = dispatches?.status === "FAILED" && attemptNumber >= 2 ? `retry-${attemptNumber}` : undefined;
+      const pontiunModule = await import("./kani-pontiun");
+      const svcNameForWa = formatServiceNameForChannel(
+        (aptData as any).custom_service_name || service?.name || "Corte",
+        "whatsapp",
+      );
+
+      const pontiunResult =
+        recipientRole === "BARBER"
+          ? targetNotificationType === "CANCELLED"
+            ? await pontiunModule.sendPontiunBarberAppointmentCancellation({
+                appointmentId: input.appointmentId,
+                barberName: snapshot.barberName,
+                barberPhone: snapshot.barberPhone,
+                clientName: client?.name || "Cliente",
+                bookingDate: aptData.booking_date,
+                startTime: aptData.start_time,
+                clientWhatsApp: client?.phone ?? null,
+                clientEmail: client?.email ?? null,
+                idempotencySuffix: retrySuffix,
+              })
+            : await pontiunModule.sendPontiunBarberAppointmentConfirmation({
+                appointmentId: input.appointmentId,
+                barberName: snapshot.barberName,
+                barberPhone: snapshot.barberPhone,
+                clientName: client?.name || "Cliente",
+                bookingDate: aptData.booking_date,
+                startTime: aptData.start_time,
+                serviceName: svcNameForWa,
+                clientWhatsApp: client?.phone ?? null,
+                clientEmail: client?.email ?? null,
+                totalPriceArs: snapshot.totalPriceArs,
+                accreditedAmountArs: snapshot.accreditedAmountArs,
+                accreditedPaymentMethod: snapshot.accreditedPaymentMethod,
+                remainingBalanceArs: snapshot.remainingBalanceArs,
+                idempotencySuffix: retrySuffix,
+              })
+          : targetNotificationType === "CANCELLED"
+            ? await pontiunModule.sendPontiunClientAppointmentCancellation({
+                appointmentId: input.appointmentId,
+                clientName: client?.name || "Cliente",
+                clientPhone: client?.phone,
+                barberName: snapshot.barberName,
+                bookingDate: aptData.booking_date,
+                startTime: aptData.start_time,
+                idempotencySuffix: retrySuffix,
+              })
+            : await pontiunModule.sendPontiunAppointmentConfirmation({
+                appointmentId: input.appointmentId,
+                clientName: client?.name || "Cliente",
+                clientPhone: client?.phone,
+                barberName: snapshot.barberName,
+                serviceName: svcNameForWa,
+                bookingDate: aptData.booking_date,
+                startTime: aptData.start_time,
+                idempotencySuffix: retrySuffix,
+              });
 
       const newStatus = pontiunResult.success
         ? "PROVIDER_ACCEPTED"
         : (pontiunResult.skipped ? "SKIPPED" : "FAILED");
 
-      const errCode = pontiunResult.error?.includes("131042") || pontiunResult.errorCode === "131042"
-        ? "131042"
-        : (pontiunResult.templatePendingOrUnapproved || pontiunResult.errorCode === "TEMPLATE_NOT_APPROVED" || pontiunResult.error?.includes("TEMPLATE_NOT_APPROVED"))
-          ? "TEMPLATE_NOT_APPROVED"
-          : (pontiunResult.error === "INVALID_PHONE_NUMBER" || pontiunResult.error === "BARBER_MISSING")
-            ? pontiunResult.error
-            : (pontiunResult.error ? "PONTIUN_RETRY_ERROR" : null);
+      const errCode = pontiunResult.error ? mapPontiunErrorCode(pontiunResult) : null;
 
-      await supabase.rpc("record_channel_dispatch_status", {
-        p_appointment_id: input.appointmentId,
-        p_notification_event_id: relevantDispatch?.notification_event_id ?? null,
-        p_channel: "WHATSAPP",
-        p_provider: "PONTIUN",
-        p_recipient: client.phone,
-        p_provider_message_id: pontiunResult.messageId ?? null,
-        p_status: newStatus,
-        p_error_code: errCode,
-        p_error_description: pontiunResult.error ?? null,
-        p_increment_attempt: false,
-        p_meta_message_id: pontiunResult.metaMessageId ?? null,
+      await safeRecordChannelDispatchStatus(supabase, {
+        appointmentId: input.appointmentId,
+        notificationEventId: relevantDispatch?.notification_event_id ?? null,
+        recipientRole,
+        channel: "WHATSAPP",
+        provider: "PONTIUN",
+        recipient: targetPhone,
+        providerMessageId: pontiunResult.messageId ?? null,
+        status: newStatus,
+        errorCode: errCode,
+        errorDescription: pontiunResult.error ?? null,
+        incrementAttempt: false,
+        metaMessageId: pontiunResult.metaMessageId ?? null,
       });
 
       return {
         success: pontiunResult.success,
         channel: "WHATSAPP",
+        recipientRole,
         status: newStatus,
         error: pontiunResult.error,
         providerMessageId: pontiunResult.messageId ?? null,
@@ -840,12 +1339,31 @@ export async function retryNotificationChannel(input: {
     }
 
     if (input.channel === "EMAIL") {
-      if (!client?.email || !client.email.trim()) {
+      const snapshot =
+        recipientRole === "BARBER"
+          ? await resolveAppointmentDispatchSnapshot(supabase, input.appointmentId, {
+              barberName: barber?.name,
+              servicePriceArs: (aptData as any).service_price_ars ?? service?.price_ars ?? 0,
+              clientEmail: client?.email,
+              clientPhone: client?.phone,
+            })
+          : null;
+
+      const targetEmail =
+        recipientRole === "BARBER"
+          ? snapshot?.barberEmail?.trim() ?? null
+          : client?.email?.trim() ?? null;
+
+      if (!targetEmail) {
         return {
           success: false,
           channel: "EMAIL",
+          recipientRole,
           status: "SKIPPED",
-          error: "CLIENT_HAS_NO_EMAIL: El cliente no posee una dirección de correo electrónico registrada.",
+          error:
+            recipientRole === "BARBER"
+              ? "BARBER_HAS_NO_EMAIL: El barbero no posee una dirección de correo electrónico configurada."
+              : "CLIENT_HAS_NO_EMAIL: El cliente no posee una dirección de correo electrónico registrada.",
         };
       }
 
@@ -858,26 +1376,24 @@ export async function retryNotificationChannel(input: {
         return {
           success: false,
           channel: "EMAIL",
+          recipientRole,
           status: "SKIPPED",
           error: "RESEND_CREDENTIALS_MISSING: No están configuradas las credenciales de Resend en el entorno.",
         };
       }
 
       // Registrar estado PROCESSING atómicamente antes del envío
-      try {
-        await supabase.rpc("record_channel_dispatch_status", {
-          p_appointment_id: input.appointmentId,
-          p_notification_event_id: relevantDispatch?.notification_event_id ?? null,
-          p_channel: "EMAIL",
-          p_provider: "RESEND",
-          p_recipient: client.email.trim(),
-          p_provider_message_id: relevantDispatch?.provider_message_id ?? null,
-          p_status: "PROCESSING",
-          p_increment_attempt: true,
-        });
-      } catch (procErr) {
-        console.warn("[KANI notification] Advertencia registrando PROCESSING para Email:", procErr);
-      }
+      await safeRecordChannelDispatchStatus(supabase, {
+        appointmentId: input.appointmentId,
+        notificationEventId: relevantDispatch?.notification_event_id ?? null,
+        recipientRole,
+        channel: "EMAIL",
+        provider: "RESEND",
+        recipient: targetEmail,
+        providerMessageId: relevantDispatch?.provider_message_id ?? null,
+        status: "PROCESSING",
+        incrementAttempt: true,
+      });
 
       const serviceName = formatServiceNameForEmail((aptData as any).custom_service_name || service?.name || "Corte");
       const servicePriceArs = (aptData as any).service_price_ars ?? service?.price_ars ?? 0;
@@ -891,10 +1407,10 @@ export async function retryNotificationChannel(input: {
         notificationId: relevantDispatch?.notification_event_id ?? input.appointmentId,
         appointmentId: input.appointmentId,
         notificationType: targetNotificationType,
-        recipientEmail: client.email.trim(),
-        recipientPhone: client.phone ?? null,
-        clientName: client.name || "Cliente",
-        barberName: barber?.name || "Lautaro",
+        recipientEmail: targetEmail,
+        recipientPhone: client?.phone ?? null,
+        clientName: client?.name || "Cliente",
+        barberName: barber?.name || snapshot?.barberName || "Barbero",
         serviceName,
         bookingDate: aptData.booking_date,
         startTime: aptData.start_time,
@@ -916,7 +1432,19 @@ export async function retryNotificationChannel(input: {
         benefitInPersonBalanceArs: (aptData as any).benefit_in_person_balance_ars ?? null,
       };
 
-      const email = buildEmail(payload);
+      const email =
+        recipientRole === "BARBER" && snapshot
+          ? targetNotificationType === "CANCELLED"
+            ? buildBarberCancelledEmail(payload)
+            : buildBarberConfirmedEmail({
+                ...payload,
+                totalPriceArs: snapshot.totalPriceArs,
+                accreditedAmountArs: snapshot.accreditedAmountArs,
+                accreditedPaymentMethod: snapshot.accreditedPaymentMethod,
+                remainingBalanceArs: snapshot.remainingBalanceArs,
+              })
+          : buildEmail(payload);
+
       const subject = notificationSubject(
         email.subject,
         getRuntimeEnv("KANI_ENVIRONMENT"),
@@ -924,7 +1452,7 @@ export async function retryNotificationChannel(input: {
       );
 
       const attemptNumber = (relevantDispatch?.attempts ?? 0) + 1;
-      const idempotencyKey = `kani-email-${input.appointmentId}-${targetNotificationType.toLowerCase()}-${attemptNumber}`;
+      const idempotencyKey = `kani-email-${input.appointmentId}-${recipientRole.toLowerCase()}-${targetNotificationType.toLowerCase()}-${attemptNumber}`;
 
       let response: Response | undefined;
       let result: { id?: string; message?: string } | null = null;
@@ -940,7 +1468,7 @@ export async function retryNotificationChannel(input: {
           },
           body: JSON.stringify({
             from: fromEmail,
-            to: [client.email.trim()],
+            to: [targetEmail],
             subject,
             html: email.html,
             text: email.text,
@@ -959,27 +1487,25 @@ export async function retryNotificationChannel(input: {
       const errorCode = ok ? null : (networkError ? "NETWORK_ERROR" : `RESEND_${response?.status}`);
       const errDesc = ok ? null : sanitizedError;
 
-      try {
-        await supabase.rpc("record_channel_dispatch_status", {
-          p_appointment_id: input.appointmentId,
-          p_notification_event_id: relevantDispatch?.notification_event_id ?? null,
-          p_channel: "EMAIL",
-          p_provider: "RESEND",
-          p_recipient: client.email.trim(),
-          p_provider_message_id: result?.id ?? null,
-          p_status: newStatus,
-          p_error_code: errorCode,
-          p_error_description: errDesc,
-          p_increment_attempt: false,
-        });
-      } catch (rpcErr) {
-        console.warn("[KANI notification] Error registrando estado final de canal EMAIL:", rpcErr);
-      }
+      await safeRecordChannelDispatchStatus(supabase, {
+        appointmentId: input.appointmentId,
+        notificationEventId: relevantDispatch?.notification_event_id ?? null,
+        recipientRole,
+        channel: "EMAIL",
+        provider: "RESEND",
+        recipient: targetEmail,
+        providerMessageId: result?.id ?? null,
+        status: newStatus,
+        errorCode,
+        errorDescription: errDesc,
+        incrementAttempt: false,
+      });
 
       const nowIso = new Date().toISOString();
       return {
         success: ok,
         channel: "EMAIL",
+        recipientRole,
         status: newStatus,
         error: errDesc ?? undefined,
         providerMessageId: result?.id ?? null,
@@ -991,7 +1517,7 @@ export async function retryNotificationChannel(input: {
           appointmentId: input.appointmentId,
           channel: "EMAIL",
           provider: "RESEND",
-          recipient: client.email.trim(),
+          recipient: targetEmail,
           providerMessageId: result?.id ?? null,
           status: newStatus,
           errorCode,
@@ -1004,14 +1530,14 @@ export async function retryNotificationChannel(input: {
       };
     }
 
-    return { success: false, channel: input.channel, status: "FAILED", error: "UNKNOWN_CHANNEL" };
+    return { success: false, channel: input.channel, recipientRole, status: "FAILED", error: "UNKNOWN_CHANNEL" };
   } finally {
     activeChannelRetries.delete(lockKey);
   }
 }
 
 export const retryNotificationChannelServerFn = createServerFn({ method: "POST" })
-  .validator((data: { appointmentId: string; channel: "WHATSAPP" | "EMAIL"; token?: string }) => {
+  .validator((data: { appointmentId: string; channel: "WHATSAPP" | "EMAIL"; recipientRole?: NotificationRecipientRole; token?: string }) => {
     if (!data?.appointmentId || !data?.channel) throw new Error("RETRY_INPUT_INVALID");
     return data;
   })
@@ -2423,6 +2949,110 @@ Lunes a sábados de 10:00 a 20:00 hs`;
   };
 }
 
+export function buildBarberConfirmedEmail(
+  payload: NotificationPayload & {
+    totalPriceArs: number;
+    accreditedAmountArs: number;
+    accreditedPaymentMethod: string;
+    remainingBalanceArs: number;
+  },
+) {
+  const dateCompact = formatSpanishDateCompact(payload.bookingDate);
+  const time = payload.startTime.slice(0, 5);
+  const clientName = payload.clientName.trim() || "Cliente";
+  const barberName = payload.barberName.trim() || "Barbero";
+  const serviceName = formatServiceNameForEmail(payload.serviceName);
+  const clientPhone = (payload.recipientPhone ?? "").trim() || "No informado";
+  const clientEmail = (payload.recipientEmail ?? "").trim() || "No informado";
+  const formatArs = (n: number) => `$${Math.max(0, Math.round(n)).toLocaleString("es-AR")}`;
+
+  const subject = `Turno confirmado · ${clientName} · ${dateCompact} ${time} · Kani Barber Studio`;
+
+  const html = `<!doctype html>
+<html lang="es">
+<body style="margin:0;padding:24px;background:#0D0F10;font-family:Arial,Helvetica,sans-serif;color:#FFFFFF;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background:#161A1D;border:1px solid #2A3136;border-radius:16px;padding:28px;">
+    <tr>
+      <td>
+        <p style="margin:0 0 8px 0;font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:#B0946E;font-weight:700;">KANI BARBER STUDIO · NUEVO TURNO CONFIRMADO</p>
+        <h1 style="margin:0 0 16px 0;font-size:22px;color:#FFFFFF;">Hola ${escapeHtml(barberName)}, tenés un turno confirmado</h1>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0D0F10;border:1px solid #2A3136;border-radius:12px;padding:16px;">
+          <tr><td style="padding:6px 0;color:#8E98A2;font-size:13px;">Cliente</td><td style="padding:6px 0;color:#FFFFFF;font-size:14px;font-weight:700;text-align:right;">${escapeHtml(clientName)}</td></tr>
+          <tr><td style="padding:6px 0;color:#8E98A2;font-size:13px;">Fecha y hora</td><td style="padding:6px 0;color:#FFFFFF;font-size:14px;font-weight:700;text-align:right;">${escapeHtml(dateCompact)} · ${escapeHtml(time)} hs</td></tr>
+          <tr><td style="padding:6px 0;color:#8E98A2;font-size:13px;">Servicio</td><td style="padding:6px 0;color:#FFFFFF;font-size:14px;text-align:right;">${escapeHtml(serviceName)}</td></tr>
+          <tr><td style="padding:6px 0;color:#8E98A2;font-size:13px;">WhatsApp cliente</td><td style="padding:6px 0;color:#FFFFFF;font-size:14px;text-align:right;">${escapeHtml(clientPhone)}</td></tr>
+          <tr><td style="padding:6px 0;color:#8E98A2;font-size:13px;">Email cliente</td><td style="padding:6px 0;color:#FFFFFF;font-size:14px;text-align:right;">${escapeHtml(clientEmail)}</td></tr>
+          <tr><td style="padding:6px 0;color:#8E98A2;font-size:13px;border-top:1px solid #2A3136;">Total del servicio</td><td style="padding:6px 0;color:#FFFFFF;font-size:14px;font-weight:700;text-align:right;border-top:1px solid #2A3136;">${escapeHtml(formatArs(payload.totalPriceArs))}</td></tr>
+          <tr><td style="padding:6px 0;color:#8E98A2;font-size:13px;">Seña acreditada</td><td style="padding:6px 0;color:#6EE7B7;font-size:14px;font-weight:700;text-align:right;">${escapeHtml(formatArs(payload.accreditedAmountArs))} (${escapeHtml(payload.accreditedPaymentMethod)})</td></tr>
+          <tr><td style="padding:6px 0;color:#8E98A2;font-size:13px;">Saldo restante en local</td><td style="padding:6px 0;color:#B0946E;font-size:14px;font-weight:700;text-align:right;">${escapeHtml(formatArs(payload.remainingBalanceArs))}</td></tr>
+        </table>
+        ${payload.clientNotes ? `<p style="margin:14px 0 0 0;font-size:13px;color:#C4CBD2;"><strong>Notas:</strong> ${escapeHtml(payload.clientNotes)}</p>` : ""}
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+  const text = [
+    `KANI BARBER STUDIO — Turno confirmado`,
+    `Hola ${barberName}, tenés un turno confirmado:`,
+    `Cliente: ${clientName}`,
+    `Fecha y hora: ${dateCompact} · ${time} hs`,
+    `Servicio: ${serviceName}`,
+    `WhatsApp cliente: ${clientPhone}`,
+    `Email cliente: ${clientEmail}`,
+    `Total: ${formatArs(payload.totalPriceArs)}`,
+    `Seña acreditada: ${formatArs(payload.accreditedAmountArs)} (${payload.accreditedPaymentMethod})`,
+    `Saldo restante: ${formatArs(payload.remainingBalanceArs)}`,
+    payload.clientNotes ? `Notas: ${payload.clientNotes}` : null,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  return { subject, html, text };
+}
+
+export function buildBarberCancelledEmail(payload: NotificationPayload) {
+  const dateCompact = formatSpanishDateCompact(payload.bookingDate);
+  const time = payload.startTime.slice(0, 5);
+  const clientName = payload.clientName.trim() || "Cliente";
+  const barberName = payload.barberName.trim() || "Barbero";
+  const clientPhone = (payload.recipientPhone ?? "").trim() || "No informado";
+  const clientEmail = (payload.recipientEmail ?? "").trim() || "No informado";
+
+  const subject = `Turno cancelado · ${clientName} · ${dateCompact} ${time} · Kani Barber Studio`;
+
+  const html = `<!doctype html>
+<html lang="es">
+<body style="margin:0;padding:24px;background:#0D0F10;font-family:Arial,Helvetica,sans-serif;color:#FFFFFF;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background:#161A1D;border:1px solid #2A3136;border-radius:16px;padding:28px;">
+    <tr>
+      <td>
+        <p style="margin:0 0 8px 0;font-size:12px;letter-spacing:0.12em;text-transform:uppercase;color:#F87171;font-weight:700;">KANI BARBER STUDIO · TURNO CANCELADO</p>
+        <h1 style="margin:0 0 16px 0;font-size:22px;color:#FFFFFF;">Hola ${escapeHtml(barberName)}, se canceló un turno</h1>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0D0F10;border:1px solid #2A3136;border-radius:12px;padding:16px;">
+          <tr><td style="padding:6px 0;color:#8E98A2;font-size:13px;">Cliente</td><td style="padding:6px 0;color:#FFFFFF;font-size:14px;font-weight:700;text-align:right;">${escapeHtml(clientName)}</td></tr>
+          <tr><td style="padding:6px 0;color:#8E98A2;font-size:13px;">Fecha y hora</td><td style="padding:6px 0;color:#FFFFFF;font-size:14px;font-weight:700;text-align:right;">${escapeHtml(dateCompact)} · ${escapeHtml(time)} hs</td></tr>
+          <tr><td style="padding:6px 0;color:#8E98A2;font-size:13px;">WhatsApp cliente</td><td style="padding:6px 0;color:#FFFFFF;font-size:14px;text-align:right;">${escapeHtml(clientPhone)}</td></tr>
+          <tr><td style="padding:6px 0;color:#8E98A2;font-size:13px;">Email cliente</td><td style="padding:6px 0;color:#FFFFFF;font-size:14px;text-align:right;">${escapeHtml(clientEmail)}</td></tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+  const text = [
+    `KANI BARBER STUDIO — Turno cancelado`,
+    `Hola ${barberName}, se canceló el turno de ${clientName}.`,
+    `Fecha y hora: ${dateCompact} · ${time} hs`,
+    `WhatsApp cliente: ${clientPhone}`,
+    `Email cliente: ${clientEmail}`,
+  ].join("\n");
+
+  return { subject, html, text };
+}
+
 export function buildNewRequestEmail(payload: NotificationPayload, date: string, time: string) {
   if (
     !payload.servicePriceArs ||
@@ -2543,16 +3173,20 @@ export async function recoverPendingNotificationEvents(options: { limit?: number
           .select("channel, status, error_code")
           .eq("notification_event_id", ev.id);
         if (Array.isArray(channelDispatches) && channelDispatches.length > 0) {
-          const wa = channelDispatches.find((d: any) => d.channel === "WHATSAPP");
-          const email = channelDispatches.find((d: any) => d.channel === "EMAIL");
-          const waBlockedNonTransient =
-            wa?.status === "FAILED" &&
-            ["TEMPLATE_NOT_APPROVED", "131042", "INVALID_PHONE_NUMBER", "BARBER_MISSING"].includes(
-              String(wa?.error_code || ""),
-            );
-          const emailNeedsRecovery =
-            email && (email.status === "FAILED" || email.status === "PENDING");
-          if (waBlockedNonTransient && !emailNeedsRecovery) {
+          const permanentErrorCodes = new Set([
+            "TEMPLATE_NOT_APPROVED",
+            "131042",
+            "INVALID_PHONE_NUMBER",
+            "BARBER_MISSING",
+          ]);
+          const hasPendingOrTransientChannel = channelDispatches.some((d: any) => {
+            if (d.status === "PENDING") return true;
+            if (d.status === "FAILED") {
+              return !permanentErrorCodes.has(String(d.error_code || ""));
+            }
+            return false;
+          });
+          if (!hasPendingOrTransientChannel) {
             skipped++;
             continue;
           }
