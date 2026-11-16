@@ -113,6 +113,25 @@ export function hasMeaningfulDraftData(draft: Pick<
   );
 }
 
+/**
+ * Only offer recovery UI when the user made progress beyond picking a single service alone.
+ */
+export function hasSignificantRecoveryProgress(draft: Pick<
+  BookingDraftV1,
+  'service' | 'barber' | 'barberDeferred' | 'date' | 'time' | 'name' | 'phone' | 'email' | 'benefitCode'
+>): boolean {
+  return Boolean(
+    draft.barber ||
+      draft.barberDeferred ||
+      draft.date ||
+      draft.time ||
+      draft.name ||
+      draft.phone ||
+      draft.email ||
+      draft.benefitCode,
+  );
+}
+
 export function buildValidatedBookingDraft(input: BookingDraftInput): BookingDraftV1 | null {
   const service = isValidServiceId(input.service) ? input.service : null;
   const barberDeferred = Boolean(input.barberDeferred);

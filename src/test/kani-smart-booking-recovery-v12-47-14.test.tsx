@@ -241,6 +241,10 @@ describe('KANI V12.47.14 — Smart Booking Recovery (/reservar Liquid Glass)', (
 
     expect(await screen.findByText('¿Querés continuar tu reserva?')).toBeInTheDocument();
     expect(screen.getByText('Encontramos una reserva que habías empezado anteriormente.')).toBeInTheDocument();
+    // Privacidad: el resumen inicial no expone nombre, celular ni email
+    expect(screen.queryByText(/Tomás Pérez/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/tomas@gmail\.com/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/5555-6666/i)).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Continuar reserva' }));
 
@@ -495,5 +499,87 @@ describe('KANI V12.47.14 — Smart Booking Recovery (/reservar Liquid Glass)', (
       await Promise.resolve();
     });
     expect(screen.queryByText('¿Querés continuar tu reserva?')).not.toBeInTheDocument();
+  });
+
+  it('5b. Borrador con progreso insuficiente (solo servicio) no interrumpe al usuario con el modal de recuperación', async () => {
+    saveBookingDraft({
+      service: 'corte',
+      barber: null,
+      barberDeferred: false,
+      date: null,
+      time: null,
+      name: null,
+      phone: null,
+      phoneCountry: 'AR',
+      email: null,
+      benefitCode: null,
+      lastMeaningfulActivityAt: Date.now(),
+    });
+
+    render(
+      <KaniProvider>
+        <Booking variant="v3" experimentalMotion={liquidGlassMotionAdapter} />
+      </KaniProvider>,
+    );
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(screen.queryByText('¿Querés continuar tu reserva?')).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Elegí un servicio' })).toBeInTheDocument();
+  });
+
+  it('11b y 14. Restaura en el paso correcto (Fecha / Horario / Datos) y muestra el aviso exacto si el descuento venció', async () => {
+    const now = Date.now();
+    // 1) Servicio + barbero sin fecha -> abre directo en Fecha
+    saveBookingDraft({
+      service: 'corte',
+      barber: 'Gonzalo',
+      barberDeferred: false,
+      date: null,
+      time: null,
+      name: null,
+      phone: null,
+      phoneCountry: 'AR',
+      email: null,
+      benefitCode: null,
+      lastMeaningfulActivityAt: now,
+    });
+
+    const first = render(
+      <KaniProvider>
+        <Booking variant="v3" experimentalMotion={liquidGlassMotionAdapter} />
+      </KaniProvider>,
+    );
+    fireEvent.click(await screen.findByRole('button', { name: 'Continuar reserva' }));
+    expect(await screen.findByRole('button', { name: new RegExp('^' + dateLabel('2026-11-20')) })).toBeInTheDocument();
+    first.unmount();
+
+    // 2) Horario disponible + descuento vencido -> abre en Datos con aviso exacto
+    saveBookingDraft({
+      service: 'corte',
+      barber: 'Gonzalo',
+      barberDeferred: false,
+      date: '2026-11-20',
+      time: '14:30',
+      name: 'Tomás Pérez',
+      phone: null,
+      phoneCountry: 'AR',
+      email: null,
+      benefitCode: 'KANI-EXPIRED',
+      lastMeaningfulActivityAt: now,
+    });
+    mocks.validateBenefitCodeQuoteFn.mockResolvedValue({ valid: false, error: 'expired' });
+
+    render(
+      <KaniProvider>
+        <Booking variant="v3" experimentalMotion={liquidGlassMotionAdapter} />
+      </KaniProvider>,
+    );
+    fireEvent.click(await screen.findByRole('button', { name: 'Continuar reserva' }));
+    expect(
+      await screen.findByText('El descuento que habías aplicado ya no está disponible. Podés continuar con la seña habitual.'),
+    ).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Tomás Pérez')).toBeInTheDocument();
   });
 });

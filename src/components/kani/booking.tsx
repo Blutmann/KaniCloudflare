@@ -15,6 +15,7 @@ import { normalizePhone, type PhoneCountry } from '@/lib/kani-phone';
 import { attachMobileProgressiveFieldScroll } from '@/lib/kani-mobile-field-scroll';
 import {
   clearBookingDraft,
+  hasSignificantRecoveryProgress,
   isValidBookingEmail,
   isValidBookingName,
   readValidBookingDraft,
@@ -377,7 +378,7 @@ export function Booking({
     }
     recoveryCheckDoneRef.current = true;
     const stored = readValidBookingDraft();
-    if (stored) {
+    if (stored && hasSignificantRecoveryProgress(stored)) {
       setRecoveryDraft(stored);
       setRecoveryModalMode('prompt');
     }
@@ -1168,7 +1169,7 @@ export function Booking({
         setBenefitCodeInput(nextBenefitCode);
         setAppliedBenefit(nextAppliedBenefit);
         setBenefitErrorMessage(null);
-        setRecoveryBenefitNotice(benefitWasRejected ? 'El descuento anterior ya no está disponible.' : '');
+        setRecoveryBenefitNotice(benefitWasRejected ? 'El descuento que habías aplicado ya no está disponible. Podés continuar con la seña habitual.' : '');
         setRecoveryBarberNotice('El profesional que habías elegido ya no está disponible. Elegí otro para continuar.');
         setRecoveryDraft(null);
         setRecoveryDismissedThisVisit(false);
@@ -1208,7 +1209,7 @@ export function Booking({
       setBenefitCodeInput(nextBenefitCode);
       setAppliedBenefit(nextAppliedBenefit);
       setBenefitErrorMessage(null);
-      setRecoveryBenefitNotice(benefitWasRejected ? 'El descuento anterior ya no está disponible.' : '');
+      setRecoveryBenefitNotice(benefitWasRejected ? 'El descuento que habías aplicado ya no está disponible. Podés continuar con la seña habitual.' : '');
       setRecoveryBarberNotice('');
       lastMeaningfulActivityAtRef.current = Date.now();
 
