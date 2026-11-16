@@ -316,13 +316,25 @@ html[data-theme="dark"] .kani-dcard-badge.is-deleted {
 }
 
 .kani-dcard-btn-warning {
-  color: #b91c1c !important;
-  border-color: rgba(220, 38, 38, 0.28) !important;
+  background: rgba(180, 44, 62, 0.06) !important;
+  color: #8f2232 !important;
+  border-color: rgba(180, 44, 62, 0.26) !important;
+}
+
+.kani-dcard-btn-warning:hover:not(:disabled) {
+  background: rgba(180, 44, 62, 0.12) !important;
+  border-color: rgba(180, 44, 62, 0.42) !important;
 }
 
 html[data-theme="dark"] .kani-dcard-btn-warning {
-  color: #fca5a5 !important;
-  border-color: rgba(248, 113, 113, 0.32) !important;
+  background: rgba(190, 56, 72, 0.10) !important;
+  color: #f08a96 !important;
+  border-color: rgba(212, 86, 102, 0.34) !important;
+}
+
+html[data-theme="dark"] .kani-dcard-btn-warning:hover:not(:disabled) {
+  background: rgba(190, 56, 72, 0.18) !important;
+  border-color: rgba(212, 86, 102, 0.52) !important;
 }
 
 .kani-dcard-btn-activate {
@@ -336,13 +348,25 @@ html[data-theme="dark"] .kani-dcard-btn-activate {
 }
 
 .kani-dcard-btn-delete.is-destructive {
-  color: #b91c1c !important;
-  border-color: rgba(220, 38, 38, 0.32) !important;
+  background: rgba(180, 44, 62, 0.10) !important;
+  color: #8f2232 !important;
+  border-color: rgba(180, 44, 62, 0.36) !important;
+}
+
+.kani-dcard-btn-delete.is-destructive:hover:not(:disabled) {
+  background: rgba(180, 44, 62, 0.17) !important;
+  border-color: rgba(180, 44, 62, 0.52) !important;
 }
 
 html[data-theme="dark"] .kani-dcard-btn-delete.is-destructive {
-  color: #fca5a5 !important;
-  border-color: rgba(248, 113, 113, 0.35) !important;
+  background: rgba(190, 56, 72, 0.16) !important;
+  color: #f08a96 !important;
+  border-color: rgba(212, 86, 102, 0.46) !important;
+}
+
+html[data-theme="dark"] .kani-dcard-btn-delete.is-destructive:hover:not(:disabled) {
+  background: rgba(190, 56, 72, 0.24) !important;
+  border-color: rgba(212, 86, 102, 0.62) !important;
 }
 
 /* Nivel 5: Panel expandible "Detalles" */

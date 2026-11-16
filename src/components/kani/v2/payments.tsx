@@ -788,7 +788,7 @@ export function V2Payments() {
                             {isAdmin && (
                               <button
                                 type="button"
-                                className="v2-quiet v2-action-icon-btn delete v2-destructive-text"
+                                className="v2-destructive v2-action-icon-btn delete"
                                 onClick={() => setDeletingPayment(p)}
                                 title="Eliminar cobro"
                                 aria-label="Eliminar cobro"
@@ -861,7 +861,7 @@ export function V2Payments() {
                       {isAdmin && (
                         <button
                           type="button"
-                          className="v2-quiet v2-pcm-btn delete v2-destructive-text"
+                          className="v2-destructive v2-pcm-btn delete"
                           onClick={() => setDeletingPayment(p)}
                           title="Eliminar cobro"
                           aria-label="Eliminar cobro"

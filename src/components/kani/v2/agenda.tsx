@@ -658,7 +658,7 @@ export function V2Appointments({
                     <button
                       key="cancel"
                       type="button"
-                      className="v2-secondary action-reject v2-action-btn"
+                      className="v2-destructive action-reject v2-action-btn"
                       disabled={busy}
                       onClick={() => setAction({ appointment: a, status: "CANCELLED" })}
                     >
@@ -670,7 +670,7 @@ export function V2Appointments({
                   actionNodes.push(
                     <Link
                       key="cobrar"
-                      className="v2-secondary v2-action-btn v2-cobrar-btn"
+                      className="v2-primary v2-action-btn v2-cobrar-btn"
                       to={paymentsTo}
                       search={{ turno: a.id }}
                     >
