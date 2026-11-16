@@ -163,6 +163,8 @@ describe("V12.47.15.1 — Smart Booking Recovery Modal Real Browser Geometry", (
 
         const metrics = await page.evaluate(() => {
           const dlg = document.querySelector('[data-slot="dialog-content"].booking-recovery-modal') as HTMLElement;
+          const summary = dlg.querySelector('.booking-recovery-summary') as HTMLElement;
+          const summaryCs = window.getComputedStyle(summary);
           const rect = dlg.getBoundingClientRect();
           const cs = window.getComputedStyle(dlg);
           const btns = Array.from(dlg.querySelectorAll("button")).filter(
@@ -174,11 +176,16 @@ describe("V12.47.15.1 — Smart Booking Recovery Modal Real Browser Geometry", (
             innerHeight: window.innerHeight,
             docScrollWidth: document.documentElement.scrollWidth,
             backdropFilter: cs.backdropFilter,
+            summaryBg: summaryCs.backgroundColor,
+            summaryBorderWidth: summaryCs.borderTopWidth,
             textContent: dlg.textContent || "",
             rect: { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom, width: rect.width },
             btnRects: btnRects.map((r) => ({ top: r.top, left: r.left, right: r.right, width: r.width })),
           };
         });
+
+        expect(metrics.summaryBg).toBe("rgba(0, 0, 0, 0)");
+        expect(metrics.summaryBorderWidth).toBe("0px");
 
         expect(metrics.docScrollWidth).toBeLessThanOrEqual(metrics.innerWidth);
         expect(metrics.rect.width).toBeGreaterThanOrEqual(500);

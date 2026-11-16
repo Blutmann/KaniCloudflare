@@ -132,7 +132,7 @@ export function BookingRecoveryModal({
         </div>
 
         {(mode === 'prompt' || mode === 'verifying') && (
-          <div className="booking-recovery-summary mt-4 rounded-2xl border border-black/10 dark:border-white/15 bg-white/45 dark:bg-white/[0.06] p-3.5 sm:p-4 text-sm sm:text-[0.9375rem] space-y-2.5 min-w-0">
+          <div className="booking-recovery-summary mt-4 text-sm sm:text-[0.9375rem] space-y-2.5 min-w-0">
             {serviceText && (
               <div className="flex items-center gap-2.5 min-w-0 text-foreground">
                 <Scissors size={15} className="shrink-0 text-gold" aria-hidden="true" />
