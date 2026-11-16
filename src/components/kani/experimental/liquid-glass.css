@@ -11750,7 +11750,7 @@ html[data-theme] body.liquid-glass-active :is([data-slot="dialog-content"], .pay
   }
 }
 
-/* V12.47.15.1 · Smart Booking Recovery Modal (Desktop ~500px + Mobile visualViewport & safe areas) */
+/* V12.47.17 · Smart Booking Recovery Modal (Desktop ~520px + Liquid Glass Real Blur + Mobile safe) */
 html[data-theme] body.liquid-glass-active [data-slot="dialog-content"].booking-recovery-modal {
   display: flex !important;
   flex-direction: column !important;
@@ -11762,11 +11762,11 @@ html[data-theme] body.liquid-glass-active [data-slot="dialog-content"].booking-r
   translate: none !important;
   transform: translate3d(-50%, -50%, 0) !important;
   width: min(
-    500px,
+    520px,
     calc(var(--kani-vv-width, 100vw) - max(32px, env(safe-area-inset-left, 0px) + env(safe-area-inset-right, 0px)))
   ) !important;
   max-width: min(
-    500px,
+    520px,
     calc(var(--kani-vv-width, 100vw) - max(32px, env(safe-area-inset-left, 0px) + env(safe-area-inset-right, 0px)))
   ) !important;
   max-height: calc(
@@ -11777,6 +11777,34 @@ html[data-theme] body.liquid-glass-active [data-slot="dialog-content"].booking-r
   overscroll-behavior: contain !important;
   padding: 28px 28px !important;
   padding-bottom: max(28px, env(safe-area-inset-bottom, 28px)) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(150%) !important;
+  backdrop-filter: blur(24px) saturate(150%) !important;
+}
+
+html[data-theme="light"] body.liquid-glass-active [data-slot="dialog-content"].booking-recovery-modal {
+  background: linear-gradient(155deg, rgba(255, 255, 255, 0.72) 0%, rgba(246, 248, 252, 0.58) 100%) !important;
+  background-color: transparent !important;
+  border: 1px solid rgba(255, 255, 255, 0.68) !important;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.78) !important;
+}
+
+html[data-theme="dark"] body.liquid-glass-active [data-slot="dialog-content"].booking-recovery-modal {
+  background: linear-gradient(155deg, rgba(24, 26, 34, 0.74) 0%, rgba(16, 18, 24, 0.62) 100%) !important;
+  background-color: transparent !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  box-shadow: 0 28px 72px rgba(0, 0, 0, 0.52), inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
+}
+
+html[data-theme] body.liquid-glass-active .booking-recovery-modal .booking-recovery-secondary-btn {
+  background: rgba(255, 255, 255, 0.36) !important;
+  border: 1px solid rgba(255, 255, 255, 0.52) !important;
+  color: var(--foreground) !important;
+}
+
+html[data-theme="dark"] body.liquid-glass-active .booking-recovery-modal .booking-recovery-secondary-btn {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  color: var(--foreground) !important;
 }
 
 @media (max-width: 640px) {

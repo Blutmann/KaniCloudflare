@@ -2,7 +2,55 @@ import { CalendarDays, Clock3, Loader2, Scissors, UserRound, X } from 'lucide-re
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { formatDraftServiceLabel, type BookingDraftV1 } from '@/lib/kani-booking-draft';
-import { dateLabel } from '@/lib/kani-model';
+
+const WEEKDAYS_FULL = [
+  'Domingo',
+  'Lunes',
+  'Martes',
+  'Miércoles',
+  'Jueves',
+  'Viernes',
+  'Sábado',
+] as const;
+
+const WEEKDAYS_SHORT = ['Dom.', 'Lun.', 'Mar.', 'Mié.', 'Jue.', 'Vie.', 'Sáb.'] as const;
+
+const MONTHS_ABBR = [
+  'Ene.',
+  'Feb.',
+  'Mar.',
+  'Abr.',
+  'May.',
+  'Jun.',
+  'Jul.',
+  'Ago.',
+  'Sep.',
+  'Oct.',
+  'Nov.',
+  'Dic.',
+] as const;
+
+export function formatRecoveryDateLabel(dateStr: string | null): {
+  full: string;
+  compact: string;
+} {
+  if (!dateStr) return { full: '', compact: '' };
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateStr.trim());
+  if (!match) return { full: dateStr, compact: dateStr };
+  const year = Number(match[1]);
+  const monthIdx = Number(match[2]) - 1;
+  const day = Number(match[3]);
+  if (monthIdx < 0 || monthIdx > 11 || day < 1 || day > 31) {
+    return { full: dateStr, compact: dateStr };
+  }
+  const utcDate = new Date(Date.UTC(year, monthIdx, day));
+  const weekdayIdx = utcDate.getUTCDay();
+  const monthAbbr = MONTHS_ABBR[monthIdx];
+  return {
+    full: `${WEEKDAYS_FULL[weekdayIdx]}, ${day} de ${monthAbbr}`,
+    compact: `${WEEKDAYS_SHORT[weekdayIdx]}, ${day} de ${monthAbbr}`,
+  };
+}
 
 export type BookingRecoveryModalMode = 'closed' | 'prompt' | 'verifying' | 'slot-occupied' | 'error';
 
@@ -32,7 +80,7 @@ export function BookingRecoveryModal({
 
   const serviceText = formatDraftServiceLabel(draft.service);
   const barberText = draft.barberDeferred ? 'Elegir más adelante' : draft.barber;
-  const dateText = draft.date ? dateLabel(draft.date) : '';
+  const dateText = formatRecoveryDateLabel(draft.date);
   const timeText = draft.time ? `${draft.time} hs` : '';
 
   return (
@@ -45,7 +93,7 @@ export function BookingRecoveryModal({
       }}
     >
       <DialogContent
-        className="booking-recovery-modal sm:max-w-[500px]"
+        className="booking-recovery-modal sm:max-w-[520px]"
         showCloseButton={false}
         onPointerDownOutside={event => {
           if (mode === 'verifying') event.preventDefault();
@@ -54,21 +102,21 @@ export function BookingRecoveryModal({
           if (mode === 'verifying') event.preventDefault();
         }}
       >
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0 flex-1 space-y-1.5">
-            <DialogTitle className="text-lg sm:text-[1.25rem] font-semibold tracking-tight leading-snug text-foreground">
+        <div className="flex items-start justify-between gap-2.5">
+          <div className="min-w-0 flex-1 space-y-1">
+            <DialogTitle className="text-[1.0625rem] sm:text-[1.25rem] font-semibold tracking-tight leading-snug text-foreground">
               {mode === 'slot-occupied'
                 ? 'Tu reserva está casi lista'
                 : mode === 'error'
                   ? 'No pudimos verificar la disponibilidad'
                   : '¿Querés continuar tu reserva?'}
             </DialogTitle>
-            <DialogDescription className="text-sm sm:text-[0.9375rem] text-muted-foreground leading-relaxed">
+            <DialogDescription className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
               {mode === 'slot-occupied'
                 ? 'Mientras estabas fuera, el horario que habías elegido dejó de estar disponible. Conservamos tus datos para que puedas elegir otro horario y terminar tu reserva.'
                 : mode === 'error'
                   ? (errorMessage || 'Ocurrió un problema temporal al consultar la disponibilidad. Tus datos siguen guardados.')
-                  : 'Encontramos una reserva que habías empezado anteriormente.'}
+                  : 'Retomá tu reserva donde la dejaste.'}
             </DialogDescription>
           </div>
           {mode !== 'verifying' && (
@@ -76,7 +124,7 @@ export function BookingRecoveryModal({
               type="button"
               onClick={onDismiss}
               aria-label="Cerrar"
-              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border/60 bg-background/60 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="booking-recovery-close-btn inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border/60 bg-background/50 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <X size={16} aria-hidden="true" />
             </button>
@@ -84,7 +132,7 @@ export function BookingRecoveryModal({
         </div>
 
         {(mode === 'prompt' || mode === 'verifying') && (
-          <div className="mt-4 rounded-xl border border-border/60 bg-background/40 p-3.5 sm:p-4 text-sm sm:text-[0.9375rem] space-y-2.5 min-w-0">
+          <div className="booking-recovery-summary mt-4 rounded-2xl border border-black/10 dark:border-white/15 bg-white/45 dark:bg-white/[0.06] p-3.5 sm:p-4 text-sm sm:text-[0.9375rem] space-y-2.5 min-w-0">
             {serviceText && (
               <div className="flex items-center gap-2.5 min-w-0 text-foreground">
                 <Scissors size={15} className="shrink-0 text-gold" aria-hidden="true" />
@@ -99,11 +147,14 @@ export function BookingRecoveryModal({
                 <span className="font-medium truncate min-w-0">{barberText}</span>
               </div>
             )}
-            {dateText && (
+            {dateText.full && (
               <div className="flex items-center gap-2.5 min-w-0 text-foreground">
                 <CalendarDays size={15} className="shrink-0 text-gold" aria-hidden="true" />
                 <span className="shrink-0 text-muted-foreground">Fecha:</span>
-                <span className="font-medium capitalize truncate min-w-0">{dateText}</span>
+                <span className="font-medium min-w-0">
+                  <span className="hidden min-[360px]:inline">{dateText.full}</span>
+                  <span className="min-[360px]:hidden">{dateText.compact}</span>
+                </span>
               </div>
             )}
             {timeText && (
@@ -124,30 +175,52 @@ export function BookingRecoveryModal({
         )}
 
         {mode === 'prompt' && (
-          <div className="mt-5 flex flex-col-reverse gap-2.5 sm:flex-row sm:justify-end sm:gap-3">
-            <Button type="button" variant="outline" onClick={onStartOver} className="w-full sm:w-auto min-h-[44px] sm:min-h-[46px] px-5">
+          <div className="booking-recovery-actions mt-5 flex flex-col-reverse gap-2.5 sm:grid sm:grid-cols-2 sm:gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onStartOver}
+              className="booking-recovery-secondary-btn w-full min-h-[44px] sm:min-h-[46px] px-4"
+            >
               Empezar de nuevo
             </Button>
-            <Button type="button" onClick={onContinue} className="action-positive w-full sm:w-auto min-h-[44px] sm:min-h-[46px] px-5 font-semibold">
+            <Button
+              type="button"
+              onClick={onContinue}
+              className="action-positive w-full min-h-[44px] sm:min-h-[46px] px-4 font-semibold"
+            >
               Continuar reserva
             </Button>
           </div>
         )}
 
         {mode === 'slot-occupied' && (
-          <div className="mt-5 flex flex-col-reverse gap-2.5 sm:flex-row sm:justify-end sm:gap-3">
-            <Button type="button" onClick={onChooseAnotherTime} className="action-positive w-full sm:w-auto min-h-[44px] sm:min-h-[46px] px-5 font-semibold">
+          <div className="booking-recovery-actions mt-5 flex flex-col gap-2.5">
+            <Button
+              type="button"
+              onClick={onChooseAnotherTime}
+              className="action-positive w-full min-h-[44px] sm:min-h-[46px] px-5 font-semibold"
+            >
               Elegir otro horario
             </Button>
           </div>
         )}
 
         {mode === 'error' && (
-          <div className="mt-5 flex flex-col-reverse gap-2.5 sm:flex-row sm:justify-end sm:gap-3">
-            <Button type="button" variant="outline" onClick={onStartOver} className="w-full sm:w-auto min-h-[44px] sm:min-h-[46px] px-5">
+          <div className="booking-recovery-actions mt-5 flex flex-col-reverse gap-2.5 sm:grid sm:grid-cols-2 sm:gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onStartOver}
+              className="booking-recovery-secondary-btn w-full min-h-[44px] sm:min-h-[46px] px-4"
+            >
               Empezar de nuevo
             </Button>
-            <Button type="button" onClick={onRetry} className="action-positive w-full sm:w-auto min-h-[44px] sm:min-h-[46px] px-5 font-semibold">
+            <Button
+              type="button"
+              onClick={onRetry}
+              className="action-positive w-full min-h-[44px] sm:min-h-[46px] px-4 font-semibold"
+            >
               Reintentar
             </Button>
           </div>

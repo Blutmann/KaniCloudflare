@@ -164,6 +164,7 @@ describe("V12.47.15.1 — Smart Booking Recovery Modal Real Browser Geometry", (
         const metrics = await page.evaluate(() => {
           const dlg = document.querySelector('[data-slot="dialog-content"].booking-recovery-modal') as HTMLElement;
           const rect = dlg.getBoundingClientRect();
+          const cs = window.getComputedStyle(dlg);
           const btns = Array.from(dlg.querySelectorAll("button")).filter(
             (b) => b.getAttribute("aria-label") !== "Cerrar",
           );
@@ -172,22 +173,28 @@ describe("V12.47.15.1 — Smart Booking Recovery Modal Real Browser Geometry", (
             innerWidth: window.innerWidth,
             innerHeight: window.innerHeight,
             docScrollWidth: document.documentElement.scrollWidth,
+            backdropFilter: cs.backdropFilter,
+            textContent: dlg.textContent || "",
             rect: { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom, width: rect.width },
-            btnRects: btnRects.map((r) => ({ top: r.top, left: r.left, right: r.right })),
+            btnRects: btnRects.map((r) => ({ top: r.top, left: r.left, right: r.right, width: r.width })),
           };
         });
 
         expect(metrics.docScrollWidth).toBeLessThanOrEqual(metrics.innerWidth);
-        expect(metrics.rect.width).toBeGreaterThanOrEqual(490);
-        expect(metrics.rect.width).toBeLessThanOrEqual(505);
+        expect(metrics.rect.width).toBeGreaterThanOrEqual(500);
+        expect(metrics.rect.width).toBeLessThanOrEqual(540);
         const centerX = (metrics.rect.left + metrics.rect.right) / 2;
         expect(Math.abs(centerX - metrics.innerWidth / 2)).toBeLessThanOrEqual(16);
         expect(metrics.rect.top).toBeGreaterThanOrEqual(16);
         expect(metrics.rect.bottom).toBeLessThanOrEqual(metrics.innerHeight - 16);
+        expect(metrics.backdropFilter).toContain("blur(24px)");
+        expect(metrics.textContent).toContain("Retomá tu reserva donde la dejaste.");
+        expect(metrics.textContent).toContain("20 de Dic.");
 
-        // Horizontal buttons on desktop
+        // Horizontal equal-width 2-column buttons on desktop
         expect(metrics.btnRects.length).toBe(2);
         expect(Math.abs(metrics.btnRects[0].top - metrics.btnRects[1].top)).toBeLessThanOrEqual(2);
+        expect(Math.abs(metrics.btnRects[0].width - metrics.btnRects[1].width)).toBeLessThanOrEqual(2);
 
         await context.close();
       }

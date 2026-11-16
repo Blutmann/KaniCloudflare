@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { KaniProvider } from '@/components/kani/store';
 import { Booking } from '@/components/kani/booking';
+import { formatRecoveryDateLabel } from '@/components/kani/booking-recovery-modal';
 import { PaywayBooking } from '@/components/kani/experimental/payway-booking';
 import { liquidGlassMotionAdapter } from '@/components/kani/experimental/liquid-glass-motion';
 import {
@@ -240,7 +241,7 @@ describe('KANI V12.47.14 — Smart Booking Recovery (/reservar Liquid Glass)', (
     );
 
     expect(await screen.findByText('¿Querés continuar tu reserva?')).toBeInTheDocument();
-    expect(screen.getByText('Encontramos una reserva que habías empezado anteriormente.')).toBeInTheDocument();
+    expect(screen.getByText('Retomá tu reserva donde la dejaste.')).toBeInTheDocument();
     // Privacidad: el resumen inicial no expone nombre, celular ni email
     expect(screen.queryByText(/Tomás Pérez/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/tomas@gmail\.com/i)).not.toBeInTheDocument();
@@ -581,5 +582,30 @@ describe('KANI V12.47.14 — Smart Booking Recovery (/reservar Liquid Glass)', (
       await screen.findByText('El descuento que habías aplicado ya no está disponible. Podés continuar con la seña habitual.'),
     ).toBeInTheDocument();
     expect(screen.getByDisplayValue('Tomás Pérez')).toBeInTheDocument();
+  });
+
+  it('15. V12.47.17: formatea fechas con mes abreviado y versión compacta para pantallas estrechas', () => {
+    const nov = formatRecoveryDateLabel('2026-11-18');
+    expect(nov.full).toBe('Miércoles, 18 de Nov.');
+    expect(nov.compact).toBe('Mié., 18 de Nov.');
+
+    const months = [
+      ['2026-01-05', 'Ene.'],
+      ['2026-02-05', 'Feb.'],
+      ['2026-03-05', 'Mar.'],
+      ['2026-04-05', 'Abr.'],
+      ['2026-05-05', 'May.'],
+      ['2026-06-05', 'Jun.'],
+      ['2026-07-05', 'Jul.'],
+      ['2026-08-05', 'Ago.'],
+      ['2026-09-05', 'Sep.'],
+      ['2026-10-05', 'Oct.'],
+      ['2026-11-05', 'Nov.'],
+      ['2026-12-05', 'Dic.'],
+    ] as const;
+
+    for (const [iso, abbr] of months) {
+      expect(formatRecoveryDateLabel(iso).full).toContain(`de ${abbr}`);
+    }
   });
 });
