@@ -1589,7 +1589,8 @@ html[data-theme] body[data-lg-admin="true"] [role="dialog"]:is(.kani-medit-dialo
   width: min(640px, calc(var(--kani-vv-width, 100vw) - 24px)) !important;
 }
 
-html[data-theme] body[data-lg-admin="true"] [role="dialog"].v2-dialog.v2-manual-dialog {
+html[data-theme] body[data-lg-admin="true"] [role="dialog"].v2-dialog.v2-manual-dialog,
+html[data-theme] body[data-lg-admin="true"] [role="dialog"].v2-dialog.v2-modal-pinned-shell {
   padding: 0 !important;
   overflow: hidden !important;
 }
@@ -1605,6 +1606,10 @@ html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(
   .v2-client-modal-scroll,
   .v2-client-editor-form,
   .v2-client-modal-footer,
+  .v2-modal-pinned-header,
+  .v2-modal-pinned-form,
+  .v2-modal-pinned-scroll,
+  .v2-modal-pinned-footer,
   .v2-dialog-actions,
   .manual-dialog-footer,
   .manual-dialog-body
@@ -1652,8 +1657,18 @@ html[data-theme] body[data-lg-admin="true"] .v2-dialog.v2-manual-dialog :is(.v2-
   border-top: 1px solid var(--lga-border) !important;
 }
 
-html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(.v2-client-modal-footer, .manual-dialog-footer, .v2-dialog-actions) {
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(.v2-client-modal-footer, .v2-modal-pinned-footer, .manual-dialog-footer, .v2-dialog-actions) {
   border-top: 1px solid var(--lga-border) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-admin-combobox-popover,
+html[data-theme] body[data-lg-admin="true"] .v2-admin-select-content {
+  background: var(--lga-glass-modal) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(175%) !important;
+  backdrop-filter: blur(22px) saturate(175%) !important;
+  border: 1px solid var(--lga-modal-border) !important;
+  color: var(--lga-text) !important;
+  border-radius: 14px !important;
 }
 
 html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(
@@ -1678,9 +1693,13 @@ html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(
   margin-right: 0 !important;
 }
 
-html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(.manual-dialog-footer, .v2-dialog-actions) {
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(.manual-dialog-footer, .v2-dialog-actions:not(.v2-modal-pinned-footer)) {
   padding-top: 16px !important;
   margin-top: 16px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] .v2-modal-pinned-footer {
+  margin-top: 0 !important;
 }
 
 html[data-theme] body[data-lg-admin="true"] [role="dialog"] .v2-client-modal-footer {

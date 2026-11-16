@@ -4733,4 +4733,172 @@ html[data-theme=dark] .v2-medit-refunded-pill{color:#34d399}
 .v2-medit-refund-box{border-top:1px dashed var(--border);flex-direction:column;gap:6px;padding-top:8px;display:flex}
 .v2-medit-refund-copy{color:var(--muted-foreground);margin:0;font-size:11.5px}
 .v2-medit-audit-list{color:var(--muted-foreground);flex-direction:column;gap:4px;margin:0;padding-left:16px;font-size:11.5px;display:flex}
+
+/* ==========================================================================
+   V12.47.16 — Pinned Modal Shells & Compact Mobile Forms
+   ========================================================================== */
+.v2-dialog.v2-modal-pinned-shell {
+  padding: 0 !important;
+  gap: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+
+.v2-modal-pinned-header {
+  flex: 0 0 auto;
+  padding: 16px 48px 12px 20px;
+  border-bottom: 1px solid var(--border);
+  min-width: 0;
+}
+
+.v2-modal-pinned-header h2 {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.3;
+}
+
+.v2-modal-pinned-header p {
+  margin: 4px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--muted-foreground);
+}
+
+.v2-modal-pinned-form {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  gap: 0 !important;
+  margin: 0 !important;
+}
+
+.v2-modal-pinned-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 14px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.v2-modal-pinned-footer {
+  flex: 0 0 auto;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 10px !important;
+  padding: 12px 20px calc(12px + env(safe-area-inset-bottom, 0px)) 20px !important;
+  margin: 0 !important;
+  border-top: 1px solid var(--border) !important;
+  background: var(--popover);
+}
+
+.v2-membership-comp-card {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.v2-membership-comp-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12.5px;
+}
+
+.v2-membership-comp-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.v2-membership-comp-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+
+.v2-membership-comp-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--foreground);
+  line-height: 1.3;
+}
+
+.v2-membership-comp-name small {
+  color: var(--muted-foreground);
+  font-weight: 400;
+  font-size: 11.5px;
+}
+
+.v2-membership-comp-row input {
+  width: 76px;
+  flex: 0 0 76px;
+  text-align: center;
+  min-height: 38px;
+}
+
+.v2-membership-summary-card {
+  padding: 9px 12px;
+  border-radius: 12px;
+  background: var(--v2-inset, rgba(120, 120, 120, 0.08));
+  font-size: 12.5px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.v2-membership-summary-card > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.v2-membership-summary-total {
+  font-weight: 700;
+  font-size: 13.5px;
+  border-top: 1px solid var(--border);
+  padding-top: 4px;
+  margin-top: 2px;
+}
+
+@media (max-width: 640px) {
+  .v2-modal-pinned-header {
+    padding: 14px 44px 10px 16px;
+  }
+  .v2-modal-pinned-scroll {
+    padding: 12px 16px;
+    gap: 8px;
+  }
+  .v2-modal-pinned-footer {
+    padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px)) 16px !important;
+  }
+  .v2-modal-pinned-footer > button {
+    flex: 1 1 0 !important;
+    min-height: 44px !important;
+  }
+  .v2-payment-edit-dialog .v2-form-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+}
+
+@media (max-width: 350px) {
+  .v2-payment-edit-dialog .v2-form-row {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
 .v2-medit-footer{grid-template-columns:1fr!important}

@@ -31,6 +31,7 @@ import {
   DialogFooter,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { supabase } from '@/integrations/supabase/client';
 import {
   BENEFIT_TYPE_DEFINITIONS,
@@ -1109,9 +1110,9 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
             </div>
           ) : (
             <form onSubmit={handleCreate} className="benefit-code-dialog-form flex flex-col flex-1 min-h-0">
-              <div className="benefit-code-dialog-scroll-body space-y-4">
+              <div className="benefit-code-dialog-scroll-body space-y-3 sm:space-y-4">
                 {/* 1. Modalidad de uso */}
-                <div className="space-y-2">
+                <div className="space-y-1.5 sm:space-y-2">
                   <label className="text-xs font-semibold text-foreground block">
                     Modalidad de uso:
                   </label>
@@ -1122,7 +1123,7 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                       return (
                         <label
                           key={mode}
-                          className={`flex flex-col p-2.5 rounded-lg border cursor-pointer transition-colors ${
+                          className={`flex flex-col justify-center p-2.5 rounded-lg border cursor-pointer transition-colors min-h-[44px] ${
                             isSelected
                               ? 'bg-gold/10 border-gold shadow-xs'
                               : 'bg-background border-border hover:bg-muted/40'
@@ -1135,11 +1136,11 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                               value={mode}
                               checked={isSelected}
                               onChange={() => setSelectedUsageMode(mode)}
-                              className="accent-gold text-gold"
+                              className="accent-gold text-gold shrink-0"
                             />
-                            <span className="text-xs sm:text-sm font-semibold text-foreground">{def.label}</span>
+                            <span className="text-xs sm:text-sm font-semibold text-foreground leading-tight">{def.label}</span>
                           </div>
-                          <span className="text-[11px] text-muted-foreground mt-1 leading-snug">
+                          <span className="hidden sm:block text-[11px] text-muted-foreground mt-1 leading-snug">
                             {def.description}
                           </span>
                         </label>
@@ -1149,18 +1150,26 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                 </div>
 
                 {/* 2. Tipo de beneficio */}
-                <div className="space-y-2">
+                <div className="space-y-1.5 sm:space-y-2">
                   <label className="text-xs font-semibold text-foreground block">
                     Beneficio:
                   </label>
-                  <div className="grid grid-cols-1 gap-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-1 gap-2">
                     {(['PERCENT_10', 'PERCENT_50', 'NO_DEPOSIT', 'FREE_SERVICE'] as const).map((t) => {
                       const d = BENEFIT_TYPE_DEFINITIONS[t];
                       const isSelected = selectedType === t;
+                      const mobileCompactLabel =
+                        t === 'PERCENT_10'
+                          ? '10 % OFF'
+                          : t === 'PERCENT_50'
+                            ? '50 % OFF'
+                            : t === 'NO_DEPOSIT'
+                              ? 'Sin seña'
+                              : 'Servicio gratis';
                       return (
                         <label
                           key={t}
-                          className={`flex items-start gap-3 p-2.5 rounded-lg border cursor-pointer transition-colors ${
+                          className={`flex items-center sm:items-start gap-2.5 sm:gap-3 p-2.5 rounded-lg border cursor-pointer transition-colors min-h-[46px] ${
                             isSelected
                               ? 'bg-gold/10 border-gold shadow-xs'
                               : 'bg-background border-border hover:bg-muted/40'
@@ -1172,14 +1181,17 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                             value={t}
                             checked={isSelected}
                             onChange={() => setSelectedType(t)}
-                            className="mt-1 accent-gold text-gold"
+                            className="sm:mt-1 accent-gold text-gold shrink-0"
                           />
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between">
+                            <span className="sm:hidden text-xs font-semibold text-foreground leading-tight block">
+                              {mobileCompactLabel}
+                            </span>
+                            <div className="hidden sm:flex items-center justify-between gap-2">
                               <span className="text-xs font-semibold text-foreground">{d.label}</span>
                               <span className="text-[11px] font-semibold text-gold">{d.shortLabel}</span>
                             </div>
-                            <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug">{d.description}</p>
+                            <p className="hidden sm:block text-[11px] text-muted-foreground mt-0.5 leading-snug">{d.description}</p>
                           </div>
                         </label>
                       );
@@ -1188,12 +1200,34 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                 </div>
 
                 {/* 3. Vigencia */}
-                <div className="space-y-2 pt-1 border-t border-border/50">
-                  <div className="flex items-center justify-between">
-                    <label htmlFor="create-validity-type" className="text-xs font-semibold text-foreground block">
-                      Vigencia:
-                    </label>
-                    <span className="text-[11px] text-muted-foreground">Hora de Buenos Aires (UTC-3)</span>
+                <div className="space-y-1.5 sm:space-y-2 pt-2 border-t border-border/50">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5">
+                      <label htmlFor="create-validity-type" className="text-xs font-semibold text-foreground block">
+                        Vigencia:
+                      </label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <button
+                            type="button"
+                            aria-label="Información sobre la vigencia del código"
+                            className="sm:hidden inline-flex h-6 w-6 items-center justify-center rounded-full text-gold hover:bg-gold/10 focus:outline-none focus:ring-1 focus:ring-gold"
+                          >
+                            <HelpCircle size={14} aria-hidden="true" />
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent side="top" align="start" className="w-64 p-3 text-xs space-y-1">
+                          <p className="font-semibold text-foreground">Nota de vigencia</p>
+                          <p className="text-muted-foreground leading-snug">
+                            La vigencia determina cuándo puede confirmarse la reserva con el código, no la fecha del turno.
+                          </p>
+                          <p className="text-[11px] text-muted-foreground pt-0.5">
+                            Horario: Buenos Aires (UTC-3).
+                          </p>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                    <span className="text-[11px] text-muted-foreground">Buenos Aires (UTC-3)</span>
                   </div>
 
                   <select
@@ -1211,7 +1245,7 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
 
                   {/* Campos progresivos según vigencia */}
                   {selectedValidityType !== 'NO_EXPIRATION' && (
-                    <div className="p-3 rounded-lg bg-muted/30 border border-border space-y-3 mt-2">
+                    <div className="p-2.5 sm:p-3 rounded-lg bg-muted/30 border border-border space-y-2.5 sm:space-y-3 mt-1.5">
                       {/* Fecha de inicio */}
                       <div>
                         <label htmlFor="create-start-date" className="text-xs font-medium text-foreground block mb-1">
@@ -1287,8 +1321,8 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                     </div>
                   )}
 
-                  {/* Aclaración obligatoria del negocio */}
-                  <div className="p-2 rounded bg-muted/40 border border-border/60 text-[11px] text-muted-foreground flex items-center gap-1.5">
+                  {/* Aclaración visible en desktop; en mobile se accede vía ícono info */}
+                  <div className="hidden sm:flex p-2 rounded bg-muted/40 border border-border/60 text-[11px] text-muted-foreground items-center gap-1.5">
                     <HelpCircle size={13} className="text-gold shrink-0" />
                     <span>
                       <strong>Nota de vigencia:</strong> La vigencia determina cuándo puede confirmarse la reserva con el código, no la fecha del turno.
@@ -1296,38 +1330,39 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                   </div>
                 </div>
 
-                {/* 4. Nota interna (opcional) */}
-                <div className="space-y-1.5">
-                  <label htmlFor="create-internal-note" className="text-xs font-semibold text-foreground block">
-                    Nota interna (opcional):
-                  </label>
-                  <Input
-                    id="create-internal-note"
-                    value={internalNote}
-                    onChange={(e) => setInternalNote(e.target.value)}
-                    placeholder="Ej: Cortesía por demora, influencer, campaña de fin de año…"
-                    className="text-xs bg-background"
-                    maxLength={250}
-                  />
-                </div>
+                {/* 4. Nota interna y Código personalizado */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
+                  <div className="space-y-1">
+                    <label htmlFor="create-internal-note" className="text-xs font-semibold text-foreground block">
+                      Nota interna (opcional):
+                    </label>
+                    <Input
+                      id="create-internal-note"
+                      value={internalNote}
+                      onChange={(e) => setInternalNote(e.target.value)}
+                      placeholder="Ej: Cortesía, campaña…"
+                      className="text-xs bg-background"
+                      maxLength={250}
+                    />
+                  </div>
 
-                {/* 5. Código personalizado (opcional) */}
-                <div className="space-y-1.5">
-                  <label htmlFor="create-custom-code" className="text-xs font-semibold text-foreground block">
-                    Código personalizado (opcional)
-                  </label>
-                  <Input
-                    id="create-custom-code"
-                    value={customCode}
-                    onChange={(e) => setCustomCode(e.target.value.toUpperCase())}
-                    placeholder="Ej: KANI-VIP-2026"
-                    className="text-xs font-mono uppercase bg-background"
-                    maxLength={32}
-                  />
-                  <span className="text-[11px] text-muted-foreground block">
-                    Si se deja vacío, el sistema generará un código seguro e irrepetible.
-                  </span>
+                  <div className="space-y-1">
+                    <label htmlFor="create-custom-code" className="text-xs font-semibold text-foreground block">
+                      Código personalizado (opcional)
+                    </label>
+                    <Input
+                      id="create-custom-code"
+                      value={customCode}
+                      onChange={(e) => setCustomCode(e.target.value.toUpperCase())}
+                      placeholder="Ej: KANI-VIP-2026"
+                      className="text-xs font-mono uppercase bg-background"
+                      maxLength={32}
+                    />
+                  </div>
                 </div>
+                <span className="hidden sm:block text-[11px] text-muted-foreground -mt-1">
+                  Si se deja el código vacío, el sistema generará un código seguro e irrepetible.
+                </span>
 
                 {createError && (
                   <div className="p-2.5 rounded bg-destructive/10 text-destructive text-xs flex items-center gap-2">
@@ -1338,20 +1373,20 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
               </div>
 
               <div className="benefit-code-dialog-footer">
-                <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2">
+                <DialogFooter className="flex flex-row gap-2 sm:justify-end">
                   <Button
                     type="button"
                     variant="outline"
                     onClick={() => setCreateOpen(false)}
                     disabled={creating}
-                    className="v2-secondary min-h-[40px] text-xs"
+                    className="v2-secondary flex-1 sm:flex-initial min-h-[44px] sm:min-h-[40px] text-xs"
                   >
                     Cancelar
                   </Button>
                   <Button
                     type="submit"
                     disabled={creating}
-                    className="action-brand min-h-[40px] text-xs font-semibold"
+                    className="action-brand flex-1 sm:flex-initial min-h-[44px] sm:min-h-[40px] text-xs font-semibold"
                   >
                     {creating ? <RefreshCw size={14} className="animate-spin mr-1.5" /> : <Sparkles size={14} className="mr-1.5" />}
                     <span>{creating ? 'Generando…' : 'Crear código'}</span>

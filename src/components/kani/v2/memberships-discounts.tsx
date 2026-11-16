@@ -28,6 +28,7 @@ import {
 } from "@/lib/kani-recurrences-memberships";
 import { BenefitCodesAdminSection } from "@/components/kani/admin-benefit-codes-section";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { AdminClientCombobox, AdminContextualSelect } from "./admin-mobile-select";
 import { useV2 } from "./data";
 import { V2Discounts } from "./discounts";
 import { EditMembershipModal, MembershipCard } from "./MembershipCard";
@@ -720,212 +721,203 @@ export function V2MembershipsAndDiscounts({
           if (!open && !busy) setCreateOpen(false);
         }}
       >
-        <DialogContent className="v2-dialog" style={{ maxWidth: "540px" }} aria-describedby={undefined}>
-          <DialogTitle>Nueva membresía prepagada</DialogTitle>
-          <form onSubmit={handleCreateSubmit} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "10px" }}>
-              <label className="v2-field">
-                <span className="v2-field-label">Cliente titular (individual)</span>
-                <select
-                  value={clientId}
-                  onChange={(e) => setClientId(e.target.value)}
-                  required
-                >
-                  <option value="">Seleccionar cliente…</option>
-                  {data.clients
-                    .filter((c) => !c.archived)
-                    .map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name} {c.phone ? `(${c.phone})` : ""}
-                      </option>
-                    ))}
-                </select>
-              </label>
-
-              <label className="v2-field">
-                <span className="v2-field-label">Barbero asignado</span>
-                <select
-                  value={barberId}
-                  onChange={(e) => setBarberId(e.target.value)}
-                  disabled={!isOperator}
-                >
-                  {staff.barbers.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-
-            <label className="v2-field">
-              <span className="v2-field-label">Tipo de membresía</span>
-              <select
-                value={packageSize}
-                onChange={(e) =>
-                  handlePackageSizeChange((Number(e.target.value) === 10 ? 10 : 4) as MembershipPackageSize)
-                }
-              >
-                <option value={4}>Membresía 4 servicios (20% de descuento)</option>
-                <option value={10}>Membresía 10 servicios (30% de descuento)</option>
-              </select>
-            </label>
-
-            <div
-              style={{
-                padding: "10px 12px",
-                borderRadius: "8px",
-                border: "1px solid var(--border)",
-                display: "flex",
-                flexDirection: "column",
-                gap: "8px",
-              }}
-            >
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px" }}>
-                <strong>Composición de servicios permitidos</strong>
-                <span
-                  style={{
-                    color: currentQuantitySum === packageSize ? "#10b981" : "#eab308",
-                    fontWeight: 600,
-                  }}
-                >
-                  Suma: {currentQuantitySum} / {packageSize} sesiones
-                </span>
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px" }}>
-                <label className="v2-field">
-                  <span className="v2-field-label">Corte ({money(25000)})</span>
-                  <input
-                    type="number"
-                    min={0}
-                    max={packageSize}
-                    value={qtyCorte}
-                    onChange={(e) => setQtyCorte(Math.max(0, Number(e.target.value) || 0))}
+        <DialogContent
+          className="v2-dialog v2-membership-create-dialog v2-modal-pinned-shell"
+          style={{ maxWidth: "540px" }}
+          aria-describedby={undefined}
+        >
+          <div className="v2-modal-pinned-header">
+            <DialogTitle>Nueva membresía prepagada</DialogTitle>
+          </div>
+          <form onSubmit={handleCreateSubmit} className="v2-form v2-modal-pinned-form">
+            <div className="v2-modal-pinned-scroll">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div className="v2-field min-w-0">
+                  <label htmlFor="membership-client-select" className="v2-field-label">
+                    Cliente titular
+                  </label>
+                  <AdminClientCombobox
+                    id="membership-client-select"
+                    clients={data.clients.filter((c) => !c.archived)}
+                    value={clientId}
+                    onChange={setClientId}
+                    required
+                    ariaLabel="Cliente titular"
                   />
-                </label>
-                <label className="v2-field">
-                  <span className="v2-field-label">Barba ({money(19000)})</span>
-                  <input
-                    type="number"
-                    min={0}
-                    max={packageSize}
-                    value={qtyBarba}
-                    onChange={(e) => setQtyBarba(Math.max(0, Number(e.target.value) || 0))}
-                  />
-                </label>
-                <label className="v2-field">
-                  <span className="v2-field-label">Corte y barba ({money(28000)})</span>
-                  <input
-                    type="number"
-                    min={0}
-                    max={packageSize}
-                    value={qtyCorteBarba}
-                    onChange={(e) => setQtyCorteBarba(Math.max(0, Number(e.target.value) || 0))}
-                  />
-                </label>
-              </div>
-            </div>
+                </div>
 
-            <div
-              style={{
-                padding: "10px 12px",
-                borderRadius: "8px",
-                background: "var(--v2-inset, rgba(255,255,255,0.04))",
-                fontSize: "12.5px",
-                display: "flex",
-                flexDirection: "column",
-                gap: "4px",
-              }}
-            >
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <span>Subtotal sin descuento:</span>
-                <span>{money(livePricing.subtotalArs)}</span>
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <span>Descuento porcentual ({livePricing.discountPercent}%):</span>
-                <span style={{ color: "#10b981" }}>-{money(livePricing.discountAmountArs)}</span>
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  fontWeight: 700,
-                  fontSize: "14px",
-                  borderTop: "1px solid var(--border)",
-                  paddingTop: "4px",
-                  marginTop: "2px",
-                }}
-              >
-                <span>Total final a abonar:</span>
-                <span>{money(livePricing.totalPriceArs)}</span>
-              </div>
-            </div>
-
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
-              <label className="v2-field">
-                <span className="v2-field-label">Vencimiento</span>
-                <select
-                  value={expirationMode}
-                  onChange={(e) => setExpirationMode(e.target.value as "NONE" | "DATE")}
-                >
-                  <option value="NONE">Sin vencimiento</option>
-                  <option value="DATE">Fecha de vencimiento determinada</option>
-                </select>
-              </label>
-              {expirationMode === "DATE" && (
-                <label className="v2-field">
-                  <span className="v2-field-label">Fecha de vencimiento</span>
-                  <input
-                    type="date"
-                    value={expiresAt}
-                    min={today}
-                    onChange={(e) => setExpiresAt(e.target.value)}
-                  />
-                </label>
-              )}
-            </div>
-
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
-              <label className="v2-field">
-                <span className="v2-field-label">Estado de pago inicial</span>
-                <select
-                  value={payImmediately ? "PAID" : "PENDING"}
-                  onChange={(e) => setPayImmediately(e.target.value === "PAID")}
-                >
-                  <option value="PAID">Registrar pago completo ahora (Activa)</option>
-                  <option value="PENDING">Dejar Pendiente de pago</option>
-                </select>
-              </label>
-              {payImmediately && (
-                <label className="v2-field">
-                  <span className="v2-field-label">Medio de pago</span>
+                <label className="v2-field min-w-0">
+                  <span className="v2-field-label">Barbero asignado</span>
                   <select
-                    value={paymentMethod}
-                    onChange={(e) =>
-                      setPaymentMethod(e.target.value as KaniMembershipPaymentMethod)
-                    }
+                    value={barberId}
+                    onChange={(e) => setBarberId(e.target.value)}
+                    disabled={!isOperator}
                   >
-                    {KANI_MEMBERSHIP_PAYMENT_METHODS.map((method) => (
-                      <option key={method} value={method}>
-                        {method}
+                    {staff.barbers.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.name}
                       </option>
                     ))}
                   </select>
                 </label>
-              )}
+              </div>
+
+              <div className="v2-field min-w-0">
+                <label htmlFor="membership-package-select" className="v2-field-label">
+                  Tipo de membresía
+                </label>
+                <AdminContextualSelect
+                  id="membership-package-select"
+                  ariaLabel="Tipo de membresía"
+                  value={String(packageSize)}
+                  onValueChange={(val) =>
+                    handlePackageSizeChange((Number(val) === 10 ? 10 : 4) as MembershipPackageSize)
+                  }
+                  options={[
+                    { value: "4", label: "Membresía 4 servicios (20% de descuento)" },
+                    { value: "10", label: "Membresía 10 servicios (30% de descuento)" },
+                  ]}
+                />
+              </div>
+
+              <div className="v2-membership-comp-card">
+                <div className="v2-membership-comp-header">
+                  <strong>Servicios incluidos</strong>
+                  <span
+                    style={{
+                      color: currentQuantitySum === packageSize ? "#10b981" : "#eab308",
+                      fontWeight: 600,
+                    }}
+                  >
+                    {currentQuantitySum} / {packageSize} sesiones
+                  </span>
+                </div>
+                <div className="v2-membership-comp-rows">
+                  <label className="v2-membership-comp-row">
+                    <span className="v2-membership-comp-name">
+                      Corte <small>({money(25000)})</small>
+                    </span>
+                    <input
+                      type="number"
+                      min={0}
+                      max={packageSize}
+                      value={qtyCorte}
+                      onChange={(e) => setQtyCorte(Math.max(0, Number(e.target.value) || 0))}
+                    />
+                  </label>
+                  <label className="v2-membership-comp-row">
+                    <span className="v2-membership-comp-name">
+                      Barba <small>({money(19000)})</small>
+                    </span>
+                    <input
+                      type="number"
+                      min={0}
+                      max={packageSize}
+                      value={qtyBarba}
+                      onChange={(e) => setQtyBarba(Math.max(0, Number(e.target.value) || 0))}
+                    />
+                  </label>
+                  <label className="v2-membership-comp-row">
+                    <span className="v2-membership-comp-name">
+                      Corte y barba <small>({money(28000)})</small>
+                    </span>
+                    <input
+                      type="number"
+                      min={0}
+                      max={packageSize}
+                      value={qtyCorteBarba}
+                      onChange={(e) => setQtyCorteBarba(Math.max(0, Number(e.target.value) || 0))}
+                    />
+                  </label>
+                </div>
+              </div>
+
+              <div className="v2-membership-summary-card">
+                <div>
+                  <span>Subtotal</span>
+                  <span>{money(livePricing.subtotalArs)}</span>
+                </div>
+                <div>
+                  <span>Descuento ({livePricing.discountPercent}%)</span>
+                  <span style={{ color: "#10b981" }}>-{money(livePricing.discountAmountArs)}</span>
+                </div>
+                <div className="v2-membership-summary-total">
+                  <span>Total final</span>
+                  <span>{money(livePricing.totalPriceArs)}</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <label className="v2-field min-w-0">
+                  <span className="v2-field-label">Vencimiento</span>
+                  <select
+                    value={expirationMode}
+                    onChange={(e) => setExpirationMode(e.target.value as "NONE" | "DATE")}
+                  >
+                    <option value="NONE">Sin vencimiento</option>
+                    <option value="DATE">Fecha determinada</option>
+                  </select>
+                </label>
+                {expirationMode === "DATE" && (
+                  <label className="v2-field min-w-0">
+                    <span className="v2-field-label">Fecha de vencimiento</span>
+                    <input
+                      type="date"
+                      value={expiresAt}
+                      min={today}
+                      onChange={(e) => setExpiresAt(e.target.value)}
+                    />
+                  </label>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div className="v2-field min-w-0">
+                  <label htmlFor="membership-payment-status" className="v2-field-label">
+                    Estado de pago inicial
+                  </label>
+                  <AdminContextualSelect
+                    id="membership-payment-status"
+                    ariaLabel="Estado de pago inicial"
+                    value={payImmediately ? "PAID" : "PENDING"}
+                    onValueChange={(val) => setPayImmediately(val === "PAID")}
+                    options={[
+                      { value: "PAID", label: "Registrar pago completo ahora (Activa)" },
+                      { value: "PENDING", label: "Dejar Pendiente de pago" },
+                    ]}
+                  />
+                </div>
+                {payImmediately && (
+                  <label className="v2-field min-w-0">
+                    <span className="v2-field-label">Medio de pago</span>
+                    <select
+                      value={paymentMethod}
+                      onChange={(e) =>
+                        setPaymentMethod(e.target.value as KaniMembershipPaymentMethod)
+                      }
+                    >
+                      {KANI_MEMBERSHIP_PAYMENT_METHODS.map((method) => (
+                        <option key={method} value={method}>
+                          {method}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
+              </div>
+
+              <label className="v2-field min-w-0">
+                <span className="v2-field-label">Notas (opcional)</span>
+                <input
+                  type="text"
+                  value={createNotes}
+                  onChange={(e) => setCreateNotes(e.target.value)}
+                  placeholder="Detalle de acuerdo o referencia"
+                />
+              </label>
             </div>
 
-            <label className="v2-field">
-              <span className="v2-field-label">Notas u observaciones</span>
-              <input
-                type="text"
-                value={createNotes}
-                onChange={(e) => setCreateNotes(e.target.value)}
-                placeholder="Opcional: detalle de acuerdo o referencia"
-              />
-            </label>
-
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", marginTop: "6px" }}>
+            <div className="v2-dialog-actions v2-modal-pinned-footer">
               <button
                 type="button"
                 className="v2-secondary"

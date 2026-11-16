@@ -884,185 +884,191 @@ export function V2Payments() {
         open={!!editingPayment}
         onOpenChange={(open) => !open && !editBusy && setEditingPayment(null)}
       >
-        <DialogContent className="v2-dialog v2-payment-edit-dialog">
-          <DialogTitle>Editar cobro registrado</DialogTitle>
-          <DialogDescription>
-            Modificá los detalles del cobro. Los cambios se registran con trazabilidad.
-          </DialogDescription>
-          {editError && <p className="v2-alert">{editError}</p>}
-          <form onSubmit={handleSavePayment} className="v2-form">
-            <label className="v2-field v2-payment-entry-field">
-              Barbero
-              <select
-                value={editBarberId}
-                onChange={(e) => setEditBarberId(e.target.value)}
-                disabled={editBusy || !isAdmin}
-              >
-                {staff.barbers.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="v2-field v2-payment-entry-field">
-              Servicio
-              <select
-                value={editServiceName}
-                onChange={(e) => {
-                  const name = e.target.value as ServicePaymentType;
-                  setEditServiceName(name);
-                  setEditFinal(null);
-                  const service = data.services.find(
-                    (s) => canonicalPaymentService(s.name) === name,
-                  );
-                  setEditPrice(name === "Anulado" ? 0 : (service?.price ?? editPrice));
-                }}
-                disabled={editBusy}
-              >
-                <option value="Corte">Corte</option>
-                <option value="Corte y barba">Corte y barba</option>
-                <option value="Barba">Barba</option>
-                <option value="Otros">Otro</option>
-                <option
-                  value="Anulado"
-                  disabled={
-                    !!editingPayment?.onlineDepositPaid ||
-                    (editingPayment?.onlineDepositAmountArs ?? 0) > 0 ||
-                    !!data.appointments.find(
-                      (a) =>
-                        a.id === editingPayment?.appointmentId &&
-                        (a.depositPaid || (a.depositAmountArs ?? 0) > 0),
-                    )
-                  }
-                >
-                  Anulado
-                </option>
-              </select>
-            </label>
-            {editServiceName === "Otros" && (
-              <label className="v2-field">
-                Detalle servicio
-                <input
-                  required
-                  value={editOtherDetail}
-                  onChange={(e) => setEditOtherDetail(e.target.value)}
-                  disabled={editBusy}
-                />
-              </label>
-            )}
-            <div className="v2-form-row">
+        <DialogContent className="v2-dialog v2-payment-edit-dialog v2-modal-pinned-shell">
+          <div className="v2-modal-pinned-header">
+            <DialogTitle>Editar cobro registrado</DialogTitle>
+            <DialogDescription>
+              Modificá los detalles del cobro. Los cambios se registran con trazabilidad.
+            </DialogDescription>
+          </div>
+          <form onSubmit={handleSavePayment} className="v2-form v2-modal-pinned-form">
+            <div className="v2-modal-pinned-scroll">
+              {editError && <p className="v2-alert">{editError}</p>}
+              <div className="v2-form-row">
+                <label className="v2-field v2-payment-entry-field">
+                  Barbero
+                  <select
+                    value={editBarberId}
+                    onChange={(e) => setEditBarberId(e.target.value)}
+                    disabled={editBusy || !isAdmin}
+                  >
+                    {staff.barbers.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="v2-field v2-payment-entry-field">
+                  Servicio
+                  <select
+                    value={editServiceName}
+                    onChange={(e) => {
+                      const name = e.target.value as ServicePaymentType;
+                      setEditServiceName(name);
+                      setEditFinal(null);
+                      const service = data.services.find(
+                        (s) => canonicalPaymentService(s.name) === name,
+                      );
+                      setEditPrice(name === "Anulado" ? 0 : (service?.price ?? editPrice));
+                    }}
+                    disabled={editBusy}
+                  >
+                    <option value="Corte">Corte</option>
+                    <option value="Corte y barba">Corte y barba</option>
+                    <option value="Barba">Barba</option>
+                    <option value="Otros">Otro</option>
+                    <option
+                      value="Anulado"
+                      disabled={
+                        !!editingPayment?.onlineDepositPaid ||
+                        (editingPayment?.onlineDepositAmountArs ?? 0) > 0 ||
+                        !!data.appointments.find(
+                          (a) =>
+                            a.id === editingPayment?.appointmentId &&
+                            (a.depositPaid || (a.depositAmountArs ?? 0) > 0),
+                        )
+                      }
+                    >
+                      Anulado
+                    </option>
+                  </select>
+                </label>
+              </div>
+              {editServiceName === "Otros" && (
+                <label className="v2-field">
+                  Detalle servicio
+                  <input
+                    required
+                    value={editOtherDetail}
+                    onChange={(e) => setEditOtherDetail(e.target.value)}
+                    disabled={editBusy}
+                  />
+                </label>
+              )}
+              <div className="v2-form-row">
+                <label className="v2-field v2-payment-entry-field">
+                  Precio ($ ARS)
+                  <input
+                    type="number"
+                    min={editServiceName === "Anulado" ? 0 : 1}
+                    required
+                    value={editPrice}
+                    onChange={(e) => setEditPrice(Number(e.target.value))}
+                    disabled={editBusy}
+                  />
+                </label>
+                <label className="v2-field">
+                  Descuento ($ ARS)
+                  <input
+                    type="number"
+                    min={0}
+                    value={editDiscount}
+                    onChange={(e) => setEditDiscount(Number(e.target.value))}
+                    disabled={editBusy}
+                  />
+                </label>
+              </div>
+              <div className="v2-form-row">
+                <label className="v2-field">
+                  Tipo de descuento
+                  <select
+                    value={editDiscountKind}
+                    onChange={(e) => setEditDiscountKind(e.target.value as DiscountKind)}
+                    disabled={editBusy || editServiceName === "Anulado"}
+                  >
+                    <option value="FIXED">Importe fijo ($)</option>
+                    <option value="PERCENT">Porcentaje (%)</option>
+                  </select>
+                </label>
+                <label className="v2-field v2-payment-entry-field">
+                  Importe total
+                  <input
+                    type="number"
+                    min={editingPayment?.onlineDepositAmountArs ?? 0}
+                    step="1"
+                    value={
+                      editServiceName === "Anulado"
+                        ? 0
+                        : (editFinal ??
+                          Math.max(
+                            0,
+                            editPrice -
+                              Math.round(
+                                editDiscountKind === "PERCENT"
+                                  ? (editPrice * editDiscount) / 100
+                                  : editDiscount,
+                              ),
+                          ))
+                    }
+                    onChange={(e) =>
+                      setEditFinal(e.target.value === "" ? null : Number(e.target.value))
+                    }
+                    disabled={editBusy || editServiceName === "Anulado"}
+                  />
+                </label>
+              </div>
               <label className="v2-field v2-payment-entry-field">
-                Precio servicio ($ ARS)
-                <input
-                  type="number"
-                  min={editServiceName === "Anulado" ? 0 : 1}
-                  required
-                  value={editPrice}
-                  onChange={(e) => setEditPrice(Number(e.target.value))}
-                  disabled={editBusy}
-                />
-              </label>
-              <label className="v2-field">
-                Descuento ($ ARS)
-                <input
-                  type="number"
-                  min={0}
-                  value={editDiscount}
-                  onChange={(e) => setEditDiscount(Number(e.target.value))}
-                  disabled={editBusy}
-                />
-              </label>
-            </div>
-            <div className="v2-form-row">
-              <label className="v2-field">
-                Tipo de descuento
+                Método de pago
                 <select
-                  value={editDiscountKind}
-                  onChange={(e) => setEditDiscountKind(e.target.value as DiscountKind)}
-                  disabled={editBusy || editServiceName === "Anulado"}
+                  value={editMethod}
+                  onChange={(e) => setEditMethod(e.target.value as PaymentMethod)}
+                  disabled={editBusy}
                 >
-                  <option value="FIXED">Importe fijo ($)</option>
-                  <option value="PERCENT">Porcentaje (%)</option>
+                  <option value="Efectivo">Efectivo</option>
+                  <option value="Transferencia">Transferencia</option>
                 </select>
               </label>
-              <label className="v2-field v2-payment-entry-field">
-                Importe total
-                <input
-                  type="number"
-                  min={editingPayment?.onlineDepositAmountArs ?? 0}
-                  step="1"
-                  value={
-                    editServiceName === "Anulado"
-                      ? 0
-                      : (editFinal ??
-                        Math.max(
-                          0,
-                          editPrice -
-                            Math.round(
-                              editDiscountKind === "PERCENT"
-                                ? (editPrice * editDiscount) / 100
-                                : editDiscount,
-                            ),
-                        ))
-                  }
-                  onChange={(e) =>
-                    setEditFinal(e.target.value === "" ? null : Number(e.target.value))
-                  }
-                  disabled={editBusy || editServiceName === "Anulado"}
-                />
-              </label>
+              <div className="v2-form-row">
+                <label className="v2-field">
+                  Nombre del cliente
+                  <input
+                    value={editClientName}
+                    onChange={(e) => setEditClientName(e.target.value)}
+                    disabled={editBusy}
+                  />
+                </label>
+                <label className="v2-field">
+                  Contacto / Celular
+                  <input
+                    value={editClientContact}
+                    onChange={(e) => setEditClientContact(e.target.value)}
+                    disabled={editBusy}
+                  />
+                </label>
+              </div>
+              <div className="v2-form-row">
+                <label className="v2-field">
+                  Fecha
+                  <input
+                    type="date"
+                    value={editDate}
+                    onChange={(e) => setEditDate(e.target.value)}
+                    disabled={editBusy}
+                  />
+                </label>
+                <label className="v2-field">
+                  Hora
+                  <input
+                    type="time"
+                    value={editTime}
+                    onChange={(e) => setEditTime(e.target.value)}
+                    disabled={editBusy}
+                  />
+                </label>
+              </div>
             </div>
-            <label className="v2-field v2-payment-entry-field">
-              Método de pago
-              <select
-                value={editMethod}
-                onChange={(e) => setEditMethod(e.target.value as PaymentMethod)}
-                disabled={editBusy}
-              >
-                <option value="Efectivo">Efectivo</option>
-                <option value="Transferencia">Transferencia</option>
-              </select>
-            </label>
-            <div className="v2-form-row">
-              <label className="v2-field">
-                Nombre del cliente
-                <input
-                  value={editClientName}
-                  onChange={(e) => setEditClientName(e.target.value)}
-                  disabled={editBusy}
-                />
-              </label>
-              <label className="v2-field">
-                Contacto / Celular
-                <input
-                  value={editClientContact}
-                  onChange={(e) => setEditClientContact(e.target.value)}
-                  disabled={editBusy}
-                />
-              </label>
-            </div>
-            <div className="v2-form-row">
-              <label className="v2-field">
-                Fecha
-                <input
-                  type="date"
-                  value={editDate}
-                  onChange={(e) => setEditDate(e.target.value)}
-                  disabled={editBusy}
-                />
-              </label>
-              <label className="v2-field">
-                Hora
-                <input
-                  type="time"
-                  value={editTime}
-                  onChange={(e) => setEditTime(e.target.value)}
-                  disabled={editBusy}
-                />
-              </label>
-            </div>
-            <div className="v2-dialog-actions">
+            <div className="v2-dialog-actions v2-modal-pinned-footer">
               <button
                 type="button"
                 className="v2-secondary"
