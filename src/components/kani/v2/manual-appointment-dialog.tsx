@@ -418,6 +418,7 @@ export function ManualAppointmentDialog({
         )}
 
         <form onSubmit={handleSubmit} className="v2-form v2-manual-form">
+          <div className="v2-manual-scroll-body">
           {formError && (
             <p className="v2-alert" role="alert">
               {formError}
@@ -460,7 +461,40 @@ export function ManualAppointmentDialog({
             </label>
           </div>
 
-          {/* Conditional inputs for Servicio "Otro" vs Standard */}
+          {/* Fila 2: Hora inicio | Hora fin */}
+          <div className="v2-manual-row">
+            <label className="v2-field">
+              Hora de inicio *
+              <select
+                value={startTime}
+                disabled={isBusy}
+                onChange={(e) => handleStartTimeChange(e.target.value)}
+              >
+                {TIME_15_OPTIONS.map((t) => (
+                  <option key={`start-${t}`} value={t}>
+                    {t} hs
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="v2-field">
+              Hora de finalización *
+              <select
+                value={customEndTime}
+                disabled={isBusy}
+                onChange={(e) => setCustomEndTime(e.target.value)}
+              >
+                {TIME_15_OPTIONS.map((t) => (
+                  <option key={`end-${t}`} value={t}>
+                    {t} hs
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          {/* Fila 3: Fecha | Importe (o campos de Servicio "Otro") */}
           {isOtro ? (
             <>
               <div className="v2-manual-row">
@@ -533,39 +567,6 @@ export function ManualAppointmentDialog({
             </div>
           )}
 
-          {/* Time row: Inicio & Finalización 24h freely customizable */}
-          <div className="v2-manual-row">
-            <label className="v2-field">
-              Hora de inicio *
-              <select
-                value={startTime}
-                disabled={isBusy}
-                onChange={(e) => handleStartTimeChange(e.target.value)}
-              >
-                {TIME_15_OPTIONS.map((t) => (
-                  <option key={`start-${t}`} value={t}>
-                    {t} hs
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="v2-field">
-              Hora de finalización *
-              <select
-                value={customEndTime}
-                disabled={isBusy}
-                onChange={(e) => setCustomEndTime(e.target.value)}
-              >
-                {TIME_15_OPTIONS.map((t) => (
-                  <option key={`end-${t}`} value={t}>
-                    {t} hs
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-
           {overlapConflict && (
             <p className="v2-alert" role="alert" style={{ marginTop: "4px" }}>
               {overlapConflict}
@@ -633,17 +634,18 @@ export function ManualAppointmentDialog({
               </label>
             </div>
 
-            <div className="v2-manual-row-single">
-              <label className="v2-field">
-                Email · opcional
-                <input
-                  type="email"
-                  placeholder="lucas@ejemplo.com"
-                  value={clientEmail}
-                  disabled={isBusy}
-                  onChange={(e) => setClientEmail(e.target.value)}
-                />
-              </label>
+              <div className="v2-manual-row-single">
+                <label className="v2-field">
+                  Email · opcional
+                  <input
+                    type="email"
+                    placeholder="lucas@ejemplo.com"
+                    value={clientEmail}
+                    disabled={isBusy}
+                    onChange={(e) => setClientEmail(e.target.value)}
+                  />
+                </label>
+              </div>
             </div>
           </div>
 

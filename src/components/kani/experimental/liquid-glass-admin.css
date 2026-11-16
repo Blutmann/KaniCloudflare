@@ -1652,8 +1652,8 @@ html[data-theme="dark"] body[data-lg-admin="true"] [role="dialog"] :is(
 html[data-theme] body[data-lg-admin="true"] .v2-dialog.v2-manual-dialog :is(.v2-manual-dialog-actions, .v2-manual-actions) {
   position: static !important;
   bottom: auto !important;
-  margin-top: 12px !important;
-  padding: 16px 0 calc(2px + env(safe-area-inset-bottom, 0px)) 0 !important;
+  margin-top: 0 !important;
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px)) 16px !important;
   border-top: 1px solid var(--lga-border) !important;
 }
 
@@ -1961,7 +1961,8 @@ html[data-theme] body[data-lg-admin="true"] .v2-manual-close-btn:hover {
 
 @media (max-width: 420px) {
   html[data-theme] body[data-lg-admin="true"] .v2-dialog.v2-manual-dialog .v2-manual-row {
-    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
   }
 }
 

@@ -3,6 +3,7 @@ import type { AuthenticatedStaff } from "@/lib/kani-auth";
 import { addCalendarDays, businessDateToday } from "@/lib/kani-mobile-appointments";
 import { isStaffOperator } from "@/lib/kani-permissions";
 import { notifyActivityChanged } from "@/lib/kani-admin-activity";
+import { services as KANI_MODEL_SERVICES } from "@/lib/kani-model";
 
 export type RecurrenceFrequencyType = "ONCE" | "DAILY" | "WEEKLY" | "BIWEEKLY" | "MONTHLY";
 export type RecurrenceEndType = "NEVER" | "UNTIL_DATE" | "AFTER_COUNT";
@@ -227,6 +228,45 @@ export const MEMBERSHIP_ALLOWED_SERVICES: MembershipAllowedServiceName[] = [
   "Barba",
   "Corte y barba",
 ];
+
+export const MEMBERSHIP_SERVICE_PRICES_ARS: Record<MembershipAllowedServiceName, number> = {
+  Corte: KANI_MODEL_SERVICES.find((s) => s.id === "corte")?.price ?? 25000,
+  Barba: KANI_MODEL_SERVICES.find((s) => s.id === "barba")?.price ?? 15000,
+  "Corte y barba": KANI_MODEL_SERVICES.find((s) => s.id === "corte-barba")?.price ?? 30000,
+};
+
+export type HomogeneousMembershipPackageId = "CORTE_4" | "BARBA_4" | "CORTE_BARBA_4";
+
+export const HOMOGENEOUS_MEMBERSHIP_PACKAGES: ReadonlyArray<{
+  id: HomogeneousMembershipPackageId;
+  label: string;
+  serviceName: MembershipAllowedServiceName;
+  packageSize: MembershipPackageSize;
+}> = [
+  { id: "CORTE_4", label: "4 cortes", serviceName: "Corte", packageSize: 4 },
+  { id: "BARBA_4", label: "4 barbas", serviceName: "Barba", packageSize: 4 },
+  {
+    id: "CORTE_BARBA_4",
+    label: "4 cortes y barbas",
+    serviceName: "Corte y barba",
+    packageSize: 4,
+  },
+];
+
+export function buildHomogeneousMembershipPricing(
+  packageId: HomogeneousMembershipPackageId,
+): MembershipPriceCalculation {
+  const pkg =
+    HOMOGENEOUS_MEMBERSHIP_PACKAGES.find((p) => p.id === packageId) ??
+    HOMOGENEOUS_MEMBERSHIP_PACKAGES[0];
+  return calculateMembershipPricing(pkg.packageSize, [
+    {
+      serviceName: pkg.serviceName,
+      quantity: pkg.packageSize,
+      unitPriceArs: MEMBERSHIP_SERVICE_PRICES_ARS[pkg.serviceName],
+    },
+  ]);
+}
 
 export const MEMBERSHIP_STATUS_LABELS: Record<MembershipStatus, string> = {
   PENDING_PAYMENT: "Pendiente de pago",

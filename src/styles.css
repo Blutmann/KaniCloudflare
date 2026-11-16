@@ -4919,8 +4919,8 @@ input[placeholder="Nombre, celular o email"]::placeholder {
   --tw-scale-x: 1 !important;
   --tw-scale-y: 1 !important;
   --tw-transform: none !important;
-  width: calc(var(--kani-vv-width, 100vw) - 32px) !important;
-  max-width: min(calc(var(--kani-vv-width, 100vw) - 32px), 520px) !important;
+  width: calc(var(--kani-vv-width, 100vw) - 24px) !important;
+  max-width: min(calc(var(--kani-vv-width, 100vw) - 24px), 520px) !important;
   height: fit-content !important;
   max-height: min(calc(var(--kani-vv-height, 100dvh) - 24px), calc(100vh - 24px)) !important;
   display: flex !important;
@@ -4961,9 +4961,22 @@ input[placeholder="Nombre, celular o email"]::placeholder {
 
 .benefit-code-dialog-header {
   flex-shrink: 0;
-  padding: 16px 48px 16px 20px;
+  padding: 16px 54px 14px 16px;
   border-bottom: 1px solid var(--border);
   position: relative;
+}
+
+.benefit-code-dialog-content > button:has(> .sr-only) {
+  top: 6px !important;
+  right: 6px !important;
+  min-width: 44px !important;
+  min-height: 44px !important;
+  width: 44px !important;
+  height: 44px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 9999px !important;
 }
 
 .benefit-code-dialog-form {

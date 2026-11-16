@@ -1058,8 +1058,8 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
           className="benefit-code-dialog-content sm:max-w-lg"
         >
           <div className="benefit-code-dialog-header">
-            <DialogTitle className="text-lg font-semibold flex items-center gap-2">
-              <Sparkles size={18} className="text-gold" />
+            <DialogTitle className="text-[1rem] sm:text-lg font-semibold leading-tight flex items-center gap-2">
+              <Sparkles size={18} className="hidden sm:inline-block text-gold shrink-0" />
               <span>Generar código de descuento</span>
             </DialogTitle>
             <DialogDescription className="sr-only">
@@ -1330,39 +1330,23 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                   </div>
                 </div>
 
-                {/* 4. Nota interna y Código personalizado */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
-                  <div className="space-y-1">
-                    <label htmlFor="create-internal-note" className="text-xs font-semibold text-foreground block">
-                      Nota interna (opcional):
-                    </label>
-                    <Input
-                      id="create-internal-note"
-                      value={internalNote}
-                      onChange={(e) => setInternalNote(e.target.value)}
-                      placeholder="Ej: Cortesía, campaña…"
-                      className="text-xs bg-background"
-                      maxLength={250}
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label htmlFor="create-custom-code" className="text-xs font-semibold text-foreground block">
-                      Código personalizado (opcional)
-                    </label>
-                    <Input
-                      id="create-custom-code"
-                      value={customCode}
-                      onChange={(e) => setCustomCode(e.target.value.toUpperCase())}
-                      placeholder="Ej: KANI-VIP-2026"
-                      className="text-xs font-mono uppercase bg-background"
-                      maxLength={32}
-                    />
-                  </div>
+                {/* 4. Código personalizado (opcional) */}
+                <div className="space-y-1">
+                  <label htmlFor="create-custom-code" className="text-xs font-semibold text-foreground block">
+                    Código personalizado (opcional)
+                  </label>
+                  <Input
+                    id="create-custom-code"
+                    value={customCode}
+                    onChange={(e) => setCustomCode(e.target.value.toUpperCase())}
+                    placeholder="Ej: KANI-VIP-2026"
+                    className="text-xs font-mono uppercase bg-background"
+                    maxLength={32}
+                  />
+                  <span className="hidden sm:block text-[11px] text-muted-foreground">
+                    Si se deja vacío, el sistema generará un código seguro e irrepetible.
+                  </span>
                 </div>
-                <span className="hidden sm:block text-[11px] text-muted-foreground -mt-1">
-                  Si se deja el código vacío, el sistema generará un código seguro e irrepetible.
-                </span>
 
                 {createError && (
                   <div className="p-2.5 rounded bg-destructive/10 text-destructive text-xs flex items-center gap-2">

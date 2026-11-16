@@ -10,7 +10,9 @@ import { isStaffOperator } from "@/lib/kani-permissions";
 import { businessDateToday, addCalendarDays } from "@/lib/kani-mobile-appointments";
 import { money, dateLabel, formatServiceName } from "@/lib/kani-model";
 import {
-  calculateMembershipPricing,
+  HOMOGENEOUS_MEMBERSHIP_PACKAGES,
+  MEMBERSHIP_SERVICE_PRICES_ARS,
+  buildHomogeneousMembershipPricing,
   consumeMembershipSession,
   createClientMembership,
   regenerateMembershipPublicToken,
@@ -20,10 +22,9 @@ import {
   registerMembershipPayment,
   updateClientMembershipDetails,
   type ClientMembershipRecord,
+  type HomogeneousMembershipPackageId,
   type KaniMembershipPaymentMethod,
-  type MembershipAllowedServiceName,
   type MembershipConsumptionType,
-  type MembershipPackageSize,
   type MembershipStatus,
 } from "@/lib/kani-recurrences-memberships";
 import { BenefitCodesAdminSection } from "@/components/kani/admin-benefit-codes-section";
@@ -33,12 +34,6 @@ import { useV2 } from "./data";
 import { V2Discounts } from "./discounts";
 import { EditMembershipModal, MembershipCard } from "./MembershipCard";
 import { AdminFilterCell, AdminFilterPanel, Empty, Metric } from "./shared";
-
-const SERVICE_DEFAULT_PRICES: Record<MembershipAllowedServiceName, number> = {
-  Corte: 25000,
-  Barba: 19000,
-  "Corte y barba": 28000,
-};
 
 export function V2MembershipsAndDiscounts({
   initialTab = "MEMBRESIAS",
@@ -80,15 +75,12 @@ export function V2MembershipsAndDiscounts({
       ? staff.profile.barber_id
       : (staff.barbers[0]?.id ?? "lautaro"),
   );
-  const [packageSize, setPackageSize] = useState<MembershipPackageSize>(4);
-  const [qtyCorte, setQtyCorte] = useState<number>(4);
-  const [qtyBarba, setQtyBarba] = useState<number>(0);
-  const [qtyCorteBarba, setQtyCorteBarba] = useState<number>(0);
+  const [selectedPackageId, setSelectedPackageId] =
+    useState<HomogeneousMembershipPackageId>("CORTE_4");
   const [expirationMode, setExpirationMode] = useState<"NONE" | "DATE">("NONE");
   const [expiresAt, setExpiresAt] = useState(addCalendarDays(today, 90));
   const [payImmediately, setPayImmediately] = useState(true);
   const [paymentMethod, setPaymentMethod] = useState<KaniMembershipPaymentMethod>("Transferencia");
-  const [createNotes, setCreateNotes] = useState("");
 
   // Detail & Unified Edit Modal
   const [detailMembershipId, setDetailMembershipId] = useState<string | null>(null);
@@ -177,57 +169,32 @@ export function V2MembershipsAndDiscounts({
     .filter((m) => m.status === "ACTIVE")
     .reduce((acc, m) => acc + m.remainingSessions, 0);
 
-  const currentQuantitySum = qtyCorte + qtyBarba + qtyCorteBarba;
-
-  const livePricing = useMemo(() => {
-    const items = [
-      {
-        serviceName: "Corte" as const,
-        quantity: qtyCorte,
-        unitPriceArs: SERVICE_DEFAULT_PRICES.Corte,
-      },
-      {
-        serviceName: "Barba" as const,
-        quantity: qtyBarba,
-        unitPriceArs: SERVICE_DEFAULT_PRICES.Barba,
-      },
-      {
-        serviceName: "Corte y barba" as const,
-        quantity: qtyCorteBarba,
-        unitPriceArs: SERVICE_DEFAULT_PRICES["Corte y barba"],
-      },
-    ].filter((i) => i.quantity > 0);
-    return calculateMembershipPricing(packageSize, items);
-  }, [packageSize, qtyCorte, qtyBarba, qtyCorteBarba]);
+  const livePricing = useMemo(
+    () => buildHomogeneousMembershipPricing(selectedPackageId),
+    [selectedPackageId],
+  );
 
   const detailMembership = useMemo(
     () => (data.memberships ?? []).find((m) => m.id === detailMembershipId) ?? null,
     [data.memberships, detailMembershipId],
   );
 
-  function handlePackageSizeChange(next: MembershipPackageSize) {
-    setPackageSize(next);
-    setQtyCorte(next);
-    setQtyBarba(0);
-    setQtyCorteBarba(0);
-  }
-
   function openRenewalModal(m: ClientMembershipRecord) {
     setExhaustedMembership(null);
     setConfirmEndRecurrence(false);
     setClientId(m.clientId);
     setBarberId(m.barberId || staff.profile.barber_id || (staff.barbers[0]?.id ?? "lautaro"));
-    setPackageSize(m.packageSize);
-    const c = m.items.find((i) => i.serviceName === "Corte")?.totalQuantity ?? m.packageSize;
-    const b = m.items.find((i) => i.serviceName === "Barba")?.totalQuantity ?? 0;
-    const cb = m.items.find((i) => i.serviceName === "Corte y barba")?.totalQuantity ?? 0;
-    setQtyCorte(c);
-    setQtyBarba(b);
-    setQtyCorteBarba(cb);
+    const primaryService = m.items[0]?.serviceName;
+    setSelectedPackageId(
+      primaryService === "Barba"
+        ? "BARBA_4"
+        : primaryService === "Corte y barba"
+          ? "CORTE_BARBA_4"
+          : "CORTE_4",
+    );
     setExpirationMode(m.expiresAt ? "DATE" : "NONE");
     setExpiresAt(addCalendarDays(today, 90));
     setPayImmediately(true);
-    setCreateNotes(`Renovación de ${m.planName}`);
     setCreateOpen(true);
   }
 
@@ -250,14 +217,14 @@ export function V2MembershipsAndDiscounts({
         {
           clientId,
           barberId,
-          packageSize,
+          packageSize: livePricing.packageSize,
           items: livePricing.items.map((item) => ({
             serviceName: item.serviceName,
             quantity: item.quantity,
             unitPriceArs: item.unitPriceArs,
           })),
           expiresAt: expirationMode === "DATE" ? expiresAt : null,
-          notes: createNotes.trim() || null,
+          notes: null,
           paymentNow: payImmediately,
           paymentMethod,
         },
@@ -265,6 +232,8 @@ export function V2MembershipsAndDiscounts({
         client ? { name: client.name, phone: client.phone, email: client.email } : undefined,
       );
       setCreateOpen(false);
+      setClientId("");
+      setSelectedPackageId("CORTE_4");
       setNotice(
         payImmediately
           ? "Membresía creada y activada con pago registrado."
@@ -769,67 +738,15 @@ export function V2MembershipsAndDiscounts({
                 <AdminContextualSelect
                   id="membership-package-select"
                   ariaLabel="Tipo de membresía"
-                  value={String(packageSize)}
+                  value={selectedPackageId}
                   onValueChange={(val) =>
-                    handlePackageSizeChange((Number(val) === 10 ? 10 : 4) as MembershipPackageSize)
+                    setSelectedPackageId(val as HomogeneousMembershipPackageId)
                   }
-                  options={[
-                    { value: "4", label: "Membresía 4 servicios (20% de descuento)" },
-                    { value: "10", label: "Membresía 10 servicios (30% de descuento)" },
-                  ]}
+                  options={HOMOGENEOUS_MEMBERSHIP_PACKAGES.map((pkg) => ({
+                    value: pkg.id,
+                    label: `${pkg.label} (${money(MEMBERSHIP_SERVICE_PRICES_ARS[pkg.serviceName])} c/u · 20% OFF)`,
+                  }))}
                 />
-              </div>
-
-              <div className="v2-membership-comp-card">
-                <div className="v2-membership-comp-header">
-                  <strong>Servicios incluidos</strong>
-                  <span
-                    style={{
-                      color: currentQuantitySum === packageSize ? "#10b981" : "#eab308",
-                      fontWeight: 600,
-                    }}
-                  >
-                    {currentQuantitySum} / {packageSize} sesiones
-                  </span>
-                </div>
-                <div className="v2-membership-comp-rows">
-                  <label className="v2-membership-comp-row">
-                    <span className="v2-membership-comp-name">
-                      Corte <small>({money(25000)})</small>
-                    </span>
-                    <input
-                      type="number"
-                      min={0}
-                      max={packageSize}
-                      value={qtyCorte}
-                      onChange={(e) => setQtyCorte(Math.max(0, Number(e.target.value) || 0))}
-                    />
-                  </label>
-                  <label className="v2-membership-comp-row">
-                    <span className="v2-membership-comp-name">
-                      Barba <small>({money(19000)})</small>
-                    </span>
-                    <input
-                      type="number"
-                      min={0}
-                      max={packageSize}
-                      value={qtyBarba}
-                      onChange={(e) => setQtyBarba(Math.max(0, Number(e.target.value) || 0))}
-                    />
-                  </label>
-                  <label className="v2-membership-comp-row">
-                    <span className="v2-membership-comp-name">
-                      Corte y barba <small>({money(28000)})</small>
-                    </span>
-                    <input
-                      type="number"
-                      min={0}
-                      max={packageSize}
-                      value={qtyCorteBarba}
-                      onChange={(e) => setQtyCorteBarba(Math.max(0, Number(e.target.value) || 0))}
-                    />
-                  </label>
-                </div>
               </div>
 
               <div className="v2-membership-summary-card">
@@ -874,16 +791,16 @@ export function V2MembershipsAndDiscounts({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 <div className="v2-field min-w-0">
                   <label htmlFor="membership-payment-status" className="v2-field-label">
-                    Estado de pago inicial
+                    Estado de pago
                   </label>
                   <AdminContextualSelect
                     id="membership-payment-status"
-                    ariaLabel="Estado de pago inicial"
+                    ariaLabel="Estado de pago"
                     value={payImmediately ? "PAID" : "PENDING"}
                     onValueChange={(val) => setPayImmediately(val === "PAID")}
                     options={[
-                      { value: "PAID", label: "Registrar pago completo ahora (Activa)" },
-                      { value: "PENDING", label: "Dejar Pendiente de pago" },
+                      { value: "PAID", label: "Pagada ahora (Activa)" },
+                      { value: "PENDING", label: "Pendiente de pago" },
                     ]}
                   />
                 </div>
@@ -905,16 +822,6 @@ export function V2MembershipsAndDiscounts({
                   </label>
                 )}
               </div>
-
-              <label className="v2-field min-w-0">
-                <span className="v2-field-label">Notas (opcional)</span>
-                <input
-                  type="text"
-                  value={createNotes}
-                  onChange={(e) => setCreateNotes(e.target.value)}
-                  placeholder="Detalle de acuerdo o referencia"
-                />
-              </label>
             </div>
 
             <div className="v2-dialog-actions v2-modal-pinned-footer">
