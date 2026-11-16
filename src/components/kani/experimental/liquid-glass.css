@@ -11661,6 +11661,8 @@ html[data-theme] body.liquid-glass-active :is([data-slot="dialog-content"], .pay
   top: 50% !important;
   right: auto !important;
   bottom: auto !important;
+  --tw-translate-x: 0px !important;
+  --tw-translate-y: 0px !important;
   translate: none !important;
   transform: translate3d(-50%, -50%, 0) !important;
   margin: 0 !important;
@@ -11721,6 +11723,8 @@ html[data-theme] body.liquid-glass-active :is([data-slot="dialog-content"], .pay
     top: 50% !important;
     right: auto !important;
     bottom: auto !important;
+    --tw-translate-x: 0px !important;
+    --tw-translate-y: 0px !important;
     translate: none !important;
     transform: translate3d(-50%, -50%, 0) !important;
     margin: 0 !important;
@@ -11743,6 +11747,42 @@ html[data-theme] body.liquid-glass-active :is([data-slot="dialog-content"], .pay
     max-width: min(calc(100% - 24px), calc(100vw - 24px), 500px) !important;
     padding: 18px 14px !important;
     padding-bottom: max(18px, env(safe-area-inset-bottom, 18px)) !important;
+  }
+}
+
+/* V12.47.15.1 · Smart Booking Recovery Modal (Desktop ~500px + Mobile visualViewport & safe areas) */
+html[data-theme] body.liquid-glass-active [data-slot="dialog-content"].booking-recovery-modal {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0 !important;
+  left: calc(var(--kani-vv-left, 0px) + var(--kani-vv-width, 100vw) / 2) !important;
+  top: calc(var(--kani-vv-top, 0px) + var(--kani-vv-height, 100dvh) / 2) !important;
+  --tw-translate-x: 0px !important;
+  --tw-translate-y: 0px !important;
+  translate: none !important;
+  transform: translate3d(-50%, -50%, 0) !important;
+  width: min(
+    500px,
+    calc(var(--kani-vv-width, 100vw) - max(32px, env(safe-area-inset-left, 0px) + env(safe-area-inset-right, 0px)))
+  ) !important;
+  max-width: min(
+    500px,
+    calc(var(--kani-vv-width, 100vw) - max(32px, env(safe-area-inset-left, 0px) + env(safe-area-inset-right, 0px)))
+  ) !important;
+  max-height: calc(
+    var(--kani-vv-height, 100dvh) - max(32px, env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px))
+  ) !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+  padding: 28px 28px !important;
+  padding-bottom: max(28px, env(safe-area-inset-bottom, 28px)) !important;
+}
+
+@media (max-width: 640px) {
+  html[data-theme] body.liquid-glass-active [data-slot="dialog-content"].booking-recovery-modal {
+    padding: 20px 18px !important;
+    padding-bottom: max(20px, env(safe-area-inset-bottom, 20px)) !important;
   }
 }
 
