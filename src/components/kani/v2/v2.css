@@ -1151,8 +1151,11 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
   color: var(--muted-foreground);
 }
 .v2-dialog {
-  max-height: 88dvh;
+  max-height: calc(var(--kani-vv-height, 100dvh) - max(24px, env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px)));
   overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   border-radius: var(--radius-card);
   border-color: var(--border);
   background: var(--popover);
@@ -1534,9 +1537,9 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
     gap: 18px;
   }
   .v2-dialog {
-    max-width: calc(100% - 32px);
-    max-height: 88dvh;
-    padding: 20px;
+    max-width: calc(var(--kani-vv-width, 100vw) - 24px);
+    max-height: calc(var(--kani-vv-height, 100dvh) - max(24px, env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px)));
+    padding: 18px;
   }
   .v2-dialog .v2-metric {
     padding: 10px;
@@ -2919,6 +2922,8 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
   z-index: 50;
   max-height: 200px;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
@@ -3008,17 +3013,17 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
    ========================================================================== */
 .v2-dialog.v2-manual-dialog {
   position: fixed !important;
-  top: 50% !important;
-  left: 50% !important;
+  top: calc(var(--kani-vv-top, 0px) + var(--kani-vv-height, 100dvh) / 2) !important;
+  left: calc(var(--kani-vv-left, 0px) + var(--kani-vv-width, 100vw) / 2) !important;
   right: auto !important;
   bottom: auto !important;
   --tw-translate-x: 0px !important;
   --tw-translate-y: 0px !important;
   transform: translate(-50%, -50%) !important;
-  width: min(calc(100vw - 24px), 520px) !important;
+  width: min(calc(var(--kani-vv-width, 100vw) - 24px), 520px) !important;
   max-width: 520px !important;
   height: auto !important;
-  max-height: calc(100dvh - 24px) !important;
+  max-height: calc(var(--kani-vv-height, 100dvh) - max(24px, env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px))) !important;
   margin: 0 !important;
   padding: 0 !important;
   gap: 0 !important;
@@ -3181,9 +3186,15 @@ html[data-theme="dark"] .v2-shell .action-confirm:hover:not(:disabled) {
   }
 
   .v2-dialog.v2-manual-dialog {
-    width: calc(100vw - 16px) !important;
+    width: calc(var(--kani-vv-width, 100vw) - 16px) !important;
     max-width: 520px !important;
-    max-height: calc(100dvh - 16px) !important;
+    max-height: calc(var(--kani-vv-height, 100dvh) - max(16px, env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px))) !important;
+  }
+
+  .v2-dialog :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea),
+  .v2-manual-dialog .v2-field :is(input, select),
+  .v2-manual-dialog .v2-client-quick-search input {
+    font-size: 16px !important;
   }
 
   .v2-manual-dialog-actions button,

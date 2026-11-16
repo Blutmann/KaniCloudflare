@@ -5,6 +5,7 @@ import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { useVisualViewportDialog } from "@/hooks/use-visual-viewport-dialog";
 
 const Dialog = DialogPrimitive.Root;
 
@@ -33,26 +34,29 @@ DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & { overlayClassName?: string; closeLabel?: string; showCloseButton?: boolean }
->(({ className, overlayClassName, closeLabel = "Close", showCloseButton = true, children, ...props }, ref) => (
-  <DialogPortal>
-    <DialogOverlay className={overlayClassName} />
-    <DialogPrimitive.Content
-      ref={ref}
-      data-slot="dialog-content"
-      className={cn(
-        "fixed left-[50%] top-[50%] z-[200] grid w-[calc(100%-32px)] max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:w-full sm:rounded-lg",
-        className,
-      )}
-      {...props}
-    >
-      {children}
-      {showCloseButton && <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background cursor-pointer transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
-        <X className="h-4 w-4" />
-        <span className="sr-only">{closeLabel}</span>
-      </DialogPrimitive.Close>}
-    </DialogPrimitive.Content>
-  </DialogPortal>
-));
+>(({ className, overlayClassName, closeLabel = "Close", showCloseButton = true, children, ...props }, ref) => {
+  const mergedRef = useVisualViewportDialog(ref);
+  return (
+    <DialogPortal>
+      <DialogOverlay className={overlayClassName} />
+      <DialogPrimitive.Content
+        ref={mergedRef}
+        data-slot="dialog-content"
+        className={cn(
+          "fixed left-[calc(var(--kani-vv-left,0px)+var(--kani-vv-width,100vw)/2)] top-[calc(var(--kani-vv-top,0px)+var(--kani-vv-height,100dvh)/2)] z-[200] grid w-[calc(100%-24px)] max-w-[min(32rem,calc(var(--kani-vv-width,100vw)-max(24px,env(safe-area-inset-left,0px)+env(safe-area-inset-right,0px))))] max-h-[calc(var(--kani-vv-height,100dvh)-max(24px,env(safe-area-inset-top,0px)+env(safe-area-inset-bottom,0px)))] translate-x-[-50%] translate-y-[-50%] gap-4 overflow-y-auto overflow-x-hidden overscroll-contain rounded-2xl border bg-background p-5 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:w-full sm:rounded-lg sm:p-6",
+          className,
+        )}
+        {...props}
+      >
+        {children}
+        {showCloseButton && <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background cursor-pointer transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
+          <X className="h-4 w-4" />
+          <span className="sr-only">{closeLabel}</span>
+        </DialogPrimitive.Close>}
+      </DialogPrimitive.Content>
+    </DialogPortal>
+  );
+});
 DialogContent.displayName = DialogPrimitive.Content.displayName;
 
 const DialogHeader = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (

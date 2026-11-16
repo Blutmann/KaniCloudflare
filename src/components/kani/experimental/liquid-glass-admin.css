@@ -1550,20 +1550,43 @@ html[data-theme] body[data-lg-admin="true"] :is(
 }
 
 html[data-theme] body[data-lg-admin="true"] [role="dialog"]:not(.v2-client-modal):not(.notification-popover):not(.kani-notif-confirm-dialog) {
+  top: calc(var(--kani-vv-top, 0px) + var(--kani-vv-height, 100dvh) / 2) !important;
+  left: calc(var(--kani-vv-left, 0px) + var(--kani-vv-width, 100vw) / 2) !important;
   width: min(
     540px,
-    calc(100vw - max(24px, env(safe-area-inset-left, 0px) + env(safe-area-inset-right, 0px)))
+    calc(var(--kani-vv-width, 100vw) - max(24px, env(safe-area-inset-left, 0px) + env(safe-area-inset-right, 0px)))
   ) !important;
-  max-width: calc(100vw - 24px) !important;
-  max-height: calc(100dvh - max(24px, env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px))) !important;
+  max-width: calc(
+    var(--kani-vv-width, 100vw) - max(24px, env(safe-area-inset-left, 0px) + env(safe-area-inset-right, 0px))
+  ) !important;
+  max-height: calc(
+    var(--kani-vv-height, 100dvh) - max(24px, env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px))
+  ) !important;
   overflow-y: auto !important;
   overflow-x: hidden !important;
   overscroll-behavior: contain !important;
+  -webkit-overflow-scrolling: touch;
   padding: 22px !important;
 }
 
+@media (max-width: 420px) {
+  html[data-theme] body[data-lg-admin="true"] [role="dialog"]:not(.v2-client-modal):not(.notification-popover):not(.kani-notif-confirm-dialog):not(.v2-manual-dialog):not(.benefit-code-dialog-content) {
+    padding: 16px !important;
+  }
+}
+
+@media (max-width: 767px), (hover: none) and (pointer: coarse) {
+  html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(
+    input:not([type="checkbox"]):not([type="radio"]),
+    select,
+    textarea
+  ) {
+    font-size: 16px !important;
+  }
+}
+
 html[data-theme] body[data-lg-admin="true"] [role="dialog"]:is(.kani-medit-dialog, .v2-medit-modal) {
-  width: min(640px, calc(100vw - 24px)) !important;
+  width: min(640px, calc(var(--kani-vv-width, 100vw) - 24px)) !important;
 }
 
 html[data-theme] body[data-lg-admin="true"] [role="dialog"].v2-dialog.v2-manual-dialog {
