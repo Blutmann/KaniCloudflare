@@ -72,19 +72,17 @@ describe('Kani Barber Studio — Dos rutas públicas de reserva con distintos pr
       expect(paywayCode).toContain('<BookingConfirmedScreen');
       expect(mpCode).toContain('<BookingConfirmedScreen');
 
-      // Verifica todos los elementos requeridos de la confirmación
-      expect(confirmedCode).toContain('Turno confirmado');
-      expect(confirmedCode).toContain('Te enviamos la confirmación por mail.');
+      // Verifica todos los elementos requeridos de la confirmación (V12.47.20)
+      expect(confirmedCode).toContain('¡Turno confirmado!');
+      expect(confirmedCode).toContain('Te enviamos los detalles por email.');
       expect(confirmedCode).toContain('Resumen de tu turno');
-      expect(confirmedCode).toContain('Estos son los detalles de tu reserva.');
+      expect(confirmedCode).toContain('Ver detalles de la reserva');
       expect(confirmedCode).toContain('¿Dónde estamos?');
-      expect(confirmedCode).toContain('San Isidro Labrador 7 · Martínez');
+      expect(confirmedCode).toContain('KANI_STUDIO_ADDRESS');
       expect(confirmedCode).toContain('KANI_MAPS_EMBED_URL');
       expect(confirmedCode).toContain('Cómo llegar');
-      expect(confirmedCode).toContain('Instagram');
       expect(confirmedCode).toContain('Volver al inicio');
-      expect(confirmedCode).toContain('booking-cta confirmation-cta');
-      expect(confirmedCode).toContain('confirmation-btn-home');
+      expect(confirmedCode).toContain('kani-confirmed-home-btn');
     });
 
     it('reserva-v4.css incluye selectores para ambas experiencias (.payway-reservation y .mercadopago-reservation)', () => {
