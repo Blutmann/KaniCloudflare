@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Check, CheckCircle2, CircleAlert, HelpCircle, Instagram, Loader2, MapPin, X } from 'lucide-react';
 import { Booking, mapBenefitErrorMessage, type BookingPaymentDraft } from '@/components/kani/booking';
+import { clearBookingDraft } from '@/lib/kani-booking-draft';
 import { validateBenefitCodeQuoteFn } from '@/lib/kani-benefit-codes.functions';
 import { normalizeBenefitCode, type BenefitQuote } from '@/lib/kani-benefit-codes';
 import { Button } from '@/components/ui/button';
@@ -135,6 +136,7 @@ function readPaidAppointments(): Set<string> {
 }
 
 function persistConfirmedBooking(booking: ConfirmedPaywayBooking) {
+  clearBookingDraft();
   if (typeof window === 'undefined') return;
   try {
     window.sessionStorage.setItem(CONFIRMED_STORAGE_KEY, JSON.stringify(booking));
@@ -1104,6 +1106,7 @@ export function PaywayBooking({
         }
         isPaymentChecking={isPaymentChecking}
         hasActivePaymentAttempt={hasPendingPayment || hasReviewNotice || result?.state === 'unknown'}
+        suppressDraftRecovery={Boolean(initialAttempt || hasPendingPayment || hasReviewNotice || isPaymentChecking || confirmed || open)}
         initialStep={initialAttempt ? 4 : undefined}
         initialService={
           initialAttempt?.serviceName?.toLowerCase().includes('barba') && !initialAttempt?.serviceName?.toLowerCase().includes('corte')

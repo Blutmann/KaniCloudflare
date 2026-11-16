@@ -51,6 +51,8 @@ const SLOTS_BY_BARBER: Record<string, PublicAvailabilityStart[]> = {
 describe('KANI V12.47.13 — Disponibilidad al cambiar de barbero en /reservar (Liquid Glass)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    window.localStorage.clear();
+    window.sessionStorage.clear();
     mocks.readPublicBookingBarbers.mockResolvedValue([
       { id: 'id-lautaro', name: 'Lautaro' },
       { id: 'id-valentin', name: 'Valentín' },

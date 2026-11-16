@@ -13,6 +13,15 @@ import { getDynamicDownPayment } from '@/lib/kani-down-payment';
 import { createBookingOrderFn } from '@/lib/kani-mercadopago.functions';
 import { normalizePhone, type PhoneCountry } from '@/lib/kani-phone';
 import { attachMobileProgressiveFieldScroll } from '@/lib/kani-mobile-field-scroll';
+import {
+  clearBookingDraft,
+  isValidBookingEmail,
+  isValidBookingName,
+  readValidBookingDraft,
+  saveBookingDraft,
+  type BookingDraftV1,
+} from '@/lib/kani-booking-draft';
+import { BookingRecoveryModal, type BookingRecoveryModalMode } from '@/components/kani/booking-recovery-modal';
 const PhoneInput = lazy(() => import('@/components/kani/phone-input').then(m => ({ default: m.PhoneInput })));
 import { useKani } from '@/components/kani/store';
 import { BookingStepHeading } from '@/components/kani/booking-step-heading';
@@ -60,8 +69,8 @@ type FieldStatus = 'idle' | 'valid' | 'invalid';
 function fieldStatus(field: ContactField, values: ContactValues, country: PhoneCountry, touched: boolean): FieldStatus {
   if (!touched) return 'idle';
   if (field === 'notes') return values.notes.trim() ? 'valid' : 'idle';
-  if (field === 'name') return values.name.trim().length >= 3 ? 'valid' : 'invalid';
-  if (field === 'email') return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email.trim()) ? 'valid' : 'invalid';
+  if (field === 'name') return isValidBookingName(values.name) ? 'valid' : 'invalid';
+  if (field === 'email') return isValidBookingEmail(values.email) ? 'valid' : 'invalid';
   return normalizePhone(values.phone, country) ? 'valid' : 'invalid';
 }
 
@@ -168,6 +177,7 @@ export function Booking({
   paymentNotice,
   isPaymentChecking = false,
   hasActivePaymentAttempt = false,
+  suppressDraftRecovery = false,
   initialStep,
   initialService,
   initialBarber,
@@ -185,6 +195,7 @@ export function Booking({
   paymentNotice?: ReactNode;
   isPaymentChecking?: boolean;
   hasActivePaymentAttempt?: boolean;
+  suppressDraftRecovery?: boolean;
   initialStep?: number;
   initialService?: ServiceId;
   initialBarber?: Barber;
@@ -316,7 +327,124 @@ export function Booking({
   const deferredVerifySeqRef = useRef(0);
   const lastLoadedAvailabilityKeyRef = useRef<string | null>(null);
   const inFlightAvailabilityRef = useRef<{ key: string; promise: Promise<PublicAvailabilityStart[]> } | null>(null);
+  const [recoveryModalMode, setRecoveryModalMode] = useState<BookingRecoveryModalMode>('closed');
+  const [recoveryDraft, setRecoveryDraft] = useState<BookingDraftV1 | null>(null);
+  const [recoveryErrorMessage, setRecoveryErrorMessage] = useState('');
+  const [recoveryDismissedThisVisit, setRecoveryDismissedThisVisit] = useState(false);
+  const [recoveryBenefitNotice, setRecoveryBenefitNotice] = useState('');
+  const [recoveryBarberNotice, setRecoveryBarberNotice] = useState('');
+  const lastMeaningfulActivityAtRef = useRef<number | null>(null);
+  const draftSaveTimerRef = useRef<number | null>(null);
+  const recoveryCheckDoneRef = useRef(false);
   const visibleStep = isV2 && step > 2 ? step - 1 : step;
+
+  const markMeaningfulActivity = useCallback(() => {
+    lastMeaningfulActivityAtRef.current = Date.now();
+    if (recoveryDismissedThisVisit) {
+      setRecoveryDismissedThisVisit(false);
+      setRecoveryDraft(null);
+    }
+    setRecoveryBenefitNotice('');
+    setRecoveryBarberNotice('');
+  }, [recoveryDismissedThisVisit]);
+
+  useEffect(() => {
+    if (recoveryCheckDoneRef.current) return;
+    if (
+      suppressDraftRecovery ||
+      hasActivePaymentAttempt ||
+      initialStep !== undefined ||
+      initialService !== undefined ||
+      initialBarber !== undefined ||
+      initialDate !== undefined ||
+      initialTime !== undefined
+    ) {
+      recoveryCheckDoneRef.current = true;
+      return;
+    }
+    if (typeof window !== 'undefined') {
+      try {
+        if (
+          window.sessionStorage.getItem('kani:payway:active-attempt') ||
+          window.sessionStorage.getItem('kani:payway:confirmed-booking')
+        ) {
+          recoveryCheckDoneRef.current = true;
+          return;
+        }
+      } catch {
+        // Ignore sessionStorage restrictions
+      }
+    }
+    recoveryCheckDoneRef.current = true;
+    const stored = readValidBookingDraft();
+    if (stored) {
+      setRecoveryDraft(stored);
+      setRecoveryModalMode('prompt');
+    }
+  }, [hasActivePaymentAttempt, initialBarber, initialDate, initialService, initialStep, initialTime, suppressDraftRecovery]);
+
+  useEffect(() => {
+    if (returnStatus === 'CONFIRMED') {
+      lastMeaningfulActivityAtRef.current = null;
+      if (draftSaveTimerRef.current !== null) {
+        window.clearTimeout(draftSaveTimerRef.current);
+        draftSaveTimerRef.current = null;
+      }
+      clearBookingDraft();
+    }
+  }, [returnStatus]);
+
+  useEffect(() => {
+    if (
+      lastMeaningfulActivityAtRef.current === null ||
+      suppressDraftRecovery ||
+      hasActivePaymentAttempt ||
+      returnStatus === 'CONFIRMED'
+    ) {
+      return;
+    }
+    if (draftSaveTimerRef.current !== null) {
+      window.clearTimeout(draftSaveTimerRef.current);
+    }
+    const activityAt = lastMeaningfulActivityAtRef.current;
+    draftSaveTimerRef.current = window.setTimeout(() => {
+      draftSaveTimerRef.current = null;
+      saveBookingDraft({
+        service,
+        barber: barberDeferred ? null : barber,
+        barberDeferred,
+        date,
+        time,
+        name: contact.name,
+        phone: contact.phone,
+        phoneCountry,
+        email: contact.email,
+        benefitCode: appliedBenefit?.code ?? null,
+        lastMeaningfulActivityAt: activityAt,
+      });
+    }, 250);
+
+    return () => {
+      if (draftSaveTimerRef.current !== null) {
+        window.clearTimeout(draftSaveTimerRef.current);
+        draftSaveTimerRef.current = null;
+      }
+    };
+  }, [
+    appliedBenefit?.code,
+    barber,
+    barberDeferred,
+    contact.email,
+    contact.name,
+    contact.phone,
+    date,
+    hasActivePaymentAttempt,
+    phoneCountry,
+    returnStatus,
+    service,
+    suppressDraftRecovery,
+    time,
+  ]);
 
   useEffect(() => {
     if (!isV2 || step !== 2 || !revealTimesRef.current || barberDeferred) return;
@@ -642,6 +770,7 @@ export function Booking({
               at: Date.now(),
             });
             setAppliedBenefit(quote);
+            markMeaningfulActivity();
             setBenefitErrorMessage(null);
             setBypassedInvalidCode(null);
             if (options?.showSuccessBanner) {
@@ -980,7 +1109,198 @@ export function Booking({
     if (status === 'idle') return null;
     return <span className={`field-validation-icon ${status}`} aria-hidden="true">{status === 'valid' ? <Check size={14} /> : <CircleAlert size={14} />}</span>;
   };
+  async function resumeDraftWithBackendCheck(draft: BookingDraftV1) {
+    setRecoveryModalMode('verifying');
+    setRecoveryErrorMessage('');
+    try {
+      const enabledBarbers = await readPublicBookingBarbers();
+      const enabledNames = enabledBarbers.map(b => b.name);
+      setPublicBarbers(enabledNames);
+
+      const targetBarberAllowed = draft.barberDeferred
+        ? enabledNames.length > 0
+        : Boolean(draft.barber && enabledNames.includes(draft.barber));
+      const effectiveBarber = draft.barberDeferred ? null : targetBarberAllowed ? draft.barber : null;
+
+      let nextBenefitCode = '';
+      let nextAppliedBenefit: BenefitQuote | null = null;
+      let benefitWasRejected = false;
+      const targetServiceId = draft.service;
+      const targetServiceName = targetServiceId
+        ? configuredServices.find(item => item.id === targetServiceId)?.name ?? serviceFor(targetServiceId).name
+        : 'Corte';
+
+      if (draft.benefitCode) {
+        try {
+          const quote = await validateBenefitCodeQuoteFn({
+            data: {
+              code: draft.benefitCode,
+              serviceName: targetServiceName,
+              barberName: effectiveBarber ?? undefined,
+            },
+          });
+          if (quote?.valid) {
+            nextBenefitCode = quote.code;
+            nextAppliedBenefit = quote;
+          } else {
+            benefitWasRejected = true;
+          }
+        } catch {
+          benefitWasRejected = true;
+        }
+      }
+
+      if (!targetBarberAllowed) {
+        setService(targetServiceId);
+        setBarber(null);
+        setBarberDeferred(false);
+        setDate('');
+        setTime('');
+        setPublicSlots([]);
+        lastLoadedAvailabilityKeyRef.current = null;
+        setContact(current => ({
+          ...current,
+          name: draft.name ?? '',
+          phone: draft.phone ?? '',
+          email: draft.email ?? '',
+        }));
+        if (draft.phoneCountry) setPhoneCountry(draft.phoneCountry);
+        setBenefitCodeInput(nextBenefitCode);
+        setAppliedBenefit(nextAppliedBenefit);
+        setBenefitErrorMessage(null);
+        setRecoveryBenefitNotice(benefitWasRejected ? 'El descuento anterior ya no está disponible.' : '');
+        setRecoveryBarberNotice('El profesional que habías elegido ya no está disponible. Elegí otro para continuar.');
+        setRecoveryDraft(null);
+        setRecoveryDismissedThisVisit(false);
+        setRecoveryModalMode('closed');
+        lastMeaningfulActivityAtRef.current = Date.now();
+        move(targetServiceId ? 1 : 0);
+        return;
+      }
+
+      const starts = await readPublicAvailabilityStarts(effectiveBarber, todayValue, bookingEndValue);
+      const filteredStarts = starts.filter(slot => enabledNames.includes(slot.barber_name));
+      const queryKey = `${effectiveBarber ?? 'ANY'}|${todayValue}|${bookingEndValue}|${enabledNames.join(',')}`;
+
+      const checkNow = new Date();
+      const checkClock = clock > checkNow ? clock : checkNow;
+      const dateTimes = draft.date
+        ? availabilityStartTimesForServiceDate(filteredStarts, draft.date, targetServiceName, checkClock, effectiveBarber)
+        : [];
+      const hasValidDate = Boolean(draft.date && dateTimes.length > 0);
+      const hasValidTime = Boolean(draft.date && draft.time && dateTimes.includes(draft.time));
+
+      setService(targetServiceId);
+      setBarber(draft.barberDeferred ? null : draft.barber);
+      setBarberDeferred(draft.barberDeferred);
+      setPublicSlots(filteredStarts);
+      lastLoadedAvailabilityKeyRef.current = queryKey;
+      setAvailabilityLoading(false);
+      setAvailabilityRefreshing(false);
+      setAvailabilityError('');
+      setContact(current => ({
+        ...current,
+        name: draft.name ?? '',
+        phone: draft.phone ?? '',
+        email: draft.email ?? '',
+      }));
+      if (draft.phoneCountry) setPhoneCountry(draft.phoneCountry);
+      setBenefitCodeInput(nextBenefitCode);
+      setAppliedBenefit(nextAppliedBenefit);
+      setBenefitErrorMessage(null);
+      setRecoveryBenefitNotice(benefitWasRejected ? 'El descuento anterior ya no está disponible.' : '');
+      setRecoveryBarberNotice('');
+      lastMeaningfulActivityAtRef.current = Date.now();
+
+      if (draft.date && draft.time && !hasValidTime) {
+        const nextDate = hasValidDate ? draft.date : '';
+        setDate(nextDate ?? '');
+        setTime('');
+        if (nextDate) setMonth(parseDate(nextDate));
+        const updatedDraft = saveBookingDraft({
+          service: targetServiceId,
+          barber: draft.barberDeferred ? null : draft.barber,
+          barberDeferred: draft.barberDeferred,
+          date: nextDate,
+          time: null,
+          name: draft.name,
+          phone: draft.phone,
+          phoneCountry: draft.phoneCountry,
+          email: draft.email,
+          benefitCode: nextAppliedBenefit?.code ?? null,
+          lastMeaningfulActivityAt: lastMeaningfulActivityAtRef.current,
+        });
+        setRecoveryDraft(updatedDraft ?? { ...draft, date: nextDate, time: null });
+        setRecoveryDismissedThisVisit(false);
+        setRecoveryModalMode('slot-occupied');
+        return;
+      }
+
+      const restoredDate = hasValidDate ? draft.date ?? '' : '';
+      const restoredTime = hasValidTime ? draft.time ?? '' : '';
+      setDate(restoredDate);
+      setTime(restoredTime);
+      if (restoredDate) setMonth(parseDate(restoredDate));
+
+      setRecoveryDraft(null);
+      setRecoveryDismissedThisVisit(false);
+      setRecoveryModalMode('closed');
+
+      if (targetServiceId && (draft.barberDeferred || draft.barber) && restoredDate && restoredTime) {
+        move(draft.barberDeferred ? 3 : 4);
+      } else if (targetServiceId && (draft.barberDeferred || draft.barber) && restoredDate) {
+        move(3);
+      } else if (targetServiceId && (draft.barberDeferred || draft.barber)) {
+        move(2);
+      } else if (targetServiceId) {
+        move(1);
+      } else {
+        move(0);
+      }
+    } catch {
+      setRecoveryErrorMessage('No pudimos conectar para verificar los horarios. Tus datos siguen guardados.');
+      setRecoveryModalMode('error');
+    }
+  }
+
+  function handleStartOverFromRecovery() {
+    clearBookingDraft();
+    lastMeaningfulActivityAtRef.current = null;
+    setRecoveryDraft(null);
+    setRecoveryDismissedThisVisit(false);
+    setRecoveryModalMode('closed');
+    setRecoveryErrorMessage('');
+    setRecoveryBenefitNotice('');
+    setRecoveryBarberNotice('');
+    setService(null);
+    setBarber(null);
+    setBarberDeferred(false);
+    setDate('');
+    setTime('');
+    setPublicSlots([]);
+    lastLoadedAvailabilityKeyRef.current = null;
+    setContact({ name: '', email: '', phone: '', notes: '' });
+    setTouched({ name: false, phone: false, email: false, notes: false });
+    setBenefitCodeInput('');
+    setAppliedBenefit(null);
+    setBenefitErrorMessage(null);
+    move(0);
+  }
+
+  function handleDismissRecovery() {
+    setRecoveryModalMode('closed');
+    setRecoveryDismissedThisVisit(true);
+  }
+
+  function handleChooseAnotherTimeFromRecovery() {
+    setRecoveryModalMode('closed');
+    setRecoveryDraft(null);
+    setRecoveryDismissedThisVisit(false);
+    move(date ? 3 : 2);
+  }
+
   function chooseService(nextService: ServiceId) {
+    markMeaningfulActivity();
     setService(nextService);
     const serviceName = configuredServices.find(item => item.id === nextService)?.name ?? serviceFor(nextService).name;
     const compatibleTimes = date ? availabilityStartTimesForServiceDate(availabilityStartsByDate.get(date) ?? [], date, serviceName, clock, barberDeferred ? null : barber) : [];
@@ -1002,6 +1322,7 @@ export function Booking({
   function chooseBarber(nextBarber: Barber) {
     if (!publicBarbersState.includes(nextBarber)) return;
     if (barber === nextBarber && !barberDeferred) return;
+    markMeaningfulActivity();
     setBarber(nextBarber);
     setBarberDeferred(false);
     resetAvailabilityForBarberChange();
@@ -1659,6 +1980,31 @@ export function Booking({
       <div ref={scrollContainerRef} className="booking-scroll-content">
         <div className="booking-layout">
           <section className="min-w-0">
+            {recoveryDismissedThisVisit && recoveryDraft && recoveryModalMode === 'closed' && (
+              <div
+                className="booking-recovery-banner mb-3 flex items-center justify-between gap-2 rounded-xl border border-border/60 bg-background/50 px-3.5 py-2 text-xs text-muted-foreground backdrop-blur-md"
+                role="status"
+              >
+                <span>Tenés una reserva sin terminar</span>
+                <button
+                  type="button"
+                  onClick={() => setRecoveryModalMode('prompt')}
+                  className="font-medium text-gold underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
+                >
+                  Recuperar
+                </button>
+              </div>
+            )}
+            {step === 1 && recoveryBarberNotice && (
+              <p role="status" className="mb-3 rounded-xl border border-border/60 bg-muted/50 px-3.5 py-2 text-xs text-muted-foreground">
+                {recoveryBarberNotice}
+              </p>
+            )}
+            {step === 4 && recoveryBenefitNotice && (
+              <p role="status" className="mb-3 rounded-xl border border-border/60 bg-muted/50 px-3.5 py-2 text-xs text-muted-foreground">
+                {recoveryBenefitNotice}
+              </p>
+            )}
             {(() => {
               const stepContent = (
                 <>
@@ -1750,6 +2096,7 @@ export function Booking({
                     className: `booking-defer-option ${barberDeferred ? 'selected' : ''}`,
                     onClick: () => {
                       if (barberDeferred) return;
+                      markMeaningfulActivity();
                       setBarber(null);
                       setBarberDeferred(true);
                       resetAvailabilityForBarberChange();
@@ -1813,7 +2160,7 @@ export function Booking({
                             disabled,
                             'aria-label': ariaLabel,
                             'aria-pressed': date === value,
-                            onClick: () => { if (isV2) { revealTimesRef.current = true; setDateSelection(current => current + 1); } if (date !== value) { deferredVerifySeqRef.current++; setSlotConflict(null); setPendingAppointment(null); setDate(value); setTime(''); if (barberDeferred) setBarber(null); } },
+                            onClick: () => { markMeaningfulActivity(); if (isV2) { revealTimesRef.current = true; setDateSelection(current => current + 1); } if (date !== value) { deferredVerifySeqRef.current++; setSlotConflict(null); setPendingAppointment(null); setDate(value); setTime(''); if (barberDeferred) setBarber(null); } },
                           };
                           return MotionCardButton ? (
                             <MotionCardButton key={value} tapScale={0.94} data-past={value < todayValue ? 'true' : undefined} {...dayProps}>
@@ -1886,6 +2233,7 @@ export function Booking({
                       selectedTime={time}
                       onSelectTime={selectedSlot => {
                         if (selectedSlot === time) return;
+                        markMeaningfulActivity();
                         deferredVerifySeqRef.current++;
                         setTime(selectedSlot);
                         setPendingAppointment(null);
@@ -1956,7 +2304,7 @@ export function Booking({
                       spellCheck="false"
                       value={contact.name}
                       onBlur={() => markTouched('name')}
-                      onChange={e => setContact({ ...contact, name: e.target.value })}
+                      onChange={e => { markMeaningfulActivity(); setContact({ ...contact, name: e.target.value }); }}
                       placeholder="Tu nombre completo"
                       aria-invalid={statusFor('name') === 'invalid'}
                       aria-describedby={statusFor('name') === 'invalid' ? 'name-error' : undefined}
@@ -1978,8 +2326,8 @@ export function Booking({
                       required
                       value={contact.phone}
                       country={phoneCountry}
-                      onCountryChange={setPhoneCountry}
-                      onChange={val => setContact(current => ({ ...current, phone: val }))}
+                      onCountryChange={nextCountry => { markMeaningfulActivity(); setPhoneCountry(nextCountry); }}
+                      onChange={val => { markMeaningfulActivity(); setContact(current => ({ ...current, phone: val })); }}
                       onBlur={() => markTouched('phone')}
                       controlClassName={statusFor('phone')}
                       feedback={feedbackFor('phone')}
@@ -2006,7 +2354,7 @@ export function Booking({
                       inputMode="email"
                       value={contact.email}
                       onBlur={() => markTouched('email')}
-                      onChange={e => setContact({ ...contact, email: e.target.value })}
+                      onChange={e => { markMeaningfulActivity(); setContact({ ...contact, email: e.target.value }); }}
                       placeholder="nombre@email.com"
                       aria-invalid={statusFor('email') === 'invalid'}
                       aria-describedby={statusFor('email') === 'invalid' ? 'email-error' : undefined}
@@ -2468,6 +2816,20 @@ export function Booking({
           </div>
         </div>
       )}
+      <BookingRecoveryModal
+        mode={recoveryModalMode}
+        draft={recoveryDraft}
+        errorMessage={recoveryErrorMessage}
+        onContinue={() => {
+          if (recoveryDraft) void resumeDraftWithBackendCheck(recoveryDraft);
+        }}
+        onStartOver={handleStartOverFromRecovery}
+        onDismiss={handleDismissRecovery}
+        onChooseAnotherTime={handleChooseAnotherTimeFromRecovery}
+        onRetry={() => {
+          if (recoveryDraft) void resumeDraftWithBackendCheck(recoveryDraft);
+        }}
+      />
     </main>
   );
 }
