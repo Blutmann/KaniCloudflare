@@ -35,7 +35,7 @@ export function ClientCardMobile({ client, canEdit, canDelete, onDetails, onEdit
           {canDelete && (
             <button
               type="button"
-              className="v2-client-action-btn delete"
+              className="v2-client-action-btn delete v2-destructive"
               onClick={onDelete}
               title="Eliminar cliente"
               aria-label="Eliminar cliente"

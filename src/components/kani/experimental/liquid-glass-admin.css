@@ -749,7 +749,7 @@ html[data-theme] body[data-lg-admin="true"] :is(
   .v2-segmented button,
   .v2-appointments-page .v2-whatsapp,
   .v2-mail-btn
-):active:not(:disabled) {
+):not(.v2-primary):not(.v2-cobrar-btn):not(.v2-danger):not(.v2-destructive):not(.action-reject):not(.is-destructive):not(.kani-dcard-btn-warning):active:not(:disabled) {
   transform: scale(0.985);
 }
 
@@ -979,9 +979,13 @@ html[data-theme] body[data-lg-admin="true"] :is(
   .kani-dcard-btn-delete.is-destructive
 ) {
   background: var(--lga-danger-bg) !important;
-  border-color: var(--lga-danger-border) !important;
+  border: 1px solid var(--lga-danger-border) !important;
   color: var(--lga-danger-text) !important;
   -webkit-text-fill-color: var(--lga-danger-text) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(135%) !important;
+  backdrop-filter: blur(12px) saturate(135%) !important;
+  box-shadow: var(--lga-specular) !important;
+  border-radius: 12px !important;
   transition:
     transform 150ms cubic-bezier(0.22, 1, 0.36, 1),
     background 150ms ease,

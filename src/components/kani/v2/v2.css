@@ -3572,6 +3572,8 @@ input[placeholder="Nombre, celular o email"]::placeholder {
   width: 36px;
   height: 36px;
   min-width: 36px;
+  min-height: 36px;
+  padding: 0;
   border-radius: 6px;
   display: inline-flex;
   align-items: center;

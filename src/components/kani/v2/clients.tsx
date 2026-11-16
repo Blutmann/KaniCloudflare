@@ -237,7 +237,7 @@ export function V2Clients() {
                 {isAdmin && (
                   <button
                     type="button"
-                    className="v2-client-action-btn delete"
+                    className="v2-client-action-btn delete v2-destructive"
                     onClick={(e) => promptDelete(c, e)}
                     title="Eliminar cliente"
                     aria-label="Eliminar cliente"
