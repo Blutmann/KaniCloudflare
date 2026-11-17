@@ -972,3 +972,121 @@ export function filterAndSortClients(
     return sortDirection === 'asc' ? cmp : -cmp;
   });
 }
+
+export function formatCountEs(count: number, singular: string, plural: string): string {
+  const safeCount = Number.isFinite(count) ? Math.trunc(count) : 0;
+  return `${safeCount} ${Math.abs(safeCount) === 1 ? singular : plural}`;
+}
+
+export interface InsightSuggestionItem {
+  id: 'activity' | 'opportunity';
+  category: string;
+  title: string;
+  description: string;
+}
+
+export function buildInsightSuggestions(params: {
+  currentServicesCount: number;
+  previousServicesCount: number;
+  servicesChangePercent: number | null;
+  revenueChangePercent: number | null;
+  previousLabel: string;
+  cancelledCount: number;
+  pendingCount: number;
+  totalAppointmentsCount: number;
+}): [InsightSuggestionItem, InsightSuggestionItem] {
+  const {
+    currentServicesCount,
+    previousServicesCount,
+    servicesChangePercent,
+    revenueChangePercent,
+    previousLabel,
+    cancelledCount,
+    pendingCount,
+    totalAppointmentsCount,
+  } = params;
+
+  const servicesText = formatCountEs(currentServicesCount, 'servicio', 'servicios');
+
+  let activity: InsightSuggestionItem;
+  if (currentServicesCount === 0 && previousServicesCount === 0) {
+    activity = {
+      id: 'activity',
+      category: 'Ritmo',
+      title: 'Sin actividad registrada',
+      description: `Todavía no hay servicios cobrados en este período ni en ${previousLabel} para comparar.`,
+    };
+  } else if (servicesChangePercent === null) {
+    activity = {
+      id: 'activity',
+      category: 'Ritmo',
+      title: 'Base inicial en construcción',
+      description: `Registraste ${servicesText} en este período. No hay registros en ${previousLabel} para comparar la evolución.`,
+    };
+  } else if (servicesChangePercent > 0) {
+    const revNote =
+      revenueChangePercent !== null && revenueChangePercent !== 0
+        ? ` (${revenueChangePercent > 0 ? '+' : ''}${revenueChangePercent}% en ingresos)`
+        : '';
+    activity = {
+      id: 'activity',
+      category: 'Ritmo',
+      title: `Actividad en alza (+${servicesChangePercent}%)`,
+      description: `Registraste ${servicesText}, frente a ${previousServicesCount} en ${previousLabel}${revNote}.`,
+    };
+  } else if (servicesChangePercent < 0) {
+    const revNote =
+      revenueChangePercent !== null && revenueChangePercent !== 0
+        ? ` (${revenueChangePercent > 0 ? '+' : ''}${revenueChangePercent}% en ingresos)`
+        : '';
+    activity = {
+      id: 'activity',
+      category: 'Ritmo',
+      title: `Actividad por debajo del período anterior (${servicesChangePercent}%)`,
+      description: `Registraste ${servicesText}, frente a ${previousServicesCount} en ${previousLabel}${revNote}.`,
+    };
+  } else {
+    activity = {
+      id: 'activity',
+      category: 'Ritmo',
+      title: 'Ritmo estable',
+      description: `Registraste ${servicesText}, frente a ${previousServicesCount} en ${previousLabel}.`,
+    };
+  }
+
+  let opportunity: InsightSuggestionItem;
+  if (cancelledCount > 0) {
+    opportunity = {
+      id: 'opportunity',
+      category: 'Agenda',
+      title: `${formatCountEs(cancelledCount, 'cancelación', 'cancelaciones')} en el período`,
+      description: `De ${formatCountEs(totalAppointmentsCount, 'turno', 'turnos')} registrados, ${formatCountEs(cancelledCount, 'se canceló', 'se cancelaron')}. Podés revisar Horarios para reabrir o ajustar esos espacios.`,
+    };
+  } else if (pendingCount > 0) {
+    opportunity = {
+      id: 'opportunity',
+      category: 'Oportunidad',
+      title: formatCountEs(pendingCount, 'turno pendiente', 'turnos pendientes'),
+      description: `Tenés ${formatCountEs(pendingCount, 'turno', 'turnos')} por atender en este período. Revisá Turnos y Horarios para aprovechar los espacios libres.`,
+    };
+  } else if (currentServicesCount === 0) {
+    opportunity = {
+      id: 'opportunity',
+      category: 'Oportunidad',
+      title: 'Disponibilidad abierta',
+      description:
+        'Sin turnos registrados en este período. Verificá tus franjas en Horarios para recibir nuevas reservas.',
+    };
+  } else {
+    opportunity = {
+      id: 'opportunity',
+      category: 'Oportunidad',
+      title: 'Agenda sin cancelaciones',
+      description:
+        'No registraste cancelaciones en este período. Consultá Horarios si querés sumar nuevas franjas disponibles.',
+    };
+  }
+
+  return [activity, opportunity];
+}
+

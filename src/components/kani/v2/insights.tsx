@@ -5,6 +5,7 @@ import { useAdminStaff } from "@/lib/kani-admin-context";
 import { scopeV2, paymentSummary, changePercent, deduplicatePaymentMovements } from "@/lib/kani-v2";
 import { businessDateToday, addCalendarDays } from "@/lib/kani-mobile-appointments";
 import { money, formatServiceName } from "@/lib/kani-model";
+import { buildInsightSuggestions, formatCountEs } from "@/lib/kani-statistics";
 import {
   AdminFilterPanel,
   AdminFilterCell,
@@ -294,7 +295,21 @@ export function V2Insights() {
       ).filter((a) => a.date >= start && a.date <= end);
 
   const summary = paymentSummary(payments);
+  const previousSummary = paymentSummary(previous);
   const comparison = changePercent(summary.count, previous.length);
+  const revenueComparison = changePercent(summary.collected, previousSummary.collected);
+  const cancelledCount = appointments.filter((a) => a.statusCode === "CANCELLED").length;
+  const pendingCount = appointments.filter((a) => a.statusCode === "PENDING").length;
+  const suggestions = buildInsightSuggestions({
+    currentServicesCount: summary.count,
+    previousServicesCount: previous.length,
+    servicesChangePercent: comparison,
+    revenueChangePercent: revenueComparison,
+    previousLabel: activeRange.prevLabel,
+    cancelledCount,
+    pendingCount,
+    totalAppointmentsCount: appointments.length,
+  });
 
   // Generate chart points (daily for ranges up to 31 days; monthly for yearly views)
   const points = useMemo(() => {
@@ -465,7 +480,7 @@ export function V2Insights() {
               aria-label={`Servicios por día: ${points.map((p) => `${p.date}: ${p.count}`).join(", ")}`}
             >
               {points.map((p) => (
-                <div key={p.date} title={`${p.date}: ${p.count} servicios`}>
+                <div key={p.date} title={`${p.date}: ${formatCountEs(p.count, "servicio", "servicios")}`}>
                   <span>{p.count || ""}</span>
                   <i style={{ height: `${(p.count / maxCount) * 140 + 2}px` }} />
                   <small>{p.label}</small>
@@ -522,34 +537,21 @@ export function V2Insights() {
         </section>
       </div>
 
-      <section className="v2-insights">
-        <div className="v2-section-title">
+      <section className="v2-insights" aria-label="Para tu próxima decisión">
+        <div className="v2-section-title v2-insights-header">
           <h2>
-            <Lightbulb size={21} />
+            <Lightbulb size={18} aria-hidden="true" />
             Para tu próxima decisión
           </h2>
         </div>
         <div className="v2-insight-grid">
-          <article>
-            <span>01 / RITMO</span>
-            <h3>
-              {comparison !== null && comparison > 0
-                ? "Tu actividad crece"
-                : "Construí una base para comparar"}
-            </h3>
-            <p>
-              {comparison !== null
-                ? `Registraste ${summary.count} servicios frente a ${previous.length} en ${activeRange.prevLabel}.`
-                : "Un registro continuo te permite anticipar demanda y organizar turnos."}
-            </p>
-          </article>
-          <article>
-            <span>02 / OPORTUNIDAD</span>
-            <h3>Buscá tus próximos espacios</h3>
-            <p>
-              Consultá Horarios para planificar franjas adicionales o promociones en momentos de menor afluencia.
-            </p>
-          </article>
+          {suggestions.map((item) => (
+            <article key={item.id} className="v2-insight-item">
+              <span className="v2-insight-category">{item.category}</span>
+              <h3>{item.title}</h3>
+              <p>{item.description}</p>
+            </article>
+          ))}
         </div>
       </section>
     </main>
