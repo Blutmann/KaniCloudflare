@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { ExternalLink, Instagram, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { BookingStepHeading } from "@/components/kani/booking-step-heading";
 import { pageHead } from "@/lib/kani-head";
 import { LiquidGlassShell } from "@/components/kani/experimental/liquid-glass-shell";
 import {
@@ -138,6 +139,8 @@ export function ContactoContent({
     <div className="booking-page kani-contacto-booking-page">
       <div className="booking-scroll-content kani-contacto-scroll-content">
         <main className="site-container studio-page contacto-page kani-contacto-main">
+          <BookingStepHeading title="Contactanos" />
+
           <div className="studio-info-grid kani-contacto-social-grid">
             {/* 1. Instagram */}
             <a
@@ -198,17 +201,17 @@ export function ContactoContent({
                   <h2 className="studio-map-title">{KANI_STUDIO_NAME}</h2>
                   <p className="studio-map-address">{KANI_STUDIO_ADDRESS}</p>
                   <p className="kani-contacto-hours">Lunes a sábados · 10:00 a 20:00</p>
+                  <a
+                    href={mapsUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="studio-map-link kani-contacto-directions-link"
+                    aria-label="Abrir Kani Barber Studio en Google Maps para obtener indicaciones"
+                  >
+                    Cómo llegar <ExternalLink size={14} aria-hidden="true" />
+                  </a>
                 </div>
               </div>
-              <a
-                href={mapsUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="studio-map-link kani-contacto-directions-link"
-                aria-label="Abrir Kani Barber Studio en Google Maps para obtener indicaciones"
-              >
-                Cómo llegar <ExternalLink size={14} aria-hidden="true" />
-              </a>
             </div>
             <div className="studio-map-frame-wrap kani-contacto-map-wrap">
               <iframe

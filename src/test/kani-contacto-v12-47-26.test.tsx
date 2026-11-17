@@ -27,13 +27,19 @@ describe('Contacto V12.47.26 — Composición, Cards y Navegación Inteligente',
     window.sessionStorage.clear();
   });
 
-  it('renderiza exactamente 3 cards (Instagram, WhatsApp y Ubicación/Horarios/Mapa) sin repeticiones', () => {
+  it('renderiza título «Contactanos» y exactamente 3 cards (Instagram, WhatsApp y Ubicación/Horarios/Mapa) sin repeticiones', () => {
     const { container } = render(<ContactoContent bookingPath="/reservar" />);
+
+    const heading = screen.getByRole('heading', { level: 1, name: 'Contactanos' });
+    expect(heading).toBeTruthy();
+    expect(heading.className).toContain('booking-step-heading-title');
+    expect(heading.className).toContain('section-title');
 
     const socialCards = container.querySelectorAll('.kani-contacto-social-card');
     const locationCards = container.querySelectorAll('.kani-contacto-location-card');
     expect(socialCards).toHaveLength(2);
     expect(locationCards).toHaveLength(1);
+    expect(container.querySelector('.kani-contacto-location-copy .kani-contacto-directions-link')).toBeTruthy();
 
     const instagramLink = screen.getByRole('link', {
       name: /Ver perfil de Kani Barber Studio en Instagram/i,
