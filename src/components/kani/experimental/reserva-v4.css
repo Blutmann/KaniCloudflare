@@ -2223,14 +2223,22 @@ html[data-theme="dark"] .booking-page .booking-candidate-barber-btn.selected:hov
 }
 
 /* ==============================================================================
- * V12.47.20 — Pantalla «¡Turno confirmado!» compacta + Acordeón + Ubicación
+ * V12.47.20 / V12.47.22 — Pantalla «¡Turno confirmado!» compacta + Acordeón + Ubicación
  * ============================================================================== */
-.payway-reservation .kani-confirmed-v2 {
-  width: min(860px, calc(100% - 32px));
-  max-width: 860px;
-  margin-inline: auto;
-  padding-top: 20px;
-  padding-bottom: 36px;
+.liquid-glass-confirmed-stage {
+  width: 100%;
+  min-width: 0;
+  overflow-x: clip;
+}
+
+html[data-theme] body .payway-reservation.liquid-glass-confirmed-stage .confirmation.kani-confirmed-v2 {
+  width: min(1000px, calc(100% - 40px)) !important;
+  max-width: 1000px !important;
+  margin-inline: auto !important;
+  padding-inline: 0 !important;
+  padding-top: 28px;
+  padding-bottom: 48px !important;
+  box-sizing: border-box !important;
 }
 
 .kani-confirmed-hero {
@@ -2239,7 +2247,7 @@ html[data-theme="dark"] .booking-page .booking-candidate-barber-btn.selected:hov
   align-items: center;
   text-align: center;
   gap: 8px;
-  margin-bottom: 18px;
+  margin-bottom: 24px;
 }
 
 .kani-confirmed-hero .confirmation-mark {
@@ -2256,21 +2264,32 @@ html[data-theme="dark"] .booking-page .booking-candidate-barber-btn.selected:hov
   margin: 0 !important;
 }
 
-.kani-confirmed-grid {
+.payway-reservation .kani-confirmed-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
-  gap: 20px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 24px;
   align-items: start;
   width: 100%;
+  min-width: 0;
   box-sizing: border-box;
 }
 
-.payway-reservation .kani-confirmed-summary-card {
+.payway-reservation .kani-confirmed-grid > .kani-confirmed-summary-card,
+.payway-reservation .kani-confirmed-grid > .kani-confirmed-place-card {
+  grid-area: auto !important;
+  grid-column: auto !important;
+  grid-row: auto !important;
   margin: 0 !important;
-  padding: 18px 20px !important;
   width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
   box-sizing: border-box !important;
+}
+
+.payway-reservation .kani-confirmed-summary-card {
+  padding: 20px 22px !important;
   border-radius: 20px !important;
+  text-align: left;
 }
 
 .kani-confirmed-compact {
@@ -2421,16 +2440,15 @@ html[data-theme="dark"] .booking-page .booking-candidate-barber-btn.selected:hov
   gap: 12px;
 }
 
-.kani-confirmed-place-card {
-  margin: 0 !important;
-  padding: 18px 20px !important;
+.payway-reservation .kani-confirmed-place-card {
+  padding: 20px 22px !important;
   border-radius: 20px !important;
   border: 1px solid color-mix(in oklch, var(--gold) 18%, var(--border));
   background: var(--surface, var(--card));
   box-shadow: 0 12px 30px rgb(0 0 0 / 0.12);
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
   text-align: left;
   box-sizing: border-box;
 }
@@ -2457,6 +2475,12 @@ html[data-theme="dark"] body.liquid-glass-active .kani-confirmed-summary-card {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  min-width: 0;
+}
+
+.kani-confirmed-place-info {
+  flex: 1 1 180px;
+  min-width: 0;
 }
 
 .kani-confirmed-place-name {
@@ -2467,6 +2491,7 @@ html[data-theme="dark"] body.liquid-glass-active .kani-confirmed-summary-card {
 }
 
 .kani-confirmed-directions-btn {
+  flex-shrink: 0;
   min-height: 42px;
   padding-inline: 16px;
   font-size: 13.5px;
@@ -2474,17 +2499,22 @@ html[data-theme="dark"] body.liquid-glass-active .kani-confirmed-summary-card {
   display: inline-flex;
   align-items: center;
   gap: 7px;
+  white-space: nowrap;
 }
 
-.payway-reservation .kani-confirmed-map {
-  height: 185px !important;
+.payway-reservation .kani-confirmed-place-card .kani-confirmed-map {
+  grid-area: auto !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 200px !important;
+  margin: 0 !important;
   border-radius: 14px !important;
 }
 
 .kani-confirmed-secondary-footer {
   display: flex;
   justify-content: center;
-  margin-top: 22px;
+  margin-top: 24px;
 }
 
 .kani-confirmed-home-btn {
@@ -2496,33 +2526,42 @@ html[data-theme="dark"] body.liquid-glass-active .kani-confirmed-summary-card {
 }
 
 @media (max-width: 767px) {
-  .payway-reservation .kani-confirmed-v2 {
-    width: calc(100% - 24px);
-    padding-top: 12px;
-    padding-bottom: 24px;
+  html[data-theme] body .payway-reservation.liquid-glass-confirmed-stage .confirmation.kani-confirmed-v2 {
+    width: calc(100% - 32px) !important;
+    max-width: 100% !important;
+    padding-top: 16px;
+    padding-bottom: 32px !important;
   }
   .kani-confirmed-hero {
     gap: 6px;
-    margin-bottom: 14px;
+    margin-bottom: 16px;
   }
-  .kani-confirmed-grid {
+  .payway-reservation .kani-confirmed-grid {
     grid-template-columns: minmax(0, 1fr);
-    gap: 14px;
+    gap: 16px;
   }
   .payway-reservation .kani-confirmed-summary-card,
-  .kani-confirmed-place-card {
-    padding: 14px 16px !important;
+  .payway-reservation .kani-confirmed-place-card {
+    padding: 16px !important;
     border-radius: 18px !important;
+  }
+  .kani-confirmed-place-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .kani-confirmed-place-info {
+    flex: 0 0 auto;
   }
   .kani-confirmed-directions-btn {
     width: 100%;
     justify-content: center;
   }
-  .payway-reservation .kani-confirmed-map {
-    height: 150px !important;
+  .payway-reservation .kani-confirmed-place-card .kani-confirmed-map {
+    height: 190px !important;
   }
   .kani-confirmed-secondary-footer {
-    margin-top: 16px;
+    margin-top: 20px;
   }
   .kani-confirmed-home-btn {
     width: 100%;

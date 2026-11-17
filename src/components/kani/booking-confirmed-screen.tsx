@@ -266,7 +266,7 @@ export function BookingConfirmedScreen({
             className="confirmation-place kani-confirmed-place-card"
           >
             <div className="kani-confirmed-place-header">
-              <div>
+              <div className="kani-confirmed-place-info">
                 <h2 id="kani-confirmed-place-heading" className="confirmation-section-title">
                   ¿Dónde estamos?
                 </h2>
