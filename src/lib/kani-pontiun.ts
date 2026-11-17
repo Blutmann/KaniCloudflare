@@ -929,7 +929,7 @@ function resolveClientConfirmedTemplateName(): string {
     getPontiunRuntimeEnv("PONTIUN_CLIENT_CONFIRMED_TEMPLATE_NAME") ??
     getPontiunRuntimeEnv("PONTIUN_TEMPLATE_NAME") ??
     getPontiunRuntimeEnv("PONTIUN_WHATSAPP_CONFIRMATION_TEMPLATE") ??
-    DEFAULT_PONTIUN_TEMPLATE_NAME
+    DEFAULT_PONTIUN_CLIENT_CONFIRMED_V2_TEMPLATE_NAME
   );
 }
 

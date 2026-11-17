@@ -516,7 +516,7 @@ describe("Pontiun WhatsApp Integration Unit Tests", () => {
   });
 
   describe("Migrated Sender Defaults, Canonical Precedence, Pending Template & Coexistence Webhook", () => {
-    it("falls back to kani_barber_confirmacion_turno and es_AR when template env vars are unset", async () => {
+    it("falls back to kani_cliente_turno_confirmado_v2 and es_AR when template env vars are unset", async () => {
       process.env.PONTIUN_API_KEY = "pk_live_secret_token_123";
       process.env.PONTIUN_PHONE_NUMBER_ID = "1443960902134586";
 
@@ -547,7 +547,7 @@ describe("Pontiun WhatsApp Integration Unit Tests", () => {
       expect(res.messageId).toBe("msg_default_tpl_01");
       expect(res.metaMessageId).toBe("wamid.DEFAULT_TPL_01");
       expect(capturedBody.pageId).toBe("1443960902134586");
-      expect(capturedBody.template.name).toBe("kani_barber_confirmacion_turno");
+      expect(capturedBody.template.name).toBe("kani_cliente_turno_confirmado_v2");
       expect(capturedBody.template.language).toBe("es_AR");
       expect(capturedBody.template.components[0].parameters.map((p: any) => p.text)).toEqual([
         "Mateo",

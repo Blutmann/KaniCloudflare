@@ -132,7 +132,7 @@ describe("Pontiun 4 WhatsApp Templates & Parameters", () => {
       "kani-appointment-apt-1-confirmed",
     );
     const body = JSON.parse(String(init?.body));
-    expect(body.template.name).toBe("kani_barber_confirmacion_turno");
+    expect(body.template.name).toBe("kani_cliente_turno_confirmado_v2");
     expect(body.template.language).toBe("es_AR");
     expect(body.template.components[0].parameters.map((p: any) => p.text)).toEqual([
       "Juan Pérez",
