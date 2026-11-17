@@ -45,6 +45,7 @@ export function V2MembershipsAndDiscounts({
   const data = useV2();
   const staff = useAdminStaff();
   const isOperator = isStaffOperator(staff.profile.role);
+  const canViewDiscounts = isOperator || staff.profile.role === "BARBER";
   const isAdmin = staff.profile.role === "ADMIN";
   const today = businessDateToday();
   const soonThreshold = addCalendarDays(today, 30);
@@ -53,7 +54,7 @@ export function V2MembershipsAndDiscounts({
     !isOperator && initialTab === "DESCUENTOS" ? "MEMBRESIAS" : initialTab,
   );
   const activeTab = standaloneTab
-    ? !isOperator && standaloneTab === "DESCUENTOS"
+    ? !canViewDiscounts && standaloneTab === "DESCUENTOS"
       ? "MEMBRESIAS"
       : standaloneTab
     : tabState;
@@ -668,7 +669,7 @@ export function V2MembershipsAndDiscounts({
               </div>
             )}
           </div>
-        ) : !isOperator ? (
+        ) : !canViewDiscounts ? (
           <p role="alert" className="v2-alert" style={{ marginTop: "16px" }}>
             No tenés permisos para consultar ni gestionar códigos de descuento.
           </p>

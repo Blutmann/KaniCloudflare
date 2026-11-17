@@ -1,7 +1,7 @@
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router';
 import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState, type MouseEvent } from 'react';
 import { createPortal } from 'react-dom';
-import { ArrowUpRight, Bell, Building2, CalendarClock, CalendarDays, ChartNoAxesCombined, Clock3, CreditCard, Instagram, LayoutGrid, LogIn, LogOut, MapPin, Menu, Moon, Scale, ShieldCheck, Sun, Tag, Users, Wrench, X } from 'lucide-react';
+import { ArrowUpRight, Bell, Building2, CalendarClock, CalendarDays, ChartNoAxesCombined, Clock3, CreditCard, Instagram, LayoutGrid, LogIn, LogOut, MapPin, Menu, Moon, Percent, Scale, ShieldCheck, Sun, Tag, Users, Wrench, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import kaniLogoLight from '@/assets/kani-logo-light.webp';
 import kaniLogoDark from '@/assets/kani-logo-dark.webp';
@@ -147,6 +147,7 @@ function getVerticalScrollOffset(scrolledContainers: Set<Element>): number {
 
 export function SiteHeader() {
   const path = useRouterState({ select: s => s.location.pathname });
+  const navigate = useNavigate();
   const isLiquidRoute = isLiquidGlassPath(path);
   const admin =
     path.startsWith('/admin') ||
@@ -344,6 +345,7 @@ export function SiteHeader() {
   const turnosLinkTarget = isLiquidRoute ? '/panel-turnos' : `${adminBase}/turnos`;
   const horariosLinkTarget = isLiquidRoute ? '/panel-horarios' : `${adminBase}/horarios`;
   const membershipsLinkTarget = isLiquidRoute ? '/panel-membresias' : `${adminBase}/membresias`;
+  const discountsLinkTarget = isLiquidRoute ? '/panel-descuentos' : `${adminBase}/descuentos`;
   const panelV2Target = isLiquidRoute ? '/admin-v2-liquid' : '/panel-v2';
   const privacyTarget = isLiquidRoute ? '/politica-de-privacidad' : '/politica-de-privacidad-old';
   const termsTarget = isLiquidRoute ? '/terminos-y-condiciones' : '/terminos-y-condiciones-old';
@@ -369,7 +371,8 @@ export function SiteHeader() {
       closeMenu();
     }
   };
-  const sessionRole = staff?.profile.role === 'ADMIN' ? 'Administrador' : staff?.profile.role === 'MANAGER' ? 'KANI Jefe' : staff?.profile.role === 'BARBER' ? 'Barbero' : '';
+  const isBarber = staff?.profile.role === 'BARBER';
+  const sessionRole = staff?.profile.role === 'ADMIN' ? 'Administrador' : staff?.profile.role === 'MANAGER' ? 'KANI Jefe' : isBarber ? 'BARBER' : '';
   const menuNavigationGroups = (
     <>
       {/* Grupo usuario */}
@@ -452,9 +455,58 @@ export function SiteHeader() {
       </div>
     </>
   );
+  const barberMenuNavigationGroups = (
+    <>
+      <div className="mobile-menu-group">
+        <Link to={bookingTarget} onClick={continueBooking}>
+          <ArrowUpRight />Reservar turno
+        </Link>
+        <Link to={contactTarget} onClick={closeMenu}>
+          <Building2 />Contacto
+        </Link>
+      </div>
+
+      <div className="mobile-menu-divider" role="separator" />
+
+      <div className="mobile-menu-group">
+        <Link to={turnosLinkTarget} onClick={closeMenu}>
+          <CalendarDays />Turnos
+        </Link>
+        <Link to={horariosLinkTarget} onClick={closeMenu}>
+          <Clock3 />Horarios
+        </Link>
+        <Link to={`${adminBase}/pagos`} onClick={closeMenu}>
+          <CreditCard />Pagos
+        </Link>
+        <Link to={`${adminBase}/clientes`} onClick={closeMenu}>
+          <Users />Clientes
+        </Link>
+        <Link to={`${adminBase}/datos`} onClick={closeMenu}>
+          <ChartNoAxesCombined />Datos
+        </Link>
+        <Link to={membershipsLinkTarget} onClick={closeMenu}>
+          <Tag />Membresías
+        </Link>
+        <Link to={discountsLinkTarget} onClick={closeMenu}>
+          <Percent />Descuentos
+        </Link>
+      </div>
+
+      <div className="mobile-menu-divider" role="separator" />
+
+      <div className="mobile-menu-group">
+        <Link to={privacyTarget} onClick={closeMenu}>
+          <ShieldCheck />Política de privacidad
+        </Link>
+        <Link to={termsTarget} onClick={closeMenu}>
+          <Scale />Términos y condiciones
+        </Link>
+      </div>
+    </>
+  );
   const menuSessionBlock = staff ? (
     <>
-      <div className="mobile-menu-divider" role="separator" />
+      {!isBarber && <div className="mobile-menu-divider" role="separator" />}
       <div className="mobile-menu-session">
         <div className="mobile-menu-session-identity">
           <strong>{staff.profile.role === 'ADMIN' ? 'KANI Admin' : (staff.profile.display_name || 'Barbero')}</strong>
@@ -477,22 +529,40 @@ export function SiteHeader() {
       </div>
     </>
   ) : null;
+  const activeMenuGroups = isBarber ? barberMenuNavigationGroups : menuNavigationGroups;
   const mobileMenu = menuOpen ? (
     isLiquidRoute ? (
-      <nav className="mobile-menu mobile-menu--liquid" id="kani-main-menu" aria-label="Menú principal">
+      <nav
+        className={['mobile-menu', 'mobile-menu--liquid', isBarber ? 'mobile-menu--barber' : ''].filter(Boolean).join(' ')}
+        id="kani-main-menu"
+        aria-label="Menú principal"
+      >
         <div className="mobile-menu-scroll">
-          {menuNavigationGroups}
+          {activeMenuGroups}
         </div>
         <div className="mobile-menu-dock">
           {menuSessionBlock}
-          <MobileMenuAction inline />
+          {!isBarber && <MobileMenuAction inline />}
         </div>
       </nav>
     ) : (
-      <nav className="mobile-menu" id="kani-main-menu" aria-label="Menú principal">
-        {menuNavigationGroups}
-        {/* Grupo 4: Sesión iniciada */}
-        {menuSessionBlock}
+      <nav
+        className={['mobile-menu', isBarber ? 'mobile-menu--barber' : ''].filter(Boolean).join(' ')}
+        id="kani-main-menu"
+        aria-label="Menú principal"
+      >
+        {isBarber ? (
+          <>
+            <div className="mobile-menu-scroll">{activeMenuGroups}</div>
+            <div className="mobile-menu-dock">{menuSessionBlock}</div>
+          </>
+        ) : (
+          <>
+            {activeMenuGroups}
+            {/* Grupo 4: Sesión iniciada */}
+            {menuSessionBlock}
+          </>
+        )}
       </nav>
     )
   ) : null;
@@ -507,7 +577,7 @@ export function SiteHeader() {
   return <>
     <div className="site-header-slot"><header className={headerClass} data-scrolled={isLiquidRoute ? String(headerScrolled && !menuOpen) : undefined}><div className="site-container flex items-center gap-4"><div className="admin-header-left"><Link to={logoTarget} aria-label="Kani Barber Studio, inicio" className="w-fit" onClick={closeMenu}><Wordmark /></Link></div><div className="header-controls ml-auto">{staff && <Suspense fallback={<Button type="button" variant="outline" size="icon" className="notification-trigger header-control-button" aria-label="Cargando notificaciones" disabled><Bell /></Button>}><AdminActivityPopover key={staff.user.id} role={staff.profile.role} userId={staff.user.id} isLiquid={isLiquidRoute} /></Suspense>}<HeaderWhatsApp /><ThemeToggle /><Button variant="outline" size="icon" className={`mobile-menu-trigger header-control-button ${admin ? 'admin-menu-trigger' : ''}`} aria-label={menuOpen ? 'Cerrar menú' : 'Abrir menú'} aria-expanded={menuOpen} aria-controls={menuOpen ? "kani-main-menu" : undefined} ref={menuButtonRef} onClick={() => onMenuOpenChange(!menuOpen)}>{menuOpen ? <X /> : <Menu />}</Button></div></div></header></div>
     {typeof document !== 'undefined' && mobileMenu ? createPortal(mobileMenu, document.body) : null}
-    {typeof document !== 'undefined' && menuOpen && !isLiquidRoute ? createPortal(<MobileMenuAction />, document.body) : null}
+    {typeof document !== 'undefined' && menuOpen && !isLiquidRoute && !isBarber ? createPortal(<MobileMenuAction />, document.body) : null}
   </>;
 }
 

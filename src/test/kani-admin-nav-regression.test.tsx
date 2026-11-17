@@ -180,13 +180,16 @@ describe('KANI — Regresión de navegación en panel original y hamburguesa', (
 
     state.role = 'BARBER';
     render(<SiteHeader />);
-    await screen.findByText('Panel de administración');
-    const linkBarber = screen.getByRole('link', { name: 'Membresías y descuentos' });
-    expect(linkBarber).toBeInTheDocument();
-    expect(linkBarber).toHaveAttribute('href', '/panel-membresias');
+    const linkBarberMembresias = await screen.findByRole('link', { name: 'Membresías' });
+    expect(linkBarberMembresias).toBeInTheDocument();
+    expect(linkBarberMembresias).toHaveAttribute('href', '/panel-membresias');
+    const linkBarberDescuentos = screen.getByRole('link', { name: 'Descuentos' });
+    expect(linkBarberDescuentos).toBeInTheDocument();
+    expect(linkBarberDescuentos).toHaveAttribute('href', '/panel-descuentos');
+    expect(screen.queryByText('Panel de administración')).toBeNull();
   });
 
-  it('5. mayAccessStaffSection autoriza «membresias» para todos los roles y restringe «descuentos» a operadores', () => {
+  it('5. mayAccessStaffSection autoriza «membresias» y «descuentos» (solo lectura para BARBER)', () => {
     const admin = { role: 'ADMIN', barber_id: null, active: true };
     const manager = { role: 'MANAGER', barber_id: null, active: true };
     const barber = { role: 'BARBER', barber_id: 'barber-1', active: true };
@@ -197,7 +200,7 @@ describe('KANI — Regresión de navegación en panel original y hamburguesa', (
 
     expect(mayAccessStaffSection(admin, 'descuentos')).toBe(true);
     expect(mayAccessStaffSection(manager, 'descuentos')).toBe(true);
-    expect(mayAccessStaffSection(barber, 'descuentos')).toBe(false);
+    expect(mayAccessStaffSection(barber, 'descuentos')).toBe(true);
   });
 
   it('6. Componente unificado V2MembershipsAndDiscounts renderiza pestañas Membresías y Descuentos con KPIs y creación', async () => {

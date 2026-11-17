@@ -22,6 +22,19 @@ export const adminListBenefitCodesFn = createServerFn({ method: 'POST' })
     return adminListBenefitCodes(data?.token, data?.includeDeleted);
   });
 
+export const staffListBenefitCodesReadOnlyFn = createServerFn({ method: 'POST' })
+  .validator((d: unknown) => {
+    if (d && typeof d === 'object') {
+      const obj = d as any;
+      return { token: typeof obj.token === 'string' ? obj.token : undefined };
+    }
+    return { token: undefined };
+  })
+  .handler(async ({ data }) => {
+    const { staffListBenefitCodesReadOnly } = await import('./kani-benefit-codes.server');
+    return staffListBenefitCodesReadOnly(data?.token);
+  });
+
 export const adminCreateBenefitCodeFn = createServerFn({ method: 'POST' })
   .validator((d: unknown) => {
     if (!d || typeof d !== 'object') throw new Error('INVALID_INPUT');

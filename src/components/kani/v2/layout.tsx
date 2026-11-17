@@ -8,6 +8,7 @@ import {
   CreditCard,
   Home,
   PackageCheck,
+  Percent,
   Tag,
   Users,
   ChartNoAxesCombined,
@@ -31,6 +32,16 @@ const sectionDefs = [
   { slug: "pagos", title: "Pagos", icon: CreditCard },
   { slug: "clientes", title: "Clientes", icon: Users },
   { slug: "datos", title: "Datos", icon: ChartNoAxesCombined },
+] as const;
+
+const barberSectionDefs = [
+  { slug: "turnos", title: "Turnos", icon: CalendarDays },
+  { slug: "horarios", title: "Horarios", icon: Clock3 },
+  { slug: "pagos", title: "Pagos", icon: CreditCard },
+  { slug: "clientes", title: "Clientes", icon: Users },
+  { slug: "datos", title: "Datos", icon: ChartNoAxesCombined },
+  { slug: "membresias", title: "Membresías", icon: PackageCheck },
+  { slug: "descuentos", title: "Descuentos", icon: Percent },
 ] as const;
 
 export function V2Layout({
@@ -325,7 +336,9 @@ function V2Shell({
     }
   }, []);
 
+  const isBarber = profile.role === "BARBER";
   const isMembershipsNav =
+    !isBarber &&
     liquidGlass &&
     allowedSection &&
     (activeSlug === "membresias" || activeSlug === "descuentos");
@@ -353,6 +366,22 @@ function V2Shell({
       icon: CalendarClock,
     },
   ] as const;
+
+  const visibleMainSections = (isBarber ? barberSectionDefs : sectionDefs)
+    .filter(({ slug }) => mayAccessStaffSection(profile, slug) && (profile.role === "ADMIN" || slug !== "inicio"))
+    .map((item) => {
+      const to =
+        item.slug === "membresias"
+          ? cleanBase.includes("-old")
+            ? `${cleanBase}/membresias`
+            : "/panel-membresias"
+          : item.slug === "descuentos"
+            ? cleanBase.includes("-old")
+              ? `${cleanBase}/descuentos`
+              : "/panel-descuentos"
+            : `${cleanBase}/${item.slug}`;
+      return { ...item, to };
+    });
 
   const navContent = isMembershipsNav ? (
     <nav
@@ -401,16 +430,20 @@ function V2Shell({
       </div>
     </nav>
   ) : (
-    <nav className="admin-section-nav v2-nav" ref={navScrollRef} aria-label="Administración">
+    <nav
+      className="admin-section-nav v2-nav"
+      data-nav-count={visibleMainSections.length}
+      data-nav-scrollable={visibleMainSections.length > 6 ? "true" : "false"}
+      ref={navScrollRef}
+      aria-label="Administración"
+    >
       <div className="admin-section-nav-items" ref={navItemsRef}>
-        {sectionDefs
-          .filter(({ slug }) => mayAccessStaffSection(profile, slug) && (profile.role === 'ADMIN' || slug !== 'inicio'))
-          .map(({ slug, title, icon: Icon }) => {
+        {visibleMainSections.map(({ slug, to, title, icon: Icon }) => {
             const isActive = activeSlug === slug;
             return (
               <Link
                 key={slug}
-                to={`${cleanBase}/${slug}`}
+                to={to}
                 activeOptions={{ exact: true }}
                 data-nav-slug={slug}
                 className={`admin-section-nav-link ${isActive ? "is-active" : ""}`.trim()}

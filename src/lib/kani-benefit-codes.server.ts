@@ -440,6 +440,162 @@ export async function adminListBenefitCodes(authToken?: string, includeDeleted?:
 }
 
 /**
+ * Verifies an active internal staff session (ADMIN, MANAGER, or BARBER) for read-only discount consultation.
+ */
+export async function assertStaffReadSession(explicitToken?: string): Promise<{
+  userId: string;
+  token: string;
+  profile: { role: string; display_name: string | null; active: boolean; barber_id: string | null };
+  supabase: any;
+}> {
+  let token = explicitToken?.trim();
+  if (!token) {
+    try {
+      token = getRequestAuthToken();
+    } catch {
+      // ignore
+    }
+  }
+
+  if (!token) {
+    throw new Error('AUTH_REQUIRED: Debe iniciar sesión para consultar códigos de beneficio.');
+  }
+
+  const supabase = await createRequestSupabaseClient(token);
+  const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+  if (userError || !user) {
+    const isExpired = userError?.message?.toLowerCase().includes('expired') || (userError as any)?.status === 401;
+    throw new Error(
+      isExpired
+        ? 'SESSION_EXPIRED: Su sesión ha expirado. Por favor, vuelva a iniciar sesión.'
+        : 'SESSION_INVALID: Sesión inválida o expirada. Por favor, vuelva a iniciar sesión.'
+    );
+  }
+
+  const { data: profile, error: profileError } = await supabase
+    .from('staff_profiles')
+    .select('role, display_name, active, barber_id')
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  const allowedRole = profile?.role === 'ADMIN' || profile?.role === 'MANAGER' || profile?.role === 'BARBER';
+  if (profileError || !profile || !profile.active || !allowedRole) {
+    throw new Error('UNAUTHORIZED_STAFF_ONLY: Acceso denegado.');
+  }
+
+  return {
+    userId: user.id,
+    token,
+    profile: profile as { role: string; display_name: string | null; active: boolean; barber_id: string | null },
+    supabase,
+  };
+}
+
+/**
+ * Read-only listing of non-deleted benefit codes for ADMIN, MANAGER, and BARBER.
+ * Excludes cancelled bookings and voided payments from effective usage history.
+ */
+export async function staffListBenefitCodesReadOnly(authToken?: string): Promise<BenefitCodeItem[]> {
+  const { supabase } = await assertStaffReadSession(authToken);
+
+  let rawList: any[] = [];
+  const staffRes = await supabase.rpc('staff_list_benefit_codes');
+  if (!staffRes.error && Array.isArray(staffRes.data)) {
+    rawList = staffRes.data;
+  } else {
+    const db = await createPaymentSupabaseClient();
+    if (db && typeof db.rpc === 'function') {
+      const adminRes = await db.rpc('admin_list_benefit_codes', { p_include_deleted: false });
+      if (!adminRes.error && Array.isArray(adminRes.data)) {
+        rawList = adminRes.data;
+      } else if (staffRes.error) {
+        throw new Error(staffRes.error.message || 'Error al consultar códigos de beneficio');
+      }
+    } else if (staffRes.error) {
+      throw new Error(staffRes.error.message || 'Error al consultar códigos de beneficio');
+    }
+  }
+
+  const usagesByCode = new Map<string, BenefitCodeUsageItem[]>();
+  const voidedAppointmentIds = new Set<string>();
+
+  try {
+    const db = await createPaymentSupabaseClient();
+    if (db && typeof db.from === 'function') {
+      const { data: voidedPayments } = await db
+        .from('payments')
+        .select('appointment_id, status, service_name')
+        .or('status.eq.VOIDED,service_name.eq.Anulado');
+      if (Array.isArray(voidedPayments)) {
+        for (const p of voidedPayments as any[]) {
+          if (p?.appointment_id) voidedAppointmentIds.add(String(p.appointment_id));
+        }
+      }
+
+      const { data: appts } = await db
+        .from('appointments')
+        .select('id, request_number, booking_date, start_time, status, created_at, benefit_code_id, benefit_code, benefit_original_price_ars, benefit_discount_amount_ars, benefit_final_price_ars, benefit_online_deposit_ars, benefit_in_person_balance_ars, client_id, clients(id, name, phone, email), services(name), barbers(name)')
+        .not('benefit_code', 'is', null)
+        .order('created_at', { ascending: false });
+
+      if (Array.isArray(appts)) {
+        for (const a of appts as any[]) {
+          const codeKey = normalizeBenefitCode(a.benefit_code);
+          if (!codeKey) continue;
+          const isCancelled = a.status === 'CANCELLED' || voidedAppointmentIds.has(String(a.id));
+          if (isCancelled) continue;
+
+          const clientObj = Array.isArray(a.clients) ? a.clients[0] : a.clients;
+          const serviceObj = Array.isArray(a.services) ? a.services[0] : a.services;
+          const barberObj = Array.isArray(a.barbers) ? a.barbers[0] : a.barbers;
+          const usageItem: BenefitCodeUsageItem = {
+            id: `appt-${a.id}`,
+            appointmentId: a.id,
+            requestNumber: a.request_number ?? null,
+            bookingDate: a.booking_date ?? null,
+            bookingTime: typeof a.start_time === 'string' ? a.start_time.slice(0, 5) : null,
+            appointmentStatus: a.status ?? null,
+            serviceName: serviceObj?.name ? formatServiceName(serviceObj.name) : null,
+            barberName: barberObj?.name ?? null,
+            clientId: a.client_id ?? clientObj?.id ?? null,
+            clientName: clientObj?.name ?? null,
+            clientPhone: clientObj?.phone ?? null,
+            clientEmail: clientObj?.email ?? null,
+            usedAt: a.created_at || new Date().toISOString(),
+            originalPriceArs: a.benefit_original_price_ars ?? null,
+            discountAmountArs: a.benefit_discount_amount_ars ?? null,
+            finalPriceArs: a.benefit_final_price_ars ?? null,
+            onlineDepositArs: a.benefit_online_deposit_ars ?? null,
+            inPersonBalanceArs: a.benefit_in_person_balance_ars ?? null,
+            isAppointmentCancelled: false,
+          };
+          const list = usagesByCode.get(codeKey) || [];
+          list.push(usageItem);
+          usagesByCode.set(codeKey, list);
+        }
+      }
+    }
+  } catch {
+    // Best-effort enrichment
+  }
+
+  return rawList
+    .map((item) => {
+      const normalized = normalizeBenefitCodeRow(item, usagesByCode.get(normalizeBenefitCode(item.code)));
+      const effectiveUsages = normalized.usages.filter(
+        (u) => !u.isAppointmentCancelled && u.appointmentStatus !== 'CANCELLED' && !voidedAppointmentIds.has(String(u.appointmentId)),
+      );
+      return {
+        ...normalized,
+        usages: effectiveUsages,
+        timesUsed: effectiveUsages.length > 0 ? effectiveUsages.length : normalized.timesUsed,
+        times_used: effectiveUsages.length > 0 ? effectiveUsages.length : normalized.timesUsed,
+      };
+    })
+    .filter((item) => !item.deletedAt);
+}
+
+/**
  * Creates a new benefit code from the admin maintenance panel.
  * Supports usage mode (SINGLE_USE / REUSABLE) and the 5 validity options.
  */
