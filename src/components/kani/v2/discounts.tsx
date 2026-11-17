@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
+import { ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminStaff } from "@/lib/kani-admin-context";
 import { staffListBenefitCodesReadOnlyFn } from "@/lib/kani-benefit-codes.functions";
 import { isStaffOperator } from "@/lib/kani-permissions";
 import { formatCountEs } from "@/lib/kani-statistics";
 import { Empty } from "./shared";
+import "./discount-card.css";
 
 type Usage = {
   appointmentId: string;
@@ -172,7 +174,7 @@ export function V2Discounts({ hideHeading = false }: { hideHeading?: boolean } =
   });
 
   return (
-    <main className="v2-page">
+    <div className={hideHeading ? "kani-dreadonly-wrap" : "v2-page kani-dreadonly-wrap"}>
       {!hideHeading && (
         <>
           <h1>Descuentos</h1>
@@ -192,76 +194,94 @@ export function V2Discounts({ hideHeading = false }: { hideHeading?: boolean } =
         </div>
       )}
       {loading && <p role="status">Cargando descuentos…</p>}
-      {!loading && !visibleRows.length && !error && <Empty>No hay códigos de descuento.</Empty>}
-      <div className="v2-client-grid">
-        {visibleRows.map((row) => {
-          const meta = metadata(row);
-          const { label: typeLabel, benefit } = describeBenefitType(row.type);
-          const isActive = row.status === "ACTIVE";
-          const effectiveUsages = getEffectiveUsages(row.usages);
-          const totalUsages =
-            effectiveUsages.length > 0
-              ? effectiveUsages.length
-              : (row.timesUsed ?? row.times_used ?? Number(meta["timesUsed"] ?? 0));
-          const uniqueClients = countUniqueClients(effectiveUsages);
-          const validity = formatValidity(row, meta);
+      {!loading && !visibleRows.length && !error && (
+        <Empty className="kani-dcard-empty">No hay códigos de descuento.</Empty>
+      )}
+      {visibleRows.length > 0 && (
+        <div className={`kani-dgrid${visibleRows.length === 1 ? " is-single" : ""}`}>
+          {visibleRows.map((row) => {
+            const meta = metadata(row);
+            const { label: typeLabel, benefit } = describeBenefitType(row.type);
+            const isActive = row.status === "ACTIVE";
+            const effectiveUsages = getEffectiveUsages(row.usages);
+            const totalUsages =
+              effectiveUsages.length > 0
+                ? effectiveUsages.length
+                : (row.timesUsed ?? row.times_used ?? Number(meta["timesUsed"] ?? 0));
+            const uniqueClients = countUniqueClients(effectiveUsages);
+            const validity = formatValidity(row, meta);
 
-          return (
-            <article key={row.id} className="v2-panel">
-              <div className="flex items-center justify-between gap-2 mb-3">
-                <h2 style={{ margin: 0 }}>{row.code}</h2>
-                <span
-                  className={`kani-mcard-badge ${isActive ? "is-active" : "is-neutral"}`}
-                  style={{
-                    padding: "4px 10px",
-                    fontSize: "0.75rem",
-                    border: "1px solid currentColor",
-                  }}
-                >
-                  {isActive ? "Activo" : "Inactivo"}
-                </span>
-              </div>
-              <dl>
-                <dt>Tipo de descuento</dt>
-                <dd>{typeLabel}</dd>
-                <dt>Beneficio</dt>
-                <dd>{benefit}</dd>
-                {validity && (
-                  <>
-                    <dt>Vigencia</dt>
-                    <dd>{validity}</dd>
-                  </>
+            return (
+              <article
+                key={row.id}
+                className="kani-dcard kani-dcard--readonly"
+                data-status={row.status}
+              >
+                <div className="kani-dcard-body">
+                  <header className="kani-dcard-header kani-dcard-header--readonly">
+                    <div className="kani-dcard-title-block">
+                      <h2 className="kani-dcard-code">{row.code}</h2>
+                      <p className="kani-dcard-type">{typeLabel}</p>
+                    </div>
+                    <span className={`kani-dcard-badge ${isActive ? "is-active" : "is-inactive"}`}>
+                      {isActive ? "Activo" : "Inactivo"}
+                    </span>
+                  </header>
+
+                  <dl className="kani-dcard-metrics-grid">
+                    <div className="kani-dcard-metric">
+                      <dt>Beneficio</dt>
+                      <dd>{benefit}</dd>
+                    </div>
+                    <div className="kani-dcard-metric">
+                      <dt>Vigencia</dt>
+                      <dd>{validity ?? "Sin vencimiento"}</dd>
+                    </div>
+                    <div className="kani-dcard-metric">
+                      <dt>Utilizaciones</dt>
+                      <dd>{formatCountEs(totalUsages, "utilización", "utilizaciones")}</dd>
+                    </div>
+                    <div className="kani-dcard-metric">
+                      <dt>Clientes únicos</dt>
+                      <dd>
+                        {effectiveUsages.length > 0
+                          ? formatCountEs(uniqueClients, "cliente", "clientes")
+                          : totalUsages === 0
+                            ? "0 clientes"
+                            : "Sin detalle disponible"}
+                      </dd>
+                    </div>
+                  </dl>
+                </div>
+
+                {effectiveUsages.length > 0 ? (
+                  <details className="kani-dcard-history">
+                    <summary className="kani-dcard-history-summary">
+                      <span>Historial de utilizaciones ({effectiveUsages.length})</span>
+                      <ChevronDown size={15} className="kani-dcard-history-chevron" aria-hidden="true" />
+                    </summary>
+                    <ul className="kani-dcard-history-list">
+                      {effectiveUsages.map((usage) => (
+                        <li key={usage.appointmentId} className="kani-dcard-history-item">
+                          <strong className="kani-dcard-history-client">
+                            {usage.clientName ?? "Cliente"}
+                          </strong>
+                          <span className="kani-dcard-history-meta">
+                            {formatUsageDate(usage)}
+                            {usage.barberName ? ` · Barbero: ${usage.barberName}` : ""}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+                ) : (
+                  <p className="kani-dcard-history-empty">Sin utilizaciones registradas.</p>
                 )}
-                <dt>Utilizaciones totales</dt>
-                <dd>{formatCountEs(totalUsages, "utilización", "utilizaciones")}</dd>
-                <dt>Clientes únicos</dt>
-                <dd>
-                  {effectiveUsages.length > 0
-                    ? formatCountEs(uniqueClients, "cliente", "clientes")
-                    : totalUsages === 0
-                      ? "0 clientes"
-                      : "Sin detalle disponible"}
-                </dd>
-              </dl>
-              {effectiveUsages.length > 0 && (
-                <details>
-                  <summary>
-                    Historial de utilizaciones ({effectiveUsages.length})
-                  </summary>
-                  <ul>
-                    {effectiveUsages.map((usage) => (
-                      <li key={usage.appointmentId}>
-                        <strong>{usage.clientName ?? "Cliente"}</strong> · {formatUsageDate(usage)}
-                        {usage.barberName ? ` · Barbero: ${usage.barberName}` : ""}
-                      </li>
-                    ))}
-                  </ul>
-                </details>
-              )}
-            </article>
-          );
-        })}
-      </div>
-    </main>
+              </article>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }

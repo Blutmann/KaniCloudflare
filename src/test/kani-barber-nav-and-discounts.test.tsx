@@ -297,4 +297,66 @@ describe('Kani — Navegación y permisos BARBER', () => {
     expect(screen.queryByRole('alert')).toBeNull();
     errSpy.mockRestore();
   });
+
+  it('renders Liquid Glass .kani-dgrid/.kani-dcard--readonly cards with 2-col metrics, expandable history, and empty state', async () => {
+    const { fireEvent } = await import('@testing-library/react');
+    mockReadOnlyFn.mockResolvedValue([
+      {
+        id: 'c-10',
+        code: 'SUPER_CODIGO_LARGO_SIN_OVERFLOW_2026',
+        type: 'FREE_SERVICE',
+        status: 'ACTIVE',
+        usages: [
+          {
+            appointmentId: 'a-10',
+            clientId: 'cli-10',
+            clientName: 'Gonzalo Pierucci',
+            bookingDate: '2026-11-17',
+            barberName: 'Valentín',
+            appointmentStatus: 'CONFIRMED',
+            isAppointmentCancelled: false,
+          },
+        ],
+      },
+      {
+        id: 'c-11',
+        code: 'INACTIVO_SIN_USOS',
+        type: 'DEPOSIT_WAIVER',
+        status: 'DISABLED',
+        timesUsed: 0,
+        usages: [],
+      },
+    ]);
+
+    const { container } = render(<V2Discounts hideHeading />);
+
+    await waitFor(() => {
+      expect(screen.getByText('SUPER_CODIGO_LARGO_SIN_OVERFLOW_2026')).toBeTruthy();
+    });
+
+    expect(container.querySelector('.kani-dgrid')).not.toBeNull();
+    const cards = container.querySelectorAll('article.kani-dcard.kani-dcard--readonly');
+    expect(cards).toHaveLength(2);
+    expect(cards[0].querySelector('.kani-dcard-metrics-grid')).not.toBeNull();
+    expect(cards[0].querySelector('.kani-dcard-badge.is-active')).not.toBeNull();
+    expect(cards[1].querySelector('.kani-dcard-badge.is-inactive')).not.toBeNull();
+
+    const details = cards[0].querySelector('details.kani-dcard-history') as HTMLDetailsElement;
+    expect(details).not.toBeNull();
+    expect(details.open).toBe(false);
+    const summary = details.querySelector('summary.kani-dcard-history-summary') as HTMLElement;
+    expect(summary.textContent).toContain('Historial de utilizaciones (1)');
+
+    fireEvent.click(summary);
+    expect(details.open).toBe(true);
+    expect(screen.getByText('Gonzalo Pierucci')).toBeTruthy();
+    expect(screen.getByText(/17\/11\/2026 · Barbero: Valentín/)).toBeTruthy();
+
+    fireEvent.click(summary);
+    expect(details.open).toBe(false);
+
+    expect(cards[1].querySelector('.kani-dcard-history-empty')?.textContent).toContain(
+      'Sin utilizaciones registradas.',
+    );
+  });
 });

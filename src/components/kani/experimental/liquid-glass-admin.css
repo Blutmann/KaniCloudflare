@@ -3539,6 +3539,18 @@ html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .kani-dcard-det
   border-top-color: var(--lga-border-nested) !important;
 }
 
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .kani-dcard-metrics-grid,
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .kani-dcard-history,
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .kani-dcard-history-item,
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .kani-dcard-history-empty {
+  border-top-color: var(--lga-border-nested) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .kani-dcard-history-summary:hover {
+  background: var(--lga-glass-nested) !important;
+  color: var(--lga-accent) !important;
+}
+
 html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .kani-dcard-usage-row,
 html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .kani-dcard-details-note,
 html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .kani-dcard-details-alert {

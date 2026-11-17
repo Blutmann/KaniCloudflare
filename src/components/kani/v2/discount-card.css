@@ -495,3 +495,179 @@ html[data-theme="dark"] .kani-dcard-usage-cancelled {
     gap: 8px;
   }
 }
+
+/* ============================================================================
+   Read-only Discount Cards (BARBER / MANAGER) inside .kani-dgrid / .kani-dcard
+   ============================================================================ */
+.kani-dreadonly-wrap {
+  width: 100%;
+  min-width: 0;
+}
+
+.kani-dcard--readonly {
+  gap: 12px;
+  overflow: hidden;
+}
+
+.kani-dcard-header--readonly {
+  align-items: flex-start;
+}
+
+.kani-dcard-title-block {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.kani-dcard-type {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--dc-muted);
+}
+
+.kani-dcard-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 14px;
+  margin: 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--dc-inset-border);
+  min-width: 0;
+}
+
+.kani-dcard-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.kani-dcard-metric dt {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--dc-muted);
+}
+
+.kani-dcard-metric dd {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--dc-text);
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+
+.kani-dcard-history {
+  border-top: 1px solid var(--dc-inset-border);
+  padding-top: 6px;
+  min-width: 0;
+}
+
+.kani-dcard-history-summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 38px;
+  padding: 4px 6px;
+  margin: 0 -6px;
+  border-radius: 10px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--dc-text);
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 140ms ease, color 140ms ease;
+}
+
+.kani-dcard-history-summary::-webkit-details-marker {
+  display: none;
+}
+
+.kani-dcard-history-summary:hover {
+  background: var(--dc-inset-bg);
+  color: var(--gold, #b99a5b);
+}
+
+.kani-dcard-history-summary:focus-visible {
+  outline: 2px solid var(--gold, #b99a5b);
+  outline-offset: 2px;
+}
+
+.kani-dcard-history-chevron {
+  flex-shrink: 0;
+  color: var(--dc-muted);
+  transition: transform 160ms ease, color 140ms ease;
+}
+
+.kani-dcard-history[open] .kani-dcard-history-chevron {
+  transform: rotate(180deg);
+  color: var(--gold, #b99a5b);
+}
+
+.kani-dcard-history-list {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.kani-dcard-history-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 2px;
+  border-top: 1px solid var(--dc-inset-border);
+  min-width: 0;
+}
+
+.kani-dcard-history-item:first-child {
+  border-top: none;
+  padding-top: 4px;
+}
+
+.kani-dcard-history-item:last-child {
+  padding-bottom: 2px;
+}
+
+.kani-dcard-history-client {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--dc-text);
+  overflow-wrap: anywhere;
+}
+
+.kani-dcard-history-meta {
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--dc-muted);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.kani-dcard-history-empty {
+  margin: 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--dc-inset-border);
+  font-size: 12px;
+  color: var(--dc-muted);
+}
+
+@media (max-width: 340px) {
+  .kani-dcard-metrics-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+}
+
