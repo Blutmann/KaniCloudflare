@@ -179,13 +179,13 @@ describe('V2Appointments periods and historical queries', () => {
     expect(screen.getByText('Cliente Próximos 10 Días')).toBeInTheDocument();
   });
 
-  it('allows querying custom range in the past (historical queries) via Rango personalizado (Fecha + Fecha hasta)', () => {
+  it('allows querying custom range in the past (historical queries) via Rango personalizado (Fecha desde + Fecha hasta)', () => {
     render(<V2Appointments />);
     const periodSelect = screen.getByLabelText('Período');
     fireEvent.change(periodSelect, { target: { value: 'CUSTOM' } });
 
-    // Existing Fecha acts as start and only Fecha hasta appears
-    const fechaInput = screen.getByLabelText('Fecha');
+    // Existing Fecha acts as Fecha desde and Fecha hasta appears
+    const fechaInput = screen.getByLabelText('Fecha desde');
     const hastaInput = screen.getByLabelText('Fecha hasta');
     expect(fechaInput).toBeInTheDocument();
     expect(hastaInput).toBeInTheDocument();
@@ -209,7 +209,7 @@ describe('V2Appointments periods and historical queries', () => {
     const periodSelect = screen.getByLabelText('Período');
     fireEvent.change(periodSelect, { target: { value: 'CUSTOM' } });
 
-    const fechaInput = screen.getByLabelText('Fecha');
+    const fechaInput = screen.getByLabelText('Fecha desde');
     const hastaInput = screen.getByLabelText('Fecha hasta');
 
     // Invalid range: Fecha after Fecha hasta

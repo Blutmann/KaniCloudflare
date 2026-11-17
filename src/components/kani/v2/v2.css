@@ -1928,6 +1928,23 @@ html[data-theme="dark"] .v2-field select {
   }
 }
 
+/* V12.47.25.1: Scoped Turnos filters grid (2x2 default, 2+2+1 on Rango personalizado) */
+.v2-turnos-filter-panel > .v2-admin-filter-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  align-items: stretch !important;
+}
+
+.v2-turnos-filter-panel.is-custom-range .v2-turnos-status-full {
+  grid-column: 1 / -1 !important;
+}
+
+@media (max-width: 390px) {
+  .v2-turnos-filter-panel :is(input, select, output) {
+    padding: 9px 8px !important;
+    font-size: 11.5px !important;
+  }
+}
+
 /* 3. Shared Filter Cell & Wrapper */
 .v2-admin-filter-cell,
 .v2-field {

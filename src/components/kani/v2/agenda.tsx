@@ -415,24 +415,19 @@ export function V2Appointments({
     <main className="v2-page v2-appointments-page">
       <AdminFilterPanel
         ariaLabel="Filtros de turnos"
+        className={
+          period === "CUSTOM"
+            ? "v2-turnos-filter-panel is-custom-range"
+            : "v2-turnos-filter-panel"
+        }
         footer={
-          period === "CUSTOM" && (
+          period === "CUSTOM" && isInvalidRange ? (
             <div className="v2-custom-range-row">
-              <AdminFilterCell label="Fecha hasta" htmlFor="v2-appointments-custom-end">
-                <input
-                  id="v2-appointments-custom-end"
-                  type="date"
-                  value={customEndDate}
-                  onChange={(e) => setCustomEndDate(e.target.value)}
-                />
-              </AdminFilterCell>
-              {isInvalidRange && (
-                <p className="v2-range-warning" role="alert">
-                  La fecha &apos;Fecha hasta&apos; debe ser igual o posterior a &apos;Fecha&apos;.
-                </p>
-              )}
+              <p className="v2-range-warning" role="alert">
+                La fecha &apos;Fecha hasta&apos; debe ser igual o posterior a &apos;Fecha&apos;.
+              </p>
             </div>
-          )
+          ) : null
         }
       >
         <AdminFilterCell label="Período" htmlFor="v2-appointments-period">
@@ -447,14 +442,6 @@ export function V2Appointments({
               </option>
             ))}
           </select>
-        </AdminFilterCell>
-        <AdminFilterCell label="Fecha" htmlFor="v2-appointments-date">
-          <input
-            id="v2-appointments-date"
-            type="date"
-            value={date}
-            onChange={(e) => handleDateChange(e.target.value)}
-          />
         </AdminFilterCell>
         <AdminFilterCell label="Barbero" htmlFor="v2-appointments-barber">
           <select
@@ -471,7 +458,32 @@ export function V2Appointments({
             ))}
           </select>
         </AdminFilterCell>
-        <AdminFilterCell label="Estado" htmlFor="v2-appointments-status">
+        <AdminFilterCell
+          label={period === "CUSTOM" ? "Fecha desde" : "Fecha"}
+          htmlFor="v2-appointments-date"
+        >
+          <input
+            id="v2-appointments-date"
+            type="date"
+            value={date}
+            onChange={(e) => handleDateChange(e.target.value)}
+          />
+        </AdminFilterCell>
+        {period === "CUSTOM" && (
+          <AdminFilterCell label="Fecha hasta" htmlFor="v2-appointments-custom-end">
+            <input
+              id="v2-appointments-custom-end"
+              type="date"
+              value={customEndDate}
+              onChange={(e) => setCustomEndDate(e.target.value)}
+            />
+          </AdminFilterCell>
+        )}
+        <AdminFilterCell
+          label="Estado"
+          htmlFor="v2-appointments-status"
+          className={period === "CUSTOM" ? "v2-turnos-status-full" : undefined}
+        >
           <select
             id="v2-appointments-status"
             value={status}

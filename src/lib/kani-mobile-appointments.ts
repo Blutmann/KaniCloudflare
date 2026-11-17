@@ -335,10 +335,15 @@ export function isAppointmentTemporallyFinished(
   return endHHMM <= currentTime;
 }
 
+const MONTHS_SHORT_TITLE_ES = [
+  'Ene.', 'Feb.', 'Mar.', 'Abr.', 'May.', 'Jun.',
+  'Jul.', 'Ago.', 'Sep.', 'Oct.', 'Nov.', 'Dic.',
+];
+
 export function formatV2AgendaPeriodLabel(
   preset: V2AgendaPeriodPreset,
   today: string,
-  compact = false,
+  _compact = false,
 ): string {
   const [yearStr, monthStr] = today.split('-');
   const year = parseInt(yearStr, 10);
@@ -350,32 +355,30 @@ export function formatV2AgendaPeriodLabel(
     case 'NEXT_5_DAYS':
       return 'Próximos 5 días';
     case 'THIS_WEEK': {
-      if (compact) return 'Esta semana';
       const weekStart = startOfBusinessWeek(today);
       const weekEnd = addCalendarDays(weekStart, 6);
-      const [, sM, sD] = weekStart.split('-').map((v) => parseInt(v, 10));
-      const [, eM, eD] = weekEnd.split('-').map((v) => parseInt(v, 10));
-      if (sM === eM) {
-        return `Esta semana — Del ${sD} al ${eD} ${MONTHS_SHORT_ES[eM - 1]}`;
+      const [sY, sM, sD] = weekStart.split('-').map((v) => parseInt(v, 10));
+      const [eY, eM, eD] = weekEnd.split('-').map((v) => parseInt(v, 10));
+      if (sY !== eY) {
+        return `${sD} ${MONTHS_SHORT_TITLE_ES[sM - 1]} ${sY} - ${eD} ${MONTHS_SHORT_TITLE_ES[eM - 1]} ${eY}`;
       }
-      return `Esta semana — Del ${sD} ${MONTHS_SHORT_ES[sM - 1]} al ${eD} ${MONTHS_SHORT_ES[eM - 1]}`;
+      if (sM !== eM) {
+        return `${sD} ${MONTHS_SHORT_TITLE_ES[sM - 1]} - ${eD} ${MONTHS_SHORT_TITLE_ES[eM - 1]}`;
+      }
+      return `${sD} - ${eD} ${MONTHS_SHORT_TITLE_ES[eM - 1]}`;
     }
     case 'NEXT_10_DAYS':
       return 'Próximos 10 días';
     case 'THIS_MONTH':
-      return compact
-        ? `Este mes — ${MONTHS_SHORT_ES[monthIdx].replace('.', '')} ${year}`
-        : `Este mes — ${MONTHS_FULL_ES[monthIdx]} ${year}`;
+      return `${MONTHS_FULL_ES[monthIdx]} ${year}`;
     case 'PREVIOUS_MONTH': {
       const prevDate = new Date(Date.UTC(year, monthIdx - 1, 1));
       const prevYear = prevDate.getUTCFullYear();
       const prevMonthIdx = prevDate.getUTCMonth();
-      return compact
-        ? `Mes ant. — ${MONTHS_SHORT_ES[prevMonthIdx].replace('.', '')} ${prevYear}`
-        : `Mes anterior — ${MONTHS_FULL_ES[prevMonthIdx]} ${prevYear}`;
+      return `${MONTHS_FULL_ES[prevMonthIdx]} ${prevYear}`;
     }
     case 'THIS_YEAR':
-      return `Este año — ${year}`;
+      return `${year}`;
     case 'CUSTOM':
       return 'Rango personalizado';
     case 'DATE':

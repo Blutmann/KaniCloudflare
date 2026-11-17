@@ -96,9 +96,9 @@ describe('V12.47.25 — Helpers de períodos, ordenamiento y WhatsApp directo', 
       end: '2024-02-29',
     });
     expect(formatV2AgendaPeriodLabel('PREVIOUS_MONTH', '2026-01-15')).toBe(
-      'Mes anterior — Diciembre 2025',
+      'Diciembre 2025',
     );
-    expect(formatV2AgendaPeriodLabel('THIS_YEAR', '2026-11-16')).toBe('Este año — 2026');
+    expect(formatV2AgendaPeriodLabel('THIS_YEAR', '2026-11-16')).toBe('2026');
   });
 
   it('determina horario finalizado usando duración real del servicio sin mutar estado', () => {
