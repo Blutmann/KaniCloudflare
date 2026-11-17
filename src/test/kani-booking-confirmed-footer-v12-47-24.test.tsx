@@ -119,4 +119,36 @@ describe('V12.47.24 · Booking Confirmation — Footer Navigation & UX Writing',
     expect(screen.queryByRole('heading', { name: '¡Turno confirmado!' })).not.toBeInTheDocument();
     expect(window.sessionStorage.getItem('kani:payway:confirmed-booking')).toBeNull();
   });
+
+  it('V12.47.26.2: no reserva espacio de stepper en .kani-confirmed-scroll-content y compacta la fila fecha/horario', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    const css = fs.readFileSync(
+      path.resolve(__dirname, '../components/kani/experimental/reserva-v4.css'),
+      'utf8',
+    );
+    expect(css).toMatch(/\.booking-scroll-content\.kani-confirmed-scroll-content[\s\S]*?padding-top:\s*78px\s*!important;/);
+    expect(css).toMatch(/\.booking-scroll-content\.kani-confirmed-scroll-content[\s\S]*?padding-top:\s*0\s*!important;/);
+
+    const { container } = render(
+      <BookingConfirmedScreen
+        confirmed={{
+          appointmentId: 'apt-v12-47-26-2',
+          serviceName: 'Corte y barba',
+          barber: 'Lautaro',
+          date: '2026-11-22',
+          time: '14:30',
+          servicePriceArs: 30000,
+          depositArs: 0,
+          benefitType: 'FREE_SERVICE',
+          inPersonBalanceArs: 0,
+        }}
+        onHomeClick={vi.fn()}
+      />,
+    );
+
+    expect(container.querySelector('.kani-confirmed-date-text')).toBeTruthy();
+    expect(container.querySelector('.kani-confirmed-time-pill')).toBeTruthy();
+    expect(screen.getByText('Sin saldo pendiente')).toBeInTheDocument();
+  });
 });

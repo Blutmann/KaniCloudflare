@@ -164,7 +164,9 @@ export function BookingConfirmedScreen({
               <div className="kani-confirmed-compact-row">
                 <CalendarDays size={16} className="shrink-0 text-gold" aria-hidden="true" />
                 <div className="kani-confirmed-compact-main">
-                  <span className="capitalize font-medium text-foreground">{formattedDate}</span>
+                  <span className="capitalize font-medium text-foreground kani-confirmed-date-text">
+                    {formattedDate}
+                  </span>
                   <span className="kani-confirmed-time-pill">
                     <Clock3 size={13} aria-hidden="true" />
                     <span>{formattedTime}</span>
