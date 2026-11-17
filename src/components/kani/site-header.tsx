@@ -372,6 +372,7 @@ export function SiteHeader() {
     }
   };
   const isBarber = staff?.profile.role === 'BARBER';
+  const isAdmin = staff?.profile.role === 'ADMIN';
   const sessionRole = staff?.profile.role === 'ADMIN' ? 'Administrador' : staff?.profile.role === 'MANAGER' ? 'KANI Jefe' : isBarber ? 'BARBER' : '';
   const menuNavigationGroups = (
     <>
@@ -504,6 +505,46 @@ export function SiteHeader() {
       </div>
     </>
   );
+  const adminMenuNavigationGroups = (
+    <>
+      {/* Grupo 1 — Navegación pública */}
+      <div className="mobile-menu-group">
+        <Link to={bookingTarget} onClick={continueBooking}>
+          <ArrowUpRight />Reservar turno
+        </Link>
+        <Link to={contactTarget} onClick={closeMenu}>
+          <Building2 />Contacto
+        </Link>
+      </div>
+
+      <div className="mobile-menu-divider" role="separator" />
+
+      {/* Grupo 2 — Administración */}
+      <div className="mobile-menu-group">
+        <Link to={adminBase} onClick={closeMenu}>
+          <CalendarClock />Panel de administración
+        </Link>
+        <Link to={membershipsLinkTarget} onClick={closeMenu}>
+          <Tag />Membresías y descuentos
+        </Link>
+        <Link to={`${adminBase}/mantenimiento`} onClick={closeMenu}>
+          <Wrench />Panel de mantenimiento
+        </Link>
+      </div>
+
+      <div className="mobile-menu-divider" role="separator" />
+
+      {/* Grupo 3 — Información legal */}
+      <div className="mobile-menu-group">
+        <Link to={privacyTarget} onClick={closeMenu}>
+          <ShieldCheck />Política de privacidad
+        </Link>
+        <Link to={termsTarget} onClick={closeMenu}>
+          <Scale />Términos y condiciones
+        </Link>
+      </div>
+    </>
+  );
   const menuSessionBlock = staff ? (
     <>
       {!isBarber && <div className="mobile-menu-divider" role="separator" />}
@@ -529,11 +570,22 @@ export function SiteHeader() {
       </div>
     </>
   ) : null;
-  const activeMenuGroups = isBarber ? barberMenuNavigationGroups : menuNavigationGroups;
+  const activeMenuGroups = isBarber
+    ? barberMenuNavigationGroups
+    : isAdmin
+      ? adminMenuNavigationGroups
+      : menuNavigationGroups;
   const mobileMenu = menuOpen ? (
     isLiquidRoute ? (
       <nav
-        className={['mobile-menu', 'mobile-menu--liquid', isBarber ? 'mobile-menu--barber' : ''].filter(Boolean).join(' ')}
+        className={[
+          'mobile-menu',
+          'mobile-menu--liquid',
+          isBarber ? 'mobile-menu--barber' : '',
+          isAdmin ? 'mobile-menu--admin' : '',
+        ]
+          .filter(Boolean)
+          .join(' ')}
         id="kani-main-menu"
         aria-label="Menú principal"
       >
@@ -547,7 +599,9 @@ export function SiteHeader() {
       </nav>
     ) : (
       <nav
-        className={['mobile-menu', isBarber ? 'mobile-menu--barber' : ''].filter(Boolean).join(' ')}
+        className={['mobile-menu', isBarber ? 'mobile-menu--barber' : '', isAdmin ? 'mobile-menu--admin' : '']
+          .filter(Boolean)
+          .join(' ')}
         id="kani-main-menu"
         aria-label="Menú principal"
       >

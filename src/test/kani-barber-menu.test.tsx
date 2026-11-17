@@ -172,9 +172,11 @@ describe('Kani — Optimización del menú desplegable BARBER', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Abrir menú' }));
     const nav = screen.getByRole('navigation', { name: 'Menú principal' });
     expect(nav.className).not.toContain('mobile-menu--barber');
+    expect(nav.className).toContain('mobile-menu--admin');
     expect(nav.textContent).toContain('Panel de administración');
     expect(nav.textContent).toContain('Panel de mantenimiento');
-    expect(nav.textContent).toContain('WhatsApp');
+    expect(nav.textContent).not.toContain('WhatsApp');
+    expect(screen.getByRole('link', { name: 'Consultas por WhatsApp' })).toBeInTheDocument();
   });
 
   it('defines full-screen Desktop and Mobile Liquid Glass styles for .mobile-menu--barber', () => {
