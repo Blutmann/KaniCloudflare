@@ -57,22 +57,28 @@ export function useMembershipStaffAuth(currentPath: string) {
   const [authError, setAuthError] = useState<string | null>(null);
   const [signingOut, setSigningOut] = useState(false);
 
-  const verifyingRef = useRef(false);
+  const inFlightSyncRef = useRef<Promise<AuthenticatedStaff | null> | null>(null);
 
-  const syncStaffSession = useCallback(async (bypassCache = false) => {
-    if (verifyingRef.current) return null;
-    verifyingRef.current = true;
-    try {
-      const resolved = await getAuthenticatedStaff(bypassCache ? { bypassCache: true } : undefined);
-      setStaff(resolved);
-      return resolved;
-    } catch {
-      setStaff(null);
-      return null;
-    } finally {
-      verifyingRef.current = false;
-      setCheckingAuth(false);
+  const syncStaffSession = useCallback(async (bypassCache = false): Promise<AuthenticatedStaff | null> => {
+    if (inFlightSyncRef.current) {
+      if (!bypassCache) return inFlightSyncRef.current;
+      await inFlightSyncRef.current.catch(() => null);
     }
+    const promise = (async () => {
+      try {
+        const resolved = await getAuthenticatedStaff(bypassCache ? { bypassCache: true } : undefined);
+        setStaff(resolved);
+        return resolved;
+      } catch {
+        setStaff(null);
+        return null;
+      } finally {
+        inFlightSyncRef.current = null;
+        setCheckingAuth(false);
+      }
+    })();
+    inFlightSyncRef.current = promise;
+    return promise;
   }, []);
 
   useEffect(() => {
@@ -117,29 +123,33 @@ export function useMembershipStaffAuth(currentPath: string) {
     };
   }, [syncStaffSession]);
 
-  const openLoginModal = useCallback(() => {
-    saveValidatedMembershipReturnPath(currentPath);
-    setAuthError(null);
-    setIsLoginOpen(true);
-  }, [currentPath]);
+  const openLoginModal = useCallback(
+    (customError?: string | null) => {
+      saveValidatedMembershipReturnPath(currentPath);
+      setAuthError(typeof customError === "string" ? customError : null);
+      setIsLoginOpen(true);
+    },
+    [currentPath],
+  );
 
   const closeLoginModal = useCallback(() => {
     setAuthError(null);
     setIsLoginOpen(false);
   }, []);
 
-  const handleAuthenticated = useCallback(async () => {
+  const handleAuthenticated = useCallback(async (): Promise<AuthenticatedStaff | null> => {
     setAuthError(null);
     const verified = await getAuthenticatedStaff({ bypassCache: true }).catch(() => null);
     if (!verified) {
       await signOut({ scope: "local" }).catch(() => undefined);
       setStaff(null);
       setAuthError("Esta cuenta no tiene permisos de personal interno (ADMIN, JEFE o BARBER).");
-      return;
+      return null;
     }
     setStaff(verified);
     setIsLoginOpen(false);
     clearValidatedMembershipReturnPath();
+    return verified;
   }, []);
 
   const handleSignOut = useCallback(async () => {

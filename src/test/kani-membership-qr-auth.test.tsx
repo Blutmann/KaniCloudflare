@@ -5,6 +5,7 @@ const mockGetAuthenticatedStaff = vi.fn();
 const mockSignInWithPassword = vi.fn();
 const mockSignOut = vi.fn();
 const mockRequestPasswordReset = vi.fn();
+const mockNavigate = vi.fn();
 const mockAuthListeners = new Set<(event: string, session: unknown) => void>();
 
 let mockedToken = "tok-qr-auth-0123456789abcdef0123456789";
@@ -12,6 +13,7 @@ let mockedToken = "tok-qr-auth-0123456789abcdef0123456789";
 vi.mock("@tanstack/react-router", () => ({
   createFileRoute: () => () => ({
     useParams: () => ({ token: mockedToken }),
+    useNavigate: () => mockNavigate,
   }),
   Link: ({ to, params, children, ...props }: any) => {
     const resolved =
@@ -406,6 +408,140 @@ describe("KANI — Autenticación integrada en membresías, verificación QR y n
       expect(sanitizeInternalMembershipReturnPath("https://evil.com/membresia/tok1234567890abcdef")).toBeNull();
       expect(sanitizeInternalMembershipReturnPath("//evil.com/verificar-membresia/tok1234567890abcdef")).toBeNull();
       expect(sanitizeInternalMembershipReturnPath("/panel-administracion/inicio")).toBeNull();
+    });
+  });
+
+  describe("4. Verificación inteligente según autenticación (botón VERIFICAR)", () => {
+    beforeEach(() => {
+      mockNavigate.mockReset();
+    });
+
+    it("ADMIN autenticado pulsa Verificar y accede directamente a Control Salón sin abrir QR ni consumir sesiones", async () => {
+      mockGetAuthenticatedStaff.mockResolvedValue(makeStaff("ADMIN", "KANI Admin"));
+      vi.spyOn(membershipsLib, "getPublicMembershipCard").mockResolvedValue(makePublicCard());
+      const consumeSpy = vi.spyOn(membershipsLib, "consumeMembershipSession");
+
+      render(<PublicMembershipCardPage />);
+      const verifyBtn = await screen.findByRole("button", { name: /Verificar membresía en Control Salón/i });
+      fireEvent.click(verifyBtn);
+
+      await waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith({
+          to: "/verificar-membresia/$token",
+          params: { token: mockedToken },
+        });
+      });
+
+      expect(screen.queryByRole("dialog", { name: /Verificación en Kani/i })).toBeNull();
+      expect(consumeSpy).not.toHaveBeenCalled();
+    });
+
+    it("MANAGER (JEFE) autenticado pulsa Verificar y accede directamente a Control Salón", async () => {
+      mockGetAuthenticatedStaff.mockResolvedValue(makeStaff("MANAGER", "Jefe KANI"));
+      vi.spyOn(membershipsLib, "getPublicMembershipCard").mockResolvedValue(makePublicCard());
+
+      render(<PublicMembershipCardPage />);
+      const verifyBtn = await screen.findByRole("button", { name: /Verificar membresía en Control Salón/i });
+      fireEvent.click(verifyBtn);
+
+      await waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith({
+          to: "/verificar-membresia/$token",
+          params: { token: mockedToken },
+        });
+      });
+    });
+
+    it("BARBER autenticado accede directamente a Control Salón, y si no tiene autorización sobre la membresía no puede consumir sesiones", async () => {
+      mockGetAuthenticatedStaff.mockResolvedValue(makeStaff("BARBER", "Lautaro"));
+      vi.spyOn(membershipsLib, "getPublicMembershipCard").mockResolvedValue(makePublicCard());
+
+      const { unmount } = render(<PublicMembershipCardPage />);
+      const verifyBtn = await screen.findByRole("button", { name: /Verificar membresía en Control Salón/i });
+      fireEvent.click(verifyBtn);
+
+      await waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith({
+          to: "/verificar-membresia/$token",
+          params: { token: mockedToken },
+        });
+      });
+      unmount();
+
+      vi.spyOn(membershipsLib, "fetchMembershipForVerification").mockResolvedValue({
+        success: false,
+        error: "Sin permisos sobre esta membresía de otro barbero",
+        membership: null,
+      });
+
+      render(<SalonMembershipVerificationView />);
+      await waitFor(() => {
+        expect(screen.getByText(/no tiene permisos para operar esta membresía/i)).toBeInTheDocument();
+      });
+      expect(screen.queryByRole("button", { name: /Descontar 1 sesión/i })).toBeNull();
+    });
+
+    it("Cliente o visitante sin sesión pulsa Verificar y ve el QR de verificación", async () => {
+      mockGetAuthenticatedStaff.mockResolvedValue(null);
+      vi.spyOn(membershipsLib, "getPublicMembershipCard").mockResolvedValue(makePublicCard());
+
+      render(<PublicMembershipCardPage />);
+      const verifyBtn = await screen.findByRole("button", { name: /Abrir código QR de verificación/i });
+      await waitFor(() => {
+        expect(mockGetAuthenticatedStaff).toHaveBeenCalled();
+      });
+
+      fireEvent.click(verifyBtn);
+
+      await waitFor(() => {
+        expect(screen.getByText("Verificación en Kani")).toBeInTheDocument();
+      });
+      expect(mockNavigate).not.toHaveBeenCalled();
+    });
+
+    it("Sesión expirada no obtiene acceso privilegiado ni muestra QR: solicita re-autenticación integrada", async () => {
+      mockGetAuthenticatedStaff
+        .mockResolvedValueOnce(makeStaff("BARBER", "Lautaro"))
+        .mockResolvedValueOnce(null);
+      vi.spyOn(membershipsLib, "getPublicMembershipCard").mockResolvedValue(makePublicCard());
+
+      render(<PublicMembershipCardPage />);
+      const verifyBtn = await screen.findByRole("button", { name: /Verificar membresía en Control Salón/i });
+      fireEvent.click(verifyBtn);
+
+      await waitFor(() => {
+        expect(screen.getByRole("dialog", { name: /Acceso de personal interno KANI/i })).toBeInTheDocument();
+      });
+      expect(screen.getByText(/Tu sesión expiró o no tiene permisos activos/i)).toBeInTheDocument();
+      expect(screen.queryByText("Verificación en Kani")).toBeNull();
+      expect(mockNavigate).not.toHaveBeenCalled();
+    });
+
+    it("Doble clic consecutivo en Verificar no produce navegaciones ni consumos duplicados", async () => {
+      let resolveRefresh!: (val: any) => void;
+      mockGetAuthenticatedStaff
+        .mockResolvedValueOnce(makeStaff("ADMIN", "KANI Admin"))
+        .mockImplementationOnce(
+          () =>
+            new Promise((resolve) => {
+              resolveRefresh = resolve;
+            }),
+        );
+      vi.spyOn(membershipsLib, "getPublicMembershipCard").mockResolvedValue(makePublicCard());
+      const consumeSpy = vi.spyOn(membershipsLib, "consumeMembershipSession");
+
+      render(<PublicMembershipCardPage />);
+      const verifyBtn = await screen.findByRole("button", { name: /Verificar membresía en Control Salón/i });
+
+      fireEvent.click(verifyBtn);
+      fireEvent.click(verifyBtn);
+
+      resolveRefresh(makeStaff("ADMIN", "KANI Admin"));
+
+      await waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledTimes(1);
+      });
+      expect(consumeSpy).not.toHaveBeenCalled();
     });
   });
 });

@@ -123,6 +123,7 @@ function KaniQRCode({
 
 export function PublicMembershipCardPage() {
   const { token } = Route.useParams();
+  const navigate = typeof Route.useNavigate === "function" ? Route.useNavigate() : null;
   const staffAuth = useMembershipStaffAuth(`/membresia/${token}`);
 
   const [loading, setLoading] = useState(true);
@@ -130,6 +131,62 @@ export function PublicMembershipCardPage() {
   const [error, setError] = useState<string | null>(null);
   const [isFlipped, setIsFlipped] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [verifyingAccess, setVerifyingAccess] = useState(false);
+  const verifyingLockRef = useRef(false);
+  const navigatedToControlRef = useRef(false);
+  const pendingVerifyAfterLoginRef = useRef(false);
+
+  const navigateToSalonVerification = useCallback(() => {
+    if (navigatedToControlRef.current) return;
+    navigatedToControlRef.current = true;
+    if (navigate) {
+      void navigate({ to: "/verificar-membresia/$token", params: { token } });
+    } else if (typeof window !== "undefined") {
+      window.location.assign(`/verificar-membresia/${encodeURIComponent(token)}`);
+    }
+  }, [navigate, token]);
+
+  const handleVerifyClick = useCallback(
+    async (e: React.MouseEvent<HTMLButtonElement>) => {
+      e.stopPropagation();
+      if (verifyingLockRef.current || navigatedToControlRef.current) return;
+
+      const hadStaffSession = Boolean(staffAuth.staff);
+      if (!hadStaffSession && !staffAuth.checkingAuth) {
+        setIsModalOpen(true);
+        return;
+      }
+
+      verifyingLockRef.current = true;
+      setVerifyingAccess(true);
+      try {
+        const verified = await staffAuth.refreshStaff();
+        const isAllowedStaff =
+          verified &&
+          verified.profile?.active !== false &&
+          ["ADMIN", "MANAGER", "BARBER"].includes(verified.profile.role);
+
+        if (isAllowedStaff) {
+          navigateToSalonVerification();
+          return;
+        }
+
+        if (hadStaffSession) {
+          pendingVerifyAfterLoginRef.current = true;
+          staffAuth.openLoginModal(
+            "Tu sesión expiró o no tiene permisos activos. Iniciá sesión para continuar a Control Salón.",
+          );
+          return;
+        }
+
+        setIsModalOpen(true);
+      } finally {
+        verifyingLockRef.current = false;
+        setVerifyingAccess(false);
+      }
+    },
+    [navigateToSalonVerification, staffAuth],
+  );
 
   // Referencias para manipulación 3D continua de alto rendimiento (Pointer Events)
   const sceneRef = useRef<HTMLDivElement>(null);
@@ -858,16 +915,23 @@ export function PublicMembershipCardPage() {
               <div className="flex items-center justify-between gap-2 pt-2.5 md:pt-3.5 lg:pt-4 border-t border-white/[0.08]">
                 <button
                   type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsModalOpen(true);
-                  }}
-                  className="relative inline-flex items-center justify-center min-h-[44px] min-w-[44px] -my-1 md:my-0 bg-transparent border-0 p-0 cursor-pointer group focus:outline-none"
-                  aria-label="Abrir código QR de verificación"
+                  onClick={(e) => void handleVerifyClick(e)}
+                  disabled={verifyingAccess}
+                  aria-busy={verifyingAccess}
+                  className="relative inline-flex items-center justify-center min-h-[44px] min-w-[44px] -my-1 md:my-0 bg-transparent border-0 p-0 cursor-pointer group focus:outline-none disabled:opacity-70 disabled:cursor-wait"
+                  aria-label={
+                    staffAuth.staff
+                      ? "Verificar membresía en Control Salón"
+                      : "Abrir código QR de verificación"
+                  }
                 >
                   <span className="inline-flex items-center justify-center gap-1.5 sm:gap-2 h-[35px] md:min-h-[44px] px-3.5 sm:px-5 md:px-6 md:py-2.5 rounded-full bg-[#070708] group-hover:bg-[#141418] border border-[#D4B475]/85 group-hover:border-[#F2DFB4] text-[#F0D9A3] group-hover:text-white transition-all text-[9.5px] sm:text-xs md:text-[13px] lg:text-[13.5px] font-mono font-semibold tracking-[0.16em] md:tracking-[0.18em] shadow-[0_0_18px_rgba(212,180,117,0.14)] whitespace-nowrap">
-                    <QrCode className="w-3.5 h-3.5 md:w-[18px] md:h-[18px] text-[#D4B475] shrink-0" />
-                    <span>VERIFICAR</span>
+                    {verifyingAccess ? (
+                      <Loader2 className="w-3.5 h-3.5 md:w-[18px] md:h-[18px] text-[#D4B475] shrink-0 animate-spin" />
+                    ) : (
+                      <QrCode className="w-3.5 h-3.5 md:w-[18px] md:h-[18px] text-[#D4B475] shrink-0" />
+                    )}
+                    <span>{verifyingAccess ? "VERIFICANDO..." : "VERIFICAR"}</span>
                   </span>
                 </button>
 
@@ -1018,8 +1082,17 @@ export function PublicMembershipCardPage() {
       )}
       <MembershipStaffLoginModal
         isOpen={staffAuth.isLoginOpen}
-        onClose={staffAuth.closeLoginModal}
-        onAuthenticated={staffAuth.handleAuthenticated}
+        onClose={() => {
+          pendingVerifyAfterLoginRef.current = false;
+          staffAuth.closeLoginModal();
+        }}
+        onAuthenticated={async () => {
+          const verified = await staffAuth.handleAuthenticated();
+          if (verified && pendingVerifyAfterLoginRef.current) {
+            pendingVerifyAfterLoginRef.current = false;
+            navigateToSalonVerification();
+          }
+        }}
         authError={staffAuth.authError}
         subtitle="Acceso interno (ADMIN, JEFE o BARBER) sin salir de la credencial."
       />
