@@ -1,13 +1,33 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { createFileRoute } from "@tanstack/react-router";
+import { LiquidGlassShell } from "@/components/kani/experimental/liquid-glass-shell";
+import "@/components/kani/experimental/liquid-glass-admin.css";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/activar-cuenta")({
-  component: ActivateAccount,
+  component: ActivateAccountRoute,
   head: () => ({
     meta: [{ title: "Activar cuenta — KANI" }, { name: "robots", content: "noindex, nofollow" }],
   }),
 });
+
+function ActivateAccountRoute() {
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    document.body.dataset.lgAdmin = "true";
+    document.body.dataset.adminLogin = "true";
+    return () => {
+      delete document.body.dataset.lgAdmin;
+      delete document.body.dataset.adminLogin;
+    };
+  }, []);
+
+  return (
+    <LiquidGlassShell section="admin">
+      <ActivateAccount />
+    </LiquidGlassShell>
+  );
+}
 
 export function ActivateAccount() {
   const [ready, setReady] = useState(false);
@@ -23,9 +43,13 @@ export function ActivateAccount() {
         if (parameters.has("error") || fragment.has("error")) throw new Error("INVALID_INVITE");
         const code = parameters.get("code");
         const tokenHash = parameters.get("token_hash");
+        const typeParam = parameters.get("type");
         if (tokenHash) {
-          if (parameters.get("type") !== "invite") throw new Error("INVALID_INVITE");
-          const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: "invite" });
+          if (typeParam !== "invite" && typeParam !== "recovery") throw new Error("INVALID_INVITE");
+          const { error } = await supabase.auth.verifyOtp({
+            token_hash: tokenHash,
+            type: typeParam,
+          });
           if (error) throw error;
         }
         if (code) {
@@ -72,13 +96,13 @@ export function ActivateAccount() {
     }
   }
   return (
-    <main className="site-container admin-page">
+    <main className="site-container admin-page admin-login-page">
       <div className="admin-login-shell mx-auto max-w-sm">
-        <h1>Activá tu cuenta KANI</h1>
-        <p>Elegí tu contraseña individual.</p>
-        {error && <p role="alert">{error}</p>}
+        <h1 className="eyebrow admin-login-title text-center">Activá tu cuenta KANI</h1>
+        <p className="admin-login-recovery-copy text-center">Elegí tu contraseña individual.</p>
+        {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
         {ready && (
-          <form onSubmit={submit} className="space-y-5">
+          <form onSubmit={submit} className="admin-login-form space-y-5">
             <label className="field-label">
               Contraseña
               <input
@@ -103,8 +127,8 @@ export function ActivateAccount() {
                 disabled={busy}
               />
             </label>
-            <button className="v2-primary" disabled={busy}>
-              {busy ? "Guardando…" : "Guardar y entrar"}
+            <button className="admin-login-submit v2-primary h-12 w-full" disabled={busy}>
+              {busy ? "Guardando..." : "Guardar y entrar"}
             </button>
           </form>
         )}

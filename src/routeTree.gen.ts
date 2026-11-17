@@ -43,6 +43,7 @@ import { Route as ReservarTurnoRouteImport } from './routes/reservar-turno'
 import { Route as ReservarTurnoLiquidRouteImport } from './routes/reservar-turno-liquid'
 import { Route as ReservarTurnoMercadopagoRouteImport } from './routes/reservar-turno-mercadopago'
 import { Route as ReservarTurnoOldRouteImport } from './routes/reservar-turno-old'
+import { Route as RestablecerContrasenaRouteImport } from './routes/restablecer-contrasena'
 import { Route as TerminosYCondicionesRouteImport } from './routes/terminos-y-condiciones'
 import { Route as TerminosYCondicionesLiquidRouteImport } from './routes/terminos-y-condiciones-liquid'
 import { Route as TerminosYCondicionesOldRouteImport } from './routes/terminos-y-condiciones-old'
@@ -288,6 +289,11 @@ const ReservarTurnoMercadopagoRoute =
 const ReservarTurnoOldRoute = ReservarTurnoOldRouteImport.update({
   id: '/reservar-turno-old',
   path: '/reservar-turno-old',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RestablecerContrasenaRoute = RestablecerContrasenaRouteImport.update({
+  id: '/restablecer-contrasena',
+  path: '/restablecer-contrasena',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TerminosYCondicionesRoute = TerminosYCondicionesRouteImport.update({
@@ -731,6 +737,7 @@ export interface FileRoutesByFullPath {
   '/reservar-turno-liquid': typeof ReservarTurnoLiquidRoute
   '/reservar-turno-mercadopago': typeof ReservarTurnoMercadopagoRoute
   '/reservar-turno-old': typeof ReservarTurnoOldRoute
+  '/restablecer-contrasena': typeof RestablecerContrasenaRoute
   '/terminos-y-condiciones': typeof TerminosYCondicionesRoute
   '/terminos-y-condiciones-liquid': typeof TerminosYCondicionesLiquidRoute
   '/terminos-y-condiciones-old': typeof TerminosYCondicionesOldRoute
@@ -834,6 +841,7 @@ export interface FileRoutesByTo {
   '/reservar-turno-liquid': typeof ReservarTurnoLiquidRoute
   '/reservar-turno-mercadopago': typeof ReservarTurnoMercadopagoRoute
   '/reservar-turno-old': typeof ReservarTurnoOldRoute
+  '/restablecer-contrasena': typeof RestablecerContrasenaRoute
   '/terminos-y-condiciones': typeof TerminosYCondicionesRoute
   '/terminos-y-condiciones-liquid': typeof TerminosYCondicionesLiquidRoute
   '/terminos-y-condiciones-old': typeof TerminosYCondicionesOldRoute
@@ -945,6 +953,7 @@ export interface FileRoutesById {
   '/reservar-turno-liquid': typeof ReservarTurnoLiquidRoute
   '/reservar-turno-mercadopago': typeof ReservarTurnoMercadopagoRoute
   '/reservar-turno-old': typeof ReservarTurnoOldRoute
+  '/restablecer-contrasena': typeof RestablecerContrasenaRoute
   '/terminos-y-condiciones': typeof TerminosYCondicionesRoute
   '/terminos-y-condiciones-liquid': typeof TerminosYCondicionesLiquidRoute
   '/terminos-y-condiciones-old': typeof TerminosYCondicionesOldRoute
@@ -1057,6 +1066,7 @@ export interface FileRouteTypes {
     | '/reservar-turno-liquid'
     | '/reservar-turno-mercadopago'
     | '/reservar-turno-old'
+    | '/restablecer-contrasena'
     | '/terminos-y-condiciones'
     | '/terminos-y-condiciones-liquid'
     | '/terminos-y-condiciones-old'
@@ -1160,6 +1170,7 @@ export interface FileRouteTypes {
     | '/reservar-turno-liquid'
     | '/reservar-turno-mercadopago'
     | '/reservar-turno-old'
+    | '/restablecer-contrasena'
     | '/terminos-y-condiciones'
     | '/terminos-y-condiciones-liquid'
     | '/terminos-y-condiciones-old'
@@ -1270,6 +1281,7 @@ export interface FileRouteTypes {
     | '/reservar-turno-liquid'
     | '/reservar-turno-mercadopago'
     | '/reservar-turno-old'
+    | '/restablecer-contrasena'
     | '/terminos-y-condiciones'
     | '/terminos-y-condiciones-liquid'
     | '/terminos-y-condiciones-old'
@@ -1381,6 +1393,7 @@ export interface RootRouteChildren {
   ReservarTurnoLiquidRoute: typeof ReservarTurnoLiquidRoute
   ReservarTurnoMercadopagoRoute: typeof ReservarTurnoMercadopagoRoute
   ReservarTurnoOldRoute: typeof ReservarTurnoOldRoute
+  RestablecerContrasenaRoute: typeof RestablecerContrasenaRoute
   TerminosYCondicionesRoute: typeof TerminosYCondicionesRoute
   TerminosYCondicionesLiquidRoute: typeof TerminosYCondicionesLiquidRoute
   TerminosYCondicionesOldRoute: typeof TerminosYCondicionesOldRoute
@@ -1629,6 +1642,13 @@ declare module '@tanstack/react-router' {
       path: '/reservar-turno-old'
       fullPath: '/reservar-turno-old'
       preLoaderRoute: typeof ReservarTurnoOldRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/restablecer-contrasena': {
+      id: '/restablecer-contrasena'
+      path: '/restablecer-contrasena'
+      fullPath: '/restablecer-contrasena'
+      preLoaderRoute: typeof RestablecerContrasenaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/terminos-y-condiciones': {
@@ -2389,6 +2409,7 @@ const rootRouteChildren: RootRouteChildren = {
   ReservarTurnoLiquidRoute: ReservarTurnoLiquidRoute,
   ReservarTurnoMercadopagoRoute: ReservarTurnoMercadopagoRoute,
   ReservarTurnoOldRoute: ReservarTurnoOldRoute,
+  RestablecerContrasenaRoute: RestablecerContrasenaRoute,
   TerminosYCondicionesRoute: TerminosYCondicionesRoute,
   TerminosYCondicionesLiquidRoute: TerminosYCondicionesLiquidRoute,
   TerminosYCondicionesOldRoute: TerminosYCondicionesOldRoute,

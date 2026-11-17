@@ -61,6 +61,20 @@ export async function signOut() {
   return supabase.auth.signOut();
 }
 
+export async function requestPasswordReset(email: string, redirectTo?: string) {
+  const cleanEmail = email.trim();
+  const target =
+    redirectTo ||
+    (typeof window !== 'undefined'
+      ? `${window.location.origin}/restablecer-contrasena`
+      : undefined);
+
+  return supabase.auth.resetPasswordForEmail(
+    cleanEmail,
+    target ? { redirectTo: target } : undefined,
+  );
+}
+
 async function fetchAuthenticatedStaff(): Promise<AuthenticatedStaff | null> {
   const {
     data: { session },
