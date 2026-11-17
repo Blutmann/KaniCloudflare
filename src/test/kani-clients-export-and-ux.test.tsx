@@ -109,25 +109,36 @@ describe('KANI — Optimización de Clientes y Exportación Excel', () => {
     cleanup();
   });
 
-  it('renders compact 2-row top toolbar (Buscar, Ordenar + Excel) and moves Nuevo cliente to persistent sticky bottom bar', () => {
+  it('renders Desktop 2-row top toolbar (Buscar + Nuevo cliente, Ordenar + Excel) and Mobile sticky button without outer capsule', () => {
     const { container } = render(<V2Clients />);
 
-    const toolbar = container.querySelector('.v2-client-toolbar-container');
+    const toolbar = container.querySelector('.v2-client-toolbar-container')!;
     expect(toolbar).toBeTruthy();
-    expect(toolbar?.textContent).not.toContain('Nuevo cliente');
+
+    const searchRow = toolbar.querySelector('.v2-client-search-row')!;
+    const controlsRow = toolbar.querySelector('.v2-client-controls-row')!;
+    expect(searchRow).toBeTruthy();
+    expect(controlsRow).toBeTruthy();
 
     expect(screen.getByLabelText('Buscar cliente')).toBeTruthy();
     expect(screen.getByPlaceholderText('Nombre, celular o email')).toBeTruthy();
-    expect(screen.getByLabelText('Ordenar por')).toBeTruthy();
+    const desktopAddBtn = searchRow.querySelector('.v2-client-add-btn--desktop');
+    expect(desktopAddBtn).toBeTruthy();
+    expect(desktopAddBtn?.textContent).toContain('Nuevo cliente');
 
+    expect(screen.getByLabelText('Ordenar por')).toBeTruthy();
     const exportBtn = screen.getByRole('button', { name: 'Exportar clientes a Excel' });
+    expect(controlsRow.contains(exportBtn)).toBe(true);
     expect(exportBtn.getAttribute('title')).toBe('Exportar clientes a Excel');
 
     const stickyBar = container.querySelector('.v2-client-sticky-bar');
     expect(stickyBar).toBeTruthy();
+    const mobileAddBtn = stickyBar?.querySelector('.v2-client-add-btn--mobile');
+    expect(mobileAddBtn).toBeTruthy();
+    expect(mobileAddBtn?.textContent).toContain('Nuevo cliente');
+
     const addButtons = screen.getAllByRole('button', { name: /Nuevo cliente/i });
-    expect(addButtons).toHaveLength(1);
-    expect(stickyBar?.contains(addButtons[0])).toBe(true);
+    expect(addButtons).toHaveLength(2);
 
     // Search filters list without affecting toolbar/sticky bar
     fireEvent.change(screen.getByPlaceholderText('Nombre, celular o email'), {
@@ -137,8 +148,37 @@ describe('KANI — Optimización de Clientes y Exportación Excel', () => {
     expect(screen.queryByText('Ana Pérez')).toBeNull();
 
     // Clicking Nuevo cliente opens creation dialog
-    fireEvent.click(addButtons[0]);
+    fireEvent.click(desktopAddBtn!);
     expect(screen.getByTestId('mock-dialog')).toBeTruthy();
+  });
+
+  it('enforces responsive Desktop/Mobile CSS (no sticky bar on Desktop, no outer capsule on Mobile, green Excel button in Dark & Light)', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    const lgAdminCss = fs.readFileSync(
+      path.resolve(__dirname, '../components/kani/experimental/liquid-glass-admin.css'),
+      'utf-8',
+    );
+    const v2Css = fs.readFileSync(
+      path.resolve(__dirname, '../components/kani/v2/v2.css'),
+      'utf-8',
+    );
+
+    // Desktop: 2 rows in toolbar + hidden bottom bar
+    expect(lgAdminCss).toMatch(/\.v2-client-search-row\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)\s+max-content/);
+    expect(lgAdminCss).toMatch(/\.v2-client-controls-row\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)\s+max-content/);
+    expect(lgAdminCss).toMatch(/@media\s*\(min-width:\s*768px\)\s*\{[\s\S]*?\.v2-client-sticky-bar\s*\{\s*display:\s*none\s*!important/);
+    expect(v2Css).toMatch(/@media\s*\(min-width:\s*768px\)\s*\{[\s\S]*?\.v2-client-sticky-bar\s*\{\s*display:\s*none\s*!important/);
+
+    // Mobile: hide desktop button, remove outer glass capsule on sticky bar, full-width button
+    expect(lgAdminCss).toMatch(/@media\s*\(max-width:\s*767px\)\s*\{[\s\S]*?\.v2-client-add-btn--desktop\s*\{\s*display:\s*none\s*!important/);
+    expect(lgAdminCss).toMatch(/@media\s*\(max-width:\s*767px\)\s*\{[\s\S]*?\.v2-client-sticky-bar\s*\{[^}]*background:\s*transparent\s*!important[^}]*backdrop-filter:\s*none\s*!important[^}]*border:\s*none\s*!important[^}]*box-shadow:\s*none\s*!important/);
+    expect(lgAdminCss).toMatch(/@media\s*\(max-width:\s*767px\)\s*\{[\s\S]*?\.v2-client-add-btn--mobile\s*\{[^}]*width:\s*100%\s*!important/);
+
+    // Excel green styling in Dark & Light modes
+    expect(lgAdminCss).toMatch(/html\[data-theme="dark"\][^}]*\.v2-client-export-btn\s*\{[^}]*rgba\(16,\s*185,\s*129,/);
+    expect(lgAdminCss).toMatch(/html\[data-theme="light"\][^}]*\.v2-client-export-btn\s*\{[^}]*rgba\(16,\s*185,\s*129,/);
+    expect(lgAdminCss).toMatch(/\.v2-client-export-btn:disabled\s*\{/);
   });
 
   it('triggers XLSX download, prevents concurrent exports, and reports success/errors', async () => {

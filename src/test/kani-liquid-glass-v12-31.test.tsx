@@ -366,7 +366,7 @@ describe('Liquid Glass V12.31 — Correcciones de interfaz, modales y navegació
   it('9. Modal de cliente en Clientes elimina el texto "Los datos se guardan de forma permanente en Supabase." conservando campos', async () => {
     render(<V2Clients />);
 
-    fireEvent.click(screen.getByRole('button', { name: /Nuevo cliente/i }));
+    fireEvent.click(screen.getAllByRole('button', { name: /Nuevo cliente/i })[0]!);
 
     await waitFor(() => {
       expect(screen.getByRole('dialog')).toBeTruthy();

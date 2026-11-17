@@ -202,6 +202,14 @@ export function V2Clients() {
               />
             </span>
           </label>
+          <button
+            type="button"
+            className="v2-primary v2-client-add-btn v2-client-add-btn--desktop"
+            onClick={() => openEditor()}
+          >
+            <Plus size={17} aria-hidden="true" />
+            <span>Nuevo cliente</span>
+          </button>
         </div>
         <div className="v2-client-controls-row">
           <label className="v2-field v2-client-order">
@@ -607,7 +615,7 @@ export function V2Clients() {
       <div className="v2-client-sticky-bar" role="region" aria-label="Acciones de clientes">
         <button
           type="button"
-          className="v2-primary v2-client-add-btn"
+          className="v2-primary v2-client-add-btn v2-client-add-btn--mobile"
           onClick={() => openEditor()}
         >
           <Plus size={17} aria-hidden="true" />

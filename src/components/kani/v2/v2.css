@@ -3481,14 +3481,13 @@ input[placeholder="Nombre, celular o email"]::placeholder {
   white-space: nowrap;
 }
 
-/* Desktop clients share the solid filter surface; mobile keeps its two rows. */
+/* Desktop clients: 2 rows (Buscar + Nuevo cliente, Ordenar por + Excel) without bottom sticky bar. */
 @media (min-width: 768px) {
   .v2-client-toolbar-container {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) max-content;
-    align-items: end;
-    gap: 14px;
-    padding: 10px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 14px 16px;
     border: 1px solid var(--border);
     border-radius: var(--radius-card);
     background: #1C1C1C;
@@ -3497,19 +3496,40 @@ input[placeholder="Nombre, celular o email"]::placeholder {
   html[data-theme="light"] .v2-client-toolbar-container {
     background: #FFFFFF;
   }
-  .v2-client-toolbar-container .v2-client-search-row,
+  .v2-client-toolbar-container .v2-client-search-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) max-content;
+    align-items: end;
+    gap: 14px;
+    width: 100%;
+  }
+  .v2-client-toolbar-container .v2-client-search-field,
   .v2-client-toolbar-container .v2-search {
     min-width: 0;
+    width: 100%;
+    margin: 0;
   }
   .v2-client-toolbar-container .v2-client-controls-row {
     display: grid;
-    grid-template-columns: 180px max-content;
+    grid-template-columns: minmax(0, 1fr) max-content;
     align-items: end;
-    width: auto;
+    width: 100%;
     gap: 14px;
   }
-  .v2-client-toolbar-container .v2-client-add-btn {
+  .v2-client-toolbar-container .v2-client-order {
+    min-width: 0;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+  }
+  .v2-client-toolbar-container .v2-client-add-btn,
+  .v2-client-toolbar-container .v2-client-export-btn {
+    min-height: 44px;
+    height: 44px;
     justify-content: center;
+  }
+  .v2-client-sticky-bar {
+    display: none !important;
   }
 }
 
@@ -3624,6 +3644,9 @@ input[placeholder="Nombre, celular o email"]::placeholder {
 }
 
 @media (max-width: 767px) {
+  .v2-client-toolbar-container .v2-client-add-btn--desktop {
+    display: none !important;
+  }
   .v2-client-controls-row {
     display: flex;
     gap: 10px;
@@ -3633,6 +3656,28 @@ input[placeholder="Nombre, celular o email"]::placeholder {
     flex: 1;
     min-width: 0;
     max-width: none;
+  }
+  .v2-client-sticky-bar {
+    position: sticky;
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    z-index: 25;
+    display: flex;
+    width: 100%;
+    margin-top: 18px;
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    pointer-events: none;
+  }
+  .v2-client-sticky-bar .v2-client-add-btn--mobile {
+    pointer-events: auto;
+    width: 100%;
+    min-height: 46px;
+    height: 46px;
+    justify-content: center;
+    align-items: center;
   }
   .v2-client-card {
     display: grid;
