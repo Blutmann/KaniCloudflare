@@ -1,8 +1,22 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, Instagram, MapPin, Clock3 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { ExternalLink, Instagram, MapPin } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { pageHead } from "@/lib/kani-head";
 import { LiquidGlassShell } from "@/components/kani/experimental/liquid-glass-shell";
-import { KANI_MAPS_URL, KANI_MAPS_EMBED_URL, KANI_PUBLIC_WHATSAPP_URL } from "@/lib/kani-constants";
+import {
+  KANI_MAPS_URL,
+  KANI_MAPS_EMBED_URL,
+  KANI_PUBLIC_WHATSAPP_URL,
+  KANI_STUDIO_ADDRESS,
+  KANI_STUDIO_NAME,
+} from "@/lib/kani-constants";
+import {
+  clearConfirmedAndDraftBookingState,
+  resolveContactoBookingNavState,
+  type ContactoBookingNavState,
+} from "@/lib/kani-booking-draft";
+import "@/components/kani/experimental/liquid-glass-desktop-v12-22.css";
 
 const mapsUrl = KANI_MAPS_URL;
 const mapsEmbedUrl = KANI_MAPS_EMBED_URL;
@@ -39,141 +53,194 @@ function WhatsAppIcon({ className, size = 20 }: { className?: string; size?: num
 }
 
 function StudioPage() {
+  const navigate = useNavigate();
   return (
     <LiquidGlassShell section="contact">
-      <ContactoContent bookingPath="/reservar" />
+      <ContactoContent
+        bookingPath="/reservar"
+        onBookingNavigate={(to) => {
+          void navigate({ to });
+        }}
+      />
     </LiquidGlassShell>
   );
 }
 
-export function ContactoContent({ bookingPath = "/reservar" }: { bookingPath?: string }) {
+export function ContactoContent({
+  bookingPath = "/reservar",
+  onBookingNavigate,
+}: {
+  bookingPath?: string;
+  onBookingNavigate?: (to: string) => void;
+}) {
+  const [navState, setNavState] = useState<ContactoBookingNavState>({
+    mode: "new",
+    label: "Reservar un turno",
+  });
+  const ctaRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const syncNavState = () => {
+      setNavState(resolveContactoBookingNavState());
+    };
+    syncNavState();
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        syncNavState();
+      }
+    };
+    window.addEventListener("focus", syncNavState);
+    window.addEventListener("storage", syncNavState);
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => {
+      window.removeEventListener("focus", syncNavState);
+      window.removeEventListener("storage", syncNavState);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
+  }, []);
+
+  useEffect(() => {
+    const cta = ctaRef.current;
+    if (!cta || typeof document === "undefined") return;
+    const updateHeight = () => {
+      document.documentElement.style.setProperty(
+        "--booking-cta-height",
+        `${cta.getBoundingClientRect().height}px`,
+      );
+    };
+    updateHeight();
+    const observer = typeof ResizeObserver !== "undefined" ? new ResizeObserver(updateHeight) : null;
+    observer?.observe(cta);
+    window.addEventListener("resize", updateHeight);
+    window.visualViewport?.addEventListener("resize", updateHeight);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener("resize", updateHeight);
+      window.visualViewport?.removeEventListener("resize", updateHeight);
+      document.documentElement.style.removeProperty("--booking-cta-height");
+    };
+  }, []);
+
+  const handleBookingCtaClick = () => {
+    if (navState.mode === "another") {
+      clearConfirmedAndDraftBookingState();
+    }
+    if (onBookingNavigate) {
+      onBookingNavigate(bookingPath);
+      return;
+    }
+    if (typeof window !== "undefined") {
+      window.location.assign(bookingPath);
+    }
+  };
+
   return (
-    <main className="site-container studio-page contacto-page">
-      <div className="studio-info-grid">
-        {/* 1. Ubicación */}
-        <a
-          className="studio-info-card studio-info-link"
-          href={mapsUrl}
-          target="_blank"
-          rel="noreferrer"
-          aria-label="Abrir ubicación de Kani Barber Studio en Google Maps"
-        >
-          <div className="studio-card-top">
-            <span className="studio-card-icon-wrap" aria-hidden="true">
-              <MapPin className="studio-info-icon" size={20} />
-            </span>
-            <h2 className="studio-card-title">Ubicación</h2>
-          </div>
-          <p className="studio-card-desc">
-            San Isidro Labrador 7<br />Martinez, Provincia de Buenos Aires
-          </p>
-          <span className="studio-card-action">
-            Ver ubicación <ArrowRight size={13} aria-hidden="true" />
-          </span>
-        </a>
+    <div className="booking-page kani-contacto-booking-page">
+      <div className="booking-scroll-content kani-contacto-scroll-content">
+        <main className="site-container studio-page contacto-page kani-contacto-main">
+          <div className="studio-info-grid kani-contacto-social-grid">
+            {/* 1. Instagram */}
+            <a
+              className="studio-info-card studio-info-link kani-contacto-social-card"
+              href={instagramUrl}
+              target="_blank"
+              rel="noreferrer"
+              aria-label="Ver perfil de Kani Barber Studio en Instagram"
+            >
+              <div className="studio-card-top">
+                <span className="studio-card-icon-wrap" aria-hidden="true">
+                  <Instagram className="studio-info-icon" size={20} />
+                </span>
+                <div className="kani-contacto-social-copy">
+                  <h2 className="studio-card-title">Instagram</h2>
+                  <p className="studio-card-desc">@kanibarberstudio</p>
+                </div>
+              </div>
+              <span className="studio-card-action">
+                Ver perfil <ExternalLink size={14} aria-hidden="true" />
+              </span>
+            </a>
 
-        {/* 2. Horarios */}
-        <Link
-          className="studio-info-card studio-info-link"
-          to={bookingPath}
-          aria-label="Reservar un turno en Kani Barber Studio"
-        >
-          <div className="studio-card-top">
-            <span className="studio-card-icon-wrap" aria-hidden="true">
-              <Clock3 className="studio-info-icon" size={20} />
-            </span>
-            <h2 className="studio-card-title">Horarios</h2>
+            {/* 2. WhatsApp */}
+            <a
+              className="studio-info-card studio-info-link kani-contacto-social-card"
+              href={whatsAppUrl}
+              target="_blank"
+              rel="noreferrer"
+              aria-label="Escribinos por WhatsApp a Kani Barber Studio"
+            >
+              <div className="studio-card-top">
+                <span className="studio-card-icon-wrap" aria-hidden="true">
+                  <WhatsAppIcon className="studio-info-icon" size={20} />
+                </span>
+                <div className="kani-contacto-social-copy">
+                  <h2 className="studio-card-title">WhatsApp</h2>
+                  <p className="studio-card-desc">Hablemos por acá</p>
+                </div>
+              </div>
+              <span className="studio-card-action">
+                Escribinos <ExternalLink size={14} aria-hidden="true" />
+              </span>
+            </a>
           </div>
-          <p className="studio-card-desc">
-            Lunes a sábados<br />10:00 a 20:00 hs
-          </p>
-          <span className="studio-card-action">
-            Reservar turno <ArrowRight size={13} aria-hidden="true" />
-          </span>
-        </Link>
 
-        {/* 3. Instagram */}
-        <a
-          className="studio-info-card studio-info-link"
-          href={instagramUrl}
-          target="_blank"
-          rel="noreferrer"
-          aria-label="Seguir a Kani Barber Studio en Instagram"
-        >
-          <div className="studio-card-top">
-            <span className="studio-card-icon-wrap" aria-hidden="true">
-              <Instagram className="studio-info-icon" size={20} />
-            </span>
-            <h2 className="studio-card-title">Instagram</h2>
-          </div>
-          <p className="studio-card-desc">
-            Seguinos en Instagram y conocé nuestro trabajo.
-          </p>
-          <span className="studio-card-action">
-            @kanibarberstudio <ArrowRight size={13} aria-hidden="true" />
-          </span>
-        </a>
-
-        {/* 4. WhatsApp */}
-        <a
-          className="studio-info-card studio-info-link"
-          href={whatsAppUrl}
-          target="_blank"
-          rel="noreferrer"
-          aria-label="Contactar a Kani Barber Studio por WhatsApp"
-        >
-          <div className="studio-card-top">
-            <span className="studio-card-icon-wrap" aria-hidden="true">
-              <WhatsAppIcon className="studio-info-icon" size={20} />
-            </span>
-            <h2 className="studio-card-title">WhatsApp</h2>
-          </div>
-          <p className="studio-card-desc">
-            Escribinos para realizar tu consulta.
-          </p>
-          <span className="studio-card-action">
-            Contactar por WhatsApp <ArrowRight size={13} aria-hidden="true" />
-          </span>
-        </a>
-      </div>
-
-      <div className="studio-map-card">
-        <div className="studio-map-header">
-          <div className="studio-map-header-info">
-            <MapPin className="studio-info-icon" size={20} />
-            <div>
-              <h2 className="studio-map-title">Kani Barber Studio</h2>
-              <p className="studio-map-address">San Isidro Labrador 7, Martínez · Buenos Aires</p>
+          {/* 3. Ubicación, horarios y mapa interactivo */}
+          <section
+            className="studio-map-card kani-contacto-location-card"
+            aria-label="Ubicación y horarios de Kani Barber Studio"
+          >
+            <div className="studio-map-header kani-contacto-location-header">
+              <div className="studio-map-header-info kani-contacto-location-info">
+                <span className="studio-card-icon-wrap kani-contacto-location-icon" aria-hidden="true">
+                  <MapPin className="studio-info-icon" size={20} />
+                </span>
+                <div className="kani-contacto-location-copy">
+                  <h2 className="studio-map-title">{KANI_STUDIO_NAME}</h2>
+                  <p className="studio-map-address">{KANI_STUDIO_ADDRESS}</p>
+                  <p className="kani-contacto-hours">Lunes a sábados · 10:00 a 20:00</p>
+                </div>
+              </div>
+              <a
+                href={mapsUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="studio-map-link kani-contacto-directions-link"
+                aria-label="Abrir Kani Barber Studio en Google Maps para obtener indicaciones"
+              >
+                Cómo llegar <ExternalLink size={14} aria-hidden="true" />
+              </a>
             </div>
-          </div>
-          <a
-            href={mapsUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="studio-map-link"
-            aria-label="Abrir Kani Barber Studio en Google Maps para obtener indicaciones"
+            <div className="studio-map-frame-wrap kani-contacto-map-wrap">
+              <iframe
+                src={mapsEmbedUrl}
+                title="Ubicación de Kani Barber Studio en Google Maps"
+                className="studio-map-iframe"
+                loading="lazy"
+                allowFullScreen
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+            </div>
+          </section>
+        </main>
+      </div>
+
+      <div
+        ref={ctaRef}
+        className="booking-cta kani-contacto-cta"
+        role="region"
+        aria-label="Navegación de reserva"
+      >
+        <div className="booking-cta-inner flex items-center">
+          <Button
+            type="button"
+            className="booking-next-button kani-contacto-cta-btn"
+            aria-label={navState.label}
+            onClick={handleBookingCtaClick}
           >
-            Cómo llegar <ArrowRight size={14} />
-          </a>
-        </div>
-        <div className="studio-map-frame-wrap">
-          <iframe
-            src={mapsEmbedUrl}
-            title="Ubicación de Kani Barber Studio en Google Maps"
-            className="studio-map-iframe"
-            loading="lazy"
-            allowFullScreen
-            referrerPolicy="no-referrer-when-downgrade"
-          >
-            <p>
-              Tu navegador no soporta iframes. Podés{" "}
-              <a href={mapsUrl} target="_blank" rel="noreferrer">
-                ver la ubicación de Kani Barber Studio directamente en Google Maps
-              </a>.
-            </p>
-          </iframe>
+            {navState.label}
+          </Button>
         </div>
       </div>
-    </main>
+    </div>
   );
 }

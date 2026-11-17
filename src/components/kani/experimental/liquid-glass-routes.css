@@ -17,11 +17,240 @@
 }
 
 /* ------------------------------------------------------------------------------
- * 1. CONTACTO — Superficies ópticas y cards con protagonismo
+ * 1. CONTACTO — V12.47.26: 3 cards Liquid Glass + CTA nativo de /reservar
  * ------------------------------------------------------------------------------ */
-html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .contacto-page {
-  padding-top: 28px;
-  padding-bottom: 56px;
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .liquid-glass-page-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+}
+
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-main {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 0 8px calc(var(--booking-cta-height, 76px) + 20px) !important;
+  box-sizing: border-box;
+}
+
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-social-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: 1fr;
+  align-items: stretch;
+  gap: 12px;
+  margin: 0;
+}
+
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-social-card {
+  height: 100%;
+  min-width: 0;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 14px;
+  box-sizing: border-box;
+}
+
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-social-card .studio-card-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+}
+
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-social-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-social-card .studio-card-desc {
+  flex: 0 0 auto;
+  font-size: clamp(11px, 3vw, 13px);
+  line-height: 1.35;
+  white-space: nowrap;
+}
+
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-social-card .studio-card-action {
+  margin-top: auto;
+  font-size: 13px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-location-card {
+  width: 100%;
+  margin-top: 14px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-location-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 16px 18px;
+  background: transparent;
+}
+
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-location-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+}
+
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-location-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-hours {
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  line-height: 1.35;
+  margin: 0;
+  color: var(--muted-foreground);
+}
+
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-directions-link {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: transform 160ms ease, background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-map-wrap {
+  width: 100%;
+  height: 152px !important;
+  border-radius: 0 0 20px 20px;
+  overflow: hidden;
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-map-wrap {
+  background: #141418;
+}
+
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-cta .booking-cta-inner {
+  display: flex;
+  align-items: center;
+}
+
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-cta .kani-contacto-cta-btn {
+  width: 100% !important;
+  min-width: 0 !important;
+  flex: 1 1 100% !important;
+  margin-left: 0 !important;
+  min-height: 46px !important;
+}
+
+@media (max-width: 479px) {
+  html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-social-grid {
+    gap: 10px;
+  }
+
+  html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-social-card {
+    padding: 14px 12px;
+    gap: 12px;
+  }
+
+  html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-social-card .studio-card-top {
+    gap: 10px;
+  }
+
+  html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-social-card .studio-card-icon-wrap {
+    width: 34px;
+    height: 34px;
+  }
+
+  html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-location-header {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 14px 16px;
+  }
+
+  html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-directions-link {
+    min-height: 38px;
+    padding: 4px 10px;
+    margin-left: 52px;
+  }
+}
+
+@media (max-width: 360px) {
+  html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-main {
+    padding-inline: 10px !important;
+  }
+
+  html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-social-card .studio-card-top {
+    flex-direction: column;
+    gap: 8px;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-booking-page {
+    width: min(860px, calc(100% - 40px)) !important;
+    max-width: min(860px, calc(100% - 40px)) !important;
+    margin-inline: auto !important;
+  }
+
+  html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-main {
+    padding-inline: 0 !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-main {
+    padding: 0 !important;
+  }
+
+  html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-social-grid {
+    gap: clamp(16px, 1.6vw, 22px);
+  }
+
+  html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-social-card {
+    padding: 20px 24px;
+    gap: 16px;
+  }
+
+  html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-location-card {
+    margin-top: clamp(16px, 2dvh, 22px);
+  }
+
+  html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-location-header {
+    padding: 18px 24px;
+  }
+
+  html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-map-wrap {
+    height: 192px !important;
+  }
 }
 
 html[data-theme="light"] .site-shell .liquid-glass-page[data-lg-section="contact"] .studio-info-card,
@@ -74,20 +303,47 @@ html[data-theme="dark"] .site-shell .liquid-glass-page[data-lg-section="contact"
   color: #e4c98f !important;
 }
 
-html[data-theme="dark"] .site-shell .liquid-glass-page[data-lg-section="contact"] .studio-card-title {
+html[data-theme="dark"] .site-shell .liquid-glass-page[data-lg-section="contact"] .studio-card-title,
+html[data-theme="dark"] .site-shell .liquid-glass-page[data-lg-section="contact"] .studio-map-title {
   color: #faf8f4 !important;
 }
 
-html[data-theme="dark"] .site-shell .liquid-glass-page[data-lg-section="contact"] .studio-card-desc {
+html[data-theme="dark"] .site-shell .liquid-glass-page[data-lg-section="contact"] .studio-card-desc,
+html[data-theme="dark"] .site-shell .liquid-glass-page[data-lg-section="contact"] .studio-map-address,
+html[data-theme="dark"] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-hours {
   color: rgba(244, 242, 238, 0.78) !important;
 }
 
-html[data-theme="light"] .site-shell .liquid-glass-page[data-lg-section="contact"] .studio-card-action {
+html[data-theme="light"] .site-shell .liquid-glass-page[data-lg-section="contact"] .studio-card-action,
+html[data-theme="light"] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-directions-link {
   color: #702b3a !important;
 }
 
-html[data-theme="dark"] .site-shell .liquid-glass-page[data-lg-section="contact"] .studio-card-action {
+html[data-theme="dark"] .site-shell .liquid-glass-page[data-lg-section="contact"] .studio-card-action,
+html[data-theme="dark"] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-directions-link {
   color: #e4c98f !important;
+}
+
+html[data-theme="light"] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-directions-link {
+  background: rgba(112, 43, 58, 0.08);
+  border: 1px solid rgba(112, 43, 58, 0.20);
+}
+
+html[data-theme="light"] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-directions-link:hover,
+html[data-theme="light"] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-directions-link:focus-visible {
+  background: rgba(112, 43, 58, 0.14);
+  border-color: rgba(112, 43, 58, 0.36);
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-directions-link {
+  background: rgba(228, 201, 143, 0.10);
+  border: 1px solid rgba(228, 201, 143, 0.28);
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-directions-link:hover,
+html[data-theme="dark"] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-directions-link:focus-visible {
+  background: rgba(228, 201, 143, 0.18);
+  border-color: rgba(228, 201, 143, 0.52);
 }
 
 /* ------------------------------------------------------------------------------

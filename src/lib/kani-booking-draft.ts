@@ -259,3 +259,87 @@ export function formatDraftServiceLabel(serviceId: ServiceId | null): string {
   if (!serviceId) return '';
   return serviceFor(serviceId).name;
 }
+
+const CONFIRMED_BOOKING_SESSION_KEYS = [
+  'kani:payway:confirmed-booking',
+  'kani:payway:confirmed-booking:v5',
+  'kani:mercadopago:confirmed-booking',
+] as const;
+
+const ACTIVE_PAYMENT_ATTEMPT_SESSION_KEY = 'kani:payway:active-attempt';
+
+export type ContactoBookingNavMode = 'new' | 'continue' | 'another';
+
+export interface ContactoBookingNavState {
+  mode: ContactoBookingNavMode;
+  label: string;
+}
+
+function hasValidConfirmedBookingInSession(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    for (const key of CONFIRMED_BOOKING_SESSION_KEYS) {
+      const raw = window.sessionStorage.getItem(key);
+      if (!raw) continue;
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object') {
+        return true;
+      }
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+function hasValidActiveAttemptInSession(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    const raw = window.sessionStorage.getItem(ACTIVE_PAYMENT_ATTEMPT_SESSION_KEY);
+    if (!raw) return false;
+    const parsed = JSON.parse(raw);
+    return Boolean(
+      parsed &&
+        typeof parsed === 'object' &&
+        typeof parsed.appointmentId === 'string' &&
+        typeof parsed.attemptId === 'string' &&
+        typeof parsed.accessToken === 'string',
+    );
+  } catch {
+    return false;
+  }
+}
+
+export function resolveContactoBookingNavState(nowMs = Date.now()): ContactoBookingNavState {
+  if (hasValidConfirmedBookingInSession()) {
+    return { mode: 'another', label: 'Reservar otro turno' };
+  }
+  if (hasValidActiveAttemptInSession()) {
+    return { mode: 'continue', label: 'Continuar mi reserva' };
+  }
+  const draft = readValidBookingDraft(nowMs);
+  if (draft && hasSignificantRecoveryProgress(draft)) {
+    return { mode: 'continue', label: 'Continuar mi reserva' };
+  }
+  return { mode: 'new', label: 'Reservar un turno' };
+}
+
+export function clearConfirmedAndDraftBookingState(): void {
+  clearBookingDraft();
+  if (typeof window === 'undefined') return;
+  try {
+    for (const key of CONFIRMED_BOOKING_SESSION_KEYS) {
+      window.sessionStorage.removeItem(key);
+    }
+    window.sessionStorage.removeItem(ACTIVE_PAYMENT_ATTEMPT_SESSION_KEY);
+    if (window.history.state?.kaniPaywayConfirmed) {
+      window.history.replaceState(
+        { ...(window.history.state ?? {}), kaniPaywayConfirmed: false },
+        '',
+      );
+    }
+  } catch {
+    // Ignore storage / history restrictions
+  }
+}
+
