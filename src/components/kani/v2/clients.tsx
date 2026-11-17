@@ -1,11 +1,14 @@
 import { useState, type FormEvent, type MouseEvent } from "react";
-import { Pencil, Plus, Search, Trash2, X } from "lucide-react";
+import { FileSpreadsheet, Loader2, Pencil, Plus, Search, Trash2, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminStaff } from "@/lib/kani-admin-context";
 import { sortClients, type ClientOrder } from "./client-order";
 import { clientHistory } from "@/lib/kani-v2";
 import { ClientCardMobile } from "./client-card-mobile";
 import { money, formatServiceName } from "@/lib/kani-model";
+import { businessDateToday } from "@/lib/kani-mobile-appointments";
+import { staffExportClientsFn } from "@/lib/kani-clients-export.functions";
+import { downloadClientsXlsx } from "@/lib/kani-clients-xlsx";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { useV2, type V2Client } from "./data";
 import { Empty, Metric, Status } from "./shared";
@@ -34,6 +37,7 @@ export function V2Clients() {
   const [notice, setNotice] = useState("");
   const [errorNotice, setErrorNotice] = useState("");
   const [saving, setSaving] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<V2Client | null>(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -142,8 +146,37 @@ export function V2Clients() {
     }
   }
 
+  async function handleExportExcel() {
+    if (exporting) return;
+    setExporting(true);
+    setErrorNotice("");
+    setNotice("");
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      const exportRows = await staffExportClientsFn({ data: { token } });
+      const filename = await downloadClientsXlsx(exportRows, businessDateToday());
+      setNotice(
+        exportRows.length === 0
+          ? `Se descargó ${filename} (sin clientes registrados).`
+          : `Exportación completada: ${filename} (${exportRows.length} ${exportRows.length === 1 ? "cliente" : "clientes"}).`,
+      );
+    } catch (err) {
+      console.error("[KANI clients] Error exportando clientes a Excel:", err);
+      setErrorNotice(
+        err instanceof Error
+          ? err.message
+          : "No pudimos exportar los clientes a Excel. Intentá nuevamente.",
+      );
+    } finally {
+      setExporting(false);
+    }
+  }
+
   return (
-    <main className="v2-page">
+    <main className="v2-page v2-clients-page">
       {notice && (
         <p role="status" className="v2-success">
           {notice}
@@ -155,7 +188,6 @@ export function V2Clients() {
         </p>
       )}
 
-      {/* Shared toolbar: one desktop row; the mobile search and controls keep their two rows. */}
       <div className="v2-client-toolbar-container">
         <div className="v2-client-search-row">
           <label className="v2-field v2-client-search-field" htmlFor="v2-client-search">
@@ -181,9 +213,21 @@ export function V2Clients() {
               <option value="name-desc">Nombre Z–A</option>
             </select>
           </label>
-          <button className="v2-primary v2-client-add-btn" onClick={() => openEditor()}>
-            <Plus size={17} />
-            Nuevo cliente
+          <button
+            type="button"
+            className="v2-secondary v2-client-export-btn"
+            onClick={() => void handleExportExcel()}
+            disabled={exporting}
+            aria-busy={exporting}
+            aria-label="Exportar clientes a Excel"
+            title="Exportar clientes a Excel"
+          >
+            {exporting ? (
+              <Loader2 size={17} className="animate-spin" aria-hidden="true" />
+            ) : (
+              <FileSpreadsheet size={17} aria-hidden="true" />
+            )}
+            <span>{exporting ? "Exportando…" : "Excel"}</span>
           </button>
         </div>
       </div>
@@ -559,6 +603,17 @@ export function V2Clients() {
           </form>
         </DialogContent>
       </Dialog>
+
+      <div className="v2-client-sticky-bar" role="region" aria-label="Acciones de clientes">
+        <button
+          type="button"
+          className="v2-primary v2-client-add-btn"
+          onClick={() => openEditor()}
+        >
+          <Plus size={17} aria-hidden="true" />
+          <span>Nuevo cliente</span>
+        </button>
+      </div>
     </main>
   );
 }
