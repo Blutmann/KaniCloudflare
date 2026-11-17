@@ -531,8 +531,8 @@ export function PublicMembershipCardPage() {
   // Estado de Carga
   if (loading) {
     return (
-      <main className="kani-membership-pass min-h-[100dvh] w-full flex flex-col justify-center items-center py-6 px-4 bg-[#050505] text-[#EDECEC]">
-        <div className="max-w-[320px] w-full bg-[#0D0B08] border border-[#231E17] rounded-2xl p-6 shadow-2xl text-center space-y-3">
+      <main className="kani-membership-pass min-h-[100svh] w-full flex flex-col justify-center items-center py-6 px-4 bg-[#050505] text-[#EDECEC]">
+        <div className="relative z-[1] max-w-[320px] w-full bg-[#0D0B08] border border-[#231E17] rounded-2xl p-6 shadow-2xl text-center space-y-3">
           <Loader2 className="w-7 h-7 animate-spin text-[#C8A96B] mx-auto" />
           <p className="text-[10px] font-mono tracking-[0.25em] text-[#8C7A58] uppercase">
             KANI · PRIVATE MEMBERSHIP
@@ -545,8 +545,8 @@ export function PublicMembershipCardPage() {
   // Estado de Error
   if (error || !data) {
     return (
-      <main className="kani-membership-pass min-h-[100dvh] w-full flex flex-col justify-between items-center py-6 px-4 bg-[#050505] text-[#EDECEC]">
-        <div className="w-full max-w-[380px] my-auto bg-gradient-to-b from-[#14110E] to-[#0A0908] border border-[#282117] rounded-2xl p-6 shadow-2xl text-center space-y-4">
+      <main className="kani-membership-pass min-h-[100svh] w-full flex flex-col justify-between items-center py-6 px-4 bg-[#050505] text-[#EDECEC]">
+        <div className="relative z-[1] w-full max-w-[380px] my-auto bg-gradient-to-b from-[#14110E] to-[#0A0908] border border-[#282117] rounded-2xl p-6 shadow-2xl text-center space-y-4">
           <div className="mx-auto w-11 h-11 rounded-full bg-rose-500/10 border border-rose-500/25 flex items-center justify-center text-rose-400">
             <ShieldAlert className="w-5 h-5" />
           </div>
@@ -560,7 +560,7 @@ export function PublicMembershipCardPage() {
           </div>
         </div>
 
-        <footer className="text-center text-[11px] text-[#443E35] tracking-widest py-4 font-mono">
+        <footer className="relative z-[1] text-center text-[11px] text-[#443E35] tracking-widest py-4 font-mono">
           <p>© 2026 KANI Barber Studio</p>
         </footer>
       </main>
@@ -628,23 +628,13 @@ export function PublicMembershipCardPage() {
 
   return (
     <main
-      className="kani-membership-pass min-h-[100dvh] w-full flex flex-col justify-between items-center pt-[max(0.875rem,env(safe-area-inset-top))] sm:pt-5 lg:pt-6 pb-[max(1rem,env(safe-area-inset-bottom))] sm:pb-[max(1.25rem,env(safe-area-inset-bottom))] px-3 sm:px-6 text-[#EDECEC] select-none antialiased relative overflow-x-hidden"
-      style={{
-        backgroundColor: "#040405",
-        backgroundImage: `
-          radial-gradient(ellipse at 50% 20%, rgba(200, 169, 107, 0.08) 0%, transparent 60%),
-          radial-gradient(circle at 15% 35%, rgba(200, 169, 107, 0.03) 0%, transparent 40%),
-          linear-gradient(to bottom, rgba(4, 4, 5, 0.72) 0%, rgba(4, 4, 5, 0.90) 100%),
-          url('/kani-background-desktop.webp')
-        `,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundRepeat: "no-repeat",
-        backgroundAttachment: "fixed",
-      }}
+      className="kani-membership-pass min-h-[100svh] w-full flex flex-col justify-between items-center pb-[max(1rem,env(safe-area-inset-bottom))] sm:pb-[max(1.25rem,env(safe-area-inset-bottom))] px-3 sm:px-6 text-[#EDECEC] select-none antialiased relative overflow-x-clip"
     >
       {/* Acción superior fuera de la credencial: Reservar turno (primaria) + Acceso interno (secundaria) */}
-      <div className="w-full flex flex-wrap items-center justify-between gap-2 pb-3 sm:pb-3.5 shrink-0">
+      <div
+        data-testid="membership-top-actions"
+        className="kani-membership-pass-topbar sticky top-0 z-30 w-full flex flex-wrap items-center justify-between gap-2 pt-[max(0.875rem,env(safe-area-inset-top))] sm:pt-5 lg:pt-6 pb-3 sm:pb-3.5 shrink-0 bg-gradient-to-b from-[#040405]/90 via-[#040405]/55 to-transparent"
+      >
         <a
           href="https://www.kanibarber.com/reservar"
           className="inline-flex items-center gap-2 sm:gap-2.5 min-h-[42px] sm:min-h-[44px] md:min-h-[46px] px-4 py-2.5 sm:px-5 md:px-6 md:py-3 rounded-full bg-[#08080A]/95 hover:bg-[#141418] border border-[#D4B475]/60 hover:border-[#F0D9A3] text-[#F0D9A3] hover:text-white transition-all text-[11.5px] sm:text-xs md:text-[13px] font-mono font-semibold tracking-[0.16em] uppercase shadow-[0_8px_24px_rgba(0,0,0,0.65),0_0_14px_rgba(212,180,117,0.10)] backdrop-blur-sm whitespace-nowrap"
@@ -687,7 +677,7 @@ export function PublicMembershipCardPage() {
         )}
       </div>
 
-      <div className="w-full max-w-[420px] sm:max-w-[560px] md:max-w-[680px] lg:max-w-[760px] xl:max-w-[800px] 2xl:max-w-[840px] mx-auto my-auto space-y-4 md:space-y-5 flex flex-col items-center">
+      <div className="relative z-[1] w-full max-w-[420px] sm:max-w-[560px] md:max-w-[680px] lg:max-w-[760px] xl:max-w-[800px] 2xl:max-w-[840px] mx-auto my-auto space-y-4 md:space-y-5 flex flex-col items-center">
         {/* Micro-píldora sutil para alternar cara */}
         <button
           onClick={toggleFlip}
@@ -993,7 +983,7 @@ export function PublicMembershipCardPage() {
       {/* ===================================================================
           FOOTER AUTÓNOMO
           =================================================================== */}
-      <footer className="w-full text-center text-[10px] sm:text-[10.5px] text-[#66625B] tracking-[0.2em] uppercase font-mono pt-6 pb-1 shrink-0">
+      <footer className="relative z-[1] w-full text-center text-[10px] sm:text-[10.5px] text-[#66625B] tracking-[0.2em] uppercase font-mono pt-6 pb-1 shrink-0">
         <p>© 2026 KANI Barber Studio</p>
       </footer>
 

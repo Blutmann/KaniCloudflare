@@ -544,4 +544,41 @@ describe("KANI — Autenticación integrada en membresías, verificación QR y n
       expect(consumeSpy).not.toHaveBeenCalled();
     });
   });
+
+  describe("5. Estabilidad de scroll y visibilidad de RESERVAR TURNO", () => {
+    it("usa overflow-x-clip, min-h-[100svh], barra superior sticky sin duplicar RESERVAR TURNO y sin background-attachment: fixed inline", async () => {
+      mockGetAuthenticatedStaff.mockResolvedValue(null);
+      vi.spyOn(membershipsLib, "getPublicMembershipCard").mockResolvedValue(makePublicCard());
+
+      const { container } = render(<PublicMembershipCardPage />);
+      const reserveLinks = await screen.findAllByRole("link", { name: /RESERVAR TURNO/i });
+      expect(reserveLinks).toHaveLength(1);
+      expect(reserveLinks[0]).toHaveAttribute("href", "https://www.kanibarber.com/reservar");
+
+      const mainEl = container.querySelector("main.kani-membership-pass") as HTMLElement | null;
+      expect(mainEl).not.toBeNull();
+      expect(mainEl?.className).toContain("overflow-x-clip");
+      expect(mainEl?.className).not.toContain("overflow-x-hidden");
+      expect(mainEl?.className).toContain("min-h-[100svh]");
+      expect(mainEl?.style.backgroundAttachment).not.toBe("fixed");
+
+      const topActions = screen.getByTestId("membership-top-actions");
+      expect(topActions.className).toContain("sticky");
+      expect(topActions.className).toContain("top-0");
+      expect(topActions.contains(reserveLinks[0])).toBe(true);
+      expect(topActions.contains(screen.getByRole("button", { name: /Iniciar sesión/i }))).toBe(true);
+    });
+
+    it("styles.css configura .kani-membership-pass con overflow-x: clip, min-height: 100svh y fondo fijo en ::before", async () => {
+      const fs = await import("node:fs");
+      const path = await import("node:path");
+      const css = fs.readFileSync(path.resolve(process.cwd(), "src/styles.css"), "utf8");
+      expect(css).toContain(".kani-membership-pass {");
+      expect(css).toContain("overflow-x: clip;");
+      expect(css).toContain("overflow-y: visible;");
+      expect(css).toContain(".kani-membership-pass::before {");
+      expect(css).toContain("height: 100lvh;");
+    });
+  });
 });
+
