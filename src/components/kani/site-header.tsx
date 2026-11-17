@@ -521,11 +521,11 @@ export function SiteHeader() {
 
       {/* Grupo 2 — Administración */}
       <div className="mobile-menu-group">
-        <Link to={adminBase} onClick={closeMenu}>
-          <CalendarClock />Panel de administración
-        </Link>
         <Link to={membershipsLinkTarget} onClick={closeMenu}>
           <Tag />Membresías y descuentos
+        </Link>
+        <Link to={adminBase} onClick={closeMenu}>
+          <CalendarClock />Panel de administración
         </Link>
         <Link to={`${adminBase}/mantenimiento`} onClick={closeMenu}>
           <Wrench />Panel de mantenimiento
@@ -594,7 +594,7 @@ export function SiteHeader() {
         </div>
         <div className="mobile-menu-dock">
           {menuSessionBlock}
-          {!isBarber && <MobileMenuAction inline />}
+          <MobileMenuAction inline />
         </div>
       </nav>
     ) : (
@@ -608,7 +608,10 @@ export function SiteHeader() {
         {isBarber ? (
           <>
             <div className="mobile-menu-scroll">{activeMenuGroups}</div>
-            <div className="mobile-menu-dock">{menuSessionBlock}</div>
+            <div className="mobile-menu-dock">
+              {menuSessionBlock}
+              <MobileMenuAction inline />
+            </div>
           </>
         ) : (
           <>

@@ -117,7 +117,7 @@ describe('Kani — Optimización del menú desplegable BARBER', () => {
     expect(nav.textContent).not.toContain('WhatsApp');
     expect(nav.textContent).not.toContain('Panel de administración');
     expect(nav.textContent).not.toContain('Panel de mantenimiento');
-    expect(nav.textContent).not.toContain('Volver a la reserva');
+    expect(screen.getByRole('button', { name: /Volver a la reserva/i })).toBeTruthy();
 
     const separators = nav.querySelectorAll('[role="separator"]');
     expect(separators.length).toBe(2);

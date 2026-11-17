@@ -114,8 +114,8 @@ describe("KANI — Reorganización del menú desplegable ADMIN (Mobile)", () => 
 
     expect(group1Links).toEqual(["Reservar turno", "Contacto"]);
     expect(group2Links).toEqual([
-      "Panel de administración",
       "Membresías y descuentos",
+      "Panel de administración",
       "Panel de mantenimiento",
     ]);
     expect(group3Links).toEqual(["Política de privacidad", "Términos y condiciones"]);
@@ -133,8 +133,8 @@ describe("KANI — Reorganización del menú desplegable ADMIN (Mobile)", () => 
     const orderedLabels = [
       "Reservar turno",
       "Contacto",
-      "Panel de administración",
       "Membresías y descuentos",
+      "Panel de administración",
       "Panel de mantenimiento",
       "Política de privacidad",
       "Términos y condiciones",
@@ -170,7 +170,7 @@ describe("KANI — Reorganización del menú desplegable ADMIN (Mobile)", () => 
     });
   });
 
-  it("3. No altera los menús de MANAGER ni BARBER", async () => {
+  it("3. No altera JEFE y agrega «Volver a la reserva» en BARBER conservando todas sus opciones", async () => {
     mockGetAuthenticatedStaff.mockResolvedValue(makeRoleStaff("MANAGER"));
     const { unmount } = render(<SiteHeader />);
 
@@ -195,18 +195,28 @@ describe("KANI — Reorganización del menú desplegable ADMIN (Mobile)", () => 
     const barberNav = await screen.findByRole("navigation", { name: "Menú principal" });
     expect(barberNav).toHaveClass("mobile-menu--barber");
     expect(barberNav).not.toHaveClass("mobile-menu--admin");
-    expect(within(barberNav).queryByRole("button", { name: /Volver a la reserva/i })).toBeNull();
+    const barberDock = barberNav.querySelector(".mobile-menu-dock")!;
+    expect(within(barberDock).getByText("Lautaro")).toBeInTheDocument();
+    expect(within(barberDock).getByText("BARBER")).toBeInTheDocument();
+    expect(within(barberDock).getByRole("button", { name: /Cerrar sesión/i })).toBeInTheDocument();
+    expect(within(barberDock).getByRole("button", { name: /Volver a la reserva/i })).toBeInTheDocument();
   });
 
-  it("4. CSS Liquid Glass de mobile-menu--admin garantiza pantalla completa, scroll interno y safe-area inferior", () => {
+  it("4. CSS Liquid Glass de ADMIN y BARBER garantiza pantalla completa, inicio superior en Desktop y espaciados consistentes", () => {
     const css = fs.readFileSync(
       path.resolve(__dirname, "../components/kani/experimental/liquid-glass.css"),
       "utf-8",
     );
-    expect(css).toContain("nav.mobile-menu.mobile-menu--liquid.mobile-menu--admin");
-    expect(css).toMatch(/\.mobile-menu--admin\s*\{[^}]*height:\s*100dvh\s*!important/);
-    expect(css).toMatch(/\.mobile-menu--admin\s+\.mobile-menu-scroll\s*\{[^}]*overflow-y:\s*auto/);
-    expect(css).toMatch(/\.mobile-menu--admin\s+\.mobile-menu-dock\s*\{[^}]*safe-area-inset-bottom/);
-    expect(css).toMatch(/\.mobile-menu--admin\s+\.mobile-menu-cta--inline[\s\S]*?width:\s*100%\s*!important/);
+    const barberAndAdminSection = css.slice(css.indexOf("MENÚ DESPLEGABLE BARBER"));
+    expect(barberAndAdminSection).toContain("nav.mobile-menu.mobile-menu--liquid.mobile-menu--admin");
+    expect(barberAndAdminSection).toMatch(/\.mobile-menu--admin\s*\{[^}]*height:\s*100dvh\s*!important/);
+    expect(barberAndAdminSection).toMatch(/\.mobile-menu--admin\s+\.mobile-menu-scroll\s*\{[^}]*overflow-y:\s*auto/);
+    expect(barberAndAdminSection).toMatch(/\.mobile-menu--admin\s+\.mobile-menu-scroll\s*\{[^}]*justify-content:\s*flex-start\s*!important/);
+    expect(barberAndAdminSection).toMatch(/\.mobile-menu--barber\s+\.mobile-menu-scroll\s*\{[^}]*justify-content:\s*flex-start\s*!important/);
+    expect(barberAndAdminSection).not.toContain("justify-content: center");
+    expect(barberAndAdminSection).toMatch(/padding:\s*28px\s+4px\s+20px/);
+    expect(barberAndAdminSection).toMatch(/\.mobile-menu--admin\s+\.mobile-menu-dock\s*\{[^}]*safe-area-inset-bottom/);
+    expect(barberAndAdminSection).toMatch(/\.mobile-menu--admin\s+\.mobile-menu-cta--inline[\s\S]*?width:\s*100%\s*!important/);
+    expect(barberAndAdminSection).toMatch(/\.mobile-menu--barber\s+\.mobile-menu-cta--inline[\s\S]*?width:\s*100%\s*!important/);
   });
 });
