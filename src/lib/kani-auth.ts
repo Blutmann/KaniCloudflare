@@ -51,14 +51,14 @@ export async function signInWithPassword(email: string, password: string) {
   return res;
 }
 
-export async function signOut() {
+export async function signOut(options?: { scope?: 'global' | 'local' | 'others' }) {
   clearStaffCache();
   if (typeof document !== 'undefined') {
     try {
       document.cookie = `sb-access-token=; path=/; max-age=0; SameSite=Lax; Secure`;
     } catch {}
   }
-  return supabase.auth.signOut();
+  return options?.scope ? supabase.auth.signOut({ scope: options.scope }) : supabase.auth.signOut();
 }
 
 export async function requestPasswordReset(email: string, redirectTo?: string) {

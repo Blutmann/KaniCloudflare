@@ -6,6 +6,7 @@ import {
   Tag,
 } from "lucide-react";
 import { useAdminStaff } from "@/lib/kani-admin-context";
+import { buildMembershipCardUrl } from "@/lib/kani-membership-urls";
 import { isStaffOperator } from "@/lib/kani-permissions";
 import { businessDateToday, addCalendarDays } from "@/lib/kani-mobile-appointments";
 import { money, dateLabel, formatServiceName } from "@/lib/kani-model";
@@ -96,11 +97,7 @@ export function V2MembershipsAndDiscounts({
 
   async function handleCopyLink(token?: string | null, membershipId?: string) {
     if (!token) return;
-    const origin =
-      typeof window !== "undefined" && window.location.origin
-        ? window.location.origin
-        : "https://www.kanibarber.com";
-    const url = `${origin}/membresia/${token}`;
+    const url = buildMembershipCardUrl(token);
     try {
       await navigator.clipboard.writeText(url);
       if (membershipId) {

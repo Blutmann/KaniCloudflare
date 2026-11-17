@@ -2,6 +2,7 @@ import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
+import { getMembershipWorkerRedirectUrl } from "./lib/kani-membership-urls";
 
 async function getCloudflareEnv(): Promise<unknown> {
   try {
@@ -96,6 +97,14 @@ export default {
       const canonicalRedirect = getCanonicalRedirectUrl(request.url, process.env.KANI_CANONICAL_HOST);
       if (canonicalRedirect) {
         return Response.redirect(canonicalRedirect, 301);
+      }
+
+      const membershipWorkerRedirect = getMembershipWorkerRedirectUrl(
+        request.url,
+        process.env.KANI_CANONICAL_HOST,
+      );
+      if (membershipWorkerRedirect) {
+        return Response.redirect(membershipWorkerRedirect, 301);
       }
 
       const url = new URL(request.url);

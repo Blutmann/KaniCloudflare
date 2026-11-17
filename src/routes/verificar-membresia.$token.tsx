@@ -1,17 +1,24 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ArrowRight,
   CircleCheck,
   CreditCard,
   Loader2,
   Lock,
+  LogIn,
+  LogOut,
   ShieldAlert,
   ShieldCheck,
   TriangleAlert,
   UserCheck,
 } from "lucide-react";
-import { getAuthenticatedStaff, type AuthenticatedStaff } from "@/lib/kani-auth";
+import {
+  formatMembershipStaffRole,
+  MembershipStaffLoginModal,
+  useMembershipStaffAuth,
+} from "@/components/kani/membership-staff-auth";
+import { isStaffOperator } from "@/lib/kani-permissions";
 import {
   consumeMembershipSession,
   fetchMembershipForVerification,
@@ -42,18 +49,15 @@ function formatDateShort(dateStr?: string | null): string {
   return `${d} ${MONTHS_ES[parseInt(m, 10) - 1] || m} ${y.slice(-2)}`;
 }
 
-const ROLE_LABELS: Record<string, string> = {
-  ADMIN: "Administrador",
-  MANAGER: "Manager / Jefe",
-  BARBER: "Barbero",
-};
-
 export function SalonMembershipVerificationView() {
   const { token } = Route.useParams();
+  const staffAuth = useMembershipStaffAuth(`/verificar-membresia/${token}`);
+  const staff = staffAuth.staff;
+
   const [loading, setLoading] = useState(true);
   const [publicCard, setPublicCard] = useState<PublicMembershipCardResult | null>(null);
-  const [staff, setStaff] = useState<AuthenticatedStaff | null>(null);
   const [staffMembership, setStaffMembership] = useState<ClientMembershipRecord | null>(null);
+  const [loadingStaffMembership, setLoadingStaffMembership] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [selectedServiceName, setSelectedServiceName] = useState("");
@@ -63,6 +67,7 @@ export function SalonMembershipVerificationView() {
   const [actionSuccess, setActionSuccess] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [lastConsumed, setLastConsumed] = useState<any>(null);
+  const deductLockRef = useRef(false);
 
   useEffect(() => {
     if (typeof document !== "undefined") {
@@ -73,7 +78,7 @@ export function SalonMembershipVerificationView() {
     }
   }, []);
 
-  const loadData = useCallback(async () => {
+  const loadPublicCard = useCallback(async () => {
     if (!token || token.trim().length < 16) {
       setError("INVALID_TOKEN");
       setLoading(false);
@@ -82,32 +87,13 @@ export function SalonMembershipVerificationView() {
     setLoading(true);
     setError(null);
     try {
-      const [pubRes, staffRes] = await Promise.all([
-        getPublicMembershipCard(token),
-        getAuthenticatedStaff({ bypassCache: true }).catch(() => null),
-      ]);
-
+      const pubRes = await getPublicMembershipCard(token);
       if (!pubRes.found) {
         setPublicCard(null);
-        setStaff(staffRes);
-        setStaffMembership(null);
         setError(pubRes.error || "NOT_FOUND_OR_REVOKED");
         return;
       }
-
       setPublicCard(pubRes);
-      setStaff(staffRes);
-
-      if (staffRes) {
-        try {
-          const detailed = await fetchMembershipForVerification(token, staffRes);
-          if (detailed) {
-            setStaffMembership(detailed);
-            const firstAvail = detailed.items.find((i) => i.remainingQuantity > 0);
-            if (firstAvail) setSelectedServiceName(firstAvail.serviceName);
-          }
-        } catch {}
-      }
     } catch {
       setError("LOAD_FAILED");
     } finally {
@@ -116,17 +102,56 @@ export function SalonMembershipVerificationView() {
   }, [token]);
 
   useEffect(() => {
-    void loadData();
-  }, [loadData]);
+    void loadPublicCard();
+  }, [loadPublicCard]);
+
+  useEffect(() => {
+    let active = true;
+    if (!staff || !token || token.trim().length < 16 || error || !publicCard?.found) {
+      setStaffMembership(null);
+      setLoadingStaffMembership(false);
+      if (!staff) {
+        setActionSuccess(false);
+        setActionError(null);
+        setLastConsumed(null);
+      }
+      return;
+    }
+
+    setLoadingStaffMembership(true);
+    fetchMembershipForVerification(token, staff)
+      .then((detailed) => {
+        if (!active) return;
+        setStaffMembership(detailed);
+        const firstAvail = detailed?.items.find((i) => i.remainingQuantity > 0);
+        if (firstAvail) {
+          setSelectedServiceName((prev) => prev || firstAvail.serviceName);
+        }
+      })
+      .catch(() => {
+        if (!active) return;
+        setStaffMembership(null);
+      })
+      .finally(() => {
+        if (active) setLoadingStaffMembership(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [staff, token, error, publicCard?.found]);
 
   const handleDeductSession = async () => {
+    if (deductLockRef.current || isDeducting) return;
     if (!staff || !staffMembership) return;
     if (staffMembership.remainingSessions <= 0) {
       setActionError("Esta membresía no tiene sesiones disponibles.");
       return;
     }
+    deductLockRef.current = true;
     setIsDeducting(true);
     setActionError(null);
+    setActionSuccess(false);
     try {
       const res = await consumeMembershipSession(
         {
@@ -138,12 +163,27 @@ export function SalonMembershipVerificationView() {
         staff,
       );
       setStaffMembership(res.membership);
+      setPublicCard((prev) =>
+        prev
+          ? {
+              ...prev,
+              remaining_sessions: res.remainingSessions,
+              consumed_sessions: res.membership.consumedSessions,
+              status: res.isExhausted ? "EXHAUSTED" : res.membership.status,
+            }
+          : prev,
+      );
       setLastConsumed(res.consumption);
       setActionSuccess(true);
-      void loadData();
+      setNotes("");
+      const nextAvail = res.membership.items.find((i) => i.remainingQuantity > 0);
+      if (nextAvail) {
+        setSelectedServiceName(nextAvail.serviceName);
+      }
     } catch (err: any) {
       setActionError(err?.message || "No se pudo registrar el consumo.");
     } finally {
+      deductLockRef.current = false;
       setIsDeducting(false);
     }
   };
@@ -333,15 +373,43 @@ export function SalonMembershipVerificationView() {
           {/* Operator Action Section */}
           {staff ? (
             <div className="pt-2 border-t border-[#241E17] space-y-2.5">
-              <div className="flex items-center justify-between text-[10px] font-mono text-[#8C7A58]">
-                <div className="flex items-center gap-1.5">
-                  <UserCheck className="w-3 h-3 text-[#10b981]" />
-                  <span className="truncate">{staff.profile.display_name}</span>
+              <div
+                data-testid="qr-staff-session"
+                className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-[#090807] border border-[#241E17] px-3 py-2 text-[10px] font-mono text-[#A39E93]"
+              >
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <UserCheck className="w-3.5 h-3.5 text-[#10b981] shrink-0" />
+                  <span className="truncate text-[#E5DFD5] font-medium">{staff.profile.display_name}</span>
+                  <span className="uppercase text-[9px] px-1.5 py-0.5 rounded bg-[#C8A96B]/15 border border-[#C8A96B]/30 text-[#E8D4A2] shrink-0">
+                    {formatMembershipStaffRole(staff.profile.role)}
+                  </span>
+                  <span className="hidden sm:inline text-[9px] text-emerald-400/90 uppercase tracking-wider shrink-0">
+                    · Sesión activa
+                  </span>
                 </div>
-                <span className="uppercase text-[9px] px-1.5 py-0.5 rounded bg-white/5 text-[#A39E93]">
-                  {ROLE_LABELS[staff.profile.role] || staff.profile.role}
-                </span>
+                <button
+                  type="button"
+                  onClick={() => void staffAuth.handleSignOut()}
+                  disabled={staffAuth.signingOut}
+                  className="inline-flex items-center gap-1 px-2 py-1 rounded-lg border border-[#2C251B] hover:border-[#C8A96B]/45 text-[#9B8A68] hover:text-white transition-colors cursor-pointer uppercase tracking-wider text-[9.5px] min-h-[30px] disabled:opacity-50"
+                >
+                  <LogOut className="w-3 h-3 shrink-0" />
+                  <span>Cerrar sesión</span>
+                </button>
               </div>
+
+              {loadingStaffMembership && (
+                <div className="flex items-center justify-center gap-2 py-2 text-[11px] font-mono text-[#8C7A58]">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-[#C8A96B]" />
+                  <span>Cargando permisos de membresía...</span>
+                </div>
+              )}
+
+              {!loadingStaffMembership && !staffMembership && (
+                <div className="rounded-xl bg-amber-500/10 border border-amber-500/25 px-3 py-2 text-[11px] text-amber-200/90 leading-relaxed">
+                  Tu cuenta <strong>{formatMembershipStaffRole(staff.profile.role)}</strong> no tiene permisos para operar esta membresía (pertenece a otro profesional o requiere rol operador).
+                </div>
+              )}
 
               {actionSuccess && (
                 <div className="flex items-center gap-2 rounded-xl bg-emerald-500/10 border border-emerald-500/30 px-3 py-2 text-[11px] text-emerald-300">
@@ -411,20 +479,32 @@ export function SalonMembershipVerificationView() {
               )}
             </div>
           ) : (
-            <div className="pt-2 border-t border-[#241E17] text-center space-y-2">
+            <div className="pt-2.5 border-t border-[#241E17] text-center space-y-2.5">
               <div className="flex items-center justify-center gap-1.5 text-[11px] text-[#A39E93]">
                 <Lock className="w-3.5 h-3.5 text-[#C8A96B]" />
                 <span>Vista pública de verificación</span>
               </div>
-              <p className="text-[10px] text-[#6E6352] leading-tight">
-                Para descontar sesiones desde este escáner, iniciá sesión en el Panel de Administración.
+              <p className="text-[10.5px] text-[#8C8270] leading-relaxed">
+                Para descontar sesiones desde este escáner, iniciá sesión con tu cuenta interna.
               </p>
+              <button
+                type="button"
+                onClick={staffAuth.openLoginModal}
+                className="w-full min-h-[44px] py-2.5 px-4 rounded-xl bg-[#18140E] hover:bg-[#241D14] border border-[#D4B475]/55 hover:border-[#F0D9A3] text-[#F0D9A3] hover:text-white font-mono text-[11px] font-semibold tracking-[0.16em] uppercase transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg"
+              >
+                <LogIn className="w-4 h-4 text-[#D4B475] shrink-0" />
+                <span>Iniciar sesión</span>
+              </button>
             </div>
           )}
 
           {/* Quick Links */}
-          <div className={`pt-2 border-t border-[#241E17] ${isOperatorStaff && staffMembership ? "grid grid-cols-2 gap-2" : "flex"}`}>
-            {isOperatorStaff && staffMembership && (
+          <div
+            className={`pt-2 border-t border-[#241E17] ${
+              staff && isStaffOperator(staff.profile.role) && staffMembership ? "grid grid-cols-2 gap-2" : "flex"
+            }`}
+          >
+            {staff && isStaffOperator(staff.profile.role) && staffMembership && (
               <Link
                 to="/panel-administracion/membresias"
                 search={{ membershipId: staffMembership.id } as any}
@@ -451,6 +531,14 @@ export function SalonMembershipVerificationView() {
       <footer className="text-center text-[9.5px] text-[#443E35] tracking-[0.2em] uppercase pt-3 pb-1 font-mono">
         <p>© 2026 KANI Barber Studio</p>
       </footer>
+
+      <MembershipStaffLoginModal
+        isOpen={staffAuth.isLoginOpen}
+        onClose={staffAuth.closeLoginModal}
+        onAuthenticated={staffAuth.handleAuthenticated}
+        authError={staffAuth.authError}
+        subtitle="Iniciá sesión como ADMIN, JEFE o BARBER para verificar y operar esta membresía."
+      />
     </main>
   );
 }

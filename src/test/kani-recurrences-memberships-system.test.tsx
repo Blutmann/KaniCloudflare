@@ -477,7 +477,7 @@ describe("FASE 15 — Pruebas integrales de Recurrencias, Membresías, Descuento
   });
 
   describe("4. Permisos por rol (ADMIN, MANAGER, BARBER)", () => {
-    it("autoriza acceso a membresias para los tres roles pero restringe descuentos y otros barberos", async () => {
+    it("autoriza acceso a membresias y descuentos (solo lectura para BARBER) pero restringe otros barberos", async () => {
       const admin = { role: "ADMIN", barber_id: null, active: true };
       const manager = { role: "MANAGER", barber_id: null, active: true };
       const barber = { role: "BARBER", barber_id: "lautaro", active: true };
@@ -488,7 +488,7 @@ describe("FASE 15 — Pruebas integrales de Recurrencias, Membresías, Descuento
 
       expect(mayAccessStaffSection(admin, "descuentos")).toBe(true);
       expect(mayAccessStaffSection(manager, "descuentos")).toBe(true);
-      expect(mayAccessStaffSection(barber, "descuentos")).toBe(false);
+      expect(mayAccessStaffSection(barber, "descuentos")).toBe(true);
 
       // Barbero no puede crear membresía ni disponibilidad recurrente para otro barbero ("tomas")
       await expect(

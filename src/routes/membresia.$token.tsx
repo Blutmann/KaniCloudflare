@@ -3,17 +3,26 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Calendar,
   Loader2,
+  LogIn,
+  LogOut,
   QrCode,
   RotateCw,
   ShieldAlert,
+  UserCheck,
   X,
 } from "lucide-react";
 import QRCode from "qrcode";
 import { pageHead } from "@/lib/kani-head";
+import { buildMembershipVerificationUrl } from "@/lib/kani-membership-urls";
 import {
   getPublicMembershipCard,
   type PublicMembershipCardResult,
 } from "@/lib/kani-recurrences-memberships";
+import {
+  formatMembershipStaffRole,
+  MembershipStaffLoginModal,
+  useMembershipStaffAuth,
+} from "@/components/kani/membership-staff-auth";
 import kaniKanjiStamp from "@/assets/kani-kanji-stamp.png";
 import kaniLogoDark from "@/assets/kani-logo-dark.png";
 
@@ -114,6 +123,7 @@ function KaniQRCode({
 
 export function PublicMembershipCardPage() {
   const { token } = Route.useParams();
+  const staffAuth = useMembershipStaffAuth(`/membresia/${token}`);
 
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<PublicMembershipCardResult | null>(null);
@@ -555,10 +565,7 @@ export function PublicMembershipCardPage() {
 
   const currentStatus = statusConfig[statusKey] || statusConfig.ACTIVE;
 
-  const verificationUrl =
-    typeof window !== "undefined" && window.location.origin
-      ? `${window.location.origin}/verificar-membresia/${token}`
-      : `https://www.kanibarber.com/verificar-membresia/${token}`;
+  const verificationUrl = buildMembershipVerificationUrl(token);
 
   const shortSerial = token.slice(0, 8).toUpperCase();
 
@@ -579,8 +586,8 @@ export function PublicMembershipCardPage() {
         backgroundAttachment: "fixed",
       }}
     >
-      {/* Acción superior izquierda fuera de la credencial */}
-      <div className="w-full flex items-center justify-start pb-3 sm:pb-3.5 shrink-0">
+      {/* Acción superior fuera de la credencial: Reservar turno (primaria) + Acceso interno (secundaria) */}
+      <div className="w-full flex flex-wrap items-center justify-between gap-2 pb-3 sm:pb-3.5 shrink-0">
         <a
           href="https://www.kanibarber.com/reservar"
           className="inline-flex items-center gap-2 sm:gap-2.5 min-h-[42px] sm:min-h-[44px] md:min-h-[46px] px-4 py-2.5 sm:px-5 md:px-6 md:py-3 rounded-full bg-[#08080A]/95 hover:bg-[#141418] border border-[#D4B475]/60 hover:border-[#F0D9A3] text-[#F0D9A3] hover:text-white transition-all text-[11.5px] sm:text-xs md:text-[13px] font-mono font-semibold tracking-[0.16em] uppercase shadow-[0_8px_24px_rgba(0,0,0,0.65),0_0_14px_rgba(212,180,117,0.10)] backdrop-blur-sm whitespace-nowrap"
@@ -588,6 +595,39 @@ export function PublicMembershipCardPage() {
           <Calendar className="w-4 h-4 md:w-[18px] md:h-[18px] text-[#D4B475] shrink-0" />
           <span>RESERVAR TURNO</span>
         </a>
+
+        {staffAuth.staff ? (
+          <div
+            data-testid="membership-staff-session"
+            className="inline-flex flex-wrap items-center gap-2 min-h-[40px] sm:min-h-[42px] px-3 py-1.5 rounded-full bg-[#09090B]/92 border border-[#C8A96B]/35 text-[10.5px] sm:text-[11px] font-mono text-[#E6E0D4] backdrop-blur-sm shadow-lg"
+          >
+            <span className="inline-flex items-center gap-1.5 max-w-[140px] sm:max-w-[180px] truncate">
+              <UserCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+              <span className="truncate">{staffAuth.staff.profile.display_name}</span>
+            </span>
+            <span className="px-1.5 py-0.5 rounded bg-[#C8A96B]/15 border border-[#C8A96B]/35 text-[#E8D4A2] text-[9.5px] tracking-[0.12em] uppercase shrink-0">
+              {formatMembershipStaffRole(staffAuth.staff.profile.role)}
+            </span>
+            <button
+              type="button"
+              onClick={() => void staffAuth.handleSignOut()}
+              disabled={staffAuth.signingOut}
+              className="inline-flex items-center gap-1 pl-1.5 border-l border-white/10 text-[#9B8A68] hover:text-white transition-colors cursor-pointer uppercase tracking-[0.1em] text-[10px] min-h-[28px] disabled:opacity-50"
+            >
+              <LogOut className="w-3 h-3 shrink-0" />
+              <span>Cerrar sesión</span>
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={staffAuth.openLoginModal}
+            className="inline-flex items-center gap-1.5 min-h-[40px] sm:min-h-[42px] px-3.5 py-2 rounded-full bg-[#09090B]/88 hover:bg-[#141418] border border-[#C8A96B]/28 hover:border-[#D4B475]/55 text-[#9B8A68] hover:text-[#F0D9A3] transition-all text-[10.5px] sm:text-[11px] font-mono tracking-[0.14em] uppercase backdrop-blur-sm cursor-pointer whitespace-nowrap"
+          >
+            <LogIn className="w-3.5 h-3.5 text-[#C8A96B]/80 shrink-0" />
+            <span>Iniciar sesión</span>
+          </button>
+        )}
       </div>
 
       <div className="w-full max-w-[420px] sm:max-w-[560px] md:max-w-[680px] lg:max-w-[760px] xl:max-w-[800px] 2xl:max-w-[840px] mx-auto my-auto space-y-4 md:space-y-5 flex flex-col items-center">
@@ -976,6 +1016,13 @@ export function PublicMembershipCardPage() {
           </div>
         </div>
       )}
+      <MembershipStaffLoginModal
+        isOpen={staffAuth.isLoginOpen}
+        onClose={staffAuth.closeLoginModal}
+        onAuthenticated={staffAuth.handleAuthenticated}
+        authError={staffAuth.authError}
+        subtitle="Acceso interno (ADMIN, JEFE o BARBER) sin salir de la credencial."
+      />
     </main>
   );
 }
