@@ -120,29 +120,37 @@ describe('formatRangeLabel helper', () => {
   });
 });
 
+import { formatV2AgendaPeriodLabel } from '@/lib/kani-mobile-appointments';
+
 describe('V2Appointments periods and historical queries', () => {
-  it('renders default Hoy view with title group and exact period options', () => {
+  it('renders default Próximos 10 días view with title group and exact 9 period options', () => {
+    window.localStorage?.clear();
     const { container } = render(<V2Appointments />);
 
     const toolbar = container.querySelector('.v2-section-toolbar');
     expect(toolbar).toBeInTheDocument();
-    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent(formatAdminV2Date(today));
+    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent(formatAdminV2Range(today, tenDaysEnd));
 
-    // Selector Período has exact options in exact order
+    // Selector Período has exact 9 options in exact order
     const periodSelect = screen.getByLabelText('Período') as HTMLSelectElement;
-    const optionTexts = Array.from(periodSelect.options)
-      .filter((opt) => !opt.hidden)
-      .map((opt) => opt.text);
+    expect(periodSelect.value).toBe('NEXT_10_DAYS');
+    const optionTexts = Array.from(periodSelect.options).map((opt) => opt.text);
 
     expect(optionTexts).toEqual([
-      'Hoy',
-      'Esta semana',
-      'Próximos 10 días',
-      'Personalizado',
+      formatV2AgendaPeriodLabel('TODAY', today),
+      formatV2AgendaPeriodLabel('NEXT_5_DAYS', today),
+      formatV2AgendaPeriodLabel('THIS_WEEK', today),
+      formatV2AgendaPeriodLabel('NEXT_10_DAYS', today),
+      formatV2AgendaPeriodLabel('THIS_MONTH', today),
+      formatV2AgendaPeriodLabel('PREVIOUS_MONTH', today),
+      formatV2AgendaPeriodLabel('THIS_YEAR', today),
+      formatV2AgendaPeriodLabel('CUSTOM', today),
+      formatV2AgendaPeriodLabel('DATE', today),
     ]);
 
-    // Shows appointments for today
+    // Shows appointments for today and 10th day
     expect(screen.getByText('Cliente Hoy')).toBeInTheDocument();
+    expect(screen.getByText('Cliente Próximos 10 Días')).toBeInTheDocument();
   });
 
   it('filters Esta semana (Monday to Sunday) when selecting Esta semana', () => {
@@ -171,19 +179,20 @@ describe('V2Appointments periods and historical queries', () => {
     expect(screen.getByText('Cliente Próximos 10 Días')).toBeInTheDocument();
   });
 
-  it('allows querying custom range in the past (historical queries) via Personalizado', () => {
+  it('allows querying custom range in the past (historical queries) via Rango personalizado (Fecha + Fecha hasta)', () => {
     render(<V2Appointments />);
     const periodSelect = screen.getByLabelText('Período');
     fireEvent.change(periodSelect, { target: { value: 'CUSTOM' } });
 
-    // Controls Desde and Hasta appear
-    const desdeInput = screen.getByLabelText('Desde');
-    const hastaInput = screen.getByLabelText('Hasta');
-    expect(desdeInput).toBeInTheDocument();
+    // Existing Fecha acts as start and only Fecha hasta appears
+    const fechaInput = screen.getByLabelText('Fecha');
+    const hastaInput = screen.getByLabelText('Fecha hasta');
+    expect(fechaInput).toBeInTheDocument();
     expect(hastaInput).toBeInTheDocument();
+    expect(screen.queryByLabelText('Desde')).toBeNull();
 
     // Query August 2026
-    fireEvent.change(desdeInput, { target: { value: pastDateAugustStart } });
+    fireEvent.change(fechaInput, { target: { value: pastDateAugustStart } });
     fireEvent.change(hastaInput, { target: { value: pastDateAugustEnd } });
 
     // Header updates to historical range with year
@@ -195,33 +204,35 @@ describe('V2Appointments periods and historical queries', () => {
     expect(screen.getByText('Cliente Pasado Histórico')).toBeInTheDocument();
   });
 
-  it('validates Desde <= Hasta and provides feedback without breaking', () => {
+  it('validates Fecha <= Fecha hasta and provides feedback without breaking', () => {
     render(<V2Appointments />);
     const periodSelect = screen.getByLabelText('Período');
     fireEvent.change(periodSelect, { target: { value: 'CUSTOM' } });
 
-    const desdeInput = screen.getByLabelText('Desde');
-    const hastaInput = screen.getByLabelText('Hasta');
+    const fechaInput = screen.getByLabelText('Fecha');
+    const hastaInput = screen.getByLabelText('Fecha hasta');
 
-    // Invalid range: Desde after Hasta
-    fireEvent.change(desdeInput, { target: { value: '2026-09-01' } });
+    // Invalid range: Fecha after Fecha hasta
+    fireEvent.change(fechaInput, { target: { value: '2026-09-01' } });
     fireEvent.change(hastaInput, { target: { value: '2026-08-01' } });
 
     expect(screen.getByRole('alert')).toHaveTextContent(
-      "La fecha 'Desde' debe ser anterior o igual a 'Hasta'.",
+      "La fecha 'Fecha hasta' debe ser igual o posterior a 'Fecha'.",
     );
     expect(
-      screen.getByText("Revisá el rango seleccionado: la fecha 'Desde' debe ser anterior o igual a 'Hasta'."),
+      screen.getByText("Revisá el rango seleccionado: la fecha 'Fecha hasta' debe ser igual o posterior a 'Fecha'."),
     ).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('Rango no válido');
   });
 
-  it('allows querying a concrete historical day via Fecha selector', () => {
+  it('switches to Fecha exacta when picking a date in Fecha and allows resetting to Hoy', () => {
     render(<V2Appointments />);
     const fechaInput = screen.getByLabelText('Fecha');
+    const periodSelect = screen.getByLabelText('Período') as HTMLSelectElement;
 
     // User chooses past date in Fecha
     fireEvent.change(fechaInput, { target: { value: pastDate } });
+    expect(periodSelect.value).toBe('DATE');
 
     // Header reflects concrete date
     expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent(formatAdminV2Date(pastDate));
@@ -230,7 +241,6 @@ describe('V2Appointments periods and historical queries', () => {
     expect(screen.getByText('Cliente Pasado Histórico')).toBeInTheDocument();
 
     // Resetting via Período 'Hoy' returns to today cleanly
-    const periodSelect = screen.getByLabelText('Período');
     fireEvent.change(periodSelect, { target: { value: 'TODAY' } });
 
     expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent(formatAdminV2Date(today));

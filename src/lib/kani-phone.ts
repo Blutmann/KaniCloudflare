@@ -496,6 +496,48 @@ export function getWhatsAppUrl(rawPhone?: string | null): string | null {
   return null;
 }
 
+/**
+ * Normaliza un teléfono del cliente y genera el enlace directo oficial de WhatsApp:
+ * https://api.whatsapp.com/send/?phone=NUMERO&text&type=phone_number&app_absent=0
+ * No inventa códigos de país cuando el número es ambiguo o inválido.
+ */
+export function getWhatsAppDirectSendUrl(rawPhone?: string | null): string | null {
+  if (!rawPhone || typeof rawPhone !== 'string') return null;
+  const trimmed = rawPhone.trim();
+  if (!trimmed || /[A-Za-z]/.test(trimmed)) return null;
+
+  const digits = trimmed.replace(/\D/g, '');
+  if (digits.length < 8) return null;
+
+  let parsed: ReturnType<typeof parsePhoneNumberFromString> | undefined;
+
+  if (trimmed.startsWith('+')) {
+    parsed = parsePhoneNumberFromString(trimmed);
+  } else if (digits.startsWith('549') && digits.length >= 12) {
+    parsed = parsePhoneNumberFromString(`+${digits}`);
+  } else if (digits.startsWith('54') && digits.length >= 12) {
+    parsed = parsePhoneNumberFromString(`+549${digits.slice(2).replace(/^0+/, '')}`);
+  } else {
+    // Solo aceptar formato local argentino inequívoco (ej. 11 2345-6789 o 011 15 2345-6789)
+    const arCandidate = parsePhoneNumberFromString(trimmed, 'AR');
+    if (arCandidate && arCandidate.isValid() && (digits.length === 10 || digits.startsWith('0') || digits.startsWith('15'))) {
+      parsed = arCandidate;
+    }
+  }
+
+  if (!parsed || !parsed.isValid()) return null;
+
+  let num = parsed.number;
+  if (parsed.country === 'AR' && num.startsWith('+54') && !num.startsWith('+549')) {
+    num = `+549${num.slice(3)}`;
+  }
+
+  const cleanDigits = num.replace(/\D/g, '');
+  if (cleanDigits.length < 10) return null;
+
+  return `https://api.whatsapp.com/send/?phone=${cleanDigits}&text&type=phone_number&app_absent=0`;
+}
+
 export function phonePlaceholder(country: PhoneCountry) {
   const example = mobileExampleNumbers[country];
   if (!example) return 'Número de celular';

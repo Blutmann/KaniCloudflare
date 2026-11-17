@@ -11,24 +11,25 @@ vi.mock('@tanstack/react-router',()=>({Link:({children}:any)=><a>{children}</a>}
 import { V2Appointments } from './agenda';
 afterEach(()=>{cleanup();mocks.status='PENDING';mocks.phone='+54 9 11 2843-6014';});
 describe('payment based appointment actions',()=>{
- it('shows cancellation with confirmation and WhatsApp Pontiun trigger, without manual approval actions',()=>{
+ it('shows cancellation with confirmation and direct WhatsApp link, without manual approval actions',()=>{
   render(<V2Appointments/>);
   expect(screen.queryByRole('button',{name:'Confirmar'})).toBeNull();
   expect(screen.queryByRole('button',{name:'Rechazar'})).toBeNull();
   expect(screen.queryByRole('button',{name:'Enviar correo'})).toBeNull();
-  const waBtn = screen.getByRole('button',{name:'WhatsApp'});
-  expect(waBtn).toBeInTheDocument();
-  expect(waBtn).not.toBeDisabled();
-  fireEvent.click(waBtn);
-  expect(screen.getByRole('heading',{name:'¿Reenviar confirmación por WhatsApp?'})).toBeInTheDocument();
-  fireEvent.click(screen.getByRole('button',{name:'Cancelar'}));
+  const waLink = screen.getByRole('link',{name:'WhatsApp'});
+  expect(waLink).toBeInTheDocument();
+  expect(waLink).toHaveAttribute('href','https://api.whatsapp.com/send/?phone=5491128436014&text&type=phone_number&app_absent=0');
+  expect(waLink).toHaveAttribute('target','_blank');
   fireEvent.click(screen.getByRole('button',{name:'Cancelar turno'}));
   expect(screen.getByRole('heading',{name:'¿Cancelar este turno?'})).toBeInTheDocument();
   expect(mocks.cancel).not.toHaveBeenCalled();
  });
- it('does not offer cancellation for terminal states or links for missing phones',()=>{
+ it('does not offer cancellation for terminal states and explains when phone is missing',()=>{
   mocks.status='CANCELLED';mocks.phone='';render(<V2Appointments/>);
   expect(screen.queryByRole('button',{name:'Cancelar turno'})).toBeNull();
-  expect(screen.getByRole('button',{name:'WhatsApp'})).toBeDisabled();
+  const waBtn = screen.getByRole('button',{name:'WhatsApp'});
+  expect(waBtn).toBeInTheDocument();
+  fireEvent.click(waBtn);
+  expect(screen.getByRole('heading',{name:'Sin número de contacto'})).toBeInTheDocument();
  });
 });

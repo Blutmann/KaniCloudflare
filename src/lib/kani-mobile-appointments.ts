@@ -1,4 +1,5 @@
 import type { RealAppointment, RealAppointmentStatus } from './kani-appointments';
+import { serviceFor } from './kani-model';
 
 export type MobileStatusFilter = 'ALL' | RealAppointmentStatus;
 export type AppointmentsDatePreset =
@@ -253,4 +254,208 @@ export function filterMobileAppointments(
       return appointment.statusCode === options.statusFilter;
     })
     .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+}
+
+export type V2AgendaPeriodPreset =
+  | 'TODAY'
+  | 'NEXT_5_DAYS'
+  | 'THIS_WEEK'
+  | 'NEXT_10_DAYS'
+  | 'THIS_MONTH'
+  | 'PREVIOUS_MONTH'
+  | 'THIS_YEAR'
+  | 'CUSTOM'
+  | 'DATE';
+
+export const v2AgendaPeriodOrder: V2AgendaPeriodPreset[] = [
+  'TODAY',
+  'NEXT_5_DAYS',
+  'THIS_WEEK',
+  'NEXT_10_DAYS',
+  'THIS_MONTH',
+  'PREVIOUS_MONTH',
+  'THIS_YEAR',
+  'CUSTOM',
+  'DATE',
+];
+
+const MONTHS_FULL_ES = [
+  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+];
+
+const MONTHS_SHORT_ES = [
+  'ene.', 'feb.', 'mar.', 'abr.', 'may.', 'jun.',
+  'jul.', 'ago.', 'sep.', 'oct.', 'nov.', 'dic.',
+];
+
+export function businessTimeNowHHMM(now = new Date()): string {
+  return new Intl.DateTimeFormat('en-GB', {
+    timeZone: BUSINESS_TIME_ZONE,
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(now);
+}
+
+/**
+ * Determina si un turno finalizó temporalmente en America/Argentina/Buenos_Aires
+ * comparando (fecha y hora de inicio + duración real del servicio) <= hora actual.
+ * No altera el estado del turno.
+ */
+export function isAppointmentTemporallyFinished(
+  appointment: Pick<RealAppointment, 'date' | 'time' | 'startTime' | 'endTime' | 'service' | 'serviceDuration'>,
+  now = new Date(),
+): boolean {
+  const bookingDate = appointment.date;
+  if (!bookingDate) return false;
+
+  const today = businessDateToday(now);
+  const currentTime = businessTimeNowHHMM(now);
+
+  const rawStart = (appointment.startTime || appointment.time || '').trim().slice(0, 5);
+  const [startH, startM] = rawStart.split(':').map((n) => parseInt(n, 10));
+  if (Number.isNaN(startH) || Number.isNaN(startM)) {
+    return bookingDate < today;
+  }
+
+  const duration =
+    typeof appointment.serviceDuration === 'number' && appointment.serviceDuration > 0
+      ? appointment.serviceDuration
+      : serviceFor(appointment.service).duration || 45;
+
+  const totalEndMin = startH * 60 + startM + duration;
+  const dayOverflow = Math.floor(totalEndMin / 1440);
+  const endMinutesOfDay = totalEndMin % 1440;
+  const endDate = dayOverflow > 0 ? addCalendarDays(bookingDate, dayOverflow) : bookingDate;
+  const endHHMM = `${String(Math.floor(endMinutesOfDay / 60)).padStart(2, '0')}:${String(endMinutesOfDay % 60).padStart(2, '0')}`;
+
+  if (endDate < today) return true;
+  if (endDate > today) return false;
+  return endHHMM <= currentTime;
+}
+
+export function formatV2AgendaPeriodLabel(
+  preset: V2AgendaPeriodPreset,
+  today: string,
+  compact = false,
+): string {
+  const [yearStr, monthStr] = today.split('-');
+  const year = parseInt(yearStr, 10);
+  const monthIdx = Math.max(0, Math.min(11, parseInt(monthStr, 10) - 1));
+
+  switch (preset) {
+    case 'TODAY':
+      return 'Hoy';
+    case 'NEXT_5_DAYS':
+      return 'Próximos 5 días';
+    case 'THIS_WEEK': {
+      if (compact) return 'Esta semana';
+      const weekStart = startOfBusinessWeek(today);
+      const weekEnd = addCalendarDays(weekStart, 6);
+      const [, sM, sD] = weekStart.split('-').map((v) => parseInt(v, 10));
+      const [, eM, eD] = weekEnd.split('-').map((v) => parseInt(v, 10));
+      if (sM === eM) {
+        return `Esta semana — Del ${sD} al ${eD} ${MONTHS_SHORT_ES[eM - 1]}`;
+      }
+      return `Esta semana — Del ${sD} ${MONTHS_SHORT_ES[sM - 1]} al ${eD} ${MONTHS_SHORT_ES[eM - 1]}`;
+    }
+    case 'NEXT_10_DAYS':
+      return 'Próximos 10 días';
+    case 'THIS_MONTH':
+      return compact
+        ? `Este mes — ${MONTHS_SHORT_ES[monthIdx].replace('.', '')} ${year}`
+        : `Este mes — ${MONTHS_FULL_ES[monthIdx]} ${year}`;
+    case 'PREVIOUS_MONTH': {
+      const prevDate = new Date(Date.UTC(year, monthIdx - 1, 1));
+      const prevYear = prevDate.getUTCFullYear();
+      const prevMonthIdx = prevDate.getUTCMonth();
+      return compact
+        ? `Mes ant. — ${MONTHS_SHORT_ES[prevMonthIdx].replace('.', '')} ${prevYear}`
+        : `Mes anterior — ${MONTHS_FULL_ES[prevMonthIdx]} ${prevYear}`;
+    }
+    case 'THIS_YEAR':
+      return `Este año — ${year}`;
+    case 'CUSTOM':
+      return 'Rango personalizado';
+    case 'DATE':
+      return 'Fecha exacta';
+  }
+}
+
+export function dateRangeForV2AgendaPeriod(
+  preset: V2AgendaPeriodPreset,
+  today: string,
+  specificDate = '',
+  customStart = '',
+  customEnd = '',
+): { start: string; end: string } {
+  const [yearStr, monthStr] = today.split('-');
+  const year = parseInt(yearStr, 10);
+  const month = parseInt(monthStr, 10);
+
+  switch (preset) {
+    case 'TODAY':
+      return { start: today, end: today };
+    case 'NEXT_5_DAYS':
+      return { start: today, end: addCalendarDays(today, 4) };
+    case 'THIS_WEEK': {
+      const start = startOfBusinessWeek(today);
+      return { start, end: addCalendarDays(start, 6) };
+    }
+    case 'NEXT_10_DAYS':
+      return { start: today, end: addCalendarDays(today, 9) };
+    case 'THIS_MONTH': {
+      const start = `${yearStr}-${monthStr}-01`;
+      const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
+      return { start, end: `${yearStr}-${monthStr}-${String(lastDay).padStart(2, '0')}` };
+    }
+    case 'PREVIOUS_MONTH': {
+      const prevFirst = new Date(Date.UTC(year, month - 2, 1));
+      const prevLast = new Date(Date.UTC(year, month - 1, 0));
+      return {
+        start: prevFirst.toISOString().slice(0, 10),
+        end: prevLast.toISOString().slice(0, 10),
+      };
+    }
+    case 'THIS_YEAR':
+      return { start: `${yearStr}-01-01`, end: `${yearStr}-12-31` };
+    case 'CUSTOM':
+      return { start: customStart || today, end: customEnd || today };
+    case 'DATE':
+      return { start: specificDate || today, end: specificDate || today };
+  }
+}
+
+/**
+ * Ordenamiento cronológico inteligente:
+ * - Mantiene el agrupamiento por fecha (a.date vs b.date).
+ * - Para el día actual (en períodos con vista futura como NEXT_10_DAYS o TODAY),
+ *   ubica primero los turnos próximos/en curso y luego los ya finalizados hoy.
+ */
+export function sortV2AgendaAppointments(
+  appointments: RealAppointment[],
+  period: V2AgendaPeriodPreset,
+  now = new Date(),
+): RealAppointment[] {
+  const today = businessDateToday(now);
+  const prioritizeUpcomingToday =
+    period === 'NEXT_10_DAYS' ||
+    period === 'NEXT_5_DAYS' ||
+    period === 'TODAY' ||
+    period === 'THIS_WEEK';
+
+  return [...appointments].sort((a, b) => {
+    if (a.date !== b.date) {
+      return a.date.localeCompare(b.date);
+    }
+    if (prioritizeUpcomingToday && a.date === today) {
+      const aFinished = isAppointmentTemporallyFinished(a, now) ? 1 : 0;
+      const bFinished = isAppointmentTemporallyFinished(b, now) ? 1 : 0;
+      if (aFinished !== bFinished) {
+        return aFinished - bFinished;
+      }
+    }
+    return (a.time || '').localeCompare(b.time || '');
+  });
 }

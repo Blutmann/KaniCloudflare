@@ -976,9 +976,11 @@ export async function retryNotificationChannel(input: {
   appointmentId: string;
   channel: "WHATSAPP" | "EMAIL";
   recipientRole?: NotificationRecipientRole;
+  forceResend?: boolean;
   token?: string;
 }): Promise<RetryChannelResult> {
   const recipientRole: NotificationRecipientRole = input.recipientRole === "BARBER" ? "BARBER" : "CLIENT";
+  const forceResend = Boolean(input.forceResend);
   const lockKey = `${input.appointmentId}:${recipientRole}:${input.channel}`;
   if (activeChannelRetries.has(lockKey)) {
     return {
@@ -1041,8 +1043,8 @@ export async function retryNotificationChannel(input: {
 
     // Validaciones rápidas de estado para reintento seguro
     if (dispatches) {
-      // A. El mensaje ya fue entregado o leído
-      if (dispatches.status === "DELIVERED" || dispatches.status === "READ") {
+      // A. El mensaje ya fue entregado o leído (permitido solo en reenvío explícito desde diagnóstico)
+      if (!forceResend && (dispatches.status === "DELIVERED" || dispatches.status === "READ")) {
         return {
           success: false,
           channel: input.channel,
@@ -1075,7 +1077,7 @@ export async function retryNotificationChannel(input: {
 
       // D. Si ya fue aceptado o enviado por el proveedor:
       // Comprobar si pertenece al mismo evento o si el turno cambió a CANCELLED
-      if (dispatches.status === "PROVIDER_ACCEPTED" || dispatches.status === "SENT") {
+      if (!forceResend && (dispatches.status === "PROVIDER_ACCEPTED" || dispatches.status === "SENT")) {
         // Consultar turno para verificar si el estado actual es diferente (ej: CANCELLED tras previa confirmación)
         const { data: quickApt } = await supabase
           .from("appointments")
@@ -1156,8 +1158,8 @@ export async function retryNotificationChannel(input: {
 
     if (currentAptStatus === "CONFIRMED") {
       targetNotificationType = "CONFIRMED";
-      // Turnos pasados: no enviar confirmaciones obsoletas a menos que lo autorice un administrador explícitamente
-      if (input.channel === "EMAIL" && aptData.booking_date && isAppointmentPast(aptData.booking_date, aptData.start_time) && !isStaffOperator(staffProfile?.role ?? "")) {
+      // Turnos pasados: no enviar confirmaciones obsoletas a menos que lo autorice un administrador o se solicite reenvío manual explícito
+      if (!input.forceResend && input.channel === "EMAIL" && aptData.booking_date && isAppointmentPast(aptData.booking_date, aptData.start_time) && !isStaffOperator(staffProfile?.role ?? "")) {
         return {
           success: false,
           channel: input.channel,
@@ -1246,7 +1248,7 @@ export async function retryNotificationChannel(input: {
       });
 
       const attemptNumber = (relevantDispatch?.attempts ?? dispatches?.attempts ?? 0) + 1;
-      const retrySuffix = dispatches?.status === "FAILED" && attemptNumber >= 2 ? `retry-${attemptNumber}` : undefined;
+      const retrySuffix = (input.forceResend || dispatches?.status === "FAILED") && attemptNumber >= 2 ? `retry-${attemptNumber}` : undefined;
       const pontiunModule = await import("./kani-pontiun");
       const svcNameForWa = formatServiceNameForChannel(
         (aptData as any).custom_service_name || service?.name || "Corte",
@@ -1537,7 +1539,7 @@ export async function retryNotificationChannel(input: {
 }
 
 export const retryNotificationChannelServerFn = createServerFn({ method: "POST" })
-  .validator((data: { appointmentId: string; channel: "WHATSAPP" | "EMAIL"; recipientRole?: NotificationRecipientRole; token?: string }) => {
+  .validator((data: { appointmentId: string; channel: "WHATSAPP" | "EMAIL"; recipientRole?: NotificationRecipientRole; forceResend?: boolean; token?: string }) => {
     if (!data?.appointmentId || !data?.channel) throw new Error("RETRY_INPUT_INVALID");
     return data;
   })
@@ -1572,7 +1574,13 @@ export const retryNotificationChannelServerFn = createServerFn({ method: "POST" 
           : "AUTH_REQUIRED: Debe iniciar sesión como personal autorizado para reintentar notificaciones.",
       };
     }
-    return retryNotificationChannel({ appointmentId: data.appointmentId, channel: data.channel, token });
+    return retryNotificationChannel({
+      appointmentId: data.appointmentId,
+      channel: data.channel,
+      recipientRole: data.recipientRole,
+      forceResend: data.forceResend,
+      token,
+    });
   });
 
 function getRuntimeEnv(name: string): string | undefined {

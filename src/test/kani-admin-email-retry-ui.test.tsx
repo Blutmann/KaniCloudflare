@@ -113,15 +113,15 @@ describe("Diagnóstico de notificación: Modal y acción de reintento en UI", ()
     expect(screen.getAllByText(/Juan Pérez/)[0]).toBeInTheDocument();
     // Mensaje de sin despacho
     expect(screen.getByText("No hay despacho registrado para este canal.")).toBeInTheDocument();
-    expect(screen.getByText("juan@example.com")).toBeInTheDocument();
+    expect(screen.getAllByText(/juan@example\.com/).length).toBeGreaterThanOrEqual(1);
 
     // Botón disponible
-    const retryBtn = screen.getByRole("button", { name: "Reintentar envío" });
+    const retryBtn = screen.getByRole("button", { name: "Reenviar notificación del turno" });
     expect(retryBtn).toBeInTheDocument();
     expect(retryBtn).not.toBeDisabled();
   });
 
-  it("2. Ejecuta reintento exitoso: muestra spinner, banner de éxito y actualiza el despacho en el modal", async () => {
+  it("2. Ejecuta reenvío exitoso: muestra spinner, banner de éxito y actualiza el despacho en el modal", async () => {
     mockAppointments.push({
       id: "apt-pending-retry-ok",
       clientId: "c-1",
@@ -163,15 +163,16 @@ describe("Diagnóstico de notificación: Modal y acción de reintento en UI", ()
     const emailPill = screen.getByRole("button", { name: /diagnóstico email: email: pendiente/i });
     fireEvent.click(emailPill);
 
-    const retryBtn = screen.getByRole("button", { name: "Reintentar envío" });
+    const retryBtn = screen.getByRole("button", { name: "Reenviar notificación del turno" });
     fireEvent.click(retryBtn);
 
-    // Debe invocar la server fn con el token
+    // Debe invocar la server fn con el token y forceResend
     await waitFor(() => {
       expect(mockRetryServerFn).toHaveBeenCalledWith({
         data: {
           appointmentId: "apt-pending-retry-ok",
           channel: "EMAIL",
+          forceResend: true,
           token: "mock-admin-token",
         },
       });
@@ -223,7 +224,7 @@ describe("Diagnóstico de notificación: Modal y acción de reintento en UI", ()
     const emailPill = screen.getByRole("button", { name: /diagnóstico email: email: error/i });
     fireEvent.click(emailPill);
 
-    const retryBtn = screen.getByRole("button", { name: "Reintentar envío" });
+    const retryBtn = screen.getByRole("button", { name: "Reenviar notificación del turno" });
     fireEvent.click(retryBtn);
 
     await waitFor(() => {
@@ -231,7 +232,7 @@ describe("Diagnóstico de notificación: Modal y acción de reintento en UI", ()
     });
   });
 
-  it("4. No permite reenvío duplicado si el correo ya fue aceptado o entregado", () => {
+  it("4. Permite reenvío manual incluso si el correo ya fue aceptado o entregado", () => {
     mockAppointments.push({
       id: "apt-already-sent",
       clientId: "c-1",
@@ -262,10 +263,10 @@ describe("Diagnóstico de notificación: Modal y acción de reintento en UI", ()
     const emailPill = screen.getByRole("button", { name: /diagnóstico email: email: (enviado|aceptado)/i });
     fireEvent.click(emailPill);
 
-    // Aviso de duplicado
-    expect(screen.getByText(/El correo ya fue aceptado por el proveedor/i)).toBeInTheDocument();
-    // Botón de reintento NO debe estar presente
-    expect(screen.queryByRole("button", { name: "Reintentar envío" })).toBeNull();
+    expect(screen.getByText(/entrega no confirmada aún/i)).toBeInTheDocument();
+    const resendBtn = screen.getByRole("button", { name: "Reenviar notificación del turno" });
+    expect(resendBtn).toBeInTheDocument();
+    expect(resendBtn).not.toBeDisabled();
   });
 
   it("5. Turno en estado PENDING (sin confirmar): muestra explicación y no ofrece botón de envío", () => {
@@ -292,10 +293,11 @@ describe("Diagnóstico de notificación: Modal y acción de reintento en UI", ()
     const emailPill = screen.getByRole("button", { name: /diagnóstico email: email: pendiente/i });
     fireEvent.click(emailPill);
 
-    expect(screen.getByText(/Solo los turnos confirmados o cancelados admiten notificaciones automáticas por correo/i)).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Reintentar envío" })).toBeNull();
+    expect(screen.getByText(/Solo los turnos confirmados o cancelados admiten el reenvío de notificaciones/i)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Reenviar notificación del turno" })).toBeNull();
   });
-  it("6. Turno confirmado pasado: muestra advertencia de turno pasado, muestra botón y requiere confirmación explícita", async () => {
+
+  it("6. Turno confirmado pasado: permite reenvío directo desde el modal sin bloquear acciones", async () => {
     mockAppointments.push({
       id: "apt-past-confirmed",
       clientId: "c-1",
@@ -313,8 +315,6 @@ describe("Diagnóstico de notificación: Modal y acción de reintento en UI", ()
       depositPaid: true,
       dispatches: undefined,
     });
-
-    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
 
     mockRetryServerFn.mockResolvedValue({
       success: true,
@@ -334,19 +334,21 @@ describe("Diagnóstico de notificación: Modal y acción de reintento en UI", ()
     const emailPill = screen.getByRole("button", { name: /diagnóstico email: email: pendiente/i });
     fireEvent.click(emailPill);
 
-    // Debe mostrar la advertencia de turno pasado
-    expect(screen.getByText(/Turno pasado/i)).toBeInTheDocument();
-
-    // El botón SÍ está presente (no se oculta)
-    const retryBtn = screen.getByRole("button", { name: "Reintentar envío" });
+    const retryBtn = screen.getByRole("button", { name: "Reenviar notificación del turno" });
     expect(retryBtn).toBeInTheDocument();
+    expect(retryBtn).not.toBeDisabled();
 
     fireEvent.click(retryBtn);
 
-    // Debe pedir confirmación explícita al usuario
-    expect(confirmSpy).toHaveBeenCalled();
     await waitFor(() => {
-      expect(mockRetryServerFn).toHaveBeenCalled();
+      expect(mockRetryServerFn).toHaveBeenCalledWith({
+        data: {
+          appointmentId: "apt-past-confirmed",
+          channel: "EMAIL",
+          forceResend: true,
+          token: "mock-admin-token",
+        },
+      });
     });
   });
 });

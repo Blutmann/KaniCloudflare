@@ -1,12 +1,21 @@
 import { isStaffOperator } from "@/lib/kani-permissions";
-import { getWhatsAppUrl } from "@/lib/kani-phone";
+import { getWhatsAppDirectSendUrl } from "@/lib/kani-phone";
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { ArrowRight, CalendarDays, Clock3, Info, Mail, Phone, Plus } from "lucide-react";
+import { ArrowRight, CalendarDays, Clock3, Info, Mail } from "lucide-react";
 import { useAdminStaff } from "@/lib/kani-admin-context";
-import { businessDateToday, addCalendarDays, startOfBusinessWeek, isAppointmentPast } from "@/lib/kani-mobile-appointments";
+import {
+  businessDateToday,
+  addCalendarDays,
+  V2AgendaPeriodPreset,
+  v2AgendaPeriodOrder,
+  isAppointmentTemporallyFinished,
+  formatV2AgendaPeriodLabel,
+  dateRangeForV2AgendaPeriod,
+  sortV2AgendaAppointments,
+} from "@/lib/kani-mobile-appointments";
 import { businessTimeNow } from "@/lib/kani-payments";
-import { money, dateLabel, formatRangeLabel, formatAdminV2Date, formatAdminV2Range, formatServiceName } from "@/lib/kani-model";
+import { money, dateLabel, formatAdminV2Date, formatAdminV2Range, formatServiceName } from "@/lib/kani-model";
 import { paymentSummary, scopeV2 } from "@/lib/kani-v2";
 import {
   appointmentErrorMessage,
@@ -174,8 +183,28 @@ export function V2Home({
   );
 }
 
-export type AgendaPeriodPreset = "TODAY" | "THIS_WEEK" | "NEXT_10_DAYS" | "CUSTOM";
-export type AgendaPeriodFilter = AgendaPeriodPreset | "DATE";
+export type AgendaPeriodPreset = V2AgendaPeriodPreset;
+export type AgendaPeriodFilter = V2AgendaPeriodPreset;
+
+const V2_TURNO_PERIOD_STORAGE_KEY = "kani_admin_turnos_period_v1";
+
+function readInitialV2Period(): V2AgendaPeriodPreset {
+  if (typeof window === "undefined") return "NEXT_10_DAYS";
+  try {
+    const saved = window.localStorage?.getItem(V2_TURNO_PERIOD_STORAGE_KEY);
+    if (
+      saved &&
+      (v2AgendaPeriodOrder as string[]).includes(saved) &&
+      saved !== "DATE" &&
+      saved !== "CUSTOM"
+    ) {
+      return saved as V2AgendaPeriodPreset;
+    }
+  } catch {
+    // ignore storage errors
+  }
+  return "NEXT_10_DAYS";
+}
 
 export function V2Appointments({
   paymentsTo = "/panel-administracion/pagos",
@@ -192,9 +221,8 @@ export function V2Appointments({
   const today = businessDateToday();
   const [date, setDate] = useState(today);
   const [status, setStatus] = useState("ALL");
-  const [period, setPeriod] = useState<AgendaPeriodFilter>("TODAY");
-  const [customStartDate, setCustomStartDate] = useState(today);
-  const [customEndDate, setCustomEndDate] = useState(today);
+  const [period, setPeriod] = useState<V2AgendaPeriodPreset>(() => readInitialV2Period());
+  const [customEndDate, setCustomEndDate] = useState(() => addCalendarDays(today, 9));
   const [action, setAction] = useState<{
     appointment: RealAppointment;
     status: "CANCELLED";
@@ -208,60 +236,37 @@ export function V2Appointments({
   const [message, setMessage] = useState("");
   const [whatsAppModal, setWhatsAppModal] = useState<{
     appointment: RealAppointment;
-    mode: "BLOCKED_131042" | "ALREADY_DELIVERED" | "IN_PROGRESS" | "CONFIRM_RESEND" | "NO_PHONE";
+    mode: "NO_PHONE" | "INVALID_PHONE";
   } | null>(null);
   const [selectedNotifDetail, setSelectedNotifDetail] = useState<{
     appointment: RealAppointment;
     channel: "WhatsApp" | "Email";
     dispatch?: NotificationChannelDispatch;
   } | null>(null);
-  const [retryingEmail, setRetryingEmail] = useState(false);
+  const [retryingNotif, setRetryingNotif] = useState(false);
   const [retryFeedback, setRetryFeedback] = useState<{
     type: "success" | "error" | "info";
     message: string;
   } | null>(null);
 
-  const isInvalidRange = period === "CUSTOM" && customStartDate > customEndDate;
+  const isInvalidRange = period === "CUSTOM" && date > customEndDate;
+  const { start: startDate, end: endDate } = dateRangeForV2AgendaPeriod(
+    period,
+    today,
+    date,
+    date,
+    customEndDate,
+  );
 
-  let startDate = today;
-  let endDate = today;
-  let headerLabel = "";
+  const headerLabel = isInvalidRange
+    ? "Rango no válido"
+    : startDate === endDate
+      ? formatAdminV2Date(startDate)
+      : formatAdminV2Range(startDate, endDate);
 
-  if (period === "TODAY") {
-    startDate = today;
-    endDate = today;
-    headerLabel = formatAdminV2Date(today);
-  } else if (period === "DATE") {
-    startDate = date;
-    endDate = date;
-    headerLabel = formatAdminV2Date(date);
-  } else if (period === "THIS_WEEK") {
-    const weekStart = startOfBusinessWeek(today);
-    const weekEnd = addCalendarDays(weekStart, 6);
-    startDate = weekStart;
-    endDate = weekEnd;
-    headerLabel = formatAdminV2Range(weekStart, weekEnd);
-  } else if (period === "NEXT_10_DAYS") {
-    const tenDaysEnd = addCalendarDays(today, 9);
-    startDate = today;
-    endDate = tenDaysEnd;
-    headerLabel = formatAdminV2Range(today, tenDaysEnd);
-  } else if (period === "CUSTOM") {
-    if (isInvalidRange) {
-      headerLabel = "Rango no válido";
-    } else {
-      startDate = customStartDate;
-      endDate = customEndDate;
-      headerLabel = formatAdminV2Range(customStartDate, customEndDate);
-    }
-  }
+  const isMultiDay = !isInvalidRange && startDate !== endDate;
 
-  const isMultiDay =
-    period === "THIS_WEEK" ||
-    period === "NEXT_10_DAYS" ||
-    (period === "CUSTOM" && !isInvalidRange && customStartDate !== customEndDate);
-
-  const rows = isInvalidRange
+  const filteredRows = isInvalidRange
     ? []
     : scopeV2(
         data.appointments,
@@ -275,42 +280,38 @@ export function V2Appointments({
           (status === "ALL" || a.statusCode === status),
       );
 
-  function handlePeriodChange(next: AgendaPeriodPreset) {
+  const rows = sortV2AgendaAppointments(filteredRows, period);
+
+  function handlePeriodChange(next: V2AgendaPeriodPreset) {
     setPeriod(next);
     if (next === "TODAY") {
       setDate(today);
+    }
+    if (typeof window !== "undefined") {
+      try {
+        if (next !== "DATE" && next !== "CUSTOM") {
+          window.localStorage?.setItem(V2_TURNO_PERIOD_STORAGE_KEY, next);
+        }
+      } catch {
+        // ignore storage errors
+      }
     }
   }
 
   function handleDateChange(nextDate: string) {
     const chosen = nextDate || today;
     setDate(chosen);
-    if (chosen === today) {
-      setPeriod("TODAY");
-    } else {
+    if (period !== "CUSTOM") {
       setPeriod("DATE");
     }
   }
 
-  function handleWhatsAppAction(a: RealAppointment) {
+  function handleWhatsAppInvalid(a: RealAppointment) {
     if (!a.phone || !a.phone.trim()) {
       setWhatsAppModal({ appointment: a, mode: "NO_PHONE" });
       return;
     }
-    const wa = a.dispatches?.whatsapp;
-    if (wa?.errorCode === "131042") {
-      setWhatsAppModal({ appointment: a, mode: "BLOCKED_131042" });
-      return;
-    }
-    if (wa?.status === "DELIVERED" || wa?.status === "READ") {
-      setWhatsAppModal({ appointment: a, mode: "ALREADY_DELIVERED" });
-      return;
-    }
-    if (wa?.status === "PROCESSING" || wa?.status === "PROVIDER_ACCEPTED" || wa?.status === "SENT") {
-      setWhatsAppModal({ appointment: a, mode: "IN_PROGRESS" });
-      return;
-    }
-    setWhatsAppModal({ appointment: a, mode: "CONFIRM_RESEND" });
+    setWhatsAppModal({ appointment: a, mode: "INVALID_PHONE" });
   }
 
   async function cancelAppointment() {
@@ -329,23 +330,13 @@ export function V2Appointments({
     }
   }
 
-  async function handleRetryEmailModal() {
-    if (!selectedNotifDetail || selectedNotifDetail.channel !== "Email") return;
+  async function handleResendNotificationModal() {
+    if (!selectedNotifDetail || retryingNotif) return;
     const apt = selectedNotifDetail.appointment;
     if (!apt) return;
 
-    // Confirmación explícita para turnos pasados confirmados
-    const apptStatus = (apt.statusCode || (apt as any).status || "").toUpperCase();
-    if ((apptStatus === "CONFIRMED" || apptStatus === "CONFIRMADO") && isAppointmentPast(apt.date, apt.startTime || apt.time)) {
-      if (typeof window !== "undefined" && typeof window.confirm === "function") {
-        const proceed = window.confirm(
-          "Este turno corresponde a una fecha u horario que ya transcurrió. ¿Desea confirmar el envío del correo de confirmación de todas formas?"
-        );
-        if (!proceed) return;
-      }
-    }
-
-    setRetryingEmail(true);
+    const channel = selectedNotifDetail.channel === "WhatsApp" ? "WHATSAPP" : "EMAIL";
+    setRetryingNotif(true);
     setRetryFeedback(null);
     try {
       const {
@@ -355,48 +346,56 @@ export function V2Appointments({
       if (!token) {
         setRetryFeedback({
           type: "error",
-          message: "AUTH_REQUIRED: Debe iniciar sesión como personal autorizado para reintentar notificaciones.",
+          message: "AUTH_REQUIRED: Debe iniciar sesión como personal autorizado para reenviar notificaciones.",
         });
         return;
       }
 
       const res = await retryNotificationChannelServerFn({
-        data: { appointmentId: apt.id, channel: "EMAIL", token },
+        data: { appointmentId: apt.id, channel, forceResend: true, token },
       });
 
       if (res.success) {
+        const defaultOkMsg =
+          channel === "EMAIL"
+            ? `Correo aceptado por el proveedor Resend (ID: ${res.providerMessageId || "OK"}). En tránsito.`
+            : `Notificación de WhatsApp enviada al proveedor Pontiun (ID: ${res.providerMessageId || "OK"}).`;
         setRetryFeedback({
           type: "success",
-          message: res.message || `Correo aceptado por el proveedor Resend (ID: ${res.providerMessageId || "OK"}). En tránsito.`,
+          message: res.message || defaultOkMsg,
         });
         if (res.dispatch) {
           setSelectedNotifDetail((prev) => (prev ? { ...prev, dispatch: res.dispatch as any } : null));
         } else {
-          setSelectedNotifDetail((prev) => (prev ? {
-            ...prev,
-            dispatch: {
-              ...(prev.dispatch || {
-                id: "generated-id",
-                appointmentId: apt.id,
-                channel: "EMAIL",
-                provider: "RESEND",
-                attempts: 1,
-                requestedAt: new Date().toISOString(),
-                createdAt: new Date().toISOString(),
-              }),
-              status: "SENT",
-              providerMessageId: res.providerMessageId || null,
-              errorCode: null,
-              errorDescription: null,
-              updatedAt: new Date().toISOString(),
-            } as any,
-          } : null));
+          setSelectedNotifDetail((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  dispatch: {
+                    ...(prev.dispatch || {
+                      id: "generated-id",
+                      appointmentId: apt.id,
+                      channel,
+                      provider: channel === "WHATSAPP" ? "PONTIUN" : "RESEND",
+                      attempts: 1,
+                      requestedAt: new Date().toISOString(),
+                      createdAt: new Date().toISOString(),
+                    }),
+                    status: (res.status as any) || "SENT",
+                    providerMessageId: res.providerMessageId || null,
+                    errorCode: null,
+                    errorDescription: null,
+                    updatedAt: new Date().toISOString(),
+                  } as any,
+                }
+              : null,
+          );
         }
         await data.refresh();
       } else {
         setRetryFeedback({
           type: "error",
-          message: res.error || "No se pudo reintentar el envío.",
+          message: res.error || "No se pudo reenviar la notificación.",
         });
         if (res.dispatch) {
           setSelectedNotifDetail((prev) => (prev ? { ...prev, dispatch: res.dispatch as any } : null));
@@ -406,52 +405,10 @@ export function V2Appointments({
     } catch (err) {
       setRetryFeedback({
         type: "error",
-        message: `Error al reintentar: ${err instanceof Error ? err.message : String(err)}`,
+        message: `Error al reenviar: ${err instanceof Error ? err.message : String(err)}`,
       });
     } finally {
-      setRetryingEmail(false);
-    }
-  }
-
-  async function handleRetryChannel(
-    appointmentId: string,
-    channel: "WHATSAPP" | "EMAIL",
-    errorCode?: string | null,
-  ) {
-    if (channel === "WHATSAPP" && errorCode === "131042") {
-      setMessage(
-        "Meta rechazó el mensaje por un problema de facturación (error 131042: la moneda de la cuenta de WhatsApp Business no está configurada). Debe resolverse la configuración en Meta Business Suite antes de reintentar.",
-      );
-      return;
-    }
-    setBusy(true);
-    setMessage("");
-    try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      const token = session?.access_token;
-      if (!token) {
-        setMessage("AUTH_REQUIRED: Debe iniciar sesión como personal autorizado para reintentar notificaciones.");
-        return;
-      }
-
-      const res = await retryNotificationChannelServerFn({
-        data: { appointmentId, channel, token },
-      });
-      if (res.blockedByAdminConfig) {
-        setMessage(res.error || "Reintento bloqueado por configuración administrativa pendiente en Meta.");
-      } else if (res.success) {
-        setMessage(`Notificación por ${channel === "WHATSAPP" ? "WhatsApp" : "Email"} reintentada correctamente.`);
-        await data.refresh();
-      } else {
-        setMessage(`Error al reintentar ${channel}: ${res.error || "Falló el envío"}`);
-        await data.refresh();
-      }
-    } catch (err) {
-      setMessage(`Error al reintentar: ${err instanceof Error ? err.message : String(err)}`);
-    } finally {
-      setBusy(false);
+      setRetryingNotif(false);
     }
   }
   return (
@@ -461,15 +418,7 @@ export function V2Appointments({
         footer={
           period === "CUSTOM" && (
             <div className="v2-custom-range-row">
-              <AdminFilterCell label="Desde" htmlFor="v2-appointments-custom-start">
-                <input
-                  id="v2-appointments-custom-start"
-                  type="date"
-                  value={customStartDate}
-                  onChange={(e) => setCustomStartDate(e.target.value)}
-                />
-              </AdminFilterCell>
-              <AdminFilterCell label="Hasta" htmlFor="v2-appointments-custom-end">
+              <AdminFilterCell label="Fecha hasta" htmlFor="v2-appointments-custom-end">
                 <input
                   id="v2-appointments-custom-end"
                   type="date"
@@ -479,7 +428,7 @@ export function V2Appointments({
               </AdminFilterCell>
               {isInvalidRange && (
                 <p className="v2-range-warning" role="alert">
-                  La fecha 'Desde' debe ser anterior o igual a 'Hasta'.
+                  La fecha &apos;Fecha hasta&apos; debe ser igual o posterior a &apos;Fecha&apos;.
                 </p>
               )}
             </div>
@@ -490,13 +439,13 @@ export function V2Appointments({
           <select
             id="v2-appointments-period"
             value={period}
-            onChange={(e) => handlePeriodChange(e.target.value as AgendaPeriodPreset)}
+            onChange={(e) => handlePeriodChange(e.target.value as V2AgendaPeriodPreset)}
           >
-            {period === "DATE" && <option value="DATE" hidden>Día seleccionado</option>}
-            <option value="TODAY">Hoy</option>
-            <option value="THIS_WEEK">Esta semana</option>
-            <option value="NEXT_10_DAYS">Próximos 10 días</option>
-            <option value="CUSTOM">Personalizado</option>
+            {v2AgendaPeriodOrder.map((preset) => (
+              <option key={preset} value={preset}>
+                {formatV2AgendaPeriodLabel(preset, today)}
+              </option>
+            ))}
           </select>
         </AdminFilterCell>
         <AdminFilterCell label="Fecha" htmlFor="v2-appointments-date">
@@ -529,11 +478,8 @@ export function V2Appointments({
             onChange={(e) => setStatus(e.target.value)}
           >
             <option value="ALL">Todos</option>
-            {Object.entries(statusLabels).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
+            <option value="CONFIRMED">Confirmado</option>
+            <option value="CANCELLED">Cancelado</option>
           </select>
         </AdminFilterCell>
       </AdminFilterPanel>
@@ -551,201 +497,223 @@ export function V2Appointments({
         {!rows.length && (
           <Empty>
             {isInvalidRange
-              ? "Revisá el rango seleccionado: la fecha 'Desde' debe ser anterior o igual a 'Hasta'."
+              ? "Revisá el rango seleccionado: la fecha 'Fecha hasta' debe ser igual o posterior a 'Fecha'."
               : "No hay turnos para esta selección. Podés consultar otro día."}
           </Empty>
         )}
-        {rows.map((a) => (
-          <article className="v2-appointment" key={a.id}>
-            <div className="v2-appointment-main">
-              {/* Fila 1: 10:00 | Matias Zarate | Estado */}
-              <div className="v2-app-row-1">
-                <strong className="v2-app-time">{a.time}</strong>
-                <span className="v2-app-sep">|</span>
-                <h3 className="v2-app-name" title={a.name}>{a.name}</h3>
-                {a.isManual && <span className="v2-manual-badge">Manual</span>}
-                <Status code={a.statusCode} />
-              </div>
-
-              {/* Fila 2: 10:45 · Corte · Lautaro (· Fecha si isMultiDay) */}
-              <div className="v2-app-row-2">
-                {a.endTime && (
-                  <>
-                    <span className="v2-app-endtime">{a.endTime}</span>
-                    <span className="v2-app-dot">·</span>
-                  </>
-                )}
-                <span className="v2-app-service">{formatServiceName(a.serviceName)}</span>
-                <span className="v2-app-dot">·</span>
-                <span className="v2-app-barber">{a.barber}</span>
-                {isMultiDay && (
-                  <>
-                    <span className="v2-app-dot">·</span>
-                    <span className="v2-app-date">{dateLabel(a.date)}</span>
-                  </>
-                )}
-              </div>
-
-              {/* Fila 3: Seña: No abonada · Importe: $25.000 */}
-              <div className="v2-app-row-3">
-                <span className="v2-app-deposit">
-                  Seña:{" "}
-                  {data.depositSupported
-                    ? a.depositPaid
-                      ? money(a.depositAmountArs ?? 5000)
-                      : "No abonada"
-                    : "Sin dato verificable"}
-                </span>
-                <span className="v2-app-dot">·</span>
-                <span className="v2-app-price">Importe: {money(a.servicePrice ?? 0)}</span>
-              </div>
-
-              {/* Fila 4: Diagnóstico compacto y accesible de notificaciones */}
-              <div className="v2-app-notifications">
-                <div className="v2-notif-channel">
-                  <span className="v2-notif-icon" aria-hidden="true">💬</span>
-                  <button
-                    type="button"
-                    className={`v2-notif-pill v2-notif-${(a.dispatches?.whatsapp?.status || "PENDING").toLowerCase()}`}
-                    onClick={() => {
-                      setSelectedNotifDetail({
-                        appointment: a,
-                        channel: "WhatsApp",
-                        dispatch: a.dispatches?.whatsapp,
-                      });
-                      setRetryFeedback(null);
-                    }}
-                    title="Ver diagnóstico completo de WhatsApp"
-                    aria-label={`Diagnóstico WhatsApp: ${formatWhatsAppStatus(a.dispatches?.whatsapp)}`}
-                  >
-                    <span>{formatWhatsAppStatus(a.dispatches?.whatsapp)}</span>
-                    <Info size={12} className="v2-notif-info-icon" aria-hidden="true" />
-                  </button>
+        {rows.map((a) => {
+          const isFinished = isAppointmentTemporallyFinished(a);
+          const waDirectUrl = getWhatsAppDirectSendUrl(a.phone);
+          return (
+            <article
+              className={isFinished ? "v2-appointment v2-appointment--past" : "v2-appointment"}
+              key={a.id}
+            >
+              <div className="v2-appointment-main">
+                {/* Fila 1: 10:00 | Matias Zarate | Estado */}
+                <div className="v2-app-row-1">
+                  <strong className="v2-app-time">{a.time}</strong>
+                  <span className="v2-app-sep">|</span>
+                  <h3 className="v2-app-name" title={a.name}>{a.name}</h3>
+                  {a.isManual && <span className="v2-manual-badge">Manual</span>}
+                  <Status code={a.statusCode} />
+                  {isFinished && (
+                    <span className="v2-past-badge">Horario finalizado</span>
+                  )}
                 </div>
-                <div className="v2-notif-channel">
-                  <span className="v2-notif-icon" aria-hidden="true">✉️</span>
-                  <button
-                    type="button"
-                    className={`v2-notif-pill v2-notif-${(a.dispatches?.email?.status || "PENDING").toLowerCase()}`}
-                    onClick={() => {
-                      setSelectedNotifDetail({
-                        appointment: a,
-                        channel: "Email",
-                        dispatch: a.dispatches?.email,
-                      });
-                      setRetryFeedback(null);
-                    }}
-                    title="Ver diagnóstico completo de Email"
-                    aria-label={`Diagnóstico Email: ${formatEmailStatus(a.dispatches?.email)}`}
-                  >
-                    <span>{formatEmailStatus(a.dispatches?.email)}</span>
-                    <Info size={12} className="v2-notif-info-icon" aria-hidden="true" />
-                  </button>
+
+                {/* Fila 2: 10:45 · Corte · Lautaro (· Fecha si isMultiDay) */}
+                <div className="v2-app-row-2">
+                  {a.endTime && (
+                    <>
+                      <span className="v2-app-endtime">{a.endTime}</span>
+                      <span className="v2-app-dot">·</span>
+                    </>
+                  )}
+                  <span className="v2-app-service">{formatServiceName(a.serviceName)}</span>
+                  <span className="v2-app-dot">·</span>
+                  <span className="v2-app-barber">{a.barber}</span>
+                  {isMultiDay && (
+                    <>
+                      <span className="v2-app-dot">·</span>
+                      <span className="v2-app-date">{dateLabel(a.date)}</span>
+                    </>
+                  )}
                 </div>
-              </div>
 
-              {a.notes && <p className="v2-note">{a.notes}</p>}
-            </div>
+                {/* Fila 3: Seña: No abonada · Importe: $25.000 */}
+                <div className="v2-app-row-3">
+                  <span className="v2-app-deposit">
+                    Seña:{" "}
+                    {data.depositSupported
+                      ? a.depositPaid
+                        ? money(a.depositAmountArs ?? 5000)
+                        : "No abonada"
+                      : "Sin dato verificable"}
+                  </span>
+                  <span className="v2-app-dot">·</span>
+                  <span className="v2-app-price">Importe: {money(a.servicePrice ?? 0)}</span>
+                </div>
 
-            <div className="v2-appointment-actions">
-              {(() => {
-                const actionNodes: React.ReactNode[] = [];
-                if (
-                  ["PENDING", "CONFIRMED"].includes(a.statusCode) &&
-                  (isStaffOperator(staff.profile.role) || a.barberId === staff.profile.barber_id)
-                ) {
-                  actionNodes.push(
+                {/* Fila 4: Diagnóstico compacto y accesible de notificaciones */}
+                <div className="v2-app-notifications">
+                  <div className="v2-notif-channel">
+                    <span className="v2-notif-icon" aria-hidden="true">💬</span>
                     <button
-                      key="cancel"
                       type="button"
-                      className="v2-destructive action-reject v2-action-btn"
-                      disabled={busy}
-                      onClick={() => setAction({ appointment: a, status: "CANCELLED" })}
+                      className={`v2-notif-pill v2-notif-${(a.dispatches?.whatsapp?.status || "PENDING").toLowerCase()}`}
+                      onClick={() => {
+                        setSelectedNotifDetail({
+                          appointment: a,
+                          channel: "WhatsApp",
+                          dispatch: a.dispatches?.whatsapp,
+                        });
+                        setRetryFeedback(null);
+                      }}
+                      title="Ver diagnóstico completo de WhatsApp"
+                      aria-label={`Diagnóstico WhatsApp: ${formatWhatsAppStatus(a.dispatches?.whatsapp)}`}
                     >
-                      Cancelar turno
-                    </button>,
-                  );
-                }
-                if (a.statusCode === "CONFIRMED") {
-                  actionNodes.push(
-                    <Link
-                      key="cobrar"
-                      className="v2-primary v2-action-btn v2-cobrar-btn"
-                      to={paymentsTo}
-                      search={{ turno: a.id }}
-                    >
-                      Cobrar
-                    </Link>,
-                  );
-                }
-                if (
-                  a.isManual &&
-                  ["PENDING", "CONFIRMED"].includes(a.statusCode) &&
-                  (isStaffOperator(staff.profile.role) || a.barberId === staff.profile.barber_id)
-                ) {
-                  actionNodes.push(
-                    <button
-                      key="edit"
-                      type="button"
-                      className="v2-secondary v2-action-btn"
-                      disabled={busy}
-                      onClick={() =>
-                        setManualDialog({ open: true, mode: "EDIT", appointment: a })
-                      }
-                    >
-                      Editar
-                    </button>,
-                  );
-                }
-                actionNodes.push(
-                  <button
-                    key="whatsapp"
-                    type="button"
-                    className="v2-secondary v2-whatsapp v2-action-btn"
-                    disabled={busy || !a.phone || !a.phone.trim()}
-                    onClick={() => handleWhatsAppAction(a)}
-                    title={
-                      !a.phone || !a.phone.trim()
-                        ? "El cliente no tiene un teléfono válido"
-                        : "Reenviar confirmación por WhatsApp mediante Pontiun"
-                    }
-                  >
-                    <WhatsAppLabel />
-                  </button>,
-                );
-                if (a.email) {
-                  actionNodes.push(
-                    <a
-                      key="mail"
-                      className="v2-secondary v2-mail-btn v2-action-btn"
-                      href={`mailto:${a.email}`}
-                    >
-                      <Mail size={16} />
-                      <span>Mail</span>
-                    </a>,
-                  );
-                }
-
-                return (
-                  <div className={`v2-appointment-actions-grid count-${actionNodes.length}`}>
-                    {actionNodes}
+                      <span>{formatWhatsAppStatus(a.dispatches?.whatsapp)}</span>
+                      <Info size={12} className="v2-notif-info-icon" aria-hidden="true" />
+                    </button>
                   </div>
-                );
-              })()}
-            </div>
-          </article>
-        ))}
+                  <div className="v2-notif-channel">
+                    <span className="v2-notif-icon" aria-hidden="true">✉️</span>
+                    <button
+                      type="button"
+                      className={`v2-notif-pill v2-notif-${(a.dispatches?.email?.status || "PENDING").toLowerCase()}`}
+                      onClick={() => {
+                        setSelectedNotifDetail({
+                          appointment: a,
+                          channel: "Email",
+                          dispatch: a.dispatches?.email,
+                        });
+                        setRetryFeedback(null);
+                      }}
+                      title="Ver diagnóstico completo de Email"
+                      aria-label={`Diagnóstico Email: ${formatEmailStatus(a.dispatches?.email)}`}
+                    >
+                      <span>{formatEmailStatus(a.dispatches?.email)}</span>
+                      <Info size={12} className="v2-notif-info-icon" aria-hidden="true" />
+                    </button>
+                  </div>
+                </div>
+
+                {a.notes && <p className="v2-note">{a.notes}</p>}
+              </div>
+
+              <div className="v2-appointment-actions">
+                {(() => {
+                  const actionNodes: React.ReactNode[] = [];
+                  if (a.statusCode === "CONFIRMED") {
+                    actionNodes.push(
+                      <Link
+                        key="cobrar"
+                        className="v2-primary v2-action-btn v2-cobrar-btn"
+                        to={paymentsTo}
+                        search={{ turno: a.id }}
+                      >
+                        Cobrar
+                      </Link>,
+                    );
+                  }
+                  if (
+                    ["PENDING", "CONFIRMED"].includes(a.statusCode) &&
+                    (isStaffOperator(staff.profile.role) || a.barberId === staff.profile.barber_id)
+                  ) {
+                    actionNodes.push(
+                      <button
+                        key="cancel"
+                        type="button"
+                        className="v2-destructive action-reject v2-action-btn"
+                        disabled={busy}
+                        onClick={() => setAction({ appointment: a, status: "CANCELLED" })}
+                      >
+                        Cancelar turno
+                      </button>,
+                    );
+                  }
+                  if (
+                    a.isManual &&
+                    ["PENDING", "CONFIRMED"].includes(a.statusCode) &&
+                    (isStaffOperator(staff.profile.role) || a.barberId === staff.profile.barber_id)
+                  ) {
+                    actionNodes.push(
+                      <button
+                        key="edit"
+                        type="button"
+                        className="v2-secondary v2-action-btn"
+                        disabled={busy}
+                        onClick={() =>
+                          setManualDialog({ open: true, mode: "EDIT", appointment: a })
+                        }
+                      >
+                        Editar
+                      </button>,
+                    );
+                  }
+                  if (waDirectUrl) {
+                    actionNodes.push(
+                      <a
+                        key="whatsapp"
+                        className="v2-secondary v2-whatsapp v2-action-btn"
+                        href={waDirectUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title="Abrir conversación de WhatsApp con el cliente"
+                      >
+                        <WhatsAppLabel />
+                      </a>,
+                    );
+                  } else {
+                    actionNodes.push(
+                      <button
+                        key="whatsapp"
+                        type="button"
+                        className="v2-secondary v2-whatsapp v2-action-btn"
+                        onClick={() => handleWhatsAppInvalid(a)}
+                        title={
+                          !a.phone || !a.phone.trim()
+                            ? "El cliente no tiene un teléfono registrado"
+                            : "Número de teléfono inválido o ambiguo para WhatsApp"
+                        }
+                      >
+                        <WhatsAppLabel />
+                      </button>,
+                    );
+                  }
+                  if (a.email) {
+                    actionNodes.push(
+                      <a
+                        key="mail"
+                        className="v2-secondary v2-mail-btn v2-action-btn"
+                        href={`mailto:${a.email}`}
+                      >
+                        <Mail size={16} />
+                        <span>Mail</span>
+                      </a>,
+                    );
+                  }
+
+                  return (
+                    <div className={`v2-appointment-actions-grid count-${actionNodes.length}`}>
+                      {actionNodes}
+                    </div>
+                  );
+                })()}
+              </div>
+            </article>
+          );
+        })}
       </div>
       <ManualAppointmentDialog
         open={manualDialog.open}
         mode={manualDialog.mode}
         appointment={manualDialog.appointment}
         initialDate={
-          period === "TODAY" || period === "DATE"
+          period === "TODAY" || period === "DATE" || period === "CUSTOM"
             ? date
-            : period === "CUSTOM"
-              ? customStartDate
-              : today
+            : today
         }
         onClose={() => setManualDialog((prev) => ({ ...prev, open: false }))}
         onSuccess={(msg) => setMessage(msg)}
@@ -772,54 +740,15 @@ export function V2Appointments({
       <Dialog
         open={!!whatsAppModal}
         onOpenChange={(open) => {
-          if (!open && !busy) setWhatsAppModal(null);
+          if (!open) setWhatsAppModal(null);
         }}
       >
         <DialogContent className="v2-dialog">
-          {whatsAppModal?.mode === "BLOCKED_131042" && (
-            <>
-              <DialogTitle>Configuración pendiente en Meta (Error 131042)</DialogTitle>
-              <DialogDescription>
-                Meta rechazó el mensaje por un problema de facturación en la cuenta de WhatsApp Business (código 131042: la moneda no está configurada). Debe resolverse la configuración en Meta Business Suite antes de reintentar el despacho.
-              </DialogDescription>
-              <div className="v2-dialog-actions" style={{ display: "flex", justifyContent: "flex-end", marginTop: "16px" }}>
-                <button className="v2-secondary" onClick={() => setWhatsAppModal(null)}>
-                  Entendido
-                </button>
-              </div>
-            </>
-          )}
-          {whatsAppModal?.mode === "ALREADY_DELIVERED" && (
-            <>
-              <DialogTitle>Mensaje ya entregado</DialogTitle>
-              <DialogDescription>
-                La confirmación por WhatsApp ya fue entregada exitosamente al cliente ({whatsAppModal.appointment.name}).
-              </DialogDescription>
-              <div className="v2-dialog-actions" style={{ display: "flex", justifyContent: "flex-end", marginTop: "16px" }}>
-                <button className="v2-secondary" onClick={() => setWhatsAppModal(null)}>
-                  Aceptar
-                </button>
-              </div>
-            </>
-          )}
-          {whatsAppModal?.mode === "IN_PROGRESS" && (
-            <>
-              <DialogTitle>Notificación en tránsito</DialogTitle>
-              <DialogDescription>
-                La notificación de WhatsApp ya fue aceptada por Pontiun y se encuentra en proceso de entrega hacia Meta.
-              </DialogDescription>
-              <div className="v2-dialog-actions" style={{ display: "flex", justifyContent: "flex-end", marginTop: "16px" }}>
-                <button className="v2-secondary" onClick={() => setWhatsAppModal(null)}>
-                  Aceptar
-                </button>
-              </div>
-            </>
-          )}
           {whatsAppModal?.mode === "NO_PHONE" && (
             <>
               <DialogTitle>Sin número de contacto</DialogTitle>
               <DialogDescription>
-                Este turno no tiene registrado un número de teléfono celular válido para el envío de WhatsApp.
+                Este turno no tiene registrado un número de teléfono celular para abrir la conversación de WhatsApp.
               </DialogDescription>
               <div className="v2-dialog-actions" style={{ display: "flex", justifyContent: "flex-end", marginTop: "16px" }}>
                 <button className="v2-secondary" onClick={() => setWhatsAppModal(null)}>
@@ -828,26 +757,15 @@ export function V2Appointments({
               </div>
             </>
           )}
-          {whatsAppModal?.mode === "CONFIRM_RESEND" && (
+          {whatsAppModal?.mode === "INVALID_PHONE" && (
             <>
-              <DialogTitle>¿Reenviar confirmación por WhatsApp?</DialogTitle>
+              <DialogTitle>Número de teléfono inválido o ambiguo</DialogTitle>
               <DialogDescription>
-                Se enviará la plantilla oficial kani_cliente_turno_confirmado_v2 a {whatsAppModal.appointment.name} ({whatsAppModal.appointment.phone}) mediante Pontiun. No se reenviará correo electrónico por Resend.
+                El teléfono registrado ({whatsAppModal.appointment.phone}) no tiene un formato internacional válido o le falta el código de país. Editá el cliente o agregá el código de país completo antes de abrir WhatsApp.
               </DialogDescription>
-              <div className="v2-dialog-actions" style={{ display: "flex", justifyContent: "flex-end", gap: "8px", marginTop: "16px" }}>
-                <button className="v2-secondary" disabled={busy} onClick={() => setWhatsAppModal(null)}>
-                  Cancelar
-                </button>
-                <button
-                  className="v2-primary v2-whatsapp"
-                  disabled={busy}
-                  onClick={async () => {
-                    const apt = whatsAppModal.appointment;
-                    setWhatsAppModal(null);
-                    await handleRetryChannel(apt.id, "WHATSAPP", apt.dispatches?.whatsapp?.errorCode);
-                  }}
-                >
-                  {busy ? "Enviando…" : "Reenviar WhatsApp"}
+              <div className="v2-dialog-actions" style={{ display: "flex", justifyContent: "flex-end", marginTop: "16px" }}>
+                <button className="v2-secondary" onClick={() => setWhatsAppModal(null)}>
+                  Aceptar
                 </button>
               </div>
             </>
@@ -857,7 +775,7 @@ export function V2Appointments({
       <Dialog
         open={!!selectedNotifDetail}
         onOpenChange={(open) => {
-          if (!open) {
+          if (!open && !retryingNotif) {
             setSelectedNotifDetail(null);
             setRetryFeedback(null);
           }
@@ -871,6 +789,9 @@ export function V2Appointments({
           {selectedNotifDetail?.appointment && (
             <div style={{ marginTop: "10px", padding: "10px 12px", background: "var(--v2-inset, rgba(255,255,255,0.04))", borderRadius: "6px", fontSize: "13px", display: "flex", flexDirection: "column", gap: "4px" }}>
               <p><strong>Cliente:</strong> {selectedNotifDetail.appointment.name} {selectedNotifDetail.appointment.phone ? `(${selectedNotifDetail.appointment.phone})` : ""}</p>
+              {selectedNotifDetail.channel === "Email" && (
+                <p><strong>Correo:</strong> {selectedNotifDetail.appointment.email || (selectedNotifDetail.appointment as any).clientEmail || selectedNotifDetail.dispatch?.recipient || "No registrado"}</p>
+              )}
               <p><strong>Turno:</strong> {dateLabel(selectedNotifDetail.appointment.date || "")} {(selectedNotifDetail.appointment.startTime || selectedNotifDetail.appointment.time || "").slice(0, 5)} hs — {formatServiceName(selectedNotifDetail.appointment.serviceName) || "Servicio"}</p>
               <p><strong>Estado del turno:</strong> <span className={`v2-status-badge v2-status-${(selectedNotifDetail.appointment.statusCode || "CONFIRMED").toLowerCase()}`}>{statusLabels[selectedNotifDetail.appointment.statusCode] || selectedNotifDetail.appointment.statusCode || "Confirmado"}</span></p>
             </div>
@@ -882,9 +803,9 @@ export function V2Appointments({
                 <span className={`v2-notif-pill v2-notif-${(selectedNotifDetail.dispatch.status || "pending").toLowerCase()}`}>
                   {formatDispatchDetailedStatus(selectedNotifDetail.dispatch.status)}
                 </span>
-                {selectedNotifDetail.dispatch.status === "SENT" && (
+                {(selectedNotifDetail.dispatch.status === "SENT" || selectedNotifDetail.dispatch.status === "PROVIDER_ACCEPTED") && (
                   <span style={{ marginLeft: "6px", fontSize: "11.5px", color: "var(--muted-foreground)" }}>
-                    (Aceptado por proveedor; en tránsito)
+                    (Aceptado por proveedor; entrega no confirmada aún)
                   </span>
                 )}
               </p>
@@ -921,40 +842,44 @@ export function V2Appointments({
             </div>
           )}
 
-          {/* Avisos explicativos para Email */}
-          {selectedNotifDetail?.channel === "Email" && selectedNotifDetail.appointment && (() => {
+          {/* Avisos explicativos unificados para WhatsApp y Email */}
+          {selectedNotifDetail?.appointment && (() => {
             const appt = selectedNotifDetail.appointment;
             const apptStatus = (appt.statusCode || (appt as any).status || "").toUpperCase();
             const isConfirmed = apptStatus === "CONFIRMED" || apptStatus === "CONFIRMADO";
             const isCancelled = apptStatus === "CANCELLED" || apptStatus === "CANCELADO";
-            const isPast = isAppointmentPast(appt.date, appt.startTime || appt.time);
-            const clientEmail = appt.email || (appt as any).clientEmail || selectedNotifDetail.dispatch?.recipient;
+            const isEmail = selectedNotifDetail.channel === "Email";
+            const clientRecipient = isEmail
+              ? (appt.email || (appt as any).clientEmail || selectedNotifDetail.dispatch?.recipient)
+              : (appt.phone || selectedNotifDetail.dispatch?.recipient);
 
             return (
               <>
                 {!isConfirmed && !isCancelled && (
                   <div className="v2-note" style={{ marginTop: "12px", borderLeftColor: "#eab308" }}>
-                    El estado actual del turno es <strong>{statusLabels[appt.statusCode] || appt.statusCode || "Pendiente"}</strong>. Solo los turnos confirmados o cancelados admiten notificaciones automáticas por correo.
+                    El estado actual del turno es <strong>{statusLabels[appt.statusCode] || appt.statusCode || "Pendiente"}</strong>. Solo los turnos confirmados o cancelados admiten el reenvío de notificaciones.
                   </div>
                 )}
-                {isPast && isConfirmed && (
-                  <div className="v2-note" style={{ marginTop: "12px", borderLeftColor: "#eab308" }}>
-                    ⚠️ <strong>Turno pasado:</strong> Este turno corresponde a una fecha u horario que ya transcurrió ({dateLabel(appt.date || "")} a las {(appt.startTime || appt.time || "").slice(0, 5)} hs). Para no generar confusión al cliente, no se envían confirmaciones retrospectivas para turnos que ya ocurrieron.
-                  </div>
-                )}
-                {!clientEmail && (isConfirmed || isCancelled) && (
+                {!clientRecipient && (isConfirmed || isCancelled) && (
                   <div className="v2-note" style={{ marginTop: "12px", borderLeftColor: "#ef4444" }}>
-                    El cliente no posee un correo electrónico registrado. Para despachar la notificación, edite el turno o complete su correo en Clientes.
+                    {isEmail
+                      ? "El cliente no posee un correo electrónico registrado. Para despachar la notificación, editá el turno o completá su correo en Clientes."
+                      : "El cliente no posee un número de teléfono registrado para enviar la notificación por WhatsApp."}
+                  </div>
+                )}
+                {!isEmail && selectedNotifDetail.dispatch?.errorCode === "131042" && (
+                  <div className="v2-note" style={{ marginTop: "12px", borderLeftColor: "#ef4444" }}>
+                    Meta rechazó el envío por configuración de facturación pendiente (código 131042). Resolvé la moneda de la cuenta en Meta Business Suite antes de reenviar.
+                  </div>
+                )}
+                {!isEmail && selectedNotifDetail.dispatch?.errorCode === "TEMPLATE_NOT_APPROVED" && (
+                  <div className="v2-note" style={{ marginTop: "12px", borderLeftColor: "#eab308" }}>
+                    ⏳ <strong>Plantilla pendiente en Meta:</strong> la plantilla oficial aún no está aprobada o sincronizada en Meta/Pontiun. Una vez aprobada, podés reenviar manualmente desde este modal.
                   </div>
                 )}
                 {(selectedNotifDetail.dispatch?.status === "DELIVERED" || selectedNotifDetail.dispatch?.status === "READ") && (
                   <div className="v2-note" style={{ marginTop: "12px", borderLeftColor: "#10b981" }}>
-                    ✓ La notificación ya fue entregada al destinatario. No se permite el reenvío duplicado.
-                  </div>
-                )}
-                {(selectedNotifDetail.dispatch?.status === "SENT" || selectedNotifDetail.dispatch?.status === "PROVIDER_ACCEPTED") && (
-                  <div className="v2-note" style={{ marginTop: "12px", borderLeftColor: "#0ea5e9" }}>
-                    ℹ El correo ya fue aceptado por el proveedor (Resend) y se encuentra en tránsito. Para evitar mensajes duplicados, no se permite un nuevo despacho mientras esté en curso.
+                    ✓ Último envío confirmado como entregado. Podés reenviar la notificación manualmente si el cliente necesita recibirla nuevamente.
                   </div>
                 )}
                 {selectedNotifDetail.dispatch?.status === "PROCESSING" && (
@@ -966,15 +891,10 @@ export function V2Appointments({
             );
           })()}
 
-          {selectedNotifDetail?.channel === "WhatsApp" && selectedNotifDetail.dispatch?.errorCode === "TEMPLATE_NOT_APPROVED" && (
-            <div className="v2-note" style={{ marginTop: "12px", borderLeftColor: "#eab308" }}>
-              ⏳ <strong>Plantilla pendiente en Meta:</strong> la plantilla oficial (<code>kani_cliente_turno_confirmado_v2</code>) aún no está aprobada o sincronizada en Meta/Pontiun. El turno sigue confirmado y no se reintenta automáticamente en bucle. Una vez aprobada, podés reenviar manualmente desde el botón WhatsApp del turno sin duplicar correos ni envíos ya aceptados.
-            </div>
-          )}
-
-          {/* Banner de retroalimentación de reintento */}
+          {/* Banner de retroalimentación de reenvío */}
           {retryFeedback && (
             <div
+              role="status"
               style={{
                 marginTop: "12px",
                 padding: "8px 12px",
@@ -994,37 +914,41 @@ export function V2Appointments({
           )}
 
           <div className="v2-dialog-actions" style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "16px" }}>
-            <button className="v2-secondary" onClick={() => setSelectedNotifDetail(null)}>
+            <button className="v2-secondary" disabled={retryingNotif} onClick={() => setSelectedNotifDetail(null)}>
               Cerrar
             </button>
             {(() => {
-              if (selectedNotifDetail?.channel !== "Email" || !selectedNotifDetail.appointment) return null;
+              if (!selectedNotifDetail?.appointment) return null;
               const appt = selectedNotifDetail.appointment;
               const apptStatus = (appt.statusCode || (appt as any).status || "").toUpperCase();
               const isConfirmed = apptStatus === "CONFIRMED" || apptStatus === "CONFIRMADO";
               const isCancelled = apptStatus === "CANCELLED" || apptStatus === "CANCELADO";
-              const isPast = isAppointmentPast(appt.date, appt.startTime || appt.time);
-              const clientEmail = appt.email || (appt as any).clientEmail || selectedNotifDetail.dispatch?.recipient;
+              const canAccessAppt = isStaffOperator(staff.profile.role) || appt.barberId === staff.profile.barber_id;
+              if ((!isConfirmed && !isCancelled) || !canAccessAppt) return null;
 
-              // Disponible para confirmados y cancelados (incluso registros antiguos o sin despacho previo)
-              const isEligible = isConfirmed || isCancelled;
-              const isAlreadyDispatched =
-                selectedNotifDetail.dispatch?.status === "SENT" ||
-                selectedNotifDetail.dispatch?.status === "PROVIDER_ACCEPTED" ||
-                selectedNotifDetail.dispatch?.status === "DELIVERED" ||
-                selectedNotifDetail.dispatch?.status === "READ" ||
-                selectedNotifDetail.dispatch?.status === "PROCESSING";
-
-              if (!isEligible || isAlreadyDispatched) return null;
+              const isEmail = selectedNotifDetail.channel === "Email";
+              const recipient = isEmail
+                ? (appt.email || (appt as any).clientEmail || selectedNotifDetail.dispatch?.recipient)
+                : (appt.phone || selectedNotifDetail.dispatch?.recipient);
+              const isMetaBlocked = !isEmail && selectedNotifDetail.dispatch?.errorCode === "131042";
 
               return (
                 <button
+                  type="button"
                   className="v2-primary"
-                  disabled={retryingEmail || !clientEmail}
-                  onClick={handleRetryEmailModal}
-                  title={!clientEmail ? "El cliente no tiene correo electrónico registrado" : "Reintentar envío de notificación por correo"}
+                  disabled={retryingNotif || !recipient || isMetaBlocked}
+                  onClick={() => void handleResendNotificationModal()}
+                  title={
+                    !recipient
+                      ? isEmail
+                        ? "El cliente no tiene correo electrónico registrado"
+                        : "El cliente no tiene teléfono registrado"
+                      : isMetaBlocked
+                        ? "Bloqueado por configuración de facturación en Meta (131042)"
+                        : `Reenviar notificación de ${isCancelled ? "cancelación" : "confirmación"} por ${selectedNotifDetail.channel}`
+                  }
                 >
-                  {retryingEmail ? "Enviando…" : "Reintentar envío"}
+                  {retryingNotif ? "Enviando…" : "Reenviar notificación del turno"}
                 </button>
               );
             })()}
