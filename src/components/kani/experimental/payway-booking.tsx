@@ -27,6 +27,11 @@ import {
 } from '@/lib/kani-card-validation';
 import { KANI_MAPS_URL, KANI_MAPS_EMBED_URL } from '@/lib/kani-constants';
 import { BookingConfirmedScreen } from '@/components/kani/booking-confirmed-screen';
+import {
+  BookingConfirmationStatusView,
+  type SmartConfirmationErrorKind,
+  type SmartConfirmationPhase,
+} from './booking-confirmation-modal';
 import { CardBrandBadge } from './card-brand-badges';
 import type { LiquidGlassMotionAdapter } from './liquid-glass-motion.types';
 import { isLiquidGlassPath } from './liquid-glass-shell';
@@ -35,6 +40,23 @@ import {
   readConfirmationSoundEnabled,
   unlockConfirmationAudio,
 } from './liquid-glass-feedback';
+
+const PROLONGED_CONFIRMATION_DELAY_MS = 4500;
+
+function isLikelyNetworkError(err: unknown): boolean {
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) return true;
+  const msg = String((err as any)?.message ?? err ?? '').toLowerCase();
+  return (
+    msg.includes('network') ||
+    msg.includes('failed to fetch') ||
+    msg.includes('fetch') ||
+    msg.includes('timeout') ||
+    msg.includes('timed out') ||
+    msg.includes('aborted') ||
+    msg.includes('err_internet') ||
+    msg.includes('load failed')
+  );
+}
 
 const CONFIRMED_STORAGE_KEY = 'kani:payway:confirmed-booking';
 const PAID_APPOINTMENTS_STORAGE_KEY = 'kani:payway:paid-appointments';
@@ -212,6 +234,22 @@ export function PaywayBooking({
     quote: BenefitQuote | null;
   } | null>(null);
   const modalDiscountInFlightRef = useRef(false);
+  const [smartPhase, setSmartPhase] = useState<SmartConfirmationPhase>('idle');
+  const [smartError, setSmartError] = useState<{
+    kind: SmartConfirmationErrorKind;
+    detail: string;
+    canRetry: boolean;
+  } | null>(null);
+  const [manualStatusChecking, setManualStatusChecking] = useState(false);
+
+  // V12.47.23: Si la confirmación sigue pendiente más allá del tiempo habitual, pasar a verificación prolongada
+  useEffect(() => {
+    if (smartPhase !== 'processing') return;
+    const timer = window.setTimeout(() => {
+      setSmartPhase(current => (current === 'processing' ? 'prolonged' : current));
+    }, PROLONGED_CONFIRMATION_DELAY_MS);
+    return () => window.clearTimeout(timer);
+  }, [smartPhase]);
 
   // Modern Payway Form State
   const [cardNumber, setCardNumber] = useState('');
@@ -292,6 +330,7 @@ export function PaywayBooking({
         if (!active) return;
         if (statusRes.state === 'approved' && statusRes.appointmentConfirmed) {
           clearInterval(intervalId);
+          clearActiveAttempt();
           setIsVerifying(false);
           const activeDraft = draftRef.current;
           const confirmedBooking: ConfirmedPaywayBooking = {
@@ -308,6 +347,8 @@ export function PaywayBooking({
           paidAppointmentsRef.current.add(pendingCheck.appointmentId);
           persistConfirmedBooking(confirmedBooking);
           setResult(statusRes);
+          setSmartPhase('idle');
+          setSmartError(null);
           setConfirmed(confirmedBooking);
           notifyVerifiedConfirmationSound(confirmedBooking.appointmentId);
           setOpen(false);
@@ -318,15 +359,30 @@ export function PaywayBooking({
         }
         if (statusRes.state === 'rejected') {
           clearInterval(intervalId);
+          clearActiveAttempt();
           setIsVerifying(false);
           setPendingCheck(null);
           setResult(statusRes);
+          setSmartError({
+            kind: 'payment_rejected',
+            detail: statusRes.message || PAYWAY_MESSAGES.rejected,
+            canRetry: true,
+          });
+          setSmartPhase('error');
           return;
         }
         if (statusRes.state === 'review') {
           clearInterval(intervalId);
+          clearActiveAttempt();
           setIsVerifying(false);
+          setPendingCheck(null);
           setResult(statusRes);
+          setSmartError({
+            kind: 'payment_review',
+            detail: statusRes.message || PAYWAY_MESSAGES.late_review,
+            canRetry: false,
+          });
+          setSmartPhase('error');
           return;
         }
       } catch {
@@ -337,6 +393,7 @@ export function PaywayBooking({
         if (active) {
           setIsVerifying(false);
           setPollExhausted(true);
+          setSmartPhase('prolonged');
         }
       }
     }, 3000);
@@ -395,6 +452,8 @@ export function PaywayBooking({
           paidAppointmentsRef.current.add(stored.appointmentId);
           persistConfirmedBooking(confirmedBooking);
           setResult(statusRes);
+          setSmartPhase('idle');
+          setSmartError(null);
           setConfirmed(confirmedBooking);
           notifyVerifiedConfirmationSound(confirmedBooking.appointmentId);
           setOpen(false);
@@ -402,18 +461,32 @@ export function PaywayBooking({
           clearActiveAttempt();
           setPendingCheck(null);
           setResult(statusRes);
+          setSmartError({
+            kind: 'payment_rejected',
+            detail: statusRes.message || PAYWAY_MESSAGES.rejected,
+            canRetry: true,
+          });
+          setSmartPhase('error');
         } else if (statusRes.state === 'review') {
           clearActiveAttempt();
           setPendingCheck(null);
           setResult(statusRes);
+          setSmartError({
+            kind: 'payment_review',
+            detail: statusRes.message || PAYWAY_MESSAGES.late_review,
+            canRetry: false,
+          });
+          setSmartPhase('error');
         } else {
           setResult(statusRes);
           setIsVerifying(true);
+          setSmartPhase('prolonged');
         }
       })
       .catch(() => {
         setIsPaymentChecking(false);
         setIsVerifying(true);
+        setSmartPhase('prolonged');
       });
   }, [configuredServices]);
 
@@ -452,6 +525,8 @@ export function PaywayBooking({
           paidAppointmentsRef.current.add(pendingCheck.appointmentId);
           persistConfirmedBooking(confirmedBooking);
           setResult(statusRes);
+          setSmartPhase('idle');
+          setSmartError(null);
           setConfirmed(confirmedBooking);
           notifyVerifiedConfirmationSound(confirmedBooking.appointmentId);
           setOpen(false);
@@ -462,11 +537,23 @@ export function PaywayBooking({
           setPendingCheck(null);
           setResult(statusRes);
           setPollExhausted(false);
+          setSmartError({
+            kind: 'payment_rejected',
+            detail: statusRes.message || PAYWAY_MESSAGES.rejected,
+            canRetry: true,
+          });
+          setSmartPhase('error');
         } else if (statusRes.state === 'review') {
           clearInterval(bgIntervalId);
           clearActiveAttempt();
           setPendingCheck(null);
           setResult(statusRes);
+          setSmartError({
+            kind: 'payment_review',
+            detail: statusRes.message || PAYWAY_MESSAGES.late_review,
+            canRetry: false,
+          });
+          setSmartPhase('error');
         }
       } catch {
         /* Background poll transient ignore */
@@ -615,7 +702,10 @@ export function PaywayBooking({
 
   async function begin(draft: BookingPaymentDraft) {
     if (isApprovedConfirmed) return;
-    if (opening.current || hasPendingPayment || result?.state === 'unknown' || result?.state === 'review') { setOpen(true); return; }
+    if (opening.current || smartPhase === 'processing' || hasPendingPayment || result?.state === 'unknown' || result?.state === 'review') {
+      setOpen(true);
+      return;
+    }
     if (isLiquid && readConfirmationSoundEnabled()) {
       unlockConfirmationAudio();
     }
@@ -631,10 +721,13 @@ export function PaywayBooking({
     // Flujo de confirmación directa sin seña (NO_DEPOSIT / FREE_SERVICE)
     if (draft.benefitQuote?.skipOnlinePayment && draft.benefitCode) {
       opening.current = true;
-      setOpen(false); // NUNCA abrir el modal de Payway cuando la seña online es $0
+      setOpen(true);
       setPreparing(true);
+      setSmartError(null);
+      setSmartPhase('processing');
       setResult(null);
       setCheckout(null);
+      let slotConflictToThrow: SlotUnavailableConflictError | null = null;
       try {
         const { confirmZeroDepositBookingFn } = await import('@/lib/kani-benefit-codes.functions');
         const confirmedResult = await confirmZeroDepositBookingFn({
@@ -671,6 +764,8 @@ export function PaywayBooking({
           };
           paidAppointmentsRef.current.add(confirmedResult.appointmentId);
           persistConfirmedBooking(confirmedBooking);
+          setSmartPhase('idle');
+          setSmartError(null);
           setConfirmed(confirmedBooking);
           notifyVerifiedConfirmationSound(confirmedBooking.appointmentId);
           setOpen(false);
@@ -678,11 +773,14 @@ export function PaywayBooking({
             window.scrollTo({ top: 0, behavior: 'instant' });
           }
           return;
-        } else {
-          throw new Error('No se pudo confirmar la reserva con beneficio.');
         }
+        setSmartError({
+          kind: 'zero_deposit',
+          detail: 'No pudimos confirmar la reserva con el beneficio. Tus datos no se perdieron.',
+          canRetry: true,
+        });
+        setSmartPhase('error');
       } catch (err: any) {
-        setOpen(false);
         const rawMsg = err?.message || '';
         let friendlyMsg = 'No pudimos confirmar tu reserva. Tus datos no se perdieron.';
         if (rawMsg.includes('BENEFIT_CODE_ALREADY_CONSUMED') || rawMsg.includes('ya fue utilizado')) {
@@ -700,18 +798,33 @@ export function PaywayBooking({
           rawMsg.includes('SLOT_ALREADY_BOOKED') ||
           isAvailabilityConflictError(rawMsg)
         ) {
-          throw new SlotUnavailableConflictError('Ese horario ya no está disponible. Elegí otro para continuar.', {
+          setSmartPhase('idle');
+          setSmartError(null);
+          setOpen(false);
+          slotConflictToThrow = new SlotUnavailableConflictError('Ese horario ya no está disponible. Elegí otro para continuar.', {
             phase: 'pre_payment',
             slotDate: draft.date,
             slotTime: draft.time,
           });
+        } else if (isLikelyNetworkError(err)) {
+          friendlyMsg = 'Detectamos un problema de conexión. Verificá tu red e intentá nuevamente; tus datos siguen guardados.';
         } else if (rawMsg) {
           friendlyMsg = rawMsg;
         }
-        throw new Error(friendlyMsg);
+        if (!slotConflictToThrow) {
+          setSmartError({
+            kind: 'zero_deposit',
+            detail: friendlyMsg,
+            canRetry: true,
+          });
+          setSmartPhase('error');
+        }
       } finally {
         opening.current = false;
         setPreparing(false);
+      }
+      if (slotConflictToThrow) {
+        throw slotConflictToThrow;
       }
       return;
     }
@@ -720,7 +833,12 @@ export function PaywayBooking({
       setCardHolder(draft.name);
     }
     opening.current = true;
-    setOpen(true); setPreparing(true); setResult(null); setCheckout(null);
+    setOpen(true);
+    setPreparing(true);
+    setSmartError(null);
+    setSmartPhase('processing');
+    setResult(null);
+    setCheckout(null);
     let slotConflictToThrow: SlotUnavailableConflictError | null = null;
     try {
       const sanitizedDraft: PaywayDraft = {
@@ -737,11 +855,16 @@ export function PaywayBooking({
       const response = await preparePaywayCheckoutFn({ data: sanitizedDraft });
       if (response.ready) {
         if (paidAppointmentsRef.current.has(response.checkout.appointmentId)) {
+          setSmartPhase('idle');
           setOpen(false);
           return;
         }
+        setSmartPhase('idle');
+        setSmartError(null);
         setCheckout(response.checkout);
       } else if (response.state === 'recoverable' && isAvailabilityConflictError(response.message)) {
+        setSmartPhase('idle');
+        setSmartError(null);
         setOpen(false);
         setResult(null);
         setCheckout(null);
@@ -751,10 +874,30 @@ export function PaywayBooking({
           slotTime: draft.time,
         });
       } else {
-        setResult({ state: response.state ?? 'unavailable', message: response.message });
+        const msg = response.message || PAYWAY_MESSAGES.unavailable;
+        setResult({ state: response.state ?? 'unavailable', message: msg });
+        setSmartError({
+          kind: 'prepare',
+          detail: msg,
+          canRetry: true,
+        });
+        setSmartPhase('error');
       }
-    } catch { setResult({ state: 'unavailable', message: PAYWAY_MESSAGES.unavailable }); }
-    finally { opening.current = false; setPreparing(false); }
+    } catch (err) {
+      const msg = isLikelyNetworkError(err)
+        ? 'No pudimos conectarnos para iniciar la confirmación. Verificá tu conexión e intentá nuevamente.'
+        : PAYWAY_MESSAGES.unavailable;
+      setResult({ state: 'unavailable', message: msg });
+      setSmartError({
+        kind: 'prepare',
+        detail: msg,
+        canRetry: true,
+      });
+      setSmartPhase('error');
+    } finally {
+      opening.current = false;
+      setPreparing(false);
+    }
     if (slotConflictToThrow) {
       throw slotConflictToThrow;
     }
@@ -793,6 +936,8 @@ export function PaywayBooking({
       });
 
       if (quote.skipOnlinePayment) {
+        setSmartError(null);
+        setSmartPhase('processing');
         const { confirmZeroDepositBookingFn } = await import('@/lib/kani-benefit-codes.functions');
         const confirmedResult = await confirmZeroDepositBookingFn({
           data: {
@@ -828,11 +973,14 @@ export function PaywayBooking({
           };
           paidAppointmentsRef.current.add(confirmedResult.appointmentId);
           persistConfirmedBooking(confirmedBooking);
+          setSmartPhase('idle');
+          setSmartError(null);
           setConfirmed(confirmedBooking);
           notifyVerifiedConfirmationSound(confirmedBooking.appointmentId);
           setOpen(false);
           return;
         }
+        setSmartPhase('idle');
         setModalDiscountError('No pudimos confirmar el turno con el beneficio. Intentá nuevamente.');
         return;
       }
@@ -866,6 +1014,7 @@ export function PaywayBooking({
         setModalDiscountError(response.message || 'No pudimos actualizar el importe con el descuento.');
       }
     } catch (err: unknown) {
+      setSmartPhase('idle');
       setModalDiscountApplied(null);
       setModalDiscountError(mapBenefitErrorMessage(err));
     } finally {
@@ -909,7 +1058,11 @@ export function PaywayBooking({
       return;
     }
 
-    paying.current = true; setStage('tokenizing'); setResult(null);
+    paying.current = true;
+    setStage('tokenizing');
+    setSmartError(null);
+    setSmartPhase('processing');
+    setResult(null);
     let sent = false;
     try {
       const token = await tokenizePaywayForm(form, checkout);
@@ -948,6 +1101,8 @@ export function PaywayBooking({
         paidAppointmentsRef.current.add(checkout.appointmentId);
         persistConfirmedBooking(confirmedBooking);
         setResult(response);
+        setSmartPhase('idle');
+        setSmartError(null);
         setConfirmed(confirmedBooking);
         notifyVerifiedConfirmationSound(confirmedBooking.appointmentId);
         setOpen(false);
@@ -956,10 +1111,28 @@ export function PaywayBooking({
         }
         return;
       }
-      if (response.state === 'rejected' || response.state === 'review') {
+      if (response.state === 'rejected') {
         clearActiveAttempt();
         setPendingCheck(null);
         setResult(response);
+        setSmartError({
+          kind: 'payment_rejected',
+          detail: response.message || PAYWAY_MESSAGES.rejected,
+          canRetry: true,
+        });
+        setSmartPhase('error');
+        return;
+      }
+      if (response.state === 'review') {
+        clearActiveAttempt();
+        setPendingCheck(null);
+        setResult(response);
+        setSmartError({
+          kind: 'payment_review',
+          detail: response.message || PAYWAY_MESSAGES.late_review,
+          canRetry: false,
+        });
+        setSmartPhase('error');
         return;
       }
       if (response.state === 'unknown' || response.state === 'verifying') {
@@ -984,10 +1157,17 @@ export function PaywayBooking({
         setIsVerifying(true);
         setPollExhausted(false);
         setResult(response);
+        setSmartPhase('prolonged');
         return;
       }
       setResult(response);
-    } catch {
+      setSmartError({
+        kind: 'payment_unavailable',
+        detail: response.message || PAYWAY_MESSAGES.technical_error,
+        canRetry: true,
+      });
+      setSmartPhase('error');
+    } catch (err) {
       if (sent && checkout) {
         const activeDraft = draftRef.current;
         persistActiveAttempt({
@@ -1010,9 +1190,19 @@ export function PaywayBooking({
         setIsVerifying(true);
         setPollExhausted(false);
         setResult({ state: 'unknown', message: PAYWAY_MESSAGES.verifying });
+        setSmartPhase('prolonged');
         setCheckout(null);
       } else {
-        setResult({ state: 'recoverable', message: 'No pudimos validar la tarjeta. Revisá sus datos e intentá nuevamente.' });
+        const detail = isLikelyNetworkError(err)
+          ? 'Se perdió la conexión antes de enviar el pago. Verificá tu red e intentá nuevamente.'
+          : 'No pudimos validar la tarjeta. Revisá sus datos e intentá nuevamente.';
+        setResult({ state: 'recoverable', message: detail });
+        setSmartError({
+          kind: 'tokenize',
+          detail,
+          canRetry: true,
+        });
+        setSmartPhase('error');
       }
     } finally {
       form.reset();
@@ -1020,6 +1210,113 @@ export function PaywayBooking({
       paying.current = false;
       setStage('idle');
     }
+  }
+
+  async function handleManualCheckStatus() {
+    if (!pendingCheck || manualStatusChecking) return;
+    setManualStatusChecking(true);
+    try {
+      const statusRes = await checkPaywayPaymentStatusFn({
+        data: {
+          appointmentId: pendingCheck.appointmentId,
+          attemptId: pendingCheck.attemptId,
+          accessToken: pendingCheck.accessToken,
+        },
+      });
+      if (statusRes.state === 'approved' && statusRes.appointmentConfirmed) {
+        clearActiveAttempt();
+        setIsVerifying(false);
+        const activeDraft = draftRef.current;
+        const confirmedBooking: ConfirmedPaywayBooking = {
+          appointmentId: pendingCheck.appointmentId,
+          attemptId: pendingCheck.attemptId,
+          serviceName: activeDraft?.serviceName ?? 'Corte',
+          barber: activeDraft?.barber ?? 'Lautaro',
+          date: activeDraft?.date ?? '',
+          time: activeDraft?.time ?? '',
+          clientName: activeDraft?.name ?? '',
+          depositArs: pendingCheck.depositArs,
+          servicePriceArs: resolveServicePrice(activeDraft?.serviceName ?? 'Corte', configuredServices),
+        };
+        paidAppointmentsRef.current.add(pendingCheck.appointmentId);
+        persistConfirmedBooking(confirmedBooking);
+        setResult(statusRes);
+        setSmartPhase('idle');
+        setSmartError(null);
+        setPendingCheck(null);
+        setConfirmed(confirmedBooking);
+        notifyVerifiedConfirmationSound(confirmedBooking.appointmentId);
+        setOpen(false);
+        if (typeof window !== 'undefined' && typeof window.scrollTo === 'function') {
+          window.scrollTo({ top: 0, behavior: 'instant' });
+        }
+        return;
+      }
+      if (statusRes.state === 'rejected') {
+        clearActiveAttempt();
+        setIsVerifying(false);
+        setPendingCheck(null);
+        setPollExhausted(false);
+        setResult(statusRes);
+        setSmartError({
+          kind: 'payment_rejected',
+          detail: statusRes.message || PAYWAY_MESSAGES.rejected,
+          canRetry: true,
+        });
+        setSmartPhase('error');
+        return;
+      }
+      if (statusRes.state === 'review') {
+        clearActiveAttempt();
+        setIsVerifying(false);
+        setPendingCheck(null);
+        setResult(statusRes);
+        setSmartError({
+          kind: 'payment_review',
+          detail: statusRes.message || PAYWAY_MESSAGES.late_review,
+          canRetry: false,
+        });
+        setSmartPhase('error');
+        return;
+      }
+      setResult(statusRes);
+      setSmartPhase('prolonged');
+    } catch {
+      setSmartPhase('prolonged');
+    } finally {
+      setManualStatusChecking(false);
+    }
+  }
+
+  function handleSmartRetry() {
+    if (hasPendingPayment || isVerifying || paying.current || opening.current) return;
+    if (smartError?.kind === 'tokenize' && checkout) {
+      setSmartError(null);
+      setSmartPhase('idle');
+      setResult(null);
+      return;
+    }
+    const activeDraft = draftRef.current;
+    if (!activeDraft) {
+      setSmartPhase('idle');
+      setSmartError(null);
+      setOpen(false);
+      return;
+    }
+    setSmartError(null);
+    setSmartPhase('idle');
+    setResult(null);
+    void begin(activeDraft);
+  }
+
+  function handleBackToBooking() {
+    if (paying.current || opening.current) return;
+    setOpen(false);
+    if (!hasPendingPayment && !isVerifying && !pollExhausted) {
+      setSmartPhase('idle');
+      setSmartError(null);
+    }
+    resetFormState();
   }
 
   function startNewReservation() {
@@ -1030,6 +1327,8 @@ export function PaywayBooking({
     setPendingCheck(null);
     setIsVerifying(false);
     setPollExhausted(false);
+    setSmartPhase('idle');
+    setSmartError(null);
     setConfirmed(null);
     setResult(null);
     setCheckout(null);
@@ -1123,27 +1422,47 @@ export function PaywayBooking({
         initialContact={initialAttempt?.clientName ? { name: initialAttempt.clientName, email: '', phone: '', notes: '' } : undefined}
         externalBenefitSync={externalBenefitSync}
       />
+      {(() => {
+        const activeSmartPhase: SmartConfirmationPhase =
+          smartPhase !== 'idle'
+            ? smartPhase
+            : isVerifying || pollExhausted || result?.state === 'unknown'
+              ? 'prolonged'
+              : preparing || stage !== 'idle'
+                ? 'processing'
+                : 'idle';
+        const isSmartStatusView = activeSmartPhase !== 'idle';
+        const isProcessingLock = activeSmartPhase === 'processing' || paying.current || opening.current;
+
+        return (
       <Dialog
         open={open}
         onOpenChange={value => {
-          if (!paying.current && !opening.current) {
+          if (!isProcessingLock) {
             setOpen(value);
-            if (!value) resetFormState();
+            if (!value) {
+              resetFormState();
+              if (!hasPendingPayment && !isVerifying && !pollExhausted) {
+                setSmartPhase('idle');
+                setSmartError(null);
+              }
+            }
           }
         }}
       >
         <DialogContent
-          className="payway-checkout"
+          className={isSmartStatusView ? 'payway-checkout smart-confirm-modal' : 'payway-checkout'}
           showCloseButton={false}
-          onEscapeKeyDown={e => { if (paying.current) e.preventDefault(); }}
-          onPointerDownOutside={e => { if (paying.current) e.preventDefault(); }}
+          onEscapeKeyDown={e => { if (isProcessingLock) e.preventDefault(); }}
+          onPointerDownOutside={e => { if (isProcessingLock) e.preventDefault(); }}
         >
+          {!isSmartStatusView && (
           <div className="payway-checkout-header">
             <DialogTitle className="payway-checkout-title">Pagá la seña con Payway</DialogTitle>
             <DialogClose
               className="payway-modal-close"
               aria-label="Cerrar"
-              disabled={paying.current}
+              disabled={isProcessingLock}
             >
               <X size={16} aria-hidden="true" />
             </DialogClose>
@@ -1153,12 +1472,34 @@ export function PaywayBooking({
                 : 'Pago seguro de seña · Kani Barber Studio'}
             </DialogDescription>
           </div>
-          {preparing && <p role="status">Preparando pago seguro…</p>}
-          {result && !isVerifying && !pollExhausted && result.state !== 'unknown' && result.state !== 'review' && (
+          )}
+          {isSmartStatusView && (
+            <BookingConfirmationStatusView
+              phase={activeSmartPhase}
+              errorKind={smartError?.kind ?? (result?.state === 'review' ? 'payment_review' : hasPendingPayment ? 'pending_unknown' : null)}
+              errorDetail={smartError?.detail ?? result?.message ?? null}
+              canRetry={Boolean(smartError?.canRetry && !hasPendingPayment && !isVerifying)}
+              canCheckStatus={Boolean(pendingCheck)}
+              isCheckingStatus={manualStatusChecking}
+              onRetry={handleSmartRetry}
+              onCheckStatus={handleManualCheckStatus}
+              onBackToBooking={activeSmartPhase === 'processing' ? undefined : handleBackToBooking}
+            />
+          )}
+          {!isSmartStatusView && result && !isVerifying && !pollExhausted && result.state !== 'unknown' && result.state !== 'review' && (
             <p role={result.state === 'approved' ? 'status' : 'alert'} className="payway-result">{result.message}</p>
           )}
           {checkout && !terminal && (
-            <form onSubmit={pay} autoComplete="off" noValidate data-private="redact" data-sensitive="true" className="payway-card-form">
+            <form
+              onSubmit={pay}
+              autoComplete="off"
+              noValidate
+              data-private="redact"
+              data-sensitive="true"
+              className="payway-card-form"
+              style={isSmartStatusView ? { display: 'none' } : undefined}
+              aria-hidden={isSmartStatusView || undefined}
+            >
               <input type="hidden" name="paymentMethod" value={detected.methodId ?? ''} />
               <div className="payway-checkout-body">
                 {modalDiscountOpen && !isApprovedConfirmed && (
@@ -1484,50 +1825,10 @@ export function PaywayBooking({
               </div>
             </form>
           )}
-          {isVerifying && (
-            <div className="payway-verifying-box space-y-4 py-4 text-center" role="status">
-              <div className="flex justify-center items-center">
-                <Loader2 className="animate-spin text-muted-foreground" size={36} />
-              </div>
-              <div className="space-y-1">
-                <p className="font-semibold text-base">Estamos verificando tu pago</p>
-                <p className="text-sm text-muted-foreground">
-                  Estamos verificando tu pago. Podés cerrar esta ventana; seguiremos comprobándolo. No vuelvas a pagar mientras la verificación esté pendiente.
-                </p>
-              </div>
-            </div>
-          )}
-          {pollExhausted && (
-            <div className="space-y-2 text-center py-2" role="alert">
-              <p className="text-sm font-semibold">Estamos verificando tu pago</p>
-              <p className="text-xs text-muted-foreground">
-                Estamos verificando tu pago. Podés cerrar esta ventana; seguiremos comprobándolo. No vuelvas a pagar mientras la verificación esté pendiente.
-              </p>
-            </div>
-          )}
-          {result?.state === 'unknown' && !isVerifying && !pollExhausted && (
-            <div className="space-y-2 text-center py-2" role="alert">
-              <p className="text-sm font-semibold">Verificación de pago pendiente</p>
-              <p className="text-xs text-muted-foreground">
-                Estamos verificando tu pago. Podés cerrar esta ventana; seguiremos comprobándolo. No vuelvas a pagar mientras la verificación esté pendiente.
-              </p>
-            </div>
-          )}
-          {result?.state === 'review' && (
-            <div className="space-y-2 text-center py-2" role="alert">
-              <p className="text-sm font-semibold">Pago registrado en revisión</p>
-              <p className="text-xs text-muted-foreground">
-                Tu pago fue recibido, pero el horario seleccionado ya no está disponible. Nos comunicaremos con vos a la brevedad para coordinar tu turno o reintegro.
-              </p>
-            </div>
-          )}
-          {!checkout && stage === 'idle' && !preparing && (
-            <Button variant="outline" onClick={() => setOpen(false)}>
-              {terminal || hasPendingPayment || isVerifying ? 'Cerrar' : 'Volver a mis datos'}
-            </Button>
-          )}
         </DialogContent>
       </Dialog>
+        );
+      })()}
     </div>
   );
 }

@@ -1513,6 +1513,19 @@ export function Booking({
   }
 
   async function submit(options?: { bypassInvalidBenefit?: boolean }) {
+    if (hasActivePaymentAttempt && onPaymentRequest) {
+      await onPaymentRequest({
+        barber: barber || 'Lautaro',
+        serviceName: selected?.name ?? serviceFor(service).name,
+        date,
+        time,
+        name: contact.name.trim(),
+        phone: contact.phone.trim(),
+        email: contact.email.trim(),
+        notes: contact.notes,
+      });
+      return;
+    }
     if (!service || !barber || !date || !time || submitting) return;
     if (!isLiquidBooking && hasUnappliedBenefitCode) {
       move(4);
@@ -2782,7 +2795,7 @@ export function Booking({
             )}
             {(() => {
               const isFinalStep = step === 5 || (isV2 || isFiveSteps) && step === 4;
-              const nextDisabled = !canNext || submitting || isPaymentChecking;
+              const nextDisabled = (hasActivePaymentAttempt ? false : !canNext) || submitting || isPaymentChecking;
               const nextLabel = isFinalStep
                 ? (isPaymentChecking
                     ? 'Comprobando pago…'
