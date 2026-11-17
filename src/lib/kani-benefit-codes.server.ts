@@ -499,18 +499,22 @@ export async function staffListBenefitCodesReadOnly(authToken?: string): Promise
   const { supabase } = await assertStaffReadSession(authToken);
 
   let rawList: any[] = [];
-  const staffRes = await supabase.rpc('staff_list_benefit_codes');
-  if (!staffRes.error && Array.isArray(staffRes.data)) {
-    rawList = staffRes.data;
+  const db = await createPaymentSupabaseClient();
+  if (db && typeof db.from === 'function') {
+    const { data: tableRows, error: tableError } = await db
+      .from('benefit_codes')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (tableError) {
+      throw new Error(tableError.message || 'Error al consultar códigos de beneficio');
+    }
+    if (Array.isArray(tableRows)) {
+      rawList = tableRows;
+    }
   } else {
-    const db = await createPaymentSupabaseClient();
-    if (db && typeof db.rpc === 'function') {
-      const adminRes = await db.rpc('admin_list_benefit_codes', { p_include_deleted: false });
-      if (!adminRes.error && Array.isArray(adminRes.data)) {
-        rawList = adminRes.data;
-      } else if (staffRes.error) {
-        throw new Error(staffRes.error.message || 'Error al consultar códigos de beneficio');
-      }
+    const staffRes = await supabase.rpc('staff_list_benefit_codes');
+    if (!staffRes.error && Array.isArray(staffRes.data)) {
+      rawList = staffRes.data;
     } else if (staffRes.error) {
       throw new Error(staffRes.error.message || 'Error al consultar códigos de beneficio');
     }

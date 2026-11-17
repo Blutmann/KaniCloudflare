@@ -272,4 +272,29 @@ describe('Kani — Navegación y permisos BARBER', () => {
     });
     mgrRender.unmount();
   });
+
+  it('never exposes raw OPERATOR_REQUIRED error to BARBER and recovers via Reintentar button', async () => {
+    const { fireEvent } = await import('@testing-library/react');
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    mockReadOnlyFn.mockRejectedValueOnce(new Error('OPERATOR_REQUIRED'));
+    mockReadOnlyFn.mockResolvedValueOnce([
+      { id: 'c-1', code: 'RECUPERADO', type: 'PERCENT_10', status: 'ACTIVE', timesUsed: 0, usages: [] },
+    ]);
+
+    render(<V2Discounts />);
+
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).not.toContain('OPERATOR_REQUIRED');
+    expect(alert.textContent).toContain('No pudimos cargar los códigos de descuento');
+    expect(mockRpc).not.toHaveBeenCalled();
+
+    const retryBtn = screen.getByRole('button', { name: 'Reintentar' });
+    fireEvent.click(retryBtn);
+
+    await waitFor(() => {
+      expect(screen.getByText('RECUPERADO')).toBeTruthy();
+    });
+    expect(screen.queryByRole('alert')).toBeNull();
+    errSpy.mockRestore();
+  });
 });

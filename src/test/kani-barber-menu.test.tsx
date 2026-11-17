@@ -177,15 +177,36 @@ describe('Kani — Optimización del menú desplegable BARBER', () => {
     expect(nav.textContent).toContain('WhatsApp');
   });
 
-  it('defines compact Desktop and Mobile Liquid Glass styles for .mobile-menu--barber', () => {
+  it('defines full-screen Desktop and Mobile Liquid Glass styles for .mobile-menu--barber', () => {
     const lgCss = fs.readFileSync(
       path.resolve(__dirname, '../components/kani/experimental/liquid-glass.css'),
       'utf-8',
     );
-    expect(lgCss).toContain('nav.mobile-menu.mobile-menu--liquid.mobile-menu--barber .mobile-menu-divider');
-    expect(lgCss).toContain('min-height: 40px !important;');
-    expect(lgCss).toContain('min-height: 44px !important;');
-    expect(lgCss).toContain('height: auto !important;');
-    expect(lgCss).toContain('env(safe-area-inset-bottom, 0px)');
+    const barberBlockStart = lgCss.indexOf('MENÚ DESPLEGABLE BARBER');
+    expect(barberBlockStart).toBeGreaterThan(-1);
+    const barberBlock = lgCss.slice(barberBlockStart);
+
+    expect(barberBlock).toContain('nav.mobile-menu.mobile-menu--liquid.mobile-menu--barber .mobile-menu-divider');
+    expect(barberBlock).toContain('inset: 0 !important;');
+    expect(barberBlock).toContain('width: 100dvw !important;');
+    expect(barberBlock).toContain('height: 100dvh !important;');
+    expect(barberBlock).toContain('min-height: 100dvh !important;');
+    expect(barberBlock).toContain('flex: 1 1 auto;');
+    expect(barberBlock).toContain('min-height: 44px !important;');
+    expect(barberBlock).toContain('env(safe-area-inset-bottom, 0px)');
+    expect(barberBlock).not.toContain('bottom: auto !important;');
+  });
+
+  it('locks background scroll when BARBER menu is open and closes via Escape or close button', async () => {
+    render(<SiteHeader />);
+    await waitFor(() => expect(mockGetAuthenticatedStaff).toHaveBeenCalled());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Abrir menú' }));
+    expect(screen.getByRole('navigation', { name: 'Menú principal' })).toBeTruthy();
+    expect(document.body.style.overflow).toBe('hidden');
+
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(screen.queryByRole('navigation', { name: 'Menú principal' })).toBeNull();
+    expect(document.body.style.overflow).not.toBe('hidden');
   });
 });

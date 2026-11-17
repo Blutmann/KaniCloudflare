@@ -111,11 +111,23 @@ function countUniqueClients(usages: Usage[]): number {
   return seen.size;
 }
 
+function formatDiscountsError(err: unknown): string {
+  const raw = err instanceof Error ? err.message : typeof err === "string" ? err : "";
+  if (/AUTH_REQUIRED|SESSION_EXPIRED/i.test(raw)) {
+    return "Tu sesión expiró. Iniciá sesión nuevamente para ver los descuentos.";
+  }
+  if (/UNAUTHORIZED_/i.test(raw)) {
+    return "No tenés permisos para consultar los códigos de descuento.";
+  }
+  return "No pudimos cargar los códigos de descuento en este momento. Intentá nuevamente.";
+}
+
 export function V2Discounts({ hideHeading = false }: { hideHeading?: boolean } = {}) {
   const { profile } = useAdminStaff();
   const [rows, setRows] = useState<Code[]>([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [reloadTick, setReloadTick] = useState(0);
   const canViewDiscounts = isStaffOperator(profile.role) || profile.role === "BARBER";
 
   useEffect(() => {
@@ -124,29 +136,22 @@ export function V2Discounts({ hideHeading = false }: { hideHeading?: boolean } =
       setLoading(false);
       return;
     }
+    setLoading(true);
+    setError("");
     void (async () => {
       try {
         const {
           data: { session },
         } = await supabase.auth.getSession();
         const token = session?.access_token;
-        try {
-          const serverRows = await staffListBenefitCodesReadOnlyFn({ data: { token } });
-          if (!cancelled && Array.isArray(serverRows)) {
-            setRows(serverRows as Code[]);
-            setLoading(false);
-            return;
-          }
-        } catch {
-          // Fallback to direct RPC when server function is unavailable (e.g. unit test mocks)
-        }
-        const { data, error: rpcError } = await (supabase.rpc as any)("staff_list_benefit_codes");
-        if (cancelled) return;
-        if (rpcError) setError(rpcError.message);
-        else setRows(data ?? []);
-      } catch (err) {
+        const serverRows = await staffListBenefitCodesReadOnlyFn({ data: { token } });
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Error al consultar descuentos.");
+          setRows(Array.isArray(serverRows) ? (serverRows as Code[]) : []);
+        }
+      } catch (err) {
+        console.error("[V2Discounts] Error al consultar códigos de descuento:", err);
+        if (!cancelled) {
+          setError(formatDiscountsError(err));
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -155,7 +160,7 @@ export function V2Discounts({ hideHeading = false }: { hideHeading?: boolean } =
     return () => {
       cancelled = true;
     };
-  }, [canViewDiscounts]);
+  }, [canViewDiscounts, reloadTick]);
 
   if (!canViewDiscounts) {
     return <p role="alert">No tenés permisos para consultar descuentos.</p>;
@@ -175,9 +180,16 @@ export function V2Discounts({ hideHeading = false }: { hideHeading?: boolean } =
         </>
       )}
       {error && (
-        <p role="alert" className="v2-alert">
-          {error}
-        </p>
+        <div role="alert" className="v2-alert flex flex-wrap items-center justify-between gap-3">
+          <span>{error}</span>
+          <button
+            type="button"
+            className="v2-btn v2-btn-secondary"
+            onClick={() => setReloadTick((n) => n + 1)}
+          >
+            Reintentar
+          </button>
+        </div>
       )}
       {loading && <p role="status">Cargando descuentos…</p>}
       {!loading && !visibleRows.length && !error && <Empty>No hay códigos de descuento.</Empty>}
