@@ -196,4 +196,34 @@ describe('Contacto V12.47.26 — Composición, Cards y Navegación Inteligente',
       label: 'Reservar un turno',
     });
   });
+
+  it('V12.47.26.3: mantiene la acción de reseña inactiva mientras KANI_GOOGLE_REVIEW_URL sea null y la renderiza debajo del mapa cuando está configurada', async () => {
+    const { KANI_GOOGLE_REVIEW_URL } = await import('@/lib/kani-constants');
+    expect(KANI_GOOGLE_REVIEW_URL).toBeNull();
+
+    const { rerender, container } = render(
+      <ContactoContent bookingPath="/reservar" onBookingNavigate={vi.fn()} />,
+    );
+    expect(screen.queryByText('Dejanos tu reseña')).not.toBeInTheDocument();
+
+    const officialReviewUrl = 'https://g.page/r/kani-barber-studio-example/review';
+    rerender(
+      <ContactoContent
+        bookingPath="/reservar"
+        onBookingNavigate={vi.fn()}
+        googleReviewUrl={officialReviewUrl}
+      />,
+    );
+
+    const locationCard = container.querySelector('.kani-contacto-location-card');
+    expect(locationCard?.querySelector('.kani-contacto-review-row')).toBeTruthy();
+    expect(screen.getByText('¿Ya nos visitaste?')).toBeInTheDocument();
+
+    const reviewLink = screen.getByRole('link', {
+      name: /Dejanos tu reseña sobre Kani Barber Studio en Google Maps/i,
+    });
+    expect(reviewLink).toHaveAttribute('href', officialReviewUrl);
+    expect(reviewLink).toHaveAttribute('target', '_blank');
+    expect(reviewLink).toHaveAttribute('rel', 'noopener noreferrer');
+  });
 });

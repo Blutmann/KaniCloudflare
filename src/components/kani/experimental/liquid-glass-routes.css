@@ -192,8 +192,69 @@ html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani
   overflow: hidden;
 }
 
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-location-card:has(.kani-contacto-review-row) .kani-contacto-map-wrap {
+  border-radius: 0;
+}
+
 html[data-theme="dark"] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-map-wrap {
   background: #141418;
+}
+
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-review-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 12px;
+  padding: 6px 16px;
+  border-top: 1px solid rgba(148, 144, 138, 0.22);
+  border-radius: 0 0 20px 20px;
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-review-row {
+  border-top-color: rgba(255, 255, 255, 0.1);
+}
+
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-review-prompt {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted-foreground);
+}
+
+html[data-theme="light"] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-review-star,
+html[data-theme="light"] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-review-link {
+  color: #8c6620;
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-review-star,
+html[data-theme="dark"] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-review-link {
+  color: #e4c98f;
+}
+
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-review-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 44px;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 6px;
+  transition: color 160ms ease, opacity 160ms ease, transform 160ms ease;
+}
+
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-review-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transform: translateX(1px);
+}
+
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-review-link:focus-visible {
+  outline: 2px solid var(--gold, #c8a96b);
+  outline-offset: 3px;
 }
 
 html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-cta .booking-cta-inner {

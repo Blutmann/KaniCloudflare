@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { ExternalLink, Instagram, MapPin } from "lucide-react";
+import { ExternalLink, Instagram, MapPin, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BookingStepHeading } from "@/components/kani/booking-step-heading";
 import { pageHead } from "@/lib/kani-head";
 import { LiquidGlassShell } from "@/components/kani/experimental/liquid-glass-shell";
 import {
+  KANI_GOOGLE_REVIEW_URL,
   KANI_MAPS_URL,
   KANI_MAPS_EMBED_URL,
   KANI_PUBLIC_WHATSAPP_URL,
@@ -70,10 +71,13 @@ function StudioPage() {
 export function ContactoContent({
   bookingPath = "/reservar",
   onBookingNavigate,
+  googleReviewUrl = KANI_GOOGLE_REVIEW_URL,
 }: {
   bookingPath?: string;
   onBookingNavigate?: (to: string) => void;
+  googleReviewUrl?: string | null;
 }) {
+  const resolvedReviewUrl = googleReviewUrl?.trim() ? googleReviewUrl.trim() : null;
   const [navState, setNavState] = useState<ContactoBookingNavState>({
     mode: "new",
     label: "Reservar un turno",
@@ -223,6 +227,24 @@ export function ContactoContent({
                 referrerPolicy="no-referrer-when-downgrade"
               />
             </div>
+            {resolvedReviewUrl ? (
+              <div className="kani-contacto-review-row">
+                <span className="kani-contacto-review-prompt">
+                  <Star size={15} className="kani-contacto-review-star" aria-hidden="true" />
+                  <span>¿Ya nos visitaste?</span>
+                </span>
+                <a
+                  href={resolvedReviewUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="kani-contacto-review-link"
+                  aria-label="Dejanos tu reseña sobre Kani Barber Studio en Google Maps"
+                >
+                  <span>Dejanos tu reseña</span>
+                  <ExternalLink size={14} aria-hidden="true" />
+                </a>
+              </div>
+            ) : null}
           </section>
         </main>
       </div>

@@ -27,6 +27,14 @@ export const KANI_MAPS_EMBED_URL =
   "https://maps.google.com/maps?cid=5241343871369591392&hl=es&output=embed";
 
 /**
+ * Enlace oficial de Google para escribir una reseña sobre Kani Barber Studio.
+ * Debe ser la URL oficial verificada (p. ej. https://g.page/r/<id>/review o
+ * https://search.google.com/local/writereview?placeid=<PLACE_ID>).
+ * Mantener en null hasta contar con el enlace oficial del perfil.
+ */
+export const KANI_GOOGLE_REVIEW_URL: string | null = null;
+
+/**
  * Seña estándar vigente en pesos argentinos (ARS) para todos los servicios de Kani.
  */
 export const KANI_STANDARD_DEPOSIT_ARS = 5000;
