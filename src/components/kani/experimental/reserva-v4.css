@@ -2232,8 +2232,8 @@ html[data-theme="dark"] .booking-page .booking-candidate-barber-btn.selected:hov
 }
 
 html[data-theme] body .payway-reservation.liquid-glass-confirmed-stage .confirmation.kani-confirmed-v2 {
-  width: min(1000px, calc(100% - 40px)) !important;
-  max-width: 1000px !important;
+  width: min(1080px, calc(100% - 40px)) !important;
+  max-width: 1080px !important;
   margin-inline: auto !important;
   padding-inline: 0 !important;
   padding-top: 28px;
@@ -2514,15 +2514,39 @@ html[data-theme="dark"] body.liquid-glass-active .kani-confirmed-summary-card {
 .kani-confirmed-secondary-footer {
   display: flex;
   justify-content: center;
+  width: 100%;
   margin-top: 24px;
 }
 
-.kani-confirmed-home-btn {
-  min-height: 44px;
-  min-width: 190px;
-  padding-inline: 24px;
-  font-size: 13.5px;
-  font-weight: 500;
+.payway-reservation .kani-confirmed-home-btn {
+  width: 100% !important;
+  height: 48px !important;
+  min-height: 48px !important;
+  max-height: 48px !important;
+  padding-inline: 24px !important;
+  border-radius: var(--radius-control, 0.65rem) !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-sizing: border-box !important;
+}
+
+html[data-theme="light"] body.liquid-glass-active .kani-confirmed-home-btn {
+  background: rgba(255, 255, 255, 0.68) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(150%) !important;
+  backdrop-filter: blur(18px) saturate(150%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.65) !important;
+  color: var(--foreground) !important;
+}
+
+html[data-theme="dark"] body.liquid-glass-active .kani-confirmed-home-btn {
+  background: rgba(22, 24, 32, 0.7) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(150%) !important;
+  backdrop-filter: blur(18px) saturate(150%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  color: var(--foreground) !important;
 }
 
 @media (max-width: 767px) {
@@ -2558,13 +2582,10 @@ html[data-theme="dark"] body.liquid-glass-active .kani-confirmed-summary-card {
     justify-content: center;
   }
   .payway-reservation .kani-confirmed-place-card .kani-confirmed-map {
-    height: 190px !important;
+    height: 150px !important;
   }
   .kani-confirmed-secondary-footer {
     margin-top: 20px;
-  }
-  .kani-confirmed-home-btn {
-    width: 100%;
   }
 }
 

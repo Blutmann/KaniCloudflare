@@ -74,7 +74,7 @@ describe('Kani Barber Studio — Dos rutas públicas de reserva con distintos pr
 
       // Verifica todos los elementos requeridos de la confirmación (V12.47.20)
       expect(confirmedCode).toContain('¡Turno confirmado!');
-      expect(confirmedCode).toContain('Te enviamos los detalles por email.');
+      expect(confirmedCode).toContain('Te enviamos los detalles por mail y WhatsApp.');
       expect(confirmedCode).toContain('Resumen de tu turno');
       expect(confirmedCode).toContain('Ver detalles de la reserva');
       expect(confirmedCode).toContain('¿Dónde estamos?');

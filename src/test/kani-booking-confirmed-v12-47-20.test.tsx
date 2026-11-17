@@ -33,7 +33,7 @@ describe("V12.47.20 — Booking Confirmation UX («¡Turno confirmado!»)", () =
     render(<BookingConfirmedScreen confirmed={confirmed} />);
 
     expect(screen.getByRole("heading", { name: "¡Turno confirmado!" })).toBeInTheDocument();
-    expect(screen.getByText("Te enviamos los detalles por email.")).toBeInTheDocument();
+    expect(screen.getByText("Te enviamos los detalles por mail y WhatsApp.")).toBeInTheDocument();
     expect(screen.getAllByText("12:15 hs")[0]).toBeInTheDocument();
     expect(screen.getAllByText("Corte")[0]).toBeInTheDocument();
     expect(screen.getAllByText("Lautaro")[0]).toBeInTheDocument();

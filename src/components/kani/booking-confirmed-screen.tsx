@@ -128,7 +128,7 @@ export function BookingConfirmedScreen({
           </div>
           <h1 className="confirmation-title">¡Turno confirmado!</h1>
           <p className="text-sm text-muted-foreground confirmation-subtitle">
-            Te enviamos los detalles por email.
+            Te enviamos los detalles por mail y WhatsApp.
           </p>
         </div>
 
