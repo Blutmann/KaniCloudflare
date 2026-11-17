@@ -1322,6 +1322,7 @@ export function PaywayBooking({
   function startNewReservation() {
     clearConfirmedBookingView();
     clearActiveAttempt();
+    clearBookingDraft();
     resetFormState();
     draftRef.current = null;
     setPendingCheck(null);

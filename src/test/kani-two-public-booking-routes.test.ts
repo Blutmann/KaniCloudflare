@@ -81,7 +81,7 @@ describe('Kani Barber Studio — Dos rutas públicas de reserva con distintos pr
       expect(confirmedCode).toContain('KANI_STUDIO_ADDRESS');
       expect(confirmedCode).toContain('KANI_MAPS_EMBED_URL');
       expect(confirmedCode).toContain('Cómo llegar');
-      expect(confirmedCode).toContain('Volver al inicio');
+      expect(confirmedCode).toContain('Reservar otro turno');
       expect(confirmedCode).toContain('kani-confirmed-home-btn');
     });
 

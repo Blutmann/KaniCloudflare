@@ -150,7 +150,7 @@ describe("V12.47.20 — Booking Confirmation UX («¡Turno confirmado!»)", () =
     expect(screen.getByText("No requerida ($0)")).toBeInTheDocument();
   });
 
-  it("6. Bloque de ubicación '¿Dónde estamos?', 'Cómo llegar' y acción secundaria 'Volver al inicio'", () => {
+  it("6. Bloque de ubicación '¿Dónde estamos?', 'Cómo llegar' y acción principal 'Reservar otro turno'", () => {
     const onHomeClick = vi.fn();
     render(
       <BookingConfirmedScreen
@@ -174,7 +174,7 @@ describe("V12.47.20 — Booking Confirmation UX («¡Turno confirmado!»)", () =
     const mapsLink = screen.getByRole("link", { name: /Cómo llegar/i });
     expect(mapsLink).toHaveAttribute("href", KANI_MAPS_URL);
 
-    const homeBtn = screen.getByRole("button", { name: "Volver al inicio" });
+    const homeBtn = screen.getByRole("button", { name: "Reservar otro turno" });
     fireEvent.click(homeBtn);
     expect(onHomeClick).toHaveBeenCalledTimes(1);
   });

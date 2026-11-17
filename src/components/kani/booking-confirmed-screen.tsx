@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { CalendarDays, Check, ChevronDown, Clock3, MapPin, Scissors, Wallet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { dateLabel, money, formatServiceName } from '@/lib/kani-model';
@@ -100,10 +100,11 @@ export function BookingConfirmedScreen({
   confirmed,
   onHomeClick,
   homeUrl = '/reservar',
-  homeLabel = 'Volver al inicio',
+  homeLabel = 'Reservar otro turno',
 }: BookingConfirmedScreenProps) {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const detailsRegionId = useId();
+  const ctaRef = useRef<HTMLDivElement | null>(null);
   const financials = deriveConfirmedFinancials(confirmed);
   const formattedDate = confirmed.date ? dateLabel(confirmed.date) : '-';
   const formattedTime = formatConfirmedTime(confirmed.time);
@@ -115,22 +116,43 @@ export function BookingConfirmedScreen({
     }
   }, [confirmed?.appointmentId]);
 
+  useEffect(() => {
+    const cta = ctaRef.current;
+    if (!cta || typeof document === 'undefined') return;
+    const updateHeight = () => {
+      document.documentElement.style.setProperty('--booking-cta-height', `${cta.getBoundingClientRect().height}px`);
+    };
+    updateHeight();
+    const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(updateHeight) : null;
+    observer?.observe(cta);
+    window.addEventListener('resize', updateHeight);
+    window.visualViewport?.addEventListener('resize', updateHeight);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener('resize', updateHeight);
+      window.visualViewport?.removeEventListener('resize', updateHeight);
+      document.documentElement.style.removeProperty('--booking-cta-height');
+    };
+  }, []);
+
   return (
     <div
       className="payway-reservation mercadopago-reservation liquid-glass-confirmed-stage"
       data-lg-confirmed="true"
     >
-      <main className="site-container confirmation liquid-glass-confirmation kani-confirmed-v2">
-        <div className="kani-confirmed-hero">
-          <div className="confirmation-mark liquid-glass-confirmation-mark">
-            <span className="lg-mark-aura" aria-hidden="true" />
-            <Check size={26} />
-          </div>
-          <h1 className="confirmation-title">¡Turno confirmado!</h1>
-          <p className="text-sm text-muted-foreground confirmation-subtitle">
-            Te enviamos los detalles por mail y WhatsApp.
-          </p>
-        </div>
+      <div className="booking-page kani-confirmed-booking-page">
+        <div className="booking-scroll-content kani-confirmed-scroll-content">
+          <main className="site-container confirmation liquid-glass-confirmation kani-confirmed-v2">
+            <div className="kani-confirmed-hero">
+              <div className="confirmation-mark liquid-glass-confirmation-mark">
+                <span className="lg-mark-aura" aria-hidden="true" />
+                <Check size={26} />
+              </div>
+              <h1 className="confirmation-title">¡Turno confirmado!</h1>
+              <p className="text-sm text-muted-foreground confirmation-subtitle">
+                Te enviamos los detalles por mail y WhatsApp.
+              </p>
+            </div>
 
         <div className="kani-confirmed-grid">
           {/* Bloque 1: Resumen compacto + Acordeón accesible */}
@@ -296,30 +318,37 @@ export function BookingConfirmedScreen({
           </section>
         </div>
 
-        {/* Acción secundaria posterior */}
-        <div className="kani-confirmed-secondary-footer" role="region" aria-label="Navegación posterior">
-          {onHomeClick ? (
-            <Button
-              type="button"
-              variant="outline"
-              className="kani-confirmed-home-btn"
-              aria-label={homeLabel}
-              onClick={onHomeClick}
-            >
-              {homeLabel}
-            </Button>
-          ) : (
-            <Button
-              asChild
-              variant="outline"
-              className="kani-confirmed-home-btn"
-              aria-label={homeLabel}
-            >
-              <a href={homeUrl}>{homeLabel}</a>
-            </Button>
-          )}
+          </main>
         </div>
-      </main>
+
+        <div
+          ref={ctaRef}
+          className="booking-cta kani-confirmed-cta"
+          role="region"
+          aria-label="Navegación posterior"
+        >
+          <div className="booking-cta-inner flex items-center">
+            {onHomeClick ? (
+              <Button
+                type="button"
+                className="booking-next-button kani-confirmed-home-btn"
+                aria-label={homeLabel}
+                onClick={onHomeClick}
+              >
+                {homeLabel}
+              </Button>
+            ) : (
+              <Button
+                asChild
+                className="booking-next-button kani-confirmed-home-btn"
+                aria-label={homeLabel}
+              >
+                <a href={homeUrl}>{homeLabel}</a>
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

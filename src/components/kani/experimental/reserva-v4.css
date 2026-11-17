@@ -2511,42 +2511,45 @@ html[data-theme="dark"] body.liquid-glass-active .kani-confirmed-summary-card {
   border-radius: 14px !important;
 }
 
-.kani-confirmed-secondary-footer {
-  display: flex;
-  justify-content: center;
-  width: 100%;
-  margin-top: 24px;
+html[data-theme] body .payway-reservation.liquid-glass-confirmed-stage .booking-page.kani-confirmed-booking-page {
+  min-width: 0;
 }
 
-.payway-reservation .kani-confirmed-home-btn {
+.payway-reservation .kani-confirmed-cta .booking-cta-inner {
   width: 100% !important;
-  height: 48px !important;
-  min-height: 48px !important;
-  max-height: 48px !important;
+}
+
+.payway-reservation .kani-confirmed-cta .kani-confirmed-home-btn {
+  width: 100% !important;
+  flex: 1 1 100% !important;
+  margin-left: 0 !important;
+  min-height: 46px !important;
   padding-inline: 24px !important;
-  border-radius: var(--radius-control, 0.65rem) !important;
-  font-size: 14px !important;
-  font-weight: 500 !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
+  text-align: center !important;
   box-sizing: border-box !important;
 }
 
-html[data-theme="light"] body.liquid-glass-active .kani-confirmed-home-btn {
-  background: rgba(255, 255, 255, 0.68) !important;
-  -webkit-backdrop-filter: blur(18px) saturate(150%) !important;
-  backdrop-filter: blur(18px) saturate(150%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.65) !important;
-  color: var(--foreground) !important;
+@media (min-width: 1024px) {
+  html[data-theme] body .payway-reservation.liquid-glass-confirmed-stage .confirmation.kani-confirmed-v2 {
+    width: min(1080px, 100%) !important;
+    padding-top: 4px !important;
+    padding-bottom: 0 !important;
+  }
+  html[data-theme] body .site-shell .liquid-glass-reservation .payway-reservation.liquid-glass-confirmed-stage .booking-cta.kani-confirmed-cta .booking-cta-inner .booking-next-button.kani-confirmed-home-btn {
+    width: 100% !important;
+    min-width: 0 !important;
+    flex: 1 1 100% !important;
+    margin-left: 0 !important;
+  }
 }
 
-html[data-theme="dark"] body.liquid-glass-active .kani-confirmed-home-btn {
-  background: rgba(22, 24, 32, 0.7) !important;
-  -webkit-backdrop-filter: blur(18px) saturate(150%) !important;
-  backdrop-filter: blur(18px) saturate(150%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.16) !important;
-  color: var(--foreground) !important;
+@media (max-width: 1023px) {
+  html[data-theme] body .payway-reservation.liquid-glass-confirmed-stage .confirmation.kani-confirmed-v2 {
+    padding-bottom: calc(var(--booking-cta-height, 76px) + 28px) !important;
+  }
 }
 
 @media (max-width: 767px) {
@@ -2554,7 +2557,7 @@ html[data-theme="dark"] body.liquid-glass-active .kani-confirmed-home-btn {
     width: calc(100% - 32px) !important;
     max-width: 100% !important;
     padding-top: 16px;
-    padding-bottom: 32px !important;
+    padding-bottom: calc(var(--booking-cta-height, 72px) + 24px) !important;
   }
   .kani-confirmed-hero {
     gap: 6px;
@@ -2583,9 +2586,6 @@ html[data-theme="dark"] body.liquid-glass-active .kani-confirmed-home-btn {
   }
   .payway-reservation .kani-confirmed-place-card .kani-confirmed-map {
     height: 150px !important;
-  }
-  .kani-confirmed-secondary-footer {
-    margin-top: 20px;
   }
 }
 
