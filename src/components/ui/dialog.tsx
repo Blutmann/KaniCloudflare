@@ -53,7 +53,7 @@ const DialogContent = React.forwardRef<
     showCloseButton?: boolean;
     transitionMode?: "origin" | "container-transform";
   }
->(({ className, overlayClassName, closeLabel = "Close", showCloseButton = true, transitionMode = "origin", children, ...props }, ref) => {
+>(({ className, overlayClassName, closeLabel = "Close", showCloseButton = true, transitionMode = "origin", onOpenAutoFocus, children, ...props }, ref) => {
   const localRef = React.useRef<HTMLDivElement | null>(null);
   const [contentNode, setContentNode] = React.useState<HTMLDivElement | null>(null);
   const originElRef = React.useRef<Element | null>(null);
@@ -171,6 +171,27 @@ const DialogContent = React.forwardRef<
     return () => observer.disconnect();
   }, [contentNode, transitionMode]);
 
+  const handleOpenAutoFocus = React.useCallback(
+    (event: Event) => {
+      onOpenAutoFocus?.(event);
+      if (event.defaultPrevented) return;
+      const target = event.currentTarget;
+      if (!(target instanceof HTMLElement)) return;
+      const firstFocusable = target.querySelector<HTMLElement>(
+        'button:not([disabled]), [href], input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      );
+      if (
+        firstFocusable &&
+        (firstFocusable.tagName === "SELECT" ||
+          firstFocusable.getAttribute("role") === "combobox")
+      ) {
+        event.preventDefault();
+        target.focus({ preventScroll: true });
+      }
+    },
+    [onOpenAutoFocus],
+  );
+
   return (
     <DialogPortal>
       <DialogOverlay
@@ -185,6 +206,7 @@ const DialogContent = React.forwardRef<
           "fixed left-[calc(var(--kani-vv-left,0px)+var(--kani-vv-width,100vw)/2)] top-[calc(var(--kani-vv-top,0px)+var(--kani-vv-height,100dvh)/2)] z-[200] grid w-[calc(100%-24px)] max-w-[min(32rem,calc(var(--kani-vv-width,100vw)-max(24px,env(safe-area-inset-left,0px)+env(safe-area-inset-right,0px))))] max-h-[calc(var(--kani-vv-height,100dvh)-max(24px,env(safe-area-inset-top,0px)+env(safe-area-inset-bottom,0px)))] translate-x-[-50%] translate-y-[-50%] gap-4 overflow-y-auto overflow-x-hidden overscroll-contain rounded-2xl border bg-background p-5 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:w-full sm:rounded-lg sm:p-6",
           className,
         )}
+        onOpenAutoFocus={handleOpenAutoFocus}
         {...props}
       >
         {children}

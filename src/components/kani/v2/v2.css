@@ -3679,6 +3679,9 @@ input[placeholder="Nombre, celular o email"]::placeholder {
     justify-content: center;
     align-items: center;
   }
+  body[data-scroll-locked]:has(.v2-clients-page) {
+    overflow: clip !important;
+  }
   .v2-client-card {
     display: grid;
     grid-template-columns: minmax(0, 3fr) minmax(0, 1fr) minmax(0, 1fr);
