@@ -73,7 +73,7 @@ describe('Kani Barber Studio - Menú y Autenticación', () => {
     expect(code).not.toContain('"INGRESAR"');
 
     // Debe contener 'Iniciar sesión'
-    expect(code).toContain("{busy ? 'VERIFICANDO…' : 'Iniciar sesión'}");
+    expect(code).toContain("{busy ? 'Verificando...' : 'Iniciar sesión'}");
   });
 
   it('4. Panel de mantenimiento bloquea el acceso directo a roles no-ADMIN', () => {

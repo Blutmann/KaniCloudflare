@@ -114,8 +114,8 @@ describe("KANI — Reorganización del menú desplegable ADMIN (Mobile)", () => 
 
     expect(group1Links).toEqual(["Reservar turno", "Contacto"]);
     expect(group2Links).toEqual([
-      "Membresías y descuentos",
       "Panel de administración",
+      "Membresías y descuentos",
       "Panel de mantenimiento",
     ]);
     expect(group3Links).toEqual(["Política de privacidad", "Términos y condiciones"]);
@@ -133,8 +133,8 @@ describe("KANI — Reorganización del menú desplegable ADMIN (Mobile)", () => 
     const orderedLabels = [
       "Reservar turno",
       "Contacto",
-      "Membresías y descuentos",
       "Panel de administración",
+      "Membresías y descuentos",
       "Panel de mantenimiento",
       "Política de privacidad",
       "Términos y condiciones",

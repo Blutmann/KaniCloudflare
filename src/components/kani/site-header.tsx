@@ -521,11 +521,11 @@ export function SiteHeader() {
 
       {/* Grupo 2 — Administración */}
       <div className="mobile-menu-group">
-        <Link to={membershipsLinkTarget} onClick={closeMenu}>
-          <Tag />Membresías y descuentos
-        </Link>
         <Link to={adminBase} onClick={closeMenu}>
           <CalendarClock />Panel de administración
+        </Link>
+        <Link to={membershipsLinkTarget} onClick={closeMenu}>
+          <Tag />Membresías y descuentos
         </Link>
         <Link to={`${adminBase}/mantenimiento`} onClick={closeMenu}>
           <Wrench />Panel de mantenimiento
