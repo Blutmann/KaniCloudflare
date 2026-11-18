@@ -11683,24 +11683,23 @@ html[data-theme] body.liquid-glass-active :is([data-slot="dialog-content"], .pay
   border-radius: 24px !important;
 }
 
-html[data-theme] body.liquid-glass-active :is([data-slot="dialog-content"], .payway-checkout)[data-state="open"] {
-  animation: lgModalOpticalEnter 240ms cubic-bezier(0.22, 1, 0.36, 1) forwards !important;
+html[data-theme] body.liquid-glass-active :is([data-slot="dialog-content"]:not(.kani-modal-shell), .payway-checkout)[data-state="open"] {
+  animation: lgModalOpticalEnter 210ms cubic-bezier(0.22, 1, 0.36, 1) both !important;
 }
 
-html[data-theme] body.liquid-glass-active :is([data-slot="dialog-content"], .payway-checkout)[data-state="closed"] {
-  animation: lgModalOpticalExit 190ms cubic-bezier(0.25, 1, 0.5, 1) forwards !important;
+html[data-theme] body.liquid-glass-active :is([data-slot="dialog-content"]:not(.kani-modal-shell), .payway-checkout)[data-state="closed"] {
+  animation: lgModalOpticalExit 160ms cubic-bezier(0.4, 0, 1, 1) forwards !important;
+  pointer-events: none !important;
 }
 
 @keyframes lgModalOpticalEnter {
   0% {
     opacity: 0;
     transform: translate3d(-50%, -48%, 0) scale(0.982);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
   }
   100% {
     opacity: 1;
     transform: translate3d(-50%, -50%, 0) scale(1);
-    box-shadow: 0 28px 72px rgba(18, 22, 28, 0.18), 0 0 0 1px rgba(255, 255, 255, 0.4);
   }
 }
 

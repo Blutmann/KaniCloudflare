@@ -18,6 +18,10 @@
   --kani-modal-footer-pad-y: 14px;
   --kani-modal-gap: 14px;
   --kani-modal-radius: 22px;
+  --kani-modal-enter-duration: 200ms;
+  --kani-modal-exit-duration: 150ms;
+  --kani-modal-enter-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --kani-modal-exit-ease: cubic-bezier(0.4, 0, 1, 1);
 }
 
 @media (min-width: 640px) {
@@ -64,6 +68,103 @@ html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active)
   overflow: hidden !important;
   border-radius: var(--kani-modal-radius) !important;
   box-sizing: border-box !important;
+}
+
+/* Unified Modal Motion: opacity + independent CSS scale (preserves translate3d centering and static shadows) */
+@keyframes kaniModalEnter {
+  0% {
+    opacity: 0;
+    scale: 0.98;
+  }
+  100% {
+    opacity: 1;
+    scale: 1;
+  }
+}
+
+@keyframes kaniModalExit {
+  0% {
+    opacity: 1;
+    scale: 1;
+  }
+  100% {
+    opacity: 0;
+    scale: 0.99;
+  }
+}
+
+@keyframes kaniModalOverlayEnter {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes kaniModalOverlayExit {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell[data-state="open"] {
+  animation: kaniModalEnter var(--kani-modal-enter-duration) var(--kani-modal-enter-ease) both !important;
+}
+
+html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell[data-state="closed"] {
+  animation: kaniModalExit var(--kani-modal-exit-duration) var(--kani-modal-exit-ease) forwards !important;
+  pointer-events: none !important;
+}
+
+html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-overlay"][data-state="open"] {
+  animation: kaniModalOverlayEnter var(--kani-modal-enter-duration) var(--kani-modal-enter-ease) both !important;
+}
+
+html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-overlay"][data-state="closed"] {
+  animation: kaniModalOverlayExit var(--kani-modal-exit-duration) var(--kani-modal-exit-ease) forwards !important;
+  pointer-events: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @keyframes kaniModalEnterReduced {
+    0% {
+      opacity: 0;
+    }
+    100% {
+      opacity: 1;
+    }
+  }
+
+  @keyframes kaniModalExitReduced {
+    0% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
+
+  html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell[data-state="open"] {
+    animation: kaniModalEnterReduced 0.01ms linear both !important;
+    scale: 1 !important;
+  }
+
+  html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell[data-state="closed"] {
+    animation: kaniModalExitReduced 0.01ms linear forwards !important;
+    scale: 1 !important;
+  }
+
+  html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-overlay"][data-state="open"] {
+    animation: kaniModalOverlayEnter 0.01ms linear both !important;
+  }
+
+  html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-overlay"][data-state="closed"] {
+    animation: kaniModalOverlayExit 0.01ms linear forwards !important;
+  }
 }
 
 [data-slot="dialog-content"].kani-modal-shell.kani-modal-recovery {

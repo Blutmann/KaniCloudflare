@@ -1991,7 +1991,14 @@ html[data-theme] body[data-lg-admin="true"] :is(
   border-radius: 22px !important;
   color: var(--lga-text) !important;
   isolation: isolate;
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"]:not(.kani-modal-shell)[data-state="open"] {
   animation: lgaDialogFadeIn 190ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"]:not(.kani-modal-shell)[data-state="closed"] {
+  animation: lgaDialogFadeOut 150ms cubic-bezier(0.4, 0, 1, 1) forwards;
 }
 
 html[data-theme] body[data-lg-admin="true"] [role="dialog"]:not(.v2-client-modal):not(.notification-popover):not(.kani-notif-confirm-dialog):not(.kani-modal-shell) {
@@ -2436,6 +2443,15 @@ body[data-lg-admin="true"] .v2-loading {
   }
   to {
     opacity: 1;
+  }
+}
+
+@keyframes lgaDialogFadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
   }
 }
 

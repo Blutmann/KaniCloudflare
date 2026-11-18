@@ -43,8 +43,6 @@ export function ManualAppointmentDialog({
   onClose,
   onSuccess,
 }: ManualAppointmentDialogProps) {
-  if (!open) return null;
-
   const data = useV2();
   const staff = useAdminStaff();
   const isAdmin = isStaffOperator(staff?.profile?.role ?? "");
@@ -396,12 +394,18 @@ export function ManualAppointmentDialog({
   const showDialogDescription = !isLiquidGlassAdmin || mode === "EDIT";
 
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && !isBusy && onClose()}>
       <DialogContent
         className="v2-dialog v2-manual-dialog kani-modal-shell"
         showCloseButton={false}
         aria-labelledby={titleId}
         aria-describedby={showDialogDescription ? descId : undefined}
+        onEscapeKeyDown={(event) => {
+          if (isBusy) event.preventDefault();
+        }}
+        onPointerDownOutside={(event) => {
+          if (isBusy) event.preventDefault();
+        }}
         onOpenAutoFocus={(event) => {
           if (!isLiquidGlassAdmin) return;
           event.preventDefault();

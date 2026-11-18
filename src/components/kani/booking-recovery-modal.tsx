@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { CalendarDays, Clock3, Loader2, Scissors, UserRound, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
@@ -76,12 +77,17 @@ export function BookingRecoveryModal({
   onRetry,
 }: BookingRecoveryModalProps) {
   const open = mode !== 'closed' && Boolean(draft);
-  if (!open || !draft) return null;
+  const lastDraftRef = useRef<BookingDraftV1 | null>(draft);
+  if (draft) {
+    lastDraftRef.current = draft;
+  }
+  const activeDraft = draft ?? lastDraftRef.current;
+  if (!activeDraft) return null;
 
-  const serviceText = formatDraftServiceLabel(draft.service);
-  const barberText = draft.barberDeferred ? 'Elegir más adelante' : draft.barber;
-  const dateText = formatRecoveryDateLabel(draft.date);
-  const timeText = draft.time ? `${draft.time} hs` : '';
+  const serviceText = formatDraftServiceLabel(activeDraft.service);
+  const barberText = activeDraft.barberDeferred ? 'Elegir más adelante' : activeDraft.barber;
+  const dateText = formatRecoveryDateLabel(activeDraft.date);
+  const timeText = activeDraft.time ? `${activeDraft.time} hs` : '';
 
   return (
     <Dialog
