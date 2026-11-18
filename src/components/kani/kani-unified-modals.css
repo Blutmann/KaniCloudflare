@@ -50,7 +50,7 @@ html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active)
   --tw-translate-x: 0px !important;
   --tw-translate-y: 0px !important;
   translate: none !important;
-  transform: translate3d(-50%, -50%, 0) !important;
+  transform: translate3d(-50%, -50%, 0);
 
   width: min(
     var(--kani-modal-max-w, 540px),
@@ -193,7 +193,7 @@ html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active)
         calc(-50% + var(--kani-origin-y, 0px)),
         0
       )
-      scale(var(--kani-origin-scale, 0.44));
+      scale(var(--kani-origin-scale, 1));
     clip-path: inset(
       var(--kani-ct-inset-y, 0px)
       var(--kani-ct-inset-x, 0px)
@@ -228,7 +228,7 @@ html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active)
         calc(-50% + var(--kani-origin-y, 0px)),
         0
       )
-      scale(var(--kani-exit-scale, 0.48));
+      scale(var(--kani-exit-scale, 1));
     clip-path: inset(
       var(--kani-ct-inset-y, 0px)
       var(--kani-ct-inset-x, 0px)

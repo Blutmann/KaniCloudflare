@@ -33,7 +33,7 @@ describe("KANI Motion System v1.2 — iOS-Inspired Container Transformations (Pi
     vi.restoreAllMocks();
   });
 
-  it("1. Calcula trayectoria espacial amplia, escala perceptible y clip-path inset proporcional sin deformar contenido", () => {
+  it("1. Calcula trayectoria exacta 1:1 entre el botón activador y el modal sin deformar contenido", () => {
     const modalRect = { left: 410, top: 140, width: 460, height: 520 }; // centro (640, 400)
     const triggerRect = { left: 1060, top: 44, width: 140, height: 40 }; // centro (1130, 64)
 
@@ -47,11 +47,10 @@ describe("KANI Motion System v1.2 — iOS-Inspired Container Transformations (Pi
     expect(ct.hasOrigin).toBe(true);
     expect(ct.dx).toBe(490);
     expect(ct.dy).toBe(-336);
-    expect(ct.enterScale).toBeGreaterThanOrEqual(0.36);
-    expect(ct.enterScale).toBeLessThanOrEqual(0.62);
-    expect(ct.exitScale).toBeGreaterThan(ct.enterScale);
-    expect(ct.insetX).toBeGreaterThanOrEqual(0);
-    expect(ct.insetY).toBeGreaterThan(0);
+    expect(ct.enterScale).toBe(1);
+    expect(ct.exitScale).toBe(1);
+    expect((modalRect.width - 2 * ct.insetX) * ct.enterScale).toBeCloseTo(triggerRect.width, 1);
+    expect((modalRect.height - 2 * ct.insetY) * ct.enterScale).toBeCloseTo(triggerRect.height, 1);
     expect(ct.originRadius).toBe(24);
   });
 
@@ -85,11 +84,11 @@ describe("KANI Motion System v1.2 — iOS-Inspired Container Transformations (Pi
     expect(computeContainerTransformParams(null, modalRect)).toEqual({
       dx: 0,
       dy: 0,
-      enterScale: 0.88,
+      enterScale: 0.9,
       exitScale: 0.9,
       insetX: 0,
       insetY: 0,
-      originRadius: 24,
+      originRadius: 22,
       hasOrigin: false,
     });
 
@@ -104,13 +103,13 @@ describe("KANI Motion System v1.2 — iOS-Inspired Container Transformations (Pi
 
   it("4. Nuevo turno (mode='CREATE') activa data-kani-transition='container-transform' e inyecta variables --kani-ct-* desde el botón", () => {
     const triggerRect = {
-      left: 980,
+      left: 820,
       top: 56,
       width: 150,
       height: 40,
-      right: 1130,
+      right: 970,
       bottom: 96,
-      x: 980,
+      x: 820,
       y: 56,
       toJSON: () => ({}),
     };
@@ -173,11 +172,13 @@ describe("KANI Motion System v1.2 — iOS-Inspired Container Transformations (Pi
 
     const dialog = screen.getByRole("dialog");
     expect(dialog.getAttribute("data-kani-transition")).toBe("container-transform");
-    expect(dialog.style.getPropertyValue("--kani-origin-x")).not.toBe("0px");
-    expect(dialog.style.getPropertyValue("--kani-origin-y")).not.toBe("0px");
-    expect(Number.parseFloat(dialog.style.getPropertyValue("--kani-origin-scale"))).toBeLessThanOrEqual(0.62);
-    expect(dialog.style.getPropertyValue("--kani-ct-inset-x")).toMatch(/px$/);
-    expect(dialog.style.getPropertyValue("--kani-ct-inset-y")).toMatch(/px$/);
+    expect(dialog.style.getPropertyValue("--kani-origin-x")).toBe("255px");
+    expect(dialog.style.getPropertyValue("--kani-origin-y")).toBe("-324px");
+    expect(dialog.style.getPropertyValue("--kani-origin-scale")).toBe("1");
+    const insetX = Number.parseFloat(dialog.style.getPropertyValue("--kani-ct-inset-x"));
+    const insetY = Number.parseFloat(dialog.style.getPropertyValue("--kani-ct-inset-y"));
+    expect(mockDialogRect.width - 2 * insetX).toBeCloseTo(triggerRect.width, 1);
+    expect(mockDialogRect.height - 2 * insetY).toBeCloseTo(triggerRect.height, 1);
     expect(dialog.style.getPropertyValue("--kani-ct-origin-radius")).toMatch(/px$/);
 
     // Al cerrar, mantiene [data-state="closed"] para animar contracción
@@ -276,9 +277,10 @@ describe("KANI Motion System v1.2 — iOS-Inspired Container Transformations (Pi
       "pointer",
     );
 
-    expect(touchCt.enterScale).toBeLessThan(pointerCt.enterScale);
-    expect(touchCt.enterScale).toBeGreaterThanOrEqual(0.36);
-    expect(pointerCt.enterScale).toBeGreaterThanOrEqual(0.48);
+    expect(touchCt.enterScale).toBe(1);
+    expect(pointerCt.enterScale).toBe(1);
+    expect((modalRect.width - 2 * touchCt.insetX) * touchCt.enterScale).toBeCloseTo(triggerRect.width, 1);
+    expect((modalRect.height - 2 * pointerCt.insetY) * pointerCt.enterScale).toBeCloseTo(triggerRect.height, 1);
 
     const container = document.createElement("div");
     const logo = document.createElement("img");
