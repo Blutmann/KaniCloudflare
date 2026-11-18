@@ -3,6 +3,11 @@ import "./lib/error-capture";
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
 import { getMembershipWorkerRedirectUrl } from "./lib/kani-membership-urls";
+import {
+  handlePrivatePreviewGate,
+  isPrivatePreviewEnabled,
+  withPrivatePreviewHeaders,
+} from "./lib/kani-preview-gate.server";
 
 async function getCloudflareEnv(): Promise<unknown> {
   try {
@@ -105,6 +110,11 @@ export default {
       );
       if (membershipWorkerRedirect) {
         return Response.redirect(membershipWorkerRedirect, 301);
+      }
+
+      const previewGateResponse = await handlePrivatePreviewGate(request);
+      if (previewGateResponse) {
+        return previewGateResponse;
       }
 
       const url = new URL(request.url);
@@ -1607,7 +1617,8 @@ export default {
 
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
-      return await normalizeCatastrophicSsrResponse(response);
+      const normalized = await normalizeCatastrophicSsrResponse(response);
+      return isPrivatePreviewEnabled() ? withPrivatePreviewHeaders(normalized) : normalized;
     } catch (error) {
       console.error(error);
       return new Response(renderErrorPage(), {
@@ -1662,6 +1673,9 @@ function mirrorRuntimeBindings(bindings: unknown): void {
   if (typeof bindings !== "object" || bindings === null) return;
   const values = bindings as Record<string, unknown>;
   const names = [
+    "KANI_PRIVATE_PREVIEW_ENABLED",
+    "KANI_PREVIEW_ACCESS_PASSWORD",
+    "KANI_PREVIEW_SESSION_SECRET",
     "SUPABASE_URL",
     "SUPABASE_SERVICE_ROLE_KEY",
     "SUPABASE_ANON_KEY",
