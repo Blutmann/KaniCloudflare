@@ -8469,7 +8469,7 @@ html[data-theme] :is(body.liquid-glass-active, body:has(.liquid-glass-header, .l
   .liquid-glass-reservation .confirmation-secondary:not(:disabled),
   .liquid-glass-reservation .confirmation a[class*="border"]:not(.action-brand):not(.action-positive),
   .payway-checkout button[type="button"]:not(:disabled):not(.right-4):not(.v2-dialog-close):not(.payway-modal-close):not(.payway-help-trigger),
-  [role="dialog"]:not(.notification-popover) button:not(:disabled):not(.action-positive):not(.v2-primary):not(.v2-destructive):not(.v2-danger):not(.action-brand):not(.action-confirm):not([type="submit"]):not(.right-4):not(.v2-dialog-close):not(.kani-notif-confirm-cancel):not(.payway-help-trigger)
+  [role="dialog"]:not(.notification-popover) button:not(:disabled):not(.action-positive):not(.v2-primary):not(.v2-destructive):not(.v2-danger):not(.action-brand):not(.action-confirm):not([type="submit"]):not(.right-4):not(.v2-dialog-close):not(.kani-modal-close):not(.kani-notif-confirm-cancel):not(.payway-help-trigger)
 ) {
   background: var(--lg-sys-btn-secondary-bg) !important;
   background-color: transparent !important;
@@ -8501,7 +8501,7 @@ html[data-theme] :is(body.liquid-glass-active, body:has(.liquid-glass-header, .l
   .liquid-glass-reservation .confirmation-secondary:not(:disabled),
   .liquid-glass-reservation .confirmation a[class*="border"]:not(.action-brand):not(.action-positive),
   .payway-checkout button[type="button"]:not(:disabled):not(.right-4):not(.v2-dialog-close):not(.payway-modal-close):not(.payway-help-trigger),
-  [role="dialog"]:not(.notification-popover) button:not(:disabled):not(.action-positive):not(.v2-primary):not(.v2-destructive):not(.v2-danger):not(.action-brand):not(.action-confirm):not([type="submit"]):not(.right-4):not(.v2-dialog-close):not(.kani-notif-confirm-cancel):not(.payway-help-trigger)
+  [role="dialog"]:not(.notification-popover) button:not(:disabled):not(.action-positive):not(.v2-primary):not(.v2-destructive):not(.v2-danger):not(.action-brand):not(.action-confirm):not([type="submit"]):not(.right-4):not(.v2-dialog-close):not(.kani-modal-close):not(.kani-notif-confirm-cancel):not(.payway-help-trigger)
 ):hover {
   background: var(--lg-sys-btn-secondary-hover) !important;
   border-color: var(--lg-sys-border-strong) !important;
@@ -8512,7 +8512,7 @@ html[data-theme] :is(body.liquid-glass-active, body:has(.liquid-glass-header, .l
   .liquid-glass-reservation .booking-back-button:not(:disabled),
   .liquid-glass-reservation .confirmation-secondary:not(:disabled),
   .payway-checkout button[type="button"]:not(:disabled):not(.right-4):not(.v2-dialog-close):not(.payway-modal-close):not(.payway-help-trigger),
-  [role="dialog"]:not(.notification-popover) button:not(:disabled):not(.action-positive):not(.v2-primary):not(.v2-destructive):not(.v2-danger):not(.action-brand):not(.action-confirm):not([type="submit"]):not(.right-4):not(.v2-dialog-close):not(.kani-notif-confirm-cancel):not(.payway-help-trigger)
+  [role="dialog"]:not(.notification-popover) button:not(:disabled):not(.action-positive):not(.v2-primary):not(.v2-destructive):not(.v2-danger):not(.action-brand):not(.action-confirm):not([type="submit"]):not(.right-4):not(.v2-dialog-close):not(.kani-modal-close):not(.kani-notif-confirm-cancel):not(.payway-help-trigger)
 ):active {
   background: var(--lg-sys-btn-secondary-active) !important;
   transform: scale(0.985) !important;
