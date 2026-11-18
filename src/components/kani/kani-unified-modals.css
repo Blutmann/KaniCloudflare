@@ -23,7 +23,7 @@
   --kani-modal-enter-ease: cubic-bezier(0.22, 1, 0.36, 1);
   --kani-modal-exit-ease: cubic-bezier(0.4, 0, 1, 1);
   --kani-ct-enter-duration: 360ms;
-  --kani-ct-exit-duration: 260ms;
+  --kani-ct-exit-duration: 190ms;
   --kani-ct-enter-ease: cubic-bezier(0.16, 1, 0.3, 1);
   --kani-ct-exit-ease: cubic-bezier(0.32, 0.72, 0, 1);
 }
