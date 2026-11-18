@@ -1352,7 +1352,7 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                 <Button
                   type="submit"
                   disabled={creating}
-                  className="action-brand min-h-[44px] text-xs font-semibold"
+                  className="action-positive min-h-[44px] text-xs font-semibold"
                 >
                   {creating ? <RefreshCw size={14} className="animate-spin mr-1.5" /> : <Sparkles size={14} className="mr-1.5" />}
                   <span>{creating ? 'Generando…' : 'Crear código'}</span>

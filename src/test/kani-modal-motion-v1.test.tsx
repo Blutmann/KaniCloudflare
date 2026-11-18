@@ -41,16 +41,19 @@ describe("KANI Motion System v1.0 — Fase 1: Modal Motion Architecture", () => 
   );
 
   it("1. Define tokens unificados de apertura/cierre y sincronización de backdrop en kani-unified-modals.css", () => {
-    expect(unifiedCss).toContain("--kani-modal-enter-duration: 200ms;");
-    expect(unifiedCss).toContain("--kani-modal-exit-duration: 150ms;");
+    expect(unifiedCss).toContain("--kani-modal-enter-duration: 300ms;");
+    expect(unifiedCss).toContain("--kani-modal-exit-duration: 220ms;");
     expect(unifiedCss).toContain("--kani-modal-enter-ease: cubic-bezier(0.22, 1, 0.36, 1);");
     expect(unifiedCss).toContain("--kani-modal-exit-ease: cubic-bezier(0.4, 0, 1, 1);");
     expect(unifiedCss).toContain("@keyframes kaniModalEnter");
     expect(unifiedCss).toContain("@keyframes kaniModalExit");
     expect(unifiedCss).toContain("@keyframes kaniModalOverlayEnter");
     expect(unifiedCss).toContain("@keyframes kaniModalOverlayExit");
-    expect(unifiedCss).toContain("scale: 0.98;");
-    expect(unifiedCss).toContain("scale: 0.99;");
+    expect(unifiedCss).toContain("--kani-origin-x");
+    expect(unifiedCss).toContain("--kani-origin-y");
+    expect(unifiedCss).toContain("--kani-origin-scale");
+    expect(unifiedCss).toContain("--kani-exit-scale");
+    expect(unifiedCss).toContain("translate3d(-50%, -50%, 0) scale(1)");
     expect(unifiedCss).toContain("@media (prefers-reduced-motion: reduce)");
     expect(unifiedCss).toContain("@keyframes kaniModalEnterReduced");
   });

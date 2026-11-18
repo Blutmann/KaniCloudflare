@@ -6,7 +6,16 @@ import { X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { useVisualViewportDialog } from "@/hooks/use-visual-viewport-dialog";
+import {
+  computeOriginTransformOffsets,
+  installModalOriginListeners,
+  resolveActiveOrigin,
+} from "@/lib/kani-modal-origin";
 import "@/components/kani/kani-unified-modals.css";
+
+if (typeof window !== "undefined") {
+  installModalOriginListeners();
+}
 
 const Dialog = DialogPrimitive.Root;
 
@@ -36,7 +45,76 @@ const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & { overlayClassName?: string; closeLabel?: string; showCloseButton?: boolean }
 >(({ className, overlayClassName, closeLabel = "Close", showCloseButton = true, children, ...props }, ref) => {
-  const mergedRef = useVisualViewportDialog(ref);
+  const localRef = React.useRef<HTMLDivElement | null>(null);
+  const [contentNode, setContentNode] = React.useState<HTMLDivElement | null>(null);
+  const originElRef = React.useRef<Element | null>(null);
+  const combinedRef = React.useCallback(
+    (node: HTMLDivElement | null) => {
+      localRef.current = node;
+      setContentNode(node);
+      if (typeof ref === "function") {
+        ref(node);
+      } else if (ref) {
+        (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
+      }
+    },
+    [ref],
+  );
+  const mergedRef = useVisualViewportDialog(combinedRef);
+
+  React.useLayoutEffect(() => {
+    installModalOriginListeners();
+    const node = contentNode;
+    if (!node || typeof window === "undefined") return;
+    if (node.classList.contains("payway-checkout")) return;
+
+    const applyCenteredFallback = () => {
+      node.style.setProperty("--kani-origin-x", "0px");
+      node.style.setProperty("--kani-origin-y", "0px");
+      node.style.setProperty("--kani-origin-scale", "0.92");
+      node.style.setProperty("--kani-exit-scale", "0.94");
+    };
+
+    const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ?? false;
+    if (reducedMotion) {
+      node.style.setProperty("--kani-origin-x", "0px");
+      node.style.setProperty("--kani-origin-y", "0px");
+      node.style.setProperty("--kani-origin-scale", "1");
+      node.style.setProperty("--kani-exit-scale", "1");
+      return;
+    }
+
+    const origin = resolveActiveOrigin();
+    originElRef.current = origin?.element ?? null;
+    const modalRect = node.getBoundingClientRect();
+    const { dx, dy, enterScale, exitScale } = computeOriginTransformOffsets(
+      origin?.rect ?? null,
+      modalRect,
+    );
+    node.style.setProperty("--kani-origin-x", `${dx}px`);
+    node.style.setProperty("--kani-origin-y", `${dy}px`);
+    node.style.setProperty("--kani-origin-scale", String(enterScale));
+    node.style.setProperty("--kani-exit-scale", String(exitScale));
+
+    const observer = new MutationObserver(() => {
+      if (node.getAttribute("data-state") !== "closed") return;
+      const triggerEl = originElRef.current;
+      if (!triggerEl || !triggerEl.isConnected) {
+        applyCenteredFallback();
+        return;
+      }
+      const liveOriginRect = triggerEl.getBoundingClientRect();
+      const liveModalRect = node.getBoundingClientRect();
+      const nextOffsets = computeOriginTransformOffsets(liveOriginRect, liveModalRect);
+      node.style.setProperty("--kani-origin-x", `${nextOffsets.dx}px`);
+      node.style.setProperty("--kani-origin-y", `${nextOffsets.dy}px`);
+      node.style.setProperty("--kani-exit-scale", String(nextOffsets.exitScale));
+    });
+    observer.observe(node, { attributes: true, attributeFilter: ["data-state"] });
+
+    return () => observer.disconnect();
+  }, [contentNode]);
+
   return (
     <DialogPortal>
       <DialogOverlay className={overlayClassName} />

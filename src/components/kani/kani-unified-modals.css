@@ -18,8 +18,8 @@
   --kani-modal-footer-pad-y: 14px;
   --kani-modal-gap: 14px;
   --kani-modal-radius: 22px;
-  --kani-modal-enter-duration: 200ms;
-  --kani-modal-exit-duration: 150ms;
+  --kani-modal-enter-duration: 300ms;
+  --kani-modal-exit-duration: 220ms;
   --kani-modal-enter-ease: cubic-bezier(0.22, 1, 0.36, 1);
   --kani-modal-exit-ease: cubic-bezier(0.4, 0, 1, 1);
 }
@@ -70,26 +70,36 @@ html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active)
   box-sizing: border-box !important;
 }
 
-/* Unified Modal Motion: opacity + independent CSS scale (preserves translate3d centering and static shadows) */
+/* Origin-Based Modal Transition (FLIP offset relative to trigger center, preserving translate3d(-50%, -50%, 0) resting geometry) */
 @keyframes kaniModalEnter {
   0% {
     opacity: 0;
-    scale: 0.98;
+    transform: translate3d(
+        calc(-50% + var(--kani-origin-x, 0px)),
+        calc(-50% + var(--kani-origin-y, 0px)),
+        0
+      )
+      scale(var(--kani-origin-scale, 0.92));
   }
   100% {
     opacity: 1;
-    scale: 1;
+    transform: translate3d(-50%, -50%, 0) scale(1);
   }
 }
 
 @keyframes kaniModalExit {
   0% {
     opacity: 1;
-    scale: 1;
+    transform: translate3d(-50%, -50%, 0) scale(1);
   }
   100% {
     opacity: 0;
-    scale: 0.99;
+    transform: translate3d(
+        calc(-50% + var(--kani-origin-x, 0px)),
+        calc(-50% + var(--kani-origin-y, 0px)),
+        0
+      )
+      scale(var(--kani-exit-scale, 0.94));
   }
 }
 
@@ -111,12 +121,14 @@ html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active)
   }
 }
 
-html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell[data-state="open"] {
+html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"]:not(.payway-checkout)[data-state="open"] {
   animation: kaniModalEnter var(--kani-modal-enter-duration) var(--kani-modal-enter-ease) both !important;
+  transform-origin: center center !important;
 }
 
-html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell[data-state="closed"] {
+html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"]:not(.payway-checkout)[data-state="closed"] {
   animation: kaniModalExit var(--kani-modal-exit-duration) var(--kani-modal-exit-ease) forwards !important;
+  transform-origin: center center !important;
   pointer-events: none !important;
 }
 
@@ -148,14 +160,12 @@ html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active)
     }
   }
 
-  html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell[data-state="open"] {
+  html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"]:not(.payway-checkout)[data-state="open"] {
     animation: kaniModalEnterReduced 0.01ms linear both !important;
-    scale: 1 !important;
   }
 
-  html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell[data-state="closed"] {
+  html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"]:not(.payway-checkout)[data-state="closed"] {
     animation: kaniModalExitReduced 0.01ms linear forwards !important;
-    scale: 1 !important;
   }
 
   html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-overlay"][data-state="open"] {

@@ -2197,7 +2197,9 @@ html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(
   .v2-manual-dialog-actions,
   .v2-manual-actions,
   .v2-client-modal-footer,
-  .v2-dialog-actions
+  .v2-dialog-actions,
+  .kani-modal-footer,
+  .benefit-code-dialog-footer
 ) > button:is(.action-positive, .v2-primary, [type="submit"]):not(.v2-destructive):not(.v2-danger):not(.action-brand) {
   background: var(--lga-btn-primary-bg) !important;
   background-color: transparent !important;
@@ -2212,7 +2214,9 @@ html[data-theme="light"] body[data-lg-admin="true"] [role="dialog"] :is(
   .v2-manual-dialog-actions,
   .v2-manual-actions,
   .v2-client-modal-footer,
-  .v2-dialog-actions
+  .v2-dialog-actions,
+  .kani-modal-footer,
+  .benefit-code-dialog-footer
 ) > button:is(.action-positive, .v2-primary, [type="submit"]):not(.v2-destructive):not(.v2-danger):not(.action-brand):not(:disabled) {
   border: 1.5px solid rgba(154, 118, 48, 0.86) !important;
   box-shadow:
@@ -2225,7 +2229,9 @@ html[data-theme="dark"] body[data-lg-admin="true"] [role="dialog"] :is(
   .v2-manual-dialog-actions,
   .v2-manual-actions,
   .v2-client-modal-footer,
-  .v2-dialog-actions
+  .v2-dialog-actions,
+  .kani-modal-footer,
+  .benefit-code-dialog-footer
 ) > button:is(.action-positive, .v2-primary, [type="submit"]):not(.v2-destructive):not(.v2-danger):not(.action-brand):not(:disabled) {
   color: #fcfaf4 !important;
   -webkit-text-fill-color: #fcfaf4 !important;
@@ -2240,7 +2246,9 @@ html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(
   .v2-manual-dialog-actions,
   .v2-manual-actions,
   .v2-client-modal-footer,
-  .v2-dialog-actions
+  .v2-dialog-actions,
+  .kani-modal-footer,
+  .benefit-code-dialog-footer
 ) > button:is(.action-positive, .v2-primary, [type="submit"]):not(.v2-destructive):not(.v2-danger):not(.action-brand):hover:not(:disabled) {
   background: var(--lga-btn-primary-hover) !important;
   border-color: var(--lga-accent) !important;
@@ -2252,7 +2260,9 @@ html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(
   .v2-manual-dialog-actions,
   .v2-manual-actions,
   .v2-client-modal-footer,
-  .v2-dialog-actions
+  .v2-dialog-actions,
+  .kani-modal-footer,
+  .benefit-code-dialog-footer
 ) > button:is(.action-positive, .v2-primary, [type="submit"]):not(.v2-destructive):not(.v2-danger):not(.action-brand):active:not(:disabled) {
   background: var(--lga-btn-primary-active) !important;
   transform: scale(0.985) !important;
@@ -2263,7 +2273,9 @@ html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(
   .v2-manual-dialog-actions,
   .v2-manual-actions,
   .v2-client-modal-footer,
-  .v2-dialog-actions
+  .v2-dialog-actions,
+  .kani-modal-footer,
+  .benefit-code-dialog-footer
 ) > button:is(.action-positive, .v2-primary, [type="submit"]):not(.v2-destructive):not(.v2-danger):not(.action-brand):disabled {
   background: var(--lga-btn-secondary-bg) !important;
   background-image: none !important;

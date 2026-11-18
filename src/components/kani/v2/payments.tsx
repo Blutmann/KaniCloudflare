@@ -884,7 +884,13 @@ export function V2Payments() {
         open={!!editingPayment}
         onOpenChange={(open) => !open && !editBusy && setEditingPayment(null)}
       >
-        <DialogContent className="v2-dialog v2-payment-edit-dialog v2-modal-pinned-shell">
+        <DialogContent
+          className="v2-dialog v2-payment-edit-dialog v2-modal-pinned-shell"
+          onOpenAutoFocus={(event) => {
+            event.preventDefault();
+            event.currentTarget.focus({ preventScroll: true });
+          }}
+        >
           <div className="v2-modal-pinned-header">
             <DialogTitle>Editar cobro registrado</DialogTitle>
             <DialogDescription>
