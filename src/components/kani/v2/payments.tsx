@@ -886,6 +886,7 @@ export function V2Payments() {
       >
         <DialogContent
           className="v2-dialog v2-payment-edit-dialog v2-modal-pinned-shell"
+          transitionMode="container-transform"
           onOpenAutoFocus={(event) => {
             event.preventDefault();
             event.currentTarget.focus({ preventScroll: true });
@@ -1096,7 +1097,7 @@ export function V2Payments() {
         open={!!deletingPayment}
         onOpenChange={(open) => !open && !editBusy && setDeletingPayment(null)}
       >
-        <DialogContent className="v2-dialog">
+        <DialogContent className="v2-dialog" transitionMode="container-transform">
           <DialogTitle>Anular cobro</DialogTitle>
           <DialogDescription>
             ¿Estás seguro de anular el cobro de{" "}

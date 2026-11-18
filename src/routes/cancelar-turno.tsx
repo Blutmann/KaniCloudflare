@@ -521,6 +521,7 @@ function CancelarTurnoPage() {
       {/* Modal explícito de confirmación */}
       <Dialog open={showConfirmModal} onOpenChange={setShowConfirmModal}>
         <DialogContent
+          transitionMode="container-transform"
           className="max-w-md w-[92vw] rounded-2xl p-6 border border-border/80 bg-background/95 backdrop-blur-xl shadow-2xl"
           style={{ translate: 'none' }}
         >

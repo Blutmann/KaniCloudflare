@@ -397,7 +397,7 @@ export function ManualAppointmentDialog({
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && !isBusy && onClose()}>
       <DialogContent
         className="v2-dialog v2-manual-dialog kani-modal-shell"
-        transitionMode={mode === "CREATE" ? "container-transform" : "origin"}
+        transitionMode="container-transform"
         showCloseButton={false}
         aria-labelledby={titleId}
         aria-describedby={showDialogDescription ? descId : undefined}

@@ -329,6 +329,7 @@ export function V2Clients() {
       >
         <DialogContent
           className="v2-dialog v2-client-modal v2-client-dialog kani-modal-shell"
+          transitionMode="container-transform"
           style={dialogViewport}
           overlayClassName="v2-client-modal-overlay"
           showCloseButton={false}
@@ -519,6 +520,7 @@ export function V2Clients() {
       >
         <DialogContent
           className="v2-dialog v2-client-modal v2-client-confirm"
+          transitionMode="container-transform"
           style={dialogViewport}
           overlayClassName="v2-client-modal-overlay v2-client-confirm-overlay"
         >
@@ -562,6 +564,7 @@ export function V2Clients() {
       >
         <DialogContent
           className="v2-dialog v2-client-modal v2-client-editor kani-modal-shell"
+          transitionMode="container-transform"
           style={dialogViewport}
           overlayClassName="v2-client-modal-overlay"
           showCloseButton={false}

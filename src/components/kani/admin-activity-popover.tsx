@@ -586,6 +586,7 @@ export function AdminActivityPopover({
         }}
       >
         <DialogContent
+          transitionMode="container-transform"
           overlayClassName={effectiveLiquid ? 'kani-notif-confirm-overlay liquid-glass-confirm-overlay' : 'kani-notif-confirm-overlay'}
           className={
             effectiveLiquid

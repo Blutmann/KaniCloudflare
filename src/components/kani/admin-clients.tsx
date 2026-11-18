@@ -603,7 +603,7 @@ export function AdminClients({
 
       {/* Client Full History Dialog */}
       <Dialog open={selectedClient !== null} onOpenChange={(open) => !open && setSelectedClient(null)}>
-        <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col p-0 overflow-hidden bg-surface border-border">
+        <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col p-0 overflow-hidden bg-surface border-border" transitionMode="container-transform">
           {selectedClient && (
             <>
               <DialogHeader className="p-5 pb-3 border-b border-border bg-muted/20 text-left sm:text-left">
@@ -827,7 +827,7 @@ export function AdminClients({
           }
         }}
       >
-        <DialogContent className="sm:max-w-md bg-surface border-border">
+        <DialogContent className="sm:max-w-md bg-surface border-border" transitionMode="container-transform">
           <DialogHeader className="text-left sm:text-left">
             <DialogTitle className="text-base font-bold text-foreground">
               {pendingAction?.nextStatus === 'CONFIRMED' ? '¿Confirmar turno?' : '¿Cancelar turno?'}

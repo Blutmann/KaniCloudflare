@@ -407,7 +407,7 @@ export function EditMembershipModal({
         if (!open && !busy && !isRegenerating) onClose();
       }}
     >
-      <DialogContent className="v2-dialog kani-medit-dialog">
+      <DialogContent className="v2-dialog kani-medit-dialog" transitionMode="container-transform">
         {membership && (
           <>
             <div className="kani-medit-header">

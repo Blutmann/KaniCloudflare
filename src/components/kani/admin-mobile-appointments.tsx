@@ -982,12 +982,12 @@ export function AdminMobileAppointments() {
     {showScrollTop && <Button type="button" variant="outline" size="icon" className="admin-mobile-scroll-top" aria-label="Volver arriba" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}><ArrowUp size={17} /></Button>}
 
     <Dialog open={Boolean(cancelTarget)} onOpenChange={open => { if (!open) setCancelTarget(null); }}>
-      <DialogContent className="admin-mobile-dialog"><DialogTitle>¿Cancelar este turno?</DialogTitle><DialogDescription>El turno quedará cancelado y seguirá disponible en el historial. Esta acción respeta la operación existente del sistema.</DialogDescription><DialogFooter><Button variant="outline" onClick={() => setCancelTarget(null)}>Volver</Button><Button className="action-brand" disabled={!cancelTarget || busyId === cancelTarget.id} onClick={() => cancelTarget && void changeStatus(cancelTarget, 'CANCELLED')}>Cancelar turno</Button></DialogFooter></DialogContent>
+      <DialogContent className="admin-mobile-dialog" transitionMode="container-transform"><DialogTitle>¿Cancelar este turno?</DialogTitle><DialogDescription>El turno quedará cancelado y seguirá disponible en el historial. Esta acción respeta la operación existente del sistema.</DialogDescription><DialogFooter><Button variant="outline" onClick={() => setCancelTarget(null)}>Volver</Button><Button className="action-brand" disabled={!cancelTarget || busyId === cancelTarget.id} onClick={() => cancelTarget && void changeStatus(cancelTarget, 'CANCELLED')}>Cancelar turno</Button></DialogFooter></DialogContent>
     </Dialog>
 
     {/* Diálogo para gestión excepcional de inasistencia */}
     <Dialog open={Boolean(noShowTarget)} onOpenChange={open => { if (!open) setNoShowTarget(null); }}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md" transitionMode="container-transform">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-destructive">
             <UserX size={18} />
@@ -1148,7 +1148,7 @@ export function AdminMobileAppointments() {
 
     {/* Diálogo para marcar turno como completado / ejecutado */}
     <Dialog open={Boolean(completeTarget)} onOpenChange={open => { if (!open) setCompleteTarget(null); }}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md" transitionMode="container-transform">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-blue-400">
             <CheckCircle2 size={18} />

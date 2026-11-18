@@ -1057,6 +1057,7 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
         <DialogContent
           overlayClassName="benefit-code-dialog-overlay"
           className="benefit-code-dialog-content kani-modal-shell"
+          transitionMode="container-transform"
           showCloseButton={false}
         >
           <div className="benefit-code-dialog-header kani-modal-header">
@@ -1370,6 +1371,7 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
         <DialogContent
           overlayClassName="benefit-code-dialog-overlay"
           className="benefit-code-dialog-content sm:max-w-md"
+          transitionMode="container-transform"
         >
           <div className="benefit-code-dialog-header">
             <DialogTitle className="text-base font-semibold text-foreground flex items-center gap-2">
@@ -1517,6 +1519,7 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
         <DialogContent
           overlayClassName="benefit-code-dialog-overlay"
           className="benefit-code-dialog-content sm:max-w-md"
+          transitionMode="container-transform"
         >
           <div className="benefit-code-dialog-header">
             <DialogTitle className="text-base font-semibold text-foreground flex items-center gap-2">
@@ -1620,6 +1623,7 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
         <DialogContent
           overlayClassName="benefit-code-dialog-overlay"
           className="benefit-code-dialog-content sm:max-w-md"
+          transitionMode="container-transform"
         >
           <div className="benefit-code-dialog-header">
             <DialogTitle className="text-base font-semibold text-foreground flex items-center gap-2">

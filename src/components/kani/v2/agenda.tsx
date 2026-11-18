@@ -736,7 +736,7 @@ export function V2Appointments({
           if (!open && !busy) setAction(null);
         }}
       >
-        <DialogContent className="v2-dialog">
+        <DialogContent className="v2-dialog" transitionMode="container-transform">
           <DialogTitle>
             ¿Cancelar este turno?
           </DialogTitle>
@@ -793,7 +793,7 @@ export function V2Appointments({
           }
         }}
       >
-        <DialogContent className="v2-dialog">
+        <DialogContent className="v2-dialog" transitionMode="container-transform">
           <DialogTitle>Diagnóstico de notificación: {selectedNotifDetail?.channel}</DialogTitle>
           <DialogDescription>
             Detalle técnico del canal de notificación registrado en Supabase.

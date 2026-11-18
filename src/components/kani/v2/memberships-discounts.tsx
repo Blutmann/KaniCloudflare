@@ -690,6 +690,7 @@ export function V2MembershipsAndDiscounts({
       >
         <DialogContent
           className="v2-dialog v2-membership-create-dialog v2-modal-pinned-shell kani-modal-shell"
+          transitionMode="container-transform"
           showCloseButton={false}
           aria-describedby={undefined}
         >
