@@ -615,6 +615,7 @@ export function AdminScheduleManager() {
       >
         <DialogContent
           className="manual-dialog admin-schedule-dialog kani-modal-shell"
+          transitionMode="container-transform"
           showCloseButton={false}
           onOpenAutoFocus={(event) => {
             const isLiquidGlassAdmin =

@@ -11,6 +11,10 @@ import {
   installModalOriginListeners,
   resolveActiveOrigin,
 } from "@/lib/kani-modal-origin";
+import {
+  computeContainerTransformParams,
+  parseOriginBorderRadius,
+} from "@/lib/kani-container-transform";
 import "@/components/kani/kani-unified-modals.css";
 
 if (typeof window !== "undefined") {
@@ -43,8 +47,13 @@ DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
 
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & { overlayClassName?: string; closeLabel?: string; showCloseButton?: boolean }
->(({ className, overlayClassName, closeLabel = "Close", showCloseButton = true, children, ...props }, ref) => {
+  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & {
+    overlayClassName?: string;
+    closeLabel?: string;
+    showCloseButton?: boolean;
+    transitionMode?: "origin" | "container-transform";
+  }
+>(({ className, overlayClassName, closeLabel = "Close", showCloseButton = true, transitionMode = "origin", children, ...props }, ref) => {
   const localRef = React.useRef<HTMLDivElement | null>(null);
   const [contentNode, setContentNode] = React.useState<HTMLDivElement | null>(null);
   const originElRef = React.useRef<Element | null>(null);
@@ -68,11 +77,18 @@ const DialogContent = React.forwardRef<
     if (!node || typeof window === "undefined") return;
     if (node.classList.contains("payway-checkout")) return;
 
+    const isContainerTransform = transitionMode === "container-transform";
+
     const applyCenteredFallback = () => {
       node.style.setProperty("--kani-origin-x", "0px");
       node.style.setProperty("--kani-origin-y", "0px");
-      node.style.setProperty("--kani-origin-scale", "0.92");
-      node.style.setProperty("--kani-exit-scale", "0.94");
+      node.style.setProperty("--kani-origin-scale", isContainerTransform ? "0.88" : "0.92");
+      node.style.setProperty("--kani-exit-scale", isContainerTransform ? "0.9" : "0.94");
+      if (isContainerTransform) {
+        node.style.setProperty("--kani-ct-inset-x", "0px");
+        node.style.setProperty("--kani-ct-inset-y", "0px");
+        node.style.setProperty("--kani-ct-origin-radius", "24px");
+      }
     };
 
     const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ?? false;
@@ -81,20 +97,43 @@ const DialogContent = React.forwardRef<
       node.style.setProperty("--kani-origin-y", "0px");
       node.style.setProperty("--kani-origin-scale", "1");
       node.style.setProperty("--kani-exit-scale", "1");
+      if (isContainerTransform) {
+        node.style.setProperty("--kani-ct-inset-x", "0px");
+        node.style.setProperty("--kani-ct-inset-y", "0px");
+        node.style.setProperty("--kani-ct-origin-radius", "24px");
+      }
       return;
     }
 
     const origin = resolveActiveOrigin();
     originElRef.current = origin?.element ?? null;
     const modalRect = node.getBoundingClientRect();
-    const { dx, dy, enterScale, exitScale } = computeOriginTransformOffsets(
-      origin?.rect ?? null,
-      modalRect,
-    );
-    node.style.setProperty("--kani-origin-x", `${dx}px`);
-    node.style.setProperty("--kani-origin-y", `${dy}px`);
-    node.style.setProperty("--kani-origin-scale", String(enterScale));
-    node.style.setProperty("--kani-exit-scale", String(exitScale));
+
+    if (isContainerTransform) {
+      const originRadius = parseOriginBorderRadius(origin?.element ?? null);
+      const ct = computeContainerTransformParams(
+        origin?.rect ?? null,
+        modalRect,
+        undefined,
+        originRadius,
+      );
+      node.style.setProperty("--kani-origin-x", `${ct.dx}px`);
+      node.style.setProperty("--kani-origin-y", `${ct.dy}px`);
+      node.style.setProperty("--kani-origin-scale", String(ct.enterScale));
+      node.style.setProperty("--kani-exit-scale", String(ct.exitScale));
+      node.style.setProperty("--kani-ct-inset-x", `${ct.insetX}px`);
+      node.style.setProperty("--kani-ct-inset-y", `${ct.insetY}px`);
+      node.style.setProperty("--kani-ct-origin-radius", `${ct.originRadius}px`);
+    } else {
+      const { dx, dy, enterScale, exitScale } = computeOriginTransformOffsets(
+        origin?.rect ?? null,
+        modalRect,
+      );
+      node.style.setProperty("--kani-origin-x", `${dx}px`);
+      node.style.setProperty("--kani-origin-y", `${dy}px`);
+      node.style.setProperty("--kani-origin-scale", String(enterScale));
+      node.style.setProperty("--kani-exit-scale", String(exitScale));
+    }
 
     const observer = new MutationObserver(() => {
       if (node.getAttribute("data-state") !== "closed") return;
@@ -105,22 +144,41 @@ const DialogContent = React.forwardRef<
       }
       const liveOriginRect = triggerEl.getBoundingClientRect();
       const liveModalRect = node.getBoundingClientRect();
-      const nextOffsets = computeOriginTransformOffsets(liveOriginRect, liveModalRect);
-      node.style.setProperty("--kani-origin-x", `${nextOffsets.dx}px`);
-      node.style.setProperty("--kani-origin-y", `${nextOffsets.dy}px`);
-      node.style.setProperty("--kani-exit-scale", String(nextOffsets.exitScale));
+      if (isContainerTransform) {
+        const nextCt = computeContainerTransformParams(
+          liveOriginRect,
+          liveModalRect,
+          undefined,
+          parseOriginBorderRadius(triggerEl),
+        );
+        node.style.setProperty("--kani-origin-x", `${nextCt.dx}px`);
+        node.style.setProperty("--kani-origin-y", `${nextCt.dy}px`);
+        node.style.setProperty("--kani-exit-scale", String(nextCt.exitScale));
+        node.style.setProperty("--kani-ct-inset-x", `${nextCt.insetX}px`);
+        node.style.setProperty("--kani-ct-inset-y", `${nextCt.insetY}px`);
+        node.style.setProperty("--kani-ct-origin-radius", `${nextCt.originRadius}px`);
+      } else {
+        const nextOffsets = computeOriginTransformOffsets(liveOriginRect, liveModalRect);
+        node.style.setProperty("--kani-origin-x", `${nextOffsets.dx}px`);
+        node.style.setProperty("--kani-origin-y", `${nextOffsets.dy}px`);
+        node.style.setProperty("--kani-exit-scale", String(nextOffsets.exitScale));
+      }
     });
     observer.observe(node, { attributes: true, attributeFilter: ["data-state"] });
 
     return () => observer.disconnect();
-  }, [contentNode]);
+  }, [contentNode, transitionMode]);
 
   return (
     <DialogPortal>
-      <DialogOverlay className={overlayClassName} />
+      <DialogOverlay
+        className={overlayClassName}
+        data-kani-transition={transitionMode === "container-transform" ? "container-transform" : undefined}
+      />
       <DialogPrimitive.Content
         ref={mergedRef}
         data-slot="dialog-content"
+        data-kani-transition={transitionMode === "container-transform" ? "container-transform" : undefined}
         className={cn(
           "fixed left-[calc(var(--kani-vv-left,0px)+var(--kani-vv-width,100vw)/2)] top-[calc(var(--kani-vv-top,0px)+var(--kani-vv-height,100dvh)/2)] z-[200] grid w-[calc(100%-24px)] max-w-[min(32rem,calc(var(--kani-vv-width,100vw)-max(24px,env(safe-area-inset-left,0px)+env(safe-area-inset-right,0px))))] max-h-[calc(var(--kani-vv-height,100dvh)-max(24px,env(safe-area-inset-top,0px)+env(safe-area-inset-bottom,0px)))] translate-x-[-50%] translate-y-[-50%] gap-4 overflow-y-auto overflow-x-hidden overscroll-contain rounded-2xl border bg-background p-5 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:w-full sm:rounded-lg sm:p-6",
           className,
