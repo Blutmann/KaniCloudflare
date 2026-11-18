@@ -12731,8 +12731,8 @@ html[data-theme] body.liquid-glass-active nav.mobile-menu.mobile-menu--liquid.mo
 }
 
 html[data-theme] body.liquid-glass-active nav.mobile-menu.mobile-menu--liquid.mobile-menu--admin .mobile-menu-session {
-  margin-top: 0 !important;
-  margin-bottom: 2px !important;
+  margin-top: 4px !important;
+  margin-bottom: 0 !important;
   padding: 12px 14px;
   border-radius: 16px;
 }

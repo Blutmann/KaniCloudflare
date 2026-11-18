@@ -100,13 +100,13 @@ describe("KANI — Reorganización del menú desplegable ADMIN (Mobile)", () => 
     expect(screen.getByRole("link", { name: "Consultas por WhatsApp" })).toBeInTheDocument();
     expect(within(nav).queryByRole("link", { name: /WhatsApp/i })).toBeNull();
 
-    // Grupo 1, 2 y 3 dentro de mobile-menu-scroll separados por divisores
+    // Grupo 1, 2, 3 y Grupo 4 (Sesión) dentro de mobile-menu-scroll separados por 3 divisores
     const scrollContainer = nav.querySelector(".mobile-menu-scroll")!;
     expect(scrollContainer).not.toBeNull();
 
     const groups = scrollContainer.querySelectorAll(".mobile-menu-group");
     expect(groups).toHaveLength(3);
-    expect(scrollContainer.querySelectorAll('[role="separator"]')).toHaveLength(2);
+    expect(scrollContainer.querySelectorAll('[role="separator"]')).toHaveLength(3);
 
     const group1Links = [...groups[0]!.querySelectorAll("a")].map((a) => a.textContent?.trim());
     const group2Links = [...groups[1]!.querySelectorAll("a")].map((a) => a.textContent?.trim());
@@ -120,13 +120,16 @@ describe("KANI — Reorganización del menú desplegable ADMIN (Mobile)", () => 
     ]);
     expect(group3Links).toEqual(["Política de privacidad", "Términos y condiciones"]);
 
-    // Grupo 4 (Sesión) y Grupo 5 (Volver a la reserva) en mobile-menu-dock
+    expect(within(scrollContainer as HTMLElement).getByText("KANI Admin")).toBeInTheDocument();
+    expect(within(scrollContainer as HTMLElement).getByText("Administrador")).toBeInTheDocument();
+    expect(within(scrollContainer as HTMLElement).getByRole("button", { name: /Cerrar sesión/i })).toBeInTheDocument();
+
+    // Grupo 5 (Volver a la reserva) anclado en mobile-menu-dock sin la tarjeta de sesión
     const dock = nav.querySelector(".mobile-menu-dock")!;
     expect(dock).not.toBeNull();
-    expect(within(dock).getByText("KANI Admin")).toBeInTheDocument();
-    expect(within(dock).getByText("Administrador")).toBeInTheDocument();
-    expect(within(dock).getByRole("button", { name: /Cerrar sesión/i })).toBeInTheDocument();
-    expect(within(dock).getByRole("button", { name: /Volver a la reserva/i })).toBeInTheDocument();
+    expect(within(dock as HTMLElement).queryByText("KANI Admin")).toBeNull();
+    expect(within(dock as HTMLElement).queryByRole("button", { name: /Cerrar sesión/i })).toBeNull();
+    expect(within(dock as HTMLElement).getByRole("button", { name: /Volver a la reserva/i })).toBeInTheDocument();
 
     // Orden global exacto dentro de nav
     const navText = nav.textContent || "";

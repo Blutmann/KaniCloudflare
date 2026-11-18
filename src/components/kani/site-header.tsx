@@ -591,9 +591,10 @@ export function SiteHeader() {
       >
         <div className="mobile-menu-scroll">
           {activeMenuGroups}
+          {isAdmin ? menuSessionBlock : null}
         </div>
         <div className="mobile-menu-dock">
-          {menuSessionBlock}
+          {!isAdmin ? menuSessionBlock : null}
           <MobileMenuAction inline />
         </div>
       </nav>
