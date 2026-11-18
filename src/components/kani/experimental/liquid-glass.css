@@ -12645,6 +12645,8 @@ html[data-theme] body.liquid-glass-active nav.mobile-menu.mobile-menu--liquid.mo
    ============================================================================ */
 
 html[data-theme] body.liquid-glass-active nav.mobile-menu.mobile-menu--liquid.mobile-menu--admin {
+  --admin-menu-footer-bottom-pad: max(10px, env(safe-area-inset-bottom, 0px));
+  --admin-menu-cta-height: 48px;
   inset: 0 !important;
   top: 0 !important;
   right: 0 !important;
@@ -12660,7 +12662,7 @@ html[data-theme] body.liquid-glass-active nav.mobile-menu.mobile-menu--liquid.mo
 }
 
 html[data-theme] body.liquid-glass-active nav.mobile-menu.mobile-menu--liquid.mobile-menu--admin .mobile-menu-group {
-  gap: 6px !important;
+  gap: 8px !important;
   margin: 0 !important;
   padding: 0 !important;
 }
@@ -12676,7 +12678,7 @@ html[data-theme] body.liquid-glass-active nav.mobile-menu.mobile-menu--liquid.mo
   height: 1px !important;
   min-height: 1px !important;
   width: 100% !important;
-  margin: 14px 0 !important;
+  margin: 16px 0 !important;
   padding: 0 !important;
   opacity: 1 !important;
 }
@@ -12693,9 +12695,9 @@ html[data-theme] body.liquid-glass-active nav.mobile-menu.mobile-menu--liquid.mo
   display: flex;
   align-items: center;
   gap: 12px;
-  min-height: 44px !important;
-  padding: 0 12px;
-  border-radius: 10px;
+  min-height: 46px !important;
+  padding: 8px 14px;
+  border-radius: 12px;
   font-size: 15px;
   font-weight: 500;
   line-height: 1.25;
@@ -12711,6 +12713,7 @@ html[data-theme] body.liquid-glass-active nav.mobile-menu.mobile-menu--liquid.mo
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden;
   justify-content: flex-start !important;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
@@ -12719,17 +12722,29 @@ html[data-theme] body.liquid-glass-active nav.mobile-menu.mobile-menu--liquid.mo
 
 html[data-theme] body.liquid-glass-active nav.mobile-menu.mobile-menu--liquid.mobile-menu--admin .mobile-menu-dock {
   flex: 0 0 auto;
-  gap: 12px !important;
-  padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px)) !important;
+  gap: 14px !important;
+  padding-bottom: var(--admin-menu-footer-bottom-pad) !important;
 }
 
 html[data-theme] body.liquid-glass-active nav.mobile-menu.mobile-menu--liquid.mobile-menu--admin .mobile-menu-dock .mobile-menu-divider {
-  margin: 2px 0 4px !important;
+  margin: 0 0 2px !important;
+}
+
+html[data-theme] body.liquid-glass-active nav.mobile-menu.mobile-menu--liquid.mobile-menu--admin .mobile-menu-session {
+  margin-top: 0 !important;
+  margin-bottom: 2px !important;
+  padding: 12px 14px;
+  border-radius: 16px;
 }
 
 html[data-theme] body.liquid-glass-active nav.mobile-menu.mobile-menu--liquid.mobile-menu--admin .mobile-menu-cta--inline,
 html[data-theme] body.liquid-glass-active nav.mobile-menu.mobile-menu--liquid.mobile-menu--admin .mobile-menu-cta--inline .booking-menu-return {
   width: 100% !important;
+}
+
+html[data-theme] body.liquid-glass-active nav.mobile-menu.mobile-menu--liquid.mobile-menu--admin .mobile-menu-cta--inline .booking-menu-return {
+  height: var(--admin-menu-cta-height) !important;
+  min-height: var(--admin-menu-cta-height) !important;
 }
 
 @media (min-width: 768px) {
@@ -12739,7 +12754,7 @@ html[data-theme] body.liquid-glass-active nav.mobile-menu.mobile-menu--liquid.mo
   }
 
   html[data-theme] body.liquid-glass-active nav.mobile-menu.mobile-menu--liquid.mobile-menu--admin .mobile-menu-dock {
-    gap: 12px !important;
+    gap: 14px !important;
     padding: 10px 4px calc(18px + env(safe-area-inset-bottom, 0px)) !important;
   }
 }
@@ -12747,14 +12762,30 @@ html[data-theme] body.liquid-glass-active nav.mobile-menu.mobile-menu--liquid.mo
 @media (max-width: 767px) {
   html[data-theme] body.liquid-glass-active nav.mobile-menu.mobile-menu--liquid.mobile-menu--admin .mobile-menu-scroll {
     justify-content: flex-start !important;
-    padding: 14px 16px 14px;
+    padding: 16px 16px 18px;
   }
 
   html[data-theme] body.liquid-glass-active nav.mobile-menu.mobile-menu--liquid.mobile-menu--admin .mobile-menu-dock {
-    gap: 10px !important;
-    padding: 10px 16px calc(16px + env(safe-area-inset-bottom, 0px)) !important;
+    gap: 14px !important;
+    padding: 8px 16px var(--admin-menu-footer-bottom-pad) !important;
   }
 }
+
+@media (max-height: 600px) {
+  html[data-theme] body.liquid-glass-active nav.mobile-menu.mobile-menu--liquid.mobile-menu--admin .mobile-menu-group {
+    gap: 6px !important;
+  }
+
+  html[data-theme] body.liquid-glass-active nav.mobile-menu.mobile-menu--liquid.mobile-menu--admin .mobile-menu-divider {
+    margin: 10px 0 !important;
+  }
+
+  html[data-theme] body.liquid-glass-active nav.mobile-menu.mobile-menu--liquid.mobile-menu--admin .mobile-menu-scroll {
+    padding-top: 10px;
+    padding-bottom: 12px;
+  }
+}
+
 
 
 
