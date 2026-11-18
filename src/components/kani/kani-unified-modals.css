@@ -310,3 +310,166 @@ html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active)
     padding: 12px 16px !important;
   }
 }
+
+/* --------------------------------------------------------------------------
+   5. Unified Controls, Labels, Typography, Summaries & Icon Alignment
+   -------------------------------------------------------------------------- */
+html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell .kani-modal-body {
+  font-family: var(--font-sans, inherit) !important;
+}
+
+/* Consistent label-to-field spacing & typography */
+html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell .kani-modal-body :is(label.v2-field, .v2-field, .admin-schedule-manual-fields > div) {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+}
+
+html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell .kani-modal-body :is(label.v2-field, .v2-field-label, .admin-schedule-manual-fields label) {
+  font-family: var(--font-sans, inherit) !important;
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
+  line-height: 1.3 !important;
+  text-align: left !important;
+  color: var(--lga-text, var(--foreground)) !important;
+}
+
+/* Unified 44px height & padding for all text/date/number inputs, native selects, and custom combobox/select triggers */
+html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell .kani-modal-body :is(
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  button[role="combobox"],
+  .v2-admin-select-trigger,
+  .v2-admin-combobox-trigger
+) {
+  height: 44px !important;
+  min-height: 44px !important;
+  max-height: 44px !important;
+  padding: 0 12px !important;
+  border-radius: 12px !important;
+  font-family: var(--font-sans, inherit) !important;
+  font-size: 14px !important;
+  line-height: 1.25 !important;
+  text-align: left !important;
+  box-sizing: border-box !important;
+}
+
+@media (max-width: 767px), (hover: none) and (pointer: coarse) {
+  html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell .kani-modal-body :is(
+    input:not([type="checkbox"]):not([type="radio"]),
+    select,
+    button[role="combobox"],
+    .v2-admin-select-trigger,
+    .v2-admin-combobox-trigger
+  ) {
+    font-size: 16px !important;
+  }
+}
+
+/* Native select arrow alignment */
+html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell .kani-modal-body select {
+  padding-right: 36px !important;
+  background-position: right 12px center !important;
+  background-size: 16px 16px !important;
+  background-repeat: no-repeat !important;
+}
+
+/* Custom combobox / select triggers flex alignment */
+html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell .kani-modal-body :is(
+  button[role="combobox"],
+  .v2-admin-select-trigger,
+  .v2-admin-combobox-trigger
+) {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  width: 100% !important;
+}
+
+/* Search input icon centered vertically without clipping */
+html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell .kani-modal-body .v2-search {
+  position: relative !important;
+  display: flex !important;
+  align-items: center !important;
+  width: 100% !important;
+}
+
+html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell .kani-modal-body .v2-search svg {
+  position: absolute !important;
+  left: 12px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  width: 16px !important;
+  height: 16px !important;
+  pointer-events: none !important;
+  flex-shrink: 0 !important;
+}
+
+html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell .kani-modal-body .v2-search input {
+  padding-left: 38px !important;
+  padding-right: 12px !important;
+}
+
+/* Prevent icon clipping & normalize icon dimensions in headers, body rows, and footers */
+html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell :is(.kani-modal-header, .kani-modal-body, .kani-modal-footer) svg {
+  flex-shrink: 0 !important;
+  overflow: visible !important;
+}
+
+html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell .kani-modal-footer > button svg {
+  width: 16px !important;
+  height: 16px !important;
+  margin: 0 !important;
+}
+
+html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell .booking-recovery-summary svg {
+  width: 16px !important;
+  height: 16px !important;
+}
+
+/* Membership economic summary card alignment & tabular numerals */
+html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell .v2-membership-summary-card {
+  padding: 12px 14px !important;
+  border-radius: 14px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+}
+
+html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell .v2-membership-summary-card > div {
+  display: flex !important;
+  align-items: baseline !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  font-size: 13px !important;
+  line-height: 1.35 !important;
+}
+
+html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell .v2-membership-summary-card > div > span:last-child {
+  font-variant-numeric: tabular-nums !important;
+  text-align: right !important;
+  white-space: nowrap !important;
+}
+
+html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell .v2-membership-summary-card > .v2-membership-summary-total {
+  padding-top: 8px !important;
+  border-top: 1px solid var(--lga-border, var(--border)) !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+}
+
+/* Client details metrics & history row vertical alignment */
+html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell .v2-history-row {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+}
+
+html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell .v2-metric strong {
+  font-variant-numeric: tabular-nums !important;
+}
+
