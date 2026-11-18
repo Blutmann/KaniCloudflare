@@ -25,7 +25,7 @@
   --kani-ct-enter-duration: 360ms;
   --kani-ct-exit-duration: 260ms;
   --kani-ct-enter-ease: cubic-bezier(0.16, 1, 0.3, 1);
-  --kani-ct-exit-ease: cubic-bezier(0.32, 0, 0.67, 0);
+  --kani-ct-exit-ease: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 @media (min-width: 640px) {
@@ -187,7 +187,7 @@ html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active)
    ========================================================================== */
 @keyframes kaniContainerEnter {
   0% {
-    opacity: 0.42;
+    opacity: 0.85;
     transform: translate3d(
         calc(-50% + var(--kani-origin-x, 0px)),
         calc(-50% + var(--kani-origin-y, 0px)),
@@ -202,7 +202,7 @@ html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active)
       round var(--kani-ct-origin-radius, 20px)
     );
   }
-  20% {
+  14% {
     opacity: 1;
   }
   100% {

@@ -87,7 +87,7 @@ export function computeContainerTransformParams(
   // Contextual Motion (Apple HIG): interacción táctil / viewport compacto enfatiza
   // continuidad espacial; puntero/teclado en desktop prioriza precisión y rapidez.
   const isTouchOrCompact = inputType === "touch" || viewport.width < 640;
-  const travelRatio = isTouchOrCompact ? 0.48 : 0.44;
+  const travelRatio = isTouchOrCompact ? 0.5 : 0.48;
   const maxDx = Math.max(150, Math.round(viewport.width * travelRatio));
   const maxDy = Math.max(160, Math.round(viewport.height * travelRatio));
   const dx = clamp(Math.round(originCenterX - modalCenterX), -maxDx, maxDx);
