@@ -689,15 +689,15 @@ export function V2MembershipsAndDiscounts({
         }}
       >
         <DialogContent
-          className="v2-dialog v2-membership-create-dialog v2-modal-pinned-shell"
+          className="v2-dialog v2-membership-create-dialog v2-modal-pinned-shell kani-modal-shell"
           style={{ maxWidth: "540px" }}
           aria-describedby={undefined}
         >
-          <div className="v2-modal-pinned-header">
+          <div className="v2-modal-pinned-header kani-modal-header">
             <DialogTitle>Nueva membresía prepagada</DialogTitle>
           </div>
           <form onSubmit={handleCreateSubmit} className="v2-form v2-modal-pinned-form">
-            <div className="v2-modal-pinned-scroll">
+            <div className="v2-modal-pinned-scroll kani-modal-body">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 <div className="v2-field min-w-0">
                   <label htmlFor="membership-client-select" className="v2-field-label">
@@ -822,7 +822,7 @@ export function V2MembershipsAndDiscounts({
               </div>
             </div>
 
-            <div className="v2-dialog-actions v2-modal-pinned-footer">
+            <div className="v2-dialog-actions v2-modal-pinned-footer kani-modal-footer">
               <button
                 type="button"
                 className="v2-secondary"

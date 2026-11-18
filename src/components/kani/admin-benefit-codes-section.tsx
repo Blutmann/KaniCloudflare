@@ -1055,9 +1055,9 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent
           overlayClassName="benefit-code-dialog-overlay"
-          className="benefit-code-dialog-content sm:max-w-lg"
+          className="benefit-code-dialog-content kani-modal-shell sm:max-w-lg"
         >
-          <div className="benefit-code-dialog-header">
+          <div className="benefit-code-dialog-header kani-modal-header">
             <DialogTitle className="text-[1rem] sm:text-lg font-semibold leading-tight flex items-center gap-2">
               <Sparkles size={18} className="hidden sm:inline-block text-gold shrink-0" />
               <span>Generar código de descuento</span>
@@ -1068,7 +1068,7 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
           </div>
 
           {createdItem ? (
-            <div className="benefit-code-dialog-scroll-body">
+            <div className="benefit-code-dialog-scroll-body kani-modal-body">
               <div className="p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-center space-y-3">
                 <p className="text-xs text-emerald-500 font-semibold uppercase tracking-wider">¡Código generado con éxito!</p>
                 <p className="font-mono text-2xl font-bold tracking-wider text-foreground select-all bg-background py-2 px-3 rounded border border-emerald-500/40">
@@ -1110,7 +1110,7 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
             </div>
           ) : (
             <form onSubmit={handleCreate} className="benefit-code-dialog-form flex flex-col flex-1 min-h-0">
-              <div className="benefit-code-dialog-scroll-body space-y-3 sm:space-y-4">
+              <div className="benefit-code-dialog-scroll-body kani-modal-body space-y-3.5">
                 {/* 1. Modalidad de uso */}
                 <div className="space-y-1.5 sm:space-y-2">
                   <label className="text-xs font-semibold text-foreground block">
@@ -1200,34 +1200,14 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                 </div>
 
                 {/* 3. Vigencia */}
-                <div className="space-y-1.5 sm:space-y-2 pt-2 border-t border-border/50">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-1.5">
-                      <label htmlFor="create-validity-type" className="text-xs font-semibold text-foreground block">
-                        Vigencia:
-                      </label>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <button
-                            type="button"
-                            aria-label="Información sobre la vigencia del código"
-                            className="sm:hidden inline-flex h-6 w-6 items-center justify-center rounded-full text-gold hover:bg-gold/10 focus:outline-none focus:ring-1 focus:ring-gold"
-                          >
-                            <HelpCircle size={14} aria-hidden="true" />
-                          </button>
-                        </PopoverTrigger>
-                        <PopoverContent side="top" align="start" className="w-64 p-3 text-xs space-y-1">
-                          <p className="font-semibold text-foreground">Nota de vigencia</p>
-                          <p className="text-muted-foreground leading-snug">
-                            La vigencia determina cuándo puede confirmarse la reserva con el código, no la fecha del turno.
-                          </p>
-                          <p className="text-[11px] text-muted-foreground pt-0.5">
-                            Horario: Buenos Aires (UTC-3).
-                          </p>
-                        </PopoverContent>
-                      </Popover>
-                    </div>
-                    <span className="text-[11px] text-muted-foreground">Buenos Aires (UTC-3)</span>
+                <div className="space-y-2 pt-2 border-t border-border/50">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <label htmlFor="create-validity-type" className="text-xs font-semibold text-foreground shrink-0">
+                      Vigencia:
+                    </label>
+                    <span className="text-[11px] font-medium text-muted-foreground text-right whitespace-nowrap">
+                      Buenos Aires (UTC-3)
+                    </span>
                   </div>
 
                   <select
@@ -1356,27 +1336,25 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                 )}
               </div>
 
-              <div className="benefit-code-dialog-footer">
-                <DialogFooter className="flex flex-row gap-2 sm:justify-end">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setCreateOpen(false)}
-                    disabled={creating}
-                    className="v2-secondary flex-1 sm:flex-initial min-h-[44px] sm:min-h-[40px] text-xs"
-                  >
-                    Cancelar
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={creating}
-                    className="action-brand flex-1 sm:flex-initial min-h-[44px] sm:min-h-[40px] text-xs font-semibold"
-                  >
-                    {creating ? <RefreshCw size={14} className="animate-spin mr-1.5" /> : <Sparkles size={14} className="mr-1.5" />}
-                    <span>{creating ? 'Generando…' : 'Crear código'}</span>
-                  </Button>
-                </DialogFooter>
-              </div>
+              <DialogFooter className="benefit-code-dialog-footer kani-modal-footer">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setCreateOpen(false)}
+                  disabled={creating}
+                  className="v2-secondary min-h-[44px] text-xs"
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={creating}
+                  className="action-brand min-h-[44px] text-xs font-semibold"
+                >
+                  {creating ? <RefreshCw size={14} className="animate-spin mr-1.5" /> : <Sparkles size={14} className="mr-1.5" />}
+                  <span>{creating ? 'Generando…' : 'Crear código'}</span>
+                </Button>
+              </DialogFooter>
             </form>
           )}
         </DialogContent>

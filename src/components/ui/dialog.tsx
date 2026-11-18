@@ -6,6 +6,7 @@ import { X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { useVisualViewportDialog } from "@/hooks/use-visual-viewport-dialog";
+import "@/components/kani/kani-unified-modals.css";
 
 const Dialog = DialogPrimitive.Root;
 

@@ -328,12 +328,12 @@ export function V2Clients() {
         }}
       >
         <DialogContent
-          className="v2-dialog v2-client-modal v2-client-dialog"
+          className="v2-dialog v2-client-modal v2-client-dialog kani-modal-shell"
           style={dialogViewport}
           overlayClassName="v2-client-modal-overlay"
           closeLabel="Cerrar detalles del cliente"
         >
-          <div className="v2-client-modal-header">
+          <div className="v2-client-modal-header kani-modal-header">
             <DialogTitle>{selected?.name}</DialogTitle>
             <DialogDescription>
               Cliente desde {selected ? clientDate(selected.created_at) : ""}
@@ -342,7 +342,7 @@ export function V2Clients() {
           {selected && summary && (
             <>
               <div
-                className="v2-client-modal-scroll"
+                className="v2-client-modal-scroll kani-modal-body"
                 role="region"
                 aria-label="Información del cliente"
                 tabIndex={0}
@@ -485,7 +485,7 @@ export function V2Clients() {
                     </div>
                   ))}
               </div>
-              <footer className="v2-client-modal-footer">
+              <footer className="v2-client-modal-footer kani-modal-footer">
                 {canEditClient(selected) && (
                   <button
                     className="v2-secondary"

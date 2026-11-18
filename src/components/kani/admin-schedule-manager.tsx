@@ -613,7 +613,7 @@ export function AdminScheduleManager() {
         }}
       >
         <DialogContent
-          className="manual-dialog admin-schedule-dialog"
+          className="manual-dialog admin-schedule-dialog kani-modal-shell"
           onOpenAutoFocus={(event) => {
             const isLiquidGlassAdmin =
               typeof document !== "undefined" &&
@@ -624,71 +624,75 @@ export function AdminScheduleManager() {
             event.currentTarget.focus({ preventScroll: true });
           }}
         >
-          <DialogTitle>Agregar horario de disponibilidad</DialogTitle>
-          <DialogDescription className="sr-only">
-            Agregar horario
-          </DialogDescription>
-          <div className="admin-schedule-manual-fields">
-            {profile.role === "ADMIN" && (
+          <div className="kani-modal-header">
+            <DialogTitle>Agregar horario de disponibilidad</DialogTitle>
+            <DialogDescription className="sr-only">
+              Agregar horario
+            </DialogDescription>
+          </div>
+          <div className="kani-modal-body">
+            <div className="admin-schedule-manual-fields">
+              {profile.role === "ADMIN" && (
+                <div>
+                  <label htmlFor="schedule-manual-barber">Agenda</label>
+                  <select
+                    id="schedule-manual-barber"
+                    className="select-control w-full"
+                    value={manualBarberId}
+                    onChange={(event) => setManualBarberId(event.target.value)}
+                  >
+                    {permittedRows.map((row) => (
+                      <option key={row.id} value={row.id}>
+                        {row.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              <div className="min-w-0">
+                <label htmlFor="schedule-manual-date">Fecha</label>
+                <Input
+                  id="schedule-manual-date"
+                  type="date"
+                  min={businessToday}
+                  value={manualDate}
+                  onChange={(event) => setManualDate(event.target.value)}
+                  className="min-w-0 max-w-full px-2"
+                />
+              </div>
               <div>
-                <label htmlFor="schedule-manual-barber">Agenda</label>
+                <label htmlFor="schedule-manual-time">Horario</label>
                 <select
-                  id="schedule-manual-barber"
+                  id="schedule-manual-time"
                   className="select-control w-full"
-                  value={manualBarberId}
-                  onChange={(event) => setManualBarberId(event.target.value)}
+                  value={manualTime}
+                  onChange={(event) => setManualTime(event.target.value)}
                 >
-                  {permittedRows.map((row) => (
-                    <option key={row.id} value={row.id}>
-                      {row.name}
+                  {SCHEDULE_TIME_OPTIONS.map((time) => (
+                    <option key={time} value={time}>
+                      {time}
                     </option>
                   ))}
                 </select>
               </div>
-            )}
-            <div className="min-w-0">
-              <label htmlFor="schedule-manual-date">Fecha</label>
-              <Input
-                id="schedule-manual-date"
-                type="date"
-                min={businessToday}
-                value={manualDate}
-                onChange={(event) => setManualDate(event.target.value)}
-                className="min-w-0 max-w-full px-2"
-              />
             </div>
-            <div>
-              <label htmlFor="schedule-manual-time">Horario</label>
-              <select
-                id="schedule-manual-time"
-                className="select-control w-full"
-                value={manualTime}
-                onChange={(event) => setManualTime(event.target.value)}
+            {manualError && (
+              <div
+                role="alert"
+                className="p-3 rounded-lg border border-destructive/40 bg-destructive/10 text-destructive text-xs font-medium flex items-start gap-2 leading-relaxed"
               >
-                {SCHEDULE_TIME_OPTIONS.map((time) => (
-                  <option key={time} value={time}>
-                    {time}
-                  </option>
-                ))}
-              </select>
-            </div>
+                <AlertTriangle size={15} className="shrink-0 mt-0.5" />
+                <span>{manualError}</span>
+              </div>
+            )}
+            {checkingNotice && !manualError && (
+              <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                <Clock3 size={13} className="shrink-0 animate-spin" />
+                <span>Verificando disponibilidad…</span>
+              </p>
+            )}
           </div>
-          {manualError && (
-            <div
-              role="alert"
-              className="p-3 rounded-lg border border-destructive/40 bg-destructive/10 text-destructive text-xs font-medium flex items-start gap-2 leading-relaxed"
-            >
-              <AlertTriangle size={15} className="shrink-0 mt-0.5" />
-              <span>{manualError}</span>
-            </div>
-          )}
-          {checkingNotice && !manualError && (
-            <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-              <Clock3 size={13} className="shrink-0 animate-spin" />
-              <span>Verificando disponibilidad…</span>
-            </p>
-          )}
-          <DialogFooter className="manual-dialog-footer">
+          <DialogFooter className="manual-dialog-footer kani-modal-footer">
             <Button
               variant="outline"
               disabled={savingId === "manual"}

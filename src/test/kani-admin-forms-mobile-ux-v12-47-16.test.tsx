@@ -106,17 +106,14 @@ describe("V12.47.16 — Mobile UX Optimization for Admin Forms & Selectors", () 
     // Desktop descriptions still in DOM for desktop & accessibility
     expect(screen.getByText("Bonificación del 10% del servicio. Se abona la seña completa.")).toBeInTheDocument();
 
-    // Accessible info popover trigger for validity note on mobile
-    const infoBtn = screen.getByRole("button", { name: /información sobre la vigencia/i });
-    fireEvent.click(infoBtn);
-    const validityNotes = await screen.findAllByText(
-      /La vigencia determina cuándo puede confirmarse la reserva/i,
-    );
-    expect(validityNotes.length).toBeGreaterThanOrEqual(2);
+    // Info button next to Vigencia removed per unified modal spec; timezone label cleanly aligned
+    expect(screen.queryByRole("button", { name: /información sobre la vigencia/i })).toBeNull();
+    expect(screen.getByText("Buenos Aires (UTC-3)")).toBeInTheDocument();
 
     // Persistent footer buttons
     const footer = document.querySelector(".benefit-code-dialog-footer");
     expect(footer).not.toBeNull();
+    expect(footer).toHaveClass("kani-modal-footer");
     expect(footer?.querySelector('button[type="submit"]')).toHaveTextContent(/Crear código/i);
   });
 

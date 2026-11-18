@@ -1,0 +1,331 @@
+/* ==========================================================================
+   KANI Barber Studio — Unified 3-Region Responsive Modal System
+   Applies to:
+     1. ¿Querés continuar tu reserva? (.booking-recovery-modal)
+     2. Agregar horario de disponibilidad (.admin-schedule-dialog)
+     3. Nuevo turno manual (.v2-manual-dialog)
+     4. Detalles del cliente (.v2-client-dialog)
+     5. Nueva membresía prepagada (.v2-membership-create-dialog)
+     6. Generar código de descuento (.benefit-code-dialog-content)
+   ========================================================================== */
+
+:root {
+  --kani-modal-gutter-x: 24px;
+  --kani-modal-gutter-y: 24px;
+  --kani-modal-pad-x: 20px;
+  --kani-modal-header-pad-y: 16px;
+  --kani-modal-body-pad-y: 16px;
+  --kani-modal-footer-pad-y: 14px;
+  --kani-modal-gap: 14px;
+  --kani-modal-radius: 22px;
+}
+
+@media (min-width: 640px) {
+  :root {
+    --kani-modal-pad-x: 24px;
+    --kani-modal-header-pad-y: 18px;
+    --kani-modal-body-pad-y: 20px;
+    --kani-modal-footer-pad-y: 16px;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   1. Shell: Viewport-adaptive height & width + 3-region flex layout
+   -------------------------------------------------------------------------- */
+html[data-theme] [data-slot="dialog-content"].kani-modal-shell,
+html[data-theme] body[data-lg-admin="true"] [role="dialog"].kani-modal-shell,
+html[data-theme] body.liquid-glass-active [data-slot="dialog-content"].kani-modal-shell {
+  position: fixed !important;
+  left: calc(var(--kani-vv-left, 0px) + var(--kani-vv-width, 100vw) / 2) !important;
+  top: calc(var(--kani-vv-top, 0px) + var(--kani-vv-height, 100dvh) / 2) !important;
+  right: auto !important;
+  bottom: auto !important;
+  margin: 0 !important;
+  --tw-translate-x: 0px !important;
+  --tw-translate-y: 0px !important;
+  translate: none !important;
+  transform: translate3d(-50%, -50%, 0) !important;
+
+  width: min(
+    var(--kani-modal-max-w, 540px),
+    calc(var(--kani-vv-width, 100vw) - max(var(--kani-modal-gutter-x), env(safe-area-inset-left, 0px) + env(safe-area-inset-right, 0px)))
+  ) !important;
+  max-width: min(
+    var(--kani-modal-max-w, 540px),
+    calc(var(--kani-vv-width, 100vw) - max(var(--kani-modal-gutter-x), env(safe-area-inset-left, 0px) + env(safe-area-inset-right, 0px)))
+  ) !important;
+  height: auto !important;
+  max-height: calc(
+    var(--kani-vv-height, 100dvh) - max(var(--kani-modal-gutter-y), env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px))
+  ) !important;
+
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  border-radius: var(--kani-modal-radius) !important;
+  box-sizing: border-box !important;
+}
+
+[data-slot="dialog-content"].kani-modal-shell.kani-modal-recovery {
+  --kani-modal-max-w: 520px;
+}
+
+[data-slot="dialog-content"].kani-modal-shell.admin-schedule-dialog {
+  --kani-modal-max-w: 480px;
+}
+
+[data-slot="dialog-content"].kani-modal-shell.v2-manual-dialog {
+  --kani-modal-max-w: 560px;
+}
+
+[data-slot="dialog-content"].kani-modal-shell.v2-client-dialog {
+  --kani-modal-max-w: 600px;
+}
+
+[data-slot="dialog-content"].kani-modal-shell.v2-membership-create-dialog {
+  --kani-modal-max-w: 540px;
+}
+
+[data-slot="dialog-content"].kani-modal-shell.benefit-code-dialog-content {
+  --kani-modal-max-w: 540px;
+}
+
+/* --------------------------------------------------------------------------
+   2. Region A: Fixed Header (title left, 44x44 circular close button right)
+   -------------------------------------------------------------------------- */
+[data-slot="dialog-content"].kani-modal-shell .kani-modal-header {
+  flex: 0 0 auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  gap: 4px !important;
+  min-height: 64px !important;
+  padding: var(--kani-modal-header-pad-y) 64px var(--kani-modal-header-pad-y) var(--kani-modal-pad-x) !important;
+  margin: 0 !important;
+  border-bottom: 1px solid var(--lga-border, var(--border)) !important;
+  background: transparent !important;
+  box-sizing: border-box !important;
+  text-align: left !important;
+}
+
+[data-slot="dialog-content"].kani-modal-shell .kani-modal-header--recovery {
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  padding: var(--kani-modal-header-pad-y) var(--kani-modal-pad-x) !important;
+}
+
+[data-slot="dialog-content"].kani-modal-shell .kani-modal-header h2 {
+  margin: 0 !important;
+  font-family: var(--font-display, inherit) !important;
+  font-size: 17px !important;
+  font-weight: 600 !important;
+  line-height: 1.3 !important;
+  letter-spacing: -0.01em !important;
+  text-align: left !important;
+  color: var(--lga-text, var(--foreground)) !important;
+}
+
+@media (min-width: 640px) {
+  [data-slot="dialog-content"].kani-modal-shell .kani-modal-header h2 {
+    font-size: 18px !important;
+  }
+}
+
+[data-slot="dialog-content"].kani-modal-shell .kani-modal-header p:not(.sr-only) {
+  margin: 0 !important;
+  font-size: 12.5px !important;
+  line-height: 1.45 !important;
+  text-align: left !important;
+  color: var(--lga-text-muted, var(--muted-foreground)) !important;
+}
+
+/* Unified 44x44 Circular Close Button */
+[data-slot="dialog-content"].kani-modal-shell > button:has(> .sr-only),
+[data-slot="dialog-content"].kani-modal-shell .booking-recovery-close-btn {
+  width: 44px !important;
+  height: 44px !important;
+  min-width: 44px !important;
+  min-height: 44px !important;
+  padding: 0 !important;
+  border-radius: 9999px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  opacity: 1 !important;
+  cursor: pointer !important;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease !important;
+}
+
+[data-slot="dialog-content"].kani-modal-shell > button:has(> .sr-only) {
+  position: absolute !important;
+  top: 10px !important;
+  right: 12px !important;
+}
+
+@media (min-width: 640px) {
+  [data-slot="dialog-content"].kani-modal-shell > button:has(> .sr-only) {
+    top: 11px !important;
+    right: 14px !important;
+  }
+}
+
+[data-slot="dialog-content"].kani-modal-shell .booking-recovery-close-btn {
+  position: static !important;
+  flex-shrink: 0 !important;
+}
+
+html[data-theme="light"] [data-slot="dialog-content"].kani-modal-shell > button:has(> .sr-only),
+html[data-theme="light"] [data-slot="dialog-content"].kani-modal-shell .booking-recovery-close-btn {
+  background: rgba(255, 255, 255, 0.56) !important;
+  border: 1px solid rgba(24, 22, 20, 0.14) !important;
+  color: rgba(24, 22, 20, 0.78) !important;
+}
+
+html[data-theme="light"] [data-slot="dialog-content"].kani-modal-shell > button:has(> .sr-only):hover,
+html[data-theme="light"] [data-slot="dialog-content"].kani-modal-shell .booking-recovery-close-btn:hover {
+  background: rgba(255, 255, 255, 0.85) !important;
+  color: #181614 !important;
+}
+
+html[data-theme="dark"] [data-slot="dialog-content"].kani-modal-shell > button:has(> .sr-only),
+html[data-theme="dark"] [data-slot="dialog-content"].kani-modal-shell .booking-recovery-close-btn {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  color: rgba(244, 242, 238, 0.84) !important;
+}
+
+html[data-theme="dark"] [data-slot="dialog-content"].kani-modal-shell > button:has(> .sr-only):hover,
+html[data-theme="dark"] [data-slot="dialog-content"].kani-modal-shell .booking-recovery-close-btn:hover {
+  background: rgba(255, 255, 255, 0.16) !important;
+  color: #ffffff !important;
+}
+
+/* --------------------------------------------------------------------------
+   3. Region B: Scrollable Body (only scrolls when content exceeds viewport)
+   -------------------------------------------------------------------------- */
+[data-slot="dialog-content"].kani-modal-shell :is(.v2-form, .v2-manual-form, .v2-modal-pinned-form, .benefit-code-dialog-form) {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  gap: 0 !important;
+  background: transparent !important;
+}
+
+[data-slot="dialog-content"].kani-modal-shell .kani-modal-body {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  overscroll-behavior: contain !important;
+  -webkit-overflow-scrolling: touch !important;
+  padding: var(--kani-modal-body-pad-y) var(--kani-modal-pad-x) !important;
+  margin: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: var(--kani-modal-gap) !important;
+  background: transparent !important;
+  box-sizing: border-box !important;
+}
+
+/* Consistent input/select sizing & zero horizontal overflow inside body */
+[data-slot="dialog-content"].kani-modal-shell .kani-modal-body :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* --------------------------------------------------------------------------
+   4. Region C: Fixed Footer (always visible, safe-area aware, no halo)
+   -------------------------------------------------------------------------- */
+[data-slot="dialog-content"].kani-modal-shell .kani-modal-footer {
+  flex: 0 0 auto !important;
+  position: static !important;
+  bottom: auto !important;
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 10px !important;
+  padding: var(--kani-modal-footer-pad-y) var(--kani-modal-pad-x) max(var(--kani-modal-footer-pad-y), env(safe-area-inset-bottom, 0px)) var(--kani-modal-pad-x) !important;
+  margin: 0 !important;
+  border-top: 1px solid var(--lga-border, var(--border)) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  box-sizing: border-box !important;
+}
+
+[data-slot="dialog-content"].kani-modal-shell .kani-modal-footer > button {
+  min-height: 44px !important;
+  margin: 0 !important;
+}
+
+/* Remove accidental halo/glow behind primary action buttons in modal footers (e.g. Crear membresía) */
+[data-slot="dialog-content"].kani-modal-shell .kani-modal-footer :is(.v2-primary, .action-positive, button[type="submit"]) {
+  filter: none !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
+}
+
+[data-slot="dialog-content"].kani-modal-shell .kani-modal-footer :is(.v2-primary, .action-positive, button[type="submit"]):hover:not(:disabled) {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.22) !important;
+}
+
+/* Recovery modal footer: stacked on mobile, 2-col on >= 640px */
+[data-slot="dialog-content"].kani-modal-shell .kani-modal-footer--recovery {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 10px !important;
+}
+
+@media (min-width: 640px) {
+  [data-slot="dialog-content"].kani-modal-shell .kani-modal-footer--recovery.kani-modal-footer--two-actions {
+    grid-template-columns: 1fr 1fr !important;
+  }
+}
+
+/* Mobile footer buttons share width cleanly when paired */
+@media (max-width: 639px) {
+  [data-slot="dialog-content"].kani-modal-shell .kani-modal-footer:not(.kani-modal-footer--recovery) {
+    flex-wrap: nowrap !important;
+  }
+
+  [data-slot="dialog-content"].kani-modal-shell .kani-modal-footer:not(.kani-modal-footer--recovery) > button {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+  }
+}
+
+/* Compact padding when virtual keyboard reduces viewport height (iOS / Android) */
+@media (max-height: 520px) {
+  [data-slot="dialog-content"].kani-modal-shell .kani-modal-header {
+    min-height: 52px !important;
+    padding: 12px 58px 10px 16px !important;
+  }
+
+  [data-slot="dialog-content"].kani-modal-shell .kani-modal-header--recovery {
+    padding: 12px 16px 10px !important;
+  }
+
+  [data-slot="dialog-content"].kani-modal-shell > button:has(> .sr-only) {
+    top: 4px !important;
+    right: 8px !important;
+  }
+
+  [data-slot="dialog-content"].kani-modal-shell .kani-modal-body {
+    padding: 12px 16px !important;
+    gap: 10px !important;
+  }
+
+  [data-slot="dialog-content"].kani-modal-shell .kani-modal-footer {
+    padding: 10px 16px max(10px, env(safe-area-inset-bottom, 0px)) 16px !important;
+  }
+}

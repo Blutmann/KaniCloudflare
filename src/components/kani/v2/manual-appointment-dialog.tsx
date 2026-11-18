@@ -397,7 +397,7 @@ export function ManualAppointmentDialog({
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
       <DialogContent
-        className="v2-dialog v2-manual-dialog"
+        className="v2-dialog v2-manual-dialog kani-modal-shell"
         aria-labelledby={titleId}
         aria-describedby={showDialogDescription ? descId : undefined}
         onOpenAutoFocus={(event) => {
@@ -406,19 +406,21 @@ export function ManualAppointmentDialog({
           event.currentTarget.focus({ preventScroll: true });
         }}
       >
-        <DialogTitle id={titleId}>
-          {mode === "CREATE" ? "Nuevo turno manual" : "Editar turno manual"}
-        </DialogTitle>
-        {showDialogDescription && (
-          <DialogDescription id={descId}>
-            {mode === "CREATE"
-              ? "Crea un turno operativo directamente confirmado sin limitaciones de horario comercial."
-              : "Modifica los datos del turno manual seleccionado."}
-          </DialogDescription>
-        )}
+        <div className="kani-modal-header">
+          <DialogTitle id={titleId}>
+            {mode === "CREATE" ? "Nuevo turno manual" : "Editar turno manual"}
+          </DialogTitle>
+          {showDialogDescription && (
+            <DialogDescription id={descId}>
+              {mode === "CREATE"
+                ? "Crea un turno operativo directamente confirmado sin limitaciones de horario comercial."
+                : "Modifica los datos del turno manual seleccionado."}
+            </DialogDescription>
+          )}
+        </div>
 
         <form onSubmit={handleSubmit} className="v2-form v2-manual-form">
-          <div className="v2-manual-scroll-body">
+          <div className="v2-manual-scroll-body kani-modal-body">
           {formError && (
             <p className="v2-alert" role="alert">
               {formError}
@@ -649,7 +651,7 @@ export function ManualAppointmentDialog({
             </div>
           </div>
 
-          <div className="v2-manual-dialog-actions">
+          <div className="v2-manual-dialog-actions kani-modal-footer">
             <button
               type="button"
               className="v2-secondary"

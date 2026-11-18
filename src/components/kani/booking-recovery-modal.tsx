@@ -93,7 +93,7 @@ export function BookingRecoveryModal({
       }}
     >
       <DialogContent
-        className="booking-recovery-modal sm:max-w-[520px]"
+        className="booking-recovery-modal kani-modal-shell kani-modal-recovery sm:max-w-[520px]"
         showCloseButton={false}
         onPointerDownOutside={event => {
           if (mode === 'verifying') event.preventDefault();
@@ -102,80 +102,81 @@ export function BookingRecoveryModal({
           if (mode === 'verifying') event.preventDefault();
         }}
       >
-        <div className="flex items-start justify-between gap-2.5">
-          <div className="min-w-0 flex-1 space-y-1">
-            <DialogTitle className="text-[1.0625rem] sm:text-[1.25rem] font-semibold tracking-tight leading-snug text-foreground">
-              {mode === 'slot-occupied'
-                ? 'Tu reserva está casi lista'
-                : mode === 'error'
-                  ? 'No pudimos verificar la disponibilidad'
-                  : '¿Querés continuar tu reserva?'}
-            </DialogTitle>
-            <DialogDescription className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-              {mode === 'slot-occupied'
-                ? 'Mientras estabas fuera, el horario que habías elegido dejó de estar disponible. Conservamos tus datos para que puedas elegir otro horario y terminar tu reserva.'
-                : mode === 'error'
-                  ? (errorMessage || 'Ocurrió un problema temporal al consultar la disponibilidad. Tus datos siguen guardados.')
-                  : 'Retomá tu reserva donde la dejaste.'}
-            </DialogDescription>
-          </div>
+        <div className="kani-modal-header kani-modal-header--recovery">
+          <DialogTitle className="min-w-0 flex-1 text-left">
+            {mode === 'slot-occupied'
+              ? 'Tu reserva está casi lista'
+              : mode === 'error'
+                ? 'No pudimos verificar la disponibilidad'
+                : '¿Querés continuar tu reserva?'}
+          </DialogTitle>
           {mode !== 'verifying' && (
             <button
               type="button"
               onClick={onDismiss}
               aria-label="Cerrar"
-              className="booking-recovery-close-btn inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border/60 bg-background/50 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="booking-recovery-close-btn inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full"
             >
               <X size={16} aria-hidden="true" />
             </button>
           )}
         </div>
 
-        {(mode === 'prompt' || mode === 'verifying') && (
-          <div className="booking-recovery-summary mt-4 text-sm sm:text-[0.9375rem] space-y-2.5 min-w-0">
-            {serviceText && (
-              <div className="flex items-center gap-2.5 min-w-0 text-foreground">
-                <Scissors size={15} className="shrink-0 text-gold" aria-hidden="true" />
-                <span className="shrink-0 text-muted-foreground">Servicio:</span>
-                <span className="font-medium truncate min-w-0">{serviceText}</span>
-              </div>
-            )}
-            {barberText && (
-              <div className="flex items-center gap-2.5 min-w-0 text-foreground">
-                <UserRound size={15} className="shrink-0 text-gold" aria-hidden="true" />
-                <span className="shrink-0 text-muted-foreground">Barbero:</span>
-                <span className="font-medium truncate min-w-0">{barberText}</span>
-              </div>
-            )}
-            {dateText.full && (
-              <div className="flex items-center gap-2.5 min-w-0 text-foreground">
-                <CalendarDays size={15} className="shrink-0 text-gold" aria-hidden="true" />
-                <span className="shrink-0 text-muted-foreground">Fecha:</span>
-                <span className="font-medium min-w-0">
-                  <span className="hidden min-[360px]:inline">{dateText.full}</span>
-                  <span className="min-[360px]:hidden">{dateText.compact}</span>
-                </span>
-              </div>
-            )}
-            {timeText && (
-              <div className="flex items-center gap-2.5 min-w-0 text-foreground">
-                <Clock3 size={15} className="shrink-0 text-gold" aria-hidden="true" />
-                <span className="shrink-0 text-muted-foreground">Horario:</span>
-                <span className="font-medium truncate min-w-0">{timeText}</span>
-              </div>
-            )}
-          </div>
-        )}
+        <div className="kani-modal-body">
+          <DialogDescription className="text-xs sm:text-sm text-muted-foreground leading-relaxed m-0">
+            {mode === 'slot-occupied'
+              ? 'Mientras estabas fuera, el horario que habías elegido dejó de estar disponible. Conservamos tus datos para que puedas elegir otro horario y terminar tu reserva.'
+              : mode === 'error'
+                ? (errorMessage || 'Ocurrió un problema temporal al consultar la disponibilidad. Tus datos siguen guardados.')
+                : 'Retomá tu reserva donde la dejaste.'}
+          </DialogDescription>
 
-        {mode === 'verifying' && (
-          <div className="mt-4 flex items-center justify-center gap-2 py-2.5 text-sm text-muted-foreground" role="status" aria-live="polite">
-            <Loader2 size={16} className="animate-spin text-gold" aria-hidden="true" />
-            <span>Verificando disponibilidad actual…</span>
-          </div>
-        )}
+          {(mode === 'prompt' || mode === 'verifying') && (
+            <div className="booking-recovery-summary text-sm sm:text-[0.9375rem] space-y-2.5 min-w-0">
+              {serviceText && (
+                <div className="flex items-center gap-2.5 min-w-0 text-foreground">
+                  <Scissors size={15} className="shrink-0 text-gold" aria-hidden="true" />
+                  <span className="shrink-0 text-muted-foreground">Servicio:</span>
+                  <span className="font-medium truncate min-w-0">{serviceText}</span>
+                </div>
+              )}
+              {barberText && (
+                <div className="flex items-center gap-2.5 min-w-0 text-foreground">
+                  <UserRound size={15} className="shrink-0 text-gold" aria-hidden="true" />
+                  <span className="shrink-0 text-muted-foreground">Barbero:</span>
+                  <span className="font-medium truncate min-w-0">{barberText}</span>
+                </div>
+              )}
+              {dateText.full && (
+                <div className="flex items-center gap-2.5 min-w-0 text-foreground">
+                  <CalendarDays size={15} className="shrink-0 text-gold" aria-hidden="true" />
+                  <span className="shrink-0 text-muted-foreground">Fecha:</span>
+                  <span className="font-medium min-w-0">
+                    <span className="hidden min-[360px]:inline">{dateText.full}</span>
+                    <span className="min-[360px]:hidden">{dateText.compact}</span>
+                  </span>
+                </div>
+              )}
+              {timeText && (
+                <div className="flex items-center gap-2.5 min-w-0 text-foreground">
+                  <Clock3 size={15} className="shrink-0 text-gold" aria-hidden="true" />
+                  <span className="shrink-0 text-muted-foreground">Horario:</span>
+                  <span className="font-medium truncate min-w-0">{timeText}</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {mode === 'verifying' && (
+            <div className="flex items-center justify-center gap-2 py-2.5 text-sm text-muted-foreground" role="status" aria-live="polite">
+              <Loader2 size={16} className="animate-spin text-gold" aria-hidden="true" />
+              <span>Verificando disponibilidad actual…</span>
+            </div>
+          )}
+        </div>
 
         {mode === 'prompt' && (
-          <div className="booking-recovery-actions mt-5 flex flex-col-reverse gap-2.5 sm:grid sm:grid-cols-2 sm:gap-3">
+          <div className="booking-recovery-actions kani-modal-footer kani-modal-footer--recovery kani-modal-footer--two-actions">
             <Button
               type="button"
               variant="outline"
@@ -195,7 +196,7 @@ export function BookingRecoveryModal({
         )}
 
         {mode === 'slot-occupied' && (
-          <div className="booking-recovery-actions mt-5 flex flex-col gap-2.5">
+          <div className="booking-recovery-actions kani-modal-footer kani-modal-footer--recovery">
             <Button
               type="button"
               onClick={onChooseAnotherTime}
@@ -207,7 +208,7 @@ export function BookingRecoveryModal({
         )}
 
         {mode === 'error' && (
-          <div className="booking-recovery-actions mt-5 flex flex-col-reverse gap-2.5 sm:grid sm:grid-cols-2 sm:gap-3">
+          <div className="booking-recovery-actions kani-modal-footer kani-modal-footer--recovery kani-modal-footer--two-actions">
             <Button
               type="button"
               variant="outline"
