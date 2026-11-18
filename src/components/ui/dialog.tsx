@@ -116,6 +116,7 @@ const DialogContent = React.forwardRef<
         modalRect,
         undefined,
         originRadius,
+        origin?.inputType ?? "pointer",
       );
       node.style.setProperty("--kani-origin-x", `${ct.dx}px`);
       node.style.setProperty("--kani-origin-y", `${ct.dy}px`);
@@ -150,6 +151,7 @@ const DialogContent = React.forwardRef<
           liveModalRect,
           undefined,
           parseOriginBorderRadius(triggerEl),
+          origin?.inputType ?? "pointer",
         );
         node.style.setProperty("--kani-origin-x", `${nextCt.dx}px`);
         node.style.setProperty("--kani-origin-y", `${nextCt.dy}px`);

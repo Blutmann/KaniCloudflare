@@ -256,4 +256,44 @@ describe("KANI Motion System v1.2 — iOS-Inspired Container Transformations (Pi
     expect(dialog.style.getPropertyValue("--kani-ct-inset-y")).toBe("0px");
     expect(parseOriginBorderRadius(null)).toBe(20);
   });
+
+  it("7. Contextual Motion (touch vs pointer) y Etapa 1 respuesta táctil inmediata (data-kani-trigger-pulse)", () => {
+    const modalRect = { left: 410, top: 140, width: 460, height: 520 };
+    const triggerRect = { left: 1060, top: 44, width: 120, height: 38 };
+
+    const touchCt = computeContainerTransformParams(
+      triggerRect,
+      modalRect,
+      { width: 1280, height: 800 },
+      20,
+      "touch",
+    );
+    const pointerCt = computeContainerTransformParams(
+      triggerRect,
+      modalRect,
+      { width: 1280, height: 800 },
+      20,
+      "pointer",
+    );
+
+    expect(touchCt.enterScale).toBeLessThan(pointerCt.enterScale);
+    expect(touchCt.enterScale).toBeGreaterThanOrEqual(0.36);
+    expect(pointerCt.enterScale).toBeGreaterThanOrEqual(0.48);
+
+    const btn = document.createElement("button");
+    btn.textContent = "Agregar horario";
+    vi.spyOn(btn, "getBoundingClientRect").mockReturnValue({
+      ...triggerRect,
+      right: 1180,
+      bottom: 82,
+      x: 1060,
+      y: 44,
+      toJSON: () => ({}),
+    });
+    document.body.appendChild(btn);
+
+    fireEvent.pointerDown(btn);
+    expect(btn.getAttribute("data-kani-trigger-pulse")).toBe("true");
+    btn.remove();
+  });
 });

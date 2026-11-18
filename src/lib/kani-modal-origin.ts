@@ -13,10 +13,13 @@ export interface ModalOriginRect {
   height: number;
 }
 
+export type ModalOriginInputType = "touch" | "pointer" | "keyboard";
+
 interface CapturedOrigin {
   element: Element | null;
   rect: ModalOriginRect;
   timestamp: number;
+  inputType: ModalOriginInputType;
 }
 
 const ORIGIN_MAX_AGE_MS = 900;
@@ -31,17 +34,32 @@ function isValidRect(rect: DOMRect | ModalOriginRect | null | undefined): rect i
   return Number.isFinite(rect.left) && Number.isFinite(rect.top) && rect.width > 0 && rect.height > 0;
 }
 
-function recordOriginElement(target: EventTarget | null): void {
+function applyTactileTriggerPulse(trigger: Element): void {
+  if (!(trigger instanceof HTMLElement)) return;
+  trigger.setAttribute("data-kani-trigger-pulse", "true");
+  window.setTimeout(() => {
+    if (trigger.isConnected) {
+      trigger.removeAttribute("data-kani-trigger-pulse");
+    }
+  }, 110);
+}
+
+function recordOriginElement(
+  target: EventTarget | null,
+  inputType: ModalOriginInputType = "pointer",
+): void {
   if (typeof window === "undefined" || !(target instanceof Element)) return;
   const trigger = target.closest(TRIGGER_SELECTOR) ?? target;
   // Ignorar clics dentro de un diálogo ya abierto (para no confundir acciones internas con apertura)
   if (trigger.closest('[data-slot="dialog-content"]')) return;
   const rect = trigger.getBoundingClientRect();
   if (!isValidRect(rect)) return;
+  applyTactileTriggerPulse(trigger);
   lastCapturedOrigin = {
     element: trigger,
     rect: { left: rect.left, top: rect.top, width: rect.width, height: rect.height },
     timestamp: Date.now(),
+    inputType,
   };
 }
 
@@ -49,22 +67,37 @@ export function installModalOriginListeners(): void {
   if (listenersInstalled || typeof document === "undefined") return;
   listenersInstalled = true;
 
-  const handlePointer = (event: Event) => {
-    recordOriginElement(event.target);
+  const handlePointerDown = (event: Event) => {
+    const pointerType =
+      typeof PointerEvent !== "undefined" && event instanceof PointerEvent
+        ? event.pointerType
+        : "mouse";
+    recordOriginElement(event.target, pointerType === "touch" ? "touch" : "pointer");
+  };
+
+  const handleClick = (event: Event) => {
+    const pointerEvent = event as MouseEvent;
+    // detail === 0 suele indicar activación por teclado (Enter/Space) en botones nativos
+    const inputType: ModalOriginInputType =
+      pointerEvent.detail === 0 ? "keyboard" : lastCapturedOrigin?.inputType ?? "pointer";
+    recordOriginElement(event.target, inputType);
   };
 
   const handleKeyDown = (event: KeyboardEvent) => {
     if (event.key === "Enter" || event.key === " ") {
-      recordOriginElement(event.target ?? document.activeElement);
+      recordOriginElement(event.target ?? document.activeElement, "keyboard");
     }
   };
 
-  document.addEventListener("pointerdown", handlePointer, { capture: true, passive: true });
-  document.addEventListener("click", handlePointer, { capture: true, passive: true });
+  document.addEventListener("pointerdown", handlePointerDown, { capture: true, passive: true });
+  document.addEventListener("click", handleClick, { capture: true, passive: true });
   document.addEventListener("keydown", handleKeyDown, { capture: true, passive: true });
 }
 
-export function captureModalOriginElement(element: Element | null): void {
+export function captureModalOriginElement(
+  element: Element | null,
+  inputType: ModalOriginInputType = "pointer",
+): void {
   if (!element) return;
   const rect = element.getBoundingClientRect();
   if (!isValidRect(rect)) return;
@@ -72,6 +105,7 @@ export function captureModalOriginElement(element: Element | null): void {
     element,
     rect: { left: rect.left, top: rect.top, width: rect.width, height: rect.height },
     timestamp: Date.now(),
+    inputType,
   };
 }
 
@@ -79,7 +113,11 @@ export function resetModalOriginForTests(): void {
   lastCapturedOrigin = null;
 }
 
-export function resolveActiveOrigin(): { element: Element | null; rect: ModalOriginRect } | null {
+export function resolveActiveOrigin(): {
+  element: Element | null;
+  rect: ModalOriginRect;
+  inputType: ModalOriginInputType;
+} | null {
   if (typeof window === "undefined") return null;
   const now = Date.now();
   if (lastCapturedOrigin && now - lastCapturedOrigin.timestamp <= ORIGIN_MAX_AGE_MS) {
@@ -89,10 +127,15 @@ export function resolveActiveOrigin(): { element: Element | null; rect: ModalOri
         return {
           element: lastCapturedOrigin.element,
           rect: { left: liveRect.left, top: liveRect.top, width: liveRect.width, height: liveRect.height },
+          inputType: lastCapturedOrigin.inputType,
         };
       }
     }
-    return { element: null, rect: lastCapturedOrigin.rect };
+    return {
+      element: null,
+      rect: lastCapturedOrigin.rect,
+      inputType: lastCapturedOrigin.inputType,
+    };
   }
 
   const active = document.activeElement;
@@ -107,6 +150,7 @@ export function resolveActiveOrigin(): { element: Element | null; rect: ModalOri
       return {
         element: active,
         rect: { left: rect.left, top: rect.top, width: rect.width, height: rect.height },
+        inputType: "keyboard",
       };
     }
   }

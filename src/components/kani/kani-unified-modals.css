@@ -302,7 +302,17 @@ html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active)
   animation: kaniContainerContentOut 110ms ease-out forwards !important;
 }
 
+/* Etapa 1 — Respuesta táctil inmediata en el activador (80–140 ms) */
+[data-kani-trigger-pulse="true"] {
+  transform: scale(0.965) !important;
+  transition: transform 95ms cubic-bezier(0.22, 1, 0.36, 1) !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
+  [data-kani-trigger-pulse="true"] {
+    transform: none !important;
+    transition: none !important;
+  }
   html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"][data-kani-transition="container-transform"]:not(.payway-checkout)[data-state="open"] {
     animation: kaniModalEnterReduced 0.01ms linear both !important;
     clip-path: none !important;
