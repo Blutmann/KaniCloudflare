@@ -257,7 +257,7 @@ describe("KANI Motion System v1.2 — iOS-Inspired Container Transformations (Pi
     expect(parseOriginBorderRadius(null)).toBe(20);
   });
 
-  it("7. Contextual Motion (touch vs pointer) y Etapa 1 respuesta táctil inmediata (data-kani-trigger-pulse)", () => {
+  it("7. Contextual Motion (touch vs pointer) y aislamiento estricto: elementos no interactivos nunca reciben pulso ni captura de origen", () => {
     const modalRect = { left: 410, top: 140, width: 460, height: 520 };
     const triggerRect = { left: 1060, top: 44, width: 120, height: 38 };
 
@@ -280,20 +280,34 @@ describe("KANI Motion System v1.2 — iOS-Inspired Container Transformations (Pi
     expect(touchCt.enterScale).toBeGreaterThanOrEqual(0.36);
     expect(pointerCt.enterScale).toBeGreaterThanOrEqual(0.48);
 
+    const container = document.createElement("div");
+    const logo = document.createElement("img");
+    const title = document.createElement("h1");
     const btn = document.createElement("button");
     btn.textContent = "Agregar horario";
-    vi.spyOn(btn, "getBoundingClientRect").mockReturnValue({
-      ...triggerRect,
-      right: 1180,
-      bottom: 82,
-      x: 1060,
-      y: 44,
+    container.append(logo, title, btn);
+    document.body.appendChild(container);
+
+    vi.spyOn(container, "getBoundingClientRect").mockReturnValue({
+      left: 0,
+      top: 0,
+      width: 1200,
+      height: 800,
+      right: 1200,
+      bottom: 800,
+      x: 0,
+      y: 0,
       toJSON: () => ({}),
     });
-    document.body.appendChild(btn);
 
-    fireEvent.pointerDown(btn);
-    expect(btn.getAttribute("data-kani-trigger-pulse")).toBe("true");
-    btn.remove();
+    fireEvent.pointerDown(container);
+    fireEvent.pointerDown(logo);
+    fireEvent.pointerDown(title);
+
+    expect(container.hasAttribute("data-kani-trigger-pulse")).toBe(false);
+    expect(logo.hasAttribute("data-kani-trigger-pulse")).toBe(false);
+    expect(title.hasAttribute("data-kani-trigger-pulse")).toBe(false);
+
+    container.remove();
   });
 });

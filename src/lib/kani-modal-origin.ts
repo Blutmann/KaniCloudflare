@@ -34,27 +34,17 @@ function isValidRect(rect: DOMRect | ModalOriginRect | null | undefined): rect i
   return Number.isFinite(rect.left) && Number.isFinite(rect.top) && rect.width > 0 && rect.height > 0;
 }
 
-function applyTactileTriggerPulse(trigger: Element): void {
-  if (!(trigger instanceof HTMLElement)) return;
-  trigger.setAttribute("data-kani-trigger-pulse", "true");
-  window.setTimeout(() => {
-    if (trigger.isConnected) {
-      trigger.removeAttribute("data-kani-trigger-pulse");
-    }
-  }, 110);
-}
-
 function recordOriginElement(
   target: EventTarget | null,
   inputType: ModalOriginInputType = "pointer",
 ): void {
   if (typeof window === "undefined" || !(target instanceof Element)) return;
-  const trigger = target.closest(TRIGGER_SELECTOR) ?? target;
+  const trigger = target.closest(TRIGGER_SELECTOR);
+  if (!trigger) return;
   // Ignorar clics dentro de un diálogo ya abierto (para no confundir acciones internas con apertura)
   if (trigger.closest('[data-slot="dialog-content"]')) return;
   const rect = trigger.getBoundingClientRect();
   if (!isValidRect(rect)) return;
-  applyTactileTriggerPulse(trigger);
   lastCapturedOrigin = {
     element: trigger,
     rect: { left: rect.left, top: rect.top, width: rect.width, height: rect.height },
