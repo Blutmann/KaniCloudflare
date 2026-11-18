@@ -9,7 +9,7 @@ import { money, formatServiceName } from "@/lib/kani-model";
 import { businessDateToday } from "@/lib/kani-mobile-appointments";
 import { staffExportClientsFn } from "@/lib/kani-clients-export.functions";
 import { downloadClientsXlsx } from "@/lib/kani-clients-xlsx";
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogTitle, KaniModalClose } from "@/components/ui/dialog";
 import { useV2, type V2Client } from "./data";
 import { Empty, Metric, Status } from "./shared";
 import { isStaffOperator } from "@/lib/kani-permissions";
@@ -331,13 +331,17 @@ export function V2Clients() {
           className="v2-dialog v2-client-modal v2-client-dialog kani-modal-shell"
           style={dialogViewport}
           overlayClassName="v2-client-modal-overlay"
+          showCloseButton={false}
           closeLabel="Cerrar detalles del cliente"
         >
           <div className="v2-client-modal-header kani-modal-header">
-            <DialogTitle>{selected?.name}</DialogTitle>
-            <DialogDescription>
-              Cliente desde {selected ? clientDate(selected.created_at) : ""}
-            </DialogDescription>
+            <div className="kani-modal-header-text">
+              <DialogTitle>{selected?.name}</DialogTitle>
+              <DialogDescription>
+                Cliente desde {selected ? clientDate(selected.created_at) : ""}
+              </DialogDescription>
+            </div>
+            <KaniModalClose label="Cerrar detalles del cliente" />
           </div>
           {selected && summary && (
             <>

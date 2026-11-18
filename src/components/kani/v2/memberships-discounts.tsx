@@ -29,7 +29,7 @@ import {
   type MembershipStatus,
 } from "@/lib/kani-recurrences-memberships";
 import { BenefitCodesAdminSection } from "@/components/kani/admin-benefit-codes-section";
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogTitle, KaniModalClose } from "@/components/ui/dialog";
 import { AdminClientCombobox, AdminContextualSelect } from "./admin-mobile-select";
 import { useV2 } from "./data";
 import { V2Discounts } from "./discounts";
@@ -691,10 +691,12 @@ export function V2MembershipsAndDiscounts({
         <DialogContent
           className="v2-dialog v2-membership-create-dialog v2-modal-pinned-shell kani-modal-shell"
           style={{ maxWidth: "540px" }}
+          showCloseButton={false}
           aria-describedby={undefined}
         >
           <div className="v2-modal-pinned-header kani-modal-header">
             <DialogTitle>Nueva membresía prepagada</DialogTitle>
+            <KaniModalClose label="Cerrar" />
           </div>
           <form onSubmit={handleCreateSubmit} className="v2-form v2-modal-pinned-form">
             <div className="v2-modal-pinned-scroll kani-modal-body">

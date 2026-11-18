@@ -115,9 +115,10 @@ export function BookingRecoveryModal({
               type="button"
               onClick={onDismiss}
               aria-label="Cerrar"
-              className="booking-recovery-close-btn inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full"
+              className="booking-recovery-close-btn kani-modal-close"
             >
-              <X size={16} aria-hidden="true" />
+              <X size={18} aria-hidden="true" />
+              <span className="sr-only">Cerrar</span>
             </button>
           )}
         </div>

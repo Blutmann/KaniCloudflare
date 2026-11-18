@@ -8,6 +8,7 @@ import {
   DialogDescription,
   DialogFooter,
   DialogTitle,
+  KaniModalClose,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useAdminStaff } from "@/lib/kani-admin-context";
@@ -614,6 +615,7 @@ export function AdminScheduleManager() {
       >
         <DialogContent
           className="manual-dialog admin-schedule-dialog kani-modal-shell"
+          showCloseButton={false}
           onOpenAutoFocus={(event) => {
             const isLiquidGlassAdmin =
               typeof document !== "undefined" &&
@@ -629,6 +631,7 @@ export function AdminScheduleManager() {
             <DialogDescription className="sr-only">
               Agregar horario
             </DialogDescription>
+            <KaniModalClose label="Cerrar" />
           </div>
           <div className="kani-modal-body">
             <div className="admin-schedule-manual-fields">

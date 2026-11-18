@@ -5,6 +5,7 @@ import {
   DialogContent,
   DialogDescription,
   DialogTitle,
+  KaniModalClose,
 } from "@/components/ui/dialog";
 import { useAdminStaff } from "@/lib/kani-admin-context";
 import {
@@ -398,6 +399,7 @@ export function ManualAppointmentDialog({
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
       <DialogContent
         className="v2-dialog v2-manual-dialog kani-modal-shell"
+        showCloseButton={false}
         aria-labelledby={titleId}
         aria-describedby={showDialogDescription ? descId : undefined}
         onOpenAutoFocus={(event) => {
@@ -407,16 +409,19 @@ export function ManualAppointmentDialog({
         }}
       >
         <div className="kani-modal-header">
-          <DialogTitle id={titleId}>
-            {mode === "CREATE" ? "Nuevo turno manual" : "Editar turno manual"}
-          </DialogTitle>
-          {showDialogDescription && (
-            <DialogDescription id={descId}>
-              {mode === "CREATE"
-                ? "Crea un turno operativo directamente confirmado sin limitaciones de horario comercial."
-                : "Modifica los datos del turno manual seleccionado."}
-            </DialogDescription>
-          )}
+          <div className="kani-modal-header-text">
+            <DialogTitle id={titleId}>
+              {mode === "CREATE" ? "Nuevo turno manual" : "Editar turno manual"}
+            </DialogTitle>
+            {showDialogDescription && (
+              <DialogDescription id={descId}>
+                {mode === "CREATE"
+                  ? "Crea un turno operativo directamente confirmado sin limitaciones de horario comercial."
+                  : "Modifica los datos del turno manual seleccionado."}
+              </DialogDescription>
+            )}
+          </div>
+          <KaniModalClose label="Cerrar" />
         </div>
 
         <form onSubmit={handleSubmit} className="v2-form v2-manual-form">

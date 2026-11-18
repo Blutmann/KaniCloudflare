@@ -78,6 +78,7 @@ vi.mock('@/components/ui/dialog', () => ({
   DialogContent: ({ children }: { children: ReactNode }) => <div>{children}</div>,
   DialogTitle: ({ children }: { children: ReactNode }) => <h2>{children}</h2>,
   DialogDescription: ({ children }: { children: ReactNode }) => <p>{children}</p>,
+  KaniModalClose: ({ label = 'Cerrar' }: { label?: string }) => <button type="button" aria-label={label}>X</button>,
 }));
 
 import { V2Clients } from '@/components/kani/v2/clients';

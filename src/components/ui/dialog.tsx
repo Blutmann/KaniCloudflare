@@ -97,6 +97,22 @@ const DialogDescription = React.forwardRef<
 ));
 DialogDescription.displayName = DialogPrimitive.Description.displayName;
 
+const KaniModalClose = React.forwardRef<
+  React.ElementRef<typeof DialogPrimitive.Close>,
+  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Close> & { label?: string }
+>(({ className, label = "Cerrar", ...props }, ref) => (
+  <DialogPrimitive.Close
+    ref={ref}
+    aria-label={label}
+    className={cn("kani-modal-close", className)}
+    {...props}
+  >
+    <X size={18} aria-hidden="true" />
+    <span className="sr-only">{label}</span>
+  </DialogPrimitive.Close>
+));
+KaniModalClose.displayName = "KaniModalClose";
+
 export {
   Dialog,
   DialogPortal,
@@ -108,4 +124,5 @@ export {
   DialogFooter,
   DialogTitle,
   DialogDescription,
+  KaniModalClose,
 };

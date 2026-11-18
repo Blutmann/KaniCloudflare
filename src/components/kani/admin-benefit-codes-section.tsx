@@ -30,6 +30,7 @@ import {
   DialogDescription,
   DialogFooter,
   DialogTitle,
+  KaniModalClose,
 } from '@/components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { supabase } from '@/integrations/supabase/client';
@@ -1056,6 +1057,7 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
         <DialogContent
           overlayClassName="benefit-code-dialog-overlay"
           className="benefit-code-dialog-content kani-modal-shell sm:max-w-lg"
+          showCloseButton={false}
         >
           <div className="benefit-code-dialog-header kani-modal-header">
             <DialogTitle className="text-[1rem] sm:text-lg font-semibold leading-tight flex items-center gap-2">
@@ -1065,6 +1067,7 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
             <DialogDescription className="sr-only">
               Formulario de creación de código de beneficio y descuento
             </DialogDescription>
+            <KaniModalClose label="Cerrar" />
           </div>
 
           {createdItem ? (
