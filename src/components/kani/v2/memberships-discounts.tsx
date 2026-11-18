@@ -690,12 +690,11 @@ export function V2MembershipsAndDiscounts({
       >
         <DialogContent
           className="v2-dialog v2-membership-create-dialog v2-modal-pinned-shell kani-modal-shell"
-          style={{ maxWidth: "540px" }}
           showCloseButton={false}
           aria-describedby={undefined}
         >
           <div className="v2-modal-pinned-header kani-modal-header">
-            <DialogTitle>Nueva membresía prepagada</DialogTitle>
+            <DialogTitle>Nueva membresía</DialogTitle>
             <KaniModalClose label="Cerrar" />
           </div>
           <form onSubmit={handleCreateSubmit} className="v2-form v2-modal-pinned-form">

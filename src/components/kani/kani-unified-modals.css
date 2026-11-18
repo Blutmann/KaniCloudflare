@@ -10,12 +10,12 @@
    ========================================================================== */
 
 :root {
-  --kani-modal-gutter-x: 24px;
-  --kani-modal-gutter-y: 24px;
-  --kani-modal-pad-x: 16px;
+  --kani-modal-gutter-x: 22px;
+  --kani-modal-gutter-y: 22px;
+  --kani-modal-pad-x: 15px;
   --kani-modal-header-pad-y: 14px;
   --kani-modal-body-pad-y: 16px;
-  --kani-modal-footer-pad-y: 16px;
+  --kani-modal-footer-pad-y: 14px;
   --kani-modal-gap: 14px;
   --kani-modal-radius: 22px;
 }
@@ -389,6 +389,39 @@ html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active)
   width: 100% !important;
 }
 
+/* Allow long membership package labels to wrap cleanly instead of truncating */
+html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell .kani-modal-body .v2-admin-select-trigger {
+  height: auto !important;
+  min-height: 44px !important;
+  max-height: none !important;
+  padding: 10px 12px !important;
+}
+
+html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell .kani-modal-body .v2-admin-select-trigger > span {
+  white-space: normal !important;
+  display: block !important;
+  overflow: visible !important;
+  -webkit-line-clamp: unset !important;
+  line-height: 1.3 !important;
+  text-align: left !important;
+}
+
+/* Keep 2-col manual appointment labels on a single line */
+html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell.v2-manual-dialog .kani-modal-body label.v2-field {
+  font-size: 12px !important;
+  white-space: nowrap !important;
+}
+
+/* Remove extra top margin and double label margin in Agregar horario */
+html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell .kani-modal-body .admin-schedule-manual-fields {
+  margin-top: 0 !important;
+  gap: var(--kani-modal-gap) !important;
+}
+
+html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell .kani-modal-body .admin-schedule-manual-fields label {
+  margin-bottom: 0 !important;
+}
+
 /* Search input icon centered vertically without clipping */
 html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell .kani-modal-body .v2-search {
   position: relative !important;
@@ -409,8 +442,10 @@ html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active)
 }
 
 html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell .kani-modal-body .v2-search input {
+  width: 100% !important;
   padding-left: 38px !important;
   padding-right: 12px !important;
+  text-overflow: ellipsis !important;
 }
 
 /* Prevent icon clipping & normalize icon dimensions in headers, body rows, and footers */

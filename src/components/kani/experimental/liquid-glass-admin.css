@@ -1994,7 +1994,7 @@ html[data-theme] body[data-lg-admin="true"] :is(
   animation: lgaDialogFadeIn 190ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-html[data-theme] body[data-lg-admin="true"] [role="dialog"]:not(.v2-client-modal):not(.notification-popover):not(.kani-notif-confirm-dialog) {
+html[data-theme] body[data-lg-admin="true"] [role="dialog"]:not(.v2-client-modal):not(.notification-popover):not(.kani-notif-confirm-dialog):not(.kani-modal-shell) {
   top: calc(var(--kani-vv-top, 0px) + var(--kani-vv-height, 100dvh) / 2) !important;
   left: calc(var(--kani-vv-left, 0px) + var(--kani-vv-width, 100vw) / 2) !important;
   width: min(
@@ -2015,7 +2015,7 @@ html[data-theme] body[data-lg-admin="true"] [role="dialog"]:not(.v2-client-modal
 }
 
 @media (max-width: 420px) {
-  html[data-theme] body[data-lg-admin="true"] [role="dialog"]:not(.v2-client-modal):not(.notification-popover):not(.kani-notif-confirm-dialog):not(.v2-manual-dialog):not(.benefit-code-dialog-content) {
+  html[data-theme] body[data-lg-admin="true"] [role="dialog"]:not(.v2-client-modal):not(.notification-popover):not(.kani-notif-confirm-dialog):not(.v2-manual-dialog):not(.benefit-code-dialog-content):not(.kani-modal-shell) {
     padding: 16px !important;
   }
 }
@@ -2094,7 +2094,7 @@ html[data-theme="dark"] body[data-lg-admin="true"] [role="dialog"] :is(
   background-color: rgba(16, 16, 22, 0.46) !important;
 }
 
-html[data-theme] body[data-lg-admin="true"] .v2-dialog.v2-manual-dialog :is(.v2-manual-dialog-actions, .v2-manual-actions) {
+html[data-theme] body[data-lg-admin="true"] .v2-dialog.v2-manual-dialog :is(.v2-manual-dialog-actions, .v2-manual-actions):not(.kani-modal-footer) {
   position: static !important;
   bottom: auto !important;
   margin-top: 0 !important;
@@ -2138,7 +2138,7 @@ html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(
   margin-right: 0 !important;
 }
 
-html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(.manual-dialog-footer, .v2-dialog-actions:not(.v2-modal-pinned-footer)) {
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(.manual-dialog-footer, .v2-dialog-actions:not(.v2-modal-pinned-footer)):not(.kani-modal-footer) {
   padding-top: 16px !important;
   margin-top: 16px !important;
 }
@@ -2147,7 +2147,7 @@ html[data-theme] body[data-lg-admin="true"] [role="dialog"] .v2-modal-pinned-foo
   margin-top: 0 !important;
 }
 
-html[data-theme] body[data-lg-admin="true"] [role="dialog"] .v2-client-modal-footer {
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] .v2-client-modal-footer:not(.kani-modal-footer) {
   padding: 16px 16px calc(16px + env(safe-area-inset-bottom, 0px)) 16px !important;
 }
 
@@ -2162,7 +2162,7 @@ html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(
   .v2-manual-actions,
   .v2-client-modal-footer,
   .v2-dialog-actions
-) > button {
+):not(.kani-modal-footer) > button {
   min-height: 48px !important;
   height: auto !important;
   padding: 12px 22px !important;
@@ -2209,10 +2209,8 @@ html[data-theme="light"] body[data-lg-admin="true"] [role="dialog"] :is(
 ) > button:is(.action-positive, .v2-primary, [type="submit"]):not(.v2-destructive):not(.v2-danger):not(.action-brand):not(:disabled) {
   border: 1.5px solid rgba(154, 118, 48, 0.86) !important;
   box-shadow:
-    0 10px 24px rgba(132, 98, 38, 0.16),
-    0 2px 6px rgba(20, 18, 16, 0.08),
-    inset 0 1.5px 0 rgba(255, 255, 255, 0.96),
-    inset 0 -1px 0 rgba(142, 106, 40, 0.16) !important;
+    0 2px 6px rgba(20, 18, 16, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.72) !important;
 }
 
 html[data-theme="dark"] body[data-lg-admin="true"] [role="dialog"] :is(
@@ -2226,9 +2224,8 @@ html[data-theme="dark"] body[data-lg-admin="true"] [role="dialog"] :is(
   -webkit-text-fill-color: #fcfaf4 !important;
   border: 1.5px solid rgba(228, 201, 143, 0.86) !important;
   box-shadow:
-    0 12px 26px rgba(0, 0, 0, 0.48),
-    0 0 18px rgba(212, 180, 114, 0.16),
-    inset 0 1.5px 0 rgba(255, 248, 232, 0.42) !important;
+    0 2px 8px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 248, 232, 0.22) !important;
 }
 
 html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(
@@ -2581,9 +2578,9 @@ html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(.benefit-code-di
 }
 
 html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(.benefit-code-dialog-footer > div, form > div[style*="justify-content: flex-end"]) > button {
-  min-height: 48px !important;
-  padding: 12px 20px !important;
-  border-radius: 999px !important;
+  min-height: 46px !important;
+  padding: 0 18px !important;
+  border-radius: 14px !important;
 }
 
 html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(.benefit-code-dialog-footer > div, form > div[style*="justify-content: flex-end"]) > button:is(.action-positive, .v2-primary, .action-brand, [type="submit"]):not(:disabled) {
@@ -2591,7 +2588,7 @@ html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(.benefit-code-di
   border: 1.5px solid var(--lga-border-accent) !important;
   color: var(--lga-text) !important;
   font-weight: 600 !important;
-  box-shadow: var(--lga-shadow-interactive), inset 0 1.5px 0 rgba(255, 255, 255, 0.85) !important;
+  box-shadow: 0 2px 6px rgba(20, 18, 16, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.72) !important;
 }
 
 html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(.benefit-code-dialog-footer > div, form > div[style*="justify-content: flex-end"]) > button:not(.action-positive):not(.v2-primary):not(.action-brand):not(.v2-destructive):not([type="submit"]) {
@@ -2604,7 +2601,7 @@ html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(.benefit-code-di
 
 html[data-theme="dark"] body[data-lg-admin="true"] [role="dialog"] :is(.benefit-code-dialog-footer > div, form > div[style*="justify-content: flex-end"]) > button:is(.action-positive, .v2-primary, .action-brand, [type="submit"]):not(:disabled) {
   color: #fcfaf4 !important;
-  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.48), inset 0 1.5px 0 rgba(255, 249, 236, 0.34) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 248, 232, 0.22) !important;
 }
 
 html[data-theme] body[data-lg-admin="true"] [role="dialog"] .kani-medit-row-actions > button {
@@ -2614,8 +2611,8 @@ html[data-theme] body[data-lg-admin="true"] [role="dialog"] .kani-medit-row-acti
 
 @media (max-width: 767px) {
   html[data-theme] body[data-lg-admin="true"] [role="dialog"] :is(.benefit-code-dialog-footer > div, form > div[style*="justify-content: flex-end"]) > button {
-    min-height: 52px !important;
-    font-size: 0.9375rem !important;
+    min-height: 46px !important;
+    font-size: 0.875rem !important;
   }
 }
 

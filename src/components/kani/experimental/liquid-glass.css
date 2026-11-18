@@ -8339,7 +8339,7 @@ html[data-theme] :is(body.liquid-glass-active, body:has(.liquid-glass-header, .l
   .liquid-glass-reservation .confirmation .action-brand:not(:disabled),
   .liquid-glass-reservation .confirmation .action-positive:not(:disabled),
   .liquid-glass-reservation .booking-contact-form .discount-apply-button:not(:disabled),
-  [role="dialog"] button:is(.action-positive, .v2-primary, [type="submit"]):not(:disabled):not(.v2-destructive):not(.v2-danger):not(.right-4):not(.v2-dialog-close)
+  [role="dialog"]:not(.kani-modal-shell) button:is(.action-positive, .v2-primary, [type="submit"]):not(:disabled):not(.v2-destructive):not(.v2-danger):not(.right-4):not(.v2-dialog-close)
 ) {
   background: var(--lg-sys-btn-primary-bg) !important;
   background-color: transparent !important;
@@ -8369,7 +8369,7 @@ html[data-theme] :is(body.liquid-glass-active, body:has(.liquid-glass-header, .l
   .liquid-glass-reservation .confirmation .action-brand:not(:disabled),
   .liquid-glass-reservation .confirmation .action-positive:not(:disabled),
   .liquid-glass-reservation .booking-contact-form .discount-apply-button:not(:disabled),
-  [role="dialog"] button:is(.action-positive, .v2-primary, [type="submit"]):not(:disabled):not(.v2-destructive):not(.v2-danger):not(.right-4):not(.v2-dialog-close)
+  [role="dialog"]:not(.kani-modal-shell) button:is(.action-positive, .v2-primary, [type="submit"]):not(:disabled):not(.v2-destructive):not(.v2-danger):not(.right-4):not(.v2-dialog-close)
 ) :is(svg) {
   color: var(--lg-sys-accent) !important;
   stroke: var(--lg-sys-accent) !important;
@@ -8385,7 +8385,7 @@ html[data-theme] :is(body.liquid-glass-active, body:has(.liquid-glass-header, .l
   .liquid-glass-reservation .confirmation .action-brand:not(:disabled),
   .liquid-glass-reservation .confirmation .action-positive:not(:disabled),
   .liquid-glass-reservation .booking-contact-form .discount-apply-button:not(:disabled),
-  [role="dialog"] button:is(.action-positive, .v2-primary, [type="submit"]):not(:disabled):not(.v2-destructive):not(.v2-danger):not(.right-4):not(.v2-dialog-close)
+  [role="dialog"]:not(.kani-modal-shell) button:is(.action-positive, .v2-primary, [type="submit"]):not(:disabled):not(.v2-destructive):not(.v2-danger):not(.right-4):not(.v2-dialog-close)
 ):hover {
   background: var(--lg-sys-btn-primary-hover) !important;
   border-color: var(--lg-sys-border-champagne-strong) !important;

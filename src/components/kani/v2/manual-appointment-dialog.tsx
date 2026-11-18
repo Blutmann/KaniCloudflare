@@ -411,7 +411,7 @@ export function ManualAppointmentDialog({
         <div className="kani-modal-header">
           <div className="kani-modal-header-text">
             <DialogTitle id={titleId}>
-              {mode === "CREATE" ? "Nuevo turno manual" : "Editar turno manual"}
+              {mode === "CREATE" ? "Nuevo turno" : "Editar turno manual"}
             </DialogTitle>
             {showDialogDescription && (
               <DialogDescription id={descId}>

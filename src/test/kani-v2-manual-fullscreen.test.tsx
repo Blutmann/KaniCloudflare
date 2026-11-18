@@ -54,7 +54,7 @@ afterEach(() => {
 });
 
 describe('ManualAppointmentDialog Responsive Viewport-Safe Modal & Datos Filter Order', () => {
-  it('renders dialog header with title "Nuevo turno manual" and working Cancelar / Close button', () => {
+  it('renders dialog header with title "Nuevo turno" and working Cancelar / Close button', () => {
     const handleClose = vi.fn();
     render(
       <ManualAppointmentDialog
@@ -67,7 +67,7 @@ describe('ManualAppointmentDialog Responsive Viewport-Safe Modal & Datos Filter 
     );
 
     expect(
-      screen.getByRole('heading', { name: /Nuevo turno manual/i, level: 2 }),
+      screen.getByRole('heading', { name: /^Nuevo turno$/i, level: 2 }),
     ).toBeInTheDocument();
 
     const cancelBtn = screen.getByRole('button', { name: 'Cancelar' });
@@ -147,6 +147,8 @@ describe('ManualAppointmentDialog Responsive Viewport-Safe Modal & Datos Filter 
   it('CSS validates responsive viewport-safe modal rules, internal scroll and 2-column manual row', () => {
     const cssPath = path.resolve(__dirname, '../components/kani/v2/v2.css');
     const css = fs.readFileSync(cssPath, 'utf-8');
+    const unifiedCssPath = path.resolve(__dirname, '../components/kani/kani-unified-modals.css');
+    const unifiedCss = fs.readFileSync(unifiedCssPath, 'utf-8');
 
     expect(css).toContain('body:has(.v2-manual-dialog) .site-header');
     expect(css).toMatch(/display:\s*none\s*!important/);
@@ -157,17 +159,17 @@ describe('ManualAppointmentDialog Responsive Viewport-Safe Modal & Datos Filter 
     expect(css).toMatch(/--tw-translate-y:\s*0px\s*!important/);
     expect(css).toMatch(/z-index:\s*200\s*!important/);
 
-    expect(css).toMatch(/\.v2-manual-form\s*\{[^}]*overflow-y:\s*auto\s*!important/);
-    expect(css).toMatch(/\.v2-manual-form\s*\{[^}]*min-height:\s*0\s*!important/);
+    expect(unifiedCss).toMatch(/\.kani-modal-body\s*\{[^}]*overflow-y:\s*auto\s*!important/);
+    expect(unifiedCss).toMatch(/\.kani-modal-body\s*\{[^}]*min-height:\s*0\s*!important/);
 
     expect(css).toMatch(/@media\s*\(min-width:\s*768px\)\s*\{[^}]*\.v2-dialog\.v2-manual-dialog\s*\{[^}]*transform:\s*translate\(-50%,\s*-50%\)\s*!important/);
 
     expect(css).toMatch(/grid-template-columns:\s*minmax\(0,\s*1fr\)\s*minmax\(0,\s*1fr\)\s*!important/);
 
-    expect(css).toMatch(/padding-bottom:\s*calc\([^)]*safe-area-inset-bottom/);
+    expect(unifiedCss).toMatch(/env\(safe-area-inset-bottom/);
   });
 
-  it('preserves exact field order: Barbero | Servicio, Fecha | Importe, Hora de inicio | Hora de finalización, Buscar cliente existente, Nombre | Celular, Email, Cancelar | Crear turno', () => {
+  it('preserves exact field order: Barbero | Servicio, Hora de inicio | Hora de finalización, Fecha | Importe, Buscar cliente existente, Nombre | Celular, Email, Cancelar | Crear turno', () => {
     render(
       <ManualAppointmentDialog
         open={true}
@@ -183,10 +185,10 @@ describe('ManualAppointmentDialog Responsive Viewport-Safe Modal & Datos Filter 
     const html = form?.innerHTML ?? '';
     const idxBarbero = html.indexOf('Barbero');
     const idxServicio = html.indexOf('Servicio');
-    const idxFecha = html.indexOf('Fecha');
-    const idxImporte = html.indexOf('Importe');
     const idxHoraInicio = html.indexOf('Hora de inicio');
     const idxHoraFin = html.indexOf('Hora de finalización');
+    const idxFecha = html.indexOf('Fecha');
+    const idxImporte = html.indexOf('Importe');
     const idxBuscar = html.indexOf('Buscar cliente existente');
     const idxNombre = html.indexOf('Nombre del cliente');
     const idxCelular = html.indexOf('Celular');
@@ -196,11 +198,11 @@ describe('ManualAppointmentDialog Responsive Viewport-Safe Modal & Datos Filter 
 
     expect(idxBarbero).toBeGreaterThanOrEqual(0);
     expect(idxBarbero).toBeLessThan(idxServicio);
-    expect(idxServicio).toBeLessThan(idxFecha);
-    expect(idxFecha).toBeLessThan(idxImporte);
-    expect(idxImporte).toBeLessThan(idxHoraInicio);
+    expect(idxServicio).toBeLessThan(idxHoraInicio);
     expect(idxHoraInicio).toBeLessThan(idxHoraFin);
-    expect(idxHoraFin).toBeLessThan(idxBuscar);
+    expect(idxHoraFin).toBeLessThan(idxFecha);
+    expect(idxFecha).toBeLessThan(idxImporte);
+    expect(idxImporte).toBeLessThan(idxBuscar);
     expect(idxBuscar).toBeLessThan(idxNombre);
     expect(idxNombre).toBeLessThan(idxCelular);
     expect(idxCelular).toBeLessThan(idxEmail);

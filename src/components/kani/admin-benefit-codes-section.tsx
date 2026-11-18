@@ -1056,13 +1056,13 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent
           overlayClassName="benefit-code-dialog-overlay"
-          className="benefit-code-dialog-content kani-modal-shell sm:max-w-lg"
+          className="benefit-code-dialog-content kani-modal-shell"
           showCloseButton={false}
         >
           <div className="benefit-code-dialog-header kani-modal-header">
             <DialogTitle className="text-[1rem] sm:text-lg font-semibold leading-tight flex items-center gap-2">
               <Sparkles size={18} className="hidden sm:inline-block text-gold shrink-0" />
-              <span>Generar código de descuento</span>
+              <span>Generar código</span>
             </DialogTitle>
             <DialogDescription className="sr-only">
               Formulario de creación de código de beneficio y descuento
@@ -1113,7 +1113,7 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
             </div>
           ) : (
             <form onSubmit={handleCreate} className="benefit-code-dialog-form flex flex-col flex-1 min-h-0">
-              <div className="benefit-code-dialog-scroll-body kani-modal-body space-y-3.5">
+              <div className="benefit-code-dialog-scroll-body kani-modal-body">
                 {/* 1. Modalidad de uso */}
                 <div className="space-y-1.5 sm:space-y-2">
                   <label className="text-xs font-semibold text-foreground block">
@@ -1172,7 +1172,7 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                       return (
                         <label
                           key={t}
-                          className={`flex items-center sm:items-start gap-2.5 sm:gap-3 p-2.5 rounded-lg border cursor-pointer transition-colors min-h-[46px] ${
+                          className={`flex items-center sm:items-start gap-2 sm:gap-3 p-2.5 rounded-lg border cursor-pointer transition-colors min-h-[46px] min-w-0 ${
                             isSelected
                               ? 'bg-gold/10 border-gold shadow-xs'
                               : 'bg-background border-border hover:bg-muted/40'
@@ -1187,7 +1187,7 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                             className="sm:mt-1 accent-gold text-gold shrink-0"
                           />
                           <div className="flex-1 min-w-0">
-                            <span className="sm:hidden text-xs font-semibold text-foreground leading-tight block">
+                            <span className="sm:hidden text-xs font-semibold text-foreground leading-tight block whitespace-nowrap">
                               {mobileCompactLabel}
                             </span>
                             <div className="hidden sm:flex items-center justify-between gap-2">

@@ -94,7 +94,7 @@ describe("V12.47.16 — Mobile UX Optimization for Admin Forms & Selectors", () 
     fireEvent.click(openBtn);
 
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: /generar código de descuento/i })).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: /^generar código$/i })).toBeInTheDocument();
     });
 
     // Compact mobile labels present

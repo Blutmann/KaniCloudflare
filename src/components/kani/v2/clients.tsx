@@ -561,16 +561,18 @@ export function V2Clients() {
         }}
       >
         <DialogContent
-          className="v2-dialog v2-client-modal v2-client-editor"
+          className="v2-dialog v2-client-modal v2-client-editor kani-modal-shell"
           style={dialogViewport}
           overlayClassName="v2-client-modal-overlay"
+          showCloseButton={false}
           aria-describedby={undefined}
         >
-          <div className="v2-client-modal-header">
+          <div className="v2-client-modal-header kani-modal-header">
             <DialogTitle>{editing === "new" ? "Nuevo cliente" : "Editar cliente"}</DialogTitle>
+            <KaniModalClose label="Cerrar" />
           </div>
-          <form onSubmit={save} className="v2-client-editor-form">
-            <div className="v2-client-modal-scroll">
+          <form onSubmit={save} className="v2-client-editor-form v2-form">
+            <div className="v2-client-modal-scroll kani-modal-body">
               {errorNotice && (
                 <p role="alert" className="v2-alert">
                   {errorNotice}
@@ -607,8 +609,8 @@ export function V2Clients() {
                 />
               </label>
             </div>
-            <footer className="v2-client-modal-footer">
-              <button className="v2-primary" disabled={saving}>
+            <footer className="v2-client-modal-footer kani-modal-footer">
+              <button type="submit" className="v2-primary" disabled={saving}>
                 {saving ? "Guardando…" : "Guardar cliente"}
               </button>
             </footer>

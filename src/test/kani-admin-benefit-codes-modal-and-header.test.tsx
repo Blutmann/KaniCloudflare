@@ -131,7 +131,7 @@ describe('Mantenimiento -> Encabezado y Modal de Generar Código de Descuento', 
       });
 
       // Título de la modal
-      const modalTitle = screen.getByRole('heading', { name: /generar código de descuento/i });
+      const modalTitle = screen.getByRole('heading', { name: /^generar código$/i });
       expect(modalTitle).not.toBeNull();
 
       // Párrafo eliminado

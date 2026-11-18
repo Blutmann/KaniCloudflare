@@ -627,7 +627,7 @@ export function AdminScheduleManager() {
           }}
         >
           <div className="kani-modal-header">
-            <DialogTitle>Agregar horario de disponibilidad</DialogTitle>
+            <DialogTitle>Agregar horario</DialogTitle>
             <DialogDescription className="sr-only">
               Agregar horario
             </DialogDescription>

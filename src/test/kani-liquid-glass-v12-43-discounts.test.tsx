@@ -360,13 +360,13 @@ describe('V12.43 — Rediseño de Descuentos Liquid Glass y navegación compacta
     fireEvent.click(screen.getByRole('button', { name: /Nueva membresía/i }));
     const createDialog = screen.getByRole('dialog');
     expect(createDialog).toBeInTheDocument();
-    expect(within(createDialog).getByRole('heading', { name: 'Nueva membresía prepagada' })).toBeInTheDocument();
+    expect(within(createDialog).getByRole('heading', { name: 'Nueva membresía' })).toBeInTheDocument();
     expect(
       within(createDialog).queryByText(
         /Configurá la combinación de servicios\. Los precios actuales quedan congelados en la membresía al crearse\./i,
       ),
     ).toBeNull();
-    expect(within(createDialog).getByText('Composición de servicios permitidos')).toBeInTheDocument();
+    expect(within(createDialog).getByText('Tipo de membresía')).toBeInTheDocument();
   });
 
   it('5. CSS de Liquid Glass Admin protege navegación mobile en una sola línea y aplica cristal a .kani-dcard sin usar :first-child roto', () => {

@@ -146,7 +146,7 @@ describe("V12.47.18 — Definitive Prices, Homogeneous Memberships, Manual Rows 
     fireEvent.click(screen.getByRole("button", { name: /generar código/i }));
 
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: /generar código de descuento/i })).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: /^generar código$/i })).toBeInTheDocument();
     });
 
     expect(screen.queryByLabelText(/nota interna/i)).not.toBeInTheDocument();
