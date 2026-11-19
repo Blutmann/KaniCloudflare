@@ -727,7 +727,7 @@ export function EditMembershipModal({
                       <div>
                         <button
                           type="button"
-                          className="v2-quiet kani-medit-note-toggle"
+                          className="kani-medit-note-toggle"
                           disabled={busy}
                           onClick={() => setShowConsumeNotes(true)}
                         >
@@ -806,7 +806,7 @@ export function EditMembershipModal({
                       <div>
                         <button
                           type="button"
-                          className="v2-quiet kani-medit-note-toggle"
+                          className="kani-medit-note-toggle"
                           disabled={busy}
                           onClick={() => setShowEditNotes(true)}
                         >
@@ -840,9 +840,11 @@ export function EditMembershipModal({
                         target="_blank"
                         rel="noopener noreferrer"
                         className="v2-secondary kani-medit-card-ver"
+                        aria-label="Ver tarjeta digital"
                       >
                         <ExternalLink size={14} aria-hidden="true" />
-                        <span>Ver</span>
+                        <span className="kani-medit-ver-short" aria-hidden="true">Ver</span>
+                        <span className="kani-medit-ver-full" aria-hidden="true">Ver tarjeta digital</span>
                       </a>
                       <button
                         type="button"
@@ -857,22 +859,20 @@ export function EditMembershipModal({
                           <Copy size={15} aria-hidden="true" />
                         )}
                       </button>
-                    </div>
-                    {copied && (
-                      <span className="kani-medit-copy-feedback">Enlace copiado</span>
-                    )}
-                    {isOperator && (
-                      <div className="kani-medit-card-regen-row">
+                      {isOperator && (
                         <button
                           type="button"
-                          className="v2-secondary kani-medit-full-mobile kani-medit-btn-regen"
+                          className="v2-secondary kani-medit-btn-regen"
                           disabled={isRegenerating}
                           onClick={() => setConfirmRegenerate(true)}
                         >
                           <RefreshCw size={14} aria-hidden="true" />
                           <span>Regenerar enlace</span>
                         </button>
-                      </div>
+                      )}
+                    </div>
+                    {copied && (
+                      <span className="kani-medit-copy-feedback">Enlace copiado</span>
                     )}
                   </MembershipAccordionSection>
                 )}

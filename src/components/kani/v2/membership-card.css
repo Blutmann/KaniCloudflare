@@ -643,18 +643,32 @@ html[data-theme="dark"] .kani-mcard-btn-copy.is-copied {
   align-items: center;
   gap: 4px;
   align-self: flex-start;
-  background: transparent;
-  border: none;
-  padding: 4px 2px;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 8px;
+  padding: 6px 4px;
   min-height: 36px;
   font-size: 13px;
   font-weight: 500;
-  color: var(--gold, #b8963c);
+  color: var(--muted-foreground);
   cursor: pointer;
+  transition: color 140ms ease;
 }
 
-.kani-medit-note-toggle:hover {
-  text-decoration: underline;
+.kani-medit-note-toggle:hover:not(:disabled),
+.kani-medit-note-toggle:active:not(:disabled) {
+  color: var(--gold, #b8963c);
+}
+
+.kani-medit-note-toggle:focus-visible {
+  outline: 2px solid var(--gold, #b8963c);
+  outline-offset: 2px;
+}
+
+.kani-medit-note-toggle:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 @media (max-width: 767px) {
@@ -669,27 +683,68 @@ html[data-theme="dark"] .kani-mcard-btn-copy.is-copied {
 
 .kani-medit-card-actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   width: 100%;
 }
 
+.kani-medit-card-ver,
+.kani-medit-card-copy,
+.kani-medit-btn-regen {
+  height: 44px;
+  min-height: 44px;
+  border-radius: var(--v2-radius-btn, 12px) !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  box-sizing: border-box;
+  white-space: nowrap;
+}
+
 .kani-medit-card-ver {
   flex: 1 1 auto;
-  min-height: 44px;
-  justify-content: center;
-  font-size: 14px !important;
-  font-weight: 600 !important;
+  min-width: 0;
+  padding: 0 12px !important;
+}
+
+.kani-medit-ver-full {
+  display: none;
 }
 
 .kani-medit-card-copy {
-  flex: 0 0 auto;
+  flex: 0 0 44px;
   width: 44px;
   min-width: 44px;
-  height: 44px;
-  min-height: 44px;
   padding: 0 !important;
-  justify-content: center;
+}
+
+.kani-medit-btn-regen {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0 12px !important;
+}
+
+@media (max-width: 379px) {
+  .kani-medit-ver-short {
+    display: none;
+  }
+
+  .kani-medit-ver-full {
+    display: inline;
+  }
+
+  .kani-medit-card-ver {
+    flex: 1 1 calc(100% - 52px);
+  }
+
+  .kani-medit-btn-regen {
+    flex: 0 0 100%;
+    width: 100%;
+  }
 }
 
 .kani-medit-copy-feedback {
@@ -701,20 +756,6 @@ html[data-theme="dark"] .kani-mcard-btn-copy.is-copied {
 
 .dark .kani-medit-copy-feedback {
   color: #4ade80;
-}
-
-.kani-medit-card-regen-row {
-  display: flex;
-  width: 100%;
-  padding-top: 2px;
-}
-
-.kani-medit-btn-regen {
-  width: 100%;
-  min-height: 42px;
-  justify-content: center;
-  font-size: 13px !important;
-  font-weight: 500 !important;
 }
 
 .kani-medit-history-info {
