@@ -855,93 +855,113 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                       )}
                     </div>
 
-                    {/* Nivel 5: Sección expandible "Detalles" */}
+                    {/* Nivel 5: Sección expandible "Detalles" (v2.2: 3 categorías) */}
                     {isExpanded && (
                       <div className="kani-dcard-details" data-testid={`discount-details-${item.id}`}>
-                        <dl className="kani-dcard-kv-grid">
-                          <div className="kani-dcard-kv is-full">
-                            <dt className="kani-dcard-kv-label">Estado completo</dt>
-                            <dd className="kani-dcard-kv-value">
-                              {statusDisplay.fullDescription}
-                              {item.isLockedInCheckout && status === 'ACTIVE'
-                                ? ' (en proceso de checkout)'
-                                : ''}
-                            </dd>
-                          </div>
-
-                          <div className="kani-dcard-kv is-full">
-                            <dt className="kani-dcard-kv-label">Condiciones</dt>
-                            <dd className="kani-dcard-kv-value">
-                              {usageDef.label} · {def.description}{' '}
-                              {item.validityType === 'NO_EXPIRATION' || !item.validUntil
-                                ? 'Sin fecha de vencimiento.'
-                                : `Vigencia hasta ${formatBuenosAiresDate(item.validUntil)} (23:59 hs).`}
-                            </dd>
-                          </div>
-
-                          <div className="kani-dcard-kv">
-                            <dt className="kani-dcard-kv-label">Creado el</dt>
-                            <dd className="kani-dcard-kv-value">
-                              {item.createdAt ? formatBuenosAiresDateTime(item.createdAt) : 'Sin registro'}
-                            </dd>
-                          </div>
-
-                          <div className="kani-dcard-kv">
-                            <dt className="kani-dcard-kv-label">Creado por</dt>
-                            <dd className="kani-dcard-kv-value">
-                              {item.createdByDisplayName || 'Sin registro'}
-                            </dd>
-                          </div>
-
-                          <div className="kani-dcard-kv">
-                            <dt className="kani-dcard-kv-label">Última edición</dt>
-                            <dd className="kani-dcard-kv-value">
-                              {item.lastEditedAt
-                                ? formatBuenosAiresDateTime(item.lastEditedAt)
-                                : 'Sin modificaciones'}
-                            </dd>
-                          </div>
-
-                          <div className="kani-dcard-kv">
-                            <dt className="kani-dcard-kv-label">Editado por</dt>
-                            <dd className="kani-dcard-kv-value">
-                              {item.lastEditedByDisplayName ||
-                                (item.lastEditedAt ? 'Sin registro' : 'Sin modificaciones')}
-                            </dd>
-                          </div>
-
-                          {changeReason && (
+                        {/* A. Condiciones (visible inicialmente) */}
+                        <div className="kani-dcard-group" aria-label="Condiciones">
+                          <h4 className="kani-dcard-group-title">Condiciones</h4>
+                          <dl className="kani-dcard-kv-grid">
                             <div className="kani-dcard-kv is-full">
-                              <dt className="kani-dcard-kv-label">Motivo</dt>
-                              <dd className="kani-dcard-kv-value">{changeReason}</dd>
+                              <dt className="kani-dcard-kv-label">Estado</dt>
+                              <dd className="kani-dcard-kv-value">
+                                {status === 'ACTIVE'
+                                  ? item.isLockedInCheckout
+                                    ? 'Activo (en checkout)'
+                                    : 'Activo'
+                                  : statusDisplay.fullDescription}
+                              </dd>
                             </div>
-                          )}
 
-                          {deactivationOrDeletionInfo && (
                             <div className="kani-dcard-kv is-full">
-                              <dt className="kani-dcard-kv-label">
-                                {status === 'DELETED' || item.deletedAt
-                                  ? 'Eliminación'
-                                  : 'Desactivación'}
-                              </dt>
-                              <dd className="kani-dcard-kv-value">{deactivationOrDeletionInfo}</dd>
+                              <dt className="kani-dcard-kv-label">Alcance y vigencia</dt>
+                              <dd className="kani-dcard-kv-value">
+                                {usageDef.label} · {def.description}{' '}
+                                {item.validityType === 'NO_EXPIRATION' || !item.validUntil
+                                  ? 'Sin vencimiento.'
+                                  : `Hasta ${formatBuenosAiresDate(item.validUntil)} (23:59 hs).`}
+                              </dd>
                             </div>
-                          )}
 
-                          <div className="kani-dcard-kv is-full">
-                            <dt className="kani-dcard-kv-label">Notas internas</dt>
-                            <dd className="kani-dcard-kv-value">
-                              {item.internalNote || 'Sin notas internas'}
-                            </dd>
-                          </div>
-                        </dl>
+                            <div className="kani-dcard-kv is-full">
+                              <dt className="kani-dcard-kv-label">Notas internas</dt>
+                              <dd className="kani-dcard-kv-value">
+                                {item.internalNote || 'Sin notas'}
+                              </dd>
+                            </div>
+                          </dl>
+                        </div>
 
-                        {(usagesList.length > 0 || hasLegacyUsage) && (
-                          <div className="kani-dcard-usages">
-                            <h4 className="kani-dcard-usages-title">
-                              Historial de usos ({usageCount})
-                            </h4>
+                        {/* B. Información administrativa (contraída inicialmente) */}
+                        <details className="kani-dcard-subgroup">
+                          <summary className="kani-dcard-subgroup-summary">
+                            <span>Información administrativa</span>
+                            <ChevronDown size={14} className="kani-dcard-subgroup-chevron" aria-hidden="true" />
+                          </summary>
+                          <dl className="kani-dcard-kv-grid kani-dcard-subgroup-body">
+                            <div className="kani-dcard-kv">
+                              <dt className="kani-dcard-kv-label">Creado el</dt>
+                              <dd className="kani-dcard-kv-value">
+                                {item.createdAt ? formatBuenosAiresDateTime(item.createdAt) : 'Sin registro'}
+                              </dd>
+                            </div>
 
+                            <div className="kani-dcard-kv">
+                              <dt className="kani-dcard-kv-label">Creado por</dt>
+                              <dd className="kani-dcard-kv-value">
+                                {item.createdByDisplayName || 'Sin registro'}
+                              </dd>
+                            </div>
+
+                            {item.lastEditedAt ? (
+                              <>
+                                <div className="kani-dcard-kv">
+                                  <dt className="kani-dcard-kv-label">Última edición</dt>
+                                  <dd className="kani-dcard-kv-value">
+                                    {formatBuenosAiresDateTime(item.lastEditedAt)}
+                                  </dd>
+                                </div>
+                                <div className="kani-dcard-kv">
+                                  <dt className="kani-dcard-kv-label">Editado por</dt>
+                                  <dd className="kani-dcard-kv-value">
+                                    {item.lastEditedByDisplayName || 'Sin registro'}
+                                  </dd>
+                                </div>
+                              </>
+                            ) : (
+                              <div className="kani-dcard-kv is-full">
+                                <dt className="kani-dcard-kv-label">Modificaciones</dt>
+                                <dd className="kani-dcard-kv-value">Sin modificaciones</dd>
+                              </div>
+                            )}
+
+                            {changeReason && (
+                              <div className="kani-dcard-kv is-full">
+                                <dt className="kani-dcard-kv-label">Motivo</dt>
+                                <dd className="kani-dcard-kv-value">{changeReason}</dd>
+                              </div>
+                            )}
+
+                            {deactivationOrDeletionInfo && (
+                              <div className="kani-dcard-kv is-full">
+                                <dt className="kani-dcard-kv-label">
+                                  {status === 'DELETED' || item.deletedAt
+                                    ? 'Eliminación'
+                                    : 'Desactivación'}
+                                </dt>
+                                <dd className="kani-dcard-kv-value">{deactivationOrDeletionInfo}</dd>
+                              </div>
+                            )}
+                          </dl>
+                        </details>
+
+                        {/* C. Historial de usos (contraída inicialmente) */}
+                        <details className="kani-dcard-subgroup">
+                          <summary className="kani-dcard-subgroup-summary">
+                            <span>Historial de usos ({usageCount})</span>
+                            <ChevronDown size={14} className="kani-dcard-subgroup-chevron" aria-hidden="true" />
+                          </summary>
+                          <div className="kani-dcard-subgroup-body kani-dcard-usages">
                             {usagesList.length > 0 ? (
                               usagesList.map((u) => (
                                 <div key={u.id} className="kani-dcard-usage-row">
@@ -994,7 +1014,7 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                                   )}
                                 </div>
                               ))
-                            ) : (
+                            ) : hasLegacyUsage ? (
                               <div className="kani-dcard-usage-row">
                                 <div className="kani-dcard-usage-top">
                                   <div>
@@ -1027,9 +1047,13 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                                   </div>
                                 )}
                               </div>
+                            ) : (
+                              <p style={{ margin: 0, fontSize: '12px', color: 'var(--dc-muted)' }}>
+                                Sin utilizaciones registradas.
+                              </p>
                             )}
                           </div>
-                        )}
+                        </details>
 
                         {status !== 'DELETED' && (
                           <div className="kani-dcard-details-danger">
@@ -1388,9 +1412,9 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
           </div>
 
           <form onSubmit={handleEditValiditySubmit} className="benefit-code-dialog-form flex flex-col flex-1 min-h-0">
-            <div className="benefit-code-dialog-scroll-body kani-modal-body space-y-3">
-              <div className="space-y-1">
-                <span className="text-xs font-semibold text-foreground block">
+            <div className="benefit-code-dialog-scroll-body kani-modal-body">
+              <div className="kani-dvalidity-field">
+                <span className="text-xs font-medium text-foreground block">
                   Código de descuento
                 </span>
                 <div className="kani-dvalidity-code-box select-all" aria-label="Código de descuento">
@@ -1398,15 +1422,15 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                 </div>
               </div>
 
-              <div className="space-y-1.5">
-                <label htmlFor="edit-validity-type" className="text-xs font-semibold text-foreground block">
+              <div className="kani-dvalidity-field">
+                <label htmlFor="edit-validity-type" className="text-xs font-medium text-foreground block">
                   Vigencia
                 </label>
                 <select
                   id="edit-validity-type"
                   value={editValidityType}
                   onChange={(e) => setEditValidityType(e.target.value as BenefitValidityType)}
-                  className="h-10 w-full px-3 text-xs bg-background border border-input rounded-md text-foreground focus:outline-none focus:ring-1 focus:ring-gold"
+                  className="h-10 w-full px-3 text-sm bg-background border border-input rounded-md text-foreground focus:outline-none focus:ring-1 focus:ring-gold"
                 >
                   <option value="NO_EXPIRATION">Sin vencimiento</option>
                   <option value="ONE_WEEK">Durante una semana (7 días)</option>
@@ -1506,14 +1530,14 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                 variant="outline"
                 onClick={() => setCodeToEditValidity(null)}
                 disabled={editingValidity}
-                className="v2-secondary min-h-[44px] text-xs"
+                className="v2-secondary min-h-[44px]"
               >
                 Cancelar
               </Button>
               <Button
                 type="submit"
                 disabled={editingValidity}
-                className="action-positive min-h-[44px] text-xs font-semibold"
+                className="action-positive min-h-[44px]"
               >
                 {editingValidity ? <RefreshCw size={14} className="animate-spin mr-1.5" /> : null}
                 <span>{editingValidity ? 'Guardando…' : 'Guardar'}</span>

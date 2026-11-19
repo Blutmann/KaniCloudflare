@@ -304,13 +304,23 @@ describe('V12.43 — Rediseño de Descuentos Liquid Glass y navegación compacta
     expect(within(activeCard).queryByText('Campaña clientes VIP')).not.toBeInTheDocument();
     expect(within(activeCard).queryByText('Marcos Gómez')).not.toBeInTheDocument();
 
-    // Abrir Detalles en tarjeta activa
+    // Abrir Detalles en tarjeta activa (Condiciones abierta; Info administrativa e Historial contraídos)
     fireEvent.click(within(activeCard).getByRole('button', { name: /Detalles/i }));
-    expect(within(activeCard).getByText('Activo y disponible para reservas')).toBeInTheDocument();
+    expect(within(activeCard).getByText('Condiciones')).toBeInTheDocument();
+    expect(within(activeCard).getAllByText('Activo').length).toBeGreaterThanOrEqual(2);
     expect(within(activeCard).getByText(/Reutilizable · Bonificación del 10%/i)).toBeInTheDocument();
+    expect(within(activeCard).getByText('Campaña clientes VIP')).toBeInTheDocument();
+
+    const adminSummary = within(activeCard).getByText('Información administrativa');
+    const historySummary = within(activeCard).getByText('Historial de usos (1)');
+    expect((adminSummary.closest('details') as HTMLDetailsElement).open).toBe(false);
+    expect((historySummary.closest('details') as HTMLDetailsElement).open).toBe(false);
+
+    fireEvent.click(adminSummary);
     expect(within(activeCard).getByText('Kani Admin')).toBeInTheDocument();
     expect(within(activeCard).getByText('Tomás')).toBeInTheDocument();
-    expect(within(activeCard).getByText('Campaña clientes VIP')).toBeInTheDocument();
+
+    fireEvent.click(historySummary);
     expect(within(activeCard).getByText(/Marcos Gómez/i)).toBeInTheDocument();
     expect(within(activeCard).getByText(/Turno #1201/i)).toBeInTheDocument();
     // No inventa motivo de modificación cuando no existe

@@ -697,7 +697,78 @@ html[data-theme="dark"] .kani-dcard-copied-tag {
   }
 }
 
-/* Modal Editar vigencia (v2.1) */
+/* Detalles agrupados en 3 categorías (v2.2) */
+.kani-dcard-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.kani-dcard-group-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--dc-muted);
+}
+
+.kani-dcard-subgroup {
+  border-top: 1px solid var(--dc-border);
+  padding-top: 6px;
+}
+
+.kani-dcard-subgroup-summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 40px;
+  padding: 4px 2px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--dc-text);
+  cursor: pointer;
+  user-select: none;
+}
+
+.kani-dcard-subgroup-summary::-webkit-details-marker {
+  display: none;
+}
+
+.kani-dcard-subgroup-summary:focus-visible {
+  outline: 2px solid var(--gold, #c9a15d);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+.kani-dcard-subgroup-chevron {
+  flex-shrink: 0;
+  color: var(--dc-muted);
+  transition: transform 180ms ease;
+}
+
+.kani-dcard-subgroup[open] .kani-dcard-subgroup-chevron {
+  transform: rotate(180deg);
+}
+
+.kani-dcard-subgroup-body {
+  padding-top: 8px;
+  padding-bottom: 4px;
+  border-top: none !important;
+}
+
+/* Modal Editar vigencia (v2.2 spacing & unified 14px button typography) */
+.kani-dvalidity-dialog .kani-modal-body {
+  padding: 16px 20px !important;
+  gap: 14px !important;
+}
+
+.kani-dvalidity-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
 .kani-dvalidity-code-box {
   padding: 9px 12px;
   border-radius: 10px;
@@ -705,7 +776,7 @@ html[data-theme="dark"] .kani-dcard-copied-tag {
   border: 1px solid var(--border);
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: 0.03em;
   color: var(--muted-foreground);
   overflow-wrap: anywhere;
@@ -713,7 +784,7 @@ html[data-theme="dark"] .kani-dcard-copied-tag {
 }
 
 .kani-dvalidity-note {
-  margin: 0;
+  margin: 2px 0 0;
   font-size: 12px;
   line-height: 1.4;
   color: var(--muted-foreground);
@@ -729,6 +800,15 @@ html[data-theme="dark"] .kani-dcard-copied-tag {
 .kani-dvalidity-footer > button {
   flex: 1 1 0;
   min-width: 0;
+  font-size: 14px !important;
+}
+
+.kani-dvalidity-footer > button.v2-secondary {
+  font-weight: 500 !important;
+}
+
+.kani-dvalidity-footer > button.action-positive {
+  font-weight: 600 !important;
 }
 
 @media (max-width: 280px) {
