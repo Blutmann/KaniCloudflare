@@ -304,23 +304,32 @@ describe('V12.43 — Rediseño de Descuentos Liquid Glass y navegación compacta
     expect(within(activeCard).queryByText('Campaña clientes VIP')).not.toBeInTheDocument();
     expect(within(activeCard).queryByText('Marcos Gómez')).not.toBeInTheDocument();
 
-    // Abrir Detalles en tarjeta activa (Condiciones abierta; Info administrativa e Historial contraídos)
-    fireEvent.click(within(activeCard).getByRole('button', { name: /Detalles/i }));
-    expect(within(activeCard).getByText('Condiciones')).toBeInTheDocument();
+    // Abrir Secciones en tarjeta activa: las 3 categorías comienzan contraídas y son mutuamente excluyentes
+    fireEvent.click(within(activeCard).getByRole('button', { name: /Secciones/i }));
+    const condBtn = within(activeCard).getByRole('button', { name: /^Condiciones$/i });
+    const adminBtn = within(activeCard).getByRole('button', { name: /^Información administrativa$/i });
+    const historyBtn = within(activeCard).getByRole('button', { name: /^Historial de usos \(1\)$/i });
+
+    expect(condBtn).toHaveAttribute('aria-expanded', 'false');
+    expect(adminBtn).toHaveAttribute('aria-expanded', 'false');
+    expect(historyBtn).toHaveAttribute('aria-expanded', 'false');
+    expect(within(activeCard).queryByText('Campaña clientes VIP')).not.toBeInTheDocument();
+
+    fireEvent.click(condBtn);
+    expect(condBtn).toHaveAttribute('aria-expanded', 'true');
     expect(within(activeCard).getAllByText('Activo').length).toBeGreaterThanOrEqual(2);
     expect(within(activeCard).getByText(/Reutilizable · Bonificación del 10%/i)).toBeInTheDocument();
     expect(within(activeCard).getByText('Campaña clientes VIP')).toBeInTheDocument();
 
-    const adminSummary = within(activeCard).getByText('Información administrativa');
-    const historySummary = within(activeCard).getByText('Historial de usos (1)');
-    expect((adminSummary.closest('details') as HTMLDetailsElement).open).toBe(false);
-    expect((historySummary.closest('details') as HTMLDetailsElement).open).toBe(false);
-
-    fireEvent.click(adminSummary);
+    fireEvent.click(adminBtn);
+    expect(condBtn).toHaveAttribute('aria-expanded', 'false');
+    expect(adminBtn).toHaveAttribute('aria-expanded', 'true');
     expect(within(activeCard).getByText('Kani Admin')).toBeInTheDocument();
     expect(within(activeCard).getByText('Tomás')).toBeInTheDocument();
 
-    fireEvent.click(historySummary);
+    fireEvent.click(historyBtn);
+    expect(adminBtn).toHaveAttribute('aria-expanded', 'false');
+    expect(historyBtn).toHaveAttribute('aria-expanded', 'true');
     expect(within(activeCard).getByText(/Marcos Gómez/i)).toBeInTheDocument();
     expect(within(activeCard).getByText(/Turno #1201/i)).toBeInTheDocument();
     // No inventa motivo de modificación cuando no existe
@@ -332,7 +341,8 @@ describe('V12.43 — Rediseño de Descuentos Liquid Glass y navegación compacta
     expect(within(disabledCard).getByText('Servicio gratuito')).toBeInTheDocument();
     expect(within(disabledCard).getByText('Inactivo')).toBeInTheDocument();
     expect(within(disabledCard).getByRole('button', { name: /Activar/i })).toBeInTheDocument();
-    fireEvent.click(within(disabledCard).getByRole('button', { name: /Detalles/i }));
+    fireEvent.click(within(disabledCard).getByRole('button', { name: /Secciones/i }));
+    fireEvent.click(within(disabledCard).getByRole('button', { name: /^Información administrativa$/i }));
     expect(within(disabledCard).getByText(/Desactivado manualmente por Lucas el/i)).toBeInTheDocument();
 
     // Tarjeta Vencida
@@ -352,7 +362,8 @@ describe('V12.43 — Rediseño de Descuentos Liquid Glass y navegación compacta
     expect(within(deletedCard).queryByRole('button', { name: /Editar/i })).not.toBeInTheDocument();
     expect(within(deletedCard).queryByRole('button', { name: /Activar/i })).not.toBeInTheDocument();
     expect(within(deletedCard).queryByRole('button', { name: /Eliminar/i })).not.toBeInTheDocument();
-    fireEvent.click(within(deletedCard).getByRole('button', { name: /Detalles/i }));
+    fireEvent.click(within(deletedCard).getByRole('button', { name: /Secciones/i }));
+    fireEvent.click(within(deletedCard).getByRole('button', { name: /^Información administrativa$/i }));
     expect(within(deletedCard).getByText(/Eliminado por Admin Root el/i)).toBeInTheDocument();
   });
 
@@ -464,7 +475,7 @@ describe('V12.43 — Rediseño de Descuentos Liquid Glass y navegación compacta
     });
 
     const activeCard = screen.getByTestId('discount-card-disc-active');
-    fireEvent.click(within(activeCard).getByRole('button', { name: /Detalles/i }));
+    fireEvent.click(within(activeCard).getByRole('button', { name: /Secciones/i }));
     const activeDetails = screen.getByTestId('discount-details-disc-active');
     const dangerBtn = within(activeDetails).getByRole('button', { name: /Eliminar código/i });
     expect(dangerBtn).toBeInTheDocument();
@@ -475,7 +486,7 @@ describe('V12.43 — Rediseño de Descuentos Liquid Glass y navegación compacta
 
     // Códigos ya eliminados no muestran botón Eliminar dentro de Detalles
     const deletedCard = screen.getByTestId('discount-card-disc-deleted');
-    fireEvent.click(within(deletedCard).getByRole('button', { name: /Detalles/i }));
+    fireEvent.click(within(deletedCard).getByRole('button', { name: /Secciones/i }));
     const deletedDetails = screen.getByTestId('discount-details-disc-deleted');
     expect(within(deletedDetails).queryByRole('button', { name: /Eliminar/i })).not.toBeInTheDocument();
 
