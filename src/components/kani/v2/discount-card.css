@@ -712,33 +712,50 @@ html[data-theme="dark"] .kani-dcard-copied-tag {
 }
 
 .kani-dcard-subgroup {
-  border-top: 1px solid var(--dc-border);
-  padding-top: 6px;
+  border: 1px solid var(--dc-inset-border, var(--dc-border));
+  border-radius: 12px;
+  background: var(--dc-inset-bg, transparent);
+  overflow: hidden;
 }
 
 .kani-dcard-subgroup-summary {
-  list-style: none;
+  width: 100%;
+  background: transparent;
+  border: none;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  min-height: 40px;
-  padding: 4px 2px;
+  min-height: 44px;
+  padding: 0 12px;
   font-size: 13px;
   font-weight: 500;
   color: var(--dc-text);
   cursor: pointer;
   user-select: none;
+  text-align: left;
 }
 
-.kani-dcard-subgroup-summary::-webkit-details-marker {
-  display: none;
+.kani-dcard-subgroup-leading {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.kani-dcard-subgroup-icon {
+  flex-shrink: 0;
+  color: var(--dc-muted);
+}
+
+.kani-dcard-subgroup-summary:hover {
+  color: var(--gold, #c9a15d);
 }
 
 .kani-dcard-subgroup-summary:focus-visible {
   outline: 2px solid var(--gold, #c9a15d);
-  outline-offset: 2px;
-  border-radius: 6px;
+  outline-offset: -2px;
+  border-radius: 12px;
 }
 
 .kani-dcard-subgroup-chevron {
@@ -747,14 +764,14 @@ html[data-theme="dark"] .kani-dcard-copied-tag {
   transition: transform 180ms ease;
 }
 
-.kani-dcard-subgroup[open] .kani-dcard-subgroup-chevron {
+.kani-dcard-subgroup.is-open .kani-dcard-subgroup-chevron {
   transform: rotate(180deg);
+  color: var(--gold, #c9a15d);
 }
 
 .kani-dcard-subgroup-body {
-  padding-top: 8px;
-  padding-bottom: 4px;
-  border-top: none !important;
+  padding: 4px 12px 12px;
+  border-top: 1px solid var(--dc-inset-border, var(--dc-border)) !important;
 }
 
 /* Modal Editar vigencia (v2.2 spacing & unified 14px button typography) */
@@ -899,6 +916,28 @@ html[data-theme="dark"] .kani-dcard-copied-tag {
 }
 
 @media (max-width: 767px) {
+  .kani-dtoolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .kani-dtoolbar-refresh-btn {
+    display: none !important;
+  }
+
+  .kani-dtoolbar-actions {
+    width: 100%;
+  }
+
+  .kani-dtoolbar-generate-btn {
+    width: 100%;
+    min-height: 44px !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    border-radius: var(--v2-radius-btn, 12px) !important;
+    justify-content: center;
+  }
+
   .kani-dcard-code-group {
     background: color-mix(in srgb, var(--gold, #b8963c) 8%, transparent);
     border: 1px solid color-mix(in srgb, var(--gold, #b8963c) 24%, var(--border));
@@ -906,5 +945,39 @@ html[data-theme="dark"] .kani-dcard-copied-tag {
     padding: 8px 10px;
   }
 }
+
+.kani-dcard-details-danger {
+  display: flex;
+  padding-top: 8px;
+  margin-top: 4px;
+  border-top: 1px solid var(--dc-inset-border, var(--dc-border));
+}
+
+.kani-dcard-details-delete-btn.is-destructive {
+  width: 100%;
+  min-height: 44px;
+  border-radius: var(--v2-radius-btn, 12px) !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  color: #dc2626 !important;
+  background: rgba(220, 38, 38, 0.07) !important;
+  border: 1px solid rgba(220, 38, 38, 0.34) !important;
+  cursor: pointer;
+}
+
+.kani-dcard-details-delete-btn.is-destructive:hover:not(:disabled) {
+  background: rgba(220, 38, 38, 0.13) !important;
+}
+
+html[data-theme="dark"] .kani-dcard-details-delete-btn.is-destructive {
+  color: #fca5a5 !important;
+  background: rgba(248, 113, 113, 0.12) !important;
+  border-color: rgba(248, 113, 113, 0.36) !important;
+}
+
 
 
