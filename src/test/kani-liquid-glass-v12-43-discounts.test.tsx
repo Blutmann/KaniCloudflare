@@ -288,7 +288,7 @@ describe('V12.43 — Rediseño de Descuentos Liquid Glass y navegación compacta
     expect(within(activeCard).getByText('Activo')).toBeInTheDocument();
     expect(within(activeCard).getByText('1 uso')).toBeInTheDocument();
     expect(within(activeCard).getByRole('button', { name: 'Copiar código KANI-10-ACTIVE' })).toBeEnabled();
-    expect(within(activeCard).getByRole('button', { name: /Vigencia/i })).toBeInTheDocument();
+    expect(within(activeCard).getByRole('button', { name: /Editar/i })).toBeInTheDocument();
     expect(within(activeCard).getByRole('button', { name: /Desactivar/i })).toBeInTheDocument();
     expect(within(activeCard).getByRole('button', { name: /Eliminar código KANI-10-ACTIVE/i })).toBeInTheDocument();
 
@@ -340,7 +340,7 @@ describe('V12.43 — Rediseño de Descuentos Liquid Glass y navegación compacta
     expect(expiredCard).toHaveAttribute('data-status', 'EXPIRED');
     expect(within(expiredCard).getByText('50% de descuento')).toBeInTheDocument();
     expect(within(expiredCard).getByText('Vencido')).toBeInTheDocument();
-    expect(within(expiredCard).getByRole('button', { name: /Vigencia/i })).toBeInTheDocument();
+    expect(within(expiredCard).getByRole('button', { name: /Editar/i })).toBeInTheDocument();
     expect(within(expiredCard).queryByRole('button', { name: /Desactivar/i })).not.toBeInTheDocument();
 
     // Tarjeta Eliminada: conservada para auditoría, copia deshabilitada y sin editar/activar/eliminar
@@ -349,7 +349,7 @@ describe('V12.43 — Rediseño de Descuentos Liquid Glass y navegación compacta
     expect(within(deletedCard).getByText('Reserva sin seña')).toBeInTheDocument();
     expect(within(deletedCard).getByText('Eliminado')).toBeInTheDocument();
     expect(within(deletedCard).getByRole('button', { name: 'Copiar código KANI-DEL-99' })).toBeDisabled();
-    expect(within(deletedCard).queryByRole('button', { name: /Vigencia/i })).not.toBeInTheDocument();
+    expect(within(deletedCard).queryByRole('button', { name: /Editar/i })).not.toBeInTheDocument();
     expect(within(deletedCard).queryByRole('button', { name: /Activar/i })).not.toBeInTheDocument();
     expect(within(deletedCard).queryByRole('button', { name: /Eliminar/i })).not.toBeInTheDocument();
     fireEvent.click(within(deletedCard).getByRole('button', { name: /Detalles/i }));
@@ -492,7 +492,7 @@ describe('V12.43 — Rediseño de Descuentos Liquid Glass y navegación compacta
     });
 
     const activeCard = screen.getByTestId('discount-card-disc-active');
-    fireEvent.click(within(activeCard).getByRole('button', { name: /Vigencia/i }));
+    fireEvent.click(within(activeCard).getByRole('button', { name: /Editar/i }));
 
     const dialog = await screen.findByRole('dialog');
     expect(within(dialog).getByRole('heading', { name: 'Editar vigencia' })).toBeInTheDocument();

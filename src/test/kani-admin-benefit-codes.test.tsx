@@ -269,7 +269,7 @@ describe('BenefitCodesAdminSection Component', () => {
     const disableBtn = screen.getByTitle('Desactivar este código');
     fireEvent.click(disableBtn);
 
-    const confirmDisableBtn = screen.getByRole('button', { name: /Confirmar desactivación/i });
+    const confirmDisableBtn = screen.getByRole('button', { name: /^Desactivar$/i });
     fireEvent.click(confirmDisableBtn);
 
     await waitFor(() => {

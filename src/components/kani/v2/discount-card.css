@@ -817,3 +817,94 @@ html[data-theme="dark"] .kani-dcard-copied-tag {
   }
 }
 
+/* Modal 3: Activar / Desactivar código (v2.3) */
+.kani-dtoggle-dialog {
+  max-width: 420px !important;
+}
+
+.kani-dtoggle-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 20px !important;
+}
+
+.kani-dvalidity-code-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.kani-dvalidity-code-label {
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted-foreground);
+}
+
+.kani-dvalidity-code-value {
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.kani-dtoggle-desc {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--muted-foreground);
+}
+
+.kani-dtoggle-footer {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.kani-dtoggle-footer > button {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 44px;
+  justify-content: center;
+  font-size: 14px !important;
+}
+
+.kani-dtoggle-footer > button.v2-secondary {
+  font-weight: 500 !important;
+}
+
+.kani-dtoggle-footer > button.v2-destructive {
+  font-weight: 600 !important;
+  background: #dc2626 !important;
+  color: #ffffff !important;
+  border: 1px solid #b91c1c !important;
+}
+
+.kani-dtoggle-footer > button.v2-destructive:hover:not(:disabled) {
+  background: #b91c1c !important;
+}
+
+.kani-dtoggle-footer > button.action-positive {
+  font-weight: 600 !important;
+}
+
+@media (max-width: 280px) {
+  .kani-dtoggle-footer {
+    flex-direction: column-reverse !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .kani-dcard-code-group {
+    background: color-mix(in srgb, var(--gold, #b8963c) 8%, transparent);
+    border: 1px solid color-mix(in srgb, var(--gold, #b8963c) 24%, var(--border));
+    border-radius: 12px;
+    padding: 8px 10px;
+  }
+}
+
+
