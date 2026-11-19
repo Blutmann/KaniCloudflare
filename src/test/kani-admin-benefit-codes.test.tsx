@@ -109,7 +109,7 @@ describe('BenefitCodesAdminSection Component', () => {
 
     // Associated reservation details live inside the expandable "Secciones" -> "Historial de usos"
     expect(screen.queryByText(/Juan Pérez/i)).not.toBeInTheDocument();
-    const detailButtons = screen.getAllByRole('button', { name: /Secciones/i });
+    const detailButtons = screen.getAllByRole('button', { name: /^Info$/i });
     expect(detailButtons).toHaveLength(3);
     fireEvent.click(detailButtons[0]);
     fireEvent.click(screen.getByRole('button', { name: /Historial de usos/i }));

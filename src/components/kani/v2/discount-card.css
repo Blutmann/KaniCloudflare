@@ -946,6 +946,13 @@ html[data-theme="dark"] .kani-dcard-copied-tag {
   }
 }
 
+.kani-dtoolbar-generate-btn {
+  border-radius: var(--v2-radius-btn, 12px) !important;
+  min-height: 40px;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+}
+
 .kani-dcard-details-danger {
   display: flex;
   padding-top: 8px;
@@ -956,6 +963,7 @@ html[data-theme="dark"] .kani-dcard-copied-tag {
 .kani-dcard-details-delete-btn.is-destructive {
   width: 100%;
   min-height: 44px;
+  height: 44px;
   border-radius: var(--v2-radius-btn, 12px) !important;
   display: inline-flex;
   align-items: center;
@@ -963,20 +971,26 @@ html[data-theme="dark"] .kani-dcard-copied-tag {
   gap: 8px;
   font-size: 14px !important;
   font-weight: 600 !important;
-  color: #dc2626 !important;
-  background: rgba(220, 38, 38, 0.07) !important;
-  border: 1px solid rgba(220, 38, 38, 0.34) !important;
+  color: #ffffff !important;
+  background: #881337 !important;
+  border: 1px solid #be123c !important;
   cursor: pointer;
+  transition: background-color 140ms ease, border-color 140ms ease;
 }
 
 .kani-dcard-details-delete-btn.is-destructive:hover:not(:disabled) {
-  background: rgba(220, 38, 38, 0.13) !important;
+  background: #9f1239 !important;
+  border-color: #e11d48 !important;
 }
 
 html[data-theme="dark"] .kani-dcard-details-delete-btn.is-destructive {
-  color: #fca5a5 !important;
-  background: rgba(248, 113, 113, 0.12) !important;
-  border-color: rgba(248, 113, 113, 0.36) !important;
+  color: #ffffff !important;
+  background: #881337 !important;
+  border-color: #be123c !important;
+}
+
+html[data-theme="dark"] .kani-dcard-details-delete-btn.is-destructive:hover:not(:disabled) {
+  background: #9f1239 !important;
 }
 
 
