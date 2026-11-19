@@ -437,6 +437,11 @@ describe("Restauración de cards de Membresías (/panel-administracion/membresia
     fireEvent.click(screen.getByRole("button", { name: /Nueva membresía/i }));
 
     const dialog = screen.getByRole("dialog");
+    const clientCombobox = within(dialog).getByRole("combobox", { name: "Cliente titular" });
+    expect(clientCombobox.className).toContain("overflow-hidden");
+    expect(clientCombobox.className).toContain("min-w-0");
+    expect(clientCombobox.textContent).toContain("Juan Pérez (1122334455)");
+
     expect(within(dialog).getByText("Barbero")).toBeInTheDocument();
     expect(within(dialog).getByText("Tipo de membresía")).toBeInTheDocument();
     expect(within(dialog).getAllByText("4 cortes").length).toBeGreaterThan(0);

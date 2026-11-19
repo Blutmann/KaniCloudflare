@@ -337,7 +337,6 @@ function formatMembershipEventType(eventType: string): string {
 function MembershipAccordionSection({
   id,
   title,
-  subtitle,
   icon,
   isOpen,
   onToggle,
@@ -345,7 +344,6 @@ function MembershipAccordionSection({
 }: {
   id: EditModalSectionId;
   title: string;
-  subtitle: string;
   icon: React.ReactNode;
   isOpen: boolean;
   onToggle: (id: EditModalSectionId) => void;
@@ -368,10 +366,7 @@ function MembershipAccordionSection({
           <span className="kani-medit-accordion-icon" aria-hidden="true">
             {icon}
           </span>
-          <span className="kani-medit-accordion-copy">
-            <span className="kani-medit-accordion-title">{title}</span>
-            <span className="kani-medit-accordion-subtitle">{subtitle}</span>
-          </span>
+          <span className="kani-medit-accordion-title">{title}</span>
         </span>
         <ChevronDown size={16} className="kani-medit-accordion-chevron" aria-hidden="true" />
       </button>
@@ -613,7 +608,6 @@ export function EditMembershipModal({
                 <MembershipAccordionSection
                   id="consume"
                   title="Registrar consumo"
-                  subtitle="Descontar una sesión utilizada"
                   icon={<CheckCircle2 size={16} />}
                   isOpen={openSection === "consume"}
                   onToggle={handleToggleSection}
@@ -709,7 +703,6 @@ export function EditMembershipModal({
               <MembershipAccordionSection
                 id="validity"
                 title="Vigencia"
-                subtitle="Vencimiento y notas internas"
                 icon={<Calendar size={16} />}
                 isOpen={openSection === "validity"}
                 onToggle={handleToggleSection}
@@ -762,7 +755,6 @@ export function EditMembershipModal({
                 <MembershipAccordionSection
                   id="card"
                   title="Tarjeta digital"
-                  subtitle="Abrir o compartir la tarjeta"
                   icon={<CreditCard size={16} />}
                   isOpen={openSection === "card"}
                   onToggle={handleToggleSection}
@@ -863,7 +855,6 @@ export function EditMembershipModal({
               <MembershipAccordionSection
                 id="history"
                 title="Historial de sesiones"
-                subtitle="Consumos y reintegros"
                 icon={<History size={16} />}
                 isOpen={openSection === "history"}
                 onToggle={handleToggleSection}
@@ -966,7 +957,6 @@ export function EditMembershipModal({
               <MembershipAccordionSection
                 id="activity"
                 title="Registro de actividad"
-                subtitle="Movimientos de la membresía"
                 icon={<Activity size={16} />}
                 isOpen={openSection === "activity"}
                 onToggle={handleToggleSection}

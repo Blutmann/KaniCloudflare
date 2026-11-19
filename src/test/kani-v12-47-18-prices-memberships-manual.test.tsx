@@ -77,7 +77,7 @@ describe("V12.47.18 — Definitive Prices, Homogeneous Memberships, Manual Rows 
     expect(HOMOGENEOUS_MEMBERSHIP_PACKAGES.map((p) => p.label)).toEqual([
       "4 cortes",
       "4 barbas",
-      "4 cortes y barbas",
+      "4 cortes con barba",
     ]);
 
     const cortes = buildHomogeneousMembershipPricing("CORTE_4");

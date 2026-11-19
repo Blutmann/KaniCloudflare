@@ -133,13 +133,13 @@ export function AdminClientCombobox({
             aria-label={ariaLabel}
             disabled={disabled}
             className={cn(
-              "v2-admin-select-trigger flex min-h-[44px] w-full items-center justify-between gap-2 rounded-md border border-input bg-background px-3 py-2 text-left text-sm text-foreground shadow-xs transition-colors focus:outline-none focus:ring-1 focus:ring-gold disabled:cursor-not-allowed disabled:opacity-50",
+              "v2-admin-select-trigger flex min-h-[44px] w-full min-w-0 max-w-full items-center justify-between gap-2.5 overflow-hidden rounded-md border border-input bg-background px-3 py-2 text-left text-sm text-foreground shadow-xs transition-colors focus:outline-none focus:ring-1 focus:ring-gold disabled:cursor-not-allowed disabled:opacity-50",
               !selectedClient && "text-muted-foreground",
             )}
           >
-            <span className="flex min-w-0 flex-1 items-center gap-2">
+            <span className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
               <UserRound size={15} className="shrink-0 text-gold" aria-hidden="true" />
-              <span className="truncate">
+              <span className="block min-w-0 flex-1 truncate">
                 {selectedClient
                   ? `${selectedClient.name}${selectedClient.phone ? ` (${selectedClient.phone})` : ""}`
                   : placeholder}

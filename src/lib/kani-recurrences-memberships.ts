@@ -247,7 +247,7 @@ export const HOMOGENEOUS_MEMBERSHIP_PACKAGES: ReadonlyArray<{
   { id: "BARBA_4", label: "4 barbas", serviceName: "Barba", packageSize: 4 },
   {
     id: "CORTE_BARBA_4",
-    label: "4 cortes y barbas",
+    label: "4 cortes con barba",
     serviceName: "Corte y barba",
     packageSize: 4,
   },
