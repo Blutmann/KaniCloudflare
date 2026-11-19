@@ -451,12 +451,10 @@ export function EditMembershipModal({
   const [consumeType, setConsumeType] = useState<MembershipConsumptionType>("SERVICE_COMPLETED");
   const [consumeAppointmentId, setConsumeAppointmentId] = useState("");
   const [consumeNotes, setConsumeNotes] = useState("");
-  const [showConsumeNotes, setShowConsumeNotes] = useState(false);
 
   const [expMode, setExpMode] = useState<"NONE" | "DATE">("NONE");
   const [expDate, setExpDate] = useState(addCalendarDays(today, 90));
   const [editNotes, setEditNotes] = useState("");
-  const [showEditNotes, setShowEditNotes] = useState(false);
 
   const [refundTarget, setRefundTarget] = useState<ClientMembershipRecord["consumptions"][number] | null>(null);
   const [confirmRegenerate, setConfirmRegenerate] = useState(false);
@@ -473,12 +471,10 @@ export function EditMembershipModal({
     setConsumeType("SERVICE_COMPLETED");
     setConsumeAppointmentId("");
     setConsumeNotes("");
-    setShowConsumeNotes(false);
     setExpMode(membership.expiresAt ? "DATE" : "NONE");
     setExpDate(membership.expiresAt || addCalendarDays(today, 90));
     const existingNotes = membership.notes || "";
     setEditNotes(existingNotes);
-    setShowEditNotes(Boolean(existingNotes.trim()));
     setRefundTarget(null);
     setConfirmRegenerate(false);
   }, [membership?.id, membership?.expiresAt, membership?.notes, membership?.status, membership?.remainingSessions, today]);
@@ -537,13 +533,14 @@ export function EditMembershipModal({
           className="v2-dialog kani-medit-dialog v2-modal-pinned-shell kani-modal-shell"
           transitionMode="container-transform"
           showCloseButton={false}
+          inert={hasSubDialogOpen || undefined}
         >
           {membership && (
             <>
               <div className="v2-modal-pinned-header kani-modal-header kani-medit-header">
                 <div className="kani-medit-header-copy">
                   <div className="kani-medit-title-row">
-                    <DialogTitle>Membresía</DialogTitle>
+                    <DialogTitle className="kani-modal-title">Membresía</DialogTitle>
                     <MembershipStatusBadge status={membership.status} />
                   </div>
                   <DialogDescription>
@@ -712,29 +709,21 @@ export function EditMembershipModal({
                         ))}
                       </select>
                     </label>
-                    {showConsumeNotes || consumeNotes.trim().length > 0 ? (
-                      <label className="v2-field">
-                        <span className="v2-field-label">Observación</span>
-                        <input
-                          type="text"
-                          value={consumeNotes}
-                          disabled={busy}
-                          onChange={(e) => setConsumeNotes(e.target.value)}
-                          placeholder="Opcional"
-                        />
-                      </label>
-                    ) : (
-                      <div>
-                        <button
-                          type="button"
-                          className="kani-medit-note-toggle"
-                          disabled={busy}
-                          onClick={() => setShowConsumeNotes(true)}
-                        >
-                          + Agregar observación
-                        </button>
-                      </div>
-                    )}
+                    <label className="v2-field">
+                      <span className="v2-field-label">Observación (opcional)</span>
+                      <textarea
+                        rows={1}
+                        className="kani-medit-textarea"
+                        value={consumeNotes}
+                        disabled={busy}
+                        onChange={(e) => {
+                          setConsumeNotes(e.target.value);
+                          e.currentTarget.style.height = "auto";
+                          e.currentTarget.style.height = `${Math.min(e.currentTarget.scrollHeight, 120)}px`;
+                        }}
+                        placeholder="Agregar una observación..."
+                      />
+                    </label>
                     <div className="kani-medit-row-actions">
                       <button
                         type="button"
@@ -791,29 +780,21 @@ export function EditMembershipModal({
                         </label>
                       )}
                     </div>
-                    {showEditNotes || editNotes.trim().length > 0 ? (
-                      <label className="v2-field">
-                        <span className="v2-field-label">Observaciones administrativas</span>
-                        <input
-                          type="text"
-                          value={editNotes}
-                          disabled={busy}
-                          onChange={(e) => setEditNotes(e.target.value)}
-                          placeholder="Motivo del cambio o nota interna"
-                        />
-                      </label>
-                    ) : (
-                      <div>
-                        <button
-                          type="button"
-                          className="kani-medit-note-toggle"
-                          disabled={busy}
-                          onClick={() => setShowEditNotes(true)}
-                        >
-                          + Agregar nota
-                        </button>
-                      </div>
-                    )}
+                    <label className="v2-field">
+                      <span className="v2-field-label">Nota administrativa (opcional)</span>
+                      <textarea
+                        rows={1}
+                        className="kani-medit-textarea"
+                        value={editNotes}
+                        disabled={busy}
+                        onChange={(e) => {
+                          setEditNotes(e.target.value);
+                          e.currentTarget.style.height = "auto";
+                          e.currentTarget.style.height = `${Math.min(e.currentTarget.scrollHeight, 120)}px`;
+                        }}
+                        placeholder="Agregar una nota..."
+                      />
+                    </label>
                     <div className="kani-medit-row-actions">
                       <button type="submit" className="v2-primary kani-medit-full-mobile" disabled={busy}>
                         {busy ? "Guardando…" : "Guardar vigencia"}
@@ -839,12 +820,10 @@ export function EditMembershipModal({
                         href={`/membresia/${membership.publicToken}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="v2-secondary kani-medit-card-ver"
-                        aria-label="Ver tarjeta digital"
+                        className="v2-primary kani-medit-card-ver"
                       >
                         <ExternalLink size={14} aria-hidden="true" />
-                        <span className="kani-medit-ver-short" aria-hidden="true">Ver</span>
-                        <span className="kani-medit-ver-full" aria-hidden="true">Ver tarjeta digital</span>
+                        <span>Ver tarjeta digital</span>
                       </a>
                       <button
                         type="button"
@@ -859,7 +838,12 @@ export function EditMembershipModal({
                           <Copy size={15} aria-hidden="true" />
                         )}
                       </button>
-                      {isOperator && (
+                    </div>
+                    {copied && (
+                      <span className="kani-medit-copy-feedback">Enlace copiado</span>
+                    )}
+                    {isOperator && (
+                      <div className="kani-medit-card-regen-row">
                         <button
                           type="button"
                           className="v2-secondary kani-medit-btn-regen"
@@ -869,10 +853,7 @@ export function EditMembershipModal({
                           <RefreshCw size={14} aria-hidden="true" />
                           <span>Regenerar enlace</span>
                         </button>
-                      )}
-                    </div>
-                    {copied && (
-                      <span className="kani-medit-copy-feedback">Enlace copiado</span>
+                      </div>
                     )}
                   </MembershipAccordionSection>
                 )}

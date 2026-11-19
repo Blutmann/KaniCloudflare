@@ -368,14 +368,17 @@ html[data-theme="dark"] .kani-mcard-btn-copy.is-copied {
 }
 
 .kani-medit-title-row {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 6px 8px;
+  gap: 8px;
   min-width: 0;
 }
 
-.kani-medit-title-row h2 {
+.kani-medit-title-row h2,
+.kani-medit-title-row .kani-modal-title {
+  width: auto !important;
+  flex: 0 0 auto !important;
   font-weight: 600 !important;
 }
 
@@ -638,37 +641,18 @@ html[data-theme="dark"] .kani-mcard-btn-copy.is-copied {
   color: var(--foreground);
 }
 
-.kani-medit-note-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  align-self: flex-start;
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  border-radius: 8px;
-  padding: 6px 4px;
-  min-height: 36px;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--muted-foreground);
-  cursor: pointer;
-  transition: color 140ms ease;
-}
-
-.kani-medit-note-toggle:hover:not(:disabled),
-.kani-medit-note-toggle:active:not(:disabled) {
-  color: var(--gold, #b8963c);
-}
-
-.kani-medit-note-toggle:focus-visible {
-  outline: 2px solid var(--gold, #b8963c);
-  outline-offset: 2px;
-}
-
-.kani-medit-note-toggle:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+.kani-medit-textarea {
+  width: 100%;
+  min-height: 44px;
+  max-height: 120px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  line-height: 1.4;
+  resize: none;
+  overflow-y: auto;
+  box-sizing: border-box;
+  field-sizing: content;
 }
 
 @media (max-width: 767px) {
@@ -683,7 +667,6 @@ html[data-theme="dark"] .kani-mcard-btn-copy.is-copied {
 
 .kani-medit-card-actions {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   width: 100%;
@@ -695,12 +678,11 @@ html[data-theme="dark"] .kani-mcard-btn-copy.is-copied {
   height: 44px;
   min-height: 44px;
   border-radius: var(--v2-radius-btn, 12px) !important;
-  font-size: 13px !important;
-  font-weight: 500 !important;
+  font-size: 14px !important;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 7px;
   box-sizing: border-box;
   white-space: nowrap;
 }
@@ -708,11 +690,8 @@ html[data-theme="dark"] .kani-mcard-btn-copy.is-copied {
 .kani-medit-card-ver {
   flex: 1 1 auto;
   min-width: 0;
-  padding: 0 12px !important;
-}
-
-.kani-medit-ver-full {
-  display: none;
+  padding: 0 14px !important;
+  font-weight: 600 !important;
 }
 
 .kani-medit-card-copy {
@@ -720,31 +699,18 @@ html[data-theme="dark"] .kani-mcard-btn-copy.is-copied {
   width: 44px;
   min-width: 44px;
   padding: 0 !important;
+  font-weight: 500 !important;
+}
+
+.kani-medit-card-regen-row {
+  display: flex;
+  width: 100%;
 }
 
 .kani-medit-btn-regen {
-  flex: 1 1 auto;
-  min-width: 0;
-  padding: 0 12px !important;
-}
-
-@media (max-width: 379px) {
-  .kani-medit-ver-short {
-    display: none;
-  }
-
-  .kani-medit-ver-full {
-    display: inline;
-  }
-
-  .kani-medit-card-ver {
-    flex: 1 1 calc(100% - 52px);
-  }
-
-  .kani-medit-btn-regen {
-    flex: 0 0 100%;
-    width: 100%;
-  }
+  width: 100%;
+  padding: 0 14px !important;
+  font-weight: 500 !important;
 }
 
 .kani-medit-copy-feedback {
@@ -813,9 +779,18 @@ html[data-theme="dark"] .kani-mcard-btn-copy.is-copied {
   color: var(--muted-foreground);
 }
 
-/* Independent v2.3 confirmation dialogs above EditMembershipModal */
+/* Independent v2.3/v2.5 confirmation dialogs above EditMembershipModal */
 .kani-mconfirm-overlay {
   z-index: 220 !important;
+  background: rgba(18, 16, 14, 0.44) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  backdrop-filter: blur(8px) !important;
+  pointer-events: auto !important;
+}
+
+html[data-theme="dark"] .kani-mconfirm-overlay,
+.dark .kani-mconfirm-overlay {
+  background: rgba(10, 9, 8, 0.6) !important;
 }
 
 .kani-mconfirm-dialog {
@@ -859,8 +834,17 @@ html[data-theme="dark"] .kani-mcard-btn-copy.is-copied {
 .kani-mconfirm-footer > button {
   flex: 1 1 0;
   min-height: 44px;
+  border-radius: var(--v2-radius-btn, 12px) !important;
   justify-content: center;
-  font-size: 13.5px !important;
+  font-size: 14px !important;
+}
+
+.kani-mconfirm-footer > button.v2-secondary {
+  font-weight: 500 !important;
+}
+
+.kani-mconfirm-footer > button.v2-primary {
   font-weight: 600 !important;
 }
+
 
