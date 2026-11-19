@@ -305,7 +305,7 @@ describe('V12.43 — Rediseño de Descuentos Liquid Glass y navegación compacta
     expect(within(activeCard).queryByText('Marcos Gómez')).not.toBeInTheDocument();
 
     // Abrir Secciones en tarjeta activa: las 3 categorías comienzan contraídas y son mutuamente excluyentes
-    fireEvent.click(within(activeCard).getByRole('button', { name: /Secciones/i }));
+    fireEvent.click(within(activeCard).getByRole('button', { name: /^Info$/i }));
     const condBtn = within(activeCard).getByRole('button', { name: /^Condiciones$/i });
     const adminBtn = within(activeCard).getByRole('button', { name: /^Información administrativa$/i });
     const historyBtn = within(activeCard).getByRole('button', { name: /^Historial de usos \(1\)$/i });
@@ -341,7 +341,7 @@ describe('V12.43 — Rediseño de Descuentos Liquid Glass y navegación compacta
     expect(within(disabledCard).getByText('Servicio gratuito')).toBeInTheDocument();
     expect(within(disabledCard).getByText('Inactivo')).toBeInTheDocument();
     expect(within(disabledCard).getByRole('button', { name: /Activar/i })).toBeInTheDocument();
-    fireEvent.click(within(disabledCard).getByRole('button', { name: /Secciones/i }));
+    fireEvent.click(within(disabledCard).getByRole('button', { name: /^Info$/i }));
     fireEvent.click(within(disabledCard).getByRole('button', { name: /^Información administrativa$/i }));
     expect(within(disabledCard).getByText(/Desactivado manualmente por Lucas el/i)).toBeInTheDocument();
 
@@ -362,7 +362,7 @@ describe('V12.43 — Rediseño de Descuentos Liquid Glass y navegación compacta
     expect(within(deletedCard).queryByRole('button', { name: /Editar/i })).not.toBeInTheDocument();
     expect(within(deletedCard).queryByRole('button', { name: /Activar/i })).not.toBeInTheDocument();
     expect(within(deletedCard).queryByRole('button', { name: /Eliminar/i })).not.toBeInTheDocument();
-    fireEvent.click(within(deletedCard).getByRole('button', { name: /Secciones/i }));
+    fireEvent.click(within(deletedCard).getByRole('button', { name: /^Info$/i }));
     fireEvent.click(within(deletedCard).getByRole('button', { name: /^Información administrativa$/i }));
     expect(within(deletedCard).getByText(/Eliminado por Admin Root el/i)).toBeInTheDocument();
   });
@@ -475,7 +475,7 @@ describe('V12.43 — Rediseño de Descuentos Liquid Glass y navegación compacta
     });
 
     const activeCard = screen.getByTestId('discount-card-disc-active');
-    fireEvent.click(within(activeCard).getByRole('button', { name: /Secciones/i }));
+    fireEvent.click(within(activeCard).getByRole('button', { name: /^Info$/i }));
     const activeDetails = screen.getByTestId('discount-details-disc-active');
     const dangerBtn = within(activeDetails).getByRole('button', { name: /Eliminar código/i });
     expect(dangerBtn).toBeInTheDocument();
@@ -486,7 +486,7 @@ describe('V12.43 — Rediseño de Descuentos Liquid Glass y navegación compacta
 
     // Códigos ya eliminados no muestran botón Eliminar dentro de Detalles
     const deletedCard = screen.getByTestId('discount-card-disc-deleted');
-    fireEvent.click(within(deletedCard).getByRole('button', { name: /Secciones/i }));
+    fireEvent.click(within(deletedCard).getByRole('button', { name: /^Info$/i }));
     const deletedDetails = screen.getByTestId('discount-details-disc-deleted');
     expect(within(deletedDetails).queryByRole('button', { name: /Eliminar/i })).not.toBeInTheDocument();
 

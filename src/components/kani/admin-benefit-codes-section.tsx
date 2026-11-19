@@ -799,7 +799,7 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                         aria-controls={`discount-details-${item.id}`}
                         onClick={() => toggleAccordion(item.id)}
                       >
-                        <span>Secciones</span>
+                        <span>Info</span>
                         {isExpanded ? (
                           <ChevronUp size={14} aria-hidden="true" />
                         ) : (
@@ -1133,7 +1133,7 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                           <div className="kani-dcard-details-danger">
                             <button
                               type="button"
-                              className="v2-secondary kani-dcard-details-delete-btn is-destructive"
+                              className="kani-dcard-details-delete-btn is-destructive"
                               onClick={() => openDeleteConfirm(item)}
                               title="Eliminar código (conserva historial)"
                             >
