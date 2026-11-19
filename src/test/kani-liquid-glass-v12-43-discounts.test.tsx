@@ -288,9 +288,15 @@ describe('V12.43 — Rediseño de Descuentos Liquid Glass y navegación compacta
     expect(within(activeCard).getByText('Activo')).toBeInTheDocument();
     expect(within(activeCard).getByText('1 uso')).toBeInTheDocument();
     expect(within(activeCard).getByRole('button', { name: 'Copiar código KANI-10-ACTIVE' })).toBeEnabled();
-    expect(within(activeCard).getByRole('button', { name: /Editar/i })).toBeInTheDocument();
+    expect(within(activeCard).getByRole('button', { name: /Vigencia/i })).toBeInTheDocument();
     expect(within(activeCard).getByRole('button', { name: /Desactivar/i })).toBeInTheDocument();
     expect(within(activeCard).getByRole('button', { name: /Eliminar código KANI-10-ACTIVE/i })).toBeInTheDocument();
+
+    // Feedback accesible al copiar código
+    fireEvent.click(within(activeCard).getByRole('button', { name: 'Copiar código KANI-10-ACTIVE' }));
+    await waitFor(() => {
+      expect(screen.getByRole('status')).toHaveTextContent('Código copiado: KANI-10-ACTIVE');
+    });
 
     // Sin repetición de etiquetas corta/larga del mismo beneficio
     expect(within(activeCard).queryByText('10% OFF')).not.toBeInTheDocument();
@@ -324,7 +330,7 @@ describe('V12.43 — Rediseño de Descuentos Liquid Glass y navegación compacta
     expect(expiredCard).toHaveAttribute('data-status', 'EXPIRED');
     expect(within(expiredCard).getByText('50% de descuento')).toBeInTheDocument();
     expect(within(expiredCard).getByText('Vencido')).toBeInTheDocument();
-    expect(within(expiredCard).getByRole('button', { name: /Editar/i })).toBeInTheDocument();
+    expect(within(expiredCard).getByRole('button', { name: /Vigencia/i })).toBeInTheDocument();
     expect(within(expiredCard).queryByRole('button', { name: /Desactivar/i })).not.toBeInTheDocument();
 
     // Tarjeta Eliminada: conservada para auditoría, copia deshabilitada y sin editar/activar/eliminar
@@ -333,7 +339,7 @@ describe('V12.43 — Rediseño de Descuentos Liquid Glass y navegación compacta
     expect(within(deletedCard).getByText('Reserva sin seña')).toBeInTheDocument();
     expect(within(deletedCard).getByText('Eliminado')).toBeInTheDocument();
     expect(within(deletedCard).getByRole('button', { name: 'Copiar código KANI-DEL-99' })).toBeDisabled();
-    expect(within(deletedCard).queryByRole('button', { name: /Editar/i })).not.toBeInTheDocument();
+    expect(within(deletedCard).queryByRole('button', { name: /Vigencia/i })).not.toBeInTheDocument();
     expect(within(deletedCard).queryByRole('button', { name: /Activar/i })).not.toBeInTheDocument();
     expect(within(deletedCard).queryByRole('button', { name: /Eliminar/i })).not.toBeInTheDocument();
     fireEvent.click(within(deletedCard).getByRole('button', { name: /Detalles/i }));
@@ -353,7 +359,7 @@ describe('V12.43 — Rediseño de Descuentos Liquid Glass y navegación compacta
     expect(stage).not.toBeNull();
     expect(stage?.style.marginTop).toBe('0px');
     expect(screen.getByText('Membresías activas')).toBeInTheDocument();
-    expect(screen.getByText('Membresía 4 servicios')).toBeInTheDocument();
+    expect(screen.getByText('Membresía 4 servicios · Lautaro')).toBeInTheDocument();
     expect(screen.getByText('Sofía Tester')).toBeInTheDocument();
 
     // Modal "Nueva membresía" elimina descripción informativa conservando controles y precios congelados
