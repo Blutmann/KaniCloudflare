@@ -2531,22 +2531,16 @@ html[data-theme] body[data-lg-admin="true"] .kani-mcard:hover {
   box-shadow: var(--lga-specular), var(--lga-shadow-hover) !important;
 }
 
-html[data-theme] body[data-lg-admin="true"] .kani-mcard-sessions {
-  background: var(--lga-glass-structural) !important;
-  border: 1px solid var(--lga-border) !important;
-  border-radius: 12px !important;
-}
-
-html[data-theme] body[data-lg-admin="true"] .kani-mcard :is(.kani-mcard-barber, .kani-mcard-sessions-label, .kani-mcard-sessions-breakdown, .kani-mcard-meta, .kani-mcard-progress-label) {
+html[data-theme] body[data-lg-admin="true"] .kani-mcard :is(.kani-mcard-plan, .kani-mcard-sessions-label, .kani-mcard-sessions-breakdown, .kani-mcard-expiry) {
   color: var(--lga-text-muted) !important;
 }
 
-html[data-theme] body[data-lg-admin="true"] .kani-mcard :is(.kani-mcard-title, .kani-mcard-client, .kani-mcard-sessions-count, .kani-mcard-progress-value) {
+html[data-theme] body[data-lg-admin="true"] .kani-mcard :is(.kani-mcard-client, .kani-mcard-sessions-count) {
   color: var(--lga-text) !important;
 }
 
 html[data-theme] body[data-lg-admin="true"] .kani-mcard-actions > :is(button, a) {
-  min-height: 40px !important;
+  min-height: 44px !important;
   border-radius: 999px !important;
   border: 1px solid var(--lga-border) !important;
   background: var(--lga-btn-secondary-bg) !important;
