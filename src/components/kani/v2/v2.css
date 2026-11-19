@@ -4954,14 +4954,32 @@ html[data-theme=dark] .v2-medit-refunded-pill{color:#34d399}
   min-height: 38px;
 }
 
+.v2-membership-create-dialog .v2-modal-pinned-scroll {
+  gap: 10px;
+  padding-bottom: 16px;
+}
+
+.v2-membership-create-row {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  gap: 10px;
+  align-items: start;
+}
+
+@media (max-width: 340px) {
+  .v2-membership-create-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .v2-membership-summary-card {
-  padding: 9px 12px;
+  padding: 8px 11px;
   border-radius: 12px;
   background: var(--v2-inset, rgba(120, 120, 120, 0.08));
   font-size: 12.5px;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
 }
 
 .v2-membership-summary-card > div {

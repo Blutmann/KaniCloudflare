@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import {
+  Activity,
   AlertCircle,
   Calendar,
   Check,
   CheckCircle2,
+  ChevronDown,
   Copy,
   CreditCard,
   ExternalLink,
@@ -23,7 +25,7 @@ import {
   type MembershipConsumptionType,
   type MembershipStatus,
 } from "@/lib/kani-recurrences-memberships";
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogTitle, KaniModalClose } from "@/components/ui/dialog";
 import "./membership-card.css";
 
 const STATUS_BADGE_CLASS: Record<MembershipStatus, string> = {
@@ -308,10 +310,88 @@ export interface EditMembershipModalProps {
   onRenew: (membership: ClientMembershipRecord) => void;
 }
 
+type EditModalSectionId = "consume" | "validity" | "card" | "history" | "activity";
+
+const MEMBERSHIP_EVENT_LABELS: Record<string, string> = {
+  CREATED: "Membresía creada",
+  PAYMENT_REGISTERED: "Pago registrado",
+  SESSION_CONSUMED: "Sesión utilizada",
+  SESSION_REFUNDED: "Sesión reintegrada",
+  EXPIRATION_UPDATED: "Vigencia actualizada",
+  DETAILS_UPDATED: "Vigencia actualizada",
+  PUBLIC_TOKEN_REGENERATED: "Enlace regenerado",
+  DIGITAL_CARD_EMAIL_SENT: "Tarjeta enviada por email",
+  EXHAUSTED: "Membresía agotada",
+  EXPIRED: "Membresía vencida",
+  CANCELLED: "Membresía cancelada",
+};
+
+function formatMembershipEventType(eventType: string): string {
+  if (MEMBERSHIP_EVENT_LABELS[eventType]) {
+    return MEMBERSHIP_EVENT_LABELS[eventType];
+  }
+  const readable = eventType.replace(/_/g, " ").trim().toLowerCase();
+  return readable ? readable.charAt(0).toUpperCase() + readable.slice(1) : "Movimiento registrado";
+}
+
+function MembershipAccordionSection({
+  id,
+  title,
+  subtitle,
+  icon,
+  isOpen,
+  onToggle,
+  children,
+}: {
+  id: EditModalSectionId;
+  title: string;
+  subtitle: string;
+  icon: React.ReactNode;
+  isOpen: boolean;
+  onToggle: (id: EditModalSectionId) => void;
+  children: React.ReactNode;
+}) {
+  const triggerId = `kani-medit-trigger-${id}`;
+  const panelId = `kani-medit-panel-${id}`;
+
+  return (
+    <section className={`kani-medit-accordion${isOpen ? " is-open" : ""}`} aria-labelledby={triggerId}>
+      <button
+        type="button"
+        id={triggerId}
+        className="kani-medit-accordion-trigger"
+        aria-expanded={isOpen}
+        aria-controls={panelId}
+        onClick={() => onToggle(id)}
+      >
+        <span className="kani-medit-accordion-leading">
+          <span className="kani-medit-accordion-icon" aria-hidden="true">
+            {icon}
+          </span>
+          <span className="kani-medit-accordion-copy">
+            <span className="kani-medit-accordion-title">{title}</span>
+            <span className="kani-medit-accordion-subtitle">{subtitle}</span>
+          </span>
+        </span>
+        <ChevronDown size={16} className="kani-medit-accordion-chevron" aria-hidden="true" />
+      </button>
+
+      <div
+        id={panelId}
+        role="region"
+        aria-labelledby={triggerId}
+        className="kani-medit-accordion-panel"
+        hidden={!isOpen}
+      >
+        <div className="kani-medit-accordion-body">{children}</div>
+      </div>
+    </section>
+  );
+}
+
 /**
- * Unified administrative modal opened by "Editar" on a membership card.
- * Concentrates payment confirmation, session consumption, expiration/notes editing,
- * Black Card token tools, session refund, and event history without cluttering cards.
+ * Unified administrative modal opened by "Gestionar" / "Registrar pago" on a membership card.
+ * Uses progressive disclosure (5 exclusive accordions, initially collapsed) while preserving form state.
  */
 export function EditMembershipModal({
   membership,
@@ -333,6 +413,7 @@ export function EditMembershipModal({
 }: EditMembershipModalProps) {
   const today = businessDateToday();
 
+  const [openSection, setOpenSection] = useState<EditModalSectionId | null>(null);
   const [localError, setLocalError] = useState("");
   const [payMethod, setPayMethod] = useState<KaniMembershipPaymentMethod>("Transferencia");
 
@@ -351,6 +432,7 @@ export function EditMembershipModal({
 
   useEffect(() => {
     if (!membership) return;
+    setOpenSection(null);
     setLocalError("");
     setPayMethod("Transferencia");
     const firstAvailable =
@@ -380,6 +462,10 @@ export function EditMembershipModal({
     });
   }, [appointments, membership]);
 
+  function handleToggleSection(id: EditModalSectionId) {
+    setOpenSection((prev) => (prev === id ? null : id));
+  }
+
   async function runSafely(task: () => Promise<void>) {
     setLocalError("");
     try {
@@ -401,6 +487,8 @@ export function EditMembershipModal({
     );
   }
 
+  const hasMultipleServices = (membership?.items.length ?? 0) > 1;
+
   return (
     <Dialog
       open={!!membership}
@@ -408,53 +496,54 @@ export function EditMembershipModal({
         if (!open && !busy && !isRegenerating) onClose();
       }}
     >
-      <DialogContent className="v2-dialog kani-medit-dialog" transitionMode="container-transform">
+      <DialogContent
+        className="v2-dialog kani-medit-dialog v2-modal-pinned-shell kani-modal-shell"
+        transitionMode="container-transform"
+        showCloseButton={false}
+      >
         {membership && (
           <>
-            <div className="kani-medit-header">
-              <div>
-                <DialogTitle>{membership.planName}</DialogTitle>
+            <div className="v2-modal-pinned-header kani-modal-header kani-medit-header">
+              <div className="kani-medit-header-copy">
+                <div className="kani-medit-title-row">
+                  <DialogTitle>{membership.planName}</DialogTitle>
+                  <MembershipStatusBadge status={membership.status} />
+                </div>
                 <DialogDescription>
                   {clientName}
-                  {barberName ? ` · Barbero: ${barberName}` : ""} · Total congelado:{" "}
-                  <strong>{money(membership.totalPriceArs)}</strong>
+                  {barberName ? ` · ${barberName}` : ""}
                 </DialogDescription>
               </div>
-              <MembershipStatusBadge status={membership.status} />
+              <KaniModalClose label="Cerrar" />
             </div>
 
             {localError ? (
-              <p role="alert" className="v2-alert" style={{ marginTop: "8px" }}>
+              <p role="alert" className="v2-alert" style={{ margin: "8px 16px 0" }}>
                 {localError}
               </p>
             ) : null}
 
-            <div className="kani-medit-scroll">
-              {/* Resumen comercial */}
-              <section className="kani-medit-section" aria-label="Resumen de membresía">
-                <div className="kani-medit-kv-grid">
-                  <div className="kani-medit-kv">
-                    <span className="kani-medit-kv-label">Titular</span>
-                    <span className="kani-medit-kv-value">{clientName}</span>
+            <div className="v2-modal-pinned-scroll kani-modal-body kani-medit-scroll">
+              {/* Resumen siempre visible */}
+              <section className="kani-medit-summary" aria-label="Resumen de membresía">
+                <div className="kani-medit-summary-main">
+                  <div className="kani-medit-summary-client">{clientName}</div>
+                  <div className="kani-medit-summary-sessions">
+                    <strong>
+                      {membership.remainingSessions} de {membership.totalSessions} sesiones disponibles
+                    </strong>
+                    {hasMultipleServices ? (
+                      <span className="kani-medit-summary-breakdown">
+                        {membership.items
+                          .map((item) => `${item.serviceName}: ${item.remainingQuantity}/${item.totalQuantity}`)
+                          .join(" · ")}
+                      </span>
+                    ) : null}
                   </div>
-                  <div className="kani-medit-kv">
-                    <span className="kani-medit-kv-label">Barbero asignado</span>
-                    <span className="kani-medit-kv-value">{barberName || "Sin asignar"}</span>
-                  </div>
-                  <div className="kani-medit-kv">
-                    <span className="kani-medit-kv-label">Sesiones disponibles</span>
-                    <span className="kani-medit-kv-value">
-                      {membership.remainingSessions} de {membership.totalSessions}
-                    </span>
-                  </div>
-                  <div className="kani-medit-kv">
-                    <span className="kani-medit-kv-label">
-                      Valor ({membership.discountPercent}% OFF)
-                    </span>
-                    <span className="kani-medit-kv-value">
-                      {money(membership.totalPriceArs)} (Subtotal {money(membership.subtotalArs)})
-                    </span>
-                  </div>
+                </div>
+                <div className="kani-medit-summary-price">
+                  <span className="kani-medit-kv-label">Precio</span>
+                  <strong>{money(membership.totalPriceArs)}</strong>
                 </div>
               </section>
 
@@ -501,13 +590,34 @@ export function EditMembershipModal({
                 </section>
               )}
 
-              {/* Registrar consumo */}
+              {/* Renovación cuando está agotada */}
+              {membership.status === "EXHAUSTED" && (
+                <section className="kani-medit-section" aria-label="Renovación">
+                  <div className="kani-medit-row-actions" style={{ justifyContent: "space-between" }}>
+                    <span style={{ fontSize: "12.5px", fontWeight: 600 }}>Membresía agotada</span>
+                    <button
+                      type="button"
+                      className="v2-primary"
+                      disabled={busy}
+                      onClick={() => onRenew(membership)}
+                    >
+                      <RefreshCw size={14} aria-hidden="true" />
+                      <span>Renovar membresía</span>
+                    </button>
+                  </div>
+                </section>
+              )}
+
+              {/* Categoría 1 — Registrar consumo */}
               {membership.status === "ACTIVE" && membership.remainingSessions > 0 && (
-                <section className="kani-medit-section" aria-label="Registrar consumo de sesión">
-                  <h3 className="kani-medit-section-title">
-                    <CheckCircle2 size={14} aria-hidden="true" />
-                    <span>Registrar consumo de sesión</span>
-                  </h3>
+                <MembershipAccordionSection
+                  id="consume"
+                  title="Registrar consumo"
+                  subtitle="Descontar una sesión utilizada"
+                  icon={<CheckCircle2 size={16} />}
+                  isOpen={openSection === "consume"}
+                  onToggle={handleToggleSection}
+                >
                   <div className="kani-medit-form-grid">
                     <label className="v2-field">
                       <span className="v2-field-label">Servicio a descontar</span>
@@ -592,88 +702,71 @@ export function EditMembershipModal({
                       {busy ? "Registrando…" : "Confirmar consumo"}
                     </button>
                   </div>
-                </section>
+                </MembershipAccordionSection>
               )}
 
-              {/* Renovación cuando está agotada */}
-              {membership.status === "EXHAUSTED" && (
-                <section className="kani-medit-section" aria-label="Renovación">
-                  <h3 className="kani-medit-section-title">
-                    <RefreshCw size={14} aria-hidden="true" />
-                    <span>Membresía agotada</span>
-                  </h3>
-                  <div className="kani-medit-row-actions">
-                    <button
-                      type="button"
-                      className="v2-primary"
+              {/* Categoría 2 — Vigencia */}
+              <MembershipAccordionSection
+                id="validity"
+                title="Vigencia"
+                subtitle="Vencimiento y notas internas"
+                icon={<Calendar size={16} />}
+                isOpen={openSection === "validity"}
+                onToggle={handleToggleSection}
+              >
+                <form className="kani-medit-accordion-form" onSubmit={handleSaveExpiration}>
+                  <div className="kani-medit-form-grid">
+                    <label className="v2-field">
+                      <span className="v2-field-label">Tipo de vigencia</span>
+                      <select
+                        value={expMode}
+                        disabled={busy}
+                        onChange={(e) => setExpMode(e.target.value as "NONE" | "DATE")}
+                      >
+                        <option value="NONE">Sin vencimiento</option>
+                        <option value="DATE">Con fecha de vencimiento</option>
+                      </select>
+                    </label>
+                    {expMode === "DATE" && (
+                      <label className="v2-field">
+                        <span className="v2-field-label">Fecha de vencimiento</span>
+                        <input
+                          type="date"
+                          value={expDate}
+                          disabled={busy}
+                          onChange={(e) => setExpDate(e.target.value)}
+                        />
+                      </label>
+                    )}
+                  </div>
+                  <label className="v2-field">
+                    <span className="v2-field-label">Observaciones administrativas</span>
+                    <input
+                      type="text"
+                      value={editNotes}
                       disabled={busy}
-                      onClick={() => onRenew(membership)}
-                    >
-                      <RefreshCw size={14} aria-hidden="true" />
-                      <span>Renovar membresía</span>
+                      onChange={(e) => setEditNotes(e.target.value)}
+                      placeholder="Motivo del cambio o nota interna"
+                    />
+                  </label>
+                  <div className="kani-medit-row-actions">
+                    <button type="submit" className="v2-secondary" disabled={busy}>
+                      {busy ? "Guardando…" : "Guardar vigencia"}
                     </button>
                   </div>
-                </section>
-              )}
+                </form>
+              </MembershipAccordionSection>
 
-              {/* Vigencia y vencimiento */}
-              <form
-                className="kani-medit-section"
-                onSubmit={handleSaveExpiration}
-                aria-label="Vigencia y vencimiento"
-              >
-                <h3 className="kani-medit-section-title">
-                  <Calendar size={14} aria-hidden="true" />
-                  <span>Vigencia, vencimiento y notas</span>
-                </h3>
-                <div className="kani-medit-form-grid">
-                  <label className="v2-field">
-                    <span className="v2-field-label">Tipo de vigencia</span>
-                    <select
-                      value={expMode}
-                      disabled={busy}
-                      onChange={(e) => setExpMode(e.target.value as "NONE" | "DATE")}
-                    >
-                      <option value="NONE">Sin vencimiento</option>
-                      <option value="DATE">Con fecha de vencimiento</option>
-                    </select>
-                  </label>
-                  {expMode === "DATE" && (
-                    <label className="v2-field">
-                      <span className="v2-field-label">Fecha de vencimiento</span>
-                      <input
-                        type="date"
-                        value={expDate}
-                        disabled={busy}
-                        onChange={(e) => setExpDate(e.target.value)}
-                      />
-                    </label>
-                  )}
-                </div>
-                <label className="v2-field">
-                  <span className="v2-field-label">Observaciones administrativas</span>
-                  <input
-                    type="text"
-                    value={editNotes}
-                    disabled={busy}
-                    onChange={(e) => setEditNotes(e.target.value)}
-                    placeholder="Motivo del cambio o nota interna"
-                  />
-                </label>
-                <div className="kani-medit-row-actions">
-                  <button type="submit" className="v2-secondary" disabled={busy}>
-                    {busy ? "Guardando…" : "Guardar vigencia"}
-                  </button>
-                </div>
-              </form>
-
-              {/* Black Card */}
+              {/* Categoría 3 — Tarjeta digital */}
               {membership.publicToken && (
-                <section className="kani-medit-section" aria-label="Black Card digital">
-                  <h3 className="kani-medit-section-title">
-                    <CreditCard size={14} aria-hidden="true" />
-                    <span>Black Card del titular</span>
-                  </h3>
+                <MembershipAccordionSection
+                  id="card"
+                  title="Tarjeta digital"
+                  subtitle="Abrir o compartir la tarjeta"
+                  icon={<CreditCard size={16} />}
+                  isOpen={openSection === "card"}
+                  onToggle={handleToggleSection}
+                >
                   <div className="kani-medit-row-actions">
                     <a
                       href={`/membresia/${membership.publicToken}`}
@@ -681,12 +774,12 @@ export function EditMembershipModal({
                       rel="noopener noreferrer"
                       className="v2-secondary"
                       style={{
-                        minHeight: "32px",
-                        padding: "0 10px",
-                        fontSize: "12px",
+                        minHeight: "38px",
+                        padding: "0 12px",
+                        fontSize: "12.5px",
                         display: "inline-flex",
                         alignItems: "center",
-                        gap: "5px",
+                        gap: "6px",
                         textDecoration: "none",
                       }}
                     >
@@ -696,7 +789,7 @@ export function EditMembershipModal({
                     <button
                       type="button"
                       className="v2-secondary"
-                      style={{ minHeight: "32px", padding: "0 10px", fontSize: "12px" }}
+                      style={{ minHeight: "38px", padding: "0 12px", fontSize: "12.5px" }}
                       onClick={() => void onCopyLink(membership)}
                     >
                       {copied ? (
@@ -711,9 +804,9 @@ export function EditMembershipModal({
                         type="button"
                         className="v2-secondary"
                         style={{
-                          minHeight: "32px",
-                          padding: "0 10px",
-                          fontSize: "12px",
+                          minHeight: "38px",
+                          padding: "0 12px",
+                          fontSize: "12.5px",
                           color: "#b91c1c",
                         }}
                         disabled={isRegenerating}
@@ -763,30 +856,18 @@ export function EditMembershipModal({
                       </div>
                     </div>
                   )}
-                </section>
+                </MembershipAccordionSection>
               )}
 
-              {/* Sesiones por servicio */}
-              <section className="kani-medit-section" aria-label="Sesiones por servicio">
-                <h3 className="kani-medit-section-title">Sesiones por servicio</h3>
-                {membership.items.map((item) => (
-                  <div key={item.id} className="kani-medit-item-row">
-                    <span>
-                      {item.serviceName} (Tarifa congelada: {money(item.unitPriceSnapshotArs)})
-                    </span>
-                    <strong>
-                      {item.remainingQuantity} disponibles / {item.totalQuantity} totales
-                    </strong>
-                  </div>
-                ))}
-              </section>
-
-              {/* Historial de sesiones consumidas y reintegros */}
-              <section className="kani-medit-section" aria-label="Historial de sesiones consumidas">
-                <h3 className="kani-medit-section-title">
-                  <History size={14} aria-hidden="true" />
-                  <span>Historial de sesiones consumidas y reintegros</span>
-                </h3>
+              {/* Categoría 4 — Historial de sesiones */}
+              <MembershipAccordionSection
+                id="history"
+                title="Historial de sesiones"
+                subtitle="Consumos y reintegros"
+                icon={<History size={16} />}
+                isOpen={openSection === "history"}
+                onToggle={handleToggleSection}
+              >
                 {!membership.consumptions.length ? (
                   <p style={{ margin: 0, fontSize: "12px", color: "var(--muted-foreground)" }}>
                     Aún no se registraron consumos en esta membresía.
@@ -815,7 +896,7 @@ export function EditMembershipModal({
                               <button
                                 type="button"
                                 className="v2-secondary"
-                                style={{ minHeight: "28px", padding: "0 9px", fontSize: "11.5px" }}
+                                style={{ minHeight: "32px", padding: "0 10px", fontSize: "11.5px" }}
                                 disabled={busy}
                                 onClick={() => {
                                   setRefundingConsumptionId(c.id);
@@ -879,43 +960,35 @@ export function EditMembershipModal({
                     );
                   })
                 )}
-              </section>
+              </MembershipAccordionSection>
 
-              {/* Auditoría de eventos */}
-              <section className="kani-medit-section" aria-label="Auditoría de eventos">
-                <h3 className="kani-medit-section-title">Auditoría de eventos</h3>
+              {/* Categoría 5 — Registro de actividad */}
+              <MembershipAccordionSection
+                id="activity"
+                title="Registro de actividad"
+                subtitle="Movimientos de la membresía"
+                icon={<Activity size={16} />}
+                isOpen={openSection === "activity"}
+                onToggle={handleToggleSection}
+              >
                 {!membership.events.length ? (
                   <p style={{ margin: 0, fontSize: "12px", color: "var(--muted-foreground)" }}>
-                    Sin eventos adicionales.
+                    Sin movimientos registrados.
                   </p>
                 ) : (
-                  <ul
-                    style={{
-                      margin: 0,
-                      paddingLeft: "16px",
-                      fontSize: "11.5px",
-                      color: "var(--muted-foreground)",
-                    }}
-                  >
+                  <ul className="kani-medit-activity-list">
                     {membership.events.map((ev) => (
                       <li key={ev.id}>
-                        <strong>{ev.eventType}</strong> — {ev.description} (
+                        <strong>{formatMembershipEventType(ev.eventType)}</strong> — {ev.description} (
                         {ev.createdAt.replace("T", " ").slice(0, 16)})
                       </li>
                     ))}
                   </ul>
                 )}
-              </section>
+              </MembershipAccordionSection>
             </div>
 
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "flex-end",
-                gap: "8px",
-                marginTop: "12px",
-              }}
-            >
+            <div className="v2-dialog-actions v2-modal-pinned-footer kani-modal-footer">
               <button
                 type="button"
                 className="v2-secondary"
