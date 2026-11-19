@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { Check, ChevronDown, Copy } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminStaff } from "@/lib/kani-admin-context";
 import { staffListBenefitCodesReadOnlyFn } from "@/lib/kani-benefit-codes.functions";
@@ -130,7 +130,20 @@ export function V2Discounts({ hideHeading = false }: { hideHeading?: boolean } =
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [reloadTick, setReloadTick] = useState(0);
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const canViewDiscounts = isStaffOperator(profile.role) || profile.role === "BARBER";
+
+  async function handleCopy(code: string) {
+    try {
+      await navigator.clipboard.writeText(code);
+    } catch {
+      // Fallback visual/accesible si el portapapeles no está disponible en el entorno
+    }
+    setCopiedCode(code);
+    setTimeout(() => {
+      setCopiedCode((prev) => (prev === code ? null : prev));
+    }, 2500);
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -198,89 +211,114 @@ export function V2Discounts({ hideHeading = false }: { hideHeading?: boolean } =
         <Empty className="kani-dcard-empty">No hay códigos de descuento.</Empty>
       )}
       {visibleRows.length > 0 && (
-        <div className={`kani-dgrid${visibleRows.length === 1 ? " is-single" : ""}`}>
-          {visibleRows.map((row) => {
-            const meta = metadata(row);
-            const { label: typeLabel, benefit } = describeBenefitType(row.type);
-            const isActive = row.status === "ACTIVE";
-            const effectiveUsages = getEffectiveUsages(row.usages);
-            const totalUsages =
-              effectiveUsages.length > 0
-                ? effectiveUsages.length
-                : (row.timesUsed ?? row.times_used ?? Number(meta["timesUsed"] ?? 0));
-            const uniqueClients = countUniqueClients(effectiveUsages);
-            const validity = formatValidity(row, meta);
+        <>
+          <span className="sr-only" role="status" aria-live="polite">
+            {copiedCode ? `Código copiado: ${copiedCode}` : ""}
+          </span>
+          <div className={`kani-dgrid${visibleRows.length === 1 ? " is-single" : ""}`}>
+            {visibleRows.map((row) => {
+              const meta = metadata(row);
+              const { label: typeLabel, benefit } = describeBenefitType(row.type);
+              const isActive = row.status === "ACTIVE";
+              const isCopied = copiedCode === row.code;
+              const effectiveUsages = getEffectiveUsages(row.usages);
+              const totalUsages =
+                effectiveUsages.length > 0
+                  ? effectiveUsages.length
+                  : (row.timesUsed ?? row.times_used ?? Number(meta["timesUsed"] ?? 0));
+              const uniqueClients = countUniqueClients(effectiveUsages);
+              const validity = formatValidity(row, meta);
 
-            return (
-              <article
-                key={row.id}
-                className="kani-dcard kani-dcard--readonly"
-                data-status={row.status}
-              >
-                <div className="kani-dcard-body">
-                  <header className="kani-dcard-header kani-dcard-header--readonly">
-                    <div className="kani-dcard-title-block">
-                      <h2 className="kani-dcard-code">{row.code}</h2>
-                      <p className="kani-dcard-type">{typeLabel}</p>
-                    </div>
-                    <span className={`kani-dcard-badge ${isActive ? "is-active" : "is-inactive"}`}>
-                      {isActive ? "Activo" : "Inactivo"}
-                    </span>
-                  </header>
+              return (
+                <article
+                  key={row.id}
+                  className="kani-dcard kani-dcard--readonly"
+                  data-status={row.status}
+                >
+                  <div className="kani-dcard-body">
+                    <header className="kani-dcard-header kani-dcard-header--readonly">
+                      <h2 className="kani-dcard-benefit kani-dcard-benefit--readonly">{benefit}</h2>
+                      <span className={`kani-dcard-badge ${isActive ? "is-active" : "is-inactive"}`}>
+                        {isActive ? "Activo" : "Inactivo"}
+                      </span>
+                    </header>
 
-                  <dl className="kani-dcard-metrics-grid">
-                    <div className="kani-dcard-metric">
-                      <dt>Beneficio</dt>
-                      <dd>{benefit}</dd>
+                    <div className="kani-dcard-code-group kani-dcard-code-group--readonly">
+                      <span className="kani-dcard-code select-all">{row.code}</span>
+                      <div className="kani-dcard-copy-wrap">
+                        {isCopied && (
+                          <span className="kani-dcard-copied-tag">Código copiado</span>
+                        )}
+                        <button
+                          type="button"
+                          className={`v2-secondary kani-dcard-btn-copy${isCopied ? " is-copied" : ""}`}
+                          aria-label={isCopied ? `Código copiado: ${row.code}` : `Copiar código ${row.code}`}
+                          title={isCopied ? "Código copiado" : "Copiar código"}
+                          onClick={() => void handleCopy(row.code)}
+                        >
+                          {isCopied ? (
+                            <Check size={14} aria-hidden="true" />
+                          ) : (
+                            <Copy size={14} aria-hidden="true" />
+                          )}
+                        </button>
+                      </div>
                     </div>
-                    <div className="kani-dcard-metric">
-                      <dt>Vigencia</dt>
-                      <dd>{validity ?? "Sin vencimiento"}</dd>
-                    </div>
-                    <div className="kani-dcard-metric">
-                      <dt>Utilizaciones</dt>
-                      <dd>{formatCountEs(totalUsages, "utilización", "utilizaciones")}</dd>
-                    </div>
-                    <div className="kani-dcard-metric">
-                      <dt>Clientes únicos</dt>
-                      <dd>
-                        {effectiveUsages.length > 0
-                          ? formatCountEs(uniqueClients, "cliente", "clientes")
-                          : totalUsages === 0
-                            ? "0 clientes"
-                            : "Sin detalle disponible"}
-                      </dd>
-                    </div>
-                  </dl>
-                </div>
 
-                {effectiveUsages.length > 0 ? (
-                  <details className="kani-dcard-history">
-                    <summary className="kani-dcard-history-summary">
-                      <span>Historial de utilizaciones ({effectiveUsages.length})</span>
-                      <ChevronDown size={15} className="kani-dcard-history-chevron" aria-hidden="true" />
-                    </summary>
-                    <ul className="kani-dcard-history-list">
-                      {effectiveUsages.map((usage) => (
-                        <li key={usage.appointmentId} className="kani-dcard-history-item">
-                          <strong className="kani-dcard-history-client">
-                            {usage.clientName ?? "Cliente"}
-                          </strong>
-                          <span className="kani-dcard-history-meta">
-                            {formatUsageDate(usage)}
-                            {usage.barberName ? ` · Barbero: ${usage.barberName}` : ""}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  </details>
-                ) : (
-                  <p className="kani-dcard-history-empty">Sin utilizaciones registradas.</p>
-                )}
-              </article>
-            );
-          })}
-        </div>
+                    <dl className="kani-dcard-metrics-grid">
+                      <div className="kani-dcard-metric">
+                        <dt>Beneficio</dt>
+                        <dd>{typeLabel}</dd>
+                      </div>
+                      <div className="kani-dcard-metric">
+                        <dt>Vigencia</dt>
+                        <dd>{validity ?? "Sin vencimiento"}</dd>
+                      </div>
+                      <div className="kani-dcard-metric">
+                        <dt>Utilizaciones</dt>
+                        <dd>{formatCountEs(totalUsages, "utilización", "utilizaciones")}</dd>
+                      </div>
+                      <div className="kani-dcard-metric">
+                        <dt>Clientes únicos</dt>
+                        <dd>
+                          {effectiveUsages.length > 0
+                            ? formatCountEs(uniqueClients, "cliente", "clientes")
+                            : totalUsages === 0
+                              ? "0 clientes"
+                              : "Sin detalle disponible"}
+                        </dd>
+                      </div>
+                    </dl>
+                  </div>
+
+                  {effectiveUsages.length > 0 ? (
+                    <details className="kani-dcard-history">
+                      <summary className="kani-dcard-history-summary">
+                        <span>Historial de utilizaciones ({effectiveUsages.length})</span>
+                        <ChevronDown size={15} className="kani-dcard-history-chevron" aria-hidden="true" />
+                      </summary>
+                      <ul className="kani-dcard-history-list">
+                        {effectiveUsages.map((usage) => (
+                          <li key={usage.appointmentId} className="kani-dcard-history-item">
+                            <strong className="kani-dcard-history-client">
+                              {usage.clientName ?? "Cliente"}
+                            </strong>
+                            <span className="kani-dcard-history-meta">
+                              {formatUsageDate(usage)}
+                              {usage.barberName ? ` · Barbero: ${usage.barberName}` : ""}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </details>
+                  ) : (
+                    <p className="kani-dcard-history-empty">Sin utilizaciones registradas.</p>
+                  )}
+                </article>
+              );
+            })}
+          </div>
+        </>
       )}
     </div>
   );

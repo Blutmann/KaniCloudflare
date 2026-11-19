@@ -3455,12 +3455,14 @@ html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-se
   -webkit-backdrop-filter: blur(20px) saturate(145%) !important;
   border: 1px solid var(--lga-border) !important;
   border-radius: 16px !important;
-  padding: 14px 16px !important;
+  padding: 11px 13px !important;
+  gap: 8px 12px !important;
   box-shadow: var(--lga-specular), var(--lga-shadow-card) !important;
 }
 
 html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .kani-dtoolbar {
-  padding: 2px 2px 4px;
+  padding: 4px 2px 6px;
+  gap: 8px 12px;
 }
 
 html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .kani-dtoolbar-count {
