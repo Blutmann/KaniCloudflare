@@ -637,3 +637,189 @@ html[data-theme="dark"] .kani-mcard-btn-copy.is-copied {
   font-weight: 500;
   color: var(--foreground);
 }
+
+.kani-medit-note-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  align-self: flex-start;
+  background: transparent;
+  border: none;
+  padding: 4px 2px;
+  min-height: 36px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--gold, #b8963c);
+  cursor: pointer;
+}
+
+.kani-medit-note-toggle:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 767px) {
+  .kani-medit-full-mobile {
+    width: 100%;
+    min-height: 44px;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    justify-content: center;
+  }
+}
+
+.kani-medit-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.kani-medit-card-ver {
+  flex: 1 1 auto;
+  min-height: 44px;
+  justify-content: center;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+}
+
+.kani-medit-card-copy {
+  flex: 0 0 auto;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0 !important;
+  justify-content: center;
+}
+
+.kani-medit-copy-feedback {
+  font-size: 12px;
+  font-weight: 500;
+  color: #16a34a;
+  margin: 0;
+}
+
+.dark .kani-medit-copy-feedback {
+  color: #4ade80;
+}
+
+.kani-medit-card-regen-row {
+  display: flex;
+  width: 100%;
+  padding-top: 2px;
+}
+
+.kani-medit-btn-regen {
+  width: 100%;
+  min-height: 42px;
+  justify-content: center;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+}
+
+.kani-medit-history-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.kani-medit-history-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.kani-medit-history-meta {
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+
+.kani-medit-refunded-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted-foreground);
+  background: color-mix(in srgb, var(--muted) 65%, transparent);
+}
+
+.kani-medit-btn-refund {
+  min-height: 40px;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+}
+
+.kani-medit-activity-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 0;
+}
+
+.kani-medit-activity-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.kani-medit-activity-meta {
+  font-size: 11.5px;
+  color: var(--muted-foreground);
+}
+
+/* Independent v2.3 confirmation dialogs above EditMembershipModal */
+.kani-mconfirm-overlay {
+  z-index: 220 !important;
+}
+
+.kani-mconfirm-dialog {
+  z-index: 221 !important;
+  max-width: 400px !important;
+}
+
+.kani-mconfirm-desc {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--muted-foreground);
+  margin: 0;
+}
+
+.kani-mconfirm-counter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--gold, #b8963c) 30%, var(--border));
+  background: color-mix(in srgb, var(--gold, #b8963c) 8%, transparent);
+  font-size: 13px;
+  color: var(--foreground);
+}
+
+.kani-mconfirm-counter strong {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.kani-mconfirm-footer {
+  display: flex;
+  flex-direction: row !important;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.kani-mconfirm-footer > button {
+  flex: 1 1 0;
+  min-height: 44px;
+  justify-content: center;
+  font-size: 13.5px !important;
+  font-weight: 600 !important;
+}
+
