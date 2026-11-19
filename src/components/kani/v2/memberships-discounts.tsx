@@ -636,7 +636,7 @@ export function V2MembershipsAndDiscounts({
                     </button>
                   </div>
                 ) : (
-                  "No hay membresías registradas para este filtro. Podés crear una Membresía 4 servicios (20% OFF) o Membresía 10 servicios (30% OFF)."
+                  "No hay membresías para este filtro."
                 )}
               </Empty>
             ) : (

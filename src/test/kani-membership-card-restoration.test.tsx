@@ -281,26 +281,27 @@ describe("Restauración de cards de Membresías (/panel-administracion/membresia
     });
   });
 
-  it("renderiza la jerarquía visual restaurada y exactamente 3 CTAs por card", () => {
+  it("renderiza la jerarquía visual Alternativa B (cliente primero, sin caja anidada, desglose multi-servicio) y exactamente 3 CTAs por card", () => {
     render(<V2MembershipsAndDiscounts initialTab="MEMBRESIAS" />);
 
     const activeCard = screen.getByTestId("membership-card-mem-active-1");
-    expect(within(activeCard).getByText("Membresía 4 servicios")).toBeInTheDocument();
-    expect(within(activeCard).getByText("Activa")).toBeInTheDocument();
     expect(within(activeCard).getByText("Juan Pérez")).toBeInTheDocument();
-    expect(within(activeCard).getByText("Barbero: Lautaro")).toBeInTheDocument();
-    expect(within(activeCard).getByText("3")).toBeInTheDocument();
-    expect(within(activeCard).getByText(/sesiones disponibles de 4/i)).toBeInTheDocument();
+    expect(within(activeCard).getByText("Membresía 4 servicios · Lautaro")).toBeInTheDocument();
+    expect(within(activeCard).getByText("Activa")).toBeInTheDocument();
+    expect(within(activeCard).getByText("3 de 4")).toBeInTheDocument();
+    expect(within(activeCard).getByText("sesiones disponibles")).toBeInTheDocument();
     expect(within(activeCard).getByText("Corte: 2/3 · Barba: 1/1")).toBeInTheDocument();
-    expect(within(activeCard).getByText(/Vence:.*31 dic/i)).toBeInTheDocument();
-    expect(within(activeCard).getByText("Progreso de sesiones")).toBeInTheDocument();
-    expect(within(activeCard).getByText("1/4 utilizadas")).toBeInTheDocument();
+    expect(within(activeCard).getByText(/Vence 31 Dic 2026/i)).toBeInTheDocument();
     expect(within(activeCard).getByRole("progressbar")).toHaveAttribute("aria-valuenow", "1");
 
-    // Card acciones: únicamente Editar, Ver tarjeta y Copiar enlace (botón chico con ícono)
+    // Sin repetición redundante de etiquetas de progreso
+    expect(within(activeCard).queryByText("Progreso de sesiones")).toBeNull();
+    expect(within(activeCard).queryByText("1/4 utilizadas")).toBeNull();
+
+    // Card acciones: Gestionar, Ver tarjeta y Copiar enlace
     const buttons = within(activeCard).getAllByRole("button");
     expect(buttons).toHaveLength(2);
-    expect(buttons[0]).toHaveAccessibleName("Editar");
+    expect(buttons[0]).toHaveAccessibleName("Gestionar");
     expect(buttons[1]).toHaveAccessibleName("Copiar enlace");
 
     const viewLink = within(activeCard).getByRole("link", { name: "Ver tarjeta" });
@@ -313,16 +314,18 @@ describe("Restauración de cards de Membresías (/panel-administracion/membresia
     expect(within(activeCard).queryByText("Regenerar enlace")).toBeNull();
   });
 
-  it("muestra correctamente la variante Pendiente de pago y Sin vencimiento", () => {
+  it("muestra correctamente la variante Pendiente de pago con CTA 'Registrar pago', Sin vencimiento y omite desglose en servicio único", () => {
     render(<V2MembershipsAndDiscounts initialTab="MEMBRESIAS" standaloneTab="MEMBRESIAS" />);
 
     const pendingCard = screen.getByTestId("membership-card-mem-pending-2");
     expect(within(pendingCard).getByText("Pendiente de pago")).toBeInTheDocument();
     expect(within(pendingCard).getByText("Matías Gómez")).toBeInTheDocument();
-    expect(within(pendingCard).getByText("Barbero: Franco")).toBeInTheDocument();
+    expect(within(pendingCard).getByText("Membresía 4 servicios · Franco")).toBeInTheDocument();
+    expect(within(pendingCard).getByText("4 de 4")).toBeInTheDocument();
     expect(within(pendingCard).getByText("Sin vencimiento")).toBeInTheDocument();
-    expect(within(pendingCard).getByText(/Pago pendiente · \$/)).toBeInTheDocument();
-    expect(within(pendingCard).getByText("0/4 utilizadas")).toBeInTheDocument();
+    expect(within(pendingCard).getByText(/Cobro pendiente · \$/)).toBeInTheDocument();
+    expect(within(pendingCard).queryByText("Corte: 4/4")).toBeNull();
+    expect(within(pendingCard).getByRole("button", { name: "Registrar pago" })).toBeInTheDocument();
   });
 
   it("copia el enlace público al clickear el botón chico Copiar enlace", async () => {
@@ -339,12 +342,12 @@ describe("Restauración de cards de Membresías (/panel-administracion/membresia
     expect(await screen.findByText(/Enlace de tarjeta digital copiado/i)).toBeInTheDocument();
   });
 
-  it("concentra todas las acciones administrativas en el modal Editar y respeta permisos por rol", async () => {
+  it("concentra todas las acciones administrativas en el modal Gestionar / Registrar pago y respeta permisos por rol", async () => {
     // 1) En rol ADMIN permite consumo, vigencia, reintegro y regenerar enlace
     const { unmount } = render(<V2MembershipsAndDiscounts initialTab="MEMBRESIAS" />);
 
     const activeCard = screen.getByTestId("membership-card-mem-active-1");
-    fireEvent.click(within(activeCard).getByRole("button", { name: "Editar" }));
+    fireEvent.click(within(activeCard).getByRole("button", { name: "Gestionar" }));
 
     expect(await screen.findByText("Registrar consumo de sesión")).toBeInTheDocument();
     expect(screen.getByText("Vigencia, vencimiento y notas")).toBeInTheDocument();
@@ -368,10 +371,10 @@ describe("Restauración de cards de Membresías (/panel-administracion/membresia
     });
     unmount();
 
-    // 2) En estado PENDIENTE DE PAGO permite confirmar pago desde Editar
+    // 2) En estado PENDIENTE DE PAGO permite confirmar pago desde Registrar pago
     const { unmount: unmountPending } = render(<V2MembershipsAndDiscounts initialTab="MEMBRESIAS" />);
     const pendingCard = screen.getByTestId("membership-card-mem-pending-2");
-    fireEvent.click(within(pendingCard).getByRole("button", { name: "Editar" }));
+    fireEvent.click(within(pendingCard).getByRole("button", { name: "Registrar pago" }));
     fireEvent.click(await screen.findByRole("button", { name: /Confirmar pago y activar/i }));
     await waitFor(() => {
       expect(mocks.registerMembershipPayment).toHaveBeenCalledWith(
@@ -387,7 +390,7 @@ describe("Restauración de cards de Membresías (/panel-administracion/membresia
     render(<V2MembershipsAndDiscounts initialTab="MEMBRESIAS" />);
     expect(screen.getByTestId("membership-card-mem-active-1")).toBeInTheDocument();
     expect(screen.queryByTestId("membership-card-mem-pending-2")).toBeNull();
-    fireEvent.click(within(screen.getByTestId("membership-card-mem-active-1")).getByRole("button", { name: "Editar" }));
+    fireEvent.click(within(screen.getByTestId("membership-card-mem-active-1")).getByRole("button", { name: "Gestionar" }));
     expect(await screen.findByText("Black Card del titular")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Regenerar enlace/i })).toBeNull();
   });

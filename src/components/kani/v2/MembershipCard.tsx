@@ -63,7 +63,7 @@ export function MembershipStatusBadge({ status }: { status: MembershipStatus }) 
   );
 }
 
-/** Visual progress indicator for consumed vs. total membership sessions. */
+/** Compact visual progress bar for consumed vs. total membership sessions. */
 export function MembershipProgress({
   totalSessions,
   remainingSessions,
@@ -79,43 +79,38 @@ export function MembershipProgress({
   const percent = safeTotal > 0 ? Math.min(100, Math.round((consumed / safeTotal) * 100)) : 0;
 
   return (
-    <div className="kani-mcard-progress">
-      <div className="kani-mcard-progress-head">
-        <span className="kani-mcard-progress-label">Progreso de sesiones</span>
-        <span className="kani-mcard-progress-value">
-          {consumed}/{safeTotal} utilizadas
-        </span>
-      </div>
+    <div
+      className="kani-mcard-progress-track"
+      role="progressbar"
+      aria-label="Progreso de sesiones utilizadas"
+      aria-valuemin={0}
+      aria-valuemax={safeTotal}
+      aria-valuenow={consumed}
+    >
       <div
-        className="kani-mcard-progress-track"
-        role="progressbar"
-        aria-label="Progreso de sesiones utilizadas"
-        aria-valuemin={0}
-        aria-valuemax={safeTotal}
-        aria-valuenow={consumed}
-      >
-        <div
-          className={`kani-mcard-progress-fill ${PROGRESS_FILL_CLASS[status] ?? "is-active"}`}
-          style={{ width: `${percent}%` }}
-        />
-      </div>
+        className={`kani-mcard-progress-fill ${PROGRESS_FILL_CLASS[status] ?? "is-active"}`}
+        style={{ width: `${percent}%` }}
+      />
     </div>
   );
 }
 
-/** Three-action footer for each membership card: Edit (modal), View Card, and compact Copy Link. */
+/** Three-action footer for each membership card: contextual primary CTA, View Card, and Copy Link. */
 export function MembershipActions({
+  status,
   publicToken,
   copied,
   onEdit,
   onCopyLink,
 }: {
+  status: MembershipStatus;
   publicToken?: string | null;
   copied: boolean;
   onEdit: () => void;
   onCopyLink: () => void;
 }) {
   const cardHref = publicToken ? `/membresia/${publicToken}` : undefined;
+  const primaryLabel = status === "PENDING_PAYMENT" ? "Registrar pago" : "Gestionar";
 
   return (
     <div className="kani-mcard-actions">
@@ -124,8 +119,12 @@ export function MembershipActions({
         className="v2-primary kani-mcard-btn-edit"
         onClick={onEdit}
       >
-        <Pencil size={14} aria-hidden="true" />
-        <span>Editar</span>
+        {status === "PENDING_PAYMENT" ? (
+          <CreditCard size={14} aria-hidden="true" />
+        ) : (
+          <Pencil size={14} aria-hidden="true" />
+        )}
+        <span>{primaryLabel}</span>
       </button>
 
       <a
@@ -148,15 +147,15 @@ export function MembershipActions({
       <button
         type="button"
         className={`v2-secondary kani-mcard-btn-copy${copied ? " is-copied" : ""}`}
-        aria-label="Copiar enlace"
+        aria-label={copied ? "Enlace copiado" : "Copiar enlace"}
         title={copied ? "¡Enlace copiado!" : "Copiar enlace de tarjeta digital"}
         disabled={!publicToken}
         onClick={onCopyLink}
       >
         {copied ? (
-          <Check size={14} aria-hidden="true" />
+          <Check size={15} aria-hidden="true" />
         ) : (
-          <Copy size={14} aria-hidden="true" />
+          <Copy size={15} aria-hidden="true" />
         )}
       </button>
     </div>
@@ -174,7 +173,7 @@ export interface MembershipCardProps {
   onCopyLink: (membership: ClientMembershipRecord) => void;
 }
 
-/** Clean, editorial membership card keeping visual hierarchy clear across mobile and desktop. */
+/** Structural Alternativa B membership card: client-first hierarchy, single surface, zero redundant repetition. */
 export function MembershipCard({
   membership,
   clientName,
@@ -194,16 +193,19 @@ export function MembershipCard({
     membership.status === "ACTIVE" &&
     (membership.expiresAt ?? "") <= soonThreshold;
 
-  const breakdown = membership.items
-    .map((item) => `${item.serviceName}: ${item.remainingQuantity}/${item.totalQuantity}`)
-    .join(" · ");
+  const hasMultipleServices = membership.items.length > 1;
+  const breakdown = hasMultipleServices
+    ? membership.items
+        .map((item) => `${item.serviceName}: ${item.remainingQuantity}/${item.totalQuantity}`)
+        .join(" · ")
+    : "";
 
   const expiryText = membership.expiresAt
-    ? `Vence: ${formatCompactExpiryDate(membership.expiresAt)}`
+    ? `Vence ${formatCompactExpiryDate(membership.expiresAt)}`
     : "Sin vencimiento";
 
-  const remainingUnitLabel =
-    membership.remainingSessions === 1 ? "sesión disponible" : "sesiones disponibles";
+  const sessionsSuffix =
+    membership.totalSessions === 1 ? "sesión disponible" : "sesiones disponibles";
 
   return (
     <article
@@ -213,46 +215,44 @@ export function MembershipCard({
     >
       <div className="kani-mcard-body">
         <header className="kani-mcard-header">
-          <h3 className="kani-mcard-title">{membership.planName}</h3>
+          <div className="kani-mcard-identity">
+            <h3 className="kani-mcard-client">{clientName}</h3>
+            <p className="kani-mcard-plan">
+              {membership.planName}
+              {barberName ? ` · ${barberName}` : ""}
+            </p>
+          </div>
           <MembershipStatusBadge status={membership.status} />
         </header>
 
-        <div className="kani-mcard-identity">
-          <div className="kani-mcard-client">{clientName}</div>
-          {barberName ? (
-            <div className="kani-mcard-barber">Barbero: {barberName}</div>
-          ) : null}
-        </div>
-
-        <div className="kani-mcard-sessions">
-          <div className="kani-mcard-sessions-main">
-            <span className="kani-mcard-sessions-count">{membership.remainingSessions}</span>
-            <span className="kani-mcard-sessions-label">
-              {remainingUnitLabel} de {membership.totalSessions}
+        <div className="kani-mcard-kpi-row">
+          <div className="kani-mcard-sessions-inline">
+            <span className="kani-mcard-sessions-count">
+              {membership.remainingSessions} de {membership.totalSessions}
             </span>
+            <span className="kani-mcard-sessions-label">{sessionsSuffix}</span>
           </div>
-          {breakdown ? (
-            <div className="kani-mcard-sessions-breakdown">{breakdown}</div>
-          ) : null}
-        </div>
 
-        <div className="kani-mcard-meta">
           <span
             className={`kani-mcard-expiry${
               isExpiredDate ? " is-expired" : isExpiringSoon ? " is-expiring" : ""
             }`}
           >
-            <Calendar size={14} aria-hidden="true" />
+            <Calendar size={13} aria-hidden="true" />
             <span>{expiryText}</span>
           </span>
-
-          {membership.status === "PENDING_PAYMENT" ? (
-            <span className="kani-mcard-due">
-              <AlertCircle size={13} aria-hidden="true" />
-              <span>Pago pendiente · {money(membership.totalPriceArs)}</span>
-            </span>
-          ) : null}
         </div>
+
+        {breakdown ? (
+          <div className="kani-mcard-sessions-breakdown">{breakdown}</div>
+        ) : null}
+
+        {membership.status === "PENDING_PAYMENT" ? (
+          <div className="kani-mcard-due">
+            <AlertCircle size={13} aria-hidden="true" />
+            <span>Cobro pendiente · {money(membership.totalPriceArs)}</span>
+          </div>
+        ) : null}
 
         <MembershipProgress
           totalSessions={membership.totalSessions}
@@ -262,6 +262,7 @@ export function MembershipCard({
       </div>
 
       <MembershipActions
+        status={membership.status}
         publicToken={membership.publicToken}
         copied={copied}
         onEdit={() => onEdit(membership)}
