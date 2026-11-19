@@ -364,19 +364,19 @@ describe("Restauración de cards de Membresías (/panel-administracion/membresia
     // Expandir Registrar consumo y escribir observación
     fireEvent.click(consumeTrigger);
     expect(consumeTrigger).toHaveAttribute("aria-expanded", "true");
-    fireEvent.click(screen.getByRole("button", { name: /\+ Agregar observación/i }));
-    const obsInput = screen.getByLabelText("Observación") as HTMLInputElement;
+    const obsInput = screen.getByLabelText("Observación (opcional)") as HTMLTextAreaElement;
     fireEvent.change(obsInput, { target: { value: "Nota pendiente" } });
 
     // Abrir Vigencia contrae Registrar consumo, pero preserva el estado del formulario al volver
     fireEvent.click(validityTrigger);
     expect(validityTrigger).toHaveAttribute("aria-expanded", "true");
     expect(consumeTrigger).toHaveAttribute("aria-expanded", "false");
+    expect(screen.getByLabelText("Nota administrativa (opcional)")).toBeInTheDocument();
 
     fireEvent.click(consumeTrigger);
     expect(consumeTrigger).toHaveAttribute("aria-expanded", "true");
     expect(validityTrigger).toHaveAttribute("aria-expanded", "false");
-    expect((screen.getByLabelText("Observación") as HTMLInputElement).value).toBe("Nota pendiente");
+    expect((screen.getByLabelText("Observación (opcional)") as HTMLTextAreaElement).value).toBe("Nota pendiente");
 
     fireEvent.click(screen.getByRole("button", { name: /Confirmar consumo/i }));
     await waitFor(() => {

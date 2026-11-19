@@ -133,19 +133,19 @@ export function AdminClientCombobox({
             aria-label={ariaLabel}
             disabled={disabled}
             className={cn(
-              "v2-admin-select-trigger flex min-h-[44px] w-full min-w-0 max-w-full items-center justify-between gap-2.5 overflow-hidden rounded-md border border-input bg-background px-3 py-2 text-left text-sm text-foreground shadow-xs transition-colors focus:outline-none focus:ring-1 focus:ring-gold disabled:cursor-not-allowed disabled:opacity-50",
+              "v2-admin-select-trigger flex h-[44px] min-h-[44px] w-full min-w-0 max-w-full items-center justify-between gap-2.5 overflow-hidden rounded-[var(--v2-radius-btn,12px)] border border-input bg-background px-3 py-0 text-left text-[14px] leading-none text-foreground shadow-xs transition-colors focus:outline-none focus:ring-1 focus:ring-gold disabled:cursor-not-allowed disabled:opacity-50",
               !selectedClient && "text-muted-foreground",
             )}
           >
-            <span className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
-              <UserRound size={15} className="shrink-0 text-gold" aria-hidden="true" />
-              <span className="block min-w-0 flex-1 truncate">
+            <span className="flex min-w-0 flex-1 items-center gap-2.5 overflow-hidden text-left">
+              <UserRound size={16} className="shrink-0 text-gold" aria-hidden="true" />
+              <span className="block min-w-0 flex-1 truncate leading-[1.35]">
                 {selectedClient
                   ? `${selectedClient.name}${selectedClient.phone ? ` (${selectedClient.phone})` : ""}`
                   : placeholder}
               </span>
             </span>
-            <ChevronDown size={16} className="shrink-0 opacity-60" aria-hidden="true" />
+            <ChevronDown size={16} className="ml-1 shrink-0 opacity-60" aria-hidden="true" />
           </button>
         </PopoverTrigger>
         <PopoverContent

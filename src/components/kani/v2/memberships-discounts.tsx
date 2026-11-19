@@ -823,10 +823,11 @@ export function V2MembershipsAndDiscounts({
               </div>
             </div>
 
-            <div className="v2-dialog-actions v2-modal-pinned-footer kani-modal-footer">
+            <div className="v2-dialog-actions v2-modal-pinned-footer kani-modal-footer kani-mcreate-footer">
               <button
                 type="button"
                 className="v2-secondary"
+                style={{ fontSize: "14px", fontWeight: 500, minHeight: "44px", borderRadius: "var(--v2-radius-btn, 12px)" }}
                 disabled={busy}
                 onClick={() => setCreateOpen(false)}
               >
@@ -835,6 +836,7 @@ export function V2MembershipsAndDiscounts({
               <button
                 type="submit"
                 className="v2-primary"
+                style={{ fontSize: "14px", fontWeight: 600, minHeight: "44px", borderRadius: "var(--v2-radius-btn, 12px)" }}
                 disabled={busy || !livePricing.isValidComposition}
               >
                 {busy ? "Guardando…" : "Crear membresía"}
