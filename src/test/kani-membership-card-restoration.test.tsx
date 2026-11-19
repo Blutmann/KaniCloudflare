@@ -364,6 +364,7 @@ describe("Restauración de cards de Membresías (/panel-administracion/membresia
     // Expandir Registrar consumo y escribir observación
     fireEvent.click(consumeTrigger);
     expect(consumeTrigger).toHaveAttribute("aria-expanded", "true");
+    fireEvent.click(screen.getByRole("button", { name: /\+ Agregar observación/i }));
     const obsInput = screen.getByLabelText("Observación") as HTMLInputElement;
     fireEvent.change(obsInput, { target: { value: "Nota pendiente" } });
 
@@ -386,7 +387,9 @@ describe("Restauración de cards de Membresías (/panel-administracion/membresia
     fireEvent.click(historyTrigger);
     expect(historyTrigger).toHaveAttribute("aria-expanded", "true");
     fireEvent.click(screen.getByRole("button", { name: /Reintegrar sesión/i }));
-    fireEvent.click(screen.getByRole("button", { name: /Sí, reintegrar sesión/i }));
+    const dialogs = screen.getAllByRole("dialog");
+    const confirmDialog = dialogs[dialogs.length - 1];
+    fireEvent.click(within(confirmDialog).getByRole("button", { name: /^Reintegrar sesión$/i }));
     await waitFor(() => {
       expect(mocks.refundMembershipSession).toHaveBeenCalledTimes(1);
     });
