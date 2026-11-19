@@ -358,5 +358,19 @@ describe('Kani — Navegación y permisos BARBER', () => {
     expect(cards[1].querySelector('.kani-dcard-history-empty')?.textContent).toContain(
       'Sin utilizaciones registradas.',
     );
+
+    // BARBER puede copiar código con confirmación accesible, sin botones de mutación
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText: vi.fn().mockResolvedValue(undefined) },
+      configurable: true,
+    });
+    const copyBtn = screen.getByRole('button', { name: 'Copiar código SUPER_CODIGO_LARGO_SIN_OVERFLOW_2026' });
+    fireEvent.click(copyBtn);
+    await waitFor(() => {
+      expect(navigator.clipboard.writeText).toHaveBeenCalledWith('SUPER_CODIGO_LARGO_SIN_OVERFLOW_2026');
+      expect(screen.getByRole('status').textContent).toContain('Código copiado: SUPER_CODIGO_LARGO_SIN_OVERFLOW_2026');
+      expect(screen.getByText('Código copiado')).toBeTruthy();
+    });
+    expect(screen.queryByRole('button', { name: /Vigencia|Desactivar|Activar|Eliminar|Generar código/i })).toBeNull();
   });
 });

@@ -473,4 +473,25 @@ describe('V12.43 — Rediseño de Descuentos Liquid Glass y navegación compacta
     fireEvent.click(dangerBtn);
     expect(await screen.findByText('¿Eliminar código KANI-10-ACTIVE?')).toBeInTheDocument();
   });
+
+  it('8. v2.1 — Modal "Editar vigencia" sigue el mockup aprobado (título limpio, código solo lectura, select sin autofocus, Cancelar | Guardar)', async () => {
+    render(<V2MembershipsAndDiscounts initialTab="DESCUENTOS" standaloneTab="DESCUENTOS" />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('discount-card-disc-active')).toBeInTheDocument();
+    });
+
+    const activeCard = screen.getByTestId('discount-card-disc-active');
+    fireEvent.click(within(activeCard).getByRole('button', { name: /Vigencia/i }));
+
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByRole('heading', { name: 'Editar vigencia' })).toBeInTheDocument();
+    expect(within(dialog).getByText('Código de descuento')).toBeInTheDocument();
+    expect(within(dialog).getByLabelText('Código de descuento')).toHaveTextContent('KANI-10-ACTIVE');
+    const validitySelect = within(dialog).getByLabelText('Vigencia') as HTMLSelectElement;
+    expect(document.activeElement).not.toBe(validitySelect);
+    expect(within(dialog).getByText('Los cambios no afectan las reservas confirmadas.')).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: 'Cancelar' })).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: 'Guardar' })).toBeInTheDocument();
+  });
 });

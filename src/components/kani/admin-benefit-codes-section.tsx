@@ -1375,24 +1375,32 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
       <Dialog open={!!codeToEditValidity} onOpenChange={(open) => !editingValidity && !open && setCodeToEditValidity(null)}>
         <DialogContent
           overlayClassName="benefit-code-dialog-overlay"
-          className="benefit-code-dialog-content sm:max-w-md"
+          className="benefit-code-dialog-content kani-modal-shell kani-dvalidity-dialog sm:max-w-md"
           transitionMode="container-transform"
+          showCloseButton={false}
+          aria-describedby={undefined}
         >
-          <div className="benefit-code-dialog-header">
-            <DialogTitle className="text-base font-semibold text-foreground flex items-center gap-2">
-              <Edit2 size={16} className="text-gold shrink-0" />
-              <span>Editar vigencia · {codeToEditValidity?.code}</span>
+          <div className="benefit-code-dialog-header kani-modal-header">
+            <DialogTitle className="text-base font-semibold text-foreground">
+              Editar vigencia
             </DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground mt-1">
-              Modificá las fechas de vigencia del código reutilizable. Las reservas ya confirmadas mantendrán sus condiciones originales intactas.
-            </DialogDescription>
+            <KaniModalClose label="Cerrar" />
           </div>
 
           <form onSubmit={handleEditValiditySubmit} className="benefit-code-dialog-form flex flex-col flex-1 min-h-0">
-            <div className="benefit-code-dialog-scroll-body space-y-4">
-              <div>
-                <label htmlFor="edit-validity-type" className="text-xs font-semibold text-foreground block mb-1">
-                  Opción de vigencia:
+            <div className="benefit-code-dialog-scroll-body kani-modal-body space-y-3">
+              <div className="space-y-1">
+                <span className="text-xs font-semibold text-foreground block">
+                  Código de descuento
+                </span>
+                <div className="kani-dvalidity-code-box select-all" aria-label="Código de descuento">
+                  {codeToEditValidity?.code}
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label htmlFor="edit-validity-type" className="text-xs font-semibold text-foreground block">
+                  Vigencia
                 </label>
                 <select
                   id="edit-validity-type"
@@ -1406,6 +1414,9 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                   <option value="CUSTOM_DURATION">Duración personalizada (X días, semanas o meses)</option>
                   <option value="DATE_RANGE">Desde una fecha hasta otra</option>
                 </select>
+                <p className="kani-dvalidity-note">
+                  Los cambios no afectan las reservas confirmadas.
+                </p>
               </div>
 
               {editValidityType !== 'NO_EXPIRATION' && (
@@ -1489,27 +1500,25 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
               )}
             </div>
 
-            <div className="benefit-code-dialog-footer">
-              <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setCodeToEditValidity(null)}
-                  disabled={editingValidity}
-                  className="v2-secondary min-h-[40px] text-xs"
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={editingValidity}
-                  className="action-brand min-h-[40px] text-xs font-semibold"
-                >
-                  {editingValidity ? <RefreshCw size={14} className="animate-spin mr-1.5" /> : <Check size={14} className="mr-1.5" />}
-                  <span>{editingValidity ? 'Guardando…' : 'Guardar vigencia'}</span>
-                </Button>
-              </DialogFooter>
-            </div>
+            <DialogFooter className="benefit-code-dialog-footer kani-modal-footer kani-dvalidity-footer">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setCodeToEditValidity(null)}
+                disabled={editingValidity}
+                className="v2-secondary min-h-[44px] text-xs"
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="submit"
+                disabled={editingValidity}
+                className="action-positive min-h-[44px] text-xs font-semibold"
+              >
+                {editingValidity ? <RefreshCw size={14} className="animate-spin mr-1.5" /> : null}
+                <span>{editingValidity ? 'Guardando…' : 'Guardar'}</span>
+              </Button>
+            </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>

@@ -518,28 +518,49 @@ html[data-theme="dark"] .kani-dcard-usage-cancelled {
   align-items: flex-start;
 }
 
-.kani-dcard-title-block {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
+.kani-dcard-benefit--readonly {
+  margin: 0;
+  font-size: 14.5px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--dc-text);
   min-width: 0;
   flex: 1 1 auto;
 }
 
-.kani-dcard-type {
-  margin: 0;
-  font-size: 12px;
-  font-weight: 500;
-  line-height: 1.3;
-  color: var(--dc-muted);
+.kani-dcard-code-group--readonly {
+  width: 100%;
+  justify-content: space-between;
+  padding: 5px 8px 5px 10px;
+  border-radius: 11px;
+  background: var(--dc-inset-bg);
+  border: 1px solid var(--dc-inset-border);
+}
+
+.kani-dcard-copy-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.kani-dcard-copied-tag {
+  font-size: 11px;
+  font-weight: 600;
+  color: #047857;
+  white-space: nowrap;
+}
+
+html[data-theme="dark"] .kani-dcard-copied-tag {
+  color: #34d399;
 }
 
 .kani-dcard-metrics-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px 14px;
+  gap: 8px 12px;
   margin: 0;
-  padding-top: 10px;
+  padding-top: 8px;
   border-top: 1px solid var(--dc-inset-border);
   min-width: 0;
 }
@@ -553,7 +574,7 @@ html[data-theme="dark"] .kani-dcard-usage-cancelled {
 
 .kani-dcard-metric dt {
   margin: 0;
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -562,7 +583,7 @@ html[data-theme="dark"] .kani-dcard-usage-cancelled {
 
 .kani-dcard-metric dd {
   margin: 0;
-  font-size: 13.5px;
+  font-size: 12.5px;
   font-weight: 600;
   line-height: 1.35;
   color: var(--dc-text);
@@ -673,6 +694,46 @@ html[data-theme="dark"] .kani-dcard-usage-cancelled {
   .kani-dcard-metrics-grid {
     grid-template-columns: minmax(0, 1fr);
     gap: 8px;
+  }
+}
+
+/* Modal Editar vigencia (v2.1) */
+.kani-dvalidity-code-box {
+  padding: 9px 12px;
+  border-radius: 10px;
+  background: var(--v2-inset, rgba(128, 128, 128, 0.08));
+  border: 1px solid var(--border);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--muted-foreground);
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+
+.kani-dvalidity-note {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--muted-foreground);
+}
+
+.kani-dvalidity-footer {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center;
+  gap: 8px;
+}
+
+.kani-dvalidity-footer > button {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+@media (max-width: 280px) {
+  .kani-dvalidity-footer {
+    flex-direction: column-reverse !important;
   }
 }
 
