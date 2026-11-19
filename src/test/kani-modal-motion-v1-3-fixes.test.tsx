@@ -126,10 +126,13 @@ describe("KANI Motion System v1.3 — Correcciones de persistencia visual y sele
     );
 
     const dialog = screen.getByRole("dialog");
-    const serviceSelect = within(dialog).getByLabelText("Servicio a descontar") as HTMLSelectElement;
+    expect(dialog.contains(document.activeElement)).toBe(true);
 
+    const consumeTrigger = within(dialog).getByRole("button", { name: /Registrar consumo/i });
+    fireEvent.click(consumeTrigger);
+
+    const serviceSelect = within(dialog).getByLabelText("Servicio a descontar") as HTMLSelectElement;
     expect(document.activeElement).not.toBe(serviceSelect);
-    expect(document.activeElement).toBe(dialog);
 
     fireEvent.change(serviceSelect, { target: { value: "Barba" } });
     expect(serviceSelect.value).toBe("Barba");

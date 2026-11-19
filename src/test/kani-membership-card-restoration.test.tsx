@@ -342,33 +342,69 @@ describe("Restauración de cards de Membresías (/panel-administracion/membresia
     expect(await screen.findByText(/Enlace de tarjeta digital copiado/i)).toBeInTheDocument();
   });
 
-  it("concentra todas las acciones administrativas en el modal Gestionar / Registrar pago y respeta permisos por rol", async () => {
-    // 1) En rol ADMIN permite consumo, vigencia, reintegro y regenerar enlace
+  it("concentra todas las acciones administrativas en accordions exclusivos de Gestionar / Registrar pago y respeta permisos por rol", async () => {
+    // 1) En rol ADMIN todas las categorías comienzan contraídas y conservan estado al alternar
     const { unmount } = render(<V2MembershipsAndDiscounts initialTab="MEMBRESIAS" />);
 
     const activeCard = screen.getByTestId("membership-card-mem-active-1");
     fireEvent.click(within(activeCard).getByRole("button", { name: "Gestionar" }));
 
-    expect(await screen.findByText("Registrar consumo de sesión")).toBeInTheDocument();
-    expect(screen.getByText("Vigencia, vencimiento y notas")).toBeInTheDocument();
-    expect(screen.getByText("Black Card del titular")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Regenerar enlace/i })).toBeInTheDocument();
+    const consumeTrigger = await screen.findByRole("button", { name: /Registrar consumo/i });
+    const validityTrigger = screen.getByRole("button", { name: /Vigencia/i });
+    const cardTrigger = screen.getByRole("button", { name: /Tarjeta digital/i });
+    const historyTrigger = screen.getByRole("button", { name: /Historial de sesiones/i });
+    const activityTrigger = screen.getByRole("button", { name: /Registro de actividad/i });
+
+    expect(consumeTrigger).toHaveAttribute("aria-expanded", "false");
+    expect(validityTrigger).toHaveAttribute("aria-expanded", "false");
+    expect(cardTrigger).toHaveAttribute("aria-expanded", "false");
+    expect(historyTrigger).toHaveAttribute("aria-expanded", "false");
+    expect(activityTrigger).toHaveAttribute("aria-expanded", "false");
+
+    // Expandir Registrar consumo y escribir observación
+    fireEvent.click(consumeTrigger);
+    expect(consumeTrigger).toHaveAttribute("aria-expanded", "true");
+    const obsInput = screen.getByLabelText("Observación") as HTMLInputElement;
+    fireEvent.change(obsInput, { target: { value: "Nota pendiente" } });
+
+    // Abrir Vigencia contrae Registrar consumo, pero preserva el estado del formulario al volver
+    fireEvent.click(validityTrigger);
+    expect(validityTrigger).toHaveAttribute("aria-expanded", "true");
+    expect(consumeTrigger).toHaveAttribute("aria-expanded", "false");
+
+    fireEvent.click(consumeTrigger);
+    expect(consumeTrigger).toHaveAttribute("aria-expanded", "true");
+    expect(validityTrigger).toHaveAttribute("aria-expanded", "false");
+    expect((screen.getByLabelText("Observación") as HTMLInputElement).value).toBe("Nota pendiente");
 
     fireEvent.click(screen.getByRole("button", { name: /Confirmar consumo/i }));
     await waitFor(() => {
       expect(mocks.consumeMembershipSession).toHaveBeenCalledTimes(1);
     });
 
+    // Historial de sesiones
+    fireEvent.click(historyTrigger);
+    expect(historyTrigger).toHaveAttribute("aria-expanded", "true");
     fireEvent.click(screen.getByRole("button", { name: /Reintegrar sesión/i }));
     fireEvent.click(screen.getByRole("button", { name: /Sí, reintegrar sesión/i }));
     await waitFor(() => {
       expect(mocks.refundMembershipSession).toHaveBeenCalledTimes(1);
     });
 
+    // Vigencia
+    fireEvent.click(validityTrigger);
     fireEvent.click(screen.getByRole("button", { name: /Guardar vigencia/i }));
     await waitFor(() => {
       expect(mocks.updateClientMembershipDetails).toHaveBeenCalledTimes(1);
     });
+
+    // Registro de actividad con etiquetas legibles
+    fireEvent.click(activityTrigger);
+    expect(screen.getByText("Membresía creada")).toBeInTheDocument();
+
+    // Tarjeta digital con Regenerar enlace visible en ADMIN
+    fireEvent.click(cardTrigger);
+    expect(screen.getByRole("button", { name: /Regenerar enlace/i })).toBeInTheDocument();
     unmount();
 
     // 2) En estado PENDIENTE DE PAGO permite confirmar pago desde Registrar pago
@@ -391,7 +427,22 @@ describe("Restauración de cards de Membresías (/panel-administracion/membresia
     expect(screen.getByTestId("membership-card-mem-active-1")).toBeInTheDocument();
     expect(screen.queryByTestId("membership-card-mem-pending-2")).toBeNull();
     fireEvent.click(within(screen.getByTestId("membership-card-mem-active-1")).getByRole("button", { name: "Gestionar" }));
-    expect(await screen.findByText("Black Card del titular")).toBeInTheDocument();
+    fireEvent.click(await screen.findByRole("button", { name: /Tarjeta digital/i }));
+    expect(screen.getByRole("button", { name: /Copiar enlace/i })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Regenerar enlace/i })).toBeNull();
+  });
+
+  it("simplifica los nombres de planes en Nueva membresía sin alterar cálculos ni resumen económico", () => {
+    render(<V2MembershipsAndDiscounts initialTab="MEMBRESIAS" />);
+    fireEvent.click(screen.getByRole("button", { name: /Nueva membresía/i }));
+
+    const dialog = screen.getByRole("dialog");
+    expect(within(dialog).getByText("Barbero")).toBeInTheDocument();
+    expect(within(dialog).getByText("Tipo de membresía")).toBeInTheDocument();
+    expect(within(dialog).getAllByText("4 cortes").length).toBeGreaterThan(0);
+    expect(within(dialog).queryByText(/c\/u · 20% OFF/i)).toBeNull();
+    expect(within(dialog).getByText("$100.000")).toBeInTheDocument();
+    expect(within(dialog).getByText("-$20.000")).toBeInTheDocument();
+    expect(within(dialog).getByText("$80.000")).toBeInTheDocument();
   });
 });

@@ -12,7 +12,6 @@ import { businessDateToday, addCalendarDays } from "@/lib/kani-mobile-appointmen
 import { money, dateLabel, formatServiceName } from "@/lib/kani-model";
 import {
   HOMOGENEOUS_MEMBERSHIP_PACKAGES,
-  MEMBERSHIP_SERVICE_PRICES_ARS,
   buildHomogeneousMembershipPricing,
   consumeMembershipSession,
   createClientMembership,
@@ -700,23 +699,23 @@ export function V2MembershipsAndDiscounts({
           </div>
           <form onSubmit={handleCreateSubmit} className="v2-form v2-modal-pinned-form">
             <div className="v2-modal-pinned-scroll kani-modal-body">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                <div className="v2-field min-w-0">
-                  <label htmlFor="membership-client-select" className="v2-field-label">
-                    Cliente titular
-                  </label>
-                  <AdminClientCombobox
-                    id="membership-client-select"
-                    clients={data.clients.filter((c) => !c.archived)}
-                    value={clientId}
-                    onChange={setClientId}
-                    required
-                    ariaLabel="Cliente titular"
-                  />
-                </div>
+              <div className="v2-field min-w-0">
+                <label htmlFor="membership-client-select" className="v2-field-label">
+                  Cliente titular
+                </label>
+                <AdminClientCombobox
+                  id="membership-client-select"
+                  clients={data.clients.filter((c) => !c.archived)}
+                  value={clientId}
+                  onChange={setClientId}
+                  required
+                  ariaLabel="Cliente titular"
+                />
+              </div>
 
+              <div className="v2-membership-create-row">
                 <label className="v2-field min-w-0">
-                  <span className="v2-field-label">Barbero asignado</span>
+                  <span className="v2-field-label">Barbero</span>
                   <select
                     value={barberId}
                     onChange={(e) => setBarberId(e.target.value)}
@@ -729,24 +728,24 @@ export function V2MembershipsAndDiscounts({
                     ))}
                   </select>
                 </label>
-              </div>
 
-              <div className="v2-field min-w-0">
-                <label htmlFor="membership-package-select" className="v2-field-label">
-                  Tipo de membresía
-                </label>
-                <AdminContextualSelect
-                  id="membership-package-select"
-                  ariaLabel="Tipo de membresía"
-                  value={selectedPackageId}
-                  onValueChange={(val) =>
-                    setSelectedPackageId(val as HomogeneousMembershipPackageId)
-                  }
-                  options={HOMOGENEOUS_MEMBERSHIP_PACKAGES.map((pkg) => ({
-                    value: pkg.id,
-                    label: `${pkg.label} (${money(MEMBERSHIP_SERVICE_PRICES_ARS[pkg.serviceName])} c/u · 20% OFF)`,
-                  }))}
-                />
+                <div className="v2-field min-w-0">
+                  <label htmlFor="membership-package-select" className="v2-field-label">
+                    Tipo de membresía
+                  </label>
+                  <AdminContextualSelect
+                    id="membership-package-select"
+                    ariaLabel="Tipo de membresía"
+                    value={selectedPackageId}
+                    onValueChange={(val) =>
+                      setSelectedPackageId(val as HomogeneousMembershipPackageId)
+                    }
+                    options={HOMOGENEOUS_MEMBERSHIP_PACKAGES.map((pkg) => ({
+                      value: pkg.id,
+                      label: pkg.label,
+                    }))}
+                  />
+                </div>
               </div>
 
               <div className="v2-membership-summary-card">
