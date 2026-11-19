@@ -3647,9 +3647,9 @@ html[data-theme] body[data-lg-admin="true"] .site-shell:has(.v2-shell) > .site-f
     flex-direction: row !important;
     flex-wrap: wrap !important;
     align-items: center !important;
-    row-gap: 10px !important;
+    row-gap: 8px !important;
     column-gap: 6px !important;
-    padding: 14px 13px !important;
+    padding: 13px 14px !important;
   }
 
   html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section .kani-dcard-body,
@@ -3664,6 +3664,7 @@ html[data-theme] body[data-lg-admin="true"] .site-shell:has(.v2-shell) > .site-f
     flex: 1 1 0 !important;
     min-width: 0 !important;
     font-size: 14.5px !important;
+    font-weight: 700 !important;
     line-height: 1.3 !important;
   }
 
@@ -3686,7 +3687,7 @@ html[data-theme] body[data-lg-admin="true"] .site-shell:has(.v2-shell) > .site-f
     font-size: 12px !important;
   }
 
-  /* Fila 3: Código promocional | Botón Copiar (agrupados visualmente, sin botón Eliminar) */
+  /* Fila 3: Código promocional | Botón Copiar (agrupados visualmente, sin desborde en códigos largos) */
   html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section .kani-dcard-code-group {
     order: 4 !important;
     flex: 0 0 100% !important;
@@ -3694,15 +3695,18 @@ html[data-theme] body[data-lg-admin="true"] .site-shell:has(.v2-shell) > .site-f
     min-width: 0 !important;
     display: flex !important;
     align-items: center !important;
-    justify-content: flex-start !important;
+    justify-content: space-between !important;
     gap: 8px !important;
+    padding: 5px 8px 5px 10px !important;
+    border-radius: 11px !important;
+    background: var(--lga-glass-nested) !important;
+    border: 1px solid var(--lga-border-nested) !important;
   }
 
   html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section .kani-dcard-code {
-    flex: 0 1 auto !important;
+    flex: 1 1 auto !important;
     min-width: 0 !important;
-    max-width: calc(100% - 46px) !important;
-    font-size: 14.5px !important;
+    font-size: 13.5px !important;
     line-height: 1.25 !important;
     letter-spacing: 0.025em !important;
     overflow-wrap: anywhere !important;
@@ -3710,14 +3714,14 @@ html[data-theme] body[data-lg-admin="true"] .site-shell:has(.v2-shell) > .site-f
   }
 
   html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section .kani-dcard .kani-dcard-btn-copy {
-    flex: 0 0 38px !important;
-    width: 38px !important;
-    height: 38px !important;
-    min-height: 38px !important;
-    max-height: 38px !important;
+    flex: 0 0 40px !important;
+    width: 40px !important;
+    height: 40px !important;
+    min-height: 40px !important;
+    max-height: 40px !important;
     padding: 0 !important;
     margin-left: 0 !important;
-    border-radius: 11px !important;
+    border-radius: 9px !important;
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;

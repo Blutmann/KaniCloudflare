@@ -662,17 +662,21 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
               <span className="text-xs">Cargando códigos de beneficios…</span>
             </div>
           ) : filteredAndSortedItems.length === 0 ? (
-            <div className="py-12 text-center border border-dashed border-border rounded-lg p-6 bg-muted/20">
-              <Gift size={32} className="mx-auto text-muted-foreground/60 mb-2" />
-              <p className="text-sm font-medium text-foreground">No se encontraron códigos</p>
+            <div className="py-10 text-center border border-dashed border-border rounded-lg p-5 bg-muted/20">
+              <Gift size={28} className="mx-auto text-muted-foreground/60 mb-2" />
+              <p className="text-sm font-medium text-foreground">Sin códigos</p>
               <p className="text-xs text-muted-foreground mt-1">
                 {searchTerm || statusFilter !== 'ALL'
-                  ? 'Probá ajustando los filtros de búsqueda o estado.'
-                  : 'Generá el primer código de beneficio para una reserva.'}
+                  ? 'No hay códigos para este filtro.'
+                  : 'Generá el primer código de beneficio.'}
               </p>
             </div>
           ) : (
-            <div className={`kani-dgrid${filteredAndSortedItems.length === 1 ? ' is-single' : ''}`}>
+            <>
+              <span className="sr-only" role="status" aria-live="polite">
+                {copiedCode ? `Código copiado: ${copiedCode}` : ''}
+              </span>
+              <div className={`kani-dgrid${filteredAndSortedItems.length === 1 ? ' is-single' : ''}`}>
               {filteredAndSortedItems.map((item) => {
                 const def = BENEFIT_TYPE_DEFINITIONS[item.type];
                 const usageMode = item.usageMode || 'SINGLE_USE';
@@ -733,12 +737,12 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                           <button
                             type="button"
                             className={`v2-secondary kani-dcard-btn-copy${isCopied ? ' is-copied' : ''}`}
-                            aria-label={`Copiar código ${item.code}`}
+                            aria-label={isCopied ? `Código copiado: ${item.code}` : `Copiar código ${item.code}`}
                             title={
                               status === 'DELETED'
                                 ? 'Código eliminado'
                                 : isCopied
-                                ? '¡Código copiado!'
+                                ? 'Código copiado'
                                 : 'Copiar código'
                             }
                             disabled={status === 'DELETED'}
@@ -799,7 +803,7 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                               title="Editar vigencia"
                             >
                               <Edit2 size={13} aria-hidden="true" />
-                              <span>Editar</span>
+                              <span>Vigencia</span>
                             </button>
                           )}
 
@@ -866,7 +870,7 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                           </div>
 
                           <div className="kani-dcard-kv is-full">
-                            <dt className="kani-dcard-kv-label">Tipo de código y condiciones de utilización</dt>
+                            <dt className="kani-dcard-kv-label">Condiciones</dt>
                             <dd className="kani-dcard-kv-value">
                               {usageDef.label} · {def.description}{' '}
                               {item.validityType === 'NO_EXPIRATION' || !item.validUntil
@@ -876,39 +880,39 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                           </div>
 
                           <div className="kani-dcard-kv">
-                            <dt className="kani-dcard-kv-label">Fecha de creación</dt>
+                            <dt className="kani-dcard-kv-label">Creado el</dt>
                             <dd className="kani-dcard-kv-value">
                               {item.createdAt ? formatBuenosAiresDateTime(item.createdAt) : 'Sin registro'}
                             </dd>
                           </div>
 
                           <div className="kani-dcard-kv">
-                            <dt className="kani-dcard-kv-label">Usuario que lo creó</dt>
+                            <dt className="kani-dcard-kv-label">Creado por</dt>
                             <dd className="kani-dcard-kv-value">
                               {item.createdByDisplayName || 'Sin registro'}
                             </dd>
                           </div>
 
                           <div className="kani-dcard-kv">
-                            <dt className="kani-dcard-kv-label">Fecha de última modificación</dt>
+                            <dt className="kani-dcard-kv-label">Última edición</dt>
                             <dd className="kani-dcard-kv-value">
                               {item.lastEditedAt
                                 ? formatBuenosAiresDateTime(item.lastEditedAt)
-                                : 'Sin modificaciones registradas'}
+                                : 'Sin modificaciones'}
                             </dd>
                           </div>
 
                           <div className="kani-dcard-kv">
-                            <dt className="kani-dcard-kv-label">Usuario que realizó la modificación</dt>
+                            <dt className="kani-dcard-kv-label">Editado por</dt>
                             <dd className="kani-dcard-kv-value">
                               {item.lastEditedByDisplayName ||
-                                (item.lastEditedAt ? 'Sin registro' : 'Sin modificaciones registradas')}
+                                (item.lastEditedAt ? 'Sin registro' : 'Sin modificaciones')}
                             </dd>
                           </div>
 
                           {changeReason && (
                             <div className="kani-dcard-kv is-full">
-                              <dt className="kani-dcard-kv-label">Motivo de los cambios</dt>
+                              <dt className="kani-dcard-kv-label">Motivo</dt>
                               <dd className="kani-dcard-kv-value">{changeReason}</dd>
                             </div>
                           )}
@@ -917,8 +921,8 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                             <div className="kani-dcard-kv is-full">
                               <dt className="kani-dcard-kv-label">
                                 {status === 'DELETED' || item.deletedAt
-                                  ? 'Información de eliminación'
-                                  : 'Información de desactivación'}
+                                  ? 'Eliminación'
+                                  : 'Desactivación'}
                               </dt>
                               <dd className="kani-dcard-kv-value">{deactivationOrDeletionInfo}</dd>
                             </div>
@@ -935,7 +939,7 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                         {(usagesList.length > 0 || hasLegacyUsage) && (
                           <div className="kani-dcard-usages">
                             <h4 className="kani-dcard-usages-title">
-                              Reservas asociadas e historial de utilización ({usageCount})
+                              Historial de usos ({usageCount})
                             </h4>
 
                             {usagesList.length > 0 ? (
@@ -1046,6 +1050,7 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                 );
               })}
             </div>
+            </>
           )}
         </>
       )}
