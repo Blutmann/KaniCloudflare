@@ -403,7 +403,7 @@ export function V2Clients() {
                       <span className="v2-client-kpi-label">Visitas</span>
                       <strong className="v2-client-kpi-value">{summary.visits}</strong>
                     </div>
-                    <div className="v2-client-kpi">
+                    <div className="v2-client-kpi is-end">
                       <span className="v2-client-kpi-label">Última visita</span>
                       {summary.lastVisit ? (
                         <strong className="v2-client-kpi-value is-date">

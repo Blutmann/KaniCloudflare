@@ -157,11 +157,11 @@ describe("KANI UX Optimization v1.0 — Detalles del cliente (Mobile Redesign)",
 
     expect(screen.getByText("Visitas")).toBeInTheDocument();
     expect(screen.getByText("2")).toBeInTheDocument();
-    expect(screen.getByText("Última visita")).toBeInTheDocument();
+    expect(screen.getByText("Última visita").closest(".v2-client-kpi")).toHaveClass("is-end");
     expect(screen.getByText("11/11/2026")).toBeInTheDocument();
     expect(screen.getByText("Total en servicios")).toBeInTheDocument();
     expect(screen.getByText("$64.000")).toBeInTheDocument();
-    expect(screen.getByText("Cancelaciones")).toBeInTheDocument();
+    expect(screen.getByText("Cancelaciones").closest(".v2-client-kpi")).toHaveClass("is-end");
     expect(screen.getByText("0")).toBeInTheDocument();
 
     // Membresías & Historial headings without uppercase or redundant words
