@@ -405,9 +405,13 @@ export function V2Clients() {
                     </div>
                     <div className="v2-client-kpi">
                       <span className="v2-client-kpi-label">Última visita</span>
-                      <strong className="v2-client-kpi-value is-date">
-                        {summary.lastVisit ? clientDate(summary.lastVisit) : "Sin registro"}
-                      </strong>
+                      {summary.lastVisit ? (
+                        <strong className="v2-client-kpi-value is-date">
+                          {clientDate(summary.lastVisit)}
+                        </strong>
+                      ) : (
+                        <span className="v2-client-kpi-empty">Sin registro</span>
+                      )}
                     </div>
                   </div>
                   <div className="v2-client-summary-secondary">

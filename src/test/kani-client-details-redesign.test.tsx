@@ -195,6 +195,11 @@ describe("KANI UX Optimization v1.0 — Detalles del cliente (Mobile Redesign)",
     expect(within(dialog).getByText("Sin email")).toBeInTheDocument();
     expect(within(dialog).queryByRole("link")).not.toBeInTheDocument();
 
+    const emptyLastVisit = within(dialog).getByText("Sin registro");
+    expect(emptyLastVisit.tagName).toBe("SPAN");
+    expect(emptyLastVisit).toHaveClass("v2-client-kpi-empty");
+    expect(emptyLastVisit).not.toHaveClass("v2-client-kpi-value");
+
     // Barber sees Editar but not Eliminar
     expect(within(dialog).getByRole("button", { name: "Editar cliente" })).toBeInTheDocument();
     expect(within(dialog).queryByRole("button", { name: "Eliminar cliente" })).not.toBeInTheDocument();
