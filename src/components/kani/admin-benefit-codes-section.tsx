@@ -803,7 +803,7 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                               title="Editar vigencia"
                             >
                               <Edit2 size={13} aria-hidden="true" />
-                              <span>Vigencia</span>
+                              <span>Editar</span>
                             </button>
                           )}
 
@@ -883,12 +883,12 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                               </dd>
                             </div>
 
-                            <div className="kani-dcard-kv is-full">
-                              <dt className="kani-dcard-kv-label">Notas internas</dt>
-                              <dd className="kani-dcard-kv-value">
-                                {item.internalNote || 'Sin notas'}
-                              </dd>
-                            </div>
+                            {item.internalNote ? (
+                              <div className="kani-dcard-kv is-full">
+                                <dt className="kani-dcard-kv-label">Notas internas</dt>
+                                <dd className="kani-dcard-kv-value">{item.internalNote}</dd>
+                              </div>
+                            ) : null}
                           </dl>
                         </div>
 
@@ -1556,31 +1556,34 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
       >
         <DialogContent
           overlayClassName="benefit-code-dialog-overlay"
-          className="benefit-code-dialog-content sm:max-w-md"
+          className="benefit-code-dialog-content kani-modal-shell kani-dtoggle-dialog"
           transitionMode="container-transform"
+          showCloseButton={false}
         >
-          <div className="benefit-code-dialog-header">
-            <DialogTitle className="text-base font-semibold text-foreground flex items-center gap-2">
-              {codeToToggle?.targetActive ? (
-                <>
-                  <Check size={18} className="text-emerald-400 shrink-0" />
-                  <span>¿Activar código {codeToToggle?.item.code}?</span>
-                </>
-              ) : (
-                <>
-                  <Ban size={18} className="text-destructive shrink-0" />
-                  <span>¿Desactivar código {codeToToggle?.item.code}?</span>
-                </>
-              )}
+          <div className="benefit-code-dialog-header kani-modal-header-row">
+            <DialogTitle className="kani-modal-title">
+              {codeToToggle?.targetActive ? 'Activar código' : 'Desactivar código'}
             </DialogTitle>
-            <DialogDescription className="text-xs sm:text-sm text-muted-foreground leading-relaxed mt-1.5">
-              {codeToToggle?.targetActive
-                ? 'El código volverá a estar disponible para reservas según sus condiciones de vigencia.'
-                : 'El código no podrá ser utilizado para nuevas reservas mientras esté desactivado. Esta acción no modifica reservas ya confirmadas.'}
-            </DialogDescription>
+            <KaniModalClose
+              label="Cerrar"
+              onClick={() => !togglingStatus && setCodeToToggle(null)}
+            />
           </div>
 
-          <div className="benefit-code-dialog-scroll-body">
+          <div className="benefit-code-dialog-scroll-body kani-dtoggle-body">
+            {codeToToggle?.item.code && (
+              <div className="kani-dvalidity-code-box" aria-label="Código seleccionado">
+                <span className="kani-dvalidity-code-label">Código</span>
+                <span className="kani-dvalidity-code-value">{codeToToggle.item.code}</span>
+              </div>
+            )}
+
+            <DialogDescription className="kani-dtoggle-desc">
+              {codeToToggle?.targetActive
+                ? 'El código volverá a estar disponible para nuevas reservas según sus condiciones de vigencia.'
+                : 'El código dejará de estar disponible para nuevas reservas. Las reservas confirmadas no se modificarán.'}
+            </DialogDescription>
+
             {toggleStatusError && (
               <div className="p-3 rounded bg-destructive/10 text-destructive text-xs space-y-2">
                 <div className="flex items-start gap-2">
@@ -1608,16 +1611,15 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
           </div>
 
           <div className="benefit-code-dialog-footer">
-            <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2">
+            <DialogFooter className="kani-dtoggle-footer">
               <Button
                 variant="outline"
                 onClick={() => setCodeToToggle(null)}
                 disabled={togglingStatus}
-                className="v2-secondary min-h-[40px] text-xs"
+                className="v2-secondary"
               >
                 Cancelar
               </Button>
-              {/* Si está vencido y no se puede activar, solo permitir cerrar o ir a editar */}
               {!(
                 codeToToggle?.targetActive &&
                 codeToToggle.item.validUntil &&
@@ -1626,24 +1628,15 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                 <Button
                   onClick={handleToggleConfirm}
                   disabled={togglingStatus}
-                  className={`action-brand min-h-[40px] text-xs font-semibold ${
-                    !codeToToggle?.targetActive ? 'v2-destructive' : ''
-                  }`}
+                  className={
+                    codeToToggle?.targetActive ? 'action-positive' : 'v2-destructive'
+                  }
                 >
-                  {togglingStatus ? (
-                    <RefreshCw size={14} className="animate-spin mr-1.5" />
-                  ) : codeToToggle?.targetActive ? (
-                    <Check size={14} className="mr-1.5" />
-                  ) : (
-                    <Ban size={14} className="mr-1.5" />
-                  )}
-                  <span>
-                    {togglingStatus
-                      ? 'Procesando…'
-                      : codeToToggle?.targetActive
-                      ? 'Confirmar activación'
-                      : 'Confirmar desactivación'}
-                  </span>
+                  {togglingStatus
+                    ? 'Procesando…'
+                    : codeToToggle?.targetActive
+                    ? 'Activar'
+                    : 'Desactivar'}
                 </Button>
               )}
             </DialogFooter>
