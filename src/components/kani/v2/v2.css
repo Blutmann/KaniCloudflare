@@ -4959,6 +4959,18 @@ html[data-theme=dark] .v2-medit-refunded-pill{color:#34d399}
   padding-bottom: 16px;
 }
 
+:is(.v2-membership-create-dialog, .kani-medit-dialog) .kani-modal-footer > button {
+  font-size: 14px !important;
+}
+
+:is(.v2-membership-create-dialog, .kani-medit-dialog) .kani-modal-footer > button.v2-primary {
+  font-weight: 600 !important;
+}
+
+:is(.v2-membership-create-dialog, .kani-medit-dialog) .kani-modal-footer > button.v2-secondary {
+  font-weight: 500 !important;
+}
+
 .v2-membership-create-row {
   display: grid;
   grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
