@@ -379,6 +379,20 @@ html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active)
   color: var(--lga-text, var(--foreground)) !important;
 }
 
+html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell .kani-modal-header .kani-medit-title-row {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+  min-width: 0 !important;
+}
+
+html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell .kani-modal-header .kani-medit-title-row h2 {
+  flex: 0 0 auto !important;
+  width: auto !important;
+}
+
 @media (min-width: 640px) {
   html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell .kani-modal-header h2 {
     font-size: 18px !important;
@@ -635,20 +649,52 @@ html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active)
 }
 
 /* Allow long membership package labels to wrap cleanly instead of truncating */
-html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell .kani-modal-body .v2-admin-select-trigger {
+html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell .kani-modal-body .v2-admin-select-trigger:not([role="combobox"]) {
   height: auto !important;
   min-height: 44px !important;
   max-height: none !important;
   padding: 10px 12px !important;
 }
 
-html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell .kani-modal-body .v2-admin-select-trigger > span {
+html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell .kani-modal-body .v2-admin-select-trigger:not([role="combobox"]) > span {
   white-space: normal !important;
   display: block !important;
   overflow: visible !important;
   -webkit-line-clamp: unset !important;
   line-height: 1.3 !important;
   text-align: left !important;
+}
+
+/* Searchable client combobox: [Icon] [Truncated Name...] [Chevron] vertically centered */
+html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell .kani-modal-body button[role="combobox"].v2-admin-select-trigger {
+  height: 44px !important;
+  min-height: 44px !important;
+  padding: 0 12px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  border-radius: var(--v2-radius-btn, 12px) !important;
+}
+
+html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell .kani-modal-body button[role="combobox"].v2-admin-select-trigger > span {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-align: left !important;
+}
+
+html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell .kani-modal-body button[role="combobox"].v2-admin-select-trigger > span > span {
+  display: block !important;
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  line-height: 1.35 !important;
 }
 
 /* Keep 2-col manual appointment labels on a single line */

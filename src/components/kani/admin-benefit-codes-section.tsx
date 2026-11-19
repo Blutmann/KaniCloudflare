@@ -799,11 +799,12 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                         aria-controls={`discount-details-${item.id}`}
                         onClick={() => toggleAccordion(item.id)}
                       >
+                        <Info size={14} strokeWidth={2} aria-hidden="true" />
                         <span>Info</span>
                         {isExpanded ? (
-                          <ChevronUp size={14} aria-hidden="true" />
+                          <ChevronUp size={14} strokeWidth={2} aria-hidden="true" />
                         ) : (
-                          <ChevronDown size={14} aria-hidden="true" />
+                          <ChevronDown size={14} strokeWidth={2} aria-hidden="true" />
                         )}
                       </button>
 
@@ -816,7 +817,7 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                               onClick={() => handleEditValidityOpen(item)}
                               title="Editar vigencia"
                             >
-                              <Edit2 size={13} aria-hidden="true" />
+                              <Edit2 size={14} strokeWidth={2} aria-hidden="true" />
                               <span>Editar</span>
                             </button>
                           )}
@@ -831,7 +832,7 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                               }}
                               title="Desactivar este código"
                             >
-                              <XCircle size={13} aria-hidden="true" />
+                              <XCircle size={14} strokeWidth={2} aria-hidden="true" />
                               <span>Desactivar</span>
                             </button>
                           ) : status === 'DISABLED' ? (
@@ -851,7 +852,7 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                               }}
                               title="Activar este código"
                             >
-                              <Check size={13} aria-hidden="true" />
+                              <Check size={14} strokeWidth={2} aria-hidden="true" />
                               <span>Activar</span>
                             </button>
                           ) : null}

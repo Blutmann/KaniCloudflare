@@ -2797,7 +2797,7 @@ html[data-theme="light"] body[data-lg-admin="true"] .kani-mcard-badge:not([class
 }
 
 /* Botones de acciones y BenefitCodesAdminSection (.maintenance-section) */
-html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section button:not([role="switch"]) {
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section button:not([role="switch"]):not(.kani-dcard-subgroup-summary):not(.kani-dcard-details-delete-btn):not(.kani-dcard-btn-details):not(.kani-dcard-btn-action):not(.kani-dtoolbar-generate-btn) {
   min-height: 40px !important;
   border-radius: 999px !important;
   transition: background-color 150ms ease, border-color 150ms ease, opacity 150ms ease;
@@ -2809,7 +2809,7 @@ html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-se
   }
 }
 
-html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section button:not(.action-brand):not(.action-positive):not(.v2-primary):not([aria-pressed="true"]):not(:disabled) {
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section button:not(.action-brand):not(.action-positive):not(.v2-primary):not(.is-destructive):not(.kani-dcard-btn-warning):not(.kani-dcard-subgroup-summary):not([aria-pressed="true"]):not(:disabled) {
   background: var(--lga-btn-secondary-bg) !important;
   border: 1px solid var(--lga-border) !important;
   color: var(--lga-text) !important;
@@ -3794,21 +3794,21 @@ html[data-theme] body[data-lg-admin="true"] .site-shell:has(.v2-shell) > .site-f
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
-    gap: 7px !important;
+    gap: 8px !important;
     font-size: 14px !important;
     font-weight: 600 !important;
-    color: #b91c1c !important;
-    background: rgba(220, 38, 38, 0.08) !important;
-    border: 1px solid rgba(220, 38, 38, 0.34) !important;
+    color: #ffffff !important;
+    background: #881337 !important;
+    border: 1px solid #be123c !important;
     -webkit-backdrop-filter: none !important;
     backdrop-filter: none !important;
     cursor: pointer !important;
   }
 
   html[data-theme="dark"] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section .kani-dcard-details-delete-btn.is-destructive {
-    color: #fca5a5 !important;
-    background: rgba(248, 113, 113, 0.12) !important;
-    border-color: rgba(248, 113, 113, 0.36) !important;
+    color: #ffffff !important;
+    background: #881337 !important;
+    border-color: #be123c !important;
   }
 }
 
@@ -4151,31 +4151,69 @@ html[data-theme="dark"] .site-shell .liquid-glass-page[data-lg-section="admin"] 
 }
 
 /* ==============================================================================
- * LAYER 16 · KANI UX v2.4/v2.5 — INTERACTION SIMPLIFICATION & DESIGN CONSISTENCY
+ * LAYER 16 · KANI UX v2.4–v2.6 — INTERACTION SIMPLIFICATION & DESIGN CONSISTENCY
  * ============================================================================== */
-html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .kani-dcard-subgroup-summary {
+html[data-theme] body[data-lg-admin="true"] :is(.v2-memberships-page, .maintenance-section) .kani-dcard-subgroup {
+  border: 1px solid var(--lga-border-nested, var(--dc-border)) !important;
+  border-radius: 12px !important;
+  background: var(--lga-glass-nested, transparent) !important;
+  overflow: hidden;
+  transition: border-color 150ms ease, background-color 150ms ease;
+}
+
+html[data-theme] body[data-lg-admin="true"] :is(.v2-memberships-page, .maintenance-section) .kani-dcard-subgroup.is-open {
+  border-color: var(--lga-border-accent, rgba(184, 150, 60, 0.36)) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] :is(.v2-memberships-page, .maintenance-section) .kani-dcard-subgroup-summary {
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
-  border-radius: 12px !important;
+  border-radius: 0 !important;
   padding: 0 12px !important;
   min-height: 44px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] :is(.v2-memberships-page, .maintenance-section) .kani-dcard-usage-row {
+  background: transparent !important;
+  border: none !important;
+  border-top: 1px solid var(--lga-border-nested, var(--dc-border)) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 8px 0 !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] :is(.v2-memberships-page, .maintenance-section) .kani-dcard-usage-row:first-child {
+  border-top: none !important;
+  padding-top: 2px !important;
 }
 
 html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .kani-dtoolbar-generate-btn {
   border-radius: var(--v2-radius-btn, 12px) !important;
 }
 
-html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section .kani-dcard :is(.kani-dcard-btn-details, .kani-dcard-btn-action) {
+html[data-theme] body[data-lg-admin="true"] :is(.v2-memberships-page, .maintenance-section) .kani-dcard :is(.kani-dcard-btn-details, .kani-dcard-btn-action) {
   border-radius: var(--v2-radius-btn, 12px) !important;
+  min-height: 44px !important;
+  height: 44px !important;
   font-size: 13.5px !important;
   font-weight: 500 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
 }
 
-html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section .kani-dcard-details-delete-btn.is-destructive {
+html[data-theme] body[data-lg-admin="true"] :is(.v2-memberships-page, .maintenance-section) .kani-dcard .kani-dcard-btn-details[aria-expanded="true"] {
+  border-color: var(--lga-border-accent, rgba(184, 150, 60, 0.45)) !important;
+  background: color-mix(in srgb, var(--gold, #b8963c) 10%, var(--lga-glass-nested, transparent)) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] :is(.v2-memberships-page, .maintenance-section) .kani-dcard-details-delete-btn.is-destructive {
   color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
   background: #881337 !important;
   border: 1px solid #be123c !important;
   border-radius: var(--v2-radius-btn, 12px) !important;
@@ -4187,15 +4225,19 @@ html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-se
   -webkit-backdrop-filter: none !important;
 }
 
-html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section .kani-dcard-details-delete-btn.is-destructive:hover:not(:disabled) {
+html[data-theme] body[data-lg-admin="true"] :is(.v2-memberships-page, .maintenance-section) .kani-dcard-details-delete-btn.is-destructive svg {
+  color: #ffffff !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] :is(.v2-memberships-page, .maintenance-section) .kani-dcard-details-delete-btn.is-destructive:hover:not(:disabled) {
   background: #9f1239 !important;
   border-color: #e11d48 !important;
 }
 
-html[data-theme="dark"] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section .kani-dcard-details-delete-btn.is-destructive {
-  color: #ffffff !important;
-  background: #881337 !important;
-  border-color: #be123c !important;
+html[data-theme] body[data-lg-admin="true"] :is(.v2-memberships-page, .maintenance-section) .kani-dcard-details-delete-btn.is-destructive:active:not(:disabled) {
+  background: #70102d !important;
+  transform: scale(0.985);
 }
+
 
 
