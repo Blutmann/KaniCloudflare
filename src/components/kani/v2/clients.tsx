@@ -1,5 +1,5 @@
 import { useState, type FormEvent, type MouseEvent } from "react";
-import { FileSpreadsheet, Loader2, Pencil, Plus, Search, Trash2, X } from "lucide-react";
+import { FileSpreadsheet, Loader2, Mail, Pencil, Phone, Plus, Search, Trash2, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminStaff } from "@/lib/kani-admin-context";
 import { sortClients, type ClientOrder } from "./client-order";
@@ -339,7 +339,10 @@ export function V2Clients() {
             <div className="kani-modal-header-text">
               <DialogTitle>{selected?.name}</DialogTitle>
               <DialogDescription>
-                Cliente desde {selected ? clientDate(selected.created_at) : ""}
+                {selected ? `Cliente desde ${clientDate(selected.created_at)}` : ""}
+                {summary && summary.frequency !== null
+                  ? ` · Frecuencia: ${summary.frequency} días`
+                  : ""}
               </DialogDescription>
             </div>
             <KaniModalClose label="Cerrar detalles del cliente" />
@@ -352,159 +355,189 @@ export function V2Clients() {
                 aria-label="Información del cliente"
                 tabIndex={0}
               >
-                <dl className="v2-client-contact-facts">
-                  <div>
-                    <dt>Teléfono</dt>
-                    <dd>
-                      {selected.phone ? (
-                        <a href={`tel:${selected.phone.replace(/[^+\d]/g, "")}`}>
-                          {selected.phone}
-                        </a>
-                      ) : (
-                        "Sin celular"
-                      )}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt>Correo electrónico</dt>
-                    <dd>
-                      {selected.email ? (
-                        <a href={`mailto:${selected.email}`}>{selected.email}</a>
-                      ) : (
-                        "Sin correo electrónico"
-                      )}
-                    </dd>
-                  </div>
-                </dl>
-                <div className="v2-metrics">
-                  <Metric label="Visitas verificadas" value={summary.visits} />
-                  <Metric
-                    label="Valor de servicios registrados"
-                    value={money(summary.recordedSpend)}
-                  />
-                  <Metric label="Cancelaciones" value={summary.cancellations} />
-                  <Metric
-                    label="Última visita"
-                    value={summary.lastVisit ? clientDate(summary.lastVisit) : "Sin registro"}
-                  />
+                <div className="v2-client-contact-card" role="group" aria-label="Datos de contacto">
+                  {selected.phone ? (
+                    <a
+                      className="v2-client-contact-row is-action"
+                      href={`tel:${selected.phone.replace(/[^+\d]/g, "")}`}
+                    >
+                      <span className="v2-client-contact-copy">
+                        <span className="v2-client-contact-label">Celular</span>
+                        <span className="v2-client-contact-value">{selected.phone}</span>
+                      </span>
+                      <Phone className="v2-client-contact-icon" aria-hidden="true" />
+                    </a>
+                  ) : (
+                    <div className="v2-client-contact-row is-empty">
+                      <span className="v2-client-contact-copy">
+                        <span className="v2-client-contact-label">Celular</span>
+                        <span className="v2-client-contact-empty">Sin celular</span>
+                      </span>
+                    </div>
+                  )}
+
+                  {selected.email ? (
+                    <a
+                      className="v2-client-contact-row is-action"
+                      href={`mailto:${selected.email}`}
+                    >
+                      <span className="v2-client-contact-copy">
+                        <span className="v2-client-contact-label">Email</span>
+                        <span className="v2-client-contact-value">{selected.email}</span>
+                      </span>
+                      <Mail className="v2-client-contact-icon" aria-hidden="true" />
+                    </a>
+                  ) : (
+                    <div className="v2-client-contact-row is-empty">
+                      <span className="v2-client-contact-copy">
+                        <span className="v2-client-contact-label">Email</span>
+                        <span className="v2-client-contact-empty">Sin email</span>
+                      </span>
+                    </div>
+                  )}
                 </div>
-                <p className="v2-client-frequency">
-                  {summary.frequency !== null
-                    ? `Frecuencia: cada ${summary.frequency} días.`
-                    : "Historial insuficiente"}
-                </p>
-                <h3 className="v2-client-history-heading">Membresías asociadas</h3>
+
+                <section className="v2-client-summary-surface" aria-label="Resumen operativo">
+                  <div className="v2-client-summary-primary">
+                    <div className="v2-client-kpi">
+                      <span className="v2-client-kpi-label">Visitas</span>
+                      <strong className="v2-client-kpi-value">{summary.visits}</strong>
+                    </div>
+                    <div className="v2-client-kpi is-end">
+                      <span className="v2-client-kpi-label">Última visita</span>
+                      {summary.lastVisit ? (
+                        <strong className="v2-client-kpi-value is-date">
+                          {clientDate(summary.lastVisit)}
+                        </strong>
+                      ) : (
+                        <span className="v2-client-kpi-empty">Sin registro</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="v2-client-summary-secondary">
+                    <div className="v2-client-kpi">
+                      <span className="v2-client-kpi-label">Total en servicios</span>
+                      <strong className="v2-client-kpi-secondary">
+                        {money(summary.recordedSpend)}
+                      </strong>
+                    </div>
+                    <div className="v2-client-kpi is-end">
+                      <span className="v2-client-kpi-label">Cancelaciones</span>
+                      <strong className="v2-client-kpi-secondary">{summary.cancellations}</strong>
+                    </div>
+                  </div>
+                </section>
+
+                <h3 className="v2-client-history-heading">Membresías</h3>
                 {!(data.memberships ?? []).filter((m) => m.clientId === selected.id).length ? (
                   <p className="v2-client-history-empty">Sin membresías registradas.</p>
                 ) : (
-                  (data.memberships ?? [])
-                    .filter((m) => m.clientId === selected.id)
-                    .map((m) => (
-                      <div className="v2-history-row" key={m.id}>
-                        <div>
-                          <h3>
-                            {m.planName} ·{" "}
-                            {m.status === "ACTIVE"
-                              ? "Activa"
-                              : m.status === "PENDING_PAYMENT"
-                                ? "Pendiente de pago"
-                                : m.status === "EXHAUSTED"
-                                  ? "Agotada"
-                                  : m.status === "EXPIRED"
-                                    ? "Vencida"
-                                    : "Cancelada"}
-                          </h3>
-                          <p>
-                            Sesiones disponibles: {m.remainingSessions} de {m.totalSessions} ·{" "}
-                            {m.expiresAt ? `Vence ${clientDate(m.expiresAt)}` : "Sin vencimiento"}
-                          </p>
-                          <p style={{ fontSize: "11px", color: "var(--muted-foreground)" }}>
-                            {m.items
-                              .map((i) => `${i.serviceName}: ${i.remainingQuantity}/${i.totalQuantity}`)
-                              .join(" · ")}
-                          </p>
-                        </div>
-                        <strong style={{ fontSize: "12.5px" }}>{money(m.totalPriceArs)}</strong>
-                      </div>
-                    ))
-                )}
-                <h3 className="v2-client-history-heading">Historial</h3>
-                {!summary.history.length && (
-                  <p className="v2-client-history-empty">Sin atenciones registradas.</p>
-                )}
-                {summary.history
-                  .slice()
-                  .reverse()
-                  .map((a) => (
-                    <div className="v2-history-row" key={a.id}>
-                      <div>
-                        <h3>
-                          {a.name ? `${a.name} · ` : ""}
-                          {formatServiceName(a.serviceName)} · {a.barber}
-                        </h3>
-                        <p>
-                          {a.date} · {a.time}
-                        </p>
-                        {a.benefitCode && (
-                          <div
-                            style={{
-                              marginTop: "4px",
-                              fontSize: "11px",
-                              display: "flex",
-                              flexDirection: "column",
-                              gap: "2px",
-                            }}
-                          >
-                            <span
-                              style={{
-                                fontFamily: "monospace",
-                                fontWeight: 600,
-                                color: "var(--gold, #C9A24D)",
-                              }}
-                            >
-                              Código: {a.benefitCode} ·{" "}
-                              {a.benefitType === "NO_DEPOSIT"
-                                ? "Reserva sin seña (Seña online dispensada)"
-                                : a.benefitType === "FREE_SERVICE"
-                                  ? "Servicio 100% bonificado ($0)"
-                                  : a.benefitType === "PERCENT_10"
-                                    ? `Descuento 10% (-$${(a.benefitDiscountAmountArs ?? 0).toLocaleString("es-AR")})`
-                                    : a.benefitType === "PERCENT_50"
-                                      ? `Descuento 50% (-$${(a.benefitDiscountAmountArs ?? 0).toLocaleString("es-AR")})`
-                                      : "Beneficio aplicado"}
-                            </span>
-                            {a.statusCode === "CANCELLED" && (
-                              <span
-                                style={{
-                                  color: "var(--muted-foreground, #888)",
-                                  fontStyle: "italic",
-                                }}
-                              >
-                                Reserva cancelada · código consumido, no reutilizable
-                              </span>
+                  <div className="v2-client-list-card">
+                    {(data.memberships ?? [])
+                      .filter((m) => m.clientId === selected.id)
+                      .map((m) => (
+                        <div className="v2-history-row" key={m.id}>
+                          <div>
+                            <h4>
+                              {m.planName} ·{" "}
+                              {m.status === "ACTIVE"
+                                ? "Activa"
+                                : m.status === "PENDING_PAYMENT"
+                                  ? "Pendiente de pago"
+                                  : m.status === "EXHAUSTED"
+                                    ? "Agotada"
+                                    : m.status === "EXPIRED"
+                                      ? "Vencida"
+                                      : "Cancelada"}
+                            </h4>
+                            <p>
+                              {m.remainingSessions} de {m.totalSessions} sesiones ·{" "}
+                              {m.expiresAt ? `Vence ${clientDate(m.expiresAt)}` : "Sin vencimiento"}
+                            </p>
+                            {m.items.length > 0 && (
+                              <p className="v2-client-membership-items">
+                                {m.items
+                                  .map(
+                                    (i) =>
+                                      `${i.serviceName}: ${i.remainingQuantity}/${i.totalQuantity}`,
+                                  )
+                                  .join(" · ")}
+                              </p>
                             )}
                           </div>
-                        )}
-                      </div>
-                      <Status code={a.statusCode} />
-                    </div>
-                  ))}
+                          <strong className="v2-client-membership-price">
+                            {money(m.totalPriceArs)}
+                          </strong>
+                        </div>
+                      ))}
+                  </div>
+                )}
+
+                <h3 className="v2-client-history-heading">Historial</h3>
+                {!summary.history.length ? (
+                  <p className="v2-client-history-empty">Sin atenciones registradas.</p>
+                ) : (
+                  <div className="v2-client-list-card">
+                    {summary.history
+                      .slice()
+                      .reverse()
+                      .map((a) => (
+                        <div className="v2-history-row" key={a.id}>
+                          <div>
+                            <h4>
+                              {formatServiceName(a.serviceName)} · {a.barber}
+                            </h4>
+                            <p>
+                              {clientDate(a.date)} · {a.time} hs
+                            </p>
+                            {a.benefitCode && (
+                              <div className="v2-client-benefit-meta">
+                                <span className="v2-client-benefit-code">
+                                  Código: {a.benefitCode} ·{" "}
+                                  {a.benefitType === "NO_DEPOSIT"
+                                    ? "Reserva sin seña (Seña online dispensada)"
+                                    : a.benefitType === "FREE_SERVICE"
+                                      ? "Servicio 100% bonificado ($0)"
+                                      : a.benefitType === "PERCENT_10"
+                                        ? `Descuento 10% (-$${(a.benefitDiscountAmountArs ?? 0).toLocaleString("es-AR")})`
+                                        : a.benefitType === "PERCENT_50"
+                                          ? `Descuento 50% (-$${(a.benefitDiscountAmountArs ?? 0).toLocaleString("es-AR")})`
+                                          : "Beneficio aplicado"}
+                                </span>
+                                {a.statusCode === "CANCELLED" && (
+                                  <span className="v2-client-benefit-cancelled">
+                                    Reserva cancelada · código consumido, no reutilizable
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                          <Status code={a.statusCode} />
+                        </div>
+                      ))}
+                  </div>
+                )}
               </div>
               <footer className="v2-client-modal-footer kani-modal-footer">
                 {canEditClient(selected) && (
                   <button
                     className="v2-secondary"
+                    aria-label="Editar cliente"
                     onClick={() => {
                       setSelectedId(null);
                       openEditor(selected);
                     }}
                   >
-                    Editar cliente
+                    Editar
                   </button>
                 )}
                 {isAdmin && (
-                  <button className="v2-destructive" onClick={() => setConfirmDelete(selected)}>
-                    Eliminar cliente
+                  <button
+                    className="v2-destructive"
+                    aria-label="Eliminar cliente"
+                    onClick={() => setConfirmDelete(selected)}
+                  >
+                    Eliminar
                   </button>
                 )}
               </footer>
