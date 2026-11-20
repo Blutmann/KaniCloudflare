@@ -18,7 +18,7 @@ describe('Liquid Glass V12.30.1 — Integración de Fondos Champagne Silk y KANI
   it('incluye los cuatro activos AVIF maestros y sus fallbacks WebP y JPG versionados en public/backgrounds sin Base64', () => {
     const assets = [
       'public/backgrounds/kani_light_desktop_v5.avif',
-      'public/backgrounds/kani_light_mobile_v5.avif',
+      'public/backgrounds/kani_light_mobile_v5_1.avif',
       'public/backgrounds/dark-mode-desktop-3840x2160-v12-41.avif',
       'public/backgrounds/dark-mode-mobile-1440x2560-v12-41.avif',
       'public/backgrounds/light-mode-desktop-3840x2160-v12-41.webp',
@@ -41,7 +41,7 @@ describe('Liquid Glass V12.30.1 — Integración de Fondos Champagne Silk y KANI
 
   it('selecciona los fondos por tema y relación de aspecto mediante image-set con fallback WebP y JPG', () => {
     expect(v12301Idx).toBeGreaterThan(-1);
-    expect(v12301).toContain("url('/backgrounds/kani_light_mobile_v5.avif') type('image/avif')");
+    expect(v12301).toContain("url('/backgrounds/kani_light_mobile_v5_1.avif') type('image/avif')");
     expect(v12301).toContain("url('/backgrounds/kani_light_desktop_v5.avif') type('image/avif')");
     expect(v12301).toContain("url('/backgrounds/dark-mode-mobile-1440x2560-v12-41.avif') type('image/avif')");
     expect(v12301).toContain("url('/backgrounds/dark-mode-desktop-3840x2160-v12-41.avif') type('image/avif')");

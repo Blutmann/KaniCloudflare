@@ -47,7 +47,7 @@ describe('Liquid Glass V12.37 — Integración definitiva de los cuatro fondos r
   it('2. Define fallback JPG + WebP (-webkit-image-set) + AVIF/WebP/JPG (image-set) para las 4 combinaciones', () => {
     expect(v1237Idx).toBeGreaterThan(-1);
     expect(section).toContain("url('/backgrounds/kani_light_desktop_v5.avif') type('image/avif')");
-    expect(section).toContain("url('/backgrounds/kani_light_mobile_v5.avif') type('image/avif')");
+    expect(section).toContain("url('/backgrounds/kani_light_mobile_v5_1.avif') type('image/avif')");
     for (const base of variants) {
       expect(section).toContain(`url('/backgrounds/${base}.jpg')`);
       expect(section).toContain(`url('/backgrounds/${base}.webp') type('image/webp')`);
