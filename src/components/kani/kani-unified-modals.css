@@ -548,10 +548,34 @@ html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active)
     flex-wrap: nowrap !important;
   }
 
-  html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell .kani-modal-footer:not(.kani-modal-footer--recovery) > button {
+  html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell .kani-modal-footer:not(.kani-modal-footer--recovery):not(.kani-mcreate-footer) > button {
     flex: 1 1 0 !important;
     min-width: 0 !important;
   }
+}
+
+html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell .kani-modal-footer.kani-mcreate-footer {
+  justify-content: flex-end !important;
+  gap: 10px !important;
+}
+
+html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell .kani-modal-footer.kani-mcreate-footer > button {
+  position: relative;
+  flex: 0 0 auto !important;
+  width: auto !important;
+  height: 41px !important;
+  min-height: 41px !important;
+  max-height: 41px !important;
+  padding: 0 16px !important;
+  font-size: 13.5px !important;
+  border-radius: var(--v2-radius-btn, 12px) !important;
+  white-space: nowrap !important;
+}
+
+html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell .kani-modal-footer.kani-mcreate-footer > button::after {
+  content: "";
+  position: absolute;
+  inset: -2px 0;
 }
 
 /* Compact padding when virtual keyboard reduces viewport height (iOS / Android) */

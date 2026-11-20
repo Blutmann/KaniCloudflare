@@ -4231,12 +4231,28 @@ html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .kani-dtoolbar-
   border-radius: var(--v2-radius-btn, 12px) !important;
 }
 
+html[data-theme] body[data-lg-admin="true"] :is(.v2-memberships-page, .maintenance-section) .kani-dcard-bottom {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 8px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] :is(.v2-memberships-page, .maintenance-section) .kani-dcard-actions {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 8px !important;
+}
+
 html[data-theme] body[data-lg-admin="true"] :is(.v2-memberships-page, .maintenance-section) .kani-dcard :is(.kani-dcard-btn-action, .kani-dcard-btn-toggle) {
+  position: relative;
   border-radius: var(--v2-radius-btn, 12px) !important;
-  min-height: 44px !important;
-  height: 44px !important;
+  min-height: 41px !important;
+  height: 41px !important;
+  max-height: 41px !important;
   padding: 0 12px !important;
-  font-size: 13px !important;
+  font-size: 13.5px !important;
   font-weight: 500 !important;
   display: inline-flex !important;
   align-items: center !important;
@@ -4245,6 +4261,18 @@ html[data-theme] body[data-lg-admin="true"] :is(.v2-memberships-page, .maintenan
   color: var(--lga-text, var(--dc-text)) !important;
   background: var(--lga-glass-nested, transparent) !important;
   border: 1px solid var(--lga-border-nested, var(--dc-border)) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] :is(.v2-memberships-page, .maintenance-section) .kani-dcard :is(.kani-dcard-btn-action, .kani-dcard-btn-toggle)::after {
+  content: "";
+  position: absolute;
+  inset: -2px 0;
+}
+
+html[data-theme] body[data-lg-admin="true"] :is(.v2-memberships-page, .maintenance-section) .kani-dcard :is(.kani-dcard-btn-action, .kani-dcard-btn-toggle) svg {
+  width: 14px !important;
+  height: 14px !important;
+  flex: 0 0 14px !important;
 }
 
 html[data-theme] body[data-lg-admin="true"] :is(.v2-memberships-page, .maintenance-section) .kani-dcard :is(.kani-dcard-btn-action, .kani-dcard-btn-toggle):hover:not(:disabled) {
@@ -4363,6 +4391,34 @@ html[data-theme] body[data-lg-admin="true"] :is(.v2-memberships-page, .maintenan
 
 html[data-theme] body[data-lg-admin="true"] :is(.v2-memberships-page, .maintenance-section) .kani-dcard-details-delete-btn.is-destructive:active:not(:disabled) {
   transform: scale(0.985);
+}
+
+/* KANI UX v2.9.2 — Nueva membresía: footer compacto alineado a la derecha */
+html[data-theme] body[data-lg-admin="true"] [role="dialog"].v2-membership-create-dialog .kani-mcreate-footer {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 10px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"].v2-membership-create-dialog .kani-mcreate-footer > button {
+  position: relative;
+  flex: 0 0 auto !important;
+  width: auto !important;
+  height: 41px !important;
+  min-height: 41px !important;
+  max-height: 41px !important;
+  padding: 0 16px !important;
+  font-size: 13.5px !important;
+  border-radius: var(--v2-radius-btn, 12px) !important;
+  white-space: nowrap !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"].v2-membership-create-dialog .kani-mcreate-footer > button::after {
+  content: "";
+  position: absolute;
+  inset: -2px 0;
 }
 
 
