@@ -284,13 +284,11 @@ describe('V12.43 — Rediseño de Descuentos Liquid Glass y navegación compacta
     const activeCard = screen.getByTestId('discount-card-disc-active');
     expect(activeCard).toHaveAttribute('data-status', 'ACTIVE');
     expect(within(activeCard).getByText('KANI-10-ACTIVE')).toBeInTheDocument();
-    expect(within(activeCard).getByText('10% de descuento')).toBeInTheDocument();
-    expect(within(activeCard).getByText('Activo')).toBeInTheDocument();
-    expect(within(activeCard).getByText('1 uso')).toBeInTheDocument();
+    expect(within(activeCard).getByText('10% de descuento · 1 uso')).toBeInTheDocument();
+    expect(within(activeCard).getByText('Habilitado')).toBeInTheDocument();
     expect(within(activeCard).getByRole('button', { name: 'Copiar código KANI-10-ACTIVE' })).toBeEnabled();
     expect(within(activeCard).getByRole('button', { name: /Editar/i })).toBeInTheDocument();
-    expect(within(activeCard).getByRole('switch', { name: 'Desactivar código' })).toHaveAttribute('aria-checked', 'true');
-    expect(within(activeCard).getByRole('button', { name: /Eliminar código KANI-10-ACTIVE/i })).toBeInTheDocument();
+    expect(within(activeCard).getByRole('button', { name: 'Desactivar código KANI-10-ACTIVE' })).toHaveAttribute('aria-pressed', 'true');
 
     // Feedback accesible al copiar código
     Object.assign(navigator, {
@@ -322,7 +320,7 @@ describe('V12.43 — Rediseño de Descuentos Liquid Glass y navegación compacta
 
     fireEvent.click(condBtn);
     expect(condBtn).toHaveAttribute('aria-expanded', 'true');
-    expect(within(activeCard).getAllByText('Activo').length).toBeGreaterThanOrEqual(2);
+    expect(within(activeCard).getByText('Activo')).toBeInTheDocument();
     expect(within(activeCard).getByText(/Reutilizable · Bonificación del 10%/i)).toBeInTheDocument();
     expect(within(activeCard).getByText('Campaña clientes VIP')).toBeInTheDocument();
 
@@ -340,12 +338,12 @@ describe('V12.43 — Rediseño de Descuentos Liquid Glass y navegación compacta
     // No inventa motivo de modificación cuando no existe
     expect(within(activeCard).queryByText(/Motivo de modificación/i)).not.toBeInTheDocument();
 
-    // Tarjeta Inactiva
+    // Tarjeta Deshabilitada
     const disabledCard = screen.getByTestId('discount-card-disc-disabled');
     expect(disabledCard).toHaveAttribute('data-status', 'DISABLED');
-    expect(within(disabledCard).getByText('Servicio gratuito')).toBeInTheDocument();
-    expect(within(disabledCard).getByText('Inactivo')).toBeInTheDocument();
-    expect(within(disabledCard).getByRole('switch', { name: 'Activar código' })).toHaveAttribute('aria-checked', 'false');
+    expect(within(disabledCard).getByText('Servicio gratuito · 0 usos')).toBeInTheDocument();
+    expect(within(disabledCard).getByText('Deshabilitado')).toBeInTheDocument();
+    expect(within(disabledCard).getByRole('button', { name: 'Activar código KANI-FREE-PAUSED' })).toHaveAttribute('aria-pressed', 'false');
     fireEvent.click(within(disabledCard).getByRole('button', { name: /^Info$/i }));
     fireEvent.click(within(disabledCard).getByRole('button', { name: /^Información administrativa$/i }));
     expect(within(disabledCard).getByText(/Desactivado manualmente por Lucas el/i)).toBeInTheDocument();
@@ -353,19 +351,19 @@ describe('V12.43 — Rediseño de Descuentos Liquid Glass y navegación compacta
     // Tarjeta Vencida
     const expiredCard = screen.getByTestId('discount-card-disc-expired');
     expect(expiredCard).toHaveAttribute('data-status', 'EXPIRED');
-    expect(within(expiredCard).getByText('50% de descuento')).toBeInTheDocument();
+    expect(within(expiredCard).getByText('50% de descuento · 2 usos')).toBeInTheDocument();
     expect(within(expiredCard).getByText('Vencido')).toBeInTheDocument();
     expect(within(expiredCard).getByRole('button', { name: /Editar/i })).toBeInTheDocument();
-    expect(within(expiredCard).queryByRole('switch')).not.toBeInTheDocument();
+    expect(within(expiredCard).queryByRole('button', { name: /Desactivar|Activar/i })).not.toBeInTheDocument();
 
     // Tarjeta Eliminada: conservada para auditoría, copia deshabilitada y sin editar/activar/eliminar
     const deletedCard = screen.getByTestId('discount-card-disc-deleted');
     expect(deletedCard).toHaveAttribute('data-status', 'DELETED');
-    expect(within(deletedCard).getByText('Reserva sin seña')).toBeInTheDocument();
+    expect(within(deletedCard).getByText('Reserva sin seña · 0 usos')).toBeInTheDocument();
     expect(within(deletedCard).getByText('Eliminado')).toBeInTheDocument();
     expect(within(deletedCard).getByRole('button', { name: 'Copiar código KANI-DEL-99' })).toBeDisabled();
     expect(within(deletedCard).queryByRole('button', { name: /Editar/i })).not.toBeInTheDocument();
-    expect(within(deletedCard).queryByRole('switch')).not.toBeInTheDocument();
+    expect(within(deletedCard).queryByRole('button', { name: /Desactivar|Activar/i })).not.toBeInTheDocument();
     expect(within(deletedCard).queryByRole('button', { name: /Eliminar/i })).not.toBeInTheDocument();
     fireEvent.click(within(deletedCard).getByRole('button', { name: /^Info$/i }));
     fireEvent.click(within(deletedCard).getByRole('button', { name: /^Información administrativa$/i }));
@@ -442,31 +440,24 @@ describe('V12.43 — Rediseño de Descuentos Liquid Glass y navegación compacta
     expect(mobileIdx).toBeGreaterThan(-1);
     const mobileBlock = layer14.slice(mobileIdx);
 
-    // Orden v2.8 de las filas mobile:
-    // Fila 1: código + copiar 44x44 (order: 1)
-    // Fila 2: Tipo de código | Vencimiento (order: 2)
-    // Fila 3: Estado | Usos (order: 3)
-    // Fila 4: Info (6) | Editar | Switch (7)
-    expect(mobileBlock).toContain('.kani-dcard-code-group');
-    expect(mobileBlock).toContain('order: 1 !important;');
-    expect(mobileBlock).toContain('.kani-dcard-secondary-grid');
-    expect(mobileBlock).toContain('order: 2 !important;');
-    expect(mobileBlock).toContain('.kani-dcard-meta');
-    expect(mobileBlock).toContain('order: 3 !important;');
-    expect(mobileBlock).toContain('flex: 0 0 100% !important;');
-    expect(mobileBlock).toContain('.kani-dcard-actions > .kani-dcard-btn-delete');
-    expect(mobileBlock).toContain('display: none !important;');
+    // Estructura v2.9 en dos niveles compactos:
+    // Nivel superior: .kani-dcard-top (.kani-dcard-top-info con código + subtítulo | Copiar 44x44)
+    // Separador: .kani-dcard-divider
+    // Nivel inferior: .kani-dcard-bottom (badge estado | .kani-dcard-actions con Info / Editar / Desactivar)
+    expect(mobileBlock).toContain('.kani-dcard-top');
+    expect(mobileBlock).toContain('.kani-dcard-top-info');
+    expect(mobileBlock).toContain('.kani-dcard-subtitle');
+    expect(mobileBlock).toContain('.kani-dcard-divider');
+    expect(mobileBlock).toContain('.kani-dcard-bottom');
     expect(mobileBlock).toContain('.kani-dcard-btn-details');
-    expect(mobileBlock).toContain('order: 6 !important;');
     expect(mobileBlock).toContain('.kani-dcard-btn-action');
-    expect(mobileBlock).toContain('order: 7 !important;');
+    expect(mobileBlock).toContain('.kani-dcard-btn-toggle');
 
     // Eliminar reubicado al final de Detalles en mobile
     expect(mobileBlock).toContain('.kani-dcard-details-danger');
     expect(mobileBlock).toContain('.kani-dcard-details-delete-btn.is-destructive');
 
-    // Tres botones inferiores alineados con altura consistente (44px)
-    expect(mobileBlock).toContain('flex: 1 1 calc((100% - 14px) / 3) !important;');
+    // Botones inferiores con área táctil mínima de 44px
     expect(mobileBlock).toContain('height: 44px !important;');
   });
 
