@@ -91,8 +91,8 @@ html[data-theme="dark"] .kani-dcard {
   min-width: 0;
 }
 
-/* Nivel 1: Código promocional + botón copiar compacto + única etiqueta de estado */
-.kani-dcard-header {
+/* Bloque superior: código + beneficio · usos a la izquierda, copiar a la derecha */
+.kani-dcard-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -100,10 +100,10 @@ html[data-theme="dark"] .kani-dcard {
   min-width: 0;
 }
 
-.kani-dcard-code-group {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
+.kani-dcard-top-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
   min-width: 0;
   flex: 1 1 auto;
 }
@@ -112,12 +112,14 @@ html[data-theme="dark"] .kani-dcard {
   margin: 0;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 14.5px;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1.25;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.02em;
   color: var(--dc-text);
   min-width: 0;
-  overflow-wrap: anywhere;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .kani-dcard-code.is-deleted {
@@ -125,13 +127,23 @@ html[data-theme="dark"] .kani-dcard {
   color: var(--dc-muted);
 }
 
+.kani-dcard-subtitle {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.35;
+  color: var(--dc-muted);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .kani-dcard-btn-copy {
-  flex: 0 0 36px;
-  width: 36px;
-  height: 36px;
-  min-height: 36px;
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
   padding: 0 !important;
-  border-radius: 9px;
+  border-radius: 12px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -166,6 +178,21 @@ html[data-theme="dark"] .kani-dcard-btn-copy.is-copied {
   cursor: not-allowed;
 }
 
+.kani-dcard-divider {
+  width: 100%;
+  height: 1px;
+  background: var(--dc-border);
+  margin: 2px 0;
+}
+
+.kani-dcard-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
 .kani-dcard-badge {
   display: inline-flex;
   align-items: center;
@@ -173,11 +200,10 @@ html[data-theme="dark"] .kani-dcard-btn-copy.is-copied {
   flex-shrink: 0;
   padding: 3px 9px;
   border-radius: 999px;
-  font-size: 11px;
-  font-weight: 700;
+  font-size: 11.5px;
+  font-weight: 600;
   line-height: 1.25;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  letter-spacing: 0.01em;
   white-space: nowrap;
   border: 1px solid transparent;
 }
@@ -277,34 +303,37 @@ html[data-theme="dark"] .kani-dcard-badge.is-deleted {
   font-variant-numeric: tabular-nums;
 }
 
-/* Nivel 4: Acciones con jerarquía tipo Membresías */
+/* Bloque inferior: Acciones compactas alineadas a la derecha */
 .kani-dcard-actions {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding-top: 12px;
-  border-top: 1px solid var(--dc-border);
+  justify-content: flex-end;
+  flex-wrap: nowrap;
+  gap: 6px;
   min-width: 0;
 }
 
 .kani-dcard-btn-details,
-.kani-dcard-btn-action {
-  min-height: 36px;
-  padding: 0 12px;
+.kani-dcard-btn-action,
+.kani-dcard-btn-toggle {
+  min-height: 44px;
+  height: 44px;
+  padding: 0 11px;
   font-size: 12.5px !important;
-  font-weight: 600;
-  border-radius: 9px;
+  font-weight: 500;
+  border-radius: var(--v2-radius-btn, 12px);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 5px;
   white-space: nowrap;
   cursor: pointer;
+  flex-shrink: 0;
 }
 
-.kani-dcard-btn-details {
-  flex: 1 1 auto;
+.kani-dcard-btn-toggle.is-busy {
+  opacity: 0.7;
+  cursor: wait;
 }
 
 .kani-dcard-btn-delete {

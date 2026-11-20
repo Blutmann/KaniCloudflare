@@ -99,13 +99,13 @@ describe('BenefitCodesAdminSection Component', () => {
     });
 
     // Check simplified benefit headlines & status badges
-    expect(screen.getByText('Reserva sin seña')).toBeInTheDocument();
-    expect(screen.getByText('Servicio gratuito')).toBeInTheDocument();
-    expect(screen.getByText('50% de descuento')).toBeInTheDocument();
+    expect(screen.getByText('Reserva sin seña · 0 usos')).toBeInTheDocument();
+    expect(screen.getByText(/^Servicio gratuito · \d+ usos?$/)).toBeInTheDocument();
+    expect(screen.getByText('50% de descuento · 0 usos')).toBeInTheDocument();
 
-    expect(screen.getByText('Activo')).toBeInTheDocument();
+    expect(screen.getByText('Habilitado')).toBeInTheDocument();
     expect(screen.getByText('Consumido')).toBeInTheDocument();
-    expect(screen.getByText('Inactivo')).toBeInTheDocument();
+    expect(screen.getByText('Deshabilitado')).toBeInTheDocument();
 
     // Associated reservation details live inside the expandable "Secciones" -> "Historial de usos"
     expect(screen.queryByText(/Juan Pérez/i)).not.toBeInTheDocument();
@@ -266,10 +266,10 @@ describe('BenefitCodesAdminSection Component', () => {
       );
     });
 
-    // 2. Disable code directly via Switch ON/OFF
-    const disableSwitch = screen.getByRole('switch', { name: 'Desactivar código' });
-    expect(disableSwitch).toHaveAttribute('aria-checked', 'true');
-    fireEvent.click(disableSwitch);
+    // 2. Disable code directly via Desactivar button (no confirmation modal)
+    const disableBtn = screen.getByRole('button', { name: 'Desactivar código KANI-BETA-1234' });
+    expect(disableBtn).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(disableBtn);
 
     await waitFor(() => {
       expect(mockDisableFn).toHaveBeenCalledWith(
@@ -333,7 +333,7 @@ describe('BenefitCodesAdminSection Component', () => {
     });
   });
 
-  it('restores switch and badge state if server toggle fails', async () => {
+  it('restores toggle button and badge state if server toggle fails', async () => {
     mockDisableFn.mockRejectedValueOnce(new Error('Error de red'));
 
     render(<BenefitCodesAdminSection />);
@@ -342,13 +342,14 @@ describe('BenefitCodesAdminSection Component', () => {
       expect(screen.getByText('KANI-BETA-1234')).toBeInTheDocument();
     });
 
-    const disableSwitch = screen.getByRole('switch', { name: 'Desactivar código' });
-    expect(disableSwitch).toHaveAttribute('aria-checked', 'true');
-    fireEvent.click(disableSwitch);
+    const disableBtn = screen.getByRole('button', { name: 'Desactivar código KANI-BETA-1234' });
+    expect(disableBtn).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(disableBtn);
 
     await waitFor(() => {
       expect(screen.getByText('Error de red')).toBeInTheDocument();
-      expect(screen.getByRole('switch', { name: 'Desactivar código' })).toHaveAttribute('aria-checked', 'true');
+      expect(screen.getByRole('button', { name: 'Desactivar código KANI-BETA-1234' })).toHaveAttribute('aria-pressed', 'true');
+      expect(screen.getByText('Habilitado')).toBeInTheDocument();
     });
   });
 });
