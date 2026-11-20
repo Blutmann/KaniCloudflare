@@ -119,9 +119,17 @@ html[data-theme="dark"] .kani-dcard[data-status="DISABLED"] {
 .kani-dcard-top-info {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
   min-width: 0;
   flex: 1 1 auto;
+}
+
+.kani-dcard-code-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  min-width: 0;
 }
 
 .kani-dcard-code {
@@ -132,7 +140,9 @@ html[data-theme="dark"] .kani-dcard[data-status="DISABLED"] {
   line-height: 1.25;
   letter-spacing: 0.02em;
   color: var(--dc-text);
+  flex: 0 1 auto;
   min-width: 0;
+  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -326,16 +336,17 @@ html[data-theme="dark"] .kani-dcard-badge.is-deleted {
   align-items: center;
   justify-content: flex-end;
   flex-wrap: nowrap;
-  gap: 6px;
+  gap: 8px;
   min-width: 0;
 }
 
 .kani-dcard-btn-action,
 .kani-dcard-btn-toggle {
-  min-height: 44px;
-  height: 44px;
+  position: relative;
+  min-height: 41px;
+  height: 41px;
   padding: 0 12px;
-  font-size: 13px !important;
+  font-size: 13.5px !important;
   font-weight: 500;
   border-radius: var(--v2-radius-btn, 12px);
   display: inline-flex;

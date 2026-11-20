@@ -4960,7 +4960,7 @@ html[data-theme=dark] .v2-medit-refunded-pill{color:#34d399}
 }
 
 :is(.v2-membership-create-dialog, .kani-medit-dialog) .kani-modal-footer > button {
-  font-size: 14px !important;
+  font-size: 13.5px !important;
 }
 
 :is(.v2-membership-create-dialog, .kani-medit-dialog) .kani-modal-footer > button.v2-primary {
@@ -4971,11 +4971,62 @@ html[data-theme=dark] .v2-medit-refunded-pill{color:#34d399}
   font-weight: 500 !important;
 }
 
+.v2-membership-create-dialog .kani-mcreate-footer {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 10px !important;
+}
+
+.v2-membership-create-dialog .kani-mcreate-footer > button {
+  position: relative;
+  flex: 0 0 auto !important;
+  width: auto !important;
+  height: 41px !important;
+  min-height: 41px !important;
+  padding: 0 16px !important;
+  font-size: 13.5px !important;
+  border-radius: var(--v2-radius-btn, 12px) !important;
+  white-space: nowrap;
+}
+
+.v2-membership-create-dialog .kani-mcreate-footer > button::after {
+  content: "";
+  position: absolute;
+  inset: -2px 0;
+}
+
 .v2-membership-create-row {
   display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 10px;
   align-items: start;
+}
+
+.v2-membership-create-row .v2-field {
+  min-width: 0;
+}
+
+.v2-membership-create-row .v2-field > select,
+.v2-membership-create-row .v2-field button[role="combobox"] {
+  width: 100%;
+  min-width: 0;
+  height: 42px;
+  min-height: 42px;
+  font-size: 13.5px;
+  border-radius: var(--v2-radius-btn, 12px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
+.v2-membership-create-row .v2-field button[role="combobox"] > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 @media (max-width: 340px) {
@@ -5022,6 +5073,12 @@ html[data-theme=dark] .v2-medit-refunded-pill{color:#34d399}
   .v2-modal-pinned-footer > button {
     flex: 1 1 0 !important;
     min-height: 44px !important;
+  }
+  .v2-membership-create-dialog .kani-mcreate-footer > button {
+    flex: 0 0 auto !important;
+    width: auto !important;
+    height: 41px !important;
+    min-height: 41px !important;
   }
   .v2-payment-edit-dialog .v2-form-row {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
