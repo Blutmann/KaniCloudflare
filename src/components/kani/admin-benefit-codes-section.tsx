@@ -781,7 +781,7 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                     data-status={status}
                   >
                     <div className="kani-dcard-body">
-                      {/* Nivel 1: Código + Copiar (ícono) + Estado único */}
+                      {/* Nivel 1: Código principal + Copiar (44x44) */}
                       <header className="kani-dcard-header">
                         <div className="kani-dcard-code-group">
                           <h3
@@ -806,29 +806,33 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                             onClick={() => void handleCopy(item.code)}
                           >
                             {isCopied ? (
-                              <Check size={14} aria-hidden="true" />
+                              <Check size={15} aria-hidden="true" />
                             ) : (
-                              <Copy size={14} aria-hidden="true" />
+                              <Copy size={15} aria-hidden="true" />
                             )}
                           </button>
                         </div>
+                      </header>
 
+                      {/* Nivel 2: Información secundaria (Tipo de código | Vencimiento) */}
+                      <div className="kani-dcard-secondary-grid">
+                        <div className="kani-dcard-secondary-item">
+                          <span className="kani-dcard-secondary-label">Tipo de código</span>
+                          <span className="kani-dcard-benefit">{getBenefitHeadline(item.type)}</span>
+                        </div>
+                        <div className="kani-dcard-secondary-item">
+                          <span className="kani-dcard-secondary-label">Vencimiento</span>
+                          <span className="kani-dcard-meta-value">{getCompactValidityText(item)}</span>
+                        </div>
+                      </div>
+
+                      {/* Nivel 3: Estado y Cantidad de usos (jerarquía secundaria) */}
+                      <div className="kani-dcard-meta">
                         <span className={`kani-dcard-badge ${statusDisplay.badgeClass}`}>
                           {statusDisplay.badgeLabel}
                         </span>
-                      </header>
-
-                      {/* Nivel 2: Beneficio principal sin repeticiones */}
-                      <div className="kani-dcard-benefit">{getBenefitHeadline(item.type)}</div>
-
-                      {/* Nivel 3: Vigencia y Cantidad de usos */}
-                      <div className="kani-dcard-meta">
                         <span className="kani-dcard-meta-item">
-                          <Calendar size={14} aria-hidden="true" />
-                          <span>{getCompactValidityText(item)}</span>
-                        </span>
-                        <span className="kani-dcard-meta-item">
-                          <Users size={14} aria-hidden="true" />
+                          <Users size={13} aria-hidden="true" />
                           <strong>{usageCount === 1 ? '1 uso' : `${usageCount} usos`}</strong>
                         </span>
                       </div>

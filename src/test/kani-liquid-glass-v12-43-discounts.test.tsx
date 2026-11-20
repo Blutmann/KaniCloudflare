@@ -442,19 +442,17 @@ describe('V12.43 — Rediseño de Descuentos Liquid Glass y navegación compacta
     expect(mobileIdx).toBeGreaterThan(-1);
     const mobileBlock = layer14.slice(mobileIdx);
 
-    // Orden obligatorio de las 4 filas mobile:
-    // Fila 1: beneficio (1) | estado (2)
-    // Fila 2: vigencia | usos (3)
-    // Fila 3: código + copiar agrupados (4), sin botón Eliminar en la vista principal
-    // Fila 4: Detalles (6) | Editar | Desactivar (7)
-    expect(mobileBlock).toContain('.kani-dcard-benefit');
+    // Orden v2.8 de las filas mobile:
+    // Fila 1: código + copiar 44x44 (order: 1)
+    // Fila 2: Tipo de código | Vencimiento (order: 2)
+    // Fila 3: Estado | Usos (order: 3)
+    // Fila 4: Info (6) | Editar | Switch (7)
+    expect(mobileBlock).toContain('.kani-dcard-code-group');
     expect(mobileBlock).toContain('order: 1 !important;');
-    expect(mobileBlock).toContain('.kani-dcard-badge');
+    expect(mobileBlock).toContain('.kani-dcard-secondary-grid');
     expect(mobileBlock).toContain('order: 2 !important;');
     expect(mobileBlock).toContain('.kani-dcard-meta');
     expect(mobileBlock).toContain('order: 3 !important;');
-    expect(mobileBlock).toContain('.kani-dcard-code-group');
-    expect(mobileBlock).toContain('order: 4 !important;');
     expect(mobileBlock).toContain('flex: 0 0 100% !important;');
     expect(mobileBlock).toContain('.kani-dcard-actions > .kani-dcard-btn-delete');
     expect(mobileBlock).toContain('display: none !important;');
