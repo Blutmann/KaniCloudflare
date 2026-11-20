@@ -1493,7 +1493,7 @@ export function PaywayBooking({
           {checkout && !terminal && (
             <form
               onSubmit={pay}
-              autoComplete="off"
+              autoComplete="on"
               noValidate
               data-private="redact"
               data-sensitive="true"
@@ -1567,7 +1567,9 @@ export function PaywayBooking({
                         <CardBrandBadge brand={detected.brand} />
                       </div>
                       <Input
+                        id="card-number"
                         name="card_number"
+                        type="text"
                         aria-label="Número de tarjeta"
                         inputMode="numeric"
                         autoComplete="cc-number"
@@ -1597,8 +1599,10 @@ export function PaywayBooking({
                       <div className="payway-expiry-month-col">
                         <span className={`payway-select-control ${expiryStatus === 'valid' ? 'valid' : monthInvalid ? 'invalid' : ''}`}>
                           <select
+                            id="card-expiration-month"
                             name="card_expiration_month"
                             aria-label="Mes de vencimiento"
+                            autoComplete="cc-exp-month"
                             value={month}
                             onChange={e => {
                               const val = e.target.value;
@@ -1622,8 +1626,10 @@ export function PaywayBooking({
                       <div className="payway-expiry-year-col">
                         <span className={`payway-select-control ${expiryStatus === 'valid' ? 'valid' : yearInvalid ? 'invalid' : ''}`}>
                           <select
+                            id="card-expiration-year"
                             name="card_expiration_year"
                             aria-label="Año de vencimiento"
+                            autoComplete="cc-exp-year"
                             value={year}
                             onChange={e => {
                               const val = e.target.value;
@@ -1768,7 +1774,9 @@ export function PaywayBooking({
                     <span>Titular de la tarjeta</span>
                     <span className={`field-control ${holderStatus}`}>
                       <Input
+                        id="card-holder-name"
                         name="card_holder_name"
+                        type="text"
                         aria-label="Titular de la tarjeta"
                         autoComplete="cc-name"
                         maxLength={60}
