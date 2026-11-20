@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   AlertCircle,
   AlertTriangle,
@@ -27,6 +28,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
 import {
   Dialog,
   DialogContent,
@@ -188,18 +190,39 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
   const [editingValidity, setEditingValidity] = useState(false);
   const [editValidityError, setEditValidityError] = useState('');
 
-  // Status Toggle Modal State (Activate / Disable)
-  const [codeToToggle, setCodeToToggle] = useState<{ item: BenefitCodeItem; targetActive: boolean } | null>(null);
-  const [togglingStatus, setTogglingStatus] = useState(false);
-  const [toggleStatusError, setToggleStatusError] = useState('');
+  // Direct Switch Status Toggle State
+  const [togglingCodeId, setTogglingCodeId] = useState<string | null>(null);
+  const togglingInFlightRef = useRef<Set<string>>(new Set());
 
   // Delete Modal State (Soft delete)
   const [codeToDelete, setCodeToDelete] = useState<BenefitCodeItem | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState('');
 
-  // Copy indicator
+  // Copy indicator & single-instance bottom toast
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [toastState, setToastState] = useState<{
+    text: string;
+    variant: 'success' | 'error';
+  } | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showToast = (text: string, variant: 'success' | 'error' = 'success') => {
+    if (toastTimerRef.current) {
+      clearTimeout(toastTimerRef.current);
+    }
+    setToastState({ text, variant });
+    toastTimerRef.current = setTimeout(() => {
+      setToastState(null);
+      toastTimerRef.current = null;
+    }, 2600);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    };
+  }, []);
 
   const loadCodes = async () => {
     setLoading(true);
@@ -238,10 +261,10 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
     try {
       await navigator.clipboard.writeText(code);
       setCopiedCode(code);
-      setTimeout(() => setCopiedCode(null), 2500);
+      setTimeout(() => setCopiedCode((prev) => (prev === code ? null : prev)), 2500);
+      showToast('Código copiado correctamente', 'success');
     } catch {
-      setCopiedCode(code);
-      setTimeout(() => setCopiedCode(null), 2500);
+      showToast('No se pudo copiar el código', 'error');
     }
   };
 
@@ -372,10 +395,30 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
     }
   };
 
-  const handleToggleConfirm = async () => {
-    if (!codeToToggle) return;
-    setTogglingStatus(true);
-    setToggleStatusError('');
+  const handleSwitchToggle = async (item: BenefitCodeItem, targetActive: boolean) => {
+    if (togglingInFlightRef.current.has(item.id)) return;
+
+    if (targetActive && item.validUntil && new Date(item.validUntil).getTime() < Date.now()) {
+      showToast('Código vencido. Actualizá su vigencia desde Editar para activarlo.', 'error');
+      return;
+    }
+
+    togglingInFlightRef.current.add(item.id);
+    setTogglingCodeId(item.id);
+    const previousItems = items;
+
+    // Optimistic sync of switch + badge
+    setItems((prev) =>
+      prev.map((it) => {
+        if (it.id !== item.id) return it;
+        const updated: BenefitCodeItem = {
+          ...it,
+          status: targetActive ? 'ACTIVE' : 'DISABLED',
+          disabledAt: targetActive ? null : new Date().toISOString(),
+        };
+        return { ...updated, status: computeBenefitCodeStatus(updated) };
+      })
+    );
 
     try {
       let token: string | undefined;
@@ -385,29 +428,30 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
       } catch {
         // Fallback
       }
-      if (!codeToToggle.targetActive) {
+      if (!targetActive) {
         await adminDisableBenefitCodeFn({
           data: {
-            codeId: codeToToggle.item.id,
+            codeId: item.id,
             token,
           },
         });
       } else {
         await adminToggleBenefitCodeStatusFn({
           data: {
-            codeId: codeToToggle.item.id,
+            codeId: item.id,
             active: true,
             token,
           },
         });
       }
-      setCodeToToggle(null);
       await loadCodes();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Error al modificar el estado del código.';
-      setToggleStatusError(msg);
+      setItems(previousItems);
+      const msg = err instanceof Error ? err.message : 'No se pudo actualizar el estado del código.';
+      showToast(msg, 'error');
     } finally {
-      setTogglingStatus(false);
+      togglingInFlightRef.current.delete(item.id);
+      setTogglingCodeId((prev) => (prev === item.id ? null : prev));
     }
   };
 
@@ -822,40 +866,35 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                             </button>
                           )}
 
-                          {status === 'ACTIVE' || status === 'SCHEDULED' ? (
-                            <button
-                              type="button"
-                              className="v2-secondary kani-dcard-btn-action kani-dcard-btn-warning"
-                              onClick={() => {
-                                setToggleStatusError('');
-                                setCodeToToggle({ item, targetActive: false });
-                              }}
-                              title="Desactivar este código"
-                            >
-                              <XCircle size={14} strokeWidth={2} aria-hidden="true" />
-                              <span>Desactivar</span>
-                            </button>
-                          ) : status === 'DISABLED' ? (
-                            <button
-                              type="button"
-                              className="v2-secondary kani-dcard-btn-action kani-dcard-btn-activate"
-                              onClick={() => {
-                                if (item.validUntil && new Date(item.validUntil).getTime() < Date.now()) {
-                                  setCodeToToggle({ item, targetActive: true });
-                                  setToggleStatusError(
-                                    'Este código se encuentra vencido. Para activarlo nuevamente, primero debés actualizar su vigencia.'
-                                  );
-                                } else {
-                                  setCodeToToggle({ item, targetActive: true });
-                                  setToggleStatusError('');
-                                }
-                              }}
-                              title="Activar este código"
-                            >
-                              <Check size={14} strokeWidth={2} aria-hidden="true" />
-                              <span>Activar</span>
-                            </button>
-                          ) : null}
+                          {(status === 'ACTIVE' || status === 'SCHEDULED' || status === 'DISABLED') && (() => {
+                            const isSwitchOn = status === 'ACTIVE' || status === 'SCHEDULED';
+                            const isSwitchBusy = togglingCodeId === item.id;
+                            const switchLabel = isSwitchOn ? 'Desactivar código' : 'Activar código';
+                            return (
+                              <div
+                                className={`kani-dcard-switch-wrap${isSwitchOn ? ' is-on' : ' is-off'}${isSwitchBusy ? ' is-busy' : ''}`}
+                                data-state={isSwitchOn ? 'checked' : 'unchecked'}
+                              >
+                                <Switch
+                                  checked={isSwitchOn}
+                                  disabled={isSwitchBusy}
+                                  aria-label={switchLabel}
+                                  title={switchLabel}
+                                  className="kani-dcard-switch"
+                                  onCheckedChange={(checked) => void handleSwitchToggle(item, checked)}
+                                />
+                                <span className="kani-dcard-switch-text" aria-hidden="true">
+                                  {isSwitchBusy ? (
+                                    <RefreshCw size={12} className="animate-spin" />
+                                  ) : isSwitchOn ? (
+                                    'ON'
+                                  ) : (
+                                    'OFF'
+                                  )}
+                                </span>
+                              </div>
+                            );
+                          })()}
 
                           <button
                             type="button"
@@ -1623,102 +1662,7 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
         </DialogContent>
       </Dialog>
 
-      {/* ==============================================================================
-          MODAL 3: ACTIVAR / DESACTIVAR
-         ============================================================================== */}
-      <Dialog
-        open={!!codeToToggle}
-        onOpenChange={(open) => !togglingStatus && !open && setCodeToToggle(null)}
-      >
-        <DialogContent
-          overlayClassName="benefit-code-dialog-overlay"
-          className="benefit-code-dialog-content kani-modal-shell kani-dtoggle-dialog"
-          transitionMode="container-transform"
-          showCloseButton={false}
-        >
-          <div className="benefit-code-dialog-header kani-modal-header-row">
-            <DialogTitle className="kani-modal-title">
-              {codeToToggle?.targetActive ? 'Activar código' : 'Desactivar código'}
-            </DialogTitle>
-            <KaniModalClose
-              label="Cerrar"
-              onClick={() => !togglingStatus && setCodeToToggle(null)}
-            />
-          </div>
-
-          <div className="benefit-code-dialog-scroll-body kani-dtoggle-body">
-            {codeToToggle?.item.code && (
-              <div className="kani-dvalidity-code-box" aria-label="Código seleccionado">
-                <span className="kani-dvalidity-code-label">Código</span>
-                <span className="kani-dvalidity-code-value">{codeToToggle.item.code}</span>
-              </div>
-            )}
-
-            <DialogDescription className="kani-dtoggle-desc">
-              {codeToToggle?.targetActive
-                ? 'El código volverá a estar disponible para nuevas reservas según sus condiciones de vigencia.'
-                : 'El código dejará de estar disponible para nuevas reservas. Las reservas confirmadas no se modificarán.'}
-            </DialogDescription>
-
-            {toggleStatusError && (
-              <div className="p-3 rounded bg-destructive/10 text-destructive text-xs space-y-2">
-                <div className="flex items-start gap-2">
-                  <AlertCircle size={15} className="shrink-0 mt-0.5" />
-                  <span>{toggleStatusError}</span>
-                </div>
-                {codeToToggle?.targetActive &&
-                  codeToToggle.item.validUntil &&
-                  new Date(codeToToggle.item.validUntil).getTime() < Date.now() && (
-                    <Button
-                      size="sm"
-                      onClick={() => {
-                        const it = codeToToggle.item;
-                        setCodeToToggle(null);
-                        handleEditValidityOpen(it);
-                      }}
-                      className="action-brand text-xs min-h-[34px] w-full mt-1 font-semibold"
-                    >
-                      <Edit2 size={13} className="mr-1" />
-                      <span>Actualizar vigencia ahora</span>
-                    </Button>
-                  )}
-              </div>
-            )}
-          </div>
-
-          <div className="benefit-code-dialog-footer">
-            <DialogFooter className="kani-dtoggle-footer">
-              <Button
-                variant="outline"
-                onClick={() => setCodeToToggle(null)}
-                disabled={togglingStatus}
-                className="v2-secondary"
-              >
-                Cancelar
-              </Button>
-              {!(
-                codeToToggle?.targetActive &&
-                codeToToggle.item.validUntil &&
-                new Date(codeToToggle.item.validUntil).getTime() < Date.now()
-              ) && (
-                <Button
-                  onClick={handleToggleConfirm}
-                  disabled={togglingStatus}
-                  className={
-                    codeToToggle?.targetActive ? 'action-positive' : 'v2-destructive'
-                  }
-                >
-                  {togglingStatus
-                    ? 'Procesando…'
-                    : codeToToggle?.targetActive
-                    ? 'Activar'
-                    : 'Desactivar'}
-                </Button>
-              )}
-            </DialogFooter>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Modal de activación/desactivación reemplazado por Switch ON/OFF directo (v2.7) */}
 
       {/* ==============================================================================
           MODAL 4: ELIMINAR (SOFT DELETE)
@@ -1773,6 +1717,24 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
           </div>
         </DialogContent>
       </Dialog>
+      {toastState &&
+        (typeof document !== 'undefined'
+          ? createPortal(
+              <div
+                className={`kani-dtoast is-${toastState.variant}`}
+                role={toastState.variant === 'error' ? 'alert' : 'status'}
+                aria-live={toastState.variant === 'error' ? 'assertive' : 'polite'}
+              >
+                {toastState.variant === 'error' ? (
+                  <AlertCircle size={16} strokeWidth={2} className="kani-dtoast-icon" aria-hidden="true" />
+                ) : (
+                  <Check size={16} strokeWidth={2.2} className="kani-dtoast-icon" aria-hidden="true" />
+                )}
+                <span className="kani-dtoast-text">{toastState.text}</span>
+              </div>,
+              document.body
+            )
+          : null)}
     </section>
   );
 }

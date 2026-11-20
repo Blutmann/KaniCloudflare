@@ -266,12 +266,10 @@ describe('BenefitCodesAdminSection Component', () => {
       );
     });
 
-    // 2. Disable code
-    const disableBtn = screen.getByTitle('Desactivar este código');
-    fireEvent.click(disableBtn);
-
-    const confirmDisableBtn = screen.getByRole('button', { name: /^Desactivar$/i });
-    fireEvent.click(confirmDisableBtn);
+    // 2. Disable code directly via Switch ON/OFF
+    const disableSwitch = screen.getByRole('switch', { name: 'Desactivar código' });
+    expect(disableSwitch).toHaveAttribute('aria-checked', 'true');
+    fireEvent.click(disableSwitch);
 
     await waitFor(() => {
       expect(mockDisableFn).toHaveBeenCalledWith(
@@ -285,7 +283,7 @@ describe('BenefitCodesAdminSection Component', () => {
     });
   });
 
-  it('copies code to clipboard when clicking Copiar button', async () => {
+  it('copies code to clipboard and shows single bottom toast without stacking', async () => {
     Object.assign(navigator, {
       clipboard: {
         writeText: vi.fn().mockResolvedValue(undefined),
@@ -301,6 +299,56 @@ describe('BenefitCodesAdminSection Component', () => {
     const copyButtons = screen.getAllByRole('button', { name: /Copiar/i });
     fireEvent.click(copyButtons[0]);
 
-    expect(navigator.clipboard.writeText).toHaveBeenCalled();
+    await waitFor(() => {
+      expect(navigator.clipboard.writeText).toHaveBeenCalledTimes(1);
+      expect(screen.getByText('Código copiado correctamente')).toBeInTheDocument();
+    });
+
+    // Copying again keeps only a single toast
+    fireEvent.click(copyButtons[1]);
+    await waitFor(() => {
+      expect(screen.getAllByText('Código copiado correctamente')).toHaveLength(1);
+    });
+  });
+
+  it('shows error toast when clipboard copy fails', async () => {
+    Object.assign(navigator, {
+      clipboard: {
+        writeText: vi.fn().mockRejectedValue(new Error('Permission denied')),
+      },
+    });
+
+    render(<BenefitCodesAdminSection />);
+
+    await waitFor(() => {
+      expect(screen.getByText('KANI-BETA-1234')).toBeInTheDocument();
+    });
+
+    const copyButtons = screen.getAllByRole('button', { name: /Copiar/i });
+    fireEvent.click(copyButtons[0]);
+
+    await waitFor(() => {
+      expect(screen.getByText('No se pudo copiar el código')).toBeInTheDocument();
+      expect(screen.queryByText('Código copiado correctamente')).not.toBeInTheDocument();
+    });
+  });
+
+  it('restores switch and badge state if server toggle fails', async () => {
+    mockDisableFn.mockRejectedValueOnce(new Error('Error de red'));
+
+    render(<BenefitCodesAdminSection />);
+
+    await waitFor(() => {
+      expect(screen.getByText('KANI-BETA-1234')).toBeInTheDocument();
+    });
+
+    const disableSwitch = screen.getByRole('switch', { name: 'Desactivar código' });
+    expect(disableSwitch).toHaveAttribute('aria-checked', 'true');
+    fireEvent.click(disableSwitch);
+
+    await waitFor(() => {
+      expect(screen.getByText('Error de red')).toBeInTheDocument();
+      expect(screen.getByRole('switch', { name: 'Desactivar código' })).toHaveAttribute('aria-checked', 'true');
+    });
   });
 });
