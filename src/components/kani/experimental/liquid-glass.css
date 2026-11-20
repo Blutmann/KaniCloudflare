@@ -8796,16 +8796,17 @@ html[data-theme] .liquid-glass-atmosphere {
   transition: background-color 180ms ease;
 }
 
-/* Light Mode — V12.41 Mobile / Portrait 1440x2560 */
+/* Light Mode — Japanese Contemporary Luxury + Optical Glass (Mobile 1440x2560) */
 html[data-theme="light"] .liquid-glass-atmosphere {
   background-color: #f4f5f7 !important;
-  background-position: 58% 52% !important;
+  background-position: 50% 50% !important;
   background-image: url('/backgrounds/light-mode-mobile-1440x2560-v12-41.jpg') !important;
   background-image: -webkit-image-set(
+    url('/backgrounds/kani_light_mobile.avif') 1x,
     url('/backgrounds/light-mode-mobile-1440x2560-v12-41.webp') 1x
   ) !important;
   background-image: image-set(
-    url('/backgrounds/light-mode-mobile-1440x2560-v12-41.avif') type('image/avif') 1x,
+    url('/backgrounds/kani_light_mobile.avif') type('image/avif') 1x,
     url('/backgrounds/light-mode-mobile-1440x2560-v12-41.webp') type('image/webp') 1x,
     url('/backgrounds/light-mode-mobile-1440x2560-v12-41.jpg') type('image/jpeg') 1x
   ) !important;
@@ -8834,16 +8835,17 @@ html[data-theme="dark"] .liquid-glass-atmosphere {
   }
 }
 
-/* Landscape & Desktop (aspect > 1:1) — V12.41 Desktop 3840x2160 */
+/* Landscape & Desktop (aspect > 1:1) — Light Mode Desktop 3840x2160 */
 @media (min-aspect-ratio: 1001/1000) {
   html[data-theme="light"] .liquid-glass-atmosphere {
     background-position: 50% 50% !important;
     background-image: url('/backgrounds/light-mode-desktop-3840x2160-v12-41.jpg') !important;
     background-image: -webkit-image-set(
+      url('/backgrounds/kani_light_desktop.avif') 1x,
       url('/backgrounds/light-mode-desktop-3840x2160-v12-41.webp') 1x
     ) !important;
     background-image: image-set(
-      url('/backgrounds/light-mode-desktop-3840x2160-v12-41.avif') type('image/avif') 1x,
+      url('/backgrounds/kani_light_desktop.avif') type('image/avif') 1x,
       url('/backgrounds/light-mode-desktop-3840x2160-v12-41.webp') type('image/webp') 1x,
       url('/backgrounds/light-mode-desktop-3840x2160-v12-41.jpg') type('image/jpeg') 1x
     ) !important;
@@ -12017,13 +12019,14 @@ html[data-theme] body.liquid-glass-active .liquid-glass-confirmed-stage .confirm
 
 @media (max-width: 539px) {
   html[data-theme="light"] .liquid-glass-atmosphere {
-    background-position: 58% 52% !important;
+    background-position: 50% 50% !important;
     background-image: url('/backgrounds/light-mode-mobile-1440x2560-v12-41.jpg') !important;
     background-image: -webkit-image-set(
+      url('/backgrounds/kani_light_mobile.avif') 1x,
       url('/backgrounds/light-mode-mobile-1440x2560-v12-41.webp') 1x
     ) !important;
     background-image: image-set(
-      url('/backgrounds/light-mode-mobile-1440x2560-v12-41.avif') type('image/avif') 1x,
+      url('/backgrounds/kani_light_mobile.avif') type('image/avif') 1x,
       url('/backgrounds/light-mode-mobile-1440x2560-v12-41.webp') type('image/webp') 1x,
       url('/backgrounds/light-mode-mobile-1440x2560-v12-41.jpg') type('image/jpeg') 1x
     ) !important;
