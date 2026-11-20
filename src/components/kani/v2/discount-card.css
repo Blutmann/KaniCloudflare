@@ -971,27 +971,209 @@ html[data-theme="dark"] .kani-dcard-copied-tag {
   gap: 8px;
   font-size: 14px !important;
   font-weight: 600 !important;
-  color: #ffffff !important;
-  background: #881337 !important;
-  border: 1px solid #be123c !important;
+  color: #b91c1c !important;
+  background: rgba(220, 38, 38, 0.07) !important;
+  border: 1px solid rgba(220, 38, 38, 0.34) !important;
   cursor: pointer;
   transition: background-color 140ms ease, border-color 140ms ease;
 }
 
+.kani-dcard-details-delete-btn.is-destructive svg {
+  color: #b91c1c !important;
+}
+
 .kani-dcard-details-delete-btn.is-destructive:hover:not(:disabled) {
-  background: #9f1239 !important;
-  border-color: #e11d48 !important;
+  background: rgba(220, 38, 38, 0.13) !important;
+  border-color: rgba(220, 38, 38, 0.48) !important;
 }
 
-html[data-theme="dark"] .kani-dcard-details-delete-btn.is-destructive {
-  color: #ffffff !important;
-  background: #881337 !important;
-  border-color: #be123c !important;
+html[data-theme="dark"] .kani-dcard-details-delete-btn.is-destructive,
+.dark .kani-dcard-details-delete-btn.is-destructive {
+  color: #fca5a5 !important;
+  background: rgba(248, 113, 113, 0.1) !important;
+  border-color: rgba(248, 113, 113, 0.34) !important;
 }
 
-html[data-theme="dark"] .kani-dcard-details-delete-btn.is-destructive:hover:not(:disabled) {
-  background: #9f1239 !important;
+html[data-theme="dark"] .kani-dcard-details-delete-btn.is-destructive svg,
+.dark .kani-dcard-details-delete-btn.is-destructive svg {
+  color: #fca5a5 !important;
 }
+
+html[data-theme="dark"] .kani-dcard-details-delete-btn.is-destructive:hover:not(:disabled),
+.dark .kani-dcard-details-delete-btn.is-destructive:hover:not(:disabled) {
+  background: rgba(248, 113, 113, 0.16) !important;
+}
+
+/* Liquid Glass ON/OFF Switch (v2.7) */
+.kani-dcard-switch-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 44px;
+  height: 44px;
+  min-width: 78px;
+  padding: 0 10px;
+  border-radius: var(--v2-radius-btn, 12px);
+  border: 1px solid var(--dc-border);
+  background: var(--dc-inset-bg, rgba(128, 128, 128, 0.06));
+  box-sizing: border-box;
+  flex-shrink: 0;
+  transition: border-color 150ms ease, background-color 150ms ease;
+}
+
+.kani-dcard-switch-wrap.is-on {
+  border-color: rgba(22, 163, 74, 0.34);
+  background: rgba(22, 163, 74, 0.08);
+}
+
+html[data-theme="dark"] .kani-dcard-switch-wrap.is-on,
+.dark .kani-dcard-switch-wrap.is-on {
+  border-color: rgba(74, 222, 128, 0.32);
+  background: rgba(74, 222, 128, 0.1);
+}
+
+.kani-dcard-switch-wrap.is-busy {
+  opacity: 0.7;
+}
+
+.kani-dcard-switch {
+  min-height: 22px !important;
+  height: 22px !important;
+  width: 40px !important;
+  border-radius: 9999px !important;
+  padding: 0 !important;
+}
+
+.kani-dcard-switch[data-state="checked"] {
+  background: #16a34a !important;
+}
+
+.kani-dcard-switch[data-state="unchecked"] {
+  background: rgba(120, 113, 108, 0.45) !important;
+}
+
+.kani-dcard-switch-text {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  min-width: 22px;
+  text-align: center;
+  color: var(--dc-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.kani-dcard-switch-wrap.is-on .kani-dcard-switch-text {
+  color: #15803d;
+}
+
+html[data-theme="dark"] .kani-dcard-switch-wrap.is-on .kani-dcard-switch-text,
+.dark .kani-dcard-switch-wrap.is-on .kani-dcard-switch-text {
+  color: #4ade80;
+}
+
+/* Bottom Liquid Glass Copy Toast (v2.7) */
+@keyframes kaniToastIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.kani-dtoast {
+  position: fixed;
+  z-index: 240;
+  bottom: max(16px, calc(env(safe-area-inset-bottom, 0px) + 12px));
+  left: 12px;
+  right: 12px;
+  min-height: 44px;
+  padding: 10px 14px;
+  border-radius: var(--v2-radius-btn, 12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  pointer-events: none;
+  font-size: 13.5px;
+  font-weight: 500;
+  line-height: 1.3;
+  color: #1c1917;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(28, 25, 23, 0.14);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.14);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  backdrop-filter: blur(18px) saturate(150%);
+  animation: kaniToastIn 180ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+html[data-theme="dark"] .kani-dtoast,
+.dark .kani-dtoast {
+  color: #f5f2ed;
+  background: rgba(28, 26, 24, 0.88);
+  border-color: rgba(255, 255, 255, 0.16);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.42);
+}
+
+.kani-dtoast.is-success .kani-dtoast-icon {
+  color: #16a34a;
+  flex-shrink: 0;
+}
+
+html[data-theme="dark"] .kani-dtoast.is-success .kani-dtoast-icon,
+.dark .kani-dtoast.is-success .kani-dtoast-icon {
+  color: #4ade80;
+}
+
+.kani-dtoast.is-error .kani-dtoast-icon {
+  color: #dc2626;
+  flex-shrink: 0;
+}
+
+html[data-theme="dark"] .kani-dtoast.is-error .kani-dtoast-icon,
+.dark .kani-dtoast.is-error .kani-dtoast-icon {
+  color: #fca5a5;
+}
+
+.kani-dtoast-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (min-width: 768px) {
+  .kani-dtoast {
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    width: max-content;
+    max-width: 400px;
+    padding: 10px 18px;
+  }
+
+  @keyframes kaniToastIn {
+    from {
+      opacity: 0;
+      transform: translate(-50%, 10px) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: translate(-50%, 0) scale(1);
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kani-dtoast {
+    animation: none;
+  }
+}
+
 
 
 

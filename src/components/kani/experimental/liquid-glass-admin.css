@@ -3797,18 +3797,20 @@ html[data-theme] body[data-lg-admin="true"] .site-shell:has(.v2-shell) > .site-f
     gap: 8px !important;
     font-size: 14px !important;
     font-weight: 600 !important;
-    color: #ffffff !important;
-    background: #881337 !important;
-    border: 1px solid #be123c !important;
-    -webkit-backdrop-filter: none !important;
-    backdrop-filter: none !important;
+    color: var(--lga-danger-text, #b91c1c) !important;
+    -webkit-text-fill-color: var(--lga-danger-text, #b91c1c) !important;
+    background: var(--lga-danger-bg, rgba(220, 38, 38, 0.08)) !important;
+    border: 1px solid var(--lga-danger-border, rgba(220, 38, 38, 0.34)) !important;
+    -webkit-backdrop-filter: blur(12px) saturate(135%) !important;
+    backdrop-filter: blur(12px) saturate(135%) !important;
     cursor: pointer !important;
   }
 
   html[data-theme="dark"] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section .kani-dcard-details-delete-btn.is-destructive {
-    color: #ffffff !important;
-    background: #881337 !important;
-    border-color: #be123c !important;
+    color: var(--lga-danger-text, #fca5a5) !important;
+    -webkit-text-fill-color: var(--lga-danger-text, #fca5a5) !important;
+    background: var(--lga-danger-bg, rgba(248, 113, 113, 0.12)) !important;
+    border-color: var(--lga-danger-border, rgba(248, 113, 113, 0.36)) !important;
   }
 }
 
@@ -4211,31 +4213,34 @@ html[data-theme] body[data-lg-admin="true"] :is(.v2-memberships-page, .maintenan
   background: color-mix(in srgb, var(--gold, #b8963c) 10%, var(--lga-glass-nested, transparent)) !important;
 }
 
+html[data-theme] body[data-lg-admin="true"] :is(.v2-memberships-page, .maintenance-section) .kani-dcard-switch-wrap {
+  order: 7 !important;
+}
+
 html[data-theme] body[data-lg-admin="true"] :is(.v2-memberships-page, .maintenance-section) .kani-dcard-details-delete-btn.is-destructive {
-  color: #ffffff !important;
-  -webkit-text-fill-color: #ffffff !important;
-  background: #881337 !important;
-  border: 1px solid #be123c !important;
+  color: var(--lga-danger-text, #b91c1c) !important;
+  -webkit-text-fill-color: var(--lga-danger-text, #b91c1c) !important;
+  background: var(--lga-danger-bg, rgba(220, 38, 38, 0.08)) !important;
+  border: 1px solid var(--lga-danger-border, rgba(220, 38, 38, 0.34)) !important;
   border-radius: var(--v2-radius-btn, 12px) !important;
   min-height: 44px !important;
   height: 44px !important;
   font-size: 14px !important;
   font-weight: 600 !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
+  -webkit-backdrop-filter: blur(12px) saturate(135%) !important;
+  backdrop-filter: blur(12px) saturate(135%) !important;
 }
 
 html[data-theme] body[data-lg-admin="true"] :is(.v2-memberships-page, .maintenance-section) .kani-dcard-details-delete-btn.is-destructive svg {
-  color: #ffffff !important;
+  color: var(--lga-danger-text, #b91c1c) !important;
 }
 
 html[data-theme] body[data-lg-admin="true"] :is(.v2-memberships-page, .maintenance-section) .kani-dcard-details-delete-btn.is-destructive:hover:not(:disabled) {
-  background: #9f1239 !important;
-  border-color: #e11d48 !important;
+  background: var(--lga-danger-bg-hover, rgba(220, 38, 38, 0.14)) !important;
+  border-color: var(--lga-danger-border-hover, rgba(220, 38, 38, 0.48)) !important;
 }
 
 html[data-theme] body[data-lg-admin="true"] :is(.v2-memberships-page, .maintenance-section) .kani-dcard-details-delete-btn.is-destructive:active:not(:disabled) {
-  background: #70102d !important;
   transform: scale(0.985);
 }
 
