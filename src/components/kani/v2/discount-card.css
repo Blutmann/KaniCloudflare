@@ -1086,15 +1086,51 @@ html[data-theme="dark"] .kani-dcard-switch-wrap.is-on .kani-dcard-switch-text,
   }
 }
 
+.kani-dcard-secondary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 12px;
+  align-items: start;
+}
+
+.kani-dcard-secondary-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.kani-dcard-secondary-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--dc-muted);
+  line-height: 1.25;
+}
+
+.kani-dcard-meta-value {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--dc-text);
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 340px) {
+  .kani-dcard-secondary-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+  }
+}
+
 .kani-dtoast {
   position: fixed;
   z-index: 240;
   bottom: max(16px, calc(env(safe-area-inset-bottom, 0px) + 12px));
   left: 12px;
   right: 12px;
-  min-height: 44px;
-  padding: 10px 14px;
-  border-radius: var(--v2-radius-btn, 12px);
+  min-height: 40px;
+  padding: 8px 14px;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1104,20 +1140,24 @@ html[data-theme="dark"] .kani-dcard-switch-wrap.is-on .kani-dcard-switch-text,
   font-weight: 500;
   line-height: 1.3;
   color: #1c1917;
-  background: rgba(255, 255, 255, 0.88);
-  border: 1px solid rgba(28, 25, 23, 0.14);
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.14);
-  -webkit-backdrop-filter: blur(18px) saturate(150%);
-  backdrop-filter: blur(18px) saturate(150%);
+  background: rgba(255, 255, 255, 0.56);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.65),
+    0 10px 28px rgba(0, 0, 0, 0.12);
+  -webkit-backdrop-filter: blur(22px) saturate(160%);
+  backdrop-filter: blur(22px) saturate(160%);
   animation: kaniToastIn 180ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 html[data-theme="dark"] .kani-dtoast,
 .dark .kani-dtoast {
   color: #f5f2ed;
-  background: rgba(28, 26, 24, 0.88);
-  border-color: rgba(255, 255, 255, 0.16);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.42);
+  background: rgba(24, 22, 20, 0.56);
+  border-color: rgba(255, 255, 255, 0.18);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 12px 32px rgba(0, 0, 0, 0.38);
 }
 
 .kani-dtoast.is-success .kani-dtoast-icon {
