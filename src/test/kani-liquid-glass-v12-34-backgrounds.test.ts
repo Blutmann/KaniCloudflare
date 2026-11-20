@@ -12,9 +12,9 @@ describe('Liquid Glass V12.34 — Integración de Fondos Light Mode (Mobile 1440
   const section = v12301Idx >= 0 ? liquidCss.slice(v12301Idx) : '';
 
   it('conserva activos AVIF, WebP y JPG de Light Mode y Dark Mode en resolución 4K desktop y mobile', () => {
-    const mobileAvif = path.resolve(root, 'public/backgrounds/kani_light_mobile_v4.avif');
+    const mobileAvif = path.resolve(root, 'public/backgrounds/kani_light_mobile_v5.avif');
     const mobileWebp = path.resolve(root, 'public/backgrounds/light-mode-mobile-1440x2560-v12-41.webp');
-    const desktopAvif = path.resolve(root, 'public/backgrounds/kani_light_desktop_v4.avif');
+    const desktopAvif = path.resolve(root, 'public/backgrounds/kani_light_desktop_v5.avif');
     const desktopWebp = path.resolve(root, 'public/backgrounds/light-mode-desktop-3840x2160-v12-41.webp');
     const darkDesktopAvif = path.resolve(root, 'public/backgrounds/dark-mode-desktop-3840x2160-v12-41.avif');
     const darkMobileAvif = path.resolve(root, 'public/backgrounds/dark-mode-mobile-1440x2560-v12-41.avif');
