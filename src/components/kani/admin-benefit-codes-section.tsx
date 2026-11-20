@@ -17,6 +17,7 @@ import {
   History,
   Info,
   Plus,
+  Power,
   RefreshCw,
   Search,
   Sparkles,
@@ -818,29 +819,13 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
 
                     <div className="kani-dcard-divider" aria-hidden="true" />
 
-                    {/* Bloque inferior: Estado a la izquierda, Info / Editar / Desactivar a la derecha */}
+                    {/* Bloque inferior: Estado a la izquierda, Editar / Activar-Desactivar a la derecha */}
                     <div className="kani-dcard-bottom">
                       <span className={`kani-dcard-badge ${statusDisplay.badgeClass}`}>
                         {statusDisplay.badgeLabel}
                       </span>
 
                       <div className="kani-dcard-actions">
-                        <button
-                          type="button"
-                          className="v2-secondary kani-dcard-btn-details"
-                          aria-expanded={isExpanded}
-                          aria-controls={`discount-details-${item.id}`}
-                          onClick={() => toggleAccordion(item.id)}
-                        >
-                          <Info size={14} strokeWidth={2} aria-hidden="true" />
-                          <span>Info</span>
-                          {isExpanded ? (
-                            <ChevronUp size={13} strokeWidth={2} aria-hidden="true" />
-                          ) : (
-                            <ChevronDown size={13} strokeWidth={2} aria-hidden="true" />
-                          )}
-                        </button>
-
                         {status !== 'DELETED' && (
                           <>
                             {isReusable && (
@@ -870,8 +855,10 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                                   disabled={isSwitchBusy}
                                   onClick={() => void handleSwitchToggle(item, !isSwitchOn)}
                                 >
-                                  {isSwitchBusy && (
-                                    <RefreshCw size={13} className="animate-spin" aria-hidden="true" />
+                                  {isSwitchBusy ? (
+                                    <RefreshCw size={14} className="animate-spin" aria-hidden="true" />
+                                  ) : (
+                                    <Power size={14} strokeWidth={2} aria-hidden="true" />
                                   )}
                                   <span>{actionLabel}</span>
                                 </button>
@@ -880,6 +867,25 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                           </>
                         )}
                       </div>
+                    </div>
+
+                    {/* Acceso discreto a información secundaria (Info) en la parte inferior */}
+                    <div className="kani-dcard-info-footer">
+                      <button
+                        type="button"
+                        className="kani-dcard-btn-details"
+                        aria-expanded={isExpanded}
+                        aria-controls={`discount-details-${item.id}`}
+                        onClick={() => toggleAccordion(item.id)}
+                      >
+                        <Info size={14} strokeWidth={2} aria-hidden="true" />
+                        <span>Info</span>
+                        {isExpanded ? (
+                          <ChevronUp size={13} strokeWidth={2} aria-hidden="true" />
+                        ) : (
+                          <ChevronDown size={13} strokeWidth={2} aria-hidden="true" />
+                        )}
+                      </button>
                     </div>
 
                     {/* Nivel 5: Sección expandible "Secciones" (v2.4: 3 accordions exclusivos contraídos inicialmente) */}
