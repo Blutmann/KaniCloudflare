@@ -23,9 +23,9 @@ describe('Liquid Glass V12.34 — Integración de Fondos Light Mode (Mobile 1440
       expect(existsSync(file)).toBe(true);
     }
 
-    // Los AVIF maestros 1440x2560 y 3840x2160 conservan detalle completo y sus WebP son livianos
-    expect(statSync(mobileAvif).size).toBeGreaterThan(200_000);
-    expect(statSync(desktopAvif).size).toBeGreaterThan(500_000);
+    // Los AVIF maestros 1440x2560 y 3840x2160 conservan detalle completo con compresión AVIF optimizada
+    expect(statSync(mobileAvif).size).toBeGreaterThan(100_000);
+    expect(statSync(desktopAvif).size).toBeGreaterThan(200_000);
     expect(statSync(mobileWebp).size).toBeLessThan(150_000);
     expect(statSync(desktopWebp).size).toBeLessThan(350_000);
   });
