@@ -16,6 +16,7 @@ import {
   HelpCircle,
   History,
   Info,
+  Pause,
   Plus,
   Power,
   RefreshCw,
@@ -192,7 +193,7 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
   const [editValidityError, setEditValidityError] = useState('');
 
   // Direct Switch Status Toggle State
-  const [togglingCodeId, setTogglingCodeId] = useState<string | null>(null);
+  const [togglingCodeIds, setTogglingCodeIds] = useState<Set<string>>(new Set());
   const togglingInFlightRef = useRef<Set<string>>(new Set());
 
   // Delete Modal State (Soft delete)
@@ -225,9 +226,12 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
     };
   }, []);
 
-  const loadCodes = async () => {
-    setLoading(true);
-    setError(null);
+  const loadCodes = async (options?: { silent?: boolean }) => {
+    const isSilent = options?.silent === true;
+    if (!isSilent) {
+      setLoading(true);
+      setError(null);
+    }
     try {
       let token: string | undefined;
       try {
@@ -244,13 +248,26 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
         ...it,
         status: computeBenefitCodeStatus(it),
       }));
-      setItems(processed);
+      if (isSilent) {
+        setItems((prev) => {
+          const prevById = new Map(prev.map((p) => [p.id, p]));
+          return processed.map((it) =>
+            togglingInFlightRef.current.has(it.id) ? (prevById.get(it.id) ?? it) : it
+          );
+        });
+      } else {
+        setItems(processed);
+      }
     } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Error al consultar códigos de beneficio.';
-      setError(msg);
-      setItems([]);
+      if (!isSilent) {
+        const msg = e instanceof Error ? e.message : 'Error al consultar códigos de beneficio.';
+        setError(msg);
+        setItems([]);
+      }
     } finally {
-      setLoading(false);
+      if (!isSilent) {
+        setLoading(false);
+      }
     }
   };
 
@@ -405,10 +422,14 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
     }
 
     togglingInFlightRef.current.add(item.id);
-    setTogglingCodeId(item.id);
-    const previousItems = items;
+    setTogglingCodeIds((prev) => {
+      const next = new Set(prev);
+      next.add(item.id);
+      return next;
+    });
+    const previousItem = item;
 
-    // Optimistic sync of switch + badge
+    // Optimistic sync of switch + badge for the affected item only
     setItems((prev) =>
       prev.map((it) => {
         if (it.id !== item.id) return it;
@@ -445,14 +466,21 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
           },
         });
       }
-      await loadCodes();
+      togglingInFlightRef.current.delete(item.id);
+      await loadCodes({ silent: true });
     } catch (err) {
-      setItems(previousItems);
+      togglingInFlightRef.current.delete(item.id);
+      setItems((prev) => prev.map((it) => (it.id === item.id ? previousItem : it)));
       const msg = err instanceof Error ? err.message : 'No se pudo actualizar el estado del código.';
       showToast(msg, 'error');
     } finally {
       togglingInFlightRef.current.delete(item.id);
-      setTogglingCodeId((prev) => (prev === item.id ? null : prev));
+      setTogglingCodeIds((prev) => {
+        if (!prev.has(item.id)) return prev;
+        const next = new Set(prev);
+        next.delete(item.id);
+        return next;
+      });
     }
   };
 
@@ -822,7 +850,10 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                     {/* Bloque inferior: Estado a la izquierda, Editar / Activar-Desactivar a la derecha */}
                     <div className="kani-dcard-bottom">
                       <span className={`kani-dcard-badge ${statusDisplay.badgeClass}`}>
-                        {statusDisplay.badgeLabel}
+                        {status === 'DISABLED' && (
+                          <Pause size={11} strokeWidth={2.25} aria-hidden="true" />
+                        )}
+                        <span>{statusDisplay.badgeLabel}</span>
                       </span>
 
                       <div className="kani-dcard-actions">
@@ -842,7 +873,7 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
 
                             {(status === 'ACTIVE' || status === 'SCHEDULED' || status === 'DISABLED') && (() => {
                               const isSwitchOn = status === 'ACTIVE' || status === 'SCHEDULED';
-                              const isSwitchBusy = togglingCodeId === item.id;
+                              const isSwitchBusy = togglingCodeIds.has(item.id);
                               const actionLabel = isSwitchOn ? 'Desactivar' : 'Activar';
                               return (
                                 <button

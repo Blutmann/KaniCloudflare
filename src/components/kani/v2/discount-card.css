@@ -71,7 +71,23 @@ html[data-theme="dark"] .kani-dcard {
 }
 
 .kani-dcard[data-status="DISABLED"] {
-  opacity: 0.92;
+  --dc-bg: color-mix(in srgb, var(--surface, #ffffff) 74%, var(--background, #f6f3ee));
+  --dc-border: color-mix(in srgb, var(--border, #e5e0d8) 65%, transparent);
+  --dc-shadow: 0 1px 6px rgb(0 0 0 / 3%);
+}
+
+html[data-theme="dark"] .kani-dcard[data-status="DISABLED"] {
+  --dc-bg: color-mix(in srgb, var(--surface, #1d1b19) 84%, #0f0e0d 16%);
+  --dc-border: rgb(255 255 255 / 10%);
+  --dc-shadow: 0 1px 8px rgb(0 0 0 / 18%);
+}
+
+.kani-dcard[data-status="DISABLED"] .kani-dcard-code {
+  color: color-mix(in srgb, var(--dc-text) 64%, var(--dc-muted));
+}
+
+.kani-dcard[data-status="DISABLED"] .kani-dcard-subtitle {
+  color: color-mix(in srgb, var(--dc-muted) 84%, transparent);
 }
 
 .kani-dcard[data-status="EXPIRED"],
@@ -197,6 +213,7 @@ html[data-theme="dark"] .kani-dcard-btn-copy.is-copied {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 4px;
   flex-shrink: 0;
   padding: 3px 9px;
   border-radius: 999px;

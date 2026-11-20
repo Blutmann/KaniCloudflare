@@ -3494,8 +3494,23 @@ html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .kani-dcard:hov
 }
 
 html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .kani-dcard[data-status="DISABLED"] {
-  border-color: var(--lga-border) !important;
-  opacity: 0.9;
+  background: color-mix(in srgb, var(--lga-glass-interactive) 74%, rgba(120, 113, 108, 0.12)) !important;
+  border-color: rgba(148, 144, 138, 0.20) !important;
+  box-shadow: var(--lga-shadow-card) !important;
+}
+
+html[data-theme="dark"] body[data-lg-admin="true"] .v2-memberships-page .kani-dcard[data-status="DISABLED"] {
+  background: color-mix(in srgb, var(--lga-glass-interactive) 80%, rgba(10, 9, 8, 0.28)) !important;
+  border-color: rgba(255, 255, 255, 0.09) !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.24) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .kani-dcard[data-status="DISABLED"] .kani-dcard-code {
+  color: color-mix(in srgb, var(--lga-text, var(--dc-text)) 64%, var(--lga-text-muted, var(--dc-muted))) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .kani-dcard[data-status="DISABLED"] .kani-dcard-subtitle {
+  color: color-mix(in srgb, var(--lga-text-muted, var(--dc-muted)) 84%, transparent) !important;
 }
 
 html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .kani-dcard[data-status="EXPIRED"],
@@ -4234,6 +4249,33 @@ html[data-theme] body[data-lg-admin="true"] :is(.v2-memberships-page, .maintenan
 
 html[data-theme] body[data-lg-admin="true"] :is(.v2-memberships-page, .maintenance-section) .kani-dcard :is(.kani-dcard-btn-action, .kani-dcard-btn-toggle):hover:not(:disabled) {
   border-color: var(--lga-border-accent, rgba(184, 150, 60, 0.45)) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section .kani-dcard .kani-dcard-btn-toggle.is-inactive,
+html[data-theme] body[data-lg-admin="true"] :is(.v2-memberships-page, .maintenance-section) .kani-dcard .kani-dcard-btn-toggle.is-inactive {
+  background: rgba(184, 150, 60, 0.14) !important;
+  border-color: rgba(184, 150, 60, 0.42) !important;
+  color: #785a14 !important;
+  font-weight: 600 !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section .kani-dcard .kani-dcard-btn-toggle.is-inactive:hover:not(:disabled),
+html[data-theme] body[data-lg-admin="true"] :is(.v2-memberships-page, .maintenance-section) .kani-dcard .kani-dcard-btn-toggle.is-inactive:hover:not(:disabled) {
+  background: rgba(184, 150, 60, 0.22) !important;
+  border-color: rgba(184, 150, 60, 0.58) !important;
+}
+
+html[data-theme="dark"] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section .kani-dcard .kani-dcard-btn-toggle.is-inactive,
+html[data-theme="dark"] body[data-lg-admin="true"] :is(.v2-memberships-page, .maintenance-section) .kani-dcard .kani-dcard-btn-toggle.is-inactive {
+  background: rgba(201, 161, 93, 0.16) !important;
+  border-color: rgba(201, 161, 93, 0.42) !important;
+  color: #e8c77b !important;
+}
+
+html[data-theme="dark"] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section .kani-dcard .kani-dcard-btn-toggle.is-inactive:hover:not(:disabled),
+html[data-theme="dark"] body[data-lg-admin="true"] :is(.v2-memberships-page, .maintenance-section) .kani-dcard .kani-dcard-btn-toggle.is-inactive:hover:not(:disabled) {
+  background: rgba(201, 161, 93, 0.24) !important;
+  border-color: rgba(201, 161, 93, 0.58) !important;
 }
 
 html[data-theme] body[data-lg-admin="true"] :is(.v2-memberships-page, .maintenance-section) .kani-dcard-info-footer {

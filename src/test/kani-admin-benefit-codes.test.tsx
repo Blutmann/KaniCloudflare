@@ -352,4 +352,35 @@ describe('BenefitCodesAdminSection Component', () => {
       expect(screen.getByText('Habilitado')).toBeInTheDocument();
     });
   });
+
+  it('toggles status in-place without triggering global loader or unmounting sibling cards (v2.9.1)', async () => {
+    render(<BenefitCodesAdminSection />);
+
+    await waitFor(() => {
+      expect(screen.getByText('KANI-BETA-1234')).toBeInTheDocument();
+    });
+
+    const cardBefore = screen.getByTestId('discount-card-code-1');
+    const siblingCardBefore = screen.getByTestId('discount-card-code-2');
+
+    // Set search term to verify filter state is preserved
+    const searchInput = screen.getByLabelText(/Buscar código o cliente/i) as HTMLInputElement;
+    fireEvent.change(searchInput, { target: { value: 'KANI' } });
+
+    const disableBtn = screen.getByRole('button', { name: 'Desactivar código KANI-BETA-1234' });
+    fireEvent.click(disableBtn);
+
+    // Global loader must NEVER appear during toggle
+    expect(screen.queryByText(/Cargando códigos de beneficios/i)).not.toBeInTheDocument();
+    // Both cards remain mounted (same DOM nodes)
+    expect(screen.getByTestId('discount-card-code-1')).toBe(cardBefore);
+    expect(screen.getByTestId('discount-card-code-2')).toBe(siblingCardBefore);
+    // Search filter stays intact
+    expect(searchInput.value).toBe('KANI');
+
+    await waitFor(() => {
+      expect(mockDisableFn).toHaveBeenCalledTimes(1);
+    });
+    expect(screen.queryByText(/Cargando códigos de beneficios/i)).not.toBeInTheDocument();
+  });
 });
