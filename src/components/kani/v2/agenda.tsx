@@ -25,7 +25,13 @@ import {
 } from "@/lib/kani-appointments";
 import { retryNotificationChannelServerFn } from "@/lib/kani-notifications.functions";
 import { supabase } from "@/integrations/supabase/client";
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+  KaniModalClose,
+} from "@/components/ui/dialog";
 import { useV2 } from "./data";
 import {
   AdminFilterPanel,
@@ -233,6 +239,7 @@ export function V2Appointments({
     appointment?: RealAppointment | null;
   }>({ open: false, mode: "CREATE", appointment: null });
   const [busy, setBusy] = useState(false);
+  const [cancelError, setCancelError] = useState("");
   const [message, setMessage] = useState("");
   const [whatsAppModal, setWhatsAppModal] = useState<{
     appointment: RealAppointment;
@@ -317,6 +324,7 @@ export function V2Appointments({
   async function cancelAppointment() {
     if (!action || busy) return;
     setBusy(true);
+    setCancelError("");
     setMessage("");
     try {
       await updateRealAppointmentStatus(action.appointment.id, action.status);
@@ -324,7 +332,9 @@ export function V2Appointments({
       await data.refresh();
       setMessage("Turno actualizado.");
     } catch (e) {
-      setMessage(appointmentErrorMessage(e));
+      const errMsg = appointmentErrorMessage(e);
+      setCancelError(errMsg);
+      setMessage(errMsg);
     } finally {
       setBusy(false);
     }
@@ -415,11 +425,13 @@ export function V2Appointments({
     <main className="v2-page v2-appointments-page">
       <AdminFilterPanel
         ariaLabel="Filtros de turnos"
-        className={
-          period === "CUSTOM"
-            ? "v2-turnos-filter-panel is-custom-range"
-            : "v2-turnos-filter-panel"
-        }
+        className={[
+          "v2-turnos-filter-panel",
+          period === "CUSTOM" ? "is-custom-range" : "",
+          !isStaffOperator(staff.profile.role) ? "is-barber-scoped" : "",
+        ]
+          .filter(Boolean)
+          .join(" ")}
         footer={
           period === "CUSTOM" && isInvalidRange ? (
             <div className="v2-custom-range-row">
@@ -443,21 +455,22 @@ export function V2Appointments({
             ))}
           </select>
         </AdminFilterCell>
-        <AdminFilterCell label="Barbero" htmlFor="v2-appointments-barber">
-          <select
-            id="v2-appointments-barber"
-            value={isStaffOperator(staff.profile.role) ? data.barberId : (staff.profile.barber_id ?? "")}
-            onChange={(e) => data.setBarberId(e.target.value)}
-            disabled={!isStaffOperator(staff.profile.role)}
-          >
-            {isStaffOperator(staff.profile.role) && <option value="ALL">Todo Kani</option>}
-            {staff.barbers.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.name}
-              </option>
-            ))}
-          </select>
-        </AdminFilterCell>
+        {isStaffOperator(staff.profile.role) && (
+          <AdminFilterCell label="Barbero" htmlFor="v2-appointments-barber">
+            <select
+              id="v2-appointments-barber"
+              value={data.barberId}
+              onChange={(e) => data.setBarberId(e.target.value)}
+            >
+              <option value="ALL">Todo Kani</option>
+              {staff.barbers.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.name}
+                </option>
+              ))}
+            </select>
+          </AdminFilterCell>
+        )}
         <AdminFilterCell
           label={period === "CUSTOM" ? "Fecha desde" : "Fecha"}
           htmlFor="v2-appointments-date"
@@ -482,7 +495,11 @@ export function V2Appointments({
         <AdminFilterCell
           label="Estado"
           htmlFor="v2-appointments-status"
-          className={period === "CUSTOM" ? "v2-turnos-status-full" : undefined}
+          className={
+            period === "CUSTOM" || !isStaffOperator(staff.profile.role)
+              ? "v2-turnos-status-full"
+              : undefined
+          }
         >
           <select
             id="v2-appointments-status"
@@ -491,7 +508,10 @@ export function V2Appointments({
           >
             <option value="ALL">Todos</option>
             <option value="CONFIRMED">Confirmado</option>
+            <option value="PENDING">Pendiente de pago</option>
+            <option value="COMPLETED">Realizado</option>
             <option value="CANCELLED">Cancelado</option>
+            <option value="NO_SHOW">No asistió</option>
           </select>
         </AdminFilterCell>
       </AdminFilterPanel>
@@ -733,20 +753,91 @@ export function V2Appointments({
       <Dialog
         open={!!action}
         onOpenChange={(open) => {
-          if (!open && !busy) setAction(null);
+          if (!open && !busy) {
+            setCancelError("");
+            setAction(null);
+          }
         }}
       >
-        <DialogContent className="v2-dialog" transitionMode="container-transform">
-          <DialogTitle>
-            ¿Cancelar este turno?
-          </DialogTitle>
-          <DialogDescription>
-            {action?.appointment.name} · {action?.appointment.time}. Esta acción actualiza el turno
-            y utiliza las notificaciones existentes.
-          </DialogDescription>
-          <button className="v2-secondary action-reject" disabled={busy} onClick={() => void cancelAppointment()}>
-            {busy ? "Guardando…" : "Cancelar turno"}
-          </button>
+        <DialogContent
+          className="v2-dialog v2-cancel-dialog kani-modal-shell"
+          transitionMode="container-transform"
+          showCloseButton={false}
+          onEscapeKeyDown={(e) => {
+            if (busy) e.preventDefault();
+          }}
+          onPointerDownOutside={(e) => {
+            if (busy) e.preventDefault();
+          }}
+        >
+          <div className="kani-modal-header">
+            <div className="kani-modal-header-text">
+              <DialogTitle>Cancelar turno</DialogTitle>
+              <DialogDescription className="sr-only">
+                Confirmación para cancelar el turno seleccionado.
+              </DialogDescription>
+            </div>
+            <KaniModalClose label="Cerrar" disabled={busy} />
+          </div>
+
+          <div className="kani-modal-body v2-cancel-dialog-body">
+            <p className="v2-cancel-dialog-question">¿Querés cancelar este turno?</p>
+            {action && (
+              <div className="v2-cancel-dialog-context">
+                <div className="v2-cancel-dialog-row">
+                  <span>Cliente</span>
+                  <strong>{action.appointment.name}</strong>
+                </div>
+                <div className="v2-cancel-dialog-row">
+                  <span>Fecha</span>
+                  <strong>{dateLabel(action.appointment.date)}</strong>
+                </div>
+                <div className="v2-cancel-dialog-row">
+                  <span>Horario</span>
+                  <strong>
+                    {action.appointment.time}
+                    {action.appointment.endTime ? ` – ${action.appointment.endTime}` : ""} hs
+                  </strong>
+                </div>
+                {action.appointment.serviceName && (
+                  <div className="v2-cancel-dialog-row">
+                    <span>Servicio</span>
+                    <strong>{formatServiceName(action.appointment.serviceName)}</strong>
+                  </div>
+                )}
+              </div>
+            )}
+            <p className="v2-cancel-dialog-note">
+              Esta acción marca el turno como cancelado y utiliza las notificaciones existentes.
+            </p>
+            {cancelError && (
+              <p className="v2-alert" role="alert">
+                {cancelError}
+              </p>
+            )}
+          </div>
+
+          <div className="kani-modal-footer v2-cancel-dialog-footer">
+            <button
+              type="button"
+              className="v2-secondary"
+              disabled={busy}
+              onClick={() => {
+                setCancelError("");
+                setAction(null);
+              }}
+            >
+              Volver
+            </button>
+            <button
+              type="button"
+              className="v2-secondary action-reject"
+              disabled={busy}
+              onClick={() => void cancelAppointment()}
+            >
+              {busy ? "Cancelando…" : "Confirmar cancelación"}
+            </button>
+          </div>
         </DialogContent>
       </Dialog>
       <Dialog

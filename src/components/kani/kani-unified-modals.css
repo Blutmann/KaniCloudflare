@@ -747,20 +747,38 @@ html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active)
 
 html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell .kani-modal-body .v2-search svg {
   position: absolute !important;
-  left: 12px !important;
+  left: 13px !important;
   top: 50% !important;
   transform: translateY(-50%) !important;
   width: 16px !important;
   height: 16px !important;
   pointer-events: none !important;
   flex-shrink: 0 !important;
+  z-index: 1 !important;
 }
 
-html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell .kani-modal-body .v2-search input {
+html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell .kani-modal-body :is(.v2-search, .v2-client-quick-search) input:not([type="checkbox"]):not([type="radio"]) {
   width: 100% !important;
-  padding-left: 38px !important;
-  padding-right: 12px !important;
+  padding: 0 14px 0 40px !important;
+  padding-left: 40px !important;
+  padding-inline-start: 40px !important;
+  padding-right: 14px !important;
   text-overflow: ellipsis !important;
+}
+
+/* Compact right-aligned footer for Cancelar turno & Agregar horario modals */
+html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell:is(.v2-cancel-dialog, .admin-schedule-dialog) .kani-modal-footer {
+  justify-content: flex-end !important;
+  gap: 10px !important;
+}
+
+html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell:is(.v2-cancel-dialog, .admin-schedule-dialog) .kani-modal-footer > button {
+  flex: 0 0 auto !important;
+  width: auto !important;
+  min-width: 0 !important;
+  min-height: 41px !important;
+  height: 41px !important;
+  padding: 0 16px !important;
 }
 
 /* Prevent icon clipping & normalize icon dimensions in headers, body rows, and footers */

@@ -69,13 +69,13 @@ describe('V12.47.25.1 — Etiquetas de período y distribución de filtros en Tu
     const labels = v2AgendaPeriodOrder.map((p) => formatV2AgendaPeriodLabel(p, today));
     expect(labels).toEqual([
       'Hoy',
-      'Próximos 5 días',
+      'Próx. 5 días',
       '16 - 22 Nov.',
-      'Próximos 10 días',
+      'Próx. 10 días',
       'Noviembre 2026',
       'Octubre 2026',
       '2026',
-      'Rango personalizado',
+      'Personalizado',
       'Fecha exacta',
     ]);
   });

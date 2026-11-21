@@ -110,7 +110,7 @@ describe('Admin V2 — Reactive Validation in Agregar horario de disponibilidad'
 
     const timeSelect = document.getElementById('schedule-manual-time') as HTMLSelectElement;
     const dateInput = document.getElementById('schedule-manual-date') as HTMLInputElement;
-    const submitBtn = screen.getByRole('button', { name: /guardar horario/i });
+    const submitBtn = screen.getByRole('button', { name: /agregar horario/i });
 
     // Set date to today
     fireEvent.change(dateInput, { target: { value: today } });
@@ -141,7 +141,7 @@ describe('Admin V2 — Reactive Validation in Agregar horario de disponibilidad'
 
     const timeSelect = document.getElementById('schedule-manual-time') as HTMLSelectElement;
     const dateInput = document.getElementById('schedule-manual-date') as HTMLInputElement;
-    const submitBtn = screen.getByRole('button', { name: /guardar horario/i });
+    const submitBtn = screen.getByRole('button', { name: /agregar horario/i });
 
     // Select time 11:00 on today (valid for Lautaro on today)
     fireEvent.change(dateInput, { target: { value: today } });
@@ -172,7 +172,7 @@ describe('Admin V2 — Reactive Validation in Agregar horario de disponibilidad'
     const barberSelect = document.getElementById('schedule-manual-barber') as HTMLSelectElement;
     const dateInput = document.getElementById('schedule-manual-date') as HTMLInputElement;
     const timeSelect = document.getElementById('schedule-manual-time') as HTMLSelectElement;
-    const submitBtn = screen.getByRole('button', { name: /guardar horario/i });
+    const submitBtn = screen.getByRole('button', { name: /agregar horario/i });
 
     // Set today at 14:00. For Lautaro (b1), this is free.
     fireEvent.change(dateInput, { target: { value: today } });
@@ -202,7 +202,7 @@ describe('Admin V2 — Reactive Validation in Agregar horario de disponibilidad'
 
     const dateInput = document.getElementById('schedule-manual-date') as HTMLInputElement;
     const timeSelect = document.getElementById('schedule-manual-time') as HTMLSelectElement;
-    const submitBtn = screen.getByRole('button', { name: /guardar horario/i });
+    const submitBtn = screen.getByRole('button', { name: /agregar horario/i });
 
     // Start with conflict: Lautaro at 09:00
     fireEvent.change(dateInput, { target: { value: today } });
@@ -234,7 +234,7 @@ describe('Admin V2 — Reactive Validation in Agregar horario de disponibilidad'
 
     const dateInput = document.getElementById('schedule-manual-date') as HTMLInputElement;
     const timeSelect = document.getElementById('schedule-manual-time') as HTMLSelectElement;
-    const submitBtn = screen.getByRole('button', { name: /guardar horario/i });
+    const submitBtn = screen.getByRole('button', { name: /agregar horario/i });
 
     fireEvent.change(dateInput, { target: { value: today } });
     fireEvent.change(timeSelect, { target: { value: '10:00' } });
@@ -279,7 +279,7 @@ describe('Admin V2 — Reactive Validation in Agregar horario de disponibilidad'
       .mockResolvedValueOnce([]);
 
     const timeSelect = document.getElementById('schedule-manual-time') as HTMLSelectElement;
-    const submitBtn = screen.getByRole('button', { name: /guardar horario/i });
+    const submitBtn = screen.getByRole('button', { name: /agregar horario/i });
 
     // Request 1: select 09:00 (triggers slowPromise)
     fireEvent.change(timeSelect, { target: { value: '09:00' } });

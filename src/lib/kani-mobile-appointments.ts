@@ -353,7 +353,7 @@ export function formatV2AgendaPeriodLabel(
     case 'TODAY':
       return 'Hoy';
     case 'NEXT_5_DAYS':
-      return 'Próximos 5 días';
+      return 'Próx. 5 días';
     case 'THIS_WEEK': {
       const weekStart = startOfBusinessWeek(today);
       const weekEnd = addCalendarDays(weekStart, 6);
@@ -368,7 +368,7 @@ export function formatV2AgendaPeriodLabel(
       return `${sD} - ${eD} ${MONTHS_SHORT_TITLE_ES[eM - 1]}`;
     }
     case 'NEXT_10_DAYS':
-      return 'Próximos 10 días';
+      return 'Próx. 10 días';
     case 'THIS_MONTH':
       return `${MONTHS_FULL_ES[monthIdx]} ${year}`;
     case 'PREVIOUS_MONTH': {
@@ -380,7 +380,7 @@ export function formatV2AgendaPeriodLabel(
     case 'THIS_YEAR':
       return `${year}`;
     case 'CUSTOM':
-      return 'Rango personalizado';
+      return 'Personalizado';
     case 'DATE':
       return 'Fecha exacta';
   }

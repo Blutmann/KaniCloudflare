@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, Check, CheckCircle2, Clock3, SlidersHorizontal, X, XCircle } from "lucide-react";
+import { AlertTriangle, Check, CheckCircle2, Clock3, Info, SlidersHorizontal, X, XCircle } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,6 +21,7 @@ import {
   schedulePresets,
   type ScheduleDatePreset,
 } from "@/lib/kani-mobile-appointments";
+import { businessTimeNow } from "@/lib/kani-payments";
 import { dateLabel, minutes, formatAdminV2Date, type Barber } from "@/lib/kani-model";
 import {
   AdminFilterPanel,
@@ -122,6 +123,48 @@ function overlaps(slot: AvailabilitySlot, appointment: RealAppointment) {
   return slotStart < appointmentEnd && appointmentStart < slotEnd;
 }
 
+export function findFirstValidManualTime({
+  barberId,
+  date,
+  today,
+  nowTime,
+  existingSlots,
+  appointments,
+}: {
+  barberId: string;
+  date: string;
+  today: string;
+  nowTime: string;
+  existingSlots: Pick<AvailabilitySlot, "barber_id" | "slot_date" | "start_time">[];
+  appointments: RealAppointment[];
+}): string | null {
+  if (!barberId || !date || date < today) return null;
+  const nowMinutes = date === today ? minutes(nowTime) : -1;
+  const takenStarts = new Set(
+    existingSlots
+      .filter((slot) => slot.barber_id === barberId && slot.slot_date === date)
+      .map((slot) => slot.start_time.slice(0, 5)),
+  );
+
+  for (const time of SCHEDULE_TIME_OPTIONS) {
+    if (date === today && minutes(time) <= nowMinutes) continue;
+    if (takenStarts.has(time)) continue;
+    const endTime = defaultSlotEndTime(time);
+    const candidate: AvailabilitySlot = {
+      id: "candidate",
+      barber_id: barberId,
+      slot_date: date,
+      start_time: `${time}:00`,
+      end_time: `${endTime}:00`,
+      status: "AVAILABLE",
+      is_manual: true,
+    };
+    const hasConflict = appointments.some((apt) => overlaps(candidate, apt));
+    if (!hasConflict) return time;
+  }
+  return null;
+}
+
 export function AdminScheduleManager() {
   const { profile, barbers: permittedRows, refreshCount, setIsRefreshing } = useAdminStaff();
   const permittedBarbers = useMemo(
@@ -139,6 +182,7 @@ export function AdminScheduleManager() {
   const [barberFilter, setBarberFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState<ScheduleStatusFilter>("ALL");
   const [slots, setSlots] = useState<ScheduleSlot[]>([]);
+  const [cachedAppointments, setCachedAppointments] = useState<RealAppointment[]>([]);
   const [validStarts, setValidStarts] = useState<ScheduleStart[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
@@ -151,6 +195,7 @@ export function AdminScheduleManager() {
   );
   const [manualTime, setManualTime] = useState("10:00");
   const [manualError, setManualError] = useState("");
+  const [manualNoAvailability, setManualNoAvailability] = useState("");
   const [manualChecking, setManualChecking] = useState(false);
   const [checkingNotice, setCheckingNotice] = useState(false);
   const validationIdRef = useRef(0);
@@ -158,6 +203,7 @@ export function AdminScheduleManager() {
   useEffect(() => {
     if (!manualOpen) {
       setManualError("");
+      setManualNoAvailability("");
       setManualChecking(false);
       setCheckingNotice(false);
       return;
@@ -165,14 +211,19 @@ export function AdminScheduleManager() {
 
     if (!manualBarberId || !manualDate || !manualTime) {
       setManualError("");
+      setManualNoAvailability("");
       setManualChecking(false);
       setCheckingNotice(false);
       return;
     }
 
+    const today = businessDateToday();
+    const nowTime = businessTimeNow();
+
     const currentReqId = ++validationIdRef.current;
     setManualChecking(true);
     setManualError("");
+    setManualNoAvailability("");
 
     const timer = window.setTimeout(() => {
       if (validationIdRef.current === currentReqId) {
@@ -194,6 +245,27 @@ export function AdminScheduleManager() {
     readRealAppointments()
       .then((appointments) => {
         if (validationIdRef.current !== currentReqId) return;
+        setCachedAppointments(appointments);
+
+        if (manualDate >= today) {
+          const firstAvailable = findFirstValidManualTime({
+            barberId: manualBarberId,
+            date: manualDate,
+            today,
+            nowTime,
+            existingSlots: slots,
+            appointments,
+          });
+
+          if (!firstAvailable) {
+            setManualNoAvailability(
+              "No quedan horarios libres disponibles para esta fecha y agenda.",
+            );
+            setManualError("");
+            return;
+          }
+        }
+
         const conflict = appointments.find((apt) => overlaps(candidateSlot, apt));
         if (conflict) {
           const barberName = barberById.get(manualBarberId)?.name ?? conflict.barber ?? "El barbero";
@@ -221,7 +293,7 @@ export function AdminScheduleManager() {
     return () => {
       window.clearTimeout(timer);
     };
-  }, [manualOpen, manualBarberId, manualDate, manualTime, barberById]);
+  }, [manualOpen, manualBarberId, manualDate, manualTime, barberById, slots]);
 
   useEffect(() => {
     if (profile.role === "BARBER") {
@@ -276,6 +348,7 @@ export function AdminScheduleManager() {
         .sort((a, b) =>
           `${a.slot_date}${a.start_time}`.localeCompare(`${b.slot_date}${b.start_time}`),
         );
+      setCachedAppointments(appointments);
       setSlots(nextSlots);
       setValidStarts(
         starts
@@ -352,7 +425,7 @@ export function AdminScheduleManager() {
 
   async function saveManualSlot() {
     if (!manualBarberId || !manualDate || !manualTime) return;
-    if (manualChecking || manualError) return;
+    if (manualChecking || manualError || manualNoAvailability) return;
     setSavingId("manual");
     setManualError("");
     setNotice("");
@@ -382,13 +455,34 @@ export function AdminScheduleManager() {
   function openManualDialog(date: string, barberId?: string) {
     validationIdRef.current += 1;
     setManualError("");
+    setManualNoAvailability("");
     setManualChecking(false);
     setCheckingNotice(false);
-    setManualDate(date || specificDate || businessToday);
-    setManualTime("10:00");
+    const targetDate = date || specificDate || businessToday;
+    setManualDate(targetDate);
     const contextualBarberId = barberId ?? selectedRows[0]?.id;
-    if (contextualBarberId && permittedRows.some((row) => row.id === contextualBarberId))
-      setManualBarberId(contextualBarberId);
+    const resolvedBarberId =
+      contextualBarberId && permittedRows.some((row) => row.id === contextualBarberId)
+        ? contextualBarberId
+        : manualBarberId;
+    if (resolvedBarberId) setManualBarberId(resolvedBarberId);
+
+    const firstValid = findFirstValidManualTime({
+      barberId: resolvedBarberId,
+      date: targetDate,
+      today: businessToday,
+      nowTime: businessTimeNow(),
+      existingSlots: slots,
+      appointments: cachedAppointments,
+    });
+    setManualTime(firstValid ?? SCHEDULE_TIME_OPTIONS[0] ?? "10:00");
+    if (!firstValid) {
+      setManualNoAvailability(
+        targetDate < businessToday
+          ? "Elegí una fecha igual o posterior a hoy para habilitar disponibilidad."
+          : "No quedan horarios libres disponibles para esta fecha y agenda.",
+      );
+    }
     setManualOpen(true);
   }
 
@@ -678,8 +772,26 @@ export function AdminScheduleManager() {
                     </option>
                   ))}
                 </select>
+                {(() => {
+                  const endTime = defaultSlotEndTime(manualTime);
+                  const durationMinutes = Math.max(0, minutes(endTime) - minutes(manualTime));
+                  return (
+                    <p className="admin-schedule-interval-hint">
+                      Franja: <strong>{manualTime} – {endTime} hs</strong> · {durationMinutes} min
+                    </p>
+                  );
+                })()}
               </div>
             </div>
+            {manualNoAvailability && !manualError && (
+              <div
+                role="status"
+                className="admin-schedule-info-banner"
+              >
+                <Info size={15} className="shrink-0 mt-0.5" />
+                <span>{manualNoAvailability}</span>
+              </div>
+            )}
             {manualError && (
               <div
                 role="alert"
@@ -689,20 +801,21 @@ export function AdminScheduleManager() {
                 <span>{manualError}</span>
               </div>
             )}
-            {checkingNotice && !manualError && (
+            {checkingNotice && !manualError && !manualNoAvailability && (
               <p className="text-xs text-muted-foreground flex items-center gap-1.5">
                 <Clock3 size={13} className="shrink-0 animate-spin" />
                 <span>Verificando disponibilidad…</span>
               </p>
             )}
           </div>
-          <DialogFooter className="manual-dialog-footer kani-modal-footer">
+          <DialogFooter className="manual-dialog-footer kani-modal-footer admin-schedule-dialog-footer">
             <Button
               variant="outline"
               disabled={savingId === "manual"}
               onClick={() => {
                 validationIdRef.current += 1;
                 setManualError("");
+                setManualNoAvailability("");
                 setManualChecking(false);
                 setCheckingNotice(false);
                 setManualOpen(false);
@@ -716,11 +829,12 @@ export function AdminScheduleManager() {
                 savingId === "manual" ||
                 !manualBarberId ||
                 manualChecking ||
-                Boolean(manualError)
+                Boolean(manualError) ||
+                Boolean(manualNoAvailability)
               }
               onClick={() => void saveManualSlot()}
             >
-              {savingId === "manual" ? "Guardando…" : "Guardar horario"}
+              {savingId === "manual" ? "Guardando…" : "Agregar horario"}
             </Button>
           </DialogFooter>
         </DialogContent>

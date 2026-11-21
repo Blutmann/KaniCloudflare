@@ -3176,8 +3176,7 @@ html[data-theme="dark"] .v2-field select {
   font-size: 11px !important;
 }
 
-.v2-manual-dialog .v2-field :is(input, select),
-.v2-manual-dialog .v2-client-quick-search input {
+.v2-manual-dialog .v2-field :is(input, select) {
   height: 44px !important;
   min-height: 44px !important;
   max-height: 44px !important;
@@ -3186,8 +3185,35 @@ html[data-theme="dark"] .v2-field select {
   box-sizing: border-box !important;
 }
 
-.v2-manual-dialog .v2-client-quick-search input {
-  padding-left: 38px !important;
+.v2-manual-dialog .v2-client-quick-search.v2-search {
+  position: relative !important;
+  display: flex !important;
+  align-items: center !important;
+  width: 100% !important;
+}
+
+.v2-manual-dialog .v2-client-quick-search.v2-search svg {
+  position: absolute !important;
+  left: 13px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  width: 16px !important;
+  height: 16px !important;
+  pointer-events: none !important;
+  z-index: 1 !important;
+}
+
+.v2-manual-dialog .v2-client-quick-search.v2-search input {
+  width: 100% !important;
+  height: 44px !important;
+  min-height: 44px !important;
+  max-height: 44px !important;
+  padding: 9px 14px 9px 40px !important;
+  padding-inline-start: 40px !important;
+  padding-inline-end: 14px !important;
+  font-size: 12.5px !important;
+  text-overflow: ellipsis !important;
+  box-sizing: border-box !important;
 }
 
 .v2-manual-row {
@@ -5148,4 +5174,120 @@ html[data-theme="light"] .v2-past-badge {
     flex-wrap: wrap !important;
     row-gap: 4px !important;
   }
+}
+
+/* ==========================================================================
+   KANI UX v3.1 — Quick Wins (Turnos & Agenda)
+   ========================================================================== */
+
+/* T-08: Grilla equilibrada cuando el filtro Barbero está oculto para rol BARBER */
+@media (min-width: 768px) {
+  .v2-turnos-filter-panel.is-barber-scoped:not(.is-custom-range) .admin-filter-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 767px) {
+  .v2-turnos-filter-panel.is-barber-scoped .v2-turnos-status-full {
+    grid-column: 1 / -1;
+  }
+}
+
+/* T-04: Modal estándar Cancelar turno */
+.v2-cancel-dialog .v2-cancel-dialog-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.v2-cancel-dialog-question {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.v2-cancel-dialog-context {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--v2-inset, rgba(128, 128, 128, 0.08)) 80%, transparent);
+}
+
+.v2-cancel-dialog-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+
+.v2-cancel-dialog-row > span {
+  color: var(--muted-foreground);
+  flex-shrink: 0;
+}
+
+.v2-cancel-dialog-row > strong {
+  color: var(--foreground);
+  font-weight: 600;
+  text-align: right;
+  word-break: break-word;
+}
+
+.v2-cancel-dialog-note {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--muted-foreground);
+}
+
+.v2-cancel-dialog .v2-cancel-dialog-footer,
+.admin-schedule-dialog .admin-schedule-dialog-footer {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+}
+
+.v2-cancel-dialog .v2-cancel-dialog-footer > button,
+.admin-schedule-dialog .admin-schedule-dialog-footer > button {
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 0;
+  min-height: 40px;
+  padding: 8px 16px;
+}
+
+/* A-03: Modal Agregar horario — intervalo resultante y estado informativo */
+.admin-schedule-interval-hint {
+  margin: 6px 0 0;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: var(--muted-foreground);
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-schedule-interval-hint strong {
+  color: var(--foreground);
+  font-weight: 600;
+}
+
+.admin-schedule-info-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--gold, #b8924a) 38%, transparent);
+  background: color-mix(in srgb, var(--gold, #b8924a) 10%, transparent);
+  color: var(--foreground);
+  font-size: 0.78rem;
+  line-height: 1.45;
+  font-weight: 500;
 }
