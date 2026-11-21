@@ -141,8 +141,8 @@ describe('KANI UX v3.1 — Regresión Turnos y Agenda', () => {
     testState.barberId = 'ALL';
     testState.profileBarberId = null;
     testState.appointments = [
-      makeAppointment({ id: 'apt-1', barberId: 'b-lautaro', barber: 'Lautaro', statusCode: 'CONFIRMED', name: 'Matías Zárate' }),
-      makeAppointment({ id: 'apt-2', barberId: 'b-franco', barber: 'Franco', statusCode: 'PENDING', name: 'Lucas Fernández', time: '11:30', endTime: '12:30' }),
+      makeAppointment({ id: 'apt-1', barberId: 'b-lautaro', barber: 'Lautaro', statusCode: 'CONFIRMED', name: 'Matías Zárate', time: '19:00', endTime: '19:45' }),
+      makeAppointment({ id: 'apt-2', barberId: 'b-franco', barber: 'Franco', statusCode: 'PENDING', name: 'Lucas Fernández', time: '20:30', endTime: '21:30' }),
     ];
   });
 
@@ -167,7 +167,7 @@ describe('KANI UX v3.1 — Regresión Turnos y Agenda', () => {
       />,
     );
 
-    const searchInput = screen.getByPlaceholderText(/buscar cliente existente/i) as HTMLInputElement;
+    const searchInput = screen.getByPlaceholderText('Buscar cliente existente...') as HTMLInputElement;
     fireEvent.focus(searchInput);
     fireEvent.change(searchInput, { target: { value: 'Lucas' } });
 
@@ -175,13 +175,13 @@ describe('KANI UX v3.1 — Regresión Turnos y Agenda', () => {
     expect(suggestionBtn).toBeInTheDocument();
 
     fireEvent.click(suggestionBtn);
-    expect((screen.getByPlaceholderText(/Lucas Fernández/i) as HTMLInputElement).value).toBe('Lucas Fernández');
+    expect((screen.getByPlaceholderText('Ej. Lucas Fernández') as HTMLInputElement).value).toBe('Lucas Fernández');
 
     fireEvent.change(searchInput, { target: { value: '' } });
     expect(searchInput.value).toBe('');
   });
 
-  it('T-04: Modal Cancelar turno tiene título estándar, contexto, botones Volver / Confirmar cancelación y no cierra ante error', async () => {
+  it('T-04: Modal Cancelar turno tiene título estándar, contexto, mensaje claro, botones Volver / Confirmar cancelación con jerarquía destructiva y no cierra ante error', async () => {
     render(<V2Appointments />);
 
     const cancelTrigger = screen.getAllByRole('button', { name: 'Cancelar turno' })[0];
@@ -189,10 +189,16 @@ describe('KANI UX v3.1 — Regresión Turnos y Agenda', () => {
 
     expect(screen.getByRole('heading', { name: 'Cancelar turno' })).toBeInTheDocument();
     expect(screen.getByText('¿Querés cancelar este turno?')).toBeInTheDocument();
-    expect(screen.getByText('10:00 – 10:45 hs')).toBeInTheDocument();
+    expect(screen.getByText('El turno quedará registrado como cancelado.')).toBeInTheDocument();
+    expect(screen.getByText('19:00 – 19:45 hs')).toBeInTheDocument();
+
+    const backBtn = screen.getByRole('button', { name: 'Volver' });
+    const confirmInitialBtn = screen.getByRole('button', { name: 'Confirmar cancelación' });
+    expect(backBtn).toHaveClass('v2-cancel-back-btn');
+    expect(confirmInitialBtn).toHaveClass('action-reject', 'v2-cancel-confirm-btn');
 
     // Cerrar con Volver no ejecuta cancelación
-    fireEvent.click(screen.getByRole('button', { name: 'Volver' }));
+    fireEvent.click(backBtn);
     expect(appointmentsModule.updateRealAppointmentStatus).not.toHaveBeenCalled();
 
     // Reabrir y probar error de servidor: no debe cerrar el modal
@@ -249,7 +255,7 @@ describe('KANI UX v3.1 — Regresión Turnos y Agenda', () => {
     expect(screen.queryByText('Lucas Fernández')).not.toBeInTheDocument();
   });
 
-  it('A-03: findFirstValidManualTime elige el primer horario libre sin conflictos y AdminScheduleManager muestra intervalo completo y aviso informativo', async () => {
+  it('A-03: findFirstValidManualTime elige el primer horario libre sin conflictos y AdminScheduleManager muestra intervalo simplificado', async () => {
     const picked = findFirstValidManualTime({
       barberId: 'b-lautaro',
       date: today,
@@ -283,7 +289,10 @@ describe('KANI UX v3.1 — Regresión Turnos y Agenda', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /\+ Agregar horario/i }));
     expect(screen.getByRole('heading', { name: 'Agregar horario' })).toBeInTheDocument();
-    expect(screen.getByText(/Franja:/)).toBeInTheDocument();
+    const intervalHint = document.querySelector('.admin-schedule-interval-hint');
+    expect(intervalHint?.textContent).toMatch(/^\d{2}:\d{2} – \d{2}:\d{2} · \d+ min$/);
+    expect(intervalHint?.textContent).not.toContain('Franja:');
+    expect(intervalHint?.textContent).not.toContain('hs');
     expect(screen.getByRole('button', { name: 'Agregar horario' })).toBeInTheDocument();
 
     // Seleccionar 10:00 (con conflicto) muestra alerta de conflicto

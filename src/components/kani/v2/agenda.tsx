@@ -808,7 +808,7 @@ export function V2Appointments({
               </div>
             )}
             <p className="v2-cancel-dialog-note">
-              Esta acción marca el turno como cancelado y utiliza las notificaciones existentes.
+              El turno quedará registrado como cancelado.
             </p>
             {cancelError && (
               <p className="v2-alert" role="alert">
@@ -820,7 +820,7 @@ export function V2Appointments({
           <div className="kani-modal-footer v2-cancel-dialog-footer">
             <button
               type="button"
-              className="v2-secondary"
+              className="v2-secondary v2-cancel-back-btn"
               disabled={busy}
               onClick={() => {
                 setCancelError("");
@@ -831,7 +831,7 @@ export function V2Appointments({
             </button>
             <button
               type="button"
-              className="v2-secondary action-reject"
+              className="v2-secondary action-reject v2-cancel-confirm-btn"
               disabled={busy}
               onClick={() => void cancelAppointment()}
             >

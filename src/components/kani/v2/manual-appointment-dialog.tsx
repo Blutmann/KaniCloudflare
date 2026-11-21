@@ -591,7 +591,7 @@ export function ManualAppointmentDialog({
               <Search size={15} />
               <input
                 type="text"
-                placeholder="Buscar cliente existente por nombre, celular o email..."
+                placeholder="Buscar cliente existente..."
                 value={clientSearch}
                 disabled={isBusy}
                 onChange={(e) => {

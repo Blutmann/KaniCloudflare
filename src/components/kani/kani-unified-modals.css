@@ -766,19 +766,91 @@ html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active)
   text-overflow: ellipsis !important;
 }
 
-/* Compact right-aligned footer for Cancelar turno & Agregar horario modals */
-html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell:is(.v2-cancel-dialog, .admin-schedule-dialog) .kani-modal-footer {
+/* Compact right-aligned footer for Agregar horario modal */
+html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell.admin-schedule-dialog .kani-modal-footer {
   justify-content: flex-end !important;
   gap: 10px !important;
 }
 
-html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell:is(.v2-cancel-dialog, .admin-schedule-dialog) .kani-modal-footer > button {
+html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell.admin-schedule-dialog .kani-modal-footer > button {
   flex: 0 0 auto !important;
   width: auto !important;
   min-width: 0 !important;
   min-height: 41px !important;
   height: 41px !important;
   padding: 0 16px !important;
+}
+
+/* Cancelar turno modal: uniform 44px touch target, 13.5px typography, 50/50 mobile, semantic destructive contrast */
+html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell.v2-cancel-dialog .kani-modal-footer {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  justify-content: flex-end !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+
+html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell.v2-cancel-dialog .kani-modal-footer > button {
+  flex: 0 0 auto !important;
+  width: auto !important;
+  min-width: 112px !important;
+  min-height: 44px !important;
+  height: 44px !important;
+  padding: 0 18px !important;
+  border-radius: 12px !important;
+  font-family: var(--font-sans, inherit) !important;
+  font-size: 13.5px !important;
+  font-weight: 600 !important;
+  line-height: 1.2 !important;
+  white-space: nowrap !important;
+  box-shadow: none !important;
+}
+
+@media (max-width: 640px) {
+  html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell.v2-cancel-dialog .kani-modal-footer > button {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    padding: 0 10px !important;
+  }
+}
+
+html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell.v2-cancel-dialog .v2-cancel-back-btn {
+  background: var(--lga-btn-secondary-bg, rgba(255, 255, 255, 0.56)) !important;
+  border: 1px solid var(--lga-border, rgba(138, 114, 76, 0.24)) !important;
+  color: var(--lga-text, var(--foreground)) !important;
+  -webkit-text-fill-color: var(--lga-text, var(--foreground)) !important;
+}
+
+html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell.v2-cancel-dialog .v2-cancel-back-btn:hover:not(:disabled) {
+  background: var(--lga-btn-secondary-hover, rgba(255, 255, 255, 0.78)) !important;
+  border-color: var(--lga-border-accent, rgba(138, 114, 76, 0.4)) !important;
+}
+
+html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell.v2-cancel-dialog .v2-cancel-confirm-btn {
+  background: var(--lga-danger-bg, rgba(185, 56, 56, 0.14)) !important;
+  border: 1px solid var(--lga-danger-border, rgba(185, 56, 56, 0.38)) !important;
+  color: var(--lga-danger-text, #992626) !important;
+  -webkit-text-fill-color: var(--lga-danger-text, #992626) !important;
+}
+
+html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell.v2-cancel-dialog .v2-cancel-confirm-btn:hover:not(:disabled) {
+  background: rgba(185, 56, 56, 0.22) !important;
+  border-color: rgba(185, 56, 56, 0.52) !important;
+}
+
+html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell.v2-cancel-dialog .kani-modal-footer > button:focus-visible {
+  outline: 2px solid var(--lga-border-accent, var(--gold, #8c6a2b)) !important;
+  outline-offset: 2px !important;
+}
+
+html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell.v2-cancel-dialog .kani-modal-footer > button:active:not(:disabled) {
+  transform: scale(0.985) !important;
+}
+
+html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell.v2-cancel-dialog .kani-modal-footer > button:disabled {
+  opacity: 0.58 !important;
+  cursor: not-allowed !important;
 }
 
 /* Prevent icon clipping & normalize icon dimensions in headers, body rows, and footers */

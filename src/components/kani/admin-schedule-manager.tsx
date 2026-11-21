@@ -777,7 +777,7 @@ export function AdminScheduleManager() {
                   const durationMinutes = Math.max(0, minutes(endTime) - minutes(manualTime));
                   return (
                     <p className="admin-schedule-interval-hint">
-                      Franja: <strong>{manualTime} – {endTime} hs</strong> · {durationMinutes} min
+                      <strong>{manualTime} – {endTime}</strong> · {durationMinutes} min
                     </p>
                   );
                 })()}
