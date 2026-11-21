@@ -19,9 +19,9 @@ export function mayManageBarber(profile: StaffScope, barberId: string): boolean 
 
 export function mayAccessStaffSection(profile: StaffScope, section: string): boolean {
   if (!validStaffScope(profile)) return false;
-  if (section === 'mantenimiento' || section === 'roles') return profile.role === 'ADMIN';
+  if (section === 'inicio' || section === 'mantenimiento' || section === 'roles') return profile.role === 'ADMIN';
   if (section === 'descuentos') return isStaffOperator(profile.role) || profile.role === 'BARBER';
-  return ['inicio','turnos','horarios','clientes','pagos','datos','membresias'].includes(section);
+  return ['turnos','horarios','clientes','pagos','datos','membresias'].includes(section);
 }
 
 export function mayManageDiscounts(profile: StaffScope): boolean {
