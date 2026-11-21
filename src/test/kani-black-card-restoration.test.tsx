@@ -184,4 +184,53 @@ describe("KANI Barber Studio — Restauración Black Card Premium (/membresia/:t
     expect(stylesCss).toContain(".kani-card-3d-scene.is-settled-front");
     expect(fs.existsSync(path.join(rootDir, "components/kani/v2/layout.tsx"))).toBe(true);
   });
+
+  it("6. Accesibilidad Black Card: modal QR con focus-trap, cierre por Escape, retorno de foco, focus-visible y targets táctiles >= 44px", async () => {
+    vi.spyOn(membershipsLib, "getPublicMembershipCard").mockResolvedValue(makeCardData());
+
+    render(<PublicMembershipCardPage />);
+    await screen.findByText("VIP CLIENT");
+
+    // Targets táctiles >= 44px en acciones superiores y anillo focus-visible en VERIFICAR
+    const loginBtn = screen.getByRole("button", { name: /Iniciar sesión/i });
+    expect(loginBtn.className).toContain("min-h-[44px]");
+    expect(loginBtn.className).toContain("focus-visible:ring-2");
+
+    const verifyBtn = screen.getByRole("button", { name: "Abrir código QR de verificación" });
+    expect(verifyBtn.className).toContain("min-h-[44px]");
+    expect(verifyBtn.className).toContain("focus-visible:ring-2");
+    expect(verifyBtn.className).toContain("focus-visible:ring-[#D4B475]");
+    expect(verifyBtn.className).not.toMatch(/\bfocus:outline-none\b/);
+
+    // Enfocar VERIFICAR y abrir modal QR
+    verifyBtn.focus();
+    expect(verifyBtn).toHaveFocus();
+    fireEvent.click(verifyBtn);
+
+    const dialog = await screen.findByRole("dialog");
+    expect(dialog).toBeInTheDocument();
+
+    const closeIconBtn = screen.getByRole("button", { name: "Cerrar ventana de verificación" });
+    const closeBottomBtn = screen.getByRole("button", { name: "Cerrar" });
+
+    // Botón de cierre >= 44x44px y foco inicial dentro del modal
+    expect(closeIconBtn.className).toContain("min-h-[44px]");
+    expect(closeIconBtn.className).toContain("min-w-[44px]");
+    expect(closeIconBtn).toHaveFocus();
+
+    // Focus-trap con Tab y Shift+Tab entre los controles del modal
+    fireEvent.keyDown(window, { key: "Tab" });
+    expect(closeBottomBtn).toHaveFocus();
+
+    fireEvent.keyDown(window, { key: "Tab" });
+    expect(closeIconBtn).toHaveFocus();
+
+    fireEvent.keyDown(window, { key: "Tab", shiftKey: true });
+    expect(closeBottomBtn).toHaveFocus();
+
+    // Cierre con Escape y retorno de foco al botón disparador
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(verifyBtn).toHaveFocus();
+  });
 });
