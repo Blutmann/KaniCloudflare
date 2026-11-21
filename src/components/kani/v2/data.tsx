@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { useAdminStaff } from "@/lib/kani-admin-context";
 import { readStaffAppointments, type RealAppointment } from "@/lib/kani-appointments";
 import { fetchServicePayments, type ServicePayment } from "@/lib/kani-payments";
@@ -41,7 +41,7 @@ const empty: Data = {
 type Value = Data & {
   loading: boolean;
   error: string;
-  refresh: () => Promise<void>;
+  refresh: (options?: { silent?: boolean }) => Promise<void>;
   refreshMemberships: () => Promise<void>;
   setClients: React.Dispatch<React.SetStateAction<V2Client[]>>;
   barberId: string;
@@ -55,9 +55,13 @@ export function V2DataProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [barberId, setBarberId] = useState("ALL");
-  const refresh = useCallback(async () => {
-    setLoading(true);
-    setError("");
+  const hasLoadedRef = useRef(false);
+  const refresh = useCallback(async (options?: { silent?: boolean }) => {
+    const isSilent = options?.silent === true && hasLoadedRef.current;
+    if (!isSilent) {
+      setLoading(true);
+      setError("");
+    }
     try {
       if (!validStaffScope(staff.profile)) {
         throw new Error("No pudimos determinar el barbero asociado a tu usuario.");
@@ -125,10 +129,11 @@ export function V2DataProvider({ children }: { children: ReactNode }) {
         depositSupported: !capability.error,
       });
       setClients(loadedClients);
+      hasLoadedRef.current = true;
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "No pudimos cargar los datos. Reintentá.");
     } finally {
-      setLoading(false);
+      if (!isSilent) setLoading(false);
     }
   }, [staff]);
 

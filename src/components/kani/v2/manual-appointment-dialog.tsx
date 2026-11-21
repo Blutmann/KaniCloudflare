@@ -356,7 +356,7 @@ export function ManualAppointmentDialog({
           notes: appointment?.notes || undefined,
           durationMinutes,
         });
-        await data.refresh();
+        await data.refresh({ silent: true });
         onSuccess("Turno manual actualizado exitosamente.");
         onClose();
       } else {
@@ -375,7 +375,7 @@ export function ManualAppointmentDialog({
           durationMinutes,
           clientId: selectedClientId,
         });
-        await data.refresh();
+        await data.refresh({ silent: true });
         onSuccess("Turno manual creado exitosamente.");
         onClose();
       }
