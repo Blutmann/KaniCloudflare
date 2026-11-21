@@ -90,7 +90,7 @@ beforeEach(() => {
   api.create.mockReset().mockResolvedValue({ appointment_id: 'v3-fixture-id', request_number: 103 });
   api.order.mockReset().mockResolvedValue({ success: true, checkoutUrl: 'https://payments.example.test/checkout-v3' });
   api.checkout.mockReset();
-  Object.defineProperty(window, 'location', { configurable: true, value: { search: '', assign: api.checkout } });
+  Object.defineProperty(window, 'location', { configurable: true, value: { pathname: '/', search: '', assign: api.checkout } });
 });
 
 afterEach(() => {
