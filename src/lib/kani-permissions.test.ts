@@ -11,6 +11,7 @@ describe('staff authorization scopes', () => {
     expect(mayDeleteOperationalRecord(barber)).toBe(false);
     expect(mayAccessStaffSection(barber,'descuentos')).toBe(true);
     expect(mayManageDiscounts(barber)).toBe(false);
+    expect(mayAccessStaffSection(barber,'inicio')).toBe(false);
     expect(mayAccessStaffSection(barber,'mantenimiento')).toBe(false);
   });
   it('allows manager operations without granting maintenance or role administration', () => {
@@ -18,6 +19,7 @@ describe('staff authorization scopes', () => {
     expect(mayDeleteOperationalRecord(manager)).toBe(true);
     expect(mayAccessStaffSection(manager,'descuentos')).toBe(true);
     expect(mayManageDiscounts(manager)).toBe(false);
+    expect(mayAccessStaffSection(manager,'inicio')).toBe(false);
     expect(mayAccessStaffSection(manager,'mantenimiento')).toBe(false);
     expect(mayAccessStaffSection(manager,'roles')).toBe(false);
   });

@@ -54,4 +54,31 @@ describe('role navigation and direct URLs',()=>{
     state.role='ADMIN';state.path='/panel-administracion/mantenimiento';render(<V2Layout/>);
     expect(await screen.findByTestId('private-child')).toBeInTheDocument();
   });
+  it('allows ADMIN and blocks BARBER and MANAGER on direct /panel-administracion/inicio URL', async () => {
+    state.role = 'ADMIN';
+    state.path = '/panel-administracion/inicio';
+    const { unmount } = render(<V2Layout />);
+    expect(await screen.findByTestId('private-child')).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).toBeNull();
+    unmount();
+
+    for (const restrictedRole of ['MANAGER', 'BARBER'] as const) {
+      state.role = restrictedRole;
+      state.path = '/panel-administracion/inicio';
+      const view = render(<V2Layout />);
+      expect(await screen.findByRole('alert')).toHaveTextContent('No tenés permisos');
+      expect(screen.queryByTestId('private-child')).toBeNull();
+      view.unmount();
+    }
+  });
+  it('keeps root /panel-administracion working without false errors for ADMIN, MANAGER, and BARBER', async () => {
+    for (const role of ['ADMIN', 'MANAGER', 'BARBER'] as const) {
+      state.role = role;
+      state.path = '/panel-administracion';
+      const view = render(<V2Layout />);
+      expect(await screen.findByTestId('private-child')).toBeInTheDocument();
+      expect(screen.queryByRole('alert')).toBeNull();
+      view.unmount();
+    }
+  });
 });
