@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, Check, CheckCircle2, Clock3, SlidersHorizontal, X, XCircle } from "lucide-react";
+import { createPortal } from "react-dom";
+import { AlertCircle, AlertTriangle, Check, CheckCircle2, Clock3, SlidersHorizontal, X, XCircle } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import {
@@ -154,6 +155,27 @@ export function AdminScheduleManager() {
   const [manualChecking, setManualChecking] = useState(false);
   const [checkingNotice, setCheckingNotice] = useState(false);
   const validationIdRef = useRef(0);
+  const hasLoadedOnceRef = useRef(false);
+  const [toastState, setToastState] = useState<{
+    text: string;
+    variant: "success" | "error";
+  } | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function showToast(text: string, variant: "success" | "error" = "success") {
+    setToastState({ text, variant });
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => {
+      setToastState(null);
+      toastTimerRef.current = null;
+    }, 3500);
+  }
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     if (!manualOpen) {
@@ -253,10 +275,13 @@ export function AdminScheduleManager() {
     return permittedRows.filter((row) => row.name === barberFilter);
   }, [barberFilter, ownBarberId, permittedRows, profile.role]);
 
-  async function loadSlots() {
-    setLoading(true);
+  async function loadSlots(options?: { silent?: boolean }) {
+    const isSilent = options?.silent === true && hasLoadedOnceRef.current;
+    if (!isSilent) {
+      setLoading(true);
+      setError("");
+    }
     setIsRefreshing(true);
-    setError("");
     try {
       const [slotRows, starts, appointments] = await Promise.all([
         Promise.all(
@@ -285,12 +310,18 @@ export function AdminScheduleManager() {
           }))
           .sort((a, b) => `${a.slot_date}${a.start_time}`.localeCompare(`${b.slot_date}${b.start_time}`)),
       );
+      hasLoadedOnceRef.current = true;
     } catch (cause) {
-      setSlots([]);
-      setValidStarts([]);
-      setError(errorMessage(cause));
+      const msg = errorMessage(cause);
+      if (!isSilent) {
+        setSlots([]);
+        setValidStarts([]);
+      } else {
+        showToast(msg, "error");
+      }
+      setError(msg);
     } finally {
-      setLoading(false);
+      if (!isSilent) setLoading(false);
       setIsRefreshing(false);
     }
   }
@@ -300,7 +331,7 @@ export function AdminScheduleManager() {
   }, [dateRange, selectedRows]);
 
   useEffect(() => {
-    if (refreshCount > 0) void loadSlots();
+    if (refreshCount > 0) void loadSlots({ silent: true });
   }, [refreshCount]);
 
   function selectPreset(next: ScheduleDatePreset) {
@@ -321,7 +352,9 @@ export function AdminScheduleManager() {
 
   async function saveSlot(slot: ScheduleSlot, nextStatus: AvailabilitySlot["status"]) {
     if (slot.occupied) {
-      setError("No se puede modificar un horario que ya tiene una reserva activa.");
+      const msg = "No se puede modificar un horario que ya tiene una reserva activa.";
+      setError(msg);
+      showToast(msg, "error");
       return;
     }
     setSavingId(slot.id);
@@ -341,10 +374,14 @@ export function AdminScheduleManager() {
             : currentSlot,
         ),
       );
-      void loadSlots();
-      setNotice(`${slot.barberName} · ${updated.start_time.slice(0, 5)} actualizado.`);
+      void loadSlots({ silent: true });
+      const msg = `${slot.barberName} · ${updated.start_time.slice(0, 5)} actualizado.`;
+      setNotice(msg);
+      showToast(msg, "success");
     } catch (cause) {
-      setError(errorMessage(cause));
+      const msg = errorMessage(cause);
+      setError(msg);
+      showToast(msg, "error");
     } finally {
       setSavingId(null);
     }
@@ -365,13 +402,14 @@ export function AdminScheduleManager() {
         endTime,
       });
       setManualOpen(false);
-      await loadSlots();
+      await loadSlots({ silent: true });
       const barberName = barberById.get(manualBarberId)?.name ?? "Agenda";
-      setNotice(
+      const msg =
         created.length > 0
           ? `${barberName} · disponibilidad guardada (${manualTime} a ${endTime}).`
-          : "Ese intervalo ya estaba cubierto; no se creó un duplicado.",
-      );
+          : "Ese intervalo ya estaba cubierto; no se creó un duplicado.";
+      setNotice(msg);
+      showToast(msg, "success");
     } catch (cause) {
       setManualError(errorMessage(cause, "add"));
     } finally {
@@ -725,6 +763,23 @@ export function AdminScheduleManager() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {toastState &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            className={`kani-v2-toast is-${toastState.variant}`}
+            role={toastState.variant === "error" ? "alert" : "status"}
+            aria-live={toastState.variant === "error" ? "assertive" : "polite"}
+          >
+            {toastState.variant === "error" ? (
+              <AlertCircle size={16} strokeWidth={2} className="kani-v2-toast-icon" aria-hidden="true" />
+            ) : (
+              <Check size={16} strokeWidth={2.2} className="kani-v2-toast-icon" aria-hidden="true" />
+            )}
+            <span className="kani-v2-toast-text">{toastState.text}</span>
+          </div>,
+          document.body,
+        )}
     </>
   );
 }

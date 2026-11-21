@@ -1,8 +1,9 @@
 import { isStaffOperator } from "@/lib/kani-permissions";
 import { getWhatsAppDirectSendUrl } from "@/lib/kani-phone";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Link } from "@tanstack/react-router";
-import { ArrowRight, CalendarDays, Clock3, Info, Mail } from "lucide-react";
+import { AlertCircle, ArrowRight, CalendarDays, Check, Clock3, Info, Mail } from "lucide-react";
 import { useAdminStaff } from "@/lib/kani-admin-context";
 import {
   businessDateToday,
@@ -234,6 +235,24 @@ export function V2Appointments({
   }>({ open: false, mode: "CREATE", appointment: null });
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
+  const [toastState, setToastState] = useState<{
+    text: string;
+    variant: "success" | "error";
+  } | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const showToast = (text: string, variant: "success" | "error" = "success") => {
+    setToastState({ text, variant });
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => {
+      setToastState(null);
+      toastTimerRef.current = null;
+    }, 3500);
+  };
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    };
+  }, []);
   const [whatsAppModal, setWhatsAppModal] = useState<{
     appointment: RealAppointment;
     mode: "NO_PHONE" | "INVALID_PHONE";
@@ -321,10 +340,13 @@ export function V2Appointments({
     try {
       await updateRealAppointmentStatus(action.appointment.id, action.status);
       setAction(null);
-      await data.refresh();
+      await data.refresh({ silent: true });
       setMessage("Turno actualizado.");
+      showToast("Turno actualizado.", "success");
     } catch (e) {
-      setMessage(appointmentErrorMessage(e));
+      const errMsg = appointmentErrorMessage(e);
+      setMessage(errMsg);
+      showToast(errMsg, "error");
     } finally {
       setBusy(false);
     }
@@ -391,7 +413,7 @@ export function V2Appointments({
               : null,
           );
         }
-        await data.refresh();
+        await data.refresh({ silent: true });
       } else {
         setRetryFeedback({
           type: "error",
@@ -400,7 +422,7 @@ export function V2Appointments({
         if (res.dispatch) {
           setSelectedNotifDetail((prev) => (prev ? { ...prev, dispatch: res.dispatch as any } : null));
         }
-        await data.refresh();
+        await data.refresh({ silent: true });
       }
     } catch (err) {
       setRetryFeedback({
@@ -728,7 +750,10 @@ export function V2Appointments({
             : today
         }
         onClose={() => setManualDialog((prev) => ({ ...prev, open: false }))}
-        onSuccess={(msg) => setMessage(msg)}
+        onSuccess={(msg) => {
+          setMessage(msg);
+          showToast(msg, "success");
+        }}
       />
       <Dialog
         open={!!action}
@@ -967,6 +992,23 @@ export function V2Appointments({
           </div>
         </DialogContent>
       </Dialog>
+      {toastState &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            className={`kani-v2-toast is-${toastState.variant}`}
+            role={toastState.variant === "error" ? "alert" : "status"}
+            aria-live={toastState.variant === "error" ? "assertive" : "polite"}
+          >
+            {toastState.variant === "error" ? (
+              <AlertCircle size={16} strokeWidth={2} className="kani-v2-toast-icon" aria-hidden="true" />
+            ) : (
+              <Check size={16} strokeWidth={2.2} className="kani-v2-toast-icon" aria-hidden="true" />
+            )}
+            <span className="kani-v2-toast-text">{toastState.text}</span>
+          </div>,
+          document.body,
+        )}
     </main>
   );
 }
