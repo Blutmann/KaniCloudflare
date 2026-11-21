@@ -8,7 +8,13 @@ const mocks = vi.hoisted(() => ({
   payments: [] as any[],
   benefit: null as any,
 }));
-vi.mock("@tanstack/react-router", () => ({ useSearch: () => ({}) }));
+vi.mock("@tanstack/react-router", () => ({
+  useSearch: () => ({}),
+  useLocation: (opts?: { select?: (loc: { pathname: string }) => unknown }) =>
+    opts?.select
+      ? opts.select({ pathname: "/panel-administracion/pagos" })
+      : { pathname: "/panel-administracion/pagos" },
+}));
 vi.mock("@/integrations/supabase/client", () => ({ supabase: { rpc: mocks.rpc } }));
 vi.mock("@/lib/kani-admin-context", () => ({
   useAdminStaff: () => ({
@@ -111,7 +117,7 @@ describe("V2 quick collection", () => {
     fireEvent.click(screen.getAllByRole('button',{name:'Editar cobro'})[0]!);
     const dialog=within(screen.getByRole('dialog'));
     fireEvent.change(dialog.getByLabelText('Servicio'),{target:{value:'Corte y barba'}});
-    expect(dialog.getByLabelText('Precio servicio ($ ARS)')).toHaveValue(30000);
+    expect(dialog.getByLabelText('Precio ($ ARS)')).toHaveValue(30000);
     expect(dialog.getByLabelText('Descuento ($ ARS)')).toHaveValue(5000);
     expect(dialog.getByLabelText('Importe total')).toHaveValue(25000);
     expect(dialog.getByLabelText('Barbero')).toBeDisabled();
