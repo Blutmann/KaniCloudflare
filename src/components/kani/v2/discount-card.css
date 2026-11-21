@@ -163,7 +163,15 @@ html[data-theme="dark"] .kani-dcard[data-status="DISABLED"] {
   overflow-wrap: anywhere;
 }
 
-.kani-dcard-btn-copy {
+.kani-dcard-top-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.kani-dcard-btn-copy,
+.kani-dcard-btn-edit-compact {
   flex: 0 0 44px;
   width: 44px;
   height: 44px;
@@ -180,12 +188,14 @@ html[data-theme="dark"] .kani-dcard[data-status="DISABLED"] {
   transition: color 140ms ease, border-color 140ms ease, background-color 140ms ease;
 }
 
-.kani-dcard-btn-copy:focus-visible {
+.kani-dcard-btn-copy:focus-visible,
+.kani-dcard-btn-edit-compact:focus-visible {
   outline: 2px solid var(--gold, #c9a15d);
   outline-offset: 2px;
 }
 
-.kani-dcard-btn-copy:hover:not(:disabled) {
+.kani-dcard-btn-copy:hover:not(:disabled),
+.kani-dcard-btn-edit-compact:hover:not(:disabled) {
   color: var(--dc-text);
   border-color: color-mix(in srgb, var(--gold, #c9a15d) 55%, var(--dc-border));
 }
@@ -330,21 +340,25 @@ html[data-theme="dark"] .kani-dcard-badge.is-deleted {
   font-variant-numeric: tabular-nums;
 }
 
-/* Bloque inferior: Acciones compactas alineadas a la derecha */
+/* Bloque inferior: Acciones principales 50/50 (Info | Activar/Desactivar) */
 .kani-dcard-actions {
-  display: inline-flex;
-  align-items: center;
-  justify-content: flex-end;
-  flex-wrap: nowrap;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 8px;
+  width: 100%;
   min-width: 0;
 }
 
-.kani-dcard-btn-action,
+.kani-dcard-actions.is-split {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.kani-dcard-btn-details,
 .kani-dcard-btn-toggle {
-  position: relative;
-  min-height: 41px;
-  height: 41px;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  height: 44px;
   padding: 0 12px;
   font-size: 13.5px !important;
   font-weight: 500;
@@ -355,38 +369,6 @@ html[data-theme="dark"] .kani-dcard-badge.is-deleted {
   gap: 6px;
   white-space: nowrap;
   cursor: pointer;
-  flex-shrink: 0;
-}
-
-.kani-dcard-info-footer {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-top: 2px;
-}
-
-.kani-dcard-btn-details {
-  width: 100%;
-  min-height: 44px;
-  height: 44px;
-  padding: 0 10px;
-  border: none;
-  background: transparent;
-  color: var(--dc-muted);
-  font-size: 12.5px !important;
-  font-weight: 500;
-  border-radius: var(--v2-radius-btn, 12px);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  white-space: nowrap;
-  cursor: pointer;
-  transition: color 140ms ease, background-color 140ms ease;
-}
-
-.kani-dcard-btn-details:hover {
-  color: var(--dc-text);
 }
 
 .kani-dcard-btn-details:focus-visible {
