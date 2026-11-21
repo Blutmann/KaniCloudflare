@@ -809,7 +809,7 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                     data-testid={`discount-card-${item.id}`}
                     data-status={status}
                   >
-                    {/* Bloque superior: Código + badge de estado + beneficio · usos a la izquierda, Copiar a la derecha */}
+                    {/* Bloque superior: Código + beneficio · usos a la izquierda, Editar (compacto) + Copiar a la derecha */}
                     <div className="kani-dcard-top">
                       <div className="kani-dcard-top-info">
                         <div className="kani-dcard-code-row">
@@ -820,109 +820,104 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                           >
                             {item.code}
                           </h3>
-                          <span className={`kani-dcard-badge ${statusDisplay.badgeClass}`}>
-                            {status === 'DISABLED' && (
-                              <Pause size={11} strokeWidth={2.25} aria-hidden="true" />
-                            )}
-                            <span>{statusDisplay.badgeLabel}</span>
-                          </span>
+                          {status === 'ACTIVE' || status === 'DISABLED' ? (
+                            <span className="sr-only">{statusDisplay.badgeLabel}</span>
+                          ) : (
+                            <span className={`kani-dcard-badge ${statusDisplay.badgeClass}`}>
+                              {statusDisplay.badgeLabel}
+                            </span>
+                          )}
                         </div>
                         <p className="kani-dcard-subtitle">
                           {getBenefitHeadline(item.type)} · {usageCount === 1 ? '1 uso' : `${usageCount} usos`}
                         </p>
                       </div>
-                      <button
-                        type="button"
-                        className={`v2-secondary kani-dcard-btn-copy${isCopied ? ' is-copied' : ''}`}
-                        aria-label={isCopied ? `Código copiado: ${item.code}` : `Copiar código ${item.code}`}
-                        title={
-                          status === 'DELETED'
-                            ? 'Código eliminado'
-                            : isCopied
-                            ? 'Código copiado'
-                            : 'Copiar código'
-                        }
-                        disabled={status === 'DELETED'}
-                        onClick={() => void handleCopy(item.code)}
-                      >
-                        {isCopied ? (
-                          <Check size={16} aria-hidden="true" />
-                        ) : (
-                          <Copy size={16} aria-hidden="true" />
+                      <div className="kani-dcard-top-actions">
+                        {status !== 'DELETED' && isReusable && (
+                          <button
+                            type="button"
+                            className="v2-secondary kani-dcard-btn-edit-compact"
+                            aria-label="Editar vigencia"
+                            title="Editar vigencia"
+                            onClick={() => handleEditValidityOpen(item)}
+                          >
+                            <Edit2 size={15} strokeWidth={2} aria-hidden="true" />
+                          </button>
                         )}
-                      </button>
+                        <button
+                          type="button"
+                          className={`v2-secondary kani-dcard-btn-copy${isCopied ? ' is-copied' : ''}`}
+                          aria-label={isCopied ? `Código copiado: ${item.code}` : `Copiar código ${item.code}`}
+                          title={
+                            status === 'DELETED'
+                              ? 'Código eliminado'
+                              : isCopied
+                              ? 'Código copiado'
+                              : 'Copiar código'
+                          }
+                          disabled={status === 'DELETED'}
+                          onClick={() => void handleCopy(item.code)}
+                        >
+                          {isCopied ? (
+                            <Check size={16} aria-hidden="true" />
+                          ) : (
+                            <Copy size={16} aria-hidden="true" />
+                          )}
+                        </button>
+                      </div>
                     </div>
 
-                    {/* Bloque inferior: Editar / Activar-Desactivar */}
-                    {status !== 'DELETED' &&
-                      (isReusable ||
-                        status === 'ACTIVE' ||
-                        status === 'SCHEDULED' ||
-                        status === 'DISABLED') && (
-                        <>
-                          <div className="kani-dcard-divider" aria-hidden="true" />
+                    <div className="kani-dcard-divider" aria-hidden="true" />
 
-                          <div className="kani-dcard-bottom">
-                            <div className="kani-dcard-actions">
-                              {isReusable && (
-                                <button
-                                  type="button"
-                                  className="v2-secondary kani-dcard-btn-action"
-                                  onClick={() => handleEditValidityOpen(item)}
-                                  title="Editar vigencia"
-                                >
-                                  <Edit2 size={14} strokeWidth={2} aria-hidden="true" />
-                                  <span>Editar</span>
-                                </button>
+                    {/* Bloque inferior: Acciones principales 50/50 (Info | Activar/Desactivar) */}
+                    {(() => {
+                      const hasToggle =
+                        status === 'ACTIVE' || status === 'SCHEDULED' || status === 'DISABLED';
+                      const isSwitchOn = status === 'ACTIVE' || status === 'SCHEDULED';
+                      const isSwitchBusy = togglingCodeIds.has(item.id);
+                      const actionLabel = isSwitchOn ? 'Desactivar' : 'Activar';
+                      return (
+                        <div className="kani-dcard-bottom">
+                          <div className={`kani-dcard-actions${hasToggle ? ' is-split' : ' is-single'}`}>
+                            <button
+                              type="button"
+                              className="v2-secondary kani-dcard-btn-details"
+                              aria-expanded={isExpanded}
+                              aria-controls={`discount-details-${item.id}`}
+                              onClick={() => toggleAccordion(item.id)}
+                            >
+                              <Info size={15} strokeWidth={2} aria-hidden="true" />
+                              <span>Info</span>
+                              {isExpanded ? (
+                                <ChevronUp size={14} strokeWidth={2} aria-hidden="true" />
+                              ) : (
+                                <ChevronDown size={14} strokeWidth={2} aria-hidden="true" />
                               )}
+                            </button>
 
-                              {(status === 'ACTIVE' || status === 'SCHEDULED' || status === 'DISABLED') && (() => {
-                                const isSwitchOn = status === 'ACTIVE' || status === 'SCHEDULED';
-                                const isSwitchBusy = togglingCodeIds.has(item.id);
-                                const actionLabel = isSwitchOn ? 'Desactivar' : 'Activar';
-                                return (
-                                  <button
-                                    type="button"
-                                    className={`v2-secondary kani-dcard-btn-toggle${
-                                      isSwitchOn ? ' is-active' : ' is-inactive'
-                                    }${isSwitchBusy ? ' is-busy' : ''}`}
-                                    aria-pressed={isSwitchOn}
-                                    aria-label={isSwitchOn ? `Desactivar código ${item.code}` : `Activar código ${item.code}`}
-                                    disabled={isSwitchBusy}
-                                    onClick={() => void handleSwitchToggle(item, !isSwitchOn)}
-                                  >
-                                    {isSwitchBusy ? (
-                                      <RefreshCw size={14} className="animate-spin" aria-hidden="true" />
-                                    ) : (
-                                      <Power size={14} strokeWidth={2} aria-hidden="true" />
-                                    )}
-                                    <span>{actionLabel}</span>
-                                  </button>
-                                );
-                              })()}
-                            </div>
+                            {hasToggle && (
+                              <button
+                                type="button"
+                                className={`v2-secondary kani-dcard-btn-toggle${
+                                  isSwitchOn ? ' is-active' : ' is-inactive'
+                                }${isSwitchBusy ? ' is-busy' : ''}`}
+                                aria-pressed={isSwitchOn}
+                                aria-label={isSwitchOn ? `Desactivar código ${item.code}` : `Activar código ${item.code}`}
+                                disabled={isSwitchBusy}
+                                onClick={() => void handleSwitchToggle(item, !isSwitchOn)}
+                              >
+                                {isSwitchBusy ? (
+                                  <RefreshCw size={15} className="animate-spin" aria-hidden="true" />
+                                ) : (
+                                  <Power size={15} strokeWidth={2} aria-hidden="true" />
+                                )}
+                                <span>{actionLabel}</span>
+                              </button>
+                            )}
                           </div>
-                        </>
-                      )}
-
-                    {/* Acceso discreto a información secundaria (Info) en la parte inferior */}
-                    <div className="kani-dcard-info-footer">
-                      <button
-                        type="button"
-                        className="kani-dcard-btn-details"
-                        aria-expanded={isExpanded}
-                        aria-controls={`discount-details-${item.id}`}
-                        onClick={() => toggleAccordion(item.id)}
-                      >
-                        <Info size={14} strokeWidth={2} aria-hidden="true" />
-                        <span>Info</span>
-                        {isExpanded ? (
-                          <ChevronUp size={13} strokeWidth={2} aria-hidden="true" />
-                        ) : (
-                          <ChevronDown size={13} strokeWidth={2} aria-hidden="true" />
-                        )}
-                      </button>
-                    </div>
+                        </div>
+                      );
+                    })()}
 
                     {/* Nivel 5: Sección expandible "Secciones" (v2.4: 3 accordions exclusivos contraídos inicialmente) */}
                     {isExpanded && (() => {
