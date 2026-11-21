@@ -203,8 +203,11 @@ describe("KANI — Autenticación integrada en membresías, verificación QR y n
       expect(screen.getByRole("link", { name: /RESERVAR TURNO/i })).toBeInTheDocument();
       expect(screen.getByText("HISTORIAL DE VISITAS")).toBeInTheDocument();
 
-      // Cerrar sesión localmente sin salir de la credencial
-      fireEvent.click(screen.getByRole("button", { name: /Cerrar sesión/i }));
+      // Cerrar sesión localmente sin salir de la credencial (target táctil >= 44px y focus-visible)
+      const signOutBtn = screen.getByRole("button", { name: /Cerrar sesión/i });
+      expect(signOutBtn.className).toContain("min-h-[44px]");
+      expect(signOutBtn.className).toContain("focus-visible:ring-2");
+      fireEvent.click(signOutBtn);
       await waitFor(() => {
         expect(mockSignOut).toHaveBeenCalledWith({ scope: "local" });
         expect(screen.getByRole("button", { name: /Iniciar sesión/i })).toBeInTheDocument();
@@ -262,6 +265,9 @@ describe("KANI — Autenticación integrada en membresías, verificación QR y n
       expect(qrSession).toHaveTextContent("Lautaro");
       expect(qrSession).toHaveTextContent("BARBER");
       expect(qrSession).toHaveTextContent(/Sesión activa/i);
+      const qrSignOutBtn = screen.getByRole("button", { name: /Cerrar sesión/i });
+      expect(qrSignOutBtn.className).toContain("min-h-[44px]");
+      expect(qrSignOutBtn.className).toContain("focus-visible:ring-2");
       expect(await screen.findByRole("button", { name: /Descontar sesión ahora/i })).toBeInTheDocument();
       // BARBER no ve el enlace Panel Admin
       expect(screen.queryByRole("link", { name: /Gestionar membresía en Panel Admin/i })).toBeNull();

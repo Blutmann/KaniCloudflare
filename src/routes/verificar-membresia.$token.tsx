@@ -391,7 +391,7 @@ export function SalonMembershipVerificationView() {
                   type="button"
                   onClick={() => void staffAuth.handleSignOut()}
                   disabled={staffAuth.signingOut}
-                  className="inline-flex items-center gap-1 px-2 py-1 rounded-lg border border-[#2C251B] hover:border-[#C8A96B]/45 text-[#9B8A68] hover:text-white transition-colors cursor-pointer uppercase tracking-wider text-[9.5px] min-h-[30px] disabled:opacity-50"
+                  className="inline-flex items-center gap-1 px-2.5 py-2 rounded-lg border border-[#2C251B] hover:border-[#C8A96B]/45 text-[#9B8A68] hover:text-white transition-colors cursor-pointer uppercase tracking-wider text-[9.5px] min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#D4B475] focus-visible:ring-offset-2 focus-visible:ring-offset-[#090807] disabled:opacity-50"
                 >
                   <LogOut className="w-3 h-3 shrink-0" />
                   <span>Cerrar sesión</span>

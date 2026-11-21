@@ -135,6 +135,11 @@ export function PublicMembershipCardPage() {
   const verifyingLockRef = useRef(false);
   const navigatedToControlRef = useRef(false);
   const pendingVerifyAfterLoginRef = useRef(false);
+  const verifyButtonRef = useRef<HTMLButtonElement>(null);
+  const qrModalRef = useRef<HTMLDivElement>(null);
+  const qrModalCloseButtonRef = useRef<HTMLButtonElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+  const wasModalOpenRef = useRef(false);
 
   const navigateToSalonVerification = useCallback(() => {
     if (navigatedToControlRef.current) return;
@@ -214,13 +219,68 @@ export function PublicMembershipCardPage() {
     };
   }, []);
 
-  // Cierre de modal con Escape
+  // Accesibilidad del modal QR: foco inicial, focus-trap (Tab / Shift+Tab), cierre con Escape y retorno de foco
   useEffect(() => {
+    if (!isModalOpen) {
+      if (wasModalOpenRef.current) {
+        wasModalOpenRef.current = false;
+        const restoreTarget =
+          previousFocusRef.current && previousFocusRef.current.isConnected
+            ? previousFocusRef.current
+            : verifyButtonRef.current;
+        restoreTarget?.focus();
+      }
+      return;
+    }
+
+    wasModalOpenRef.current = true;
+    previousFocusRef.current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+
+    if (qrModalCloseButtonRef.current) {
+      qrModalCloseButtonRef.current.focus();
+    } else {
+      qrModalRef.current?.focus();
+    }
+
+    const getFocusableElements = (): HTMLElement[] => {
+      if (!qrModalRef.current) return [];
+      const selector =
+        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+      return Array.from(qrModalRef.current.querySelectorAll<HTMLElement>(selector));
+    };
+
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && isModalOpen) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
         setIsModalOpen(false);
+        return;
+      }
+
+      if (e.key === "Tab") {
+        e.preventDefault();
+        const focusables = getFocusableElements();
+        if (focusables.length === 0) {
+          qrModalRef.current?.focus();
+          return;
+        }
+
+        const active = document.activeElement as HTMLElement | null;
+        const currentIndex = active ? focusables.indexOf(active) : -1;
+
+        const nextIndex = e.shiftKey
+          ? currentIndex <= 0
+            ? focusables.length - 1
+            : currentIndex - 1
+          : currentIndex === -1 || currentIndex >= focusables.length - 1
+            ? 0
+            : currentIndex + 1;
+
+        focusables[nextIndex].focus();
       }
     };
+
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isModalOpen]);
@@ -637,7 +697,7 @@ export function PublicMembershipCardPage() {
       >
         <a
           href="https://www.kanibarber.com/reservar"
-          className="inline-flex items-center gap-2 sm:gap-2.5 min-h-[42px] sm:min-h-[44px] md:min-h-[46px] px-4 py-2.5 sm:px-5 md:px-6 md:py-3 rounded-full bg-[#08080A]/95 hover:bg-[#141418] border border-[#D4B475]/60 hover:border-[#F0D9A3] text-[#F0D9A3] hover:text-white transition-all text-[11.5px] sm:text-xs md:text-[13px] font-mono font-semibold tracking-[0.16em] uppercase shadow-[0_8px_24px_rgba(0,0,0,0.65),0_0_14px_rgba(212,180,117,0.10)] backdrop-blur-sm whitespace-nowrap"
+          className="inline-flex items-center gap-2 sm:gap-2.5 min-h-[44px] md:min-h-[46px] px-4 py-2.5 sm:px-5 md:px-6 md:py-3 rounded-full bg-[#08080A]/95 hover:bg-[#141418] border border-[#D4B475]/60 hover:border-[#F0D9A3] text-[#F0D9A3] hover:text-white transition-all text-[11.5px] sm:text-xs md:text-[13px] font-mono font-semibold tracking-[0.16em] uppercase shadow-[0_8px_24px_rgba(0,0,0,0.65),0_0_14px_rgba(212,180,117,0.10)] backdrop-blur-sm whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#D4B475] focus-visible:ring-offset-2 focus-visible:ring-offset-[#040405]"
         >
           <Calendar className="w-4 h-4 md:w-[18px] md:h-[18px] text-[#D4B475] shrink-0" />
           <span>RESERVAR TURNO</span>
@@ -646,7 +706,7 @@ export function PublicMembershipCardPage() {
         {staffAuth.staff ? (
           <div
             data-testid="membership-staff-session"
-            className="inline-flex flex-wrap items-center gap-2 min-h-[40px] sm:min-h-[42px] px-3 py-1.5 rounded-full bg-[#09090B]/92 border border-[#C8A96B]/35 text-[10.5px] sm:text-[11px] font-mono text-[#E6E0D4] backdrop-blur-sm shadow-lg"
+            className="inline-flex flex-wrap items-center gap-2 min-h-[44px] px-3 py-0.5 rounded-full bg-[#09090B]/92 border border-[#C8A96B]/35 text-[10.5px] sm:text-[11px] font-mono text-[#E6E0D4] backdrop-blur-sm shadow-lg"
           >
             <span className="inline-flex items-center gap-1.5 max-w-[140px] sm:max-w-[180px] truncate">
               <UserCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
@@ -659,7 +719,7 @@ export function PublicMembershipCardPage() {
               type="button"
               onClick={() => void staffAuth.handleSignOut()}
               disabled={staffAuth.signingOut}
-              className="inline-flex items-center gap-1 pl-1.5 border-l border-white/10 text-[#9B8A68] hover:text-white transition-colors cursor-pointer uppercase tracking-[0.1em] text-[10px] min-h-[28px] disabled:opacity-50"
+              className="inline-flex items-center gap-1 pl-2 pr-1 border-l border-white/10 text-[#9B8A68] hover:text-white transition-colors cursor-pointer uppercase tracking-[0.1em] text-[10px] min-h-[44px] rounded-r-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#D4B475] disabled:opacity-50"
             >
               <LogOut className="w-3 h-3 shrink-0" />
               <span>Cerrar sesión</span>
@@ -669,7 +729,7 @@ export function PublicMembershipCardPage() {
           <button
             type="button"
             onClick={staffAuth.openLoginModal}
-            className="inline-flex items-center gap-1.5 min-h-[40px] sm:min-h-[42px] px-3.5 py-2 rounded-full bg-[#09090B]/88 hover:bg-[#141418] border border-[#C8A96B]/28 hover:border-[#D4B475]/55 text-[#9B8A68] hover:text-[#F0D9A3] transition-all text-[10.5px] sm:text-[11px] font-mono tracking-[0.14em] uppercase backdrop-blur-sm cursor-pointer whitespace-nowrap"
+            className="inline-flex items-center gap-1.5 min-h-[44px] px-3.5 py-2 rounded-full bg-[#09090B]/88 hover:bg-[#141418] border border-[#C8A96B]/28 hover:border-[#D4B475]/55 text-[#9B8A68] hover:text-[#F0D9A3] transition-all text-[10.5px] sm:text-[11px] font-mono tracking-[0.14em] uppercase backdrop-blur-sm cursor-pointer whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#D4B475] focus-visible:ring-offset-2 focus-visible:ring-offset-[#040405]"
           >
             <LogIn className="w-3.5 h-3.5 text-[#C8A96B]/80 shrink-0" />
             <span>Iniciar sesión</span>
@@ -683,7 +743,7 @@ export function PublicMembershipCardPage() {
           onClick={toggleFlip}
           type="button"
           aria-label={isFlipped ? "Ver frente de la credencial" : "Ver reverso de la credencial"}
-          className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-[#09090B]/95 hover:bg-[#141417] border border-[#C8A96B]/30 text-[#9B8A68] hover:text-[#F0D9A3] transition-colors text-[9.5px] md:text-[10.5px] font-mono tracking-[0.22em] uppercase cursor-pointer shadow-lg backdrop-blur-sm"
+          className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-[#09090B]/95 hover:bg-[#141417] border border-[#C8A96B]/30 text-[#9B8A68] hover:text-[#F0D9A3] transition-colors text-[9.5px] md:text-[10.5px] font-mono tracking-[0.22em] uppercase cursor-pointer shadow-lg backdrop-blur-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#D4B475] focus-visible:ring-offset-2 focus-visible:ring-offset-[#040405]"
         >
           <RotateCw
             className="w-3 h-3 md:w-3.5 md:h-3.5 text-[#D4B475] transition-transform duration-500"
@@ -698,7 +758,7 @@ export function PublicMembershipCardPage() {
         <div
           ref={sceneRef}
           data-testid="kani-card-3d-scene"
-          className="kani-card-3d-scene is-settled-front relative cursor-grab active:cursor-grabbing select-none focus:outline-none"
+          className="kani-card-3d-scene is-settled-front relative cursor-grab active:cursor-grabbing select-none rounded-[22px] sm:rounded-[26px] md:rounded-[30px] lg:rounded-[32px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#D4B475] focus-visible:ring-offset-2 focus-visible:ring-offset-[#040405]"
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerLeave={handlePointerLeave}
@@ -904,11 +964,12 @@ export function PublicMembershipCardPage() {
               {/* 3. Fila Inferior Reverso: Botón VERIFICAR y Serial */}
               <div className="flex items-center justify-between gap-2 pt-2.5 md:pt-3.5 lg:pt-4 border-t border-white/[0.08]">
                 <button
+                  ref={verifyButtonRef}
                   type="button"
                   onClick={(e) => void handleVerifyClick(e)}
                   disabled={verifyingAccess}
                   aria-busy={verifyingAccess}
-                  className="relative inline-flex items-center justify-center min-h-[44px] min-w-[44px] -my-1 md:my-0 bg-transparent border-0 p-0 cursor-pointer group focus:outline-none disabled:opacity-70 disabled:cursor-wait"
+                  className="relative inline-flex items-center justify-center min-h-[44px] min-w-[44px] -my-1 md:my-0 bg-transparent border-0 p-0 cursor-pointer group rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#D4B475] focus-visible:ring-offset-2 focus-visible:ring-offset-[#09090B] disabled:opacity-70 disabled:cursor-wait"
                   aria-label={
                     staffAuth.staff
                       ? "Verificar membresía en Control Salón"
@@ -992,10 +1053,12 @@ export function PublicMembershipCardPage() {
           =================================================================== */}
       {isModalOpen && (
         <div
+          ref={qrModalRef}
           role="dialog"
           aria-modal="true"
           aria-labelledby="qr-modal-title"
-          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/82 backdrop-blur-md animate-in fade-in duration-200 overflow-y-auto"
+          tabIndex={-1}
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/82 backdrop-blur-md animate-in fade-in duration-200 overflow-y-auto focus:outline-none"
           onClick={() => setIsModalOpen(false)}
         >
           <div
@@ -1003,15 +1066,16 @@ export function PublicMembershipCardPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <button
+              ref={qrModalCloseButtonRef}
               type="button"
               onClick={() => setIsModalOpen(false)}
-              className="absolute top-3.5 right-3.5 sm:top-4 sm:right-4 p-2 rounded-full text-[#9B8A68] hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
+              className="absolute top-3 right-3 sm:top-4 sm:right-4 inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded-full text-[#9B8A68] hover:text-white hover:bg-white/5 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#D4B475] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0B0A08]"
               aria-label="Cerrar ventana de verificación"
             >
               <X className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
 
-            <div className="space-y-1.5 sm:space-y-2 px-6">
+            <div className="space-y-1.5 sm:space-y-2 px-8">
               <img
                 src={kaniLogoDark}
                 alt="KANI Barber Studio"
@@ -1063,7 +1127,7 @@ export function PublicMembershipCardPage() {
             <button
               type="button"
               onClick={() => setIsModalOpen(false)}
-              className="w-full min-h-[44px] py-2.5 sm:py-3 rounded-xl bg-[#16130E] hover:bg-[#221D15] border border-[#D4B475]/45 hover:border-[#F0D9A3] text-[#F0D9A3] hover:text-white text-xs sm:text-[13px] font-mono font-semibold tracking-[0.2em] uppercase transition-colors cursor-pointer"
+              className="w-full min-h-[44px] py-2.5 sm:py-3 rounded-xl bg-[#16130E] hover:bg-[#221D15] border border-[#D4B475]/45 hover:border-[#F0D9A3] text-[#F0D9A3] hover:text-white text-xs sm:text-[13px] font-mono font-semibold tracking-[0.2em] uppercase transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#D4B475] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0B0A08]"
             >
               Cerrar
             </button>
