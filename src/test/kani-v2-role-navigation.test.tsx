@@ -33,10 +33,21 @@ describe('role navigation and direct URLs',()=>{
     expect(await screen.findByRole('alert')).toHaveTextContent('No tenés permisos');
     expect(screen.queryByTestId('private-child')).toBeNull();
   });
-  it('does not render discounts or maintenance for a barber even through a direct URL',async()=>{
-    state.role='BARBER';state.path='/panel-administracion/descuentos';render(<V2Layout/>);
+  it("allows discounts and blocks maintenance for a barber on direct URLs", async () => {
+    state.role = "BARBER";
+    state.path = "/panel-administracion/descuentos";
+    render(<V2Layout />);
+    expect(await screen.findByTestId("private-child")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Descuentos" })).toHaveAttribute(
+      "href",
+      "/panel-descuentos",
+    );
+    expect(screen.queryByRole("link", { name: "Mantenimiento" })).toBeNull();
+  });
+  it('does not render maintenance for a barber even through a direct URL',async()=>{
+    state.role='BARBER';state.path='/panel-administracion/mantenimiento';render(<V2Layout/>);
     expect(await screen.findByRole('alert')).toHaveTextContent('No tenés permisos');
-    expect(screen.queryByRole('link',{name:'Descuentos'})).toBeNull();
+    expect(screen.queryByRole('link',{name:'Mantenimiento'})).toBeNull();
     expect(screen.queryByTestId('private-child')).toBeNull();
   });
   it('preserves ADMIN access to maintenance',async()=>{

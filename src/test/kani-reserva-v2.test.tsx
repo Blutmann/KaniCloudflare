@@ -53,7 +53,7 @@ beforeEach(() => {
   api.create.mockReset().mockResolvedValue({ appointment_id: 'fixture-id', request_number: 42 });
   api.order.mockReset().mockResolvedValue({ success: true, checkoutUrl: 'https://payments.example.test/checkout' });
   api.checkout.mockReset();
-  Object.defineProperty(window, 'location', { configurable: true, value: { search: '', assign: api.checkout } });
+  Object.defineProperty(window, 'location', { configurable: true, value: { pathname: '/', search: '', assign: api.checkout } });
 });
 afterEach(() => { cleanup(); vi.useRealTimers(); Object.defineProperty(window, 'location', { configurable: true, value: originalLocation }); });
 
