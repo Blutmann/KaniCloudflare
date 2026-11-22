@@ -8,6 +8,16 @@ function ExperimentalBooking() {
 }
 
 export const Route = createFileRoute('/reserva-v2')({
-  head: () => pageHead('Reservá tu turno · Experimento', 'Elegí tu servicio, barbero, fecha y horario en Kani Barber Studio.', 'Kani Barber Studio - Reservar turno'),
+  head: () => {
+    const baseHead = pageHead(
+      'Reservá tu turno · Experimento',
+      'Elegí tu servicio, barbero, fecha y horario en Kani Barber Studio.',
+      'Kani Barber Studio - Reservar turno',
+    );
+    return {
+      ...baseHead,
+      meta: [...baseHead.meta, { name: 'robots', content: 'noindex, nofollow' }],
+    };
+  },
   component: ExperimentalBooking,
 });

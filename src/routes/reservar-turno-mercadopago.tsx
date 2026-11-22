@@ -6,11 +6,16 @@ import '@/components/kani/experimental/reserva-v3.css';
 import '@/components/kani/experimental/reserva-v4.css';
 
 export const Route = createFileRoute('/reservar-turno-mercadopago')({
-  head: () =>
-    pageHead(
+  head: () => {
+    const baseHead = pageHead(
       'Reservá tu turno · Mercado Pago',
       'Reservá tu turno en Kani Barber Studio con Mercado Pago.',
       'Kani Barber Studio - Reservar turno',
-    ),
+    );
+    return {
+      ...baseHead,
+      meta: [...baseHead.meta, { name: 'robots', content: 'noindex, nofollow' }],
+    };
+  },
   component: MercadoPagoBooking,
 });
