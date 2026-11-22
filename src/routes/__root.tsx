@@ -120,7 +120,7 @@ const ROOT_PREPAINT_SCRIPT = [
   "else{d.dataset.theme='light';}",
   "var p=(window.location.pathname||'').replace(/\\/+$/,'')||'/';",
   "var c=p.slice(-4)==='-old'||p.indexOf('-old/')!==-1||p==='/reservar-turno-mercadopago'||p==='/reservar-mercadopago'||p==='/panel-v2'||p.indexOf('/panel-v2/')===0||p==='/reserva-v2'||p==='/reserva-v3'||p==='/reserva-v5'||p==='/admin'||p.indexOf('/admin/')===0||p==='/admin-v2'||p.indexOf('/admin-v2/')===0;",
-  "var lgP=['/','/reservar','/contacto','/cancelar-turno','/panel-administracion','/panel-membresias','/panel-descuentos','/panel-turnos','/panel-horarios','/politica-de-privacidad','/terminos-y-condiciones','/admin-v2-liquid','/reservar-turno','/reservar-turno-liquid','/contacto-liquid','/admin-liquid','/politica-de-privacidad-liquid','/terminos-y-condiciones-liquid'];",
+  "var lgP=['/','/reservar','/contacto','/cancelar-turno','/panel-administracion','/panel-membresias','/panel-descuentos','/panel-turnos','/panel-horarios','/pago','/politica-de-privacidad','/terminos-y-condiciones','/admin-v2-liquid','/reservar-turno','/reservar-turno-liquid','/contacto-liquid','/admin-liquid','/politica-de-privacidad-liquid','/terminos-y-condiciones-liquid'];",
   "var lgA=['/panel-administracion','/panel-membresias','/panel-descuentos','/panel-turnos','/panel-horarios','/admin-v2-liquid','/admin-liquid'];",
   "var m=function(list){for(var i=0;i<list.length;i++){var x=list[i];if(x==='/'?p==='/':p===x||p.indexOf(x+'/')===0)return true;}return false;};",
   "var isLg=!c&&m(lgP);",
