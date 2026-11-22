@@ -1964,9 +1964,14 @@ html[data-theme="dark"] body[data-lg-admin="true"] .v2-notif-pill.v2-notif-pendi
     padding-bottom: 4px !important;
   }
 
-  body[data-lg-admin="true"] .v2-app-row-1 .v2-badge {
-    padding: 2px 8px !important;
-    font-size: 11px !important;
+  body[data-lg-admin="true"] .v2-app-row-1 .v2-badge,
+  body[data-lg-admin="true"] .v2-app-mobile-badges .v2-badge {
+    padding: 2px 7px !important;
+    font-size: 10.5px !important;
+  }
+
+  body[data-lg-admin="true"] .v2-app-mobile-drawer {
+    border-top-color: var(--lga-border) !important;
   }
 }
 
