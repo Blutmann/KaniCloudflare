@@ -1056,7 +1056,12 @@ export function V2Appointments({
               <span className="text-muted-foreground">{action.appointment.time} hs.</span>
             </div>
           )}
-          <button className="v2-secondary action-reject" disabled={busy} onClick={() => void cancelAppointment()}>
+          <button
+            type="button"
+            className="v2-destructive action-reject"
+            disabled={busy}
+            onClick={() => void cancelAppointment()}
+          >
             {busy ? "Guardando…" : "Cancelar turno"}
           </button>
         </DialogContent>
