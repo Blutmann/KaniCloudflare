@@ -832,11 +832,193 @@ html[data-theme="dark"] .v2-field select {
 }
 
 /* Collection: familiar capsule selection and a clear amount/action. */
+.v2-cash-summary-card {
+  margin-bottom: 16px;
+  padding: 16px 20px;
+}
+.v2-cash-summary-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px 20px;
+}
+.v2-cash-summary-total {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.v2-cash-summary-eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted-foreground);
+}
+.v2-cash-summary-amount-row {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.v2-cash-summary-amount {
+  font-size: clamp(22px, 3vw, 28px);
+  font-weight: 700;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  color: var(--foreground);
+}
+.v2-cash-summary-count {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted-foreground);
+}
+.v2-cash-summary-breakdown {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+.v2-cash-metric {
+  display: grid;
+  gap: 2px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--v2-line, var(--border));
+  background: var(--v2-inset, rgba(128, 128, 128, 0.08));
+  min-width: 112px;
+}
+.v2-cash-metric span {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted-foreground);
+}
+.v2-cash-metric strong {
+  font-size: 14px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--foreground);
+}
 .v2-payment-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   align-items: start;
   gap: 20px;
+}
+@media (min-width: 1024px) {
+  .v2-payment-layout {
+    grid-template-columns: minmax(340px, 420px) minmax(0, 1fr);
+  }
+}
+.v2-payment-form-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.v2-payment-form-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--foreground);
+}
+.v2-payment-form-header .v2-segmented {
+  margin-bottom: 0;
+}
+.v2-quick-chips {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.v2-quick-method-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.v2-quick-chip {
+  min-height: 44px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--v2-line, var(--border));
+  background: var(--v2-inset, rgba(128, 128, 128, 0.06));
+  color: var(--foreground);
+  font-size: 13px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.16s, border-color 0.16s, color 0.16s, box-shadow 0.16s;
+  min-width: 0;
+}
+.v2-quick-method-btn {
+  justify-content: center;
+  font-weight: 600;
+}
+.v2-quick-chip-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.v2-quick-chip-price {
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted-foreground);
+  flex-shrink: 0;
+}
+.v2-quick-chip.is-selected,
+.v2-quick-chip[aria-pressed="true"] {
+  background: #702B3A;
+  border-color: #702B3A;
+  color: #ffffff;
+  font-weight: 600;
+}
+.v2-quick-chip.is-selected .v2-quick-chip-price,
+.v2-quick-chip[aria-pressed="true"] .v2-quick-chip-price {
+  color: rgba(255, 255, 255, 0.88);
+}
+.v2-quick-chip:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.v2-method-filter-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 10px 0 6px;
+}
+.v2-method-pill {
+  min-height: 36px;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  border: 1px solid var(--v2-line, var(--border));
+  background: transparent;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.16s, border-color 0.16s, color 0.16s;
+}
+.v2-method-pill.is-active,
+.v2-method-pill[aria-pressed="true"] {
+  background: #702B3A;
+  border-color: #702B3A;
+  color: #ffffff;
+  font-weight: 600;
+}
+@media (max-width: 420px) {
+  .v2-cash-summary-card {
+    padding: 14px;
+  }
+  .v2-cash-metric {
+    flex: 1 1 calc(50% - 4px);
+    min-width: 0;
+  }
 }
 .v2-payment-form {
   padding: 18px 20px;

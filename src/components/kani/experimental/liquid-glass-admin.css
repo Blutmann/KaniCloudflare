@@ -265,6 +265,7 @@ html[data-theme] body[data-lg-admin="true"] :is(
   .admin-schedule-cards-container,
   .v2-payments-table-wrap,
   .v2-payments-history-panel,
+  .v2-cash-summary-card,
   .v2-empty
 ) {
   background: var(--lga-glass-structural) !important;
@@ -317,6 +318,28 @@ html[data-theme="dark"] body[data-lg-admin="true"] .v2-kani-loader-kanji {
 
 html[data-theme="dark"] body[data-lg-admin="true"] .v2-kani-loader-label {
   color: rgba(242, 240, 236, 0.78) !important;
+}
+
+html[data-theme="light"] body[data-lg-admin="true"] .v2-cash-metric,
+html[data-theme="light"] body[data-lg-admin="true"] .v2-quick-chip:not(.is-selected) {
+  background: rgba(255, 255, 255, 0.56) !important;
+  border-color: rgba(24, 22, 20, 0.12) !important;
+  color: #1c1e22 !important;
+}
+
+html[data-theme="dark"] body[data-lg-admin="true"] .v2-cash-metric,
+html[data-theme="dark"] body[data-lg-admin="true"] .v2-quick-chip:not(.is-selected) {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  color: #f4f4f6 !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-quick-chip.is-selected,
+html[data-theme] body[data-lg-admin="true"] .v2-method-pill.is-active {
+  background: #762936 !important;
+  border-color: #762936 !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(118, 41, 54, 0.28) !important;
 }
 
 html[data-theme="light"] body[data-lg-admin="true"] .admin-login-shell {
