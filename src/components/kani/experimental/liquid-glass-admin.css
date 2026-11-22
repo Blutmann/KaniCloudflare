@@ -335,11 +335,19 @@ html[data-theme="dark"] body[data-lg-admin="true"] .v2-quick-chip:not(.is-select
 }
 
 html[data-theme] body[data-lg-admin="true"] .v2-quick-chip.is-selected,
-html[data-theme] body[data-lg-admin="true"] .v2-method-pill.is-active {
-  background: #762936 !important;
-  border-color: #762936 !important;
-  color: #ffffff !important;
-  box-shadow: 0 4px 14px rgba(118, 41, 54, 0.28) !important;
+html[data-theme] body[data-lg-admin="true"] .v2-quick-chip[aria-pressed="true"],
+html[data-theme] body[data-lg-admin="true"] .v2-method-pill.is-active,
+html[data-theme] body[data-lg-admin="true"] .v2-method-pill[aria-pressed="true"] {
+  background: var(--lga-accent-pill, rgba(212, 180, 117, 0.22)) !important;
+  border: 1px solid var(--lga-border-accent, rgba(184, 145, 70, 0.55)) !important;
+  color: var(--lga-text) !important;
+  box-shadow: var(--lga-shadow-interactive), var(--lga-specular) !important;
+  font-weight: 600 !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-quick-chip.is-selected .v2-quick-chip-price,
+html[data-theme] body[data-lg-admin="true"] .v2-quick-chip[aria-pressed="true"] .v2-quick-chip-price {
+  color: var(--lga-text-muted, var(--muted-foreground)) !important;
 }
 
 html[data-theme="light"] body[data-lg-admin="true"] .admin-login-shell {

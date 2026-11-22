@@ -166,7 +166,7 @@ describe('Benefit-aware appointment collection',()=>{
   mocks.benefit={benefitCode:'CONTROL',benefitOriginalPriceArs:25000,benefitDiscountAmountArs:discount,benefitFinalPriceArs:final,depositPaid:final>0,depositAmountArs:final>0?5000:0};
   mocks.rpc.mockResolvedValue({data:{id:'benefit-payment'},error:null});
   render(<V2Payments/>);fireEvent.click(screen.getByRole('button',{name:'Con turno'}));fireEvent.change(screen.getByLabelText('Turno'),{target:{value:'a1'}});
-  expect(screen.getByText('$'+balance.toLocaleString('es-AR'),{selector:'.v2-total-box-amount'})).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Cobrar $' + balance.toLocaleString('es-AR') })).toBeInTheDocument();
   fireEvent.click(screen.getByRole('button',{name:/Registrar cobro|Cobrar/i}));await waitFor(()=>expect(mocks.rpc).toHaveBeenCalled());
   expect(mocks.rpc.mock.calls.at(-1)[1]).toMatchObject({p_appointment_id:'a1',p_service_price_ars:25000,p_discount_value:discount});
  });
@@ -278,7 +278,7 @@ describe('Benefit-aware appointment collection',()=>{
   // Resumen de caja arriba
   const cashSummary = screen.getByRole('region', { name: 'Resumen de caja' });
   expect(within(cashSummary).getByText('$55.000')).toBeInTheDocument();
-  expect(within(cashSummary).getByText('2 cobros')).toBeInTheDocument();
+  expect(within(cashSummary).getByText(/2 cobros/)).toBeInTheDocument();
   expect(within(cashSummary).getByText('$25.000')).toBeInTheDocument();
   expect(within(cashSummary).getByText('$30.000')).toBeInTheDocument();
 

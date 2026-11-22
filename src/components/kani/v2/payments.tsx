@@ -347,26 +347,31 @@ export function V2Payments() {
       <section className="v2-panel v2-cash-summary-card" aria-label="Resumen de caja">
         <div className="v2-cash-summary-main">
           <div className="v2-cash-summary-total">
-            <span className="v2-cash-summary-eyebrow">Caja del período</span>
+            <span className="v2-cash-summary-eyebrow">
+              {period === "TODAY" ? "Tu caja de hoy" : "Caja del período"}
+            </span>
             <div className="v2-cash-summary-amount-row">
               <strong className="v2-cash-summary-amount">{money(summary.collected)}</strong>
               <span className="v2-cash-summary-count">
-                {history.length} {history.length === 1 ? "cobro" : "cobros"}
+                · {history.length} {history.length === 1 ? "cobro" : "cobros"}
               </span>
             </div>
           </div>
-          <div className="v2-cash-summary-breakdown" aria-label="Desglose por método de pago">
+          <div
+            className={`v2-cash-summary-breakdown ${onlineTotal > 0 ? "has-online" : ""}`}
+            aria-label="Desglose por método de pago"
+          >
             <div className="v2-cash-metric cash">
               <span>Efectivo</span>
               <strong>{money(cashTotal)}</strong>
             </div>
             <div className="v2-cash-metric transfer">
-              <span>Transferencia</span>
+              <span>Transf.</span>
               <strong>{money(transferTotal)}</strong>
             </div>
             {onlineTotal > 0 && (
               <div className="v2-cash-metric online">
-                <span>Tarjeta / Online</span>
+                <span>Online</span>
                 <strong>{money(onlineTotal)}</strong>
               </div>
             )}
@@ -493,7 +498,11 @@ export function V2Payments() {
                         >
                           <span className="v2-quick-chip-name">{opt.label}</span>
                           {baseService && baseService.price > 0 && (
-                            <span className="v2-quick-chip-price">{money(baseService.price)}</span>
+                            <span className="v2-quick-chip-price">
+                              {baseService.price >= 1000 && baseService.price % 1000 === 0
+                                ? `$${baseService.price / 1000}k`
+                                : money(baseService.price)}
+                            </span>
                           )}
                         </button>
                       );
@@ -545,12 +554,45 @@ export function V2Payments() {
                   </div>
                 </div>
 
-                {/* Importe editable */}
-                <div className="v2-payment-full-row">
-                  <label className="v2-field v2-payment-col v2-payment-entry-field">
-                    <span className="v2-field-label">Importe</span>
+                {/* Fila compacta: + Descuento | + Cliente | $ Importe */}
+                <div className="v2-quick-utility-row">
+                  <div className="v2-quick-utility-chips">
+                    <button
+                      type="button"
+                      className={`v2-secondary v2-quick-utility-btn ${showDiscount ? "active" : ""}`}
+                      onClick={() => setShowDiscount(!showDiscount)}
+                      aria-expanded={showDiscount}
+                    >
+                      <Tag size={14} />
+                      <span>{showDiscount ? "Quitar desc." : "+ Descuento"}</span>
+                    </button>
+
+                    {origin === "walk_in" ? (
+                      <button
+                        type="button"
+                        className={`v2-secondary v2-quick-utility-btn ${showClient ? "active" : ""}`}
+                        onClick={() => setShowClient(!showClient)}
+                        aria-expanded={showClient}
+                      >
+                        <User size={14} />
+                        <span>{showClient ? "Ocultar" : "+ Cliente"}</span>
+                      </button>
+                    ) : (
+                      <div className="v2-payment-appointment-client-badge v2-quick-client-pill">
+                        <User size={14} />
+                        <span className="v2-truncate">
+                          {appointment?.name || "Cliente del turno"}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  <label className="v2-quick-amount-inline">
+                    <span className="sr-only">Importe</span>
+                    <span className="v2-quick-amount-prefix" aria-hidden="true">$</span>
                     <input
                       type="number"
+                      aria-label="Importe"
                       min={serviceName === "Anulado" ? 0 : 1}
                       disabled={serviceName === "Anulado"}
                       step={1}
@@ -566,47 +608,6 @@ export function V2Payments() {
                       }
                     />
                   </label>
-                </div>
-
-                {/* Fila 3: Agregar descuento | Asociar cliente */}
-                <div className="v2-payment-row">
-                  <button
-                    type="button"
-                    className={`v2-secondary v2-payment-toggle-btn ${showDiscount ? "active" : ""}`}
-                    onClick={() => setShowDiscount(!showDiscount)}
-                    aria-expanded={showDiscount}
-                  >
-                    <Tag size={16} />
-                    <span>
-                      {showDiscount ? (
-                        "Quitar descuento"
-                      ) : (
-                        <>
-                          <span className="v2-discount-text-desktop">Agregar descuento</span>
-                          <span className="v2-discount-text-mobile">Descuento</span>
-                        </>
-                      )}
-                    </span>
-                  </button>
-
-                  {origin === "walk_in" ? (
-                    <button
-                      type="button"
-                      className={`v2-secondary v2-payment-toggle-btn ${showClient ? "active" : ""}`}
-                      onClick={() => setShowClient(!showClient)}
-                      aria-expanded={showClient}
-                    >
-                      <User size={16} />
-                      <span>{showClient ? "Ocultar cliente" : "Asociar cliente"}</span>
-                    </button>
-                  ) : (
-                    <div className="v2-payment-appointment-client-badge">
-                      <User size={16} />
-                      <span className="v2-truncate">
-                        {appointment?.name || "Cliente del turno"}
-                      </span>
-                    </div>
-                  )}
                 </div>
 
                 {showDiscount && (
@@ -679,39 +680,30 @@ export function V2Payments() {
                   </div>
                 )}
 
-                {/* Fila 4: A cobrar ahora | Registrar cobro */}
-                <div className="v2-payment-row v2-payment-row-final">
-                  <div className="v2-payment-total-box">
-                    <span className="v2-total-box-label">Importe:</span>
-                    <span className="sr-only">A cobrar ahora</span>
-                    <div className="v2-total-box-amount-wrap">
-                      <strong className="v2-total-box-amount">{money(total)}</strong>
-                      {(discount > 0 || deposit > 0) && (
-                        <span className="v2-total-box-breakdown">
-                          {deposit > 0 ? `Seña: -${money(deposit)} ` : ""}
-                          {discount > 0 ? `Desc: -${money(discount)}` : ""}
-                        </span>
-                      )}
-                    </div>
-                  </div>
+                {(discount > 0 || deposit > 0) && (
+                  <p className="v2-quick-breakdown-note">
+                    {deposit > 0 ? `Seña online: -${money(deposit)}` : ""}
+                    {deposit > 0 && discount > 0 ? " · " : ""}
+                    {discount > 0 ? `Descuento: -${money(discount)}` : ""}
+                  </p>
+                )}
 
-                  <button
-                    className="v2-primary v2-payment-submit-btn"
-                    type="submit"
-                    disabled={
-                      busy ||
-                      (!price && serviceName !== "Anulado") ||
-                      (origin === "appointment" && (!appointment || !depositVerifiable || (total <= 0 && serviceName !== "Anulado") || (appointmentBalance != null && total > appointmentBalance)))
-                    }
-                  >
-                    <CheckCircle2 size={18} />
-                    {busy ? (
-                      <span>Registrando…</span>
-                    ) : (
-                      <span>{`Cobrar ${money(total)}`}</span>
-                    )}
-                  </button>
-                </div>
+                <button
+                  className="v2-primary v2-payment-submit-btn v2-quick-submit-full"
+                  type="submit"
+                  disabled={
+                    busy ||
+                    (!price && serviceName !== "Anulado") ||
+                    (origin === "appointment" && (!appointment || !depositVerifiable || (total <= 0 && serviceName !== "Anulado") || (appointmentBalance != null && total > appointmentBalance)))
+                  }
+                >
+                  <CheckCircle2 size={18} />
+                  {busy ? (
+                    <span>Registrando…</span>
+                  ) : (
+                    <span>{`Cobrar ${money(total)}`}</span>
+                  )}
+                </button>
                 {appointment && total <= 0 && serviceName !== "Anulado" && <p role="status">Sin saldo pendiente.</p>}
               </div>
             </fieldset>
