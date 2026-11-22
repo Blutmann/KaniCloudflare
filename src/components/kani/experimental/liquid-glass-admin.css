@@ -394,6 +394,16 @@ html[data-theme] body[data-lg-admin="true"] .v2-cobro-panel :is(input, select) {
   max-height: 38px !important;
 }
 
+html[data-theme] body[data-lg-admin="true"] .v2-cobro-panel select {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  padding-right: 36px !important;
+  height: 38px !important;
+  min-height: 38px !important;
+  max-height: 38px !important;
+  line-height: 38px !important;
+}
+
 html[data-theme="light"] body[data-lg-admin="true"] .admin-login-shell {
   background: linear-gradient(
     156deg,

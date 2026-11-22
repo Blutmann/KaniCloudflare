@@ -1003,6 +1003,12 @@ html[data-theme="dark"] .v2-field select {
   max-height: 38px;
   padding: 6px 10px;
 }
+.v2-cobro-panel select {
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-right: 36px;
+  line-height: 38px;
+}
 .v2-quick-chips {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
