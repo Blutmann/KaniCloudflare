@@ -832,15 +832,19 @@ html[data-theme="dark"] .v2-field select {
 }
 
 /* Collection: familiar capsule selection and a clear amount/action. */
+.v2-payments-page {
+  display: grid;
+  gap: 10px;
+}
 .v2-cash-summary-card {
-  margin-bottom: 12px;
-  padding: 12px 14px;
+  margin: 0;
+  padding: 10px 12px;
 }
 .v2-cash-summary-main {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 10px;
+  gap: 8px;
 }
 .v2-cash-summary-total {
   display: flex;
@@ -878,15 +882,15 @@ html[data-theme="dark"] .v2-field select {
 .v2-cash-summary-breakdown {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
+  gap: 6px;
   width: 100%;
   min-width: 0;
 }
 .v2-cash-metric {
   display: grid;
-  gap: 2px;
-  padding: 7px 9px;
-  border-radius: 12px;
+  gap: 1px;
+  padding: 6px 8px;
+  border-radius: 10px;
   border: 1px solid var(--v2-line, var(--border));
   background: var(--v2-inset, rgba(128, 128, 128, 0.08));
   min-width: 0;
@@ -908,7 +912,7 @@ html[data-theme="dark"] .v2-field select {
 }
 @media (min-width: 768px) {
   .v2-cash-summary-card {
-    padding: 14px 18px;
+    padding: 12px 16px;
   }
   .v2-cash-summary-main {
     flex-direction: row;
@@ -929,7 +933,7 @@ html[data-theme="dark"] .v2-field select {
   }
   .v2-cash-metric {
     min-width: 108px;
-    padding: 8px 12px;
+    padding: 7px 12px;
   }
   .v2-cash-metric strong {
     font-size: 14px;
@@ -939,7 +943,7 @@ html[data-theme="dark"] .v2-field select {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   align-items: start;
-  gap: 12px;
+  gap: 10px;
 }
 @media (min-width: 1024px) {
   .v2-payment-layout {
@@ -947,12 +951,18 @@ html[data-theme="dark"] .v2-field select {
     gap: 20px;
   }
 }
-.v2-payment-form-header {
+.v2-cobro-panel {
+  margin: 0;
+  padding: 12px 14px;
+}
+.v2-cobro-header {
   display: flex;
-  flex-direction: column;
-  align-items: stretch;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
   gap: 8px;
-  margin-bottom: 12px;
+  flex-wrap: nowrap;
+  margin-bottom: 10px;
 }
 .v2-payment-form-title {
   margin: 0;
@@ -961,47 +971,52 @@ html[data-theme="dark"] .v2-field select {
   color: var(--foreground);
   white-space: nowrap;
 }
-.v2-payment-form-header .v2-segmented {
-  margin-bottom: 0;
-  width: 100%;
+.v2-cobro-header .v2-segmented {
+  width: auto;
   max-width: 100%;
+  display: inline-grid;
+  grid-template-columns: repeat(2, auto);
+  margin-bottom: 0;
+  padding: 3px;
+  border-radius: 12px;
+  flex: 0 0 auto;
 }
-.v2-payment-form-header .v2-segmented button {
-  padding: 0 10px;
+.v2-cobro-header .v2-segmented > button {
+  min-height: 32px;
+  height: 32px;
+  padding: 4px 10px;
   font-size: 12px;
+  border-radius: 9px;
   white-space: nowrap;
 }
-@media (min-width: 640px) {
-  .v2-payment-form-header {
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-  }
-  .v2-payment-form-header .v2-segmented {
-    width: auto;
-    max-width: 220px;
-    flex-shrink: 0;
-  }
-}
+.v2-cobro-panel fieldset,
 .v2-payment-grid {
   display: grid;
-  gap: 12px;
+  gap: 8px;
+}
+.v2-cobro-panel .v2-field {
+  gap: 3px;
+}
+.v2-cobro-panel :is(input, select) {
+  height: 38px;
+  min-height: 38px;
+  max-height: 38px;
+  padding: 6px 10px;
 }
 .v2-quick-chips {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  gap: 6px;
 }
 .v2-quick-method-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  gap: 6px;
 }
 .v2-quick-chip {
-  min-height: 44px;
-  padding: 8px 10px;
-  border-radius: 12px;
+  min-height: 40px;
+  padding: 6px 10px;
+  border-radius: 11px;
   border: 1px solid var(--v2-line, var(--border));
   background: var(--v2-inset, rgba(128, 128, 128, 0.06));
   color: var(--foreground);
@@ -1020,7 +1035,7 @@ html[data-theme="dark"] .v2-field select {
   justify-content: center;
   font-weight: 600;
   font-size: 13px;
-  padding: 8px 10px;
+  padding: 6px 10px;
 }
 .v2-quick-chip-name {
   white-space: nowrap;
@@ -1056,31 +1071,31 @@ html[data-theme="dark"] .v2-field select {
 }
 .v2-quick-amount-prefix {
   position: absolute;
-  left: 12px;
+  left: 11px;
   font-size: 13px;
   font-weight: 600;
   color: var(--muted-foreground);
   pointer-events: none;
 }
-.v2-payment-form .v2-quick-amount-input-wrap input {
+.v2-cobro-panel .v2-quick-amount-input-wrap input {
   width: 100%;
-  height: 44px;
-  min-height: 44px;
-  max-height: 44px;
-  padding: 8px 12px 8px 26px;
+  height: 38px;
+  min-height: 38px;
+  max-height: 38px;
+  padding: 6px 10px 6px 24px;
   font-size: 14px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
-  border-radius: 12px;
+  border-radius: 11px;
 }
 .v2-quick-secondary-toggles {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  gap: 6px;
 }
 .v2-quick-secondary-btn {
-  min-height: 36px;
-  height: 36px;
+  min-height: 34px;
+  height: 34px;
   padding: 0 10px;
   border-radius: 10px;
   font-size: 12px;
@@ -1092,8 +1107,8 @@ html[data-theme="dark"] .v2-field select {
   white-space: nowrap;
 }
 .v2-quick-secondary-pill {
-  min-height: 36px;
-  height: 36px;
+  min-height: 34px;
+  height: 34px;
   padding: 0 10px;
   font-size: 12px;
 }
@@ -1137,7 +1152,7 @@ html[data-theme="dark"] .v2-field select {
   font-weight: 600;
 }
 .v2-payment-form {
-  padding: 14px 16px;
+  padding: 12px 14px;
   border: 1px solid var(--v2-line, var(--border));
   border-radius: var(--radius-card);
   background: var(--v2-surface);

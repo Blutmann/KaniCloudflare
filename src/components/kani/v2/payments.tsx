@@ -339,7 +339,7 @@ export function V2Payments() {
   }
 
   return (
-    <main className="v2-page">
+    <main className="v2-page v2-payments-page">
       {actionNotice && (
         <p role="status" className="v2-success" style={{ marginBottom: "1rem" }}>
           {actionNotice}
@@ -381,8 +381,8 @@ export function V2Payments() {
       </section>
 
       <div className="v2-payment-layout">
-        <section className="v2-panel v2-payment-form" aria-label="Cobro rápido">
-          <div className="v2-payment-form-header">
+        <section className="v2-panel v2-payment-form v2-cobro-panel" aria-label="Cobro rápido">
+          <div className="v2-payment-form-header v2-cobro-header">
             <h2 className="v2-payment-form-title">Cobro rápido</h2>
             <MotionConfig reducedMotion="user">
               <div

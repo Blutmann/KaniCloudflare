@@ -350,19 +350,48 @@ html[data-theme] body[data-lg-admin="true"] .v2-quick-chip[aria-pressed="true"] 
   color: var(--lga-text-muted, var(--muted-foreground)) !important;
 }
 
+html[data-theme] body[data-lg-admin="true"] .v2-payments-page {
+  display: grid !important;
+  gap: 10px !important;
+}
+
 html[data-theme] body[data-lg-admin="true"] .v2-cash-summary-card {
-  margin-bottom: 12px !important;
+  margin: 0 !important;
+  padding: 10px 12px !important;
 }
 
-html[data-theme] body[data-lg-admin="true"] .v2-payment-form-header .v2-segmented[data-lg-segmented="true"] {
+html[data-theme] body[data-lg-admin="true"] .v2-cobro-panel {
+  margin: 0 !important;
+  padding: 12px 14px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-cobro-header .v2-segmented[data-lg-segmented="true"] {
+  width: auto !important;
+  max-width: 100% !important;
+  display: inline-grid !important;
+  grid-template-columns: repeat(2, auto) !important;
   margin-bottom: 0 !important;
+  padding: 3px !important;
+  border-radius: 12px !important;
+  flex: 0 0 auto;
 }
 
-@media (min-width: 640px) {
-  html[data-theme] body[data-lg-admin="true"] .v2-payment-form-header .v2-segmented[data-lg-segmented="true"] {
-    width: auto !important;
-    max-width: 220px !important;
-  }
+html[data-theme] body[data-lg-admin="true"] .v2-cobro-header .v2-segmented[data-lg-segmented="true"] > button {
+  min-height: 32px !important;
+  height: 32px !important;
+  padding: 4px 10px !important;
+  font-size: 12px !important;
+  border-radius: 9px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-cobro-header .v2-segmented[data-lg-segmented="true"] .lg-segmented-pill {
+  border-radius: 9px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-cobro-panel :is(input, select) {
+  height: 38px !important;
+  min-height: 38px !important;
+  max-height: 38px !important;
 }
 
 html[data-theme="light"] body[data-lg-admin="true"] .admin-login-shell {
