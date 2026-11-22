@@ -61,7 +61,7 @@ export function V2Payments() {
   const [clientName, setClientName] = useState("");
   const [clientPhone, setClientPhone] = useState("");
   const [period, setPeriod] = useState<PaymentPeriodFilter>("TODAY");
-  const [methodFilter, setMethodFilter] = useState<"ALL" | "Efectivo" | "Transferencia">("ALL");
+  const [methodFilter, setMethodFilter] = useState<"ALL" | "Efectivo" | "Transferencia" | "Payway">("ALL");
   const [customStartDate, setCustomStartDate] = useState(today);
   const [customEndDate, setCustomEndDate] = useState(today);
   const [busy, setBusy] = useState(false);
@@ -138,20 +138,23 @@ export function V2Payments() {
       ).filter((p) => p.paymentDate >= periodRange.start && p.paymentDate <= periodRange.end);
   const summary = paymentSummary(history);
   const activeHistory = history.filter((p) => p.serviceName !== "Anulado");
+  const isPaywayMethod = (pm: string) => /payway|tarjeta/i.test(pm);
   const cashTotal = activeHistory
     .filter((p) => p.paymentMethod === "Efectivo")
     .reduce((sum, p) => sum + p.collectedAmountArs, 0);
   const transferTotal = activeHistory
     .filter((p) => p.paymentMethod === "Transferencia")
     .reduce((sum, p) => sum + p.collectedAmountArs, 0);
-  const otherMethodTotal = activeHistory
-    .filter((p) => p.paymentMethod !== "Efectivo" && p.paymentMethod !== "Transferencia")
+  const paywayMovementsTotal = activeHistory
+    .filter((p) => isPaywayMethod(p.paymentMethod))
     .reduce((sum, p) => sum + p.collectedAmountArs, 0);
-  const onlineTotal = Math.max(otherMethodTotal, summary.deposits);
+  const paywayTotal = Math.max(paywayMovementsTotal, summary.deposits);
   const filteredHistory =
     methodFilter === "ALL"
       ? history
-      : history.filter((p) => p.paymentMethod === methodFilter);
+      : methodFilter === "Payway"
+        ? history.filter((p) => isPaywayMethod(p.paymentMethod))
+        : history.filter((p) => p.paymentMethod === methodFilter);
   const quickServiceOptions: Array<{ value: string; label: string }> = [
     { value: "Corte", label: "Corte" },
     { value: "Corte y barba", label: "Corte y barba" },
@@ -358,7 +361,7 @@ export function V2Payments() {
             </div>
           </div>
           <div
-            className={`v2-cash-summary-breakdown ${onlineTotal > 0 ? "has-online" : ""}`}
+            className="v2-cash-summary-breakdown"
             aria-label="Desglose por método de pago"
           >
             <div className="v2-cash-metric cash">
@@ -369,12 +372,10 @@ export function V2Payments() {
               <span>Transf.</span>
               <strong>{money(transferTotal)}</strong>
             </div>
-            {onlineTotal > 0 && (
-              <div className="v2-cash-metric online">
-                <span>Online</span>
-                <strong>{money(onlineTotal)}</strong>
-              </div>
-            )}
+            <div className="v2-cash-metric payway">
+              <span>Payway</span>
+              <strong>{money(paywayTotal)}</strong>
+            </div>
           </div>
         </div>
       </section>
@@ -533,60 +534,37 @@ export function V2Payments() {
                   </div>
                 )}
 
-                {/* 2. Método de pago en 1 toque (50/50) */}
+                {/* 2. Método de pago en 1 toque (3 columnas) */}
                 <div className="v2-payment-full-row">
                   <span className="v2-field-label">2. Método de pago</span>
                   <div className="v2-quick-method-grid" role="group" aria-label="Método de pago">
-                    {(["Efectivo", "Transferencia"] as const).map((m) => {
-                      const isSelected = method === m;
+                    {(
+                      [
+                        { value: "Efectivo", label: "Efectivo", ariaLabel: "Efectivo" },
+                        { value: "Transferencia", label: "Transf.", ariaLabel: "Transferencia" },
+                        { value: "Tarjeta — Payway", label: "Payway", ariaLabel: "Payway" },
+                      ] as const
+                    ).map((m) => {
+                      const isSelected = method === m.value;
                       return (
                         <button
-                          key={m}
+                          key={m.value}
                           type="button"
                           className={`v2-quick-chip v2-quick-method-btn ${isSelected ? "is-selected" : ""}`}
                           aria-pressed={isSelected}
-                          onClick={() => setMethod(m)}
+                          aria-label={m.ariaLabel}
+                          onClick={() => setMethod(m.value)}
                         >
-                          {m}
+                          {m.label}
                         </button>
                       );
                     })}
                   </div>
                 </div>
 
-                {/* Fila compacta: + Descuento | + Cliente | $ Importe */}
-                <div className="v2-quick-utility-row">
-                  <div className="v2-quick-utility-chips">
-                    <button
-                      type="button"
-                      className={`v2-secondary v2-quick-utility-btn ${showDiscount ? "active" : ""}`}
-                      onClick={() => setShowDiscount(!showDiscount)}
-                      aria-expanded={showDiscount}
-                    >
-                      <Tag size={14} />
-                      <span>{showDiscount ? "Quitar desc." : "+ Descuento"}</span>
-                    </button>
-
-                    {origin === "walk_in" ? (
-                      <button
-                        type="button"
-                        className={`v2-secondary v2-quick-utility-btn ${showClient ? "active" : ""}`}
-                        onClick={() => setShowClient(!showClient)}
-                        aria-expanded={showClient}
-                      >
-                        <User size={14} />
-                        <span>{showClient ? "Ocultar" : "+ Cliente"}</span>
-                      </button>
-                    ) : (
-                      <div className="v2-payment-appointment-client-badge v2-quick-client-pill">
-                        <User size={14} />
-                        <span className="v2-truncate">
-                          {appointment?.name || "Cliente del turno"}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
+                {/* Fila limpia de Importe */}
+                <div className="v2-quick-amount-row">
+                  <span className="v2-field-label">Importe</span>
                   <label className="v2-quick-amount-inline">
                     <span className="sr-only">Importe</span>
                     <span className="v2-quick-amount-prefix" aria-hidden="true">$</span>
@@ -608,6 +586,38 @@ export function V2Payments() {
                       }
                     />
                   </label>
+                </div>
+
+                {/* Fila 50/50 discreta: Descuento | Asociar cliente */}
+                <div className="v2-quick-secondary-toggles">
+                  <button
+                    type="button"
+                    className={`v2-secondary v2-quick-secondary-btn ${showDiscount ? "active" : ""}`}
+                    onClick={() => setShowDiscount(!showDiscount)}
+                    aria-expanded={showDiscount}
+                  >
+                    <Tag size={14} />
+                    <span>{showDiscount ? "Quitar descuento" : "Descuento"}</span>
+                  </button>
+
+                  {origin === "walk_in" ? (
+                    <button
+                      type="button"
+                      className={`v2-secondary v2-quick-secondary-btn ${showClient ? "active" : ""}`}
+                      onClick={() => setShowClient(!showClient)}
+                      aria-expanded={showClient}
+                    >
+                      <User size={14} />
+                      <span>{showClient ? "Ocultar cliente" : "Asociar cliente"}</span>
+                    </button>
+                  ) : (
+                    <div className="v2-payment-appointment-client-badge v2-quick-secondary-pill">
+                      <User size={14} />
+                      <span className="v2-truncate">
+                        {appointment?.name || "Cliente del turno"}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {showDiscount && (
@@ -765,9 +775,10 @@ export function V2Payments() {
           <div className="v2-method-filter-pills" role="group" aria-label="Filtrar por método">
             {(
               [
-                { value: "ALL", label: "Todos" },
-                { value: "Efectivo", label: "Efectivo" },
-                { value: "Transferencia", label: "Transferencia" },
+                { value: "ALL", label: "Todos", ariaLabel: "Todos" },
+                { value: "Efectivo", label: "Efectivo", ariaLabel: "Efectivo" },
+                { value: "Transferencia", label: "Transf.", ariaLabel: "Transferencia" },
+                { value: "Payway", label: "Payway", ariaLabel: "Payway" },
               ] as const
             ).map((opt) => (
               <button
@@ -775,6 +786,7 @@ export function V2Payments() {
                 type="button"
                 className={`v2-method-pill ${methodFilter === opt.value ? "is-active" : ""}`}
                 aria-pressed={methodFilter === opt.value}
+                aria-label={opt.ariaLabel}
                 onClick={() => setMethodFilter(opt.value)}
               >
                 {opt.label}

@@ -235,7 +235,7 @@ describe('Benefit-aware appointment collection',()=>{
   expect(rangeAlert).toHaveAttribute('role', 'alert');
  });
 
- it('supports 1-tap Service and Method selection, renders Cash Summary Efectivo vs Transferencia, and filters history by method', async () => {
+ it('supports 1-tap Service and Method selection, renders Cash Summary Efectivo vs Transferencia vs Payway, and filters history by method', async () => {
   const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' }).format(new Date());
   mocks.payments = [
     {
@@ -270,34 +270,51 @@ describe('Benefit-aware appointment collection',()=>{
       onlineDepositAmountArs: 0,
       appointmentId: null,
     },
+    {
+      id: 'p-payway',
+      barberId: 'b1',
+      barberName: 'Gonzalo',
+      serviceName: 'Barba',
+      servicePriceArs: 15000,
+      discountArs: 0,
+      finalAmountArs: 15000,
+      collectedAmountArs: 15000,
+      paymentDate: today,
+      paymentTime: '12:00',
+      paymentMethod: 'Tarjeta — Payway',
+      onlineDepositPaid: false,
+      onlineDepositAmountArs: 0,
+      appointmentId: null,
+    },
   ];
   mocks.rpc.mockResolvedValue({ data: { id: 'p-new' }, error: null });
 
   render(<V2Payments />);
 
-  // Resumen de caja arriba
+  // Resumen de caja arriba (3 columnas siempre: Efectivo | Transf. | Payway)
   const cashSummary = screen.getByRole('region', { name: 'Resumen de caja' });
-  expect(within(cashSummary).getByText('$55.000')).toBeInTheDocument();
-  expect(within(cashSummary).getByText(/2 cobros/)).toBeInTheDocument();
+  expect(within(cashSummary).getByText('$70.000')).toBeInTheDocument();
+  expect(within(cashSummary).getByText(/3 cobros/)).toBeInTheDocument();
   expect(within(cashSummary).getByText('$25.000')).toBeInTheDocument();
   expect(within(cashSummary).getByText('$30.000')).toBeInTheDocument();
+  expect(within(cashSummary).getByText('$15.000')).toBeInTheDocument();
 
-  // Filtro por método en el historial
+  // Filtro por método en el historial (Todos | Efectivo | Transf. | Payway)
   const methodFilterGroup = screen.getByRole('group', { name: 'Filtrar por método' });
-  fireEvent.click(within(methodFilterGroup).getByRole('button', { name: 'Transferencia' }));
+  fireEvent.click(within(methodFilterGroup).getByRole('button', { name: 'Payway' }));
   const historyPanel = screen.getByRole('region', { name: 'Cobros registrados' });
   expect(within(historyPanel).getByText('1 servicios')).toBeInTheDocument();
 
-  // Selección en 1 toque de Servicio y Método de pago
+  // Selección en 1 toque de Servicio y Método de pago (incluyendo Payway)
   const serviceGroup = screen.getByRole('group', { name: 'Servicio' });
   const comboBtn = within(serviceGroup).getByRole('button', { name: /Corte y barba/i });
   fireEvent.click(comboBtn);
   expect(comboBtn).toHaveAttribute('aria-pressed', 'true');
 
   const methodGroup = screen.getByRole('group', { name: 'Método de pago' });
-  const transferBtn = within(methodGroup).getByRole('button', { name: 'Transferencia' });
-  fireEvent.click(transferBtn);
-  expect(transferBtn).toHaveAttribute('aria-pressed', 'true');
+  const paywayBtn = within(methodGroup).getByRole('button', { name: 'Payway' });
+  fireEvent.click(paywayBtn);
+  expect(paywayBtn).toHaveAttribute('aria-pressed', 'true');
 
   const submitBtn = screen.getByRole('button', { name: 'Cobrar $30.000' });
   fireEvent.click(submitBtn);
@@ -305,7 +322,7 @@ describe('Benefit-aware appointment collection',()=>{
   expect(mocks.rpc.mock.calls[0]?.[1]).toMatchObject({
     p_service_name: 'Corte y barba',
     p_service_price_ars: 30000,
-    p_payment_method: 'Transferencia',
+    p_payment_method: 'Tarjeta — Payway',
   });
  });
 

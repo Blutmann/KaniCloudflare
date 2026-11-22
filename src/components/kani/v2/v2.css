@@ -833,7 +833,7 @@ html[data-theme="dark"] .v2-field select {
 
 /* Collection: familiar capsule selection and a clear amount/action. */
 .v2-cash-summary-card {
-  margin-bottom: 14px;
+  margin-bottom: 12px;
   padding: 12px 14px;
 }
 .v2-cash-summary-main {
@@ -877,18 +877,15 @@ html[data-theme="dark"] .v2-field select {
 }
 .v2-cash-summary-breakdown {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
   width: 100%;
   min-width: 0;
 }
-.v2-cash-summary-breakdown.has-online {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
 .v2-cash-metric {
   display: grid;
   gap: 2px;
-  padding: 7px 10px;
+  padding: 7px 9px;
   border-radius: 12px;
   border: 1px solid var(--v2-line, var(--border));
   background: var(--v2-inset, rgba(128, 128, 128, 0.08));
@@ -903,10 +900,11 @@ html[data-theme="dark"] .v2-field select {
   text-overflow: ellipsis;
 }
 .v2-cash-metric strong {
-  font-size: 13.5px;
+  font-size: 13px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   color: var(--foreground);
+  white-space: nowrap;
 }
 @media (min-width: 768px) {
   .v2-cash-summary-card {
@@ -930,15 +928,18 @@ html[data-theme="dark"] .v2-field select {
     gap: 10px;
   }
   .v2-cash-metric {
-    min-width: 112px;
+    min-width: 108px;
     padding: 8px 12px;
+  }
+  .v2-cash-metric strong {
+    font-size: 14px;
   }
 }
 .v2-payment-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   align-items: start;
-  gap: 16px;
+  gap: 14px;
 }
 @media (min-width: 1024px) {
   .v2-payment-layout {
@@ -948,24 +949,33 @@ html[data-theme="dark"] .v2-field select {
 }
 .v2-payment-form-header {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 .v2-payment-form-title {
   margin: 0;
   font-size: 15px;
   font-weight: 600;
   color: var(--foreground);
+  white-space: nowrap;
 }
 .v2-payment-form-header .v2-segmented {
   margin-bottom: 0;
+  width: auto;
+  max-width: 196px;
+  flex-shrink: 0;
+}
+.v2-payment-form-header .v2-segmented button {
+  padding: 0 10px;
+  font-size: 11.5px;
+  white-space: nowrap;
 }
 .v2-payment-grid {
   display: grid;
-  gap: 10px;
+  gap: 12px;
 }
 .v2-quick-chips {
   display: grid;
@@ -974,7 +984,7 @@ html[data-theme="dark"] .v2-field select {
 }
 .v2-quick-method-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 7px;
 }
 .v2-quick-chip {
@@ -998,7 +1008,8 @@ html[data-theme="dark"] .v2-field select {
 .v2-quick-method-btn {
   justify-content: center;
   font-weight: 600;
-  font-size: 13px;
+  font-size: 12.5px;
+  padding: 8px 6px;
 }
 .v2-quick-chip-name {
   white-space: nowrap;
@@ -1026,21 +1037,46 @@ html[data-theme="dark"] .v2-field select {
   opacity: 0.45;
   cursor: not-allowed;
 }
-.v2-quick-utility-row {
+.v2-quick-amount-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 12px;
   min-width: 0;
 }
-.v2-quick-utility-chips {
-  display: flex;
+.v2-quick-amount-inline {
+  position: relative;
+  display: inline-flex;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 6px;
-  min-width: 0;
+  width: 132px;
+  flex-shrink: 0;
 }
-.v2-quick-utility-btn {
+.v2-quick-amount-prefix {
+  position: absolute;
+  left: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  pointer-events: none;
+}
+.v2-payment-form .v2-quick-amount-inline input {
+  width: 100%;
+  height: 44px;
+  min-height: 44px;
+  max-height: 44px;
+  padding: 6px 12px 6px 26px;
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  border-radius: 12px;
+}
+.v2-quick-secondary-toggles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.v2-quick-secondary-btn {
   min-height: 36px;
   height: 36px;
   padding: 0 10px;
@@ -1049,42 +1085,15 @@ html[data-theme="dark"] .v2-field select {
   font-weight: 500;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  justify-content: center;
+  gap: 6px;
   white-space: nowrap;
 }
-.v2-quick-client-pill {
+.v2-quick-secondary-pill {
   min-height: 36px;
   height: 36px;
   padding: 0 10px;
   font-size: 12px;
-  max-width: 150px;
-}
-.v2-quick-amount-inline {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  width: 106px;
-  flex-shrink: 0;
-}
-.v2-quick-amount-prefix {
-  position: absolute;
-  left: 10px;
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--muted-foreground);
-  pointer-events: none;
-}
-.v2-payment-form .v2-quick-amount-inline input {
-  width: 100%;
-  height: 36px;
-  min-height: 36px;
-  max-height: 36px;
-  padding: 4px 10px 4px 22px;
-  font-size: 13px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  text-align: right;
-  border-radius: 10px;
 }
 .v2-quick-breakdown-note {
   margin: 0;
@@ -1108,7 +1117,7 @@ html[data-theme="dark"] .v2-field select {
 }
 .v2-method-pill {
   min-height: 36px;
-  padding: 6px 14px;
+  padding: 6px 12px;
   border-radius: 9999px;
   border: 1px solid var(--v2-line, var(--border));
   background: transparent;
@@ -1126,7 +1135,7 @@ html[data-theme="dark"] .v2-field select {
   font-weight: 600;
 }
 .v2-payment-form {
-  padding: 18px 20px;
+  padding: 14px 16px;
   border: 1px solid var(--v2-line, var(--border));
   border-radius: var(--radius-card);
   background: var(--v2-surface);
