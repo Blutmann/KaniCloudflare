@@ -1039,12 +1039,11 @@ export function V2Appointments({
         }}
       >
         <DialogContent className="v2-dialog max-w-[calc(100vw-24px)] max-h-[calc(100dvh-32px)] overflow-y-auto" transitionMode="container-transform">
-          <DialogTitle>
-            ¿Estás seguro que querés cancelar este turno?
+          <DialogTitle className="pr-10">
+            Cancelar turno
           </DialogTitle>
           <DialogDescription>
-            {action?.appointment.name} · {action?.appointment.time} hs. Esta acción actualiza el turno
-            y utiliza las notificaciones existentes.
+            {action?.appointment.name} · {action?.appointment.time} hs. ¿Estás seguro que querés cancelar el turno?
           </DialogDescription>
           <button className="v2-secondary action-reject" disabled={busy} onClick={() => void cancelAppointment()}>
             {busy ? "Guardando…" : "Cancelar turno"}

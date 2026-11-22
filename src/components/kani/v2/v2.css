@@ -5278,9 +5278,9 @@ html[data-theme="light"] .v2-past-badge {
   }
 
   .v2-appointments-page .v2-app-time-hero {
-    font-size: 18px !important;
-    font-weight: 700 !important;
-    line-height: 1.2 !important;
+    font-size: 15.5px !important;
+    font-weight: 600 !important;
+    line-height: 1.25 !important;
     color: var(--foreground) !important;
     font-variant-numeric: tabular-nums !important;
     letter-spacing: -0.015em !important;
@@ -5333,7 +5333,7 @@ html[data-theme="light"] .v2-past-badge {
     flex: 0 0 auto !important;
     min-width: 0 !important;
     margin: 0 !important;
-    font-size: 15.5px !important;
+    font-size: 14.5px !important;
     font-weight: 600 !important;
     line-height: 1.3 !important;
     color: var(--foreground) !important;
@@ -5342,7 +5342,8 @@ html[data-theme="light"] .v2-past-badge {
     text-overflow: clip !important;
   }
 
-  .v2-appointments-page .v2-app-mobile-meta {
+  .v2-appointments-page .v2-app-mobile-meta,
+  .v2-appointments-page .v2-app-meta--clean {
     display: flex !important;
     align-items: baseline !important;
     flex-wrap: wrap !important;

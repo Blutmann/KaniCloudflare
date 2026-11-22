@@ -482,7 +482,8 @@ describe('V12.47.25 — UI /admin/turnos (V2Appointments)', () => {
 
       // Tocar X abre confirmación de cancelación directamente
       fireEvent.click(screen.getByRole('button', { name: 'Cancelar turno' }));
-      expect(screen.getByRole('heading', { name: '¿Estás seguro que querés cancelar este turno?' })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Cancelar turno' })).toBeInTheDocument();
+      expect(screen.getByText(/¿Estás seguro que querés cancelar el turno\?/i)).toBeInTheDocument();
       fireEvent.click(screen.getByRole('button', { name: 'Close' }));
 
       // Chip Manual abre ManualAppointmentDialog en modo EDIT
