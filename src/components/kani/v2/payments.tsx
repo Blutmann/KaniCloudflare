@@ -233,7 +233,7 @@ export function V2Payments() {
       setClientId("");
       setClientName("");
       setClientPhone("");
-      await data.refresh();
+      await data.refresh({ silent: true });
       notifyActivityChanged();
     } catch (e) {
       setMessage(
@@ -289,7 +289,7 @@ export function V2Payments() {
       );
       setEditingPayment(null);
       setActionNotice("Cobro actualizado exitosamente.");
-      await data.refresh();
+      await data.refresh({ silent: true });
     } catch (err) {
       setEditError(err instanceof Error ? err.message : "Error al actualizar el cobro.");
     } finally {
@@ -304,7 +304,7 @@ export function V2Payments() {
       await deleteServicePayment(deletingPayment.id, staff);
       setDeletingPayment(null);
       setActionNotice("Cobro anulado con registro de trazabilidad.");
-      await data.refresh();
+      await data.refresh({ silent: true });
     } catch (err) {
       alert(err instanceof Error ? err.message : "Error al anular el cobro.");
     } finally {
@@ -706,6 +706,7 @@ export function V2Payments() {
         </div>
         {isInvalidRange && (
           <p
+            role="alert"
             className="v2-notice"
             style={{ color: "var(--destructive, #ef4444)", margin: "8px 0" }}
           >
@@ -1119,8 +1120,7 @@ export function V2Payments() {
             </button>
             <button
               type="button"
-              className="v2-primary"
-              style={{ background: "var(--destructive, #ef4444)" }}
+              className="v2-destructive action-reject"
               onClick={handleConfirmDelete}
               disabled={editBusy}
             >

@@ -192,7 +192,7 @@ export function AdminMaintenance() {
             )}
 
             {error && (
-              <div role="alert" className="notice v2-alert-notice mt-5 text-destructive">
+              <div id="maintenance-cleanup-error" role="alert" className="notice v2-alert-notice mt-5 text-destructive">
                 <AlertTriangle size={16} className="shrink-0" />
                 <span className="min-w-0 break-words">{error}</span>
               </div>
@@ -286,7 +286,7 @@ export function AdminMaintenance() {
 
       {/* Diálogo de verificación de identidad */}
       <Dialog open={reauthOpen} onOpenChange={open => { if (!busy) setReauthOpen(open); }}>
-        <DialogContent className="max-w-[calc(100vw-32px)] sm:max-w-md p-5 sm:p-6 rounded-[var(--radius-card)]">
+        <DialogContent className="max-w-[calc(100vw-32px)] max-h-[calc(100dvh-32px)] overflow-y-auto sm:max-w-md p-5 sm:p-6 rounded-[var(--radius-card)]">
           <DialogTitle className="text-lg font-medium">Verificar identidad</DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground mt-1.5 leading-relaxed">
             Ingresá la contraseña actual de tu cuenta ADMIN. No se almacena ni se envía a servicios propios.
@@ -302,6 +302,8 @@ export function AdminMaintenance() {
               autoComplete="current-password"
               placeholder="••••••••••••"
               value={password}
+              aria-invalid={Boolean(error)}
+              aria-describedby={error ? 'maintenance-cleanup-error' : undefined}
               onChange={event => setPassword(event.target.value)}
               onKeyDown={event => { if (event.key === 'Enter' && password) void handleReauthentication(); }}
             />
@@ -328,7 +330,7 @@ export function AdminMaintenance() {
 
       {/* Diálogo de confirmación para eliminar turnos */}
       <Dialog open={confirmationOpen} onOpenChange={open => { if (!busy) setConfirmationOpen(open); }}>
-        <DialogContent className="max-w-[calc(100vw-32px)] sm:max-w-md p-5 sm:p-6 rounded-[var(--radius-card)]">
+        <DialogContent className="max-w-[calc(100vw-32px)] max-h-[calc(100dvh-32px)] overflow-y-auto sm:max-w-md p-5 sm:p-6 rounded-[var(--radius-card)]">
           <DialogTitle className="text-lg font-medium">¿Eliminar estos registros?</DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground mt-1.5 leading-relaxed">
             Esta acción no se puede deshacer. Se eliminarán los estados seleccionados y sus notificaciones y eventos de email relacionados. No se eliminarán clientes, disponibilidad, perfiles ni la secuencia de reservas.
@@ -362,7 +364,7 @@ export function AdminMaintenance() {
 
       {/* Diálogo de confirmación para eliminar disponibilidad */}
       <Dialog open={availabilityConfirmationOpen} onOpenChange={open => { if (!availabilityBusy) setAvailabilityConfirmationOpen(open); }}>
-        <DialogContent className="max-w-[calc(100vw-32px)] sm:max-w-md p-5 sm:p-6 rounded-[var(--radius-card)]">
+        <DialogContent className="max-w-[calc(100vw-32px)] max-h-[calc(100dvh-32px)] overflow-y-auto sm:max-w-md p-5 sm:p-6 rounded-[var(--radius-card)]">
           <DialogTitle className="text-lg font-medium">¿Eliminar historial de disponibilidad?</DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground mt-1.5 leading-relaxed">
             Se eliminarán exactamente {availabilityCount ?? 0} notificaciones de horarios bloqueados y liberados. Esta acción es irreversible y no modifica la disponibilidad actual de los barberos.

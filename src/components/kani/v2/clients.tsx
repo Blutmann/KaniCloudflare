@@ -111,7 +111,7 @@ export function V2Clients() {
 
       setEditing(null);
       setNotice(clientId ? "Cliente actualizado en Supabase." : "Cliente guardado en Supabase.");
-      await data.refresh();
+      await data.refresh({ silent: true });
     } catch (err) {
       console.error("[KANI clients] Error guardando cliente:", err);
       setErrorNotice(err instanceof Error ? err.message : "Error al guardar cliente en Supabase.");
@@ -137,7 +137,7 @@ export function V2Clients() {
       setConfirmDelete(null);
       setSelectedId(null);
       setNotice(`Cliente ${deletedName} eliminado correctamente.`);
-      await data.refresh();
+      await data.refresh({ silent: true });
     } catch (err) {
       console.error("[KANI clients] Error eliminando cliente:", err);
       setErrorNotice(err instanceof Error ? err.message : "Error al eliminar cliente.");
