@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, cleanup, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   addCalendarDays,
@@ -367,7 +367,7 @@ describe('V12.47.25 — UI /admin/turnos (V2Appointments)', () => {
     ).toBeInTheDocument();
   });
 
-  it('Mobile Modelo 1: rango horario unificado (10:00–10:45), barra 100% ancho (Cobrar, WA, Mail, Más) y bandeja horizontal por tarjeta', () => {
+  it('Mobile Clean Card V2: encabezados por día, 10:00 hs + duración, barra Cobrar|WhatsApp|Email|X, modales de canal y cancelar/editar', async () => {
     const origMatchMedia = window.matchMedia;
     window.matchMedia = vi.fn().mockImplementation((query: string) => ({
       matches: query === '(max-width: 639px)',
@@ -380,16 +380,25 @@ describe('V12.47.25 — UI /admin/turnos (V2Appointments)', () => {
       dispatchEvent: vi.fn(),
     })) as unknown as typeof window.matchMedia;
 
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    const origClipboard = navigator.clipboard;
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText: writeTextMock },
+    });
+
     try {
       const today = businessDateToday();
+      const tomorrow = addCalendarDays(today, 1);
+
       testState.appointments = [
         {
-          id: 'apt-mobile-1',
+          id: 'apt-clean-1',
           barberId: 'b1',
           barber: 'Lautaro',
           date: today,
           time: '10:00',
-          endTime: '10:45',
+          endTime: '10:30',
           name: 'Matias Zarate',
           phone: '+5491122334455',
           email: 'matias@test.com',
@@ -398,62 +407,99 @@ describe('V12.47.25 — UI /admin/turnos (V2Appointments)', () => {
           servicePrice: 25000,
           depositPaid: false,
           isManual: true,
+          dispatches: {
+            whatsapp: { id: 'w1', channel: 'WHATSAPP', provider: 'PONTIUN', status: 'DELIVERED', recipient: '+5491122334455', attempts: 1 },
+            email: { id: 'e1', channel: 'EMAIL', provider: 'RESEND', status: 'FAILED', recipient: 'matias@test.com', attempts: 1, errorDescription: 'Bounce' },
+          },
         },
         {
-          id: 'apt-mobile-2',
+          id: 'apt-clean-2',
           barberId: 'b1',
           barber: 'Lautaro',
-          date: today,
+          date: tomorrow,
           time: '11:00',
           endTime: '11:45',
           name: 'Lucas Pérez',
           phone: '+5491122334456',
-          statusCode: 'CONFIRMED',
+          statusCode: 'CANCELLED',
           serviceName: 'Barba',
           servicePrice: 15000,
           depositPaid: true,
+          depositAmountArs: 5000,
           isManual: false,
         },
       ];
 
+      testState.retryServerFn.mockResolvedValue({
+        success: true,
+        channel: 'EMAIL',
+        status: 'SENT',
+        providerMessageId: 'resend-999',
+      });
+
       const { container } = render(<V2Appointments />);
 
-      // Rango horario unificado y barra principal al 100%
-      expect(screen.getByText('10:00–10:45')).toBeInTheDocument();
-      expect(screen.getByText('11:00–11:45')).toBeInTheDocument();
-      expect(container.querySelectorAll('.v2-app-mobile-bar')).toHaveLength(2);
-      expect(screen.getAllByRole('link', { name: 'Cobrar' })).toHaveLength(2);
-      expect(screen.getAllByRole('link', { name: 'WhatsApp' })).toHaveLength(2);
-      expect(screen.getByRole('link', { name: 'Mail' })).toBeInTheDocument();
+      // Encabezados de día en vista multi-día (NEXT_10_DAYS) y horario 10:00 hs + duración
+      const dayHeaders = container.querySelectorAll('.v2-mobile-day-header');
+      expect(dayHeaders).toHaveLength(2);
+      expect(screen.getByText('10:00 hs')).toBeInTheDocument();
+      expect(screen.getByText('30 min')).toBeInTheDocument();
+      expect(screen.getByText('11:00 hs')).toBeInTheDocument();
+      expect(screen.getByText('45 min')).toBeInTheDocument();
 
-      const moreButtons = screen.getAllByRole('button', { name: /Más/i });
-      expect(moreButtons).toHaveLength(2);
-      expect(moreButtons[0]).toHaveAttribute('aria-expanded', 'false');
-      expect(moreButtons[1]).toHaveAttribute('aria-expanded', 'false');
-      expect(screen.queryByRole('button', { name: 'Cancelar turno' })).toBeNull();
+      // Barra única Cobrar | WhatsApp (SVG) | Email | X (sin Opciones ni Más)
+      expect(screen.queryByRole('button', { name: /Opciones/i })).toBeNull();
+      expect(screen.queryByRole('button', { name: /Más/i })).toBeNull();
+      expect(screen.getAllByRole('link', { name: 'Cobrar' })).toHaveLength(1);
+      expect(container.querySelectorAll('.v2-clean-bar-wa .v2-whatsapp-icon')).toHaveLength(2);
+      expect(screen.getAllByRole('button', { name: 'WhatsApp' })).toHaveLength(2);
+      expect(screen.getAllByRole('button', { name: 'Email' })).toHaveLength(2);
+      expect(screen.getAllByRole('button', { name: 'Cancelar turno' })).toHaveLength(1);
 
-      // Abrir bandeja solo en la primera tarjeta (manual)
-      fireEvent.click(moreButtons[0]!);
-      expect(moreButtons[0]).toHaveAttribute('aria-expanded', 'true');
-      expect(moreButtons[0]).toHaveTextContent('Menos');
-      expect(moreButtons[1]).toHaveAttribute('aria-expanded', 'false');
+      // Punto rojo de alerta en Email del primer turno (FAILED) y tarjeta cancelada atenuada
+      expect(container.querySelectorAll('.v2-icon-alert-dot')).toHaveLength(1);
+      const cards = container.querySelectorAll('.v2-appointment');
+      expect(cards[1]).toHaveClass('v2-appointment--cancelled');
 
-      expect(screen.getByRole('button', { name: 'Editar' })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'Avisos' })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'Cancelar turno' })).toBeInTheDocument();
+      // Abrir modal de WhatsApp: teléfono + Copiar + Contactar cliente + Reenviar notificación
+      fireEvent.click(screen.getAllByRole('button', { name: 'WhatsApp' })[0]!);
+      expect(screen.getByRole('heading', { name: /WhatsApp · Matias Zarate/i })).toBeInTheDocument();
+      expect(screen.getByText('+5491122334455')).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: 'Copiar' }));
+      await waitFor(() => expect(writeTextMock).toHaveBeenCalledWith('+5491122334455'));
+      expect(screen.getByRole('link', { name: 'Contactar cliente' })).toHaveAttribute('href', expect.stringContaining('api.whatsapp.com/send/?phone=5491122334455'));
+      expect(screen.getByRole('button', { name: 'Reenviar notificación' })).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: 'Close' }));
 
-      // Avisos abre el modal de diagnóstico de notificaciones
-      fireEvent.click(screen.getByRole('button', { name: 'Avisos' }));
-      expect(
-        screen.getByRole('heading', { name: 'Diagnóstico de notificación: WhatsApp' }),
-      ).toBeInTheDocument();
-      fireEvent.click(screen.getByRole('button', { name: 'Cerrar' }));
+      // Abrir modal de Email: email + Copiar + Contactar cliente + Reenviar mail
+      fireEvent.click(screen.getAllByRole('button', { name: 'Email' })[0]!);
+      expect(screen.getByRole('heading', { name: /Email · Matias Zarate/i })).toBeInTheDocument();
+      expect(screen.getByText('matias@test.com')).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Contactar cliente' })).toHaveAttribute('href', 'mailto:matias@test.com');
+      fireEvent.click(screen.getByRole('button', { name: 'Reenviar mail' }));
+      await waitFor(() => expect(testState.retryServerFn).toHaveBeenCalledTimes(1));
+      fireEvent.click(screen.getByRole('button', { name: 'Close' }));
 
-      // Cerrar bandeja de la primera tarjeta
-      fireEvent.click(screen.getByRole('button', { name: /Menos/i }));
-      expect(screen.queryByRole('button', { name: 'Cancelar turno' })).toBeNull();
+      // Tocar X abre confirmación de cancelación directamente
+      fireEvent.click(screen.getByRole('button', { name: 'Cancelar turno' }));
+      const cancelDialog = screen.getByRole('dialog');
+      expect(within(cancelDialog).getByRole('heading', { name: 'Cancelar turno' })).toBeInTheDocument();
+      expect(within(cancelDialog).getByText('¿Estás seguro que querés cancelar el turno?')).toBeInTheDocument();
+      expect(within(cancelDialog).getByText('Matias Zarate')).toBeInTheDocument();
+      expect(within(cancelDialog).getByText(/10:00 hs\./)).toBeInTheDocument();
+      const cancelConfirmBtn = within(cancelDialog).getByRole('button', { name: 'Cancelar turno' });
+      expect(cancelConfirmBtn).toHaveClass('v2-destructive', 'action-reject');
+      fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+
+      // Chip Manual abre ManualAppointmentDialog en modo EDIT
+      fireEvent.click(screen.getByRole('button', { name: /Editar turno manual de Matias Zarate/i }));
+      expect(screen.getByRole('heading', { name: /Editar turno manual/i })).toBeInTheDocument();
     } finally {
       window.matchMedia = origMatchMedia;
+      Object.defineProperty(navigator, 'clipboard', {
+        configurable: true,
+        value: origClipboard,
+      });
     }
   });
 });

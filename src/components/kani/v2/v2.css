@@ -5237,130 +5237,279 @@ html[data-theme="light"] .v2-past-badge {
     min-width: 0 !important;
   }
 
-  .v2-appointments-page .v2-app-row-1--mobile {
+  .v2-appointments-page .v2-mobile-card-group {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+
+  .v2-appointments-page .v2-mobile-day-header {
+    margin: 10px 2px 4px !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.01em !important;
+    color: var(--foreground) !important;
+  }
+
+  .v2-appointments-page .v2-appointment--clean-mobile {
+    padding: 14px !important;
+    gap: 12px !important;
+  }
+
+  .v2-appointments-page .v2-appointment-main--clean {
+    gap: 10px !important;
+  }
+
+  .v2-appointments-page .v2-app-row-1--clean {
+    display: flex !important;
+    align-items: center !important;
     justify-content: space-between !important;
+    flex-wrap: wrap !important;
     gap: 4px 8px !important;
+    padding-bottom: 0 !important;
+    border-bottom: none !important;
     width: 100% !important;
   }
 
-  .v2-appointments-page .v2-app-mobile-identity {
-    display: flex !important;
-    align-items: center !important;
-    gap: 6px !important;
-    flex: 1 1 150px !important;
-    min-width: 0 !important;
+  .v2-appointments-page .v2-app-clean-time-wrap {
+    display: inline-flex !important;
+    align-items: baseline !important;
+    gap: 7px !important;
   }
 
-  .v2-appointments-page .v2-app-row-1--mobile .v2-app-name {
-    flex: 1 1 auto !important;
-    min-width: 0 !important;
+  .v2-appointments-page .v2-app-time-hero {
+    font-size: 15.5px !important;
+    font-weight: 600 !important;
+    line-height: 1.25 !important;
+    color: var(--foreground) !important;
+    font-variant-numeric: tabular-nums !important;
+    letter-spacing: -0.015em !important;
+  }
+
+  .v2-appointments-page .v2-app-duration {
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    color: var(--muted-foreground) !important;
   }
 
   .v2-appointments-page .v2-app-mobile-badges {
     display: inline-flex !important;
     align-items: center !important;
     flex-wrap: wrap !important;
-    gap: 4px !important;
-    flex: 0 0 auto !important;
+    gap: 5px !important;
     margin-left: auto !important;
   }
 
   .v2-appointments-page .v2-app-mobile-badges > .v2-badge,
   .v2-appointments-page .v2-app-mobile-badges > .v2-manual-badge,
-  .v2-appointments-page .v2-app-mobile-badges > .v2-past-badge {
-    padding: 2px 7px !important;
-    font-size: 10.5px !important;
+  .v2-appointments-page .v2-app-mobile-badges > .v2-past-badge,
+  .v2-appointments-page .v2-manual-chip-btn {
+    padding: 3px 8px !important;
+    font-size: 11px !important;
     line-height: 1.25 !important;
     white-space: nowrap !important;
   }
 
-  .v2-appointments-page .v2-app-row-2--mobile {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: space-between !important;
-    flex-wrap: wrap !important;
-    gap: 4px 8px !important;
-    width: 100% !important;
-  }
-
-  .v2-appointments-page .v2-app-mobile-meta {
-    display: flex !important;
-    align-items: baseline !important;
-    flex-wrap: wrap !important;
-    gap: 1px 5px !important;
-    flex: 1 1 190px !important;
-    min-width: 0 !important;
-    font-size: 12px !important;
-    line-height: 1.3 !important;
-  }
-
-  .v2-appointments-page .v2-app-mobile-notif-inline {
+  .v2-appointments-page .v2-manual-chip-btn {
     display: inline-flex !important;
     align-items: center !important;
     gap: 4px !important;
+    border-radius: 999px !important;
+    border: 1px solid rgba(200, 169, 107, 0.45) !important;
+    background: rgba(200, 169, 107, 0.14) !important;
+    color: var(--gold) !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+  }
+
+  .v2-appointments-page .v2-app-clean-body {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 6px !important;
+    min-width: 0 !important;
+  }
+
+  .v2-appointments-page .v2-app-name--clean {
+    flex: 0 0 auto !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    font-size: 14.5px !important;
+    font-weight: 600 !important;
+    line-height: 1.3 !important;
+    color: var(--foreground) !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+  }
+
+  .v2-appointments-page .v2-app-mobile-meta,
+  .v2-appointments-page .v2-app-meta--clean {
+    display: flex !important;
+    align-items: baseline !important;
+    flex-wrap: wrap !important;
+    gap: 2px 5px !important;
+    font-size: 12.5px !important;
+    line-height: 1.35 !important;
+    color: var(--muted-foreground) !important;
+  }
+
+  .v2-appointments-page .v2-appointment--cancelled {
+    opacity: 0.68 !important;
+  }
+
+  .v2-appointments-page .v2-app-deposit--paid {
+    color: #059669 !important;
+    font-weight: 600 !important;
+  }
+
+  html[data-theme="dark"] .v2-appointments-page .v2-app-deposit--paid,
+  .dark .v2-appointments-page .v2-app-deposit--paid {
+    color: #34d399 !important;
+  }
+
+  .v2-appointments-page .v2-app-clean-bar {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+
+  .v2-appointments-page .v2-clean-bar-primary {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    min-height: 44px !important;
+    height: 44px !important;
+    padding: 0 14px !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+  }
+
+  .v2-appointments-page .v2-clean-bar-status-note {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    color: var(--muted-foreground) !important;
+    padding-left: 2px !important;
+  }
+
+  .v2-appointments-page .v2-clean-bar-icons {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
     flex: 0 0 auto !important;
     margin-left: auto !important;
   }
 
-  .v2-appointments-page .v2-notif-pill--compact {
-    min-width: 28px !important;
-    min-height: 26px !important;
-    padding: 2px 6px !important;
-    justify-content: center !important;
-    cursor: pointer !important;
-  }
-
-  .v2-appointments-page .v2-appointment-actions--mobile {
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 6px !important;
-    width: 100% !important;
-  }
-
-  .v2-appointments-page .v2-app-mobile-bar {
-    display: flex !important;
-    align-items: stretch !important;
-    gap: 5px !important;
-    width: 100% !important;
-  }
-
-  .v2-appointments-page .v2-mobile-bar-primary {
-    flex: 1.3 1 0 !important;
-    min-width: 0 !important;
-    padding: 0 8px !important;
-    font-size: 12px !important;
-  }
-
-  .v2-appointments-page .v2-mobile-bar-btn,
-  .v2-appointments-page .v2-mobile-bar-more {
-    flex: 1 1 0 !important;
-    min-width: 0 !important;
-    padding: 0 6px !important;
-    font-size: 12px !important;
-    gap: 4px !important;
-  }
-
-  .v2-appointments-page .v2-app-mobile-drawer {
-    display: flex !important;
-    align-items: stretch !important;
-    flex-wrap: wrap !important;
-    gap: 6px !important;
-    width: 100% !important;
-    padding-top: 6px !important;
-    border-top: 1px solid var(--border) !important;
-  }
-
-  .v2-appointments-page .v2-mobile-drawer-btn {
-    flex: 1 1 0 !important;
-    min-width: 0 !important;
-    padding: 0 8px !important;
-    font-size: 12px !important;
-    min-height: 44px !important;
+  .v2-appointments-page .v2-clean-bar-icon-btn {
+    position: relative !important;
+    width: 44px !important;
+    min-width: 44px !important;
     height: 44px !important;
+    min-height: 44px !important;
+    padding: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 12px !important;
+    box-shadow: none !important;
   }
 
-  .v2-appointments-page .v2-mobile-drawer-cancel {
-    flex: 1.35 1 0 !important;
+  .v2-appointments-page .v2-clean-bar-wa .v2-whatsapp-icon {
+    width: 18px !important;
+    height: 18px !important;
+    color: #16a34a !important;
+  }
+
+  html[data-theme="dark"] .v2-appointments-page .v2-clean-bar-wa .v2-whatsapp-icon,
+  .dark .v2-appointments-page .v2-clean-bar-wa .v2-whatsapp-icon {
+    color: #4ade80 !important;
+  }
+
+  .v2-appointments-page .v2-icon-alert-dot {
+    position: absolute !important;
+    top: 6px !important;
+    right: 6px !important;
+    width: 8px !important;
+    height: 8px !important;
+    border-radius: 999px !important;
+    background: #ef4444 !important;
+    box-shadow: 0 0 0 2px var(--v2-reading-surface, #111113) !important;
+  }
+
+  .v2-channel-modal-body {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 8px;
+  }
+
+  .v2-channel-status-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 13px;
+  }
+
+  .v2-channel-status-label {
+    color: var(--muted-foreground);
+    font-weight: 500;
+  }
+
+  .v2-channel-error-detail {
+    margin: 0;
+    padding: 8px 10px;
+    border-radius: 10px;
+    font-size: 12.5px;
+    line-height: 1.4;
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #dc2626;
+  }
+
+  html[data-theme="dark"] .v2-channel-error-detail,
+  .dark .v2-channel-error-detail {
+    color: #fca5a5;
+  }
+
+  .v2-channel-contact-box {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--v2-inset, rgba(255, 255, 255, 0.04));
+  }
+
+  .v2-channel-contact-value {
+    font-size: 13.5px;
+    font-weight: 600;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .v2-channel-copy-btn {
+    min-height: 36px !important;
+    padding: 4px 10px !important;
+    font-size: 12px !important;
+    gap: 5px !important;
+    flex: 0 0 auto !important;
+  }
+
+  .v2-channel-modal-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .v2-channel-modal-actions > * {
+    width: 100%;
+    min-height: 44px;
   }
 }
 
