@@ -1139,10 +1139,10 @@ export function V2Payments() {
               </div>
             </dl>
           )}
-          <div className="v2-dialog-actions">
+          <div className="v2-dialog-actions grid grid-cols-2 w-full sm:flex sm:justify-end">
             <button
               type="button"
-              className="v2-secondary"
+              className="v2-secondary w-full sm:w-auto"
               onClick={() => setDeletingPayment(null)}
               disabled={editBusy}
             >
@@ -1150,7 +1150,7 @@ export function V2Payments() {
             </button>
             <button
               type="button"
-              className="v2-destructive action-reject"
+              className="v2-destructive action-reject w-full sm:w-auto"
               onClick={handleConfirmDelete}
               disabled={editBusy}
             >
