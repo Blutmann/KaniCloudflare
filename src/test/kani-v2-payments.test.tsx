@@ -191,10 +191,18 @@ describe('Benefit-aware appointment collection',()=>{
   fireEvent.click(screen.getByRole('button', { name: /Registrar cobro|Cobrar/i }));
   await waitFor(() => expect(mocks.refresh).toHaveBeenCalledWith({ silent: true }));
 
-  // 2. Modal de anulación -> botón Confirmar anulación con v2-destructive action-reject
+  // 2. Modal de anulación -> título, pregunta, ficha resumen y botón Anular pago con v2-destructive action-reject
   fireEvent.click(screen.getAllByRole('button', { name: 'Eliminar cobro' })[0]!);
   const deleteDialog = within(screen.getByRole('dialog'));
-  const confirmBtn = deleteDialog.getByRole('button', { name: 'Confirmar anulación' });
+  expect(deleteDialog.getByRole('heading', { name: 'Anular pago' })).toBeInTheDocument();
+  expect(deleteDialog.getByText('¿Querés anular este cobro?')).toBeInTheDocument();
+  expect(deleteDialog.queryByText(/baja lógica con trazabilidad/i)).not.toBeInTheDocument();
+  expect(deleteDialog.getByText('Sin cliente asociado')).toBeInTheDocument();
+  expect(deleteDialog.getByText(`${today} · 10:00 hs`)).toBeInTheDocument();
+  expect(deleteDialog.getByText('Corte')).toBeInTheDocument();
+  expect(deleteDialog.getByText('Efectivo')).toBeInTheDocument();
+  expect(deleteDialog.getByText('$25.000')).toBeInTheDocument();
+  const confirmBtn = deleteDialog.getByRole('button', { name: 'Anular pago' });
   expect(confirmBtn).toHaveClass('v2-destructive', 'action-reject');
   expect(confirmBtn).not.toHaveClass('v2-primary');
   fireEvent.click(deleteDialog.getByRole('button', { name: 'Cancelar' }));
