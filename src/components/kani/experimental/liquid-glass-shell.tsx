@@ -47,11 +47,29 @@ export function isClassicLegacyPath(pathname: string): boolean {
   );
 }
 
+const LIQUID_GLASS_ADMIN_PREFIXES = [
+  '/panel-administracion',
+  '/panel-membresias',
+  '/panel-descuentos',
+  '/panel-turnos',
+  '/panel-horarios',
+  '/admin-v2-liquid',
+  '/admin-liquid',
+] as const;
+
 export function isLiquidGlassPath(pathname: string): boolean {
   const clean = pathname.replace(/\/+$/, '') || '/';
   if (isClassicLegacyPath(clean)) return false;
   return LIQUID_GLASS_PREFIXES.some((prefix) =>
     prefix === '/' ? clean === '/' : clean === prefix || clean.startsWith(`${prefix}/`),
+  );
+}
+
+export function isLiquidGlassAdminPath(pathname: string): boolean {
+  const clean = pathname.replace(/\/+$/, '') || '/';
+  if (isClassicLegacyPath(clean)) return false;
+  return LIQUID_GLASS_ADMIN_PREFIXES.some(
+    (prefix) => clean === prefix || clean.startsWith(`${prefix}/`),
   );
 }
 

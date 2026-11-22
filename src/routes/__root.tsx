@@ -4,16 +4,22 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
   type ErrorComponentProps,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
+import "@fontsource-variable/inter";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { KaniProvider } from '@/components/kani/store';
 import { SiteHeader, SiteFooter } from '@/components/kani/site-header';
+import {
+  isLiquidGlassAdminPath,
+  isLiquidGlassPath,
+} from '@/components/kani/experimental/liquid-glass-shell';
 
 function NotFoundComponent() {
   return (
@@ -105,19 +111,64 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   errorComponent: ErrorComponent,
 });
 
+const ROOT_PREPAINT_SCRIPT = [
+  "try{",
+  "var d=document.documentElement;",
+  "var t=window.localStorage.getItem('kani-theme');",
+  "if(t==='dark'||t==='light'){d.dataset.theme=t;}",
+  "else if(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches){d.dataset.theme='dark';}",
+  "else{d.dataset.theme='light';}",
+  "var p=(window.location.pathname||'').replace(/\\/+$/,'')||'/';",
+  "var c=p.slice(-4)==='-old'||p.indexOf('-old/')!==-1||p==='/reservar-turno-mercadopago'||p==='/reservar-mercadopago'||p==='/panel-v2'||p.indexOf('/panel-v2/')===0||p==='/reserva-v2'||p==='/reserva-v3'||p==='/reserva-v5'||p==='/admin'||p.indexOf('/admin/')===0||p==='/admin-v2'||p.indexOf('/admin-v2/')===0;",
+  "var lgP=['/','/reservar','/contacto','/cancelar-turno','/panel-administracion','/panel-membresias','/panel-descuentos','/panel-turnos','/panel-horarios','/politica-de-privacidad','/terminos-y-condiciones','/admin-v2-liquid','/reservar-turno','/reservar-turno-liquid','/contacto-liquid','/admin-liquid','/politica-de-privacidad-liquid','/terminos-y-condiciones-liquid'];",
+  "var lgA=['/panel-administracion','/panel-membresias','/panel-descuentos','/panel-turnos','/panel-horarios','/admin-v2-liquid','/admin-liquid'];",
+  "var m=function(list){for(var i=0;i<list.length;i++){var x=list[i];if(x==='/'?p==='/':p===x||p.indexOf(x+'/')===0)return true;}return false;};",
+  "var isLg=!c&&m(lgP);",
+  "var isAdmin=!c&&m(lgA);",
+  "if(isLg){d.dataset.liquidGlass='true';}else{delete d.dataset.liquidGlass;}",
+  "if(isAdmin){d.dataset.lgAdmin='true';}else{delete d.dataset.lgAdmin;}",
+  "}catch(e){}",
+].join("");
+
 function RootShell({ children }: { children: ReactNode }) {
+  const pathname = useRouterState({ select: (s) => s.location.pathname || "/" });
+  const isLiquidGlass = isLiquidGlassPath(pathname);
+  const isLiquidGlassAdmin = isLiquidGlassAdminPath(pathname);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    if (isLiquidGlass) {
+      document.documentElement.dataset.liquidGlass = "true";
+    } else {
+      delete document.documentElement.dataset.liquidGlass;
+    }
+    if (isLiquidGlassAdmin) {
+      document.documentElement.dataset.lgAdmin = "true";
+    } else {
+      delete document.documentElement.dataset.lgAdmin;
+    }
+  }, [isLiquidGlass, isLiquidGlassAdmin]);
+
   return (
-    <html lang="es" suppressHydrationWarning>
+    <html
+      lang="es"
+      data-liquid-glass={isLiquidGlass ? "true" : undefined}
+      data-lg-admin={isLiquidGlassAdmin ? "true" : undefined}
+      suppressHydrationWarning
+    >
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html:
-              "try{var t=window.localStorage.getItem('kani-theme');if(t==='dark'||t==='light'){document.documentElement.dataset.theme=t;}else if(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches){document.documentElement.dataset.theme='dark';}else{document.documentElement.dataset.theme='light';}}catch(e){}",
+            __html: ROOT_PREPAINT_SCRIPT,
           }}
         />
         <HeadContent />
       </head>
-      <body>
+      <body
+        className={isLiquidGlass ? "liquid-glass-active" : undefined}
+        data-lg-admin={isLiquidGlassAdmin ? "true" : undefined}
+        suppressHydrationWarning
+      >
         {children}
         <Scripts />
       </body>
