@@ -366,4 +366,94 @@ describe('V12.47.25 — UI /admin/turnos (V2Appointments)', () => {
       screen.getByRole('heading', { name: 'Número de teléfono inválido o ambiguo' }),
     ).toBeInTheDocument();
   });
+
+  it('Mobile Modelo 1: rango horario unificado (10:00–10:45), barra 100% ancho (Cobrar, WA, Mail, Más) y bandeja horizontal por tarjeta', () => {
+    const origMatchMedia = window.matchMedia;
+    window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+      matches: query === '(max-width: 639px)',
+      media: query,
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })) as unknown as typeof window.matchMedia;
+
+    try {
+      const today = businessDateToday();
+      testState.appointments = [
+        {
+          id: 'apt-mobile-1',
+          barberId: 'b1',
+          barber: 'Lautaro',
+          date: today,
+          time: '10:00',
+          endTime: '10:45',
+          name: 'Matias Zarate',
+          phone: '+5491122334455',
+          email: 'matias@test.com',
+          statusCode: 'CONFIRMED',
+          serviceName: 'Corte',
+          servicePrice: 25000,
+          depositPaid: false,
+          isManual: true,
+        },
+        {
+          id: 'apt-mobile-2',
+          barberId: 'b1',
+          barber: 'Lautaro',
+          date: today,
+          time: '11:00',
+          endTime: '11:45',
+          name: 'Lucas Pérez',
+          phone: '+5491122334456',
+          statusCode: 'CONFIRMED',
+          serviceName: 'Barba',
+          servicePrice: 15000,
+          depositPaid: true,
+          isManual: false,
+        },
+      ];
+
+      const { container } = render(<V2Appointments />);
+
+      // Rango horario unificado y barra principal al 100%
+      expect(screen.getByText('10:00–10:45')).toBeInTheDocument();
+      expect(screen.getByText('11:00–11:45')).toBeInTheDocument();
+      expect(container.querySelectorAll('.v2-app-mobile-bar')).toHaveLength(2);
+      expect(screen.getAllByRole('link', { name: 'Cobrar' })).toHaveLength(2);
+      expect(screen.getAllByRole('link', { name: 'WhatsApp' })).toHaveLength(2);
+      expect(screen.getByRole('link', { name: 'Mail' })).toBeInTheDocument();
+
+      const moreButtons = screen.getAllByRole('button', { name: /Más/i });
+      expect(moreButtons).toHaveLength(2);
+      expect(moreButtons[0]).toHaveAttribute('aria-expanded', 'false');
+      expect(moreButtons[1]).toHaveAttribute('aria-expanded', 'false');
+      expect(screen.queryByRole('button', { name: 'Cancelar turno' })).toBeNull();
+
+      // Abrir bandeja solo en la primera tarjeta (manual)
+      fireEvent.click(moreButtons[0]!);
+      expect(moreButtons[0]).toHaveAttribute('aria-expanded', 'true');
+      expect(moreButtons[0]).toHaveTextContent('Menos');
+      expect(moreButtons[1]).toHaveAttribute('aria-expanded', 'false');
+
+      expect(screen.getByRole('button', { name: 'Editar' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Avisos' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Cancelar turno' })).toBeInTheDocument();
+
+      // Avisos abre el modal de diagnóstico de notificaciones
+      fireEvent.click(screen.getByRole('button', { name: 'Avisos' }));
+      expect(
+        screen.getByRole('heading', { name: 'Diagnóstico de notificación: WhatsApp' }),
+      ).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: 'Cerrar' }));
+
+      // Cerrar bandeja de la primera tarjeta
+      fireEvent.click(screen.getByRole('button', { name: /Menos/i }));
+      expect(screen.queryByRole('button', { name: 'Cancelar turno' })).toBeNull();
+    } finally {
+      window.matchMedia = origMatchMedia;
+    }
+  });
 });

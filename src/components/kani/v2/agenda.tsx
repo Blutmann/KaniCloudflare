@@ -3,7 +3,7 @@ import { getWhatsAppDirectSendUrl } from "@/lib/kani-phone";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "@tanstack/react-router";
-import { AlertCircle, ArrowRight, CalendarDays, Check, Clock3, Info, Mail } from "lucide-react";
+import { AlertCircle, ArrowRight, CalendarDays, Check, ChevronDown, ChevronUp, Clock3, Info, Mail } from "lucide-react";
 import { useAdminStaff } from "@/lib/kani-admin-context";
 import {
   businessDateToday,
@@ -253,6 +253,23 @@ export function V2Appointments({
       if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     };
   }, []);
+  const [isMobileCard, setIsMobileCard] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
+    const mql = window.matchMedia("(max-width: 639px)");
+    const update = () => setIsMobileCard(mql.matches);
+    update();
+    if (typeof mql.addEventListener === "function") {
+      mql.addEventListener("change", update);
+      return () => mql.removeEventListener("change", update);
+    }
+    mql.addListener?.(update);
+    return () => mql.removeListener?.(update);
+  }, []);
+  const [expandedDrawers, setExpandedDrawers] = useState<Record<string, boolean>>({});
+  const toggleDrawer = (id: string) => {
+    setExpandedDrawers((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
   const [whatsAppModal, setWhatsAppModal] = useState<{
     appointment: RealAppointment;
     mode: "NO_PHONE" | "INVALID_PHONE";
@@ -538,6 +555,218 @@ export function V2Appointments({
         {rows.map((a) => {
           const isFinished = isAppointmentTemporallyFinished(a);
           const waDirectUrl = getWhatsAppDirectSendUrl(a.phone);
+          const canOperate =
+            isStaffOperator(staff.profile.role) || a.barberId === staff.profile.barber_id;
+          const canCancel = ["PENDING", "CONFIRMED"].includes(a.statusCode) && canOperate;
+          const canEditManual =
+            a.isManual && ["PENDING", "CONFIRMED"].includes(a.statusCode) && canOperate;
+          const isDrawerOpen = Boolean(expandedDrawers[a.id]);
+          const timeRangeLabel = a.endTime ? `${a.time}–${a.endTime}` : a.time;
+          const depositText = data.depositSupported
+            ? a.depositPaid
+              ? money(a.depositAmountArs ?? 5000)
+              : "No abonada"
+            : "Sin dato verificable";
+
+          if (isMobileCard) {
+            return (
+              <article
+                className={
+                  isFinished
+                    ? "v2-appointment v2-appointment--past v2-appointment--mobile-wide"
+                    : "v2-appointment v2-appointment--mobile-wide"
+                }
+                key={a.id}
+              >
+                <div className="v2-appointment-main">
+                  {/* Cabecera compacta: rango horario + cliente a la izquierda, badges a la derecha */}
+                  <div className="v2-app-row-1 v2-app-row-1--mobile">
+                    <div className="v2-app-mobile-identity">
+                      <strong className="v2-app-time">{timeRangeLabel}</strong>
+                      <span className="v2-app-sep">|</span>
+                      <h3 className="v2-app-name" title={a.name}>
+                        {a.name}
+                      </h3>
+                    </div>
+                    <div className="v2-app-mobile-badges">
+                      {a.isManual && <span className="v2-manual-badge">Manual</span>}
+                      <Status code={a.statusCode} />
+                      {isFinished && (
+                        <span className="v2-past-badge">Horario finalizado</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Segunda línea: Servicio · Barbero · Importe · Seña · (Fecha) + avisos compactos */}
+                  <div className="v2-app-row-2 v2-app-row-2--mobile">
+                    <div className="v2-app-mobile-meta">
+                      <span className="v2-app-service">{formatServiceName(a.serviceName)}</span>
+                      <span className="v2-app-dot">·</span>
+                      <span className="v2-app-barber">{a.barber}</span>
+                      <span className="v2-app-dot">·</span>
+                      <span className="v2-app-price">{money(a.servicePrice ?? 0)}</span>
+                      <span className="v2-app-dot">·</span>
+                      <span className="v2-app-deposit">Seña: {depositText}</span>
+                      {isMultiDay && (
+                        <>
+                          <span className="v2-app-dot">·</span>
+                          <span className="v2-app-date">{dateLabel(a.date)}</span>
+                        </>
+                      )}
+                    </div>
+                    <div className="v2-app-mobile-notif-inline">
+                      <button
+                        type="button"
+                        className={`v2-notif-pill v2-notif-pill--compact v2-notif-${(a.dispatches?.whatsapp?.status || "PENDING").toLowerCase()}`}
+                        onClick={() => {
+                          setSelectedNotifDetail({
+                            appointment: a,
+                            channel: "WhatsApp",
+                            dispatch: a.dispatches?.whatsapp,
+                          });
+                          setRetryFeedback(null);
+                        }}
+                        title="Ver diagnóstico completo de WhatsApp"
+                        aria-label={`Diagnóstico WhatsApp: ${formatWhatsAppStatus(a.dispatches?.whatsapp)}`}
+                      >
+                        <span aria-hidden="true">💬</span>
+                      </button>
+                      <button
+                        type="button"
+                        className={`v2-notif-pill v2-notif-pill--compact v2-notif-${(a.dispatches?.email?.status || "PENDING").toLowerCase()}`}
+                        onClick={() => {
+                          setSelectedNotifDetail({
+                            appointment: a,
+                            channel: "Email",
+                            dispatch: a.dispatches?.email,
+                          });
+                          setRetryFeedback(null);
+                        }}
+                        title="Ver diagnóstico completo de Email"
+                        aria-label={`Diagnóstico Email: ${formatEmailStatus(a.dispatches?.email)}`}
+                      >
+                        <span aria-hidden="true">✉️</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {a.notes && <p className="v2-note">{a.notes}</p>}
+                </div>
+
+                {/* Barra principal de acciones 100% ancho (1 fila, 44px) + bandeja desplegable horizontal */}
+                <div className="v2-appointment-actions v2-appointment-actions--mobile">
+                  <div className="v2-app-mobile-bar">
+                    {a.statusCode === "CONFIRMED" && (
+                      <Link
+                        className="v2-primary v2-action-btn v2-cobrar-btn v2-mobile-bar-primary"
+                        to={paymentsTo}
+                        search={{ turno: a.id }}
+                      >
+                        Cobrar
+                      </Link>
+                    )}
+                    {waDirectUrl ? (
+                      <a
+                        className="v2-secondary v2-whatsapp v2-action-btn v2-mobile-bar-btn"
+                        href={waDirectUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label="WhatsApp"
+                        title="Abrir conversación de WhatsApp con el cliente"
+                      >
+                        <span aria-hidden="true">💬</span>
+                        <span>WA</span>
+                      </a>
+                    ) : (
+                      <button
+                        type="button"
+                        className="v2-secondary v2-whatsapp v2-action-btn v2-mobile-bar-btn"
+                        onClick={() => handleWhatsAppInvalid(a)}
+                        aria-label="WhatsApp"
+                        title={
+                          !a.phone || !a.phone.trim()
+                            ? "El cliente no tiene un teléfono registrado"
+                            : "Número de teléfono inválido o ambiguo para WhatsApp"
+                        }
+                      >
+                        <span aria-hidden="true">💬</span>
+                        <span>WA</span>
+                      </button>
+                    )}
+                    {a.email && (
+                      <a
+                        className="v2-secondary v2-mail-btn v2-action-btn v2-mobile-bar-btn"
+                        href={`mailto:${a.email}`}
+                        aria-label="Mail"
+                      >
+                        <Mail size={15} aria-hidden="true" />
+                        <span>Mail</span>
+                      </a>
+                    )}
+                    <button
+                      type="button"
+                      className="v2-secondary v2-action-btn v2-mobile-bar-more"
+                      aria-expanded={isDrawerOpen}
+                      aria-controls={`v2-mobile-drawer-${a.id}`}
+                      onClick={() => toggleDrawer(a.id)}
+                    >
+                      <span>{isDrawerOpen ? "Menos" : "Más"}</span>
+                      {isDrawerOpen ? (
+                        <ChevronUp size={15} aria-hidden="true" />
+                      ) : (
+                        <ChevronDown size={15} aria-hidden="true" />
+                      )}
+                    </button>
+                  </div>
+
+                  {isDrawerOpen && (
+                    <div
+                      id={`v2-mobile-drawer-${a.id}`}
+                      className="v2-app-mobile-drawer"
+                    >
+                      {canEditManual && (
+                        <button
+                          type="button"
+                          className="v2-secondary v2-action-btn v2-mobile-drawer-btn"
+                          disabled={busy}
+                          onClick={() =>
+                            setManualDialog({ open: true, mode: "EDIT", appointment: a })
+                          }
+                        >
+                          Editar
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        className="v2-secondary v2-action-btn v2-mobile-drawer-btn"
+                        onClick={() => {
+                          setSelectedNotifDetail({
+                            appointment: a,
+                            channel: "WhatsApp",
+                            dispatch: a.dispatches?.whatsapp,
+                          });
+                          setRetryFeedback(null);
+                        }}
+                      >
+                        Avisos
+                      </button>
+                      {canCancel && (
+                        <button
+                          type="button"
+                          className="v2-destructive action-reject v2-action-btn v2-mobile-drawer-btn v2-mobile-drawer-cancel"
+                          disabled={busy}
+                          onClick={() => setAction({ appointment: a, status: "CANCELLED" })}
+                        >
+                          Cancelar turno
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </article>
+            );
+          }
+
           return (
             <article
               className={isFinished ? "v2-appointment v2-appointment--past" : "v2-appointment"}
