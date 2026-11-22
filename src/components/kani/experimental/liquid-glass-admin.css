@@ -350,6 +350,21 @@ html[data-theme] body[data-lg-admin="true"] .v2-quick-chip[aria-pressed="true"] 
   color: var(--lga-text-muted, var(--muted-foreground)) !important;
 }
 
+html[data-theme] body[data-lg-admin="true"] .v2-cash-summary-card {
+  margin-bottom: 12px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-payment-form-header .v2-segmented[data-lg-segmented="true"] {
+  margin-bottom: 0 !important;
+}
+
+@media (min-width: 640px) {
+  html[data-theme] body[data-lg-admin="true"] .v2-payment-form-header .v2-segmented[data-lg-segmented="true"] {
+    width: auto !important;
+    max-width: 220px !important;
+  }
+}
+
 html[data-theme="light"] body[data-lg-admin="true"] .admin-login-shell {
   background: linear-gradient(
     156deg,

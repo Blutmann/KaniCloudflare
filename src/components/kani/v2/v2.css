@@ -939,7 +939,7 @@ html[data-theme="dark"] .v2-field select {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   align-items: start;
-  gap: 14px;
+  gap: 12px;
 }
 @media (min-width: 1024px) {
   .v2-payment-layout {
@@ -949,9 +949,8 @@ html[data-theme="dark"] .v2-field select {
 }
 .v2-payment-form-header {
   display: flex;
-  flex-wrap: nowrap;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  align-items: stretch;
   gap: 8px;
   margin-bottom: 12px;
 }
@@ -964,14 +963,26 @@ html[data-theme="dark"] .v2-field select {
 }
 .v2-payment-form-header .v2-segmented {
   margin-bottom: 0;
-  width: auto;
-  max-width: 196px;
-  flex-shrink: 0;
+  width: 100%;
+  max-width: 100%;
 }
 .v2-payment-form-header .v2-segmented button {
   padding: 0 10px;
-  font-size: 11.5px;
+  font-size: 12px;
   white-space: nowrap;
+}
+@media (min-width: 640px) {
+  .v2-payment-form-header {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .v2-payment-form-header .v2-segmented {
+    width: auto;
+    max-width: 220px;
+    flex-shrink: 0;
+  }
 }
 .v2-payment-grid {
   display: grid;
@@ -980,12 +991,12 @@ html[data-theme="dark"] .v2-field select {
 .v2-quick-chips {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 7px;
+  gap: 8px;
 }
 .v2-quick-method-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 7px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
 }
 .v2-quick-chip {
   min-height: 44px;
@@ -1008,8 +1019,8 @@ html[data-theme="dark"] .v2-field select {
 .v2-quick-method-btn {
   justify-content: center;
   font-weight: 600;
-  font-size: 12.5px;
-  padding: 8px 6px;
+  font-size: 13px;
+  padding: 8px 10px;
 }
 .v2-quick-chip-name {
   white-space: nowrap;
@@ -1037,19 +1048,11 @@ html[data-theme="dark"] .v2-field select {
   opacity: 0.45;
   cursor: not-allowed;
 }
-.v2-quick-amount-row {
+.v2-quick-amount-input-wrap {
+  position: relative;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  min-width: 0;
-}
-.v2-quick-amount-inline {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  width: 132px;
-  flex-shrink: 0;
+  width: 100%;
 }
 .v2-quick-amount-prefix {
   position: absolute;
@@ -1059,16 +1062,15 @@ html[data-theme="dark"] .v2-field select {
   color: var(--muted-foreground);
   pointer-events: none;
 }
-.v2-payment-form .v2-quick-amount-inline input {
+.v2-payment-form .v2-quick-amount-input-wrap input {
   width: 100%;
   height: 44px;
   min-height: 44px;
   max-height: 44px;
-  padding: 6px 12px 6px 26px;
+  padding: 8px 12px 8px 26px;
   font-size: 14px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
-  text-align: right;
   border-radius: 12px;
 }
 .v2-quick-secondary-toggles {

@@ -305,16 +305,20 @@ describe('Benefit-aware appointment collection',()=>{
   const historyPanel = screen.getByRole('region', { name: 'Cobros registrados' });
   expect(within(historyPanel).getByText('1 servicios')).toBeInTheDocument();
 
-  // Selección en 1 toque de Servicio y Método de pago (incluyendo Payway)
+  // Selección en 1 toque de Servicio y Método de pago (solo Efectivo y Transferencia)
   const serviceGroup = screen.getByRole('group', { name: 'Servicio' });
   const comboBtn = within(serviceGroup).getByRole('button', { name: /Corte y barba/i });
   fireEvent.click(comboBtn);
   expect(comboBtn).toHaveAttribute('aria-pressed', 'true');
 
   const methodGroup = screen.getByRole('group', { name: 'Método de pago' });
-  const paywayBtn = within(methodGroup).getByRole('button', { name: 'Payway' });
-  fireEvent.click(paywayBtn);
-  expect(paywayBtn).toHaveAttribute('aria-pressed', 'true');
+  expect(within(methodGroup).getAllByRole('button').map((b) => b.textContent)).toEqual([
+    'Efectivo',
+    'Transferencia',
+  ]);
+  const transferBtn = within(methodGroup).getByRole('button', { name: 'Transferencia' });
+  fireEvent.click(transferBtn);
+  expect(transferBtn).toHaveAttribute('aria-pressed', 'true');
 
   const submitBtn = screen.getByRole('button', { name: 'Cobrar $30.000' });
   fireEvent.click(submitBtn);
@@ -322,7 +326,7 @@ describe('Benefit-aware appointment collection',()=>{
   expect(mocks.rpc.mock.calls[0]?.[1]).toMatchObject({
     p_service_name: 'Corte y barba',
     p_service_price_ars: 30000,
-    p_payment_method: 'Tarjeta — Payway',
+    p_payment_method: 'Transferencia',
   });
  });
 

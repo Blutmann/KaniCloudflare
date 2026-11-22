@@ -534,15 +534,14 @@ export function V2Payments() {
                   </div>
                 )}
 
-                {/* 2. Método de pago en 1 toque (3 columnas) */}
+                {/* 2. Método de pago en 1 toque (50/50) */}
                 <div className="v2-payment-full-row">
                   <span className="v2-field-label">2. Método de pago</span>
                   <div className="v2-quick-method-grid" role="group" aria-label="Método de pago">
                     {(
                       [
                         { value: "Efectivo", label: "Efectivo", ariaLabel: "Efectivo" },
-                        { value: "Transferencia", label: "Transf.", ariaLabel: "Transferencia" },
-                        { value: "Tarjeta — Payway", label: "Payway", ariaLabel: "Payway" },
+                        { value: "Transferencia", label: "Transferencia", ariaLabel: "Transferencia" },
                       ] as const
                     ).map((m) => {
                       const isSelected = method === m.value;
@@ -562,29 +561,30 @@ export function V2Payments() {
                   </div>
                 </div>
 
-                {/* Fila limpia de Importe */}
-                <div className="v2-quick-amount-row">
-                  <span className="v2-field-label">Importe</span>
-                  <label className="v2-quick-amount-inline">
-                    <span className="sr-only">Importe</span>
-                    <span className="v2-quick-amount-prefix" aria-hidden="true">$</span>
-                    <input
-                      type="number"
-                      aria-label="Importe"
-                      min={serviceName === "Anulado" ? 0 : 1}
-                      disabled={serviceName === "Anulado"}
-                      step={1}
-                      value={
-                        serviceName === "Anulado"
-                          ? 0
-                          : (priceOverride ??
-                            (["Otro", "Otros"].includes(serviceName) ? "" : price))
-                      }
-                      placeholder={String(service?.price ?? 25000)}
-                      onChange={(e) =>
-                        setPriceOverride(e.target.value === "" ? null : Number(e.target.value))
-                      }
-                    />
+                {/* Campo limpio de Importe al 100% */}
+                <div className="v2-payment-full-row">
+                  <label className="v2-field v2-payment-col v2-payment-entry-field">
+                    <span className="v2-field-label">Importe</span>
+                    <div className="v2-quick-amount-input-wrap">
+                      <span className="v2-quick-amount-prefix" aria-hidden="true">$</span>
+                      <input
+                        type="number"
+                        aria-label="Importe"
+                        min={serviceName === "Anulado" ? 0 : 1}
+                        disabled={serviceName === "Anulado"}
+                        step={1}
+                        value={
+                          serviceName === "Anulado"
+                            ? 0
+                            : (priceOverride ??
+                              (["Otro", "Otros"].includes(serviceName) ? "" : price))
+                        }
+                        placeholder={String(service?.price ?? 25000)}
+                        onChange={(e) =>
+                          setPriceOverride(e.target.value === "" ? null : Number(e.target.value))
+                        }
+                      />
+                    </div>
                   </label>
                 </div>
 
