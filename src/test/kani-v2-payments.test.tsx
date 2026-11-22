@@ -76,13 +76,17 @@ describe("V2 quick collection", () => {
     expect(mocks.rpc.mock.calls[0]?.[0]).toBe("staff_save_service_payment");
     expect(mocks.rpc.mock.calls[0]?.[1]).not.toHaveProperty("p_online_deposit_paid");
     expect(mocks.rpc.mock.calls[0]?.[1]).not.toHaveProperty("p_payment_date");
-    expect(await screen.findByText("Cobro registrado.")).toBeTruthy();
+    const successMsg = await screen.findByText("Cobro registrado.");
+    expect(successMsg).toBeTruthy();
+    expect(successMsg).toHaveAttribute("role", "status");
   });
   it("preserves the form and exposes a failure without trying another insert", async () => {
     mocks.rpc.mockResolvedValue({ data: null, error: { message: "FORBIDDEN_BARBER_SCOPE" } });
     render(<V2Payments />);
     fireEvent.click(screen.getByRole("button", { name: /Registrar cobro|Cobrar/i }));
-    expect(await screen.findByText(/No se confirmó el cobro/)).toBeTruthy();
+    const errorMsg = await screen.findByText(/No se confirmó el cobro/);
+    expect(errorMsg).toBeTruthy();
+    expect(errorMsg).toHaveAttribute("role", "alert");
     expect(mocks.rpc).toHaveBeenCalledTimes(1);
     expect(mocks.refresh).not.toHaveBeenCalled();
   });
@@ -121,6 +125,18 @@ describe("V2 quick collection", () => {
     expect(dialog.getByLabelText('Descuento ($ ARS)')).toHaveValue(5000);
     expect(dialog.getByLabelText('Importe total')).toHaveValue(25000);
     expect(dialog.getByLabelText('Barbero')).toBeDisabled();
+  });
+
+  it('exposes editError with role="alert" when saving an edited payment fails', async () => {
+    const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' }).format(new Date());
+    mocks.payments = [{ id: 'p1', barberId: 'b1', barberName: 'Gonzalo', serviceName: 'Corte', servicePriceArs: 25000, discountArs: 0, finalAmountArs: 25000, collectedAmountArs: 25000, paymentDate: today, paymentTime: '10:00', paymentMethod: 'Efectivo', onlineDepositPaid: false, onlineDepositAmountArs: 0, appointmentId: null }];
+    mocks.rpc.mockResolvedValue({ data: null, error: { message: 'EDIT_PAYMENT_FAILED' } });
+    render(<V2Payments />);
+    fireEvent.click(screen.getAllByRole('button', { name: 'Editar cobro' })[0]!);
+    const dialog = within(screen.getByRole('dialog'));
+    fireEvent.submit(dialog.getByRole('button', { name: /Guardar cambios/i }).closest('form')!);
+    const alert = await dialog.findByRole('alert');
+    expect(alert).toBeInTheDocument();
   });
 });
 

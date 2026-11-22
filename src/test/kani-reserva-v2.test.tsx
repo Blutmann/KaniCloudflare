@@ -1,6 +1,7 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import fs from 'node:fs';
+import path from 'node:path';
 import { dateLabel } from '@/lib/kani-model';
 
 const api = vi.hoisted(() => ({
@@ -327,5 +328,23 @@ describe('isolated four-stage booking presentation', () => {
     const alert = await screen.findByRole('alert');
     expect(alert.textContent).not.toContain('[object Object]');
     expect(alert.textContent).toBe('No pudimos iniciar el pago. Tus datos no se perdieron. Podés volver a intentarlo.');
+  });
+
+  it('declares noindex, nofollow in head() for experimental and alternative booking routes', () => {
+    const routesDir = path.resolve(__dirname, '../routes');
+    const experimentalRoutes = [
+      'reserva-v2.tsx',
+      'reserva-v3.tsx',
+      'reserva-v5.tsx',
+      'reservar-turno-mercadopago.tsx',
+      'reservar-mercadopago.tsx',
+    ];
+    for (const file of experimentalRoutes) {
+      const source = fs.readFileSync(path.join(routesDir, file), 'utf8');
+      expect(source, `${file} should declare head()`).toContain('head:');
+      expect(source, `${file} should include robots noindex, nofollow`).toMatch(
+        /name:\s*['"]robots['"],\s*content:\s*['"]noindex,\s*nofollow['"]/,
+      );
+    }
   });
 });

@@ -9,6 +9,16 @@ function ReservaV3Booking() {
 }
 
 export const Route = createFileRoute('/reserva-v3')({
-  head: () => pageHead('Reservá tu turno · Reserva V3', 'Elegí tu servicio, barbero, fecha, horario y completá tus datos en Kani Barber Studio.', 'Kani Barber Studio - Reservar turno'),
+  head: () => {
+    const baseHead = pageHead(
+      'Reservá tu turno · Reserva V3',
+      'Elegí tu servicio, barbero, fecha, horario y completá tus datos en Kani Barber Studio.',
+      'Kani Barber Studio - Reservar turno',
+    );
+    return {
+      ...baseHead,
+      meta: [...baseHead.meta, { name: 'robots', content: 'noindex, nofollow' }],
+    };
+  },
   component: ReservaV3Booking,
 });

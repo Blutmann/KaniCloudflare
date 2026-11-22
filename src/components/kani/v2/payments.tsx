@@ -650,7 +650,7 @@ export function V2Payments() {
             </fieldset>
           </form>
           {message && (
-            <p className={success ? "v2-success" : "v2-alert"} role="status">
+            <p className={success ? "v2-success" : "v2-alert"} role={success ? "status" : "alert"}>
               {message}
             </p>
           )}
@@ -900,7 +900,7 @@ export function V2Payments() {
           </div>
           <form onSubmit={handleSavePayment} className="v2-form v2-modal-pinned-form">
             <div className="v2-modal-pinned-scroll">
-              {editError && <p className="v2-alert">{editError}</p>}
+              {editError && <p className="v2-alert" role="alert">{editError}</p>}
               <div className="v2-form-row">
                 <label className="v2-field v2-payment-entry-field">
                   Barbero
