@@ -233,7 +233,7 @@ export function V2Payments() {
       setClientId("");
       setClientName("");
       setClientPhone("");
-      await data.refresh();
+      await data.refresh({ silent: true });
       notifyActivityChanged();
     } catch (e) {
       setMessage(
@@ -289,7 +289,7 @@ export function V2Payments() {
       );
       setEditingPayment(null);
       setActionNotice("Cobro actualizado exitosamente.");
-      await data.refresh();
+      await data.refresh({ silent: true });
     } catch (err) {
       setEditError(err instanceof Error ? err.message : "Error al actualizar el cobro.");
     } finally {
@@ -304,7 +304,7 @@ export function V2Payments() {
       await deleteServicePayment(deletingPayment.id, staff);
       setDeletingPayment(null);
       setActionNotice("Cobro anulado con registro de trazabilidad.");
-      await data.refresh();
+      await data.refresh({ silent: true });
     } catch (err) {
       alert(err instanceof Error ? err.message : "Error al anular el cobro.");
     } finally {
@@ -706,6 +706,7 @@ export function V2Payments() {
         </div>
         {isInvalidRange && (
           <p
+            role="alert"
             className="v2-notice"
             style={{ color: "var(--destructive, #ef4444)", margin: "8px 0" }}
           >
@@ -1097,21 +1098,54 @@ export function V2Payments() {
         open={!!deletingPayment}
         onOpenChange={(open) => !open && !editBusy && setDeletingPayment(null)}
       >
-        <DialogContent className="v2-dialog" transitionMode="container-transform">
-          <DialogTitle>Anular cobro</DialogTitle>
-          <DialogDescription>
-            ¿Estás seguro de anular el cobro de{" "}
-            <strong>
-              {formatServiceName(deletingPayment?.serviceName)} (
-              {money(deletingPayment?.collectedAmountArs || 0)})
-            </strong>
-            ? Esta operación aplicará una baja lógica con trazabilidad y excluirá el cobro de las
-            métricas sin alterar pagos externos ni eliminar turnos agendados.
-          </DialogDescription>
-          <div className="v2-dialog-actions">
+        <DialogContent
+          className="v2-dialog max-w-[calc(100vw-24px)] max-h-[calc(100dvh-32px)] overflow-y-auto"
+          transitionMode="container-transform"
+        >
+          <DialogTitle className="pr-10">Anular pago</DialogTitle>
+          <DialogDescription>¿Querés anular este cobro?</DialogDescription>
+          {deletingPayment && (
+            <dl className="my-2 rounded-xl border border-border/60 bg-muted/30 px-3.5 py-2.5 text-sm space-y-1.5 min-w-0">
+              <div className="flex items-baseline justify-between gap-3 min-w-0">
+                <dt className="text-muted-foreground shrink-0">Cliente</dt>
+                <dd className="font-medium text-foreground text-right min-w-0 break-words">
+                  {deletingPayment.clientName || "Sin cliente asociado"}
+                </dd>
+              </div>
+              <div className="flex items-baseline justify-between gap-3 min-w-0">
+                <dt className="text-muted-foreground shrink-0">Fecha y horario</dt>
+                <dd className="font-medium text-foreground text-right min-w-0">
+                  {`${deletingPayment.paymentDate ?? ""} · ${deletingPayment.paymentTime ?? ""} hs`}
+                </dd>
+              </div>
+              <div className="flex items-baseline justify-between gap-3 min-w-0">
+                <dt className="text-muted-foreground shrink-0">Servicio</dt>
+                <dd className="font-medium text-foreground text-right min-w-0 break-words">
+                  {deletingPayment.serviceOtherDetail ||
+                    formatServiceName(deletingPayment.serviceName)}
+                </dd>
+              </div>
+              <div className="flex items-baseline justify-between gap-3 min-w-0">
+                <dt className="text-muted-foreground shrink-0">Método de pago</dt>
+                <dd className="font-medium text-foreground text-right min-w-0">
+                  {formatPaymentMethodLabel(deletingPayment.paymentMethod || "")}
+                </dd>
+              </div>
+              <div className="flex items-baseline justify-between gap-3 min-w-0">
+                <dt className="text-muted-foreground shrink-0">Importe</dt>
+                <dd className="font-semibold text-foreground text-right min-w-0">
+                  {money(deletingPayment.collectedAmountArs || 0)}
+                </dd>
+              </div>
+            </dl>
+          )}
+          <div
+            className="v2-dialog-actions w-full flex-nowrap sm:justify-end"
+            style={{ flexWrap: "nowrap" }}
+          >
             <button
               type="button"
-              className="v2-secondary"
+              className="v2-secondary flex-1 min-w-0 sm:flex-none"
               onClick={() => setDeletingPayment(null)}
               disabled={editBusy}
             >
@@ -1119,12 +1153,11 @@ export function V2Payments() {
             </button>
             <button
               type="button"
-              className="v2-primary"
-              style={{ background: "var(--destructive, #ef4444)" }}
+              className="v2-destructive action-reject flex-1 min-w-0 sm:flex-none"
               onClick={handleConfirmDelete}
               disabled={editBusy}
             >
-              {editBusy ? "Anulando…" : "Confirmar anulación"}
+              {editBusy ? "Anulando…" : "Anular pago"}
             </button>
           </div>
         </DialogContent>

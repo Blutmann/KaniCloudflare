@@ -162,4 +162,57 @@ describe('Benefit-aware appointment collection',()=>{
   expect(screen.getByRole('button',{name:/Registrar cobro|Cobrar/i})).toBeDisabled();expect(screen.getByText('Sin saldo pendiente.')).toBeInTheDocument();expect(mocks.rpc).not.toHaveBeenCalled();
  });
 
+ it('calls refresh({ silent: true }) after registering a payment, shows role="alert" on invalid date range, and uses v2-destructive on Confirmar anulación', async () => {
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' }).format(new Date());
+  mocks.role = 'ADMIN';
+  mocks.payments = [
+    {
+      id: 'p1',
+      barberId: 'b1',
+      barberName: 'Gonzalo',
+      serviceName: 'Corte',
+      servicePriceArs: 25000,
+      discountArs: 0,
+      finalAmountArs: 25000,
+      collectedAmountArs: 25000,
+      paymentDate: today,
+      paymentTime: '10:00',
+      paymentMethod: 'Efectivo',
+      onlineDepositPaid: false,
+      onlineDepositAmountArs: 0,
+      appointmentId: null,
+    },
+  ];
+  mocks.rpc.mockResolvedValue({ data: { id: 'p2' }, error: null });
+
+  render(<V2Payments />);
+
+  // 1. Registrar cobro -> refresh({ silent: true })
+  fireEvent.click(screen.getByRole('button', { name: /Registrar cobro|Cobrar/i }));
+  await waitFor(() => expect(mocks.refresh).toHaveBeenCalledWith({ silent: true }));
+
+  // 2. Modal de anulación -> título, pregunta, ficha resumen y botón Anular pago con v2-destructive action-reject
+  fireEvent.click(screen.getAllByRole('button', { name: 'Eliminar cobro' })[0]!);
+  const deleteDialog = within(screen.getByRole('dialog'));
+  expect(deleteDialog.getByRole('heading', { name: 'Anular pago' })).toBeInTheDocument();
+  expect(deleteDialog.getByText('¿Querés anular este cobro?')).toBeInTheDocument();
+  expect(deleteDialog.queryByText(/baja lógica con trazabilidad/i)).not.toBeInTheDocument();
+  expect(deleteDialog.getByText('Sin cliente asociado')).toBeInTheDocument();
+  expect(deleteDialog.getByText(`${today} · 10:00 hs`)).toBeInTheDocument();
+  expect(deleteDialog.getByText('Corte')).toBeInTheDocument();
+  expect(deleteDialog.getByText('Efectivo')).toBeInTheDocument();
+  expect(deleteDialog.getByText('$25.000')).toBeInTheDocument();
+  const confirmBtn = deleteDialog.getByRole('button', { name: 'Anular pago' });
+  expect(confirmBtn).toHaveClass('v2-destructive', 'action-reject');
+  expect(confirmBtn).not.toHaveClass('v2-primary');
+  fireEvent.click(deleteDialog.getByRole('button', { name: 'Cancelar' }));
+
+  // 3. Rango inválido en filtro personalizado -> role="alert"
+  fireEvent.change(screen.getByLabelText('Período'), { target: { value: 'CUSTOM' } });
+  fireEvent.change(screen.getByLabelText('Fecha desde'), { target: { value: '2026-12-20' } });
+  fireEvent.change(screen.getByLabelText('Fecha hasta'), { target: { value: '2026-12-10' } });
+  const rangeAlert = screen.getByText(/Rango no válido:/i);
+  expect(rangeAlert).toHaveAttribute('role', 'alert');
+ });
+
 });

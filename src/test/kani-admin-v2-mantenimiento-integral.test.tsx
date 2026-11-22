@@ -135,4 +135,37 @@ describe('KANI BARBER STUDIO — Corrección Integral de la Interfaz de Mantenim
       });
     }
   });
+
+  describe('5. Modales contenidos en 100dvh y ARIA en reautenticación', () => {
+    it('los 3 DialogContent incluyen max-h-[calc(100dvh-32px)] overflow-y-auto', () => {
+      const matches = maintenanceComponentCode.match(/max-h-\[calc\(100dvh-32px\)\] overflow-y-auto/g) ?? [];
+      expect(matches).toHaveLength(3);
+    });
+
+    it('el input #maintenance-password expone aria-invalid y aria-describedby al fallar la reautenticación', async () => {
+      const { fireEvent, screen, waitFor } = await import('@testing-library/react');
+      const { reauthenticateAdmin } = await import('@/lib/kani-maintenance');
+      vi.mocked(reauthenticateAdmin).mockRejectedValueOnce(new Error('Contraseña incorrecta.'));
+
+      await React.act(async () => {
+        render(<AdminMaintenance />);
+      });
+
+      fireEvent.click(screen.getByLabelText('Seleccionar Pendientes'));
+      fireEvent.click(screen.getByRole('button', { name: 'Eliminar registros' }));
+
+      const passwordInput = await screen.findByLabelText('Contraseña actual');
+      expect(passwordInput).toHaveAttribute('aria-invalid', 'false');
+      expect(passwordInput).not.toHaveAttribute('aria-describedby');
+
+      fireEvent.change(passwordInput, { target: { value: 'wrong-pass' } });
+      fireEvent.click(screen.getByRole('button', { name: 'Continuar' }));
+
+      await waitFor(() => {
+        expect(passwordInput).toHaveAttribute('aria-invalid', 'true');
+        expect(passwordInput).toHaveAttribute('aria-describedby', 'maintenance-cleanup-error');
+        expect(document.getElementById('maintenance-cleanup-error')).toHaveAttribute('role', 'alert');
+      });
+    });
+  });
 });

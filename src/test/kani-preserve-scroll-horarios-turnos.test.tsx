@@ -279,4 +279,26 @@ describe("Preservar scroll, recarga silenciosa in-place y feedback visible en Ho
     expect(screen.getByTestId("v2-loading")).toHaveTextContent("false");
     expect(document.querySelector(".v2-status-cancelled")).toHaveTextContent("Cancelado");
   });
+
+  it("Clientes, Pagos y Membresías usan data.refresh({ silent: true }) y Reintentar tiene minHeight 44px", async () => {
+    const fs = await import("node:fs");
+    const path = await import("node:path");
+
+    for (const relPath of [
+      "src/components/kani/v2/clients.tsx",
+      "src/components/kani/v2/payments.tsx",
+      "src/components/kani/v2/memberships-discounts.tsx",
+    ]) {
+      const code = fs.readFileSync(path.resolve(process.cwd(), relPath), "utf-8");
+      expect(code).toContain("data.refresh({ silent: true })");
+      expect(code).not.toMatch(/data\.refresh\(\)/);
+    }
+
+    const membershipsCode = fs.readFileSync(
+      path.resolve(process.cwd(), "src/components/kani/v2/memberships-discounts.tsx"),
+      "utf-8",
+    );
+    const retryMinHeights = membershipsCode.match(/minHeight:\s*"44px"/g) ?? [];
+    expect(retryMinHeights.length).toBeGreaterThanOrEqual(2);
+  });
 });

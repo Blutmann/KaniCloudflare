@@ -125,7 +125,7 @@ export function V2MembershipsAndDiscounts({
         setNotice(
           "Enlace regenerado con éxito y copiado al portapapeles. El enlace anterior quedó revocado.",
         );
-        await data.refresh();
+        await data.refresh({ silent: true });
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "No se pudo regenerar el enlace.";
@@ -236,7 +236,7 @@ export function V2MembershipsAndDiscounts({
           ? "Membresía creada y activada con pago registrado."
           : "Membresía creada en estado Pendiente de pago.",
       );
-      await data.refresh();
+      await data.refresh({ silent: true });
     } catch (err) {
       setErrorNotice(err instanceof Error ? err.message : "No se pudo crear la membresía.");
     } finally {
@@ -254,7 +254,7 @@ export function V2MembershipsAndDiscounts({
     try {
       await registerMembershipPayment(membership.id, method, staff);
       setNotice("Pago registrado. La membresía ahora está Activa.");
-      await data.refresh();
+      await data.refresh({ silent: true });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "No se pudo registrar el pago.";
       setErrorNotice(msg);
@@ -285,7 +285,7 @@ export function V2MembershipsAndDiscounts({
         },
         staff,
       );
-      await data.refresh();
+      await data.refresh({ silent: true });
       if (res.isExhausted) {
         setDetailMembershipId(null);
         setExhaustedMembership(res.membership);
@@ -319,7 +319,7 @@ export function V2MembershipsAndDiscounts({
         staff,
       );
       setNotice(`Sesión reintegrada al cliente. Sesiones disponibles: ${res.remainingSessions}.`);
-      await data.refresh();
+      await data.refresh({ silent: true });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "No se pudo reintegrar la sesión.";
       setErrorNotice(msg);
@@ -348,7 +348,7 @@ export function V2MembershipsAndDiscounts({
         staff,
       );
       setNotice("Vigencia y observaciones actualizadas y auditadas en el historial.");
-      await data.refresh();
+      await data.refresh({ silent: true });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "No se pudo actualizar el vencimiento.";
       setErrorNotice(msg);
@@ -387,7 +387,7 @@ export function V2MembershipsAndDiscounts({
       setExhaustedMembership(null);
       setConfirmEndRecurrence(false);
       setNotice("Se finalizó la recurrencia asociada a la membresía agotada.");
-      await data.refresh();
+      await data.refresh({ silent: true });
     } catch (err) {
       setErrorNotice(err instanceof Error ? err.message : "No se pudo finalizar la recurrencia.");
     } finally {
@@ -508,7 +508,7 @@ export function V2MembershipsAndDiscounts({
                   type="button"
                   className="v2-secondary"
                   style={{
-                    minHeight: "32px",
+                    minHeight: "44px",
                     display: "inline-flex",
                     alignItems: "center",
                     gap: "6px",
@@ -519,7 +519,7 @@ export function V2MembershipsAndDiscounts({
                     if (data.refreshMemberships) {
                       void data.refreshMemberships();
                     } else {
-                      void data.refresh();
+                      void data.refresh({ silent: true });
                     }
                   }}
                 >
@@ -616,7 +616,7 @@ export function V2MembershipsAndDiscounts({
                       type="button"
                       className="v2-secondary"
                       style={{
-                        minHeight: "32px",
+                        minHeight: "44px",
                         display: "inline-flex",
                         alignItems: "center",
                         gap: "6px",
@@ -626,7 +626,7 @@ export function V2MembershipsAndDiscounts({
                         if (data.refreshMemberships) {
                           void data.refreshMemberships();
                         } else {
-                          void data.refresh();
+                          void data.refresh({ silent: true });
                         }
                       }}
                     >
