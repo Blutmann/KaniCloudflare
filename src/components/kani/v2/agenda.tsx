@@ -1043,8 +1043,19 @@ export function V2Appointments({
             Cancelar turno
           </DialogTitle>
           <DialogDescription>
-            {action?.appointment.name} · {action?.appointment.time} hs. ¿Estás seguro que querés cancelar el turno?
+            ¿Estás seguro que querés cancelar el turno?
           </DialogDescription>
+          {action && (
+            <div className="v2-cancel-appointment-summary flex flex-col gap-1 rounded-lg border border-border/60 bg-muted/30 px-3 py-2.5 text-sm">
+              <strong className="font-semibold text-foreground">{action.appointment.name}</strong>
+              {action.appointment.date && (
+                <span className="text-muted-foreground">
+                  {capitalizeFirst(dateLabel(action.appointment.date).replace(",", ""))}
+                </span>
+              )}
+              <span className="text-muted-foreground">{action.appointment.time} hs.</span>
+            </div>
+          )}
           <button className="v2-secondary action-reject" disabled={busy} onClick={() => void cancelAppointment()}>
             {busy ? "Guardando…" : "Cancelar turno"}
           </button>

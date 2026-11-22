@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, cleanup, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   addCalendarDays,
@@ -482,8 +482,12 @@ describe('V12.47.25 — UI /admin/turnos (V2Appointments)', () => {
 
       // Tocar X abre confirmación de cancelación directamente
       fireEvent.click(screen.getByRole('button', { name: 'Cancelar turno' }));
-      expect(screen.getByRole('heading', { name: 'Cancelar turno' })).toBeInTheDocument();
-      expect(screen.getByText(/¿Estás seguro que querés cancelar el turno\?/i)).toBeInTheDocument();
+      const cancelDialog = screen.getByRole('dialog');
+      expect(within(cancelDialog).getByRole('heading', { name: 'Cancelar turno' })).toBeInTheDocument();
+      expect(within(cancelDialog).getByText('¿Estás seguro que querés cancelar el turno?')).toBeInTheDocument();
+      expect(within(cancelDialog).getByText('Matias Zarate')).toBeInTheDocument();
+      expect(within(cancelDialog).getByText(/10:00 hs\./)).toBeInTheDocument();
+      expect(within(cancelDialog).getByRole('button', { name: 'Cancelar turno' })).toBeInTheDocument();
       fireEvent.click(screen.getByRole('button', { name: 'Close' }));
 
       // Chip Manual abre ManualAppointmentDialog en modo EDIT
