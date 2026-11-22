@@ -3,7 +3,7 @@ import { getWhatsAppDirectSendUrl } from "@/lib/kani-phone";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "@tanstack/react-router";
-import { AlertCircle, ArrowRight, CalendarDays, Check, ChevronDown, ChevronUp, Clock3, Info, Mail } from "lucide-react";
+import { AlertCircle, ArrowRight, CalendarDays, Check, Clock3, Copy, Info, Mail, Pencil, X } from "lucide-react";
 import { useAdminStaff } from "@/lib/kani-admin-context";
 import {
   businessDateToday,
@@ -41,6 +41,27 @@ import {
   statusLabels,
 } from "./shared";
 import { ManualAppointmentDialog } from "./manual-appointment-dialog";
+
+function formatAppointmentDurationLabel(
+  startTime?: string | null,
+  endTime?: string | null,
+): string | null {
+  if (!startTime || !endTime) return null;
+  const [sh, sm] = startTime.split(":").map(Number);
+  const [eh, em] = endTime.split(":").map(Number);
+  if (!Number.isFinite(sh) || !Number.isFinite(sm) || !Number.isFinite(eh) || !Number.isFinite(em)) {
+    return null;
+  }
+  let diff = eh * 60 + em - (sh * 60 + sm);
+  if (diff <= 0) diff += 24 * 60;
+  if (diff <= 0 || diff > 720) return null;
+  return `${diff} min`;
+}
+
+function capitalizeFirst(text: string): string {
+  if (!text) return text;
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
 
 export function V2Home({
   basePath = "/panel-administracion",
@@ -266,9 +287,32 @@ export function V2Appointments({
     mql.addListener?.(update);
     return () => mql.removeListener?.(update);
   }, []);
-  const [expandedDrawers, setExpandedDrawers] = useState<Record<string, boolean>>({});
-  const toggleDrawer = (id: string) => {
-    setExpandedDrawers((prev) => ({ ...prev, [id]: !prev[id] }));
+  const [channelModal, setChannelModal] = useState<{
+    appointment: RealAppointment;
+    channel: "WhatsApp" | "Email";
+  } | null>(null);
+  const [copiedContact, setCopiedContact] = useState(false);
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    return () => {
+      if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+    };
+  }, []);
+  const handleCopyContact = async (value: string) => {
+    if (!value) return;
+    try {
+      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(value);
+      }
+      setCopiedContact(true);
+      if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+      copyTimerRef.current = setTimeout(() => {
+        setCopiedContact(false);
+        copyTimerRef.current = null;
+      }, 2000);
+    } catch {
+      setCopiedContact(false);
+    }
   };
   const [whatsAppModal, setWhatsAppModal] = useState<{
     appointment: RealAppointment;
@@ -369,12 +413,16 @@ export function V2Appointments({
     }
   }
 
-  async function handleResendNotificationModal() {
-    if (!selectedNotifDetail || retryingNotif) return;
-    const apt = selectedNotifDetail.appointment;
+  async function handleResendNotificationModal(override?: {
+    appointment: RealAppointment;
+    channel: "WhatsApp" | "Email";
+  }) {
+    const target = override ?? selectedNotifDetail;
+    if (!target || retryingNotif) return;
+    const apt = target.appointment;
     if (!apt) return;
 
-    const channel = selectedNotifDetail.channel === "WhatsApp" ? "WHATSAPP" : "EMAIL";
+    const channel = target.channel === "WhatsApp" ? "WHATSAPP" : "EMAIL";
     setRetryingNotif(true);
     setRetryFeedback(null);
     try {
@@ -394,6 +442,23 @@ export function V2Appointments({
         data: { appointmentId: apt.id, channel, forceResend: true, token },
       });
 
+      const nextDispatch =
+        res.dispatch ??
+        ({
+          id: "generated-id",
+          appointmentId: apt.id,
+          channel,
+          provider: channel === "WHATSAPP" ? "PONTIUN" : "RESEND",
+          attempts: 1,
+          requestedAt: new Date().toISOString(),
+          createdAt: new Date().toISOString(),
+          status: (res.status as any) || "SENT",
+          providerMessageId: res.providerMessageId || null,
+          errorCode: null,
+          errorDescription: null,
+          updatedAt: new Date().toISOString(),
+        } as any);
+
       if (res.success) {
         const defaultOkMsg =
           channel === "EMAIL"
@@ -411,15 +476,7 @@ export function V2Appointments({
               ? {
                   ...prev,
                   dispatch: {
-                    ...(prev.dispatch || {
-                      id: "generated-id",
-                      appointmentId: apt.id,
-                      channel,
-                      provider: channel === "WHATSAPP" ? "PONTIUN" : "RESEND",
-                      attempts: 1,
-                      requestedAt: new Date().toISOString(),
-                      createdAt: new Date().toISOString(),
-                    }),
+                    ...(prev.dispatch || nextDispatch),
                     status: (res.status as any) || "SENT",
                     providerMessageId: res.providerMessageId || null,
                     errorCode: null,
@@ -430,6 +487,20 @@ export function V2Appointments({
               : null,
           );
         }
+        setChannelModal((prev) =>
+          prev && prev.appointment.id === apt.id
+            ? {
+                ...prev,
+                appointment: {
+                  ...prev.appointment,
+                  dispatches: {
+                    ...prev.appointment.dispatches,
+                    [channel === "WHATSAPP" ? "whatsapp" : "email"]: nextDispatch,
+                  },
+                },
+              }
+            : prev,
+        );
         await data.refresh({ silent: true });
       } else {
         setRetryFeedback({
@@ -438,6 +509,20 @@ export function V2Appointments({
         });
         if (res.dispatch) {
           setSelectedNotifDetail((prev) => (prev ? { ...prev, dispatch: res.dispatch as any } : null));
+          setChannelModal((prev) =>
+            prev && prev.appointment.id === apt.id
+              ? {
+                  ...prev,
+                  appointment: {
+                    ...prev.appointment,
+                    dispatches: {
+                      ...prev.appointment.dispatches,
+                      [channel === "WHATSAPP" ? "whatsapp" : "email"]: res.dispatch as any,
+                    },
+                  },
+                }
+              : prev,
+          );
         }
         await data.refresh({ silent: true });
       }
@@ -552,7 +637,7 @@ export function V2Appointments({
               : "No hay turnos para esta selección. Podés consultar otro día."}
           </Empty>
         )}
-        {rows.map((a) => {
+        {rows.map((a, index) => {
           const isFinished = isAppointmentTemporallyFinished(a);
           const waDirectUrl = getWhatsAppDirectSendUrl(a.phone);
           const canOperate =
@@ -560,8 +645,6 @@ export function V2Appointments({
           const canCancel = ["PENDING", "CONFIRMED"].includes(a.statusCode) && canOperate;
           const canEditManual =
             a.isManual && ["PENDING", "CONFIRMED"].includes(a.statusCode) && canOperate;
-          const isDrawerOpen = Boolean(expandedDrawers[a.id]);
-          const timeRangeLabel = a.endTime ? `${a.time}–${a.endTime}` : a.time;
           const depositText = data.depositSupported
             ? a.depositPaid
               ? money(a.depositAmountArs ?? 5000)
@@ -569,201 +652,166 @@ export function V2Appointments({
             : "Sin dato verificable";
 
           if (isMobileCard) {
+            const isCancelled = a.statusCode === "CANCELLED";
+            const waFailed = a.dispatches?.whatsapp?.status === "FAILED";
+            const emailFailed = a.dispatches?.email?.status === "FAILED";
+            const durationLabel = formatAppointmentDurationLabel(a.time, a.endTime);
+            const showDayHeader =
+              isMultiDay && (index === 0 || rows[index - 1]?.date !== a.date);
+            const mobileArticleClasses = [
+              "v2-appointment",
+              "v2-appointment--clean-mobile",
+              isFinished ? "v2-appointment--past" : "",
+              isCancelled ? "v2-appointment--cancelled" : "",
+            ]
+              .filter(Boolean)
+              .join(" ");
+
             return (
-              <article
-                className={
-                  isFinished
-                    ? "v2-appointment v2-appointment--past v2-appointment--mobile-wide"
-                    : "v2-appointment v2-appointment--mobile-wide"
-                }
-                key={a.id}
-              >
-                <div className="v2-appointment-main">
-                  {/* Cabecera compacta: rango horario + cliente a la izquierda, badges a la derecha */}
-                  <div className="v2-app-row-1 v2-app-row-1--mobile">
-                    <div className="v2-app-mobile-identity">
-                      <strong className="v2-app-time">{timeRangeLabel}</strong>
-                      <span className="v2-app-sep">|</span>
-                      <h3 className="v2-app-name" title={a.name}>
+              <div className="v2-mobile-card-group" key={a.id}>
+                {showDayHeader && (
+                  <h3 className="v2-mobile-day-header">
+                    {capitalizeFirst(dateLabel(a.date))}
+                  </h3>
+                )}
+                <article className={mobileArticleClasses}>
+                  <div className="v2-appointment-main v2-appointment-main--clean">
+                    {/* Fila 1: 10:00 hs + duración a la izquierda | badges + chip Manual a la derecha */}
+                    <div className="v2-app-row-1 v2-app-row-1--clean">
+                      <div className="v2-app-clean-time-wrap">
+                        <strong className="v2-app-time-hero">{a.time} hs</strong>
+                        {durationLabel && (
+                          <span className="v2-app-duration">{durationLabel}</span>
+                        )}
+                      </div>
+                      <div className="v2-app-mobile-badges">
+                        {canEditManual ? (
+                          <button
+                            type="button"
+                            className="v2-manual-chip-btn"
+                            disabled={busy}
+                            onClick={() =>
+                              setManualDialog({ open: true, mode: "EDIT", appointment: a })
+                            }
+                            aria-label={`Editar turno manual de ${a.name}`}
+                          >
+                            <Pencil size={11} aria-hidden="true" />
+                            <span>Manual</span>
+                          </button>
+                        ) : (
+                          a.isManual && <span className="v2-manual-badge">Manual</span>
+                        )}
+                        <Status code={a.statusCode} />
+                        {isFinished && (
+                          <span className="v2-past-badge">Horario finalizado</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Fila 2: Cliente en su propia línea + metadatos limpios debajo */}
+                    <div className="v2-app-clean-body">
+                      <h3 className="v2-app-name v2-app-name--clean" title={a.name}>
                         {a.name}
                       </h3>
+                      <div className="v2-app-mobile-meta">
+                        <span className="v2-app-service">{formatServiceName(a.serviceName)}</span>
+                        <span className="v2-app-dot">·</span>
+                        <span className="v2-app-barber">{a.barber}</span>
+                        <span className="v2-app-dot">·</span>
+                        <span className="v2-app-price">{money(a.servicePrice ?? 0)}</span>
+                        {data.depositSupported && a.depositPaid && (
+                          <>
+                            <span className="v2-app-dot">·</span>
+                            <span className="v2-app-deposit v2-app-deposit--paid">
+                              Seña {money(a.depositAmountArs ?? 5000)}
+                            </span>
+                          </>
+                        )}
+                        {!data.depositSupported && (
+                          <>
+                            <span className="v2-app-dot">·</span>
+                            <span className="v2-app-deposit">Sin dato verificable</span>
+                          </>
+                        )}
+                      </div>
                     </div>
-                    <div className="v2-app-mobile-badges">
-                      {a.isManual && <span className="v2-manual-badge">Manual</span>}
-                      <Status code={a.statusCode} />
-                      {isFinished && (
-                        <span className="v2-past-badge">Horario finalizado</span>
-                      )}
-                    </div>
+
+                    {a.notes && <p className="v2-note">{a.notes}</p>}
                   </div>
 
-                  {/* Segunda línea: Servicio · Barbero · Importe · Seña · (Fecha) + avisos compactos */}
-                  <div className="v2-app-row-2 v2-app-row-2--mobile">
-                    <div className="v2-app-mobile-meta">
-                      <span className="v2-app-service">{formatServiceName(a.serviceName)}</span>
-                      <span className="v2-app-dot">·</span>
-                      <span className="v2-app-barber">{a.barber}</span>
-                      <span className="v2-app-dot">·</span>
-                      <span className="v2-app-price">{money(a.servicePrice ?? 0)}</span>
-                      <span className="v2-app-dot">·</span>
-                      <span className="v2-app-deposit">Seña: {depositText}</span>
-                      {isMultiDay && (
-                        <>
-                          <span className="v2-app-dot">·</span>
-                          <span className="v2-app-date">{dateLabel(a.date)}</span>
-                        </>
-                      )}
-                    </div>
-                    <div className="v2-app-mobile-notif-inline">
-                      <button
-                        type="button"
-                        className={`v2-notif-pill v2-notif-pill--compact v2-notif-${(a.dispatches?.whatsapp?.status || "PENDING").toLowerCase()}`}
-                        onClick={() => {
-                          setSelectedNotifDetail({
-                            appointment: a,
-                            channel: "WhatsApp",
-                            dispatch: a.dispatches?.whatsapp,
-                          });
-                          setRetryFeedback(null);
-                        }}
-                        title="Ver diagnóstico completo de WhatsApp"
-                        aria-label={`Diagnóstico WhatsApp: ${formatWhatsAppStatus(a.dispatches?.whatsapp)}`}
-                      >
-                        <span aria-hidden="true">💬</span>
-                      </button>
-                      <button
-                        type="button"
-                        className={`v2-notif-pill v2-notif-pill--compact v2-notif-${(a.dispatches?.email?.status || "PENDING").toLowerCase()}`}
-                        onClick={() => {
-                          setSelectedNotifDetail({
-                            appointment: a,
-                            channel: "Email",
-                            dispatch: a.dispatches?.email,
-                          });
-                          setRetryFeedback(null);
-                        }}
-                        title="Ver diagnóstico completo de Email"
-                        aria-label={`Diagnóstico Email: ${formatEmailStatus(a.dispatches?.email)}`}
-                      >
-                        <span aria-hidden="true">✉️</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {a.notes && <p className="v2-note">{a.notes}</p>}
-                </div>
-
-                {/* Barra principal de acciones 100% ancho (1 fila, 44px) + bandeja desplegable horizontal */}
-                <div className="v2-appointment-actions v2-appointment-actions--mobile">
-                  <div className="v2-app-mobile-bar">
-                    {a.statusCode === "CONFIRMED" && (
+                  {/* Barra única de acciones: Cobrar | WhatsApp | Email | ✕ */}
+                  <div className="v2-app-clean-bar">
+                    {a.statusCode === "CONFIRMED" ? (
                       <Link
-                        className="v2-primary v2-action-btn v2-cobrar-btn v2-mobile-bar-primary"
+                        className="v2-primary v2-action-btn v2-cobrar-btn v2-clean-bar-primary"
                         to={paymentsTo}
                         search={{ turno: a.id }}
                       >
                         Cobrar
                       </Link>
-                    )}
-                    {waDirectUrl ? (
-                      <a
-                        className="v2-secondary v2-whatsapp v2-action-btn v2-mobile-bar-btn"
-                        href={waDirectUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        aria-label="WhatsApp"
-                        title="Abrir conversación de WhatsApp con el cliente"
-                      >
-                        <span aria-hidden="true">💬</span>
-                        <span>WA</span>
-                      </a>
                     ) : (
-                      <button
-                        type="button"
-                        className="v2-secondary v2-whatsapp v2-action-btn v2-mobile-bar-btn"
-                        onClick={() => handleWhatsAppInvalid(a)}
-                        aria-label="WhatsApp"
-                        title={
-                          !a.phone || !a.phone.trim()
-                            ? "El cliente no tiene un teléfono registrado"
-                            : "Número de teléfono inválido o ambiguo para WhatsApp"
-                        }
-                      >
-                        <span aria-hidden="true">💬</span>
-                        <span>WA</span>
-                      </button>
+                      <span className="v2-clean-bar-status-note">
+                        {statusLabels[a.statusCode] || a.statusCode}
+                      </span>
                     )}
-                    {a.email && (
-                      <a
-                        className="v2-secondary v2-mail-btn v2-action-btn v2-mobile-bar-btn"
-                        href={`mailto:${a.email}`}
-                        aria-label="Mail"
-                      >
-                        <Mail size={15} aria-hidden="true" />
-                        <span>Mail</span>
-                      </a>
-                    )}
-                    <button
-                      type="button"
-                      className="v2-secondary v2-action-btn v2-mobile-bar-more"
-                      aria-expanded={isDrawerOpen}
-                      aria-controls={`v2-mobile-drawer-${a.id}`}
-                      onClick={() => toggleDrawer(a.id)}
-                    >
-                      <span>{isDrawerOpen ? "Menos" : "Más"}</span>
-                      {isDrawerOpen ? (
-                        <ChevronUp size={15} aria-hidden="true" />
-                      ) : (
-                        <ChevronDown size={15} aria-hidden="true" />
-                      )}
-                    </button>
-                  </div>
 
-                  {isDrawerOpen && (
-                    <div
-                      id={`v2-mobile-drawer-${a.id}`}
-                      className="v2-app-mobile-drawer"
-                    >
-                      {canEditManual && (
-                        <button
-                          type="button"
-                          className="v2-secondary v2-action-btn v2-mobile-drawer-btn"
-                          disabled={busy}
-                          onClick={() =>
-                            setManualDialog({ open: true, mode: "EDIT", appointment: a })
-                          }
-                        >
-                          Editar
-                        </button>
-                      )}
+                    <div className="v2-clean-bar-icons">
                       <button
                         type="button"
-                        className="v2-secondary v2-action-btn v2-mobile-drawer-btn"
+                        className="v2-secondary v2-action-btn v2-clean-bar-icon-btn v2-clean-bar-wa"
+                        aria-label="WhatsApp"
+                        title="Opciones y aviso de WhatsApp"
                         onClick={() => {
-                          setSelectedNotifDetail({
-                            appointment: a,
-                            channel: "WhatsApp",
-                            dispatch: a.dispatches?.whatsapp,
-                          });
+                          setCopiedContact(false);
                           setRetryFeedback(null);
+                          setChannelModal({ appointment: a, channel: "WhatsApp" });
                         }}
                       >
-                        Avisos
+                        <WhatsAppSvgIcon />
+                        {waFailed && (
+                          <span
+                            className="v2-icon-alert-dot"
+                            aria-label="Error en aviso de WhatsApp"
+                          />
+                        )}
                       </button>
+
+                      <button
+                        type="button"
+                        className="v2-secondary v2-action-btn v2-clean-bar-icon-btn v2-clean-bar-mail"
+                        aria-label="Email"
+                        title="Opciones y aviso de Email"
+                        onClick={() => {
+                          setCopiedContact(false);
+                          setRetryFeedback(null);
+                          setChannelModal({ appointment: a, channel: "Email" });
+                        }}
+                      >
+                        <Mail size={18} aria-hidden="true" />
+                        {emailFailed && (
+                          <span
+                            className="v2-icon-alert-dot"
+                            aria-label="Error en aviso de Email"
+                          />
+                        )}
+                      </button>
+
                       {canCancel && (
                         <button
                           type="button"
-                          className="v2-destructive action-reject v2-action-btn v2-mobile-drawer-btn v2-mobile-drawer-cancel"
+                          className="v2-destructive action-reject v2-action-btn v2-clean-bar-icon-btn v2-clean-bar-cancel"
+                          aria-label="Cancelar turno"
+                          title="Cancelar turno"
                           disabled={busy}
                           onClick={() => setAction({ appointment: a, status: "CANCELLED" })}
                         >
-                          Cancelar turno
+                          <X size={18} aria-hidden="true" />
                         </button>
                       )}
                     </div>
-                  )}
-                </div>
-              </article>
+                  </div>
+                </article>
+              </div>
             );
           }
 
@@ -990,12 +1038,12 @@ export function V2Appointments({
           if (!open && !busy) setAction(null);
         }}
       >
-        <DialogContent className="v2-dialog" transitionMode="container-transform">
+        <DialogContent className="v2-dialog max-w-[calc(100vw-24px)] max-h-[calc(100dvh-32px)] overflow-y-auto" transitionMode="container-transform">
           <DialogTitle>
-            ¿Cancelar este turno?
+            ¿Estás seguro que querés cancelar este turno?
           </DialogTitle>
           <DialogDescription>
-            {action?.appointment.name} · {action?.appointment.time}. Esta acción actualiza el turno
+            {action?.appointment.name} · {action?.appointment.time} hs. Esta acción actualiza el turno
             y utiliza las notificaciones existentes.
           </DialogDescription>
           <button className="v2-secondary action-reject" disabled={busy} onClick={() => void cancelAppointment()}>
@@ -1004,12 +1052,154 @@ export function V2Appointments({
         </DialogContent>
       </Dialog>
       <Dialog
+        open={!!channelModal}
+        onOpenChange={(open) => {
+          if (!open && !retryingNotif) {
+            setChannelModal(null);
+            setCopiedContact(false);
+            setRetryFeedback(null);
+          }
+        }}
+      >
+        <DialogContent
+          className="v2-dialog v2-channel-dialog max-w-[calc(100vw-24px)] max-h-[calc(100dvh-32px)] overflow-y-auto"
+          transitionMode="container-transform"
+        >
+          {channelModal && (() => {
+            const apt = channelModal.appointment;
+            const isEmail = channelModal.channel === "Email";
+            const dispatch = isEmail ? apt.dispatches?.email : apt.dispatches?.whatsapp;
+            const contactValue = isEmail
+              ? (apt.email || (apt as any).clientEmail || dispatch?.recipient || "")
+              : (apt.phone || dispatch?.recipient || "");
+            const waUrl = !isEmail ? getWhatsAppDirectSendUrl(apt.phone) : null;
+
+            return (
+              <>
+                <DialogTitle>
+                  {isEmail ? "Email" : "WhatsApp"} · {apt.name}
+                </DialogTitle>
+                <DialogDescription>
+                  {capitalizeFirst(dateLabel(apt.date || ""))} · {apt.time} hs — {formatServiceName(apt.serviceName)}
+                </DialogDescription>
+
+                <div className="v2-channel-modal-body">
+                  <div className="v2-channel-status-row">
+                    <span className="v2-channel-status-label">Estado del aviso:</span>
+                    <span className={`v2-notif-pill v2-notif-${(dispatch?.status || "pending").toLowerCase()}`}>
+                      {formatDispatchDetailedStatus(dispatch?.status)}
+                    </span>
+                  </div>
+
+                  {dispatch?.errorDescription && (
+                    <p className="v2-channel-error-detail" role="alert">
+                      {dispatch.errorDescription}
+                    </p>
+                  )}
+
+                  <div className="v2-channel-contact-box">
+                    <span className="v2-channel-contact-value">
+                      {contactValue || (isEmail ? "Sin correo electrónico registrado" : "Sin teléfono registrado")}
+                    </span>
+                    <button
+                      type="button"
+                      className="v2-secondary v2-channel-copy-btn"
+                      disabled={!contactValue}
+                      onClick={() => void handleCopyContact(contactValue)}
+                    >
+                      {copiedContact ? (
+                        <>
+                          <Check size={14} aria-hidden="true" />
+                          <span>Copiado</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy size={14} aria-hidden="true" />
+                          <span>Copiar</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  {retryFeedback && (
+                    <div
+                      role={retryFeedback.type === "error" ? "alert" : "status"}
+                      className={
+                        retryFeedback.type === "error"
+                          ? "v2-alert"
+                          : "v2-success"
+                      }
+                    >
+                      {retryFeedback.message}
+                    </div>
+                  )}
+                </div>
+
+                <div className="v2-dialog-actions v2-channel-modal-actions">
+                  {isEmail ? (
+                    contactValue ? (
+                      <a
+                        className="v2-primary v2-action-btn"
+                        href={`mailto:${contactValue}`}
+                      >
+                        <Mail size={16} aria-hidden="true" />
+                        <span>Contactar cliente</span>
+                      </a>
+                    ) : (
+                      <button type="button" className="v2-primary v2-action-btn" disabled>
+                        <Mail size={16} aria-hidden="true" />
+                        <span>Contactar cliente</span>
+                      </button>
+                    )
+                  ) : waUrl ? (
+                    <a
+                      className="v2-primary v2-action-btn"
+                      href={waUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <WhatsAppSvgIcon />
+                      <span>Contactar cliente</span>
+                    </a>
+                  ) : (
+                    <button
+                      type="button"
+                      className="v2-primary v2-action-btn"
+                      onClick={() => {
+                        setChannelModal(null);
+                        handleWhatsAppInvalid(apt);
+                      }}
+                    >
+                      <WhatsAppSvgIcon />
+                      <span>Contactar cliente</span>
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    className="v2-secondary v2-action-btn"
+                    disabled={retryingNotif || !contactValue}
+                    onClick={() => void handleResendNotificationModal(channelModal)}
+                  >
+                    {retryingNotif
+                      ? "Enviando…"
+                      : isEmail
+                        ? "Reenviar mail"
+                        : "Reenviar notificación"}
+                  </button>
+                </div>
+              </>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
+      <Dialog
         open={!!whatsAppModal}
         onOpenChange={(open) => {
           if (!open) setWhatsAppModal(null);
         }}
       >
-        <DialogContent className="v2-dialog">
+        <DialogContent className="v2-dialog max-w-[calc(100vw-24px)] max-h-[calc(100dvh-32px)] overflow-y-auto">
           {whatsAppModal?.mode === "NO_PHONE" && (
             <>
               <DialogTitle>Sin número de contacto</DialogTitle>
@@ -1307,8 +1497,19 @@ function formatDispatchDetailedStatus(status?: string): string {
   }
 }
 
+function WhatsAppSvgIcon() {
+  return (
+    <svg className="v2-whatsapp-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z" />
+    </svg>
+  );
+}
+
 function WhatsAppLabel() {
-  return <><svg className="v2-whatsapp-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-          <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z" />
-        </svg><span>WhatsApp</span></>;
+  return (
+    <>
+      <WhatsAppSvgIcon />
+      <span>WhatsApp</span>
+    </>
+  );
 }

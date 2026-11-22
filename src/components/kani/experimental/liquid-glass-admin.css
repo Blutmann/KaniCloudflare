@@ -1956,22 +1956,27 @@ html[data-theme="dark"] body[data-lg-admin="true"] .v2-notif-pill.v2-notif-pendi
 
 @media (max-width: 639px) {
   body[data-lg-admin="true"] .v2-appointment {
-    padding: 10px 12px !important;
-    gap: 8px !important;
+    padding: 14px !important;
+    gap: 10px !important;
   }
 
   body[data-lg-admin="true"] .v2-app-row-1 {
-    padding-bottom: 4px !important;
+    padding-bottom: 6px !important;
   }
 
   body[data-lg-admin="true"] .v2-app-row-1 .v2-badge,
   body[data-lg-admin="true"] .v2-app-mobile-badges .v2-badge {
-    padding: 2px 7px !important;
-    font-size: 10.5px !important;
+    padding: 3px 8px !important;
+    font-size: 11px !important;
   }
 
-  body[data-lg-admin="true"] .v2-app-mobile-drawer {
-    border-top-color: var(--lga-border) !important;
+  html[data-theme] body[data-lg-admin="true"] .v2-appointments-page .v2-appointment--cancelled {
+    opacity: 0.68 !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-appointments-page .v2-clean-bar-icon-btn:not(.v2-destructive):not(.action-reject) {
+    border: 1px solid var(--lga-border) !important;
+    box-shadow: none !important;
   }
 }
 
