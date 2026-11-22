@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, Outlet, useLocation } from "@tanstack/react-router";
-import { MotionConfig, motion } from "motion/react";
+import { MotionConfig, motion, useReducedMotion } from "motion/react";
 import {
   CalendarClock,
   CalendarDays,
@@ -209,10 +209,58 @@ export function V2Layout({
       subscription.unsubscribe();
     };
   }, []);
+  const shouldReduceMotion = useReducedMotion();
+
   if (state.loading)
     return wrap(
-      <main className="v2-access" role="status">
-        Verificando acceso…
+      <main className="v2-access v2-access-loading" role="status" aria-live="polite">
+        <div className="v2-kani-loader">
+          <div className="v2-kani-loader-emblem" aria-hidden="true">
+            <motion.span
+              className="v2-kani-loader-ring"
+              animate={
+                shouldReduceMotion
+                  ? undefined
+                  : {
+                      scale: [1, 1.14, 1],
+                      opacity: [0.55, 0.2, 0.55],
+                    }
+              }
+              transition={
+                shouldReduceMotion
+                  ? undefined
+                  : {
+                      duration: 2.2,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    }
+              }
+            />
+            <motion.span
+              className="v2-kani-loader-kanji"
+              animate={
+                shouldReduceMotion
+                  ? undefined
+                  : {
+                      opacity: [0.82, 1, 0.82],
+                      scale: [0.98, 1.02, 0.98],
+                    }
+              }
+              transition={
+                shouldReduceMotion
+                  ? undefined
+                  : {
+                      duration: 2.2,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    }
+              }
+            >
+              蟹
+            </motion.span>
+          </div>
+          <p className="v2-kani-loader-label">Verificando acceso…</p>
+        </div>
       </main>
     );
   if (state.error)

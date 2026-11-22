@@ -255,6 +255,28 @@ html[data-theme="light"] {
     background: var(--page-background);
   }
 
+  html[data-liquid-glass="true"],
+  html[data-liquid-glass="true"] body,
+  body.liquid-glass-active {
+    --lg-font-inter: 'Inter Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-sans: var(--lg-font-inter);
+    --font-display: var(--lg-font-inter);
+    font-family: var(--lg-font-inter);
+  }
+
+  html[data-theme="light"][data-liquid-glass="true"] {
+    --page-background: #f4f5f7;
+  }
+
+  html[data-theme="dark"][data-liquid-glass="true"] {
+    --page-background: #101014;
+  }
+
+  html[data-liquid-glass="true"] body::before,
+  html[data-liquid-glass="true"] body::after {
+    display: none;
+  }
+
   /* Original artwork is retained at full resolution. Smaller lossless variants
      are selected only by viewport/density; all crops still use cover. */
   @supports (background-image: image-set(url('/kani-fondo-oscuro-mobile.webp') 1x)) {
