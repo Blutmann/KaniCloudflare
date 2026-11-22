@@ -1139,10 +1139,13 @@ export function V2Payments() {
               </div>
             </dl>
           )}
-          <div className="v2-dialog-actions grid grid-cols-2 w-full sm:flex sm:justify-end">
+          <div
+            className="v2-dialog-actions w-full flex-nowrap sm:justify-end"
+            style={{ flexWrap: "nowrap" }}
+          >
             <button
               type="button"
-              className="v2-secondary w-full sm:w-auto"
+              className="v2-secondary flex-1 min-w-0 sm:flex-none"
               onClick={() => setDeletingPayment(null)}
               disabled={editBusy}
             >
@@ -1150,7 +1153,7 @@ export function V2Payments() {
             </button>
             <button
               type="button"
-              className="v2-destructive action-reject w-full sm:w-auto"
+              className="v2-destructive action-reject flex-1 min-w-0 sm:flex-none"
               onClick={handleConfirmDelete}
               disabled={editBusy}
             >
