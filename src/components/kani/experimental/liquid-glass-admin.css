@@ -1973,6 +1973,21 @@ html[data-theme="dark"] body[data-lg-admin="true"] .v2-notif-pill.v2-notif-pendi
   body[data-lg-admin="true"] .v2-app-mobile-drawer {
     border-top-color: var(--lga-border) !important;
   }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-appointments-page .v2-mobile-bar-options,
+  html[data-theme] body[data-lg-admin="true"] .v2-appointments-page .v2-mobile-drawer-btn:not(.v2-destructive):not(.action-reject) {
+    border: 1px solid var(--lga-border) !important;
+    box-shadow: none !important;
+    outline: none !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-appointments-page .v2-appointment--cancelled {
+    opacity: 0.72 !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-appointments-page .v2-appointment--cancelled.v2-appointment--drawer-open {
+    opacity: 1 !important;
+  }
 }
 
 body[data-lg-admin="true"] .v2-appointment-actions-grid {

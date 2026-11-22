@@ -367,7 +367,7 @@ describe('V12.47.25 — UI /admin/turnos (V2Appointments)', () => {
     ).toBeInTheDocument();
   });
 
-  it('Mobile Modelo 1: rango horario unificado (10:00–10:45), barra 100% ancho (Cobrar, WA, Mail, Más) y bandeja horizontal por tarjeta', () => {
+  it('Mobile Product Designer Card: sin bolitas permanentes ni Seña: No abonada, Seña $X y Error aviso condicionales, fecha corta, barra 50/50 Cobrar + Opciones y bandeja de 2 filas', () => {
     const origMatchMedia = window.matchMedia;
     window.matchMedia = vi.fn().mockImplementation((query: string) => ({
       matches: query === '(max-width: 639px)',
@@ -382,14 +382,21 @@ describe('V12.47.25 — UI /admin/turnos (V2Appointments)', () => {
 
     try {
       const today = businessDateToday();
+      // Calcular un lunes y martes dentro de los próximos 10 días para verificar fecha corta en modo multi-día
+      const monday = '2026-11-23';
+      const tuesday = '2026-11-24';
+      const inRange = monday >= today && tuesday <= addCalendarDays(today, 9);
+      const d1 = inRange ? monday : today;
+      const d2 = inRange ? tuesday : addCalendarDays(today, 1);
+
       testState.appointments = [
         {
-          id: 'apt-mobile-1',
+          id: 'apt-pd-1',
           barberId: 'b1',
           barber: 'Lautaro',
-          date: today,
+          date: d1,
           time: '10:00',
-          endTime: '10:45',
+          endTime: '10:30',
           name: 'Matias Zarate',
           phone: '+5491122334455',
           email: 'matias@test.com',
@@ -398,60 +405,78 @@ describe('V12.47.25 — UI /admin/turnos (V2Appointments)', () => {
           servicePrice: 25000,
           depositPaid: false,
           isManual: true,
+          dispatches: {
+            whatsapp: { id: 'w1', channel: 'WHATSAPP', provider: 'PONTIUN', status: 'DELIVERED', recipient: '+5491122334455', attempts: 1 },
+            email: { id: 'e1', channel: 'EMAIL', provider: 'RESEND', status: 'SENT', recipient: 'matias@test.com', attempts: 1 },
+          },
         },
         {
-          id: 'apt-mobile-2',
+          id: 'apt-pd-2',
           barberId: 'b1',
           barber: 'Lautaro',
-          date: today,
+          date: d2,
           time: '11:00',
           endTime: '11:45',
           name: 'Lucas Pérez',
           phone: '+5491122334456',
-          statusCode: 'CONFIRMED',
+          statusCode: 'CANCELLED',
           serviceName: 'Barba',
           servicePrice: 15000,
           depositPaid: true,
+          depositAmountArs: 5000,
           isManual: false,
+          dispatches: {
+            whatsapp: { id: 'w2', channel: 'WHATSAPP', provider: 'PONTIUN', status: 'FAILED', recipient: '+5491122334456', attempts: 1, errorMessage: 'No WA' },
+          },
         },
       ];
 
       const { container } = render(<V2Appointments />);
 
-      // Rango horario unificado y barra principal al 100%
-      expect(screen.getByText('10:00–10:45')).toBeInTheDocument();
-      expect(screen.getByText('11:00–11:45')).toBeInTheDocument();
-      expect(container.querySelectorAll('.v2-app-mobile-bar')).toHaveLength(2);
-      expect(screen.getAllByRole('link', { name: 'Cobrar' })).toHaveLength(2);
-      expect(screen.getAllByRole('link', { name: 'WhatsApp' })).toHaveLength(2);
+      // Sin bolitas permanentes ni "Seña: No abonada"
+      expect(container.querySelector('.v2-app-mobile-notif-inline')).toBeNull();
+      expect(screen.queryByText(/Seña:\s*No abonada/i)).toBeNull();
+
+      // Seña $5.000 solo cuando depositPaid: true, y Error aviso solo en FAILED
+      expect(screen.getByText(/Seña \$5\.000/)).toBeInTheDocument();
+      const errorAvisoBtns = screen.getAllByRole('button', { name: /Error en aviso/i });
+      expect(errorAvisoBtns).toHaveLength(1);
+      expect(errorAvisoBtns[0]).toHaveTextContent('Error aviso');
+
+      // Fecha corta en modo multi-día (NEXT_10_DAYS)
+      if (inRange) {
+        expect(screen.getByText('Lun 23/11')).toBeInTheDocument();
+        expect(screen.getByText('Mar 24/11')).toBeInTheDocument();
+      }
+
+      // Jerarquía por estado y barras 50/50 vs 100%
+      const cards = container.querySelectorAll('.v2-appointment');
+      expect(cards[0]).not.toHaveClass('v2-appointment--cancelled');
+      expect(cards[1]).toHaveClass('v2-appointment--cancelled');
+
+      expect(container.querySelectorAll('.v2-app-mobile-bar--split')).toHaveLength(1);
+      expect(container.querySelectorAll('.v2-app-mobile-bar--single')).toHaveLength(1);
+      expect(screen.getAllByRole('link', { name: 'Cobrar' })).toHaveLength(1);
+
+      const opcionesBtns = screen.getAllByRole('button', { name: /Opciones/i });
+      expect(opcionesBtns).toHaveLength(2);
+      expect(opcionesBtns[0]).toHaveAttribute('aria-expanded', 'false');
+
+      // Abrir bandeja en la tarjeta CONFIRMED (manual con email)
+      fireEvent.click(opcionesBtns[0]!);
+      expect(opcionesBtns[0]).toHaveAttribute('aria-expanded', 'true');
+      expect(cards[0]).toHaveClass('v2-appointment--drawer-open');
+
+      // Fila 1: WhatsApp + Mail, Fila 2: Avisos + Editar + Cancelar
+      expect(screen.getByRole('link', { name: 'WhatsApp' })).toBeInTheDocument();
       expect(screen.getByRole('link', { name: 'Mail' })).toBeInTheDocument();
-
-      const moreButtons = screen.getAllByRole('button', { name: /Más/i });
-      expect(moreButtons).toHaveLength(2);
-      expect(moreButtons[0]).toHaveAttribute('aria-expanded', 'false');
-      expect(moreButtons[1]).toHaveAttribute('aria-expanded', 'false');
-      expect(screen.queryByRole('button', { name: 'Cancelar turno' })).toBeNull();
-
-      // Abrir bandeja solo en la primera tarjeta (manual)
-      fireEvent.click(moreButtons[0]!);
-      expect(moreButtons[0]).toHaveAttribute('aria-expanded', 'true');
-      expect(moreButtons[0]).toHaveTextContent('Menos');
-      expect(moreButtons[1]).toHaveAttribute('aria-expanded', 'false');
-
-      expect(screen.getByRole('button', { name: 'Editar' })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'Avisos' })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'Cancelar turno' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Editar' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Cancelar' })).toBeInTheDocument();
 
-      // Avisos abre el modal de diagnóstico de notificaciones
-      fireEvent.click(screen.getByRole('button', { name: 'Avisos' }));
-      expect(
-        screen.getByRole('heading', { name: 'Diagnóstico de notificación: WhatsApp' }),
-      ).toBeInTheDocument();
-      fireEvent.click(screen.getByRole('button', { name: 'Cerrar' }));
-
-      // Cerrar bandeja de la primera tarjeta
-      fireEvent.click(screen.getByRole('button', { name: /Menos/i }));
-      expect(screen.queryByRole('button', { name: 'Cancelar turno' })).toBeNull();
+      // Al abrir bandeja en tarjeta CANCELLED, recupera opacidad (v2-appointment--drawer-open)
+      fireEvent.click(opcionesBtns[1]!);
+      expect(cards[1]).toHaveClass('v2-appointment--drawer-open');
     } finally {
       window.matchMedia = origMatchMedia;
     }
