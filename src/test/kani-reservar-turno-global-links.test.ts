@@ -67,15 +67,19 @@ describe('Kani Barber Studio — Actualización global de enlaces de reservas a 
     expect(oldRouteCode).toContain('homeUrl="/reservar-turno-old"');
   });
 
-  it('8. Flujo alternativo de Mercado Pago conserva su navegación independiente', () => {
+  it('8. Flujo alternativo de Mercado Pago conserva su ruta y retornos de pago enlazan a /reservar', () => {
     const mpBookingCode = fs.readFileSync(path.join(rootDir, 'components', 'kani', 'experimental', 'mercadopago-booking.tsx'), 'utf8');
     const pagoExitoCode = fs.readFileSync(path.join(rootDir, 'routes', 'pago.exito.tsx'), 'utf8');
     const pagoErrorCode = fs.readFileSync(path.join(rootDir, 'routes', 'pago.error.tsx'), 'utf8');
     const pagoPendienteCode = fs.readFileSync(path.join(rootDir, 'routes', 'pago.pendiente.tsx'), 'utf8');
 
     expect(mpBookingCode).toContain('homeUrl="/reservar-turno-mercadopago"');
-    expect(pagoExitoCode).toContain('to="/reservar-turno-mercadopago"');
-    expect(pagoErrorCode).toContain('to="/reservar-turno-mercadopago"');
-    expect(pagoPendienteCode).toContain('to="/reservar-turno-mercadopago"');
+    expect(pagoExitoCode).toContain('to="/reservar"');
+    expect(pagoExitoCode).toContain('homeUrl="/reservar"');
+    expect(pagoExitoCode).not.toContain('/reservar-turno-mercadopago');
+    expect(pagoErrorCode).toContain('to="/reservar"');
+    expect(pagoErrorCode).not.toContain('/reservar-turno-mercadopago');
+    expect(pagoPendienteCode).toContain('to="/reservar"');
+    expect(pagoPendienteCode).not.toContain('/reservar-turno-mercadopago');
   });
 });

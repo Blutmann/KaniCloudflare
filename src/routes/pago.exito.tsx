@@ -6,6 +6,7 @@ import { pageHead } from '@/lib/kani-head';
 import { checkoutReturnIdentifiers } from '@/lib/kani-payment-return';
 import { Button } from '@/components/ui/button';
 import { BookingConfirmedScreen, type ConfirmedBookingData } from '@/components/kani/booking-confirmed-screen';
+import { LiquidGlassShell } from '@/components/kani/experimental/liquid-glass-shell';
 import { KANI_STANDARD_DEPOSIT_ARS } from '@/lib/kani-constants';
 import '@/components/kani/experimental/reserva-v2.css';
 import '@/components/kani/experimental/reserva-v3.css';
@@ -76,128 +77,136 @@ function PagoExitoPage() {
     };
   }, [appointmentId, orderId, paymentId, retryCount]);
 
-  // Si no se proveyó ID de turno
-  if (!appointmentId) {
-    return (
-      <main className="min-h-[75vh] flex items-center justify-center px-4 py-12">
-        <div className="max-w-md w-full text-center space-y-5 bg-card/60 backdrop-blur-md border border-border/70 rounded-2xl p-6 sm:p-8 shadow-xl">
-          <div className="mx-auto w-14 h-14 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-500">
-            <AlertCircle className="w-7 h-7" />
-          </div>
-          <h1 className="text-2xl font-serif font-bold text-foreground tracking-tight">Referencia no encontrada</h1>
-          <p className="text-sm text-muted-foreground">
-            No se identificó el identificador del turno para verificar el pago. Si realizaste una transferencia o pago, podés consultar tu turno desde el inicio.
-          </p>
-          <div className="pt-2">
-            <Button asChild className="w-full h-11 bg-primary text-primary-foreground font-medium rounded-xl">
-              <Link to="/reservar-turno-mercadopago">Volver al inicio</Link>
-            </Button>
-          </div>
-        </div>
-      </main>
-    );
-  }
-
-  // Estado de carga o resolución de race condition
-  if (loading) {
-    return (
-      <main className="min-h-[75vh] flex items-center justify-center px-4 py-12">
-        <div className="max-w-md w-full text-center space-y-6 bg-card/60 backdrop-blur-md border border-border/70 rounded-2xl p-8 shadow-xl">
-          <div className="relative mx-auto w-16 h-16 flex items-center justify-center">
-            <div className="absolute inset-0 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
-            <Clock className="w-7 h-7 text-primary animate-pulse" />
-          </div>
-          <div className="space-y-2">
-            <h1 className="text-2xl font-serif font-bold text-foreground tracking-tight">Estamos confirmando tu pago</h1>
+  const renderContent = () => {
+    // Si no se proveyó ID de turno
+    if (!appointmentId) {
+      return (
+        <main className="min-h-[75vh] flex items-center justify-center px-4 py-8 sm:py-12">
+          <div className="max-w-md w-full text-center space-y-5 bg-card/85 backdrop-blur-xl border border-border/80 rounded-2xl p-5 sm:p-8 shadow-xl">
+            <div className="mx-auto w-14 h-14 rounded-full bg-amber-500/12 border border-amber-500/35 flex items-center justify-center text-amber-600">
+              <AlertCircle className="w-7 h-7" aria-hidden="true" />
+            </div>
+            <h1 className="text-2xl font-bold text-foreground tracking-tight">Referencia no encontrada</h1>
             <p className="text-sm text-muted-foreground">
-              Verificando la acreditación con Mercado Pago y reservando tu turno en el local…
+              No se identificó el identificador del turno para verificar el pago. Si realizaste una transferencia o pago, podés consultar tu turno desde el inicio.
             </p>
+            <div className="pt-2">
+              <Button asChild className="w-full h-11 bg-[#762936] text-white hover:bg-[#8A3342] font-medium rounded-xl">
+                <Link to="/reservar">Volver al inicio</Link>
+              </Button>
+            </div>
           </div>
-          <div className="text-xs text-muted-foreground/80 font-mono">
-            {retryCount > 0 ? `Verificación en curso (${retryCount}/3)…` : 'Conectando con el servidor seguro…'}
+        </main>
+      );
+    }
+
+    // Estado de carga o resolución de race condition
+    if (loading) {
+      return (
+        <main className="min-h-[75vh] flex items-center justify-center px-4 py-8 sm:py-12">
+          <div className="max-w-md w-full text-center space-y-6 bg-card/85 backdrop-blur-xl border border-border/80 rounded-2xl p-6 sm:p-8 shadow-xl">
+            <div className="relative mx-auto w-16 h-16 flex items-center justify-center">
+              <div className="absolute inset-0 rounded-full border-2 border-[#762936]/20 border-t-[#762936] animate-spin" />
+              <Clock className="w-7 h-7 text-[#762936] animate-pulse" aria-hidden="true" />
+            </div>
+            <div className="space-y-2">
+              <h1 className="text-2xl font-bold text-foreground tracking-tight">Estamos confirmando tu pago</h1>
+              <p className="text-sm text-muted-foreground">
+                Verificando la acreditación con Mercado Pago y reservando tu turno en el local…
+              </p>
+            </div>
+            <div className="text-xs text-muted-foreground font-mono">
+              {retryCount > 0 ? `Verificación en curso (${retryCount}/3)…` : 'Conectando con el servidor seguro…'}
+            </div>
           </div>
-        </div>
-      </main>
-    );
-  }
+        </main>
+      );
+    }
 
-  // Caso 1: Turno confirmado con éxito — Renderiza la pantalla final idéntica a Reserva V4
-  if (result?.isConfirmed && result.appointment) {
-    const appt = result.appointment;
-    const confirmedData: ConfirmedBookingData = {
-      appointmentId: appt.id,
-      serviceName: appt.serviceName ?? 'Servicio Kani',
-      barber: appt.barberName ?? 'Lautaro',
-      date: appt.date ?? '',
-      time: (appt.time ?? '').slice(0, 5),
-      clientName: appt.clientName ?? '',
-      depositArs: typeof appt.depositAmountArs === 'number' ? appt.depositAmountArs : KANI_STANDARD_DEPOSIT_ARS,
-      servicePriceArs: appt.servicePriceArs ?? 25000,
-      benefitType: (appt as any).benefitType ?? null,
-      benefitCode: (appt as any).benefitCode ?? null,
-      originalPriceArs: (appt as any).originalPriceArs ?? null,
-      discountAmountArs: (appt as any).discountAmountArs ?? null,
-      finalPriceArs: (appt as any).finalPriceArs ?? null,
-      onlineDepositArs: (appt as any).onlineDepositArs ?? null,
-      inPersonBalanceArs: (appt as any).inPersonBalanceArs ?? null,
-    };
+    // Caso 1: Turno confirmado con éxito — Renderiza la pantalla final idéntica a Reserva V4
+    if (result?.isConfirmed && result.appointment) {
+      const appt = result.appointment;
+      const confirmedData: ConfirmedBookingData = {
+        appointmentId: appt.id,
+        serviceName: appt.serviceName ?? 'Servicio Kani',
+        barber: appt.barberName ?? 'Lautaro',
+        date: appt.date ?? '',
+        time: (appt.time ?? '').slice(0, 5),
+        clientName: appt.clientName ?? '',
+        depositArs: typeof appt.depositAmountArs === 'number' ? appt.depositAmountArs : KANI_STANDARD_DEPOSIT_ARS,
+        servicePriceArs: appt.servicePriceArs ?? 25000,
+        benefitType: (appt as any).benefitType ?? null,
+        benefitCode: (appt as any).benefitCode ?? null,
+        originalPriceArs: (appt as any).originalPriceArs ?? null,
+        discountAmountArs: (appt as any).discountAmountArs ?? null,
+        finalPriceArs: (appt as any).finalPriceArs ?? null,
+        onlineDepositArs: (appt as any).onlineDepositArs ?? null,
+        inPersonBalanceArs: (appt as any).inPersonBalanceArs ?? null,
+      };
 
+      return (
+        <BookingConfirmedScreen
+          confirmed={confirmedData}
+          homeUrl="/reservar"
+        />
+      );
+    }
+
+    // Caso 2: El turno fue cancelado o expiró
+    if (result?.appointmentStatus === 'CANCELLED') {
+      return (
+        <main className="min-h-[75vh] flex items-center justify-center px-4 py-8 sm:py-12">
+          <div className="max-w-md w-full text-center space-y-5 bg-card/85 backdrop-blur-xl border border-rose-500/35 rounded-2xl p-5 sm:p-8 shadow-xl">
+            <div className="mx-auto w-14 h-14 rounded-full bg-rose-500/12 border border-rose-500/35 flex items-center justify-center text-rose-600">
+              <AlertCircle className="w-7 h-7" aria-hidden="true" />
+            </div>
+            <h1 className="text-2xl font-bold text-foreground tracking-tight">Turno no disponible</h1>
+            <p className="text-sm text-muted-foreground">
+              El tiempo límite de 10 minutos para abonar la seña expiró o la operación fue cancelada. El horario fue liberado.
+            </p>
+            <div className="pt-2">
+              <Button asChild className="w-full h-11 bg-[#762936] text-white hover:bg-[#8A3342] font-medium rounded-xl">
+                <Link to="/reservar">Elegir otro horario</Link>
+              </Button>
+            </div>
+          </div>
+        </main>
+      );
+    }
+
+    // Caso 3: Estado pendiente persistente
     return (
-      <BookingConfirmedScreen
-        confirmed={confirmedData}
-        homeUrl="/reservar-turno-mercadopago"
-      />
-    );
-  }
-
-  // Caso 2: El turno fue cancelado o expiró
-  if (result?.appointmentStatus === 'CANCELLED') {
-    return (
-      <main className="min-h-[75vh] flex items-center justify-center px-4 py-12">
-        <div className="max-w-md w-full text-center space-y-5 bg-card/60 backdrop-blur-md border border-rose-500/30 rounded-2xl p-6 sm:p-8 shadow-xl">
-          <div className="mx-auto w-14 h-14 rounded-full bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-500">
-            <AlertCircle className="w-7 h-7" />
+      <main className="min-h-[75vh] flex items-center justify-center px-4 py-8 sm:py-12">
+        <div className="max-w-md w-full text-center space-y-5 bg-card/85 backdrop-blur-xl border border-amber-500/35 rounded-2xl p-5 sm:p-8 shadow-xl">
+          <div className="mx-auto w-14 h-14 rounded-full bg-amber-500/12 border border-amber-500/35 flex items-center justify-center text-amber-600">
+            <Clock className="w-7 h-7" aria-hidden="true" />
           </div>
-          <h1 className="text-2xl font-serif font-bold text-foreground tracking-tight">Turno no disponible</h1>
+          <h1 className="text-2xl font-bold text-foreground tracking-tight">Pago en proceso</h1>
           <p className="text-sm text-muted-foreground">
-            El tiempo límite de 10 minutos para abonar la seña expiró o la operación fue cancelada. El horario fue liberado.
+            Mercado Pago está procesando la acreditación de tu seña. Tu turno se confirmará automáticamente al completarse.
           </p>
-          <div className="pt-2">
-            <Button asChild className="w-full h-11 bg-primary text-primary-foreground font-medium rounded-xl">
-              <Link to="/reservar-turno-mercadopago">Elegir otro horario</Link>
+          <div className="pt-2 flex flex-col gap-2.5">
+            <Button
+              className="w-full h-11 bg-[#762936] text-white hover:bg-[#8A3342] font-medium rounded-xl"
+              onClick={() => {
+                setLoading(true);
+                setRetryCount(0);
+              }}
+            >
+              Comprobar nuevamente
+            </Button>
+            <Button asChild variant="outline" className="w-full h-11 border-border/80 bg-background/60 text-foreground hover:bg-accent/50 rounded-xl">
+              <Link to="/reservar">Volver al inicio</Link>
             </Button>
           </div>
         </div>
       </main>
     );
-  }
+  };
 
-  // Caso 3: Estado pendiente persistente
   return (
-    <main className="min-h-[75vh] flex items-center justify-center px-4 py-12">
-      <div className="max-w-md w-full text-center space-y-5 bg-card/60 backdrop-blur-md border border-amber-500/30 rounded-2xl p-6 sm:p-8 shadow-xl">
-        <div className="mx-auto w-14 h-14 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-500">
-          <Clock className="w-7 h-7" />
-        </div>
-        <h1 className="text-2xl font-serif font-bold text-foreground tracking-tight">Pago en proceso</h1>
-        <p className="text-sm text-muted-foreground">
-          Mercado Pago está procesando la acreditación de tu seña. Tu turno se confirmará automáticamente al completarse.
-        </p>
-        <div className="pt-2 flex flex-col gap-2">
-          <Button
-            className="w-full h-11 bg-primary text-primary-foreground font-medium rounded-xl"
-            onClick={() => {
-              setLoading(true);
-              setRetryCount(0);
-            }}
-          >
-            Comprobar nuevamente
-          </Button>
-          <Button asChild variant="outline" className="w-full h-11 rounded-xl">
-            <Link to="/reservar-turno-mercadopago">Volver al inicio</Link>
-          </Button>
-        </div>
-      </div>
-    </main>
+    <LiquidGlassShell section="booking">
+      {renderContent()}
+    </LiquidGlassShell>
   );
 }

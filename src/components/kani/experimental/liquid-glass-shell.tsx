@@ -16,6 +16,7 @@ const LIQUID_GLASS_PREFIXES = [
   '/panel-descuentos',
   '/panel-turnos',
   '/panel-horarios',
+  '/pago',
   '/politica-de-privacidad',
   '/terminos-y-condiciones',
   '/admin-v2-liquid',
