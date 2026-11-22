@@ -1961,8 +1961,8 @@ html[data-theme="dark"] body[data-lg-admin="true"] .v2-notif-pill.v2-notif-pendi
   }
 
   body[data-lg-admin="true"] .v2-appointment--clean-mobile {
-    padding: 10px 12px !important;
-    gap: 8px !important;
+    padding: 14px !important;
+    gap: 12px !important;
   }
 
   body[data-lg-admin="true"] .v2-app-row-1 {
@@ -1971,6 +1971,7 @@ html[data-theme="dark"] body[data-lg-admin="true"] .v2-notif-pill.v2-notif-pendi
 
   body[data-lg-admin="true"] .v2-app-row-1.v2-app-row-1--clean {
     padding-bottom: 0 !important;
+    border-bottom: none !important;
   }
 
   body[data-lg-admin="true"] .v2-app-row-1 .v2-badge,
