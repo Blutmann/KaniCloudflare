@@ -11178,7 +11178,7 @@ html[data-theme="dark"] body.liquid-glass-active .site-shell .liquid-glass-reser
 }
 
 html[data-theme] body.liquid-glass-active .site-shell .liquid-glass-reservation .booking-page .discount-error-action-btn {
-  min-height: 40px !important;
+  min-height: 44px !important;
   height: auto !important;
   padding: 8px 13px !important;
   border-radius: 10px !important;
@@ -12157,6 +12157,7 @@ html[data-theme] body.liquid-glass-active .payway-checkout .payway-checkout-head
 }
 
 html[data-theme] body.liquid-glass-active .payway-checkout .payway-modal-close {
+  position: relative !important;
   width: 34px !important;
   height: 34px !important;
   min-width: 34px !important;
@@ -12164,6 +12165,12 @@ html[data-theme] body.liquid-glass-active .payway-checkout .payway-modal-close {
   border-radius: 999px !important;
   backdrop-filter: blur(12px) saturate(140%) !important;
   -webkit-backdrop-filter: blur(12px) saturate(140%) !important;
+}
+
+html[data-theme] body.liquid-glass-active .payway-checkout .payway-modal-close::after {
+  content: '' !important;
+  position: absolute !important;
+  inset: -5px !important;
 }
 
 html[data-theme="light"] body.liquid-glass-active .payway-checkout .payway-modal-close {
@@ -12196,6 +12203,7 @@ html[data-theme] body.liquid-glass-active .payway-checkout .payway-cvv-dni-row .
 }
 
 html[data-theme] body.liquid-glass-active .payway-checkout .payway-cvv-dni-row .payway-help-trigger {
+  position: relative !important;
   width: 20px !important;
   height: 20px !important;
   min-width: 20px !important;
@@ -12213,6 +12221,12 @@ html[data-theme] body.liquid-glass-active .payway-checkout .payway-cvv-dni-row .
   -webkit-backdrop-filter: none !important;
 }
 
+html[data-theme] body.liquid-glass-active .payway-checkout .payway-cvv-dni-row .payway-help-trigger::after {
+  content: '' !important;
+  position: absolute !important;
+  inset: -12px !important;
+}
+
 @media (max-width: 640px) {
   html[data-theme] body.liquid-glass-active .payway-checkout .payway-cvv-dni-row .payway-cvv-col,
   html[data-theme] body.liquid-glass-active .payway-checkout .payway-cvv-dni-row .payway-dni-col,
@@ -12227,6 +12241,10 @@ html[data-theme] body.liquid-glass-active .payway-checkout .payway-cvv-dni-row .
     min-height: 42px !important;
     max-width: 26px !important;
     max-height: 42px !important;
+  }
+
+  html[data-theme] body.liquid-glass-active .payway-checkout .payway-cvv-dni-row .payway-help-trigger::after {
+    inset: -1px -9px !important;
   }
 }
 

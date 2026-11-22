@@ -201,7 +201,7 @@ function CancelarTurnoPage() {
                 <Button
                   asChild
                   variant="ghost"
-                  className="w-full h-10 rounded-xl text-xs font-medium text-muted-foreground hover:text-foreground"
+                  className="w-full min-h-[44px] h-12 rounded-xl text-xs font-medium text-muted-foreground hover:text-foreground"
                 >
                   <Link to="/">
                     <ArrowLeft className="w-3.5 h-3.5 mr-1.5" />
@@ -242,11 +242,11 @@ function CancelarTurnoPage() {
           {/* ESTADO 4: Turno cancelado con éxito (o ya cancelado previamente) */}
           {!loading && !errorType && !keptTurno && cancelledSuccess && (
             <div className="space-y-6 text-center">
-              <div className="mx-auto w-16 h-16 rounded-full bg-[#762936]/20 border border-[#762936]/40 flex items-center justify-center text-[#E06D80] shadow-inner">
+              <div className="cancellation-status-icon mx-auto w-16 h-16 rounded-full bg-[#762936]/20 border border-[#762936]/40 flex items-center justify-center text-[#702B3A] dark:text-[#E06D80] shadow-inner">
                 <CheckCircle2 className="w-8 h-8" />
               </div>
               <div className="space-y-2">
-                <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider bg-[#762936]/25 text-[#E06D80] border border-[#762936]/40">
+                <span className="cancellation-status-badge inline-block px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider bg-[#762936]/15 text-[#702B3A] dark:text-[#E06D80] border border-[#762936]/35">
                   Reserva cancelada
                 </span>
                 <h1 className="text-2xl sm:text-3xl font-serif font-bold text-foreground tracking-tight">
@@ -437,7 +437,7 @@ function CancelarTurnoPage() {
               <div className="space-y-6">
                 {/* Encabezado */}
                 <div className="text-center space-y-2">
-                  <div className="mx-auto w-14 h-14 rounded-full bg-[#762936]/15 border border-[#762936]/35 flex items-center justify-center text-[#E06D80] mb-3">
+                  <div className="cancellation-status-icon mx-auto w-14 h-14 rounded-full bg-[#762936]/15 border border-[#762936]/35 flex items-center justify-center text-[#702B3A] dark:text-[#E06D80] mb-3">
                     <AlertCircle className="w-7 h-7" />
                   </div>
                   <h1 className="text-2xl sm:text-3xl font-serif font-bold text-foreground tracking-tight">
@@ -487,7 +487,10 @@ function CancelarTurnoPage() {
                 </div>
 
                 {cancelErrorMessage && (
-                  <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs text-center font-medium">
+                  <div
+                    role="alert"
+                    className="cancellation-error-alert p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-800 dark:text-rose-300 text-xs text-center font-medium"
+                  >
                     {cancelErrorMessage}
                   </div>
                 )}
@@ -541,7 +544,7 @@ function CancelarTurnoPage() {
               variant="outline"
               disabled={isCancelling}
               onClick={() => setShowConfirmModal(false)}
-              className="w-full sm:w-auto rounded-xl"
+              className="w-full sm:w-auto min-h-[44px] h-12 rounded-xl"
             >
               No, conservar turno
             </Button>
@@ -549,7 +552,7 @@ function CancelarTurnoPage() {
               type="button"
               disabled={isCancelling}
               onClick={handleConfirmCancellation}
-              className="w-full sm:w-auto rounded-xl bg-[#702B3A] text-white hover:bg-[#5A222E]"
+              className="w-full sm:w-auto min-h-[44px] h-12 rounded-xl bg-[#702B3A] text-white hover:bg-[#5A222E]"
             >
               {isCancelling ? (
                 <span className="flex items-center justify-center">

@@ -70,6 +70,12 @@ html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani
   margin: 0;
 }
 
+@media (max-width: 380px) {
+  html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-social-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-social-card {
   height: 100%;
   min-width: 0;
@@ -97,6 +103,9 @@ html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani
 
 html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-social-card .studio-card-desc {
   flex: 0 0 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-size: clamp(11px, 3vw, 13px);
   line-height: 1.35;
   white-space: nowrap;
@@ -624,3 +633,39 @@ html[data-theme="dark"] .site-shell .liquid-glass-page[data-lg-section="cancella
   color: #e4c98f !important;
 }
 
+/* Badges y alertas de cancelación con contraste AA/AAA en Light y Dark Mode */
+html[data-theme="light"] .site-shell .liquid-glass-page[data-lg-section="cancellation"] .cancellation-status-icon {
+  background: rgba(112, 43, 58, 0.10) !important;
+  border-color: rgba(112, 43, 58, 0.28) !important;
+  color: #702b3a !important;
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-page[data-lg-section="cancellation"] .cancellation-status-icon {
+  background: rgba(118, 41, 54, 0.20) !important;
+  border-color: rgba(118, 41, 54, 0.40) !important;
+  color: #e06d80 !important;
+}
+
+html[data-theme="light"] .site-shell .liquid-glass-page[data-lg-section="cancellation"] .cancellation-status-badge {
+  background: rgba(112, 43, 58, 0.12) !important;
+  border-color: rgba(112, 43, 58, 0.30) !important;
+  color: #702b3a !important;
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-page[data-lg-section="cancellation"] .cancellation-status-badge {
+  background: rgba(118, 41, 54, 0.25) !important;
+  border-color: rgba(118, 41, 54, 0.40) !important;
+  color: #f3a6b3 !important;
+}
+
+html[data-theme="light"] .site-shell .liquid-glass-page[data-lg-section="cancellation"] .cancellation-error-alert {
+  background: rgba(190, 18, 60, 0.08) !important;
+  border-color: rgba(190, 18, 60, 0.28) !important;
+  color: #9f1239 !important;
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-page[data-lg-section="cancellation"] .cancellation-error-alert {
+  background: rgba(244, 63, 94, 0.12) !important;
+  border-color: rgba(244, 63, 94, 0.32) !important;
+  color: #fda4af !important;
+}

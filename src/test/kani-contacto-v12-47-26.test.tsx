@@ -226,4 +226,19 @@ describe('Contacto V12.47.26 — Composición, Cards y Navegación Inteligente',
     expect(reviewLink).toHaveAttribute('target', '_blank');
     expect(reviewLink).toHaveAttribute('rel', 'noopener noreferrer');
   });
+
+  it('previene recorte/desborde en 360px en las tarjetas sociales de /contacto', async () => {
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    const routesCss = fs.readFileSync(
+      path.resolve(__dirname, '../components/kani/experimental/liquid-glass-routes.css'),
+      'utf-8',
+    );
+    expect(routesCss).toMatch(
+      /@media\s*\(max-width:\s*380px\)[\s\S]*?\.kani-contacto-social-grid\s*\{\s*grid-template-columns:\s*minmax\(0,\s*1fr\);/,
+    );
+    expect(routesCss).toMatch(
+      /\.kani-contacto-social-card\s+\.studio-card-desc\s*\{[\s\S]*?min-width:\s*0;[\s\S]*?overflow:\s*hidden;[\s\S]*?text-overflow:\s*ellipsis;/,
+    );
+  });
 });

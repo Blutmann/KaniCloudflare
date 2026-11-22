@@ -76,4 +76,13 @@ describe('KANI — Optimización UX Mobile del Modal Payway (Footer Sticky, CVV/
       /@media\s*\(max-width:\s*767px\),\s*\(hover:\s*none\)\s*and\s*\(pointer:\s*coarse\)[\s\S]*?font-size:\s*max\(16px,\s*1rem\)\s*!important;/,
     );
   });
+
+  it('5. Garantiza área táctil efectiva >= 44×44 px en cerrar modal (×), ayuda CVV (?) y botones de error de descuento', () => {
+    expect(liquidCss).toMatch(/\.payway-modal-close::after\s*\{[\s\S]*?inset:\s*-5px\s*!important;/);
+    expect(liquidCss).toMatch(/\.payway-help-trigger::after\s*\{[\s\S]*?inset:\s*-12px\s*!important;/);
+    expect(liquidCss).toMatch(/\.payway-help-trigger::after\s*\{[\s\S]*?inset:\s*-1px\s+-9px\s*!important;/);
+    expect(reservaV4Css).toMatch(/\.payway-modal-close::after\s*\{[\s\S]*?inset:\s*-5px;/);
+    expect(reservaV4Css).toMatch(/\.payway-help-trigger::after\s*\{[\s\S]*?inset:\s*-12px;/);
+    expect(liquidCss).toMatch(/\.discount-error-action-btn\s*\{[\s\S]*?min-height:\s*44px\s*!important;/);
+  });
 });

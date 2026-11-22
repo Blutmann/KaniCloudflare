@@ -311,4 +311,29 @@ describe('Flujo de Cancelación desde Enlace Único de Kani Barber Studio', () =
       });
     });
   });
+
+  describe('4. Accesibilidad, contraste Light/Dark y targets >= 44 px en /cancelar-turno', () => {
+    it('incluye role="alert" en cancelErrorMessage, contraste legible y botones >= 44 px en modal y Estado 2', async () => {
+      const fs = await import('node:fs');
+      const path = await import('node:path');
+      const cancelPageCode = fs.readFileSync(
+        path.resolve(__dirname, '../routes/cancelar-turno.tsx'),
+        'utf-8',
+      );
+      const routesCss = fs.readFileSync(
+        path.resolve(__dirname, '../components/kani/experimental/liquid-glass-routes.css'),
+        'utf-8',
+      );
+
+      expect(cancelPageCode).toMatch(/role="alert"\s+className="cancellation-error-alert/);
+      expect(cancelPageCode).toContain('cancellation-status-badge');
+      expect(cancelPageCode).toContain('cancellation-status-icon');
+      expect(cancelPageCode).toMatch(/min-h-\[44px\] h-12 rounded-xl[\s\S]*?Volver al inicio/);
+      expect(cancelPageCode).toMatch(/min-h-\[44px\] h-12 rounded-xl[\s\S]*?No, conservar turno/);
+      expect(cancelPageCode).toMatch(/min-h-\[44px\] h-12 rounded-xl[\s\S]*?'Sí, cancelar turno'/);
+
+      expect(routesCss).toMatch(/html\[data-theme="light"\][\s\S]*?\.cancellation-status-badge[\s\S]*?color:\s*#702b3a\s*!important;/);
+      expect(routesCss).toMatch(/html\[data-theme="light"\][\s\S]*?\.cancellation-error-alert[\s\S]*?color:\s*#9f1239\s*!important;/);
+    });
+  });
 });
