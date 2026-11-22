@@ -98,19 +98,39 @@ describe("V2 quick collection", () => {
     expect(screen.getByRole("button", { name: /Registrar cobro|Cobrar/i })).toBeDisabled();
     expect(mocks.rpc).not.toHaveBeenCalled();
   });
-  it('offers exactly the five payment classifications', () => {
-    render(<V2Payments/>);
-    const options=within(screen.getByLabelText('Servicio')).getAllByRole('option');
-    expect(options.map(option=>option.textContent)).toEqual(['Corte','Corte y barba','Barba','Otro','Anulado']);
+  it('offers 1-tap service buttons (4 in walk-in, 5 including Anulado in appointment)', () => {
+    render(<V2Payments />);
+    const walkInGroup = screen.getByRole('group', { name: 'Servicio' });
+    const walkInButtons = within(walkInGroup).getAllByRole('button');
+    expect(walkInButtons.map((b) => b.querySelector('.v2-quick-chip-name')?.textContent)).toEqual([
+      'Corte',
+      'Corte y barba',
+      'Barba',
+      'Otro',
+    ]);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Con turno' }));
+    const apptButtons = within(screen.getByRole('group', { name: 'Servicio' })).getAllByRole('button');
+    expect(apptButtons.map((b) => b.querySelector('.v2-quick-chip-name')?.textContent)).toEqual([
+      'Corte',
+      'Corte y barba',
+      'Barba',
+      'Otro',
+      'Anulado',
+    ]);
   });
-  it('records an eligible zero-value void without a direct insert or a provider claim', async () => {
-    mocks.rpc.mockResolvedValue({data:{id:'void'},error:null});
-    render(<V2Payments/>);
-    fireEvent.change(screen.getByLabelText('Servicio'),{target:{value:'Anulado'}});
-    const submit=screen.getByRole('button',{name:/Registrar cobro|Cobrar/i});
-    expect(submit).toBeEnabled(); fireEvent.click(submit);
-    await waitFor(()=>expect(mocks.rpc).toHaveBeenCalledTimes(1));
-    expect(mocks.rpc.mock.calls[0]?.[1]).toMatchObject({p_service_name:'Anulado',p_service_price_ars:0});
+  it('records an eligible zero-value void in appointment mode without a direct insert or a provider claim', async () => {
+    mocks.benefit = { depositPaid: false, depositAmountArs: 0 };
+    mocks.rpc.mockResolvedValue({ data: { id: 'void' }, error: null });
+    render(<V2Payments />);
+    fireEvent.click(screen.getByRole('button', { name: 'Con turno' }));
+    fireEvent.change(screen.getByLabelText('Turno'), { target: { value: 'a1' } });
+    fireEvent.click(within(screen.getByRole('group', { name: 'Servicio' })).getByRole('button', { name: 'Anulado' }));
+    const submit = screen.getByRole('button', { name: /Registrar cobro|Cobrar/i });
+    expect(submit).toBeEnabled();
+    fireEvent.click(submit);
+    await waitFor(() => expect(mocks.rpc).toHaveBeenCalledTimes(1));
+    expect(mocks.rpc.mock.calls[0]?.[1]).toMatchObject({ p_service_name: 'Anulado', p_service_price_ars: 0 });
     expect(mocks.rpc.mock.calls[0]?.[1]).not.toHaveProperty('p_online_deposit_paid');
   });
   it('allows a barber to edit an own payment and retain its fixed discount on service change', () => {
@@ -146,7 +166,7 @@ describe('Benefit-aware appointment collection',()=>{
   mocks.benefit={benefitCode:'CONTROL',benefitOriginalPriceArs:25000,benefitDiscountAmountArs:discount,benefitFinalPriceArs:final,depositPaid:final>0,depositAmountArs:final>0?5000:0};
   mocks.rpc.mockResolvedValue({data:{id:'benefit-payment'},error:null});
   render(<V2Payments/>);fireEvent.click(screen.getByRole('button',{name:'Con turno'}));fireEvent.change(screen.getByLabelText('Turno'),{target:{value:'a1'}});
-  expect(screen.getByText('$'+balance.toLocaleString('es-AR'),{selector:'.v2-total-box-amount'})).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Cobrar $' + balance.toLocaleString('es-AR') })).toBeInTheDocument();
   fireEvent.click(screen.getByRole('button',{name:/Registrar cobro|Cobrar/i}));await waitFor(()=>expect(mocks.rpc).toHaveBeenCalled());
   expect(mocks.rpc.mock.calls.at(-1)[1]).toMatchObject({p_appointment_id:'a1',p_service_price_ars:25000,p_discount_value:discount});
  });
@@ -213,6 +233,101 @@ describe('Benefit-aware appointment collection',()=>{
   fireEvent.change(screen.getByLabelText('Fecha hasta'), { target: { value: '2026-12-10' } });
   const rangeAlert = screen.getByText(/Rango no válido:/i);
   expect(rangeAlert).toHaveAttribute('role', 'alert');
+ });
+
+ it('supports 1-tap Service and Method selection, renders Cash Summary Efectivo vs Transferencia vs Payway, and filters history by method', async () => {
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' }).format(new Date());
+  mocks.payments = [
+    {
+      id: 'p-cash',
+      barberId: 'b1',
+      barberName: 'Gonzalo',
+      serviceName: 'Corte',
+      servicePriceArs: 25000,
+      discountArs: 0,
+      finalAmountArs: 25000,
+      collectedAmountArs: 25000,
+      paymentDate: today,
+      paymentTime: '10:00',
+      paymentMethod: 'Efectivo',
+      onlineDepositPaid: false,
+      onlineDepositAmountArs: 0,
+      appointmentId: null,
+    },
+    {
+      id: 'p-transfer',
+      barberId: 'b1',
+      barberName: 'Gonzalo',
+      serviceName: 'Corte y barba',
+      servicePriceArs: 30000,
+      discountArs: 0,
+      finalAmountArs: 30000,
+      collectedAmountArs: 30000,
+      paymentDate: today,
+      paymentTime: '11:00',
+      paymentMethod: 'Transferencia',
+      onlineDepositPaid: false,
+      onlineDepositAmountArs: 0,
+      appointmentId: null,
+    },
+    {
+      id: 'p-payway',
+      barberId: 'b1',
+      barberName: 'Gonzalo',
+      serviceName: 'Barba',
+      servicePriceArs: 15000,
+      discountArs: 0,
+      finalAmountArs: 15000,
+      collectedAmountArs: 15000,
+      paymentDate: today,
+      paymentTime: '12:00',
+      paymentMethod: 'Tarjeta — Payway',
+      onlineDepositPaid: false,
+      onlineDepositAmountArs: 0,
+      appointmentId: null,
+    },
+  ];
+  mocks.rpc.mockResolvedValue({ data: { id: 'p-new' }, error: null });
+
+  render(<V2Payments />);
+
+  // Resumen de caja arriba (3 columnas siempre: Efectivo | Transf. | Payway)
+  const cashSummary = screen.getByRole('region', { name: 'Resumen de caja' });
+  expect(within(cashSummary).getByText('$70.000')).toBeInTheDocument();
+  expect(within(cashSummary).getByText(/3 cobros/)).toBeInTheDocument();
+  expect(within(cashSummary).getByText('$25.000')).toBeInTheDocument();
+  expect(within(cashSummary).getByText('$30.000')).toBeInTheDocument();
+  expect(within(cashSummary).getByText('$15.000')).toBeInTheDocument();
+
+  // Filtro por método en el historial (Todos | Efectivo | Transf. | Payway)
+  const methodFilterGroup = screen.getByRole('group', { name: 'Filtrar por método' });
+  fireEvent.click(within(methodFilterGroup).getByRole('button', { name: 'Payway' }));
+  const historyPanel = screen.getByRole('region', { name: 'Cobros registrados' });
+  expect(within(historyPanel).getByText('1 servicios')).toBeInTheDocument();
+
+  // Selección en 1 toque de Servicio y Método de pago (solo Efectivo y Transferencia)
+  const serviceGroup = screen.getByRole('group', { name: 'Servicio' });
+  const comboBtn = within(serviceGroup).getByRole('button', { name: /Corte y barba/i });
+  fireEvent.click(comboBtn);
+  expect(comboBtn).toHaveAttribute('aria-pressed', 'true');
+
+  const methodGroup = screen.getByRole('group', { name: 'Método de pago' });
+  expect(within(methodGroup).getAllByRole('button').map((b) => b.textContent)).toEqual([
+    'Efectivo',
+    'Transferencia',
+  ]);
+  const transferBtn = within(methodGroup).getByRole('button', { name: 'Transferencia' });
+  fireEvent.click(transferBtn);
+  expect(transferBtn).toHaveAttribute('aria-pressed', 'true');
+
+  const submitBtn = screen.getByRole('button', { name: 'Cobrar $30.000' });
+  fireEvent.click(submitBtn);
+  await waitFor(() => expect(mocks.rpc).toHaveBeenCalledTimes(1));
+  expect(mocks.rpc.mock.calls[0]?.[1]).toMatchObject({
+    p_service_name: 'Corte y barba',
+    p_service_price_ars: 30000,
+    p_payment_method: 'Transferencia',
+  });
  });
 
 });

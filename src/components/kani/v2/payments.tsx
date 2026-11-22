@@ -61,6 +61,7 @@ export function V2Payments() {
   const [clientName, setClientName] = useState("");
   const [clientPhone, setClientPhone] = useState("");
   const [period, setPeriod] = useState<PaymentPeriodFilter>("TODAY");
+  const [methodFilter, setMethodFilter] = useState<"ALL" | "Efectivo" | "Transferencia" | "Payway">("ALL");
   const [customStartDate, setCustomStartDate] = useState(today);
   const [customEndDate, setCustomEndDate] = useState(today);
   const [busy, setBusy] = useState(false);
@@ -136,6 +137,31 @@ export function V2Payments() {
         scopeV2(data.payments, staff.profile.role, staff.profile.barber_id, data.barberId),
       ).filter((p) => p.paymentDate >= periodRange.start && p.paymentDate <= periodRange.end);
   const summary = paymentSummary(history);
+  const activeHistory = history.filter((p) => p.serviceName !== "Anulado");
+  const isPaywayMethod = (pm: string) => /payway|tarjeta/i.test(pm);
+  const cashTotal = activeHistory
+    .filter((p) => p.paymentMethod === "Efectivo")
+    .reduce((sum, p) => sum + p.collectedAmountArs, 0);
+  const transferTotal = activeHistory
+    .filter((p) => p.paymentMethod === "Transferencia")
+    .reduce((sum, p) => sum + p.collectedAmountArs, 0);
+  const paywayMovementsTotal = activeHistory
+    .filter((p) => isPaywayMethod(p.paymentMethod))
+    .reduce((sum, p) => sum + p.collectedAmountArs, 0);
+  const paywayTotal = Math.max(paywayMovementsTotal, summary.deposits);
+  const filteredHistory =
+    methodFilter === "ALL"
+      ? history
+      : methodFilter === "Payway"
+        ? history.filter((p) => isPaywayMethod(p.paymentMethod))
+        : history.filter((p) => p.paymentMethod === methodFilter);
+  const quickServiceOptions: Array<{ value: string; label: string }> = [
+    { value: "Corte", label: "Corte" },
+    { value: "Corte y barba", label: "Corte y barba" },
+    { value: "Barba", label: "Barba" },
+    { value: "Otros", label: "Otro" },
+    ...(origin === "appointment" ? [{ value: "Anulado", label: "Anulado" }] : []),
+  ];
   const appointmentById = new Map(data.appointments.map(a => [a.id, a]));
 
   async function submit(event: FormEvent) {
@@ -147,7 +173,7 @@ export function V2Payments() {
       setMessage("Seleccioná un turno con información de seña verificable.");
       return;
     }
-    if (appointment && total <= 0) { setMessage("Sin saldo pendiente."); return; }
+    if (appointment && total <= 0 && serviceName !== "Anulado") { setMessage("Sin saldo pendiente."); return; }
     if (appointmentBalance != null && total > appointmentBalance) {
       setMessage("El cobro no puede superar el saldo pendiente del turno."); return;
     }
@@ -313,132 +339,176 @@ export function V2Payments() {
   }
 
   return (
-    <main className="v2-page">
+    <main className="v2-page v2-payments-page">
       {actionNotice && (
         <p role="status" className="v2-success" style={{ marginBottom: "1rem" }}>
           {actionNotice}
         </p>
       )}
-      <div className="v2-payment-layout">
-        <section className="v2-panel v2-payment-form">
-          <MotionConfig reducedMotion="user">
-            <div
-              className="v2-segmented"
-              role="group"
-              aria-label="Origen del cobro"
-              data-lg-segmented={isLiquidAdmin ? "true" : undefined}
-            >
-              {(["walk_in", "appointment"] as const).map((value) => {
-                const isSelected = origin === value;
-                return (
-                  <button
-                    type="button"
-                    key={value}
-                    aria-pressed={isSelected}
-                    onClick={() => {
-                      setOrigin(value);
-                      setServiceName(null);
-                      setFinalOverride(null);
-                      setPriceOverride(null);
-                      setDiscount(null);
-                    }}
-                  >
-                    {isLiquidAdmin && isSelected && (
-                      <motion.span
-                        layoutId="lg-payment-origin-pill"
-                        className="lg-segmented-pill"
-                        aria-hidden="true"
-                        transition={
-                          shouldReduceMotion
-                            ? { duration: 0 }
-                            : { duration: 0.22, ease: [0.22, 1, 0.36, 1] }
-                        }
-                      />
-                    )}
-                    <span className="lg-segmented-label">
-                      {value === "walk_in" ? "Sin turno" : "Con turno"}
-                    </span>
-                  </button>
-                );
-              })}
+
+      {/* 1. Resumen de Caja del Día arriba (Cierre individual rápido) */}
+      <section className="v2-panel v2-cash-summary-card" aria-label="Resumen de caja">
+        <div className="v2-cash-summary-main">
+          <div className="v2-cash-summary-total">
+            <span className="v2-cash-summary-eyebrow">
+              {period === "TODAY" ? "Tu caja de hoy" : "Caja del período"}
+            </span>
+            <div className="v2-cash-summary-amount-row">
+              <strong className="v2-cash-summary-amount">{money(summary.collected)}</strong>
+              <span className="v2-cash-summary-count">
+                · {history.length} {history.length === 1 ? "cobro" : "cobros"}
+              </span>
             </div>
-          </MotionConfig>
+          </div>
+          <div
+            className="v2-cash-summary-breakdown"
+            aria-label="Desglose por método de pago"
+          >
+            <div className="v2-cash-metric cash">
+              <span>Efectivo</span>
+              <strong>{money(cashTotal)}</strong>
+            </div>
+            <div className="v2-cash-metric transfer">
+              <span>Transf.</span>
+              <strong>{money(transferTotal)}</strong>
+            </div>
+            <div className="v2-cash-metric payway">
+              <span>Payway</span>
+              <strong>{money(paywayTotal)}</strong>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div className="v2-payment-layout">
+        <section className="v2-panel v2-payment-form v2-cobro-panel" aria-label="Cobro rápido">
+          <div className="v2-payment-form-header v2-cobro-header">
+            <h2 className="v2-payment-form-title">Cobro rápido</h2>
+            <MotionConfig reducedMotion="user">
+              <div
+                className="v2-segmented"
+                role="group"
+                aria-label="Origen del cobro"
+                data-lg-segmented={isLiquidAdmin ? "true" : undefined}
+              >
+                {(["walk_in", "appointment"] as const).map((value) => {
+                  const isSelected = origin === value;
+                  return (
+                    <button
+                      type="button"
+                      key={value}
+                      aria-pressed={isSelected}
+                      onClick={() => {
+                        setOrigin(value);
+                        setServiceName(null);
+                        setFinalOverride(null);
+                        setPriceOverride(null);
+                        setDiscount(null);
+                      }}
+                    >
+                      {isLiquidAdmin && isSelected && (
+                        <motion.span
+                          layoutId="lg-payment-origin-pill"
+                          className="lg-segmented-pill"
+                          aria-hidden="true"
+                          transition={
+                            shouldReduceMotion
+                              ? { duration: 0 }
+                              : { duration: 0.22, ease: [0.22, 1, 0.36, 1] }
+                          }
+                        />
+                      )}
+                      <span className="lg-segmented-label">
+                        {value === "walk_in" ? "Sin turno" : "Con turno"}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </MotionConfig>
+          </div>
           <form onSubmit={(e) => void submit(e)} className="v2-payment-compact-form">
             <fieldset disabled={busy || data.loading} className="v2-payment-form-fieldset">
               <div className="v2-payment-grid">
-                {/* Fila 1: Barbero (o Turno) | Servicio */}
-                <div className="v2-payment-row">
-                  {origin === "appointment" ? (
-                    <label className="v2-field v2-payment-col">
-                      <span className="v2-field-label">Turno</span>
-                      <select
-                        value={appointmentId}
-                        onChange={(e) => {
-                          setAppointmentId(e.target.value);
-                          setServiceName(null);
-                          setFinalOverride(null);
-                          setPriceOverride(null);
-                          setDiscount(null);
-                        }}
-                      >
-                        <option value="">Seleccionar turno</option>
-                        {choices.map((a) => (
-                          <option value={a.id} key={a.id}>
-                            {a.name} · {a.time} hs ({a.barber})
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  ) : isAdmin ? (
-                    <label className="v2-field v2-payment-col v2-payment-entry-field">
-                      <span className="v2-field-label">Barbero</span>
-                      <select value={barberId} onChange={(e) => setBarberId(e.target.value)}>
-                        {staff.barbers.map((b) => (
-                          <option value={b.id} key={b.id}>
-                            {b.name}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  ) : (
-                    <label className="v2-field v2-payment-col v2-payment-entry-field">
-                      <span className="v2-field-label">Barbero</span>
-                      <input
-                        value={
-                          staff.barbers.find((b) => b.id === barberId)?.name ||
-                          staff.profile.display_name ||
-                          "Lautaro"
-                        }
-                        disabled
-                        readOnly
-                      />
-                    </label>
-                  )}
+                {/* Turno o Barbero */}
+                {(origin === "appointment" || isAdmin) && (
+                  <div className="v2-payment-full-row">
+                    {origin === "appointment" ? (
+                      <label className="v2-field v2-payment-col">
+                        <span className="v2-field-label">Turno</span>
+                        <select
+                          value={appointmentId}
+                          onChange={(e) => {
+                            setAppointmentId(e.target.value);
+                            setServiceName(null);
+                            setFinalOverride(null);
+                            setPriceOverride(null);
+                            setDiscount(null);
+                          }}
+                        >
+                          <option value="">Seleccionar turno</option>
+                          {choices.map((a) => (
+                            <option value={a.id} key={a.id}>
+                              {a.name} · {a.time} hs ({a.barber})
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    ) : (
+                      <label className="v2-field v2-payment-col v2-payment-entry-field">
+                        <span className="v2-field-label">Barbero</span>
+                        <select value={barberId} onChange={(e) => setBarberId(e.target.value)}>
+                          {staff.barbers.map((b) => (
+                            <option value={b.id} key={b.id}>
+                              {b.name}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    )}
+                  </div>
+                )}
 
-                  <label className="v2-field v2-payment-col v2-payment-entry-field">
-                    <span className="v2-field-label">Servicio</span>
-                    <select
-                      value={serviceName}
-                      onChange={(e) => {
-                        setServiceName(e.target.value);
-                        setPriceOverride(null);
-                        setFinalOverride(null);
-                      }}
-                    >
-                      <option value="Corte">Corte</option>
-                      <option value="Corte y barba">Corte y barba</option>
-                      <option value="Barba">Barba</option>
-                      <option value="Otros">Otro</option>
-                      <option
-                        value="Anulado"
-                        disabled={
-                          !!appointment?.depositPaid || (appointment?.depositAmountArs ?? 0) > 0
-                        }
-                      >
-                        Anulado
-                      </option>
-                    </select>
-                  </label>
+                {/* 1. Servicio en 1 toque */}
+                <div className="v2-payment-full-row">
+                  <span className="v2-field-label">1. Servicio</span>
+                  <div className="v2-quick-chips" role="group" aria-label="Servicio">
+                    {quickServiceOptions.map((opt) => {
+                      const isSelected =
+                        opt.value === "Otros"
+                          ? ["Otro", "Otros"].includes(serviceName)
+                          : serviceName === opt.value;
+                      const isDisabled =
+                        opt.value === "Anulado" &&
+                        (!!appointment?.depositPaid || (appointment?.depositAmountArs ?? 0) > 0);
+                      const baseService = data.services.find(
+                        (s) => canonicalPaymentService(s.name) === canonicalPaymentService(opt.value),
+                      );
+                      return (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          className={`v2-quick-chip ${isSelected ? "is-selected" : ""}`}
+                          aria-pressed={isSelected}
+                          disabled={isDisabled}
+                          onClick={() => {
+                            setServiceName(opt.value);
+                            setPriceOverride(null);
+                            setFinalOverride(null);
+                          }}
+                        >
+                          <span className="v2-quick-chip-name">{opt.label}</span>
+                          {baseService && baseService.price > 0 && (
+                            <span className="v2-quick-chip-price">
+                              {baseService.price >= 1000 && baseService.price % 1000 === 0
+                                ? `$${baseService.price / 1000}k`
+                                : money(baseService.price)}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 {["Otro", "Otros"].includes(serviceName) && (
@@ -464,74 +534,85 @@ export function V2Payments() {
                   </div>
                 )}
 
-                {/* Fila 2: Método de pago | Importe */}
-                <div className="v2-payment-row">
-                  <label className="v2-field v2-payment-col v2-payment-entry-field">
-                    <span className="v2-field-label">Método de pago</span>
-                    <select
-                      value={method}
-                      onChange={(e) => setMethod(e.target.value as PaymentMethod)}
-                    >
-                      <option value="Efectivo">Efectivo</option>
-                      <option value="Transferencia">Transferencia</option>
-                    </select>
-                  </label>
+                {/* 2. Método de pago en 1 toque (50/50) */}
+                <div className="v2-payment-full-row">
+                  <span className="v2-field-label">2. Método de pago</span>
+                  <div className="v2-quick-method-grid" role="group" aria-label="Método de pago">
+                    {(
+                      [
+                        { value: "Efectivo", label: "Efectivo", ariaLabel: "Efectivo" },
+                        { value: "Transferencia", label: "Transferencia", ariaLabel: "Transferencia" },
+                      ] as const
+                    ).map((m) => {
+                      const isSelected = method === m.value;
+                      return (
+                        <button
+                          key={m.value}
+                          type="button"
+                          className={`v2-quick-chip v2-quick-method-btn ${isSelected ? "is-selected" : ""}`}
+                          aria-pressed={isSelected}
+                          aria-label={m.ariaLabel}
+                          onClick={() => setMethod(m.value)}
+                        >
+                          {m.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
 
+                {/* Campo limpio de Importe al 100% */}
+                <div className="v2-payment-full-row">
                   <label className="v2-field v2-payment-col v2-payment-entry-field">
                     <span className="v2-field-label">Importe</span>
-                    <input
-                      type="number"
-                      min={serviceName === "Anulado" ? 0 : 1}
-                      disabled={serviceName === "Anulado"}
-                      step={1}
-                      value={
-                        serviceName === "Anulado"
-                          ? 0
-                          : (priceOverride ??
-                            (["Otro", "Otros"].includes(serviceName) ? "" : price))
-                      }
-                      placeholder={String(service?.price ?? 25000)}
-                      onChange={(e) =>
-                        setPriceOverride(e.target.value === "" ? null : Number(e.target.value))
-                      }
-                    />
+                    <div className="v2-quick-amount-input-wrap">
+                      <span className="v2-quick-amount-prefix" aria-hidden="true">$</span>
+                      <input
+                        type="number"
+                        aria-label="Importe"
+                        min={serviceName === "Anulado" ? 0 : 1}
+                        disabled={serviceName === "Anulado"}
+                        step={1}
+                        value={
+                          serviceName === "Anulado"
+                            ? 0
+                            : (priceOverride ??
+                              (["Otro", "Otros"].includes(serviceName) ? "" : price))
+                        }
+                        placeholder={String(service?.price ?? 25000)}
+                        onChange={(e) =>
+                          setPriceOverride(e.target.value === "" ? null : Number(e.target.value))
+                        }
+                      />
+                    </div>
                   </label>
                 </div>
 
-                {/* Fila 3: Agregar descuento | Asociar cliente */}
-                <div className="v2-payment-row">
+                {/* Fila 50/50 discreta: Descuento | Asociar cliente */}
+                <div className="v2-quick-secondary-toggles">
                   <button
                     type="button"
-                    className={`v2-secondary v2-payment-toggle-btn ${showDiscount ? "active" : ""}`}
+                    className={`v2-secondary v2-quick-secondary-btn ${showDiscount ? "active" : ""}`}
                     onClick={() => setShowDiscount(!showDiscount)}
                     aria-expanded={showDiscount}
                   >
-                    <Tag size={16} />
-                    <span>
-                      {showDiscount ? (
-                        "Quitar descuento"
-                      ) : (
-                        <>
-                          <span className="v2-discount-text-desktop">Agregar descuento</span>
-                          <span className="v2-discount-text-mobile">Descuento</span>
-                        </>
-                      )}
-                    </span>
+                    <Tag size={14} />
+                    <span>{showDiscount ? "Quitar descuento" : "Descuento"}</span>
                   </button>
 
                   {origin === "walk_in" ? (
                     <button
                       type="button"
-                      className={`v2-secondary v2-payment-toggle-btn ${showClient ? "active" : ""}`}
+                      className={`v2-secondary v2-quick-secondary-btn ${showClient ? "active" : ""}`}
                       onClick={() => setShowClient(!showClient)}
                       aria-expanded={showClient}
                     >
-                      <User size={16} />
+                      <User size={14} />
                       <span>{showClient ? "Ocultar cliente" : "Asociar cliente"}</span>
                     </button>
                   ) : (
-                    <div className="v2-payment-appointment-client-badge">
-                      <User size={16} />
+                    <div className="v2-payment-appointment-client-badge v2-quick-secondary-pill">
+                      <User size={14} />
                       <span className="v2-truncate">
                         {appointment?.name || "Cliente del turno"}
                       </span>
@@ -609,43 +690,31 @@ export function V2Payments() {
                   </div>
                 )}
 
-                {/* Fila 4: A cobrar ahora | Registrar cobro */}
-                <div className="v2-payment-row v2-payment-row-final">
-                  <div className="v2-payment-total-box">
-                    <span className="v2-total-box-label">Importe:</span>
-                    <span className="sr-only">A cobrar ahora</span>
-                    <div className="v2-total-box-amount-wrap">
-                      <strong className="v2-total-box-amount">{money(total)}</strong>
-                      {(discount > 0 || deposit > 0) && (
-                        <span className="v2-total-box-breakdown">
-                          {deposit > 0 ? `Seña: -${money(deposit)} ` : ""}
-                          {discount > 0 ? `Desc: -${money(discount)}` : ""}
-                        </span>
-                      )}
-                    </div>
-                  </div>
+                {(discount > 0 || deposit > 0) && (
+                  <p className="v2-quick-breakdown-note">
+                    {deposit > 0 ? `Seña online: -${money(deposit)}` : ""}
+                    {deposit > 0 && discount > 0 ? " · " : ""}
+                    {discount > 0 ? `Descuento: -${money(discount)}` : ""}
+                  </p>
+                )}
 
-                  <button
-                    className="v2-primary v2-payment-submit-btn"
-                    type="submit"
-                    disabled={
-                      busy ||
-                      (!price && serviceName !== "Anulado") ||
-                      (origin === "appointment" && (!appointment || !depositVerifiable || total <= 0 || (appointmentBalance != null && total > appointmentBalance)))
-                    }
-                  >
-                    <CheckCircle2 size={18} />
-                    {busy ? (
-                      <span>Registrando…</span>
-                    ) : (
-                      <>
-                        <span className="v2-submit-btn-text-desktop">Registrar cobro</span>
-                        <span className="v2-submit-btn-text-mobile">Cobrar</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-                {appointment && total <= 0 && <p role="status">Sin saldo pendiente.</p>}
+                <button
+                  className="v2-primary v2-payment-submit-btn v2-quick-submit-full"
+                  type="submit"
+                  disabled={
+                    busy ||
+                    (!price && serviceName !== "Anulado") ||
+                    (origin === "appointment" && (!appointment || !depositVerifiable || (total <= 0 && serviceName !== "Anulado") || (appointmentBalance != null && total > appointmentBalance)))
+                  }
+                >
+                  <CheckCircle2 size={18} />
+                  {busy ? (
+                    <span>Registrando…</span>
+                  ) : (
+                    <span>{`Cobrar ${money(total)}`}</span>
+                  )}
+                </button>
+                {appointment && total <= 0 && serviceName !== "Anulado" && <p role="status">Sin saldo pendiente.</p>}
               </div>
             </fieldset>
           </form>
@@ -655,164 +724,190 @@ export function V2Payments() {
             </p>
           )}
         </section>
-      </div>
 
-      <section className="v2-panel v2-payments-history-panel">
-        <div className="v2-section-title">
-          <h2>Cobros registrados</h2>
-          <span>{history.length} servicios</span>
-        </div>
-        <div className="v2-filters">
-          <label className="v2-field">
-            Período
-            <select
-              value={period}
-              onChange={(e) => setPeriod(e.target.value as PaymentPeriodFilter)}
+        <section className="v2-panel v2-payments-history-panel" aria-label="Cobros registrados">
+          <div className="v2-section-title">
+            <h2>Cobros registrados</h2>
+            <span>{filteredHistory.length} servicios</span>
+          </div>
+          <div className="v2-filters">
+            <label className="v2-field">
+              Período
+              <select
+                value={period}
+                onChange={(e) => setPeriod(e.target.value as PaymentPeriodFilter)}
+              >
+                <option value="TODAY">Hoy</option>
+                <option value="YESTERDAY">Ayer</option>
+                <option value="THIS_WEEK">Esta semana</option>
+                <option value="THIS_MONTH">{dynamicLabels.THIS_MONTH}</option>
+                <option value="THIS_YEAR">{dynamicLabels.THIS_YEAR}</option>
+                <option value="LAST_7_DAYS">Últimos 7 días</option>
+                <option value="LAST_14_DAYS">Últimos 14 días</option>
+                <option value="LAST_30_DAYS">Últimos 30 días</option>
+                <option value="PREVIOUS_MONTH">{dynamicLabels.PREVIOUS_MONTH}</option>
+                <option value="PREVIOUS_YEAR">{dynamicLabels.PREVIOUS_YEAR}</option>
+                <option value="CUSTOM">Fecha específica</option>
+              </select>
+            </label>
+            {period === "CUSTOM" && (
+              <>
+                <label className="v2-field">
+                  Fecha desde
+                  <input
+                    type="date"
+                    value={customStartDate}
+                    onChange={(e) => setCustomStartDate(e.target.value || today)}
+                  />
+                </label>
+                <label className="v2-field">
+                  Fecha hasta
+                  <input
+                    type="date"
+                    value={customEndDate}
+                    onChange={(e) => setCustomEndDate(e.target.value || today)}
+                  />
+                </label>
+              </>
+            )}
+            <BarberFilter />
+          </div>
+          <div className="v2-method-filter-pills" role="group" aria-label="Filtrar por método">
+            {(
+              [
+                { value: "ALL", label: "Todos", ariaLabel: "Todos" },
+                { value: "Efectivo", label: "Efectivo", ariaLabel: "Efectivo" },
+                { value: "Transferencia", label: "Transf.", ariaLabel: "Transferencia" },
+                { value: "Payway", label: "Payway", ariaLabel: "Payway" },
+              ] as const
+            ).map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                className={`v2-method-pill ${methodFilter === opt.value ? "is-active" : ""}`}
+                aria-pressed={methodFilter === opt.value}
+                aria-label={opt.ariaLabel}
+                onClick={() => setMethodFilter(opt.value)}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          {isInvalidRange && (
+            <p
+              role="alert"
+              className="v2-notice"
+              style={{ color: "var(--destructive, #ef4444)", margin: "8px 0" }}
             >
-              <option value="TODAY">Hoy</option>
-              <option value="YESTERDAY">Ayer</option>
-              <option value="THIS_WEEK">Esta semana</option>
-              <option value="THIS_MONTH">{dynamicLabels.THIS_MONTH}</option>
-              <option value="THIS_YEAR">{dynamicLabels.THIS_YEAR}</option>
-              <option value="LAST_7_DAYS">Últimos 7 días</option>
-              <option value="LAST_14_DAYS">Últimos 14 días</option>
-              <option value="LAST_30_DAYS">Últimos 30 días</option>
-              <option value="PREVIOUS_MONTH">{dynamicLabels.PREVIOUS_MONTH}</option>
-              <option value="PREVIOUS_YEAR">{dynamicLabels.PREVIOUS_YEAR}</option>
-              <option value="CUSTOM">Fecha específica</option>
-            </select>
-          </label>
-          {period === "CUSTOM" && (
-            <>
-              <label className="v2-field">
-                Fecha desde
-                <input
-                  type="date"
-                  value={customStartDate}
-                  onChange={(e) => setCustomStartDate(e.target.value || today)}
-                />
-              </label>
-              <label className="v2-field">
-                Fecha hasta
-                <input
-                  type="date"
-                  value={customEndDate}
-                  onChange={(e) => setCustomEndDate(e.target.value || today)}
-                />
-              </label>
-            </>
+              Rango no válido: Fecha desde debe ser menor o igual a Fecha hasta.
+            </p>
           )}
-          <BarberFilter />
-        </div>
-        {isInvalidRange && (
-          <p
-            role="alert"
-            className="v2-notice"
-            style={{ color: "var(--destructive, #ef4444)", margin: "8px 0" }}
-          >
-            Rango no válido: Fecha desde debe ser menor o igual a Fecha hasta.
-          </p>
-        )}
-        <div className="v2-history-total">
-          <strong>{money(summary.collected)}</strong>
-          <span>
-            Total recaudado · valor de servicios {money(summary.value)} · señas online{" "}
-            {money(summary.deposits)}
-          </span>
-        </div>
-        {!history.length && <Empty>No hay cobros registrados en este período.</Empty>}
+          <div className="v2-history-total">
+            <strong>{money(summary.collected)}</strong>
+            <span>
+              Total recaudado · valor de servicios {money(summary.value)} · señas online{" "}
+              {money(summary.deposits)}
+            </span>
+          </div>
+          {!filteredHistory.length && (
+            <Empty>
+              {history.length > 0
+                ? "No hay cobros con este método en el período seleccionado."
+                : "No hay cobros registrados en este período."}
+            </Empty>
+          )}
 
-        {/* Presentación Desktop: Tabla con columnas estables y montos alineados a la derecha */}
-        {history.length > 0 && (
-          <div className="v2-payments-table-wrap">
-            <table className="v2-payments-table">
-              <thead>
-                <tr>
-                  <th className="col-datetime">Fecha del cobro</th>
-                  <th className="col-service">Servicio</th>
-                  <th className="col-client">Cliente</th>
-                  <th className="col-method">Método</th>
-                  <th className="col-amount">Importe</th>
-                  <th className="col-actions">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {history.map((p) => (
-                  <tr key={p.id}>
-                    <td className="col-datetime">
-                      <div className="v2-table-datetime">
-                        <span>{p.paymentDate}</span>
-                        <small>{p.paymentTime} hs</small>
-                      </div>
-                    </td>
-                    <td className="col-service">
-                      <strong className="v2-table-service-name">
-                        {p.serviceOtherDetail || formatServiceName(p.serviceName)}
-                      </strong>
-                      <small className="v2-table-barber-name">{p.barberName}</small>
-                      {p.appointmentId && appointmentById.has(p.appointmentId) && <small>
-                        Fecha del servicio: {appointmentById.get(p.appointmentId)!.date} {appointmentById.get(p.appointmentId)!.time} hs
-                      </small>}
-                    </td>
-                    <td className="col-client">
-                      <span className="v2-table-client-name">
-                        {p.clientName || "Sin cliente asociado"}
-                      </span>
-                      {p.clientContact && (
-                        <small className="v2-table-client-contact">{p.clientContact}</small>
-                      )}
-                    </td>
-                    <td className="col-method">
-                      <span className={`v2-method-badge ${p.paymentMethod.toLowerCase()}`}>
-                        {formatPaymentMethodLabel(p.paymentMethod)}
-                      </span>
-                    </td>
-                    <td className="col-amount">
-                      <strong className="v2-table-amount-cell">
-                        {money(p.collectedAmountArs)}
-                      </strong>
-                    </td>
-                    <td className="col-actions">
-                      <div className="v2-table-actions-cell">
-                        {!p.isDepositMovement ? (
-                          <>
-                            <button
-                              type="button"
-                              className="v2-secondary v2-action-icon-btn edit"
-                              onClick={() => openEditModal(p)}
-                              title="Editar cobro"
-                              aria-label="Editar cobro"
-                            >
-                              <Edit2 size={13} />
-                              <span className="v2-btn-text">Editar</span>
-                            </button>
-                            {isAdmin && (
+          {/* Presentación Desktop: Tabla con columnas estables y montos alineados a la derecha */}
+          {filteredHistory.length > 0 && (
+            <div className="v2-payments-table-wrap">
+              <table className="v2-payments-table">
+                <thead>
+                  <tr>
+                    <th className="col-datetime">Fecha del cobro</th>
+                    <th className="col-service">Servicio</th>
+                    <th className="col-client">Cliente</th>
+                    <th className="col-method">Método</th>
+                    <th className="col-amount">Importe</th>
+                    <th className="col-actions">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredHistory.map((p) => (
+                    <tr key={p.id}>
+                      <td className="col-datetime">
+                        <div className="v2-table-datetime">
+                          <span>{p.paymentDate}</span>
+                          <small>{p.paymentTime} hs</small>
+                        </div>
+                      </td>
+                      <td className="col-service">
+                        <strong className="v2-table-service-name">
+                          {p.serviceOtherDetail || formatServiceName(p.serviceName)}
+                        </strong>
+                        <small className="v2-table-barber-name">{p.barberName}</small>
+                        {p.appointmentId && appointmentById.has(p.appointmentId) && <small>
+                          Fecha del servicio: {appointmentById.get(p.appointmentId)!.date} {appointmentById.get(p.appointmentId)!.time} hs
+                        </small>}
+                      </td>
+                      <td className="col-client">
+                        <span className="v2-table-client-name">
+                          {p.clientName || "Sin cliente asociado"}
+                        </span>
+                        {p.clientContact && (
+                          <small className="v2-table-client-contact">{p.clientContact}</small>
+                        )}
+                      </td>
+                      <td className="col-method">
+                        <span className={`v2-method-badge ${p.paymentMethod.toLowerCase()}`}>
+                          {formatPaymentMethodLabel(p.paymentMethod)}
+                        </span>
+                      </td>
+                      <td className="col-amount">
+                        <strong className="v2-table-amount-cell">
+                          {money(p.collectedAmountArs)}
+                        </strong>
+                      </td>
+                      <td className="col-actions">
+                        <div className="v2-table-actions-cell">
+                          {!p.isDepositMovement ? (
+                            <>
                               <button
                                 type="button"
-                                className="v2-destructive v2-action-icon-btn delete"
-                                onClick={() => setDeletingPayment(p)}
-                                title="Eliminar cobro"
-                                aria-label="Eliminar cobro"
+                                className="v2-secondary v2-action-icon-btn edit"
+                                onClick={() => openEditModal(p)}
+                                title="Editar cobro"
+                                aria-label="Editar cobro"
                               >
-                                <Trash2 size={13} />
-                                <span className="v2-btn-text">Eliminar</span>
+                                <Edit2 size={13} />
+                                <span className="v2-btn-text">Editar</span>
                               </button>
-                            )}
-                          </>
-                        ) : null}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+                              {isAdmin && (
+                                <button
+                                  type="button"
+                                  className="v2-destructive v2-action-icon-btn delete"
+                                  onClick={() => setDeletingPayment(p)}
+                                  title="Eliminar cobro"
+                                  aria-label="Eliminar cobro"
+                                >
+                                  <Trash2 size={13} />
+                                  <span className="v2-btn-text">Eliminar</span>
+                                </button>
+                              )}
+                            </>
+                          ) : null}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
 
-        {/* Presentación Mobile: Tarjetas compactas estructuradas en 4 líneas, sin desborde horizontal */}
-        {history.length > 0 && (
-          <div className="v2-payments-mobile-cards">
-            {history.map((p) => (
+          {/* Presentación Mobile: Tarjetas compactas estructuradas en 4 líneas, sin desborde horizontal */}
+          {filteredHistory.length > 0 && (
+            <div className="v2-payments-mobile-cards">
+              {filteredHistory.map((p) => (
               <article className="v2-payment-card-mobile" key={p.id}>
                 {/* 1. Línea superior: Servicio + Importe */}
                 <div className="v2-pcm-row-top">
@@ -879,6 +974,7 @@ export function V2Payments() {
           </div>
         )}
       </section>
+      </div>
 
       {/* Scoped full edit: own barber payments or all payments for operators. */}
       <Dialog

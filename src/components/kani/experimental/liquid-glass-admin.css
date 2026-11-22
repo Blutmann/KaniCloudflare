@@ -265,6 +265,7 @@ html[data-theme] body[data-lg-admin="true"] :is(
   .admin-schedule-cards-container,
   .v2-payments-table-wrap,
   .v2-payments-history-panel,
+  .v2-cash-summary-card,
   .v2-empty
 ) {
   background: var(--lga-glass-structural) !important;
@@ -317,6 +318,90 @@ html[data-theme="dark"] body[data-lg-admin="true"] .v2-kani-loader-kanji {
 
 html[data-theme="dark"] body[data-lg-admin="true"] .v2-kani-loader-label {
   color: rgba(242, 240, 236, 0.78) !important;
+}
+
+html[data-theme="light"] body[data-lg-admin="true"] .v2-cash-metric,
+html[data-theme="light"] body[data-lg-admin="true"] .v2-quick-chip:not(.is-selected) {
+  background: rgba(255, 255, 255, 0.56) !important;
+  border-color: rgba(24, 22, 20, 0.12) !important;
+  color: #1c1e22 !important;
+}
+
+html[data-theme="dark"] body[data-lg-admin="true"] .v2-cash-metric,
+html[data-theme="dark"] body[data-lg-admin="true"] .v2-quick-chip:not(.is-selected) {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  color: #f4f4f6 !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-quick-chip.is-selected,
+html[data-theme] body[data-lg-admin="true"] .v2-quick-chip[aria-pressed="true"],
+html[data-theme] body[data-lg-admin="true"] .v2-method-pill.is-active,
+html[data-theme] body[data-lg-admin="true"] .v2-method-pill[aria-pressed="true"] {
+  background: var(--lga-accent-pill, rgba(212, 180, 117, 0.22)) !important;
+  border: 1px solid var(--lga-border-accent, rgba(184, 145, 70, 0.55)) !important;
+  color: var(--lga-text) !important;
+  box-shadow: var(--lga-shadow-interactive), var(--lga-specular) !important;
+  font-weight: 600 !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-quick-chip.is-selected .v2-quick-chip-price,
+html[data-theme] body[data-lg-admin="true"] .v2-quick-chip[aria-pressed="true"] .v2-quick-chip-price {
+  color: var(--lga-text-muted, var(--muted-foreground)) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-payments-page {
+  display: grid !important;
+  gap: 10px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-cash-summary-card {
+  margin: 0 !important;
+  padding: 10px 12px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-cobro-panel {
+  margin: 0 !important;
+  padding: 12px 14px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-cobro-header .v2-segmented[data-lg-segmented="true"] {
+  width: auto !important;
+  max-width: 100% !important;
+  display: inline-grid !important;
+  grid-template-columns: repeat(2, auto) !important;
+  margin-bottom: 0 !important;
+  padding: 3px !important;
+  border-radius: 12px !important;
+  flex: 0 0 auto;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-cobro-header .v2-segmented[data-lg-segmented="true"] > button {
+  min-height: 32px !important;
+  height: 32px !important;
+  padding: 4px 10px !important;
+  font-size: 12px !important;
+  border-radius: 9px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-cobro-header .v2-segmented[data-lg-segmented="true"] .lg-segmented-pill {
+  border-radius: 9px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-cobro-panel :is(input, select) {
+  height: 38px !important;
+  min-height: 38px !important;
+  max-height: 38px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-cobro-panel select {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  padding-right: 36px !important;
+  height: 38px !important;
+  min-height: 38px !important;
+  max-height: 38px !important;
+  line-height: 38px !important;
 }
 
 html[data-theme="light"] body[data-lg-admin="true"] .admin-login-shell {
