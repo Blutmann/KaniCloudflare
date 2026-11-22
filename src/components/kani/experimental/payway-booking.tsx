@@ -1611,6 +1611,8 @@ export function PaywayBooking({
                             }}
                             onBlur={() => markTouched('expiry')}
                             className="payway-select"
+                            aria-invalid={Boolean(expiryError)}
+                            aria-describedby={expiryError ? 'expiry-error' : undefined}
                             required
                           >
                             <option value="">Mes</option>
@@ -1638,6 +1640,8 @@ export function PaywayBooking({
                             }}
                             onBlur={() => markTouched('expiry')}
                             className="payway-select"
+                            aria-invalid={Boolean(expiryError)}
+                            aria-describedby={expiryError ? 'expiry-error' : undefined}
                             required
                           >
                             <option value="">Año</option>

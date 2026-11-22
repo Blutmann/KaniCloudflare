@@ -443,13 +443,28 @@ describe('Payway V4 Modern Checkout UX/UI', () => {
     expect(submitBtn).toBeEnabled();
 
     // 4b. Vencimiento vencido (mes pasado del año actual 2026-10)
+    expect(monthSelect).toHaveAttribute('aria-invalid', 'false');
+    expect(monthSelect).not.toHaveAttribute('aria-describedby');
+    expect(yearSelect).toHaveAttribute('aria-invalid', 'false');
+    expect(yearSelect).not.toHaveAttribute('aria-describedby');
+
     fireEvent.change(monthSelect, { target: { value: '05' } });
     fireEvent.change(yearSelect, { target: { value: '26' } });
     expect(submitBtn).toBeDisabled();
     expect(screen.getByText('La tarjeta está vencida.')).toBeInTheDocument();
+    expect(monthSelect).toHaveAttribute('aria-invalid', 'true');
+    expect(monthSelect).toHaveAttribute('aria-describedby', 'expiry-error');
+    expect(yearSelect).toHaveAttribute('aria-invalid', 'true');
+    expect(yearSelect).toHaveAttribute('aria-describedby', 'expiry-error');
+    expect(document.getElementById('expiry-error')).toHaveAttribute('role', 'alert');
+
     fireEvent.change(monthSelect, { target: { value: '12' } });
     fireEvent.change(yearSelect, { target: { value: '29' } });
     expect(submitBtn).toBeEnabled();
+    expect(monthSelect).toHaveAttribute('aria-invalid', 'false');
+    expect(monthSelect).not.toHaveAttribute('aria-describedby');
+    expect(yearSelect).toHaveAttribute('aria-invalid', 'false');
+    expect(yearSelect).not.toHaveAttribute('aria-describedby');
 
     // 4c. CVV incompleto
     fireEvent.change(cvvInput, { target: { value: '12' } });
