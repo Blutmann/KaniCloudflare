@@ -6026,14 +6026,106 @@ html[data-theme="dark"] .kani-v2-toast.is-error .kani-v2-toast-icon,
 }
 
 @media (min-width: 768px) {
-  .v2-schedule-cards-card-header {
+  .v2-schedule-cards-card-header,
+  .v2-admin-filter-quickbar {
     display: none;
+  }
+
+  .v2-admin-filter-collapsible.is-collapsed {
+    display: block;
   }
 }
 
 @media (max-width: 767px) {
   :is(.v2-appointments-page, .v2-schedule) {
     padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .v2-appointments-page {
+    gap: 12px !important;
+  }
+
+  .v2-appointments-page .v2-admin-filter-panel {
+    margin-bottom: 0 !important;
+  }
+
+  .v2-schedule .v2-admin-filter-panel {
+    margin-bottom: 12px !important;
+  }
+
+  .v2-appointments-page .v2-mobile-day-header {
+    margin: 0 2px 2px !important;
+  }
+
+  .v2-appointments-page .v2-mobile-card-group + .v2-mobile-card-group .v2-mobile-day-header {
+    margin-top: 8px !important;
+  }
+
+  .v2-admin-filter-quickbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    width: 100%;
+  }
+
+  .v2-quickbar-chips {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .v2-quickbar-chip,
+  .v2-filter-toggle-btn {
+    min-height: 40px;
+    height: 40px;
+    padding: 0 10px;
+    border-radius: 10px;
+    font-size: 12.5px;
+    font-weight: 600;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border);
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .v2-quickbar-chip {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .v2-filter-toggle-btn {
+    flex: 0 0 auto;
+    gap: 5px;
+  }
+
+  .v2-quickbar-chip.is-active,
+  .v2-quickbar-chip[aria-pressed="true"],
+  .v2-filter-toggle-btn.is-open {
+    border-color: var(--gold);
+    background: color-mix(in srgb, var(--gold) 14%, transparent);
+  }
+
+  .v2-filter-toggle-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: var(--gold);
+  }
+
+  .v2-admin-filter-collapsible.is-collapsed {
+    display: none;
+  }
+
+  .v2-admin-filter-quickbar + .v2-admin-filter-collapsible:not(.is-collapsed) {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
   }
 
   .v2-appointments-page .v2-section-toolbar,

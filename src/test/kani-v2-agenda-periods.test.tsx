@@ -79,10 +79,14 @@ vi.mock('@/components/kani/v2/data', () => ({
   }),
 }));
 
-vi.mock('@/lib/kani-appointments', () => ({
-  updateRealAppointmentStatus: vi.fn(),
-  appointmentErrorMessage: String,
-}));
+vi.mock('@/lib/kani-appointments', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/kani-appointments')>();
+  return {
+    ...actual,
+    updateRealAppointmentStatus: vi.fn(),
+    appointmentErrorMessage: String,
+  };
+});
 
 vi.mock('@tanstack/react-router', () => ({
   Link: ({ children }: any) => <a>{children}</a>,
@@ -245,5 +249,31 @@ describe('V2Appointments periods and historical queries', () => {
 
     expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent(formatAdminV2Date(today));
     expect((screen.getByLabelText('Fecha') as HTMLInputElement).value).toBe(today);
+  });
+
+  it('renders mobile quick period chips (Hoy, Semana, 10 días) and collapsible Filtros toggle', () => {
+    window.localStorage?.clear();
+    const { container } = render(<V2Appointments />);
+
+    const hoyChip = screen.getByRole('button', { name: 'Hoy' });
+    const semanaChip = screen.getByRole('button', { name: 'Semana' });
+    const tenDaysChip = screen.getByRole('button', { name: '10 días' });
+    const filtrosBtn = screen.getByRole('button', { name: /Filtros/i });
+
+    expect(tenDaysChip).toHaveAttribute('aria-pressed', 'true');
+    expect(filtrosBtn).toHaveAttribute('aria-expanded', 'false');
+    expect(container.querySelector('.v2-admin-filter-collapsible')).toHaveClass('is-collapsed');
+
+    fireEvent.click(hoyChip);
+    expect(hoyChip).toHaveAttribute('aria-pressed', 'true');
+    expect((screen.getByLabelText('Período') as HTMLSelectElement).value).toBe('TODAY');
+
+    fireEvent.click(semanaChip);
+    expect(semanaChip).toHaveAttribute('aria-pressed', 'true');
+    expect((screen.getByLabelText('Período') as HTMLSelectElement).value).toBe('THIS_WEEK');
+
+    fireEvent.click(filtrosBtn);
+    expect(filtrosBtn).toHaveAttribute('aria-expanded', 'true');
+    expect(container.querySelector('.v2-admin-filter-collapsible')).not.toHaveClass('is-collapsed');
   });
 });

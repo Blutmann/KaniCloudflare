@@ -78,6 +78,8 @@ export interface AdminFilterPanelProps {
   children: ReactNode;
   className?: string;
   footer?: ReactNode;
+  mobileQuickBar?: ReactNode;
+  mobileExpanded?: boolean;
 }
 
 export function AdminFilterPanel({
@@ -85,16 +87,28 @@ export function AdminFilterPanel({
   children,
   className,
   footer,
+  mobileQuickBar,
+  mobileExpanded = true,
 }: AdminFilterPanelProps) {
   return (
     <section
       className={cn("v2-admin-filter-panel v2-admin-filter-card", className)}
       aria-label={ariaLabel}
     >
-      <div className="v2-admin-filter-grid v2-filters-grid">
-        {children}
+      {mobileQuickBar ? (
+        <div className="v2-admin-filter-quickbar">{mobileQuickBar}</div>
+      ) : null}
+      <div
+        className={cn(
+          "v2-admin-filter-collapsible",
+          mobileQuickBar && !mobileExpanded && "is-collapsed",
+        )}
+      >
+        <div className="v2-admin-filter-grid v2-filters-grid">
+          {children}
+        </div>
+        {footer}
       </div>
-      {footer}
     </section>
   );
 }

@@ -4722,14 +4722,122 @@ html[data-theme] body[data-lg-admin="true"] .v2-page :is(.v2-hero-grid, .v2-char
     gap: 12px !important;
   }
 
-  html[data-theme] body[data-lg-admin="true"] .v2-schedule-cards-card-header {
+  html[data-theme] body[data-lg-admin="true"] .v2-schedule-cards-card-header,
+  html[data-theme] body[data-lg-admin="true"] .v2-admin-filter-quickbar {
     display: none !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-admin-filter-collapsible.is-collapsed {
+    display: block !important;
   }
 }
 
 @media (max-width: 767px) {
   html[data-theme] body[data-lg-admin="true"] :is(.v2-clients-page, .v2-appointments-page, .v2-schedule) {
     padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-appointments-page {
+    gap: 12px !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-appointments-page .v2-admin-filter-panel {
+    margin-bottom: 0 !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-schedule .v2-admin-filter-panel {
+    margin-bottom: 12px !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-appointments-page .v2-mobile-day-header {
+    margin: 0 2px 2px !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-appointments-page .v2-mobile-card-group + .v2-mobile-card-group .v2-mobile-day-header {
+    margin-top: 8px !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-admin-filter-quickbar {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 6px !important;
+    width: 100% !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-quickbar-chips {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-quickbar-chip,
+  html[data-theme] body[data-lg-admin="true"] .v2-filter-toggle-btn {
+    min-height: 40px !important;
+    height: 40px !important;
+    padding: 0 10px !important;
+    border-radius: 10px !important;
+    font-size: 12.5px !important;
+    font-weight: 600 !important;
+    line-height: 1 !important;
+    white-space: nowrap !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border: 1px solid var(--lga-border) !important;
+    background: var(--lga-surface-2) !important;
+    color: var(--lga-text-muted) !important;
+    cursor: pointer !important;
+    transition: background-color 0.16s ease, border-color 0.16s ease, color 0.16s ease !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-quickbar-chip {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-filter-toggle-btn {
+    flex: 0 0 auto !important;
+    gap: 5px !important;
+    color: var(--lga-text) !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-quickbar-chip.is-active,
+  html[data-theme] body[data-lg-admin="true"] .v2-quickbar-chip[aria-pressed="true"],
+  html[data-theme] body[data-lg-admin="true"] .v2-filter-toggle-btn.is-open {
+    background: var(--lga-btn-primary-bg) !important;
+    border-color: var(--lga-btn-primary-border, rgba(212, 175, 55, 0.45)) !important;
+    color: var(--lga-text) !important;
+    box-shadow: var(--lga-btn-primary-shadow, none) !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-filter-toggle-dot {
+    width: 6px !important;
+    height: 6px !important;
+    border-radius: 999px !important;
+    background: var(--gold, #d4af37) !important;
+    flex: 0 0 auto !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-filter-toggle-chevron {
+    flex: 0 0 auto !important;
+    transition: transform 0.18s ease !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-filter-toggle-chevron.is-open {
+    transform: rotate(180deg) !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-admin-filter-collapsible.is-collapsed {
+    display: none !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-admin-filter-quickbar + .v2-admin-filter-collapsible:not(.is-collapsed) {
+    margin-top: 10px !important;
+    padding-top: 10px !important;
+    border-top: 1px solid var(--lga-border) !important;
   }
 
   html[data-theme] body[data-lg-admin="true"] .v2-appointments-page .v2-section-toolbar,

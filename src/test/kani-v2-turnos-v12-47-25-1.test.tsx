@@ -69,9 +69,9 @@ describe('V12.47.25.1 — Etiquetas de período y distribución de filtros en Tu
     const labels = v2AgendaPeriodOrder.map((p) => formatV2AgendaPeriodLabel(p, today));
     expect(labels).toEqual([
       'Hoy',
-      'Próximos 5 días',
-      '16 - 22 Nov.',
-      'Próximos 10 días',
+      'Próx. 5 días',
+      'Esta semana',
+      'Próx. 10 días',
       'Noviembre 2026',
       'Octubre 2026',
       '2026',
@@ -80,11 +80,11 @@ describe('V12.47.25.1 — Etiquetas de período y distribución de filtros en Tu
     ]);
   });
 
-  it('2. Formatea rangos semanales dentro del mismo mes, entre meses, entre años y en febrero bisiesto', () => {
-    expect(formatV2AgendaPeriodLabel('THIS_WEEK', '2026-11-16')).toBe('16 - 22 Nov.');
-    expect(formatV2AgendaPeriodLabel('THIS_WEEK', '2026-11-01')).toBe('26 Oct. - 1 Nov.');
-    expect(formatV2AgendaPeriodLabel('THIS_WEEK', '2026-12-30')).toBe('28 Dic. 2026 - 3 Ene. 2027');
-    expect(formatV2AgendaPeriodLabel('THIS_WEEK', '2024-02-28')).toBe('26 Feb. - 3 Mar.');
+  it('2. Formatea Esta semana de forma clara junto con meses y años', () => {
+    expect(formatV2AgendaPeriodLabel('THIS_WEEK', '2026-11-16')).toBe('Esta semana');
+    expect(formatV2AgendaPeriodLabel('THIS_WEEK', '2026-11-01')).toBe('Esta semana');
+    expect(formatV2AgendaPeriodLabel('THIS_WEEK', '2026-12-30')).toBe('Esta semana');
+    expect(formatV2AgendaPeriodLabel('THIS_WEEK', '2024-02-28')).toBe('Esta semana');
     expect(formatV2AgendaPeriodLabel('THIS_MONTH', '2024-02-29')).toBe('Febrero 2024');
     expect(formatV2AgendaPeriodLabel('PREVIOUS_MONTH', '2024-03-01')).toBe('Febrero 2024');
   });
