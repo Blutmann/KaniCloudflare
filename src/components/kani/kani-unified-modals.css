@@ -625,7 +625,7 @@ html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active)
 
 /* Unified 44px height & padding for all text/date/number inputs, native selects, and custom combobox/select triggers */
 html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell .kani-modal-body :is(
-  input:not([type="checkbox"]):not([type="radio"]),
+  input:not([type="checkbox"]):not([type="radio"]):not(.v2-client-picker-search-input),
   select,
   button[role="combobox"],
   .v2-admin-select-trigger,
@@ -645,7 +645,7 @@ html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active)
 
 @media (max-width: 767px), (hover: none) and (pointer: coarse) {
   html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell .kani-modal-body :is(
-    input:not([type="checkbox"]):not([type="radio"]),
+    input:not([type="checkbox"]):not([type="radio"]):not(.v2-client-picker-search-input),
     select,
     button[role="combobox"],
     .v2-admin-select-trigger,

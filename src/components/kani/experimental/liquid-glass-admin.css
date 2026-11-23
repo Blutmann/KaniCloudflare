@@ -5515,14 +5515,11 @@ html[data-theme] body[data-lg-admin="true"] .benefit-codes-section .v2-quickbar-
   border-color: transparent !important;
 }
 
-html[data-theme="light"] body[data-lg-admin="true"] [role="dialog"] .v2-client-picker-search-wrap > input,
-html[data-theme="light"] body[data-lg-admin="true"] [role="dialog"] .v2-client-picker-search-wrap > input:hover,
-html[data-theme="light"] body[data-lg-admin="true"] [role="dialog"] .v2-client-picker-search-wrap > input:focus,
-html[data-theme="light"] body[data-lg-admin="true"] [role="dialog"] .v2-client-picker-search-wrap > input:focus-visible,
-html[data-theme="dark"] body[data-lg-admin="true"] [role="dialog"] .v2-client-picker-search-wrap > input,
-html[data-theme="dark"] body[data-lg-admin="true"] [role="dialog"] .v2-client-picker-search-wrap > input:hover,
-html[data-theme="dark"] body[data-lg-admin="true"] [role="dialog"] .v2-client-picker-search-wrap > input:focus,
-html[data-theme="dark"] body[data-lg-admin="true"] [role="dialog"] .v2-client-picker-search-wrap > input:focus-visible {
+html[data-theme] body[data-lg-admin="true"] [data-slot="dialog-content"].kani-modal-shell .kani-modal-body .v2-client-picker-search-wrap > input.v2-client-picker-search-input,
+html[data-theme] body[data-lg-admin="true"] [data-slot="dialog-content"].kani-modal-shell .kani-modal-body .v2-client-picker-search-wrap > input.v2-client-picker-search-input:hover,
+html[data-theme] body[data-lg-admin="true"] [data-slot="dialog-content"].kani-modal-shell .kani-modal-body .v2-client-picker-search-wrap > input.v2-client-picker-search-input:focus,
+html[data-theme] body[data-lg-admin="true"] [data-slot="dialog-content"].kani-modal-shell .kani-modal-body .v2-client-picker-search-wrap > input.v2-client-picker-search-input:focus-visible,
+html[data-theme] body[data-lg-admin="true"] [data-slot="dialog-content"].kani-modal-shell .kani-modal-body .v2-client-picker-search-wrap > input.v2-client-picker-search-input:-webkit-autofill {
   border: none !important;
   background: transparent !important;
   background-color: transparent !important;
@@ -5531,6 +5528,7 @@ html[data-theme="dark"] body[data-lg-admin="true"] [role="dialog"] .v2-client-pi
   border-radius: 0 !important;
   min-height: 0 !important;
   height: auto !important;
+  max-height: none !important;
   padding: 0 !important;
   -webkit-appearance: none !important;
   appearance: none !important;

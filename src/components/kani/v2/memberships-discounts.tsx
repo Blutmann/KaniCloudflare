@@ -902,7 +902,8 @@ export function V2MembershipsAndDiscounts({
                         aria-hidden="true"
                       />
                       <input
-                        type="search"
+                        type="text"
+                        inputMode="search"
                         value={clientPickerQuery}
                         onChange={(e) => setClientPickerQuery(e.target.value)}
                         placeholder="Buscar por nombre o celular..."
