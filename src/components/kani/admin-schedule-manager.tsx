@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { AlertCircle, AlertTriangle, CalendarDays, Check, CheckCircle2, Clock3, Plus, SlidersHorizontal, X, XCircle } from "lucide-react";
+import { AlertCircle, AlertTriangle, Check, CheckCircle2, Clock3, Plus, SlidersHorizontal, X, XCircle } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import {
@@ -446,23 +446,10 @@ export function AdminScheduleManager() {
     return [...groups.entries()];
   }, [filteredSlots]);
 
-  const selectedFilterDateLabel = useMemo(() => {
-    const primaryDate = groupedSlots[0]?.[0] ?? specificDate;
-    return formatAdminV2Date(primaryDate);
-  }, [groupedSlots, specificDate]);
-
   return (
     <>
       {/* 1. Card unificada de Filtros y Estados de horarios */}
-      <AdminFilterPanel
-        ariaLabel="Filtros de horarios"
-        footer={
-          <div className="v2-filter-card-date-footer">
-            <CalendarDays size={14} aria-hidden="true" />
-            <span>{selectedFilterDateLabel}</span>
-          </div>
-        }
-      >
+      <AdminFilterPanel ariaLabel="Filtros de horarios">
         {/* 1. Período */}
         <AdminFilterCell label="Período" htmlFor="schedule-date-preset">
           <select
@@ -592,6 +579,9 @@ export function AdminScheduleManager() {
                   onAction={() => openManualDialog(date, dateSlots[0]?.barber_id)}
                 />
                 <div className="v2-schedule-cards-container admin-schedule-cards-container">
+                  <div className="v2-schedule-cards-card-header">
+                    <h3 className="v2-schedule-cards-date-title">{formatAdminV2Date(date)}</h3>
+                  </div>
                   <div className="v2-schedule-cards-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                     {dateSlots.map((slot) => {
                       const available = slot.status === "AVAILABLE";

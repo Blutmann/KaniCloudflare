@@ -58,26 +58,6 @@ function formatAppointmentDurationLabel(
   return `${diff} min`;
 }
 
-function formatV2AgendaFilterRange(startIso: string, endIso: string): string {
-  if (startIso === endIso) {
-    return formatAdminV2Date(startIso);
-  }
-  const [sy, sm, sd] = startIso.split("-").map(Number);
-  const [ey, em, ed] = endIso.split("-").map(Number);
-  const start = new Date(sy, sm - 1, sd);
-  const end = new Date(ey, em - 1, ed);
-  const formatMonth = (dt: Date) => {
-    const raw = dt.toLocaleDateString("es-AR", { month: "short" }).replace(/\./g, "").trim();
-    return `${raw.charAt(0).toUpperCase()}${raw.slice(1)}.`;
-  };
-  const startLabel = `${start.getDate()} ${formatMonth(start)}`;
-  const endLabel = `${end.getDate()} ${formatMonth(end)}`;
-  if (sy === ey) {
-    return `${startLabel} al ${endLabel} ${ey}`;
-  }
-  return `${startLabel} ${sy} al ${endLabel} ${ey}`;
-}
-
 function capitalizeFirst(text: string): string {
   if (!text) return text;
   return text.charAt(0).toUpperCase() + text.slice(1);
@@ -565,21 +545,13 @@ export function V2Appointments({
             : "v2-turnos-filter-panel"
         }
         footer={
-          <>
-            {period === "CUSTOM" && isInvalidRange ? (
-              <div className="v2-custom-range-row">
-                <p className="v2-range-warning" role="alert">
-                  La fecha &apos;Fecha hasta&apos; debe ser igual o posterior a &apos;Fecha&apos;.
-                </p>
-              </div>
-            ) : null}
-            <div className="v2-filter-card-date-footer">
-              <CalendarDays size={14} aria-hidden="true" />
-              <span>
-                {isInvalidRange ? "Rango no válido" : formatV2AgendaFilterRange(startDate, endDate)}
-              </span>
+          period === "CUSTOM" && isInvalidRange ? (
+            <div className="v2-custom-range-row">
+              <p className="v2-range-warning" role="alert">
+                La fecha &apos;Fecha hasta&apos; debe ser igual o posterior a &apos;Fecha&apos;.
+              </p>
             </div>
-          </>
+          ) : null
         }
       >
         <AdminFilterCell label="Período" htmlFor="v2-appointments-period">
@@ -684,8 +656,7 @@ export function V2Appointments({
             const waFailed = a.dispatches?.whatsapp?.status === "FAILED";
             const emailFailed = a.dispatches?.email?.status === "FAILED";
             const durationLabel = formatAppointmentDurationLabel(a.time, a.endTime);
-            const showDayHeader =
-              isMultiDay && (index === 0 || rows[index - 1]?.date !== a.date);
+            const showDayHeader = index === 0 || rows[index - 1]?.date !== a.date;
             const mobileArticleClasses = [
               "v2-appointment",
               "v2-appointment--clean-mobile",

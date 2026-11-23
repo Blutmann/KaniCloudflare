@@ -4722,7 +4722,7 @@ html[data-theme] body[data-lg-admin="true"] .v2-page :is(.v2-hero-grid, .v2-char
     gap: 12px !important;
   }
 
-  html[data-theme] body[data-lg-admin="true"] .v2-filter-card-date-footer {
+  html[data-theme] body[data-lg-admin="true"] .v2-schedule-cards-card-header {
     display: none !important;
   }
 }
@@ -4732,43 +4732,30 @@ html[data-theme] body[data-lg-admin="true"] .v2-page :is(.v2-hero-grid, .v2-char
     padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px)) !important;
   }
 
-  html[data-theme] body[data-lg-admin="true"] .v2-filter-card-date-footer {
-    display: flex !important;
-    align-items: center !important;
-    gap: 6px !important;
-    margin-top: 10px !important;
-    padding-top: 9px !important;
-    border-top: 1px solid var(--lga-border) !important;
-    color: var(--lga-text) !important;
-    font-size: 13px !important;
-    font-weight: 600 !important;
-    line-height: 1.25 !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-  }
-
-  html[data-theme] body[data-lg-admin="true"] .v2-filter-card-date-footer svg {
-    color: var(--lga-text-muted) !important;
-    flex: 0 0 auto !important;
-  }
-
   html[data-theme] body[data-lg-admin="true"] .v2-appointments-page .v2-section-toolbar,
-  html[data-theme] body[data-lg-admin="true"] .v2-schedule .admin-schedule-list > .v2-section-toolbar,
-  html[data-theme] body[data-lg-admin="true"] .v2-schedule .admin-schedule-date-group:first-child > .v2-section-toolbar {
+  html[data-theme] body[data-lg-admin="true"] .v2-schedule .v2-section-toolbar {
     display: none !important;
   }
 
-  html[data-theme] body[data-lg-admin="true"] .v2-schedule .admin-schedule-date-group:first-child > .v2-section-toolbar + .v2-schedule-cards-container {
+  html[data-theme] body[data-lg-admin="true"] .v2-schedule .admin-schedule-date-group > .v2-section-toolbar + .v2-schedule-cards-container {
     margin-top: 0 !important;
   }
 
-  html[data-theme] body[data-lg-admin="true"] .v2-schedule .admin-schedule-date-group + .admin-schedule-date-group > .v2-section-toolbar {
-    margin: 12px 0 8px !important;
+  html[data-theme] body[data-lg-admin="true"] .v2-schedule-cards-card-header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding-bottom: 10px !important;
+    margin-bottom: 12px !important;
+    border-bottom: 1px solid var(--lga-border) !important;
   }
 
-  html[data-theme] body[data-lg-admin="true"] .v2-schedule .admin-schedule-date-group + .admin-schedule-date-group > .v2-section-toolbar .v2-toolbar-action {
-    display: none !important;
+  html[data-theme] body[data-lg-admin="true"] .v2-schedule-cards-date-title {
+    margin: 0 !important;
+    color: var(--lga-text) !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    line-height: 1.25 !important;
   }
 
   html[data-theme] body[data-lg-admin="true"] .v2-mobile-sticky-cta {
