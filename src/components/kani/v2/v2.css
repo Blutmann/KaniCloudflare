@@ -6061,27 +6061,30 @@ html[data-theme="dark"] .kani-v2-toast.is-error .kani-v2-toast-icon,
     margin-top: 8px !important;
   }
 
+  .v2-admin-filter-panel.is-mobile-collapsed {
+    padding: 5px 6px !important;
+  }
+
   .v2-admin-filter-quickbar {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 6px;
+    gap: 4px;
     width: 100%;
   }
 
   .v2-quickbar-chips {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 4px;
     flex: 1 1 auto;
     min-width: 0;
   }
 
-  .v2-quickbar-chip,
-  .v2-filter-toggle-btn {
-    min-height: 40px;
-    height: 40px;
-    padding: 0 10px;
+  .v2-quickbar-chip {
+    min-height: 38px;
+    height: 38px;
+    padding: 0 8px;
     border-radius: 10px;
     font-size: 12.5px;
     font-weight: 600;
@@ -6089,23 +6092,38 @@ html[data-theme="dark"] .kani-v2-toast.is-error .kani-v2-toast-icon,
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid var(--border);
+    flex: 1 1 0;
+    min-width: 0;
+    border: 1px solid transparent;
     background: transparent;
     cursor: pointer;
   }
 
-  .v2-quickbar-chip {
-    flex: 1 1 0;
-    min-width: 0;
+  .v2-quickbar-chip.is-active,
+  .v2-quickbar-chip[aria-pressed="true"] {
+    border-color: var(--gold);
+    background: color-mix(in srgb, var(--gold) 14%, transparent);
   }
 
   .v2-filter-toggle-btn {
-    flex: 0 0 auto;
+    min-height: 38px;
+    height: 38px;
+    padding: 0 10px;
+    margin-left: 2px;
+    border-radius: 10px;
+    font-size: 12.5px;
+    font-weight: 600;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     gap: 5px;
+    flex: 0 0 auto;
+    border: 1px solid var(--border);
+    background: color-mix(in srgb, var(--foreground) 6%, transparent);
+    cursor: pointer;
   }
 
-  .v2-quickbar-chip.is-active,
-  .v2-quickbar-chip[aria-pressed="true"],
   .v2-filter-toggle-btn.is-open {
     border-color: var(--gold);
     background: color-mix(in srgb, var(--gold) 14%, transparent);
@@ -6123,9 +6141,13 @@ html[data-theme="dark"] .kani-v2-toast.is-error .kani-v2-toast-icon,
   }
 
   .v2-admin-filter-quickbar + .v2-admin-filter-collapsible:not(.is-collapsed) {
-    margin-top: 10px;
-    padding-top: 10px;
+    margin-top: 8px;
+    padding-top: 8px;
     border-top: 1px solid var(--border);
+  }
+
+  .v2-admin-filter-quickbar + .v2-admin-filter-collapsible:not(.is-collapsed) .v2-admin-filter-grid {
+    gap: 8px !important;
   }
 
   .v2-appointments-page .v2-section-toolbar,

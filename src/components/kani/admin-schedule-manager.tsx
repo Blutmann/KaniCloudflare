@@ -487,6 +487,7 @@ export function AdminScheduleManager() {
               aria-expanded={showFilters}
               onClick={() => setShowFilters((prev) => !prev)}
             >
+              <SlidersHorizontal size={13} aria-hidden="true" />
               <span>Filtros</span>
               {((profile.role === "ADMIN" &&
                 Boolean(barberFilter) &&

@@ -92,7 +92,11 @@ export function AdminFilterPanel({
 }: AdminFilterPanelProps) {
   return (
     <section
-      className={cn("v2-admin-filter-panel v2-admin-filter-card", className)}
+      className={cn(
+        "v2-admin-filter-panel v2-admin-filter-card",
+        mobileQuickBar && !mobileExpanded && "is-mobile-collapsed",
+        className,
+      )}
       aria-label={ariaLabel}
     >
       {mobileQuickBar ? (

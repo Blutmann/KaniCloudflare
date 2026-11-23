@@ -4757,27 +4757,30 @@ html[data-theme] body[data-lg-admin="true"] .v2-page :is(.v2-hero-grid, .v2-char
     margin-top: 8px !important;
   }
 
+  html[data-theme] body[data-lg-admin="true"] .v2-admin-filter-panel.is-mobile-collapsed {
+    padding: 5px 6px !important;
+  }
+
   html[data-theme] body[data-lg-admin="true"] .v2-admin-filter-quickbar {
     display: flex !important;
     align-items: center !important;
     justify-content: space-between !important;
-    gap: 6px !important;
+    gap: 4px !important;
     width: 100% !important;
   }
 
   html[data-theme] body[data-lg-admin="true"] .v2-quickbar-chips {
     display: flex !important;
     align-items: center !important;
-    gap: 6px !important;
+    gap: 4px !important;
     flex: 1 1 auto !important;
     min-width: 0 !important;
   }
 
-  html[data-theme] body[data-lg-admin="true"] .v2-quickbar-chip,
-  html[data-theme] body[data-lg-admin="true"] .v2-filter-toggle-btn {
-    min-height: 40px !important;
-    height: 40px !important;
-    padding: 0 10px !important;
+  html[data-theme] body[data-lg-admin="true"] .v2-quickbar-chip {
+    min-height: 38px !important;
+    height: 38px !important;
+    padding: 0 8px !important;
     border-radius: 10px !important;
     font-size: 12.5px !important;
     font-weight: 600 !important;
@@ -4786,31 +4789,48 @@ html[data-theme] body[data-lg-admin="true"] .v2-page :is(.v2-hero-grid, .v2-char
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
-    border: 1px solid var(--lga-border) !important;
-    background: var(--lga-surface-2) !important;
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    border: 1px solid transparent !important;
+    background: transparent !important;
     color: var(--lga-text-muted) !important;
     cursor: pointer !important;
     transition: background-color 0.16s ease, border-color 0.16s ease, color 0.16s ease !important;
   }
 
-  html[data-theme] body[data-lg-admin="true"] .v2-quickbar-chip {
-    flex: 1 1 0 !important;
-    min-width: 0 !important;
+  html[data-theme] body[data-lg-admin="true"] .v2-quickbar-chip.is-active,
+  html[data-theme] body[data-lg-admin="true"] .v2-quickbar-chip[aria-pressed="true"] {
+    background: var(--lga-accent-pill) !important;
+    border: 1px solid var(--lga-border-accent) !important;
+    color: var(--lga-text) !important;
+    box-shadow: var(--lga-btn-primary-shadow, none) !important;
   }
 
   html[data-theme] body[data-lg-admin="true"] .v2-filter-toggle-btn {
-    flex: 0 0 auto !important;
+    min-height: 38px !important;
+    height: 38px !important;
+    padding: 0 10px !important;
+    margin-left: 2px !important;
+    border-radius: 10px !important;
+    font-size: 12.5px !important;
+    font-weight: 600 !important;
+    line-height: 1 !important;
+    white-space: nowrap !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
     gap: 5px !important;
+    flex: 0 0 auto !important;
+    background: var(--lga-btn-secondary-bg) !important;
+    border: 1px solid var(--lga-border-strong) !important;
     color: var(--lga-text) !important;
+    cursor: pointer !important;
+    transition: background-color 0.16s ease, border-color 0.16s ease, color 0.16s ease !important;
   }
 
-  html[data-theme] body[data-lg-admin="true"] .v2-quickbar-chip.is-active,
-  html[data-theme] body[data-lg-admin="true"] .v2-quickbar-chip[aria-pressed="true"],
   html[data-theme] body[data-lg-admin="true"] .v2-filter-toggle-btn.is-open {
-    background: var(--lga-btn-primary-bg) !important;
-    border-color: var(--lga-btn-primary-border, rgba(212, 175, 55, 0.45)) !important;
-    color: var(--lga-text) !important;
-    box-shadow: var(--lga-btn-primary-shadow, none) !important;
+    background: var(--lga-accent-pill) !important;
+    border-color: var(--lga-border-accent) !important;
   }
 
   html[data-theme] body[data-lg-admin="true"] .v2-filter-toggle-dot {
@@ -4835,9 +4855,13 @@ html[data-theme] body[data-lg-admin="true"] .v2-page :is(.v2-hero-grid, .v2-char
   }
 
   html[data-theme] body[data-lg-admin="true"] .v2-admin-filter-quickbar + .v2-admin-filter-collapsible:not(.is-collapsed) {
-    margin-top: 10px !important;
-    padding-top: 10px !important;
+    margin-top: 8px !important;
+    padding-top: 8px !important;
     border-top: 1px solid var(--lga-border) !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-admin-filter-quickbar + .v2-admin-filter-collapsible:not(.is-collapsed) .v2-admin-filter-grid {
+    gap: 8px !important;
   }
 
   html[data-theme] body[data-lg-admin="true"] .v2-appointments-page .v2-section-toolbar,

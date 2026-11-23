@@ -3,7 +3,7 @@ import { getWhatsAppDirectSendUrl } from "@/lib/kani-phone";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "@tanstack/react-router";
-import { AlertCircle, ArrowRight, CalendarDays, Check, ChevronDown, Clock3, Copy, Info, Mail, Pencil, Plus, X } from "lucide-react";
+import { AlertCircle, ArrowRight, CalendarDays, Check, ChevronDown, Clock3, Copy, Info, Mail, Pencil, Plus, SlidersHorizontal, X } from "lucide-react";
 import { useAdminStaff } from "@/lib/kani-admin-context";
 import {
   businessDateToday,
@@ -580,6 +580,7 @@ export function V2Appointments({
               aria-expanded={showFilters}
               onClick={() => setShowFilters((prev) => !prev)}
             >
+              <SlidersHorizontal size={13} aria-hidden="true" />
               <span>Filtros</span>
               {((isStaffOperator(staff.profile.role) && data.barberId !== "ALL") ||
                 status !== "ALL" ||
@@ -617,21 +618,6 @@ export function V2Appointments({
             ))}
           </select>
         </AdminFilterCell>
-        <AdminFilterCell label="Barbero" htmlFor="v2-appointments-barber">
-          <select
-            id="v2-appointments-barber"
-            value={isStaffOperator(staff.profile.role) ? data.barberId : (staff.profile.barber_id ?? "")}
-            onChange={(e) => data.setBarberId(e.target.value)}
-            disabled={!isStaffOperator(staff.profile.role)}
-          >
-            {isStaffOperator(staff.profile.role) && <option value="ALL">Todo Kani</option>}
-            {staff.barbers.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.name}
-              </option>
-            ))}
-          </select>
-        </AdminFilterCell>
         <AdminFilterCell
           label={period === "CUSTOM" ? "Fecha desde" : "Fecha"}
           htmlFor="v2-appointments-date"
@@ -653,6 +639,21 @@ export function V2Appointments({
             />
           </AdminFilterCell>
         )}
+        <AdminFilterCell label="Barbero" htmlFor="v2-appointments-barber">
+          <select
+            id="v2-appointments-barber"
+            value={isStaffOperator(staff.profile.role) ? data.barberId : (staff.profile.barber_id ?? "")}
+            onChange={(e) => data.setBarberId(e.target.value)}
+            disabled={!isStaffOperator(staff.profile.role)}
+          >
+            {isStaffOperator(staff.profile.role) && <option value="ALL">Todo Kani</option>}
+            {staff.barbers.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.name}
+              </option>
+            ))}
+          </select>
+        </AdminFilterCell>
         <AdminFilterCell
           label="Estado"
           htmlFor="v2-appointments-status"
