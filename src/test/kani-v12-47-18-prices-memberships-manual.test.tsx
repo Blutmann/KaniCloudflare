@@ -143,7 +143,7 @@ describe("V12.47.18 — Definitive Prices, Homogeneous Memberships, Manual Rows 
 
   it("5. Generar código de descuento removes Nota interna, hides mobile title icon, and enforces 44x44px close button", async () => {
     render(<BenefitCodesAdminSection />);
-    fireEvent.click(screen.getByRole("button", { name: /generar código/i }));
+    fireEvent.click(screen.getAllByRole("button", { name: /generar código/i })[0]);
 
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: /^generar código$/i })).toBeInTheDocument();

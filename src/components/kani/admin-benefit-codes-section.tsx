@@ -615,7 +615,7 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
             <Button
               size="sm"
               onClick={openCreateDialog}
-              className="action-brand kani-dtoolbar-generate-btn min-h-[38px] text-xs font-semibold"
+              className="action-brand kani-dtoolbar-generate-btn v2-client-add-btn--desktop min-h-[38px] text-xs font-semibold"
             >
               <Plus size={16} className="shrink-0" />
               <span>Generar código</span>
@@ -1745,6 +1745,22 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
               document.body
             )
           : null)}
+      {!error && (
+        <div
+          className="v2-client-sticky-bar v2-mobile-sticky-cta"
+          role="region"
+          aria-label="Acciones de códigos"
+        >
+          <button
+            type="button"
+            onClick={openCreateDialog}
+            className="v2-primary v2-client-add-btn v2-client-add-btn--mobile"
+          >
+            <Plus size={17} aria-hidden="true" />
+            <span>Generar código</span>
+          </button>
+        </div>
+      )}
     </section>
   );
 }

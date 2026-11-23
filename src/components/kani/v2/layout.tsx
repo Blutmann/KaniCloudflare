@@ -348,29 +348,39 @@ function V2Shell({
       });
     };
 
-    const activeEl = navEl.querySelector<HTMLElement>(`[data-nav-slug="${activeSlug}"]`);
-    if (activeEl && navEl.scrollWidth > navEl.clientWidth + 2) {
-      const maxScroll = navEl.scrollWidth - navEl.clientWidth;
-      const desiredLeft = activeEl.offsetLeft - (navEl.clientWidth - activeEl.offsetWidth) / 2;
-      const targetLeft = Math.max(0, Math.min(maxScroll, desiredLeft));
-      const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
-      if (typeof navEl.scrollTo === "function") {
-        navEl.scrollTo({ left: targetLeft, behavior: reduced ? "auto" : "smooth" });
-      } else if (typeof activeEl.scrollIntoView === "function") {
-        activeEl.scrollIntoView({
-          inline: "center",
-          block: "nearest",
-          behavior: reduced ? "auto" : "smooth",
-        });
-      } else {
-        navEl.scrollLeft = targetLeft;
-      }
-    }
+    const rafId =
+      typeof window.requestAnimationFrame === "function"
+        ? window.requestAnimationFrame(() => {
+            const activeEl = navEl.querySelector<HTMLElement>(`[data-nav-slug="${activeSlug}"]`);
+            if (activeEl && navEl.scrollWidth > navEl.clientWidth + 2) {
+              const maxScroll = navEl.scrollWidth - navEl.clientWidth;
+              const desiredLeft =
+                activeEl.offsetLeft - (navEl.clientWidth - activeEl.offsetWidth) / 2;
+              const targetLeft = Math.max(0, Math.min(maxScroll, desiredLeft));
+              const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+              if (typeof navEl.scrollTo === "function") {
+                navEl.scrollTo({ left: targetLeft, behavior: reduced ? "auto" : "smooth" });
+              } else if (typeof activeEl.scrollIntoView === "function") {
+                activeEl.scrollIntoView({
+                  inline: "center",
+                  block: "nearest",
+                  behavior: reduced ? "auto" : "smooth",
+                });
+              } else {
+                navEl.scrollLeft = targetLeft;
+              }
+            }
+            updateCue();
+          })
+        : 0;
 
     updateCue();
     navEl.addEventListener("scroll", updateCue, { passive: true });
     window.addEventListener("resize", updateCue);
     return () => {
+      if (rafId && typeof window.cancelAnimationFrame === "function") {
+        window.cancelAnimationFrame(rafId);
+      }
       navEl.removeEventListener("scroll", updateCue);
       window.removeEventListener("resize", updateCue);
     };

@@ -90,7 +90,7 @@ describe("V12.47.16 — Mobile UX Optimization for Admin Forms & Selectors", () 
   it("3. Generar código de descuento: compact mobile 2-col benefit cards, accessible validity info popover, and persistent footer", async () => {
     render(<BenefitCodesAdminSection />);
 
-    const openBtn = screen.getByRole("button", { name: /generar código/i });
+    const openBtn = screen.getAllByRole("button", { name: /generar código/i })[0];
     fireEvent.click(openBtn);
 
     await waitFor(() => {

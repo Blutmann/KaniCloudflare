@@ -256,7 +256,7 @@ describe('V12.43 — Rediseño de Descuentos Liquid Glass y navegación compacta
     // Conserva filtros, acciones principales y listado
     expect(screen.getByLabelText('Estado')).toBeInTheDocument();
     expect(screen.getByLabelText('Ordenar por')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Generar código/i })).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /Generar código/i })[0]).toBeInTheDocument();
   });
 
   it('2. La ruta tradicional/Mantenimiento (hideHeading=false por defecto) conserva su encabezado habitual', async () => {

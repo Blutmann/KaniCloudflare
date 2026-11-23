@@ -2743,6 +2743,40 @@ body[data-lg-admin="true"] .v2-loading {
     letter-spacing: normal !important;
     white-space: nowrap !important;
   }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-navigation[data-scroll-right="true"]:not([data-scroll-left="true"]) .admin-section-nav-items {
+    -webkit-mask-image: linear-gradient(to right, #000 0%, #000 calc(100% - 22px), transparent 100%);
+    mask-image: linear-gradient(to right, #000 0%, #000 calc(100% - 22px), transparent 100%);
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-navigation[data-scroll-left="true"]:not([data-scroll-right="true"]) .admin-section-nav-items {
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 22px, #000 100%);
+    mask-image: linear-gradient(to right, transparent 0%, #000 22px, #000 100%);
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-navigation[data-scroll-left="true"][data-scroll-right="true"] .admin-section-nav-items {
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 22px, #000 calc(100% - 22px), transparent 100%);
+    mask-image: linear-gradient(to right, transparent 0%, #000 22px, #000 calc(100% - 22px), transparent 100%);
+  }
+
+  html[data-theme] body[data-lg-admin="true"] :is(.v2-clients-page, .v2-appointments-page, .v2-schedule, .v2-memberships-page, .benefit-codes-section) {
+    padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-client-sticky-bar,
+  html[data-theme] body[data-lg-admin="true"] .v2-mobile-sticky-cta {
+    position: fixed !important;
+    left: 12px !important;
+    right: 12px !important;
+    bottom: max(12px, env(safe-area-inset-bottom, 0px)) !important;
+    width: auto !important;
+    z-index: 40 !important;
+    margin: 0 !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .kani-dtoolbar-generate-btn.v2-client-add-btn--desktop {
+    display: none !important;
+  }
 }
 
 @media (min-width: 768px) {
