@@ -116,9 +116,9 @@ describe('KANI — Regresión de navegación en panel original y hamburguesa', (
     expect(nav).not.toBeNull();
 
     const links = nav!.querySelectorAll('.admin-section-nav-link');
-    expect(links).toHaveLength(6);
+    expect(links).toHaveLength(7);
 
-    const expectedSections = ['Turnos', 'Horarios', 'Pagos', 'Clientes', 'Miembros', 'Códigos'];
+    const expectedSections = ['Inicio', 'Turnos', 'Horarios', 'Pagos', 'Clientes', 'Miembros', 'Códigos'];
     links.forEach((link, idx) => {
       expect(link.textContent).toContain(expectedSections[idx]);
     });
@@ -132,7 +132,7 @@ describe('KANI — Regresión de navegación en panel original y hamburguesa', (
     expect(oldNav!.querySelector('.admin-section-nav-refresh-btn')).not.toBeNull();
   });
 
-  it('2. La barra principal incluye Miembros y Códigos y excluye Inicio, Datos y Mantenimiento', async () => {
+  it('2. La barra principal incluye Inicio, Miembros y Códigos y excluye Datos y Mantenimiento', async () => {
     state.role = 'ADMIN';
     state.path = '/panel-administracion/turnos';
     const { container } = render(<V2Layout />);
@@ -142,9 +142,9 @@ describe('KANI — Regresión de navegación en panel original y hamburguesa', (
     const links = nav!.querySelectorAll('.admin-section-nav-link');
     const linkTexts = Array.from(links).map((l) => l.textContent?.trim());
 
+    expect(linkTexts).toContain('Inicio');
     expect(linkTexts).toContain('Miembros');
     expect(linkTexts).toContain('Códigos');
-    expect(linkTexts).not.toContain('Inicio');
     expect(linkTexts).not.toContain('Datos');
     expect(linkTexts).not.toContain('Mantenimiento');
     expect(linkTexts).not.toContain('Negocio');
@@ -351,7 +351,7 @@ describe('KANI — Regresión de navegación en panel original y hamburguesa', (
     }
   });
 
-  it('12. /panel-membresias usa la barra única de 6 ítems sin segunda barra apilada + Resumen colapsable', async () => {
+  it('12. /panel-membresias usa la barra única de 7 ítems para ADMIN sin segunda barra apilada + Resumen colapsable', async () => {
     state.role = 'ADMIN';
     state.path = '/panel-membresias';
     const { container, unmount } = render(<V2Layout />);
@@ -360,8 +360,9 @@ describe('KANI — Regresión de navegación en panel original y hamburguesa', (
     const mainNav = container.querySelector('nav.admin-section-nav');
     expect(mainNav).not.toBeNull();
     const links = mainNav!.querySelectorAll('.admin-section-nav-link');
-    expect(links).toHaveLength(6);
+    expect(links).toHaveLength(7);
     expect(Array.from(links).map((l) => l.textContent?.trim())).toEqual([
+      'Inicio',
       'Turnos',
       'Horarios',
       'Pagos',

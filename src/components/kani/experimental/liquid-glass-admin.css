@@ -2745,6 +2745,12 @@ body[data-lg-admin="true"] .v2-loading {
   }
 }
 
+@media (min-width: 768px) {
+  html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav[data-nav-count="7"] .admin-section-nav-items {
+    grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+  }
+}
+
 html[data-theme] body[data-lg-admin="true"] .v2-memberships-standalone-panel {
   padding: 0 !important;
   margin: 0 !important;

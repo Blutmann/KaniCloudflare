@@ -6238,6 +6238,12 @@ html[data-theme="dark"] .kani-v2-toast.is-error .kani-v2-toast-icon,
   }
 }
 
+@media (min-width: 768px) {
+  .v2-nav.admin-section-nav[data-nav-count="7"] .admin-section-nav-items {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+  }
+}
+
 .v2-memberships-standalone-panel {
   padding: 0 !important;
   margin: 0 !important;

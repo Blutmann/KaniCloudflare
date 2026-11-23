@@ -5,6 +5,7 @@ import {
   CalendarDays,
   Clock3,
   CreditCard,
+  Home,
   IdCard,
   Tag,
   Users,
@@ -22,6 +23,7 @@ import { V2DataProvider, useV2 } from "./data";
 import "./v2.css";
 
 const sectionDefs = [
+  { slug: "inicio", title: "Inicio", icon: Home },
   { slug: "turnos", title: "Turnos", icon: CalendarDays },
   { slug: "horarios", title: "Horarios", icon: Clock3 },
   { slug: "pagos", title: "Pagos", icon: CreditCard },
@@ -335,7 +337,7 @@ function V2Shell({
 
   useEffect(() => {
     if (!liquidGlass || typeof window === "undefined") return;
-    const navEl = navScrollRef.current;
+    const navEl = navItemsRef.current ?? navScrollRef.current;
     if (!navEl) return;
 
     const updateCue = () => {
@@ -354,6 +356,12 @@ function V2Shell({
       const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
       if (typeof navEl.scrollTo === "function") {
         navEl.scrollTo({ left: targetLeft, behavior: reduced ? "auto" : "smooth" });
+      } else if (typeof activeEl.scrollIntoView === "function") {
+        activeEl.scrollIntoView({
+          inline: "center",
+          block: "nearest",
+          behavior: reduced ? "auto" : "smooth",
+        });
       } else {
         navEl.scrollLeft = targetLeft;
       }
@@ -380,7 +388,10 @@ function V2Shell({
   const isBarber = profile.role === "BARBER";
 
   const visibleMainSections = (isBarber ? barberSectionDefs : sectionDefs)
-    .filter(({ slug }) => mayAccessStaffSection(profile, slug))
+    .filter(
+      ({ slug }) =>
+        mayAccessStaffSection(profile, slug) && (profile.role === "ADMIN" || slug !== "inicio"),
+    )
     .map((item) => {
       const to =
         item.slug === "membresias"
