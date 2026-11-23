@@ -670,7 +670,7 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
           {/* Barra de herramientas: Quickbar móvil idéntica a Miembros + Filtros desktop */}
           <AdminFilterPanel
             ariaLabel="Filtros de códigos de beneficio"
-            className="kani-dfilters v2-codes-filter-panel"
+            className="v2-codes-filter-panel"
             mobileExpanded={false}
             mobileQuickBar={
               <>

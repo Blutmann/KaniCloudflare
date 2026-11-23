@@ -3072,6 +3072,17 @@ html[data-theme] body[data-lg-admin="true"] .v2-memberships-count {
     text-align: center !important;
   }
 
+  html[data-theme] body[data-lg-admin="true"] .v2-codes-filter-panel .v2-quickbar-chip {
+    font-size: 11px !important;
+    padding: 6px 6px !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-codes-filter-panel .v2-memberships-sort-btn {
+    min-width: 74px !important;
+    padding: 6px 8px !important;
+    font-size: 11px !important;
+  }
+
   html[data-theme] body[data-lg-admin="true"] .v2-admin-combobox-list {
     max-height: 190px !important;
     overflow-y: auto !important;
@@ -5216,23 +5227,23 @@ html[data-theme] body[data-lg-admin="true"] :is(.v2-memberships-page, .maintenan
   transform: scale(0.985);
 }
 
-/* KANI UX v2.9.2 — Nueva membresía: footer compacto alineado a la derecha */
+/* KANI UX v2.9.2 — Nueva membresía: footer 50% / 50% */
 html[data-theme] body[data-lg-admin="true"] [role="dialog"].v2-membership-create-dialog .kani-mcreate-footer {
-  display: flex !important;
-  flex-direction: row !important;
-  align-items: center !important;
-  justify-content: flex-end !important;
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   gap: 10px !important;
+  width: 100% !important;
 }
 
 html[data-theme] body[data-lg-admin="true"] [role="dialog"].v2-membership-create-dialog .kani-mcreate-footer > button {
   position: relative;
-  flex: 0 0 auto !important;
-  width: auto !important;
+  width: 100% !important;
+  flex: 1 1 0 !important;
+  min-width: 0 !important;
   height: 41px !important;
   min-height: 41px !important;
   max-height: 41px !important;
-  padding: 0 16px !important;
+  padding: 0 12px !important;
   font-size: 13.5px !important;
   border-radius: var(--v2-radius-btn, 12px) !important;
   white-space: nowrap !important;

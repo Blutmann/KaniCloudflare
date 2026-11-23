@@ -6543,6 +6543,17 @@ html[data-theme="dark"] .kani-v2-toast.is-error .kani-v2-toast-icon,
     text-align: center !important;
   }
 
+  .v2-codes-filter-panel .v2-quickbar-chip {
+    font-size: 11px !important;
+    padding: 6px 6px !important;
+  }
+
+  .v2-codes-filter-panel .v2-memberships-sort-btn {
+    min-width: 74px !important;
+    padding: 6px 8px !important;
+    font-size: 11px !important;
+  }
+
   .v2-admin-combobox-list {
     max-height: 190px;
     overflow-y: auto;

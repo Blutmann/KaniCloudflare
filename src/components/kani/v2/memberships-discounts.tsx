@@ -1032,32 +1032,51 @@ export function V2MembershipsAndDiscounts({
                     <label htmlFor="membership-client-select" className="v2-field-label">
                       Cliente titular
                     </label>
-                    <button
-                      id="membership-client-select"
-                      type="button"
-                      role="combobox"
-                      aria-expanded={clientPickerOpen}
-                      aria-haspopup="listbox"
-                      aria-label="Cliente titular"
-                      onClick={() => setClientPickerOpen(true)}
-                      className="v2-admin-select-trigger flex h-[44px] min-h-[44px] w-full min-w-0 max-w-full items-center justify-between gap-2.5 overflow-hidden rounded-[var(--v2-radius-btn,12px)] border border-input bg-background px-3 py-0 text-left text-[14px] leading-none text-foreground shadow-xs transition-colors focus:outline-none focus:ring-1 focus:ring-gold"
-                    >
-                      <span className="flex min-w-0 flex-1 items-center gap-2.5 overflow-hidden text-left">
-                        <UserRound size={16} className="shrink-0 text-gold" aria-hidden="true" />
-                        <span
-                          className={`block min-w-0 flex-1 truncate leading-[1.35]${
-                            !selectedCreateClient ? " text-muted-foreground" : ""
-                          }`}
-                        >
-                          {selectedCreateClient
-                            ? `${selectedCreateClient.name}${
-                                selectedCreateClient.phone ? ` (${selectedCreateClient.phone})` : ""
-                              }`
-                            : "Seleccionar cliente…"}
+                    <div className="flex items-center gap-2 min-w-0">
+                      <button
+                        id="membership-client-select"
+                        type="button"
+                        role="combobox"
+                        aria-expanded={clientPickerOpen}
+                        aria-haspopup="listbox"
+                        aria-label="Cliente titular"
+                        onClick={() => {
+                          setClientPickerTab("SEARCH");
+                          setClientPickerOpen(true);
+                        }}
+                        className="v2-admin-select-trigger flex h-[44px] min-h-[44px] flex-1 min-w-0 max-w-full items-center justify-between gap-2.5 overflow-hidden rounded-[var(--v2-radius-btn,12px)] border border-input bg-background px-3 py-0 text-left text-[14px] leading-none text-foreground shadow-xs transition-colors focus:outline-none focus:ring-1 focus:ring-gold"
+                      >
+                        <span className="flex min-w-0 flex-1 items-center gap-2.5 overflow-hidden text-left">
+                          <UserRound size={16} className="shrink-0 text-gold" aria-hidden="true" />
+                          <span
+                            className={`block min-w-0 flex-1 truncate leading-[1.35]${
+                              !selectedCreateClient ? " text-muted-foreground" : ""
+                            }`}
+                          >
+                            {selectedCreateClient
+                              ? `${selectedCreateClient.name}${
+                                  selectedCreateClient.phone ? ` (${selectedCreateClient.phone})` : ""
+                                }`
+                              : "Seleccionar cliente…"}
+                          </span>
                         </span>
-                      </span>
-                      <ChevronDown size={16} className="ml-1 shrink-0 opacity-60" aria-hidden="true" />
-                    </button>
+                        <ChevronDown size={16} className="ml-1 shrink-0 opacity-60" aria-hidden="true" />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label="Nuevo cliente"
+                        title="Nuevo cliente"
+                        onClick={() => {
+                          setClientPickerTab("CREATE");
+                          setNewClientError("");
+                          setClientPickerOpen(true);
+                        }}
+                        className="v2-secondary inline-flex shrink-0 items-center justify-center rounded-[var(--v2-radius-btn,12px)]"
+                        style={{ minWidth: "44px", minHeight: "44px", padding: "0 12px" }}
+                      >
+                        <Plus size={16} aria-hidden="true" />
+                      </button>
+                    </div>
                   </div>
 
                   <div className="v2-membership-create-row">
