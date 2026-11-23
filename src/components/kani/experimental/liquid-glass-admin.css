@@ -2711,6 +2711,571 @@ body[data-lg-admin="true"] .v2-loading {
   }
 }
 
+/* Barra única en móvil (< 768px): scroll horizontal con aire cuando >= 6 ítems; grid 4 cols para BARBER */
+@media (max-width: 767px) {
+  html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav[data-nav-scrollable="true"] .admin-section-nav-items {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    scrollbar-width: none !important;
+    gap: 4px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav[data-nav-scrollable="true"] .admin-section-nav-items::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav[data-nav-scrollable="true"] .admin-section-nav-link {
+    flex: 0 0 auto !important;
+    width: auto !important;
+    min-width: 68px !important;
+    padding: 6px 10px !important;
+    font-size: 11px !important;
+    white-space: nowrap !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav[data-nav-scrollable="false"] .admin-section-nav-items {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 4px !important;
+    width: 100% !important;
+    overflow-x: visible !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav[data-nav-scrollable="false"] .admin-section-nav-link {
+    flex: initial !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    padding: 6px 4px !important;
+    font-size: 11px !important;
+    white-space: nowrap !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav .admin-section-nav-link .lg-admin-nav-label {
+    font-size: 11px !important;
+    letter-spacing: normal !important;
+    white-space: nowrap !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-navigation[data-scroll-right="true"]:not([data-scroll-left="true"]) .admin-section-nav-items {
+    -webkit-mask-image: linear-gradient(to right, #000 0%, #000 calc(100% - 22px), transparent 100%);
+    mask-image: linear-gradient(to right, #000 0%, #000 calc(100% - 22px), transparent 100%);
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-navigation[data-scroll-left="true"]:not([data-scroll-right="true"]) .admin-section-nav-items {
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 22px, #000 100%);
+    mask-image: linear-gradient(to right, transparent 0%, #000 22px, #000 100%);
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-navigation[data-scroll-left="true"][data-scroll-right="true"] .admin-section-nav-items {
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 22px, #000 calc(100% - 22px), transparent 100%);
+    mask-image: linear-gradient(to right, transparent 0%, #000 22px, #000 calc(100% - 22px), transparent 100%);
+  }
+
+  html[data-theme] body[data-lg-admin="true"] :is(.v2-clients-page, .v2-appointments-page, .v2-schedule, .v2-memberships-page, .benefit-codes-section) {
+    padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px)) !important;
+    margin-bottom: 0 !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] :is(.v2-clients-page, .v2-appointments-page, .v2-schedule, .v2-memberships-page, .benefit-codes-section) > :not(.v2-client-sticky-bar):last-child,
+  html[data-theme] body[data-lg-admin="true"] :is(.v2-clients-page, .v2-appointments-page, .v2-schedule, .v2-memberships-page, .benefit-codes-section) > :not(.v2-client-sticky-bar):nth-last-child(2) {
+    margin-bottom: 0 !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-schedule,
+  html[data-theme] body[data-lg-admin="true"] .v2-schedule .admin-schedule-page,
+  html[data-theme] body[data-lg-admin="true"] .v2-schedule .admin-schedule-shell,
+  html[data-theme] body[data-lg-admin="true"] .v2-schedule .admin-schedule-list,
+  html[data-theme] body[data-lg-admin="true"] .v2-schedule .admin-schedule-date-group {
+    gap: 0 !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-schedule .v2-admin-filter-panel {
+    margin-bottom: 10px !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-schedule .v2-schedule-cards-container,
+  html[data-theme] body[data-lg-admin="true"] .v2-schedule .admin-schedule-cards-container {
+    margin-top: 0 !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .site-shell:has(.v2-shell) > .site-footer,
+  html[data-theme] body[data-admin-internal="true"] .site-shell > .site-footer {
+    position: relative !important;
+    z-index: 1 !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .site-shell:has(.v2-shell) > .liquid-glass-page[data-lg-section="admin"],
+  html[data-theme] body[data-lg-admin="true"] .v2-shell {
+    position: relative !important;
+    z-index: 20 !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-shell {
+    padding-bottom: 0 !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-client-sticky-bar,
+  html[data-theme] body[data-lg-admin="true"] .v2-mobile-sticky-cta {
+    position: fixed !important;
+    left: 12px !important;
+    right: 12px !important;
+    bottom: max(12px, env(safe-area-inset-bottom, 0px)) !important;
+    width: auto !important;
+    z-index: 120 !important;
+    margin: 0 !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .benefit-codes-section .v2-client-add-btn--desktop,
+  html[data-theme] body[data-lg-admin="true"] .v2-client-add-btn--desktop,
+  html[data-theme] body[data-lg-admin="true"] .kani-dtoolbar-generate-btn.v2-client-add-btn--desktop {
+    display: none !important;
+  }
+}
+
+@media (min-width: 768px) {
+  html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav[data-nav-count="7"] .admin-section-nav-items {
+    grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+  }
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-standalone-panel {
+  padding: 0 !important;
+  margin: 0 !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-stage {
+  gap: 10px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-stage .v2-admin-filter-panel {
+  margin-bottom: 0 !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-summary-card {
+  margin: 0 !important;
+  padding: 8px 12px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-summary-toggle {
+  width: 100% !important;
+  min-height: 44px !important;
+  padding: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--lga-text) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  cursor: pointer !important;
+  text-align: left !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-summary-eyebrow {
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: var(--lga-text-muted) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-summary-meta {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  min-width: 0 !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-summary-highlight {
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  color: var(--lga-text) !important;
+  font-variant-numeric: tabular-nums !important;
+  white-space: nowrap !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-summary-chevron {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: var(--lga-text-muted) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-summary-breakdown {
+  display: none !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 6px !important;
+  margin-top: 8px !important;
+  padding-top: 8px !important;
+  border-top: 1px solid var(--lga-border) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-summary-breakdown.is-open {
+  display: grid !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-summary-metric {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 6px !important;
+  padding: 7px 10px !important;
+  border-radius: 10px !important;
+  border: 1px solid var(--lga-border) !important;
+  background: var(--lga-surface-2) !important;
+  min-width: 0 !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-summary-metric span {
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  color: var(--lga-text-muted) !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-summary-metric strong {
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  color: var(--lga-text) !important;
+  font-variant-numeric: tabular-nums !important;
+  flex-shrink: 0 !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-count {
+  font-size: 12.5px !important;
+  color: var(--lga-text-muted) !important;
+  line-height: 1.3 !important;
+}
+
+@media (min-width: 768px) {
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-stage {
+    gap: 12px !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-filter-panel .v2-admin-filter-grid {
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) minmax(0, 1fr) !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-codes-filter-panel .v2-admin-filter-grid {
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) minmax(0, 1fr) !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-unified-card {
+    padding: 0 !important;
+    overflow: hidden;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-unified-card .v2-memberships-summary-card,
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-filter-panel--embedded {
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    border-radius: 0 !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-card-divider {
+    height: 1px;
+    background: var(--lga-hairline, var(--border));
+    margin: 0 14px;
+  }
+}
+
+@media (min-width: 1024px) {
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-summary-card {
+    padding: 10px 14px !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-summary-toggle {
+    display: none !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-summary-breakdown,
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-summary-breakdown.is-open {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+    border-top: none !important;
+  }
+}
+
+@media (max-width: 767px) {
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-page {
+    padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-unified-card {
+    padding: 0 !important;
+    border-radius: 16px !important;
+    overflow: hidden;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-unified-card .v2-memberships-summary-card {
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    border-radius: 0 !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    padding: 8px 12px !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-card-divider {
+    height: 1px;
+    background: var(--lga-hairline, var(--border));
+    margin: 0 12px;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-filter-panel--embedded {
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    border-radius: 0 !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    padding: 6px !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-desktop-only,
+  html[data-theme] body[data-lg-admin="true"] .v2-codes-desktop-only {
+    display: none !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .benefit-codes-section,
+  html[data-theme] body[data-lg-admin="true"] .v2-codes-filter-panel,
+  html[data-theme] body[data-lg-admin="true"] .v2-codes-filter-panel .v2-admin-filter-quickbar,
+  html[data-theme] body[data-lg-admin="true"] .benefit-codes-section .kani-dgrid,
+  html[data-theme] body[data-lg-admin="true"] .benefit-codes-section .kani-dcard {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-sort-btn {
+    min-width: 88px !important;
+    justify-content: center !important;
+    text-align: center !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-codes-filter-panel .v2-quickbar-chip {
+    font-size: 11px !important;
+    padding: 6px 6px !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-codes-filter-panel .v2-memberships-sort-btn {
+    min-width: 76px !important;
+    padding: 6px 8px !important;
+    font-size: 11px !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-admin-combobox-list {
+    max-height: 190px !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y !important;
+    overscroll-behavior: contain !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .kani-mcreate-footer {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+    width: 100% !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .kani-mcreate-footer > button {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-client-picker-tabs {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 4px !important;
+    padding: 4px !important;
+    margin-bottom: 10px !important;
+    border-radius: 12px !important;
+    border: 1px solid var(--lga-border) !important;
+    background: var(--lga-glass-nested) !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-client-picker-tab {
+    height: 34px !important;
+    border-radius: 8px !important;
+    border: 1px solid transparent !important;
+    background: transparent !important;
+    color: var(--lga-text-muted) !important;
+    font-size: 12.5px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-client-picker-tab.is-active {
+    background: var(--lga-accent-pill) !important;
+    border-color: var(--lga-border-accent) !important;
+    color: var(--lga-text) !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-client-picker-back {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    padding: 6px 8px !important;
+    margin-left: -6px !important;
+    border-radius: 8px !important;
+    border: none !important;
+    background: transparent !important;
+    color: var(--lga-text) !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-client-picker-search-wrap {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    padding: 0 12px !important;
+    width: 100% !important;
+    height: 42px !important;
+    box-sizing: border-box !important;
+    border-radius: 10px !important;
+    border: 1px solid var(--lga-border) !important;
+    background: var(--lga-glass-nested) !important;
+    margin-bottom: 10px !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-client-picker-search-icon {
+    position: static !important;
+    transform: none !important;
+    flex-shrink: 0 !important;
+    color: var(--lga-text-muted) !important;
+    pointer-events: none !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-client-picker-search-input {
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 10px 0 !important;
+    flex: 1 !important;
+    min-width: 0 !important;
+    height: auto !important;
+    color: var(--lga-text) !important;
+    font-size: 15px !important;
+    outline: none !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-client-picker-list {
+    list-style: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    max-height: min(56dvh, 420px) !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y !important;
+    overscroll-behavior: contain !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-client-picker-row {
+    width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 10px !important;
+    padding: 11px 4px !important;
+    border: none !important;
+    border-bottom: 1px solid var(--lga-hairline, var(--lga-border)) !important;
+    background: transparent !important;
+    color: var(--lga-text) !important;
+    text-align: left !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-client-picker-row:last-child {
+    border-bottom: none !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-client-picker-name {
+    min-width: 0 !important;
+    flex: 1 !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-client-picker-phone {
+    flex: 0 0 auto !important;
+    font-size: 12.5px !important;
+    color: var(--lga-text-muted) !important;
+    white-space: nowrap !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] :is(.v2-memberships-filter-panel, .v2-codes-filter-panel) .v2-admin-filter-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section > * + * {
+    margin-top: 0 !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .kani-dtoolbar,
+  html[data-theme] body[data-lg-admin="true"] .benefit-codes-section .kani-dtoolbar {
+    margin: 0 !important;
+    padding: 0 2px !important;
+    min-height: 0 !important;
+    gap: 0 !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .benefit-codes-section .kani-dtoolbar-actions {
+    display: none !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .kani-dtoolbar-count,
+  html[data-theme] body[data-lg-admin="true"] .benefit-codes-section .kani-dtoolbar-count {
+    font-size: 12px !important;
+    line-height: 1.25 !important;
+    margin: 0 !important;
+    padding: 0 2px !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .kani-dtoolbar + .kani-dgrid {
+    margin-top: 0 !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-toolbar-row .v2-client-add-btn--desktop,
+  html[data-theme] body[data-lg-admin="true"] .v2-client-add-btn--desktop {
+    display: none !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-toolbar-row {
+    margin: 0 !important;
+    padding: 0 2px !important;
+  }
+}
+
 @keyframes lgaDialogFadeIn {
   from {
     opacity: 0;
@@ -3058,19 +3623,19 @@ html[data-theme="light"] body[data-lg-admin="true"] .kani-mcard-badge:not([class
 }
 
 /* Botones de acciones y BenefitCodesAdminSection (.maintenance-section) */
-html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section button:not([role="switch"]):not(.kani-dcard-subgroup-summary):not(.kani-dcard-details-delete-btn):not(.kani-dcard-btn-details):not(.kani-dcard-btn-action):not(.kani-dtoolbar-generate-btn) {
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section button:not([role="switch"]):not(.kani-dcard-subgroup-summary):not(.kani-dcard-details-delete-btn):not(.kani-dcard-btn-details):not(.kani-dcard-btn-action):not(.kani-dtoolbar-generate-btn):not(.v2-quickbar-chip):not(.v2-memberships-summary-toggle):not(.v2-filter-toggle-btn) {
   min-height: 40px !important;
   border-radius: 999px !important;
   transition: background-color 150ms ease, border-color 150ms ease, opacity 150ms ease;
 }
 
 @media (max-width: 767px) {
-  html[data-theme] body[data-lg-admin="true"] .v2-memberships-page :is(.kani-mcard-actions > button, .kani-mcard-actions > a, .maintenance-section button:not([role="switch"])) {
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-page :is(.kani-mcard-actions > button, .kani-mcard-actions > a, .maintenance-section button:not([role="switch"]):not(.v2-quickbar-chip):not(.v2-memberships-summary-toggle):not(.v2-filter-toggle-btn)) {
     min-height: 44px !important;
   }
 }
 
-html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section button:not(.action-brand):not(.action-positive):not(.v2-primary):not(.is-destructive):not(.kani-dcard-btn-warning):not(.kani-dcard-subgroup-summary):not([aria-pressed="true"]):not(:disabled) {
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section button:not(.action-brand):not(.action-positive):not(.v2-primary):not(.is-destructive):not(.kani-dcard-btn-warning):not(.kani-dcard-subgroup-summary):not([aria-pressed="true"]):not(:disabled):not(.v2-quickbar-chip):not(.v2-memberships-summary-toggle):not(.v2-filter-toggle-btn) {
   background: var(--lga-btn-secondary-bg) !important;
   border: 1px solid var(--lga-border) !important;
   color: var(--lga-text) !important;
@@ -4683,23 +5248,23 @@ html[data-theme] body[data-lg-admin="true"] :is(.v2-memberships-page, .maintenan
   transform: scale(0.985);
 }
 
-/* KANI UX v2.9.2 — Nueva membresía: footer compacto alineado a la derecha */
+/* KANI UX v2.9.2 — Nueva membresía: footer 50% / 50% */
 html[data-theme] body[data-lg-admin="true"] [role="dialog"].v2-membership-create-dialog .kani-mcreate-footer {
-  display: flex !important;
-  flex-direction: row !important;
-  align-items: center !important;
-  justify-content: flex-end !important;
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   gap: 10px !important;
+  width: 100% !important;
 }
 
 html[data-theme] body[data-lg-admin="true"] [role="dialog"].v2-membership-create-dialog .kani-mcreate-footer > button {
   position: relative;
-  flex: 0 0 auto !important;
-  width: auto !important;
+  width: 100% !important;
+  flex: 1 1 0 !important;
+  min-width: 0 !important;
   height: 41px !important;
   min-height: 41px !important;
   max-height: 41px !important;
-  padding: 0 16px !important;
+  padding: 0 12px !important;
   font-size: 13.5px !important;
   border-radius: var(--v2-radius-btn, 12px) !important;
   white-space: nowrap !important;
@@ -4756,7 +5321,7 @@ html[data-theme] body[data-lg-admin="true"] .v2-page :is(.v2-hero-grid, .v2-char
 
 @media (max-width: 767px) {
   html[data-theme] body[data-lg-admin="true"] :is(.v2-clients-page, .v2-appointments-page, .v2-schedule) {
-    padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px)) !important;
+    padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px)) !important;
   }
 
   html[data-theme] body[data-lg-admin="true"] .v2-appointments-page {
@@ -4768,7 +5333,7 @@ html[data-theme] body[data-lg-admin="true"] .v2-page :is(.v2-hero-grid, .v2-char
   }
 
   html[data-theme] body[data-lg-admin="true"] .v2-schedule .v2-admin-filter-panel {
-    margin-bottom: 12px !important;
+    margin-bottom: 10px !important;
   }
 
   html[data-theme] body[data-lg-admin="true"] .v2-appointments-page .v2-mobile-day-header {
@@ -4931,5 +5496,56 @@ html[data-theme] body[data-lg-admin="true"] .v2-page :is(.v2-hero-grid, .v2-char
   }
 }
 
+html[data-theme] body[data-lg-admin="true"] [role="dialog"].v2-membership-create-dialog .kani-modal-footer.kani-mcreate-footer {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+  width: 100% !important;
+}
 
+html[data-theme] body[data-lg-admin="true"] [role="dialog"].v2-membership-create-dialog .kani-modal-footer.kani-mcreate-footer > button {
+  width: 100% !important;
+  min-width: 0 !important;
+  flex: initial !important;
+  margin: 0 !important;
+}
 
+html[data-theme] body[data-lg-admin="true"] .benefit-codes-section .v2-quickbar-chip:not(.is-active) {
+  background: transparent !important;
+  border-color: transparent !important;
+}
+
+html[data-theme="light"] body[data-lg-admin="true"] [role="dialog"] .v2-client-picker-search-wrap > input,
+html[data-theme="dark"] body[data-lg-admin="true"] [role="dialog"] .v2-client-picker-search-wrap > input {
+  border: none !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
+  border-radius: 0 !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] .v2-client-picker-create-form {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 14px !important;
+  padding-top: 4px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] .v2-client-picker-create-form > label {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px !important;
+  margin: 0 !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .benefit-codes-section {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .benefit-codes-section > * {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}

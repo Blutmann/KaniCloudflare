@@ -555,18 +555,22 @@ html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active)
 }
 
 html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell .kani-modal-footer.kani-mcreate-footer {
-  justify-content: flex-end !important;
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   gap: 10px !important;
+  width: 100% !important;
 }
 
 html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell .kani-modal-footer.kani-mcreate-footer > button {
   position: relative;
-  flex: 0 0 auto !important;
-  width: auto !important;
+  flex: initial !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  margin: 0 !important;
   height: 41px !important;
   min-height: 41px !important;
   max-height: 41px !important;
-  padding: 0 16px !important;
+  padding: 0 12px !important;
   font-size: 13.5px !important;
   border-radius: var(--v2-radius-btn, 12px) !important;
   white-space: nowrap !important;

@@ -11,6 +11,7 @@ vi.mock('@/lib/kani-admin-context', () => ({
       id: 'admin-1',
       displayName: 'Administrador Kani',
       role: 'ADMIN',
+      barber_id: null,
       email: 'admin@kanibarber.com',
     },
   }),

@@ -6075,7 +6075,7 @@ html[data-theme="dark"] .kani-v2-toast.is-error .kani-v2-toast-icon,
 
 @media (max-width: 767px) {
   :is(.v2-appointments-page, .v2-schedule) {
-    padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
   }
 
   .v2-appointments-page {
@@ -6087,7 +6087,7 @@ html[data-theme="dark"] .kani-v2-toast.is-error .kani-v2-toast-icon,
   }
 
   .v2-schedule .v2-admin-filter-panel {
-    margin-bottom: 12px !important;
+    margin-bottom: 10px !important;
   }
 
   .v2-appointments-page .v2-mobile-day-header {
@@ -6210,5 +6210,541 @@ html[data-theme="dark"] .kani-v2-toast.is-error .kani-v2-toast-icon,
     font-size: 14px;
     font-weight: 600;
     line-height: 1.25;
+  }
+}
+
+/* Barra única en móvil (< 768px): scroll horizontal con aire cuando >= 6 ítems; grid 4 cols para BARBER */
+@media (max-width: 767px) {
+  .v2-nav[data-nav-scrollable="true"] .admin-section-nav-items {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    gap: 4px;
+    width: 100%;
+  }
+
+  .v2-nav[data-nav-scrollable="true"] .admin-section-nav-items::-webkit-scrollbar {
+    display: none;
+  }
+
+  .v2-nav[data-nav-scrollable="true"] .admin-section-nav-link {
+    flex: 0 0 auto;
+    width: auto;
+    min-width: 68px;
+    padding: 6px 10px;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+
+  .v2-nav[data-nav-scrollable="false"] .admin-section-nav-items {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 4px;
+    width: 100%;
+    overflow-x: visible;
+  }
+
+  .v2-nav[data-nav-scrollable="false"] .admin-section-nav-link {
+    width: 100%;
+    min-width: 0;
+    padding: 6px 4px;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+
+  .v2-navigation[data-scroll-right="true"]:not([data-scroll-left="true"]) .admin-section-nav-items {
+    -webkit-mask-image: linear-gradient(to right, #000 0%, #000 calc(100% - 22px), transparent 100%);
+    mask-image: linear-gradient(to right, #000 0%, #000 calc(100% - 22px), transparent 100%);
+  }
+
+  .v2-navigation[data-scroll-left="true"]:not([data-scroll-right="true"]) .admin-section-nav-items {
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 22px, #000 100%);
+    mask-image: linear-gradient(to right, transparent 0%, #000 22px, #000 100%);
+  }
+
+  .v2-navigation[data-scroll-left="true"][data-scroll-right="true"] .admin-section-nav-items {
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 22px, #000 calc(100% - 22px), transparent 100%);
+    mask-image: linear-gradient(to right, transparent 0%, #000 22px, #000 calc(100% - 22px), transparent 100%);
+  }
+
+  :is(.v2-clients-page, .v2-appointments-page, .v2-schedule, .v2-memberships-page, .benefit-codes-section) {
+    padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px)) !important;
+    margin-bottom: 0 !important;
+  }
+
+  :is(.v2-clients-page, .v2-appointments-page, .v2-schedule, .v2-memberships-page, .benefit-codes-section) > :not(.v2-client-sticky-bar):last-child,
+  :is(.v2-clients-page, .v2-appointments-page, .v2-schedule, .v2-memberships-page, .benefit-codes-section) > :not(.v2-client-sticky-bar):nth-last-child(2) {
+    margin-bottom: 0 !important;
+  }
+
+  .v2-schedule,
+  .v2-schedule .admin-schedule-page,
+  .v2-schedule .admin-schedule-shell,
+  .v2-schedule .admin-schedule-list,
+  .v2-schedule .admin-schedule-date-group {
+    gap: 0 !important;
+  }
+
+  .v2-schedule .v2-admin-filter-panel {
+    margin-bottom: 10px !important;
+  }
+
+  .v2-schedule .v2-schedule-cards-container,
+  .v2-schedule .admin-schedule-cards-container {
+    margin-top: 0 !important;
+  }
+
+  :is(
+    .site-shell:has(.v2-shell),
+    .site-shell:has(.v2-page),
+    body[data-admin-internal="true"] .site-shell
+  ) .site-footer {
+    position: relative !important;
+    z-index: 1 !important;
+  }
+
+  .v2-shell {
+    position: relative !important;
+    z-index: 20 !important;
+    padding-bottom: 0 !important;
+  }
+
+  .v2-client-sticky-bar,
+  .v2-mobile-sticky-cta {
+    position: fixed !important;
+    left: 12px !important;
+    right: 12px !important;
+    bottom: max(12px, env(safe-area-inset-bottom, 0px)) !important;
+    width: auto !important;
+    z-index: 120 !important;
+    margin: 0 !important;
+  }
+
+  .benefit-codes-section .v2-client-add-btn--desktop,
+  .v2-client-add-btn--desktop,
+  .kani-dtoolbar-generate-btn.v2-client-add-btn--desktop {
+    display: none !important;
+  }
+}
+
+@media (min-width: 768px) {
+  .v2-nav.admin-section-nav[data-nav-count="7"] .admin-section-nav-items {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+  }
+}
+
+.v2-memberships-standalone-panel {
+  padding: 0 !important;
+  margin: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.v2-memberships-stage {
+  gap: 10px !important;
+}
+
+.v2-memberships-stage .v2-admin-filter-panel {
+  margin-bottom: 0 !important;
+}
+
+.v2-memberships-summary-card {
+  margin: 0;
+  padding: 8px 12px;
+}
+
+.v2-memberships-summary-toggle {
+  width: 100%;
+  min-height: 44px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.v2-memberships-summary-eyebrow {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted-foreground);
+}
+
+.v2-memberships-summary-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.v2-memberships-summary-highlight {
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.v2-memberships-summary-chevron {
+  display: inline-flex;
+  align-items: center;
+  color: var(--muted-foreground);
+}
+
+.v2-memberships-summary-breakdown {
+  display: none;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.v2-memberships-summary-breakdown.is-open {
+  display: grid;
+}
+
+.v2-memberships-summary-metric {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 7px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+
+.v2-memberships-summary-metric span {
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+
+.v2-memberships-summary-metric strong {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.v2-memberships-count {
+  font-size: 12.5px;
+  color: var(--muted-foreground);
+  line-height: 1.3;
+}
+
+@media (min-width: 768px) {
+  .v2-memberships-stage {
+    gap: 12px !important;
+  }
+
+  .v2-memberships-filter-panel .v2-admin-filter-grid {
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) minmax(0, 1fr) !important;
+  }
+
+  .v2-codes-filter-panel .v2-admin-filter-grid {
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) minmax(0, 1fr) !important;
+  }
+
+  .v2-memberships-unified-card {
+    padding: 0 !important;
+    overflow: hidden;
+  }
+
+  .v2-memberships-unified-card .v2-memberships-summary-card {
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    border-radius: 0 !important;
+  }
+
+  .v2-memberships-card-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 0 14px;
+  }
+
+  .v2-memberships-filter-panel--embedded {
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    border-radius: 0 !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  .v2-memberships-summary-toggle {
+    display: none;
+  }
+
+  .v2-memberships-summary-breakdown,
+  .v2-memberships-summary-breakdown.is-open {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+  }
+}
+
+@media (max-width: 767px) {
+  .v2-memberships-page {
+    padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  .v2-memberships-unified-card {
+    padding: 0 !important;
+    border-radius: 16px !important;
+    overflow: hidden;
+  }
+
+  .v2-memberships-unified-card .v2-memberships-summary-card {
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    border-radius: 0 !important;
+    padding: 8px 12px !important;
+  }
+
+  .v2-memberships-card-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 0 12px;
+  }
+
+  .v2-memberships-filter-panel--embedded {
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    border-radius: 0 !important;
+    padding: 6px !important;
+  }
+
+  .v2-memberships-desktop-only,
+  .v2-codes-desktop-only {
+    display: none !important;
+  }
+
+  .benefit-codes-section,
+  .v2-codes-filter-panel,
+  .v2-codes-filter-panel .v2-admin-filter-quickbar,
+  .benefit-codes-section .kani-dgrid,
+  .benefit-codes-section .kani-dcard {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .v2-memberships-sort-btn {
+    min-width: 88px !important;
+    justify-content: center !important;
+    text-align: center !important;
+  }
+
+  .v2-codes-filter-panel .v2-quickbar-chip {
+    font-size: 11px !important;
+    padding: 6px 6px !important;
+  }
+
+  .v2-codes-filter-panel .v2-memberships-sort-btn {
+    min-width: 76px !important;
+    padding: 6px 8px !important;
+    font-size: 11px !important;
+  }
+
+  .v2-admin-combobox-list {
+    max-height: 190px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+    overscroll-behavior: contain;
+  }
+
+  .kani-mcreate-footer {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+    width: 100% !important;
+  }
+
+  .kani-mcreate-footer > button {
+    width: 100% !important;
+    min-width: 0 !important;
+    flex: initial !important;
+    margin: 0 !important;
+  }
+
+  .v2-client-picker-tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px;
+    padding: 4px;
+    margin-bottom: 10px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--v2-inset, rgb(0 0 0 / 4%));
+  }
+
+  .v2-client-picker-tab {
+    height: 34px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--muted-foreground);
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .v2-client-picker-tab.is-active {
+    background: var(--v2-accent-pill, rgb(198 164 108 / 18%));
+    border-color: var(--v2-border-accent, rgb(198 164 108 / 45%));
+    color: var(--foreground);
+  }
+
+  .v2-client-picker-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 8px;
+    margin-left: -6px;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    color: var(--foreground);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+
+  .v2-client-picker-search-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 12px;
+    width: 100%;
+    height: 42px;
+    box-sizing: border-box;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--background);
+    margin-bottom: 10px;
+  }
+
+  .v2-client-picker-search-icon {
+    position: static;
+    transform: none;
+    flex-shrink: 0;
+    color: var(--muted-foreground);
+    pointer-events: none;
+  }
+
+  .v2-client-picker-search-input {
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 10px 0 !important;
+    flex: 1;
+    min-width: 0;
+    height: auto;
+    color: var(--foreground);
+    font-size: 15px;
+    outline: none;
+  }
+
+  .v2-client-picker-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    max-height: min(56dvh, 420px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+    overscroll-behavior: contain;
+  }
+
+  .v2-client-picker-row {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 11px 4px;
+    border: none;
+    border-bottom: 1px solid var(--border);
+    background: transparent;
+    color: var(--foreground);
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .v2-client-picker-row:last-child {
+    border-bottom: none;
+  }
+
+  .v2-client-picker-name {
+    min-width: 0;
+    flex: 1;
+    font-size: 14px;
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .v2-client-picker-phone {
+    flex: 0 0 auto;
+    font-size: 12.5px;
+    color: var(--muted-foreground);
+    white-space: nowrap;
+  }
+
+  :is(.v2-memberships-filter-panel, .v2-codes-filter-panel) .v2-admin-filter-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+
+  .v2-memberships-page .maintenance-section,
+  .benefit-codes-section {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+
+  .v2-memberships-page .maintenance-section > * + *,
+  .benefit-codes-section > * {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+  }
+
+  .v2-memberships-page .kani-dtoolbar,
+  .benefit-codes-section .kani-dtoolbar {
+    margin: 0 !important;
+    padding: 0 2px !important;
+    min-height: 0 !important;
+    gap: 0 !important;
+  }
+
+  .benefit-codes-section .kani-dtoolbar-actions {
+    display: none !important;
+  }
+
+  .v2-memberships-page .kani-dtoolbar-count,
+  .benefit-codes-section .kani-dtoolbar-count {
+    font-size: 12px !important;
+    line-height: 1.25 !important;
+    margin: 0 !important;
+    padding: 0 2px !important;
+  }
+
+  .v2-memberships-page .kani-dtoolbar + .kani-dgrid {
+    margin-top: 0 !important;
+  }
+
+  .v2-memberships-toolbar-row .v2-client-add-btn--desktop,
+  .v2-client-add-btn--desktop {
+    display: none !important;
   }
 }

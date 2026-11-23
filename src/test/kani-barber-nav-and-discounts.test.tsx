@@ -126,11 +126,11 @@ describe('Kani — Navegación y permisos BARBER', () => {
     cleanup();
   });
 
-  it('renders 7-section BARBER top navigation in exact order without empty slot for Inicio', async () => {
+  it('renders 6-section BARBER top navigation in exact order without Inicio or Datos', async () => {
     render(<V2Layout basePath="/panel-administracion" liquidGlass />);
 
     const nav = await screen.findByRole('navigation', { name: 'Administración' });
-    expect(nav.getAttribute('data-nav-count')).toBe('7');
+    expect(nav.getAttribute('data-nav-count')).toBe('6');
     expect(nav.getAttribute('data-nav-scrollable')).toBe('true');
 
     const links = Array.from(nav.querySelectorAll('a'));
@@ -139,23 +139,21 @@ describe('Kani — Navegación y permisos BARBER', () => {
       'Horarios',
       'Pagos',
       'Clientes',
-      'Datos',
-      'Membresías',
-      'Descuentos',
+      'Miembros',
+      'Códigos',
     ]);
     expect(links.map((l) => l.getAttribute('href'))).toEqual([
       '/panel-administracion/turnos',
       '/panel-administracion/horarios',
       '/panel-administracion/pagos',
       '/panel-administracion/clientes',
-      '/panel-administracion/datos',
       '/panel-membresias',
       '/panel-descuentos',
     ]);
     expect(nav.textContent).not.toContain('Inicio');
   });
 
-  it('keeps unified 7-section BARBER navigation even on Membresías and Descuentos routes', async () => {
+  it('keeps unified 6-section BARBER navigation even on Miembros and Códigos routes', async () => {
     mockStaffState.path = '/panel-descuentos';
     render(<V2Layout basePath="/panel-administracion" liquidGlass forcedSectionSlug="descuentos" />);
 
@@ -166,9 +164,8 @@ describe('Kani — Navegación y permisos BARBER', () => {
       'Horarios',
       'Pagos',
       'Clientes',
-      'Datos',
-      'Membresías',
-      'Descuentos',
+      'Miembros',
+      'Códigos',
     ]);
   });
 

@@ -2,16 +2,13 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, Outlet, useLocation } from "@tanstack/react-router";
 import { MotionConfig, motion, useReducedMotion } from "motion/react";
 import {
-  CalendarClock,
   CalendarDays,
   Clock3,
   CreditCard,
   Home,
-  PackageCheck,
-  Percent,
+  IdCard,
   Tag,
   Users,
-  ChartNoAxesCombined,
   RefreshCw,
 } from "lucide-react";
 import { AdminAccess } from "@/components/kani/admin-access";
@@ -31,7 +28,8 @@ const sectionDefs = [
   { slug: "horarios", title: "Horarios", icon: Clock3 },
   { slug: "pagos", title: "Pagos", icon: CreditCard },
   { slug: "clientes", title: "Clientes", icon: Users },
-  { slug: "datos", title: "Datos", icon: ChartNoAxesCombined },
+  { slug: "membresias", title: "Miembros", icon: IdCard },
+  { slug: "descuentos", title: "Códigos", icon: Tag },
 ] as const;
 
 const barberSectionDefs = [
@@ -39,9 +37,8 @@ const barberSectionDefs = [
   { slug: "horarios", title: "Horarios", icon: Clock3 },
   { slug: "pagos", title: "Pagos", icon: CreditCard },
   { slug: "clientes", title: "Clientes", icon: Users },
-  { slug: "datos", title: "Datos", icon: ChartNoAxesCombined },
-  { slug: "membresias", title: "Membresías", icon: PackageCheck },
-  { slug: "descuentos", title: "Descuentos", icon: Percent },
+  { slug: "membresias", title: "Miembros", icon: IdCard },
+  { slug: "descuentos", title: "Códigos", icon: Tag },
 ] as const;
 
 export function V2Layout({
@@ -342,7 +339,7 @@ function V2Shell({
 
   useEffect(() => {
     if (!liquidGlass || typeof window === "undefined") return;
-    const navEl = navScrollRef.current;
+    const navEl = navItemsRef.current ?? navScrollRef.current;
     if (!navEl) return;
 
     const updateCue = () => {
@@ -353,23 +350,39 @@ function V2Shell({
       });
     };
 
-    const activeEl = navEl.querySelector<HTMLElement>(`[data-nav-slug="${activeSlug}"]`);
-    if (activeEl && navEl.scrollWidth > navEl.clientWidth + 2) {
-      const maxScroll = navEl.scrollWidth - navEl.clientWidth;
-      const desiredLeft = activeEl.offsetLeft - (navEl.clientWidth - activeEl.offsetWidth) / 2;
-      const targetLeft = Math.max(0, Math.min(maxScroll, desiredLeft));
-      const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
-      if (typeof navEl.scrollTo === "function") {
-        navEl.scrollTo({ left: targetLeft, behavior: reduced ? "auto" : "smooth" });
-      } else {
-        navEl.scrollLeft = targetLeft;
-      }
-    }
+    const rafId =
+      typeof window.requestAnimationFrame === "function"
+        ? window.requestAnimationFrame(() => {
+            const activeEl = navEl.querySelector<HTMLElement>(`[data-nav-slug="${activeSlug}"]`);
+            if (activeEl && navEl.scrollWidth > navEl.clientWidth + 2) {
+              const maxScroll = navEl.scrollWidth - navEl.clientWidth;
+              const desiredLeft =
+                activeEl.offsetLeft - (navEl.clientWidth - activeEl.offsetWidth) / 2;
+              const targetLeft = Math.max(0, Math.min(maxScroll, desiredLeft));
+              const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+              if (typeof navEl.scrollTo === "function") {
+                navEl.scrollTo({ left: targetLeft, behavior: reduced ? "auto" : "smooth" });
+              } else if (typeof activeEl.scrollIntoView === "function") {
+                activeEl.scrollIntoView({
+                  inline: "center",
+                  block: "nearest",
+                  behavior: reduced ? "auto" : "smooth",
+                });
+              } else {
+                navEl.scrollLeft = targetLeft;
+              }
+            }
+            updateCue();
+          })
+        : 0;
 
     updateCue();
     navEl.addEventListener("scroll", updateCue, { passive: true });
     window.addEventListener("resize", updateCue);
     return () => {
+      if (rafId && typeof window.cancelAnimationFrame === "function") {
+        window.cancelAnimationFrame(rafId);
+      }
       navEl.removeEventListener("scroll", updateCue);
       window.removeEventListener("resize", updateCue);
     };
@@ -385,38 +398,12 @@ function V2Shell({
   }, []);
 
   const isBarber = profile.role === "BARBER";
-  const isMembershipsNav =
-    !isBarber &&
-    liquidGlass &&
-    allowedSection &&
-    (activeSlug === "membresias" || activeSlug === "descuentos");
-
-  const membershipsNavDefs = [
-    {
-      slug: "membresias",
-      to: cleanBase.includes("-old") ? `${cleanBase}/membresias` : "/panel-membresias",
-      title: "Membresías",
-      mobileTitle: "Membresías",
-      icon: PackageCheck,
-    },
-    {
-      slug: "descuentos",
-      to: cleanBase.includes("-old") ? `${cleanBase}/descuentos` : "/panel-descuentos",
-      title: "Descuentos",
-      mobileTitle: "Descuentos",
-      icon: Tag,
-    },
-    {
-      slug: "panel",
-      to: cleanBase,
-      title: "Panel de administración",
-      mobileTitle: "Administración",
-      icon: CalendarClock,
-    },
-  ] as const;
 
   const visibleMainSections = (isBarber ? barberSectionDefs : sectionDefs)
-    .filter(({ slug }) => mayAccessStaffSection(profile, slug) && (profile.role === "ADMIN" || slug !== "inicio"))
+    .filter(
+      ({ slug }) =>
+        mayAccessStaffSection(profile, slug) && (profile.role === "ADMIN" || slug !== "inicio"),
+    )
     .map((item) => {
       const to =
         item.slug === "membresias"
@@ -431,17 +418,16 @@ function V2Shell({
       return { ...item, to };
     });
 
-  const navContent = isMembershipsNav ? (
+  const navContent = (
     <nav
-      className="admin-section-nav v2-nav lg-memberships-nav"
-      data-lg-nav-variant="memberships"
+      className="admin-section-nav v2-nav"
+      data-nav-count={visibleMainSections.length}
+      data-nav-scrollable={visibleMainSections.length >= 6 ? "true" : "false"}
       ref={navScrollRef}
-      aria-label="Membresías y descuentos"
+      aria-label="Administración"
     >
       <div className="admin-section-nav-items" ref={navItemsRef}>
-        {membershipsNavDefs
-          .filter(({ slug }) => slug === "panel" || mayAccessStaffSection(profile, slug))
-          .map(({ slug, to, title, mobileTitle, icon: Icon }) => {
+        {visibleMainSections.map(({ slug, to, title, icon: Icon }) => {
           const isActive = activeSlug === slug;
           return (
             <Link
@@ -451,66 +437,21 @@ function V2Shell({
               data-nav-slug={slug}
               className={`admin-section-nav-link ${isActive ? "is-active" : ""}`.trim()}
               aria-current={isActive ? "page" : undefined}
-              aria-label={mobileTitle !== title ? title : undefined}
+              activeProps={{ className: "is-active", "aria-current": "page" }}
             >
-              {isActive && (
+              {liquidGlass && isActive && (
                 <motion.span
-                  layoutId="lg-admin-memberships-nav-pill"
+                  layoutId="lg-admin-nav-pill"
                   className="lg-admin-nav-pill"
                   aria-hidden="true"
                   transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
                 />
               )}
               <Icon size={16} aria-hidden="true" className="lg-admin-nav-icon" />
-              {mobileTitle !== title ? (
-                <>
-                  <span className="lg-admin-nav-label lg-admin-nav-label--desktop">{title}</span>
-                  <span className="lg-admin-nav-label lg-admin-nav-label--mobile" aria-hidden="true">
-                    {mobileTitle}
-                  </span>
-                </>
-              ) : (
-                <span className="lg-admin-nav-label">{title}</span>
-              )}
+              <span className="lg-admin-nav-label">{title}</span>
             </Link>
           );
         })}
-      </div>
-    </nav>
-  ) : (
-    <nav
-      className="admin-section-nav v2-nav"
-      data-nav-count={visibleMainSections.length}
-      data-nav-scrollable={visibleMainSections.length > 6 ? "true" : "false"}
-      ref={navScrollRef}
-      aria-label="Administración"
-    >
-      <div className="admin-section-nav-items" ref={navItemsRef}>
-        {visibleMainSections.map(({ slug, to, title, icon: Icon }) => {
-            const isActive = activeSlug === slug;
-            return (
-              <Link
-                key={slug}
-                to={to}
-                activeOptions={{ exact: true }}
-                data-nav-slug={slug}
-                className={`admin-section-nav-link ${isActive ? "is-active" : ""}`.trim()}
-                aria-current={isActive ? "page" : undefined}
-                activeProps={{ className: "is-active", "aria-current": "page" }}
-              >
-                {liquidGlass && isActive && (
-                  <motion.span
-                    layoutId="lg-admin-nav-pill"
-                    className="lg-admin-nav-pill"
-                    aria-hidden="true"
-                    transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
-                  />
-                )}
-                <Icon size={16} aria-hidden="true" className="lg-admin-nav-icon" />
-                <span className="lg-admin-nav-label">{title}</span>
-              </Link>
-            );
-          })}
       </div>
       {!liquidGlass && (
         <>

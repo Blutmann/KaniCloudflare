@@ -250,7 +250,7 @@ describe('BenefitCodesAdminSection Component', () => {
     });
 
     // 1. Create code
-    const generateBtn = screen.getByRole('button', { name: /Generar código/i });
+    const generateBtn = screen.getAllByRole('button', { name: /Generar código/i })[0];
     fireEvent.click(generateBtn);
 
     const submitBtn = screen.getByRole('button', { name: /Crear código/i });

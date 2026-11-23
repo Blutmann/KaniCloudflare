@@ -116,9 +116,9 @@ describe('KANI — Regresión de navegación en panel original y hamburguesa', (
     expect(nav).not.toBeNull();
 
     const links = nav!.querySelectorAll('.admin-section-nav-link');
-    expect(links).toHaveLength(6);
+    expect(links).toHaveLength(7);
 
-    const expectedSections = ['Inicio', 'Turnos', 'Horarios', 'Pagos', 'Clientes', 'Datos'];
+    const expectedSections = ['Inicio', 'Turnos', 'Horarios', 'Pagos', 'Clientes', 'Miembros', 'Códigos'];
     links.forEach((link, idx) => {
       expect(link.textContent).toContain(expectedSections[idx]);
     });
@@ -132,9 +132,9 @@ describe('KANI — Regresión de navegación en panel original y hamburguesa', (
     expect(oldNav!.querySelector('.admin-section-nav-refresh-btn')).not.toBeNull();
   });
 
-  it('2. «Descuentos» está absolutamente ausente de la barra de navegación de /panel-administracion/*', async () => {
+  it('2. La barra principal incluye Inicio, Miembros y Códigos y excluye Datos y Mantenimiento', async () => {
     state.role = 'ADMIN';
-    state.path = '/panel-administracion/inicio';
+    state.path = '/panel-administracion/turnos';
     const { container } = render(<V2Layout />);
     await screen.findByTestId('private-child');
 
@@ -142,7 +142,11 @@ describe('KANI — Regresión de navegación en panel original y hamburguesa', (
     const links = nav!.querySelectorAll('.admin-section-nav-link');
     const linkTexts = Array.from(links).map((l) => l.textContent?.trim());
 
-    expect(linkTexts).not.toContain('Descuentos');
+    expect(linkTexts).toContain('Inicio');
+    expect(linkTexts).toContain('Miembros');
+    expect(linkTexts).toContain('Códigos');
+    expect(linkTexts).not.toContain('Datos');
+    expect(linkTexts).not.toContain('Mantenimiento');
     expect(linkTexts).not.toContain('Negocio');
     expect(linkTexts).not.toContain('Operación');
   });
@@ -157,33 +161,38 @@ describe('KANI — Regresión de navegación en panel original y hamburguesa', (
     expect(v2Css).toMatch(/\.v2-nav \.admin-section-nav-link\s*\{[^}]*flex-direction:\s*column;/);
   });
 
-  it('4. Menú desplegable (hamburguesa) recupera «Membresías y descuentos» para ADMIN, MANAGER y BARBER', async () => {
+  it('4. Menú desplegable (hamburguesa) recupera «Miembros» y «Códigos» para ADMIN, MANAGER y BARBER', async () => {
     state.role = 'ADMIN';
     state.path = '/panel-administracion/inicio';
     state.menuOpen = true;
     const { unmount } = render(<SiteHeader />);
     await screen.findByText('Panel de administración');
 
-    const linkAdmin = screen.getByRole('link', { name: 'Membresías y descuentos' });
-    expect(linkAdmin).toBeInTheDocument();
-    expect(linkAdmin).toHaveAttribute('href', '/panel-membresias');
-    expect(screen.queryByRole('link', { name: /^Descuentos$/ })).toBeNull();
+    const linkAdminMiembros = screen.getByRole('link', { name: 'Miembros' });
+    expect(linkAdminMiembros).toBeInTheDocument();
+    expect(linkAdminMiembros).toHaveAttribute('href', '/panel-membresias');
+    const linkAdminCodigos = screen.getByRole('link', { name: 'Códigos' });
+    expect(linkAdminCodigos).toBeInTheDocument();
+    expect(linkAdminCodigos).toHaveAttribute('href', '/panel-descuentos');
     unmount();
 
     state.role = 'MANAGER';
     const resManager = render(<SiteHeader />);
     await screen.findByText('Panel de administración');
-    const linkManager = screen.getByRole('link', { name: 'Membresías y descuentos' });
-    expect(linkManager).toBeInTheDocument();
-    expect(linkManager).toHaveAttribute('href', '/panel-membresias');
+    const linkManagerMiembros = screen.getByRole('link', { name: 'Miembros' });
+    expect(linkManagerMiembros).toBeInTheDocument();
+    expect(linkManagerMiembros).toHaveAttribute('href', '/panel-membresias');
+    const linkManagerCodigos = screen.getByRole('link', { name: 'Códigos' });
+    expect(linkManagerCodigos).toBeInTheDocument();
+    expect(linkManagerCodigos).toHaveAttribute('href', '/panel-descuentos');
     resManager.unmount();
 
     state.role = 'BARBER';
     render(<SiteHeader />);
-    const linkBarberMembresias = await screen.findByRole('link', { name: 'Membresías' });
+    const linkBarberMembresias = await screen.findByRole('link', { name: 'Miembros' });
     expect(linkBarberMembresias).toBeInTheDocument();
     expect(linkBarberMembresias).toHaveAttribute('href', '/panel-membresias');
-    const linkBarberDescuentos = screen.getByRole('link', { name: 'Descuentos' });
+    const linkBarberDescuentos = screen.getByRole('link', { name: 'Códigos' });
     expect(linkBarberDescuentos).toBeInTheDocument();
     expect(linkBarberDescuentos).toHaveAttribute('href', '/panel-descuentos');
     expect(screen.queryByText('Panel de administración')).toBeNull();
@@ -212,7 +221,7 @@ describe('KANI — Regresión de navegación en panel original y hamburguesa', (
     expect(screen.getByRole('tab', { name: 'Descuentos' })).toBeInTheDocument();
     expect(screen.getByText('Membresías activas')).toBeInTheDocument();
     expect(screen.getByText('Sesiones restantes')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Nueva membresía/i })).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /Nueva membresía/i })[0]).toBeInTheDocument();
     unmount();
   });
 
@@ -340,5 +349,59 @@ describe('KANI — Regresión de navegación en panel original y hamburguesa', (
     if (typeof window !== 'undefined' && window.localStorage) {
       expect(window.localStorage.getItem('kani_client_memberships_fallback_v1')).toBeNull();
     }
+  });
+
+  it('12. /panel-membresias usa la barra única de 7 ítems para ADMIN sin segunda barra apilada + Resumen colapsable', async () => {
+    state.role = 'ADMIN';
+    state.path = '/panel-membresias';
+    const { container, unmount } = render(<V2Layout />);
+    await screen.findByTestId('private-child');
+
+    const mainNav = container.querySelector('nav.admin-section-nav');
+    expect(mainNav).not.toBeNull();
+    const links = mainNav!.querySelectorAll('.admin-section-nav-link');
+    expect(links).toHaveLength(7);
+    expect(Array.from(links).map((l) => l.textContent?.trim())).toEqual([
+      'Inicio',
+      'Turnos',
+      'Horarios',
+      'Pagos',
+      'Clientes',
+      'Miembros',
+      'Códigos',
+    ]);
+    expect(container.querySelector('.v2-memberships-subswitch')).toBeNull();
+    unmount();
+
+    state.role = 'BARBER';
+    state.path = '/panel-administracion/turnos';
+    const barberView = render(<V2Layout />);
+    await screen.findByTestId('private-child');
+    const barberNav = barberView.container.querySelector('nav.admin-section-nav');
+    expect(barberNav).not.toBeNull();
+    expect(barberNav).toHaveAttribute('data-nav-scrollable', 'true');
+    const barberLinks = barberNav!.querySelectorAll('.admin-section-nav-link');
+    expect(barberLinks).toHaveLength(6);
+    expect(Array.from(barberLinks).map((l) => l.textContent?.trim())).toEqual([
+      'Turnos',
+      'Horarios',
+      'Pagos',
+      'Clientes',
+      'Miembros',
+      'Códigos',
+    ]);
+    barberView.unmount();
+
+    const mView = render(<V2MembershipsAndDiscounts initialTab="MEMBRESIAS" hideHeaderBlock />);
+    const toggle = mView.container.querySelector('.v2-memberships-summary-toggle');
+    const breakdown = mView.container.querySelector('#v2-memberships-summary-breakdown');
+    expect(toggle).not.toBeNull();
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect(breakdown).not.toHaveClass('is-open');
+
+    fireEvent.click(toggle!);
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    expect(breakdown).toHaveClass('is-open');
+    mView.unmount();
   });
 });

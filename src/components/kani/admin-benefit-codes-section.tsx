@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import {
   AlertCircle,
   AlertTriangle,
+  ArrowUpDown,
   Ban,
   Calendar,
   Check,
@@ -40,7 +41,10 @@ import {
   KaniModalClose,
 } from '@/components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { AdminFilterCell, AdminFilterPanel } from '@/components/kani/v2/admin-filter-panel';
 import { supabase } from '@/integrations/supabase/client';
+import { useAdminStaff } from '@/lib/kani-admin-context';
+import { mayManageDiscounts } from '@/lib/kani-permissions';
 import {
   BENEFIT_TYPE_DEFINITIONS,
   BENEFIT_USAGE_MODE_DEFINITIONS,
@@ -61,6 +65,7 @@ import {
   adminCreateBenefitCodeFn,
   adminDeleteBenefitCodeFn,
   adminDisableBenefitCodeFn,
+  staffListBenefitCodesReadOnlyFn,
   adminListBenefitCodesFn,
   adminToggleBenefitCodeStatusFn,
   adminUpdateBenefitCodeValidityFn,
@@ -149,6 +154,13 @@ function getCompactValidityText(item: BenefitCodeItem): string {
 }
 
 export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?: boolean } = {}) {
+  let staffCtx: ReturnType<typeof useAdminStaff> | null = null;
+  try {
+    staffCtx = useAdminStaff();
+  } catch {
+    staffCtx = null;
+  }
+  const canManageCodes = staffCtx?.profile ? mayManageDiscounts(staffCtx.profile) : true;
   const [items, setItems] = useState<BenefitCodeItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -203,6 +215,7 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
 
   // Copy indicator & single-instance bottom toast
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [showSummary, setShowSummary] = useState(false);
   const [toastState, setToastState] = useState<{
     text: string;
     variant: 'success' | 'error';
@@ -240,9 +253,13 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
       } catch {
         // Fallback seguro si se ejecuta en SSR o entorno sin storage
       }
-      const res = await adminListBenefitCodesFn({
-        data: { token, includeDeleted: true },
-      });
+      const res = canManageCodes
+        ? await adminListBenefitCodesFn({
+            data: { token, includeDeleted: true },
+          })
+        : await staffListBenefitCodesReadOnlyFn({
+            data: { token },
+          });
       // Asegurar estados calculados homogéneos
       const processed = (res || []).map((it) => ({
         ...it,
@@ -528,6 +545,11 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
     };
   }, [items]);
 
+  const totalUses = useMemo(
+    () => items.reduce((acc, item) => acc + (item.timesUsed ?? item.usages?.length ?? 0), 0),
+    [items]
+  );
+
   const filteredAndSortedItems = useMemo(() => {
     // 1. Filtrar por estado y término de búsqueda
     const filtered = items.filter((item) => {
@@ -582,7 +604,7 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
 
   return (
     <section
-      className="maintenance-section w-full p-5 sm:p-6 rounded-[var(--radius-card)] border border-border bg-card space-y-5"
+      className={`maintenance-section benefit-codes-section w-full p-5 sm:p-6 rounded-[var(--radius-card)] border border-border bg-card ${hideHeading ? 'flex flex-col gap-2.5' : 'space-y-5'}`}
       aria-labelledby={hideHeading ? undefined : 'discounts-title'}
       aria-label={hideHeading ? 'Códigos de descuento y beneficio' : undefined}
     >
@@ -612,14 +634,16 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
               <RefreshCw size={14} className={loading ? 'animate-spin shrink-0' : 'shrink-0'} />
               <span className="hidden sm:inline">Actualizar</span>
             </Button>
-            <Button
-              size="sm"
-              onClick={openCreateDialog}
-              className="action-brand kani-dtoolbar-generate-btn min-h-[38px] text-xs font-semibold"
-            >
-              <Plus size={16} className="shrink-0" />
-              <span>Generar código</span>
-            </Button>
+            {canManageCodes && (
+              <Button
+                size="sm"
+                onClick={openCreateDialog}
+                className="action-brand kani-dtoolbar-generate-btn v2-client-add-btn--desktop min-h-[38px] text-xs font-semibold"
+              >
+                <Plus size={16} className="shrink-0" />
+                <span>Generar código</span>
+              </Button>
+            )}
           </div>
         </div>
       )}
@@ -649,13 +673,101 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
         </div>
       ) : (
         <>
-          {/* Barra de herramientas: Buscador + Filtro Estado + Orden */}
-          <div className="kani-dfilters flex flex-col lg:flex-row items-stretch lg:items-end gap-3 w-full">
-            {/* Buscador de texto */}
-            <div className="flex-1 min-w-0">
-              <label htmlFor="benefit-search" className="block text-xs font-medium text-muted-foreground mb-1.5">
-                Buscar código o cliente
-              </label>
+          {/* Tarjeta unificada Resumen + Filtros idéntica a Miembros */}
+          <section className="v2-panel v2-memberships-unified-card" aria-label="Resumen y filtros de códigos">
+            <div className="v2-memberships-summary-card">
+              <button
+                type="button"
+                className="v2-memberships-summary-toggle"
+                aria-expanded={showSummary}
+                aria-controls="v2-codes-summary-breakdown"
+                onClick={() => setShowSummary((prev) => !prev)}
+              >
+                <span className="v2-memberships-summary-eyebrow">Resumen</span>
+                <span className="v2-memberships-summary-meta">
+                  <strong className="v2-memberships-summary-highlight">
+                    {statusCounts.ACTIVE} {statusCounts.ACTIVE === 1 ? 'activo' : 'activos'} · {totalUses}{' '}
+                    {totalUses === 1 ? 'uso' : 'usos'}
+                  </strong>
+                  <span className="v2-memberships-summary-chevron" aria-hidden="true">
+                    {showSummary ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                  </span>
+                </span>
+              </button>
+              <div
+                id="v2-codes-summary-breakdown"
+                className={`v2-memberships-summary-breakdown ${showSummary ? 'is-open' : ''}`}
+              >
+                <div className="v2-memberships-summary-metric">
+                  <span>Activos</span>
+                  <strong>{statusCounts.ACTIVE}</strong>
+                </div>
+                <div className="v2-memberships-summary-metric">
+                  <span>Desactivados</span>
+                  <strong>{statusCounts.DISABLED}</strong>
+                </div>
+                <div className="v2-memberships-summary-metric">
+                  <span>Eliminados</span>
+                  <strong>{statusCounts.DELETED}</strong>
+                </div>
+                <div className="v2-memberships-summary-metric">
+                  <span>Usos totales</span>
+                  <strong>{totalUses}</strong>
+                </div>
+              </div>
+            </div>
+
+            <div className="v2-memberships-card-divider" aria-hidden="true" />
+
+            <AdminFilterPanel
+              ariaLabel="Filtros de códigos de beneficio"
+              className="v2-codes-filter-panel v2-memberships-filter-panel--embedded"
+              mobileExpanded={false}
+            mobileQuickBar={
+              <>
+                <div className="v2-quickbar-chips" role="group" aria-label="Estados rápidos de códigos">
+                  <button
+                    type="button"
+                    className={`v2-quickbar-chip${statusFilter === 'ALL' ? ' is-active' : ''}`}
+                    aria-pressed={statusFilter === 'ALL'}
+                    onClick={() => setStatusFilter('ALL')}
+                  >
+                    Todos
+                  </button>
+                  <button
+                    type="button"
+                    className={`v2-quickbar-chip${statusFilter === 'ACTIVE' ? ' is-active' : ''}`}
+                    aria-pressed={statusFilter === 'ACTIVE'}
+                    onClick={() => setStatusFilter('ACTIVE')}
+                  >
+                    Activos
+                  </button>
+                  <button
+                    type="button"
+                    className={`v2-quickbar-chip${statusFilter === 'DISABLED' ? ' is-active' : ''}`}
+                    aria-pressed={statusFilter === 'DISABLED'}
+                    onClick={() => setStatusFilter('DISABLED')}
+                  >
+                    Desactivados
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  className="v2-filter-toggle-btn v2-memberships-sort-btn"
+                  aria-label={`Ordenar por ${sortBy === 'OLDEST' ? 'nuevos' : 'viejos'}`}
+                  onClick={() => setSortBy((prev) => (prev === 'OLDEST' ? 'RECENT' : 'OLDEST'))}
+                >
+                  <ArrowUpDown size={13} aria-hidden="true" />
+                  <span>{sortBy === 'OLDEST' ? 'Viejos' : 'Nuevos'}</span>
+                </button>
+              </>
+            }
+          >
+            <AdminFilterCell
+              label="Buscar código o cliente"
+              htmlFor="benefit-search"
+              className="v2-codes-search-cell v2-codes-desktop-only"
+            >
               <div className="relative">
                 <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
                 <Input
@@ -666,17 +778,13 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                   className="pl-8 text-xs h-10 w-full bg-background"
                 />
               </div>
-            </div>
+            </AdminFilterCell>
 
-            {/* Selector de Estado */}
-            <div className="w-full lg:w-56 shrink-0">
-              <label htmlFor="benefit-status-filter" className="block text-xs font-medium text-muted-foreground mb-1.5">
-                Estado
-              </label>
+            <AdminFilterCell label="Estado" htmlFor="benefit-status-filter" className="v2-codes-desktop-only">
               <select
                 id="benefit-status-filter"
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as any)}
+                onChange={(e) => setStatusFilter(e.target.value as 'ALL' | BenefitCodeStatus)}
                 className="h-10 w-full px-3 text-xs bg-background border border-input rounded-md text-foreground focus:outline-none focus:ring-1 focus:ring-gold"
               >
                 <option value="ALL">Todos ({statusCounts.ALL})</option>
@@ -687,13 +795,9 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                 <option value="CONSUMED">Consumidos ({statusCounts.CONSUMED})</option>
                 <option value="DELETED">Eliminados ({statusCounts.DELETED})</option>
               </select>
-            </div>
+            </AdminFilterCell>
 
-            {/* Selector Ordenar por */}
-            <div className="w-full lg:w-48 shrink-0">
-              <label htmlFor="benefit-sort-order" className="block text-xs font-medium text-muted-foreground mb-1.5">
-                Ordenar por
-              </label>
+            <AdminFilterCell label="Ordenar por" htmlFor="benefit-sort-order" className="v2-codes-desktop-only">
               <select
                 id="benefit-sort-order"
                 value={sortBy}
@@ -701,13 +805,14 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                 className="h-10 w-full px-3 text-xs bg-background border border-input rounded-md text-foreground focus:outline-none focus:ring-1 focus:ring-gold"
               >
                 <option value="RECENT">Más recientes</option>
-                <option value="OLDEST">Más antiguos</option>
-                <option value="CODE_ASC">Nombre A-Z</option>
-                <option value="CODE_DESC">Nombre Z-A</option>
                 <option value="MOST_USED">Más utilizados</option>
+                <option value="CODE_ASC">Nombre A-Z</option>
+                <option value="OLDEST">Más antiguos</option>
+                <option value="CODE_DESC">Nombre Z-A</option>
               </select>
-            </div>
-          </div>
+            </AdminFilterCell>
+          </AdminFilterPanel>
+          </section>
 
           {/* Barra compacta de resultados y acciones principales (estilo Membresías) */}
           {hideHeading && (
@@ -729,14 +834,16 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                   <RefreshCw size={14} className={loading ? 'animate-spin shrink-0' : 'shrink-0'} />
                   <span>Actualizar</span>
                 </Button>
-                <Button
-                  size="sm"
-                  onClick={openCreateDialog}
-                  className="action-brand kani-dtoolbar-generate-btn min-h-[38px] text-xs font-semibold"
-                >
-                  <Plus size={16} className="shrink-0" />
-                  <span>Generar código</span>
-                </Button>
+                {canManageCodes && (
+                  <Button
+                    size="sm"
+                    onClick={openCreateDialog}
+                    className="action-brand kani-dtoolbar-generate-btn v2-client-add-btn--desktop min-h-[38px] text-xs font-semibold"
+                  >
+                    <Plus size={16} className="shrink-0" />
+                    <span>Generar código</span>
+                  </Button>
+                )}
               </div>
             </div>
           )}
@@ -833,7 +940,7 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                         </p>
                       </div>
                       <div className="kani-dcard-top-actions">
-                        {status !== 'DELETED' && isReusable && (
+                        {canManageCodes && status !== 'DELETED' && isReusable && (
                           <button
                             type="button"
                             className="v2-secondary kani-dcard-btn-edit-compact"
@@ -872,7 +979,8 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                     {/* Bloque inferior: Acciones principales 50/50 (Info | Activar/Desactivar) */}
                     {(() => {
                       const hasToggle =
-                        status === 'ACTIVE' || status === 'SCHEDULED' || status === 'DISABLED';
+                        canManageCodes &&
+                        (status === 'ACTIVE' || status === 'SCHEDULED' || status === 'DISABLED');
                       const isSwitchOn = status === 'ACTIVE' || status === 'SCHEDULED';
                       const isSwitchBusy = togglingCodeIds.has(item.id);
                       const actionLabel = isSwitchOn ? 'Desactivar' : 'Activar';
@@ -1179,7 +1287,7 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                           )}
                         </section>
 
-                        {status !== 'DELETED' && (
+                        {canManageCodes && status !== 'DELETED' && (
                           <div className="kani-dcard-details-danger">
                             <button
                               type="button"
@@ -1745,6 +1853,22 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
               document.body
             )
           : null)}
+      {!error && canManageCodes && (
+        <div
+          className="v2-client-sticky-bar v2-mobile-sticky-cta"
+          role="region"
+          aria-label="Acciones de códigos"
+        >
+          <button
+            type="button"
+            onClick={openCreateDialog}
+            className="v2-primary v2-client-add-btn v2-client-add-btn--mobile"
+          >
+            <Plus size={17} aria-hidden="true" />
+            <span>Generar código</span>
+          </button>
+        </div>
+      )}
     </section>
   );
 }
