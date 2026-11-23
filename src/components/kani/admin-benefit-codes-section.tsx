@@ -695,7 +695,7 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                   aria-pressed={statusFilter === 'DISABLED'}
                   onClick={() => setStatusFilter('DISABLED')}
                 >
-                  Desact.
+                  Desactivados
                 </button>
                 <button
                   type="button"

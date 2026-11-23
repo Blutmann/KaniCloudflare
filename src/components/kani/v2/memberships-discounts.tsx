@@ -622,7 +622,7 @@ export function V2MembershipsAndDiscounts({
                     </div>
                     <button
                       type="button"
-                      className="v2-filter-toggle-btn"
+                      className="v2-filter-toggle-btn v2-memberships-sort-btn"
                       aria-label={`Ordenar por ${sortOrder === "NEWEST" ? "viejas" : "nuevas"}`}
                       onClick={() => setSortOrder((prev) => (prev === "NEWEST" ? "OLDEST" : "NEWEST"))}
                     >

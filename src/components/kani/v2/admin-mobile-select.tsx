@@ -1,6 +1,5 @@
 import * as React from "react";
 import { Check, ChevronDown, Search, UserRound } from "lucide-react";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -45,6 +44,7 @@ export function AdminClientCombobox({
   const [query, setQuery] = React.useState("");
   const [activeIndex, setActiveIndex] = React.useState(0);
   const listboxId = React.useId();
+  const containerRef = React.useRef<HTMLDivElement>(null);
   const searchInputRef = React.useRef<HTMLInputElement>(null);
 
   const selectedClient = React.useMemo(
@@ -78,7 +78,16 @@ export function AdminClientCombobox({
     const timer = window.setTimeout(() => {
       searchInputRef.current?.focus({ preventScroll: true });
     }, 30);
-    return () => window.clearTimeout(timer);
+    const handlePointerDown = (event: PointerEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => {
+      window.clearTimeout(timer);
+      document.removeEventListener("pointerdown", handlePointerDown);
+    };
   }, [open]);
 
   const handleSelect = (clientId: string) => {
@@ -111,7 +120,7 @@ export function AdminClientCombobox({
   };
 
   return (
-    <div className="relative min-w-0 w-full">
+    <div ref={containerRef} className="relative min-w-0 w-full">
       {required && (
         <input
           tabIndex={-1}
@@ -122,38 +131,32 @@ export function AdminClientCombobox({
           className="sr-only"
         />
       )}
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <button
-            id={id}
-            type="button"
-            role="combobox"
-            aria-expanded={open}
-            aria-controls={listboxId}
-            aria-label={ariaLabel}
-            disabled={disabled}
-            className={cn(
-              "v2-admin-select-trigger flex h-[44px] min-h-[44px] w-full min-w-0 max-w-full items-center justify-between gap-2.5 overflow-hidden rounded-[var(--v2-radius-btn,12px)] border border-input bg-background px-3 py-0 text-left text-[14px] leading-none text-foreground shadow-xs transition-colors focus:outline-none focus:ring-1 focus:ring-gold disabled:cursor-not-allowed disabled:opacity-50",
-              !selectedClient && "text-muted-foreground",
-            )}
-          >
-            <span className="flex min-w-0 flex-1 items-center gap-2.5 overflow-hidden text-left">
-              <UserRound size={16} className="shrink-0 text-gold" aria-hidden="true" />
-              <span className="block min-w-0 flex-1 truncate leading-[1.35]">
-                {selectedClient
-                  ? `${selectedClient.name}${selectedClient.phone ? ` (${selectedClient.phone})` : ""}`
-                  : placeholder}
-              </span>
-            </span>
-            <ChevronDown size={16} className="ml-1 shrink-0 opacity-60" aria-hidden="true" />
-          </button>
-        </PopoverTrigger>
-        <PopoverContent
-          align="start"
-          sideOffset={6}
-          collisionPadding={12}
-          className="v2-admin-combobox-popover w-[var(--radix-popover-trigger-width)] min-w-[260px] max-w-[calc(100vw-24px)] p-0 overflow-hidden"
-        >
+      <button
+        id={id}
+        type="button"
+        role="combobox"
+        aria-expanded={open}
+        aria-controls={listboxId}
+        aria-label={ariaLabel}
+        disabled={disabled}
+        onClick={() => !disabled && setOpen((prev) => !prev)}
+        className={cn(
+          "v2-admin-select-trigger flex h-[44px] min-h-[44px] w-full min-w-0 max-w-full items-center justify-between gap-2.5 overflow-hidden rounded-[var(--v2-radius-btn,12px)] border border-input bg-background px-3 py-0 text-left text-[14px] leading-none text-foreground shadow-xs transition-colors focus:outline-none focus:ring-1 focus:ring-gold disabled:cursor-not-allowed disabled:opacity-50",
+          !selectedClient && "text-muted-foreground",
+        )}
+      >
+        <span className="flex min-w-0 flex-1 items-center gap-2.5 overflow-hidden text-left">
+          <UserRound size={16} className="shrink-0 text-gold" aria-hidden="true" />
+          <span className="block min-w-0 flex-1 truncate leading-[1.35]">
+            {selectedClient
+              ? `${selectedClient.name}${selectedClient.phone ? ` (${selectedClient.phone})` : ""}`
+              : placeholder}
+          </span>
+        </span>
+        <ChevronDown size={16} className="ml-1 shrink-0 opacity-60" aria-hidden="true" />
+      </button>
+      {open && (
+        <div className="v2-admin-combobox-popover relative mt-1.5 w-full overflow-hidden rounded-md border border-border bg-popover text-popover-foreground shadow-md">
           <div className="flex items-center gap-2 border-b border-border/70 px-3 py-2">
             <Search size={15} className="shrink-0 text-muted-foreground" aria-hidden="true" />
             <input
@@ -177,7 +180,8 @@ export function AdminClientCombobox({
             id={listboxId}
             role="listbox"
             aria-label="Clientes"
-            className="max-h-[min(220px,36dvh)] overflow-y-auto overscroll-contain p-1"
+            className="v2-admin-combobox-list max-h-[190px] overflow-y-auto overscroll-contain p-1"
+            style={{ WebkitOverflowScrolling: "touch", touchAction: "pan-y" }}
           >
             {filteredClients.length === 0 ? (
               <li className="px-3 py-4 text-center text-xs text-muted-foreground">
@@ -224,8 +228,8 @@ export function AdminClientCombobox({
               })
             )}
           </ul>
-        </PopoverContent>
-      </Popover>
+        </div>
+      )}
     </div>
   );
 }

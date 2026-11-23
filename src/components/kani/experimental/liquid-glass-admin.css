@@ -3066,24 +3066,47 @@ html[data-theme] body[data-lg-admin="true"] .v2-memberships-count {
     box-sizing: border-box !important;
   }
 
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-sort-btn {
+    min-width: 88px !important;
+    justify-content: center !important;
+    text-align: center !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-admin-combobox-list {
+    max-height: 190px !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y !important;
+    overscroll-behavior: contain !important;
+  }
+
   html[data-theme] body[data-lg-admin="true"] .v2-codes-quickbar-4 {
-    display: grid !important;
-    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-    gap: 4px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 2px !important;
     width: 100% !important;
     min-width: 0 !important;
   }
 
   html[data-theme] body[data-lg-admin="true"] .v2-codes-quickbar-4 .v2-quickbar-chip {
-    width: 100% !important;
+    flex: 0 1 auto !important;
+    width: auto !important;
     min-width: 0 !important;
-    padding: 6px 4px !important;
+    padding: 6px 7px !important;
     font-size: 11px !important;
+    white-space: nowrap !important;
+    background: transparent !important;
+    border: 1px solid transparent !important;
     justify-content: center !important;
     text-align: center !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-codes-quickbar-4 .v2-quickbar-chip.is-active,
+  html[data-theme] body[data-lg-admin="true"] .v2-codes-quickbar-4 .v2-quickbar-chip[aria-pressed="true"] {
+    background: var(--lga-accent-pill) !important;
+    border: 1px solid var(--lga-border-accent) !important;
+    color: var(--lga-text) !important;
   }
 
   html[data-theme] body[data-lg-admin="true"] :is(.v2-memberships-filter-panel, .v2-codes-filter-panel) .v2-admin-filter-grid {

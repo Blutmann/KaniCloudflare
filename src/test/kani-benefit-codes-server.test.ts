@@ -151,8 +151,8 @@ describe('kani-benefit-codes.server — BARBER read-only & ADMIN-only mutations'
     const result = await staffListBenefitCodesReadOnly('tok-barber');
 
     expect(mockUserRpc).not.toHaveBeenCalled();
-    expect(result).toHaveLength(2);
-    expect(result.map((r) => r.code)).toEqual(['KANI10', 'KANI50']);
+    expect(result).toHaveLength(3);
+    expect(result.map((r) => r.code)).toEqual(['KANI10', 'KANI50', 'KANIDEL']);
     expect(result[0].timesUsed).toBe(1);
     expect(result[0].usages).toHaveLength(1);
     expect(result[0].usages[0].clientName).toBe('Marcos Díaz');

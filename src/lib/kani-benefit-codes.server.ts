@@ -595,8 +595,7 @@ export async function staffListBenefitCodesReadOnly(authToken?: string): Promise
         timesUsed: effectiveUsages.length > 0 ? effectiveUsages.length : normalized.timesUsed,
         times_used: effectiveUsages.length > 0 ? effectiveUsages.length : normalized.timesUsed,
       };
-    })
-    .filter((item) => !item.deletedAt);
+    });
 }
 
 /**
