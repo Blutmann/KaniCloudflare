@@ -41,6 +41,8 @@ import {
 } from '@/components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { supabase } from '@/integrations/supabase/client';
+import { useAdminStaff } from '@/lib/kani-admin-context';
+import { mayManageDiscounts } from '@/lib/kani-permissions';
 import {
   BENEFIT_TYPE_DEFINITIONS,
   BENEFIT_USAGE_MODE_DEFINITIONS,
@@ -149,6 +151,13 @@ function getCompactValidityText(item: BenefitCodeItem): string {
 }
 
 export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?: boolean } = {}) {
+  let staffCtx: ReturnType<typeof useAdminStaff> | null = null;
+  try {
+    staffCtx = useAdminStaff();
+  } catch {
+    staffCtx = null;
+  }
+  const canManageCodes = staffCtx?.profile ? mayManageDiscounts(staffCtx.profile) : true;
   const [items, setItems] = useState<BenefitCodeItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -612,14 +621,16 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
               <RefreshCw size={14} className={loading ? 'animate-spin shrink-0' : 'shrink-0'} />
               <span className="hidden sm:inline">Actualizar</span>
             </Button>
-            <Button
-              size="sm"
-              onClick={openCreateDialog}
-              className="action-brand kani-dtoolbar-generate-btn v2-client-add-btn--desktop min-h-[38px] text-xs font-semibold"
-            >
-              <Plus size={16} className="shrink-0" />
-              <span>Generar código</span>
-            </Button>
+            {canManageCodes && (
+              <Button
+                size="sm"
+                onClick={openCreateDialog}
+                className="action-brand kani-dtoolbar-generate-btn v2-client-add-btn--desktop min-h-[38px] text-xs font-semibold"
+              >
+                <Plus size={16} className="shrink-0" />
+                <span>Generar código</span>
+              </Button>
+            )}
           </div>
         </div>
       )}
@@ -729,14 +740,16 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                   <RefreshCw size={14} className={loading ? 'animate-spin shrink-0' : 'shrink-0'} />
                   <span>Actualizar</span>
                 </Button>
-                <Button
-                  size="sm"
-                  onClick={openCreateDialog}
-                  className="action-brand kani-dtoolbar-generate-btn min-h-[38px] text-xs font-semibold"
-                >
-                  <Plus size={16} className="shrink-0" />
-                  <span>Generar código</span>
-                </Button>
+                {canManageCodes && (
+                  <Button
+                    size="sm"
+                    onClick={openCreateDialog}
+                    className="action-brand kani-dtoolbar-generate-btn min-h-[38px] text-xs font-semibold"
+                  >
+                    <Plus size={16} className="shrink-0" />
+                    <span>Generar código</span>
+                  </Button>
+                )}
               </div>
             </div>
           )}
@@ -833,7 +846,7 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                         </p>
                       </div>
                       <div className="kani-dcard-top-actions">
-                        {status !== 'DELETED' && isReusable && (
+                        {canManageCodes && status !== 'DELETED' && isReusable && (
                           <button
                             type="button"
                             className="v2-secondary kani-dcard-btn-edit-compact"
@@ -872,7 +885,8 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                     {/* Bloque inferior: Acciones principales 50/50 (Info | Activar/Desactivar) */}
                     {(() => {
                       const hasToggle =
-                        status === 'ACTIVE' || status === 'SCHEDULED' || status === 'DISABLED';
+                        canManageCodes &&
+                        (status === 'ACTIVE' || status === 'SCHEDULED' || status === 'DISABLED');
                       const isSwitchOn = status === 'ACTIVE' || status === 'SCHEDULED';
                       const isSwitchBusy = togglingCodeIds.has(item.id);
                       const actionLabel = isSwitchOn ? 'Desactivar' : 'Activar';
@@ -1179,7 +1193,7 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                           )}
                         </section>
 
-                        {status !== 'DELETED' && (
+                        {canManageCodes && status !== 'DELETED' && (
                           <div className="kani-dcard-details-danger">
                             <button
                               type="button"
@@ -1745,7 +1759,7 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
               document.body
             )
           : null)}
-      {!error && (
+      {!error && canManageCodes && (
         <div
           className="v2-client-sticky-bar v2-mobile-sticky-cta"
           role="region"

@@ -373,6 +373,25 @@ describe('KANI — Regresión de navegación en panel original y hamburguesa', (
     expect(container.querySelector('.v2-memberships-subswitch')).toBeNull();
     unmount();
 
+    state.role = 'BARBER';
+    state.path = '/panel-administracion/turnos';
+    const barberView = render(<V2Layout />);
+    await screen.findByTestId('private-child');
+    const barberNav = barberView.container.querySelector('nav.admin-section-nav');
+    expect(barberNav).not.toBeNull();
+    expect(barberNav).toHaveAttribute('data-nav-scrollable', 'true');
+    const barberLinks = barberNav!.querySelectorAll('.admin-section-nav-link');
+    expect(barberLinks).toHaveLength(6);
+    expect(Array.from(barberLinks).map((l) => l.textContent?.trim())).toEqual([
+      'Turnos',
+      'Horarios',
+      'Pagos',
+      'Clientes',
+      'Miembros',
+      'Códigos',
+    ]);
+    barberView.unmount();
+
     const mView = render(<V2MembershipsAndDiscounts initialTab="MEMBRESIAS" hideHeaderBlock />);
     const toggle = mView.container.querySelector('.v2-memberships-summary-toggle');
     const breakdown = mView.container.querySelector('#v2-memberships-summary-breakdown');

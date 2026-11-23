@@ -22,7 +22,7 @@ vi.mock("@/integrations/supabase/client", () => ({
 
 vi.mock("@/lib/kani-admin-context", () => ({
   useAdminStaff: () => ({
-    profile: { id: "admin-1", displayName: "Admin", role: "ADMIN", barber_id: "lautaro" },
+    profile: { id: "admin-1", displayName: "Admin", role: "ADMIN", barber_id: null },
     barbers: [
       { id: "lautaro", name: "Lautaro" },
       { id: "gonzalo", name: "Gonzalo" },

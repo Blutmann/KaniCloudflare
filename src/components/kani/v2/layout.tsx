@@ -37,6 +37,8 @@ const barberSectionDefs = [
   { slug: "horarios", title: "Horarios", icon: Clock3 },
   { slug: "pagos", title: "Pagos", icon: CreditCard },
   { slug: "clientes", title: "Clientes", icon: Users },
+  { slug: "membresias", title: "Miembros", icon: IdCard },
+  { slug: "descuentos", title: "Códigos", icon: Tag },
 ] as const;
 
 export function V2Layout({
