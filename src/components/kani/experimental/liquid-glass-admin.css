@@ -4689,5 +4689,43 @@ html[data-theme] body[data-lg-admin="true"] [role="dialog"].v2-membership-create
   inset: -2px 0;
 }
 
+/* ==============================================================================
+ * RITMO VERTICAL UNIFICADO PARA TODAS LAS SECCIONES DE V2Layout (Mobile y Desktop)
+ * - 12px entre .v2-navigation y el primer bloque en móvil (<1024px)
+ * - 14px entre .v2-navigation y el primer bloque en desktop (>=1024px)
+ * - 10px–12px de separación uniforme entre tarjetas hermanas
+ * ============================================================================== */
+html[data-theme] body[data-lg-admin="true"] .v2-navigation {
+  margin-bottom: 12px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-page {
+  padding-top: 0 !important;
+  margin-top: 0 !important;
+  gap: 10px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-page.v2-payments-page {
+  gap: 8px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-page :is(.v2-hero-grid, .v2-chart-grid, .v2-appointments-list, .v2-clients-list, .v2-insights-grid) {
+  gap: 10px !important;
+}
+
+@media (min-width: 1024px) {
+  html[data-theme] body[data-lg-admin="true"] .v2-navigation {
+    margin-bottom: 14px !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-page {
+    gap: 12px !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-page :is(.v2-hero-grid, .v2-chart-grid, .v2-appointments-list, .v2-clients-list, .v2-insights-grid) {
+    gap: 12px !important;
+  }
+}
+
 
 
