@@ -5516,22 +5516,41 @@ html[data-theme] body[data-lg-admin="true"] .benefit-codes-section .v2-quickbar-
 }
 
 html[data-theme="light"] body[data-lg-admin="true"] [role="dialog"] .v2-client-picker-search-wrap > input,
-html[data-theme="dark"] body[data-lg-admin="true"] [role="dialog"] .v2-client-picker-search-wrap > input {
+html[data-theme="light"] body[data-lg-admin="true"] [role="dialog"] .v2-client-picker-search-wrap > input:hover,
+html[data-theme="light"] body[data-lg-admin="true"] [role="dialog"] .v2-client-picker-search-wrap > input:focus,
+html[data-theme="light"] body[data-lg-admin="true"] [role="dialog"] .v2-client-picker-search-wrap > input:focus-visible,
+html[data-theme="dark"] body[data-lg-admin="true"] [role="dialog"] .v2-client-picker-search-wrap > input,
+html[data-theme="dark"] body[data-lg-admin="true"] [role="dialog"] .v2-client-picker-search-wrap > input:hover,
+html[data-theme="dark"] body[data-lg-admin="true"] [role="dialog"] .v2-client-picker-search-wrap > input:focus,
+html[data-theme="dark"] body[data-lg-admin="true"] [role="dialog"] .v2-client-picker-search-wrap > input:focus-visible {
   border: none !important;
   background: transparent !important;
   background-color: transparent !important;
   box-shadow: none !important;
   outline: none !important;
   border-radius: 0 !important;
+  min-height: 0 !important;
+  height: auto !important;
+  padding: 0 !important;
+  -webkit-appearance: none !important;
+  appearance: none !important;
 }
 
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] .v2-client-picker-search-wrap:focus-within {
+  border-color: var(--lga-border-accent) !important;
+  box-shadow: 0 0 0 3px rgba(200, 169, 107, 0.18) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] [data-slot="dialog-content"].kani-modal-shell .v2-form.v2-client-picker-create-form,
 html[data-theme] body[data-lg-admin="true"] [role="dialog"] .v2-client-picker-create-form {
   display: flex !important;
   flex-direction: column !important;
   gap: 14px !important;
   padding-top: 4px !important;
+  overflow: visible !important;
 }
 
+html[data-theme] body[data-lg-admin="true"] [data-slot="dialog-content"].kani-modal-shell .v2-form.v2-client-picker-create-form > label,
 html[data-theme] body[data-lg-admin="true"] [role="dialog"] .v2-client-picker-create-form > label {
   display: flex !important;
   flex-direction: column !important;
@@ -5548,4 +5567,23 @@ html[data-theme] body[data-lg-admin="true"] .benefit-codes-section {
 html[data-theme] body[data-lg-admin="true"] .benefit-codes-section > * {
   margin-top: 0 !important;
   margin-bottom: 0 !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-unified-card .v2-admin-filter-panel,
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-unified-card .v2-memberships-filter-panel--embedded {
+  margin: 0 !important;
+  margin-bottom: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+@media (max-width: 767px) {
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-unified-card .v2-admin-filter-panel,
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-unified-card .v2-memberships-filter-panel--embedded {
+    padding: 6px !important;
+  }
 }

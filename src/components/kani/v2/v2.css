@@ -6743,6 +6743,17 @@ html[data-theme="dark"] .kani-v2-toast.is-error .kani-v2-toast-icon,
     margin-top: 0 !important;
   }
 
+  .v2-memberships-unified-card .v2-admin-filter-panel,
+  .v2-memberships-unified-card .v2-memberships-filter-panel--embedded {
+    margin: 0 !important;
+    margin-bottom: 0 !important;
+    padding: 6px !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    border-radius: 0 !important;
+  }
+
   .v2-memberships-toolbar-row .v2-client-add-btn--desktop,
   .v2-client-add-btn--desktop {
     display: none !important;
