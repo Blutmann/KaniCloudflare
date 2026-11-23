@@ -2,7 +2,6 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, Outlet, useLocation } from "@tanstack/react-router";
 import { MotionConfig, motion, useReducedMotion } from "motion/react";
 import {
-  CalendarClock,
   CalendarDays,
   Clock3,
   CreditCard,
@@ -391,27 +390,18 @@ function V2Shell({
     allowedSection &&
     (activeSlug === "membresias" || activeSlug === "descuentos");
 
-  const membershipsNavDefs = [
+  const membershipsSubSwitchDefs = [
     {
       slug: "membresias",
       to: cleanBase.includes("-old") ? `${cleanBase}/membresias` : "/panel-membresias",
       title: "Membresías",
-      mobileTitle: "Membresías",
       icon: PackageCheck,
     },
     {
       slug: "descuentos",
       to: cleanBase.includes("-old") ? `${cleanBase}/descuentos` : "/panel-descuentos",
       title: "Descuentos",
-      mobileTitle: "Descuentos",
       icon: Tag,
-    },
-    {
-      slug: "panel",
-      to: cleanBase,
-      title: "Panel de administración",
-      mobileTitle: "Administración",
-      icon: CalendarClock,
     },
   ] as const;
 
@@ -431,102 +421,92 @@ function V2Shell({
       return { ...item, to };
     });
 
-  const navContent = isMembershipsNav ? (
-    <nav
-      className="admin-section-nav v2-nav lg-memberships-nav"
-      data-lg-nav-variant="memberships"
-      ref={navScrollRef}
-      aria-label="Membresías y descuentos"
-    >
-      <div className="admin-section-nav-items" ref={navItemsRef}>
-        {membershipsNavDefs
-          .filter(({ slug }) => slug === "panel" || mayAccessStaffSection(profile, slug))
-          .map(({ slug, to, title, mobileTitle, icon: Icon }) => {
-          const isActive = activeSlug === slug;
-          return (
-            <Link
-              key={slug}
-              to={to}
-              activeOptions={{ exact: true }}
-              data-nav-slug={slug}
-              className={`admin-section-nav-link ${isActive ? "is-active" : ""}`.trim()}
-              aria-current={isActive ? "page" : undefined}
-              aria-label={mobileTitle !== title ? title : undefined}
+  const navContent = (
+    <>
+      <nav
+        className="admin-section-nav v2-nav"
+        data-nav-count={visibleMainSections.length}
+        data-nav-scrollable={visibleMainSections.length > 6 ? "true" : "false"}
+        ref={navScrollRef}
+        aria-label="Administración"
+      >
+        <div className="admin-section-nav-items" ref={navItemsRef}>
+          {visibleMainSections.map(({ slug, to, title, icon: Icon }) => {
+              const isActive = activeSlug === slug;
+              return (
+                <Link
+                  key={slug}
+                  to={to}
+                  activeOptions={{ exact: true }}
+                  data-nav-slug={slug}
+                  className={`admin-section-nav-link ${isActive ? "is-active" : ""}`.trim()}
+                  aria-current={isActive ? "page" : undefined}
+                  activeProps={{ className: "is-active", "aria-current": "page" }}
+                >
+                  {liquidGlass && isActive && (
+                    <motion.span
+                      layoutId="lg-admin-nav-pill"
+                      className="lg-admin-nav-pill"
+                      aria-hidden="true"
+                      transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+                    />
+                  )}
+                  <Icon size={16} aria-hidden="true" className="lg-admin-nav-icon" />
+                  <span className="lg-admin-nav-label">{title}</span>
+                </Link>
+              );
+            })}
+        </div>
+        {!liquidGlass && (
+          <>
+            <div className="admin-section-nav-divider" aria-hidden="true" />
+            <button
+              type="button"
+              className="admin-section-nav-refresh-btn"
+              onClick={() => void refresh()}
+              disabled={loading}
+              aria-label="Actualizar datos"
             >
-              {isActive && (
-                <motion.span
-                  layoutId="lg-admin-memberships-nav-pill"
-                  className="lg-admin-nav-pill"
-                  aria-hidden="true"
-                  transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
-                />
-              )}
-              <Icon size={16} aria-hidden="true" className="lg-admin-nav-icon" />
-              {mobileTitle !== title ? (
-                <>
-                  <span className="lg-admin-nav-label lg-admin-nav-label--desktop">{title}</span>
-                  <span className="lg-admin-nav-label lg-admin-nav-label--mobile" aria-hidden="true">
-                    {mobileTitle}
-                  </span>
-                </>
-              ) : (
-                <span className="lg-admin-nav-label">{title}</span>
-              )}
-            </Link>
-          );
-        })}
-      </div>
-    </nav>
-  ) : (
-    <nav
-      className="admin-section-nav v2-nav"
-      data-nav-count={visibleMainSections.length}
-      data-nav-scrollable={visibleMainSections.length > 6 ? "true" : "false"}
-      ref={navScrollRef}
-      aria-label="Administración"
-    >
-      <div className="admin-section-nav-items" ref={navItemsRef}>
-        {visibleMainSections.map(({ slug, to, title, icon: Icon }) => {
-            const isActive = activeSlug === slug;
-            return (
-              <Link
-                key={slug}
-                to={to}
-                activeOptions={{ exact: true }}
-                data-nav-slug={slug}
-                className={`admin-section-nav-link ${isActive ? "is-active" : ""}`.trim()}
-                aria-current={isActive ? "page" : undefined}
-                activeProps={{ className: "is-active", "aria-current": "page" }}
-              >
-                {liquidGlass && isActive && (
-                  <motion.span
-                    layoutId="lg-admin-nav-pill"
-                    className="lg-admin-nav-pill"
-                    aria-hidden="true"
-                    transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
-                  />
-                )}
-                <Icon size={16} aria-hidden="true" className="lg-admin-nav-icon" />
-                <span className="lg-admin-nav-label">{title}</span>
-              </Link>
-            );
-          })}
-      </div>
-      {!liquidGlass && (
-        <>
-          <div className="admin-section-nav-divider" aria-hidden="true" />
-          <button
-            type="button"
-            className="admin-section-nav-refresh-btn"
-            onClick={() => void refresh()}
-            disabled={loading}
-            aria-label="Actualizar datos"
-          >
-            <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
-          </button>
-        </>
+              <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
+            </button>
+          </>
+        )}
+      </nav>
+      {isMembershipsNav && (
+        <nav
+          className="v2-memberships-subswitch"
+          data-lg-nav-variant="memberships"
+          aria-label="Membresías y descuentos"
+        >
+          {membershipsSubSwitchDefs
+            .filter(({ slug }) => mayAccessStaffSection(profile, slug))
+            .map(({ slug, to, title, icon: Icon }) => {
+              const isActive = activeSlug === slug;
+              return (
+                <Link
+                  key={slug}
+                  to={to}
+                  activeOptions={{ exact: true }}
+                  data-nav-slug={slug}
+                  className={`v2-memberships-subswitch-link ${isActive ? "is-active" : ""}`.trim()}
+                  aria-current={isActive ? "page" : undefined}
+                >
+                  {isActive && (
+                    <motion.span
+                      layoutId="lg-admin-memberships-subswitch-pill"
+                      className="lg-admin-nav-pill"
+                      aria-hidden="true"
+                      transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+                    />
+                  )}
+                  <Icon size={15} aria-hidden="true" className="lg-admin-nav-icon" />
+                  <span>{title}</span>
+                </Link>
+              );
+            })}
+        </nav>
       )}
-    </nav>
+    </>
   );
 
   const outletContent = allowedSection ? (

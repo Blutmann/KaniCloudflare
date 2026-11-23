@@ -6213,14 +6213,130 @@ html[data-theme="dark"] .kani-v2-toast.is-error .kani-v2-toast-icon,
   }
 }
 
-/* Membresías: KPIs compactos, filtros 100% + 50/50 y barra fija inferior */
+/* Membresías y Descuentos: sub-switch 50/50, tarjeta resumen colapsable, filtros 100% + 50/50 y barra fija inferior */
+.v2-memberships-subswitch {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  width: 100%;
+  padding: 4px;
+  margin-top: 8px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--v2-surface);
+}
+
+.v2-memberships-subswitch-link {
+  position: relative;
+  min-height: 38px;
+  height: 38px;
+  padding: 0 12px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  text-decoration: none;
+}
+
+.v2-memberships-subswitch-link.is-active {
+  color: var(--foreground);
+}
+
+.v2-memberships-standalone-panel {
+  padding: 0 !important;
+  margin: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
 .v2-memberships-stage {
   gap: 10px !important;
 }
 
-.v2-memberships-stage .v2-metrics,
 .v2-memberships-stage .v2-admin-filter-panel {
   margin-bottom: 0 !important;
+}
+
+.v2-memberships-summary-card {
+  margin: 0;
+  padding: 8px 12px;
+}
+
+.v2-memberships-summary-toggle {
+  width: 100%;
+  min-height: 44px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.v2-memberships-summary-eyebrow {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted-foreground);
+}
+
+.v2-memberships-summary-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.v2-memberships-summary-highlight {
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.v2-memberships-summary-chevron {
+  display: inline-flex;
+  align-items: center;
+  color: var(--muted-foreground);
+}
+
+.v2-memberships-summary-breakdown {
+  display: none;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.v2-memberships-summary-breakdown.is-open {
+  display: grid;
+}
+
+.v2-memberships-summary-metric {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 7px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+
+.v2-memberships-summary-metric span {
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+
+.v2-memberships-summary-metric strong {
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .v2-memberships-count {
@@ -6239,31 +6355,25 @@ html[data-theme="dark"] .kani-v2-toast.is-error .kani-v2-toast-icon,
   }
 }
 
+@media (min-width: 1024px) {
+  .v2-memberships-summary-toggle {
+    display: none;
+  }
+
+  .v2-memberships-summary-breakdown,
+  .v2-memberships-summary-breakdown.is-open {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+  }
+}
+
 @media (max-width: 767px) {
   .v2-memberships-page {
     padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px));
-  }
-
-  .v2-memberships-stage .v2-metrics {
-    display: grid !important;
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 6px !important;
-  }
-
-  .v2-memberships-stage .v2-metric {
-    padding: 10px 12px !important;
-    min-height: 0 !important;
-    gap: 2px !important;
-  }
-
-  .v2-memberships-stage .v2-metric span {
-    font-size: 11px !important;
-    line-height: 1.2 !important;
-  }
-
-  .v2-memberships-stage .v2-metric strong {
-    font-size: 18px !important;
-    line-height: 1.15 !important;
   }
 
   .v2-memberships-filter-panel .v2-admin-filter-grid {

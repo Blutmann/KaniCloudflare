@@ -341,4 +341,37 @@ describe('KANI — Regresión de navegación en panel original y hamburguesa', (
       expect(window.localStorage.getItem('kani_client_memberships_fallback_v1')).toBeNull();
     }
   });
+
+  it('12. /panel-membresias conserva la barra principal y muestra el sub-switch 50/50 + Resumen colapsable', async () => {
+    state.role = 'ADMIN';
+    state.path = '/panel-membresias';
+    const { container, unmount } = render(<V2Layout />);
+    await screen.findByTestId('private-child');
+
+    const mainNav = container.querySelector('nav.admin-section-nav');
+    expect(mainNav).not.toBeNull();
+    expect(mainNav!.querySelectorAll('.admin-section-nav-link')).toHaveLength(6);
+
+    const subswitch = container.querySelector('nav.v2-memberships-subswitch');
+    expect(subswitch).not.toBeNull();
+    const subLinks = subswitch!.querySelectorAll('.v2-memberships-subswitch-link');
+    expect(subLinks).toHaveLength(2);
+    expect(subLinks[0]).toHaveTextContent('Membresías');
+    expect(subLinks[0]).toHaveAttribute('href', '/panel-membresias');
+    expect(subLinks[1]).toHaveTextContent('Descuentos');
+    expect(subLinks[1]).toHaveAttribute('href', '/panel-descuentos');
+    unmount();
+
+    const mView = render(<V2MembershipsAndDiscounts initialTab="MEMBRESIAS" hideHeaderBlock />);
+    const toggle = mView.container.querySelector('.v2-memberships-summary-toggle');
+    const breakdown = mView.container.querySelector('#v2-memberships-summary-breakdown');
+    expect(toggle).not.toBeNull();
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect(breakdown).not.toHaveClass('is-open');
+
+    fireEvent.click(toggle!);
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    expect(breakdown).toHaveClass('is-open');
+    mView.unmount();
+  });
 });

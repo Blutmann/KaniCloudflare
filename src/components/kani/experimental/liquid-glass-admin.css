@@ -2711,14 +2711,159 @@ body[data-lg-admin="true"] .v2-loading {
   }
 }
 
-/* Membresías: KPIs compactos, filtros 100% + 50/50, ritmo vertical 10px/12px y barra fija inferior */
+/* Membresías y Descuentos: sub-switch 50/50, tarjeta resumen colapsable, filtros 100% + 50/50 y barra fija inferior */
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-subswitch {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 4px !important;
+  width: 100% !important;
+  padding: 4px !important;
+  margin-top: 8px !important;
+  border-radius: 14px !important;
+  background: var(--lga-nav-bg, var(--lga-surface)) !important;
+  border: 1px solid var(--lga-border) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(160%) !important;
+  backdrop-filter: blur(22px) saturate(160%) !important;
+  box-shadow: var(--lga-shadow-soft, none) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-subswitch-link {
+  position: relative !important;
+  z-index: 1 !important;
+  min-height: 38px !important;
+  height: 38px !important;
+  padding: 0 12px !important;
+  border-radius: 10px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: var(--lga-text-muted) !important;
+  text-decoration: none !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  transition: color 0.16s ease !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-subswitch-link.is-active {
+  color: var(--lga-text) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-subswitch-link .lg-admin-nav-pill {
+  border-radius: 10px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-standalone-panel {
+  padding: 0 !important;
+  margin: 0 !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
 html[data-theme] body[data-lg-admin="true"] .v2-memberships-stage {
   gap: 10px !important;
 }
 
-html[data-theme] body[data-lg-admin="true"] .v2-memberships-stage .v2-metrics,
 html[data-theme] body[data-lg-admin="true"] .v2-memberships-stage .v2-admin-filter-panel {
   margin-bottom: 0 !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-summary-card {
+  margin: 0 !important;
+  padding: 8px 12px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-summary-toggle {
+  width: 100% !important;
+  min-height: 44px !important;
+  padding: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--lga-text) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  cursor: pointer !important;
+  text-align: left !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-summary-eyebrow {
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: var(--lga-text-muted) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-summary-meta {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  min-width: 0 !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-summary-highlight {
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  color: var(--lga-text) !important;
+  font-variant-numeric: tabular-nums !important;
+  white-space: nowrap !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-summary-chevron {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: var(--lga-text-muted) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-summary-breakdown {
+  display: none !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 6px !important;
+  margin-top: 8px !important;
+  padding-top: 8px !important;
+  border-top: 1px solid var(--lga-border) !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-summary-breakdown.is-open {
+  display: grid !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-summary-metric {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 6px !important;
+  padding: 7px 10px !important;
+  border-radius: 10px !important;
+  border: 1px solid var(--lga-border) !important;
+  background: var(--lga-surface-2) !important;
+  min-width: 0 !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-summary-metric span {
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  color: var(--lga-text-muted) !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-summary-metric strong {
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  color: var(--lga-text) !important;
+  font-variant-numeric: tabular-nums !important;
+  flex-shrink: 0 !important;
 }
 
 html[data-theme] body[data-lg-admin="true"] .v2-memberships-count {
@@ -2737,31 +2882,29 @@ html[data-theme] body[data-lg-admin="true"] .v2-memberships-count {
   }
 }
 
+@media (min-width: 1024px) {
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-summary-card {
+    padding: 10px 14px !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-summary-toggle {
+    display: none !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-summary-breakdown,
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-summary-breakdown.is-open {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+    border-top: none !important;
+  }
+}
+
 @media (max-width: 767px) {
   html[data-theme] body[data-lg-admin="true"] .v2-memberships-page {
     padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px)) !important;
-  }
-
-  html[data-theme] body[data-lg-admin="true"] .v2-memberships-stage .v2-metrics {
-    display: grid !important;
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 6px !important;
-  }
-
-  html[data-theme] body[data-lg-admin="true"] .v2-memberships-stage .v2-metric {
-    padding: 10px 12px !important;
-    min-height: 0 !important;
-    gap: 2px !important;
-  }
-
-  html[data-theme] body[data-lg-admin="true"] .v2-memberships-stage .v2-metric span {
-    font-size: 11px !important;
-    line-height: 1.2 !important;
-  }
-
-  html[data-theme] body[data-lg-admin="true"] .v2-memberships-stage .v2-metric strong {
-    font-size: 18px !important;
-    line-height: 1.15 !important;
   }
 
   html[data-theme] body[data-lg-admin="true"] .v2-memberships-filter-panel .v2-admin-filter-grid {

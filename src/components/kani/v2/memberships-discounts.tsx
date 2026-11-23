@@ -1,5 +1,7 @@
 import { useMemo, useState, type FormEvent } from "react";
 import {
+  ChevronDown,
+  ChevronUp,
   PackageCheck,
   Plus,
   RefreshCw,
@@ -33,7 +35,7 @@ import { AdminClientCombobox, AdminContextualSelect } from "./admin-mobile-selec
 import { useV2 } from "./data";
 import { V2Discounts } from "./discounts";
 import { EditMembershipModal, MembershipCard } from "./MembershipCard";
-import { AdminFilterCell, AdminFilterPanel, Empty, Metric } from "./shared";
+import { AdminFilterCell, AdminFilterPanel, Empty } from "./shared";
 
 export function V2MembershipsAndDiscounts({
   initialTab = "MEMBRESIAS",
@@ -64,6 +66,7 @@ export function V2MembershipsAndDiscounts({
   const [barberFilter, setBarberFilter] = useState<string>(
     isOperator ? "ALL" : (staff.profile.barber_id ?? ""),
   );
+  const [showSummary, setShowSummary] = useState(false);
   const [notice, setNotice] = useState("");
   const [errorNotice, setErrorNotice] = useState("");
   const [busy, setBusy] = useState(false);
@@ -399,7 +402,10 @@ export function V2MembershipsAndDiscounts({
 
   return (
     <main className="v2-page v2-memberships-page">
-      <section className="v2-panel" style={{ padding: "16px 18px" }}>
+      <section
+        className={hideHeaderBlock ? "v2-memberships-standalone-panel" : "v2-panel"}
+        style={hideHeaderBlock ? undefined : { padding: "16px 18px" }}
+      >
         {!hideHeaderBlock && (
           <div
             className="v2-memberships-header"
@@ -528,12 +534,47 @@ export function V2MembershipsAndDiscounts({
               </div>
             )}
 
-            <div className="v2-metrics">
-              <Metric label="Membresías activas" value={kpiActive} />
-              <Metric label="Pendientes de pago" value={kpiPending} />
-              <Metric label="Próximas a vencer" value={kpiExpiringSoon} />
-              <Metric label="Sesiones restantes" value={kpiRemainingSessions} />
-            </div>
+            <section className="v2-panel v2-memberships-summary-card" aria-label="Resumen de membresías">
+              <button
+                type="button"
+                className="v2-memberships-summary-toggle"
+                aria-expanded={showSummary}
+                aria-controls="v2-memberships-summary-breakdown"
+                onClick={() => setShowSummary((prev) => !prev)}
+              >
+                <span className="v2-memberships-summary-eyebrow">Resumen</span>
+                <span className="v2-memberships-summary-meta">
+                  <strong className="v2-memberships-summary-highlight">
+                    {kpiActive} {kpiActive === 1 ? "activa" : "activas"} · {kpiRemainingSessions}{" "}
+                    {kpiRemainingSessions === 1 ? "sesión" : "sesiones"}
+                  </strong>
+                  <span className="v2-memberships-summary-chevron" aria-hidden="true">
+                    {showSummary ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                  </span>
+                </span>
+              </button>
+              <div
+                id="v2-memberships-summary-breakdown"
+                className={`v2-memberships-summary-breakdown ${showSummary ? "is-open" : ""}`}
+              >
+                <div className="v2-memberships-summary-metric">
+                  <span>Membresías activas</span>
+                  <strong>{kpiActive}</strong>
+                </div>
+                <div className="v2-memberships-summary-metric">
+                  <span>Pendientes de pago</span>
+                  <strong>{kpiPending}</strong>
+                </div>
+                <div className="v2-memberships-summary-metric">
+                  <span>Próximas a vencer</span>
+                  <strong>{kpiExpiringSoon}</strong>
+                </div>
+                <div className="v2-memberships-summary-metric">
+                  <span>Sesiones restantes</span>
+                  <strong>{kpiRemainingSessions}</strong>
+                </div>
+              </div>
+            </section>
 
             <AdminFilterPanel
               ariaLabel="Filtros de membresías"
