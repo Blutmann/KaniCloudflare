@@ -351,7 +351,7 @@ export function V2Payments() {
         <div className="v2-cash-summary-main">
           <div className="v2-cash-summary-total">
             <span className="v2-cash-summary-eyebrow">
-              {period === "TODAY" ? "Tu caja de hoy" : "Caja del período"}
+              {period === "TODAY" ? "Caja del día" : "Caja del período"}
             </span>
             <div className="v2-cash-summary-amount-row">
               <strong className="v2-cash-summary-amount">{money(summary.collected)}</strong>
@@ -430,42 +430,29 @@ export function V2Payments() {
           <form onSubmit={(e) => void submit(e)} className="v2-payment-compact-form">
             <fieldset disabled={busy || data.loading} className="v2-payment-form-fieldset">
               <div className="v2-payment-grid">
-                {/* Turno o Barbero */}
-                {(origin === "appointment" || isAdmin) && (
+                {/* Turno (solo en modo Con turno) */}
+                {origin === "appointment" && (
                   <div className="v2-payment-full-row">
-                    {origin === "appointment" ? (
-                      <label className="v2-field v2-payment-col">
-                        <span className="v2-field-label">Turno</span>
-                        <select
-                          value={appointmentId}
-                          onChange={(e) => {
-                            setAppointmentId(e.target.value);
-                            setServiceName(null);
-                            setFinalOverride(null);
-                            setPriceOverride(null);
-                            setDiscount(null);
-                          }}
-                        >
-                          <option value="">Seleccionar turno</option>
-                          {choices.map((a) => (
-                            <option value={a.id} key={a.id}>
-                              {a.name} · {a.time} hs ({a.barber})
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    ) : (
-                      <label className="v2-field v2-payment-col v2-payment-entry-field">
-                        <span className="v2-field-label">Barbero</span>
-                        <select value={barberId} onChange={(e) => setBarberId(e.target.value)}>
-                          {staff.barbers.map((b) => (
-                            <option value={b.id} key={b.id}>
-                              {b.name}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    )}
+                    <label className="v2-field v2-payment-col">
+                      <span className="v2-field-label">Turno</span>
+                      <select
+                        value={appointmentId}
+                        onChange={(e) => {
+                          setAppointmentId(e.target.value);
+                          setServiceName(null);
+                          setFinalOverride(null);
+                          setPriceOverride(null);
+                          setDiscount(null);
+                        }}
+                      >
+                        <option value="">Seleccionar turno</option>
+                        {choices.map((a) => (
+                          <option value={a.id} key={a.id}>
+                            {a.name} · {a.time} hs ({a.barber})
+                          </option>
+                        ))}
+                      </select>
+                    </label>
                   </div>
                 )}
 
@@ -561,8 +548,27 @@ export function V2Payments() {
                   </div>
                 </div>
 
-                {/* Campo limpio de Importe al 100% */}
-                <div className="v2-payment-full-row">
+                {/* Barbero | Importe en una misma fila 50/50 (o Importe al 100% si no aplica Barbero) */}
+                <div
+                  className={
+                    origin === "walk_in" && isAdmin
+                      ? "v2-cobro-barber-amount-row"
+                      : "v2-payment-full-row"
+                  }
+                >
+                  {origin === "walk_in" && isAdmin && (
+                    <label className="v2-field v2-payment-col v2-payment-entry-field">
+                      <span className="v2-field-label">Barbero</span>
+                      <select value={barberId} onChange={(e) => setBarberId(e.target.value)}>
+                        {staff.barbers.map((b) => (
+                          <option value={b.id} key={b.id}>
+                            {b.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  )}
+
                   <label className="v2-field v2-payment-col v2-payment-entry-field">
                     <span className="v2-field-label">Importe</span>
                     <div className="v2-quick-amount-input-wrap">

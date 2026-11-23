@@ -352,17 +352,17 @@ html[data-theme] body[data-lg-admin="true"] .v2-quick-chip[aria-pressed="true"] 
 
 html[data-theme] body[data-lg-admin="true"] .v2-payments-page {
   display: grid !important;
-  gap: 10px !important;
+  gap: 8px !important;
 }
 
 html[data-theme] body[data-lg-admin="true"] .v2-cash-summary-card {
   margin: 0 !important;
-  padding: 10px 12px !important;
+  padding: 8px 12px !important;
 }
 
 html[data-theme] body[data-lg-admin="true"] .v2-cobro-panel {
   margin: 0 !important;
-  padding: 12px 14px !important;
+  padding: 10px 12px !important;
 }
 
 html[data-theme] body[data-lg-admin="true"] .v2-cobro-header .v2-segmented[data-lg-segmented="true"] {
