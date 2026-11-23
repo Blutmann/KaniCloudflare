@@ -6620,38 +6620,45 @@ html[data-theme="dark"] .kani-v2-toast.is-error .kani-v2-toast-icon,
   }
 
   .v2-client-picker-search-wrap {
-    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 12px;
     width: 100%;
+    height: 42px;
+    box-sizing: border-box;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--background);
     margin-bottom: 10px;
   }
 
   .v2-client-picker-search-icon {
-    position: absolute;
-    left: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    z-index: 2;
+    position: static;
+    transform: none;
+    flex-shrink: 0;
     color: var(--muted-foreground);
     pointer-events: none;
   }
 
   .v2-client-picker-search-input {
-    width: 100%;
-    height: 40px;
-    padding: 0 12px 0 36px !important;
-    box-sizing: border-box !important;
-    border-radius: 10px;
-    border: 1px solid var(--border);
-    background: var(--background);
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 10px 0 !important;
+    flex: 1;
+    min-width: 0;
+    height: auto;
     color: var(--foreground);
     font-size: 15px;
+    outline: none;
   }
 
   .v2-client-picker-list {
     list-style: none;
     margin: 0;
     padding: 0;
-    max-height: 46dvh;
+    max-height: min(56dvh, 420px);
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     touch-action: pan-y;
@@ -6699,12 +6706,18 @@ html[data-theme="dark"] .kani-v2-toast.is-error .kani-v2-toast-icon,
     gap: 8px !important;
   }
 
+  .v2-memberships-page .maintenance-section {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+
   .v2-memberships-page .maintenance-section > * + * {
-    margin-top: 10px !important;
+    margin-top: 0 !important;
   }
 
   .v2-memberships-page .kani-dtoolbar {
-    margin-top: 8px !important;
+    margin: 0 !important;
     padding: 0 2px !important;
     min-height: 0 !important;
   }
@@ -6713,10 +6726,11 @@ html[data-theme="dark"] .kani-v2-toast.is-error .kani-v2-toast-icon,
     font-size: 12px !important;
     line-height: 1.25 !important;
     margin: 0 !important;
+    padding: 0 2px !important;
   }
 
   .v2-memberships-page .kani-dtoolbar + .kani-dgrid {
-    margin-top: 10px !important;
+    margin-top: 0 !important;
   }
 
   .v2-memberships-toolbar-row .v2-client-add-btn--desktop,

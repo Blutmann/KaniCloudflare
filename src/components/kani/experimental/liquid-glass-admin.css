@@ -3146,38 +3146,45 @@ html[data-theme] body[data-lg-admin="true"] .v2-memberships-count {
   }
 
   html[data-theme] body[data-lg-admin="true"] .v2-client-picker-search-wrap {
-    position: relative !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    padding: 0 12px !important;
     width: 100% !important;
+    height: 42px !important;
+    box-sizing: border-box !important;
+    border-radius: 10px !important;
+    border: 1px solid var(--lga-border) !important;
+    background: var(--lga-glass-nested) !important;
     margin-bottom: 10px !important;
   }
 
   html[data-theme] body[data-lg-admin="true"] .v2-client-picker-search-icon {
-    position: absolute !important;
-    left: 12px !important;
-    top: 50% !important;
-    transform: translateY(-50%) !important;
-    z-index: 2 !important;
+    position: static !important;
+    transform: none !important;
+    flex-shrink: 0 !important;
     color: var(--lga-text-muted) !important;
     pointer-events: none !important;
   }
 
   html[data-theme] body[data-lg-admin="true"] .v2-client-picker-search-input {
-    width: 100% !important;
-    height: 40px !important;
-    padding: 0 12px 0 36px !important;
-    box-sizing: border-box !important;
-    border-radius: 10px !important;
-    border: 1px solid var(--lga-border) !important;
-    background: var(--lga-glass-nested) !important;
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 10px 0 !important;
+    flex: 1 !important;
+    min-width: 0 !important;
+    height: auto !important;
     color: var(--lga-text) !important;
     font-size: 15px !important;
+    outline: none !important;
   }
 
   html[data-theme] body[data-lg-admin="true"] .v2-client-picker-list {
     list-style: none !important;
     margin: 0 !important;
     padding: 0 !important;
-    max-height: 46dvh !important;
+    max-height: min(56dvh, 420px) !important;
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch;
     touch-action: pan-y !important;
@@ -3224,12 +3231,18 @@ html[data-theme] body[data-lg-admin="true"] .v2-memberships-count {
     gap: 8px !important;
   }
 
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+
   html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section > * + * {
-    margin-top: 10px !important;
+    margin-top: 0 !important;
   }
 
   html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .kani-dtoolbar {
-    margin-top: 8px !important;
+    margin: 0 !important;
     padding: 0 2px !important;
     min-height: 0 !important;
   }
@@ -3238,10 +3251,11 @@ html[data-theme] body[data-lg-admin="true"] .v2-memberships-count {
     font-size: 12px !important;
     line-height: 1.25 !important;
     margin: 0 !important;
+    padding: 0 2px !important;
   }
 
   html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .kani-dtoolbar + .kani-dgrid {
-    margin-top: 10px !important;
+    margin-top: 0 !important;
   }
 
   html[data-theme] body[data-lg-admin="true"] .v2-memberships-toolbar-row .v2-client-add-btn--desktop,

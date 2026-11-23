@@ -908,7 +908,6 @@ export function V2MembershipsAndDiscounts({
                         placeholder="Buscar por nombre o teléfono…"
                         aria-label="Buscar cliente por nombre o teléfono"
                         className="v2-client-picker-search-input"
-                        style={{ paddingLeft: "36px" }}
                         autoFocus
                       />
                     </div>
@@ -947,13 +946,20 @@ export function V2MembershipsAndDiscounts({
                     </ul>
                   </>
                 ) : (
-                  <form onSubmit={handleCreateInlineClient} className="v2-form space-y-3">
+                  <form
+                    onSubmit={handleCreateInlineClient}
+                    className="v2-form v2-client-picker-create-form"
+                    style={{ display: "flex", flexDirection: "column", gap: "12px" }}
+                  >
                     {newClientError && (
                       <p role="alert" className="v2-alert">
                         {newClientError}
                       </p>
                     )}
-                    <label className="v2-field min-w-0">
+                    <label
+                      className="v2-field min-w-0"
+                      style={{ display: "flex", flexDirection: "column", gap: "6px" }}
+                    >
                       <span className="v2-field-label">Nombre</span>
                       <input
                         type="text"
@@ -965,7 +971,10 @@ export function V2MembershipsAndDiscounts({
                         autoFocus
                       />
                     </label>
-                    <label className="v2-field min-w-0">
+                    <label
+                      className="v2-field min-w-0"
+                      style={{ display: "flex", flexDirection: "column", gap: "6px" }}
+                    >
                       <span className="v2-field-label">Celular</span>
                       <input
                         type="tel"
@@ -976,7 +985,10 @@ export function V2MembershipsAndDiscounts({
                         onChange={(e) => setNewClientPhone(e.target.value)}
                       />
                     </label>
-                    <label className="v2-field min-w-0">
+                    <label
+                      className="v2-field min-w-0"
+                      style={{ display: "flex", flexDirection: "column", gap: "6px" }}
+                    >
                       <span className="v2-field-label">Email · opcional</span>
                       <input
                         type="email"
@@ -985,14 +997,22 @@ export function V2MembershipsAndDiscounts({
                         onChange={(e) => setNewClientEmail(e.target.value)}
                       />
                     </label>
-                    <button
-                      type="submit"
-                      className="v2-primary w-full"
-                      style={{ width: "100%" }}
-                      disabled={newClientSaving}
+                    <div
+                      style={{
+                        marginTop: "4px",
+                        paddingTop: "12px",
+                        borderTop: "1px solid var(--lga-border, rgba(128, 128, 128, 0.18))",
+                      }}
                     >
-                      {newClientSaving ? "Guardando…" : "Guardar cliente"}
-                    </button>
+                      <button
+                        type="submit"
+                        className="v2-primary w-full"
+                        style={{ width: "100%" }}
+                        disabled={newClientSaving}
+                      >
+                        {newClientSaving ? "Guardando…" : "Guardar cliente"}
+                      </button>
+                    </div>
                   </form>
                 )}
               </div>
