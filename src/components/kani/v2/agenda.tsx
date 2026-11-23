@@ -3,7 +3,7 @@ import { getWhatsAppDirectSendUrl } from "@/lib/kani-phone";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "@tanstack/react-router";
-import { AlertCircle, ArrowRight, CalendarDays, Check, Clock3, Copy, Info, Mail, Pencil, X } from "lucide-react";
+import { AlertCircle, ArrowRight, CalendarDays, Check, ChevronDown, Clock3, Copy, Info, Mail, Pencil, Plus, SlidersHorizontal, X } from "lucide-react";
 import { useAdminStaff } from "@/lib/kani-admin-context";
 import {
   businessDateToday,
@@ -245,6 +245,7 @@ export function V2Appointments({
   const [status, setStatus] = useState("ALL");
   const [period, setPeriod] = useState<V2AgendaPeriodPreset>(() => readInitialV2Period());
   const [customEndDate, setCustomEndDate] = useState(() => addCalendarDays(today, 9));
+  const [showFilters, setShowFilters] = useState(false);
   const [action, setAction] = useState<{
     appointment: RealAppointment;
     status: "CANCELLED";
@@ -544,6 +545,56 @@ export function V2Appointments({
             ? "v2-turnos-filter-panel is-custom-range"
             : "v2-turnos-filter-panel"
         }
+        mobileExpanded={showFilters}
+        mobileQuickBar={
+          <>
+            <div className="v2-quickbar-chips" role="group" aria-label="Períodos rápidos">
+              <button
+                type="button"
+                className={`v2-quickbar-chip${period === "TODAY" ? " is-active" : ""}`}
+                aria-pressed={period === "TODAY"}
+                onClick={() => handlePeriodChange("TODAY")}
+              >
+                Hoy
+              </button>
+              <button
+                type="button"
+                className={`v2-quickbar-chip${period === "THIS_WEEK" ? " is-active" : ""}`}
+                aria-pressed={period === "THIS_WEEK"}
+                onClick={() => handlePeriodChange("THIS_WEEK")}
+              >
+                Semana
+              </button>
+              <button
+                type="button"
+                className={`v2-quickbar-chip${period === "NEXT_10_DAYS" ? " is-active" : ""}`}
+                aria-pressed={period === "NEXT_10_DAYS"}
+                onClick={() => handlePeriodChange("NEXT_10_DAYS")}
+              >
+                10 días
+              </button>
+            </div>
+            <button
+              type="button"
+              className={`v2-filter-toggle-btn${showFilters ? " is-open" : ""}`}
+              aria-expanded={showFilters}
+              onClick={() => setShowFilters((prev) => !prev)}
+            >
+              <SlidersHorizontal size={13} aria-hidden="true" />
+              <span>Filtros</span>
+              {((isStaffOperator(staff.profile.role) && data.barberId !== "ALL") ||
+                status !== "ALL" ||
+                !["TODAY", "THIS_WEEK", "NEXT_10_DAYS"].includes(period)) && (
+                <span className="v2-filter-toggle-dot" aria-hidden="true" />
+              )}
+              <ChevronDown
+                size={14}
+                className={`v2-filter-toggle-chevron${showFilters ? " is-open" : ""}`}
+                aria-hidden="true"
+              />
+            </button>
+          </>
+        }
         footer={
           period === "CUSTOM" && isInvalidRange ? (
             <div className="v2-custom-range-row">
@@ -563,21 +614,6 @@ export function V2Appointments({
             {v2AgendaPeriodOrder.map((preset) => (
               <option key={preset} value={preset}>
                 {formatV2AgendaPeriodLabel(preset, today)}
-              </option>
-            ))}
-          </select>
-        </AdminFilterCell>
-        <AdminFilterCell label="Barbero" htmlFor="v2-appointments-barber">
-          <select
-            id="v2-appointments-barber"
-            value={isStaffOperator(staff.profile.role) ? data.barberId : (staff.profile.barber_id ?? "")}
-            onChange={(e) => data.setBarberId(e.target.value)}
-            disabled={!isStaffOperator(staff.profile.role)}
-          >
-            {isStaffOperator(staff.profile.role) && <option value="ALL">Todo Kani</option>}
-            {staff.barbers.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.name}
               </option>
             ))}
           </select>
@@ -603,6 +639,21 @@ export function V2Appointments({
             />
           </AdminFilterCell>
         )}
+        <AdminFilterCell label="Barbero" htmlFor="v2-appointments-barber">
+          <select
+            id="v2-appointments-barber"
+            value={isStaffOperator(staff.profile.role) ? data.barberId : (staff.profile.barber_id ?? "")}
+            onChange={(e) => data.setBarberId(e.target.value)}
+            disabled={!isStaffOperator(staff.profile.role)}
+          >
+            {isStaffOperator(staff.profile.role) && <option value="ALL">Todo Kani</option>}
+            {staff.barbers.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.name}
+              </option>
+            ))}
+          </select>
+        </AdminFilterCell>
         <AdminFilterCell
           label="Estado"
           htmlFor="v2-appointments-status"
@@ -656,8 +707,7 @@ export function V2Appointments({
             const waFailed = a.dispatches?.whatsapp?.status === "FAILED";
             const emailFailed = a.dispatches?.email?.status === "FAILED";
             const durationLabel = formatAppointmentDurationLabel(a.time, a.endTime);
-            const showDayHeader =
-              isMultiDay && (index === 0 || rows[index - 1]?.date !== a.date);
+            const showDayHeader = index === 0 || rows[index - 1]?.date !== a.date;
             const mobileArticleClasses = [
               "v2-appointment",
               "v2-appointment--clean-mobile",
@@ -1443,6 +1493,20 @@ export function V2Appointments({
           </div>,
           document.body,
         )}
+      <div
+        className="v2-client-sticky-bar v2-mobile-sticky-cta"
+        role="region"
+        aria-label="Acciones de turnos"
+      >
+        <button
+          type="button"
+          className="v2-primary v2-client-add-btn v2-client-add-btn--mobile"
+          onClick={() => setManualDialog({ open: true, mode: "CREATE", appointment: null })}
+        >
+          <Plus size={17} aria-hidden="true" />
+          <span>Agregar turno</span>
+        </button>
+      </div>
     </main>
   );
 }

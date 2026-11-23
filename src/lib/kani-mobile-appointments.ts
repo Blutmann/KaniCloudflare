@@ -353,22 +353,11 @@ export function formatV2AgendaPeriodLabel(
     case 'TODAY':
       return 'Hoy';
     case 'NEXT_5_DAYS':
-      return 'Próximos 5 días';
-    case 'THIS_WEEK': {
-      const weekStart = startOfBusinessWeek(today);
-      const weekEnd = addCalendarDays(weekStart, 6);
-      const [sY, sM, sD] = weekStart.split('-').map((v) => parseInt(v, 10));
-      const [eY, eM, eD] = weekEnd.split('-').map((v) => parseInt(v, 10));
-      if (sY !== eY) {
-        return `${sD} ${MONTHS_SHORT_TITLE_ES[sM - 1]} ${sY} - ${eD} ${MONTHS_SHORT_TITLE_ES[eM - 1]} ${eY}`;
-      }
-      if (sM !== eM) {
-        return `${sD} ${MONTHS_SHORT_TITLE_ES[sM - 1]} - ${eD} ${MONTHS_SHORT_TITLE_ES[eM - 1]}`;
-      }
-      return `${sD} - ${eD} ${MONTHS_SHORT_TITLE_ES[eM - 1]}`;
-    }
+      return 'Próx. 5 días';
+    case 'THIS_WEEK':
+      return 'Esta semana';
     case 'NEXT_10_DAYS':
-      return 'Próximos 10 días';
+      return 'Próx. 10 días';
     case 'THIS_MONTH':
       return `${MONTHS_FULL_ES[monthIdx]} ${year}`;
     case 'PREVIOUS_MONTH': {

@@ -691,9 +691,46 @@ html[data-theme="dark"] .v2-field select {
   padding: 0 8px;
 }
 .v2-loading {
-  padding-top: 12px;
-  color: var(--muted-foreground);
-  font-size: 11px;
+  position: fixed;
+  top: auto;
+  bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 230;
+  pointer-events: none;
+  margin: 0;
+  padding: 6px 14px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  color: #1c1917;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.65),
+    0 10px 28px rgba(0, 0, 0, 0.12);
+  -webkit-backdrop-filter: blur(22px) saturate(160%);
+  backdrop-filter: blur(22px) saturate(160%);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.2;
+}
+@media (min-width: 768px) {
+  .v2-loading {
+    top: auto;
+    bottom: 20px;
+  }
+}
+html[data-theme="dark"] .v2-loading,
+.dark .v2-loading {
+  color: #f5f2ed;
+  background: rgba(24, 22, 20, 0.8);
+  border-color: rgba(255, 255, 255, 0.18);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 12px 32px rgba(0, 0, 0, 0.38);
 }
 .v2-footnote {
   font-size: 10px !important;
@@ -3818,7 +3855,7 @@ html[data-theme="dark"] .v2-field select {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  margin-bottom: 16px;
+  margin-bottom: 0;
   width: 100%;
 }
 .v2-client-search-row {
@@ -6022,5 +6059,156 @@ html[data-theme="dark"] .kani-v2-toast.is-error .kani-v2-toast-icon,
 @media (prefers-reduced-motion: reduce) {
   .kani-v2-toast {
     animation: none;
+  }
+}
+
+@media (min-width: 768px) {
+  .v2-schedule-cards-card-header,
+  .v2-admin-filter-quickbar {
+    display: none;
+  }
+
+  .v2-admin-filter-collapsible.is-collapsed {
+    display: block;
+  }
+}
+
+@media (max-width: 767px) {
+  :is(.v2-appointments-page, .v2-schedule) {
+    padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .v2-appointments-page {
+    gap: 12px !important;
+  }
+
+  .v2-appointments-page .v2-admin-filter-panel {
+    margin-bottom: 0 !important;
+  }
+
+  .v2-schedule .v2-admin-filter-panel {
+    margin-bottom: 12px !important;
+  }
+
+  .v2-appointments-page .v2-mobile-day-header {
+    margin: 0 2px 2px !important;
+  }
+
+  .v2-appointments-page .v2-mobile-card-group + .v2-mobile-card-group .v2-mobile-day-header {
+    margin-top: 8px !important;
+  }
+
+  .v2-admin-filter-panel.is-mobile-collapsed {
+    padding: 5px 6px !important;
+  }
+
+  .v2-admin-filter-quickbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px;
+    width: 100%;
+  }
+
+  .v2-quickbar-chips {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .v2-quickbar-chip {
+    min-height: 38px;
+    height: 38px;
+    padding: 0 8px;
+    border-radius: 10px;
+    font-size: 12.5px;
+    font-weight: 600;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1 1 0;
+    min-width: 0;
+    border: 1px solid transparent;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .v2-quickbar-chip.is-active,
+  .v2-quickbar-chip[aria-pressed="true"] {
+    border-color: var(--gold);
+    background: color-mix(in srgb, var(--gold) 14%, transparent);
+  }
+
+  .v2-filter-toggle-btn {
+    min-height: 38px;
+    height: 38px;
+    padding: 0 10px;
+    margin-left: 2px;
+    border-radius: 10px;
+    font-size: 12.5px;
+    font-weight: 600;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    flex: 0 0 auto;
+    border: 1px solid var(--border);
+    background: color-mix(in srgb, var(--foreground) 6%, transparent);
+    cursor: pointer;
+  }
+
+  .v2-filter-toggle-btn.is-open {
+    border-color: var(--gold);
+    background: color-mix(in srgb, var(--gold) 14%, transparent);
+  }
+
+  .v2-filter-toggle-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: var(--gold);
+  }
+
+  .v2-admin-filter-collapsible.is-collapsed {
+    display: none;
+  }
+
+  .v2-admin-filter-quickbar + .v2-admin-filter-collapsible:not(.is-collapsed) {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border);
+  }
+
+  .v2-admin-filter-quickbar + .v2-admin-filter-collapsible:not(.is-collapsed) .v2-admin-filter-grid {
+    gap: 8px !important;
+  }
+
+  .v2-appointments-page .v2-section-toolbar,
+  .v2-schedule .v2-section-toolbar {
+    display: none !important;
+  }
+
+  .v2-schedule .admin-schedule-date-group > .v2-section-toolbar + .v2-schedule-cards-container {
+    margin-top: 0 !important;
+  }
+
+  .v2-schedule-cards-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 10px;
+    margin-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .v2-schedule-cards-date-title {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.25;
   }
 }

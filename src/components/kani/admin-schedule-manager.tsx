@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { AlertCircle, AlertTriangle, Check, CheckCircle2, Clock3, SlidersHorizontal, X, XCircle } from "lucide-react";
+import { AlertCircle, AlertTriangle, Check, CheckCircle2, ChevronDown, Clock3, Plus, SlidersHorizontal, X, XCircle } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import {
@@ -139,6 +139,7 @@ export function AdminScheduleManager() {
   const [specificDate, setSpecificDate] = useState(() => businessDateToday());
   const [barberFilter, setBarberFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState<ScheduleStatusFilter>("ALL");
+  const [showFilters, setShowFilters] = useState(false);
   const [slots, setSlots] = useState<ScheduleSlot[]>([]);
   const [validStarts, setValidStarts] = useState<ScheduleStart[]>([]);
   const [loading, setLoading] = useState(true);
@@ -449,7 +450,61 @@ export function AdminScheduleManager() {
   return (
     <>
       {/* 1. Card unificada de Filtros y Estados de horarios */}
-      <AdminFilterPanel ariaLabel="Filtros de horarios">
+      <AdminFilterPanel
+        ariaLabel="Filtros de horarios"
+        mobileExpanded={showFilters}
+        mobileQuickBar={
+          <>
+            <div className="v2-quickbar-chips" role="group" aria-label="Períodos rápidos">
+              <button
+                type="button"
+                className={`v2-quickbar-chip${datePreset === "TODAY" ? " is-active" : ""}`}
+                aria-pressed={datePreset === "TODAY"}
+                onClick={() => selectPreset("TODAY")}
+              >
+                Hoy
+              </button>
+              <button
+                type="button"
+                className={`v2-quickbar-chip${datePreset === "TOMORROW" ? " is-active" : ""}`}
+                aria-pressed={datePreset === "TOMORROW"}
+                onClick={() => selectPreset("TOMORROW")}
+              >
+                Mañana
+              </button>
+              <button
+                type="button"
+                className={`v2-quickbar-chip${datePreset === "THIS_WEEK" ? " is-active" : ""}`}
+                aria-pressed={datePreset === "THIS_WEEK"}
+                onClick={() => selectPreset("THIS_WEEK")}
+              >
+                Semana
+              </button>
+            </div>
+            <button
+              type="button"
+              className={`v2-filter-toggle-btn${showFilters ? " is-open" : ""}`}
+              aria-expanded={showFilters}
+              onClick={() => setShowFilters((prev) => !prev)}
+            >
+              <SlidersHorizontal size={13} aria-hidden="true" />
+              <span>Filtros</span>
+              {((profile.role === "ADMIN" &&
+                Boolean(barberFilter) &&
+                barberFilter !== permittedBarbers[0]) ||
+                statusFilter !== "ALL" ||
+                !["TODAY", "TOMORROW", "THIS_WEEK"].includes(datePreset)) && (
+                <span className="v2-filter-toggle-dot" aria-hidden="true" />
+              )}
+              <ChevronDown
+                size={14}
+                className={`v2-filter-toggle-chevron${showFilters ? " is-open" : ""}`}
+                aria-hidden="true"
+              />
+            </button>
+          </>
+        }
+      >
         {/* 1. Período */}
         <AdminFilterCell label="Período" htmlFor="schedule-date-preset">
           <select
@@ -579,6 +634,9 @@ export function AdminScheduleManager() {
                   onAction={() => openManualDialog(date, dateSlots[0]?.barber_id)}
                 />
                 <div className="v2-schedule-cards-container admin-schedule-cards-container">
+                  <div className="v2-schedule-cards-card-header">
+                    <h3 className="v2-schedule-cards-date-title">{formatAdminV2Date(date)}</h3>
+                  </div>
                   <div className="v2-schedule-cards-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                     {dateSlots.map((slot) => {
                       const available = slot.status === "AVAILABLE";
@@ -780,6 +838,25 @@ export function AdminScheduleManager() {
           </div>,
           document.body,
         )}
+      <div
+        className="v2-client-sticky-bar v2-mobile-sticky-cta"
+        role="region"
+        aria-label="Acciones de horarios"
+      >
+        <button
+          type="button"
+          className="v2-primary v2-client-add-btn v2-client-add-btn--mobile"
+          onClick={() =>
+            openManualDialog(
+              groupedSlots[0]?.[0] ?? specificDate,
+              groupedSlots[0]?.[1]?.[0]?.barber_id ?? selectedRows[0]?.id,
+            )
+          }
+        >
+          <Plus size={17} aria-hidden="true" />
+          <span>Agregar horario</span>
+        </button>
+      </div>
     </>
   );
 }

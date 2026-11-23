@@ -1141,7 +1141,7 @@ html[data-theme] body[data-lg-admin="true"] .v2-client-toolbar-container {
   flex-direction: column !important;
   gap: 12px !important;
   padding: 14px 16px !important;
-  margin-bottom: 16px !important;
+  margin-bottom: 0 !important;
 }
 
 html[data-theme] body[data-lg-admin="true"] .v2-client-toolbar-container .v2-client-search-row {
@@ -2680,13 +2680,35 @@ body[data-lg-admin="true"] .v2-success {
 }
 
 body[data-lg-admin="true"] .v2-loading {
+  position: fixed !important;
+  top: auto !important;
+  bottom: calc(84px + env(safe-area-inset-bottom, 0px)) !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  z-index: 230 !important;
+  pointer-events: none !important;
+  margin: 0 !important;
   background: var(--lga-glass-interactive) !important;
   border: 1px solid var(--lga-border-accent) !important;
   border-radius: 999px !important;
-  padding: 6px 14px;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
+  color: var(--lga-text) !important;
+  padding: 6px 14px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  white-space: nowrap !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  line-height: 1.2 !important;
+  -webkit-backdrop-filter: blur(22px) saturate(160%) !important;
+  backdrop-filter: blur(22px) saturate(160%) !important;
+}
+
+@media (min-width: 768px) {
+  body[data-lg-admin="true"] .v2-loading {
+    top: auto !important;
+    bottom: 20px !important;
+  }
 }
 
 @keyframes lgaDialogFadeIn {
@@ -4687,6 +4709,226 @@ html[data-theme] body[data-lg-admin="true"] [role="dialog"].v2-membership-create
   content: "";
   position: absolute;
   inset: -2px 0;
+}
+
+/* ==============================================================================
+ * RITMO VERTICAL UNIFICADO PARA TODAS LAS SECCIONES DE V2Layout (Mobile y Desktop)
+ * - 12px entre .v2-navigation y el primer bloque en móvil (<1024px)
+ * - 14px entre .v2-navigation y el primer bloque en desktop (>=1024px)
+ * - 10px–12px de separación uniforme entre tarjetas hermanas
+ * ============================================================================== */
+html[data-theme] body[data-lg-admin="true"] .v2-navigation {
+  margin-bottom: 12px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-page {
+  padding-top: 0 !important;
+  margin-top: 0 !important;
+  gap: 10px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-page.v2-payments-page {
+  gap: 8px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-page :is(.v2-hero-grid, .v2-chart-grid, .v2-appointments-list, .v2-clients-list, .v2-client-grid, .v2-insights-grid) {
+  gap: 10px !important;
+}
+
+@media (min-width: 768px) {
+  html[data-theme] body[data-lg-admin="true"] .v2-clients-page {
+    gap: 12px !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-page .v2-client-grid {
+    gap: 12px !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-schedule-cards-card-header,
+  html[data-theme] body[data-lg-admin="true"] .v2-admin-filter-quickbar {
+    display: none !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-admin-filter-collapsible.is-collapsed {
+    display: block !important;
+  }
+}
+
+@media (max-width: 767px) {
+  html[data-theme] body[data-lg-admin="true"] :is(.v2-clients-page, .v2-appointments-page, .v2-schedule) {
+    padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-appointments-page {
+    gap: 12px !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-appointments-page .v2-admin-filter-panel {
+    margin-bottom: 0 !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-schedule .v2-admin-filter-panel {
+    margin-bottom: 12px !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-appointments-page .v2-mobile-day-header {
+    margin: 0 2px 2px !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-appointments-page .v2-mobile-card-group + .v2-mobile-card-group .v2-mobile-day-header {
+    margin-top: 8px !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-admin-filter-panel.is-mobile-collapsed {
+    padding: 5px 6px !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-admin-filter-quickbar {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 4px !important;
+    width: 100% !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-quickbar-chips {
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-quickbar-chip {
+    min-height: 38px !important;
+    height: 38px !important;
+    padding: 0 8px !important;
+    border-radius: 10px !important;
+    font-size: 12.5px !important;
+    font-weight: 600 !important;
+    line-height: 1 !important;
+    white-space: nowrap !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    border: 1px solid transparent !important;
+    background: transparent !important;
+    color: var(--lga-text-muted) !important;
+    cursor: pointer !important;
+    transition: background-color 0.16s ease, border-color 0.16s ease, color 0.16s ease !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-quickbar-chip.is-active,
+  html[data-theme] body[data-lg-admin="true"] .v2-quickbar-chip[aria-pressed="true"] {
+    background: var(--lga-accent-pill) !important;
+    border: 1px solid var(--lga-border-accent) !important;
+    color: var(--lga-text) !important;
+    box-shadow: var(--lga-btn-primary-shadow, none) !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-filter-toggle-btn {
+    min-height: 38px !important;
+    height: 38px !important;
+    padding: 0 10px !important;
+    margin-left: 2px !important;
+    border-radius: 10px !important;
+    font-size: 12.5px !important;
+    font-weight: 600 !important;
+    line-height: 1 !important;
+    white-space: nowrap !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 5px !important;
+    flex: 0 0 auto !important;
+    background: var(--lga-btn-secondary-bg) !important;
+    border: 1px solid var(--lga-border-strong) !important;
+    color: var(--lga-text) !important;
+    cursor: pointer !important;
+    transition: background-color 0.16s ease, border-color 0.16s ease, color 0.16s ease !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-filter-toggle-btn.is-open {
+    background: var(--lga-accent-pill) !important;
+    border-color: var(--lga-border-accent) !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-filter-toggle-dot {
+    width: 6px !important;
+    height: 6px !important;
+    border-radius: 999px !important;
+    background: var(--gold, #d4af37) !important;
+    flex: 0 0 auto !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-filter-toggle-chevron {
+    flex: 0 0 auto !important;
+    transition: transform 0.18s ease !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-filter-toggle-chevron.is-open {
+    transform: rotate(180deg) !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-admin-filter-collapsible.is-collapsed {
+    display: none !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-admin-filter-quickbar + .v2-admin-filter-collapsible:not(.is-collapsed) {
+    margin-top: 8px !important;
+    padding-top: 8px !important;
+    border-top: 1px solid var(--lga-border) !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-admin-filter-quickbar + .v2-admin-filter-collapsible:not(.is-collapsed) .v2-admin-filter-grid {
+    gap: 8px !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-appointments-page .v2-section-toolbar,
+  html[data-theme] body[data-lg-admin="true"] .v2-schedule .v2-section-toolbar {
+    display: none !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-schedule .admin-schedule-date-group > .v2-section-toolbar + .v2-schedule-cards-container {
+    margin-top: 0 !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-schedule-cards-card-header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding-bottom: 10px !important;
+    margin-bottom: 12px !important;
+    border-bottom: 1px solid var(--lga-border) !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-schedule-cards-date-title {
+    margin: 0 !important;
+    color: var(--lga-text) !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    line-height: 1.25 !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-mobile-sticky-cta {
+    margin-top: 8px !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  html[data-theme] body[data-lg-admin="true"] .v2-navigation {
+    margin-bottom: 14px !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-page {
+    gap: 12px !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-page :is(.v2-hero-grid, .v2-chart-grid, .v2-appointments-list, .v2-clients-list, .v2-client-grid, .v2-insights-grid) {
+    gap: 12px !important;
+  }
 }
 
 
