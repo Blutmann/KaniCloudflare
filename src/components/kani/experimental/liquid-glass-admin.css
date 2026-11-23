@@ -360,6 +360,13 @@ html[data-theme] body[data-lg-admin="true"] .v2-cash-summary-card {
   padding: 8px 12px !important;
 }
 
+html[data-theme] body[data-lg-admin="true"] .v2-cash-summary-toggle {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: var(--lga-text) !important;
+}
+
 html[data-theme] body[data-lg-admin="true"] .v2-cobro-panel {
   margin: 0 !important;
   padding: 10px 12px !important;

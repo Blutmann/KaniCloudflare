@@ -846,12 +846,20 @@ html[data-theme="dark"] .v2-field select {
   align-items: stretch;
   gap: 6px;
 }
-.v2-cash-summary-total {
+.v2-cash-summary-toggle {
+  width: 100%;
+  min-height: 44px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 6px 10px;
+  cursor: pointer;
+  text-align: left;
   min-width: 0;
 }
 .v2-cash-summary-eyebrow {
@@ -862,7 +870,7 @@ html[data-theme="dark"] .v2-field select {
 }
 .v2-cash-summary-amount-row {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   flex-wrap: wrap;
   gap: 6px;
 }
@@ -878,12 +886,21 @@ html[data-theme="dark"] .v2-field select {
   font-weight: 500;
   color: var(--muted-foreground);
 }
+.v2-cash-summary-chevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted-foreground);
+}
 .v2-cash-summary-breakdown {
-  display: grid;
+  display: none;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 6px;
   width: 100%;
   min-width: 0;
+}
+.v2-cash-summary-breakdown.is-open {
+  display: grid;
 }
 .v2-cash-metric {
   display: flex;
@@ -913,7 +930,7 @@ html[data-theme="dark"] .v2-field select {
   white-space: nowrap;
   flex-shrink: 0;
 }
-@media (min-width: 768px) {
+@media (min-width: 1024px) {
   .v2-cash-summary-card {
     padding: 10px 16px;
   }
@@ -923,12 +940,20 @@ html[data-theme="dark"] .v2-field select {
     justify-content: flex-start;
     gap: 28px;
   }
-  .v2-cash-summary-total {
+  .v2-cash-summary-toggle {
+    width: auto;
+    min-height: 0;
     flex-direction: column;
     align-items: flex-start;
     gap: 2px;
+    cursor: default;
+    pointer-events: none;
   }
-  .v2-cash-summary-breakdown {
+  .v2-cash-summary-chevron {
+    display: none;
+  }
+  .v2-cash-summary-breakdown,
+  .v2-cash-summary-breakdown.is-open {
     width: auto;
     display: flex;
     flex-wrap: nowrap;

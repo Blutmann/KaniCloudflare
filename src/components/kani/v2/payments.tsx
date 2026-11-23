@@ -8,7 +8,7 @@ import {
 import { useRef, useState, type FormEvent } from "react";
 import { useLocation, useSearch } from "@tanstack/react-router";
 import { MotionConfig, motion, useReducedMotion } from "motion/react";
-import { CheckCircle2, Tag, Trash2, Edit2, User } from "lucide-react";
+import { CheckCircle2, ChevronDown, ChevronUp, Tag, Trash2, Edit2, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAdminStaff } from "@/lib/kani-admin-context";
 import { businessDateToday, addCalendarDays } from "@/lib/kani-mobile-appointments";
@@ -61,6 +61,7 @@ export function V2Payments() {
   const [clientName, setClientName] = useState("");
   const [clientPhone, setClientPhone] = useState("");
   const [period, setPeriod] = useState<PaymentPeriodFilter>("TODAY");
+  const [showCashBreakdown, setShowCashBreakdown] = useState(false);
   const [methodFilter, setMethodFilter] = useState<"ALL" | "Efectivo" | "Transferencia" | "Payway">("ALL");
   const [customStartDate, setCustomStartDate] = useState(today);
   const [customEndDate, setCustomEndDate] = useState(today);
@@ -346,22 +347,32 @@ export function V2Payments() {
         </p>
       )}
 
-      {/* 1. Resumen de Caja del Día arriba (Cierre individual rápido) */}
+      {/* 1. Resumen de Caja del Día arriba (Cierre individual rápido, colapsable en móvil) */}
       <section className="v2-panel v2-cash-summary-card" aria-label="Resumen de caja">
         <div className="v2-cash-summary-main">
-          <div className="v2-cash-summary-total">
+          <button
+            type="button"
+            className="v2-cash-summary-toggle"
+            aria-expanded={showCashBreakdown}
+            aria-controls="v2-cash-summary-breakdown"
+            onClick={() => setShowCashBreakdown((prev) => !prev)}
+          >
             <span className="v2-cash-summary-eyebrow">
               {period === "TODAY" ? "Caja del día" : "Caja del período"}
             </span>
-            <div className="v2-cash-summary-amount-row">
+            <span className="v2-cash-summary-amount-row">
               <strong className="v2-cash-summary-amount">{money(summary.collected)}</strong>
               <span className="v2-cash-summary-count">
                 · {history.length} {history.length === 1 ? "cobro" : "cobros"}
               </span>
-            </div>
-          </div>
+              <span className="v2-cash-summary-chevron" aria-hidden="true">
+                {showCashBreakdown ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+              </span>
+            </span>
+          </button>
           <div
-            className="v2-cash-summary-breakdown"
+            id="v2-cash-summary-breakdown"
+            className={`v2-cash-summary-breakdown ${showCashBreakdown ? "is-open" : ""}`}
             aria-label="Desglose por método de pago"
           >
             <div className="v2-cash-metric cash">
