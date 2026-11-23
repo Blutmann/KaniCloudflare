@@ -1,5 +1,6 @@
 import { useMemo, useState, type FormEvent } from "react";
 import {
+  ArrowUpDown,
   ChevronDown,
   ChevronUp,
   PackageCheck,
@@ -61,7 +62,8 @@ export function V2MembershipsAndDiscounts({
     : tabState;
   const setActiveTab = setTabState;
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"ALL" | MembershipStatus>("ALL");
+  const [statusFilter, setStatusFilter] = useState<"ALL" | "INACTIVE_GROUP" | MembershipStatus>("ALL");
+  const [sortOrder, setSortOrder] = useState<"NEWEST" | "OLDEST">("NEWEST");
   const [barberFilter, setBarberFilter] = useState<string>(
     isOperator ? "ALL" : (staff.profile.barber_id ?? ""),
   );
@@ -140,14 +142,16 @@ export function V2MembershipsAndDiscounts({
   }
 
   const scopedMemberships = useMemo(() => {
-    return (data.memberships ?? []).filter((m) => {
+    const filtered = (data.memberships ?? []).filter((m) => {
       if (!isOperator && m.barberId && m.barberId !== staff.profile.barber_id) {
         return false;
       }
       if (isOperator && barberFilter !== "ALL" && m.barberId !== barberFilter) {
         return false;
       }
-      if (statusFilter !== "ALL" && m.status !== statusFilter) {
+      if (statusFilter === "INACTIVE_GROUP") {
+        if (!["EXHAUSTED", "EXPIRED", "CANCELLED"].includes(m.status)) return false;
+      } else if (statusFilter !== "ALL" && m.status !== statusFilter) {
         return false;
       }
       if (search.trim()) {
@@ -158,7 +162,12 @@ export function V2MembershipsAndDiscounts({
       }
       return true;
     });
-  }, [data.memberships, data.clients, isOperator, staff.profile.barber_id, barberFilter, statusFilter, search]);
+    return [...filtered].sort((a, b) => {
+      const aTime = new Date(a.createdAt ?? 0).getTime();
+      const bTime = new Date(b.createdAt ?? 0).getTime();
+      return sortOrder === "OLDEST" ? aTime - bTime : bTime - aTime;
+    });
+  }, [data.memberships, data.clients, isOperator, staff.profile.barber_id, barberFilter, statusFilter, sortOrder, search]);
 
   const kpiActive = scopedMemberships.filter((m) => m.status === "ACTIVE").length;
   const kpiPending = scopedMemberships.filter((m) => m.status === "PENDING_PAYMENT").length;
@@ -534,145 +543,142 @@ export function V2MembershipsAndDiscounts({
               </div>
             )}
 
-            <section className="v2-panel v2-memberships-summary-card" aria-label="Resumen de membresías">
-              <button
-                type="button"
-                className="v2-memberships-summary-toggle"
-                aria-expanded={showSummary}
-                aria-controls="v2-memberships-summary-breakdown"
-                onClick={() => setShowSummary((prev) => !prev)}
-              >
-                <span className="v2-memberships-summary-eyebrow">Resumen</span>
-                <span className="v2-memberships-summary-meta">
-                  <strong className="v2-memberships-summary-highlight">
-                    {kpiActive} {kpiActive === 1 ? "activa" : "activas"} · {kpiRemainingSessions}{" "}
-                    {kpiRemainingSessions === 1 ? "sesión" : "sesiones"}
-                  </strong>
-                  <span className="v2-memberships-summary-chevron" aria-hidden="true">
-                    {showSummary ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            <section className="v2-panel v2-memberships-unified-card" aria-label="Resumen y filtros de membresías">
+              <div className="v2-memberships-summary-card">
+                <button
+                  type="button"
+                  className="v2-memberships-summary-toggle"
+                  aria-expanded={showSummary}
+                  aria-controls="v2-memberships-summary-breakdown"
+                  onClick={() => setShowSummary((prev) => !prev)}
+                >
+                  <span className="v2-memberships-summary-eyebrow">Resumen</span>
+                  <span className="v2-memberships-summary-meta">
+                    <strong className="v2-memberships-summary-highlight">
+                      {kpiActive} {kpiActive === 1 ? "activa" : "activas"} · {kpiRemainingSessions}{" "}
+                      {kpiRemainingSessions === 1 ? "sesión" : "sesiones"}
+                    </strong>
+                    <span className="v2-memberships-summary-chevron" aria-hidden="true">
+                      {showSummary ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                    </span>
                   </span>
-                </span>
-              </button>
-              <div
-                id="v2-memberships-summary-breakdown"
-                className={`v2-memberships-summary-breakdown ${showSummary ? "is-open" : ""}`}
-              >
-                <div className="v2-memberships-summary-metric">
-                  <span>Membresías activas</span>
-                  <strong>{kpiActive}</strong>
-                </div>
-                <div className="v2-memberships-summary-metric">
-                  <span>Pendientes de pago</span>
-                  <strong>{kpiPending}</strong>
-                </div>
-                <div className="v2-memberships-summary-metric">
-                  <span>Próximas a vencer</span>
-                  <strong>{kpiExpiringSoon}</strong>
-                </div>
-                <div className="v2-memberships-summary-metric">
-                  <span>Sesiones restantes</span>
-                  <strong>{kpiRemainingSessions}</strong>
+                </button>
+                <div
+                  id="v2-memberships-summary-breakdown"
+                  className={`v2-memberships-summary-breakdown ${showSummary ? "is-open" : ""}`}
+                >
+                  <div className="v2-memberships-summary-metric">
+                    <span>Membresías activas</span>
+                    <strong>{kpiActive}</strong>
+                  </div>
+                  <div className="v2-memberships-summary-metric">
+                    <span>Pendientes de pago</span>
+                    <strong>{kpiPending}</strong>
+                  </div>
+                  <div className="v2-memberships-summary-metric">
+                    <span>Próximas a vencer</span>
+                    <strong>{kpiExpiringSoon}</strong>
+                  </div>
+                  <div className="v2-memberships-summary-metric">
+                    <span>Sesiones restantes</span>
+                    <strong>{kpiRemainingSessions}</strong>
+                  </div>
                 </div>
               </div>
-            </section>
 
-            <AdminFilterPanel
-              ariaLabel="Filtros de membresías"
-              className="v2-memberships-filter-panel"
-              mobileExpanded={showFilters}
-              mobileQuickBar={
-                <>
-                  <div className="v2-quickbar-chips" role="group" aria-label="Estados rápidos de membresías">
+              <div className="v2-memberships-card-divider" aria-hidden="true" />
+
+              <AdminFilterPanel
+                ariaLabel="Filtros de membresías"
+                className="v2-memberships-filter-panel v2-memberships-filter-panel--embedded"
+                mobileExpanded={false}
+                mobileQuickBar={
+                  <>
+                    <div className="v2-quickbar-chips" role="group" aria-label="Estados rápidos de membresías">
+                      <button
+                        type="button"
+                        className={`v2-quickbar-chip${statusFilter === "ALL" ? " is-active" : ""}`}
+                        aria-pressed={statusFilter === "ALL"}
+                        onClick={() => setStatusFilter("ALL")}
+                      >
+                        Todas
+                      </button>
+                      <button
+                        type="button"
+                        className={`v2-quickbar-chip${statusFilter === "ACTIVE" ? " is-active" : ""}`}
+                        aria-pressed={statusFilter === "ACTIVE"}
+                        onClick={() => setStatusFilter("ACTIVE")}
+                      >
+                        Activas
+                      </button>
+                      <button
+                        type="button"
+                        className={`v2-quickbar-chip${statusFilter === "INACTIVE_GROUP" ? " is-active" : ""}`}
+                        aria-pressed={statusFilter === "INACTIVE_GROUP"}
+                        onClick={() => setStatusFilter("INACTIVE_GROUP")}
+                      >
+                        Inactivas
+                      </button>
+                    </div>
                     <button
                       type="button"
-                      className={`v2-quickbar-chip${statusFilter === "ALL" ? " is-active" : ""}`}
-                      aria-pressed={statusFilter === "ALL"}
-                      onClick={() => setStatusFilter("ALL")}
+                      className="v2-filter-toggle-btn"
+                      aria-label={`Ordenar por ${sortOrder === "NEWEST" ? "más vieja" : "más nueva"}`}
+                      onClick={() => setSortOrder((prev) => (prev === "NEWEST" ? "OLDEST" : "NEWEST"))}
                     >
-                      Todas
+                      <ArrowUpDown size={13} aria-hidden="true" />
+                      <span>{sortOrder === "NEWEST" ? "Más nueva" : "Más vieja"}</span>
                     </button>
-                    <button
-                      type="button"
-                      className={`v2-quickbar-chip${statusFilter === "ACTIVE" ? " is-active" : ""}`}
-                      aria-pressed={statusFilter === "ACTIVE"}
-                      onClick={() => setStatusFilter("ACTIVE")}
-                    >
-                      Activas
-                    </button>
-                    <button
-                      type="button"
-                      className={`v2-quickbar-chip${statusFilter === "PENDING_PAYMENT" ? " is-active" : ""}`}
-                      aria-pressed={statusFilter === "PENDING_PAYMENT"}
-                      onClick={() => setStatusFilter("PENDING_PAYMENT")}
-                    >
-                      Pendientes
-                    </button>
-                  </div>
-                  <button
-                    type="button"
-                    className={`v2-filter-toggle-btn${showFilters ? " is-open" : ""}`}
-                    aria-expanded={showFilters}
-                    onClick={() => setShowFilters((prev) => !prev)}
-                  >
-                    <SlidersHorizontal size={13} aria-hidden="true" />
-                    <span>Filtros</span>
-                    {(Boolean(search.trim()) ||
-                      (isOperator && barberFilter !== "ALL") ||
-                      !["ALL", "ACTIVE", "PENDING_PAYMENT"].includes(statusFilter)) && (
-                      <span className="v2-filter-toggle-dot" aria-hidden="true" />
-                    )}
-                    <ChevronDown
-                      size={14}
-                      className={`v2-filter-toggle-chevron${showFilters ? " is-open" : ""}`}
-                      aria-hidden="true"
-                    />
-                  </button>
-                </>
-              }
-            >
-              <AdminFilterCell
-                label="Buscar cliente"
-                htmlFor="v2-memberships-search"
-                className="v2-memberships-search-cell"
+                  </>
+                }
               >
-                <input
-                  id="v2-memberships-search"
-                  type="search"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Nombre, teléfono o email"
-                />
-              </AdminFilterCell>
-              <AdminFilterCell label="Estado" htmlFor="v2-memberships-status">
-                <select
-                  id="v2-memberships-status"
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value as "ALL" | MembershipStatus)}
+                <AdminFilterCell
+                  label="Buscar cliente"
+                  htmlFor="v2-memberships-search"
+                  className="v2-memberships-search-cell v2-memberships-desktop-only"
                 >
-                  <option value="ALL">Todos</option>
-                  <option value="ACTIVE">Activa</option>
-                  <option value="PENDING_PAYMENT">Pendiente de pago</option>
-                  <option value="EXHAUSTED">Agotada</option>
-                  <option value="EXPIRED">Vencida</option>
-                  <option value="CANCELLED">Cancelada</option>
-                </select>
-              </AdminFilterCell>
-              <AdminFilterCell label="Barbero" htmlFor="v2-memberships-barber">
-                <select
-                  id="v2-memberships-barber"
-                  value={isOperator ? barberFilter : (staff.profile.barber_id ?? "")}
-                  onChange={(e) => setBarberFilter(e.target.value)}
-                  disabled={!isOperator}
-                >
-                  {isOperator && <option value="ALL">Todo Kani</option>}
-                  {staff.barbers.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.name}
-                    </option>
-                  ))}
-                </select>
-              </AdminFilterCell>
-            </AdminFilterPanel>
+                  <input
+                    id="v2-memberships-search"
+                    type="search"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Nombre, teléfono o email"
+                  />
+                </AdminFilterCell>
+                <AdminFilterCell label="Estado" htmlFor="v2-memberships-status">
+                  <select
+                    id="v2-memberships-status"
+                    value={statusFilter}
+                    onChange={(e) =>
+                      setStatusFilter(e.target.value as "ALL" | "INACTIVE_GROUP" | MembershipStatus)
+                    }
+                  >
+                    <option value="ALL">Todas</option>
+                    <option value="ACTIVE">Activa</option>
+                    <option value="INACTIVE_GROUP">Inactivas</option>
+                    <option value="PENDING_PAYMENT">Pendiente de pago</option>
+                    <option value="EXHAUSTED">Agotada</option>
+                    <option value="EXPIRED">Vencida</option>
+                    <option value="CANCELLED">Cancelada</option>
+                  </select>
+                </AdminFilterCell>
+                <AdminFilterCell label="Barbero" htmlFor="v2-memberships-barber">
+                  <select
+                    id="v2-memberships-barber"
+                    value={isOperator ? barberFilter : (staff.profile.barber_id ?? "")}
+                    onChange={(e) => setBarberFilter(e.target.value)}
+                    disabled={!isOperator}
+                  >
+                    {isOperator && <option value="ALL">Todo Kani</option>}
+                    {staff.barbers.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.name}
+                      </option>
+                    ))}
+                  </select>
+                </AdminFilterCell>
+              </AdminFilterPanel>
+            </section>
 
             <div
               className="v2-memberships-toolbar-row"

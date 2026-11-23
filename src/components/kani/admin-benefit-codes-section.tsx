@@ -165,6 +165,7 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'INACTIVE_GROUP' | BenefitCodeStatus>('ALL');
+  const [typeFilter, setTypeFilter] = useState<'ALL' | 'NO_DEPOSIT' | 'PERCENT' | 'FREE_SERVICE'>('ALL');
   const [sortBy, setSortBy] = useState<BenefitCodeSortOption>('RECENT');
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
@@ -553,6 +554,9 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
       } else if (statusFilter !== 'ALL' && item.status !== statusFilter) {
         return false;
       }
+      if (typeFilter === 'NO_DEPOSIT' && item.type !== 'NO_DEPOSIT') return false;
+      if (typeFilter === 'PERCENT' && item.type !== 'PERCENT_10' && item.type !== 'PERCENT_50') return false;
+      if (typeFilter === 'FREE_SERVICE' && item.type !== 'FREE_SERVICE') return false;
       if (!searchTerm.trim()) return true;
       const term = searchTerm.toLowerCase();
       const noteMatch = item.internalNote ? item.internalNote.toLowerCase().includes(term) : false;
@@ -587,7 +591,7 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
           return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       }
     });
-  }, [items, statusFilter, searchTerm, sortBy]);
+  }, [items, statusFilter, typeFilter, searchTerm, sortBy]);
 
   const openCreateDialog = () => {
     setCreateOpen(true);
@@ -682,19 +686,19 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                 <div className="v2-quickbar-chips" role="group" aria-label="Estados rápidos de códigos">
                   <button
                     type="button"
-                    className={`v2-quickbar-chip${statusFilter === 'ALL' ? ' is-active' : ''}`}
-                    aria-pressed={statusFilter === 'ALL'}
-                    onClick={() => setStatusFilter('ALL')}
-                  >
-                    Todos
-                  </button>
-                  <button
-                    type="button"
                     className={`v2-quickbar-chip${statusFilter === 'ACTIVE' ? ' is-active' : ''}`}
                     aria-pressed={statusFilter === 'ACTIVE'}
                     onClick={() => setStatusFilter('ACTIVE')}
                   >
                     Activos
+                  </button>
+                  <button
+                    type="button"
+                    className={`v2-quickbar-chip${statusFilter === 'ALL' ? ' is-active' : ''}`}
+                    aria-pressed={statusFilter === 'ALL'}
+                    onClick={() => setStatusFilter('ALL')}
+                  >
+                    Todos
                   </button>
                   <button
                     type="button"
@@ -712,10 +716,8 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                   onClick={() => setShowFilters((prev) => !prev)}
                 >
                   <SlidersHorizontal size={13} aria-hidden="true" />
-                  <span>Filtros</span>
-                  {(Boolean(searchTerm.trim()) ||
-                    sortBy !== 'RECENT' ||
-                    !['ALL', 'ACTIVE', 'INACTIVE_GROUP'].includes(statusFilter)) && (
+                  <span>Tipo / Orden</span>
+                  {(typeFilter !== 'ALL' || sortBy !== 'RECENT') && (
                     <span className="v2-filter-toggle-dot" aria-hidden="true" />
                   )}
                   <ChevronDown
@@ -730,7 +732,7 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
             <AdminFilterCell
               label="Buscar código o cliente"
               htmlFor="benefit-search"
-              className="v2-codes-search-cell"
+              className="v2-codes-search-cell v2-codes-desktop-only"
             >
               <div className="relative">
                 <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
@@ -744,7 +746,7 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
               </div>
             </AdminFilterCell>
 
-            <AdminFilterCell label="Estado" htmlFor="benefit-status-filter">
+            <AdminFilterCell label="Estado" htmlFor="benefit-status-filter" className="v2-codes-desktop-only">
               <select
                 id="benefit-status-filter"
                 value={statusFilter}
@@ -764,6 +766,22 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
               </select>
             </AdminFilterCell>
 
+            <AdminFilterCell label="Tipo" htmlFor="benefit-type-filter">
+              <select
+                id="benefit-type-filter"
+                value={typeFilter}
+                onChange={(e) =>
+                  setTypeFilter(e.target.value as 'ALL' | 'NO_DEPOSIT' | 'PERCENT' | 'FREE_SERVICE')
+                }
+                className="h-10 w-full px-3 text-xs bg-background border border-input rounded-md text-foreground focus:outline-none focus:ring-1 focus:ring-gold"
+              >
+                <option value="ALL">Todos</option>
+                <option value="NO_DEPOSIT">Sin seña</option>
+                <option value="PERCENT">% Descuento</option>
+                <option value="FREE_SERVICE">Sin cargo</option>
+              </select>
+            </AdminFilterCell>
+
             <AdminFilterCell label="Ordenar por" htmlFor="benefit-sort-order">
               <select
                 id="benefit-sort-order"
@@ -772,10 +790,10 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                 className="h-10 w-full px-3 text-xs bg-background border border-input rounded-md text-foreground focus:outline-none focus:ring-1 focus:ring-gold"
               >
                 <option value="RECENT">Más recientes</option>
-                <option value="OLDEST">Más antiguos</option>
+                <option value="MOST_USED">Más usados</option>
                 <option value="CODE_ASC">Nombre A-Z</option>
+                <option value="OLDEST">Más antiguos</option>
                 <option value="CODE_DESC">Nombre Z-A</option>
-                <option value="MOST_USED">Más utilizados</option>
               </select>
             </AdminFilterCell>
           </AdminFilterPanel>
