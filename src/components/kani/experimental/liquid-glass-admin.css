@@ -2711,9 +2711,9 @@ body[data-lg-admin="true"] .v2-loading {
   }
 }
 
-/* Barra única 6 ítems en móvil (< 768px): scroll horizontal suave con aire y sin recortes */
+/* Barra única en móvil (< 768px): scroll horizontal con aire cuando >= 6 ítems; grid 4 cols para BARBER */
 @media (max-width: 767px) {
-  html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav .admin-section-nav-items {
+  html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav[data-nav-scrollable="true"] .admin-section-nav-items {
     display: flex !important;
     flex-wrap: nowrap !important;
     overflow-x: auto !important;
@@ -2724,16 +2724,32 @@ body[data-lg-admin="true"] .v2-loading {
     -webkit-overflow-scrolling: touch;
   }
 
-  html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav .admin-section-nav-items::-webkit-scrollbar {
+  html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav[data-nav-scrollable="true"] .admin-section-nav-items::-webkit-scrollbar {
     display: none !important;
   }
 
-  html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav .admin-section-nav-link,
   html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav[data-nav-scrollable="true"] .admin-section-nav-link {
     flex: 0 0 auto !important;
     width: auto !important;
     min-width: 68px !important;
     padding: 6px 10px !important;
+    font-size: 11px !important;
+    white-space: nowrap !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav[data-nav-scrollable="false"] .admin-section-nav-items {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 4px !important;
+    width: 100% !important;
+    overflow-x: visible !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav[data-nav-scrollable="false"] .admin-section-nav-link {
+    flex: initial !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    padding: 6px 4px !important;
     font-size: 11px !important;
     white-space: nowrap !important;
   }
@@ -2760,7 +2776,13 @@ body[data-lg-admin="true"] .v2-loading {
   }
 
   html[data-theme] body[data-lg-admin="true"] :is(.v2-clients-page, .v2-appointments-page, .v2-schedule, .v2-memberships-page, .benefit-codes-section) {
-    padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px)) !important;
+    padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)) !important;
+    margin-bottom: 0 !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] :is(.v2-clients-page, .v2-appointments-page, .v2-schedule, .v2-memberships-page, .benefit-codes-section) > :not(.v2-client-sticky-bar):last-child,
+  html[data-theme] body[data-lg-admin="true"] :is(.v2-clients-page, .v2-appointments-page, .v2-schedule, .v2-memberships-page, .benefit-codes-section) > :not(.v2-client-sticky-bar):nth-last-child(2) {
+    margin-bottom: 0 !important;
   }
 
   html[data-theme] body[data-lg-admin="true"] .v2-client-sticky-bar,
@@ -2770,7 +2792,7 @@ body[data-lg-admin="true"] .v2-loading {
     right: 12px !important;
     bottom: max(12px, env(safe-area-inset-bottom, 0px)) !important;
     width: auto !important;
-    z-index: 40 !important;
+    z-index: 120 !important;
     margin: 0 !important;
   }
 
