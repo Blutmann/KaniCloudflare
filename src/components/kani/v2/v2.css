@@ -832,9 +832,11 @@ html[data-theme="dark"] .v2-field select {
 }
 
 /* Collection: familiar capsule selection and a clear amount/action. */
-.v2-payments-page {
+.v2-page.v2-payments-page {
   display: grid;
   gap: 8px;
+  padding-top: 12px;
+  margin-top: 0;
 }
 .v2-cash-summary-card {
   margin: 0;

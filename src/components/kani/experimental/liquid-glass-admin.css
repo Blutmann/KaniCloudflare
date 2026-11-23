@@ -350,9 +350,15 @@ html[data-theme] body[data-lg-admin="true"] .v2-quick-chip[aria-pressed="true"] 
   color: var(--lga-text-muted, var(--muted-foreground)) !important;
 }
 
+html[data-theme] body[data-lg-admin="true"] .v2-navigation:has(+ .v2-workspace > .v2-payments-page) {
+  margin-bottom: 12px !important;
+}
+
 html[data-theme] body[data-lg-admin="true"] .v2-payments-page {
   display: grid !important;
   gap: 8px !important;
+  padding-top: 0 !important;
+  margin-top: 0 !important;
 }
 
 html[data-theme] body[data-lg-admin="true"] .v2-cash-summary-card {
