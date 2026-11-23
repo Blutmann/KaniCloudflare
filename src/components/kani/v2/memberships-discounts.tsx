@@ -908,6 +908,16 @@ export function V2MembershipsAndDiscounts({
                         placeholder="Buscar por nombre o celular..."
                         aria-label="Buscar cliente por nombre o celular"
                         className="v2-client-picker-search-input"
+                        style={{
+                          border: "none",
+                          background: "transparent",
+                          backgroundColor: "transparent",
+                          boxShadow: "none",
+                          outline: "none",
+                          borderRadius: 0,
+                          padding: "10px 0",
+                          width: "100%",
+                        }}
                         autoFocus
                       />
                     </div>
@@ -949,7 +959,7 @@ export function V2MembershipsAndDiscounts({
                   <form
                     onSubmit={handleCreateInlineClient}
                     className="v2-form v2-client-picker-create-form"
-                    style={{ display: "flex", flexDirection: "column", gap: "12px" }}
+                    style={{ display: "flex", flexDirection: "column", gap: "14px", paddingTop: "4px" }}
                   >
                     {newClientError && (
                       <p role="alert" className="v2-alert">
@@ -958,7 +968,7 @@ export function V2MembershipsAndDiscounts({
                     )}
                     <label
                       className="v2-field min-w-0"
-                      style={{ display: "flex", flexDirection: "column", gap: "6px" }}
+                      style={{ display: "flex", flexDirection: "column", gap: "6px", margin: 0 }}
                     >
                       <span className="v2-field-label">Nombre</span>
                       <input
@@ -973,7 +983,7 @@ export function V2MembershipsAndDiscounts({
                     </label>
                     <label
                       className="v2-field min-w-0"
-                      style={{ display: "flex", flexDirection: "column", gap: "6px" }}
+                      style={{ display: "flex", flexDirection: "column", gap: "6px", margin: 0 }}
                     >
                       <span className="v2-field-label">Celular</span>
                       <input
@@ -987,7 +997,7 @@ export function V2MembershipsAndDiscounts({
                     </label>
                     <label
                       className="v2-field min-w-0"
-                      style={{ display: "flex", flexDirection: "column", gap: "6px" }}
+                      style={{ display: "flex", flexDirection: "column", gap: "6px", margin: 0 }}
                     >
                       <span className="v2-field-label">Email · opcional</span>
                       <input

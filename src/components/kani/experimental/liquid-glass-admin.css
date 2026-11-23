@@ -3241,13 +3241,20 @@ html[data-theme] body[data-lg-admin="true"] .v2-memberships-count {
     margin-top: 0 !important;
   }
 
-  html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .kani-dtoolbar {
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .kani-dtoolbar,
+  html[data-theme] body[data-lg-admin="true"] .benefit-codes-section .kani-dtoolbar {
     margin: 0 !important;
     padding: 0 2px !important;
     min-height: 0 !important;
+    gap: 0 !important;
   }
 
-  html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .kani-dtoolbar-count {
+  html[data-theme] body[data-lg-admin="true"] .benefit-codes-section .kani-dtoolbar-actions {
+    display: none !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .kani-dtoolbar-count,
+  html[data-theme] body[data-lg-admin="true"] .benefit-codes-section .kani-dtoolbar-count {
     font-size: 12px !important;
     line-height: 1.25 !important;
     margin: 0 !important;
@@ -5508,7 +5515,8 @@ html[data-theme] body[data-lg-admin="true"] .benefit-codes-section .v2-quickbar-
   border-color: transparent !important;
 }
 
-html[data-theme] body[data-lg-admin="true"] [role="dialog"] .v2-client-picker-search-wrap > input {
+html[data-theme="light"] body[data-lg-admin="true"] [role="dialog"] .v2-client-picker-search-wrap > input,
+html[data-theme="dark"] body[data-lg-admin="true"] [role="dialog"] .v2-client-picker-search-wrap > input {
   border: none !important;
   background: transparent !important;
   background-color: transparent !important;

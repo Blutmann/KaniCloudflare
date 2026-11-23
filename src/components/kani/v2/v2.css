@@ -6719,13 +6719,20 @@ html[data-theme="dark"] .kani-v2-toast.is-error .kani-v2-toast-icon,
     margin-bottom: 0 !important;
   }
 
-  .v2-memberships-page .kani-dtoolbar {
+  .v2-memberships-page .kani-dtoolbar,
+  .benefit-codes-section .kani-dtoolbar {
     margin: 0 !important;
     padding: 0 2px !important;
     min-height: 0 !important;
+    gap: 0 !important;
   }
 
-  .v2-memberships-page .kani-dtoolbar-count {
+  .benefit-codes-section .kani-dtoolbar-actions {
+    display: none !important;
+  }
+
+  .v2-memberships-page .kani-dtoolbar-count,
+  .benefit-codes-section .kani-dtoolbar-count {
     font-size: 12px !important;
     line-height: 1.25 !important;
     margin: 0 !important;
