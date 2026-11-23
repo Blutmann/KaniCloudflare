@@ -2785,6 +2785,18 @@ body[data-lg-admin="true"] .v2-loading {
     margin-bottom: 0 !important;
   }
 
+  html[data-theme] body[data-lg-admin="true"] .site-shell:has(.v2-shell) > .site-footer,
+  html[data-theme] body[data-admin-internal="true"] .site-shell > .site-footer {
+    position: relative !important;
+    z-index: 1 !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .site-shell:has(.v2-shell) > .liquid-glass-page[data-lg-section="admin"],
+  html[data-theme] body[data-lg-admin="true"] .v2-shell {
+    position: relative !important;
+    z-index: 20 !important;
+  }
+
   html[data-theme] body[data-lg-admin="true"] .v2-client-sticky-bar,
   html[data-theme] body[data-lg-admin="true"] .v2-mobile-sticky-cta {
     position: fixed !important;

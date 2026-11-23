@@ -6278,6 +6278,20 @@ html[data-theme="dark"] .kani-v2-toast.is-error .kani-v2-toast-icon,
     margin-bottom: 0 !important;
   }
 
+  :is(
+    .site-shell:has(.v2-shell),
+    .site-shell:has(.v2-page),
+    body[data-admin-internal="true"] .site-shell
+  ) .site-footer {
+    position: relative !important;
+    z-index: 1 !important;
+  }
+
+  .v2-shell {
+    position: relative !important;
+    z-index: 20 !important;
+  }
+
   .v2-client-sticky-bar,
   .v2-mobile-sticky-cta {
     position: fixed !important;
