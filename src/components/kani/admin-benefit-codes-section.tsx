@@ -63,6 +63,7 @@ import {
   adminCreateBenefitCodeFn,
   adminDeleteBenefitCodeFn,
   adminDisableBenefitCodeFn,
+  staffListBenefitCodesReadOnlyFn,
   adminListBenefitCodesFn,
   adminToggleBenefitCodeStatusFn,
   adminUpdateBenefitCodeValidityFn,
@@ -249,9 +250,13 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
       } catch {
         // Fallback seguro si se ejecuta en SSR o entorno sin storage
       }
-      const res = await adminListBenefitCodesFn({
-        data: { token, includeDeleted: true },
-      });
+      const res = canManageCodes
+        ? await adminListBenefitCodesFn({
+            data: { token, includeDeleted: true },
+          })
+        : await staffListBenefitCodesReadOnlyFn({
+            data: { token },
+          });
       // Asegurar estados calculados homogéneos
       const processed = (res || []).map((it) => ({
         ...it,

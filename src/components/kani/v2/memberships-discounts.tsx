@@ -33,7 +33,6 @@ import { BenefitCodesAdminSection } from "@/components/kani/admin-benefit-codes-
 import { Dialog, DialogContent, DialogDescription, DialogTitle, KaniModalClose } from "@/components/ui/dialog";
 import { AdminClientCombobox, AdminContextualSelect } from "./admin-mobile-select";
 import { useV2 } from "./data";
-import { V2Discounts } from "./discounts";
 import { EditMembershipModal, MembershipCard } from "./MembershipCard";
 import { AdminFilterCell, AdminFilterPanel, Empty } from "./shared";
 
@@ -48,7 +47,6 @@ export function V2MembershipsAndDiscounts({
   const staff = useAdminStaff();
   const isOperator = isStaffOperator(staff.profile.role);
   const canViewDiscounts = isOperator || staff.profile.role === "BARBER";
-  const isAdmin = staff.profile.role === "ADMIN";
   const today = businessDateToday();
   const soonThreshold = addCalendarDays(today, 30);
 
@@ -717,13 +715,9 @@ export function V2MembershipsAndDiscounts({
           <p role="alert" className="v2-alert" style={{ marginTop: "16px" }}>
             No tenés permisos para consultar ni gestionar códigos de descuento.
           </p>
-        ) : isAdmin ? (
-          <div className="v2-discounts-stage" style={hideHeaderBlock ? undefined : { marginTop: "16px" }}>
-            <BenefitCodesAdminSection hideHeading={hideHeaderBlock} />
-          </div>
         ) : (
           <div className="v2-discounts-stage" style={hideHeaderBlock ? undefined : { marginTop: "16px" }}>
-            <V2Discounts hideHeading={hideHeaderBlock} />
+            <BenefitCodesAdminSection hideHeading={hideHeaderBlock} />
           </div>
         )}
       </section>

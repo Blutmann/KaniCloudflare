@@ -2776,13 +2776,30 @@ body[data-lg-admin="true"] .v2-loading {
   }
 
   html[data-theme] body[data-lg-admin="true"] :is(.v2-clients-page, .v2-appointments-page, .v2-schedule, .v2-memberships-page, .benefit-codes-section) {
-    padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)) !important;
+    padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px)) !important;
     margin-bottom: 0 !important;
   }
 
   html[data-theme] body[data-lg-admin="true"] :is(.v2-clients-page, .v2-appointments-page, .v2-schedule, .v2-memberships-page, .benefit-codes-section) > :not(.v2-client-sticky-bar):last-child,
   html[data-theme] body[data-lg-admin="true"] :is(.v2-clients-page, .v2-appointments-page, .v2-schedule, .v2-memberships-page, .benefit-codes-section) > :not(.v2-client-sticky-bar):nth-last-child(2) {
     margin-bottom: 0 !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-schedule,
+  html[data-theme] body[data-lg-admin="true"] .v2-schedule .admin-schedule-page,
+  html[data-theme] body[data-lg-admin="true"] .v2-schedule .admin-schedule-shell,
+  html[data-theme] body[data-lg-admin="true"] .v2-schedule .admin-schedule-list,
+  html[data-theme] body[data-lg-admin="true"] .v2-schedule .admin-schedule-date-group {
+    gap: 0 !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-schedule .v2-admin-filter-panel {
+    margin-bottom: 10px !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-schedule .v2-schedule-cards-container,
+  html[data-theme] body[data-lg-admin="true"] .v2-schedule .admin-schedule-cards-container {
+    margin-top: 0 !important;
   }
 
   html[data-theme] body[data-lg-admin="true"] .site-shell:has(.v2-shell) > .site-footer,
@@ -2797,6 +2814,10 @@ body[data-lg-admin="true"] .v2-loading {
     z-index: 20 !important;
   }
 
+  html[data-theme] body[data-lg-admin="true"] .v2-shell {
+    padding-bottom: 0 !important;
+  }
+
   html[data-theme] body[data-lg-admin="true"] .v2-client-sticky-bar,
   html[data-theme] body[data-lg-admin="true"] .v2-mobile-sticky-cta {
     position: fixed !important;
@@ -2808,6 +2829,8 @@ body[data-lg-admin="true"] .v2-loading {
     margin: 0 !important;
   }
 
+  html[data-theme] body[data-lg-admin="true"] .benefit-codes-section .v2-client-add-btn--desktop,
+  html[data-theme] body[data-lg-admin="true"] .v2-client-add-btn--desktop,
   html[data-theme] body[data-lg-admin="true"] .kani-dtoolbar-generate-btn.v2-client-add-btn--desktop {
     display: none !important;
   }
@@ -5034,7 +5057,7 @@ html[data-theme] body[data-lg-admin="true"] .v2-page :is(.v2-hero-grid, .v2-char
 
 @media (max-width: 767px) {
   html[data-theme] body[data-lg-admin="true"] :is(.v2-clients-page, .v2-appointments-page, .v2-schedule) {
-    padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px)) !important;
+    padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px)) !important;
   }
 
   html[data-theme] body[data-lg-admin="true"] .v2-appointments-page {
@@ -5046,7 +5069,7 @@ html[data-theme] body[data-lg-admin="true"] .v2-page :is(.v2-hero-grid, .v2-char
   }
 
   html[data-theme] body[data-lg-admin="true"] .v2-schedule .v2-admin-filter-panel {
-    margin-bottom: 12px !important;
+    margin-bottom: 10px !important;
   }
 
   html[data-theme] body[data-lg-admin="true"] .v2-appointments-page .v2-mobile-day-header {
