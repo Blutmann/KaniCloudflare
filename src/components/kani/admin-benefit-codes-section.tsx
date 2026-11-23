@@ -21,6 +21,7 @@ import {
   Power,
   RefreshCw,
   Search,
+  SlidersHorizontal,
   Sparkles,
   Tag,
   Trash2,
@@ -40,6 +41,7 @@ import {
   KaniModalClose,
 } from '@/components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { AdminFilterCell, AdminFilterPanel } from '@/components/kani/v2/admin-filter-panel';
 import { supabase } from '@/integrations/supabase/client';
 import { useAdminStaff } from '@/lib/kani-admin-context';
 import { mayManageDiscounts } from '@/lib/kani-permissions';
@@ -162,9 +164,10 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
   const [items, setItems] = useState<BenefitCodeItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState<'ALL' | BenefitCodeStatus>('ALL');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'INACTIVE_GROUP' | BenefitCodeStatus>('ALL');
   const [sortBy, setSortBy] = useState<BenefitCodeSortOption>('RECENT');
   const [searchTerm, setSearchTerm] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
   const [expandedCodeIds, setExpandedCodeIds] = useState<Set<string>>(new Set());
   const [openSubSectionMap, setOpenSubSectionMap] = useState<
     Record<string, 'conditions' | 'admin' | 'history' | null>
@@ -545,7 +548,11 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
   const filteredAndSortedItems = useMemo(() => {
     // 1. Filtrar por estado y término de búsqueda
     const filtered = items.filter((item) => {
-      if (statusFilter !== 'ALL' && item.status !== statusFilter) return false;
+      if (statusFilter === 'INACTIVE_GROUP') {
+        if (item.status === 'ACTIVE' || item.status === 'DELETED') return false;
+      } else if (statusFilter !== 'ALL' && item.status !== statusFilter) {
+        return false;
+      }
       if (!searchTerm.trim()) return true;
       const term = searchTerm.toLowerCase();
       const noteMatch = item.internalNote ? item.internalNote.toLowerCase().includes(term) : false;
@@ -665,13 +672,66 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
         </div>
       ) : (
         <>
-          {/* Barra de herramientas: Buscador + Filtro Estado + Orden */}
-          <div className="kani-dfilters flex flex-col lg:flex-row items-stretch lg:items-end gap-3 w-full">
-            {/* Buscador de texto */}
-            <div className="flex-1 min-w-0">
-              <label htmlFor="benefit-search" className="block text-xs font-medium text-muted-foreground mb-1.5">
-                Buscar código o cliente
-              </label>
+          {/* Barra de herramientas: Quickbar móvil + Filtros colapsables */}
+          <AdminFilterPanel
+            ariaLabel="Filtros de códigos de beneficio"
+            className="kani-dfilters v2-codes-filter-panel"
+            mobileExpanded={showFilters}
+            mobileQuickBar={
+              <>
+                <div className="v2-quickbar-chips" role="group" aria-label="Estados rápidos de códigos">
+                  <button
+                    type="button"
+                    className={`v2-quickbar-chip${statusFilter === 'ALL' ? ' is-active' : ''}`}
+                    aria-pressed={statusFilter === 'ALL'}
+                    onClick={() => setStatusFilter('ALL')}
+                  >
+                    Todos
+                  </button>
+                  <button
+                    type="button"
+                    className={`v2-quickbar-chip${statusFilter === 'ACTIVE' ? ' is-active' : ''}`}
+                    aria-pressed={statusFilter === 'ACTIVE'}
+                    onClick={() => setStatusFilter('ACTIVE')}
+                  >
+                    Activos
+                  </button>
+                  <button
+                    type="button"
+                    className={`v2-quickbar-chip${statusFilter === 'INACTIVE_GROUP' ? ' is-active' : ''}`}
+                    aria-pressed={statusFilter === 'INACTIVE_GROUP'}
+                    onClick={() => setStatusFilter('INACTIVE_GROUP')}
+                  >
+                    Inactivos
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  className={`v2-filter-toggle-btn${showFilters ? ' is-open' : ''}`}
+                  aria-expanded={showFilters}
+                  onClick={() => setShowFilters((prev) => !prev)}
+                >
+                  <SlidersHorizontal size={13} aria-hidden="true" />
+                  <span>Filtros</span>
+                  {(Boolean(searchTerm.trim()) ||
+                    sortBy !== 'RECENT' ||
+                    !['ALL', 'ACTIVE', 'INACTIVE_GROUP'].includes(statusFilter)) && (
+                    <span className="v2-filter-toggle-dot" aria-hidden="true" />
+                  )}
+                  <ChevronDown
+                    size={14}
+                    className={`v2-filter-toggle-chevron${showFilters ? ' is-open' : ''}`}
+                    aria-hidden="true"
+                  />
+                </button>
+              </>
+            }
+          >
+            <AdminFilterCell
+              label="Buscar código o cliente"
+              htmlFor="benefit-search"
+              className="v2-codes-search-cell"
+            >
               <div className="relative">
                 <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
                 <Input
@@ -682,34 +742,29 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                   className="pl-8 text-xs h-10 w-full bg-background"
                 />
               </div>
-            </div>
+            </AdminFilterCell>
 
-            {/* Selector de Estado */}
-            <div className="w-full lg:w-56 shrink-0">
-              <label htmlFor="benefit-status-filter" className="block text-xs font-medium text-muted-foreground mb-1.5">
-                Estado
-              </label>
+            <AdminFilterCell label="Estado" htmlFor="benefit-status-filter">
               <select
                 id="benefit-status-filter"
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as any)}
+                onChange={(e) => setStatusFilter(e.target.value as 'ALL' | 'INACTIVE_GROUP' | BenefitCodeStatus)}
                 className="h-10 w-full px-3 text-xs bg-background border border-input rounded-md text-foreground focus:outline-none focus:ring-1 focus:ring-gold"
               >
                 <option value="ALL">Todos ({statusCounts.ALL})</option>
                 <option value="ACTIVE">Activos ({statusCounts.ACTIVE})</option>
+                <option value="INACTIVE_GROUP">
+                  Inactivos ({statusCounts.DISABLED + statusCounts.EXPIRED + statusCounts.CONSUMED + statusCounts.SCHEDULED})
+                </option>
                 <option value="SCHEDULED">Programados ({statusCounts.SCHEDULED})</option>
                 <option value="DISABLED">Desactivados ({statusCounts.DISABLED})</option>
                 <option value="EXPIRED">Vencidos ({statusCounts.EXPIRED})</option>
                 <option value="CONSUMED">Consumidos ({statusCounts.CONSUMED})</option>
                 <option value="DELETED">Eliminados ({statusCounts.DELETED})</option>
               </select>
-            </div>
+            </AdminFilterCell>
 
-            {/* Selector Ordenar por */}
-            <div className="w-full lg:w-48 shrink-0">
-              <label htmlFor="benefit-sort-order" className="block text-xs font-medium text-muted-foreground mb-1.5">
-                Ordenar por
-              </label>
+            <AdminFilterCell label="Ordenar por" htmlFor="benefit-sort-order">
               <select
                 id="benefit-sort-order"
                 value={sortBy}
@@ -722,8 +777,8 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                 <option value="CODE_DESC">Nombre Z-A</option>
                 <option value="MOST_USED">Más utilizados</option>
               </select>
-            </div>
-          </div>
+            </AdminFilterCell>
+          </AdminFilterPanel>
 
           {/* Barra compacta de resultados y acciones principales (estilo Membresías) */}
           {hideHeading && (
@@ -749,7 +804,7 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                   <Button
                     size="sm"
                     onClick={openCreateDialog}
-                    className="action-brand kani-dtoolbar-generate-btn min-h-[38px] text-xs font-semibold"
+                    className="action-brand kani-dtoolbar-generate-btn v2-client-add-btn--desktop min-h-[38px] text-xs font-semibold"
                   >
                     <Plus size={16} className="shrink-0" />
                     <span>Generar código</span>

@@ -6438,7 +6438,7 @@ html[data-theme="dark"] .kani-v2-toast.is-error .kani-v2-toast-icon,
     gap: 12px !important;
   }
 
-  .v2-memberships-filter-panel .v2-admin-filter-grid {
+  :is(.v2-memberships-filter-panel, .v2-codes-filter-panel) .v2-admin-filter-grid {
     grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) minmax(0, 1fr) !important;
   }
 }
@@ -6461,19 +6461,20 @@ html[data-theme="dark"] .kani-v2-toast.is-error .kani-v2-toast-icon,
 
 @media (max-width: 767px) {
   .v2-memberships-page {
-    padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px)) !important;
   }
 
-  .v2-memberships-filter-panel .v2-admin-filter-grid {
+  :is(.v2-memberships-filter-panel, .v2-codes-filter-panel) .v2-admin-filter-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     gap: 8px !important;
   }
 
-  .v2-memberships-filter-panel .v2-memberships-search-cell {
+  :is(.v2-memberships-filter-panel, .v2-codes-filter-panel) :is(.v2-memberships-search-cell, .v2-codes-search-cell) {
     grid-column: 1 / -1 !important;
   }
 
-  .v2-memberships-toolbar-row .v2-client-add-btn--desktop {
+  .v2-memberships-toolbar-row .v2-client-add-btn--desktop,
+  .v2-client-add-btn--desktop {
     display: none !important;
   }
 }

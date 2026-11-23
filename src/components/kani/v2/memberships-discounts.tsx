@@ -5,6 +5,7 @@ import {
   PackageCheck,
   Plus,
   RefreshCw,
+  SlidersHorizontal,
   Tag,
 } from "lucide-react";
 import { useAdminStaff } from "@/lib/kani-admin-context";
@@ -65,6 +66,7 @@ export function V2MembershipsAndDiscounts({
     isOperator ? "ALL" : (staff.profile.barber_id ?? ""),
   );
   const [showSummary, setShowSummary] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
   const [notice, setNotice] = useState("");
   const [errorNotice, setErrorNotice] = useState("");
   const [busy, setBusy] = useState(false);
@@ -577,6 +579,56 @@ export function V2MembershipsAndDiscounts({
             <AdminFilterPanel
               ariaLabel="Filtros de membresías"
               className="v2-memberships-filter-panel"
+              mobileExpanded={showFilters}
+              mobileQuickBar={
+                <>
+                  <div className="v2-quickbar-chips" role="group" aria-label="Estados rápidos de membresías">
+                    <button
+                      type="button"
+                      className={`v2-quickbar-chip${statusFilter === "ALL" ? " is-active" : ""}`}
+                      aria-pressed={statusFilter === "ALL"}
+                      onClick={() => setStatusFilter("ALL")}
+                    >
+                      Todas
+                    </button>
+                    <button
+                      type="button"
+                      className={`v2-quickbar-chip${statusFilter === "ACTIVE" ? " is-active" : ""}`}
+                      aria-pressed={statusFilter === "ACTIVE"}
+                      onClick={() => setStatusFilter("ACTIVE")}
+                    >
+                      Activas
+                    </button>
+                    <button
+                      type="button"
+                      className={`v2-quickbar-chip${statusFilter === "PENDING_PAYMENT" ? " is-active" : ""}`}
+                      aria-pressed={statusFilter === "PENDING_PAYMENT"}
+                      onClick={() => setStatusFilter("PENDING_PAYMENT")}
+                    >
+                      Pendientes
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    className={`v2-filter-toggle-btn${showFilters ? " is-open" : ""}`}
+                    aria-expanded={showFilters}
+                    onClick={() => setShowFilters((prev) => !prev)}
+                  >
+                    <SlidersHorizontal size={13} aria-hidden="true" />
+                    <span>Filtros</span>
+                    {(Boolean(search.trim()) ||
+                      (isOperator && barberFilter !== "ALL") ||
+                      !["ALL", "ACTIVE", "PENDING_PAYMENT"].includes(statusFilter)) && (
+                      <span className="v2-filter-toggle-dot" aria-hidden="true" />
+                    )}
+                    <ChevronDown
+                      size={14}
+                      className={`v2-filter-toggle-chevron${showFilters ? " is-open" : ""}`}
+                      aria-hidden="true"
+                    />
+                  </button>
+                </>
+              }
             >
               <AdminFilterCell
                 label="Buscar cliente"
