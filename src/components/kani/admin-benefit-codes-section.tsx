@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import {
   AlertCircle,
   AlertTriangle,
+  ArrowUpDown,
   Ban,
   Calendar,
   Check,
@@ -666,46 +667,49 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
         </div>
       ) : (
         <>
-          {/* Barra de herramientas: Quickbar móvil de 4 botones iguales + Filtros desktop */}
+          {/* Barra de herramientas: Quickbar móvil idéntica a Miembros + Filtros desktop */}
           <AdminFilterPanel
             ariaLabel="Filtros de códigos de beneficio"
             className="kani-dfilters v2-codes-filter-panel"
             mobileExpanded={false}
             mobileQuickBar={
-              <div className="v2-quickbar-chips v2-codes-quickbar-4" role="group" aria-label="Estados de códigos">
+              <>
+                <div className="v2-quickbar-chips" role="group" aria-label="Estados rápidos de códigos">
+                  <button
+                    type="button"
+                    className={`v2-quickbar-chip${statusFilter === 'ALL' ? ' is-active' : ''}`}
+                    aria-pressed={statusFilter === 'ALL'}
+                    onClick={() => setStatusFilter('ALL')}
+                  >
+                    Todos
+                  </button>
+                  <button
+                    type="button"
+                    className={`v2-quickbar-chip${statusFilter === 'ACTIVE' ? ' is-active' : ''}`}
+                    aria-pressed={statusFilter === 'ACTIVE'}
+                    onClick={() => setStatusFilter('ACTIVE')}
+                  >
+                    Activos
+                  </button>
+                  <button
+                    type="button"
+                    className={`v2-quickbar-chip${statusFilter === 'DISABLED' ? ' is-active' : ''}`}
+                    aria-pressed={statusFilter === 'DISABLED'}
+                    onClick={() => setStatusFilter('DISABLED')}
+                  >
+                    Desactivados
+                  </button>
+                </div>
                 <button
                   type="button"
-                  className={`v2-quickbar-chip${statusFilter === 'ALL' ? ' is-active' : ''}`}
-                  aria-pressed={statusFilter === 'ALL'}
-                  onClick={() => setStatusFilter('ALL')}
+                  className="v2-filter-toggle-btn v2-memberships-sort-btn"
+                  aria-label={`Ordenar por ${sortBy === 'OLDEST' ? 'nuevos' : 'viejos'}`}
+                  onClick={() => setSortBy((prev) => (prev === 'OLDEST' ? 'RECENT' : 'OLDEST'))}
                 >
-                  Todos
+                  <ArrowUpDown size={13} aria-hidden="true" />
+                  <span>{sortBy === 'OLDEST' ? 'Viejos' : 'Nuevos'}</span>
                 </button>
-                <button
-                  type="button"
-                  className={`v2-quickbar-chip${statusFilter === 'ACTIVE' ? ' is-active' : ''}`}
-                  aria-pressed={statusFilter === 'ACTIVE'}
-                  onClick={() => setStatusFilter('ACTIVE')}
-                >
-                  Activos
-                </button>
-                <button
-                  type="button"
-                  className={`v2-quickbar-chip${statusFilter === 'DISABLED' ? ' is-active' : ''}`}
-                  aria-pressed={statusFilter === 'DISABLED'}
-                  onClick={() => setStatusFilter('DISABLED')}
-                >
-                  Desactivados
-                </button>
-                <button
-                  type="button"
-                  className={`v2-quickbar-chip${statusFilter === 'DELETED' ? ' is-active' : ''}`}
-                  aria-pressed={statusFilter === 'DELETED'}
-                  onClick={() => setStatusFilter('DELETED')}
-                >
-                  Eliminados
-                </button>
-              </div>
+              </>
             }
           >
             <AdminFilterCell

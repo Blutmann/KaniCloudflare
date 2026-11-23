@@ -37,6 +37,7 @@ import {
 } from "@/lib/kani-recurrences-memberships";
 import { BenefitCodesAdminSection } from "@/components/kani/admin-benefit-codes-section";
 import { Dialog, DialogContent, DialogDescription, DialogTitle, KaniModalClose } from "@/components/ui/dialog";
+import { supabase } from "@/integrations/supabase/client";
 import { AdminContextualSelect } from "./admin-mobile-select";
 import { useV2 } from "./data";
 import { EditMembershipModal, MembershipCard } from "./MembershipCard";
@@ -79,8 +80,52 @@ export function V2MembershipsAndDiscounts({
   // Create Membership Modal State
   const [createOpen, setCreateOpen] = useState(false);
   const [clientPickerOpen, setClientPickerOpen] = useState(false);
+  const [clientPickerTab, setClientPickerTab] = useState<"SEARCH" | "CREATE">("SEARCH");
   const [clientPickerQuery, setClientPickerQuery] = useState("");
+  const [newClientName, setNewClientName] = useState("");
+  const [newClientPhone, setNewClientPhone] = useState("");
+  const [newClientEmail, setNewClientEmail] = useState("");
+  const [newClientSaving, setNewClientSaving] = useState(false);
+  const [newClientError, setNewClientError] = useState("");
   const [clientId, setClientId] = useState("");
+
+  async function handleCreateInlineClient(event: FormEvent) {
+    event.preventDefault();
+    if (newClientName.trim().length < 2) {
+      setNewClientError("El nombre debe tener al menos 2 caracteres.");
+      return;
+    }
+    const phoneDigits = newClientPhone.replace(/\D/g, "");
+    if (phoneDigits.length < 6) {
+      setNewClientError("El teléfono debe tener al menos 6 dígitos.");
+      return;
+    }
+    setNewClientSaving(true);
+    setNewClientError("");
+    try {
+      const { data: createdClient, error } = await supabase.rpc("save_client", {
+        p_id: null,
+        p_name: newClientName.trim(),
+        p_phone: newClientPhone.trim(),
+        p_email: newClientEmail.trim() || null,
+      });
+      if (error) throw error;
+      await data.refresh({ silent: true });
+      if (createdClient && typeof createdClient === "object" && "id" in createdClient && createdClient.id) {
+        setClientId(String(createdClient.id));
+      }
+      setNewClientName("");
+      setNewClientPhone("");
+      setNewClientEmail("");
+      setClientPickerTab("SEARCH");
+      setClientPickerQuery("");
+      setClientPickerOpen(false);
+    } catch (err) {
+      setNewClientError(err instanceof Error ? err.message : "No se pudo crear el cliente.");
+    } finally {
+      setNewClientSaving(false);
+    }
+  }
   const activeCreateClients = useMemo(
     () => (data.clients ?? []).filter((c) => !c.archived),
     [data.clients],
@@ -810,10 +855,12 @@ export function V2MembershipsAndDiscounts({
       <Dialog
         open={createOpen}
         onOpenChange={(open) => {
-          if (!open && !busy) {
+          if (!open && !busy && !newClientSaving) {
             setCreateOpen(false);
             setClientPickerOpen(false);
+            setClientPickerTab("SEARCH");
             setClientPickerQuery("");
+            setNewClientError("");
           }
         }}
       >
@@ -829,9 +876,12 @@ export function V2MembershipsAndDiscounts({
                 <button
                   type="button"
                   className="v2-client-picker-back"
+                  disabled={newClientSaving}
                   onClick={() => {
                     setClientPickerOpen(false);
+                    setClientPickerTab("SEARCH");
                     setClientPickerQuery("");
+                    setNewClientError("");
                   }}
                 >
                   <ArrowLeft size={16} aria-hidden="true" />
@@ -841,54 +891,133 @@ export function V2MembershipsAndDiscounts({
                 <KaniModalClose label="Cerrar" />
               </div>
               <div className="v2-modal-pinned-scroll kani-modal-body v2-client-picker-body">
-                <div className="v2-client-picker-search-wrap">
-                  <Search
-                    size={15}
-                    className="v2-client-picker-search-icon"
-                    aria-hidden="true"
-                  />
-                  <input
-                    type="search"
-                    value={clientPickerQuery}
-                    onChange={(e) => setClientPickerQuery(e.target.value)}
-                    placeholder="Buscar por nombre o teléfono…"
-                    aria-label="Buscar cliente por nombre o teléfono"
-                    className="v2-client-picker-search-input"
-                    autoFocus
-                  />
+                <div className="v2-client-picker-tabs" role="tablist" aria-label="Modo de cliente">
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={clientPickerTab === "SEARCH"}
+                    className={`v2-client-picker-tab${clientPickerTab === "SEARCH" ? " is-active" : ""}`}
+                    onClick={() => {
+                      setClientPickerTab("SEARCH");
+                      setNewClientError("");
+                    }}
+                  >
+                    Buscar
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={clientPickerTab === "CREATE"}
+                    className={`v2-client-picker-tab${clientPickerTab === "CREATE" ? " is-active" : ""}`}
+                    onClick={() => {
+                      setClientPickerTab("CREATE");
+                      setNewClientError("");
+                    }}
+                  >
+                    + Nuevo cliente
+                  </button>
                 </div>
-                <ul role="listbox" aria-label="Clientes" className="v2-client-picker-list">
-                  {filteredPickerClients.length === 0 ? (
-                    <li className="px-3 py-5 text-center text-xs text-muted-foreground">
-                      No se encontraron clientes para “{clientPickerQuery}”.
-                    </li>
-                  ) : (
-                    filteredPickerClients.map((c) => {
-                      const isSelected = c.id === clientId;
-                      return (
-                        <li key={c.id}>
-                          <button
-                            type="button"
-                            role="option"
-                            aria-selected={isSelected}
-                            className={`v2-client-picker-row${isSelected ? " is-selected" : ""}`}
-                            onClick={() => {
-                              setClientId(c.id);
-                              setClientPickerOpen(false);
-                              setClientPickerQuery("");
-                            }}
-                          >
-                            <span className="v2-client-picker-name">{c.name}</span>
-                            {c.phone && <span className="v2-client-picker-phone">{c.phone}</span>}
-                            {isSelected && (
-                              <Check size={14} className="shrink-0 text-gold" aria-hidden="true" />
-                            )}
-                          </button>
+
+                {clientPickerTab === "SEARCH" ? (
+                  <>
+                    <div className="v2-client-picker-search-wrap">
+                      <Search
+                        size={15}
+                        className="v2-client-picker-search-icon"
+                        aria-hidden="true"
+                      />
+                      <input
+                        type="search"
+                        value={clientPickerQuery}
+                        onChange={(e) => setClientPickerQuery(e.target.value)}
+                        placeholder="Buscar por nombre o teléfono…"
+                        aria-label="Buscar cliente por nombre o teléfono"
+                        className="v2-client-picker-search-input"
+                        style={{ paddingLeft: "36px" }}
+                        autoFocus
+                      />
+                    </div>
+                    <ul role="listbox" aria-label="Clientes" className="v2-client-picker-list">
+                      {filteredPickerClients.length === 0 ? (
+                        <li className="px-3 py-5 text-center text-xs text-muted-foreground">
+                          No se encontraron clientes para “{clientPickerQuery}”.
                         </li>
-                      );
-                    })
-                  )}
-                </ul>
+                      ) : (
+                        filteredPickerClients.map((c) => {
+                          const isSelected = c.id === clientId;
+                          return (
+                            <li key={c.id}>
+                              <button
+                                type="button"
+                                role="option"
+                                aria-selected={isSelected}
+                                className={`v2-client-picker-row${isSelected ? " is-selected" : ""}`}
+                                onClick={() => {
+                                  setClientId(c.id);
+                                  setClientPickerOpen(false);
+                                  setClientPickerTab("SEARCH");
+                                  setClientPickerQuery("");
+                                }}
+                              >
+                                <span className="v2-client-picker-name">{c.name}</span>
+                                {c.phone && <span className="v2-client-picker-phone">{c.phone}</span>}
+                                {isSelected && (
+                                  <Check size={14} className="shrink-0 text-gold" aria-hidden="true" />
+                                )}
+                              </button>
+                            </li>
+                          );
+                        })
+                      )}
+                    </ul>
+                  </>
+                ) : (
+                  <form onSubmit={handleCreateInlineClient} className="v2-form space-y-3">
+                    {newClientError && (
+                      <p role="alert" className="v2-alert">
+                        {newClientError}
+                      </p>
+                    )}
+                    <label className="v2-field min-w-0">
+                      <span className="v2-field-label">Nombre</span>
+                      <input
+                        type="text"
+                        required
+                        minLength={2}
+                        value={newClientName}
+                        onChange={(e) => setNewClientName(e.target.value)}
+                        placeholder="Nombre y apellido"
+                        autoFocus
+                      />
+                    </label>
+                    <label className="v2-field min-w-0">
+                      <span className="v2-field-label">Teléfono</span>
+                      <input
+                        type="tel"
+                        required
+                        value={newClientPhone}
+                        onChange={(e) => setNewClientPhone(e.target.value)}
+                        placeholder="Ej: 11 2345 6789"
+                      />
+                    </label>
+                    <label className="v2-field min-w-0">
+                      <span className="v2-field-label">Email (opcional)</span>
+                      <input
+                        type="email"
+                        value={newClientEmail}
+                        onChange={(e) => setNewClientEmail(e.target.value)}
+                        placeholder="cliente@email.com"
+                      />
+                    </label>
+                    <button
+                      type="submit"
+                      className="v2-primary w-full"
+                      disabled={newClientSaving}
+                    >
+                      {newClientSaving ? "Guardando…" : "Guardar y seleccionar"}
+                    </button>
+                  </form>
+                )}
               </div>
             </>
           ) : (

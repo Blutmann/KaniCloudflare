@@ -6551,49 +6551,44 @@ html[data-theme="dark"] .kani-v2-toast.is-error .kani-v2-toast-icon,
     overscroll-behavior: contain;
   }
 
-  .v2-codes-quickbar-4 {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: space-between !important;
-    gap: 2px !important;
-    width: 100% !important;
-    min-width: 0 !important;
-  }
-
-  .v2-codes-quickbar-4 .v2-quickbar-chip,
-  .v2-codes-quickbar-4 > button:not([aria-pressed="true"]) {
-    flex: 0 1 auto !important;
-    width: auto !important;
-    min-width: 0 !important;
-    padding: 6px 7px !important;
-    font-size: 11px !important;
-    white-space: nowrap !important;
-    background: transparent !important;
-    background-color: transparent !important;
-    border: 1px solid transparent !important;
-    border-color: transparent !important;
-    box-shadow: none !important;
-    justify-content: center !important;
-    text-align: center !important;
-  }
-
-  .v2-codes-quickbar-4 .v2-quickbar-chip.is-active,
-  .v2-codes-quickbar-4 .v2-quickbar-chip[aria-pressed="true"] {
-    background: var(--v2-accent-pill, rgb(198 164 108 / 18%)) !important;
-    border: 1px solid var(--v2-border-accent, rgb(198 164 108 / 45%)) !important;
-    color: var(--foreground) !important;
-  }
-
   .kani-mcreate-footer {
-    display: flex !important;
-    flex-wrap: nowrap !important;
-    width: 100% !important;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     gap: 10px !important;
+    width: 100% !important;
   }
 
   .kani-mcreate-footer > button {
-    flex: 1 1 0% !important;
+    width: 100% !important;
     min-width: 0 !important;
+  }
+
+  .v2-client-picker-tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px;
+    padding: 4px;
+    margin-bottom: 10px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--v2-inset, rgb(0 0 0 / 4%));
+  }
+
+  .v2-client-picker-tab {
+    height: 34px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--muted-foreground);
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .v2-client-picker-tab.is-active {
+    background: var(--v2-accent-pill, rgb(198 164 108 / 18%));
+    border-color: var(--v2-border-accent, rgb(198 164 108 / 45%));
+    color: var(--foreground);
   }
 
   .v2-client-picker-back {
@@ -6619,9 +6614,10 @@ html[data-theme="dark"] .kani-v2-toast.is-error .kani-v2-toast-icon,
 
   .v2-client-picker-search-icon {
     position: absolute;
-    left: 11px;
+    left: 12px;
     top: 50%;
     transform: translateY(-50%);
+    z-index: 2;
     color: var(--muted-foreground);
     pointer-events: none;
   }
@@ -6629,7 +6625,8 @@ html[data-theme="dark"] .kani-v2-toast.is-error .kani-v2-toast-icon,
   .v2-client-picker-search-input {
     width: 100%;
     height: 40px;
-    padding: 0 12px 0 34px;
+    padding: 0 12px 0 36px !important;
+    box-sizing: border-box !important;
     border-radius: 10px;
     border: 1px solid var(--border);
     background: var(--background);

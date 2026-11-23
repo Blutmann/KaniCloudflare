@@ -3080,49 +3080,44 @@ html[data-theme] body[data-lg-admin="true"] .v2-memberships-count {
     overscroll-behavior: contain !important;
   }
 
-  html[data-theme] body[data-lg-admin="true"] .v2-codes-quickbar-4 {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: space-between !important;
-    gap: 2px !important;
-    width: 100% !important;
-    min-width: 0 !important;
-  }
-
-  html[data-theme] body[data-lg-admin="true"] .v2-codes-quickbar-4 .v2-quickbar-chip,
-  html[data-theme] body[data-lg-admin="true"] .v2-codes-quickbar-4 > button:not([aria-pressed="true"]) {
-    flex: 0 1 auto !important;
-    width: auto !important;
-    min-width: 0 !important;
-    padding: 6px 7px !important;
-    font-size: 11px !important;
-    white-space: nowrap !important;
-    background: transparent !important;
-    background-color: transparent !important;
-    border: 1px solid transparent !important;
-    border-color: transparent !important;
-    box-shadow: none !important;
-    justify-content: center !important;
-    text-align: center !important;
-  }
-
-  html[data-theme] body[data-lg-admin="true"] .v2-codes-quickbar-4 .v2-quickbar-chip.is-active,
-  html[data-theme] body[data-lg-admin="true"] .v2-codes-quickbar-4 .v2-quickbar-chip[aria-pressed="true"] {
-    background: var(--lga-accent-pill) !important;
-    border: 1px solid var(--lga-border-accent) !important;
-    color: var(--lga-text) !important;
-  }
-
   html[data-theme] body[data-lg-admin="true"] .kani-mcreate-footer {
-    display: flex !important;
-    flex-wrap: nowrap !important;
-    width: 100% !important;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     gap: 10px !important;
+    width: 100% !important;
   }
 
   html[data-theme] body[data-lg-admin="true"] .kani-mcreate-footer > button {
-    flex: 1 1 0% !important;
+    width: 100% !important;
     min-width: 0 !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-client-picker-tabs {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 4px !important;
+    padding: 4px !important;
+    margin-bottom: 10px !important;
+    border-radius: 12px !important;
+    border: 1px solid var(--lga-border) !important;
+    background: var(--lga-glass-nested) !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-client-picker-tab {
+    height: 34px !important;
+    border-radius: 8px !important;
+    border: 1px solid transparent !important;
+    background: transparent !important;
+    color: var(--lga-text-muted) !important;
+    font-size: 12.5px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-client-picker-tab.is-active {
+    background: var(--lga-accent-pill) !important;
+    border-color: var(--lga-border-accent) !important;
+    color: var(--lga-text) !important;
   }
 
   html[data-theme] body[data-lg-admin="true"] .v2-client-picker-back {
@@ -3147,9 +3142,10 @@ html[data-theme] body[data-lg-admin="true"] .v2-memberships-count {
 
   html[data-theme] body[data-lg-admin="true"] .v2-client-picker-search-icon {
     position: absolute !important;
-    left: 11px !important;
+    left: 12px !important;
     top: 50% !important;
     transform: translateY(-50%) !important;
+    z-index: 2 !important;
     color: var(--lga-text-muted) !important;
     pointer-events: none !important;
   }
@@ -3157,7 +3153,8 @@ html[data-theme] body[data-lg-admin="true"] .v2-memberships-count {
   html[data-theme] body[data-lg-admin="true"] .v2-client-picker-search-input {
     width: 100% !important;
     height: 40px !important;
-    padding: 0 12px 0 34px !important;
+    padding: 0 12px 0 36px !important;
+    box-sizing: border-box !important;
     border-radius: 10px !important;
     border: 1px solid var(--lga-border) !important;
     background: var(--lga-glass-nested) !important;
