@@ -3089,7 +3089,8 @@ html[data-theme] body[data-lg-admin="true"] .v2-memberships-count {
     min-width: 0 !important;
   }
 
-  html[data-theme] body[data-lg-admin="true"] .v2-codes-quickbar-4 .v2-quickbar-chip {
+  html[data-theme] body[data-lg-admin="true"] .v2-codes-quickbar-4 .v2-quickbar-chip,
+  html[data-theme] body[data-lg-admin="true"] .v2-codes-quickbar-4 > button:not([aria-pressed="true"]) {
     flex: 0 1 auto !important;
     width: auto !important;
     min-width: 0 !important;
@@ -3097,7 +3098,10 @@ html[data-theme] body[data-lg-admin="true"] .v2-memberships-count {
     font-size: 11px !important;
     white-space: nowrap !important;
     background: transparent !important;
+    background-color: transparent !important;
     border: 1px solid transparent !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
     justify-content: center !important;
     text-align: center !important;
   }
@@ -3107,6 +3111,104 @@ html[data-theme] body[data-lg-admin="true"] .v2-memberships-count {
     background: var(--lga-accent-pill) !important;
     border: 1px solid var(--lga-border-accent) !important;
     color: var(--lga-text) !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .kani-mcreate-footer {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    width: 100% !important;
+    gap: 10px !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .kani-mcreate-footer > button {
+    flex: 1 1 0% !important;
+    min-width: 0 !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-client-picker-back {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    padding: 6px 8px !important;
+    margin-left: -6px !important;
+    border-radius: 8px !important;
+    border: none !important;
+    background: transparent !important;
+    color: var(--lga-text) !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-client-picker-search-wrap {
+    position: relative !important;
+    width: 100% !important;
+    margin-bottom: 10px !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-client-picker-search-icon {
+    position: absolute !important;
+    left: 11px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    color: var(--lga-text-muted) !important;
+    pointer-events: none !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-client-picker-search-input {
+    width: 100% !important;
+    height: 40px !important;
+    padding: 0 12px 0 34px !important;
+    border-radius: 10px !important;
+    border: 1px solid var(--lga-border) !important;
+    background: var(--lga-glass-nested) !important;
+    color: var(--lga-text) !important;
+    font-size: 15px !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-client-picker-list {
+    list-style: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    max-height: 46dvh !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y !important;
+    overscroll-behavior: contain !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-client-picker-row {
+    width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 10px !important;
+    padding: 11px 4px !important;
+    border: none !important;
+    border-bottom: 1px solid var(--lga-hairline, var(--lga-border)) !important;
+    background: transparent !important;
+    color: var(--lga-text) !important;
+    text-align: left !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-client-picker-row:last-child {
+    border-bottom: none !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-client-picker-name {
+    min-width: 0 !important;
+    flex: 1 !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-client-picker-phone {
+    flex: 0 0 auto !important;
+    font-size: 12.5px !important;
+    color: var(--lga-text-muted) !important;
+    white-space: nowrap !important;
   }
 
   html[data-theme] body[data-lg-admin="true"] :is(.v2-memberships-filter-panel, .v2-codes-filter-panel) .v2-admin-filter-grid {

@@ -1,13 +1,17 @@
 import { useMemo, useState, type FormEvent } from "react";
 import {
+  ArrowLeft,
   ArrowUpDown,
+  Check,
   ChevronDown,
   ChevronUp,
   PackageCheck,
   Plus,
   RefreshCw,
+  Search,
   SlidersHorizontal,
   Tag,
+  UserRound,
 } from "lucide-react";
 import { useAdminStaff } from "@/lib/kani-admin-context";
 import { buildMembershipCardUrl } from "@/lib/kani-membership-urls";
@@ -33,7 +37,7 @@ import {
 } from "@/lib/kani-recurrences-memberships";
 import { BenefitCodesAdminSection } from "@/components/kani/admin-benefit-codes-section";
 import { Dialog, DialogContent, DialogDescription, DialogTitle, KaniModalClose } from "@/components/ui/dialog";
-import { AdminClientCombobox, AdminContextualSelect } from "./admin-mobile-select";
+import { AdminContextualSelect } from "./admin-mobile-select";
 import { useV2 } from "./data";
 import { EditMembershipModal, MembershipCard } from "./MembershipCard";
 import { AdminFilterCell, AdminFilterPanel, Empty } from "./shared";
@@ -68,14 +72,36 @@ export function V2MembershipsAndDiscounts({
     isOperator ? "ALL" : (staff.profile.barber_id ?? ""),
   );
   const [showSummary, setShowSummary] = useState(false);
-  const [showFilters, setShowFilters] = useState(false);
   const [notice, setNotice] = useState("");
   const [errorNotice, setErrorNotice] = useState("");
   const [busy, setBusy] = useState(false);
 
   // Create Membership Modal State
   const [createOpen, setCreateOpen] = useState(false);
+  const [clientPickerOpen, setClientPickerOpen] = useState(false);
+  const [clientPickerQuery, setClientPickerQuery] = useState("");
   const [clientId, setClientId] = useState("");
+  const activeCreateClients = useMemo(
+    () => (data.clients ?? []).filter((c) => !c.archived),
+    [data.clients],
+  );
+  const selectedCreateClient = useMemo(
+    () => activeCreateClients.find((c) => c.id === clientId) ?? null,
+    [activeCreateClients, clientId],
+  );
+  const filteredPickerClients = useMemo(() => {
+    const q = clientPickerQuery.trim().toLowerCase();
+    if (!q) return activeCreateClients;
+    const digitsQuery = q.replace(/\D/g, "");
+    return activeCreateClients.filter((c) => {
+      const nameMatch = c.name.toLowerCase().includes(q);
+      const phoneStr = (c.phone ?? "").toLowerCase();
+      const phoneMatch = phoneStr.includes(q);
+      const digitsMatch =
+        digitsQuery.length > 0 && phoneStr.replace(/\D/g, "").includes(digitsQuery);
+      return nameMatch || phoneMatch || digitsMatch;
+    });
+  }, [activeCreateClients, clientPickerQuery]);
   const [barberId, setBarberId] = useState(
     !isOperator && staff.profile.barber_id
       ? staff.profile.barber_id
@@ -784,7 +810,11 @@ export function V2MembershipsAndDiscounts({
       <Dialog
         open={createOpen}
         onOpenChange={(open) => {
-          if (!open && !busy) setCreateOpen(false);
+          if (!open && !busy) {
+            setCreateOpen(false);
+            setClientPickerOpen(false);
+            setClientPickerQuery("");
+          }
         }}
       >
         <DialogContent
@@ -793,154 +823,248 @@ export function V2MembershipsAndDiscounts({
           showCloseButton={false}
           aria-describedby={undefined}
         >
-          <div className="v2-modal-pinned-header kani-modal-header">
-            <DialogTitle>Nueva membresía</DialogTitle>
-            <KaniModalClose label="Cerrar" />
-          </div>
-          <form onSubmit={handleCreateSubmit} className="v2-form v2-modal-pinned-form">
-            <div className="v2-modal-pinned-scroll kani-modal-body">
-              <div className="v2-field min-w-0">
-                <label htmlFor="membership-client-select" className="v2-field-label">
-                  Cliente titular
-                </label>
-                <AdminClientCombobox
-                  id="membership-client-select"
-                  clients={data.clients.filter((c) => !c.archived)}
-                  value={clientId}
-                  onChange={setClientId}
-                  required
-                  ariaLabel="Cliente titular"
-                />
+          {clientPickerOpen ? (
+            <>
+              <div className="v2-modal-pinned-header kani-modal-header">
+                <button
+                  type="button"
+                  className="v2-client-picker-back"
+                  onClick={() => {
+                    setClientPickerOpen(false);
+                    setClientPickerQuery("");
+                  }}
+                >
+                  <ArrowLeft size={16} aria-hidden="true" />
+                  <span>Volver</span>
+                </button>
+                <DialogTitle>Elegir cliente</DialogTitle>
+                <KaniModalClose label="Cerrar" />
               </div>
-
-              <div className="v2-membership-create-row">
-                <label className="v2-field min-w-0">
-                  <span className="v2-field-label">Barbero</span>
-                  <select
-                    value={barberId}
-                    onChange={(e) => setBarberId(e.target.value)}
-                    disabled={!isOperator}
-                  >
-                    {staff.barbers.map((b) => (
-                      <option key={b.id} value={b.id}>
-                        {b.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <div className="v2-field min-w-0">
-                  <label htmlFor="membership-package-select" className="v2-field-label">
-                    Tipo de membresía
-                  </label>
-                  <AdminContextualSelect
-                    id="membership-package-select"
-                    ariaLabel="Tipo de membresía"
-                    value={selectedPackageId}
-                    onValueChange={(val) =>
-                      setSelectedPackageId(val as HomogeneousMembershipPackageId)
-                    }
-                    options={HOMOGENEOUS_MEMBERSHIP_PACKAGES.map((pkg) => ({
-                      value: pkg.id,
-                      label: pkg.label,
-                    }))}
+              <div className="v2-modal-pinned-scroll kani-modal-body v2-client-picker-body">
+                <div className="v2-client-picker-search-wrap">
+                  <Search
+                    size={15}
+                    className="v2-client-picker-search-icon"
+                    aria-hidden="true"
+                  />
+                  <input
+                    type="search"
+                    value={clientPickerQuery}
+                    onChange={(e) => setClientPickerQuery(e.target.value)}
+                    placeholder="Buscar por nombre o teléfono…"
+                    aria-label="Buscar cliente por nombre o teléfono"
+                    className="v2-client-picker-search-input"
+                    autoFocus
                   />
                 </div>
+                <ul role="listbox" aria-label="Clientes" className="v2-client-picker-list">
+                  {filteredPickerClients.length === 0 ? (
+                    <li className="px-3 py-5 text-center text-xs text-muted-foreground">
+                      No se encontraron clientes para “{clientPickerQuery}”.
+                    </li>
+                  ) : (
+                    filteredPickerClients.map((c) => {
+                      const isSelected = c.id === clientId;
+                      return (
+                        <li key={c.id}>
+                          <button
+                            type="button"
+                            role="option"
+                            aria-selected={isSelected}
+                            className={`v2-client-picker-row${isSelected ? " is-selected" : ""}`}
+                            onClick={() => {
+                              setClientId(c.id);
+                              setClientPickerOpen(false);
+                              setClientPickerQuery("");
+                            }}
+                          >
+                            <span className="v2-client-picker-name">{c.name}</span>
+                            {c.phone && <span className="v2-client-picker-phone">{c.phone}</span>}
+                            {isSelected && (
+                              <Check size={14} className="shrink-0 text-gold" aria-hidden="true" />
+                            )}
+                          </button>
+                        </li>
+                      );
+                    })
+                  )}
+                </ul>
               </div>
-
-              <div className="v2-membership-summary-card">
-                <div>
-                  <span>Subtotal</span>
-                  <span>{money(livePricing.subtotalArs)}</span>
-                </div>
-                <div>
-                  <span>Descuento ({livePricing.discountPercent}%)</span>
-                  <span style={{ color: "#10b981" }}>-{money(livePricing.discountAmountArs)}</span>
-                </div>
-                <div className="v2-membership-summary-total">
-                  <span>Total final</span>
-                  <span>{money(livePricing.totalPriceArs)}</span>
-                </div>
+            </>
+          ) : (
+            <>
+              <div className="v2-modal-pinned-header kani-modal-header">
+                <DialogTitle>Nueva membresía</DialogTitle>
+                <KaniModalClose label="Cerrar" />
               </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                <label className="v2-field min-w-0">
-                  <span className="v2-field-label">Vencimiento</span>
-                  <select
-                    value={expirationMode}
-                    onChange={(e) => setExpirationMode(e.target.value as "NONE" | "DATE")}
-                  >
-                    <option value="NONE">Sin vencimiento</option>
-                    <option value="DATE">Fecha determinada</option>
-                  </select>
-                </label>
-                {expirationMode === "DATE" && (
-                  <label className="v2-field min-w-0">
-                    <span className="v2-field-label">Fecha de vencimiento</span>
-                    <input
-                      type="date"
-                      value={expiresAt}
-                      min={today}
-                      onChange={(e) => setExpiresAt(e.target.value)}
-                    />
-                  </label>
-                )}
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                <div className="v2-field min-w-0">
-                  <label htmlFor="membership-payment-status" className="v2-field-label">
-                    Estado de pago
-                  </label>
-                  <AdminContextualSelect
-                    id="membership-payment-status"
-                    ariaLabel="Estado de pago"
-                    value={payImmediately ? "PAID" : "PENDING"}
-                    onValueChange={(val) => setPayImmediately(val === "PAID")}
-                    options={[
-                      { value: "PAID", label: "Pagada ahora (Activa)" },
-                      { value: "PENDING", label: "Pendiente de pago" },
-                    ]}
-                  />
-                </div>
-                {payImmediately && (
-                  <label className="v2-field min-w-0">
-                    <span className="v2-field-label">Medio de pago</span>
-                    <select
-                      value={paymentMethod}
-                      onChange={(e) =>
-                        setPaymentMethod(e.target.value as KaniMembershipPaymentMethod)
-                      }
+              <form onSubmit={handleCreateSubmit} className="v2-form v2-modal-pinned-form">
+                <div className="v2-modal-pinned-scroll kani-modal-body">
+                  <div className="v2-field min-w-0">
+                    <label htmlFor="membership-client-select" className="v2-field-label">
+                      Cliente titular
+                    </label>
+                    <button
+                      id="membership-client-select"
+                      type="button"
+                      role="combobox"
+                      aria-expanded={clientPickerOpen}
+                      aria-haspopup="listbox"
+                      aria-label="Cliente titular"
+                      onClick={() => setClientPickerOpen(true)}
+                      className="v2-admin-select-trigger flex h-[44px] min-h-[44px] w-full min-w-0 max-w-full items-center justify-between gap-2.5 overflow-hidden rounded-[var(--v2-radius-btn,12px)] border border-input bg-background px-3 py-0 text-left text-[14px] leading-none text-foreground shadow-xs transition-colors focus:outline-none focus:ring-1 focus:ring-gold"
                     >
-                      {KANI_MEMBERSHIP_PAYMENT_METHODS.map((method) => (
-                        <option key={method} value={method}>
-                          {method}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                )}
-              </div>
-            </div>
+                      <span className="flex min-w-0 flex-1 items-center gap-2.5 overflow-hidden text-left">
+                        <UserRound size={16} className="shrink-0 text-gold" aria-hidden="true" />
+                        <span
+                          className={`block min-w-0 flex-1 truncate leading-[1.35]${
+                            !selectedCreateClient ? " text-muted-foreground" : ""
+                          }`}
+                        >
+                          {selectedCreateClient
+                            ? `${selectedCreateClient.name}${
+                                selectedCreateClient.phone ? ` (${selectedCreateClient.phone})` : ""
+                              }`
+                            : "Seleccionar cliente…"}
+                        </span>
+                      </span>
+                      <ChevronDown size={16} className="ml-1 shrink-0 opacity-60" aria-hidden="true" />
+                    </button>
+                  </div>
 
-            <div className="v2-dialog-actions v2-modal-pinned-footer kani-modal-footer kani-mcreate-footer">
-              <button
-                type="button"
-                className="v2-secondary"
-                disabled={busy}
-                onClick={() => setCreateOpen(false)}
-              >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                className="v2-primary"
-                disabled={busy || !livePricing.isValidComposition}
-              >
-                {busy ? "Guardando…" : "Crear membresía"}
-              </button>
-            </div>
-          </form>
+                  <div className="v2-membership-create-row">
+                    <label className="v2-field min-w-0">
+                      <span className="v2-field-label">Barbero</span>
+                      <select
+                        value={barberId}
+                        onChange={(e) => setBarberId(e.target.value)}
+                        disabled={!isOperator}
+                      >
+                        {staff.barbers.map((b) => (
+                          <option key={b.id} value={b.id}>
+                            {b.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <div className="v2-field min-w-0">
+                      <label htmlFor="membership-package-select" className="v2-field-label">
+                        Tipo de membresía
+                      </label>
+                      <AdminContextualSelect
+                        id="membership-package-select"
+                        ariaLabel="Tipo de membresía"
+                        value={selectedPackageId}
+                        onValueChange={(val) =>
+                          setSelectedPackageId(val as HomogeneousMembershipPackageId)
+                        }
+                        options={HOMOGENEOUS_MEMBERSHIP_PACKAGES.map((pkg) => ({
+                          value: pkg.id,
+                          label: pkg.label,
+                        }))}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="v2-membership-summary-card">
+                    <div>
+                      <span>Subtotal</span>
+                      <span>{money(livePricing.subtotalArs)}</span>
+                    </div>
+                    <div>
+                      <span>Descuento ({livePricing.discountPercent}%)</span>
+                      <span style={{ color: "#10b981" }}>-{money(livePricing.discountAmountArs)}</span>
+                    </div>
+                    <div className="v2-membership-summary-total">
+                      <span>Total final</span>
+                      <span>{money(livePricing.totalPriceArs)}</span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <label className="v2-field min-w-0">
+                      <span className="v2-field-label">Vencimiento</span>
+                      <select
+                        value={expirationMode}
+                        onChange={(e) => setExpirationMode(e.target.value as "NONE" | "DATE")}
+                      >
+                        <option value="NONE">Sin vencimiento</option>
+                        <option value="DATE">Fecha determinada</option>
+                      </select>
+                    </label>
+                    {expirationMode === "DATE" && (
+                      <label className="v2-field min-w-0">
+                        <span className="v2-field-label">Fecha de vencimiento</span>
+                        <input
+                          type="date"
+                          value={expiresAt}
+                          min={today}
+                          onChange={(e) => setExpiresAt(e.target.value)}
+                        />
+                      </label>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div className="v2-field min-w-0">
+                      <label htmlFor="membership-payment-status" className="v2-field-label">
+                        Estado de pago
+                      </label>
+                      <AdminContextualSelect
+                        id="membership-payment-status"
+                        ariaLabel="Estado de pago"
+                        value={payImmediately ? "PAID" : "PENDING"}
+                        onValueChange={(val) => setPayImmediately(val === "PAID")}
+                        options={[
+                          { value: "PAID", label: "Pagada ahora (Activa)" },
+                          { value: "PENDING", label: "Pendiente de pago" },
+                        ]}
+                      />
+                    </div>
+                    {payImmediately && (
+                      <label className="v2-field min-w-0">
+                        <span className="v2-field-label">Medio de pago</span>
+                        <select
+                          value={paymentMethod}
+                          onChange={(e) =>
+                            setPaymentMethod(e.target.value as KaniMembershipPaymentMethod)
+                          }
+                        >
+                          {KANI_MEMBERSHIP_PAYMENT_METHODS.map((method) => (
+                            <option key={method} value={method}>
+                              {method}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    )}
+                  </div>
+                </div>
+
+                <div className="v2-dialog-actions v2-modal-pinned-footer kani-modal-footer kani-mcreate-footer flex-nowrap w-full">
+                  <button
+                    type="button"
+                    className="v2-secondary flex-1 min-w-0"
+                    disabled={busy}
+                    onClick={() => {
+                      setCreateOpen(false);
+                      setClientPickerOpen(false);
+                      setClientPickerQuery("");
+                    }}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="v2-primary flex-1 min-w-0"
+                    disabled={busy || !livePricing.isValidComposition}
+                  >
+                    {busy ? "Guardando…" : "Crear membresía"}
+                  </button>
+                </div>
+              </form>
+            </>
+          )}
         </DialogContent>
       </Dialog>
 
