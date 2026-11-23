@@ -556,7 +556,7 @@ function V2Shell({
           </div>
         )}
         {loading && (
-          <p className="v2-loading" role="status">
+          <p className="v2-loading" role="status" aria-live="polite">
             Actualizando información…
           </p>
         )}

@@ -2680,13 +2680,27 @@ body[data-lg-admin="true"] .v2-success {
 }
 
 body[data-lg-admin="true"] .v2-loading {
+  position: fixed !important;
+  top: calc(env(safe-area-inset-top, 0px) + 68px) !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  z-index: 230 !important;
+  pointer-events: none !important;
+  margin: 0 !important;
   background: var(--lga-glass-interactive) !important;
   border: 1px solid var(--lga-border-accent) !important;
   border-radius: 999px !important;
-  padding: 6px 14px;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
+  color: var(--lga-text) !important;
+  padding: 6px 14px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  white-space: nowrap !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  line-height: 1.2 !important;
+  -webkit-backdrop-filter: blur(22px) saturate(160%) !important;
+  backdrop-filter: blur(22px) saturate(160%) !important;
 }
 
 @keyframes lgaDialogFadeIn {
