@@ -3078,7 +3078,7 @@ html[data-theme] body[data-lg-admin="true"] .v2-memberships-count {
   }
 
   html[data-theme] body[data-lg-admin="true"] .v2-codes-filter-panel .v2-memberships-sort-btn {
-    min-width: 74px !important;
+    min-width: 76px !important;
     padding: 6px 8px !important;
     font-size: 11px !important;
   }
@@ -3602,19 +3602,19 @@ html[data-theme="light"] body[data-lg-admin="true"] .kani-mcard-badge:not([class
 }
 
 /* Botones de acciones y BenefitCodesAdminSection (.maintenance-section) */
-html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section button:not([role="switch"]):not(.kani-dcard-subgroup-summary):not(.kani-dcard-details-delete-btn):not(.kani-dcard-btn-details):not(.kani-dcard-btn-action):not(.kani-dtoolbar-generate-btn) {
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section button:not([role="switch"]):not(.kani-dcard-subgroup-summary):not(.kani-dcard-details-delete-btn):not(.kani-dcard-btn-details):not(.kani-dcard-btn-action):not(.kani-dtoolbar-generate-btn):not(.v2-quickbar-chip):not(.v2-memberships-summary-toggle):not(.v2-filter-toggle-btn) {
   min-height: 40px !important;
   border-radius: 999px !important;
   transition: background-color 150ms ease, border-color 150ms ease, opacity 150ms ease;
 }
 
 @media (max-width: 767px) {
-  html[data-theme] body[data-lg-admin="true"] .v2-memberships-page :is(.kani-mcard-actions > button, .kani-mcard-actions > a, .maintenance-section button:not([role="switch"])) {
+  html[data-theme] body[data-lg-admin="true"] .v2-memberships-page :is(.kani-mcard-actions > button, .kani-mcard-actions > a, .maintenance-section button:not([role="switch"]):not(.v2-quickbar-chip):not(.v2-memberships-summary-toggle):not(.v2-filter-toggle-btn)) {
     min-height: 44px !important;
   }
 }
 
-html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section button:not(.action-brand):not(.action-positive):not(.v2-primary):not(.is-destructive):not(.kani-dcard-btn-warning):not(.kani-dcard-subgroup-summary):not([aria-pressed="true"]):not(:disabled) {
+html[data-theme] body[data-lg-admin="true"] .v2-memberships-page .maintenance-section button:not(.action-brand):not(.action-positive):not(.v2-primary):not(.is-destructive):not(.kani-dcard-btn-warning):not(.kani-dcard-subgroup-summary):not([aria-pressed="true"]):not(:disabled):not(.v2-quickbar-chip):not(.v2-memberships-summary-toggle):not(.v2-filter-toggle-btn) {
   background: var(--lga-btn-secondary-bg) !important;
   border: 1px solid var(--lga-border) !important;
   color: var(--lga-text) !important;
@@ -5475,5 +5475,21 @@ html[data-theme] body[data-lg-admin="true"] .v2-page :is(.v2-hero-grid, .v2-char
   }
 }
 
+html[data-theme] body[data-lg-admin="true"] [role="dialog"].v2-membership-create-dialog .kani-modal-footer.kani-mcreate-footer {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+  width: 100% !important;
+}
 
+html[data-theme] body[data-lg-admin="true"] [role="dialog"].v2-membership-create-dialog .kani-modal-footer.kani-mcreate-footer > button {
+  width: 100% !important;
+  min-width: 0 !important;
+  flex: initial !important;
+  margin: 0 !important;
+}
 
+html[data-theme] body[data-lg-admin="true"] .benefit-codes-section .v2-quickbar-chip:not(.is-active) {
+  background: transparent !important;
+  border-color: transparent !important;
+}

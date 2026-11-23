@@ -1,6 +1,5 @@
 import { useMemo, useState, type FormEvent } from "react";
 import {
-  ArrowLeft,
   ArrowUpDown,
   Check,
   ChevronDown,
@@ -12,6 +11,7 @@ import {
   SlidersHorizontal,
   Tag,
   UserRound,
+  X,
 } from "lucide-react";
 import { useAdminStaff } from "@/lib/kani-admin-context";
 import { buildMembershipCardUrl } from "@/lib/kani-membership-urls";
@@ -873,9 +873,13 @@ export function V2MembershipsAndDiscounts({
           {clientPickerOpen ? (
             <>
               <div className="v2-modal-pinned-header kani-modal-header">
+                <DialogTitle>
+                  {clientPickerTab === "CREATE" ? "Nuevo cliente" : "Elegir cliente"}
+                </DialogTitle>
                 <button
                   type="button"
-                  className="v2-client-picker-back"
+                  aria-label="Volver al formulario"
+                  className="kani-modal-close"
                   disabled={newClientSaving}
                   onClick={() => {
                     setClientPickerOpen(false);
@@ -884,40 +888,11 @@ export function V2MembershipsAndDiscounts({
                     setNewClientError("");
                   }}
                 >
-                  <ArrowLeft size={16} aria-hidden="true" />
-                  <span>Volver</span>
+                  <X size={18} aria-hidden="true" />
+                  <span className="sr-only">Volver al formulario</span>
                 </button>
-                <DialogTitle>Elegir cliente</DialogTitle>
-                <KaniModalClose label="Cerrar" />
               </div>
               <div className="v2-modal-pinned-scroll kani-modal-body v2-client-picker-body">
-                <div className="v2-client-picker-tabs" role="tablist" aria-label="Modo de cliente">
-                  <button
-                    type="button"
-                    role="tab"
-                    aria-selected={clientPickerTab === "SEARCH"}
-                    className={`v2-client-picker-tab${clientPickerTab === "SEARCH" ? " is-active" : ""}`}
-                    onClick={() => {
-                      setClientPickerTab("SEARCH");
-                      setNewClientError("");
-                    }}
-                  >
-                    Buscar
-                  </button>
-                  <button
-                    type="button"
-                    role="tab"
-                    aria-selected={clientPickerTab === "CREATE"}
-                    className={`v2-client-picker-tab${clientPickerTab === "CREATE" ? " is-active" : ""}`}
-                    onClick={() => {
-                      setClientPickerTab("CREATE");
-                      setNewClientError("");
-                    }}
-                  >
-                    + Nuevo cliente
-                  </button>
-                </div>
-
                 {clientPickerTab === "SEARCH" ? (
                   <>
                     <div className="v2-client-picker-search-wrap">
@@ -984,37 +959,39 @@ export function V2MembershipsAndDiscounts({
                         type="text"
                         required
                         minLength={2}
+                        disabled={newClientSaving}
                         value={newClientName}
                         onChange={(e) => setNewClientName(e.target.value)}
-                        placeholder="Nombre y apellido"
                         autoFocus
                       />
                     </label>
                     <label className="v2-field min-w-0">
-                      <span className="v2-field-label">Teléfono</span>
+                      <span className="v2-field-label">Celular</span>
                       <input
                         type="tel"
                         required
+                        minLength={6}
+                        disabled={newClientSaving}
                         value={newClientPhone}
                         onChange={(e) => setNewClientPhone(e.target.value)}
-                        placeholder="Ej: 11 2345 6789"
                       />
                     </label>
                     <label className="v2-field min-w-0">
-                      <span className="v2-field-label">Email (opcional)</span>
+                      <span className="v2-field-label">Email · opcional</span>
                       <input
                         type="email"
+                        disabled={newClientSaving}
                         value={newClientEmail}
                         onChange={(e) => setNewClientEmail(e.target.value)}
-                        placeholder="cliente@email.com"
                       />
                     </label>
                     <button
                       type="submit"
                       className="v2-primary w-full"
+                      style={{ width: "100%" }}
                       disabled={newClientSaving}
                     >
-                      {newClientSaving ? "Guardando…" : "Guardar y seleccionar"}
+                      {newClientSaving ? "Guardando…" : "Guardar cliente"}
                     </button>
                   </form>
                 )}
@@ -1189,10 +1166,19 @@ export function V2MembershipsAndDiscounts({
                   </div>
                 </div>
 
-                <div className="v2-dialog-actions v2-modal-pinned-footer kani-modal-footer kani-mcreate-footer flex-nowrap w-full">
+                <div
+                  className="v2-dialog-actions v2-modal-pinned-footer kani-modal-footer kani-mcreate-footer flex-nowrap w-full"
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                    gap: "10px",
+                    width: "100%",
+                  }}
+                >
                   <button
                     type="button"
                     className="v2-secondary flex-1 min-w-0"
+                    style={{ width: "100%", minWidth: 0, flex: "initial", margin: 0 }}
                     disabled={busy}
                     onClick={() => {
                       setCreateOpen(false);
@@ -1205,6 +1191,7 @@ export function V2MembershipsAndDiscounts({
                   <button
                     type="submit"
                     className="v2-primary flex-1 min-w-0"
+                    style={{ width: "100%", minWidth: 0, flex: "initial", margin: 0 }}
                     disabled={busy || !livePricing.isValidComposition}
                   >
                     {busy ? "Guardando…" : "Crear membresía"}

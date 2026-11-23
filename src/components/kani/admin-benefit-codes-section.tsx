@@ -215,6 +215,7 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
 
   // Copy indicator & single-instance bottom toast
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [showSummary, setShowSummary] = useState(false);
   const [toastState, setToastState] = useState<{
     text: string;
     variant: 'success' | 'error';
@@ -544,6 +545,11 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
     };
   }, [items]);
 
+  const totalUses = useMemo(
+    () => items.reduce((acc, item) => acc + (item.timesUsed ?? item.usages?.length ?? 0), 0),
+    [items]
+  );
+
   const filteredAndSortedItems = useMemo(() => {
     // 1. Filtrar por estado y término de búsqueda
     const filtered = items.filter((item) => {
@@ -667,11 +673,56 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
         </div>
       ) : (
         <>
-          {/* Barra de herramientas: Quickbar móvil idéntica a Miembros + Filtros desktop */}
-          <AdminFilterPanel
-            ariaLabel="Filtros de códigos de beneficio"
-            className="v2-codes-filter-panel"
-            mobileExpanded={false}
+          {/* Tarjeta unificada Resumen + Filtros idéntica a Miembros */}
+          <section className="v2-panel v2-memberships-unified-card" aria-label="Resumen y filtros de códigos">
+            <div className="v2-memberships-summary-card">
+              <button
+                type="button"
+                className="v2-memberships-summary-toggle"
+                aria-expanded={showSummary}
+                aria-controls="v2-codes-summary-breakdown"
+                onClick={() => setShowSummary((prev) => !prev)}
+              >
+                <span className="v2-memberships-summary-eyebrow">Resumen</span>
+                <span className="v2-memberships-summary-meta">
+                  <strong className="v2-memberships-summary-highlight">
+                    {statusCounts.ACTIVE} {statusCounts.ACTIVE === 1 ? 'activo' : 'activos'} · {totalUses}{' '}
+                    {totalUses === 1 ? 'uso' : 'usos'}
+                  </strong>
+                  <span className="v2-memberships-summary-chevron" aria-hidden="true">
+                    {showSummary ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                  </span>
+                </span>
+              </button>
+              <div
+                id="v2-codes-summary-breakdown"
+                className={`v2-memberships-summary-breakdown ${showSummary ? 'is-open' : ''}`}
+              >
+                <div className="v2-memberships-summary-metric">
+                  <span>Activos</span>
+                  <strong>{statusCounts.ACTIVE}</strong>
+                </div>
+                <div className="v2-memberships-summary-metric">
+                  <span>Desactivados</span>
+                  <strong>{statusCounts.DISABLED}</strong>
+                </div>
+                <div className="v2-memberships-summary-metric">
+                  <span>Eliminados</span>
+                  <strong>{statusCounts.DELETED}</strong>
+                </div>
+                <div className="v2-memberships-summary-metric">
+                  <span>Usos totales</span>
+                  <strong>{totalUses}</strong>
+                </div>
+              </div>
+            </div>
+
+            <div className="v2-memberships-card-divider" aria-hidden="true" />
+
+            <AdminFilterPanel
+              ariaLabel="Filtros de códigos de beneficio"
+              className="v2-codes-filter-panel v2-memberships-filter-panel--embedded"
+              mobileExpanded={false}
             mobileQuickBar={
               <>
                 <div className="v2-quickbar-chips" role="group" aria-label="Estados rápidos de códigos">
@@ -761,6 +812,7 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
               </select>
             </AdminFilterCell>
           </AdminFilterPanel>
+          </section>
 
           {/* Barra compacta de resultados y acciones principales (estilo Membresías) */}
           {hideHeading && (
