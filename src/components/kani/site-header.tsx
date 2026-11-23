@@ -1,7 +1,7 @@
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router';
 import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState, type MouseEvent } from 'react';
 import { createPortal } from 'react-dom';
-import { ArrowUpRight, Bell, Building2, CalendarClock, CalendarDays, ChartNoAxesCombined, Clock3, CreditCard, Home, Instagram, LayoutGrid, LogIn, LogOut, MapPin, Menu, Moon, Percent, Scale, ShieldCheck, Sun, Tag, Users, Wrench, X } from 'lucide-react';
+import { ArrowUpRight, Bell, Building2, CalendarClock, CalendarDays, ChartNoAxesCombined, Clock3, CreditCard, Home, IdCard, Instagram, LayoutGrid, LogIn, LogOut, MapPin, Menu, Moon, Scale, ShieldCheck, Sun, Tag, Users, Wrench, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import kaniLogoLight from '@/assets/kani-logo-light.webp';
 import kaniLogoDark from '@/assets/kani-logo-dark.webp';
@@ -426,7 +426,10 @@ export function SiteHeader() {
       {staff && ['ADMIN', 'MANAGER', 'BARBER'].includes(staff.profile.role) && (
         <div className="mobile-menu-group">
           <Link to={membershipsLinkTarget} onClick={closeMenu}>
-            <Tag />Membresías y descuentos
+            <IdCard />Miembros
+          </Link>
+          <Link to={discountsLinkTarget} onClick={closeMenu}>
+            <Tag />Códigos
           </Link>
         </div>
       )}
@@ -486,10 +489,10 @@ export function SiteHeader() {
           <ChartNoAxesCombined />Datos
         </Link>
         <Link to={membershipsLinkTarget} onClick={closeMenu}>
-          <Tag />Membresías
+          <IdCard />Miembros
         </Link>
         <Link to={discountsLinkTarget} onClick={closeMenu}>
-          <Percent />Descuentos
+          <Tag />Códigos
         </Link>
       </div>
 
@@ -533,7 +536,10 @@ export function SiteHeader() {
           <ChartNoAxesCombined />Datos
         </Link>
         <Link to={membershipsLinkTarget} onClick={closeMenu}>
-          <Tag />Membresías y descuentos
+          <IdCard />Miembros
+        </Link>
+        <Link to={discountsLinkTarget} onClick={closeMenu}>
+          <Tag />Códigos
         </Link>
         <Link to={`${adminBase}/mantenimiento`} onClick={closeMenu}>
           <Wrench />Panel de mantenimiento

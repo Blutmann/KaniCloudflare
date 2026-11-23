@@ -5,8 +5,8 @@ import {
   CalendarDays,
   Clock3,
   CreditCard,
-  PackageCheck,
-  Percent,
+  IdCard,
+  Tag,
   Users,
   RefreshCw,
 } from "lucide-react";
@@ -26,8 +26,8 @@ const sectionDefs = [
   { slug: "horarios", title: "Horarios", icon: Clock3 },
   { slug: "pagos", title: "Pagos", icon: CreditCard },
   { slug: "clientes", title: "Clientes", icon: Users },
-  { slug: "membresias", title: "Membresías", icon: PackageCheck },
-  { slug: "descuentos", title: "Descuentos", icon: Percent },
+  { slug: "membresias", title: "Miembros", icon: IdCard },
+  { slug: "descuentos", title: "Códigos", icon: Tag },
 ] as const;
 
 const barberSectionDefs = [
@@ -399,7 +399,7 @@ function V2Shell({
     <nav
       className="admin-section-nav v2-nav"
       data-nav-count={visibleMainSections.length}
-      data-nav-scrollable={visibleMainSections.length > 6 ? "true" : "false"}
+      data-nav-scrollable={visibleMainSections.length >= 6 ? "true" : "false"}
       ref={navScrollRef}
       aria-label="Administración"
     >

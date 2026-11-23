@@ -2711,17 +2711,37 @@ body[data-lg-admin="true"] .v2-loading {
   }
 }
 
-/* Barra única 6 ítems en <= 400px: evita cortes en "Membresías" y "Descuentos" */
-@media (max-width: 400px) {
-  html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav .admin-section-nav-link {
-    font-size: 9.5px !important;
-    letter-spacing: -0.01em !important;
-    padding: 5px 1px !important;
+/* Barra única 6 ítems en móvil (< 768px): scroll horizontal suave con aire y sin recortes */
+@media (max-width: 767px) {
+  html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav .admin-section-nav-items {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    scrollbar-width: none !important;
+    gap: 4px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav .admin-section-nav-items::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav .admin-section-nav-link,
+  html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav[data-nav-scrollable="true"] .admin-section-nav-link {
+    flex: 0 0 auto !important;
+    width: auto !important;
+    min-width: 68px !important;
+    padding: 6px 10px !important;
+    font-size: 11px !important;
+    white-space: nowrap !important;
   }
 
   html[data-theme] body[data-lg-admin="true"] .v2-navigation .v2-nav.admin-section-nav .admin-section-nav-link .lg-admin-nav-label {
-    font-size: 9.5px !important;
-    letter-spacing: -0.01em !important;
+    font-size: 11px !important;
+    letter-spacing: normal !important;
+    white-space: nowrap !important;
   }
 }
 

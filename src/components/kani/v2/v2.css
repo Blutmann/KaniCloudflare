@@ -6213,12 +6213,28 @@ html[data-theme="dark"] .kani-v2-toast.is-error .kani-v2-toast-icon,
   }
 }
 
-/* Barra única 6 ítems en <= 400px: evita cortes en "Membresías" y "Descuentos" */
-@media (max-width: 400px) {
+/* Barra única 6 ítems en móvil (< 768px): scroll horizontal suave con aire y sin recortes */
+@media (max-width: 767px) {
+  .v2-nav .admin-section-nav-items {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    gap: 4px;
+    width: 100%;
+  }
+
+  .v2-nav .admin-section-nav-items::-webkit-scrollbar {
+    display: none;
+  }
+
   .v2-nav .admin-section-nav-link {
-    font-size: 9.5px;
-    letter-spacing: -0.01em;
-    padding: 5px 1px;
+    flex: 0 0 auto;
+    width: auto;
+    min-width: 68px;
+    padding: 6px 10px;
+    font-size: 11px;
+    white-space: nowrap;
   }
 }
 

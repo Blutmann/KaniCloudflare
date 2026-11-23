@@ -118,7 +118,7 @@ describe('KANI — Regresión de navegación en panel original y hamburguesa', (
     const links = nav!.querySelectorAll('.admin-section-nav-link');
     expect(links).toHaveLength(6);
 
-    const expectedSections = ['Turnos', 'Horarios', 'Pagos', 'Clientes', 'Membresías', 'Descuentos'];
+    const expectedSections = ['Turnos', 'Horarios', 'Pagos', 'Clientes', 'Miembros', 'Códigos'];
     links.forEach((link, idx) => {
       expect(link.textContent).toContain(expectedSections[idx]);
     });
@@ -132,7 +132,7 @@ describe('KANI — Regresión de navegación en panel original y hamburguesa', (
     expect(oldNav!.querySelector('.admin-section-nav-refresh-btn')).not.toBeNull();
   });
 
-  it('2. La barra principal incluye Membresías y Descuentos y excluye Inicio, Datos y Mantenimiento', async () => {
+  it('2. La barra principal incluye Miembros y Códigos y excluye Inicio, Datos y Mantenimiento', async () => {
     state.role = 'ADMIN';
     state.path = '/panel-administracion/turnos';
     const { container } = render(<V2Layout />);
@@ -142,8 +142,8 @@ describe('KANI — Regresión de navegación en panel original y hamburguesa', (
     const links = nav!.querySelectorAll('.admin-section-nav-link');
     const linkTexts = Array.from(links).map((l) => l.textContent?.trim());
 
-    expect(linkTexts).toContain('Membresías');
-    expect(linkTexts).toContain('Descuentos');
+    expect(linkTexts).toContain('Miembros');
+    expect(linkTexts).toContain('Códigos');
     expect(linkTexts).not.toContain('Inicio');
     expect(linkTexts).not.toContain('Datos');
     expect(linkTexts).not.toContain('Mantenimiento');
@@ -161,33 +161,38 @@ describe('KANI — Regresión de navegación en panel original y hamburguesa', (
     expect(v2Css).toMatch(/\.v2-nav \.admin-section-nav-link\s*\{[^}]*flex-direction:\s*column;/);
   });
 
-  it('4. Menú desplegable (hamburguesa) recupera «Membresías y descuentos» para ADMIN, MANAGER y BARBER', async () => {
+  it('4. Menú desplegable (hamburguesa) recupera «Miembros» y «Códigos» para ADMIN, MANAGER y BARBER', async () => {
     state.role = 'ADMIN';
     state.path = '/panel-administracion/inicio';
     state.menuOpen = true;
     const { unmount } = render(<SiteHeader />);
     await screen.findByText('Panel de administración');
 
-    const linkAdmin = screen.getByRole('link', { name: 'Membresías y descuentos' });
-    expect(linkAdmin).toBeInTheDocument();
-    expect(linkAdmin).toHaveAttribute('href', '/panel-membresias');
-    expect(screen.queryByRole('link', { name: /^Descuentos$/ })).toBeNull();
+    const linkAdminMiembros = screen.getByRole('link', { name: 'Miembros' });
+    expect(linkAdminMiembros).toBeInTheDocument();
+    expect(linkAdminMiembros).toHaveAttribute('href', '/panel-membresias');
+    const linkAdminCodigos = screen.getByRole('link', { name: 'Códigos' });
+    expect(linkAdminCodigos).toBeInTheDocument();
+    expect(linkAdminCodigos).toHaveAttribute('href', '/panel-descuentos');
     unmount();
 
     state.role = 'MANAGER';
     const resManager = render(<SiteHeader />);
     await screen.findByText('Panel de administración');
-    const linkManager = screen.getByRole('link', { name: 'Membresías y descuentos' });
-    expect(linkManager).toBeInTheDocument();
-    expect(linkManager).toHaveAttribute('href', '/panel-membresias');
+    const linkManagerMiembros = screen.getByRole('link', { name: 'Miembros' });
+    expect(linkManagerMiembros).toBeInTheDocument();
+    expect(linkManagerMiembros).toHaveAttribute('href', '/panel-membresias');
+    const linkManagerCodigos = screen.getByRole('link', { name: 'Códigos' });
+    expect(linkManagerCodigos).toBeInTheDocument();
+    expect(linkManagerCodigos).toHaveAttribute('href', '/panel-descuentos');
     resManager.unmount();
 
     state.role = 'BARBER';
     render(<SiteHeader />);
-    const linkBarberMembresias = await screen.findByRole('link', { name: 'Membresías' });
+    const linkBarberMembresias = await screen.findByRole('link', { name: 'Miembros' });
     expect(linkBarberMembresias).toBeInTheDocument();
     expect(linkBarberMembresias).toHaveAttribute('href', '/panel-membresias');
-    const linkBarberDescuentos = screen.getByRole('link', { name: 'Descuentos' });
+    const linkBarberDescuentos = screen.getByRole('link', { name: 'Códigos' });
     expect(linkBarberDescuentos).toBeInTheDocument();
     expect(linkBarberDescuentos).toHaveAttribute('href', '/panel-descuentos');
     expect(screen.queryByText('Panel de administración')).toBeNull();
@@ -361,8 +366,8 @@ describe('KANI — Regresión de navegación en panel original y hamburguesa', (
       'Horarios',
       'Pagos',
       'Clientes',
-      'Membresías',
-      'Descuentos',
+      'Miembros',
+      'Códigos',
     ]);
     expect(container.querySelector('.v2-memberships-subswitch')).toBeNull();
     unmount();
