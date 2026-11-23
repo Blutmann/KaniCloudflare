@@ -623,11 +623,11 @@ export function V2MembershipsAndDiscounts({
                     <button
                       type="button"
                       className="v2-filter-toggle-btn"
-                      aria-label={`Ordenar por ${sortOrder === "NEWEST" ? "más vieja" : "más nueva"}`}
+                      aria-label={`Ordenar por ${sortOrder === "NEWEST" ? "viejas" : "nuevas"}`}
                       onClick={() => setSortOrder((prev) => (prev === "NEWEST" ? "OLDEST" : "NEWEST"))}
                     >
                       <ArrowUpDown size={13} aria-hidden="true" />
-                      <span>{sortOrder === "NEWEST" ? "Más nueva" : "Más vieja"}</span>
+                      <span>{sortOrder === "NEWEST" ? "Nuevas" : "Viejas"}</span>
                     </button>
                   </>
                 }
