@@ -6706,14 +6706,17 @@ html[data-theme="dark"] .kani-v2-toast.is-error .kani-v2-toast-icon,
     gap: 8px !important;
   }
 
-  .v2-memberships-page .maintenance-section {
+  .v2-memberships-page .maintenance-section,
+  .benefit-codes-section {
     display: flex !important;
     flex-direction: column !important;
-    gap: 8px !important;
+    gap: 10px !important;
   }
 
-  .v2-memberships-page .maintenance-section > * + * {
+  .v2-memberships-page .maintenance-section > * + *,
+  .benefit-codes-section > * {
     margin-top: 0 !important;
+    margin-bottom: 0 !important;
   }
 
   .v2-memberships-page .kani-dtoolbar {

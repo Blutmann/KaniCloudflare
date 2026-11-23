@@ -604,7 +604,7 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
 
   return (
     <section
-      className="maintenance-section benefit-codes-section w-full p-5 sm:p-6 rounded-[var(--radius-card)] border border-border bg-card space-y-5"
+      className={`maintenance-section benefit-codes-section w-full p-5 sm:p-6 rounded-[var(--radius-card)] border border-border bg-card ${hideHeading ? 'flex flex-col gap-2.5' : 'space-y-5'}`}
       aria-labelledby={hideHeading ? undefined : 'discounts-title'}
       aria-label={hideHeading ? 'Códigos de descuento y beneficio' : undefined}
     >

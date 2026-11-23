@@ -5507,3 +5507,37 @@ html[data-theme] body[data-lg-admin="true"] .benefit-codes-section .v2-quickbar-
   background: transparent !important;
   border-color: transparent !important;
 }
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] .v2-client-picker-search-wrap > input {
+  border: none !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
+  border-radius: 0 !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] .v2-client-picker-create-form {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 14px !important;
+  padding-top: 4px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] [role="dialog"] .v2-client-picker-create-form > label {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px !important;
+  margin: 0 !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .benefit-codes-section {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .benefit-codes-section > * {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}

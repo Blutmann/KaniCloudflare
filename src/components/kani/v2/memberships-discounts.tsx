@@ -905,8 +905,8 @@ export function V2MembershipsAndDiscounts({
                         type="search"
                         value={clientPickerQuery}
                         onChange={(e) => setClientPickerQuery(e.target.value)}
-                        placeholder="Buscar por nombre o teléfono…"
-                        aria-label="Buscar cliente por nombre o teléfono"
+                        placeholder="Buscar por nombre o celular..."
+                        aria-label="Buscar cliente por nombre o celular"
                         className="v2-client-picker-search-input"
                         autoFocus
                       />
