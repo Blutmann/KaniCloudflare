@@ -16,11 +16,14 @@ vi.mock('@/integrations/supabase/client',()=>({supabase:{supabaseUrl:'https://io
 import { V2Layout } from '@/components/kani/v2/layout';
 describe('role navigation and direct URLs',()=>{
   beforeEach(()=>{state.role='MANAGER';state.path='/panel-administracion/turnos';});
-  it('shows operational sections and excludes discounts from the top navigation bar',async()=>{
+  it('shows operational sections including Membresías and Descuentos in the single top navigation bar',async()=>{
     render(<V2Layout/>); await screen.findByTestId('private-child');
-    expect(screen.queryByRole('link',{name:'Descuentos'})).toBeNull();
-    expect(screen.queryByRole('link',{name:'Mantenimiento'})).toBeNull();
     expect(screen.getByRole('link',{name:'Turnos'})).toBeInTheDocument();
+    expect(screen.getByRole('link',{name:'Membresías'})).toHaveAttribute('href','/panel-membresias');
+    expect(screen.getByRole('link',{name:'Descuentos'})).toHaveAttribute('href','/panel-descuentos');
+    expect(screen.queryByRole('link',{name:'Mantenimiento'})).toBeNull();
+    expect(screen.queryByRole('link',{name:'Inicio'})).toBeNull();
+    expect(screen.queryByRole('link',{name:'Datos'})).toBeNull();
   });
   it('renders discounts child on direct URL for authorized manager',async()=>{
     state.role='MANAGER';state.path='/panel-administracion/descuentos';render(<V2Layout/>);
@@ -38,10 +41,7 @@ describe('role navigation and direct URLs',()=>{
     state.path = "/panel-administracion/descuentos";
     render(<V2Layout />);
     expect(await screen.findByTestId("private-child")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Descuentos" })).toHaveAttribute(
-      "href",
-      "/panel-descuentos",
-    );
+    expect(screen.getByRole("link", { name: "Turnos" })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Mantenimiento" })).toBeNull();
   });
   it('does not render maintenance for a barber even through a direct URL',async()=>{

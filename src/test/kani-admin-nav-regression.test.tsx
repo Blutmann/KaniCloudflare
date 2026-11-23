@@ -118,7 +118,7 @@ describe('KANI — Regresión de navegación en panel original y hamburguesa', (
     const links = nav!.querySelectorAll('.admin-section-nav-link');
     expect(links).toHaveLength(6);
 
-    const expectedSections = ['Inicio', 'Turnos', 'Horarios', 'Pagos', 'Clientes', 'Datos'];
+    const expectedSections = ['Turnos', 'Horarios', 'Pagos', 'Clientes', 'Membresías', 'Descuentos'];
     links.forEach((link, idx) => {
       expect(link.textContent).toContain(expectedSections[idx]);
     });
@@ -132,9 +132,9 @@ describe('KANI — Regresión de navegación en panel original y hamburguesa', (
     expect(oldNav!.querySelector('.admin-section-nav-refresh-btn')).not.toBeNull();
   });
 
-  it('2. «Descuentos» está absolutamente ausente de la barra de navegación de /panel-administracion/*', async () => {
+  it('2. La barra principal incluye Membresías y Descuentos y excluye Inicio, Datos y Mantenimiento', async () => {
     state.role = 'ADMIN';
-    state.path = '/panel-administracion/inicio';
+    state.path = '/panel-administracion/turnos';
     const { container } = render(<V2Layout />);
     await screen.findByTestId('private-child');
 
@@ -142,7 +142,11 @@ describe('KANI — Regresión de navegación en panel original y hamburguesa', (
     const links = nav!.querySelectorAll('.admin-section-nav-link');
     const linkTexts = Array.from(links).map((l) => l.textContent?.trim());
 
-    expect(linkTexts).not.toContain('Descuentos');
+    expect(linkTexts).toContain('Membresías');
+    expect(linkTexts).toContain('Descuentos');
+    expect(linkTexts).not.toContain('Inicio');
+    expect(linkTexts).not.toContain('Datos');
+    expect(linkTexts).not.toContain('Mantenimiento');
     expect(linkTexts).not.toContain('Negocio');
     expect(linkTexts).not.toContain('Operación');
   });
@@ -342,7 +346,7 @@ describe('KANI — Regresión de navegación en panel original y hamburguesa', (
     }
   });
 
-  it('12. /panel-membresias conserva la barra principal y muestra el sub-switch 50/50 + Resumen colapsable', async () => {
+  it('12. /panel-membresias usa la barra única de 6 ítems sin segunda barra apilada + Resumen colapsable', async () => {
     state.role = 'ADMIN';
     state.path = '/panel-membresias';
     const { container, unmount } = render(<V2Layout />);
@@ -350,16 +354,17 @@ describe('KANI — Regresión de navegación en panel original y hamburguesa', (
 
     const mainNav = container.querySelector('nav.admin-section-nav');
     expect(mainNav).not.toBeNull();
-    expect(mainNav!.querySelectorAll('.admin-section-nav-link')).toHaveLength(6);
-
-    const subswitch = container.querySelector('nav.v2-memberships-subswitch');
-    expect(subswitch).not.toBeNull();
-    const subLinks = subswitch!.querySelectorAll('.v2-memberships-subswitch-link');
-    expect(subLinks).toHaveLength(2);
-    expect(subLinks[0]).toHaveTextContent('Membresías');
-    expect(subLinks[0]).toHaveAttribute('href', '/panel-membresias');
-    expect(subLinks[1]).toHaveTextContent('Descuentos');
-    expect(subLinks[1]).toHaveAttribute('href', '/panel-descuentos');
+    const links = mainNav!.querySelectorAll('.admin-section-nav-link');
+    expect(links).toHaveLength(6);
+    expect(Array.from(links).map((l) => l.textContent?.trim())).toEqual([
+      'Turnos',
+      'Horarios',
+      'Pagos',
+      'Clientes',
+      'Membresías',
+      'Descuentos',
+    ]);
+    expect(container.querySelector('.v2-memberships-subswitch')).toBeNull();
     unmount();
 
     const mView = render(<V2MembershipsAndDiscounts initialTab="MEMBRESIAS" hideHeaderBlock />);

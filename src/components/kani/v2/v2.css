@@ -6213,37 +6213,13 @@ html[data-theme="dark"] .kani-v2-toast.is-error .kani-v2-toast-icon,
   }
 }
 
-/* Membresías y Descuentos: sub-switch 50/50, tarjeta resumen colapsable, filtros 100% + 50/50 y barra fija inferior */
-.v2-memberships-subswitch {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 4px;
-  width: 100%;
-  padding: 4px;
-  margin-top: 8px;
-  border-radius: 14px;
-  border: 1px solid var(--border);
-  background: var(--v2-surface);
-}
-
-.v2-memberships-subswitch-link {
-  position: relative;
-  min-height: 38px;
-  height: 38px;
-  padding: 0 12px;
-  border-radius: 10px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--muted-foreground);
-  text-decoration: none;
-}
-
-.v2-memberships-subswitch-link.is-active {
-  color: var(--foreground);
+/* Barra única 6 ítems en <= 400px: evita cortes en "Membresías" y "Descuentos" */
+@media (max-width: 400px) {
+  .v2-nav .admin-section-nav-link {
+    font-size: 9.5px;
+    letter-spacing: -0.01em;
+    padding: 5px 1px;
+  }
 }
 
 .v2-memberships-standalone-panel {

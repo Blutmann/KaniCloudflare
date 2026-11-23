@@ -5,12 +5,9 @@ import {
   CalendarDays,
   Clock3,
   CreditCard,
-  Home,
   PackageCheck,
   Percent,
-  Tag,
   Users,
-  ChartNoAxesCombined,
   RefreshCw,
 } from "lucide-react";
 import { AdminAccess } from "@/components/kani/admin-access";
@@ -25,12 +22,12 @@ import { V2DataProvider, useV2 } from "./data";
 import "./v2.css";
 
 const sectionDefs = [
-  { slug: "inicio", title: "Inicio", icon: Home },
   { slug: "turnos", title: "Turnos", icon: CalendarDays },
   { slug: "horarios", title: "Horarios", icon: Clock3 },
   { slug: "pagos", title: "Pagos", icon: CreditCard },
   { slug: "clientes", title: "Clientes", icon: Users },
-  { slug: "datos", title: "Datos", icon: ChartNoAxesCombined },
+  { slug: "membresias", title: "Membresías", icon: PackageCheck },
+  { slug: "descuentos", title: "Descuentos", icon: Percent },
 ] as const;
 
 const barberSectionDefs = [
@@ -38,9 +35,6 @@ const barberSectionDefs = [
   { slug: "horarios", title: "Horarios", icon: Clock3 },
   { slug: "pagos", title: "Pagos", icon: CreditCard },
   { slug: "clientes", title: "Clientes", icon: Users },
-  { slug: "datos", title: "Datos", icon: ChartNoAxesCombined },
-  { slug: "membresias", title: "Membresías", icon: PackageCheck },
-  { slug: "descuentos", title: "Descuentos", icon: Percent },
 ] as const;
 
 export function V2Layout({
@@ -384,29 +378,9 @@ function V2Shell({
   }, []);
 
   const isBarber = profile.role === "BARBER";
-  const isMembershipsNav =
-    !isBarber &&
-    liquidGlass &&
-    allowedSection &&
-    (activeSlug === "membresias" || activeSlug === "descuentos");
-
-  const membershipsSubSwitchDefs = [
-    {
-      slug: "membresias",
-      to: cleanBase.includes("-old") ? `${cleanBase}/membresias` : "/panel-membresias",
-      title: "Membresías",
-      icon: PackageCheck,
-    },
-    {
-      slug: "descuentos",
-      to: cleanBase.includes("-old") ? `${cleanBase}/descuentos` : "/panel-descuentos",
-      title: "Descuentos",
-      icon: Tag,
-    },
-  ] as const;
 
   const visibleMainSections = (isBarber ? barberSectionDefs : sectionDefs)
-    .filter(({ slug }) => mayAccessStaffSection(profile, slug) && (profile.role === "ADMIN" || slug !== "inicio"))
+    .filter(({ slug }) => mayAccessStaffSection(profile, slug))
     .map((item) => {
       const to =
         item.slug === "membresias"
@@ -422,91 +396,55 @@ function V2Shell({
     });
 
   const navContent = (
-    <>
-      <nav
-        className="admin-section-nav v2-nav"
-        data-nav-count={visibleMainSections.length}
-        data-nav-scrollable={visibleMainSections.length > 6 ? "true" : "false"}
-        ref={navScrollRef}
-        aria-label="Administración"
-      >
-        <div className="admin-section-nav-items" ref={navItemsRef}>
-          {visibleMainSections.map(({ slug, to, title, icon: Icon }) => {
-              const isActive = activeSlug === slug;
-              return (
-                <Link
-                  key={slug}
-                  to={to}
-                  activeOptions={{ exact: true }}
-                  data-nav-slug={slug}
-                  className={`admin-section-nav-link ${isActive ? "is-active" : ""}`.trim()}
-                  aria-current={isActive ? "page" : undefined}
-                  activeProps={{ className: "is-active", "aria-current": "page" }}
-                >
-                  {liquidGlass && isActive && (
-                    <motion.span
-                      layoutId="lg-admin-nav-pill"
-                      className="lg-admin-nav-pill"
-                      aria-hidden="true"
-                      transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
-                    />
-                  )}
-                  <Icon size={16} aria-hidden="true" className="lg-admin-nav-icon" />
-                  <span className="lg-admin-nav-label">{title}</span>
-                </Link>
-              );
-            })}
-        </div>
-        {!liquidGlass && (
-          <>
-            <div className="admin-section-nav-divider" aria-hidden="true" />
-            <button
-              type="button"
-              className="admin-section-nav-refresh-btn"
-              onClick={() => void refresh()}
-              disabled={loading}
-              aria-label="Actualizar datos"
+    <nav
+      className="admin-section-nav v2-nav"
+      data-nav-count={visibleMainSections.length}
+      data-nav-scrollable={visibleMainSections.length > 6 ? "true" : "false"}
+      ref={navScrollRef}
+      aria-label="Administración"
+    >
+      <div className="admin-section-nav-items" ref={navItemsRef}>
+        {visibleMainSections.map(({ slug, to, title, icon: Icon }) => {
+          const isActive = activeSlug === slug;
+          return (
+            <Link
+              key={slug}
+              to={to}
+              activeOptions={{ exact: true }}
+              data-nav-slug={slug}
+              className={`admin-section-nav-link ${isActive ? "is-active" : ""}`.trim()}
+              aria-current={isActive ? "page" : undefined}
+              activeProps={{ className: "is-active", "aria-current": "page" }}
             >
-              <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
-            </button>
-          </>
-        )}
-      </nav>
-      {isMembershipsNav && (
-        <nav
-          className="v2-memberships-subswitch"
-          data-lg-nav-variant="memberships"
-          aria-label="Membresías y descuentos"
-        >
-          {membershipsSubSwitchDefs
-            .filter(({ slug }) => mayAccessStaffSection(profile, slug))
-            .map(({ slug, to, title, icon: Icon }) => {
-              const isActive = activeSlug === slug;
-              return (
-                <Link
-                  key={slug}
-                  to={to}
-                  activeOptions={{ exact: true }}
-                  data-nav-slug={slug}
-                  className={`v2-memberships-subswitch-link ${isActive ? "is-active" : ""}`.trim()}
-                  aria-current={isActive ? "page" : undefined}
-                >
-                  {isActive && (
-                    <motion.span
-                      layoutId="lg-admin-memberships-subswitch-pill"
-                      className="lg-admin-nav-pill"
-                      aria-hidden="true"
-                      transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
-                    />
-                  )}
-                  <Icon size={15} aria-hidden="true" className="lg-admin-nav-icon" />
-                  <span>{title}</span>
-                </Link>
-              );
-            })}
-        </nav>
+              {liquidGlass && isActive && (
+                <motion.span
+                  layoutId="lg-admin-nav-pill"
+                  className="lg-admin-nav-pill"
+                  aria-hidden="true"
+                  transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+                />
+              )}
+              <Icon size={16} aria-hidden="true" className="lg-admin-nav-icon" />
+              <span className="lg-admin-nav-label">{title}</span>
+            </Link>
+          );
+        })}
+      </div>
+      {!liquidGlass && (
+        <>
+          <div className="admin-section-nav-divider" aria-hidden="true" />
+          <button
+            type="button"
+            className="admin-section-nav-refresh-btn"
+            onClick={() => void refresh()}
+            disabled={loading}
+            aria-label="Actualizar datos"
+          >
+            <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
+          </button>
+        </>
       )}
-    </>
+    </nav>
   );
 
   const outletContent = allowedSection ? (

@@ -1,7 +1,7 @@
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router';
 import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState, type MouseEvent } from 'react';
 import { createPortal } from 'react-dom';
-import { ArrowUpRight, Bell, Building2, CalendarClock, CalendarDays, ChartNoAxesCombined, Clock3, CreditCard, Instagram, LayoutGrid, LogIn, LogOut, MapPin, Menu, Moon, Percent, Scale, ShieldCheck, Sun, Tag, Users, Wrench, X } from 'lucide-react';
+import { ArrowUpRight, Bell, Building2, CalendarClock, CalendarDays, ChartNoAxesCombined, Clock3, CreditCard, Home, Instagram, LayoutGrid, LogIn, LogOut, MapPin, Menu, Moon, Percent, Scale, ShieldCheck, Sun, Tag, Users, Wrench, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import kaniLogoLight from '@/assets/kani-logo-light.webp';
 import kaniLogoDark from '@/assets/kani-logo-dark.webp';
@@ -523,6 +523,14 @@ export function SiteHeader() {
       <div className="mobile-menu-group">
         <Link to={adminBase} onClick={closeMenu}>
           <CalendarClock />Panel de administración
+        </Link>
+        {isAdmin && (
+          <Link to={`${adminBase}/inicio`} onClick={closeMenu}>
+            <Home />Inicio
+          </Link>
+        )}
+        <Link to={`${adminBase}/datos`} onClick={closeMenu}>
+          <ChartNoAxesCombined />Datos
         </Link>
         <Link to={membershipsLinkTarget} onClick={closeMenu}>
           <Tag />Membresías y descuentos
