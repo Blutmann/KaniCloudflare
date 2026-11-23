@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { AlertCircle, AlertTriangle, Check, CheckCircle2, Clock3, SlidersHorizontal, X, XCircle } from "lucide-react";
+import { AlertCircle, AlertTriangle, CalendarDays, Check, CheckCircle2, Clock3, Plus, SlidersHorizontal, X, XCircle } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import {
@@ -446,10 +446,23 @@ export function AdminScheduleManager() {
     return [...groups.entries()];
   }, [filteredSlots]);
 
+  const selectedFilterDateLabel = useMemo(() => {
+    const primaryDate = groupedSlots[0]?.[0] ?? specificDate;
+    return formatAdminV2Date(primaryDate);
+  }, [groupedSlots, specificDate]);
+
   return (
     <>
       {/* 1. Card unificada de Filtros y Estados de horarios */}
-      <AdminFilterPanel ariaLabel="Filtros de horarios">
+      <AdminFilterPanel
+        ariaLabel="Filtros de horarios"
+        footer={
+          <div className="v2-filter-card-date-footer">
+            <CalendarDays size={14} aria-hidden="true" />
+            <span>{selectedFilterDateLabel}</span>
+          </div>
+        }
+      >
         {/* 1. Período */}
         <AdminFilterCell label="Período" htmlFor="schedule-date-preset">
           <select
@@ -780,6 +793,25 @@ export function AdminScheduleManager() {
           </div>,
           document.body,
         )}
+      <div
+        className="v2-client-sticky-bar v2-mobile-sticky-cta"
+        role="region"
+        aria-label="Acciones de horarios"
+      >
+        <button
+          type="button"
+          className="v2-primary v2-client-add-btn v2-client-add-btn--mobile"
+          onClick={() =>
+            openManualDialog(
+              groupedSlots[0]?.[0] ?? specificDate,
+              groupedSlots[0]?.[1]?.[0]?.barber_id ?? selectedRows[0]?.id,
+            )
+          }
+        >
+          <Plus size={17} aria-hidden="true" />
+          <span>Agregar horario</span>
+        </button>
+      </div>
     </>
   );
 }

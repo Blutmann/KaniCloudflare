@@ -139,7 +139,7 @@ describe('Admin V2 — UI and Visual Consistency Audit (Structural Unification)'
     });
 
     it('Horarios: la grilla de tarjetas horarias está en su propio contenedor independiente del bloque de filtros, conservando la barra de fecha y botón Agregar horario en medio', () => {
-      expect(scheduleCode).toContain('<AdminFilterPanel ariaLabel="Filtros de horarios">');
+      expect(scheduleCode).toMatch(/<AdminFilterPanel[\s\S]*?ariaLabel="Filtros de horarios"/);
       expect(scheduleCode).toContain('className="v2-schedule-cards-container admin-schedule-cards-container"');
       expect(scheduleCode).toContain('className="v2-schedule-cards-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3"');
       expect(cssCode).toMatch(/\.v2-schedule-cards-container,\s*\.admin-schedule-cards-container\s*\{[\s\S]*?border:\s*1px solid var\(--border\)\s*!important;[\s\S]*?border-radius:\s*var\(--radius-card\)\s*!important;[\s\S]*?box-shadow:\s*var\(--v2-shadow\)\s*!important;/);

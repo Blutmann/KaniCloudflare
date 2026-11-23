@@ -3,7 +3,7 @@ import { getWhatsAppDirectSendUrl } from "@/lib/kani-phone";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "@tanstack/react-router";
-import { AlertCircle, ArrowRight, CalendarDays, Check, Clock3, Copy, Info, Mail, Pencil, X } from "lucide-react";
+import { AlertCircle, ArrowRight, CalendarDays, Check, Clock3, Copy, Info, Mail, Pencil, Plus, X } from "lucide-react";
 import { useAdminStaff } from "@/lib/kani-admin-context";
 import {
   businessDateToday,
@@ -56,6 +56,26 @@ function formatAppointmentDurationLabel(
   if (diff <= 0) diff += 24 * 60;
   if (diff <= 0 || diff > 720) return null;
   return `${diff} min`;
+}
+
+function formatV2AgendaFilterRange(startIso: string, endIso: string): string {
+  if (startIso === endIso) {
+    return formatAdminV2Date(startIso);
+  }
+  const [sy, sm, sd] = startIso.split("-").map(Number);
+  const [ey, em, ed] = endIso.split("-").map(Number);
+  const start = new Date(sy, sm - 1, sd);
+  const end = new Date(ey, em - 1, ed);
+  const formatMonth = (dt: Date) => {
+    const raw = dt.toLocaleDateString("es-AR", { month: "short" }).replace(/\./g, "").trim();
+    return `${raw.charAt(0).toUpperCase()}${raw.slice(1)}.`;
+  };
+  const startLabel = `${start.getDate()} ${formatMonth(start)}`;
+  const endLabel = `${end.getDate()} ${formatMonth(end)}`;
+  if (sy === ey) {
+    return `${startLabel} al ${endLabel} ${ey}`;
+  }
+  return `${startLabel} ${sy} al ${endLabel} ${ey}`;
 }
 
 function capitalizeFirst(text: string): string {
@@ -545,13 +565,21 @@ export function V2Appointments({
             : "v2-turnos-filter-panel"
         }
         footer={
-          period === "CUSTOM" && isInvalidRange ? (
-            <div className="v2-custom-range-row">
-              <p className="v2-range-warning" role="alert">
-                La fecha &apos;Fecha hasta&apos; debe ser igual o posterior a &apos;Fecha&apos;.
-              </p>
+          <>
+            {period === "CUSTOM" && isInvalidRange ? (
+              <div className="v2-custom-range-row">
+                <p className="v2-range-warning" role="alert">
+                  La fecha &apos;Fecha hasta&apos; debe ser igual o posterior a &apos;Fecha&apos;.
+                </p>
+              </div>
+            ) : null}
+            <div className="v2-filter-card-date-footer">
+              <CalendarDays size={14} aria-hidden="true" />
+              <span>
+                {isInvalidRange ? "Rango no válido" : formatV2AgendaFilterRange(startDate, endDate)}
+              </span>
             </div>
-          ) : null
+          </>
         }
       >
         <AdminFilterCell label="Período" htmlFor="v2-appointments-period">
@@ -1443,6 +1471,20 @@ export function V2Appointments({
           </div>,
           document.body,
         )}
+      <div
+        className="v2-client-sticky-bar v2-mobile-sticky-cta"
+        role="region"
+        aria-label="Acciones de turnos"
+      >
+        <button
+          type="button"
+          className="v2-primary v2-client-add-btn v2-client-add-btn--mobile"
+          onClick={() => setManualDialog({ open: true, mode: "CREATE", appointment: null })}
+        >
+          <Plus size={17} aria-hidden="true" />
+          <span>Agregar turno</span>
+        </button>
+      </div>
     </main>
   );
 }

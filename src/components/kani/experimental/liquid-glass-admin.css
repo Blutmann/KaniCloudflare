@@ -1141,7 +1141,7 @@ html[data-theme] body[data-lg-admin="true"] .v2-client-toolbar-container {
   flex-direction: column !important;
   gap: 12px !important;
   padding: 14px 16px !important;
-  margin-bottom: 16px !important;
+  margin-bottom: 0 !important;
 }
 
 html[data-theme] body[data-lg-admin="true"] .v2-client-toolbar-container .v2-client-search-row {
@@ -4709,8 +4709,71 @@ html[data-theme] body[data-lg-admin="true"] .v2-page.v2-payments-page {
   gap: 8px !important;
 }
 
-html[data-theme] body[data-lg-admin="true"] .v2-page :is(.v2-hero-grid, .v2-chart-grid, .v2-appointments-list, .v2-clients-list, .v2-insights-grid) {
+html[data-theme] body[data-lg-admin="true"] .v2-page :is(.v2-hero-grid, .v2-chart-grid, .v2-appointments-list, .v2-clients-list, .v2-client-grid, .v2-insights-grid) {
   gap: 10px !important;
+}
+
+@media (min-width: 768px) {
+  html[data-theme] body[data-lg-admin="true"] .v2-clients-page {
+    gap: 12px !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-page .v2-client-grid {
+    gap: 12px !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-filter-card-date-footer {
+    display: none !important;
+  }
+}
+
+@media (max-width: 767px) {
+  html[data-theme] body[data-lg-admin="true"] :is(.v2-clients-page, .v2-appointments-page, .v2-schedule) {
+    padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-filter-card-date-footer {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    margin-top: 10px !important;
+    padding-top: 9px !important;
+    border-top: 1px solid var(--lga-border) !important;
+    color: var(--lga-text) !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    line-height: 1.25 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-filter-card-date-footer svg {
+    color: var(--lga-text-muted) !important;
+    flex: 0 0 auto !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-appointments-page .v2-section-toolbar,
+  html[data-theme] body[data-lg-admin="true"] .v2-schedule .admin-schedule-list > .v2-section-toolbar,
+  html[data-theme] body[data-lg-admin="true"] .v2-schedule .admin-schedule-date-group:first-child > .v2-section-toolbar {
+    display: none !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-schedule .admin-schedule-date-group:first-child > .v2-section-toolbar + .v2-schedule-cards-container {
+    margin-top: 0 !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-schedule .admin-schedule-date-group + .admin-schedule-date-group > .v2-section-toolbar {
+    margin: 12px 0 8px !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-schedule .admin-schedule-date-group + .admin-schedule-date-group > .v2-section-toolbar .v2-toolbar-action {
+    display: none !important;
+  }
+
+  html[data-theme] body[data-lg-admin="true"] .v2-mobile-sticky-cta {
+    margin-top: 8px !important;
+  }
 }
 
 @media (min-width: 1024px) {
@@ -4722,7 +4785,7 @@ html[data-theme] body[data-lg-admin="true"] .v2-page :is(.v2-hero-grid, .v2-char
     gap: 12px !important;
   }
 
-  html[data-theme] body[data-lg-admin="true"] .v2-page :is(.v2-hero-grid, .v2-chart-grid, .v2-appointments-list, .v2-clients-list, .v2-insights-grid) {
+  html[data-theme] body[data-lg-admin="true"] .v2-page :is(.v2-hero-grid, .v2-chart-grid, .v2-appointments-list, .v2-clients-list, .v2-client-grid, .v2-insights-grid) {
     gap: 12px !important;
   }
 }
