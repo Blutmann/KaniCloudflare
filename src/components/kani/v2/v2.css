@@ -692,7 +692,8 @@ html[data-theme="dark"] .v2-field select {
 }
 .v2-loading {
   position: fixed;
-  top: calc(env(safe-area-inset-top, 0px) + 68px);
+  top: auto;
+  bottom: calc(84px + env(safe-area-inset-bottom, 0px));
   left: 50%;
   transform: translateX(-50%);
   z-index: 230;
@@ -715,6 +716,12 @@ html[data-theme="dark"] .v2-field select {
   font-size: 12px;
   font-weight: 500;
   line-height: 1.2;
+}
+@media (min-width: 768px) {
+  .v2-loading {
+    top: auto;
+    bottom: 20px;
+  }
 }
 html[data-theme="dark"] .v2-loading,
 .dark .v2-loading {

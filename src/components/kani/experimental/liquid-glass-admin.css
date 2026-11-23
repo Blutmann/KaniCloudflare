@@ -2681,7 +2681,8 @@ body[data-lg-admin="true"] .v2-success {
 
 body[data-lg-admin="true"] .v2-loading {
   position: fixed !important;
-  top: calc(env(safe-area-inset-top, 0px) + 68px) !important;
+  top: auto !important;
+  bottom: calc(84px + env(safe-area-inset-bottom, 0px)) !important;
   left: 50% !important;
   transform: translateX(-50%) !important;
   z-index: 230 !important;
@@ -2701,6 +2702,13 @@ body[data-lg-admin="true"] .v2-loading {
   line-height: 1.2 !important;
   -webkit-backdrop-filter: blur(22px) saturate(160%) !important;
   backdrop-filter: blur(22px) saturate(160%) !important;
+}
+
+@media (min-width: 768px) {
+  body[data-lg-admin="true"] .v2-loading {
+    top: auto !important;
+    bottom: 20px !important;
+  }
 }
 
 @keyframes lgaDialogFadeIn {
