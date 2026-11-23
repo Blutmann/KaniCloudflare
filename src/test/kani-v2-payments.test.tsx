@@ -291,8 +291,15 @@ describe('Benefit-aware appointment collection',()=>{
 
   render(<V2Payments />);
 
-  // Resumen de caja arriba (3 columnas siempre: Efectivo | Transf. | Payway)
+  // Resumen de caja arriba (colapsable en móvil con aria-expanded, 3 columnas: Efectivo | Transf. | Payway)
   const cashSummary = screen.getByRole('region', { name: 'Resumen de caja' });
+  const cashToggle = within(cashSummary).getByRole('button', { name: /Caja del día/i });
+  expect(cashToggle).toHaveAttribute('aria-expanded', 'false');
+  const breakdown = cashSummary.querySelector('#v2-cash-summary-breakdown');
+  expect(breakdown).not.toHaveClass('is-open');
+  fireEvent.click(cashToggle);
+  expect(cashToggle).toHaveAttribute('aria-expanded', 'true');
+  expect(breakdown).toHaveClass('is-open');
   expect(within(cashSummary).getByText('$70.000')).toBeInTheDocument();
   expect(within(cashSummary).getByText(/3 cobros/)).toBeInTheDocument();
   expect(within(cashSummary).getByText('$25.000')).toBeInTheDocument();
