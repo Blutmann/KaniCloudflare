@@ -6212,3 +6212,70 @@ html[data-theme="dark"] .kani-v2-toast.is-error .kani-v2-toast-icon,
     line-height: 1.25;
   }
 }
+
+/* Membresías: KPIs compactos, filtros 100% + 50/50 y barra fija inferior */
+.v2-memberships-stage {
+  gap: 10px !important;
+}
+
+.v2-memberships-stage .v2-metrics,
+.v2-memberships-stage .v2-admin-filter-panel {
+  margin-bottom: 0 !important;
+}
+
+.v2-memberships-count {
+  font-size: 12.5px;
+  color: var(--muted-foreground);
+  line-height: 1.3;
+}
+
+@media (min-width: 768px) {
+  .v2-memberships-stage {
+    gap: 12px !important;
+  }
+
+  .v2-memberships-filter-panel .v2-admin-filter-grid {
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) minmax(0, 1fr) !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .v2-memberships-page {
+    padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .v2-memberships-stage .v2-metrics {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+  }
+
+  .v2-memberships-stage .v2-metric {
+    padding: 10px 12px !important;
+    min-height: 0 !important;
+    gap: 2px !important;
+  }
+
+  .v2-memberships-stage .v2-metric span {
+    font-size: 11px !important;
+    line-height: 1.2 !important;
+  }
+
+  .v2-memberships-stage .v2-metric strong {
+    font-size: 18px !important;
+    line-height: 1.15 !important;
+  }
+
+  .v2-memberships-filter-panel .v2-admin-filter-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+
+  .v2-memberships-filter-panel .v2-memberships-search-cell {
+    grid-column: 1 / -1 !important;
+  }
+
+  .v2-memberships-toolbar-row .v2-client-add-btn--desktop {
+    display: none !important;
+  }
+}

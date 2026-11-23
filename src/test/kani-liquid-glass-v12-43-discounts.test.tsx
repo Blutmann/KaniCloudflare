@@ -387,7 +387,7 @@ describe('V12.43 — Rediseño de Descuentos Liquid Glass y navegación compacta
     expect(screen.getByText('Sofía Tester')).toBeInTheDocument();
 
     // Modal "Nueva membresía" elimina descripción informativa conservando controles y precios congelados
-    fireEvent.click(screen.getByRole('button', { name: /Nueva membresía/i }));
+    fireEvent.click(screen.getAllByRole('button', { name: /Nueva membresía/i })[0]);
     const createDialog = screen.getByRole('dialog');
     expect(createDialog).toBeInTheDocument();
     expect(within(createDialog).getByRole('heading', { name: 'Nueva membresía' })).toBeInTheDocument();

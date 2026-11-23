@@ -212,7 +212,7 @@ describe('KANI — Regresión de navegación en panel original y hamburguesa', (
     expect(screen.getByRole('tab', { name: 'Descuentos' })).toBeInTheDocument();
     expect(screen.getByText('Membresías activas')).toBeInTheDocument();
     expect(screen.getByText('Sesiones restantes')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Nueva membresía/i })).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /Nueva membresía/i })[0]).toBeInTheDocument();
     unmount();
   });
 

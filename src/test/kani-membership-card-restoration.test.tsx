@@ -437,7 +437,7 @@ describe("Restauración de cards de Membresías (/panel-administracion/membresia
 
   it("simplifica los nombres de planes en Nueva membresía sin alterar cálculos ni resumen económico", () => {
     render(<V2MembershipsAndDiscounts initialTab="MEMBRESIAS" />);
-    fireEvent.click(screen.getByRole("button", { name: /Nueva membresía/i }));
+    fireEvent.click(screen.getAllByRole("button", { name: /Nueva membresía/i })[0]);
 
     const dialog = screen.getByRole("dialog");
     const clientCombobox = within(dialog).getByRole("combobox", { name: "Cliente titular" });

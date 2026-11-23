@@ -479,10 +479,9 @@ export function V2MembershipsAndDiscounts({
           <div
             className="v2-memberships-stage"
             style={{
-              marginTop: hideHeaderBlock && !notice && !errorNotice ? 0 : "16px",
+              marginTop: hideHeaderBlock && !notice && !errorNotice ? 0 : "12px",
               display: "flex",
               flexDirection: "column",
-              gap: "16px",
             }}
           >
             {data.membershipsError && (
@@ -536,14 +535,21 @@ export function V2MembershipsAndDiscounts({
               <Metric label="Sesiones restantes" value={kpiRemainingSessions} />
             </div>
 
-            <AdminFilterPanel ariaLabel="Filtros de membresías">
-              <AdminFilterCell label="Buscar cliente" htmlFor="v2-memberships-search">
+            <AdminFilterPanel
+              ariaLabel="Filtros de membresías"
+              className="v2-memberships-filter-panel"
+            >
+              <AdminFilterCell
+                label="Buscar cliente"
+                htmlFor="v2-memberships-search"
+                className="v2-memberships-search-cell"
+              >
                 <input
                   id="v2-memberships-search"
                   type="search"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Nombre, teléfono o paquete"
+                  placeholder="Nombre, teléfono o email"
                 />
               </AdminFilterCell>
               <AdminFilterCell label="Estado" htmlFor="v2-memberships-status">
@@ -552,7 +558,7 @@ export function V2MembershipsAndDiscounts({
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value as "ALL" | MembershipStatus)}
                 >
-                  <option value="ALL">Todos los estados</option>
+                  <option value="ALL">Todos</option>
                   <option value="ACTIVE">Activa</option>
                   <option value="PENDING_PAYMENT">Pendiente de pago</option>
                   <option value="EXHAUSTED">Agotada</option>
@@ -578,6 +584,7 @@ export function V2MembershipsAndDiscounts({
             </AdminFilterPanel>
 
             <div
+              className="v2-memberships-toolbar-row"
               style={{
                 display: "flex",
                 flexWrap: "wrap",
@@ -586,14 +593,14 @@ export function V2MembershipsAndDiscounts({
                 gap: "10px",
               }}
             >
-              <span style={{ fontSize: "13px", color: "var(--muted-foreground)" }}>
+              <span className="v2-memberships-count">
                 {scopedMemberships.length === 1
                   ? "1 membresía encontrada"
                   : `${scopedMemberships.length} membresías encontradas`}
               </span>
               <button
                 type="button"
-                className="v2-primary"
+                className="v2-primary v2-client-add-btn v2-client-add-btn--desktop"
                 onClick={() => {
                   setErrorNotice("");
                   if (!clientId && data.clients[0]) {
@@ -959,6 +966,28 @@ export function V2MembershipsAndDiscounts({
         </DialogContent>
       </Dialog>
 
+      {activeTab === "MEMBRESIAS" && (
+        <div
+          className="v2-client-sticky-bar v2-mobile-sticky-cta"
+          role="region"
+          aria-label="Acciones de membresías"
+        >
+          <button
+            type="button"
+            className="v2-primary v2-client-add-btn v2-client-add-btn--mobile"
+            onClick={() => {
+              setErrorNotice("");
+              if (!clientId && data.clients[0]) {
+                setClientId(data.clients[0].id);
+              }
+              setCreateOpen(true);
+            }}
+          >
+            <Plus size={17} aria-hidden="true" />
+            <span>Nueva membresía</span>
+          </button>
+        </div>
+      )}
     </main>
   );
 }
