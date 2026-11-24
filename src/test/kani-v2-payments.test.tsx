@@ -397,5 +397,14 @@ describe('Benefit-aware appointment collection',()=>{
     p_service_price_ars: 30000,
     p_final_amount_ars: null,
   });
+
+  // Switching to Otro and editing Importe to 70.000 updates breakdown to Servicio $75.000 · Seña Payway -$5.000
+  fireEvent.click(screen.getByRole('button', { name: 'Con turno' }));
+  fireEvent.change(screen.getByLabelText('Turno'), { target: { value: 'a1' } });
+  fireEvent.click(within(screen.getByRole('group', { name: 'Servicio' })).getByRole('button', { name: 'Otro' }));
+  fireEvent.change(screen.getByLabelText('Importe'), { target: { value: '70000' } });
+  expect((screen.getByLabelText('Importe') as HTMLInputElement).value).toBe('70.000');
+  expect(screen.getByText('Servicio $75.000 · Seña Payway -$5.000')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Cobrar $70.000' })).not.toBeDisabled();
  });
 });

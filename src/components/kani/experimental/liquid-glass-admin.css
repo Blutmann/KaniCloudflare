@@ -5815,3 +5815,9 @@ html[data-theme] body[data-lg-admin="true"] .v2-quick-secondary-toggles .v2-quic
   display: inline-flex !important;
   align-items: center !important;
 }
+
+html[data-theme] body[data-lg-admin="true"] .v2-quick-amount-input-wrap > input {
+  text-align: right !important;
+  font-variant-numeric: tabular-nums !important;
+  padding-right: 14px !important;
+}

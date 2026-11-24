@@ -1162,10 +1162,11 @@ html[data-theme="dark"] .v2-loading,
   height: 38px;
   min-height: 38px;
   max-height: 38px;
-  padding: 6px 10px 6px 24px;
+  padding: 6px 14px 6px 24px !important;
   font-size: 14px;
   font-weight: 600;
-  font-variant-numeric: tabular-nums;
+  text-align: right !important;
+  font-variant-numeric: tabular-nums !important;
   border-radius: 11px;
 }
 .v2-quick-secondary-toggles {

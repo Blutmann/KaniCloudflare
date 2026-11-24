@@ -737,7 +737,7 @@ export function V2Payments() {
 
                 {(discount > 0 || deposit > 0) && (
                   <p className="v2-quick-breakdown-note">
-                    {`Servicio ${money(price)}`}
+                    {`Servicio ${money(serviceName === "Anulado" ? 0 : (finalOverride !== null ? finalOverride + discount : price))}`}
                     {deposit > 0 ? ` · Seña Payway -${money(deposit)}` : ""}
                     {discount > 0 ? ` · Descuento -${money(discount)}` : ""}
                   </p>
@@ -748,7 +748,7 @@ export function V2Payments() {
                   type="submit"
                   disabled={
                     busy ||
-                    (!price && serviceName !== "Anulado") ||
+                    (!price && finalOverride === null && serviceName !== "Anulado") ||
                     (origin === "appointment" && (!appointment || !depositVerifiable || (total <= 0 && serviceName !== "Anulado")))
                   }
                 >
