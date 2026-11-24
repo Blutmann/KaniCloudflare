@@ -349,7 +349,7 @@ export function ManualAppointmentDialog({
         : `Todos los ${weekdayNames[dayIdx] || "días"}`;
     const endMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(resolvedRecurringEndDate);
     const endText = endMatch ? `${endMatch[3]}/${endMatch[2]}/${endMatch[1]}` : resolvedRecurringEndDate;
-    return `${freqText} a las ${startTime} hs · Hasta el ${endText} (sin renovación automática)`;
+    return `${freqText} ${startTime} hs · Hasta ${endText} (sin renovación)`;
   }, [isRecurring, date, startTime, recurringFrequency, resolvedRecurringEndDate]);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -754,14 +754,11 @@ export function ManualAppointmentDialog({
           )}
 
           {mode === "CREATE" && (
-            <div className="v2-manual-recurring-box">
+            <div className={`v2-manual-recurring-box${isRecurring ? " is-expanded" : ""}`}>
               <div className="v2-recurring-header">
                 <label htmlFor="manual-recurring-switch" className="v2-recurring-label-wrap">
-                  <Repeat size={15} className="text-gold shrink-0" aria-hidden="true" />
-                  <span className="v2-recurring-label-text">
-                    <strong>Turno fijo (se repite)</strong>
-                    <small>Agenda automática por 60 días</small>
-                  </span>
+                  <Repeat size={14} className="text-gold shrink-0" aria-hidden="true" />
+                  <span className="v2-recurring-label-title">Turno fijo (se repite)</span>
                 </label>
                 <button
                   type="button"
@@ -786,12 +783,12 @@ export function ManualAppointmentDialog({
               {isRecurring && (
                 <div className="v2-recurring-body">
                   <div className="v2-recurring-group">
-                    <span className="v2-field-label">Frecuencia</span>
+                    <span className="v2-recurring-group-label">Frecuencia</span>
                     <div className="v2-recurring-segmented" role="group" aria-label="Frecuencia">
                       <button
                         type="button"
                         aria-pressed={recurringFrequency === "WEEKLY"}
-                        className={`v2-recurring-seg-btn${recurringFrequency === "WEEKLY" ? " is-active" : ""}`}
+                        className={`v2-recurring-pill${recurringFrequency === "WEEKLY" ? " is-active" : ""}`}
                         disabled={isBusy}
                         onClick={() => setRecurringFrequency("WEEKLY")}
                       >
@@ -800,7 +797,7 @@ export function ManualAppointmentDialog({
                       <button
                         type="button"
                         aria-pressed={recurringFrequency === "BIWEEKLY"}
-                        className={`v2-recurring-seg-btn${recurringFrequency === "BIWEEKLY" ? " is-active" : ""}`}
+                        className={`v2-recurring-pill${recurringFrequency === "BIWEEKLY" ? " is-active" : ""}`}
                         disabled={isBusy}
                         onClick={() => setRecurringFrequency("BIWEEKLY")}
                       >
@@ -810,12 +807,12 @@ export function ManualAppointmentDialog({
                   </div>
 
                   <div className="v2-recurring-group">
-                    <span className="v2-field-label">Duración</span>
+                    <span className="v2-recurring-group-label">Duración</span>
                     <div className="v2-recurring-segmented" role="group" aria-label="Duración">
                       <button
                         type="button"
                         aria-pressed={recurringDurationMode === "60_DAYS"}
-                        className={`v2-recurring-seg-btn${recurringDurationMode === "60_DAYS" ? " is-active" : ""}`}
+                        className={`v2-recurring-pill${recurringDurationMode === "60_DAYS" ? " is-active" : ""}`}
                         disabled={isBusy}
                         onClick={() => setRecurringDurationMode("60_DAYS")}
                       >
@@ -824,7 +821,7 @@ export function ManualAppointmentDialog({
                       <button
                         type="button"
                         aria-pressed={recurringDurationMode === "UNTIL_DATE"}
-                        className={`v2-recurring-seg-btn${recurringDurationMode === "UNTIL_DATE" ? " is-active" : ""}`}
+                        className={`v2-recurring-pill${recurringDurationMode === "UNTIL_DATE" ? " is-active" : ""}`}
                         disabled={isBusy}
                         onClick={() => {
                           setRecurringDurationMode("UNTIL_DATE");
@@ -859,7 +856,7 @@ export function ManualAppointmentDialog({
                       className="v2-recurring-summary"
                       data-testid="recurring-series-summary"
                     >
-                      <strong>Resumen:</strong> {recurringSummaryText}
+                      {recurringSummaryText}
                     </p>
                   )}
                 </div>
