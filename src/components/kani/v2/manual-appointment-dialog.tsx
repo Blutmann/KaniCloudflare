@@ -349,7 +349,7 @@ export function ManualAppointmentDialog({
         : `Todos los ${weekdayNames[dayIdx] || "días"}`;
     const endMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(resolvedRecurringEndDate);
     const endText = endMatch ? `${endMatch[3]}/${endMatch[2]}/${endMatch[1]}` : resolvedRecurringEndDate;
-    return `${freqText} ${startTime} hs · Hasta ${endText} (sin renovación)`;
+    return `${freqText} ${startTime} hs · Hasta ${endText}`;
   }, [isRecurring, date, startTime, recurringFrequency, resolvedRecurringEndDate]);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -753,117 +753,6 @@ export function ManualAppointmentDialog({
             </p>
           )}
 
-          {mode === "CREATE" && (
-            <div className={`v2-manual-recurring-box${isRecurring ? " is-expanded" : ""}`}>
-              <div className="v2-recurring-header">
-                <label htmlFor="manual-recurring-switch" className="v2-recurring-label-wrap">
-                  <Repeat size={14} className="text-gold shrink-0" aria-hidden="true" />
-                  <span className="v2-recurring-label-title">Turno fijo (se repite)</span>
-                </label>
-                <button
-                  type="button"
-                  role="switch"
-                  id="manual-recurring-switch"
-                  aria-checked={isRecurring}
-                  aria-label="Turno fijo (se repite)"
-                  disabled={isBusy}
-                  className={`v2-recurring-switch${isRecurring ? " is-checked" : ""}`}
-                  onClick={() => {
-                    const next = !isRecurring;
-                    setIsRecurring(next);
-                    if (next && (!recurringEndDate || recurringEndDate < date)) {
-                      setRecurringEndDate(addCalendarDays(date, 60));
-                    }
-                  }}
-                >
-                  <span className="v2-recurring-switch-thumb" aria-hidden="true" />
-                </button>
-              </div>
-
-              {isRecurring && (
-                <div className="v2-recurring-body">
-                  <div className="v2-recurring-group">
-                    <span className="v2-recurring-group-label">Frecuencia</span>
-                    <div className="v2-recurring-segmented" role="group" aria-label="Frecuencia">
-                      <button
-                        type="button"
-                        aria-pressed={recurringFrequency === "WEEKLY"}
-                        className={`v2-recurring-pill${recurringFrequency === "WEEKLY" ? " is-active" : ""}`}
-                        disabled={isBusy}
-                        onClick={() => setRecurringFrequency("WEEKLY")}
-                      >
-                        Semanal
-                      </button>
-                      <button
-                        type="button"
-                        aria-pressed={recurringFrequency === "BIWEEKLY"}
-                        className={`v2-recurring-pill${recurringFrequency === "BIWEEKLY" ? " is-active" : ""}`}
-                        disabled={isBusy}
-                        onClick={() => setRecurringFrequency("BIWEEKLY")}
-                      >
-                        Cada 2 semanas
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="v2-recurring-group">
-                    <span className="v2-recurring-group-label">Duración</span>
-                    <div className="v2-recurring-segmented" role="group" aria-label="Duración">
-                      <button
-                        type="button"
-                        aria-pressed={recurringDurationMode === "60_DAYS"}
-                        className={`v2-recurring-pill${recurringDurationMode === "60_DAYS" ? " is-active" : ""}`}
-                        disabled={isBusy}
-                        onClick={() => setRecurringDurationMode("60_DAYS")}
-                      >
-                        Por 60 días
-                      </button>
-                      <button
-                        type="button"
-                        aria-pressed={recurringDurationMode === "UNTIL_DATE"}
-                        className={`v2-recurring-pill${recurringDurationMode === "UNTIL_DATE" ? " is-active" : ""}`}
-                        disabled={isBusy}
-                        onClick={() => {
-                          setRecurringDurationMode("UNTIL_DATE");
-                          if (!recurringEndDate || recurringEndDate < date) {
-                            setRecurringEndDate(addCalendarDays(date, 60));
-                          }
-                        }}
-                      >
-                        Hasta fecha
-                      </button>
-                    </div>
-                  </div>
-
-                  {recurringDurationMode === "UNTIL_DATE" && (
-                    <div className="v2-manual-row-single">
-                      <label className="v2-field">
-                        Último turno
-                        <input
-                          type="date"
-                          value={recurringEndDate}
-                          min={date}
-                          max={maxRecurringEndDate}
-                          disabled={isBusy}
-                          onChange={(e) => setRecurringEndDate(e.target.value)}
-                        />
-                      </label>
-                    </div>
-                  )}
-
-                  {recurringSummaryText && (
-                    <p
-                      className="v2-recurring-summary"
-                      data-testid="recurring-series-summary"
-                    >
-                      {recurringSummaryText}
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-
           {/* Client Details Section */}
           <div className="v2-manual-client-section">
             <div className="v2-client-quick-search v2-search">
@@ -938,6 +827,142 @@ export function ManualAppointmentDialog({
                 </label>
               </div>
             </div>
+
+            {mode === "CREATE" && (
+              <div
+                className={`v2-manual-recurring-box${isRecurring ? " is-expanded" : ""}`}
+                style={{ flex: "0 0 auto" }}
+              >
+                <div className="v2-recurring-header">
+                  <span
+                    className="v2-recurring-label-wrap"
+                    onClick={() => {
+                      if (isBusy) return;
+                      const next = !isRecurring;
+                      setIsRecurring(next);
+                      if (next && (!recurringEndDate || recurringEndDate < date)) {
+                        setRecurringEndDate(addCalendarDays(date, 60));
+                      }
+                    }}
+                  >
+                    <Repeat size={14} className="text-gold shrink-0" aria-hidden="true" />
+                    <span className="v2-recurring-label-title">Turno fijo (se repite)</span>
+                  </span>
+                  <span
+                    role="switch"
+                    tabIndex={isBusy ? -1 : 0}
+                    id="manual-recurring-switch"
+                    aria-checked={isRecurring}
+                    aria-disabled={isBusy}
+                    aria-label="Turno fijo (se repite)"
+                    className={`v2-recurring-switch${isRecurring ? " is-checked" : ""}`}
+                    onClick={() => {
+                      if (isBusy) return;
+                      const next = !isRecurring;
+                      setIsRecurring(next);
+                      if (next && (!recurringEndDate || recurringEndDate < date)) {
+                        setRecurringEndDate(addCalendarDays(date, 60));
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (isBusy) return;
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        const next = !isRecurring;
+                        setIsRecurring(next);
+                        if (next && (!recurringEndDate || recurringEndDate < date)) {
+                          setRecurringEndDate(addCalendarDays(date, 60));
+                        }
+                      }
+                    }}
+                  >
+                    <span className="v2-recurring-switch-thumb" aria-hidden="true" />
+                  </span>
+                </div>
+
+                {isRecurring && (
+                  <div className="v2-recurring-body">
+                    <div className="v2-recurring-group">
+                      <span className="v2-recurring-group-label">Frecuencia</span>
+                      <div className="v2-recurring-segmented" role="group" aria-label="Frecuencia">
+                        <button
+                          type="button"
+                          aria-pressed={recurringFrequency === "WEEKLY"}
+                          className={`v2-recurring-pill${recurringFrequency === "WEEKLY" ? " is-active" : ""}`}
+                          disabled={isBusy}
+                          onClick={() => setRecurringFrequency("WEEKLY")}
+                        >
+                          Semanal
+                        </button>
+                        <button
+                          type="button"
+                          aria-pressed={recurringFrequency === "BIWEEKLY"}
+                          className={`v2-recurring-pill${recurringFrequency === "BIWEEKLY" ? " is-active" : ""}`}
+                          disabled={isBusy}
+                          onClick={() => setRecurringFrequency("BIWEEKLY")}
+                        >
+                          Cada 2 semanas
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="v2-recurring-group">
+                      <span className="v2-recurring-group-label">Duración</span>
+                      <div className="v2-recurring-segmented" role="group" aria-label="Duración">
+                        <button
+                          type="button"
+                          aria-pressed={recurringDurationMode === "60_DAYS"}
+                          className={`v2-recurring-pill${recurringDurationMode === "60_DAYS" ? " is-active" : ""}`}
+                          disabled={isBusy}
+                          onClick={() => setRecurringDurationMode("60_DAYS")}
+                        >
+                          Por 60 días
+                        </button>
+                        <button
+                          type="button"
+                          aria-pressed={recurringDurationMode === "UNTIL_DATE"}
+                          className={`v2-recurring-pill${recurringDurationMode === "UNTIL_DATE" ? " is-active" : ""}`}
+                          disabled={isBusy}
+                          onClick={() => {
+                            setRecurringDurationMode("UNTIL_DATE");
+                            if (!recurringEndDate || recurringEndDate < date) {
+                              setRecurringEndDate(addCalendarDays(date, 60));
+                            }
+                          }}
+                        >
+                          Hasta fecha
+                        </button>
+                      </div>
+                    </div>
+
+                    {recurringDurationMode === "UNTIL_DATE" && (
+                      <div className="v2-manual-row-single">
+                        <label className="v2-field">
+                          Último turno
+                          <input
+                            type="date"
+                            value={recurringEndDate}
+                            min={date}
+                            max={maxRecurringEndDate}
+                            disabled={isBusy}
+                            onChange={(e) => setRecurringEndDate(e.target.value)}
+                          />
+                        </label>
+                      </div>
+                    )}
+
+                    {recurringSummaryText && (
+                      <p
+                        className="v2-recurring-summary"
+                        data-testid="recurring-series-summary"
+                      >
+                        {recurringSummaryText}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="v2-manual-dialog-actions kani-modal-footer">
