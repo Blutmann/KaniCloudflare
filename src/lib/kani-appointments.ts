@@ -25,6 +25,7 @@ export type NotificationChannelDispatch = {
   id: string;
   appointmentId: string;
   channel: 'WHATSAPP' | 'EMAIL';
+  recipientRole?: 'CLIENT' | 'BARBER';
   provider: 'PONTIUN' | 'RESEND';
   recipient?: string | null;
   providerMessageId?: string | null;
@@ -41,6 +42,8 @@ export type NotificationChannelDispatch = {
 
 export type AppointmentDispatches = {
   whatsapp?: NotificationChannelDispatch;
+  whatsappClient?: NotificationChannelDispatch;
+  whatsappBarber?: NotificationChannelDispatch;
   email?: NotificationChannelDispatch;
 };
 
@@ -539,14 +542,26 @@ async function executeReadRealAppointments(options?: { bypassCache?: boolean; ba
   const exceptionByApt = new Map((((exceptionsResult as any)?.data as any[]) ?? []).map((e: any) => [e.appointment_id, e]));
   const orderByApt = new Map((((ordersResult as any)?.data as any[]) ?? []).map((o: any) => [o.appointment_id, o]));
 
+  const pickNewerDispatch = (
+    existing: NotificationChannelDispatch | undefined,
+    candidate: NotificationChannelDispatch,
+  ): NotificationChannelDispatch => {
+    if (!existing) return candidate;
+    const existingTs = Date.parse(existing.updatedAt || existing.createdAt || existing.requestedAt || '') || 0;
+    const candidateTs = Date.parse(candidate.updatedAt || candidate.createdAt || candidate.requestedAt || '') || 0;
+    return candidateTs >= existingTs ? candidate : existing;
+  };
+
   const dispatchesMap = new Map<string, AppointmentDispatches>();
   if (dispatchesResult && Array.isArray((dispatchesResult as any).data)) {
     for (const d of (dispatchesResult as any).data) {
       const current = dispatchesMap.get(d.appointment_id) || {};
+      const recipientRole: 'CLIENT' | 'BARBER' = d.recipient_role === 'BARBER' ? 'BARBER' : 'CLIENT';
       const record: NotificationChannelDispatch = {
         id: d.id,
         appointmentId: d.appointment_id,
         channel: d.channel,
+        recipientRole,
         provider: d.provider,
         recipient: d.recipient,
         providerMessageId: d.provider_message_id,
@@ -560,8 +575,19 @@ async function executeReadRealAppointments(options?: { bypassCache?: boolean; ba
         createdAt: d.created_at,
         updatedAt: d.updated_at,
       };
-      if (d.channel === 'WHATSAPP') current.whatsapp = record;
-      if (d.channel === 'EMAIL') current.email = record;
+      if (d.channel === 'WHATSAPP') {
+        if (recipientRole === 'BARBER') {
+          current.whatsappBarber = pickNewerDispatch(current.whatsappBarber, record);
+        } else {
+          current.whatsappClient = pickNewerDispatch(current.whatsappClient, record);
+        }
+        current.whatsapp = current.whatsappClient ?? current.whatsappBarber;
+      }
+      if (d.channel === 'EMAIL') {
+        if (recipientRole === 'CLIENT' || !current.email) {
+          current.email = pickNewerDispatch(current.email, record);
+        }
+      }
       dispatchesMap.set(d.appointment_id, current);
     }
   }

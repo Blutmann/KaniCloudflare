@@ -526,7 +526,9 @@ export function V2Appointments({
                   ...prev.appointment,
                   dispatches: {
                     ...prev.appointment.dispatches,
-                    [channel === "WHATSAPP" ? "whatsapp" : "email"]: nextDispatch,
+                    ...(channel === "WHATSAPP"
+                      ? { whatsapp: nextDispatch, whatsappClient: nextDispatch }
+                      : { email: nextDispatch }),
                   },
                 },
               }
@@ -548,7 +550,9 @@ export function V2Appointments({
                     ...prev.appointment,
                     dispatches: {
                       ...prev.appointment.dispatches,
-                      [channel === "WHATSAPP" ? "whatsapp" : "email"]: res.dispatch as any,
+                      ...(channel === "WHATSAPP"
+                        ? { whatsapp: res.dispatch as any, whatsappClient: res.dispatch as any }
+                        : { email: res.dispatch as any }),
                     },
                   },
                 }
@@ -1202,11 +1206,26 @@ export function V2Appointments({
           {channelModal && (() => {
             const apt = channelModal.appointment;
             const isEmail = channelModal.channel === "Email";
-            const dispatch = isEmail ? apt.dispatches?.email : apt.dispatches?.whatsapp;
+            const clientDispatch = isEmail
+              ? apt.dispatches?.email
+              : (apt.dispatches?.whatsappClient ?? apt.dispatches?.whatsapp);
+            const barberDispatch = !isEmail ? apt.dispatches?.whatsappBarber : undefined;
+            const barberName = apt.barber || "Barbero";
             const contactValue = isEmail
-              ? (apt.email || (apt as any).clientEmail || dispatch?.recipient || "")
-              : (apt.phone || dispatch?.recipient || "");
+              ? (apt.email || (apt as any).clientEmail || clientDispatch?.recipient || "")
+              : (apt.phone || clientDispatch?.recipient || "");
             const waUrl = !isEmail ? getWhatsAppDirectSendUrl(apt.phone) : null;
+
+            const clientError =
+              clientDispatch &&
+              (clientDispatch.status === "FAILED" || clientDispatch.errorCode || clientDispatch.errorDescription)
+                ? translateDispatchError(clientDispatch.errorCode, clientDispatch.errorDescription)
+                : null;
+            const barberError =
+              barberDispatch &&
+              (barberDispatch.status === "FAILED" || barberDispatch.errorCode || barberDispatch.errorDescription)
+                ? translateDispatchError(barberDispatch.errorCode, barberDispatch.errorDescription)
+                : null;
 
             return (
               <>
@@ -1218,17 +1237,58 @@ export function V2Appointments({
                 </DialogDescription>
 
                 <div className="v2-channel-modal-body">
-                  <div className="v2-channel-status-row">
-                    <span className="v2-channel-status-label">Estado del aviso:</span>
-                    <span className={`v2-notif-pill v2-notif-${(dispatch?.status || "pending").toLowerCase()}`}>
-                      {formatDispatchDetailedStatus(dispatch?.status)}
-                    </span>
-                  </div>
+                  {isEmail ? (
+                    <>
+                      <div className="v2-channel-status-row">
+                        <span className="v2-channel-status-label">Estado del aviso:</span>
+                        <span className={`v2-notif-pill v2-notif-${(clientDispatch?.status || "pending").toLowerCase()}`}>
+                          {formatDispatchDetailedStatus(clientDispatch?.status)}
+                        </span>
+                      </div>
+                      {clientError && (
+                        <p className="v2-channel-error-detail" role="alert">
+                          {clientError}
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                        <div className="v2-channel-status-row" style={{ justifyContent: "space-between" }}>
+                          <span className="v2-channel-status-label">
+                            <strong>Cliente</strong> ({apt.name}):
+                          </span>
+                          <span
+                            className={`v2-notif-pill v2-notif-${(clientDispatch?.status || "pending").toLowerCase()}`}
+                          >
+                            {formatCompactDispatchStatus(clientDispatch)}
+                          </span>
+                        </div>
+                        {barberDispatch && (
+                          <div className="v2-channel-status-row" style={{ justifyContent: "space-between" }}>
+                            <span className="v2-channel-status-label">
+                              <strong>Barbero</strong> ({barberName}):
+                            </span>
+                            <span
+                              className={`v2-notif-pill v2-notif-${(barberDispatch.status || "pending").toLowerCase()}`}
+                            >
+                              {formatCompactDispatchStatus(barberDispatch)}
+                            </span>
+                          </div>
+                        )}
+                      </div>
 
-                  {dispatch?.errorDescription && (
-                    <p className="v2-channel-error-detail" role="alert">
-                      {dispatch.errorDescription}
-                    </p>
+                      {clientError && (
+                        <p className="v2-channel-error-detail" role="alert">
+                          <strong>Cliente:</strong> {clientError}
+                        </p>
+                      )}
+                      {barberError && (
+                        <p className="v2-channel-error-detail" role="alert">
+                          <strong>Barbero:</strong> {barberError}
+                        </p>
+                      )}
+                    </>
                   )}
 
                   <div className="v2-channel-contact-box">
@@ -1388,17 +1448,60 @@ export function V2Appointments({
           )}
           {selectedNotifDetail?.dispatch ? (
             <div className="v2-diagnostics-box" style={{ marginTop: "12px", display: "flex", flexDirection: "column", gap: "8px", fontSize: "13px" }}>
-              <p>
-                <strong>Estado:</strong>{" "}
-                <span className={`v2-notif-pill v2-notif-${(selectedNotifDetail.dispatch.status || "pending").toLowerCase()}`}>
-                  {formatDispatchDetailedStatus(selectedNotifDetail.dispatch.status)}
-                </span>
-                {(selectedNotifDetail.dispatch.status === "SENT" || selectedNotifDetail.dispatch.status === "PROVIDER_ACCEPTED") && (
-                  <span style={{ marginLeft: "6px", fontSize: "11.5px", color: "var(--muted-foreground)" }}>
-                    (Aceptado por proveedor; entrega no confirmada aún)
+              {selectedNotifDetail.channel === "WhatsApp" && selectedNotifDetail.appointment ? (() => {
+                const appt = selectedNotifDetail.appointment;
+                const clientWa = appt.dispatches?.whatsappClient ?? selectedNotifDetail.dispatch;
+                const barberWa = appt.dispatches?.whatsappBarber;
+                const barberName = appt.barber || "Barbero";
+                const clientErr =
+                  clientWa && (clientWa.status === "FAILED" || clientWa.errorCode || clientWa.errorDescription)
+                    ? translateDispatchError(clientWa.errorCode, clientWa.errorDescription)
+                    : null;
+                const barberErr =
+                  barberWa && (barberWa.status === "FAILED" || barberWa.errorCode || barberWa.errorDescription)
+                    ? translateDispatchError(barberWa.errorCode, barberWa.errorDescription)
+                    : null;
+                return (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                    <div className="v2-channel-status-row" style={{ justifyContent: "space-between" }}>
+                      <span><strong>Cliente</strong> ({appt.name}):</span>
+                      <span className={`v2-notif-pill v2-notif-${(clientWa?.status || "pending").toLowerCase()}`}>
+                        {formatCompactDispatchStatus(clientWa)}
+                      </span>
+                    </div>
+                    {barberWa && (
+                      <div className="v2-channel-status-row" style={{ justifyContent: "space-between" }}>
+                        <span><strong>Barbero</strong> ({barberName}):</span>
+                        <span className={`v2-notif-pill v2-notif-${(barberWa.status || "pending").toLowerCase()}`}>
+                          {formatCompactDispatchStatus(barberWa)}
+                        </span>
+                      </div>
+                    )}
+                    {clientErr && (
+                      <p className="v2-channel-error-detail" role="alert">
+                        <strong>Cliente:</strong> {clientErr}
+                      </p>
+                    )}
+                    {barberErr && (
+                      <p className="v2-channel-error-detail" role="alert">
+                        <strong>Barbero:</strong> {barberErr}
+                      </p>
+                    )}
+                  </div>
+                );
+              })() : (
+                <p>
+                  <strong>Estado:</strong>{" "}
+                  <span className={`v2-notif-pill v2-notif-${(selectedNotifDetail.dispatch.status || "pending").toLowerCase()}`}>
+                    {formatDispatchDetailedStatus(selectedNotifDetail.dispatch.status)}
                   </span>
-                )}
-              </p>
+                  {(selectedNotifDetail.dispatch.status === "SENT" || selectedNotifDetail.dispatch.status === "PROVIDER_ACCEPTED") && (
+                    <span style={{ marginLeft: "6px", fontSize: "11.5px", color: "var(--muted-foreground)" }}>
+                      (Aceptado por proveedor; entrega no confirmada aún)
+                    </span>
+                  )}
+                </p>
+              )}
               <p><strong>Proveedor:</strong> {selectedNotifDetail.dispatch.provider || (selectedNotifDetail.channel === "WhatsApp" ? "PONTIUN" : "RESEND")}</p>
               {selectedNotifDetail.dispatch.recipient && (
                 <p><strong>Destinatario:</strong> {selectedNotifDetail.dispatch.recipient}</p>
@@ -1409,11 +1512,14 @@ export function V2Appointments({
               {selectedNotifDetail.dispatch.providerMessageId && (
                 <p><strong>ID de mensaje:</strong> <code>{selectedNotifDetail.dispatch.providerMessageId}</code></p>
               )}
-              {selectedNotifDetail.dispatch.errorCode && (
-                <p><strong>Código de error:</strong> <code>{selectedNotifDetail.dispatch.errorCode}</code></p>
-              )}
-              {selectedNotifDetail.dispatch.errorDescription && (
-                <p><strong>Detalle:</strong> {selectedNotifDetail.dispatch.errorDescription}</p>
+              {(selectedNotifDetail.dispatch.errorCode || selectedNotifDetail.dispatch.errorDescription) && (
+                <p>
+                  <strong>Motivo:</strong>{" "}
+                  {translateDispatchError(
+                    selectedNotifDetail.dispatch.errorCode,
+                    selectedNotifDetail.dispatch.errorDescription,
+                  )}
+                </p>
               )}
               {selectedNotifDetail.dispatch.updatedAt && (
                 <p><strong>Última actualización:</strong> {selectedNotifDetail.dispatch.updatedAt.replace("T", " ").slice(0, 19)}</p>
@@ -1439,9 +1545,18 @@ export function V2Appointments({
             const isConfirmed = apptStatus === "CONFIRMED" || apptStatus === "CONFIRMADO";
             const isCancelled = apptStatus === "CANCELLED" || apptStatus === "CANCELADO";
             const isEmail = selectedNotifDetail.channel === "Email";
+            const clientWa = appt.dispatches?.whatsappClient ?? selectedNotifDetail.dispatch;
+            const barberWa = appt.dispatches?.whatsappBarber;
             const clientRecipient = isEmail
               ? (appt.email || (appt as any).clientEmail || selectedNotifDetail.dispatch?.recipient)
-              : (appt.phone || selectedNotifDetail.dispatch?.recipient);
+              : (appt.phone || clientWa?.recipient);
+            const hasBillingError = !isEmail && (clientWa?.errorCode === "131042" || barberWa?.errorCode === "131042");
+            const templatePendingTargets = !isEmail
+              ? [
+                  clientWa?.errorCode === "TEMPLATE_NOT_APPROVED" ? "Cliente" : null,
+                  barberWa?.errorCode === "TEMPLATE_NOT_APPROVED" ? "Barbero" : null,
+                ].filter(Boolean)
+              : [];
 
             return (
               <>
@@ -1457,14 +1572,14 @@ export function V2Appointments({
                       : "El cliente no posee un número de teléfono registrado para enviar la notificación por WhatsApp."}
                   </div>
                 )}
-                {!isEmail && selectedNotifDetail.dispatch?.errorCode === "131042" && (
+                {hasBillingError && (
                   <div className="v2-note" style={{ marginTop: "12px", borderLeftColor: "#ef4444" }}>
                     Meta rechazó el envío por configuración de facturación pendiente (código 131042). Resolvé la moneda de la cuenta en Meta Business Suite antes de reenviar.
                   </div>
                 )}
-                {!isEmail && selectedNotifDetail.dispatch?.errorCode === "TEMPLATE_NOT_APPROVED" && (
+                {templatePendingTargets.length > 0 && (
                   <div className="v2-note" style={{ marginTop: "12px", borderLeftColor: "#eab308" }}>
-                    ⏳ <strong>Plantilla pendiente en Meta:</strong> la plantilla oficial aún no está aprobada o sincronizada en Meta/Pontiun. Una vez aprobada, podés reenviar manualmente desde este modal.
+                    ⏳ <strong>{templatePendingTargets.join(" y ")}: Plantilla pendiente en Meta</strong> — la plantilla oficial aún no está aprobada o sincronizada en Meta/Pontiun. Una vez aprobada, podés reenviar manualmente desde este modal.
                   </div>
                 )}
                 {(selectedNotifDetail.dispatch?.status === "DELIVERED" || selectedNotifDetail.dispatch?.status === "READ") && (
@@ -1621,6 +1736,70 @@ function formatEmailStatus(dispatch?: NotificationChannelDispatch): string {
     default:
       return `Email: ${dispatch.status}`;
   }
+}
+
+export function formatCompactDispatchStatus(dispatch?: NotificationChannelDispatch): string {
+  if (!dispatch) return "Sin envío";
+  switch (dispatch.status) {
+    case "DELIVERED":
+      return "Entregado";
+    case "READ":
+      return "Leído";
+    case "SENT":
+    case "PROVIDER_ACCEPTED":
+      return "Enviado";
+    case "PENDING":
+    case "PROCESSING":
+      return "Pendiente";
+    case "FAILED":
+      return "Error";
+    case "SKIPPED":
+      return "Omitido";
+    default:
+      return "Pendiente";
+  }
+}
+
+export function translateDispatchError(
+  errorCode?: string | null,
+  errorDescription?: string | null,
+): string | null {
+  const code = (errorCode || "").trim().toUpperCase();
+  const desc = (errorDescription || "").trim();
+
+  const knownMessages: Record<string, string> = {
+    TEMPLATE_NOT_APPROVED: "Plantilla pendiente en Meta",
+    "131042": "Configuración de facturación pendiente en Meta (131042)",
+    "131026": "El número no pudo recibir el mensaje de WhatsApp",
+    MESSAGE_UNDELIVERABLE: "El número no pudo recibir el mensaje de WhatsApp",
+    "131047": "Ventana de 24 h vencida; requiere plantilla aprobada",
+    "131051": "Tipo de mensaje no compatible con WhatsApp",
+    "130472": "El usuario no aceptó los términos actuales de WhatsApp",
+    RATE_LIMITED: "Límite temporal de envíos alcanzado; reintentá en unos minutos",
+    "130429": "Límite temporal de envíos alcanzado; reintentá en unos minutos",
+    INVALID_PHONE: "Número de teléfono inválido o faltante",
+    MISSING_PHONE: "Número de teléfono inválido o faltante",
+    NO_PHONE: "Número de teléfono inválido o faltante",
+    MISSING_EMAIL: "Correo electrónico faltante",
+    NO_EMAIL: "Correo electrónico faltante",
+    PROVIDER_ERROR: "Error de conexión con el proveedor de mensajería",
+    NETWORK_ERROR: "Error de conexión con el proveedor de mensajería",
+    UNKNOWN_ERROR: "Error inesperado al enviar la notificación",
+  };
+
+  if (code && knownMessages[code]) {
+    return knownMessages[code];
+  }
+  if (desc.toUpperCase().includes("TEMPLATE_NOT_APPROVED")) {
+    return "Plantilla pendiente en Meta";
+  }
+  if (desc && !/^[A-Z0-9_]+$/.test(desc)) {
+    return desc;
+  }
+  if (code) {
+    return "No se pudo completar el envío";
+  }
+  return desc || null;
 }
 
 function formatDispatchDetailedStatus(status?: string): string {
