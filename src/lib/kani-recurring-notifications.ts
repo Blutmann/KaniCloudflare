@@ -10,6 +10,12 @@ import { notificationSubject } from "./kani-email-environment";
 import { addCalendarDays, businessDateToday } from "./kani-mobile-appointments";
 import { formatServiceNameForEmail } from "./kani-model";
 import { getRuntimeEnv } from "./kani-notifications.server";
+import {
+  formatPontiunRecurringFrequencySchedule,
+  sendPontiunAppointmentReminder,
+  sendPontiunRecurringSeriesBarberConfirmation,
+  sendPontiunRecurringSeriesClientConfirmation,
+} from "./kani-pontiun";
 
 export interface GroupedSeriesAppointmentItem {
   id: string;
@@ -436,6 +442,164 @@ export const sendRecurringSeriesGroupedEmailServerFn = createServerFn({ method: 
   .validator((data: GroupedSeriesEmailPayload & { ruleId?: string }) => data)
   .handler(async ({ data }) => sendRecurringSeriesGroupedEmailOnServer(data));
 
+export interface RecurringSeriesCreatedNotificationPayload {
+  ruleId: string;
+  barberId: string;
+  barberName: string;
+  barberPhone?: string | null;
+  clientName: string;
+  clientPhone?: string | null;
+  clientEmail?: string | null;
+  serviceName: string;
+  frequencyType: "WEEKLY" | "BIWEEKLY";
+  startDate: string;
+  startTime: string;
+  appointments: GroupedSeriesAppointmentItem[];
+  appUrl?: string;
+  token?: string;
+}
+
+export async function sendRecurringSeriesCreatedNotificationsOnServer(
+  payload: RecurringSeriesCreatedNotificationPayload,
+): Promise<{
+  clientWhatsappSent: boolean;
+  barberWhatsappSent: boolean;
+  emailSent: boolean;
+  warnings: string[];
+}> {
+  const warnings: string[] = [];
+  if (!payload.appointments || payload.appointments.length === 0) {
+    return { clientWhatsappSent: false, barberWhatsappSent: false, emailSent: false, warnings };
+  }
+
+  const sorted = [...payload.appointments].sort((a, b) =>
+    `${a.bookingDate}T${a.startTime}`.localeCompare(`${b.bookingDate}T${b.startTime}`),
+  );
+  const bookedDates = sorted.map((a) => a.bookingDate);
+  const lastAppointmentDate = bookedDates[bookedDates.length - 1] || payload.startDate;
+  const frequencyLabel = formatPontiunRecurringFrequencySchedule(
+    payload.frequencyType,
+    payload.startDate,
+    payload.startTime,
+  );
+
+  let barberPhone = payload.barberPhone ?? null;
+  if (!barberPhone && payload.barberId) {
+    try {
+      const { createPaymentSupabaseClient } = await import("./kani-payment-db.server");
+      const db = await createPaymentSupabaseClient();
+      const { data: barberRow } = await db
+        .from("barbers")
+        .select("phone")
+        .eq("id", payload.barberId)
+        .maybeSingle();
+      if (barberRow?.phone) {
+        barberPhone = barberRow.phone;
+      }
+    } catch {
+      // Non-fatal fallback
+    }
+  }
+
+  let clientWhatsappSent = false;
+  if (payload.clientPhone?.trim()) {
+    try {
+      const clientWa = await sendPontiunRecurringSeriesClientConfirmation({
+        ruleId: payload.ruleId,
+        clientName: payload.clientName,
+        clientPhone: payload.clientPhone,
+        frequencyType: payload.frequencyType,
+        startDate: payload.startDate,
+        startTime: payload.startTime,
+        lastAppointmentDate,
+        barberName: payload.barberName,
+        serviceName: payload.serviceName,
+        bookedDates,
+      });
+      clientWhatsappSent = clientWa.success;
+      if (!clientWa.success) {
+        const reason = clientWa.templatePendingOrUnapproved
+          ? "TEMPLATE_NOT_APPROVED (cliente)"
+          : clientWa.error || "CLIENT_WA_FAILED";
+        console.warn(`[KANI recurring notify] WhatsApp cliente omitido (${reason})`);
+        warnings.push(reason);
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "CLIENT_WA_ERROR";
+      console.warn(`[KANI recurring notify] Error WhatsApp cliente:`, msg);
+      warnings.push(msg);
+    }
+  }
+
+  let barberWhatsappSent = false;
+  if (barberPhone?.trim()) {
+    try {
+      const barberWa = await sendPontiunRecurringSeriesBarberConfirmation({
+        ruleId: payload.ruleId,
+        barberName: payload.barberName,
+        barberPhone,
+        clientName: payload.clientName,
+        clientPhone: payload.clientPhone,
+        frequencyType: payload.frequencyType,
+        startDate: payload.startDate,
+        startTime: payload.startTime,
+        lastAppointmentDate,
+        serviceName: payload.serviceName,
+        bookedDates,
+      });
+      barberWhatsappSent = barberWa.success;
+      if (!barberWa.success) {
+        const reason = barberWa.templatePendingOrUnapproved
+          ? "TEMPLATE_NOT_APPROVED (barbero)"
+          : barberWa.error || "BARBER_WA_FAILED";
+        console.warn(`[KANI recurring notify] WhatsApp barbero omitido (${reason})`);
+        warnings.push(reason);
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "BARBER_WA_ERROR";
+      console.warn(`[KANI recurring notify] Error WhatsApp barbero:`, msg);
+      warnings.push(msg);
+    }
+  }
+
+  let emailSent = false;
+  const cleanEmail = payload.clientEmail?.trim() || "";
+  if (
+    cleanEmail &&
+    cleanEmail.includes("@") &&
+    !cleanEmail.includes("@cliente.kanibarber.internal")
+  ) {
+    const emailRes = await sendRecurringSeriesGroupedEmailOnServer({
+      ruleId: payload.ruleId,
+      clientName: payload.clientName,
+      recipientEmail: cleanEmail,
+      barberName: payload.barberName,
+      serviceName: payload.serviceName,
+      frequencyLabel,
+      appointments: sorted,
+      appUrl: payload.appUrl,
+    });
+    emailSent = emailRes.sent;
+    if (!emailRes.sent && emailRes.skippedReason) {
+      warnings.push(emailRes.skippedReason);
+    }
+  }
+
+  return { clientWhatsappSent, barberWhatsappSent, emailSent, warnings };
+}
+
+export const sendRecurringSeriesCreatedNotificationsServerFn = createServerFn({ method: "POST" })
+  .validator((data: RecurringSeriesCreatedNotificationPayload) => data)
+  .handler(async ({ data }) => {
+    const { authenticateStaffRequest } = await import("./kani-staff-request.server");
+    const staff = await authenticateStaffRequest(data.token);
+    const { isStaffOperator } = await import("./kani-permissions");
+    if (!isStaffOperator(staff.profile.role) && staff.profile.barber_id !== data.barberId) {
+      throw new Error("FORBIDDEN");
+    }
+    return sendRecurringSeriesCreatedNotificationsOnServer(data);
+  });
+
 /**
  * Tarea programada (cron):
  * 1. Sincroniza la ventana móvil de 90 días para todas las reglas activas de turnos recurrentes
@@ -520,7 +684,7 @@ export async function runScheduledRecurrencesAndReminders(): Promise<{
 
     const { data: tomorrowAppointments } = await (db as any)
       .from("appointments")
-      .select("id, client_id, barber_id, service_id, custom_service_name, booking_date, start_time, end_time, status, reminder_sent_at, reminder_claim_at, booking_client_name")
+      .select("id, client_id, barber_id, service_id, custom_service_name, service_price_ars, booking_date, start_time, end_time, status, reminder_sent_at, reminder_claim_at, booking_client_name")
       .eq("booking_date", tomorrow)
       .eq("status", "CONFIRMED")
       .is("reminder_sent_at", null)
@@ -533,19 +697,27 @@ export async function runScheduledRecurrencesAndReminders(): Promise<{
       ? rawFrom
       : "Kani Barber <turnos@kanibarber.com>";
 
-    if (tomorrowAppointments && tomorrowAppointments.length > 0 && apiKey && fromEmail) {
+    if (tomorrowAppointments && tomorrowAppointments.length > 0) {
       for (const apt of tomorrowAppointments) {
         if (apt.status !== "CONFIRMED" || apt.reminder_sent_at) continue;
 
         const [{ data: client }, { data: barber }, { data: service }] = await Promise.all([
-          db.from("clients").select("name, email").eq("id", apt.client_id).maybeSingle(),
+          db.from("clients").select("name, email, phone").eq("id", apt.client_id).maybeSingle(),
           db.from("barbers").select("name").eq("id", apt.barber_id).maybeSingle(),
           apt.service_id
-            ? db.from("services").select("name").eq("id", apt.service_id).maybeSingle()
+            ? db.from("services").select("name, price_ars").eq("id", apt.service_id).maybeSingle()
             : Promise.resolve({ data: null }),
         ]);
 
-        if (!client?.email || !client.email.includes("@")) continue;
+        const hasValidEmail = Boolean(
+          client?.email &&
+            client.email.includes("@") &&
+            !client.email.includes("@cliente.kanibarber.internal") &&
+            apiKey &&
+            fromEmail,
+        );
+        const hasPhone = Boolean(client?.phone && client.phone.trim());
+        if (!hasValidEmail && !hasPhone) continue;
 
         // Reclamo atómico con lease de 10 min para evitar duplicados concurrentes y bloqueos permanentes tras crash
         const claimTimestamp = new Date().toISOString();
@@ -562,65 +734,100 @@ export async function runScheduledRecurrencesAndReminders(): Promise<{
           continue;
         }
 
-        const reminder = buildAppointmentReminderEmail({
-          appointmentId: apt.id,
-          clientName: apt.booking_client_name || client.name || "Cliente",
-          recipientEmail: client.email,
-          barberName: barber?.name || "Kani Barber Studio",
-          serviceName: apt.custom_service_name || service?.name || "Corte",
-          bookingDate: apt.booking_date,
-          startTime: (apt.start_time || "").slice(0, 5),
-          endTime: (apt.end_time || "").slice(0, 5),
-        });
+        const resolvedClientName = apt.booking_client_name || client?.name || "Cliente";
+        const resolvedBarberName = barber?.name || "Kani Barber Studio";
+        const resolvedServiceName = apt.custom_service_name || service?.name || "Corte";
+        const resolvedAmountArs = Number(apt.service_price_ars ?? service?.price_ars ?? 0);
+        const resolvedStartTime = (apt.start_time || "").slice(0, 5);
 
-        const subject = notificationSubject(
-          reminder.subject,
-          getRuntimeEnv("KANI_ENVIRONMENT"),
-          getRuntimeEnv("SUPABASE_URL") ?? getRuntimeEnv("VITE_SUPABASE_URL"),
-        );
+        let waDispatched = false;
+        if (hasPhone) {
+          try {
+            const waRes = await sendPontiunAppointmentReminder({
+              appointmentId: apt.id,
+              clientName: resolvedClientName,
+              clientPhone: client.phone,
+              bookingDate: apt.booking_date,
+              startTime: resolvedStartTime,
+              serviceName: resolvedServiceName,
+              barberName: resolvedBarberName,
+              amountArs: resolvedAmountArs,
+              cancellationUrl: buildCancellationUrl(apt.id),
+            });
+            waDispatched = waRes.success;
+            if (!waRes.success && waRes.templatePendingOrUnapproved) {
+              console.warn(`[KANI reminder] Plantilla Pontiun pendiente/no aprobada para turno ${apt.id}`);
+            }
+          } catch (waErr) {
+            console.warn(
+              `[KANI reminder] Error WhatsApp Pontiun para turno ${apt.id}:`,
+              waErr instanceof Error ? waErr.message : "UNKNOWN_ERROR",
+            );
+          }
+        }
 
-        try {
-          const response = await fetch("https://api.resend.com/emails", {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${apiKey}`,
-              "Content-Type": "application/json",
-              "Idempotency-Key": `reminder-${apt.id}-${apt.booking_date}`,
-            },
-            body: JSON.stringify({
-              from: fromEmail,
-              to: [client.email.trim()],
-              subject,
-              html: reminder.html,
-              text: reminder.text,
-            }),
+        let emailDispatched = false;
+        if (hasValidEmail) {
+          const reminder = buildAppointmentReminderEmail({
+            appointmentId: apt.id,
+            clientName: resolvedClientName,
+            recipientEmail: client.email,
+            barberName: resolvedBarberName,
+            serviceName: resolvedServiceName,
+            bookingDate: apt.booking_date,
+            startTime: resolvedStartTime,
+            endTime: (apt.end_time || "").slice(0, 5),
           });
 
-          if (response.ok) {
-            await (db as any)
-              .from("appointments")
-              .update({
-                reminder_sent_at: new Date().toISOString(),
-                reminder_claim_at: null,
-              })
-              .eq("id", apt.id);
-            remindersSent++;
-          } else {
-            // Revertir marca de reclamo para permitir reintento en la próxima ejecución del cron
-            await (db as any)
-              .from("appointments")
-              .update({ reminder_claim_at: null })
-              .eq("id", apt.id)
-              .eq("reminder_claim_at", claimTimestamp);
-            console.warn(`[KANI reminder] Error HTTP (${response.status}) de Resend para cliente ${maskEmail(client.email)}`);
+          const subject = notificationSubject(
+            reminder.subject,
+            getRuntimeEnv("KANI_ENVIRONMENT"),
+            getRuntimeEnv("SUPABASE_URL") ?? getRuntimeEnv("VITE_SUPABASE_URL"),
+          );
+
+          try {
+            const response = await fetch("https://api.resend.com/emails", {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${apiKey}`,
+                "Content-Type": "application/json",
+                "Idempotency-Key": `reminder-${apt.id}-${apt.booking_date}`,
+              },
+              body: JSON.stringify({
+                from: fromEmail,
+                to: [client.email.trim()],
+                subject,
+                html: reminder.html,
+                text: reminder.text,
+              }),
+            });
+
+            if (response.ok) {
+              emailDispatched = true;
+            } else {
+              console.warn(`[KANI reminder] Error HTTP (${response.status}) de Resend para cliente ${maskEmail(client.email)}`);
+            }
+          } catch (dispatchErr) {
+            console.warn(`[KANI reminder] Error de red hacia Resend para cliente ${maskEmail(client.email)}:`, dispatchErr instanceof Error ? dispatchErr.message : "NETWORK_ERROR");
           }
-        } catch (dispatchErr) {
+        }
+
+        if (waDispatched || emailDispatched) {
+          await (db as any)
+            .from("appointments")
+            .update({
+              reminder_sent_at: new Date().toISOString(),
+              reminder_claim_at: null,
+            })
+            .eq("id", apt.id);
+          remindersSent++;
+        } else {
+          // Revertir marca de reclamo para permitir reintento en la próxima ejecución del cron
           await (db as any)
             .from("appointments")
             .update({ reminder_claim_at: null })
             .eq("id", apt.id)
             .eq("reminder_claim_at", claimTimestamp);
-          console.warn(`[KANI reminder] Error de red hacia Resend para cliente ${maskEmail(client.email)}:`, dispatchErr instanceof Error ? dispatchErr.message : "NETWORK_ERROR");
         }
       }
     }

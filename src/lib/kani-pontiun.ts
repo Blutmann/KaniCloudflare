@@ -5,6 +5,9 @@ export const DEFAULT_PONTIUN_CLIENT_CONFIRMED_V2_TEMPLATE_NAME = "kani_cliente_t
 export const DEFAULT_PONTIUN_BARBER_CONFIRMED_TEMPLATE_NAME = "kani_barbero_turno_confirmado";
 export const DEFAULT_PONTIUN_CLIENT_CANCELLED_TEMPLATE_NAME = "kani_cliente_turno_cancelado";
 export const DEFAULT_PONTIUN_BARBER_CANCELLED_TEMPLATE_NAME = "kani_barbero_turno_cancelado";
+export const DEFAULT_PONTIUN_CLIENT_RECURRING_CREATED_TEMPLATE_NAME = "kani_cliente_turno_fijo_creado";
+export const DEFAULT_PONTIUN_BARBER_RECURRING_CREATED_TEMPLATE_NAME = "kani_barbero_turno_fijo_creado";
+export const DEFAULT_PONTIUN_CLIENT_REMINDER_TEMPLATE_NAME = "kani_cliente_recordatorio_turno";
 export const DEFAULT_PONTIUN_TEMPLATE_LANGUAGE = "es_AR";
 
 export type PontiunAppointmentPayload = {
@@ -54,6 +57,48 @@ export type PontiunBarberCancellationPayload = {
   startTime?: string | null;
   clientWhatsApp?: string | null;
   clientEmail?: string | null;
+  idempotencySuffix?: string | null;
+};
+
+export type PontiunRecurringSeriesClientPayload = {
+  ruleId: string;
+  clientName: string;
+  clientPhone?: string | null;
+  frequencyType: "WEEKLY" | "BIWEEKLY";
+  startDate: string;
+  startTime: string;
+  lastAppointmentDate: string;
+  barberName?: string | null;
+  serviceName?: string | null;
+  bookedDates: string[];
+  idempotencySuffix?: string | null;
+};
+
+export type PontiunRecurringSeriesBarberPayload = {
+  ruleId: string;
+  barberName?: string | null;
+  barberPhone?: string | null;
+  clientName: string;
+  clientPhone?: string | null;
+  frequencyType: "WEEKLY" | "BIWEEKLY";
+  startDate: string;
+  startTime: string;
+  lastAppointmentDate: string;
+  serviceName?: string | null;
+  bookedDates: string[];
+  idempotencySuffix?: string | null;
+};
+
+export type PontiunAppointmentReminderPayload = {
+  appointmentId: string;
+  clientName: string;
+  clientPhone?: string | null;
+  bookingDate: string;
+  startTime: string;
+  serviceName?: string | null;
+  barberName?: string | null;
+  amountArs: number;
+  cancellationUrl: string;
   idempotencySuffix?: string | null;
 };
 
@@ -1096,5 +1141,215 @@ export async function sendPontiunBarberAppointmentCancellation(
       params.idempotencySuffix,
     ),
     logContext: "cancelación al barbero",
+  });
+}
+
+const PONTIUN_WEEKDAYS_CAPITALIZED = [
+  "Domingo",
+  "Lunes",
+  "Martes",
+  "Miércoles",
+  "Jueves",
+  "Viernes",
+  "Sábado",
+];
+
+const PONTIUN_WEEKDAYS_LOWER = [
+  "domingo",
+  "lunes",
+  "martes",
+  "miércoles",
+  "jueves",
+  "viernes",
+  "sábado",
+];
+
+const PONTIUN_WEEKDAYS_PLURAL_LOWER = [
+  "domingos",
+  "lunes",
+  "martes",
+  "miércoles",
+  "jueves",
+  "viernes",
+  "sábados",
+];
+
+function getYmdWeekdayIndex(ymd: string | null | undefined): number {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec((ymd ?? "").trim());
+  if (!match) return -1;
+  const dt = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]), 12, 0, 0));
+  return dt.getUTCDay();
+}
+
+export function formatPontiunFriendlyDateEs(ymd: string | null | undefined): string {
+  const raw = (ymd ?? "").trim();
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(raw);
+  if (!match) return raw || "-";
+  const dayIdx = getYmdWeekdayIndex(raw);
+  const weekday = PONTIUN_WEEKDAYS_CAPITALIZED[dayIdx] || "";
+  return `${weekday} ${match[3]}/${match[2]}/${match[1]}`.trim();
+}
+
+export function formatPontiunRecurringDatesLine(dates: string[]): string {
+  const formatted = [...dates]
+    .sort()
+    .map((ymd) => {
+      const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec((ymd ?? "").trim());
+      return m ? `${m[3]}/${m[2]}` : (ymd ?? "").trim();
+    })
+    .filter(Boolean);
+  return formatted.join(" · ") || "-";
+}
+
+export function formatPontiunRecurringFrequencySchedule(
+  frequencyType: "WEEKLY" | "BIWEEKLY",
+  startDate: string,
+  startTime: string,
+): string {
+  const dayIdx = getYmdWeekdayIndex(startDate);
+  const hhmm = formatPontiunStartTime(startTime);
+  if (frequencyType === "BIWEEKLY") {
+    const weekday = PONTIUN_WEEKDAYS_LOWER[dayIdx] || "día";
+    return `Cada 2 semanas (${weekday}) a las ${hhmm} hs`;
+  }
+  const weekdayPlural = PONTIUN_WEEKDAYS_PLURAL_LOWER[dayIdx] || "días";
+  return `Todos los ${weekdayPlural} a las ${hhmm} hs`;
+}
+
+export function formatPontiunSpacedArsAmount(amount: number | null | undefined): string {
+  const safe = Number.isFinite(Number(amount)) ? Math.max(0, Math.round(Number(amount))) : 0;
+  return `$ ${safe.toLocaleString("es-AR")}`;
+}
+
+/**
+ * Envía el WhatsApp de creación de serie fija al CLIENTE (6 parámetros).
+ * Plantilla: kani_cliente_turno_fijo_creado (es_AR)
+ */
+export async function sendPontiunRecurringSeriesClientConfirmation(
+  params: PontiunRecurringSeriesClientPayload,
+): Promise<PontiunSendResult> {
+  const barberName = params.barberName?.trim();
+  if (!barberName) {
+    return {
+      success: false,
+      error: "BARBER_MISSING",
+      retryable: false,
+      attempts: 0,
+    };
+  }
+
+  const templateName =
+    getPontiunRuntimeEnv("PONTIUN_CLIENT_RECURRING_CREATED_TEMPLATE_NAME") ??
+    DEFAULT_PONTIUN_CLIENT_RECURRING_CREATED_TEMPLATE_NAME;
+
+  return sendPontiunTemplateMessage({
+    appointmentId: `series-${params.ruleId}`,
+    recipientPhone: params.clientPhone,
+    templateName,
+    parameters: [
+      params.clientName?.trim() || "Cliente",
+      formatPontiunRecurringFrequencySchedule(
+        params.frequencyType,
+        params.startDate,
+        params.startTime,
+      ),
+      formatPontiunFriendlyDateEs(params.lastAppointmentDate),
+      barberName,
+      normalizePontiunServiceName(params.serviceName),
+      formatPontiunRecurringDatesLine(params.bookedDates),
+    ],
+    idempotencyKey: buildPontiunIdempotencyKey(
+      `kani-recurring-series-${params.ruleId}-client`,
+      params.idempotencySuffix,
+    ),
+    logContext: "serie fija al cliente",
+  });
+}
+
+/**
+ * Envía el WhatsApp de creación de serie fija al BARBERO (7 parámetros).
+ * Plantilla: kani_barbero_turno_fijo_creado (es_AR)
+ */
+export async function sendPontiunRecurringSeriesBarberConfirmation(
+  params: PontiunRecurringSeriesBarberPayload,
+): Promise<PontiunSendResult> {
+  const barberName = params.barberName?.trim();
+  if (!barberName) {
+    return {
+      success: false,
+      error: "BARBER_MISSING",
+      retryable: false,
+      attempts: 0,
+    };
+  }
+
+  const templateName =
+    getPontiunRuntimeEnv("PONTIUN_BARBER_RECURRING_CREATED_TEMPLATE_NAME") ??
+    DEFAULT_PONTIUN_BARBER_RECURRING_CREATED_TEMPLATE_NAME;
+
+  return sendPontiunTemplateMessage({
+    appointmentId: `series-${params.ruleId}`,
+    recipientPhone: params.barberPhone,
+    templateName,
+    parameters: [
+      barberName,
+      params.clientName?.trim() || "Cliente",
+      params.clientPhone?.trim() || "No informado",
+      formatPontiunRecurringFrequencySchedule(
+        params.frequencyType,
+        params.startDate,
+        params.startTime,
+      ),
+      formatPontiunFriendlyDateEs(params.lastAppointmentDate),
+      normalizePontiunServiceName(params.serviceName),
+      formatPontiunRecurringDatesLine(params.bookedDates),
+    ],
+    idempotencyKey: buildPontiunIdempotencyKey(
+      `kani-recurring-series-${params.ruleId}-barber`,
+      params.idempotencySuffix,
+    ),
+    logContext: "serie fija al barbero",
+  });
+}
+
+/**
+ * Envía el WhatsApp de recordatorio 24 hs antes de la cita al CLIENTE (7 parámetros).
+ * Plantilla: kani_cliente_recordatorio_turno (es_AR)
+ */
+export async function sendPontiunAppointmentReminder(
+  params: PontiunAppointmentReminderPayload,
+): Promise<PontiunSendResult> {
+  const barberName = params.barberName?.trim();
+  if (!barberName) {
+    return {
+      success: false,
+      error: "BARBER_MISSING",
+      retryable: false,
+      attempts: 0,
+    };
+  }
+
+  const templateName =
+    getPontiunRuntimeEnv("PONTIUN_CLIENT_REMINDER_TEMPLATE_NAME") ??
+    DEFAULT_PONTIUN_CLIENT_REMINDER_TEMPLATE_NAME;
+
+  return sendPontiunTemplateMessage({
+    appointmentId: params.appointmentId,
+    recipientPhone: params.clientPhone,
+    templateName,
+    parameters: [
+      params.clientName?.trim() || "Cliente",
+      formatPontiunFriendlyDateEs(params.bookingDate),
+      formatPontiunStartTime(params.startTime),
+      normalizePontiunServiceName(params.serviceName),
+      barberName,
+      formatPontiunSpacedArsAmount(params.amountArs),
+      params.cancellationUrl,
+    ],
+    idempotencyKey: buildPontiunIdempotencyKey(
+      `kani-appointment-${params.appointmentId}-reminder-${params.bookingDate}`,
+      params.idempotencySuffix,
+    ),
+    logContext: "recordatorio 24h al cliente",
   });
 }

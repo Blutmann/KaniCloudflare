@@ -1966,7 +1966,8 @@ body[data-lg-admin="true"] .v2-app-row-1 {
 body[data-lg-admin="true"] .v2-app-time { color: var(--lga-accent) !important; }
 body[data-lg-admin="true"] .v2-app-name { color: var(--lga-text) !important; }
 
-body[data-lg-admin="true"] .v2-manual-badge {
+body[data-lg-admin="true"] .v2-manual-badge,
+body[data-lg-admin="true"] .v2-recurring-badge {
   background: rgba(200, 169, 107, 0.16) !important;
   border: 1px solid rgba(200, 169, 107, 0.44) !important;
   color: var(--lga-accent) !important;
