@@ -5773,3 +5773,35 @@ html[data-theme] body[data-lg-admin="true"] .v2-manual-dialog input[type="date"]
   margin: 0 !important;
   flex-shrink: 0 !important;
 }
+
+html[data-theme] body[data-lg-admin="true"] .v2-channel-dialog .v2-channel-modal-body {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+  margin-top: 10px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-channel-dialog .v2-channel-status-list {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-channel-dialog .v2-channel-modal-body .v2-notif-pill {
+  height: 24px !important;
+  min-height: 24px !important;
+  max-height: 24px !important;
+  padding: 0 10px !important;
+  border-radius: 9999px !important;
+  font-size: 12px !important;
+  line-height: 1 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 4px !important;
+  box-sizing: border-box !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-channel-dialog .v2-channel-modal-body .v2-notif-pill.v2-notif-pill-action {
+  cursor: pointer !important;
+}

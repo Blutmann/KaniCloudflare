@@ -57,6 +57,7 @@ vi.mock("@tanstack/react-router", () => ({
 import {
   V2Appointments,
   formatCompactDispatchStatus,
+  formatWhatsAppPhoneDisplay,
   translateDispatchError,
 } from "@/components/kani/v2/agenda";
 
@@ -348,7 +349,9 @@ describe("WhatsApp dispatch recipient clarity (Client vs Barber) & error transla
     fireEvent.click(errorPillBtn);
 
     const confirmRegion = screen.getByRole("region", { name: /Confirmar reenvío por destinatario/i });
-    expect(confirmRegion.textContent).toContain("¿Reenviar aviso de WhatsApp a Lautaro (+5491166669999)?");
+    expect(confirmRegion.textContent).toContain("¿Reenviar aviso de WhatsApp a Lautaro (+54 9 11 6666-9999)?");
+    expect(formatWhatsAppPhoneDisplay("+541158810005")).toBe("+54 9 11 5881-0005");
+    expect(formatWhatsAppPhoneDisplay("+5491158810005")).toBe("+54 9 11 5881-0005");
 
     fireEvent.click(screen.getByRole("button", { name: "Reenviar" }));
 

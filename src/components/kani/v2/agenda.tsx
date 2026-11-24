@@ -1,5 +1,5 @@
 import { isStaffOperator } from "@/lib/kani-permissions";
-import { getWhatsAppDirectSendUrl } from "@/lib/kani-phone";
+import { formatPhoneWithCountryAndWhatsApp, getWhatsAppDirectSendUrl } from "@/lib/kani-phone";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "@tanstack/react-router";
@@ -1267,6 +1267,9 @@ export function V2Appointments({
             const contactValue = isEmail
               ? (apt.email || (apt as any).clientEmail || clientDispatch?.recipient || "")
               : (apt.phone || clientDispatch?.recipient || "");
+            const displayContactValue = isEmail
+              ? contactValue
+              : formatWhatsAppPhoneDisplay(contactValue);
             const waUrl = !isEmail ? getWhatsAppDirectSendUrl(apt.phone) : null;
 
             const clientError =
@@ -1306,28 +1309,40 @@ export function V2Appointments({
                     </>
                   ) : (
                     <>
-                      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                      <div className="v2-channel-status-list">
                         <div className="v2-channel-status-row" style={{ justifyContent: "space-between" }}>
                           <span className="v2-channel-status-label">
                             <strong>Cliente</strong> ({apt.name}):
                           </span>
                           {clientDispatch?.status === "FAILED" ? (
-                            <button
-                              type="button"
+                            <span
+                              role="button"
+                              tabIndex={retryingNotif ? -1 : 0}
+                              aria-disabled={retryingNotif}
                               className="v2-notif-pill v2-notif-failed v2-notif-pill-action"
-                              style={{ cursor: "pointer" }}
-                              disabled={retryingNotif}
                               title={`Reenviar aviso de WhatsApp a ${apt.name}`}
-                              onClick={() =>
+                              onClick={() => {
+                                if (retryingNotif) return;
                                 setPendingRecipientResend({
                                   role: "CLIENT",
                                   name: apt.name,
-                                  phone: apt.phone || clientDispatch.recipient || "sin teléfono",
-                                })
-                              }
+                                  phone: formatWhatsAppPhoneDisplay(apt.phone || clientDispatch.recipient) || "sin teléfono",
+                                });
+                              }}
+                              onKeyDown={(e) => {
+                                if (retryingNotif) return;
+                                if (e.key === "Enter" || e.key === " ") {
+                                  e.preventDefault();
+                                  setPendingRecipientResend({
+                                    role: "CLIENT",
+                                    name: apt.name,
+                                    phone: formatWhatsAppPhoneDisplay(apt.phone || clientDispatch.recipient) || "sin teléfono",
+                                  });
+                                }
+                              }}
                             >
                               Error ↻
-                            </button>
+                            </span>
                           ) : (
                             <span
                               className={`v2-notif-pill v2-notif-${(clientDispatch?.status || "pending").toLowerCase()}`}
@@ -1342,22 +1357,34 @@ export function V2Appointments({
                               <strong>Barbero</strong> ({barberName}):
                             </span>
                             {barberDispatch.status === "FAILED" ? (
-                              <button
-                                type="button"
+                              <span
+                                role="button"
+                                tabIndex={retryingNotif ? -1 : 0}
+                                aria-disabled={retryingNotif}
                                 className="v2-notif-pill v2-notif-failed v2-notif-pill-action"
-                                style={{ cursor: "pointer" }}
-                                disabled={retryingNotif}
                                 title={`Reenviar aviso de WhatsApp a ${barberName}`}
-                                onClick={() =>
+                                onClick={() => {
+                                  if (retryingNotif) return;
                                   setPendingRecipientResend({
                                     role: "BARBER",
                                     name: barberName,
-                                    phone: barberDispatch.recipient || "sin teléfono",
-                                  })
-                                }
+                                    phone: formatWhatsAppPhoneDisplay(barberDispatch.recipient) || "sin teléfono",
+                                  });
+                                }}
+                                onKeyDown={(e) => {
+                                  if (retryingNotif) return;
+                                  if (e.key === "Enter" || e.key === " ") {
+                                    e.preventDefault();
+                                    setPendingRecipientResend({
+                                      role: "BARBER",
+                                      name: barberName,
+                                      phone: formatWhatsAppPhoneDisplay(barberDispatch.recipient) || "sin teléfono",
+                                    });
+                                  }
+                                }}
                               >
                                 Error ↻
-                              </button>
+                              </span>
                             ) : (
                               <span
                                 className={`v2-notif-pill v2-notif-${(barberDispatch.status || "pending").toLowerCase()}`}
@@ -1420,13 +1447,13 @@ export function V2Appointments({
 
                   <div className="v2-channel-contact-box">
                     <span className="v2-channel-contact-value">
-                      {contactValue || (isEmail ? "Sin correo electrónico registrado" : "Sin teléfono registrado")}
+                      {displayContactValue || (isEmail ? "Sin correo electrónico registrado" : "Sin teléfono registrado")}
                     </span>
                     <button
                       type="button"
                       className="v2-secondary v2-channel-copy-btn"
                       disabled={!contactValue}
-                      onClick={() => void handleCopyContact(contactValue)}
+                      onClick={() => void handleCopyContact(displayContactValue || contactValue)}
                     >
                       {copiedContact ? (
                         <>
@@ -1863,6 +1890,20 @@ function formatEmailStatus(dispatch?: NotificationChannelDispatch): string {
     default:
       return `Email: ${dispatch.status}`;
   }
+}
+
+export function formatWhatsAppPhoneDisplay(rawPhone?: string | null): string {
+  if (!rawPhone || typeof rawPhone !== "string") return "";
+  const trimmed = rawPhone.trim();
+  if (!trimmed) return "";
+  const digits = trimmed.replace(/\D/g, "");
+  const arMatch = /^(?:54)?9?(\d{2})(\d{4})(\d{4})$/.exec(digits);
+  if (arMatch) {
+    return `+54 9 ${arMatch[1]} ${arMatch[2]}-${arMatch[3]}`;
+  }
+  const formatted = formatPhoneWithCountryAndWhatsApp(trimmed);
+  const withoutFlag = formatted.display.replace(/^[\u{1F1E6}-\u{1F1FF}]{2}\s*/u, "").trim();
+  return withoutFlag || trimmed;
 }
 
 export function formatCompactDispatchStatus(dispatch?: NotificationChannelDispatch): string {
