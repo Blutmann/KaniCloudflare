@@ -6961,3 +6961,47 @@ html[data-theme="dark"] .kani-v2-toast.is-error .kani-v2-toast-icon,
   margin: 0 !important;
   flex-shrink: 0 !important;
 }
+
+.v2-appointment--highlighted {
+  outline: 2px solid var(--accent, #c8a96b);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(200, 169, 107, 0.16);
+}
+
+.v2-notif-pill-action {
+  cursor: pointer;
+  transition: transform 120ms ease, filter 120ms ease;
+}
+
+.v2-notif-pill-action:hover:not(:disabled) {
+  filter: brightness(1.08);
+  transform: translateY(-0.5px);
+}
+
+.v2-channel-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.v2-channel-status-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.v2-channel-modal-body .v2-notif-pill {
+  height: 24px !important;
+  min-height: 24px !important;
+  max-height: 24px !important;
+  padding: 0 10px !important;
+  border-radius: 9999px !important;
+  font-size: 12px !important;
+  line-height: 1 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 4px !important;
+  box-sizing: border-box !important;
+}

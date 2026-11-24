@@ -248,7 +248,7 @@ describe('V12.47.25 — UI /admin/turnos (V2Appointments)', () => {
     expect(screen.getByText('Realizado')).toBeInTheDocument();
   });
 
-  it('diferencia turnos con horario finalizado con clase atenuada y badge Horario finalizado sin bloquear acciones', () => {
+  it('diferencia turnos con horario finalizado con clase atenuada y badge Finalizado sin bloquear acciones', () => {
     const yesterday = addCalendarDays(businessDateToday(), -1);
     testState.appointments = [
       {
@@ -272,7 +272,7 @@ describe('V12.47.25 — UI /admin/turnos (V2Appointments)', () => {
 
     const card = container.querySelector('.v2-appointment');
     expect(card).toHaveClass('v2-appointment--past');
-    expect(screen.getByText('Horario finalizado')).toBeInTheDocument();
+    expect(screen.getByText('Finalizado')).toBeInTheDocument();
     // Sigue mostrando estado Confirmado y acciones habilitadas
     expect(container.querySelector('.v2-status-confirmed')).toHaveTextContent('Confirmado');
     expect(screen.getByRole('link', { name: 'Cobrar' })).toBeInTheDocument();
