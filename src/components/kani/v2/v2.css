@@ -6837,19 +6837,18 @@ html[data-theme="dark"] .kani-v2-toast.is-error .kani-v2-toast-icon,
   display: inline-flex !important;
   align-items: center !important;
   justify-content: flex-start !important;
-  background: var(--lga-btn-secondary-bg, rgba(255, 255, 255, 0.28)) !important;
-  border: 1px solid var(--lga-border-strong, rgba(132, 128, 122, 0.44)) !important;
+  background: rgba(130, 124, 116, 0.30) !important;
+  border: 1px solid rgba(130, 124, 116, 0.45) !important;
   box-shadow: none !important;
   cursor: pointer !important;
-  transition: background 160ms ease, border-color 160ms ease, box-shadow 160ms ease !important;
+  transition: background 160ms ease, border-color 160ms ease !important;
   box-sizing: border-box !important;
 }
 
 [data-slot="dialog-content"].kani-modal-shell .kani-modal-body .v2-recurring-switch[aria-checked="true"],
 [data-slot="dialog-content"].kani-modal-shell .kani-modal-body .v2-recurring-switch.is-checked {
-  background: var(--lga-btn-primary-bg, linear-gradient(148deg, rgba(255, 251, 242, 0.88) 0%, rgba(235, 219, 184, 0.72) 56%, rgba(218, 191, 138, 0.64) 100%)) !important;
-  border: 1px solid var(--lga-border-accent, rgba(178, 144, 78, 0.62)) !important;
-  box-shadow: var(--lga-specular, inset 0 1px 0 rgba(255, 255, 255, 0.92)) !important;
+  background: rgba(200, 169, 107, 0.22) !important;
+  border: 1px solid var(--accent, #c8a96b) !important;
 }
 
 [data-slot="dialog-content"].kani-modal-shell .kani-modal-body .v2-recurring-switch .v2-recurring-switch-thumb {
@@ -6857,7 +6856,7 @@ html[data-theme="dark"] .kani-v2-toast.is-error .kani-v2-toast-icon,
   height: 16px !important;
   border-radius: 9999px !important;
   background: #ffffff !important;
-  box-shadow: 0 1px 3px rgba(20, 18, 16, 0.24) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.28) !important;
   transform: translateX(0) !important;
   transition: transform 160ms ease !important;
   display: block !important;
@@ -6908,9 +6907,9 @@ html[data-theme="dark"] .kani-v2-toast.is-error .kani-v2-toast-icon,
   border-radius: 9px !important;
   font-size: 12px !important;
   font-weight: 500 !important;
-  border: 1px solid var(--lga-border, var(--border)) !important;
-  background: var(--lga-btn-secondary-bg, transparent) !important;
-  color: var(--lga-text-muted, var(--muted-foreground)) !important;
+  border: 1px solid var(--border) !important;
+  background: transparent !important;
+  color: var(--muted-foreground) !important;
   box-shadow: none !important;
   display: flex !important;
   align-items: center !important;
@@ -6922,11 +6921,11 @@ html[data-theme="dark"] .kani-v2-toast.is-error .kani-v2-toast-icon,
 
 [data-slot="dialog-content"].kani-modal-shell .kani-modal-body .v2-recurring-segmented > .v2-recurring-pill.is-active,
 [data-slot="dialog-content"].kani-modal-shell .kani-modal-body .v2-recurring-segmented > .v2-recurring-pill[aria-pressed="true"] {
-  background: var(--lga-btn-primary-bg, linear-gradient(148deg, rgba(255, 251, 242, 0.88) 0%, rgba(235, 219, 184, 0.72) 56%, rgba(218, 191, 138, 0.64) 100%)) !important;
-  border: 1px solid var(--lga-border-accent, rgba(178, 144, 78, 0.62)) !important;
-  color: var(--lga-text, var(--foreground)) !important;
+  background: rgba(200, 169, 107, 0.22) !important;
+  border: 1px solid var(--accent, #c8a96b) !important;
+  color: var(--foreground) !important;
   font-weight: 600 !important;
-  box-shadow: var(--lga-specular, inset 0 1px 0 rgba(255, 255, 255, 0.92)), 0 2px 8px rgba(24, 22, 20, 0.05) !important;
+  box-shadow: none !important;
 }
 
 [data-slot="dialog-content"].kani-modal-shell .kani-modal-body .v2-recurring-summary {

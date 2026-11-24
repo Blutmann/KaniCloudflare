@@ -5648,11 +5648,11 @@ html[data-theme] body[data-lg-admin="true"] [data-slot="dialog-content"].kani-mo
   display: inline-flex !important;
   align-items: center !important;
   justify-content: flex-start !important;
-  background: var(--lga-btn-secondary-bg) !important;
-  border: 1px solid var(--lga-border-strong) !important;
+  background: rgba(130, 124, 116, 0.30) !important;
+  border: 1px solid rgba(130, 124, 116, 0.45) !important;
   box-shadow: none !important;
   cursor: pointer !important;
-  transition: background 160ms ease, border-color 160ms ease, box-shadow 160ms ease !important;
+  transition: background 160ms ease, border-color 160ms ease !important;
   box-sizing: border-box !important;
 }
 
@@ -5660,7 +5660,7 @@ html[data-theme] body[data-lg-admin="true"] [data-slot="dialog-content"].kani-mo
 html[data-theme] body[data-lg-admin="true"] [data-slot="dialog-content"].kani-modal-shell .kani-modal-body .v2-recurring-switch.is-checked {
   background: var(--lga-btn-primary-bg) !important;
   border: 1px solid var(--lga-border-accent) !important;
-  box-shadow: var(--lga-specular) !important;
+  box-shadow: var(--lga-btn-primary-shadow) !important;
 }
 
 html[data-theme] body[data-lg-admin="true"] [data-slot="dialog-content"].kani-modal-shell .kani-modal-body .v2-recurring-switch .v2-recurring-switch-thumb {
@@ -5668,7 +5668,7 @@ html[data-theme] body[data-lg-admin="true"] [data-slot="dialog-content"].kani-mo
   height: 16px !important;
   border-radius: 9999px !important;
   background: #ffffff !important;
-  box-shadow: 0 1px 3px rgba(20, 18, 16, 0.24) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.28) !important;
   transform: translateX(0) !important;
   transition: transform 160ms ease !important;
   display: block !important;
@@ -5720,7 +5720,7 @@ html[data-theme] body[data-lg-admin="true"] [data-slot="dialog-content"].kani-mo
   font-size: 12px !important;
   font-weight: 500 !important;
   border: 1px solid var(--lga-border) !important;
-  background: var(--lga-btn-secondary-bg) !important;
+  background: var(--lga-glass-nested, transparent) !important;
   color: var(--lga-text-muted) !important;
   box-shadow: none !important;
   display: flex !important;
@@ -5729,7 +5729,6 @@ html[data-theme] body[data-lg-admin="true"] [data-slot="dialog-content"].kani-mo
   cursor: pointer !important;
   user-select: none !important;
   box-sizing: border-box !important;
-  transition: background 140ms ease, border-color 140ms ease, color 140ms ease, box-shadow 140ms ease !important;
 }
 
 html[data-theme] body[data-lg-admin="true"] [data-slot="dialog-content"].kani-modal-shell .kani-modal-body .v2-recurring-segmented > .v2-recurring-pill.is-active,
@@ -5738,7 +5737,7 @@ html[data-theme] body[data-lg-admin="true"] [data-slot="dialog-content"].kani-mo
   border: 1px solid var(--lga-border-accent) !important;
   color: var(--lga-text) !important;
   font-weight: 600 !important;
-  box-shadow: var(--lga-specular), 0 2px 8px rgba(24, 22, 20, 0.05) !important;
+  box-shadow: var(--lga-btn-primary-shadow) !important;
 }
 
 html[data-theme] body[data-lg-admin="true"] [data-slot="dialog-content"].kani-modal-shell .kani-modal-body .v2-recurring-summary {
