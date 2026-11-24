@@ -1059,8 +1059,9 @@ html[data-theme="dark"] .v2-loading,
   border-radius: 9px;
   white-space: nowrap;
 }
+.v2-cobro-header .v2-segmented[data-lg-segmented="true"] > button[aria-pressed="false"],
 .v2-cobro-header .v2-segmented > button[aria-pressed="false"] {
-  border-color: transparent !important;
+  border: 1px solid transparent !important;
   background: transparent !important;
   box-shadow: none !important;
 }
