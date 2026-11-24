@@ -7,7 +7,6 @@ import {
   DialogTitle,
   KaniModalClose,
 } from "@/components/ui/dialog";
-import { Switch } from "@/components/ui/switch";
 import { useAdminStaff } from "@/lib/kani-admin-context";
 import {
   appointmentErrorMessage,
@@ -755,68 +754,94 @@ export function ManualAppointmentDialog({
           )}
 
           {mode === "CREATE" && (
-            <div className="v2-manual-recurring-box rounded-xl border border-border/70 bg-muted/20 p-3 space-y-3">
-              <div className="flex items-center justify-between gap-3">
-                <label
-                  htmlFor="manual-recurring-switch"
-                  className="flex items-center gap-2 text-sm font-medium text-foreground cursor-pointer select-none"
-                >
+            <div className="v2-manual-recurring-box">
+              <div className="v2-recurring-header">
+                <label htmlFor="manual-recurring-switch" className="v2-recurring-label-wrap">
                   <Repeat size={15} className="text-gold shrink-0" aria-hidden="true" />
-                  <span>Turno fijo (se repite)</span>
+                  <span className="v2-recurring-label-text">
+                    <strong>Turno fijo (se repite)</strong>
+                    <small>Agenda automática por 60 días</small>
+                  </span>
                 </label>
-                <Switch
+                <button
+                  type="button"
+                  role="switch"
                   id="manual-recurring-switch"
-                  checked={isRecurring}
+                  aria-checked={isRecurring}
+                  aria-label="Turno fijo (se repite)"
                   disabled={isBusy}
-                  onCheckedChange={(checked) => {
-                    setIsRecurring(checked);
-                    if (checked && (!recurringEndDate || recurringEndDate < date)) {
+                  className={`v2-recurring-switch${isRecurring ? " is-checked" : ""}`}
+                  onClick={() => {
+                    const next = !isRecurring;
+                    setIsRecurring(next);
+                    if (next && (!recurringEndDate || recurringEndDate < date)) {
                       setRecurringEndDate(addCalendarDays(date, 60));
                     }
                   }}
-                />
+                >
+                  <span className="v2-recurring-switch-thumb" aria-hidden="true" />
+                </button>
               </div>
 
               {isRecurring && (
-                <div className="space-y-2.5 pt-1 border-t border-border/50">
-                  <div className="v2-manual-row">
-                    <label className="v2-field">
-                      Frecuencia
-                      <select
-                        value={recurringFrequency}
+                <div className="v2-recurring-body">
+                  <div className="v2-recurring-group">
+                    <span className="v2-field-label">Frecuencia</span>
+                    <div className="v2-recurring-segmented" role="group" aria-label="Frecuencia">
+                      <button
+                        type="button"
+                        aria-pressed={recurringFrequency === "WEEKLY"}
+                        className={`v2-recurring-seg-btn${recurringFrequency === "WEEKLY" ? " is-active" : ""}`}
                         disabled={isBusy}
-                        onChange={(e) =>
-                          setRecurringFrequency(e.target.value as "WEEKLY" | "BIWEEKLY")
-                        }
+                        onClick={() => setRecurringFrequency("WEEKLY")}
                       >
-                        <option value="WEEKLY">Semanal</option>
-                        <option value="BIWEEKLY">Cada 2 semanas</option>
-                      </select>
-                    </label>
-
-                    <label className="v2-field">
-                      Duración
-                      <select
-                        value={recurringDurationMode}
+                        Semanal
+                      </button>
+                      <button
+                        type="button"
+                        aria-pressed={recurringFrequency === "BIWEEKLY"}
+                        className={`v2-recurring-seg-btn${recurringFrequency === "BIWEEKLY" ? " is-active" : ""}`}
                         disabled={isBusy}
-                        onChange={(e) => {
-                          const next = e.target.value as "60_DAYS" | "UNTIL_DATE";
-                          setRecurringDurationMode(next);
-                          if (next === "UNTIL_DATE" && (!recurringEndDate || recurringEndDate < date)) {
+                        onClick={() => setRecurringFrequency("BIWEEKLY")}
+                      >
+                        Cada 2 semanas
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="v2-recurring-group">
+                    <span className="v2-field-label">Duración</span>
+                    <div className="v2-recurring-segmented" role="group" aria-label="Duración">
+                      <button
+                        type="button"
+                        aria-pressed={recurringDurationMode === "60_DAYS"}
+                        className={`v2-recurring-seg-btn${recurringDurationMode === "60_DAYS" ? " is-active" : ""}`}
+                        disabled={isBusy}
+                        onClick={() => setRecurringDurationMode("60_DAYS")}
+                      >
+                        Por 60 días
+                      </button>
+                      <button
+                        type="button"
+                        aria-pressed={recurringDurationMode === "UNTIL_DATE"}
+                        className={`v2-recurring-seg-btn${recurringDurationMode === "UNTIL_DATE" ? " is-active" : ""}`}
+                        disabled={isBusy}
+                        onClick={() => {
+                          setRecurringDurationMode("UNTIL_DATE");
+                          if (!recurringEndDate || recurringEndDate < date) {
                             setRecurringEndDate(addCalendarDays(date, 60));
                           }
                         }}
                       >
-                        <option value="60_DAYS">Por 60 días</option>
-                        <option value="UNTIL_DATE">Hasta fecha</option>
-                      </select>
-                    </label>
+                        Hasta fecha
+                      </button>
+                    </div>
                   </div>
 
                   {recurringDurationMode === "UNTIL_DATE" && (
                     <div className="v2-manual-row-single">
                       <label className="v2-field">
-                        Fecha límite (máx. 90 días)
+                        Último turno
                         <input
                           type="date"
                           value={recurringEndDate}
@@ -831,11 +856,10 @@ export function ManualAppointmentDialog({
 
                   {recurringSummaryText && (
                     <p
-                      className="text-xs text-muted-foreground rounded-lg bg-background/60 border border-border/50 px-2.5 py-2 leading-relaxed"
+                      className="v2-recurring-summary"
                       data-testid="recurring-series-summary"
                     >
-                      <strong className="text-foreground font-medium">Resumen:</strong>{" "}
-                      {recurringSummaryText}
+                      <strong>Resumen:</strong> {recurringSummaryText}
                     </p>
                   )}
                 </div>
@@ -934,10 +958,14 @@ export function ManualAppointmentDialog({
               disabled={isBusy || Boolean(overlapConflict)}
             >
               {isBusy
-                ? "Guardando…"
+                ? isRecurring && mode === "CREATE"
+                  ? "Agendando…"
+                  : "Guardando…"
                 : mode === "CREATE"
-                ? "Crear turno"
-                : "Guardar cambios"}
+                  ? isRecurring
+                    ? "Agendar turno fijo"
+                    : "Crear turno"
+                  : "Guardar cambios"}
             </button>
           </div>
         </form>
