@@ -22,10 +22,13 @@ describe("V2 appointments are scoped at query origin", () => {
     mock.from.mockImplementation((table: string) => {
       const filters: unknown[][] = [];
       mock.queries.push({ table, filters });
-      let full = false;
+      let isFirstAppointmentQuery = false;
       const query = {
-        select: (columns: string) => {
-          full = columns.includes("deposit_required");
+        select: () => {
+          if (table === "appointments") {
+            isFirstAppointmentQuery =
+              mock.queries.filter((q) => q.table === "appointments").length === 1;
+          }
           return query;
         },
         order: () => query,
@@ -37,7 +40,7 @@ describe("V2 appointments are scoped at query origin", () => {
           Promise.resolve({
             data: [],
             error:
-              table === "appointments" && full && mock.fallback
+              table === "appointments" && isFirstAppointmentQuery && mock.fallback
                 ? { code: "42703", message: "is_manual missing" }
                 : null,
           }).then(resolve),
@@ -81,5 +84,87 @@ describe("V2 appointments are scoped at query origin", () => {
   it("leaves existing V1 reads unchanged", async () => {
     await readRealAppointments({ bypassCache: true });
     expect(mock.queries[0]).toEqual({ table: "appointments", filters: [] });
+  });
+
+  it("preserves depositPaid and depositAmountArs via select('*') and approved payment_attempts backup", async () => {
+    const selectedCols: Record<string, string> = {};
+    mock.from.mockImplementation((table: string) => {
+      const chain: any = {
+        select: (cols: string) => {
+          selectedCols[table] = cols;
+          return chain;
+        },
+        order: () => chain,
+        eq: () => chain,
+        in: () => chain,
+        then: (resolve: (val: unknown) => unknown) => {
+          if (table === "appointments") {
+            return Promise.resolve({
+              data: [
+                {
+                  id: "apt-row-deposit",
+                  request_number: 501,
+                  client_id: "c1",
+                  barber_id: "b1",
+                  service_id: "s1",
+                  booking_date: "2026-11-23",
+                  start_time: "10:00:00",
+                  end_time: "10:45:00",
+                  status: "CONFIRMED",
+                  notes: "",
+                  created_at: "2026-11-23T12:00:00Z",
+                  deposit_paid: true,
+                  deposit_amount_ars: 5000,
+                },
+                {
+                  id: "apt-attempt-deposit",
+                  request_number: 502,
+                  client_id: "c1",
+                  barber_id: "b1",
+                  service_id: "s1",
+                  booking_date: "2026-11-23",
+                  start_time: "11:00:00",
+                  end_time: "11:45:00",
+                  status: "CONFIRMED",
+                  notes: "",
+                  created_at: "2026-11-23T12:00:00Z",
+                  deposit_paid: false,
+                  deposit_amount_ars: null,
+                },
+              ],
+              error: null,
+            }).then(resolve);
+          }
+          if (table === "payment_attempts") {
+            return Promise.resolve({
+              data: [{ appointment_id: "apt-attempt-deposit", amount_ars: 5000, state: "APPROVED" }],
+              error: null,
+            }).then(resolve);
+          }
+          if (table === "clients") {
+            return Promise.resolve({ data: [{ id: "c1", name: "Salvador Kawakami", email: "", phone: "" }], error: null }).then(resolve);
+          }
+          if (table === "barbers") {
+            return Promise.resolve({ data: [{ id: "b1", name: "Lautaro" }], error: null }).then(resolve);
+          }
+          if (table === "services") {
+            return Promise.resolve({ data: [{ id: "s1", name: "Corte", duration_minutes: 45, price_ars: 25000 }], error: null }).then(resolve);
+          }
+          return Promise.resolve({ data: [], error: null }).then(resolve);
+        },
+      };
+      return chain;
+    });
+
+    const list = await readRealAppointments({ bypassCache: true });
+    expect(selectedCols.appointments).toBe("*");
+    expect(list.find((a) => a.id === "apt-row-deposit")).toMatchObject({
+      depositPaid: true,
+      depositAmountArs: 5000,
+    });
+    expect(list.find((a) => a.id === "apt-attempt-deposit")).toMatchObject({
+      depositPaid: true,
+      depositAmountArs: 5000,
+    });
   });
 });

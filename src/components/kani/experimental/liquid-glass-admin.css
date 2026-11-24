@@ -386,6 +386,8 @@ html[data-theme] body[data-lg-admin="true"] .v2-cobro-header .v2-segmented[data-
   margin-bottom: 0 !important;
   padding: 3px !important;
   border-radius: 12px !important;
+  border: 1px solid var(--lga-border) !important;
+  background: var(--lga-glass-nested) !important;
   flex: 0 0 auto;
 }
 
@@ -395,6 +397,18 @@ html[data-theme] body[data-lg-admin="true"] .v2-cobro-header .v2-segmented[data-
   padding: 4px 10px !important;
   font-size: 12px !important;
   border-radius: 9px !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-cobro-header .v2-segmented[data-lg-segmented="true"] > button[aria-pressed="false"] {
+  border: 1px solid transparent !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-cobro-header .v2-segmented[data-lg-segmented="true"] > button[aria-pressed="true"] {
+  border: 1px solid var(--lga-border-accent) !important;
+  background: var(--lga-btn-primary-bg) !important;
+  box-shadow: none !important;
 }
 
 html[data-theme] body[data-lg-admin="true"] .v2-cobro-header .v2-segmented[data-lg-segmented="true"] .lg-segmented-pill {
@@ -5804,4 +5818,24 @@ html[data-theme] body[data-lg-admin="true"] .v2-channel-dialog .v2-channel-modal
 
 html[data-theme] body[data-lg-admin="true"] .v2-channel-dialog .v2-channel-modal-body .v2-notif-pill.v2-notif-pill-action {
   cursor: pointer !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-quick-secondary-toggles .v2-quick-secondary-btn,
+html[data-theme] body[data-lg-admin="true"] .v2-quick-secondary-toggles .v2-quick-secondary-pill {
+  height: 40px !important;
+  min-height: 40px !important;
+  max-height: 40px !important;
+  box-sizing: border-box !important;
+  display: inline-flex !important;
+  align-items: center !important;
+}
+
+html[data-theme] body[data-lg-admin="true"] .v2-quick-amount-input-wrap > input {
+  width: 100% !important;
+  min-width: 0 !important;
+  flex: 1 !important;
+  cursor: text !important;
+  text-align: right !important;
+  font-variant-numeric: tabular-nums !important;
+  padding-right: 14px !important;
 }

@@ -161,7 +161,7 @@ describe("V2 quick collection", () => {
 });
 
 describe('Benefit-aware appointment collection',()=>{
- beforeEach(()=>{mocks.rpc.mockReset();mocks.refresh.mockReset();mocks.payments=[];mocks.role='BARBER';mocks.depositSupported=true;});
+ beforeEach(()=>{mocks.rpc.mockReset();mocks.refresh.mockReset();mocks.payments=[];mocks.role='BARBER';mocks.depositSupported=true;mocks.benefit=null;});
  it.each([[2500,22500,17500]])('keeps benefit discount %i and the true remaining balance',async(discount,final,balance)=>{
   mocks.benefit={benefitCode:'CONTROL',benefitOriginalPriceArs:25000,benefitDiscountAmountArs:discount,benefitFinalPriceArs:final,depositPaid:final>0,depositAmountArs:final>0?5000:0};
   mocks.rpc.mockResolvedValue({data:{id:'benefit-payment'},error:null});
@@ -337,4 +337,104 @@ describe('Benefit-aware appointment collection',()=>{
   });
  });
 
+ it('deducts Payway deposit ($5.000) in Importe with dot-thousands (20.000), shows Cobrar $20.000, and avoids double deduction on submit', async () => {
+  mocks.rpc.mockResolvedValue({ data: { id: 'p-dep-1' }, error: null });
+  render(<V2Payments />);
+
+  fireEvent.click(screen.getByRole('button', { name: 'Con turno' }));
+  fireEvent.change(screen.getByLabelText('Turno'), { target: { value: 'a1' } });
+
+  const amountInput = screen.getByLabelText('Importe') as HTMLInputElement;
+  expect(amountInput.type).toBe('text');
+  expect(amountInput.value).toBe('20.000');
+  expect(screen.getByText('Servicio $25.000 · Seña Payway -$5.000')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Cobrar $20.000' })).toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole('button', { name: 'Cobrar $20.000' }));
+  await waitFor(() => expect(mocks.rpc).toHaveBeenCalledTimes(1));
+  expect(mocks.rpc.mock.calls[0]?.[1]).toMatchObject({
+    p_appointment_id: 'a1',
+    p_service_price_ars: 25000,
+    p_discount_value: 0,
+    p_final_amount_ars: null,
+  });
+
+  // Editing Importe to 18000 formats to 18.000 and sets p_final_amount_ars = 23000 (18000 + 5000 deposit)
+  fireEvent.click(screen.getByRole('button', { name: 'Con turno' }));
+  fireEvent.change(screen.getByLabelText('Turno'), { target: { value: 'a1' } });
+  fireEvent.change(screen.getByLabelText('Importe'), { target: { value: '18000' } });
+  expect((screen.getByLabelText('Importe') as HTMLInputElement).value).toBe('18.000');
+  expect(screen.getByRole('button', { name: 'Cobrar $18.000' })).toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole('button', { name: 'Cobrar $18.000' }));
+  await waitFor(() => expect(mocks.rpc).toHaveBeenCalledTimes(2));
+  expect(mocks.rpc.mock.calls[1]?.[1]).toMatchObject({
+    p_appointment_id: 'a1',
+    p_service_price_ars: 25000,
+    p_final_amount_ars: 23000,
+  });
+ });
+
+ it('allows switching service on an appointment with deposit from Corte ($25.000) to Corte y barba ($30.000) and collects $25.000', async () => {
+  mocks.rpc.mockResolvedValue({ data: { id: 'p-upgrade-1' }, error: null });
+  render(<V2Payments />);
+
+  fireEvent.click(screen.getByRole('button', { name: 'Con turno' }));
+  fireEvent.change(screen.getByLabelText('Turno'), { target: { value: 'a1' } });
+
+  const serviceGroup = screen.getByRole('group', { name: 'Servicio' });
+  fireEvent.click(within(serviceGroup).getByRole('button', { name: /Corte y barba/i }));
+
+  expect((screen.getByLabelText('Importe') as HTMLInputElement).value).toBe('25.000');
+  const submitBtn = screen.getByRole('button', { name: 'Cobrar $25.000' });
+  expect(submitBtn).not.toBeDisabled();
+
+  fireEvent.click(submitBtn);
+  await waitFor(() => expect(mocks.rpc).toHaveBeenCalledTimes(1));
+  expect(mocks.rpc.mock.calls[0]?.[1]).toMatchObject({
+    p_appointment_id: 'a1',
+    p_service_name: 'Corte y barba',
+    p_service_price_ars: 30000,
+    p_final_amount_ars: null,
+  });
+
+  // Switching to Otro and editing Importe to 70.000 updates breakdown to Servicio $75.000 · Seña Payway -$5.000
+  fireEvent.click(screen.getByRole('button', { name: 'Con turno' }));
+  fireEvent.change(screen.getByLabelText('Turno'), { target: { value: 'a1' } });
+  fireEvent.click(within(screen.getByRole('group', { name: 'Servicio' })).getByRole('button', { name: 'Otro' }));
+  fireEvent.change(screen.getByLabelText('Importe'), { target: { value: '70000' } });
+  expect((screen.getByLabelText('Importe') as HTMLInputElement).value).toBe('70.000');
+  expect(screen.getByText('Servicio $75.000 · Seña Payway -$5.000')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Cobrar $70.000' })).not.toBeDisabled();
+ });
+
+ it('handles Otro smoothly in Sin turno (18.500), hides Anulado on deposit appointments, and allows clearing Importe to "" before typing 35.000', () => {
+  render(<V2Payments />);
+
+  // 1. Sin turno -> Otro: placeholder "0", typing 18.500 enables Cobrar $18.500
+  fireEvent.click(within(screen.getByRole('group', { name: 'Servicio' })).getByRole('button', { name: 'Otro' }));
+  const walkInAmount = screen.getByLabelText('Importe') as HTMLInputElement;
+  expect(walkInAmount.value).toBe('');
+  expect(walkInAmount.placeholder).toBe('0');
+  fireEvent.change(walkInAmount, { target: { value: '18500' } });
+  expect(walkInAmount.value).toBe('18.500');
+  expect(screen.getByRole('button', { name: 'Cobrar $18.500' })).not.toBeDisabled();
+
+  // 2. Con turno con seña ($5.000): Anulado is hidden, clearing Importe leaves "" and typing 35.000 updates breakdown
+  fireEvent.click(screen.getByRole('button', { name: 'Con turno' }));
+  fireEvent.change(screen.getByLabelText('Turno'), { target: { value: 'a1' } });
+  const serviceGroup = screen.getByRole('group', { name: 'Servicio' });
+  expect(within(serviceGroup).queryByRole('button', { name: 'Anulado' })).toBeNull();
+
+  fireEvent.click(within(serviceGroup).getByRole('button', { name: 'Otro' }));
+  const apptAmount = screen.getByLabelText('Importe') as HTMLInputElement;
+  expect(apptAmount.placeholder).toBe('0');
+  fireEvent.change(apptAmount, { target: { value: '' } });
+  expect(apptAmount.value).toBe('');
+
+  fireEvent.change(apptAmount, { target: { value: '35000' } });
+  expect(apptAmount.value).toBe('35.000');
+  expect(screen.getByText('Servicio $40.000 · Seña Payway -$5.000')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Cobrar $35.000' })).not.toBeDisabled();
+ });
 });

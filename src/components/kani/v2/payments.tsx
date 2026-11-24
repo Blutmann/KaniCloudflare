@@ -37,6 +37,19 @@ export function formatPaymentMethodLabel(method: string): string {
     .replace(/^Payway$/i, "Tarjeta - Payway");
 }
 
+function formatArsThousands(value: number | null | undefined): string {
+  if (value === null || value === undefined || !Number.isFinite(value)) return "";
+  return Math.max(0, Math.round(value))
+    .toString()
+    .replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+}
+
+function parseArsDigits(raw: string): number | null {
+  const digits = raw.replace(/\D/g, "");
+  if (!digits) return null;
+  return Number(digits);
+}
+
 export function V2Payments() {
   const data = useV2();
   const staff = useAdminStaff();
@@ -55,6 +68,7 @@ export function V2Payments() {
   const [discountOverride, setDiscount] = useState<number | null>(null);
   const [discountKind, setDiscountKind] = useState<DiscountKind>("FIXED");
   const [finalOverride, setFinalOverride] = useState<number | null>(null);
+  const [amountInputEmpty, setAmountInputEmpty] = useState(false);
   const [showDiscount, setShowDiscount] = useState(false);
   const [showClient, setShowClient] = useState(false);
   const [clientId, setClientId] = useState("");
@@ -120,13 +134,13 @@ export function V2Payments() {
     ? (appointment.benefitDiscountAmountArs ?? Math.max(0,
         (appointment.benefitOriginalPriceArs ?? appointment.servicePrice ?? 0) -
         (appointment.benefitFinalPriceArs ?? appointment.servicePrice ?? 0))) : 0);
-  const deposit = appointment?.depositPaid ? (appointment.depositAmountArs ?? 0) : 0;
+  const hasDeposit =
+    Boolean(appointment?.depositPaid) || (appointment?.depositAmountArs ?? 0) > 0;
+  const deposit = hasDeposit ? (appointment?.depositAmountArs ?? 5000) : 0;
   const discount =
     discountKind === "PERCENT" ? Math.round((price * discountValue) / 100) : discountValue;
   const total =
     serviceName === "Anulado" ? 0 : Math.max(0, (finalOverride ?? price - discount) - deposit);
-  const appointmentBalance = appointment ? Math.max(0,
-    (appointment.benefitFinalPriceArs ?? appointment.servicePrice ?? 0) - deposit) : null;
   const depositVerifiable = data.depositSupported && (!appointment?.depositPaid || appointment.depositAmountArs != null);
   const dynamicLabels = getPaymentPeriodDynamicLabels(today);
   const periodRange = calculatePaymentPeriodRange(period, today, customStartDate, customEndDate);
@@ -161,7 +175,7 @@ export function V2Payments() {
     { value: "Corte y barba", label: "Corte y barba" },
     { value: "Barba", label: "Barba" },
     { value: "Otros", label: "Otro" },
-    ...(origin === "appointment" ? [{ value: "Anulado", label: "Anulado" }] : []),
+    ...(origin === "appointment" && !hasDeposit ? [{ value: "Anulado", label: "Anulado" }] : []),
   ];
   const appointmentById = new Map(data.appointments.map(a => [a.id, a]));
 
@@ -175,9 +189,6 @@ export function V2Payments() {
       return;
     }
     if (appointment && total <= 0 && serviceName !== "Anulado") { setMessage("Sin saldo pendiente."); return; }
-    if (appointmentBalance != null && total > appointmentBalance) {
-      setMessage("El cobro no puede superar el saldo pendiente del turno."); return;
-    }
     const rawServiceName = serviceName;
     const isOtherService = ["Otro", "Otros"].includes(serviceName);
     const trimmedCustomDetail =
@@ -254,6 +265,7 @@ export function V2Payments() {
       setDiscount(null);
       setPriceOverride(null);
       setFinalOverride(null);
+      setAmountInputEmpty(false);
       setServiceName(null);
       setCustomServiceName("");
       setShowClient(false);
@@ -414,6 +426,7 @@ export function V2Payments() {
                         setServiceName(null);
                         setFinalOverride(null);
                         setPriceOverride(null);
+                        setAmountInputEmpty(false);
                         setDiscount(null);
                       }}
                     >
@@ -453,6 +466,7 @@ export function V2Payments() {
                           setServiceName(null);
                           setFinalOverride(null);
                           setPriceOverride(null);
+                          setAmountInputEmpty(false);
                           setDiscount(null);
                         }}
                       >
@@ -493,6 +507,7 @@ export function V2Payments() {
                             setServiceName(opt.value);
                             setPriceOverride(null);
                             setFinalOverride(null);
+                            setAmountInputEmpty(false);
                           }}
                         >
                           <span className="v2-quick-chip-name">{opt.label}</span>
@@ -585,21 +600,46 @@ export function V2Payments() {
                     <div className="v2-quick-amount-input-wrap">
                       <span className="v2-quick-amount-prefix" aria-hidden="true">$</span>
                       <input
-                        type="number"
+                        type="text"
+                        inputMode="numeric"
                         aria-label="Importe"
-                        min={serviceName === "Anulado" ? 0 : 1}
                         disabled={serviceName === "Anulado"}
-                        step={1}
                         value={
                           serviceName === "Anulado"
-                            ? 0
-                            : (priceOverride ??
-                              (["Otro", "Otros"].includes(serviceName) ? "" : price))
+                            ? "0"
+                            : amountInputEmpty ||
+                                (["Otro", "Otros"].includes(serviceName) &&
+                                  priceOverride === null &&
+                                  finalOverride === null &&
+                                  !appointment)
+                              ? ""
+                              : formatArsThousands(total)
                         }
-                        placeholder={String(service?.price ?? 25000)}
-                        onChange={(e) =>
-                          setPriceOverride(e.target.value === "" ? null : Number(e.target.value))
+                        placeholder={
+                          ["Otro", "Otros"].includes(serviceName)
+                            ? "0"
+                            : formatArsThousands(service?.price ?? 25000)
                         }
+                        onChange={(e) => {
+                          const parsed = parseArsDigits(e.target.value);
+                          if (parsed === null) {
+                            setAmountInputEmpty(true);
+                            if (deposit > 0 || discount > 0) {
+                              setFinalOverride(deposit);
+                            } else {
+                              setPriceOverride(null);
+                              setFinalOverride(null);
+                            }
+                            return;
+                          }
+                          setAmountInputEmpty(false);
+                          if (deposit > 0 || discount > 0) {
+                            setFinalOverride(parsed + deposit);
+                          } else {
+                            setFinalOverride(null);
+                            setPriceOverride(parsed);
+                          }
+                        }}
                       />
                     </div>
                   </label>
@@ -709,9 +749,9 @@ export function V2Payments() {
 
                 {(discount > 0 || deposit > 0) && (
                   <p className="v2-quick-breakdown-note">
-                    {deposit > 0 ? `Seña online: -${money(deposit)}` : ""}
-                    {deposit > 0 && discount > 0 ? " · " : ""}
-                    {discount > 0 ? `Descuento: -${money(discount)}` : ""}
+                    {`Servicio ${money(serviceName === "Anulado" ? 0 : (finalOverride !== null ? finalOverride + discount : price))}`}
+                    {deposit > 0 ? ` · Seña Payway -${money(deposit)}` : ""}
+                    {discount > 0 ? ` · Descuento -${money(discount)}` : ""}
                   </p>
                 )}
 
@@ -720,8 +760,8 @@ export function V2Payments() {
                   type="submit"
                   disabled={
                     busy ||
-                    (!price && serviceName !== "Anulado") ||
-                    (origin === "appointment" && (!appointment || !depositVerifiable || (total <= 0 && serviceName !== "Anulado") || (appointmentBalance != null && total > appointmentBalance)))
+                    (!price && finalOverride === null && serviceName !== "Anulado") ||
+                    (origin === "appointment" && (!appointment || !depositVerifiable || (total <= 0 && serviceName !== "Anulado")))
                   }
                 >
                   <CheckCircle2 size={18} />
