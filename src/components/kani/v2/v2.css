@@ -1047,6 +1047,8 @@ html[data-theme="dark"] .v2-loading,
   margin-bottom: 0;
   padding: 3px;
   border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--v2-inset, rgba(0, 0, 0, 0.04));
   flex: 0 0 auto;
 }
 .v2-cobro-header .v2-segmented > button {
@@ -1056,6 +1058,16 @@ html[data-theme="dark"] .v2-loading,
   font-size: 12px;
   border-radius: 9px;
   white-space: nowrap;
+}
+.v2-cobro-header .v2-segmented > button[aria-pressed="false"] {
+  border-color: transparent !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.v2-cobro-header .v2-segmented > button[aria-pressed="true"] {
+  border: 1px solid var(--accent, #c8a96b) !important;
+  background: rgba(200, 169, 107, 0.16) !important;
+  box-shadow: none !important;
 }
 .v2-cobro-panel fieldset,
 .v2-payment-grid {
@@ -1159,6 +1171,9 @@ html[data-theme="dark"] .v2-loading,
 }
 .v2-cobro-panel .v2-quick-amount-input-wrap input {
   width: 100%;
+  min-width: 0;
+  flex: 1;
+  cursor: text;
   height: 38px;
   min-height: 38px;
   max-height: 38px;

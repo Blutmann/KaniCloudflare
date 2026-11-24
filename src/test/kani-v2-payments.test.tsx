@@ -407,4 +407,34 @@ describe('Benefit-aware appointment collection',()=>{
   expect(screen.getByText('Servicio $75.000 · Seña Payway -$5.000')).toBeInTheDocument();
   expect(screen.getByRole('button', { name: 'Cobrar $70.000' })).not.toBeDisabled();
  });
+
+ it('handles Otro smoothly in Sin turno (18.500), hides Anulado on deposit appointments, and allows clearing Importe to "" before typing 35.000', () => {
+  render(<V2Payments />);
+
+  // 1. Sin turno -> Otro: placeholder "0", typing 18.500 enables Cobrar $18.500
+  fireEvent.click(within(screen.getByRole('group', { name: 'Servicio' })).getByRole('button', { name: 'Otro' }));
+  const walkInAmount = screen.getByLabelText('Importe') as HTMLInputElement;
+  expect(walkInAmount.value).toBe('');
+  expect(walkInAmount.placeholder).toBe('0');
+  fireEvent.change(walkInAmount, { target: { value: '18500' } });
+  expect(walkInAmount.value).toBe('18.500');
+  expect(screen.getByRole('button', { name: 'Cobrar $18.500' })).not.toBeDisabled();
+
+  // 2. Con turno con seña ($5.000): Anulado is hidden, clearing Importe leaves "" and typing 35.000 updates breakdown
+  fireEvent.click(screen.getByRole('button', { name: 'Con turno' }));
+  fireEvent.change(screen.getByLabelText('Turno'), { target: { value: 'a1' } });
+  const serviceGroup = screen.getByRole('group', { name: 'Servicio' });
+  expect(within(serviceGroup).queryByRole('button', { name: 'Anulado' })).toBeNull();
+
+  fireEvent.click(within(serviceGroup).getByRole('button', { name: 'Otro' }));
+  const apptAmount = screen.getByLabelText('Importe') as HTMLInputElement;
+  expect(apptAmount.placeholder).toBe('0');
+  fireEvent.change(apptAmount, { target: { value: '' } });
+  expect(apptAmount.value).toBe('');
+
+  fireEvent.change(apptAmount, { target: { value: '35000' } });
+  expect(apptAmount.value).toBe('35.000');
+  expect(screen.getByText('Servicio $40.000 · Seña Payway -$5.000')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Cobrar $35.000' })).not.toBeDisabled();
+ });
 });

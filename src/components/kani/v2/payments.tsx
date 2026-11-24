@@ -68,6 +68,7 @@ export function V2Payments() {
   const [discountOverride, setDiscount] = useState<number | null>(null);
   const [discountKind, setDiscountKind] = useState<DiscountKind>("FIXED");
   const [finalOverride, setFinalOverride] = useState<number | null>(null);
+  const [amountInputEmpty, setAmountInputEmpty] = useState(false);
   const [showDiscount, setShowDiscount] = useState(false);
   const [showClient, setShowClient] = useState(false);
   const [clientId, setClientId] = useState("");
@@ -174,7 +175,7 @@ export function V2Payments() {
     { value: "Corte y barba", label: "Corte y barba" },
     { value: "Barba", label: "Barba" },
     { value: "Otros", label: "Otro" },
-    ...(origin === "appointment" ? [{ value: "Anulado", label: "Anulado" }] : []),
+    ...(origin === "appointment" && !hasDeposit ? [{ value: "Anulado", label: "Anulado" }] : []),
   ];
   const appointmentById = new Map(data.appointments.map(a => [a.id, a]));
 
@@ -264,6 +265,7 @@ export function V2Payments() {
       setDiscount(null);
       setPriceOverride(null);
       setFinalOverride(null);
+      setAmountInputEmpty(false);
       setServiceName(null);
       setCustomServiceName("");
       setShowClient(false);
@@ -424,6 +426,7 @@ export function V2Payments() {
                         setServiceName(null);
                         setFinalOverride(null);
                         setPriceOverride(null);
+                        setAmountInputEmpty(false);
                         setDiscount(null);
                       }}
                     >
@@ -463,6 +466,7 @@ export function V2Payments() {
                           setServiceName(null);
                           setFinalOverride(null);
                           setPriceOverride(null);
+                          setAmountInputEmpty(false);
                           setDiscount(null);
                         }}
                       >
@@ -503,6 +507,7 @@ export function V2Payments() {
                             setServiceName(opt.value);
                             setPriceOverride(null);
                             setFinalOverride(null);
+                            setAmountInputEmpty(false);
                           }}
                         >
                           <span className="v2-quick-chip-name">{opt.label}</span>
@@ -602,17 +607,23 @@ export function V2Payments() {
                         value={
                           serviceName === "Anulado"
                             ? "0"
-                            : ["Otro", "Otros"].includes(serviceName) &&
-                                priceOverride === null &&
-                                finalOverride === null &&
-                                !appointment
+                            : amountInputEmpty ||
+                                (["Otro", "Otros"].includes(serviceName) &&
+                                  priceOverride === null &&
+                                  finalOverride === null &&
+                                  !appointment)
                               ? ""
                               : formatArsThousands(total)
                         }
-                        placeholder={formatArsThousands(service?.price ?? 25000)}
+                        placeholder={
+                          ["Otro", "Otros"].includes(serviceName)
+                            ? "0"
+                            : formatArsThousands(service?.price ?? 25000)
+                        }
                         onChange={(e) => {
                           const parsed = parseArsDigits(e.target.value);
                           if (parsed === null) {
+                            setAmountInputEmpty(true);
                             if (deposit > 0 || discount > 0) {
                               setFinalOverride(deposit);
                             } else {
@@ -621,6 +632,7 @@ export function V2Payments() {
                             }
                             return;
                           }
+                          setAmountInputEmpty(false);
                           if (deposit > 0 || discount > 0) {
                             setFinalOverride(parsed + deposit);
                           } else {
