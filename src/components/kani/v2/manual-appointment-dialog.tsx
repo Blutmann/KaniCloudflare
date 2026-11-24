@@ -39,6 +39,19 @@ const TIME_15_OPTIONS = Array.from({ length: 96 }, (_, i) => {
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 });
 
+function formatArsThousands(value: number | ""): string {
+  if (value === "" || !Number.isFinite(value)) return "";
+  return Math.max(0, Math.round(value))
+    .toString()
+    .replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+}
+
+function parseArsDigits(raw: string): number | "" {
+  const digits = raw.replace(/\D/g, "");
+  if (!digits) return "";
+  return Number(digits);
+}
+
 export function ManualAppointmentDialog({
   open,
   mode,
@@ -704,16 +717,15 @@ export function ManualAppointmentDialog({
                 <label className="v2-field">
                   Importe ($ ARS) *
                   <input
-                    type="number"
-                    min={0}
-                    step={1}
+                    type="text"
+                    inputMode="numeric"
                     required
-                    placeholder="Ej. 35000"
-                    value={customPrice}
+                    className="v2-manual-amount-input"
+                    style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}
+                    placeholder="Ej. 35.000"
+                    value={formatArsThousands(customPrice)}
                     disabled={isBusy}
-                    onChange={(e) =>
-                      setCustomPrice(e.target.value === "" ? "" : Number(e.target.value))
-                    }
+                    onChange={(e) => setCustomPrice(parseArsDigits(e.target.value))}
                   />
                 </label>
               </div>
@@ -745,14 +757,18 @@ export function ManualAppointmentDialog({
               <label className="v2-field">
                 Importe ($ ARS) *
                 <input
-                  type="number"
-                  min={0}
-                  step={1}
+                  type="text"
+                  inputMode="numeric"
                   required
-                  placeholder="Ej. 25000"
-                  value={servicePrice}
+                  className="v2-manual-amount-input"
+                  style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}
+                  placeholder="Ej. 25.000"
+                  value={formatArsThousands(servicePrice)}
                   disabled={isBusy}
-                  onChange={(e) => setServicePrice(Number(e.target.value))}
+                  onChange={(e) => {
+                    const parsed = parseArsDigits(e.target.value);
+                    setServicePrice(parsed === "" ? 0 : parsed);
+                  }}
                 />
               </label>
             </div>

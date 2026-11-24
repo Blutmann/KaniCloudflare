@@ -6937,3 +6937,27 @@ html[data-theme="dark"] .kani-v2-toast.is-error .kani-v2-toast-icon,
   line-height: 1.3;
   color: var(--muted-foreground);
 }
+
+.v2-manual-dialog .v2-manual-amount-input {
+  text-align: right !important;
+  font-variant-numeric: tabular-nums !important;
+}
+
+.v2-manual-dialog input[type="date"] {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+  padding: 0 8px 0 10px !important;
+  box-sizing: border-box !important;
+}
+
+.v2-manual-dialog input[type="date"]::-webkit-datetime-edit {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.v2-manual-dialog input[type="date"]::-webkit-calendar-picker-indicator {
+  margin: 0 !important;
+  flex-shrink: 0 !important;
+}

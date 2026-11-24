@@ -176,6 +176,11 @@ describe("Turno fijo (se repite) — UI & Pontiun", () => {
     fireEvent.change(screen.getByLabelText(/Nombre del cliente/i), { target: { value: "Lucas Gómez" } });
     fireEvent.change(screen.getByLabelText(/Celular/i), { target: { value: "1155551234" } });
 
+    const amountInput = screen.getByLabelText(/Importe \(\$ ARS\)/i) as HTMLInputElement;
+    expect(amountInput.value).toBe("25.000");
+    fireEvent.change(amountInput, { target: { value: "32000" } });
+    expect(amountInput.value).toBe("32.000");
+
     fireEvent.click(screen.getByRole("button", { name: "Agendar turno fijo" }));
 
     await waitFor(() => expect(mockCreateRecurringManualSeries).toHaveBeenCalledTimes(1));
@@ -187,6 +192,7 @@ describe("Turno fijo (se repite) — UI & Pontiun", () => {
       endDate: "2027-01-26",
       pricingMode: "CURRENT_RATE",
       horizonDays: 60,
+      servicePriceArs: 32000,
     });
 
     await waitFor(() => expect(mockSendSeriesNotifications).toHaveBeenCalledTimes(1));

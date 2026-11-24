@@ -529,7 +529,7 @@ describe("Admin V2 — UI de Turnos y Permisos", () => {
     });
 
     // Fill manual price
-    fireEvent.change(screen.getByPlaceholderText("Ej. 35000"), {
+    fireEvent.change(screen.getByPlaceholderText("Ej. 35.000"), {
       target: { value: "32000" },
     });
 
