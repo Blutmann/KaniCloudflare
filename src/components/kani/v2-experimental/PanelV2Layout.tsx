@@ -73,6 +73,7 @@ export function PanelV2Layout({
     error: string;
   }>({ loading: true, staff: null, error: "" });
   const [allowed, setAllowed] = useState(false);
+  const currentUserIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     const supabaseUrl =
@@ -82,6 +83,7 @@ export function PanelV2Layout({
     const adminEnvironment = isV2AdminEnvironment(supabaseUrl, window.location.hostname);
     setAllowed(adminEnvironment);
     if (!adminEnvironment) {
+      currentUserIdRef.current = null;
       setState({
         loading: false,
         staff: null,
@@ -99,10 +101,25 @@ export function PanelV2Layout({
           options?.bypassCache ? { bypassCache: true } : undefined,
         );
         if (!cancelled && revision === refreshRevision) {
-          setState({ loading: false, staff, error: "" });
+          currentUserIdRef.current = staff?.user?.id ?? null;
+          setState((prev) => {
+            if (
+              !prev.loading &&
+              prev.error === "" &&
+              prev.staff &&
+              staff &&
+              prev.staff.user.id === staff.user.id &&
+              prev.staff.profile.role === staff.profile.role &&
+              prev.staff.profile.barber_id === staff.profile.barber_id
+            ) {
+              return prev;
+            }
+            return { loading: false, staff, error: "" };
+          });
         }
       } catch {
         if (!cancelled && revision === refreshRevision) {
+          currentUserIdRef.current = null;
           setState({
             loading: false,
             staff: null,
@@ -115,9 +132,10 @@ export function PanelV2Layout({
     void refreshStaff();
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "INITIAL_SESSION") return;
       if (event === "SIGNED_OUT") {
+        currentUserIdRef.current = null;
         clearStaffCache();
         if (!cancelled) setState({ loading: false, staff: null, error: "" });
         return;
@@ -126,6 +144,17 @@ export function PanelV2Layout({
         void refreshStaff({ bypassCache: true });
         return;
       }
+      const nextUserId = session?.user?.id ?? null;
+      const currentUserId = currentUserIdRef.current;
+      if (
+        (event === "SIGNED_IN" || event === "USER_UPDATED") &&
+        currentUserId !== null &&
+        nextUserId === currentUserId
+      ) {
+        void refreshStaff({ bypassCache: true });
+        return;
+      }
+      currentUserIdRef.current = null;
       clearStaffCache();
       if (!cancelled) setState({ loading: true, staff: null, error: "" });
       window.setTimeout(() => {
