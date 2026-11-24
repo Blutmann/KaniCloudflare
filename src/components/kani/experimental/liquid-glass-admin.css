@@ -5707,41 +5707,45 @@ html[data-theme] body[data-lg-admin="true"] [data-slot="dialog-content"].kani-mo
   width: 100% !important;
 }
 
-html[data-theme] body[data-lg-admin="true"] [data-slot="dialog-content"].kani-modal-shell .kani-modal-body .v2-recurring-segmented > button.v2-recurring-pill {
+html[data-theme] body[data-lg-admin="true"] [data-slot="dialog-content"].kani-modal-shell .kani-modal-body .v2-recurring-segmented > .v2-recurring-pill {
   width: 100% !important;
   min-width: 0 !important;
-  height: 30px !important;
-  min-height: 30px !important;
-  max-height: 30px !important;
+  height: 32px !important;
+  min-height: 32px !important;
+  max-height: 32px !important;
   padding: 0 10px !important;
   margin: 0 !important;
-  border-radius: 8px !important;
+  border-radius: 9px !important;
   font-size: 12px !important;
   font-weight: 500 !important;
   border: 1px solid var(--lga-border) !important;
   background: transparent !important;
   color: var(--lga-text-muted) !important;
   box-shadow: none !important;
-  display: inline-flex !important;
+  display: flex !important;
   align-items: center !important;
   justify-content: center !important;
   cursor: pointer !important;
+  user-select: none !important;
+  box-sizing: border-box !important;
 }
 
-html[data-theme="light"] body[data-lg-admin="true"] [data-slot="dialog-content"].kani-modal-shell .kani-modal-body .v2-recurring-segmented > button.v2-recurring-pill.is-active,
-html[data-theme="light"] body[data-lg-admin="true"] [data-slot="dialog-content"].kani-modal-shell .kani-modal-body .v2-recurring-segmented > button.v2-recurring-pill[aria-pressed="true"] {
-  background: rgba(200, 169, 107, 0.28) !important;
+html[data-theme="light"] body[data-lg-admin="true"] [data-slot="dialog-content"].kani-modal-shell .kani-modal-body .v2-recurring-segmented > .v2-recurring-pill.is-active,
+html[data-theme="light"] body[data-lg-admin="true"] [data-slot="dialog-content"].kani-modal-shell .kani-modal-body .v2-recurring-segmented > .v2-recurring-pill[aria-pressed="true"] {
+  background: linear-gradient(154deg, rgba(232, 210, 158, 0.95), rgba(204, 173, 108, 0.88)) !important;
   border: 1.5px solid #b89248 !important;
   color: #1c1917 !important;
   font-weight: 700 !important;
+  box-shadow: 0 2px 6px rgba(184, 146, 72, 0.22) !important;
 }
 
-html[data-theme="dark"] body[data-lg-admin="true"] [data-slot="dialog-content"].kani-modal-shell .kani-modal-body .v2-recurring-segmented > button.v2-recurring-pill.is-active,
-html[data-theme="dark"] body[data-lg-admin="true"] [data-slot="dialog-content"].kani-modal-shell .kani-modal-body .v2-recurring-segmented > button.v2-recurring-pill[aria-pressed="true"] {
-  background: rgba(200, 169, 107, 0.26) !important;
+html[data-theme="dark"] body[data-lg-admin="true"] [data-slot="dialog-content"].kani-modal-shell .kani-modal-body .v2-recurring-segmented > .v2-recurring-pill.is-active,
+html[data-theme="dark"] body[data-lg-admin="true"] [data-slot="dialog-content"].kani-modal-shell .kani-modal-body .v2-recurring-segmented > .v2-recurring-pill[aria-pressed="true"] {
+  background: linear-gradient(154deg, rgba(215, 185, 122, 0.38), rgba(184, 146, 72, 0.28)) !important;
   border: 1.5px solid #d7b97a !important;
   color: #fafaf9 !important;
   font-weight: 700 !important;
+  box-shadow: none !important;
 }
 
 html[data-theme] body[data-lg-admin="true"] [data-slot="dialog-content"].kani-modal-shell .kani-modal-body .v2-recurring-summary {

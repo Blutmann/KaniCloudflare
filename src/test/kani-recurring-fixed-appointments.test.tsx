@@ -161,17 +161,18 @@ describe("Turno fijo (se repite) — UI & Pontiun", () => {
     fireEvent.click(toggle);
 
     const freqGroup = screen.getByRole("group", { name: "Frecuencia" });
-    const freqButtons = Array.from(freqGroup.querySelectorAll("button")).map((b) => b.textContent);
+    const freqButtons = Array.from(freqGroup.querySelectorAll('[role="button"]')).map((b) => b.textContent);
     expect(freqButtons).toEqual(["Semanal", "Cada 2 semanas"]);
 
     const durationGroup = screen.getByRole("group", { name: "Duración" });
-    const durationButtons = Array.from(durationGroup.querySelectorAll("button")).map((b) => b.textContent);
+    const durationButtons = Array.from(durationGroup.querySelectorAll('[role="button"]')).map((b) => b.textContent);
     expect(durationButtons).toEqual(["Por 60 días", "Hasta fecha"]);
     expect(screen.getByRole("button", { name: "Por 60 días" }).getAttribute("aria-pressed")).toBe("true");
 
-    expect(screen.getByTestId("recurring-series-summary").textContent).toContain("26/01/2027");
+    expect(screen.getByTestId("recurring-series-summary").textContent).toContain("26/01/2027 · 9 turnos");
 
     fireEvent.click(screen.getByRole("button", { name: "Cada 2 semanas" }));
+    expect(screen.getByTestId("recurring-series-summary").textContent).toContain("26/01/2027 · 5 turnos");
     fireEvent.change(screen.getByLabelText(/Nombre del cliente/i), { target: { value: "Lucas Gómez" } });
     fireEvent.change(screen.getByLabelText(/Celular/i), { target: { value: "1155551234" } });
 

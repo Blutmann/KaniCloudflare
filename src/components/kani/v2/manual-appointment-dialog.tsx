@@ -349,7 +349,18 @@ export function ManualAppointmentDialog({
         : `Todos los ${weekdayNames[dayIdx] || "días"}`;
     const endMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(resolvedRecurringEndDate);
     const endText = endMatch ? `${endMatch[3]}/${endMatch[2]}/${endMatch[1]}` : resolvedRecurringEndDate;
-    return `${freqText} ${startTime} hs · Hasta ${endText}`;
+    let occurrencesSuffix = "";
+    if (m && endMatch) {
+      const startUtc = Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+      const endUtc = Date.UTC(Number(endMatch[1]), Number(endMatch[2]) - 1, Number(endMatch[3]));
+      const diffDays = Math.round((endUtc - startUtc) / 86_400_000);
+      if (diffDays >= 0) {
+        const stepDays = recurringFrequency === "BIWEEKLY" ? 14 : 7;
+        const count = Math.floor(diffDays / stepDays) + 1;
+        occurrencesSuffix = ` · ${count} ${count === 1 ? "turno" : "turnos"}`;
+      }
+    }
+    return `${freqText} ${startTime} hs · Hasta ${endText}${occurrencesSuffix}`;
   }, [isRecurring, date, startTime, recurringFrequency, resolvedRecurringEndDate]);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -885,53 +896,95 @@ export function ManualAppointmentDialog({
                     <div className="v2-recurring-group">
                       <span className="v2-recurring-group-label">Frecuencia</span>
                       <div className="v2-recurring-segmented" role="group" aria-label="Frecuencia">
-                        <button
-                          type="button"
+                        <div
+                          role="button"
+                          tabIndex={isBusy ? -1 : 0}
+                          aria-disabled={isBusy}
                           aria-pressed={recurringFrequency === "WEEKLY"}
                           className={`v2-recurring-pill${recurringFrequency === "WEEKLY" ? " is-active" : ""}`}
-                          disabled={isBusy}
-                          onClick={() => setRecurringFrequency("WEEKLY")}
+                          onClick={() => {
+                            if (!isBusy) setRecurringFrequency("WEEKLY");
+                          }}
+                          onKeyDown={(e) => {
+                            if (isBusy) return;
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              setRecurringFrequency("WEEKLY");
+                            }
+                          }}
                         >
                           Semanal
-                        </button>
-                        <button
-                          type="button"
+                        </div>
+                        <div
+                          role="button"
+                          tabIndex={isBusy ? -1 : 0}
+                          aria-disabled={isBusy}
                           aria-pressed={recurringFrequency === "BIWEEKLY"}
                           className={`v2-recurring-pill${recurringFrequency === "BIWEEKLY" ? " is-active" : ""}`}
-                          disabled={isBusy}
-                          onClick={() => setRecurringFrequency("BIWEEKLY")}
+                          onClick={() => {
+                            if (!isBusy) setRecurringFrequency("BIWEEKLY");
+                          }}
+                          onKeyDown={(e) => {
+                            if (isBusy) return;
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              setRecurringFrequency("BIWEEKLY");
+                            }
+                          }}
                         >
                           Cada 2 semanas
-                        </button>
+                        </div>
                       </div>
                     </div>
 
                     <div className="v2-recurring-group">
                       <span className="v2-recurring-group-label">Duración</span>
                       <div className="v2-recurring-segmented" role="group" aria-label="Duración">
-                        <button
-                          type="button"
+                        <div
+                          role="button"
+                          tabIndex={isBusy ? -1 : 0}
+                          aria-disabled={isBusy}
                           aria-pressed={recurringDurationMode === "60_DAYS"}
                           className={`v2-recurring-pill${recurringDurationMode === "60_DAYS" ? " is-active" : ""}`}
-                          disabled={isBusy}
-                          onClick={() => setRecurringDurationMode("60_DAYS")}
+                          onClick={() => {
+                            if (!isBusy) setRecurringDurationMode("60_DAYS");
+                          }}
+                          onKeyDown={(e) => {
+                            if (isBusy) return;
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              setRecurringDurationMode("60_DAYS");
+                            }
+                          }}
                         >
                           Por 60 días
-                        </button>
-                        <button
-                          type="button"
+                        </div>
+                        <div
+                          role="button"
+                          tabIndex={isBusy ? -1 : 0}
+                          aria-disabled={isBusy}
                           aria-pressed={recurringDurationMode === "UNTIL_DATE"}
                           className={`v2-recurring-pill${recurringDurationMode === "UNTIL_DATE" ? " is-active" : ""}`}
-                          disabled={isBusy}
                           onClick={() => {
+                            if (isBusy) return;
                             setRecurringDurationMode("UNTIL_DATE");
                             if (!recurringEndDate || recurringEndDate < date) {
                               setRecurringEndDate(addCalendarDays(date, 60));
                             }
                           }}
+                          onKeyDown={(e) => {
+                            if (isBusy) return;
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              setRecurringDurationMode("UNTIL_DATE");
+                              if (!recurringEndDate || recurringEndDate < date) {
+                                setRecurringEndDate(addCalendarDays(date, 60));
+                              }
+                            }
+                          }}
                         >
                           Hasta fecha
-                        </button>
+                        </div>
                       </div>
                     </div>
 
