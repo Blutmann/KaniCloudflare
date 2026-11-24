@@ -254,7 +254,7 @@ describe('Liquid Glass V12.40 — Complete Scenarios A–G Verification', () => 
     render(<AdminActivityPopover role="ADMIN" userId={users.admin.id} isLiquid={true} />);
 
     fireEvent.click(await screen.findByRole('button', { name: /2 notificaciones sin leer/i }));
-    await screen.findByText(/Carlos reservó un turno con Lautaro/i);
+    await screen.findByText(/Carlos reservó un turno el 18\/11 a las 15:00 hs./i);
 
     fireEvent.click(screen.getByRole('button', { name: 'Eliminar notificaciones' }));
     const dialog = await screen.findByRole('dialog', { name: 'Eliminar notificaciones' });
@@ -270,7 +270,7 @@ describe('Liquid Glass V12.40 — Complete Scenarios A–G Verification', () => 
     await waitFor(() => {
       expect(screen.queryByRole('dialog', { name: 'Eliminar notificaciones' })).toBeNull();
     });
-    expect(screen.getByText(/Carlos reservó un turno con Lautaro/i)).toBeTruthy();
+    expect(screen.getByText(/Carlos reservó un turno el 18\/11 a las 15:00 hs./i)).toBeTruthy();
 
     const css = fs.readFileSync(
       path.resolve(process.cwd(), 'src/components/kani/experimental/liquid-glass-notifications.css'),
@@ -286,7 +286,7 @@ describe('Liquid Glass V12.40 — Complete Scenarios A–G Verification', () => 
     const adminDeviceA = render(<AdminActivityPopover key="admin-dev-a" role="ADMIN" userId={users.admin.id} isLiquid={true} />);
 
     fireEvent.click(await screen.findByRole('button', { name: /2 notificaciones sin leer/i }));
-    await screen.findByText(/Carlos reservó un turno con Lautaro/i);
+    await screen.findByText(/Carlos reservó un turno el 18\/11 a las 15:00 hs./i);
 
     // Admin marks notif-lautaro-1 as read and deletes notif-gonzalo-2 individually
     fireEvent.click(screen.getAllByRole('button', { name: 'Marcar como leída' })[1]);
@@ -304,7 +304,7 @@ describe('Liquid Glass V12.40 — Complete Scenarios A–G Verification', () => 
     window.sessionStorage.clear();
     const adminDeviceB = render(<AdminActivityPopover key="admin-dev-b" role="ADMIN" userId={users.admin.id} isLiquid={true} />);
     fireEvent.click(await screen.findByRole('button', { name: /^Notificaciones$/i }));
-    expect(await screen.findByText(/Carlos reservó un turno con Lautaro/i)).toBeTruthy();
+    expect(await screen.findByText(/Carlos reservó un turno el 18\/11 a las 15:00 hs./i)).toBeTruthy();
     expect(screen.queryByText(/Kani Admin bloqueó el horario/i)).toBeNull();
     expect(screen.getByText('Todas leídas')).toBeTruthy();
     adminDeviceB.unmount();
@@ -314,7 +314,7 @@ describe('Liquid Glass V12.40 — Complete Scenarios A–G Verification', () => 
     simDb.setActive(users.lautaro);
     render(<AdminActivityPopover key="lautaro-dev" role="BARBER" userId={users.lautaro.id} isLiquid={true} />);
     fireEvent.click(await screen.findByRole('button', { name: /1 notificaciones sin leer/i }));
-    expect(await screen.findByText(/Carlos reservó un turno con Lautaro/i)).toBeTruthy();
+    expect(await screen.findByText(/Carlos reservó un turno el 18\/11 a las 15:00 hs./i)).toBeTruthy();
     expect(screen.getByText('1 sin leer')).toBeTruthy();
   });
 
@@ -323,7 +323,7 @@ describe('Liquid Glass V12.40 — Complete Scenarios A–G Verification', () => 
     const adminView = render(<AdminActivityPopover key="admin-bulk" role="ADMIN" userId={users.admin.id} isLiquid={true} />);
 
     fireEvent.click(await screen.findByRole('button', { name: /2 notificaciones sin leer/i }));
-    await screen.findByText(/Carlos reservó un turno con Lautaro/i);
+    await screen.findByText(/Carlos reservó un turno el 18\/11 a las 15:00 hs./i);
 
     // Admin opens confirmation dialog at cutoff = 17:00:00Z
     fireEvent.click(screen.getByRole('button', { name: 'Eliminar notificaciones' }));
@@ -350,10 +350,12 @@ describe('Liquid Glass V12.40 — Complete Scenarios A–G Verification', () => 
 
     // The 2 old notifications are gone, AND the race arrival generated after cutoff appears cleanly!
     await waitFor(() => {
-      expect(screen.queryByText(/Carlos reservó un turno con Lautaro/i)).toBeNull();
+      expect(screen.queryByText(/Carlos reservó un turno el 18\/11 a las 15:00 hs\./i)).toBeNull();
       expect(screen.queryByText(/Kani Admin bloqueó el horario/i)).toBeNull();
-      expect(screen.getByText(/confirmó el turno de Martín Nuevo/i)).toBeTruthy();
+      expect(screen.getByText(/Martín Nuevo reservó un turno el 20\/11 a las 18:00 hs\./i)).toBeTruthy();
     });
+    const raceLink = screen.getByRole('link', { name: /Martín Nuevo reservó un turno el 20\/11 a las 18:00 hs\./i });
+    expect(raceLink.getAttribute('href')).toBe('/panel-turnos?appointmentId=apt-race&date=2026-11-20');
     expect(screen.getByText('1 sin leer')).toBeTruthy();
     adminView.unmount();
 
@@ -376,15 +378,15 @@ describe('Liquid Glass V12.40 — Complete Scenarios A–G Verification', () => 
 
     const adminReload = render(<AdminActivityPopover key="admin-after" role="ADMIN" userId={users.admin.id} isLiquid={true} />);
     fireEvent.click(await screen.findByRole('button', { name: /2 notificaciones sin leer/i }));
-    expect(await screen.findByText(/Lucas Post reservó un turno con Lautaro/i)).toBeTruthy();
-    expect(screen.queryByText(/Carlos reservó un turno con Lautaro/i)).toBeNull();
+    expect(await screen.findByText(/Lucas reservó un turno para Lucas Post el 21\/11 a las 12:00 hs\./i)).toBeTruthy();
+    expect(screen.queryByText(/Carlos reservó un turno el 18\/11 a las 15:00 hs\./i)).toBeNull();
     adminReload.unmount();
 
     // Lautaro retains his earlier notification (Carlos) plus his new ones untouched
     simDb.setActive(users.lautaro);
     render(<AdminActivityPopover key="lautaro-after" role="BARBER" userId={users.lautaro.id} isLiquid={true} />);
     fireEvent.click(await screen.findByRole('button', { name: /notificaciones sin leer/i }));
-    expect(await screen.findByText(/Carlos reservó un turno con Lautaro/i)).toBeTruthy();
+    expect(await screen.findByText(/Carlos reservó un turno el 18\/11 a las 15:00 hs./i)).toBeTruthy();
   });
 
   it('Escenario F — Lautaro cannot dismiss or mark as read notifications belonging to Admin/another barber even by tampering IDs', async () => {
