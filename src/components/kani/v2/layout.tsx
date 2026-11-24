@@ -146,6 +146,7 @@ export function V2Layout({
     };
   }, [liquidGlass, state.loading]);
   const [allowed, setAllowed] = useState(false);
+  const currentUserIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     const supabaseUrl =
@@ -155,6 +156,7 @@ export function V2Layout({
     const adminEnvironment = isV2AdminEnvironment(supabaseUrl, window.location.hostname);
     setAllowed(adminEnvironment);
     if (!adminEnvironment) {
+      currentUserIdRef.current = null;
       setState({
         loading: false,
         staff: null,
@@ -170,22 +172,41 @@ export function V2Layout({
         const staff = await getAuthenticatedStaff(
           options?.bypassCache ? { bypassCache: true } : undefined,
         );
-        if (!cancelled && revision === refreshRevision) setState({ loading: false, staff, error: "" });
+        if (!cancelled && revision === refreshRevision) {
+          currentUserIdRef.current = staff?.user?.id ?? null;
+          setState((prev) => {
+            if (
+              !prev.loading &&
+              prev.error === "" &&
+              prev.staff &&
+              staff &&
+              prev.staff.user.id === staff.user.id &&
+              prev.staff.profile.role === staff.profile.role &&
+              prev.staff.profile.barber_id === staff.profile.barber_id
+            ) {
+              return prev;
+            }
+            return { loading: false, staff, error: "" };
+          });
+        }
       } catch {
-        if (!cancelled && revision === refreshRevision)
+        if (!cancelled && revision === refreshRevision) {
+          currentUserIdRef.current = null;
           setState({
             loading: false,
             staff: null,
             error: "No pudimos verificar el acceso. Recargá la página.",
           });
+        }
       }
     }
     void refresh();
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "INITIAL_SESSION") return;
       if (event === "SIGNED_OUT") {
+        currentUserIdRef.current = null;
         clearStaffCache();
         if (!cancelled) setState({ loading: false, staff: null, error: "" });
         return;
@@ -194,6 +215,17 @@ export function V2Layout({
         void refresh({ bypassCache: true });
         return;
       }
+      const nextUserId = session?.user?.id ?? null;
+      const currentUserId = currentUserIdRef.current;
+      if (
+        (event === "SIGNED_IN" || event === "USER_UPDATED") &&
+        currentUserId !== null &&
+        nextUserId === currentUserId
+      ) {
+        void refresh({ bypassCache: true });
+        return;
+      }
+      currentUserIdRef.current = null;
       clearStaffCache();
       // Hide stale data immediately, including during account switching.
       if (!cancelled) setState({ loading: true, staff: null, error: "" });
