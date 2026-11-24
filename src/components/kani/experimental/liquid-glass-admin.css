@@ -5805,3 +5805,13 @@ html[data-theme] body[data-lg-admin="true"] .v2-channel-dialog .v2-channel-modal
 html[data-theme] body[data-lg-admin="true"] .v2-channel-dialog .v2-channel-modal-body .v2-notif-pill.v2-notif-pill-action {
   cursor: pointer !important;
 }
+
+html[data-theme] body[data-lg-admin="true"] .v2-quick-secondary-toggles .v2-quick-secondary-btn,
+html[data-theme] body[data-lg-admin="true"] .v2-quick-secondary-toggles .v2-quick-secondary-pill {
+  height: 40px !important;
+  min-height: 40px !important;
+  max-height: 40px !important;
+  box-sizing: border-box !important;
+  display: inline-flex !important;
+  align-items: center !important;
+}

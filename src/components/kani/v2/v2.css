@@ -1174,8 +1174,10 @@ html[data-theme="dark"] .v2-loading,
   gap: 6px;
 }
 .v2-quick-secondary-btn {
-  min-height: 34px;
-  height: 34px;
+  height: 40px !important;
+  min-height: 40px !important;
+  max-height: 40px !important;
+  box-sizing: border-box !important;
   padding: 0 10px;
   border-radius: 10px;
   font-size: 12px;
@@ -1187,8 +1189,12 @@ html[data-theme="dark"] .v2-loading,
   white-space: nowrap;
 }
 .v2-quick-secondary-pill {
-  min-height: 34px;
-  height: 34px;
+  height: 40px !important;
+  min-height: 40px !important;
+  max-height: 40px !important;
+  box-sizing: border-box !important;
+  display: inline-flex;
+  align-items: center;
   padding: 0 10px;
   font-size: 12px;
 }

@@ -140,8 +140,6 @@ export function V2Payments() {
     discountKind === "PERCENT" ? Math.round((price * discountValue) / 100) : discountValue;
   const total =
     serviceName === "Anulado" ? 0 : Math.max(0, (finalOverride ?? price - discount) - deposit);
-  const appointmentBalance = appointment ? Math.max(0,
-    (appointment.benefitFinalPriceArs ?? appointment.servicePrice ?? 0) - deposit) : null;
   const depositVerifiable = data.depositSupported && (!appointment?.depositPaid || appointment.depositAmountArs != null);
   const dynamicLabels = getPaymentPeriodDynamicLabels(today);
   const periodRange = calculatePaymentPeriodRange(period, today, customStartDate, customEndDate);
@@ -190,9 +188,6 @@ export function V2Payments() {
       return;
     }
     if (appointment && total <= 0 && serviceName !== "Anulado") { setMessage("Sin saldo pendiente."); return; }
-    if (appointmentBalance != null && total > appointmentBalance) {
-      setMessage("El cobro no puede superar el saldo pendiente del turno."); return;
-    }
     const rawServiceName = serviceName;
     const isOtherService = ["Otro", "Otros"].includes(serviceName);
     const trimmedCustomDetail =
@@ -754,7 +749,7 @@ export function V2Payments() {
                   disabled={
                     busy ||
                     (!price && serviceName !== "Anulado") ||
-                    (origin === "appointment" && (!appointment || !depositVerifiable || (total <= 0 && serviceName !== "Anulado") || (appointmentBalance != null && total > appointmentBalance)))
+                    (origin === "appointment" && (!appointment || !depositVerifiable || (total <= 0 && serviceName !== "Anulado")))
                   }
                 >
                   <CheckCircle2 size={18} />

@@ -374,4 +374,28 @@ describe('Benefit-aware appointment collection',()=>{
     p_final_amount_ars: 23000,
   });
  });
+
+ it('allows switching service on an appointment with deposit from Corte ($25.000) to Corte y barba ($30.000) and collects $25.000', async () => {
+  mocks.rpc.mockResolvedValue({ data: { id: 'p-upgrade-1' }, error: null });
+  render(<V2Payments />);
+
+  fireEvent.click(screen.getByRole('button', { name: 'Con turno' }));
+  fireEvent.change(screen.getByLabelText('Turno'), { target: { value: 'a1' } });
+
+  const serviceGroup = screen.getByRole('group', { name: 'Servicio' });
+  fireEvent.click(within(serviceGroup).getByRole('button', { name: /Corte y barba/i }));
+
+  expect((screen.getByLabelText('Importe') as HTMLInputElement).value).toBe('25.000');
+  const submitBtn = screen.getByRole('button', { name: 'Cobrar $25.000' });
+  expect(submitBtn).not.toBeDisabled();
+
+  fireEvent.click(submitBtn);
+  await waitFor(() => expect(mocks.rpc).toHaveBeenCalledTimes(1));
+  expect(mocks.rpc.mock.calls[0]?.[1]).toMatchObject({
+    p_appointment_id: 'a1',
+    p_service_name: 'Corte y barba',
+    p_service_price_ars: 30000,
+    p_final_amount_ars: null,
+  });
+ });
 });
