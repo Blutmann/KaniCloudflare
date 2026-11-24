@@ -16,8 +16,12 @@ import {
   updateManualAppointment,
   type RealAppointment,
 } from "@/lib/kani-appointments";
+import { addCalendarDays } from "@/lib/kani-mobile-appointments";
+import { createRecurringManualSeries } from "@/lib/kani-recurrences-memberships";
+import { sendRecurringSeriesCreatedNotificationsServerFn } from "@/lib/kani-recurring-notifications";
+import { supabase } from "@/integrations/supabase/client";
 import { useV2, type V2Client } from "./data";
-import { Search } from "lucide-react";
+import { Repeat, Search } from "lucide-react";
 import { formatServiceName, getEffectiveServicePrice } from "@/lib/kani-model";
 
 export type ManualAppointmentDialogProps = {
@@ -34,6 +38,19 @@ const TIME_15_OPTIONS = Array.from({ length: 96 }, (_, i) => {
   const m = (i * 15) % 60;
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 });
+
+function formatArsThousands(value: number | ""): string {
+  if (value === "" || !Number.isFinite(value)) return "";
+  return Math.max(0, Math.round(value))
+    .toString()
+    .replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+}
+
+function parseArsDigits(raw: string): number | "" {
+  const digits = raw.replace(/\D/g, "");
+  if (!digits) return "";
+  return Number(digits);
+}
 
 export function ManualAppointmentDialog({
   open,
@@ -79,6 +96,12 @@ export function ManualAppointmentDialog({
   const [showClientSuggestions, setShowClientSuggestions] = useState<boolean>(false);
   const [isBusy, setIsBusy] = useState<boolean>(false);
   const [formError, setFormError] = useState<string>("");
+
+  // Turno fijo (se repite) states - CREATE only
+  const [isRecurring, setIsRecurring] = useState<boolean>(false);
+  const [recurringFrequency, setRecurringFrequency] = useState<"WEEKLY" | "BIWEEKLY">("WEEKLY");
+  const [recurringDurationMode, setRecurringDurationMode] = useState<"60_DAYS" | "UNTIL_DATE">("60_DAYS");
+  const [recurringEndDate, setRecurringEndDate] = useState<string>(() => addCalendarDays(initialDate, 60));
 
   const isOtro = serviceId === "OTRO";
 
@@ -157,6 +180,10 @@ export function ManualAppointmentDialog({
       setClientSearch("");
       setShowClientSuggestions(false);
       setSelectedClientId(null);
+      setIsRecurring(false);
+      setRecurringFrequency("WEEKLY");
+      setRecurringDurationMode("60_DAYS");
+      setRecurringEndDate(addCalendarDays(initialDate, 60));
       return;
     }
 
@@ -286,6 +313,69 @@ export function ManualAppointmentDialog({
     return servicePrice || activeService?.price || 0;
   }, [isOtro, customPrice, servicePrice, activeService?.price]);
 
+  const resolvedRecurringEndDate = useMemo(() => {
+    if (!date) return "";
+    return recurringDurationMode === "60_DAYS" ? addCalendarDays(date, 60) : recurringEndDate;
+  }, [date, recurringDurationMode, recurringEndDate]);
+
+  const maxRecurringEndDate = useMemo(() => {
+    return date ? addCalendarDays(date, 90) : "";
+  }, [date]);
+
+  const recurringHorizonDays = useMemo(() => {
+    if (recurringDurationMode === "60_DAYS") return 60;
+    if (!date || !resolvedRecurringEndDate) return 60;
+    const diffMs =
+      new Date(`${resolvedRecurringEndDate}T12:00:00Z`).getTime() -
+      new Date(`${date}T12:00:00Z`).getTime();
+    const diffDays = Math.ceil(diffMs / 86400000);
+    return Math.min(90, Math.max(1, Number.isFinite(diffDays) ? diffDays : 60));
+  }, [date, recurringDurationMode, resolvedRecurringEndDate]);
+
+  const recurringSummaryText = useMemo(() => {
+    if (!isRecurring || !date || !startTime) return "";
+    const weekdayNames = [
+      "domingos",
+      "lunes",
+      "martes",
+      "miércoles",
+      "jueves",
+      "viernes",
+      "sábados",
+    ];
+    const weekdaySingular = [
+      "domingo",
+      "lunes",
+      "martes",
+      "miércoles",
+      "jueves",
+      "viernes",
+      "sábado",
+    ];
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
+    const dayIdx = m
+      ? new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 12, 0, 0)).getUTCDay()
+      : -1;
+    const freqText =
+      recurringFrequency === "BIWEEKLY"
+        ? `Cada 2 semanas (${weekdaySingular[dayIdx] || "día"})`
+        : `Todos los ${weekdayNames[dayIdx] || "días"}`;
+    const endMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(resolvedRecurringEndDate);
+    const endText = endMatch ? `${endMatch[3]}/${endMatch[2]}/${endMatch[1]}` : resolvedRecurringEndDate;
+    let occurrencesSuffix = "";
+    if (m && endMatch) {
+      const startUtc = Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+      const endUtc = Date.UTC(Number(endMatch[1]), Number(endMatch[2]) - 1, Number(endMatch[3]));
+      const diffDays = Math.round((endUtc - startUtc) / 86_400_000);
+      if (diffDays >= 0) {
+        const stepDays = recurringFrequency === "BIWEEKLY" ? 14 : 7;
+        const count = Math.floor(diffDays / stepDays) + 1;
+        occurrencesSuffix = ` · ${count} ${count === 1 ? "turno" : "turnos"}`;
+      }
+    }
+    return `${freqText} ${startTime} hs · Hasta ${endText}${occurrencesSuffix}`;
+  }, [isRecurring, date, startTime, recurringFrequency, resolvedRecurringEndDate]);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setFormError("");
@@ -301,6 +391,17 @@ export function ManualAppointmentDialog({
     if (!date) {
       setFormError("Tenés que indicar una fecha.");
       return;
+    }
+
+    if (mode === "CREATE" && isRecurring) {
+      if (!resolvedRecurringEndDate || resolvedRecurringEndDate < date) {
+        setFormError("La fecha límite de la serie debe ser igual o posterior a la fecha de inicio.");
+        return;
+      }
+      if (maxRecurringEndDate && resolvedRecurringEndDate > maxRecurringEndDate) {
+        setFormError("La duración máxima de una serie fija es de 90 días.");
+        return;
+      }
     }
 
     if (isOtro) {
@@ -358,6 +459,97 @@ export function ManualAppointmentDialog({
         });
         await data.refresh({ silent: true });
         onSuccess("Turno manual actualizado exitosamente.");
+        onClose();
+      } else if (isRecurring) {
+        if (!staff?.profile) {
+          throw new Error("AUTH_REQUIRED");
+        }
+        const seriesRes = await createRecurringManualSeries(
+          {
+            barberId,
+            serviceId: targetServiceUuid,
+            customServiceName: isOtro ? customServiceName.trim() : null,
+            servicePriceArs: resolvedPrice,
+            startDate: date,
+            startTime,
+            durationMinutes,
+            clientName: cleanName,
+            clientPhone: cleanPhone,
+            clientEmail: clientEmail.trim() || null,
+            clientId: selectedClientId,
+            frequencyType: recurringFrequency,
+            endType: "UNTIL_DATE",
+            endDate: resolvedRecurringEndDate,
+            pricingMode: "CURRENT_RATE",
+            horizonDays: recurringHorizonDays,
+          },
+          { profile: staff.profile, barbers: staff.barbers },
+          appointmentsList,
+        );
+
+        if (seriesRes.createdCount === 0) {
+          setFormError(
+            "No se pudo crear la serie porque todas las fechas coinciden con turnos ya ocupados.",
+          );
+          return;
+        }
+
+        // Enviar 1 única notificación agrupada (WhatsApp cliente + barbero + email) sin abortar si falla
+        try {
+          const selectedB = barbersList.find((b) => b.id === barberId);
+          const resolvedServiceName = isOtro
+            ? customServiceName.trim()
+            : activeService?.name || "Corte";
+          let token: string | undefined;
+          try {
+            const { data: sessionData } = await supabase.auth.getSession();
+            token = sessionData.session?.access_token;
+          } catch {
+            // fallback
+          }
+          await sendRecurringSeriesCreatedNotificationsServerFn({
+            data: {
+              ruleId: seriesRes.ruleId,
+              barberId,
+              barberName: selectedB?.name || "Kani Barber Studio",
+              clientName: cleanName,
+              clientPhone: cleanPhone,
+              clientEmail: clientEmail.trim() || null,
+              serviceName: resolvedServiceName,
+              frequencyType: recurringFrequency,
+              startDate: date,
+              startTime,
+              appointments: seriesRes.createdAppointments.map((a) => ({
+                id: a.id,
+                bookingDate: a.bookingDate,
+                startTime: a.startTime,
+                endTime: a.endTime,
+                serviceName: resolvedServiceName,
+                barberName: selectedB?.name || "Kani Barber Studio",
+                servicePriceArs: a.servicePriceArs,
+              })),
+              token,
+            },
+          });
+        } catch (notifyErr) {
+          console.warn(
+            "[KANI recurring notify] Error al despachar aviso agrupado de serie fija:",
+            notifyErr,
+          );
+        }
+
+        await data.refresh({ silent: true });
+        const msg =
+          seriesRes.omittedCount > 0
+            ? `Serie fija creada (${seriesRes.createdCount} ${
+                seriesRes.createdCount === 1 ? "turno" : "turnos"
+              }). Se omitieron ${seriesRes.omittedCount} ${
+                seriesRes.omittedCount === 1 ? "fecha" : "fechas"
+              } por estar ocupadas.`
+            : `Serie fija creada (${seriesRes.createdCount} ${
+                seriesRes.createdCount === 1 ? "turno" : "turnos"
+              }).`;
+        onSuccess(msg);
         onClose();
       } else {
         await createManualAppointment({
@@ -525,16 +717,15 @@ export function ManualAppointmentDialog({
                 <label className="v2-field">
                   Importe ($ ARS) *
                   <input
-                    type="number"
-                    min={0}
-                    step={1}
+                    type="text"
+                    inputMode="numeric"
                     required
-                    placeholder="Ej. 35000"
-                    value={customPrice}
+                    className="v2-manual-amount-input"
+                    style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}
+                    placeholder="Ej. 35.000"
+                    value={formatArsThousands(customPrice)}
                     disabled={isBusy}
-                    onChange={(e) =>
-                      setCustomPrice(e.target.value === "" ? "" : Number(e.target.value))
-                    }
+                    onChange={(e) => setCustomPrice(parseArsDigits(e.target.value))}
                   />
                 </label>
               </div>
@@ -566,14 +757,18 @@ export function ManualAppointmentDialog({
               <label className="v2-field">
                 Importe ($ ARS) *
                 <input
-                  type="number"
-                  min={0}
-                  step={1}
+                  type="text"
+                  inputMode="numeric"
                   required
-                  placeholder="Ej. 25000"
-                  value={servicePrice}
+                  className="v2-manual-amount-input"
+                  style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}
+                  placeholder="Ej. 25.000"
+                  value={formatArsThousands(servicePrice)}
                   disabled={isBusy}
-                  onChange={(e) => setServicePrice(Number(e.target.value))}
+                  onChange={(e) => {
+                    const parsed = parseArsDigits(e.target.value);
+                    setServicePrice(parsed === "" ? 0 : parsed);
+                  }}
                 />
               </label>
             </div>
@@ -659,6 +854,184 @@ export function ManualAppointmentDialog({
                 </label>
               </div>
             </div>
+
+            {mode === "CREATE" && (
+              <div
+                className={`v2-manual-recurring-box${isRecurring ? " is-expanded" : ""}`}
+                style={{ flex: "0 0 auto" }}
+              >
+                <div className="v2-recurring-header">
+                  <span
+                    className="v2-recurring-label-wrap"
+                    onClick={() => {
+                      if (isBusy) return;
+                      const next = !isRecurring;
+                      setIsRecurring(next);
+                      if (next && (!recurringEndDate || recurringEndDate < date)) {
+                        setRecurringEndDate(addCalendarDays(date, 60));
+                      }
+                    }}
+                  >
+                    <Repeat size={14} className="text-gold shrink-0" aria-hidden="true" />
+                    <span className="v2-recurring-label-title">Turno fijo (se repite)</span>
+                  </span>
+                  <span
+                    role="switch"
+                    tabIndex={isBusy ? -1 : 0}
+                    id="manual-recurring-switch"
+                    aria-checked={isRecurring}
+                    aria-disabled={isBusy}
+                    aria-label="Turno fijo (se repite)"
+                    className={`v2-recurring-switch${isRecurring ? " is-checked" : ""}`}
+                    onClick={() => {
+                      if (isBusy) return;
+                      const next = !isRecurring;
+                      setIsRecurring(next);
+                      if (next && (!recurringEndDate || recurringEndDate < date)) {
+                        setRecurringEndDate(addCalendarDays(date, 60));
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (isBusy) return;
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        const next = !isRecurring;
+                        setIsRecurring(next);
+                        if (next && (!recurringEndDate || recurringEndDate < date)) {
+                          setRecurringEndDate(addCalendarDays(date, 60));
+                        }
+                      }
+                    }}
+                  >
+                    <span className="v2-recurring-switch-thumb" aria-hidden="true" />
+                  </span>
+                </div>
+
+                {isRecurring && (
+                  <div className="v2-recurring-body">
+                    <div className="v2-recurring-group">
+                      <span className="v2-recurring-group-label">Frecuencia</span>
+                      <div className="v2-recurring-segmented" role="group" aria-label="Frecuencia">
+                        <div
+                          role="button"
+                          tabIndex={isBusy ? -1 : 0}
+                          aria-disabled={isBusy}
+                          aria-pressed={recurringFrequency === "WEEKLY"}
+                          className={`v2-recurring-pill${recurringFrequency === "WEEKLY" ? " is-active" : ""}`}
+                          onClick={() => {
+                            if (!isBusy) setRecurringFrequency("WEEKLY");
+                          }}
+                          onKeyDown={(e) => {
+                            if (isBusy) return;
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              setRecurringFrequency("WEEKLY");
+                            }
+                          }}
+                        >
+                          Semanal
+                        </div>
+                        <div
+                          role="button"
+                          tabIndex={isBusy ? -1 : 0}
+                          aria-disabled={isBusy}
+                          aria-pressed={recurringFrequency === "BIWEEKLY"}
+                          className={`v2-recurring-pill${recurringFrequency === "BIWEEKLY" ? " is-active" : ""}`}
+                          onClick={() => {
+                            if (!isBusy) setRecurringFrequency("BIWEEKLY");
+                          }}
+                          onKeyDown={(e) => {
+                            if (isBusy) return;
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              setRecurringFrequency("BIWEEKLY");
+                            }
+                          }}
+                        >
+                          Cada 2 semanas
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="v2-recurring-group">
+                      <span className="v2-recurring-group-label">Duración</span>
+                      <div className="v2-recurring-segmented" role="group" aria-label="Duración">
+                        <div
+                          role="button"
+                          tabIndex={isBusy ? -1 : 0}
+                          aria-disabled={isBusy}
+                          aria-pressed={recurringDurationMode === "60_DAYS"}
+                          className={`v2-recurring-pill${recurringDurationMode === "60_DAYS" ? " is-active" : ""}`}
+                          onClick={() => {
+                            if (!isBusy) setRecurringDurationMode("60_DAYS");
+                          }}
+                          onKeyDown={(e) => {
+                            if (isBusy) return;
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              setRecurringDurationMode("60_DAYS");
+                            }
+                          }}
+                        >
+                          Por 60 días
+                        </div>
+                        <div
+                          role="button"
+                          tabIndex={isBusy ? -1 : 0}
+                          aria-disabled={isBusy}
+                          aria-pressed={recurringDurationMode === "UNTIL_DATE"}
+                          className={`v2-recurring-pill${recurringDurationMode === "UNTIL_DATE" ? " is-active" : ""}`}
+                          onClick={() => {
+                            if (isBusy) return;
+                            setRecurringDurationMode("UNTIL_DATE");
+                            if (!recurringEndDate || recurringEndDate < date) {
+                              setRecurringEndDate(addCalendarDays(date, 60));
+                            }
+                          }}
+                          onKeyDown={(e) => {
+                            if (isBusy) return;
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              setRecurringDurationMode("UNTIL_DATE");
+                              if (!recurringEndDate || recurringEndDate < date) {
+                                setRecurringEndDate(addCalendarDays(date, 60));
+                              }
+                            }
+                          }}
+                        >
+                          Hasta fecha
+                        </div>
+                      </div>
+                    </div>
+
+                    {recurringDurationMode === "UNTIL_DATE" && (
+                      <div className="v2-manual-row-single">
+                        <label className="v2-field">
+                          Último turno
+                          <input
+                            type="date"
+                            value={recurringEndDate}
+                            min={date}
+                            max={maxRecurringEndDate}
+                            disabled={isBusy}
+                            onChange={(e) => setRecurringEndDate(e.target.value)}
+                          />
+                        </label>
+                      </div>
+                    )}
+
+                    {recurringSummaryText && (
+                      <p
+                        className="v2-recurring-summary"
+                        data-testid="recurring-series-summary"
+                      >
+                        {recurringSummaryText}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="v2-manual-dialog-actions kani-modal-footer">
@@ -676,10 +1049,14 @@ export function ManualAppointmentDialog({
               disabled={isBusy || Boolean(overlapConflict)}
             >
               {isBusy
-                ? "Guardando…"
+                ? isRecurring && mode === "CREATE"
+                  ? "Agendando…"
+                  : "Guardando…"
                 : mode === "CREATE"
-                ? "Crear turno"
-                : "Guardar cambios"}
+                  ? isRecurring
+                    ? "Agendar turno fijo"
+                    : "Crear turno"
+                  : "Guardar cambios"}
             </button>
           </div>
         </form>

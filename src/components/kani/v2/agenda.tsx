@@ -25,6 +25,7 @@ import {
   type NotificationChannelDispatch,
 } from "@/lib/kani-appointments";
 import { retryNotificationChannelServerFn } from "@/lib/kani-notifications.functions";
+import { modifyRecurringAppointmentSeries } from "@/lib/kani-recurrences-memberships";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { useV2 } from "./data";
@@ -414,6 +415,35 @@ export function V2Appointments({
     }
   }
 
+  async function cancelRecurringSeries() {
+    if (!action || busy || !staff?.profile) return;
+    setBusy(true);
+    setMessage("");
+    try {
+      const res = await modifyRecurringAppointmentSeries(
+        {
+          appointmentId: action.appointment.id,
+          scope: "THIS_AND_FOLLOWING",
+          action: "CANCEL",
+        },
+        { profile: staff.profile, barbers: staff.barbers },
+      );
+      setAction(null);
+      await data.refresh({ silent: true });
+      const msg = `Serie fija finalizada (${res.affectedCount} ${
+        res.affectedCount === 1 ? "turno cancelado" : "turnos cancelados"
+      }).`;
+      setMessage(msg);
+      showToast(msg, "success");
+    } catch (e) {
+      const errMsg = appointmentErrorMessage(e);
+      setMessage(errMsg);
+      showToast(errMsg, "error");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function handleResendNotificationModal(override?: {
     appointment: RealAppointment;
     channel: "WhatsApp" | "Email";
@@ -752,6 +782,14 @@ export function V2Appointments({
                           a.isManual && <span className="v2-manual-badge">Manual</span>
                         )}
                         <Status code={a.statusCode} />
+                        {a.recurringRuleId && (
+                          <span
+                            className="v2-recurring-badge"
+                            title="Turno fijo (serie recurrente)"
+                          >
+                            🔁 Fijo
+                          </span>
+                        )}
                         {isFinished && (
                           <span className="v2-past-badge">Horario finalizado</span>
                         )}
@@ -878,6 +916,14 @@ export function V2Appointments({
                   <h3 className="v2-app-name" title={a.name}>{a.name}</h3>
                   {a.isManual && <span className="v2-manual-badge">Manual</span>}
                   <Status code={a.statusCode} />
+                  {a.recurringRuleId && (
+                    <span
+                      className="v2-recurring-badge"
+                      title="Turno fijo (serie recurrente)"
+                    >
+                      🔁 Fijo
+                    </span>
+                  )}
                   {isFinished && (
                     <span className="v2-past-badge">Horario finalizado</span>
                   )}
@@ -1093,7 +1139,9 @@ export function V2Appointments({
             Cancelar turno
           </DialogTitle>
           <DialogDescription>
-            ¿Estás seguro que querés cancelar el turno?
+            {action?.appointment.recurringRuleId
+              ? "Este turno pertenece a una serie fija. Elegí si querés cancelar solo esta fecha o finalizar toda la serie:"
+              : "¿Estás seguro que querés cancelar el turno?"}
           </DialogDescription>
           {action && (
             <div className="v2-cancel-appointment-summary flex flex-col gap-1 rounded-lg border border-border/60 bg-muted/30 px-3 py-2.5 text-sm">
@@ -1106,14 +1154,35 @@ export function V2Appointments({
               <span className="text-muted-foreground">{action.appointment.time} hs.</span>
             </div>
           )}
-          <button
-            type="button"
-            className="v2-destructive action-reject"
-            disabled={busy}
-            onClick={() => void cancelAppointment()}
-          >
-            {busy ? "Guardando…" : "Cancelar turno"}
-          </button>
+          {action?.appointment.recurringRuleId ? (
+            <div className="flex flex-col gap-2">
+              <button
+                type="button"
+                className="v2-secondary"
+                disabled={busy}
+                onClick={() => void cancelAppointment()}
+              >
+                {busy ? "Guardando…" : "Cancelar solo esta fecha"}
+              </button>
+              <button
+                type="button"
+                className="v2-destructive action-reject"
+                disabled={busy}
+                onClick={() => void cancelRecurringSeries()}
+              >
+                {busy ? "Guardando…" : "Finalizar toda la serie fija"}
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              className="v2-destructive action-reject"
+              disabled={busy}
+              onClick={() => void cancelAppointment()}
+            >
+              {busy ? "Guardando…" : "Cancelar turno"}
+            </button>
+          )}
         </DialogContent>
       </Dialog>
       <Dialog
