@@ -477,13 +477,10 @@ export function clearAppointmentsReferenceCache() {
 }
 
 async function executeReadRealAppointments(options?: { bypassCache?: boolean; barberId?: string }): Promise<RealAppointment[]> {
-  const fullColumns = 'id, request_number, client_id, barber_id, service_id, custom_service_name, service_price_ars, booking_date, start_time, end_time, status, notes, created_at, updated_at, is_manual, origin, created_by_user_id, created_by_display_name, recurring_rule_id, deposit_required, deposit_paid, deposit_amount_ars, balance_paid, no_show_decision, no_show_refund_amount_ars, booking_client_name, benefit_code_id, benefit_code, benefit_type, benefit_original_price_ars, benefit_discount_amount_ars, benefit_final_price_ars, benefit_online_deposit_ars, benefit_in_person_balance_ars';
-  const baseColumns = 'id, request_number, client_id, barber_id, service_id, booking_date, start_time, end_time, status, notes, created_at, updated_at';
-
   let rows: AppointmentRow[] | null = null;
   let fullQuery = supabase
     .from('appointments')
-    .select(fullColumns)
+    .select('*')
     .order('booking_date', { ascending: true })
     .order('start_time', { ascending: true });
   if (options?.barberId) fullQuery = fullQuery.eq('barber_id', options.barberId);
@@ -495,7 +492,7 @@ async function executeReadRealAppointments(options?: { bypassCache?: boolean; ba
     console.warn('[KANI appointments] Columnas extendidas no detectadas en appointments, ejecutando consulta base:', fullError.message);
     let fallbackQuery = supabase
       .from('appointments')
-      .select(baseColumns)
+      .select('*')
       .order('booking_date', { ascending: true })
       .order('start_time', { ascending: true });
     if (options?.barberId) fallbackQuery = fallbackQuery.eq('barber_id', options.barberId);
@@ -512,12 +509,13 @@ async function executeReadRealAppointments(options?: { bypassCache?: boolean; ba
   const barberIds = [...new Set(appointments.map(row => row.barber_id))];
   const serviceIds = [...new Set(appointments.map(row => row.service_id).filter(Boolean))] as string[];
 
-  const [clientsResult, barbersResult, servicesResult, exceptionsResult, ordersResult, dispatchesResult] = await Promise.all([
+  const [clientsResult, barbersResult, servicesResult, exceptionsResult, ordersResult, attemptsResult, dispatchesResult] = await Promise.all([
     clientIds.length ? supabase.from('clients').select('id, name, email, phone').in('id', clientIds) : { data: [] },
     cachedBarbersMap ? { data: Array.from(cachedBarbersMap.data.values()) } : (barberIds.length ? supabase.from('barbers').select('id, name').in('id', barberIds) : { data: [] }),
     cachedServicesMap ? { data: Array.from(cachedServicesMap.data.values()) } : (serviceIds.length ? supabase.from('services').select('id, name, duration_minutes, price_ars').in('id', serviceIds) : { data: [] }),
     appointments.length ? (supabase as any).from('appointment_no_show_exceptions').select('appointment_id, decision, refund_amount_ars, reason').in('appointment_id', appointments.map(a => a.id)) : { data: [] },
     appointments.length ? (supabase as any).from('mercadopago_orders').select('appointment_id, paid_amount_ars').in('appointment_id', appointments.map(a => a.id)).eq('status', 'CONFIRMED') : { data: [] },
+    appointments.length ? (supabase as any).from('payment_attempts').select('appointment_id, amount_ars, state').in('appointment_id', appointments.map(a => a.id)).eq('state', 'APPROVED') : { data: [] },
     appointments.length ? (supabase as any).from('appointment_notification_dispatches').select('*').in('appointment_id', appointments.map(a => a.id)) : { data: [] },
   ]);
 
@@ -541,6 +539,7 @@ async function executeReadRealAppointments(options?: { bypassCache?: boolean; ba
   const serviceById = new Map((services ?? []).map(service => [service.id, service]));
   const exceptionByApt = new Map((((exceptionsResult as any)?.data as any[]) ?? []).map((e: any) => [e.appointment_id, e]));
   const orderByApt = new Map((((ordersResult as any)?.data as any[]) ?? []).map((o: any) => [o.appointment_id, o]));
+  const approvedAttemptByApt = new Map((((attemptsResult as any)?.data as any[]) ?? []).map((a: any) => [a.appointment_id, a]));
 
   const pickNewerDispatch = (
     existing: NotificationChannelDispatch | undefined,
@@ -646,8 +645,18 @@ async function executeReadRealAppointments(options?: { bypassCache?: boolean; ba
       createdByDisplayName: (row as any).created_by_display_name ?? null,
       recurringRuleId: (row as any).recurring_rule_id ?? null,
       depositRequired: (row as any).deposit_required ?? true,
-      depositPaid: Boolean(orderByApt.get(row.id) || (row as any).deposit_paid),
-      depositAmountArs: orderByApt.get(row.id)?.paid_amount_ars ?? (row as any).deposit_amount_ars ?? (orderByApt.has(row.id) || (row as any).deposit_paid ? 5000 : undefined),
+      depositPaid: Boolean(orderByApt.get(row.id) || approvedAttemptByApt.get(row.id) || (row as any).deposit_paid),
+      depositAmountArs: (() => {
+        const order = orderByApt.get(row.id);
+        const approvedAttempt = approvedAttemptByApt.get(row.id);
+        const hasPaid = Boolean(order || approvedAttempt || (row as any).deposit_paid);
+        const rawAmount =
+          (row as any).deposit_amount_ars ??
+          approvedAttempt?.amount_ars ??
+          order?.paid_amount_ars ??
+          (hasPaid ? 5000 : undefined);
+        return rawAmount != null ? Number(rawAmount) : undefined;
+      })(),
       balancePaid: (row as any).balance_paid ?? false,
       noShowDecision: (exc?.decision ?? (row as any).no_show_decision ?? null) as NoShowDecision | null,
       noShowRefundAmountArs: exc?.refund_amount_ars ?? (row as any).no_show_refund_amount_ars ?? 0,
