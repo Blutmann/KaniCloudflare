@@ -6961,3 +6961,19 @@ html[data-theme="dark"] .kani-v2-toast.is-error .kani-v2-toast-icon,
   margin: 0 !important;
   flex-shrink: 0 !important;
 }
+
+.v2-appointment--highlighted {
+  outline: 2px solid var(--accent, #c8a96b);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(200, 169, 107, 0.16);
+}
+
+.v2-notif-pill-action {
+  cursor: pointer;
+  transition: transform 120ms ease, filter 120ms ease;
+}
+
+.v2-notif-pill-action:hover:not(:disabled) {
+  filter: brightness(1.08);
+  transform: translateY(-0.5px);
+}

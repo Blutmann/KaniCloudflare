@@ -27,6 +27,8 @@ import '@/components/kani/experimental/liquid-glass-notifications.css';
 type NotificationHref =
   | '/panel-administracion'
   | '/panel-horarios'
+  | '/panel-turnos'
+  | `/panel-turnos?${string}`
   | '/panel-administracion-old'
   | '/panel-administracion-old/horarios';
 type AdminNotification = {
@@ -53,21 +55,44 @@ function toAdminNotification(event: AdminActivityEvent, useLiquidPaths: boolean)
   const date = new Date(`${event.event_date}T12:00:00`).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' });
   const time = event.event_time?.slice(0, 5) ?? '--:--';
   const client = event.client_name ?? 'cliente';
-  const actor = event.actor_display_name === 'KANI Admin' ? 'Kani Admin' : event.actor_display_name.replace('Personal KANI', 'Kani Barber Studio');
+  const rawActor = (event.actor_display_name || '').trim();
+  const actor = rawActor === 'KANI Admin' ? 'Kani Admin' : rawActor.replace('Personal KANI', 'Kani Barber Studio');
+  const isSystemOrClientActor =
+    !rawActor ||
+    rawActor === 'Personal KANI' ||
+    rawActor === 'KANI Admin' ||
+    rawActor === 'Kani Admin' ||
+    rawActor === 'Kani Barber Studio' ||
+    rawActor.toLowerCase() === client.toLowerCase();
   const isAvailability = event.event_type.startsWith('AVAILABILITY');
+  const isCancelOrReject = event.event_type.includes('CANCEL') || event.event_type.includes('REJECT');
+
   const message = event.event_type === 'AVAILABILITY_UNAVAILABLE'
     ? `${actor} bloqueó el horario del ${date} a las ${time}`
     : event.event_type === 'AVAILABILITY_AVAILABLE'
       ? `${actor} liberó el horario del ${date} a las ${time}`
-      : event.event_type === 'APPOINTMENT_REQUESTED'
-        ? `${client} reservó un turno con ${event.barber_name}`
-        : event.event_type === 'APPOINTMENT_CONFIRMED'
-          ? `${actor} confirmó el turno de ${client}`
-          : `${actor} rechazó el turno de ${client}`;
+      : isSystemOrClientActor
+        ? (isCancelOrReject
+            ? `${client} canceló su turno del ${date} a las ${time} hs.`
+            : `${client} reservó un turno el ${date} a las ${time} hs.`)
+        : (isCancelOrReject
+            ? `${actor} canceló el turno de ${client} del ${date} a las ${time} hs.`
+            : `${actor} reservó un turno para ${client} el ${date} a las ${time} hs.`);
 
-  const href: NotificationHref = useLiquidPaths
-    ? (isAvailability ? '/panel-horarios' : '/panel-administracion')
-    : (isAvailability ? '/panel-administracion-old/horarios' : '/panel-administracion-old');
+  let href: NotificationHref;
+  if (useLiquidPaths) {
+    if (isAvailability) {
+      href = '/panel-horarios';
+    } else {
+      const params = new URLSearchParams();
+      if (event.appointment_id) params.set('appointmentId', event.appointment_id);
+      if (event.event_date) params.set('date', event.event_date);
+      const qs = params.toString();
+      href = qs ? (`/panel-turnos?${qs}` as NotificationHref) : '/panel-turnos';
+    }
+  } else {
+    href = isAvailability ? '/panel-administracion-old/horarios' : '/panel-administracion-old';
+  }
 
   return {
     id: event.id,

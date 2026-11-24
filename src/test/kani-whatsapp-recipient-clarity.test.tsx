@@ -4,10 +4,12 @@ import type { RealAppointment } from "@/lib/kani-appointments";
 import { readRealAppointments } from "@/lib/kani-appointments";
 import { businessDateToday } from "@/lib/kani-mobile-appointments";
 
-const { mockSupabaseFrom, mockV2State, mockStaffState } = vi.hoisted(() => {
+const { mockSupabaseFrom, mockGetSession, mockRetryChannel, mockV2State, mockStaffState } = vi.hoisted(() => {
   const today = new Date().toISOString().slice(0, 10);
   return {
     mockSupabaseFrom: vi.fn(),
+    mockGetSession: vi.fn().mockResolvedValue({ data: { session: { access_token: "test-token" } } }),
+    mockRetryChannel: vi.fn(),
     mockStaffState: {
       profile: { role: "ADMIN", barber_id: null },
       barbers: [{ id: "barber-lautaro", name: "Lautaro" }],
@@ -29,7 +31,14 @@ const { mockSupabaseFrom, mockV2State, mockStaffState } = vi.hoisted(() => {
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     from: (...args: any[]) => mockSupabaseFrom(...args),
+    auth: {
+      getSession: (...args: any[]) => mockGetSession(...args),
+    },
   },
+}));
+
+vi.mock("@/lib/kani-notifications.functions", () => ({
+  retryNotificationChannelServerFn: (...args: any[]) => mockRetryChannel(...args),
 }));
 
 vi.mock("@/lib/kani-admin-context", () => ({
@@ -297,5 +306,97 @@ describe("WhatsApp dispatch recipient clarity (Client vs Barber) & error transla
     expect(dialog.textContent).toContain("Barbero (Lautaro):");
     expect(dialog.textContent).toContain("Barbero: Plantilla pendiente en Meta");
     expect(dialog.textContent).not.toContain("TEMPLATE_NOT_APPROVED");
+  });
+
+  it("allows clicking Barber Error pill in channelModal to confirm and resend specifically to BARBER", async () => {
+    window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+      matches: query.includes("max-width: 639px"),
+      media: query,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
+
+    mockRetryChannel.mockResolvedValue({
+      success: true,
+      channel: "WHATSAPP",
+      recipientRole: "BARBER",
+      status: "SENT",
+      providerMessageId: "wamid.barber.retry.1",
+      dispatch: {
+        id: "disp-barber-1",
+        appointmentId: "apt-mixed-1",
+        channel: "WHATSAPP",
+        recipientRole: "BARBER",
+        provider: "PONTIUN",
+        recipient: "+5491166669999",
+        status: "SENT",
+        providerMessageId: "wamid.barber.retry.1",
+        attempts: 2,
+        requestedAt: "2026-11-23T15:00:00Z",
+        createdAt: "2026-11-23T15:00:00Z",
+        updatedAt: "2026-11-23T16:00:00Z",
+      },
+    });
+
+    render(<V2Appointments />);
+
+    fireEvent.click(screen.getByRole("button", { name: "WhatsApp" }));
+    const errorPillBtn = screen.getByRole("button", { name: /Error ↻/i });
+    fireEvent.click(errorPillBtn);
+
+    const confirmRegion = screen.getByRole("region", { name: /Confirmar reenvío por destinatario/i });
+    expect(confirmRegion.textContent).toContain("¿Reenviar aviso de WhatsApp a Lautaro (+5491166669999)?");
+
+    fireEvent.click(screen.getByRole("button", { name: "Reenviar" }));
+
+    await vi.waitFor(() => {
+      expect(mockRetryChannel).toHaveBeenCalledWith({
+        data: {
+          appointmentId: "apt-mixed-1",
+          channel: "WHATSAPP",
+          recipientRole: "BARBER",
+          forceResend: true,
+          token: "test-token",
+        },
+      });
+    });
+
+    await vi.waitFor(() => {
+      expect(screen.getByRole("dialog").textContent).toContain("Notificación de WhatsApp al barbero");
+    });
+  });
+
+  it("renders Finalizado badge on finished appointments and highlights/scrolls to appointmentId from URL", () => {
+    const yesterday = "2026-11-22";
+    const pastApt = makeMixedAppointment();
+    pastApt.id = "apt-target-url";
+    pastApt.date = yesterday;
+    mockV2State.appointments = [pastApt];
+
+    window.history.replaceState({}, "", `/panel-turnos?appointmentId=apt-target-url&date=${yesterday}`);
+    const scrollIntoViewMock = vi.fn();
+    Element.prototype.scrollIntoView = scrollIntoViewMock;
+
+    window.matchMedia = vi.fn().mockImplementation(() => ({
+      matches: false,
+      media: "",
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
+
+    const { container } = render(<V2Appointments />);
+    const card = container.querySelector('[data-appointment-id="apt-target-url"]');
+    expect(card).toBeTruthy();
+    expect(card?.className).toContain("v2-appointment--highlighted");
+    expect(screen.getByText("Finalizado")).toBeTruthy();
+    expect(scrollIntoViewMock).toHaveBeenCalled();
+
+    window.history.replaceState({}, "", "/");
   });
 });

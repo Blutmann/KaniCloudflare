@@ -242,11 +242,30 @@ export function V2Appointments({
   const data = useV2();
   const staff = useAdminStaff();
   const today = businessDateToday();
-  const [date, setDate] = useState(today);
+  const initialQuery = (() => {
+    if (typeof window === "undefined") return { appointmentId: null as string | null, date: null as string | null };
+    try {
+      const sp = new URLSearchParams(window.location.search);
+      const qDate = sp.get("date");
+      const qAppt = sp.get("appointmentId");
+      return {
+        appointmentId: qAppt && qAppt.trim() ? qAppt.trim() : null,
+        date: qDate && /^\d{4}-\d{2}-\d{2}$/.test(qDate) ? qDate : null,
+      };
+    } catch {
+      return { appointmentId: null, date: null };
+    }
+  })();
+  const [date, setDate] = useState(() => initialQuery.date || today);
   const [status, setStatus] = useState("ALL");
-  const [period, setPeriod] = useState<V2AgendaPeriodPreset>(() => readInitialV2Period());
+  const [period, setPeriod] = useState<V2AgendaPeriodPreset>(() =>
+    initialQuery.date ? "DATE" : readInitialV2Period(),
+  );
   const [customEndDate, setCustomEndDate] = useState(() => addCalendarDays(today, 9));
   const [showFilters, setShowFilters] = useState(false);
+  const [highlightedAppointmentId, setHighlightedAppointmentId] = useState<string | null>(
+    () => initialQuery.appointmentId,
+  );
   const [action, setAction] = useState<{
     appointment: RealAppointment;
     status: "CANCELLED";
@@ -330,6 +349,19 @@ export function V2Appointments({
     type: "success" | "error" | "info";
     message: string;
   } | null>(null);
+  const [pendingRecipientResend, setPendingRecipientResend] = useState<{
+    role: "CLIENT" | "BARBER";
+    name: string;
+    phone: string;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!highlightedAppointmentId || typeof document === "undefined") return;
+    const el = document.querySelector(`[data-appointment-id="${highlightedAppointmentId}"]`) as HTMLElement | null;
+    if (el) {
+      el.scrollIntoView?.({ behavior: "smooth", block: "center" });
+    }
+  }, [highlightedAppointmentId, data.appointments.length, period, date]);
 
   const isInvalidRange = period === "CUSTOM" && date > customEndDate;
   const { start: startDate, end: endDate } = dateRangeForV2AgendaPeriod(
@@ -447,6 +479,7 @@ export function V2Appointments({
   async function handleResendNotificationModal(override?: {
     appointment: RealAppointment;
     channel: "WhatsApp" | "Email";
+    recipientRole?: "CLIENT" | "BARBER";
   }) {
     const target = override ?? selectedNotifDetail;
     if (!target || retryingNotif) return;
@@ -454,6 +487,7 @@ export function V2Appointments({
     if (!apt) return;
 
     const channel = target.channel === "WhatsApp" ? "WHATSAPP" : "EMAIL";
+    const recipientRole: "CLIENT" | "BARBER" = override?.recipientRole === "BARBER" ? "BARBER" : "CLIENT";
     setRetryingNotif(true);
     setRetryFeedback(null);
     try {
@@ -470,7 +504,7 @@ export function V2Appointments({
       }
 
       const res = await retryNotificationChannelServerFn({
-        data: { appointmentId: apt.id, channel, forceResend: true, token },
+        data: { appointmentId: apt.id, channel, recipientRole, forceResend: true, token },
       });
 
       const nextDispatch =
@@ -479,6 +513,7 @@ export function V2Appointments({
           id: "generated-id",
           appointmentId: apt.id,
           channel,
+          recipientRole,
           provider: channel === "WHATSAPP" ? "PONTIUN" : "RESEND",
           attempts: 1,
           requestedAt: new Date().toISOString(),
@@ -490,15 +525,25 @@ export function V2Appointments({
           updatedAt: new Date().toISOString(),
         } as any);
 
+      const dispatchPatch =
+        channel === "WHATSAPP"
+          ? recipientRole === "BARBER"
+            ? { whatsappBarber: nextDispatch }
+            : { whatsapp: nextDispatch, whatsappClient: nextDispatch }
+          : { email: nextDispatch };
+
       if (res.success) {
         const defaultOkMsg =
           channel === "EMAIL"
             ? `Correo aceptado por el proveedor Resend (ID: ${res.providerMessageId || "OK"}). En tránsito.`
-            : `Notificación de WhatsApp enviada al proveedor Pontiun (ID: ${res.providerMessageId || "OK"}).`;
+            : recipientRole === "BARBER"
+              ? `Notificación de WhatsApp al barbero enviada al proveedor Pontiun (ID: ${res.providerMessageId || "OK"}).`
+              : `Notificación de WhatsApp enviada al proveedor Pontiun (ID: ${res.providerMessageId || "OK"}).`;
         setRetryFeedback({
           type: "success",
           message: res.message || defaultOkMsg,
         });
+        setPendingRecipientResend(null);
         if (res.dispatch) {
           setSelectedNotifDetail((prev) => (prev ? { ...prev, dispatch: res.dispatch as any } : null));
         } else {
@@ -526,9 +571,7 @@ export function V2Appointments({
                   ...prev.appointment,
                   dispatches: {
                     ...prev.appointment.dispatches,
-                    ...(channel === "WHATSAPP"
-                      ? { whatsapp: nextDispatch, whatsappClient: nextDispatch }
-                      : { email: nextDispatch }),
+                    ...dispatchPatch,
                   },
                 },
               }
@@ -540,7 +583,14 @@ export function V2Appointments({
           type: "error",
           message: res.error || "No se pudo reenviar la notificación.",
         });
+        setPendingRecipientResend(null);
         if (res.dispatch) {
+          const errPatch =
+            channel === "WHATSAPP"
+              ? recipientRole === "BARBER"
+                ? { whatsappBarber: res.dispatch as any }
+                : { whatsapp: res.dispatch as any, whatsappClient: res.dispatch as any }
+              : { email: res.dispatch as any };
           setSelectedNotifDetail((prev) => (prev ? { ...prev, dispatch: res.dispatch as any } : null));
           setChannelModal((prev) =>
             prev && prev.appointment.id === apt.id
@@ -550,9 +600,7 @@ export function V2Appointments({
                     ...prev.appointment,
                     dispatches: {
                       ...prev.appointment.dispatches,
-                      ...(channel === "WHATSAPP"
-                        ? { whatsapp: res.dispatch as any, whatsappClient: res.dispatch as any }
-                        : { email: res.dispatch as any }),
+                      ...errPatch,
                     },
                   },
                 }
@@ -758,7 +806,10 @@ export function V2Appointments({
                     {capitalizeFirst(dateLabel(a.date))}
                   </h3>
                 )}
-                <article className={mobileArticleClasses}>
+                <article
+                  className={`${mobileArticleClasses}${highlightedAppointmentId === a.id ? " v2-appointment--highlighted" : ""}`}
+                  data-appointment-id={a.id}
+                >
                   <div className="v2-appointment-main v2-appointment-main--clean">
                     {/* Fila 1: 10:00 hs + duración a la izquierda | badges + chip Manual a la derecha */}
                     <div className="v2-app-row-1 v2-app-row-1--clean">
@@ -795,7 +846,7 @@ export function V2Appointments({
                           </span>
                         )}
                         {isFinished && (
-                          <span className="v2-past-badge">Horario finalizado</span>
+                          <span className="v2-past-badge">Finalizado</span>
                         )}
                       </div>
                     </div>
@@ -909,7 +960,8 @@ export function V2Appointments({
 
           return (
             <article
-              className={isFinished ? "v2-appointment v2-appointment--past" : "v2-appointment"}
+              className={`${isFinished ? "v2-appointment v2-appointment--past" : "v2-appointment"}${highlightedAppointmentId === a.id ? " v2-appointment--highlighted" : ""}`}
+              data-appointment-id={a.id}
               key={a.id}
             >
               <div className="v2-appointment-main">
@@ -929,7 +981,7 @@ export function V2Appointments({
                     </span>
                   )}
                   {isFinished && (
-                    <span className="v2-past-badge">Horario finalizado</span>
+                    <span className="v2-past-badge">Finalizado</span>
                   )}
                 </div>
 
@@ -1196,6 +1248,7 @@ export function V2Appointments({
             setChannelModal(null);
             setCopiedContact(false);
             setRetryFeedback(null);
+            setPendingRecipientResend(null);
           }
         }}
       >
@@ -1258,25 +1311,99 @@ export function V2Appointments({
                           <span className="v2-channel-status-label">
                             <strong>Cliente</strong> ({apt.name}):
                           </span>
-                          <span
-                            className={`v2-notif-pill v2-notif-${(clientDispatch?.status || "pending").toLowerCase()}`}
-                          >
-                            {formatCompactDispatchStatus(clientDispatch)}
-                          </span>
+                          {clientDispatch?.status === "FAILED" ? (
+                            <button
+                              type="button"
+                              className="v2-notif-pill v2-notif-failed v2-notif-pill-action"
+                              style={{ cursor: "pointer" }}
+                              disabled={retryingNotif}
+                              title={`Reenviar aviso de WhatsApp a ${apt.name}`}
+                              onClick={() =>
+                                setPendingRecipientResend({
+                                  role: "CLIENT",
+                                  name: apt.name,
+                                  phone: apt.phone || clientDispatch.recipient || "sin teléfono",
+                                })
+                              }
+                            >
+                              Error ↻
+                            </button>
+                          ) : (
+                            <span
+                              className={`v2-notif-pill v2-notif-${(clientDispatch?.status || "pending").toLowerCase()}`}
+                            >
+                              {formatCompactDispatchStatus(clientDispatch)}
+                            </span>
+                          )}
                         </div>
                         {barberDispatch && (
                           <div className="v2-channel-status-row" style={{ justifyContent: "space-between" }}>
                             <span className="v2-channel-status-label">
                               <strong>Barbero</strong> ({barberName}):
                             </span>
-                            <span
-                              className={`v2-notif-pill v2-notif-${(barberDispatch.status || "pending").toLowerCase()}`}
-                            >
-                              {formatCompactDispatchStatus(barberDispatch)}
-                            </span>
+                            {barberDispatch.status === "FAILED" ? (
+                              <button
+                                type="button"
+                                className="v2-notif-pill v2-notif-failed v2-notif-pill-action"
+                                style={{ cursor: "pointer" }}
+                                disabled={retryingNotif}
+                                title={`Reenviar aviso de WhatsApp a ${barberName}`}
+                                onClick={() =>
+                                  setPendingRecipientResend({
+                                    role: "BARBER",
+                                    name: barberName,
+                                    phone: barberDispatch.recipient || "sin teléfono",
+                                  })
+                                }
+                              >
+                                Error ↻
+                              </button>
+                            ) : (
+                              <span
+                                className={`v2-notif-pill v2-notif-${(barberDispatch.status || "pending").toLowerCase()}`}
+                              >
+                                {formatCompactDispatchStatus(barberDispatch)}
+                              </span>
+                            )}
                           </div>
                         )}
                       </div>
+
+                      {pendingRecipientResend && (
+                        <div
+                          className="v2-note"
+                          role="region"
+                          aria-label="Confirmar reenvío por destinatario"
+                          style={{ display: "flex", flexDirection: "column", gap: "8px" }}
+                        >
+                          <span>
+                            ¿Reenviar aviso de WhatsApp a <strong>{pendingRecipientResend.name}</strong> ({pendingRecipientResend.phone})?
+                          </span>
+                          <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
+                            <button
+                              type="button"
+                              className="v2-secondary"
+                              disabled={retryingNotif}
+                              onClick={() => setPendingRecipientResend(null)}
+                            >
+                              Cancelar
+                            </button>
+                            <button
+                              type="button"
+                              className="v2-primary"
+                              disabled={retryingNotif}
+                              onClick={() =>
+                                void handleResendNotificationModal({
+                                  ...channelModal,
+                                  recipientRole: pendingRecipientResend.role,
+                                })
+                              }
+                            >
+                              {retryingNotif ? "Enviando…" : "Reenviar"}
+                            </button>
+                          </div>
+                        </div>
+                      )}
 
                       {clientError && (
                         <p className="v2-channel-error-detail" role="alert">
