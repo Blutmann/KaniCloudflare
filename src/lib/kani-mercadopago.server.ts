@@ -90,21 +90,112 @@ export async function handleCreateBookingOrder(data: CreateBookingOrderInput): P
     if (savedError || !appointment || appointment.appointment_status !== "PENDING") {
       return { success: false, error: "APPOINTMENT_NOT_PAYABLE" };
     }
+
+    const servicePriceArs = Math.round(Number(appointment.service_price_ars));
+    if (!Number.isFinite(servicePriceArs) || servicePriceArs <= 0) {
+      return { success: false, error: "DEPOSIT_CONFIGURATION_MISMATCH" };
+    }
+
+    // Read persisted benefit columns from appointments if available
+    let savedBenefitRow: {
+      benefit_code_id?: string | null;
+      benefit_code?: string | null;
+      benefit_type?: string | null;
+      benefit_online_deposit_ars?: number | null;
+    } | null = null;
+    if (typeof db.from === "function") {
+      try {
+        const benefitQuery = db
+          .from("appointments")
+          .select("benefit_code_id, benefit_code, benefit_type, benefit_online_deposit_ars")
+          .eq("id", data.appointmentId);
+        if (typeof benefitQuery?.maybeSingle === "function") {
+          const { data: row } = await benefitQuery.maybeSingle();
+          savedBenefitRow = row ?? null;
+        }
+      } catch {
+        savedBenefitRow = null;
+      }
+    }
+
+    // Calculate authoritative deposit amount server-side:
+    // 1. Persisted benefit_online_deposit_ars on the appointment
+    // 2. Caller-provided benefitCode validated & locked server-side
+    // 3. Dynamic down payment for the appointment's barber
+    const dynamicDeposit = await getDynamicDownPayment(appointment.barber_name);
+    let depositAmount: number;
+
+    if (
+      savedBenefitRow &&
+      savedBenefitRow.benefit_online_deposit_ars !== null &&
+      savedBenefitRow.benefit_online_deposit_ars !== undefined &&
+      Number.isFinite(Number(savedBenefitRow.benefit_online_deposit_ars))
+    ) {
+      depositAmount = Math.round(Number(savedBenefitRow.benefit_online_deposit_ars));
+    } else if (data.benefitCode && data.benefitCode.trim()) {
+      const { prepareBenefitCodeForPaymentAttempt } = await import("./kani-benefit-codes-payment.server");
+      const { calculateBenefitAmounts, normalizeBenefitCode } = await import("./kani-benefit-codes");
+      const normalizedCode = normalizeBenefitCode(data.benefitCode);
+      const prepared = await prepareBenefitCodeForPaymentAttempt(db, normalizedCode, data.appointmentId, 600);
+      let codeRow: { id: string; code: string; type: "NO_DEPOSIT" | "FREE_SERVICE" | "PERCENT_10" | "PERCENT_50" } | null = null;
+      if (typeof db.from === "function") {
+        const codeQuery = prepared.codeId
+          ? db.from("benefit_codes").select("id, code, type").eq("id", prepared.codeId)
+          : db.from("benefit_codes").select("id, code, type").eq("code", prepared.code);
+        if (typeof codeQuery?.maybeSingle === "function") {
+          const { data: row } = await codeQuery.maybeSingle();
+          codeRow = row ?? null;
+        }
+      }
+      if (!codeRow) {
+        return { success: false, error: "BENEFIT_CODE_NOT_FOUND" };
+      }
+      const calc = calculateBenefitAmounts(servicePriceArs, dynamicDeposit, codeRow.type, codeRow.code);
+      depositAmount = Math.round(calc.onlineDepositArs);
+      if (typeof db.from === "function") {
+        try {
+          await db
+            .from("appointments")
+            .update({
+              benefit_code_id: codeRow.id,
+              benefit_code: codeRow.code,
+              benefit_type: codeRow.type,
+              benefit_original_price_ars: calc.originalPriceArs,
+              benefit_discount_amount_ars: calc.discountAmountArs,
+              benefit_final_price_ars: calc.finalPriceArs,
+              benefit_online_deposit_ars: calc.onlineDepositArs,
+              benefit_in_person_balance_ars: calc.inPersonBalanceArs,
+            })
+            .eq("id", data.appointmentId);
+        } catch {
+          /* best effort snapshot persistence */
+        }
+      }
+    } else {
+      depositAmount = Math.round(Number(dynamicDeposit));
+    }
+
+    if (!Number.isFinite(depositAmount) || depositAmount <= 0) {
+      return { success: false, error: "ZERO_DEPOSIT_NOT_PAYABLE_ONLINE" };
+    }
+    if (depositAmount > servicePriceArs) {
+      return { success: false, error: "DEPOSIT_CONFIGURATION_MISMATCH" };
+    }
+
     // Persist before calling MP: simultaneous requests/retries reuse the same operation.
     const { error: intentError } = await db.from("appointment_payment_orders").upsert({
-      appointment_id: data.appointmentId, expected_amount_ars: 5000,
+      appointment_id: data.appointmentId, expected_amount_ars: depositAmount,
     }, { onConflict: "appointment_id", ignoreDuplicates: true });
     if (intentError) return { success: false, error: "PAYMENT_REGISTRY_NOT_READY" };
     const { data: intent, error: intentReadError } = await db.from("appointment_payment_orders")
-      .select("idempotency_key, order_id").eq("appointment_id", data.appointmentId).single();
+      .select("idempotency_key, order_id, expected_amount_ars").eq("appointment_id", data.appointmentId).single();
     if (intentReadError || !intent) return { success: false, error: "PAYMENT_REGISTRY_NOT_READY" };
 
-    // Obtener el monto de la seña dinámica de forma no hardcodeada (fuente de verdad: RPC o default 5000)
-    const dynamicDeposit = await getDynamicDownPayment(appointment.barber_name);
-    if (dynamicDeposit !== 5000 || Number(appointment.service_price_ars) < 5000) {
+    const persistedAmount = Number(intent.expected_amount_ars ?? depositAmount);
+    if (!Number.isFinite(persistedAmount) || persistedAmount <= 0 || persistedAmount > servicePriceArs) {
       return { success: false, error: "DEPOSIT_CONFIGURATION_MISMATCH" };
     }
-    const depositAmount = 5000;
+    const effectiveDepositAmount = Math.round(persistedAmount);
 
     const { createMercadoPagoOrder } = await import("./kani-mercadopago");
     const orderResult = await createMercadoPagoOrder({
@@ -112,7 +203,7 @@ export async function handleCreateBookingOrder(data: CreateBookingOrderInput): P
         externalReference: data.appointmentId,
         title: `Seña - ${appointment.service_name} (${appointment.barber_name})`,
         description: `Seña para reserva en Kani Barber Studio - ${appointment.service_name} con ${appointment.barber_name}`,
-        amount: depositAmount,
+        amount: effectiveDepositAmount,
         currencyId: "ARS",
         payer: {
           email: appointment.client_email.trim(),
@@ -158,7 +249,7 @@ export async function handleCreateBookingOrder(data: CreateBookingOrderInput): P
       orderId: orderResult.orderId,
       initPoint: checkoutUrl,
       checkoutUrl,
-      depositAmount,
+      depositAmount: effectiveDepositAmount,
     };
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : (typeof error === 'object' && error !== null && 'message' in error && typeof error.message === 'string') ? error.message : String(error);
@@ -274,9 +365,21 @@ export async function handleGetAppointmentPaymentStatus(data: AppointmentPayment
 
     if (accessToken && (orderIdToVerify || paymentIdToVerify)) {
       const confirmation = await verifyAndConfirmAppointmentPayment(data);
-      if (confirmation.success) return {
-        success: true, isConfirmed: true, appointmentStatus: "CONFIRMED", appointment: appointmentDetails,
-      };
+      if (confirmation.success) {
+        const confirmedDeposit =
+          typeof rawDepositAmount === "number"
+            ? rawDepositAmount
+            : (confirmation.paidAmountArs ?? appointmentDetails.depositAmountArs);
+        return {
+          success: true,
+          isConfirmed: true,
+          appointmentStatus: "CONFIRMED",
+          appointment: {
+            ...appointmentDetails,
+            depositAmountArs: confirmedDeposit,
+          },
+        };
+      }
     }
 
     // Si aún no está confirmado, retornar PENDING con datos del turno
@@ -303,35 +406,46 @@ export async function verifyAndConfirmAppointmentPayment(data: AppointmentPaymen
   const db = await createPaymentSupabaseClient();
   const { data: intent, error } = await db.from("appointment_payment_orders")
     .select("order_id, expected_amount_ars").eq("appointment_id", data.appointmentId).single();
-  if (error || !intent?.order_id || intent.expected_amount_ars !== 5000) {
-    return { success: false, resultCode: "FAILED" };
+  const expectedAmountArs = Number(intent?.expected_amount_ars);
+  if (error || !intent?.order_id || !Number.isFinite(expectedAmountArs) || expectedAmountArs <= 0) {
+    return { success: false, resultCode: "FAILED" as const };
   }
   const { getMercadoPagoOrder, getMercadoPagoPayment, isOrderFullyApproved, confirmAppointmentPayment } =
     await import("./kani-mercadopago");
   const accessToken = getRuntimeEnv("MERCADOPAGO_ACCESS_TOKEN");
-  if (data.orderId && data.orderId !== intent.order_id) return { success: false, resultCode: "ID_MISMATCH" };
+  if (data.orderId && data.orderId !== intent.order_id) return { success: false, resultCode: "ID_MISMATCH" as const };
   let verifiedPaymentId: string | undefined;
   if (data.paymentId) {
     const { payment } = await getMercadoPagoPayment({ paymentId: data.paymentId, accessToken });
+    const paidCents = Math.round(Number(payment?.transaction_amount) * 100);
+    const expectedCents = Math.round(expectedAmountArs * 100);
     if (!payment || String(payment.id) !== data.paymentId || payment.external_reference !== data.appointmentId ||
         payment.status !== "approved" ||
-        payment.currency_id !== "ARS" || payment.transaction_amount !== 5000) {
-      return { success: false, resultCode: "PAYMENT_NOT_APPROVED" };
+        payment.currency_id !== "ARS" || !Number.isFinite(paidCents) || paidCents !== expectedCents) {
+      return { success: false, resultCode: "PAYMENT_NOT_APPROVED" as const };
     }
     verifiedPaymentId = String(payment.id);
   }
   const { order, success } = await getMercadoPagoOrder({ orderId: intent.order_id, accessToken });
-  if (!success) return { success: false, resultCode: "FAILED" };
+  if (!success) return { success: false, resultCode: "FAILED" as const };
   if (!order || String(order.id) !== intent.order_id || order.external_reference !== data.appointmentId ||
-      !isOrderFullyApproved(order, intent.expected_amount_ars)) {
-    return { success: false, resultCode: "ORDER_NOT_APPROVED" };
+      !isOrderFullyApproved(order, expectedAmountArs)) {
+    return { success: false, resultCode: "ORDER_NOT_APPROVED" as const };
   }
   // Legacy /v1/payments.order.id identifies a Merchant Order, not a /v1/orders ID.
   // The actual Checkout Pro association is the Orders transaction's reference_id.
   if (verifiedPaymentId && !order.transactions?.payments?.some(payment =>
     payment.reference_id === verifiedPaymentId && payment.status === "processed" && payment.status_detail === "accredited"
-  )) return { success: false, resultCode: "ID_MISMATCH" };
-  return confirmAppointmentPayment({ appointmentId: data.appointmentId, orderId: intent.order_id, totalAmount: 5000 });
+  )) return { success: false, resultCode: "ID_MISMATCH" as const };
+  const confirmed = await confirmAppointmentPayment({
+    appointmentId: data.appointmentId,
+    orderId: intent.order_id,
+    totalAmount: Math.round(expectedAmountArs),
+  });
+  return {
+    ...confirmed,
+    paidAmountArs: Math.round(expectedAmountArs),
+  };
 }
 
 

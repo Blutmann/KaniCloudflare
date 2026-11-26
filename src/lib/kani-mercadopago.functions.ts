@@ -9,6 +9,7 @@ export type CreateBookingOrderInput = {
   clientName: string;
   clientEmail: string;
   clientPhone: string;
+  benefitCode?: string;
 };
 
 export type CreateBookingOrderResult = {
@@ -42,6 +43,13 @@ export type AppointmentPaymentStatusResult = {
     clientEmail?: string;
     depositAmountArs?: number;
     servicePriceArs?: number;
+    benefitType?: 'NO_DEPOSIT' | 'FREE_SERVICE' | 'PERCENT_10' | 'PERCENT_50' | null;
+    benefitCode?: string | null;
+    originalPriceArs?: number | null;
+    discountAmountArs?: number | null;
+    finalPriceArs?: number | null;
+    onlineDepositArs?: number | null;
+    inPersonBalanceArs?: number | null;
   };
   error?: string;
   message?: string;

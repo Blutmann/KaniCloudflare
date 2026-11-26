@@ -20,27 +20,70 @@ export async function readOnlineDepositMovementsServer(
     if (!staff?.token || !validStaffScope(staff.profile)) throw new Error('STAFF_REQUIRED');
     const client = await createRequestSupabaseClient(staff.token);
 
-    // 1. Fetch APPROVED payment_attempts (Payway / Mercado Pago)
-    const { data: attempts, error: attError } = await client
-      .from("payment_attempts")
-      .select("id, appointment_id, provider, amount_ars, state, created_at, provider_status, provider_transaction_id")
-      .eq("state", "APPROVED")
-      .order("created_at", { ascending: false });
+    // 1. Fetch APPROVED payment_attempts (Payway) and CONFIRMED appointment_payment_orders (Mercado Pago)
+    const [attemptsRes, mpOrdersRes] = await Promise.all([
+      client
+        .from("payment_attempts")
+        .select("id, appointment_id, provider, amount_ars, state, created_at, provider_status, provider_transaction_id")
+        .eq("state", "APPROVED")
+        .order("created_at", { ascending: false }),
+      client
+        .from("appointment_payment_orders")
+        .select("appointment_id, order_id, expected_amount_ars, paid_amount_ars, reconciliation_status, created_at")
+        .eq("reconciliation_status", "CONFIRMED")
+        .order("created_at", { ascending: false }),
+    ]);
 
-    if (attError || !attempts || attempts.length === 0) {
-      if (attError) console.warn("[KANI online-deposits] Error reading payment_attempts:", attError);
-      return [];
+    const attempts = Array.isArray(attemptsRes?.data) ? attemptsRes.data : [];
+    const mpOrders = Array.isArray(mpOrdersRes?.data) ? mpOrdersRes.data : [];
+
+    if (attemptsRes?.error) {
+      console.warn("[KANI online-deposits] Error reading payment_attempts:", attemptsRes.error);
+    }
+    if (mpOrdersRes?.error) {
+      console.warn("[KANI online-deposits] Error reading appointment_payment_orders:", mpOrdersRes.error);
     }
 
-    // Deduplicate approved attempts by appointment_id (keep most recent approved attempt per appointment)
-    const uniqueAttemptsByAppointment = new Map<string, (typeof attempts)[number]>();
+    type NormalizedOnlineAttempt = {
+      appointment_id: string;
+      provider: string;
+      amount_ars: number | null;
+      created_at: string | null;
+    };
+
+    // Deduplicate by appointment_id (keep most recent approved attempt / confirmed MP order per appointment)
+    const uniqueAttemptsByAppointment = new Map<string, NormalizedOnlineAttempt>();
     for (const att of attempts) {
       if (!att.appointment_id) continue;
       if (!uniqueAttemptsByAppointment.has(att.appointment_id)) {
-        uniqueAttemptsByAppointment.set(att.appointment_id, att);
+        uniqueAttemptsByAppointment.set(att.appointment_id, {
+          appointment_id: att.appointment_id,
+          provider: att.provider || "PAYWAY",
+          amount_ars: att.amount_ars != null ? Number(att.amount_ars) : null,
+          created_at: att.created_at ?? null,
+        });
       }
     }
-    const deduplicatedAttempts = [...uniqueAttemptsByAppointment.values()];
+    for (const ord of mpOrders) {
+      if (!ord.appointment_id) continue;
+      if (!uniqueAttemptsByAppointment.has(ord.appointment_id)) {
+        uniqueAttemptsByAppointment.set(ord.appointment_id, {
+          appointment_id: ord.appointment_id,
+          provider: "MERCADO_PAGO",
+          amount_ars:
+            ord.paid_amount_ars != null
+              ? Number(ord.paid_amount_ars)
+              : ord.expected_amount_ars != null
+                ? Number(ord.expected_amount_ars)
+                : null,
+          created_at: ord.created_at ?? null,
+        });
+      }
+    }
+
+    const deduplicatedAttempts = [...uniqueAttemptsByAppointment.values()].sort((a, b) =>
+      String(b.created_at || "").localeCompare(String(a.created_at || "")),
+    );
     const appointmentIds = [...uniqueAttemptsByAppointment.keys()];
     if (appointmentIds.length === 0) return [];
 
@@ -86,7 +129,7 @@ export async function readOnlineDepositMovementsServer(
       });
     }
 
-    // 4. Map approved attempts into ServicePayment movements (at most 1 per appointment_id)
+    // 4. Map approved attempts / confirmed MP orders into ServicePayment movements (at most 1 per appointment_id)
     const movements: ServicePayment[] = deduplicatedAttempts
       .map((att) => {
         const apt = apptMap.get(att.appointment_id) as any;

@@ -519,10 +519,15 @@ export async function confirmAppointmentPayment({
     const { createPaymentSupabaseClient } = await import("./kani-payment-db.server");
     const supabase = await createPaymentSupabaseClient();
 
+    const validPaidAmount =
+      typeof totalAmount === "number" && Number.isFinite(totalAmount) && totalAmount > 0
+        ? Math.round(totalAmount)
+        : null;
+
     const { data, error } = await supabase.rpc("confirm_appointment_from_payment", {
       p_appointment_id: appointmentId,
       p_order_id: orderId,
-      p_paid_amount: totalAmount === 5000 ? totalAmount : null,
+      p_paid_amount: validPaidAmount,
     });
 
     if (error) {
@@ -569,9 +574,29 @@ export async function confirmAppointmentPayment({
       };
     }
 
-    // Confirmación exitosa: disparar notificaciones si se generó un claim token
+    // Confirmación exitosa: consumir código de beneficio si aplica y disparar notificaciones si se generó un claim token
     if (resultCode === "CONFIRMED") {
       console.log(`[Mercado Pago] Turno ${appointmentId} confirmado exitosamente tras pago.`);
+      if (typeof (supabase as any).from === "function") {
+        try {
+          const benefitLookup = (supabase as any)
+            .from("appointments")
+            .select("benefit_code_id, benefit_code")
+            .eq("id", appointmentId);
+          if (typeof benefitLookup?.maybeSingle === "function") {
+            const { data: apptBenefit } = await benefitLookup.maybeSingle();
+            if (apptBenefit?.benefit_code_id || apptBenefit?.benefit_code) {
+              const { consumeBenefitCodeForPaymentAttempt } = await import("./kani-benefit-codes-payment.server");
+              await consumeBenefitCodeForPaymentAttempt(supabase, appointmentId, appointmentId);
+            }
+          }
+        } catch (benefitErr) {
+          console.warn(
+            `[Mercado Pago] Advertencia al consumir código de beneficio para ${appointmentId}:`,
+            benefitErr,
+          );
+        }
+      }
       if (row.notification_claim_token) {
         try {
           const { dispatchAppointmentNotification } = await import("./kani-notifications.functions");

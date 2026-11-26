@@ -7,6 +7,7 @@ import { checkoutReturnIdentifiers } from '@/lib/kani-payment-return';
 import { Button } from '@/components/ui/button';
 import { BookingConfirmedScreen, type ConfirmedBookingData } from '@/components/kani/booking-confirmed-screen';
 import { LiquidGlassShell } from '@/components/kani/experimental/liquid-glass-shell';
+import { clearBookingDraft } from '@/lib/kani-booking-draft';
 import { KANI_STANDARD_DEPOSIT_ARS } from '@/lib/kani-constants';
 import '@/components/kani/experimental/reserva-v2.css';
 import '@/components/kani/experimental/reserva-v3.css';
@@ -53,6 +54,17 @@ function PagoExitoPage() {
         if (!isMounted) return;
 
         setResult(res);
+
+        if (res.isConfirmed) {
+          clearBookingDraft();
+          try {
+            window.sessionStorage.removeItem('kani:mercadopago:reservar-active-attempt');
+          } catch {
+            /* best effort */
+          }
+          setLoading(false);
+          return;
+        }
 
         // Si aún está en PENDING y llevamos menos de 3 reintentos, reintentar a los 2.5s (race condition resolution)
         if (!res.isConfirmed && res.appointmentStatus === 'PENDING' && retryCount < 3) {
@@ -129,19 +141,19 @@ function PagoExitoPage() {
       const confirmedData: ConfirmedBookingData = {
         appointmentId: appt.id,
         serviceName: appt.serviceName ?? 'Servicio Kani',
-        barber: appt.barberName ?? 'Lautaro',
+        barber: appt.barberName ?? 'Gonzalo',
         date: appt.date ?? '',
         time: (appt.time ?? '').slice(0, 5),
         clientName: appt.clientName ?? '',
         depositArs: typeof appt.depositAmountArs === 'number' ? appt.depositAmountArs : KANI_STANDARD_DEPOSIT_ARS,
         servicePriceArs: appt.servicePriceArs ?? 25000,
-        benefitType: (appt as any).benefitType ?? null,
-        benefitCode: (appt as any).benefitCode ?? null,
-        originalPriceArs: (appt as any).originalPriceArs ?? null,
-        discountAmountArs: (appt as any).discountAmountArs ?? null,
-        finalPriceArs: (appt as any).finalPriceArs ?? null,
-        onlineDepositArs: (appt as any).onlineDepositArs ?? null,
-        inPersonBalanceArs: (appt as any).inPersonBalanceArs ?? null,
+        benefitType: appt.benefitType ?? null,
+        benefitCode: appt.benefitCode ?? null,
+        originalPriceArs: appt.originalPriceArs ?? null,
+        discountAmountArs: appt.discountAmountArs ?? null,
+        finalPriceArs: appt.finalPriceArs ?? null,
+        onlineDepositArs: appt.onlineDepositArs ?? null,
+        inPersonBalanceArs: appt.inPersonBalanceArs ?? null,
       };
 
       return (
