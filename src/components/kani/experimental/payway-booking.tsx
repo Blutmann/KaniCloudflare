@@ -8,11 +8,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { preparePaywayCheckoutFn, payPaywayDepositFn, checkPaywayPaymentStatusFn } from '@/lib/kani-payway.functions';
+import { createBookingOrderFn, getAppointmentPaymentStatusFn } from '@/lib/kani-mercadopago.functions';
+import { createRealAppointment, appointmentErrorMessage } from '@/lib/kani-appointments';
+import { resolveBookingPaymentGateway } from '@/lib/kani-payment-routing';
 import { tokenizePaywayForm } from '@/lib/kani-payway.browser';
-import { PAYWAY_MESSAGES, type PaywayCheckout, type PaywayResult } from '@/lib/kani-payway';
+import { PAYWAY_MESSAGES, type PaywayCheckout, type PaywayDraft, type PaywayResult } from '@/lib/kani-payway';
 import { isAvailabilityConflictError, SlotUnavailableConflictError } from '@/lib/kani-booking-slots';
 import { readConfiguredServices, type ConfiguredService } from '@/lib/kani-availability';
-import { dateLabel, money, services } from '@/lib/kani-model';
+import { dateLabel, money, services, type Barber } from '@/lib/kani-model';
 import {
   detectCardNetwork,
   formatCardPan,
@@ -100,6 +103,53 @@ function clearActiveAttempt() {
   if (typeof window === 'undefined') return;
   try {
     window.sessionStorage.removeItem(ACTIVE_ATTEMPT_STORAGE_KEY);
+  } catch {}
+}
+
+const MP_ACTIVE_ATTEMPT_STORAGE_KEY = 'kani:mercadopago:reservar-active-attempt';
+
+type StoredMpActiveAttempt = {
+  appointmentId: string;
+  barber: string;
+  serviceName: string;
+  date: string;
+  time: string;
+  benefitCode?: string;
+  timestamp: number;
+};
+
+function readMpActiveAttempt(): StoredMpActiveAttempt | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.sessionStorage.getItem(MP_ACTIVE_ATTEMPT_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<StoredMpActiveAttempt>;
+    if (
+      parsed &&
+      typeof parsed.appointmentId === 'string' &&
+      typeof parsed.timestamp === 'number' &&
+      Date.now() - parsed.timestamp < 10 * 60 * 1000
+    ) {
+      return parsed as StoredMpActiveAttempt;
+    }
+    window.sessionStorage.removeItem(MP_ACTIVE_ATTEMPT_STORAGE_KEY);
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function persistMpActiveAttempt(data: StoredMpActiveAttempt) {
+  if (typeof window === 'undefined') return;
+  try {
+    window.sessionStorage.setItem(MP_ACTIVE_ATTEMPT_STORAGE_KEY, JSON.stringify(data));
+  } catch {}
+}
+
+function clearMpActiveAttempt() {
+  if (typeof window === 'undefined') return;
+  try {
+    window.sessionStorage.removeItem(MP_ACTIVE_ATTEMPT_STORAGE_KEY);
   } catch {}
 }
 
@@ -718,8 +768,15 @@ export function PaywayBooking({
     setModalDiscountError(null);
     setModalDiscountApplied(null);
 
-    // Flujo de confirmación directa sin seña (NO_DEPOSIT / FREE_SERVICE)
-    if (draft.benefitQuote?.skipOnlinePayment && draft.benefitCode) {
+    const gateway = resolveBookingPaymentGateway({
+      barberName: draft.barber,
+      benefitType: draft.benefitQuote?.type ?? null,
+      skipOnlinePayment: draft.benefitQuote?.skipOnlinePayment,
+      onlineDepositArs: draft.benefitQuote?.onlineDepositArs ?? null,
+    });
+
+    // Flujo de confirmación directa sin seña (NO_DEPOSIT / FREE_SERVICE / seña $0)
+    if (gateway === 'DIRECT_ZERO_DEPOSIT' && draft.benefitCode) {
       opening.current = true;
       setOpen(true);
       setPreparing(true);
@@ -819,6 +876,171 @@ export function PaywayBooking({
           });
           setSmartPhase('error');
         }
+      } finally {
+        opening.current = false;
+        setPreparing(false);
+      }
+      if (slotConflictToThrow) {
+        throw slotConflictToThrow;
+      }
+      return;
+    }
+
+    // Flujo Mercado Pago Checkout Pro (Gonzalo con seña > $0)
+    if (gateway === 'MERCADO_PAGO') {
+      opening.current = true;
+      setOpen(true);
+      setPreparing(true);
+      setSmartError(null);
+      setSmartPhase('processing');
+      setResult(null);
+      setCheckout(null);
+      let slotConflictToThrow: SlotUnavailableConflictError | null = null;
+      try {
+        const servicePrice = resolveServicePrice(draft.serviceName, configuredServices);
+        let appointmentId: string | undefined;
+
+        const activeMp = readMpActiveAttempt();
+        if (
+          activeMp &&
+          activeMp.barber === draft.barber &&
+          activeMp.date === draft.date &&
+          activeMp.time === draft.time &&
+          activeMp.serviceName === draft.serviceName &&
+          (activeMp.benefitCode ?? '') === (draft.benefitCode ?? '')
+        ) {
+          try {
+            const existingStatus = await getAppointmentPaymentStatusFn({
+              data: { appointmentId: activeMp.appointmentId },
+            });
+            if (existingStatus?.isConfirmed && existingStatus.appointment) {
+              const appt = existingStatus.appointment;
+              const confirmedBooking: ConfirmedPaywayBooking = {
+                appointmentId: appt.id,
+                attemptId: 'mercadopago',
+                serviceName: appt.serviceName ?? draft.serviceName,
+                barber: appt.barberName ?? draft.barber,
+                date: appt.date ?? draft.date,
+                time: (appt.time ?? draft.time).slice(0, 5),
+                clientName: appt.clientName ?? draft.name.trim(),
+                depositArs: typeof appt.depositAmountArs === 'number' ? appt.depositAmountArs : (draft.benefitQuote?.onlineDepositArs ?? 5000),
+                servicePriceArs: appt.servicePriceArs ?? servicePrice,
+                benefitType: appt.benefitType ?? draft.benefitQuote?.type ?? null,
+                benefitCode: appt.benefitCode ?? draft.benefitCode ?? null,
+                originalPriceArs: appt.originalPriceArs ?? draft.benefitQuote?.originalPriceArs ?? null,
+                discountAmountArs: appt.discountAmountArs ?? draft.benefitQuote?.discountAmountArs ?? null,
+                finalPriceArs: appt.finalPriceArs ?? draft.benefitQuote?.finalPriceArs ?? null,
+                onlineDepositArs: appt.onlineDepositArs ?? draft.benefitQuote?.onlineDepositArs ?? null,
+                inPersonBalanceArs: appt.inPersonBalanceArs ?? draft.benefitQuote?.inPersonBalanceArs ?? null,
+              };
+              clearMpActiveAttempt();
+              paidAppointmentsRef.current.add(confirmedBooking.appointmentId);
+              persistConfirmedBooking(confirmedBooking);
+              setSmartPhase('idle');
+              setSmartError(null);
+              setConfirmed(confirmedBooking);
+              notifyVerifiedConfirmationSound(confirmedBooking.appointmentId);
+              setOpen(false);
+              if (typeof window !== 'undefined' && typeof window.scrollTo === 'function') {
+                window.scrollTo({ top: 0, behavior: 'instant' });
+              }
+              return;
+            }
+            if (existingStatus?.appointmentStatus === 'CANCELLED') {
+              clearMpActiveAttempt();
+            } else {
+              appointmentId = activeMp.appointmentId;
+            }
+          } catch {
+            appointmentId = activeMp.appointmentId;
+          }
+        }
+
+        if (!appointmentId) {
+          try {
+            const created = await createRealAppointment({
+              barber: draft.barber as Barber,
+              serviceName: draft.serviceName,
+              date: draft.date,
+              time: draft.time,
+              name: draft.name.trim(),
+              phone: draft.phone,
+              email: draft.email.trim(),
+              notes: draft.notes,
+            });
+            appointmentId = created.appointment_id;
+            persistMpActiveAttempt({
+              appointmentId,
+              barber: draft.barber,
+              serviceName: draft.serviceName,
+              date: draft.date,
+              time: draft.time,
+              benefitCode: draft.benefitCode,
+              timestamp: Date.now(),
+            });
+          } catch (err) {
+            const msg = appointmentErrorMessage(err);
+            if (isAvailabilityConflictError(err) || isAvailabilityConflictError(msg)) {
+              setSmartPhase('idle');
+              setSmartError(null);
+              setOpen(false);
+              slotConflictToThrow = new SlotUnavailableConflictError(msg, {
+                phase: 'pre_payment',
+                slotDate: draft.date,
+                slotTime: draft.time,
+              });
+            } else {
+              throw err;
+            }
+          }
+        }
+
+        if (!slotConflictToThrow && appointmentId) {
+          const orderRes = await createBookingOrderFn({
+            data: {
+              appointmentId,
+              serviceName: draft.serviceName,
+              barberName: draft.barber,
+              servicePrice,
+              clientName: draft.name.trim(),
+              clientEmail: draft.email.trim(),
+              clientPhone: draft.phone,
+              ...(draft.benefitCode ? { benefitCode: draft.benefitCode } : {}),
+            },
+          });
+
+          const checkoutUrl = orderRes?.checkoutUrl || orderRes?.initPoint;
+          if (orderRes?.success && checkoutUrl) {
+            if (typeof window !== 'undefined') {
+              window.location.assign(checkoutUrl);
+            }
+            return;
+          }
+
+          const rawErr = orderRes?.error || 'ORDER_CREATION_FAILED';
+          const detail =
+            rawErr === 'BENEFIT_CODE_LOCKED_OR_INVALID' || rawErr === 'BENEFIT_CODE_NOT_FOUND'
+              ? 'No pudimos aplicar el código de beneficio. Revisalo o intentá nuevamente.'
+              : 'No pudimos iniciar el pago con Mercado Pago. Tus datos no se perdieron. Podés volver a intentarlo.';
+          setResult({ state: 'unavailable', message: detail });
+          setSmartError({
+            kind: 'prepare',
+            detail,
+            canRetry: true,
+          });
+          setSmartPhase('error');
+        }
+      } catch (err) {
+        const detail = isLikelyNetworkError(err)
+          ? 'No pudimos conectarnos con Mercado Pago para iniciar el pago. Verificá tu conexión e intentá nuevamente.'
+          : 'No pudimos iniciar el pago con Mercado Pago. Tus datos no se perdieron. Podés volver a intentarlo.';
+        setResult({ state: 'unavailable', message: detail });
+        setSmartError({
+          kind: 'prepare',
+          detail,
+          canRetry: true,
+        });
+        setSmartPhase('error');
       } finally {
         opening.current = false;
         setPreparing(false);
@@ -1322,6 +1544,7 @@ export function PaywayBooking({
   function startNewReservation() {
     clearConfirmedBookingView();
     clearActiveAttempt();
+    clearMpActiveAttempt();
     clearBookingDraft();
     resetFormState();
     draftRef.current = null;

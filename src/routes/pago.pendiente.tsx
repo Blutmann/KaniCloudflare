@@ -3,12 +3,19 @@ import { useEffect, useState } from 'react';
 import { Clock, Scissors, User, Calendar, MapPin, AlertCircle } from 'lucide-react';
 import { getAppointmentPaymentStatusFn, type AppointmentPaymentStatusResult } from '@/lib/kani-mercadopago.functions';
 import { pageHead } from '@/lib/kani-head';
+import { checkoutReturnIdentifiers } from '@/lib/kani-payment-return';
+import { clearBookingDraft } from '@/lib/kani-booking-draft';
 import { Button } from '@/components/ui/button';
+import { BookingConfirmedScreen, type ConfirmedBookingData } from '@/components/kani/booking-confirmed-screen';
 import { LiquidGlassShell } from '@/components/kani/experimental/liquid-glass-shell';
 import {
+  KANI_STANDARD_DEPOSIT_ARS,
   KANI_STUDIO_ADDRESS,
   formatAppointmentDateTime,
 } from '@/lib/kani-constants';
+import '@/components/kani/experimental/reserva-v2.css';
+import '@/components/kani/experimental/reserva-v3.css';
+import '@/components/kani/experimental/reserva-v4.css';
 
 export const Route = createFileRoute('/pago/pendiente')({
   head: () =>
@@ -21,8 +28,9 @@ export const Route = createFileRoute('/pago/pendiente')({
 });
 
 function PagoPendientePage() {
-  const searchParams = Route.useSearch() as Record<string, string | undefined>;
-  const appointmentId = searchParams.appointment_id || searchParams.external_reference;
+  const { appointmentId, orderId, paymentId } = checkoutReturnIdentifiers(
+    Route.useSearch() as Record<string, unknown>,
+  );
 
   const [loading, setLoading] = useState(true);
   const [result, setResult] = useState<AppointmentPaymentStatusResult | null>(null);
@@ -35,10 +43,22 @@ function PagoPendientePage() {
 
     let isMounted = true;
     void getAppointmentPaymentStatusFn({
-      data: { appointmentId },
+      data: {
+        appointmentId,
+        orderId: orderId?.trim() || undefined,
+        paymentId: paymentId?.trim() || undefined,
+      },
     })
       .then((res) => {
         if (isMounted) {
+          if (res.isConfirmed) {
+            clearBookingDraft();
+            try {
+              window.sessionStorage.removeItem('kani:mercadopago:reservar-active-attempt');
+            } catch {
+              /* best effort */
+            }
+          }
           setResult(res);
           setLoading(false);
         }
@@ -51,7 +71,34 @@ function PagoPendientePage() {
     return () => {
       isMounted = false;
     };
-  }, [appointmentId]);
+  }, [appointmentId, orderId, paymentId]);
+
+  if (!loading && result?.isConfirmed && result.appointment) {
+    const appt = result.appointment;
+    const confirmedData: ConfirmedBookingData = {
+      appointmentId: appt.id,
+      serviceName: appt.serviceName ?? 'Servicio Kani',
+      barber: appt.barberName ?? 'Gonzalo',
+      date: appt.date ?? '',
+      time: (appt.time ?? '').slice(0, 5),
+      clientName: appt.clientName ?? '',
+      depositArs: typeof appt.depositAmountArs === 'number' ? appt.depositAmountArs : KANI_STANDARD_DEPOSIT_ARS,
+      servicePriceArs: appt.servicePriceArs ?? 25000,
+      benefitType: appt.benefitType ?? null,
+      benefitCode: appt.benefitCode ?? null,
+      originalPriceArs: appt.originalPriceArs ?? null,
+      discountAmountArs: appt.discountAmountArs ?? null,
+      finalPriceArs: appt.finalPriceArs ?? null,
+      onlineDepositArs: appt.onlineDepositArs ?? null,
+      inPersonBalanceArs: appt.inPersonBalanceArs ?? null,
+    };
+
+    return (
+      <LiquidGlassShell section="booking">
+        <BookingConfirmedScreen confirmed={confirmedData} homeUrl="/reservar" />
+      </LiquidGlassShell>
+    );
+  }
 
   return (
     <LiquidGlassShell section="booking">
