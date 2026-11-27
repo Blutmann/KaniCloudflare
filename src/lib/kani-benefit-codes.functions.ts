@@ -1,5 +1,6 @@
 import { createServerFn } from '@tanstack/react-start';
 import type {
+  BenefitBatchCount,
   BenefitCodeType,
   BenefitDurationUnit,
   BenefitUsageMode,
@@ -43,6 +44,7 @@ export const adminCreateBenefitCodeFn = createServerFn({ method: 'POST' })
       internalNote?: string;
       code?: string;
       usageMode?: BenefitUsageMode;
+      maxUses?: number;
       validityType?: BenefitValidityType;
       startDate?: string;
       endDate?: string;
@@ -53,14 +55,56 @@ export const adminCreateBenefitCodeFn = createServerFn({ method: 'POST' })
     if (!['NO_DEPOSIT', 'FREE_SERVICE', 'PERCENT_10', 'PERCENT_50'].includes(input.type)) {
       throw new Error('INVALID_BENEFIT_TYPE');
     }
-    if (input.usageMode !== 'SINGLE_USE' && input.usageMode !== 'REUSABLE') {
-      throw new Error('INVALID_USAGE_MODE: Debe seleccionarse explícitamente la modalidad de uso (Un solo uso o Reutilizable).');
+    if (
+      input.usageMode !== 'SINGLE_USE' &&
+      input.usageMode !== 'LIMITED_USE' &&
+      input.usageMode !== 'REUSABLE'
+    ) {
+      throw new Error('INVALID_USAGE_MODE: Debe seleccionarse explícitamente la cantidad de usos (Único uso, 10 usos o Reutilizable).');
     }
     return input;
   })
   .handler(async ({ data }) => {
     const { adminCreateBenefitCode } = await import('./kani-benefit-codes.server');
     return adminCreateBenefitCode(data);
+  });
+
+export const adminCreateBenefitCodesBatchFn = createServerFn({ method: 'POST' })
+  .validator((d: unknown) => {
+    if (!d || typeof d !== 'object') throw new Error('INVALID_INPUT');
+    const input = d as {
+      type: BenefitCodeType;
+      usageMode: BenefitUsageMode;
+      batchCount: BenefitBatchCount;
+      maxUses?: number;
+      prefix?: string;
+      code?: string;
+      internalNote?: string;
+      validityType?: BenefitValidityType;
+      startDate?: string;
+      endDate?: string;
+      durationValue?: number;
+      durationUnit?: BenefitDurationUnit;
+      token?: string;
+    };
+    if (!['NO_DEPOSIT', 'FREE_SERVICE', 'PERCENT_10', 'PERCENT_50'].includes(input.type)) {
+      throw new Error('INVALID_BENEFIT_TYPE');
+    }
+    if (
+      input.usageMode !== 'SINGLE_USE' &&
+      input.usageMode !== 'LIMITED_USE' &&
+      input.usageMode !== 'REUSABLE'
+    ) {
+      throw new Error('INVALID_USAGE_MODE: Debe seleccionarse explícitamente la cantidad de usos (Único uso, 10 usos o Reutilizable).');
+    }
+    if (input.batchCount !== 1 && input.batchCount !== 5 && input.batchCount !== 10) {
+      throw new Error('INVALID_BATCH_COUNT: La cantidad debe ser 1, 5 o 10.');
+    }
+    return input;
+  })
+  .handler(async ({ data }) => {
+    const { adminCreateBenefitCodesBatch } = await import('./kani-benefit-codes.server');
+    return adminCreateBenefitCodesBatch(data);
   });
 
 export const adminUpdateBenefitCodeValidityFn = createServerFn({ method: 'POST' })

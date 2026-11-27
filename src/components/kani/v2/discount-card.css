@@ -163,6 +163,31 @@ html[data-theme="dark"] .kani-dcard[data-status="DISABLED"] {
   overflow-wrap: anywhere;
 }
 
+.kani-dcard-quota-bar {
+  margin-top: 6px;
+  width: 100%;
+  max-width: 180px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(148, 144, 138, 0.22);
+  overflow: hidden;
+}
+
+html[data-theme="dark"] .kani-dcard-quota-bar {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.kani-dcard-quota-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--gold, #c9a15d);
+  transition: width 240ms ease;
+}
+
+.kani-dcard-quota-fill.is-full {
+  background: #8e8a82;
+}
+
 .kani-dcard-top-actions {
   display: inline-flex;
   align-items: center;
