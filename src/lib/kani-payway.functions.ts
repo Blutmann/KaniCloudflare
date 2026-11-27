@@ -21,3 +21,17 @@ export const checkPaywayPaymentStatusFn = createServerFn({ method: 'POST' })
     const { runtimePaywayService } = await import('./kani-payway.server');
     return (await runtimePaywayService()).checkPaymentStatus(data);
   });
+
+export const releaseUnpaidBookingHoldFn = createServerFn({ method: 'POST' })
+  .validator((input: unknown): { appointmentId: string } => {
+    const raw = (input && typeof input === 'object' ? (input as Record<string, unknown>).appointmentId : '') ?? '';
+    const appointmentId = String(raw).trim();
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(appointmentId)) {
+      throw new Error('INVALID_APPOINTMENT_ID');
+    }
+    return { appointmentId };
+  })
+  .handler(async ({ data }) => {
+    const { releaseAbandonedUnpaidHoldServer } = await import('./kani-unpaid-hold.server');
+    return releaseAbandonedUnpaidHoldServer({ appointmentId: data.appointmentId });
+  });

@@ -202,7 +202,7 @@ export async function createMercadoPagoOrder({
   const amountStr = sanitizedAmount.toFixed(2);
 
   // Orders uses ISO 8601 durations, not Preferences expiration_date_to.
-  const expirationMinutes = input.expirationMinutes ?? 10;
+  const expirationMinutes = input.expirationMinutes ?? 7;
 
   const bodyPayload: Record<string, unknown> = {
     type: "online",
