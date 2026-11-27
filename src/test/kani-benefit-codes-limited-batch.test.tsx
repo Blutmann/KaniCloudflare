@@ -8,7 +8,13 @@ import {
   isValidBenefitCodeFormat,
   type BenefitCodeItem,
 } from '@/lib/kani-benefit-codes';
+import {
+  buildBenefitCodesExportFilename,
+  mapBenefitCodesToExportRows,
+} from '@/lib/kani-benefit-codes-xlsx';
 import { BenefitCodesAdminSection } from '@/components/kani/admin-benefit-codes-section';
+
+let mockStaffRole: 'ADMIN' | 'MANAGER' | 'BARBER' = 'ADMIN';
 
 const existingCodesFixture: BenefitCodeItem[] = [
   {
@@ -42,6 +48,7 @@ const existingCodesFixture: BenefitCodeItem[] = [
 ];
 
 const mockListFn = vi.fn().mockImplementation(() => Promise.resolve(existingCodesFixture));
+const mockDownloadXlsx = vi.fn().mockResolvedValue('kani-codigos-descuento-2026-11-27.xlsx');
 const mockCreateFn = vi.fn().mockImplementation(({ data }) =>
   Promise.resolve({
     id: 'created-single-1',
@@ -75,6 +82,26 @@ const mockCreateBatchFn = vi.fn().mockImplementation(({ data }) =>
   )
 );
 
+vi.mock('@/lib/kani-admin-context', () => ({
+  useAdminStaff: () => ({
+    profile: {
+      user_id: 'staff-1',
+      role: mockStaffRole,
+      display_name: 'Staff Test',
+      active: true,
+      barber_id: mockStaffRole === 'BARBER' ? 'barber-1' : null,
+    },
+  }),
+}));
+
+vi.mock('@/lib/kani-benefit-codes-xlsx', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/kani-benefit-codes-xlsx')>();
+  return {
+    ...actual,
+    downloadBenefitCodesXlsx: (...args: unknown[]) => mockDownloadXlsx(...args),
+  };
+});
+
 vi.mock('@/lib/kani-benefit-codes.functions', () => ({
   adminListBenefitCodesFn: (...args: unknown[]) => mockListFn(...args),
   adminCreateBenefitCodeFn: (...args: unknown[]) => mockCreateFn(...args),
@@ -100,6 +127,7 @@ vi.mock('@/integrations/supabase/client', () => ({
 describe('Benefit Codes — LIMITED_USE (10 usos), Batch 1X→5X→10X y Sugerencias Contextuales', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockStaffRole = 'ADMIN';
     mockListFn.mockImplementation(() => Promise.resolve(existingCodesFixture));
   });
 
@@ -261,5 +289,56 @@ describe('Benefit Codes — LIMITED_USE (10 usos), Batch 1X→5X→10X y Sugeren
     expect(screen.getByText('KANI-VIP-B001')).toBeInTheDocument();
     expect(screen.getByText('KANI-VIP-B005')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Copiar todos/i })).toBeInTheDocument();
+  });
+
+  it('el botón solo-ícono de exportar a Excel está disponible para ADMIN, MANAGER y BARBER y se deshabilita con 0 resultados', async () => {
+    for (const role of ['ADMIN', 'MANAGER', 'BARBER'] as const) {
+      mockStaffRole = role;
+      mockDownloadXlsx.mockClear();
+
+      const { unmount } = render(<BenefitCodesAdminSection hideHeading />);
+
+      await waitFor(() => {
+        expect(screen.getByText('2 descuentos encontrados')).toBeInTheDocument();
+      });
+
+      const exportBtn = screen.getByRole('button', { name: 'Exportar códigos a Excel' });
+      expect(exportBtn).toBeInTheDocument();
+      expect(exportBtn.textContent?.trim()).toBe('');
+      expect(exportBtn).not.toBeDisabled();
+
+      fireEvent.click(exportBtn);
+      await waitFor(() => {
+        expect(mockDownloadXlsx).toHaveBeenCalledTimes(1);
+      });
+      expect(mockDownloadXlsx.mock.calls[0][0]).toHaveLength(2);
+
+      unmount();
+    }
+
+    // Con 0 resultados, el botón debe estar deshabilitado
+    mockStaffRole = 'ADMIN';
+    mockListFn.mockResolvedValueOnce([]);
+    render(<BenefitCodesAdminSection hideHeading />);
+
+    await waitFor(() => {
+      expect(screen.getByText('0 descuentos encontrados')).toBeInTheDocument();
+    });
+
+    const disabledBtn = screen.getByRole('button', { name: 'Exportar códigos a Excel' });
+    expect(disabledBtn).toBeDisabled();
+  });
+
+  it('mapea correctamente las columnas en español y el nombre de archivo kani-codigos-descuento-YYYY-MM-DD.xlsx', () => {
+    expect(buildBenefitCodesExportFilename('2026-11-27')).toBe('kani-codigos-descuento-2026-11-27.xlsx');
+    const rows = mapBenefitCodesToExportRows(existingCodesFixture);
+    expect(rows[0]).toMatchObject({
+      codigo: 'KANI-OFF-10USOS',
+      estado: 'Habilitado',
+      cantidadDeUsos: '10 usos',
+      usos: '3/10',
+      beneficio: '10% de descuento',
+      vigencia: 'Sin vencimiento',
+    });
   });
 });
