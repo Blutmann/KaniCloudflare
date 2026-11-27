@@ -4593,25 +4593,7 @@ html[data-theme='light'] .booking-page .booking-contact-form :is(.field-label in
   background: var(--kani-surface-control) !important;
 }
 
-/* Original lossless mobile artwork, shared by the page and mobile navigation. */
-@media (max-width: 767px) {
-  html[data-theme="light"] {
-    --kani-wallpaper-image: url('/kani-fondo-claro-mobile-relieve-lossless.webp');
-  }
-  html[data-theme="dark"] {
-    --kani-wallpaper-image: url('/kani-fondo-oscuro-mobile-master.webp');
-  }
-}
-
-/* Desktop artwork applies across public pages and administration. */
-@media (min-width: 768px) {
-  html[data-theme="light"] {
-    --kani-wallpaper-image: url('/kani-fondo-claro-desktop-relieve-lossless.webp');
-  }
-  html[data-theme="dark"] {
-    --kani-wallpaper-image: url('/kani-fondo-oscuro-desktop-lossless.webp');
-  }
-}
+/* Optimized responsive wallpaper rules are defined in the base layer above. */
 
 
 /* Menu groups and dividers — separación vertical sin líneas horizontales (8px entre filas del mismo grupo y 40px entre grupos) */
