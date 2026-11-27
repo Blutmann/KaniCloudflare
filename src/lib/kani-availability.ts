@@ -26,6 +26,16 @@ const AVAILABILITY_STEP_MINUTES = 5;
 
 export const FIXED_BOOKING_START_TIMES = bookingStartTimes;
 
+export const GONZALO_TUE_THU_START_TIMES = [
+  '11:00', '11:45', '12:30', '13:15', '14:00', '14:45',
+  '15:30', '16:15', '17:00', '17:45', '18:30', '19:15',
+];
+
+export const VALENTIN_TUE_FRI_START_TIMES = [
+  '12:00', '12:45', '13:30', '14:15', '15:00', '15:45',
+  '16:30', '17:15', '18:00', '18:45', '19:30',
+];
+
 export const FRANCO_ALLOWED_START_TIMES = [
   '16:00', '16:45', '17:30', '18:15', '19:00', '19:15', '19:30'
 ];
@@ -36,6 +46,60 @@ export function isFixedBookingStart(value: string) {
   return FIXED_BOOKING_START_TIMES.includes(value.slice(0, 5));
 }
 
+function normalizeBarberScheduleKey(barber?: Barber | string | null): string {
+  return (barber ?? '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+/**
+ * Returns the official 45-min base start times for a given barber and calendar date:
+ * - Lautaro: Mon–Sat 10:00..19:00
+ * - Gonzalo: Mon/Wed/Fri/Sat 10:00..19:00; Tue/Thu 11:00..19:15
+ * - Valentín: Mon off ([]); Tue–Fri 12:00..19:30; Sat 10:00..19:00
+ * - Franco: Sat 16:00..19:30 (working days allowed for compatibility)
+ * - Sunday: []
+ */
+export function baseBookingStartTimesForBarberDate(
+  slotDate: string,
+  barber?: Barber | string | null,
+): string[] {
+  const day = parseDate(slotDate).getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
+  if (day === 0) return [];
+
+  const key = normalizeBarberScheduleKey(barber);
+  if (key === 'franco') {
+    return FRANCO_ALLOWED_START_TIMES;
+  }
+  if (key === 'gonzalo') {
+    return day === 2 || day === 4 ? GONZALO_TUE_THU_START_TIMES : FIXED_BOOKING_START_TIMES;
+  }
+  if (key === 'valentin') {
+    if (day === 1) return [];
+    if (day === 6) return FIXED_BOOKING_START_TIMES;
+    return VALENTIN_TUE_FRI_START_TIMES;
+  }
+  return FIXED_BOOKING_START_TIMES;
+}
+
+function isExtraordinaryBookingStart(
+  slotDate: string,
+  startTime: string,
+  barber?: Barber | string | null,
+): boolean {
+  const day = parseDate(slotDate).getDay();
+  if (day === 0) return true;
+
+  const baseStarts = barber
+    ? baseBookingStartTimesForBarberDate(slotDate, barber)
+    : FIXED_BOOKING_START_TIMES;
+
+  if (baseStarts.length === 0) return true;
+
+  const startMinutes = minutes(startTime.slice(0, 5));
+  const firstBaseMinutes = minutes(baseStarts[0]!);
+  const lastBaseEndMinutes = minutes(baseStarts[baseStarts.length - 1]!) + 45;
+  return startMinutes < firstBaseMinutes || startMinutes >= lastBaseEndMinutes;
+}
+
 export function isAllowedPublicBookingStart(
   slotDate: string,
   startTime: string,
@@ -43,15 +107,24 @@ export function isAllowedPublicBookingStart(
   barber?: Barber | null,
 ) {
   const shortTime = startTime.slice(0, 5);
-  if (barber !== 'Franco' && isFixedBookingStart(shortTime)) return true;
-  const isWorkingDay = parseDate(slotDate).getDay() >= 1 && parseDate(slotDate).getDay() <= 6;
-  if ((barber === 'Franco' || !barber) && isWorkingDay && FRANCO_ALLOWED_START_TIMES.includes(shortTime)) {
+  if (isException && isExtraordinaryBookingStart(slotDate, shortTime, barber)) {
     return true;
   }
-  if (!isException) return false;
-  if (parseDate(slotDate).getDay() === 0) return true;
-  const startMinutes = minutes(shortTime);
-  return startMinutes < 10 * 60 || startMinutes > 19 * 60;
+
+  const day = parseDate(slotDate).getDay();
+  if (day === 0) return false;
+
+  if (barber) {
+    return baseBookingStartTimesForBarberDate(slotDate, barber).includes(shortTime);
+  }
+
+  // Without a specific barber, allow any start belonging to at least one barber's base schedule for that day
+  return (
+    baseBookingStartTimesForBarberDate(slotDate, 'Lautaro').includes(shortTime) ||
+    baseBookingStartTimesForBarberDate(slotDate, 'Gonzalo').includes(shortTime) ||
+    baseBookingStartTimesForBarberDate(slotDate, 'Valentín').includes(shortTime) ||
+    FRANCO_ALLOWED_START_TIMES.includes(shortTime)
+  );
 }
 
 const EFFECTIVE_SERVICE_DURATION_SECONDS: Record<number, number> = {
@@ -232,20 +305,14 @@ export function availableTimesForServiceDate(
     return [...new Set(barbersInSlots.flatMap(b => availableTimesForServiceDate(slots, date, duration, now, b)))].sort();
   }
   const segmentStarts = availableSegmentStarts(slots, date, barber);
-  const isSunday = parseDate(date).getDay() === 0;
+  const baseStarts = baseBookingStartTimesForBarberDate(date, barber);
+  const baseSet = new Set(baseStarts);
   const extraordinaryStarts = slots
     .filter(slot => slot.slot_date === date && slot.status === 'AVAILABLE')
     .filter(slot => !barber || slot.barber_name === barber)
     .map(slot => slot.start_time.slice(0, 5))
-    .filter(startTime => {
-      const m = minutes(startTime);
-      return isSunday || m < 10 * 60 || m > 19 * 60;
-    });
-  const isFrancoWorkingDay = parseDate(date).getDay() >= 1 && parseDate(date).getDay() <= 6;
-  const barberStarts = (barber === 'Franco' || (!barber && slots.some(s => s.barber_name === 'Franco'))) && isFrancoWorkingDay
-    ? FRANCO_ALLOWED_START_TIMES
-    : [];
-  const candidateStarts = [...new Set([...FIXED_BOOKING_START_TIMES, ...extraordinaryStarts, ...barberStarts])].sort();
+    .filter(startTime => !baseSet.has(startTime) && isExtraordinaryBookingStart(date, startTime, barber));
+  const candidateStarts = [...new Set([...baseStarts, ...extraordinaryStarts])].sort();
   const times: string[] = [];
   for (const startTime of candidateStarts) {
     const start = minutes(startTime);

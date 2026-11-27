@@ -32,7 +32,6 @@ import {
 } from "@/components/kani/v2/shared";
 import {
   createAvailabilitySlots,
-  FIXED_BOOKING_START_TIMES,
   readAvailabilityStartsForRange,
   readAvailabilitySlotsForRange,
   updateAvailabilitySlot,
