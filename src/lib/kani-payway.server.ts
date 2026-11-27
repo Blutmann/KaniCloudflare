@@ -62,7 +62,7 @@ export type PaywayAttempt = {
  */
 export interface PaywayStore {
   prepare(draft: PaywayDraft): Promise<{
-    appointmentId: string; attemptId: string; accessToken: string; depositArs: number;
+    appointmentId: string; attemptId: string; accessToken: string; depositArs: number; expiresAt?: string;
   }>;
   claim(input: Pick<PaywayPaymentInput, 'appointmentId' | 'attemptId' | 'accessToken'>): Promise<{
     acquired: boolean; appointment: PaywayAppointment; attempt: PaywayAttempt;
@@ -106,6 +106,7 @@ export function createPaywayService({ config, store, fetcher = fetch }: {
             publicKey: config.publicKey,
             apiBaseUrl: config.apiBaseUrl,
             methods: config.methods,
+            ...(prepared.expiresAt ? { expiresAt: prepared.expiresAt } : {}),
           },
         };
       } catch (cause) {

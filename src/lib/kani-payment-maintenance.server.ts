@@ -16,7 +16,7 @@ export async function reconcilePendingPayments() {
   const db = await createPaymentSupabaseClient();
   const { data, error } = await db.from('appointment_payment_orders')
     .select('appointment_id, order_id').eq('reconciliation_status', 'PENDING')
-    .lt('created_at', new Date(Date.now() - 10 * 60_000).toISOString()).limit(100);
+    .lt('created_at', new Date(Date.now() - 7 * 60_000).toISOString()).limit(100);
   if (error) throw new Error('PAYMENT_MAINTENANCE_READ_FAILED');
   for (const intent of data ?? []) {
     if (!intent.order_id) continue;

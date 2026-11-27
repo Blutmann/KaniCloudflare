@@ -195,7 +195,7 @@ describe('Mercado Pago Checkout Pro Return Flow & Status Resolution', () => {
     expect(capturedPayload.total_amount).toBe('5000.00');
     expect(capturedPayload.processing_mode).toBe('manual');
     expect(capturedPayload.currency).toBe('ARS');
-    expect(capturedPayload.expiration_time).toBe('PT10M');
+    expect(capturedPayload.expiration_time).toBe('PT7M');
     expect(capturedPayload.config?.online?.auto_return).toBe('all');
     expect(capturedPayload.config?.online?.success_url).toBe(
       'https://kanibarberstudio-cloudflare.kanibarber.workers.dev/pago/exito?appointment_id=apt_order_urls_test'

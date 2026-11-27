@@ -1,8 +1,37 @@
+import { useEffect, useRef, useState } from 'react';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { AlertTriangle, RefreshCcw, ArrowLeft } from 'lucide-react';
 import { pageHead } from '@/lib/kani-head';
+import { releaseUnpaidBookingHoldFn } from '@/lib/kani-payway.functions';
 import { Button } from '@/components/ui/button';
 import { LiquidGlassShell } from '@/components/kani/experimental/liquid-glass-shell';
+
+const MP_ACTIVE_ATTEMPT_STORAGE_KEY = 'kani:mercadopago:reservar-active-attempt';
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function resolveAbandonedAppointmentId(): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const fromQuery =
+      params.get('appointment_id') ||
+      params.get('external_reference') ||
+      params.get('appointmentId');
+    if (fromQuery && UUID_PATTERN.test(fromQuery.trim())) {
+      return fromQuery.trim();
+    }
+    const raw = window.sessionStorage.getItem(MP_ACTIVE_ATTEMPT_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as { appointmentId?: unknown };
+      if (typeof parsed?.appointmentId === 'string' && UUID_PATTERN.test(parsed.appointmentId.trim())) {
+        return parsed.appointmentId.trim();
+      }
+    }
+  } catch {
+    // Ignore storage/URL parsing errors
+  }
+  return null;
+}
 
 export const Route = createFileRoute('/pago/error')({
   head: () =>
@@ -15,7 +44,41 @@ export const Route = createFileRoute('/pago/error')({
   component: PagoErrorPage,
 });
 
-function PagoErrorPage() {
+export function PagoErrorPage() {
+  const releasedRef = useRef(false);
+  const [holdStatus, setHoldStatus] = useState<'idle' | 'releasing' | 'released' | 'active'>('idle');
+
+  useEffect(() => {
+    if (releasedRef.current) return;
+    const appointmentId = resolveAbandonedAppointmentId();
+    if (!appointmentId) return;
+
+    releasedRef.current = true;
+    setHoldStatus('releasing');
+    void (async () => {
+      try {
+        const res = await releaseUnpaidBookingHoldFn({ data: { appointmentId } });
+        if (res?.released || res?.status === 'NOT_PENDING') {
+          try {
+            window.sessionStorage.removeItem(MP_ACTIVE_ATTEMPT_STORAGE_KEY);
+          } catch {
+            // Ignore sessionStorage removal errors
+          }
+          setHoldStatus('released');
+        } else if (
+          res?.status === 'MERCADO_PAGO_ACTIVE_OR_PAID' ||
+          res?.status === 'PAYMENT_IN_PROGRESS_OR_PAID'
+        ) {
+          setHoldStatus('active');
+        } else {
+          setHoldStatus('idle');
+        }
+      } catch {
+        setHoldStatus('idle');
+      }
+    })();
+  }, []);
+
   return (
     <LiquidGlassShell section="booking">
       <main className="min-h-[80vh] flex items-center justify-center px-4 py-8 sm:py-12">
@@ -34,6 +97,16 @@ function PagoErrorPage() {
             <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
               La operación fue cancelada o rechazada por Mercado Pago. No se realizó ningún débito de tu cuenta y el turno no fue confirmado.
             </p>
+            {holdStatus === 'released' && (
+              <p role="status" className="text-xs text-muted-foreground">
+                Liberamos la reserva temporal de ese horario para que puedas elegir nuevamente.
+              </p>
+            )}
+            {holdStatus === 'active' && (
+              <p role="status" className="text-xs text-amber-600">
+                Detectamos un pago en proceso o acreditado en Mercado Pago. Si ya se debitó, recibirás la confirmación por email.
+              </p>
+            )}
           </div>
 
           {/* Sugerencias */}
@@ -42,7 +115,7 @@ function PagoErrorPage() {
             <ul className="list-disc list-inside space-y-1 text-muted-foreground">
               <li>Cancelaste la operación en el portal de Mercado Pago.</li>
               <li>Fondos insuficientes o límite de tarjeta excedido.</li>
-              <li>Tiempo de sesión de pago expirado (10 minutos).</li>
+              <li>Tiempo de sesión de pago expirado (7 minutos).</li>
             </ul>
           </div>
 

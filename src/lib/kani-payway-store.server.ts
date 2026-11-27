@@ -107,7 +107,7 @@ export function createPaywayStore(db:Db,siteId:string,session:SessionAccess):Pay
       const accessToken=previous?.accessToken??crypto.randomUUID().replaceAll('-','')+crypto.randomUUID().replaceAll('-','');
       try { await session.write({appointmentId:row.appointment_id,accessToken,expiresAt:new Date(row.expires_at).getTime()}); }
       catch { throw new Error('PAYMENT_REVIEW_REQUIRED'); }
-      return {appointmentId:row.appointment_id,attemptId:row.id.replaceAll('-',''),accessToken,depositArs:Number(row.amount_ars)};
+      return {appointmentId:row.appointment_id,attemptId:row.id.replaceAll('-',''),accessToken,depositArs:Number(row.amount_ars),expiresAt:row.expires_at};
     },
     async claim(input) {
       const owner=await session.read();

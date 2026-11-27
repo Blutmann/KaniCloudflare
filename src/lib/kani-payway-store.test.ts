@@ -16,7 +16,7 @@ function setup(){
 describe('durable Payway adapter',()=>{
   it('uses the atomic preparation RPC and its authoritative deposit, without persisting authentication',async()=>{
     const s=setup();s.rpc.mockResolvedValue({data:{...row,state:'CREATED'},error:null});
-    expect(await s.store.prepare(draft)).toEqual({appointmentId,attemptId:compact,accessToken:owner.accessToken,depositArs:3000});
+    expect(await s.store.prepare(draft)).toEqual({appointmentId,attemptId:compact,accessToken:owner.accessToken,depositArs:3000,expiresAt:row.expires_at});
     const args=s.rpc.mock.calls[0]![1];
     expect(args.p_existing_appointment_id).toBe(appointmentId);
     expect(args).not.toHaveProperty('amount');expect(args).not.toHaveProperty('accessToken');

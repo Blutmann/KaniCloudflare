@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Check, CheckCircle2, CircleAlert, HelpCircle, Instagram, Loader2, MapPin, X } from 'lucide-react';
+import { Check, CheckCircle2, CircleAlert, Clock, HelpCircle, Instagram, Loader2, MapPin, X } from 'lucide-react';
 import { Booking, mapBenefitErrorMessage, type BookingPaymentDraft } from '@/components/kani/booking';
 import { clearBookingDraft } from '@/lib/kani-booking-draft';
 import { validateBenefitCodeQuoteFn } from '@/lib/kani-benefit-codes.functions';
@@ -7,7 +7,7 @@ import { normalizeBenefitCode, type BenefitQuote } from '@/lib/kani-benefit-code
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
-import { preparePaywayCheckoutFn, payPaywayDepositFn, checkPaywayPaymentStatusFn } from '@/lib/kani-payway.functions';
+import { preparePaywayCheckoutFn, payPaywayDepositFn, checkPaywayPaymentStatusFn, releaseUnpaidBookingHoldFn } from '@/lib/kani-payway.functions';
 import { createBookingOrderFn, getAppointmentPaymentStatusFn } from '@/lib/kani-mercadopago.functions';
 import { createRealAppointment, appointmentErrorMessage } from '@/lib/kani-appointments';
 import { resolveBookingPaymentGateway } from '@/lib/kani-payment-routing';
@@ -106,6 +106,16 @@ function clearActiveAttempt() {
   } catch {}
 }
 
+const HOLD_WINDOW_MINUTES = 7;
+const HOLD_WINDOW_MS = HOLD_WINDOW_MINUTES * 60 * 1000;
+
+function formatHoldCountdown(totalSeconds: number): string {
+  const clamped = Math.max(0, Math.floor(totalSeconds));
+  const mins = Math.floor(clamped / 60);
+  const secs = clamped % 60;
+  return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+}
+
 const MP_ACTIVE_ATTEMPT_STORAGE_KEY = 'kani:mercadopago:reservar-active-attempt';
 
 type StoredMpActiveAttempt = {
@@ -128,7 +138,7 @@ function readMpActiveAttempt(): StoredMpActiveAttempt | null {
       parsed &&
       typeof parsed.appointmentId === 'string' &&
       typeof parsed.timestamp === 'number' &&
-      Date.now() - parsed.timestamp < 10 * 60 * 1000
+      Date.now() - parsed.timestamp < HOLD_WINDOW_MS
     ) {
       return parsed as StoredMpActiveAttempt;
     }
@@ -291,6 +301,21 @@ export function PaywayBooking({
     canRetry: boolean;
   } | null>(null);
   const [manualStatusChecking, setManualStatusChecking] = useState(false);
+  const [holdExpiresAtMs, setHoldExpiresAtMs] = useState<number | null>(null);
+  const [holdRemainingSec, setHoldRemainingSec] = useState<number | null>(null);
+  const [mpRedirectNotice, setMpRedirectNotice] = useState(false);
+
+  // Live 1s countdown for Payway temporary hold (7 minutes)
+  useEffect(() => {
+    if (!open || !checkout || holdExpiresAtMs === null) return;
+    const updateRemaining = () => {
+      const remaining = Math.max(0, Math.ceil((holdExpiresAtMs - Date.now()) / 1000));
+      setHoldRemainingSec(remaining);
+    };
+    updateRemaining();
+    const interval = window.setInterval(updateRemaining, 1000);
+    return () => window.clearInterval(interval);
+  }, [open, checkout, holdExpiresAtMs]);
 
   // V12.47.23: Si la confirmación sigue pendiente más allá del tiempo habitual, pasar a verificación prolongada
   useEffect(() => {
@@ -889,6 +914,7 @@ export function PaywayBooking({
     // Flujo Mercado Pago Checkout Pro (Gonzalo con seña > $0)
     if (gateway === 'MERCADO_PAGO') {
       opening.current = true;
+      setMpRedirectNotice(true);
       setOpen(true);
       setPreparing(true);
       setSmartError(null);
@@ -1055,12 +1081,15 @@ export function PaywayBooking({
       setCardHolder(draft.name);
     }
     opening.current = true;
+    setMpRedirectNotice(false);
     setOpen(true);
     setPreparing(true);
     setSmartError(null);
     setSmartPhase('processing');
     setResult(null);
     setCheckout(null);
+    setHoldExpiresAtMs(null);
+    setHoldRemainingSec(null);
     let slotConflictToThrow: SlotUnavailableConflictError | null = null;
     try {
       const sanitizedDraft: PaywayDraft = {
@@ -1081,9 +1110,15 @@ export function PaywayBooking({
           setOpen(false);
           return;
         }
+        const parsedExpiry = response.checkout.expiresAt ? Date.parse(response.checkout.expiresAt) : NaN;
+        const effectiveExpiry = Number.isFinite(parsedExpiry) && parsedExpiry > Date.now()
+          ? parsedExpiry
+          : Date.now() + HOLD_WINDOW_MS;
         setSmartPhase('idle');
         setSmartError(null);
         setCheckout(response.checkout);
+        setHoldExpiresAtMs(effectiveExpiry);
+        setHoldRemainingSec(Math.max(0, Math.ceil((effectiveExpiry - Date.now()) / 1000)));
       } else if (response.state === 'recoverable' && isAvailabilityConflictError(response.message)) {
         setSmartPhase('idle');
         setSmartError(null);
@@ -1657,19 +1692,53 @@ export function PaywayBooking({
                 : 'idle';
         const isSmartStatusView = activeSmartPhase !== 'idle';
         const isProcessingLock = activeSmartPhase === 'processing' || paying.current || opening.current;
+        const isHoldExpired =
+          Boolean(checkout) &&
+          !terminal &&
+          !isApprovedConfirmed &&
+          holdRemainingSec === 0 &&
+          stage === 'idle' &&
+          !paying.current &&
+          !hasPendingPayment &&
+          !isVerifying &&
+          !pollExhausted;
+
+        const releaseHoldAndClose = () => {
+          const appointmentToRelease = checkout?.appointmentId;
+          const canReleaseUnpaidHold =
+            Boolean(appointmentToRelease) &&
+            !terminal &&
+            stage === 'idle' &&
+            !paying.current &&
+            !hasPendingPayment &&
+            !isVerifying &&
+            !pollExhausted &&
+            !paidAppointmentsRef.current.has(appointmentToRelease!);
+          if (canReleaseUnpaidHold && appointmentToRelease) {
+            void releaseUnpaidBookingHoldFn({ data: { appointmentId: appointmentToRelease } }).catch(() => {});
+            clearActiveAttempt();
+            setCheckout(null);
+            setHoldExpiresAtMs(null);
+            setHoldRemainingSec(null);
+          }
+          setMpRedirectNotice(false);
+          setOpen(false);
+          resetFormState();
+          if (!hasPendingPayment && !isVerifying && !pollExhausted) {
+            setSmartPhase('idle');
+            setSmartError(null);
+          }
+        };
 
         return (
       <Dialog
         open={open}
         onOpenChange={value => {
           if (!isProcessingLock) {
-            setOpen(value);
             if (!value) {
-              resetFormState();
-              if (!hasPendingPayment && !isVerifying && !pollExhausted) {
-                setSmartPhase('idle');
-                setSmartError(null);
-              }
+              releaseHoldAndClose();
+            } else {
+              setOpen(true);
             }
           }
         }}
@@ -1698,17 +1767,27 @@ export function PaywayBooking({
           </div>
           )}
           {isSmartStatusView && (
-            <BookingConfirmationStatusView
-              phase={activeSmartPhase}
-              errorKind={smartError?.kind ?? (result?.state === 'review' ? 'payment_review' : hasPendingPayment ? 'pending_unknown' : null)}
-              errorDetail={smartError?.detail ?? result?.message ?? null}
-              canRetry={Boolean(smartError?.canRetry && !hasPendingPayment && !isVerifying)}
-              canCheckStatus={Boolean(pendingCheck)}
-              isCheckingStatus={manualStatusChecking}
-              onRetry={handleSmartRetry}
-              onCheckStatus={handleManualCheckStatus}
-              onBackToBooking={activeSmartPhase === 'processing' ? undefined : handleBackToBooking}
-            />
+            <>
+              <BookingConfirmationStatusView
+                phase={activeSmartPhase}
+                errorKind={smartError?.kind ?? (result?.state === 'review' ? 'payment_review' : hasPendingPayment ? 'pending_unknown' : null)}
+                errorDetail={smartError?.detail ?? result?.message ?? null}
+                canRetry={Boolean(smartError?.canRetry && !hasPendingPayment && !isVerifying)}
+                canCheckStatus={Boolean(pendingCheck)}
+                isCheckingStatus={manualStatusChecking}
+                onRetry={handleSmartRetry}
+                onCheckStatus={handleManualCheckStatus}
+                onBackToBooking={activeSmartPhase === 'processing' ? undefined : handleBackToBooking}
+              />
+              {mpRedirectNotice && activeSmartPhase === 'processing' && (
+                <p
+                  role="status"
+                  className="text-xs text-center text-muted-foreground mt-3 px-2"
+                >
+                  Tu horario queda reservado por <strong>7 minutos</strong> mientras completás el pago en Mercado Pago.
+                </p>
+              )}
+            </>
           )}
           {!isSmartStatusView && result && !isVerifying && !pollExhausted && result.state !== 'unknown' && result.state !== 'review' && (
             <p role={result.state === 'approved' ? 'status' : 'alert'} className="payway-result">{result.message}</p>
@@ -1726,6 +1805,38 @@ export function PaywayBooking({
             >
               <input type="hidden" name="paymentMethod" value={detected.methodId ?? ''} />
               <div className="payway-checkout-body">
+                {!isApprovedConfirmed && holdRemainingSec !== null && holdRemainingSec > 0 && (
+                  <div
+                    role="status"
+                    aria-live="off"
+                    className="payway-hold-countdown flex items-center gap-2 rounded-xl border border-border/70 bg-background/60 px-3 py-2 text-xs text-muted-foreground mb-3"
+                  >
+                    <Clock size={14} className="shrink-0" aria-hidden="true" />
+                    <span>
+                      Tu horario queda reservado por{' '}
+                      <strong className="tabular-nums text-foreground">{formatHoldCountdown(holdRemainingSec)}</strong>{' '}
+                      mientras completás el pago
+                    </span>
+                  </div>
+                )}
+                {isHoldExpired && (
+                  <div
+                    role="alert"
+                    className="payway-hold-expired space-y-2 rounded-xl border border-rose-500/40 bg-rose-500/10 px-3 py-3 text-xs text-foreground mb-3"
+                  >
+                    <p className="font-medium">
+                      Venció la reserva temporal de 7 minutos. Elegí un horario nuevamente para continuar.
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={releaseHoldAndClose}
+                    >
+                      Elegir horario nuevamente
+                    </Button>
+                  </div>
+                )}
                 {modalDiscountOpen && !isApprovedConfirmed && (
                   <div className="payway-discount-retry-box" role="region" aria-label="Código de descuento">
                     {!modalDiscountApplied ? (
@@ -2051,7 +2162,7 @@ export function PaywayBooking({
               </div>
 
               <div className="payway-checkout-footer">
-                <Button type="submit" className="action-positive payway-submit-btn" disabled={!isCardFormValid || stage !== 'idle'}>
+                <Button type="submit" className="action-positive payway-submit-btn" disabled={!isCardFormValid || stage !== 'idle' || isHoldExpired}>
                   {stage === 'tokenizing'
                     ? 'Validando tarjeta…'
                     : stage === 'paying'

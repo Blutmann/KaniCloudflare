@@ -13,6 +13,7 @@ export type PaywayCheckout = {
   publicKey: string; apiBaseUrl: string;
   methods: { id: number; label: string }[];
   benefitCode?: string;
+  expiresAt?: string;
 };
 export type PaywayPreparation =
   | { ready: true; checkout: PaywayCheckout }

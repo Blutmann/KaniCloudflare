@@ -217,7 +217,7 @@ export async function handleCreateBookingOrder(data: CreateBookingOrderInput): P
           pendingUrl,
         },
         returnUrl: successUrl,
-        expirationMinutes: 10,
+        expirationMinutes: 7,
       },
       accessToken,
       idempotencyKey: intent.idempotency_key,
