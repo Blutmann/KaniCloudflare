@@ -27,7 +27,7 @@ describe('Contacto V12.47.26 — Composición, Cards y Navegación Inteligente',
     window.sessionStorage.clear();
   });
 
-  it('renderiza título «Contactanos», bloque Instagram (sin duplicados), WhatsApp y Ubicación/Horarios/Mapa sin repeticiones', async () => {
+  it('renderiza título «Contactanos» y 2 bloques principales (Instagram + Card unificada de Google con Ubicación/Mapa/Reseñas) y micro-link de WhatsApp sin repeticiones', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn().mockImplementation((input: string | URL) => {
@@ -56,16 +56,25 @@ describe('Contacto V12.47.26 — Composición, Cards y Navegación Inteligente',
     expect(heading.className).toContain('booking-step-heading-title');
     expect(heading.className).toContain('section-title');
 
-    // En fallback, Instagram renderiza fila compacta horizontal + WhatsApp (sin links duplicados)
+    // En fallback, Instagram renderiza fila compacta horizontal (sin card dedicada de WhatsApp)
     await waitFor(() => {
       expect(container.querySelector('.kani-contacto-ig-fallback')).toBeTruthy();
     });
 
     const socialCards = container.querySelectorAll('.kani-contacto-social-card');
     const locationCards = container.querySelectorAll('.kani-contacto-location-card');
-    expect(socialCards).toHaveLength(2);
+    expect(socialCards).toHaveLength(1);
     expect(locationCards).toHaveLength(1);
+    expect(container.querySelector('.kani-contacto-whatsapp-card')).toBeNull();
     expect(container.querySelector('.kani-contacto-location-copy .kani-contacto-directions-link')).toBeTruthy();
+
+    // Reseñas de Google integradas dentro de la card de ubicación debajo del mapa
+    const locationCard = locationCards[0];
+    expect(locationCard.querySelector('.kani-contacto-reviews-embedded')).toBeTruthy();
+    const reviewsFallbackLink = locationCard.querySelector('.kani-contacto-reviews-fallback-row');
+    expect(reviewsFallbackLink).toBeTruthy();
+    expect(reviewsFallbackLink?.textContent).toContain('Opiniones en Google Maps');
+    expect(reviewsFallbackLink?.textContent).toContain('Ver reseñas');
 
     const instagramLinks = screen.getAllByRole('link', {
       name: /Ver perfil de Kani Barber Studio en Instagram/i,
@@ -79,15 +88,14 @@ describe('Contacto V12.47.26 — Composición, Cards y Navegación Inteligente',
     expect(instagramLink.textContent).toContain('@kanibarberstudio');
     expect(instagramLink.textContent).toContain('Ver perfil');
 
+    // Micro-link discreto de WhatsApp al pie del scroll
     const whatsappLink = screen.getByRole('link', {
       name: /Escribinos por WhatsApp a Kani Barber Studio/i,
     });
     expect(whatsappLink.getAttribute('href')).toBe(KANI_PUBLIC_WHATSAPP_URL);
     expect(whatsappLink.getAttribute('target')).toBe('_blank');
     expect(whatsappLink.getAttribute('rel')).toBe('noopener noreferrer');
-    expect(whatsappLink.textContent).toContain('WhatsApp');
-    expect(whatsappLink.textContent).toContain('Hablemos por acá');
-    expect(whatsappLink.textContent).toContain('Escribinos');
+    expect(whatsappLink.textContent).toContain('Escribinos por WhatsApp');
 
     const directionsLink = screen.getByRole('link', {
       name: /Abrir Kani Barber Studio en Google Maps/i,

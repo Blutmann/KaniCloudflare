@@ -21,26 +21,13 @@ export function getStudioOpenStatus(now: Date = new Date()): StudioOpenStatus {
     const hour = Number(parts.find((p) => p.type === "hour")?.value ?? "0");
 
     const isSunday = weekday === "Sun";
-    const isSaturday = weekday === "Sat";
 
-    if (isSunday) {
-      return { isOpen: false, label: "Cerrado · Abre lunes 10:00" };
+    if (!isSunday && hour >= 10 && hour < 20) {
+      return { isOpen: true, label: "Abierto · Hasta las 20:00 hs" };
     }
 
-    if (hour >= 10 && hour < 20) {
-      return { isOpen: true, label: "Abierto ahora · Hasta las 20:00" };
-    }
-
-    if (hour < 10) {
-      return { isOpen: false, label: "Cerrado · Abre hoy 10:00" };
-    }
-
-    if (isSaturday) {
-      return { isOpen: false, label: "Cerrado · Abre lunes 10:00" };
-    }
-
-    return { isOpen: false, label: "Cerrado · Abre mañana 10:00" };
+    return { isOpen: false, label: "Cerrado" };
   } catch {
-    return { isOpen: false, label: "Lunes a sábados · 10:00 a 20:00" };
+    return { isOpen: false, label: "Cerrado" };
   }
 }
