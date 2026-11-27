@@ -18,6 +18,7 @@ export const Route = createFileRoute('/pago/exito')({
       'Pago Confirmado · Kani Barber Studio',
       'Tu pago fue acreditado y tu turno en Kani Barber Studio está confirmado.',
       'Kani Barber Studio - Pago Exitoso',
+      { noindex: true },
     ),
   component: PagoExitoPage,
 });

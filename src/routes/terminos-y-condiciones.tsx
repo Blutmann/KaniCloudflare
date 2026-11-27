@@ -10,6 +10,7 @@ export const Route = createFileRoute('/terminos-y-condiciones')({
       'Términos y Condiciones',
       'Términos y Condiciones generales de contratación de servicios y reservas en Kani Barber Studio.',
       'Términos y Condiciones · Kani Barber Studio',
+      { canonicalPath: '/terminos-y-condiciones' },
     ),
   component: () => (
     <LiquidGlassShell section="legal">
