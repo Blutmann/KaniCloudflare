@@ -1330,6 +1330,68 @@ html[data-theme] body[data-lg-admin="true"] .v2-client-toolbar-container .v2-cli
   transform: none !important;
 }
 
+/* Botón Excel solo-ícono unificado (Códigos, Miembros, Cobros registrados) */
+html[data-theme] .kani-excel-icon-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 40px !important;
+  height: 40px !important;
+  min-width: 40px !important;
+  min-height: 40px !important;
+  padding: 0 !important;
+  border-radius: 12px !important;
+  cursor: pointer;
+  -webkit-backdrop-filter: blur(12px) saturate(135%);
+  backdrop-filter: blur(12px) saturate(135%);
+  transition: background-color 160ms ease, border-color 160ms ease, transform 140ms ease, opacity 160ms ease;
+}
+
+html[data-theme="dark"] .kani-excel-icon-btn {
+  background: rgba(52, 211, 153, 0.08) !important;
+  border: 1px solid rgba(52, 211, 153, 0.28) !important;
+  color: #34d399 !important;
+}
+
+html[data-theme="dark"] .kani-excel-icon-btn svg {
+  color: #34d399 !important;
+  stroke: currentColor !important;
+}
+
+html[data-theme="dark"] .kani-excel-icon-btn:hover:not(:disabled) {
+  background: rgba(52, 211, 153, 0.16) !important;
+  border-color: rgba(52, 211, 153, 0.48) !important;
+  transform: translateY(-1px);
+}
+
+html[data-theme="light"] .kani-excel-icon-btn {
+  background: rgba(5, 150, 105, 0.08) !important;
+  border: 1px solid rgba(5, 150, 105, 0.28) !important;
+  color: #059669 !important;
+}
+
+html[data-theme="light"] .kani-excel-icon-btn svg {
+  color: #059669 !important;
+  stroke: currentColor !important;
+}
+
+html[data-theme="light"] .kani-excel-icon-btn:hover:not(:disabled) {
+  background: rgba(5, 150, 105, 0.15) !important;
+  border-color: rgba(5, 150, 105, 0.45) !important;
+  transform: translateY(-1px);
+}
+
+html[data-theme] .kani-excel-icon-btn:focus-visible {
+  outline: 2px solid rgba(16, 185, 129, 0.58) !important;
+  outline-offset: 2px !important;
+}
+
+html[data-theme] .kani-excel-icon-btn:disabled {
+  opacity: 0.42 !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+}
+
 @media (min-width: 768px) {
   html[data-theme] body[data-lg-admin="true"] .v2-client-sticky-bar {
     display: none !important;

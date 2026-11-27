@@ -351,23 +351,29 @@ describe('KANI — Optimización de Clientes y Exportación Excel', () => {
 
     expect(buildClientExportFilename('2026-11-17')).toBe('KANI_Clientes_2026-11-17.xlsx');
 
-    const bytes = await generateClientsWorkbookBuffer(rows);
+    const bytes = await generateClientsWorkbookBuffer(rows, {
+      generatedAt: new Date('2026-11-27T19:08:00Z'),
+    });
     const parsed = new ExcelJS.Workbook();
     await parsed.xlsx.load(bytes.buffer as ArrayBuffer);
 
     const sheet = parsed.getWorksheet('Clientes');
     expect(sheet).toBeTruthy();
-    expect(sheet?.views?.[0]).toMatchObject({ state: 'frozen', ySplit: 1 });
-    expect(sheet?.autoFilter).toBe('A1:J1');
+    expect(sheet?.views?.[0]).toMatchObject({ state: 'frozen', ySplit: 5 });
+    expect(sheet?.autoFilter).toBe('A5:J5');
 
-    const headers = [1, 2, 3, 4, 5].map((c) => sheet?.getRow(1).getCell(c).value);
+    expect(sheet?.getRow(1).getCell(1).value).toBe('Kani Barber Studio — Clientes');
+    expect(sheet?.getRow(2).getCell(1).value).toBe('Generado el 27/11/2026 a las 16:08 hs');
+    expect(sheet?.getRow(3).getCell(1).value).toBe('2 clientes');
+
+    const headers = [1, 2, 3, 4, 5].map((c) => sheet?.getRow(5).getCell(c).value);
     expect(headers).toEqual(['Cliente desde', 'Nombre', 'Mail', 'Celular', 'Barbero']);
 
-    expect(sheet?.getRow(2).getCell(1).value).toBe('03/05/2025');
-    expect(sheet?.getRow(2).getCell(4).value).toBe('+5491122334455');
-    expect(sheet?.getRow(2).getCell(5).value).toBe('Franco | Gonzalo');
-    expect(sheet?.getRow(2).getCell(9).value).toBe("'=SUM(A1:A2)");
-    expect(sheet?.getRow(3).getCell(4).value).toBe('01144556677');
-    expect(sheet?.getRow(3).getCell(5).value).toBe('Sin atenciones');
+    expect(sheet?.getRow(6).getCell(1).value).toBe('03/05/2025');
+    expect(sheet?.getRow(6).getCell(4).value).toBe('+5491122334455');
+    expect(sheet?.getRow(6).getCell(5).value).toBe('Franco | Gonzalo');
+    expect(sheet?.getRow(6).getCell(9).value).toBe("'=SUM(A1:A2)");
+    expect(sheet?.getRow(7).getCell(4).value).toBe('01144556677');
+    expect(sheet?.getRow(7).getCell(5).value).toBe('Sin atenciones');
   });
 });

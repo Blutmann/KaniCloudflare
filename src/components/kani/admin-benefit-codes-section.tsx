@@ -44,6 +44,7 @@ import {
 } from '@/components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { AdminFilterCell, AdminFilterPanel } from '@/components/kani/v2/admin-filter-panel';
+import { ExcelExportButton } from '@/components/kani/v2/excel-export-button';
 import { supabase } from '@/integrations/supabase/client';
 import { useAdminStaff } from '@/lib/kani-admin-context';
 import { mayManageDiscounts } from '@/lib/kani-permissions';
@@ -664,7 +665,17 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
     if (exportingExcel || filteredAndSortedItems.length === 0) return;
     setExportingExcel(true);
     try {
-      await downloadBenefitCodesXlsx(filteredAndSortedItems);
+      const statusLabel = statusFilter === 'ALL' ? 'Todos' : getStatusDisplay(statusFilter).badgeLabel;
+      const filterParts = [`Estado: ${statusLabel}`];
+      if (searchTerm.trim()) filterParts.push(`Búsqueda: "${searchTerm.trim()}"`);
+      filterParts.push(
+        filteredAndSortedItems.length === 1
+          ? '1 registro'
+          : `${filteredAndSortedItems.length} registros`
+      );
+      await downloadBenefitCodesXlsx(filteredAndSortedItems, {
+        filterSummary: filterParts.join(' · '),
+      });
       showToast(
         filteredAndSortedItems.length === 1
           ? '1 código exportado a Excel'
@@ -915,22 +926,13 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                   ? '1 descuento encontrado'
                   : `${filteredAndSortedItems.length} descuentos encontrados`}
               </span>
-              <button
-                type="button"
+              <ExcelExportButton
                 onClick={() => void handleExportExcel()}
-                disabled={exportingExcel || loading || filteredAndSortedItems.length === 0}
-                aria-busy={exportingExcel}
-                aria-label="Exportar códigos a Excel"
-                title="Exportar códigos a Excel"
-                data-testid="export-benefit-codes-excel-btn"
-                className="v2-secondary kani-dtoolbar-export-btn inline-flex items-center justify-center w-10 h-10 shrink-0 rounded-xl border border-border text-muted-foreground hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              >
-                {exportingExcel ? (
-                  <Loader2 size={17} className="animate-spin" aria-hidden="true" />
-                ) : (
-                  <FileSpreadsheet size={17} aria-hidden="true" />
-                )}
-              </button>
+                exporting={exportingExcel}
+                disabled={loading || filteredAndSortedItems.length === 0}
+                label="Exportar códigos a Excel"
+                testId="export-benefit-codes-excel-btn"
+              />
             </div>
             {hideHeading && (
               <div className="kani-dtoolbar-actions">

@@ -40,8 +40,10 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle, KaniModalClose }
 import { supabase } from "@/integrations/supabase/client";
 import { AdminContextualSelect } from "./admin-mobile-select";
 import { useV2 } from "./data";
+import { ExcelExportButton } from "./excel-export-button";
 import { EditMembershipModal, MembershipCard } from "./MembershipCard";
 import { AdminFilterCell, AdminFilterPanel, Empty } from "./shared";
+import { downloadMembershipsXlsx, mapMembershipsToExportRows } from "@/lib/kani-memberships-xlsx";
 
 export function V2MembershipsAndDiscounts({
   initialTab = "MEMBRESIAS",
@@ -239,6 +241,58 @@ export function V2MembershipsAndDiscounts({
       return sortOrder === "OLDEST" ? aTime - bTime : bTime - aTime;
     });
   }, [data.memberships, data.clients, isOperator, staff.profile.barber_id, barberFilter, statusFilter, sortOrder, search]);
+
+  const [exportingMemberships, setExportingMemberships] = useState(false);
+
+  async function handleExportMembershipsExcel() {
+    if (exportingMemberships || scopedMemberships.length === 0) return;
+    setExportingMemberships(true);
+    try {
+      const rows = mapMembershipsToExportRows(
+        scopedMemberships,
+        (m) => {
+          const client = data.clients.find((c) => c.id === m.clientId);
+          return m.clientName || client?.name || "Sin cliente";
+        },
+        (m) => {
+          if (!m.barberId) return "Cualquiera";
+          return staff.barbers.find((b) => b.id === m.barberId)?.name || m.barberId;
+        },
+      );
+      const barberLabel = !isOperator
+        ? (staff.barbers.find((b) => b.id === staff.profile.barber_id)?.name || "Mi cuenta")
+        : barberFilter === "ALL"
+          ? "Todo Kani"
+          : (staff.barbers.find((b) => b.id === barberFilter)?.name || barberFilter);
+      const statusLabel =
+        statusFilter === "ALL"
+          ? "Todos"
+          : statusFilter === "ACTIVE"
+            ? "Activas"
+            : statusFilter === "PENDING_PAYMENT"
+              ? "Pago pendiente"
+              : statusFilter === "INACTIVE_GROUP"
+                ? "Inactivas"
+                : statusFilter;
+      const filterParts = [`Estado: ${statusLabel}`, `Barbero: ${barberLabel}`];
+      if (search.trim()) filterParts.push(`Búsqueda: "${search.trim()}"`);
+      filterParts.push(
+        scopedMemberships.length === 1
+          ? "1 registro"
+          : `${scopedMemberships.length} registros`,
+      );
+      await downloadMembershipsXlsx(rows, { filterSummary: filterParts.join(" · ") });
+      setNotice(
+        scopedMemberships.length === 1
+          ? "1 membresía exportada a Excel."
+          : `${scopedMemberships.length} membresías exportadas a Excel.`,
+      );
+    } catch {
+      setErrorNotice("No se pudo exportar el archivo Excel de membresías.");
+    } finally {
+      setExportingMemberships(false);
+    }
+  }
 
   const kpiActive = scopedMemberships.filter((m) => m.status === "ACTIVE").length;
   const kpiPending = scopedMemberships.filter((m) => m.status === "PENDING_PAYMENT").length;
@@ -761,11 +815,20 @@ export function V2MembershipsAndDiscounts({
                 gap: "10px",
               }}
             >
-              <span className="v2-memberships-count">
-                {scopedMemberships.length === 1
-                  ? "1 membresía encontrada"
-                  : `${scopedMemberships.length} membresías encontradas`}
-              </span>
+              <div className="flex items-center justify-between gap-2 flex-1 sm:flex-initial min-w-0">
+                <span className="v2-memberships-count">
+                  {scopedMemberships.length === 1
+                    ? "1 membresía encontrada"
+                    : `${scopedMemberships.length} membresías encontradas`}
+                </span>
+                <ExcelExportButton
+                  onClick={() => void handleExportMembershipsExcel()}
+                  exporting={exportingMemberships}
+                  disabled={scopedMemberships.length === 0}
+                  label="Exportar membresías a Excel"
+                  testId="export-memberships-excel-btn"
+                />
+              </div>
               <button
                 type="button"
                 className="v2-primary v2-client-add-btn v2-client-add-btn--desktop"
