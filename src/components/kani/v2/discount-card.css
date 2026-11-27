@@ -28,12 +28,42 @@
   color: var(--dc-text);
 }
 
-html[data-theme="dark"] .kani-dcode-rotate-btn {
-  border-left-color: rgba(255, 255, 255, 0.15);
+.kani-dcode-input-group {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  height: 44px;
+  min-height: 44px;
+  padding: 0 !important;
+  border-radius: 12px;
+  overflow: hidden !important;
+  box-sizing: border-box;
 }
 
-html[data-theme="light"] .kani-dcode-rotate-btn {
-  border-left-color: rgba(0, 0, 0, 0.1);
+.kani-dcode-input-group input {
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+}
+
+.kani-dcode-input-group .kani-dcode-rotate-btn {
+  width: 48px !important;
+  min-width: 48px !important;
+  height: auto !important;
+  align-self: stretch;
+  border: none !important;
+  border-left: 1px solid rgba(255, 255, 255, 0.14) !important;
+  border-radius: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+html[data-theme="light"] .kani-dcode-input-group .kani-dcode-rotate-btn {
+  border-left-color: rgba(0, 0, 0, 0.12) !important;
 }
 
 .kani-dgrid {
