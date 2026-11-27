@@ -8,6 +8,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { AdminSectionNav } from '@/components/kani/admin-section-nav';
 
 export const Route = createFileRoute('/admin')({
+  head: () => ({
+    meta: [{ name: 'robots', content: 'noindex, nofollow' }],
+  }),
   component: AdminLayout,
 });
 

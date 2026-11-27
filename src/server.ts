@@ -8,6 +8,10 @@ import {
   isPrivatePreviewEnabled,
   withPrivatePreviewHeaders,
 } from "./lib/kani-preview-gate.server";
+import {
+  getLegacyRouteRedirectUrl,
+  withSeoRobotsHeader,
+} from "./lib/kani-seo-routing.server";
 
 async function getCloudflareEnv(): Promise<unknown> {
   try {
@@ -121,6 +125,12 @@ export default {
       if (url.pathname === "/estudio" || url.pathname === "/estudio/") {
         url.pathname = "/contacto";
         return Response.redirect(url.toString(), 301);
+      }
+      if (request.method === "GET" || request.method === "HEAD") {
+        const legacyRedirect = getLegacyRouteRedirectUrl(request.url);
+        if (legacyRedirect) {
+          return withSeoRobotsHeader(request, Response.redirect(legacyRedirect, 301));
+        }
       }
       if (url.pathname === "/googleb98699670c2c80a6.html") {
         return new Response("google-site-verification: googleb98699670c2c80a6.html", {
@@ -1618,7 +1628,8 @@ export default {
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
       const normalized = await normalizeCatastrophicSsrResponse(response);
-      return isPrivatePreviewEnabled() ? withPrivatePreviewHeaders(normalized) : normalized;
+      const withRobots = withSeoRobotsHeader(request, normalized);
+      return isPrivatePreviewEnabled() ? withPrivatePreviewHeaders(withRobots) : withRobots;
     } catch (error) {
       console.error(error);
       return new Response(renderErrorPage(), {

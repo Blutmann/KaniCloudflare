@@ -22,6 +22,7 @@ export const Route = createFileRoute("/case-study")({
       "Caso de estudio Product Design",
       "Caso de estudio de Kani Barber Studio: diseño y construcción de una experiencia real de reservas.",
       "Kani Barber Studio — Product Design Case Study",
+      { noindex: true },
     ),
   component: CaseStudyPage,
 });

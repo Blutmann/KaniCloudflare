@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import '@fontsource-variable/inter';
 import { LiquidGlassBooking } from '@/components/kani/experimental/liquid-glass-booking';
-import { pageHead } from '@/lib/kani-head';
+import { buildKaniLocalBusinessJsonLd, KANI_SITE_ORIGIN, pageHead } from '@/lib/kani-head';
 import '@/components/kani/experimental/reserva-v2.css';
 import '@/components/kani/experimental/reserva-v3.css';
 import '@/components/kani/experimental/reserva-v4.css';
@@ -15,6 +15,10 @@ export const Route = createFileRoute('/reservar')({
       'Reservá tu turno',
       'Reservá tu turno en Kani Barber Studio.',
       'Kani Barber Studio - Reservar turno',
+      {
+        canonicalPath: '/reservar',
+        jsonLd: buildKaniLocalBusinessJsonLd(`${KANI_SITE_ORIGIN}/reservar`),
+      },
     ),
   component: () => <LiquidGlassBooking homeUrl="/reservar" />,
 });

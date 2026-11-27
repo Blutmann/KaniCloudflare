@@ -23,6 +23,7 @@ export const Route = createFileRoute('/pago/pendiente')({
       'Pago Pendiente · Kani Barber Studio',
       'Tu pago está pendiente de acreditación en Mercado Pago.',
       'Kani Barber Studio - Pago Pendiente',
+      { noindex: true },
     ),
   component: PagoPendientePage,
 });
