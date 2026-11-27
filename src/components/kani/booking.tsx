@@ -10,6 +10,7 @@ import { availabilityStartTimesForServiceDate, eligibleBarbersForAvailabilitySta
 import { businessDateToday } from '@/lib/kani-mobile-appointments';
 import { appointmentErrorMessage, createRealAppointment } from '@/lib/kani-appointments';
 import { getDynamicDownPayment } from '@/lib/kani-down-payment';
+import { KANI_PUBLIC_WHATSAPP_URL } from '@/lib/kani-constants';
 import { createBookingOrderFn } from '@/lib/kani-mercadopago.functions';
 import { normalizePhone, type PhoneCountry } from '@/lib/kani-phone';
 import { attachMobileProgressiveFieldScroll } from '@/lib/kani-mobile-field-scroll';
@@ -2750,6 +2751,17 @@ export function Booking({
                   >
                     Política de Privacidad
                   </a>.
+                </p>
+                <p className="booking-datos-whatsapp-help text-xs text-muted-foreground mt-2 px-1 text-left leading-relaxed">
+                  ¿Tenés alguna duda con la seña?{' '}
+                  <a
+                    href={`${KANI_PUBLIC_WHATSAPP_URL}?text=${encodeURIComponent('Hola, tengo una consulta sobre la seña de mi turno.')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline underline-offset-2 hover:text-foreground text-gold font-medium transition-colors"
+                  >
+                    Escribinos por WhatsApp
+                  </a>
                 </p>
               </div>
             )}

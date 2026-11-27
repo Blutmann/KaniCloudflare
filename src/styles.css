@@ -4543,7 +4543,7 @@ html[data-theme] .booking-page .selection-circle,
 html[data-theme] .booking-page .booking-time-slot:not(.selected):not(:disabled) {
   border-color: var(--kani-control-border) !important;
 }
-html[data-theme='light'] .header-whatsapp-button svg { color: #128c4b; }
+html[data-theme='light'] .header-whatsapp-button svg { color: #128c4b !important; }
 /* The pending notice crosses the wallpaper's red seal on small screens. */
 html[data-theme='light'] .booking-page .summary-pending-notice {
   background: #ffffff66 !important;

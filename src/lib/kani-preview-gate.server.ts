@@ -33,6 +33,8 @@ const EXACT_EXCLUDED_PATHS = new Set([
   "/api/calendar/turno",
   "/googleb98699670c2c80a6.html",
   "/favicon.svg",
+  "/favicon-32x32.png",
+  "/apple-touch-icon.png",
 ]);
 
 function getEnvValue(name: string): string {

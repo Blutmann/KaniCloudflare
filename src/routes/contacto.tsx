@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { ExternalLink, Instagram, MapPin, Star } from "lucide-react";
+import { Check, Copy, ExternalLink, Instagram, MapPin, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BookingStepHeading } from "@/components/kani/booking-step-heading";
 import { buildKaniLocalBusinessJsonLd, pageHead } from "@/lib/kani-head";
@@ -18,6 +18,8 @@ import {
   resolveContactoBookingNavState,
   type ContactoBookingNavState,
 } from "@/lib/kani-booking-draft";
+import type { GoogleReviewsPayload } from "@/lib/kani-google-reviews.server";
+import { getStudioOpenStatus, type StudioOpenStatus } from "@/lib/kani-studio-hours";
 import "@/components/kani/experimental/liquid-glass-desktop-v12-22.css";
 
 const mapsUrl = KANI_MAPS_URL;
@@ -30,9 +32,10 @@ export const Route = createFileRoute("/contacto")({
     pageHead(
       "Contacto",
       "Contacto de Kani Barber Studio, ubicación y horarios de atención.",
-      "Kani Barber Studio - Contacto",
+      "Kani · Contacto",
       {
         canonicalPath: "https://www.kanibarber.com/contacto",
+        ogTitle: "Kani Barber Studio · Contacto y Ubicación",
         jsonLd: buildKaniLocalBusinessJsonLd("https://www.kanibarber.com/contacto"),
       },
     ),
@@ -82,11 +85,18 @@ export function ContactoContent({
     mode: "new",
     label: "Reservar un turno",
   });
+  const [studioStatus, setStudioStatus] = useState<StudioOpenStatus>(() => getStudioOpenStatus());
+  const [copiedAddress, setCopiedAddress] = useState(false);
+  const [reviewsState, setReviewsState] = useState<{
+    loading: boolean;
+    data: GoogleReviewsPayload | null;
+  }>({ loading: true, data: null });
   const ctaRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const syncNavState = () => {
       setNavState(resolveContactoBookingNavState());
+      setStudioStatus(getStudioOpenStatus());
     };
     syncNavState();
     const handleVisibility = () => {
@@ -101,6 +111,29 @@ export function ContactoContent({
       window.removeEventListener("focus", syncNavState);
       window.removeEventListener("storage", syncNavState);
       document.removeEventListener("visibilitychange", handleVisibility);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof fetch !== "function") {
+      setReviewsState({ loading: false, data: null });
+      return;
+    }
+    const controller = new AbortController();
+    fetch("/api/google-reviews", { signal: controller.signal })
+      .then((res) => (res.ok ? (res.json() as Promise<GoogleReviewsPayload>) : null))
+      .then((data) => {
+        if (!controller.signal.aborted) {
+          setReviewsState({ loading: false, data });
+        }
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) {
+          setReviewsState({ loading: false, data: null });
+        }
+      });
+    return () => {
+      controller.abort();
     };
   }, []);
 
@@ -139,11 +172,36 @@ export function ContactoContent({
     }
   };
 
+  const handleCopyAddress = async () => {
+    try {
+      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(KANI_STUDIO_ADDRESS);
+        setCopiedAddress(true);
+        window.setTimeout(() => setCopiedAddress(false), 2000);
+      }
+    } catch {
+      // Ignore clipboard permission errors cleanly
+    }
+  };
+
+  const liveReviews = reviewsState.data?.reviews ?? [];
+  const hasLiveReviews = reviewsState.data?.source === "google_places" && liveReviews.length > 0;
+  const effectiveReviewUrl = resolvedReviewUrl ?? reviewsState.data?.reviewUrl ?? null;
+
   return (
     <div className="booking-page kani-contacto-booking-page">
       <div className="booking-scroll-content kani-contacto-scroll-content">
         <main className="site-container studio-page contacto-page kani-contacto-main">
-          <BookingStepHeading title="Contactanos" />
+          <div className="kani-contacto-heading-row">
+            <BookingStepHeading title="Contactanos" />
+            <span
+              className={`kani-contacto-status-pill ${studioStatus.isOpen ? "is-open" : "is-closed"}`}
+              suppressHydrationWarning
+            >
+              <span className="kani-contacto-status-dot" aria-hidden="true" />
+              <span>{studioStatus.label}</span>
+            </span>
+          </div>
 
           <div className="studio-info-grid kani-contacto-social-grid">
             {/* 1. Instagram */}
@@ -156,7 +214,7 @@ export function ContactoContent({
             >
               <div className="studio-card-top">
                 <span className="studio-card-icon-wrap" aria-hidden="true">
-                  <Instagram className="studio-info-icon" size={20} />
+                  <Instagram className="studio-info-icon" size={18} />
                 </span>
                 <div className="kani-contacto-social-copy">
                   <h2 className="studio-card-title">Instagram</h2>
@@ -164,7 +222,7 @@ export function ContactoContent({
                 </div>
               </div>
               <span className="studio-card-action">
-                Ver perfil <ExternalLink size={14} aria-hidden="true" />
+                Ver perfil <ExternalLink size={13} aria-hidden="true" />
               </span>
             </a>
 
@@ -178,7 +236,7 @@ export function ContactoContent({
             >
               <div className="studio-card-top">
                 <span className="studio-card-icon-wrap" aria-hidden="true">
-                  <WhatsAppIcon className="studio-info-icon" size={20} />
+                  <WhatsAppIcon className="studio-info-icon" size={18} />
                 </span>
                 <div className="kani-contacto-social-copy">
                   <h2 className="studio-card-title">WhatsApp</h2>
@@ -186,12 +244,94 @@ export function ContactoContent({
                 </div>
               </div>
               <span className="studio-card-action">
-                Escribinos <ExternalLink size={14} aria-hidden="true" />
+                Escribinos <ExternalLink size={13} aria-hidden="true" />
               </span>
             </a>
           </div>
 
-          {/* 3. Ubicación, horarios y mapa interactivo */}
+          {/* 3. Reseñas de Google (Google Places API con fallback automático a Google Maps) */}
+          <section
+            className="kani-contacto-reviews-section"
+            aria-label="Reseñas de clientes en Google"
+          >
+            {reviewsState.loading ? (
+              <div className="kani-contacto-reviews-skeleton" aria-hidden="true">
+                <div className="kani-contacto-skeleton-line is-short" />
+                <div className="kani-contacto-skeleton-line" />
+              </div>
+            ) : hasLiveReviews ? (
+              <div className="studio-info-card kani-contacto-reviews-card">
+                <div className="kani-contacto-reviews-header">
+                  <div className="kani-contacto-reviews-summary">
+                    <span className="kani-contacto-reviews-score">
+                      <Star size={15} className="kani-contacto-review-star is-filled" aria-hidden="true" />
+                      <strong>{reviewsState.data?.rating?.toFixed(1) ?? "5.0"}</strong>
+                    </span>
+                    {reviewsState.data?.userRatingCount ? (
+                      <span className="kani-contacto-reviews-count">
+                        · {reviewsState.data.userRatingCount} reseñas en Google
+                      </span>
+                    ) : (
+                      <span className="kani-contacto-reviews-count">· Reseñas en Google</span>
+                    )}
+                  </div>
+                  <a
+                    href={reviewsState.data?.mapsUrl || mapsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="kani-contacto-reviews-more"
+                  >
+                    Ver todas <ExternalLink size={13} aria-hidden="true" />
+                  </a>
+                </div>
+                <div className="kani-contacto-reviews-carousel" role="list">
+                  {liveReviews.map((review, index) => (
+                    <article
+                      key={`${review.authorName}-${index}`}
+                      className="kani-contacto-review-item"
+                      role="listitem"
+                    >
+                      <div className="kani-contacto-review-item-head">
+                        <span className="kani-contacto-review-author">{review.authorName}</span>
+                        <span className="kani-contacto-review-stars" aria-label={`${review.rating} de 5 estrellas`}>
+                          {"★".repeat(Math.max(1, Math.min(5, Math.round(review.rating))))}
+                        </span>
+                      </div>
+                      <p className="kani-contacto-review-text">“{review.text}”</p>
+                      {review.relativePublishTimeDescription ? (
+                        <span className="kani-contacto-review-date">
+                          {review.relativePublishTimeDescription}
+                        </span>
+                      ) : null}
+                    </article>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <a
+                href={mapsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="studio-info-card studio-info-link kani-contacto-reviews-fallback"
+                aria-label="Ver opiniones de clientes en Google Maps"
+              >
+                <div className="kani-contacto-reviews-fallback-left">
+                  <span className="studio-card-icon-wrap kani-contacto-reviews-icon" aria-hidden="true">
+                    <Star size={18} className="kani-contacto-review-star is-filled" />
+                  </span>
+                  <div className="kani-contacto-social-copy">
+                    <h2 className="studio-card-title">Opiniones en Google Maps</h2>
+                    <p className="studio-card-desc">Conocé la experiencia de nuestros clientes</p>
+                  </div>
+                </div>
+                <span className="studio-card-action">
+                  Ver reseñas <ExternalLink size={13} aria-hidden="true" />
+                </span>
+              </a>
+            )}
+          </section>
+
+          {/* 4. Ubicación, horarios y mapa interactivo */}
           <section
             className="studio-map-card kani-contacto-location-card"
             aria-label="Ubicación y horarios de Kani Barber Studio"
@@ -205,15 +345,35 @@ export function ContactoContent({
                   <h2 className="studio-map-title">{KANI_STUDIO_NAME}</h2>
                   <p className="studio-map-address">{KANI_STUDIO_ADDRESS}</p>
                   <p className="kani-contacto-hours">Lunes a sábados · 10:00 a 20:00</p>
-                  <a
-                    href={mapsUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="studio-map-link kani-contacto-directions-link"
-                    aria-label="Abrir Kani Barber Studio en Google Maps para obtener indicaciones"
-                  >
-                    Cómo llegar <ExternalLink size={14} aria-hidden="true" />
-                  </a>
+                  <div className="kani-contacto-location-actions">
+                    <a
+                      href={mapsUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="studio-map-link kani-contacto-directions-link"
+                      aria-label="Abrir Kani Barber Studio en Google Maps para obtener indicaciones"
+                    >
+                      Cómo llegar <ExternalLink size={14} aria-hidden="true" />
+                    </a>
+                    <button
+                      type="button"
+                      onClick={handleCopyAddress}
+                      className="kani-contacto-copy-btn"
+                      aria-label="Copiar dirección del estudio"
+                    >
+                      {copiedAddress ? (
+                        <>
+                          <Check size={13} aria-hidden="true" />
+                          <span>¡Copiada!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy size={13} aria-hidden="true" />
+                          <span>Copiar dirección</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -227,14 +387,14 @@ export function ContactoContent({
                 referrerPolicy="no-referrer-when-downgrade"
               />
             </div>
-            {resolvedReviewUrl ? (
+            {effectiveReviewUrl ? (
               <div className="kani-contacto-review-row">
                 <span className="kani-contacto-review-prompt">
                   <Star size={15} className="kani-contacto-review-star" aria-hidden="true" />
                   <span>¿Ya nos visitaste?</span>
                 </span>
                 <a
-                  href={resolvedReviewUrl}
+                  href={effectiveReviewUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="kani-contacto-review-link"

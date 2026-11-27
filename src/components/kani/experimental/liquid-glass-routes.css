@@ -47,10 +47,52 @@ html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani
   box-sizing: border-box;
 }
 
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-heading-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  margin-bottom: var(--lg-rhythm-title-to-content, 16px);
+}
+
 html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .booking-step-heading {
   margin-top: 0 !important;
-  margin-bottom: var(--lg-rhythm-title-to-content, 16px) !important;
+  margin-bottom: 0 !important;
   padding-top: 4px !important;
+}
+
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.2;
+  border: 1px solid rgba(148, 144, 138, 0.28);
+  background: rgba(255, 255, 255, 0.56);
+  color: var(--foreground);
+  backdrop-filter: blur(12px);
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-status-pill {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: #8e8a82;
+  flex-shrink: 0;
+}
+
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-status-pill.is-open .kani-contacto-status-dot {
+  background: #16a34a;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.18);
 }
 
 html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .booking-step-heading-title.section-title {
@@ -66,7 +108,7 @@ html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani
   grid-template-columns: repeat(2, minmax(0, 1fr));
   grid-auto-rows: 1fr;
   align-items: stretch;
-  gap: 12px;
+  gap: 10px;
   margin: 0;
 }
 
@@ -79,26 +121,33 @@ html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani
 html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-social-card {
   height: 100%;
   min-width: 0;
-  padding: 16px;
+  min-height: 64px;
+  padding: 12px 14px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  gap: 14px;
+  gap: 8px;
   box-sizing: border-box;
 }
 
 html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-social-card .studio-card-top {
   display: flex;
-  align-items: flex-start;
-  gap: 12px;
+  align-items: center;
+  gap: 10px;
   min-width: 0;
+}
+
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-social-card .studio-card-icon-wrap {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
 }
 
 html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-social-copy {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
 }
 
 html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-social-card .studio-card-desc {
@@ -106,23 +155,193 @@ html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: clamp(11px, 3vw, 13px);
-  line-height: 1.35;
+  font-size: clamp(11px, 3vw, 12.5px);
+  line-height: 1.3;
   white-space: nowrap;
 }
 
 html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-social-card .studio-card-action {
   margin-top: auto;
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 600;
   display: inline-flex;
   align-items: center;
+  gap: 5px;
+}
+
+/* --- Reseñas de Google --- */
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-reviews-section {
+  width: 100%;
+  margin-top: 12px;
+}
+
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-reviews-skeleton {
+  padding: 14px 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(148, 144, 138, 0.22);
+  background: rgba(255, 255, 255, 0.45);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-reviews-skeleton {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-skeleton-line {
+  height: 14px;
+  border-radius: 999px;
+  background: rgba(148, 144, 138, 0.2);
+}
+
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-skeleton-line.is-short {
+  width: 48%;
+}
+
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-reviews-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  min-height: 62px;
+  text-decoration: none;
+}
+
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-reviews-fallback-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-reviews-fallback .studio-card-action {
+  flex-shrink: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-reviews-card {
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-reviews-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-reviews-summary {
+  display: inline-flex;
+  align-items: center;
   gap: 6px;
+  font-size: 13.5px;
+}
+
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-reviews-score {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--foreground);
+}
+
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-reviews-count {
+  color: var(--muted-foreground);
+  font-size: 12.5px;
+}
+
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-reviews-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--gold, #8c6620);
+  text-decoration: none;
+}
+
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-reviews-carousel {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding-bottom: 4px;
+  -webkit-overflow-scrolling: touch;
+}
+
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-review-item {
+  flex: 0 0 min(260px, 82%);
+  scroll-snap-align: start;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 144, 138, 0.22);
+  background: rgba(255, 255, 255, 0.55);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-review-item {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-review-item-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-review-author {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--foreground);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-review-stars {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: #b4842c;
+  flex-shrink: 0;
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-review-stars {
+  color: #e4c98f;
+}
+
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-review-text {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.42;
+  color: var(--foreground);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-review-date {
+  margin-top: auto;
+  font-size: 11px;
+  color: var(--muted-foreground);
 }
 
 html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-location-card {
   width: 100%;
-  margin-top: 14px;
+  margin-top: 12px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -166,13 +385,20 @@ html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani
   color: var(--muted-foreground);
 }
 
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-location-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 16px;
+}
+
 html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-directions-link {
   display: inline-flex;
   align-items: center;
   gap: 5px;
   width: fit-content;
   min-height: 44px;
-  margin: -6px 0 -8px 0;
+  margin: -4px 0 -6px 0;
   padding: 0;
   background: transparent !important;
   border: none !important;
@@ -181,6 +407,32 @@ html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani
   font-weight: 600;
   text-decoration: none;
   transition: color 160ms ease, opacity 160ms ease, transform 160ms ease;
+}
+
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 44px;
+  margin: -4px 0 -6px 0;
+  padding: 0 4px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--muted-foreground);
+  cursor: pointer;
+  transition: color 160ms ease, opacity 160ms ease;
+}
+
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-copy-btn:hover {
+  color: var(--foreground);
+}
+
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-copy-btn:focus-visible {
+  outline: 2px solid var(--gold, #c8a96b);
+  outline-offset: 2px;
 }
 
 html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-directions-link:hover {
