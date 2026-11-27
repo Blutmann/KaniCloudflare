@@ -354,6 +354,9 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
     });
   }, [selectedType, selectedUsageMode, existingCodesList, suggestionSeed]);
 
+  const currentSuggestion =
+    codeSuggestions[suggestionSeed % Math.max(1, codeSuggestions.length)] || 'KANI-VIP-2026';
+
   const cycleBatchCount = () => {
     setSelectedBatchCount((prev) => (prev === 1 ? 5 : prev === 5 ? 10 : 1));
   };
@@ -1646,7 +1649,7 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                       </select>
                     </div>
 
-                    <div className="w-[84px] shrink-0 space-y-1.5">
+                    <div className="w-[76px] shrink-0 space-y-1.5">
                       <span className="text-xs font-semibold text-foreground block text-center">
                         Cantidad
                       </span>
@@ -1754,49 +1757,35 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                   </div>
                 </div>
 
-                {/* 4. Código personalizado / Prefijo del lote + 2 sugerencias contextuales */}
+                {/* 4. Código personalizado / Prefijo del lote con sugerencia contextual en placeholder + botón ↻ dentro del input */}
                 <div className="space-y-1.5">
-                  <div className="flex items-center justify-between gap-2">
-                    <label htmlFor="create-custom-code" className="text-xs font-semibold text-foreground block">
-                      {selectedBatchCount > 1
-                        ? `Prefijo del lote ×${selectedBatchCount} (opcional)`
-                        : 'Código personalizado (opcional)'}
-                    </label>
+                  <label htmlFor="create-custom-code" className="text-xs font-semibold text-foreground block">
+                    {selectedBatchCount > 1
+                      ? `Prefijo del lote ×${selectedBatchCount} (opcional)`
+                      : 'Código personalizado (opcional)'}
+                  </label>
+                  <div className="relative">
+                    <Input
+                      id="create-custom-code"
+                      value={customCode}
+                      onChange={(e) => setCustomCode(e.target.value.toUpperCase())}
+                      placeholder={selectedBatchCount > 1 ? 'KANI-VIP' : currentSuggestion}
+                      className={`text-xs font-mono uppercase bg-background${selectedBatchCount === 1 ? ' pr-10' : ''}`}
+                      maxLength={selectedBatchCount > 1 ? 24 : 32}
+                    />
                     {selectedBatchCount === 1 && (
                       <button
                         type="button"
                         onClick={() => setSuggestionSeed((s) => s + 1)}
-                        className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors"
-                        aria-label="Generar nuevas sugerencias de código"
+                        data-testid="rotate-suggestion-btn"
+                        aria-label="Rotar sugerencia de código"
+                        title="Otra sugerencia"
+                        className="absolute right-1.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-md inline-flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
                       >
-                        <RefreshCw size={11} aria-hidden="true" />
-                        <span>Nuevas</span>
+                        <RefreshCw size={14} aria-hidden="true" />
                       </button>
                     )}
                   </div>
-                  <Input
-                    id="create-custom-code"
-                    value={customCode}
-                    onChange={(e) => setCustomCode(e.target.value.toUpperCase())}
-                    placeholder={selectedBatchCount > 1 ? 'Ej: KANI-VIP' : 'Ej: KANI-VIP-2026'}
-                    className="text-xs font-mono uppercase bg-background"
-                    maxLength={selectedBatchCount > 1 ? 24 : 32}
-                  />
-                  {selectedBatchCount === 1 && codeSuggestions.length > 0 && (
-                    <div className="grid grid-cols-2 gap-2 pt-0.5" data-testid="code-suggestions-grid">
-                      {codeSuggestions.slice(0, 2).map((suggestion) => (
-                        <button
-                          key={suggestion}
-                          type="button"
-                          onClick={() => setCustomCode(suggestion)}
-                          title={suggestion}
-                          className="min-w-0 w-full px-2.5 py-1.5 rounded-md border border-border bg-muted/30 hover:border-gold/70 hover:bg-gold/10 text-[11px] font-mono font-medium text-foreground truncate text-center transition-colors"
-                        >
-                          {suggestion}
-                        </button>
-                      ))}
-                    </div>
-                  )}
                   <span className="hidden sm:block text-[11px] text-muted-foreground">
                     {selectedBatchCount > 1
                       ? `Se generarán ${selectedBatchCount} códigos únicos automáticamente con sufijo aleatorio.`

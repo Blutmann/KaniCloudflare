@@ -279,11 +279,11 @@ export function normalizeBenefitCode(code: string | undefined | null): string {
 
 /**
  * Validates benefit code syntax.
- * Codes must be 4 to 32 alphanumeric characters or hyphens.
+ * Codes must be 4 to 32 alphanumeric characters (including Ñ) or hyphens.
  */
 export function isValidBenefitCodeFormat(code: string): boolean {
   const normalized = normalizeBenefitCode(code);
-  return /^[A-Z0-9-]{4,32}$/.test(normalized);
+  return /^[A-Z0-9Ñ-]{4,32}$/.test(normalized);
 }
 
 const BENEFIT_CODE_ALPHABET = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
@@ -316,7 +316,7 @@ export const generateBenefitCode = generateBenefitCodeString;
  */
 export function generateBatchBenefitCodeString(prefix?: string | null): string {
   const cleanPrefix = normalizeBenefitCode(prefix)
-    .replace(/[^A-Z0-9-]/g, '')
+    .replace(/[^A-Z0-9Ñ-]/g, '')
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '')
     .slice(0, 24);
@@ -336,10 +336,10 @@ function getBuenosAiresContextualOccasion(baseDate: Date): { year: number; tag: 
   }
   // Año Nuevo (27–31 Dic usa año entrante; 1–7 Ene usa año actual)
   if (month === 12 && day >= 27) {
-    return { year: year + 1, tag: 'ANO' };
+    return { year: year + 1, tag: 'AÑO' };
   }
   if (month === 1 && day <= 7) {
-    return { year, tag: 'ANO' };
+    return { year, tag: 'AÑO' };
   }
   // San Valentín (8–16 Feb)
   if (month === 2 && day >= 8 && day <= 16) {
@@ -367,7 +367,7 @@ function getBuenosAiresContextualOccasion(baseDate: Date): { year: number; tag: 
     return { year, tag: 'VERANO' };
   }
   if (month >= 3 && month <= 5) {
-    return { year, tag: 'OTONO' };
+    return { year, tag: 'OTOÑO' };
   }
   if (month >= 6 && month <= 8) {
     return { year, tag: 'INVIERNO' };
@@ -382,7 +382,7 @@ function getBenefitTagForSuggestion(type: BenefitCodeType): string {
     case 'PERCENT_50':
       return '50OFF';
     case 'NO_DEPOSIT':
-      return 'SINSENA';
+      return 'SIN-SEÑA';
     case 'FREE_SERVICE':
       return 'FREE';
   }
@@ -419,11 +419,15 @@ export function generateContextualBenefitCodeSuggestions(params: {
 
   const buildCandidate = (slot: number): string => {
     if (slot === 0) {
-      // Chip 1: contextual por fecha AR (ej. KANI-2026-NAVIDAD-X9E3 / KANI-2027-ANO-7J9Q)
+      // Contextual por fecha AR (ej. KANI-2026-NAVIDAD-X9E3 / KANI-2027-AÑO-7J9Q)
       return `KANI-${occasion.year}-${occasion.tag}-${randomBenefitChunk(4)}`;
     }
+    if (params.type === 'NO_DEPOSIT') {
+      // Formato natural con Ñ: KANI-SIN-SEÑA-X910
+      return `KANI-SIN-SEÑA-${randomBenefitChunk(4)}`;
+    }
     if (params.usageMode === 'LIMITED_USE') {
-      // Chip 2 para 10 usos: ej. KANI-OFF-N8Z1-X9G2 o KANI-10OFF-N8Z1-X9G2
+      // Para 10 usos: ej. KANI-OFF-N8Z1-X9G2
       const prefix = params.type === 'PERCENT_10' || params.type === 'PERCENT_50' ? 'OFF' : benefitTag;
       return `KANI-${prefix}-${randomBenefitChunk(4)}-${randomBenefitChunk(4)}`;
     }
