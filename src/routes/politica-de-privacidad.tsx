@@ -10,6 +10,7 @@ export const Route = createFileRoute('/politica-de-privacidad')({
       'Política de Privacidad',
       'Política de Privacidad de Kani Barber Studio. Tratamiento, resguardo de datos personales y derechos del usuario conforme a la Ley 25.326.',
       'Política de Privacidad · Kani Barber Studio',
+      { canonicalPath: '/politica-de-privacidad' },
     ),
   component: () => (
     <LiquidGlassShell section="legal">

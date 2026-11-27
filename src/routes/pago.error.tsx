@@ -10,6 +10,7 @@ export const Route = createFileRoute('/pago/error')({
       'Pago No Procesado · Kani Barber Studio',
       'El pago de la seña no pudo completarse.',
       'Kani Barber Studio - Pago No Procesado',
+      { noindex: true },
     ),
   component: PagoErrorPage,
 });

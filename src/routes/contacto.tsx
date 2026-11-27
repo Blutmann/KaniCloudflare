@@ -3,7 +3,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { ExternalLink, Instagram, MapPin, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BookingStepHeading } from "@/components/kani/booking-step-heading";
-import { pageHead } from "@/lib/kani-head";
+import { buildKaniLocalBusinessJsonLd, pageHead } from "@/lib/kani-head";
 import { LiquidGlassShell } from "@/components/kani/experimental/liquid-glass-shell";
 import {
   KANI_GOOGLE_REVIEW_URL,
@@ -26,16 +26,16 @@ const instagramUrl = "https://www.instagram.com/kanibarberstudio/";
 const whatsAppUrl = KANI_PUBLIC_WHATSAPP_URL;
 
 export const Route = createFileRoute("/contacto")({
-  head: () => ({
-    ...pageHead(
+  head: () =>
+    pageHead(
       "Contacto",
       "Contacto de Kani Barber Studio, ubicación y horarios de atención.",
       "Kani Barber Studio - Contacto",
+      {
+        canonicalPath: "https://www.kanibarber.com/contacto",
+        jsonLd: buildKaniLocalBusinessJsonLd("https://www.kanibarber.com/contacto"),
+      },
     ),
-    links: [
-      { rel: "canonical", href: "https://www.kanibarber.com/contacto" },
-    ],
-  }),
   component: StudioPage,
 });
 

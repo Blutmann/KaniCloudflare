@@ -1,14 +1,22 @@
-User-agent: Googlebot
-Allow: /
-
-User-agent: Bingbot
-Allow: /
-
-User-agent: Twitterbot
-Allow: /
-
-User-agent: facebookexternalhit
-Allow: /
-
 User-agent: *
 Allow: /
+Disallow: /panel-administracion
+Disallow: /panel-administracion-old
+Disallow: /panel-v2
+Disallow: /panel-descuentos
+Disallow: /panel-horarios
+Disallow: /panel-membresias
+Disallow: /panel-turnos
+Disallow: /admin
+Disallow: /admin-liquid
+Disallow: /admin-v2
+Disallow: /admin-v2-liquid
+Disallow: /pago/
+Disallow: /membresia/
+Disallow: /verificar-membresia/
+Disallow: /activar-cuenta
+Disallow: /restablecer-contrasena
+Disallow: /acceso-privado
+Disallow: /api/
+
+Sitemap: https://www.kanibarber.com/sitemap.xml
