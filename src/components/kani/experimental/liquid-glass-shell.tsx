@@ -19,33 +19,10 @@ const LIQUID_GLASS_PREFIXES = [
   '/pago',
   '/politica-de-privacidad',
   '/terminos-y-condiciones',
-  '/admin-v2-liquid',
-  // Rutas heredadas que redirigen a oficiales
-  '/reservar-turno',
-  '/reservar-turno-liquid',
-  '/contacto-liquid',
-  '/admin-liquid',
-  '/politica-de-privacidad-liquid',
-  '/terminos-y-condiciones-liquid',
 ] as const;
 
-export function isClassicLegacyPath(pathname: string): boolean {
-  const clean = pathname.replace(/\/+$/, '') || '/';
-  return (
-    clean.endsWith('-old') ||
-    clean.includes('-old/') ||
-    clean === '/reservar-turno-mercadopago' ||
-    clean === '/reservar-mercadopago' ||
-    clean === '/panel-v2' ||
-    clean.startsWith('/panel-v2/') ||
-    clean === '/reserva-v2' ||
-    clean === '/reserva-v3' ||
-    clean === '/reserva-v5' ||
-    clean === '/admin' ||
-    clean.startsWith('/admin/') ||
-    clean === '/admin-v2' ||
-    clean.startsWith('/admin-v2/')
-  );
+export function isClassicLegacyPath(_pathname: string): boolean {
+  return false;
 }
 
 const LIQUID_GLASS_ADMIN_PREFIXES = [
@@ -54,13 +31,10 @@ const LIQUID_GLASS_ADMIN_PREFIXES = [
   '/panel-descuentos',
   '/panel-turnos',
   '/panel-horarios',
-  '/admin-v2-liquid',
-  '/admin-liquid',
 ] as const;
 
 export function isLiquidGlassPath(pathname: string): boolean {
   const clean = pathname.replace(/\/+$/, '') || '/';
-  if (isClassicLegacyPath(clean)) return false;
   return LIQUID_GLASS_PREFIXES.some((prefix) =>
     prefix === '/' ? clean === '/' : clean === prefix || clean.startsWith(`${prefix}/`),
   );
@@ -68,7 +42,6 @@ export function isLiquidGlassPath(pathname: string): boolean {
 
 export function isLiquidGlassAdminPath(pathname: string): boolean {
   const clean = pathname.replace(/\/+$/, '') || '/';
-  if (isClassicLegacyPath(clean)) return false;
   return LIQUID_GLASS_ADMIN_PREFIXES.some(
     (prefix) => clean === prefix || clean.startsWith(`${prefix}/`),
   );

@@ -28,8 +28,6 @@ vi.mock('@/lib/kani-maintenance', () => ({
 describe('KANI BARBER STUDIO — Corrección Integral de la Interfaz de Mantenimiento en Admin V2', () => {
   const stylesCss = fs.readFileSync(path.resolve(process.cwd(), 'src/styles.css'), 'utf-8');
   const siteHeaderCode = fs.readFileSync(path.resolve(process.cwd(), 'src/components/kani/site-header.tsx'), 'utf-8');
-  const adminMaintenanceRoute = fs.readFileSync(path.resolve(process.cwd(), 'src/routes/admin.mantenimiento.tsx'), 'utf-8');
-  const adminV2MaintenanceRoute = fs.readFileSync(path.resolve(process.cwd(), 'src/routes/admin-v2.mantenimiento.tsx'), 'utf-8');
   const maintenanceComponentCode = fs.readFileSync(path.resolve(process.cwd(), 'src/components/kani/admin-maintenance.tsx'), 'utf-8');
 
   afterEach(() => {
@@ -38,16 +36,23 @@ describe('KANI BARBER STUDIO — Corrección Integral de la Interfaz de Mantenim
 
   describe('1. Unificación de Navegación y Rutas canónicas', () => {
     it('el menú principal de SiteHeader enlaza a /panel-administracion/mantenimiento para rol ADMIN', () => {
-      expect(siteHeaderCode).toContain('to="/panel-administracion/mantenimiento"');
+      expect(siteHeaderCode).toContain("const adminBase = '/panel-administracion';");
+      expect(siteHeaderCode).toContain('to={`${adminBase}/mantenimiento`}');
       expect(siteHeaderCode).not.toContain('to="/admin/mantenimiento"');
     });
 
-    it('la ruta heredada /admin/mantenimiento redirige a /panel-administracion/mantenimiento', () => {
-      expect(adminMaintenanceRoute).toContain("redirect({ to: '/panel-administracion/mantenimiento'");
+    it('la ruta heredada /admin/mantenimiento redirige 301 a /panel-administracion/mantenimiento', async () => {
+      const { getLegacyRouteRedirectUrl } = await import('@/lib/kani-seo-routing.server');
+      expect(getLegacyRouteRedirectUrl('https://www.kanibarber.com/admin/mantenimiento')).toBe(
+        'https://www.kanibarber.com/panel-administracion/mantenimiento',
+      );
     });
 
-    it('la ruta /admin-v2/mantenimiento redirige a /panel-administracion/mantenimiento', () => {
-      expect(adminV2MaintenanceRoute).toContain('redirect({ to: "/panel-administracion/mantenimiento"');
+    it('la ruta /admin-v2/mantenimiento redirige 301 a /panel-administracion/mantenimiento', async () => {
+      const { getLegacyRouteRedirectUrl } = await import('@/lib/kani-seo-routing.server');
+      expect(getLegacyRouteRedirectUrl('https://www.kanibarber.com/admin-v2/mantenimiento')).toBe(
+        'https://www.kanibarber.com/panel-administracion/mantenimiento',
+      );
     });
   });
 

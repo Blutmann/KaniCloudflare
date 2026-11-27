@@ -47,6 +47,8 @@ async function fillContact(combined = true) {
   if (!combined) { next(); await screen.findByRole('heading', { name: 'Resumen' }); }
 }
 beforeEach(() => {
+  window.localStorage.clear();
+  window.sessionStorage.clear();
   Element.prototype.scrollTo = vi.fn();
   vi.useFakeTimers({ toFake: ['Date'] });
   vi.setSystemTime(new Date('2026-10-24T12:00:00Z'));
@@ -330,21 +332,19 @@ describe('isolated four-stage booking presentation', () => {
     expect(alert.textContent).toBe('No pudimos iniciar el pago. Tus datos no se perdieron. Podés volver a intentarlo.');
   });
 
-  it('declares noindex, nofollow in head() for experimental and alternative booking routes', () => {
+  it('removed experimental and alternative booking routes from src/routes/ and redirects them 301 to /reservar', async () => {
+    const { getLegacyRouteRedirectUrl } = await import('@/lib/kani-seo-routing.server');
     const routesDir = path.resolve(__dirname, '../routes');
     const experimentalRoutes = [
-      'reserva-v2.tsx',
-      'reserva-v3.tsx',
-      'reserva-v5.tsx',
-      'reservar-turno-mercadopago.tsx',
-      'reservar-mercadopago.tsx',
+      { file: 'reserva-v2.tsx', url: 'https://www.kanibarber.com/reserva-v2' },
+      { file: 'reserva-v3.tsx', url: 'https://www.kanibarber.com/reserva-v3' },
+      { file: 'reserva-v5.tsx', url: 'https://www.kanibarber.com/reserva-v5' },
+      { file: 'reservar-turno-mercadopago.tsx', url: 'https://www.kanibarber.com/reservar-turno-mercadopago' },
+      { file: 'reservar-mercadopago.tsx', url: 'https://www.kanibarber.com/reservar-mercadopago' },
     ];
-    for (const file of experimentalRoutes) {
-      const source = fs.readFileSync(path.join(routesDir, file), 'utf8');
-      expect(source, `${file} should declare head()`).toContain('head:');
-      expect(source, `${file} should include robots noindex, nofollow`).toMatch(
-        /name:\s*['"]robots['"],\s*content:\s*['"]noindex,\s*nofollow['"]/,
-      );
+    for (const { file, url } of experimentalRoutes) {
+      expect(fs.existsSync(path.join(routesDir, file)), `${file} should be removed in Phase 3`).toBe(false);
+      expect(getLegacyRouteRedirectUrl(url)).toBe('https://www.kanibarber.com/reservar');
     }
   });
 });

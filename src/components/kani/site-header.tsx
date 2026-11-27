@@ -1,7 +1,7 @@
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router';
 import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState, type MouseEvent } from 'react';
 import { createPortal } from 'react-dom';
-import { ArrowUpRight, Bell, Building2, CalendarClock, CalendarDays, ChartNoAxesCombined, Clock3, CreditCard, Home, IdCard, Instagram, LayoutGrid, LogIn, LogOut, MapPin, Menu, Moon, Scale, ShieldCheck, Sun, Tag, Users, Wrench, X } from 'lucide-react';
+import { ArrowUpRight, Bell, Building2, CalendarClock, CalendarDays, ChartNoAxesCombined, Clock3, CreditCard, Home, IdCard, Instagram, LogIn, LogOut, MapPin, Menu, Moon, Scale, ShieldCheck, Sun, Tag, Users, Wrench, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import kaniLogoLight from '@/assets/kani-logo-light.webp';
 import kaniLogoDark from '@/assets/kani-logo-dark.webp';
@@ -42,11 +42,7 @@ export function MobileMenuAction({ inline = false }: { inline?: boolean } = {}) 
   const { setMobileMenuOpen } = useKani();
   const returnToBooking = () => {
     setMobileMenuOpen(false);
-    const target = isLiquidGlassPath(path)
-      ? '/reservar'
-      : path.includes('mercadopago')
-        ? '/reservar-turno-mercadopago'
-        : '/reservar-turno-old';
+    const target = '/reservar';
     if (path !== target) void navigate({ to: target });
   };
   if (inline) {
@@ -150,13 +146,11 @@ export function SiteHeader() {
   const navigate = useNavigate();
   const isLiquidRoute = isLiquidGlassPath(path);
   const admin =
-    path.startsWith('/admin') ||
     path.startsWith('/panel-administracion') ||
     path.startsWith('/panel-membresias') ||
     path.startsWith('/panel-descuentos') ||
     path.startsWith('/panel-turnos') ||
-    path.startsWith('/panel-horarios') ||
-    path.startsWith('/panel-v2');
+    path.startsWith('/panel-horarios');
   const { mobileMenuOpen: menuOpen, setMobileMenuOpen: onMenuOpenChange } = useKani();
   const [staff, setStaff] = useState<AuthenticatedStaff | null>(null);
   const [headerScrolled, setHeaderScrolled] = useState(false);
@@ -335,38 +329,19 @@ export function SiteHeader() {
   }, [menuOpen]);
 
   const closeMenu = () => onMenuOpenChange(false);
-  const bookingTarget = isLiquidRoute
-    ? '/reservar'
-    : path.includes('mercadopago')
-      ? '/reservar-turno-mercadopago'
-      : '/reservar-turno-old';
-  const contactTarget = isLiquidRoute ? '/contacto' : '/contacto-old';
-  const adminBase = isLiquidRoute ? '/panel-administracion' : '/panel-administracion-old';
-  const turnosLinkTarget = isLiquidRoute ? '/panel-turnos' : `${adminBase}/turnos`;
-  const horariosLinkTarget = isLiquidRoute ? '/panel-horarios' : `${adminBase}/horarios`;
-  const membershipsLinkTarget = isLiquidRoute ? '/panel-membresias' : `${adminBase}/membresias`;
-  const discountsLinkTarget = isLiquidRoute ? '/panel-descuentos' : `${adminBase}/descuentos`;
-  const panelV2Target = isLiquidRoute ? '/admin-v2-liquid' : '/panel-v2';
-  const privacyTarget = isLiquidRoute ? '/politica-de-privacidad' : '/politica-de-privacidad-old';
-  const termsTarget = isLiquidRoute ? '/terminos-y-condiciones' : '/terminos-y-condiciones-old';
-  const logoTarget = path.startsWith('/admin-v2-liquid')
-    ? '/admin-v2-liquid'
-    : isLiquidRoute
-      ? '/reservar'
-      : path.startsWith('/panel-v2')
-        ? '/panel-v2'
-        : '/reservar-turno-old';
+  const bookingTarget = '/reservar';
+  const contactTarget = '/contacto';
+  const adminBase = '/panel-administracion';
+  const turnosLinkTarget = '/panel-turnos';
+  const horariosLinkTarget = '/panel-horarios';
+  const membershipsLinkTarget = '/panel-membresias';
+  const discountsLinkTarget = '/panel-descuentos';
+  const privacyTarget = '/politica-de-privacidad';
+  const termsTarget = '/terminos-y-condiciones';
+  const logoTarget = '/reservar';
 
   const continueBooking = (event: MouseEvent<HTMLAnchorElement>) => {
-    if (
-      path === '/reservar' ||
-      path === '/reservar-turno-old' ||
-      path === '/reservar-turno' ||
-      path === '/reservar-turno-liquid' ||
-      path === '/reservar-turno-mercadopago' ||
-      path === '/reserva-v4' ||
-      path === '/reserva-v2'
-    ) {
+    if (path === '/reservar') {
       event.preventDefault();
       closeMenu();
     }
@@ -396,11 +371,6 @@ export function SiteHeader() {
         <Link to={adminBase} onClick={closeMenu}>
           <CalendarClock />Panel de administración
         </Link>
-        {!isLiquidRoute && (
-          <Link to={panelV2Target} onClick={closeMenu}>
-            <LayoutGrid />Panel V2
-          </Link>
-        )}
 
         {staff?.profile.role === 'BARBER' && (
           <>
@@ -572,10 +542,9 @@ export function SiteHeader() {
           className="mobile-menu-signout"
           onClick={() => {
             closeMenu();
-            const isMp = path.includes('mercadopago');
             void signOut().then(() => {
               setStaff(null);
-              void navigate({ to: isLiquidRoute ? '/reservar' : isMp ? '/reservar-turno-mercadopago' : '/reservar-turno-old' });
+              void navigate({ to: '/reservar' });
             });
           }}
         >
@@ -654,8 +623,6 @@ export function SiteHeader() {
 }
 
 export function SiteFooter() {
-  const path = useRouterState({ select: s => s.location.pathname });
-  const isLiquidRoute = isLiquidGlassPath(path);
   const footerRef = useRef<HTMLElement>(null);
   useLayoutEffect(() => {
     const footer = footerRef.current;
@@ -667,5 +634,5 @@ export function SiteFooter() {
     window.addEventListener('resize', updateHeight);
     return () => { observer?.disconnect(); window.removeEventListener('resize', updateHeight); document.documentElement.style.removeProperty('--site-footer-height'); };
   }, []);
-  return <footer ref={footerRef} className="site-footer border-t text-xs text-muted-foreground"><div className="site-container site-footer-inner"><div className="site-footer-study"><p>San Isidro Labrador 7, Martínez, Provincia de Buenos Aires</p><p>Lunes a sábados de 10:00 a 20:00 hs</p></div><div className="site-footer-links"><div className="site-footer-link-row"><Link to={isLiquidRoute ? "/contacto" : "/contacto-old"} className="inline-flex items-center gap-2 hover:text-foreground"><Building2 size={14} /> Contacto</Link><a href={KANI_PUBLIC_WHATSAPP_URL} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 hover:text-foreground"><svg className="h-3.5 w-3.5 text-[#25D366]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z" /></svg> WhatsApp</a><a href="https://www.google.com/maps/place/KANI+BARBER+STUDIO/data=!4m2!3m1!1s0x0:0x48bcfe7b2ea7ba60" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 hover:text-foreground"><MapPin size={14} /> Ver ubicación</a><a href="https://www.instagram.com/kanibarberstudio/" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 hover:text-foreground"><Instagram size={14} /> Instagram</a><Link to={isLiquidRoute ? "/terminos-y-condiciones" : "/terminos-y-condiciones-old"} className="hover:text-foreground">Términos y Condiciones</Link><Link to={isLiquidRoute ? "/politica-de-privacidad" : "/politica-de-privacidad-old"} className="hover:text-foreground">Política de Privacidad</Link></div><span className="site-footer-copyright">© 2026 Kani Barber Studio</span></div></div></footer>;
+  return <footer ref={footerRef} className="site-footer border-t text-xs text-muted-foreground"><div className="site-container site-footer-inner"><div className="site-footer-study"><p>San Isidro Labrador 7, Martínez, Provincia de Buenos Aires</p><p>Lunes a sábados de 10:00 a 20:00 hs</p></div><div className="site-footer-links"><div className="site-footer-link-row"><Link to="/contacto" className="inline-flex items-center gap-2 hover:text-foreground"><Building2 size={14} /> Contacto</Link><a href={KANI_PUBLIC_WHATSAPP_URL} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 hover:text-foreground"><svg className="h-3.5 w-3.5 text-[#25D366]" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z" /></svg> WhatsApp</a><a href="https://www.google.com/maps/place/KANI+BARBER+STUDIO/data=!4m2!3m1!1s0x0:0x48bcfe7b2ea7ba60" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 hover:text-foreground"><MapPin size={14} /> Ver ubicación</a><a href="https://www.instagram.com/kanibarberstudio/" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 hover:text-foreground"><Instagram size={14} /> Instagram</a><Link to="/terminos-y-condiciones" className="hover:text-foreground">Términos y Condiciones</Link><Link to="/politica-de-privacidad" className="hover:text-foreground">Política de Privacidad</Link></div><span className="site-footer-copyright">© 2026 Kani Barber Studio</span></div></div></footer>;
 }

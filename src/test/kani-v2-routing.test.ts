@@ -3,21 +3,41 @@ import { createRouter } from "@tanstack/react-router";
 import { describe, expect, it } from "vitest";
 import { routeTree } from "@/routeTree.gen";
 
-describe("V2 parallel routing", () => {
-  for (const section of ["inicio", "turnos", "horarios", "pagos", "clientes", "datos"]) {
-    it(`keeps /admin-v2/${section} under its own layout`, () => {
+describe("Consolidated active routing (Phase 3)", () => {
+  for (const section of [
+    "inicio",
+    "turnos",
+    "horarios",
+    "pagos",
+    "clientes",
+    "datos",
+    "descuentos",
+    "membresias",
+    "mantenimiento",
+  ]) {
+    it(`keeps /panel-administracion/${section} under /panel-administracion layout`, () => {
       const router = createRouter({ routeTree, context: { queryClient: new QueryClient() } });
-      const matches = router.matchRoutes(`/admin-v2/${section}`);
-      expect(matches.at(-1)?.routeId).toBe(`/admin-v2/${section}`);
-      expect(matches.some((m) => m.routeId === "/admin")).toBe(false);
-      expect(matches.some((m) => m.routeId === "/admin-v2")).toBe(true);
+      const matches = router.matchRoutes(`/panel-administracion/${section}`);
+      expect(matches.at(-1)?.routeId).toBe(`/panel-administracion/${section}`);
+      expect(matches.some((m) => m.routeId === "/panel-administracion")).toBe(true);
     });
   }
-  for (const path of ["/admin", "/admin/horarios", "/admin/pagos", "/admin/datos", "/reservar", "/reserva-v2", "/reserva-v3"]) {
-    it(`preserves ${path} independently`, () => {
+
+  for (const activePath of [
+    "/reservar",
+    "/contacto",
+    "/cancelar-turno",
+    "/politica-de-privacidad",
+    "/terminos-y-condiciones",
+    "/case-study",
+    "/panel-turnos",
+    "/panel-horarios",
+    "/panel-membresias",
+    "/panel-descuentos",
+  ]) {
+    it(`preserves active route ${activePath} independently`, () => {
       const router = createRouter({ routeTree, context: { queryClient: new QueryClient() } });
-      expect(router.matchRoutes(path).some((m) => m.routeId === "/admin-v2")).toBe(false);
-      expect(router.matchRoutes(path).at(-1)?.routeId).toContain(path);
+      expect(router.matchRoutes(activePath).at(-1)?.routeId).toBe(activePath);
     });
   }
 });
