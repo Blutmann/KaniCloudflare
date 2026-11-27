@@ -132,7 +132,10 @@ describe('Benefit Codes — LIMITED_USE (10 usos), Batch 1X→5X→10X y Sugeren
     ).toBe('CONSUMED');
   });
 
-  it('genera 2 sugerencias contextuales según fecha AR (Navidad / Año Nuevo), modalidad 10 usos y excluye códigos existentes', () => {
+  it('acepta Ñ en isValidBenefitCodeFormat y genera sugerencias contextuales (Navidad, Año Nuevo con Ñ, Sin seña con Ñ) excluyendo códigos existentes', () => {
+    expect(isValidBenefitCodeFormat('KANI-SIN-SEÑA-X910')).toBe(true);
+    expect(isValidBenefitCodeFormat('KANI-2027-AÑO-7J9Q')).toBe(true);
+
     const christmas = generateContextualBenefitCodeSuggestions({
       type: 'PERCENT_10',
       usageMode: 'LIMITED_USE',
@@ -147,16 +150,18 @@ describe('Benefit Codes — LIMITED_USE (10 usos), Batch 1X→5X→10X y Sugeren
     christmas.forEach((c) => expect(isValidBenefitCodeFormat(c)).toBe(true));
 
     const newYear = generateContextualBenefitCodeSuggestions({
-      type: 'PERCENT_50',
+      type: 'NO_DEPOSIT',
       usageMode: 'SINGLE_USE',
       baseDate: new Date('2026-12-29T15:00:00Z'),
       count: 2,
     });
-    expect(newYear[0]).toMatch(/^KANI-2027-ANO-[A-Z0-9]{4}$/);
+    expect(newYear[0]).toMatch(/^KANI-2027-AÑO-[A-Z0-9]{4}$/);
+    expect(newYear[1]).toMatch(/^KANI-SIN-SEÑA-[A-Z0-9]{4}$/);
+    newYear.forEach((c) => expect(isValidBenefitCodeFormat(c)).toBe(true));
 
-    // Batch helper with prefix
-    const withPrefix = generateBatchBenefitCodeString('kani vip');
-    expect(withPrefix).toMatch(/^KANI-VIP-[A-Z0-9]{4}$/);
+    // Batch helper with prefix preserving Ñ
+    const withPrefix = generateBatchBenefitCodeString('kani seña');
+    expect(withPrefix).toMatch(/^KANI-SEÑA-[A-Z0-9]{4}$/);
     expect(isValidBenefitCodeFormat(withPrefix)).toBe(true);
   });
 
@@ -177,7 +182,7 @@ describe('Benefit Codes — LIMITED_USE (10 usos), Batch 1X→5X→10X y Sugeren
     expect(barExhausted).toHaveAttribute('aria-valuemax', '10');
   });
 
-  it('en el modal Generar código permite elegir 10 usos, conmutar 1X → 5X → 10X, usar sugerencias y crear lote con Copiar todos', async () => {
+  it('en el modal Generar código muestra sugerencia en placeholder (sin Ej: ni chips inferiores), botón solo-ícono ↻ adentro del input y lote 1X → 5X → 10X', async () => {
     render(<BenefitCodesAdminSection />);
 
     await waitFor(() => {
@@ -196,15 +201,26 @@ describe('Benefit Codes — LIMITED_USE (10 usos), Batch 1X→5X→10X y Sugeren
     // Seleccionar "10 usos"
     fireEvent.click(screen.getByText('10 usos'));
 
-    // 2 chips de sugerencia al 50%
-    const suggestionsGrid = screen.getByTestId('code-suggestions-grid');
-    const chips = suggestionsGrid.querySelectorAll('button');
-    expect(chips).toHaveLength(2);
-    const firstSuggestion = chips[0].textContent || '';
-    expect(firstSuggestion).not.toBe('KANI-OFF-10USOS');
-    fireEvent.click(chips[0]);
+    // Sin chips debajo del input y sin botón de texto "Nuevas"
+    expect(screen.queryByTestId('code-suggestions-grid')).toBeNull();
+    expect(screen.queryByText('Nuevas')).toBeNull();
+
+    // Sugerencia contextual directo en el placeholder sin "Ej:" + botón solo-ícono ↻ dentro del input
     const codeInput = screen.getByLabelText(/Código personalizado/i) as HTMLInputElement;
-    expect(codeInput.value).toBe(firstSuggestion);
+    const initialPlaceholder = codeInput.placeholder;
+    expect(initialPlaceholder).toMatch(/^KANI-/);
+    expect(initialPlaceholder).not.toMatch(/^Ej:/i);
+    expect(initialPlaceholder).not.toBe('KANI-OFF-10USOS');
+
+    const rotateBtn = screen.getByTestId('rotate-suggestion-btn');
+    expect(rotateBtn.textContent?.trim()).toBe('');
+    expect(rotateBtn.parentElement?.contains(codeInput)).toBe(true);
+
+    fireEvent.click(rotateBtn);
+    const rotatedPlaceholder = codeInput.placeholder;
+    expect(rotatedPlaceholder).toMatch(/^KANI-/);
+    expect(rotatedPlaceholder).not.toBe(initialPlaceholder);
+    expect(rotatedPlaceholder).not.toBe('KANI-OFF-10USOS');
 
     // Botón cíclico 1X → 5X → 10X → 1X
     const cycleBtn = screen.getByTestId('batch-count-cycle-btn');
