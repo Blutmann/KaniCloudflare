@@ -9,6 +9,11 @@ import {
   type BenefitCodeStatus,
   type BenefitCodeType,
 } from './kani-benefit-codes';
+import {
+  buildKaniWorkbookBuffer,
+  downloadWorkbookBytes,
+  type KaniExcelColumn,
+} from './kani-excel';
 
 export interface BenefitCodeExportRow {
   codigo: string;
@@ -18,14 +23,6 @@ export interface BenefitCodeExportRow {
   beneficio: string;
   vigencia: string;
   fechaDeCreacion: string;
-}
-
-function sanitizeCell(value: string): string {
-  if (!value) return '';
-  if (/^[=@\t\r]/.test(value)) {
-    return `'${value}`;
-  }
-  return value;
 }
 
 function formatStatusLabel(status: BenefitCodeStatus): string {
@@ -93,7 +90,7 @@ export function mapBenefitCodesToExportRows(items: BenefitCodeItem[]): BenefitCo
         : null;
 
     return {
-      codigo: sanitizeCell(item.code),
+      codigo: item.code,
       estado: formatStatusLabel(item.status),
       cantidadDeUsos: usageDef?.label ?? usageMode,
       usos: maxUses !== null ? `${usageCount}/${maxUses}` : String(usageCount),
@@ -106,103 +103,38 @@ export function mapBenefitCodesToExportRows(items: BenefitCodeItem[]): BenefitCo
 
 export async function generateBenefitCodesWorkbookBuffer(
   items: BenefitCodeItem[],
+  options?: { filterSummary?: string; generatedAt?: Date },
 ): Promise<Uint8Array> {
-  const ExcelJSModule = await import('exceljs');
-  const ExcelJS = ExcelJSModule.default ?? ExcelJSModule;
   const rows = mapBenefitCodesToExportRows(items);
-
-  const workbook = new ExcelJS.Workbook();
-  workbook.creator = 'KANI Barber Studio';
-  workbook.created = new Date();
-
-  const sheet = workbook.addWorksheet('Códigos de descuento', {
-    views: [{ state: 'frozen', ySplit: 1 }],
-  });
-
-  const columns: Array<{ header: string; key: keyof BenefitCodeExportRow; width: number }> = [
-    { header: 'Código', key: 'codigo', width: 26 },
+  const columns: KaniExcelColumn<BenefitCodeExportRow>[] = [
+    { header: 'Código', key: 'codigo', width: 26, numFmt: '@' },
     { header: 'Estado', key: 'estado', width: 16 },
     { header: 'Cantidad de usos', key: 'cantidadDeUsos', width: 18 },
-    { header: 'Usos', key: 'usos', width: 12 },
+    { header: 'Usos', key: 'usos', width: 12, align: 'center', numFmt: '@' },
     { header: 'Beneficio', key: 'beneficio', width: 22 },
     { header: 'Vigencia', key: 'vigencia', width: 28 },
-    { header: 'Fecha de creación', key: 'fechaDeCreacion', width: 22 },
+    { header: 'Fecha de creación', key: 'fechaDeCreacion', width: 22, numFmt: '@' },
   ];
 
-  sheet.columns = columns.map((c) => ({ header: c.header, key: c.key, width: c.width }));
-  sheet.autoFilter = 'A1:G1';
+  const defaultSummary =
+    options?.filterSummary ??
+    (rows.length === 1 ? '1 código' : `${rows.length} códigos`);
 
-  const headerRow = sheet.getRow(1);
-  headerRow.height = 26;
-  headerRow.eachCell((cell) => {
-    cell.font = { bold: true, color: { argb: 'FFF6F2EA' }, size: 11 };
-    cell.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FF1C1A18' },
-    };
-    cell.alignment = { vertical: 'middle', horizontal: 'left' };
-    cell.border = {
-      bottom: { style: 'medium', color: { argb: 'FFC8A253' } },
-      right: { style: 'thin', color: { argb: 'FF3A3530' } },
-    };
+  return buildKaniWorkbookBuffer({
+    reportName: 'Códigos de descuento',
+    sheetName: 'Códigos de descuento',
+    columns,
+    rows: rows as unknown as Array<Record<string, string | number | null | undefined>>,
+    filterSummary: defaultSummary,
+    generatedAt: options?.generatedAt,
   });
-
-  rows.forEach((row, index) => {
-    const added = sheet.addRow(row);
-    added.height = 21;
-    const isEven = index % 2 === 1;
-    added.eachCell({ includeEmpty: true }, (cell, colNumber) => {
-      if (isEven) {
-        cell.fill = {
-          type: 'pattern',
-          pattern: 'solid',
-          fgColor: { argb: 'FFFAF8F4' },
-        };
-      }
-      cell.border = {
-        bottom: { style: 'thin', color: { argb: 'FFE5DFD3' } },
-      };
-      cell.alignment = {
-        vertical: 'middle',
-        horizontal: colNumber === 4 ? 'center' : 'left',
-      };
-      // Force text format so Excel never turns "3/10" into a date (3-Oct)
-      if ([1, 4, 7].includes(colNumber)) {
-        cell.numFmt = '@';
-      }
-    });
-  });
-
-  columns.forEach((col, idx) => {
-    let maxLen = col.header.length + 4;
-    for (const r of rows) {
-      const val = String(r[col.key] ?? '');
-      if (val.length + 3 > maxLen) maxLen = val.length + 3;
-    }
-    sheet.getColumn(idx + 1).width = Math.min(Math.max(col.width, maxLen), 44);
-  });
-
-  const buffer = await workbook.xlsx.writeBuffer();
-  return new Uint8Array(buffer as ArrayBuffer);
 }
 
 export async function downloadBenefitCodesXlsx(
   items: BenefitCodeItem[],
-  todayYmd?: string,
+  options?: { todayYmd?: string; filterSummary?: string; generatedAt?: Date },
 ): Promise<string> {
-  const bytes = await generateBenefitCodesWorkbookBuffer(items);
-  const filename = buildBenefitCodesExportFilename(todayYmd);
-  const blob = new Blob([bytes], {
-    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  });
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement('a');
-  anchor.href = url;
-  anchor.download = filename;
-  document.body.appendChild(anchor);
-  anchor.click();
-  anchor.remove();
-  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-  return filename;
+  const bytes = await generateBenefitCodesWorkbookBuffer(items, options);
+  const filename = buildBenefitCodesExportFilename(options?.todayYmd);
+  return downloadWorkbookBytes(bytes, filename);
 }

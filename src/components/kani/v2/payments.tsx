@@ -27,7 +27,9 @@ import {
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { isLiquidGlassPath } from "@/components/kani/experimental/liquid-glass-shell";
 import { BarberFilter, Empty } from "./shared";
+import { ExcelExportButton } from "./excel-export-button";
 import { useV2 } from "./data";
+import { downloadPaymentsXlsx, type PaymentExportRow } from "@/lib/kani-payments-xlsx";
 import './payment-amount-alignment.css';
 
 export function formatPaymentMethodLabel(method: string): string {
@@ -111,6 +113,7 @@ export function V2Payments() {
 
   const [deletingPayment, setDeletingPayment] = useState<ServicePayment | null>(null);
   const [actionNotice, setActionNotice] = useState("");
+  const [exportingExcel, setExportingExcel] = useState(false);
   const pathname = useLocation({ select: (location) => location.pathname });
   const isLiquidAdmin = isLiquidGlassPath(pathname);
   const shouldReduceMotion = useReducedMotion();
@@ -802,7 +805,70 @@ export function V2Payments() {
         <section className="v2-panel v2-payments-history-panel" aria-label="Cobros registrados">
           <div className="v2-section-title">
             <h2>Cobros registrados</h2>
-            <span>{filteredHistory.length} servicios</span>
+            <div className="flex items-center gap-2.5">
+              <span>{filteredHistory.length} servicios</span>
+              <ExcelExportButton
+                onClick={async () => {
+                  if (exportingExcel || filteredHistory.length === 0) return;
+                  setExportingExcel(true);
+                  try {
+                    const periodLabels: Record<PaymentPeriodFilter, string> = {
+                      TODAY: "Hoy",
+                      YESTERDAY: "Ayer",
+                      THIS_WEEK: "Esta semana",
+                      THIS_MONTH: dynamicLabels.THIS_MONTH,
+                      THIS_YEAR: dynamicLabels.THIS_YEAR,
+                      LAST_7_DAYS: "Últimos 7 días",
+                      LAST_14_DAYS: "Últimos 14 días",
+                      LAST_30_DAYS: "Últimos 30 días",
+                      PREVIOUS_MONTH: dynamicLabels.PREVIOUS_MONTH,
+                      PREVIOUS_YEAR: dynamicLabels.PREVIOUS_YEAR,
+                      CUSTOM: `${customStartDate} a ${customEndDate}`,
+                    };
+                    const activeBarberId = isAdmin ? data.barber : (staff.profile.barber_id ?? "");
+                    const barberLabel = !activeBarberId || activeBarberId === "ALL"
+                      ? "Todo Kani"
+                      : (staff.barbers.find((b) => b.id === activeBarberId)?.name || activeBarberId);
+                    const filterParts = [
+                      `Período: ${periodLabels[period] ?? period}`,
+                      `Barbero: ${barberLabel}`,
+                    ];
+                    if (methodFilter !== "ALL") {
+                      filterParts.push(`Método: ${methodFilter}`);
+                    }
+                    filterParts.push(
+                      filteredHistory.length === 1
+                        ? "1 registro"
+                        : `${filteredHistory.length} registros`,
+                    );
+                    const rows: PaymentExportRow[] = filteredHistory.map((p) => ({
+                      fecha: p.paymentDate,
+                      hora: p.paymentTime ? `${p.paymentTime} hs` : "",
+                      servicio: p.serviceOtherDetail || formatServiceName(p.serviceName),
+                      barbero: p.barberName,
+                      cliente: p.clientName || "Sin cliente asociado",
+                      metodo: formatPaymentMethodLabel(p.paymentMethod),
+                      importeArs: Number(p.collectedAmountArs) || 0,
+                      tipo: p.isDepositMovement ? "Seña online" : "Cobro en estudio",
+                    }));
+                    await downloadPaymentsXlsx(rows, { filterSummary: filterParts.join(" · ") });
+                    setActionNotice(
+                      filteredHistory.length === 1
+                        ? "1 cobro exportado a Excel."
+                        : `${filteredHistory.length} cobros exportados a Excel.`,
+                    );
+                  } catch {
+                    setActionNotice("No se pudo exportar el archivo Excel de cobros.");
+                  } finally {
+                    setExportingExcel(false);
+                  }
+                }}
+                exporting={exportingExcel}
+                disabled={filteredHistory.length === 0}
+                label="Exportar cobros registrados a Excel"
+                testId="export-payments-excel-btn"
+              />
+            </div>
           </div>
           <div className="v2-filters">
             <label className="v2-field">
