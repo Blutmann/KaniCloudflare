@@ -27,7 +27,28 @@ describe('Contacto V12.47.26 — Composición, Cards y Navegación Inteligente',
     window.sessionStorage.clear();
   });
 
-  it('renderiza título «Contactanos» y exactamente 3 cards (Instagram, WhatsApp y Ubicación/Horarios/Mapa) sin repeticiones', () => {
+  it('renderiza título «Contactanos», bloque Instagram (sin duplicados), WhatsApp y Ubicación/Horarios/Mapa sin repeticiones', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation((input: string | URL) => {
+        const url = String(input);
+        if (url.includes('/api/instagram-feed')) {
+          return Promise.resolve(
+            new Response(JSON.stringify({ source: 'fallback', items: [] }), {
+              status: 200,
+              headers: { 'content-type': 'application/json' },
+            }),
+          );
+        }
+        return Promise.resolve(
+          new Response(JSON.stringify({ source: 'fallback', reviews: [] }), {
+            status: 200,
+            headers: { 'content-type': 'application/json' },
+          }),
+        );
+      }),
+    );
+
     const { container } = render(<ContactoContent bookingPath="/reservar" />);
 
     const heading = screen.getByRole('heading', { level: 1, name: 'Contactanos' });
@@ -35,18 +56,25 @@ describe('Contacto V12.47.26 — Composición, Cards y Navegación Inteligente',
     expect(heading.className).toContain('booking-step-heading-title');
     expect(heading.className).toContain('section-title');
 
+    // En fallback, Instagram renderiza fila compacta horizontal + WhatsApp (sin links duplicados)
+    await waitFor(() => {
+      expect(container.querySelector('.kani-contacto-ig-fallback')).toBeTruthy();
+    });
+
     const socialCards = container.querySelectorAll('.kani-contacto-social-card');
     const locationCards = container.querySelectorAll('.kani-contacto-location-card');
     expect(socialCards).toHaveLength(2);
     expect(locationCards).toHaveLength(1);
     expect(container.querySelector('.kani-contacto-location-copy .kani-contacto-directions-link')).toBeTruthy();
 
-    const instagramLink = screen.getByRole('link', {
+    const instagramLinks = screen.getAllByRole('link', {
       name: /Ver perfil de Kani Barber Studio en Instagram/i,
     });
+    expect(instagramLinks).toHaveLength(1);
+    const instagramLink = instagramLinks[0];
     expect(instagramLink.getAttribute('href')).toBe('https://www.instagram.com/kanibarberstudio/');
     expect(instagramLink.getAttribute('target')).toBe('_blank');
-    expect(instagramLink.getAttribute('rel')).toBe('noreferrer');
+    expect(instagramLink.getAttribute('rel')).toBe('noopener noreferrer');
     expect(instagramLink.textContent).toContain('Instagram');
     expect(instagramLink.textContent).toContain('@kanibarberstudio');
     expect(instagramLink.textContent).toContain('Ver perfil');
@@ -56,7 +84,7 @@ describe('Contacto V12.47.26 — Composición, Cards y Navegación Inteligente',
     });
     expect(whatsappLink.getAttribute('href')).toBe(KANI_PUBLIC_WHATSAPP_URL);
     expect(whatsappLink.getAttribute('target')).toBe('_blank');
-    expect(whatsappLink.getAttribute('rel')).toBe('noreferrer');
+    expect(whatsappLink.getAttribute('rel')).toBe('noopener noreferrer');
     expect(whatsappLink.textContent).toContain('WhatsApp');
     expect(whatsappLink.textContent).toContain('Hablemos por acá');
     expect(whatsappLink.textContent).toContain('Escribinos');
@@ -77,6 +105,92 @@ describe('Contacto V12.47.26 — Composición, Cards y Navegación Inteligente',
     expect(fullText.split(KANI_STUDIO_NAME).length - 1).toBe(1);
     expect(fullText.split(KANI_STUDIO_ADDRESS).length - 1).toBe(1);
     expect(fullText.split('Lunes a sábados · 10:00 a 20:00').length - 1).toBe(1);
+
+    vi.unstubAllGlobals();
+  });
+
+  it('renderiza grilla 3×1 de Instagram con 3 tiles, lazy loading y badge de reel/video cuando el feed responde', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation((input: string | URL) => {
+        const url = String(input);
+        if (url.includes('/api/instagram-feed')) {
+          return Promise.resolve(
+            new Response(
+              JSON.stringify({
+                source: 'behold',
+                items: [
+                  {
+                    id: 'p1',
+                    mediaType: 'IMAGE',
+                    mediaUrl: 'https://cdn.behold.so/p1.jpg',
+                    thumbnailUrl: null,
+                    permalink: 'https://www.instagram.com/p/p1/',
+                    caption: 'Fade clásico',
+                    timestamp: '2026-11-26T15:00:00Z',
+                  },
+                  {
+                    id: 'p2',
+                    mediaType: 'REELS',
+                    mediaUrl: 'https://cdn.behold.so/p2-thumb.jpg',
+                    thumbnailUrl: 'https://cdn.behold.so/p2-thumb.jpg',
+                    permalink: 'https://www.instagram.com/reel/p2/',
+                    caption: 'Proceso de corte',
+                    timestamp: '2026-11-25T15:00:00Z',
+                  },
+                  {
+                    id: 'p3',
+                    mediaType: 'CAROUSEL_ALBUM',
+                    mediaUrl: 'https://cdn.behold.so/p3.jpg',
+                    thumbnailUrl: null,
+                    permalink: 'https://www.instagram.com/p/p3/',
+                    caption: 'Detalles del estudio',
+                    timestamp: '2026-11-24T15:00:00Z',
+                  },
+                ],
+              }),
+              { status: 200, headers: { 'content-type': 'application/json' } },
+            ),
+          );
+        }
+        return Promise.resolve(
+          new Response(JSON.stringify({ source: 'fallback', reviews: [] }), {
+            status: 200,
+            headers: { 'content-type': 'application/json' },
+          }),
+        );
+      }),
+    );
+
+    const { container } = render(<ContactoContent bookingPath="/reservar" />);
+
+    // Durante la carga inicial muestra 3 placeholders shimmer
+    expect(container.querySelectorAll('.kani-contacto-ig-shimmer')).toHaveLength(3);
+
+    await waitFor(() => {
+      expect(container.querySelectorAll('.kani-contacto-ig-img')).toHaveLength(3);
+    });
+
+    const tiles = container.querySelectorAll<HTMLAnchorElement>('.kani-contacto-ig-grid a.kani-contacto-ig-tile');
+    expect(tiles).toHaveLength(3);
+    expect(tiles[0].getAttribute('href')).toBe('https://www.instagram.com/p/p1/');
+    expect(tiles[0].getAttribute('target')).toBe('_blank');
+    expect(tiles[0].getAttribute('rel')).toBe('noopener noreferrer');
+
+    const images = container.querySelectorAll<HTMLImageElement>('.kani-contacto-ig-img');
+    images.forEach((img) => {
+      expect(img.getAttribute('loading')).toBe('lazy');
+    });
+
+    // Solo el reel/video tiene el badge de play
+    expect(container.querySelectorAll('.kani-contacto-ig-video-badge')).toHaveLength(1);
+
+    // Sigue existiendo un único link al perfil de Instagram
+    expect(
+      screen.getAllByRole('link', { name: /Ver perfil de Kani Barber Studio en Instagram/i }),
+    ).toHaveLength(1);
+
+    vi.unstubAllGlobals();
   });
 
   it('Caso A: sin reserva previa ni borrador muestra «Reservar un turno» y navega a /reservar', () => {

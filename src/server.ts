@@ -152,6 +152,11 @@ export default {
         return await handleGoogleReviewsRequest(request);
       }
 
+      if (url.pathname === "/api/instagram-feed") {
+        const { handleInstagramFeedRequest } = await import("./lib/kani-instagram-feed.server");
+        return await handleInstagramFeedRequest(request);
+      }
+
       if (url.pathname === "/api/webhook/mercadopago") {
         const { handleMercadoPagoWebhook } = await import("./lib/kani-mercadopago-webhook.server");
         return await handleMercadoPagoWebhook(request);
