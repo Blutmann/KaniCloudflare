@@ -1,5 +1,6 @@
 import { createRequestSupabaseClient } from "./kani-notifications.server";
-import { validStaffScope } from './kani-permissions';
+import { createPaymentSupabaseClient } from "./kani-payment-db.server";
+import { isStaffOperator, validStaffScope } from './kani-permissions';
 import {
   timestampToBusinessDateTime,
   type ServicePayment,
@@ -7,6 +8,17 @@ import {
   type PaymentMethod,
   type ServicePaymentOrigin,
 } from "./kani-payments";
+
+type UnifiedOnlineDepositSource = {
+  appointmentId: string;
+  provider: string;
+  amountArs: number | null;
+  paidTimestamp: string | null;
+};
+
+function compareIsoDesc(a: string | null | undefined, b: string | null | undefined): number {
+  return (b || "").localeCompare(a || "");
+}
 
 export async function readOnlineDepositMovementsServer(
   filters: ServicePaymentFilters = {},
@@ -18,73 +30,81 @@ export async function readOnlineDepositMovementsServer(
 ): Promise<ServicePayment[]> {
   try {
     if (!staff?.token || !validStaffScope(staff.profile)) throw new Error('STAFF_REQUIRED');
+    if (staff.profile.role === "BARBER" && !staff.profile.barber_id) return [];
+
     const client = await createRequestSupabaseClient(staff.token);
 
-    // 1. Fetch APPROVED payment_attempts (Payway) and CONFIRMED appointment_payment_orders (Mercado Pago)
-    const [attemptsRes, mpOrdersRes] = await Promise.all([
-      client
-        .from("payment_attempts")
-        .select("id, appointment_id, provider, amount_ars, state, created_at, provider_status, provider_transaction_id")
-        .eq("state", "APPROVED")
-        .order("created_at", { ascending: false }),
-      client
-        .from("appointment_payment_orders")
-        .select("appointment_id, order_id, expected_amount_ars, paid_amount_ars, reconciliation_status, created_at")
-        .eq("reconciliation_status", "CONFIRMED")
-        .order("created_at", { ascending: false }),
-    ]);
+    // 1A. Fetch APPROVED payment_attempts (Payway / Mercado Pago) using staff-scoped client
+    const attemptsPromise = client
+      .from("payment_attempts")
+      .select("id, appointment_id, provider, amount_ars, state, created_at, updated_at, provider_status, provider_transaction_id")
+      .eq("state", "APPROVED")
+      .order("created_at", { ascending: false });
 
-    const attempts = Array.isArray(attemptsRes?.data) ? attemptsRes.data : [];
-    const mpOrders = Array.isArray(mpOrdersRes?.data) ? mpOrdersRes.data : [];
+    // 1B. Fetch CONFIRMED appointment_payment_orders (Mercado Pago) via service_role
+    //     because appointment_payment_orders has REVOKE ALL for authenticated.
+    //     Staff auth & barber scoping are enforced explicitly below.
+    const mpOrdersPromise = (async () => {
+      try {
+        const serviceClient = await createPaymentSupabaseClient();
+        return await serviceClient
+          .from("appointment_payment_orders")
+          .select("appointment_id, order_id, expected_amount_ars, paid_amount_ars, reconciliation_status, created_at, updated_at")
+          .eq("reconciliation_status", "CONFIRMED")
+          .order("updated_at", { ascending: false });
+      } catch (err) {
+        console.warn("[KANI online-deposits] Error reading appointment_payment_orders:", err);
+        return { data: null, error: err };
+      }
+    })();
 
-    if (attemptsRes?.error) {
+    const [attemptsRes, mpOrdersRes] = await Promise.all([attemptsPromise, mpOrdersPromise]);
+
+    if (attemptsRes.error) {
       console.warn("[KANI online-deposits] Error reading payment_attempts:", attemptsRes.error);
     }
-    if (mpOrdersRes?.error) {
+    if (mpOrdersRes.error) {
       console.warn("[KANI online-deposits] Error reading appointment_payment_orders:", mpOrdersRes.error);
     }
 
-    type NormalizedOnlineAttempt = {
-      appointment_id: string;
-      provider: string;
-      amount_ars: number | null;
-      created_at: string | null;
-    };
+    const attempts = Array.isArray(attemptsRes.data) ? attemptsRes.data : [];
+    const mpOrders = Array.isArray(mpOrdersRes.data) ? mpOrdersRes.data : [];
 
-    // Deduplicate by appointment_id (keep most recent approved attempt / confirmed MP order per appointment)
-    const uniqueAttemptsByAppointment = new Map<string, NormalizedOnlineAttempt>();
+    // Merge and deduplicate strictly by appointment_id (at most 1 online deposit per appointment,
+    // keeping the most recent real accreditation/confirmation timestamp).
+    const depositByAppointment = new Map<string, UnifiedOnlineDepositSource>();
+
     for (const att of attempts) {
       if (!att.appointment_id) continue;
-      if (!uniqueAttemptsByAppointment.has(att.appointment_id)) {
-        uniqueAttemptsByAppointment.set(att.appointment_id, {
-          appointment_id: att.appointment_id,
+      const paidTimestamp = (att as any).updated_at || att.created_at || null;
+      const existing = depositByAppointment.get(att.appointment_id);
+      if (!existing || compareIsoDesc(paidTimestamp, existing.paidTimestamp) < 0) {
+        depositByAppointment.set(att.appointment_id, {
+          appointmentId: att.appointment_id,
           provider: att.provider || "PAYWAY",
-          amount_ars: att.amount_ars != null ? Number(att.amount_ars) : null,
-          created_at: att.created_at ?? null,
-        });
-      }
-    }
-    for (const ord of mpOrders) {
-      if (!ord.appointment_id) continue;
-      if (!uniqueAttemptsByAppointment.has(ord.appointment_id)) {
-        uniqueAttemptsByAppointment.set(ord.appointment_id, {
-          appointment_id: ord.appointment_id,
-          provider: "MERCADO_PAGO",
-          amount_ars:
-            ord.paid_amount_ars != null
-              ? Number(ord.paid_amount_ars)
-              : ord.expected_amount_ars != null
-                ? Number(ord.expected_amount_ars)
-                : null,
-          created_at: ord.created_at ?? null,
+          amountArs: att.amount_ars != null ? Number(att.amount_ars) : null,
+          paidTimestamp,
         });
       }
     }
 
-    const deduplicatedAttempts = [...uniqueAttemptsByAppointment.values()].sort((a, b) =>
-      String(b.created_at || "").localeCompare(String(a.created_at || "")),
-    );
-    const appointmentIds = [...uniqueAttemptsByAppointment.keys()];
+    for (const ord of mpOrders) {
+      if (!ord.appointment_id) continue;
+      const paidTimestamp = ord.updated_at || ord.created_at || null;
+      const amountVal = ord.paid_amount_ars ?? ord.expected_amount_ars;
+      const existing = depositByAppointment.get(ord.appointment_id);
+      if (!existing || compareIsoDesc(paidTimestamp, existing.paidTimestamp) < 0) {
+        depositByAppointment.set(ord.appointment_id, {
+          appointmentId: ord.appointment_id,
+          provider: "MERCADO_PAGO",
+          amountArs: amountVal != null ? Number(amountVal) : null,
+          paidTimestamp,
+        });
+      }
+    }
+
+    const deduplicatedDeposits = [...depositByAppointment.values()];
+    const appointmentIds = [...depositByAppointment.keys()];
     if (appointmentIds.length === 0) return [];
 
     // 2. Fetch corresponding appointments (WITHOUT booking_client_name column to avoid missing-column errors)
@@ -93,16 +113,17 @@ export async function readOnlineDepositMovementsServer(
       .select("id, barber_id, service_id, custom_service_name, status, deposit_paid, deposit_amount_ars, booking_date, start_time, created_at, client_id")
       .in("id", appointmentIds);
 
-    // Apply barber scoping if role is BARBER or filter specifies a barber
-    if (staff?.profile?.role === "BARBER" && staff.profile.barber_id) {
+    // Enforce strict barber scoping: BARBER can only see their own appointments;
+    // ADMIN/MANAGER operators can see all or filter by barberId.
+    if (staff.profile.role === "BARBER" && staff.profile.barber_id) {
       apptQuery = apptQuery.eq("barber_id", staff.profile.barber_id);
-    } else if (filters.barberId && filters.barberId !== "ALL") {
+    } else if (isStaffOperator(staff.profile.role) && filters.barberId && filters.barberId !== "ALL") {
       apptQuery = apptQuery.eq("barber_id", filters.barberId);
     }
 
     const { data: appts, error: apptError } = await apptQuery;
     if (apptError || !appts || appts.length === 0) {
-      if (apptError) console.warn("[KANI online-deposits] Error reading appointments for attempts:", apptError);
+      if (apptError) console.warn("[KANI online-deposits] Error reading appointments for deposits:", apptError);
       return [];
     }
 
@@ -129,23 +150,25 @@ export async function readOnlineDepositMovementsServer(
       });
     }
 
-    // 4. Map approved attempts / confirmed MP orders into ServicePayment movements (at most 1 per appointment_id)
-    const movements: ServicePayment[] = deduplicatedAttempts
-      .map((att) => {
-        const apt = apptMap.get(att.appointment_id) as any;
+    // 4. Map confirmed deposits into ServicePayment movements (at most 1 per appointment_id)
+    const movements: ServicePayment[] = deduplicatedDeposits
+      .map((dep) => {
+        const apt = apptMap.get(dep.appointmentId) as any;
         if (!apt || apt.status === "CANCELLED") return null;
+        if (staff.profile.role === "BARBER" && apt.barber_id !== staff.profile.barber_id) return null;
 
-        const rawTimestamp = att.created_at || apt.created_at;
+        // Always use real payment accreditation/confirmation timestamp in AR timezone (never booking_date)
+        const rawTimestamp = dep.paidTimestamp || apt.created_at;
         const { date: payDate, time: payTime } = timestampToBusinessDateTime(rawTimestamp);
-        const client = clientMap.get(apt.client_id) as any;
+        const clientRow = clientMap.get(apt.client_id) as any;
         const sName = apt.custom_service_name || srvMap.get(apt.service_id) || "Servicio";
-        const depositArs = Number(att.amount_ars ?? apt.deposit_amount_ars ?? 5000);
+        const depositArs = Number(dep.amountArs ?? apt.deposit_amount_ars ?? 5000);
         const provLabel: PaymentMethod =
-          att.provider === "PAYWAY"
+          dep.provider === "PAYWAY"
             ? "Tarjeta — Payway"
-            : att.provider === "MERCADO_PAGO"
+            : dep.provider === "MERCADO_PAGO"
               ? "Mercado Pago"
-              : (att.provider as PaymentMethod);
+              : (dep.provider as PaymentMethod);
 
         return {
           id: `deposit-${apt.id}`,
@@ -163,19 +186,20 @@ export async function readOnlineDepositMovementsServer(
           onlineDepositPaid: true,
           onlineDepositAmountArs: depositArs,
           collectedAmountArs: depositArs,
-          clientName: client?.name || null,
-          clientContact: client?.phone || null,
+          clientName: clientRow?.name || null,
+          clientContact: clientRow?.phone || null,
           appointmentId: apt.id,
           appointmentDate: apt.booking_date,
           appointmentTime: (apt.start_time || "").slice(0, 5),
           serviceOrigin: "online_deposit" as ServicePaymentOrigin,
           createdByUserId: null,
-          createdByDisplayName: att.provider || "Payway",
+          createdByDisplayName: dep.provider === "MERCADO_PAGO" ? "Mercado Pago" : dep.provider || "Payway",
           createdAt: rawTimestamp,
           isDepositMovement: true,
         };
       })
-      .filter((m): m is ServicePayment => m !== null);
+      .filter((m): m is ServicePayment => m !== null)
+      .sort((a, b) => compareIsoDesc(a.createdAt, b.createdAt));
 
     return movements.filter((d) => {
       if (filters.date && d.paymentDate !== filters.date) return false;

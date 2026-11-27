@@ -50,6 +50,12 @@ function parseArsDigits(raw: string): number | null {
   return Number(digits);
 }
 
+function formatShortDayMonth(isoDate: string): string {
+  const parts = isoDate.split("-");
+  if (parts.length !== 3) return isoDate;
+  return `${parts[2]}/${parts[1]}`;
+}
+
 export function V2Payments() {
   const data = useV2();
   const staff = useAdminStaff();
@@ -76,7 +82,9 @@ export function V2Payments() {
   const [clientPhone, setClientPhone] = useState("");
   const [period, setPeriod] = useState<PaymentPeriodFilter>("TODAY");
   const [showCashBreakdown, setShowCashBreakdown] = useState(false);
-  const [methodFilter, setMethodFilter] = useState<"ALL" | "Efectivo" | "Transferencia" | "Payway">("ALL");
+  const [methodFilter, setMethodFilter] = useState<
+    "ALL" | "Efectivo" | "Transferencia" | "Payway" | "Mercado Pago"
+  >("ALL");
   const [customStartDate, setCustomStartDate] = useState(today);
   const [customEndDate, setCustomEndDate] = useState(today);
   const [busy, setBusy] = useState(false);
@@ -154,22 +162,27 @@ export function V2Payments() {
   const summary = paymentSummary(history);
   const activeHistory = history.filter((p) => p.serviceName !== "Anulado");
   const isPaywayMethod = (pm: string) => /payway|tarjeta/i.test(pm);
+  const isMercadoPagoMethod = (pm: string) => /mercado\s*pago/i.test(pm);
   const cashTotal = activeHistory
     .filter((p) => p.paymentMethod === "Efectivo")
     .reduce((sum, p) => sum + p.collectedAmountArs, 0);
   const transferTotal = activeHistory
     .filter((p) => p.paymentMethod === "Transferencia")
     .reduce((sum, p) => sum + p.collectedAmountArs, 0);
-  const paywayMovementsTotal = activeHistory
+  const paywayTotal = activeHistory
     .filter((p) => isPaywayMethod(p.paymentMethod))
     .reduce((sum, p) => sum + p.collectedAmountArs, 0);
-  const paywayTotal = Math.max(paywayMovementsTotal, summary.deposits);
+  const mercadoPagoTotal = activeHistory
+    .filter((p) => isMercadoPagoMethod(p.paymentMethod))
+    .reduce((sum, p) => sum + p.collectedAmountArs, 0);
   const filteredHistory =
     methodFilter === "ALL"
       ? history
       : methodFilter === "Payway"
         ? history.filter((p) => isPaywayMethod(p.paymentMethod))
-        : history.filter((p) => p.paymentMethod === methodFilter);
+        : methodFilter === "Mercado Pago"
+          ? history.filter((p) => isMercadoPagoMethod(p.paymentMethod))
+          : history.filter((p) => p.paymentMethod === methodFilter);
   const quickServiceOptions: Array<{ value: string; label: string }> = [
     { value: "Corte", label: "Corte" },
     { value: "Corte y barba", label: "Corte y barba" },
@@ -398,6 +411,10 @@ export function V2Payments() {
             <div className="v2-cash-metric payway">
               <span>Payway</span>
               <strong>{money(paywayTotal)}</strong>
+            </div>
+            <div className="v2-cash-metric mercadopago">
+              <span>Mercado Pago</span>
+              <strong>{money(mercadoPagoTotal)}</strong>
             </div>
           </div>
         </div>
@@ -836,6 +853,7 @@ export function V2Payments() {
                 { value: "Efectivo", label: "Efectivo", ariaLabel: "Efectivo" },
                 { value: "Transferencia", label: "Transf.", ariaLabel: "Transferencia" },
                 { value: "Payway", label: "Payway", ariaLabel: "Payway" },
+                { value: "Mercado Pago", label: "Mercado Pago", ariaLabel: "Mercado Pago" },
               ] as const
             ).map((opt) => (
               <button
@@ -889,7 +907,15 @@ export function V2Payments() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredHistory.map((p) => (
+                  {filteredHistory.map((p) => {
+                    const linkedAppointment = p.appointmentId
+                      ? appointmentById.get(p.appointmentId)
+                      : undefined;
+                    const depositAppointmentDate =
+                      p.appointmentDate || linkedAppointment?.date || null;
+                    const depositAppointmentTime =
+                      (p.appointmentTime || linkedAppointment?.time || "").slice(0, 5) || null;
+                    return (
                     <tr key={p.id}>
                       <td className="col-datetime">
                         <div className="v2-table-datetime">
@@ -902,9 +928,18 @@ export function V2Payments() {
                           {p.serviceOtherDetail || formatServiceName(p.serviceName)}
                         </strong>
                         <small className="v2-table-barber-name">{p.barberName}</small>
-                        {p.appointmentId && appointmentById.has(p.appointmentId) && <small>
-                          Fecha del servicio: {appointmentById.get(p.appointmentId)!.date} {appointmentById.get(p.appointmentId)!.time} hs
-                        </small>}
+                        {p.isDepositMovement && depositAppointmentDate ? (
+                          <small>
+                            Turno {formatShortDayMonth(depositAppointmentDate)}
+                            {depositAppointmentTime ? ` ${depositAppointmentTime} hs` : ""}
+                          </small>
+                        ) : (
+                          linkedAppointment && (
+                            <small>
+                              Fecha del servicio: {linkedAppointment.date} {linkedAppointment.time} hs
+                            </small>
+                          )
+                        )}
                       </td>
                       <td className="col-client">
                         <span className="v2-table-client-name">
@@ -955,7 +990,8 @@ export function V2Payments() {
                         </div>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -964,7 +1000,15 @@ export function V2Payments() {
           {/* Presentación Mobile: Tarjetas compactas estructuradas en 4 líneas, sin desborde horizontal */}
           {filteredHistory.length > 0 && (
             <div className="v2-payments-mobile-cards">
-              {filteredHistory.map((p) => (
+              {filteredHistory.map((p) => {
+                const linkedAppointment = p.appointmentId
+                  ? appointmentById.get(p.appointmentId)
+                  : undefined;
+                const depositAppointmentDate =
+                  p.appointmentDate || linkedAppointment?.date || null;
+                const depositAppointmentTime =
+                  (p.appointmentTime || linkedAppointment?.time || "").slice(0, 5) || null;
+                return (
               <article className="v2-payment-card-mobile" key={p.id}>
                 {/* 1. Línea superior: Servicio + Importe */}
                 <div className="v2-pcm-row-top">
@@ -972,7 +1016,12 @@ export function V2Payments() {
                     <strong className="v2-pcm-service">
                       {p.serviceOtherDetail || formatServiceName(p.serviceName)}
                     </strong>
-                    <span className="v2-pcm-barber">{p.barberName}</span>
+                    <span className="v2-pcm-barber">
+                      {p.barberName}
+                      {p.isDepositMovement && depositAppointmentDate
+                        ? ` · Turno ${formatShortDayMonth(depositAppointmentDate)}${depositAppointmentTime ? ` ${depositAppointmentTime}` : ""}`
+                        : ""}
+                    </span>
                   </div>
                   <strong className="v2-pcm-amount">{money(p.collectedAmountArs)}</strong>
                 </div>
@@ -1027,7 +1076,8 @@ export function V2Payments() {
                   ) : null}
                 </div>
               </article>
-            ))}
+                );
+              })}
           </div>
         )}
       </section>

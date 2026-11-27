@@ -933,7 +933,7 @@ html[data-theme="dark"] .v2-loading,
 }
 .v2-cash-summary-breakdown {
   display: none;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px;
   width: 100%;
   min-width: 0;
@@ -995,7 +995,7 @@ html[data-theme="dark"] .v2-loading,
   .v2-cash-summary-breakdown.is-open {
     width: auto;
     display: flex;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     gap: 10px;
   }
   .v2-cash-metric {

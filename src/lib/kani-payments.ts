@@ -43,6 +43,8 @@ export type ServicePayment = {
   clientName: string | null;
   clientContact: string | null;
   appointmentId: string | null;
+  appointmentDate?: string | null;
+  appointmentTime?: string | null;
   appointmentRequestNumber?: number | null;
   serviceOrigin: ServicePaymentOrigin;
   createdByUserId: string | null;
@@ -519,7 +521,17 @@ export async function fetchServicePayments(
         if (filters.endDate) params.set('endDate', filters.endDate);
         if (filters.serviceName) params.set('serviceName', filters.serviceName);
 
-        const res = await fetch(`${window.location.origin}/api/admin/online-deposits?${params.toString()}`);
+        let accessToken: string | undefined;
+        try {
+          const sessionRes = await supabase.auth?.getSession?.();
+          accessToken = sessionRes?.data?.session?.access_token;
+        } catch {
+          // Ignore session lookup failure and fall back to cookie/RPC
+        }
+
+        const res = await fetch(`${window.location.origin}/api/admin/online-deposits?${params.toString()}`, {
+          headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+        });
         if (res.ok) {
           const serverDeposits = await res.json();
           if (Array.isArray(serverDeposits)) {
