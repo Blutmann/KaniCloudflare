@@ -25,7 +25,11 @@
 
 export type BenefitCodeType = 'NO_DEPOSIT' | 'FREE_SERVICE' | 'PERCENT_10' | 'PERCENT_50';
 
-export type BenefitUsageMode = 'SINGLE_USE' | 'REUSABLE';
+export type BenefitUsageMode = 'SINGLE_USE' | 'LIMITED_USE' | 'REUSABLE';
+
+export type BenefitBatchCount = 1 | 5 | 10;
+
+export const DEFAULT_LIMITED_USE_MAX_USES = 10;
 
 export type BenefitValidityType =
   | 'NO_EXPIRATION'
@@ -216,9 +220,14 @@ export const BENEFIT_USAGE_MODE_DEFINITIONS: Record<
   }
 > = {
   SINGLE_USE: {
-    label: 'Un solo uso',
+    label: 'Único uso',
     description: 'Se consume permanentemente al confirmar una reserva.',
-    badgeLabel: 'Un solo uso',
+    badgeLabel: 'Único uso',
+  },
+  LIMITED_USE: {
+    label: '10 usos',
+    description: 'Permite hasta 10 reservas confirmadas y luego se agota automáticamente.',
+    badgeLabel: '10 usos',
   },
   REUSABLE: {
     label: 'Reutilizable',
@@ -277,27 +286,184 @@ export function isValidBenefitCodeFormat(code: string): boolean {
   return /^[A-Z0-9-]{4,32}$/.test(normalized);
 }
 
+const BENEFIT_CODE_ALPHABET = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+
+function randomBenefitChunk(len: number): string {
+  let result = '';
+  const bytes = new Uint8Array(len);
+  crypto.getRandomValues(bytes);
+  for (let i = 0; i < len; i++) {
+    result += BENEFIT_CODE_ALPHABET[bytes[i] % BENEFIT_CODE_ALPHABET.length];
+  }
+  return result;
+}
+
 /**
  * Generates an unguessable single-use benefit code:
  * Format: KANI-XXXX-XXXX using cryptographically secure random bytes
  * Alphabet excludes ambiguous characters (0, O, 1, I).
  */
 export function generateBenefitCodeString(): string {
-  const chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
-  const getRandomChunk = (len: number) => {
-    let result = '';
-    const bytes = new Uint8Array(len);
-    crypto.getRandomValues(bytes);
-    for (let i = 0; i < len; i++) {
-      result += chars[bytes[i] % chars.length];
-    }
-    return result;
-  };
-  return `KANI-${getRandomChunk(4)}-${getRandomChunk(4)}`;
+  return `KANI-${randomBenefitChunk(4)}-${randomBenefitChunk(4)}`;
 }
 
 // Alias for backwards compatibility
 export const generateBenefitCode = generateBenefitCodeString;
+
+/**
+ * Generates a unique benefit code for batch creation, optionally honoring a sanitized prefix.
+ * Always produces a valid 4..32 char code.
+ */
+export function generateBatchBenefitCodeString(prefix?: string | null): string {
+  const cleanPrefix = normalizeBenefitCode(prefix)
+    .replace(/[^A-Z0-9-]/g, '')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 24);
+  if (!cleanPrefix) {
+    return generateBenefitCodeString();
+  }
+  return `${cleanPrefix}-${randomBenefitChunk(4)}`;
+}
+
+function getBuenosAiresContextualOccasion(baseDate: Date): { year: number; tag: string } {
+  const todayStr = getBuenosAiresTodayDateString(baseDate);
+  const [year, month, day] = todayStr.split('-').map(Number);
+
+  // Navidad (10–26 Dic)
+  if (month === 12 && day >= 10 && day <= 26) {
+    return { year, tag: 'NAVIDAD' };
+  }
+  // Año Nuevo (27–31 Dic usa año entrante; 1–7 Ene usa año actual)
+  if (month === 12 && day >= 27) {
+    return { year: year + 1, tag: 'ANO' };
+  }
+  if (month === 1 && day <= 7) {
+    return { year, tag: 'ANO' };
+  }
+  // San Valentín (8–16 Feb)
+  if (month === 2 && day >= 8 && day <= 16) {
+    return { year, tag: 'VALENTIN' };
+  }
+  // Día del Padre AR (10–22 Jun)
+  if (month === 6 && day >= 10 && day <= 22) {
+    return { year, tag: 'PADRE' };
+  }
+  // Día del Amigo AR (14–22 Jul)
+  if (month === 7 && day >= 14 && day <= 22) {
+    return { year, tag: 'AMIGO' };
+  }
+  // Primavera (18–26 Sep)
+  if (month === 9 && day >= 18 && day <= 26) {
+    return { year, tag: 'PRIMAVERA' };
+  }
+  // Black Friday / Cyber (20 Nov–3 Dic)
+  if ((month === 11 && day >= 20) || (month === 12 && day <= 3)) {
+    return { year, tag: 'BLACK' };
+  }
+
+  // Estaciones del hemisferio sur
+  if (month === 12 || month === 1 || month === 2) {
+    return { year, tag: 'VERANO' };
+  }
+  if (month >= 3 && month <= 5) {
+    return { year, tag: 'OTONO' };
+  }
+  if (month >= 6 && month <= 8) {
+    return { year, tag: 'INVIERNO' };
+  }
+  return { year, tag: 'PRIMAVERA' };
+}
+
+function getBenefitTagForSuggestion(type: BenefitCodeType): string {
+  switch (type) {
+    case 'PERCENT_10':
+      return '10OFF';
+    case 'PERCENT_50':
+      return '50OFF';
+    case 'NO_DEPOSIT':
+      return 'SINSENA';
+    case 'FREE_SERVICE':
+      return 'FREE';
+  }
+}
+
+/**
+ * Generates contextual benefit code suggestions based on:
+ * - Current date in America/Argentina/Buenos_Aires (holidays/seasons)
+ * - Selected usageMode (SINGLE_USE, LIMITED_USE, REUSABLE)
+ * - Selected benefitType
+ *
+ * Strictly filters against `existingCodes` (all active, consumed, disabled, or deleted codes in DB)
+ * so an already-used code is NEVER suggested.
+ */
+export function generateContextualBenefitCodeSuggestions(params: {
+  type: BenefitCodeType;
+  usageMode: BenefitUsageMode;
+  existingCodes?: Iterable<string>;
+  baseDate?: Date;
+  count?: number;
+}): string[] {
+  const count = Math.max(1, params.count ?? 2);
+  const baseDate = params.baseDate ?? new Date();
+  const occasion = getBuenosAiresContextualOccasion(baseDate);
+  const benefitTag = getBenefitTagForSuggestion(params.type);
+
+  const usedSet = new Set<string>();
+  if (params.existingCodes) {
+    for (const c of params.existingCodes) {
+      const norm = normalizeBenefitCode(c);
+      if (norm) usedSet.add(norm);
+    }
+  }
+
+  const buildCandidate = (slot: number): string => {
+    if (slot === 0) {
+      // Chip 1: contextual por fecha AR (ej. KANI-2026-NAVIDAD-X9E3 / KANI-2027-ANO-7J9Q)
+      return `KANI-${occasion.year}-${occasion.tag}-${randomBenefitChunk(4)}`;
+    }
+    if (params.usageMode === 'LIMITED_USE') {
+      // Chip 2 para 10 usos: ej. KANI-OFF-N8Z1-X9G2 o KANI-10OFF-N8Z1-X9G2
+      const prefix = params.type === 'PERCENT_10' || params.type === 'PERCENT_50' ? 'OFF' : benefitTag;
+      return `KANI-${prefix}-${randomBenefitChunk(4)}-${randomBenefitChunk(4)}`;
+    }
+    if (params.usageMode === 'REUSABLE') {
+      return `KANI-CLUB-${benefitTag}-${randomBenefitChunk(4)}`;
+    }
+    return `KANI-${benefitTag}-${randomBenefitChunk(4)}-${randomBenefitChunk(4)}`;
+  };
+
+  const results: string[] = [];
+  for (let slot = 0; slot < count; slot++) {
+    let chosen = '';
+    for (let attempt = 0; attempt < 40; attempt++) {
+      const candidate = normalizeBenefitCode(buildCandidate(slot));
+      if (
+        isValidBenefitCodeFormat(candidate) &&
+        !usedSet.has(candidate) &&
+        !results.includes(candidate)
+      ) {
+        chosen = candidate;
+        break;
+      }
+    }
+    if (!chosen) {
+      for (let attempt = 0; attempt < 40; attempt++) {
+        const fallback = generateBenefitCodeString();
+        if (!usedSet.has(fallback) && !results.includes(fallback)) {
+          chosen = fallback;
+          break;
+        }
+      }
+    }
+    if (chosen) {
+      results.push(chosen);
+      usedSet.add(chosen);
+    }
+  }
+
+  return results;
+}
 
 /**
  * Timezone helpers for Buenos Aires (UTC-3)
@@ -560,6 +726,7 @@ export function computeBenefitCodeStatus(
     validUntil?: string | null;
     deletedAt?: string | null;
     timesUsed?: number;
+    maxUses?: number | null;
   },
   now: Date = new Date()
 ): BenefitCodeStatus {
@@ -569,6 +736,15 @@ export function computeBenefitCodeStatus(
   const usageMode = item.usageMode || 'SINGLE_USE';
   if (usageMode === 'SINGLE_USE' && (item.status === 'CONSUMED' || (item.timesUsed ?? 0) > 0)) {
     return 'CONSUMED';
+  }
+  if (usageMode === 'LIMITED_USE') {
+    const limit =
+      typeof item.maxUses === 'number' && item.maxUses > 0
+        ? item.maxUses
+        : DEFAULT_LIMITED_USE_MAX_USES;
+    if (item.status === 'CONSUMED' || (item.timesUsed ?? 0) >= limit) {
+      return 'CONSUMED';
+    }
   }
 
   const nowMs = now.getTime();

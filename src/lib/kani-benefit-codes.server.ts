@@ -2,6 +2,7 @@ import { getRequest } from '@tanstack/react-start/server';
 import { createPaymentSupabaseClient } from './kani-payment-db.server';
 import { createRequestSupabaseClient, getRequestAuthToken } from './kani-notifications.server';
 import {
+  type BenefitBatchCount,
   type BenefitCalculation,
   type BenefitCodeItem,
   type BenefitCodeType,
@@ -10,8 +11,10 @@ import {
   type BenefitQuote,
   type BenefitUsageMode,
   type BenefitValidityType,
+  DEFAULT_LIMITED_USE_MAX_USES,
   calculateBenefitAmounts,
   calculateValidityDates,
+  generateBatchBenefitCodeString,
   generateBenefitCodeString,
   isValidBenefitCodeFormat,
   normalizeBenefitCode,
@@ -23,6 +26,7 @@ const KANI_META_SUFFIX = ']]';
 
 export interface BenefitCodeEmbeddedMeta {
   usageMode?: BenefitUsageMode;
+  maxUses?: number | null;
   validityType?: BenefitValidityType;
   validFrom?: string | null;
   validUntil?: string | null;
@@ -192,6 +196,14 @@ export function normalizeBenefitCodeRow(
     (a, b) => new Date(b.usedAt || 0).getTime() - new Date(a.usedAt || 0).getTime()
   );
 
+  const explicitMaxUses = raw?.maxUses ?? raw?.max_uses ?? meta?.maxUses;
+  const maxUses: number | null =
+    usageMode === 'LIMITED_USE'
+      ? (typeof explicitMaxUses === 'number' && explicitMaxUses > 0 ? explicitMaxUses : DEFAULT_LIMITED_USE_MAX_USES)
+      : usageMode === 'SINGLE_USE'
+        ? 1
+        : null;
+
   const explicitTimesUsed = raw?.timesUsed ?? raw?.times_used ?? meta?.timesUsed;
   const timesUsed = Math.max(
     typeof explicitTimesUsed === 'number' ? explicitTimesUsed : 0,
@@ -199,10 +211,18 @@ export function normalizeBenefitCodeRow(
     consumedAt || consumedAppointmentId || raw?.status === 'CONSUMED' ? 1 : 0
   );
 
-  // If a REUSABLE code was marked CONSUMED by a legacy RPC/trigger, its effective raw status is ACTIVE
+  // If a REUSABLE or non-exhausted LIMITED_USE code was marked CONSUMED by a legacy RPC/trigger,
+  // its effective raw status is ACTIVE
   let effectiveRawStatus = raw?.status || 'ACTIVE';
   if (usageMode === 'REUSABLE' && effectiveRawStatus === 'CONSUMED') {
     effectiveRawStatus = 'ACTIVE';
+  }
+  if (usageMode === 'LIMITED_USE' && maxUses !== null) {
+    if (timesUsed >= maxUses) {
+      effectiveRawStatus = 'CONSUMED';
+    } else if (effectiveRawStatus === 'CONSUMED') {
+      effectiveRawStatus = 'ACTIVE';
+    }
   }
   if (deletedAt) {
     effectiveRawStatus = 'DELETED';
@@ -217,6 +237,8 @@ export function normalizeBenefitCodeRow(
     type: raw?.type,
     usageMode,
     usage_mode: usageMode,
+    maxUses,
+    max_uses: maxUses,
     validityType,
     validity_type: validityType,
     validFrom,
@@ -600,13 +622,14 @@ export async function staffListBenefitCodesReadOnly(authToken?: string): Promise
 
 /**
  * Creates a new benefit code from the admin maintenance panel.
- * Supports usage mode (SINGLE_USE / REUSABLE) and the 5 validity options.
+ * Supports usage mode (SINGLE_USE / LIMITED_USE / REUSABLE) and the 5 validity options.
  */
 export async function adminCreateBenefitCode(params: {
   type: BenefitCodeType;
   internalNote?: string;
   code?: string;
   usageMode?: BenefitUsageMode;
+  maxUses?: number;
   validityType?: BenefitValidityType;
   startDate?: string;
   endDate?: string;
@@ -621,12 +644,19 @@ export async function adminCreateBenefitCode(params: {
     'usageMode' in params &&
     params.usageMode !== undefined &&
     params.usageMode !== 'SINGLE_USE' &&
+    params.usageMode !== 'LIMITED_USE' &&
     params.usageMode !== 'REUSABLE'
   ) {
-    throw new Error('INVALID_USAGE_MODE: La modalidad debe ser SINGLE_USE o REUSABLE.');
+    throw new Error('INVALID_USAGE_MODE: La modalidad debe ser SINGLE_USE, LIMITED_USE o REUSABLE.');
   }
 
   const usageMode: BenefitUsageMode = params.usageMode || 'SINGLE_USE';
+  const maxUses: number | null =
+    usageMode === 'LIMITED_USE'
+      ? Math.max(1, Math.round(Number(params.maxUses) || DEFAULT_LIMITED_USE_MAX_USES))
+      : usageMode === 'SINGLE_USE'
+        ? 1
+        : null;
   const validityType = params.validityType || 'NO_EXPIRATION';
 
   const dates = calculateValidityDates({
@@ -643,6 +673,7 @@ export async function adminCreateBenefitCode(params: {
 
   const embeddedMeta: BenefitCodeEmbeddedMeta = {
     usageMode,
+    maxUses,
     validityType,
     validFrom: dates.validFromIso,
     validUntil: dates.validUntilIso,
@@ -654,7 +685,7 @@ export async function adminCreateBenefitCode(params: {
 
   const noteWithMeta = encodeInternalNoteWithMetadata(params.internalNote || null, embeddedMeta);
 
-  let res = await supabase.rpc('admin_create_benefit_code', {
+  const baseRpcParams: Record<string, any> = {
     p_type: params.type,
     p_internal_note: params.internalNote || null,
     p_code: generatedCode,
@@ -664,11 +695,30 @@ export async function adminCreateBenefitCode(params: {
     p_valid_until: dates.validUntilIso,
     p_duration_value: params.durationValue || null,
     p_duration_unit: params.durationUnit || null,
-  });
+  };
+
+  let res = await supabase.rpc(
+    'admin_create_benefit_code',
+    usageMode === 'LIMITED_USE' ? { ...baseRpcParams, p_max_uses: maxUses } : baseRpcParams
+  );
+
+  // Fallback: if 10-param LIMITED_USE signature isn't migrated yet on remote DB,
+  // persist LIMITED_USE + maxUses inside internal_note metadata on top of REUSABLE/legacy RPC.
+  if (
+    res.error &&
+    usageMode === 'LIMITED_USE' &&
+    (isSchemaCacheMissingError(res.error) || String(res.error.message || '').includes('INVALID_USAGE_MODE'))
+  ) {
+    console.warn('[Kani Benefit Codes] LIMITED_USE RPC not yet available in schema cache, falling back to metadata-backed REUSABLE:', res.error.message);
+    res = await supabase.rpc('admin_create_benefit_code', {
+      ...baseRpcParams,
+      p_internal_note: noteWithMeta,
+      p_usage_mode: 'REUSABLE',
+    });
+  }
 
   // Fallback: If PostgREST has the legacy 3-param signature in schema cache,
-  // explicitly persist expansion metadata (usageMode + validity) inside internal_note
-  // for BOTH SINGLE_USE and REUSABLE so the chosen modality is always saved in DB.
+  // explicitly persist expansion metadata (usageMode + maxUses + validity) inside internal_note.
   if (res.error && isSchemaCacheMissingError(res.error)) {
     console.warn('[Kani Benefit Codes] 9-param admin_create_benefit_code not found, retrying 3-param legacy signature:', res.error.message);
     res = await supabase.rpc('admin_create_benefit_code', {
@@ -712,7 +762,8 @@ export async function adminCreateBenefitCode(params: {
     type: rawItem.type || params.type,
     internal_note: rawItem.internal_note ?? noteWithMeta,
     status: rawItem.status || 'ACTIVE',
-    usage_mode: rawItem.usage_mode || usageMode,
+    usage_mode: persistedMeta?.usageMode || rawItem.usage_mode || usageMode,
+    max_uses: rawItem.max_uses ?? persistedMeta?.maxUses ?? maxUses,
     validity_type: rawItem.validity_type || validityType,
     valid_from: rawItem.valid_from || dates.validFromIso,
     valid_until: rawItem.valid_until ?? dates.validUntilIso,
@@ -722,6 +773,116 @@ export async function adminCreateBenefitCode(params: {
     deleted_at: rawItem.deleted_at || null,
     usages: rawItem.usages || [],
   });
+}
+
+/**
+ * Creates 1, 5, or 10 guaranteed-unique benefit codes in batch.
+ * Accepts an optional prefix (used as prefix for batchCount > 1, or exact custom code for batchCount === 1).
+ */
+export async function adminCreateBenefitCodesBatch(params: {
+  type: BenefitCodeType;
+  usageMode: BenefitUsageMode;
+  batchCount: BenefitBatchCount;
+  maxUses?: number;
+  prefix?: string;
+  code?: string;
+  internalNote?: string;
+  validityType?: BenefitValidityType;
+  startDate?: string;
+  endDate?: string;
+  durationValue?: number;
+  durationUnit?: BenefitDurationUnit;
+  token?: string;
+}): Promise<BenefitCodeItem[]> {
+  if (params.batchCount !== 1 && params.batchCount !== 5 && params.batchCount !== 10) {
+    throw new Error('INVALID_BATCH_COUNT: La cantidad debe ser 1, 5 o 10.');
+  }
+
+  if (params.batchCount === 1) {
+    const single = await adminCreateBenefitCode({
+      type: params.type,
+      usageMode: params.usageMode,
+      maxUses: params.maxUses,
+      code: params.code ?? params.prefix,
+      internalNote: params.internalNote,
+      validityType: params.validityType,
+      startDate: params.startDate,
+      endDate: params.endDate,
+      durationValue: params.durationValue,
+      durationUnit: params.durationUnit,
+      token: params.token,
+    });
+    return [single];
+  }
+
+  // Verify admin session once up-front
+  await assertAdminSession(params.token);
+
+  // Best-effort preload of existing codes to avoid collisions before hitting DB
+  const takenCodes = new Set<string>();
+  try {
+    const db = await createPaymentSupabaseClient();
+    if (db && typeof db.from === 'function') {
+      const { data: existingRows } = await db.from('benefit_codes').select('code');
+      if (Array.isArray(existingRows)) {
+        for (const r of existingRows as Array<{ code?: string }>) {
+          const norm = normalizeBenefitCode(r?.code);
+          if (norm) takenCodes.add(norm);
+        }
+      }
+    }
+  } catch {
+    // Proceed; DB unique check + retry loop guarantees uniqueness
+  }
+
+  const prefix = (params.prefix ?? params.code ?? '').trim() || undefined;
+  const created: BenefitCodeItem[] = [];
+
+  for (let i = 0; i < params.batchCount; i++) {
+    let createdItem: BenefitCodeItem | null = null;
+    let lastError: unknown = null;
+
+    for (let attempt = 0; attempt < 10; attempt++) {
+      let candidate = generateBatchBenefitCodeString(prefix);
+      for (let genAttempt = 0; genAttempt < 15 && takenCodes.has(candidate); genAttempt++) {
+        candidate = generateBatchBenefitCodeString(prefix);
+      }
+      takenCodes.add(candidate);
+
+      try {
+        createdItem = await adminCreateBenefitCode({
+          type: params.type,
+          usageMode: params.usageMode,
+          maxUses: params.maxUses,
+          code: candidate,
+          internalNote: params.internalNote,
+          validityType: params.validityType,
+          startDate: params.startDate,
+          endDate: params.endDate,
+          durationValue: params.durationValue,
+          durationUnit: params.durationUnit,
+          token: params.token,
+        });
+        break;
+      } catch (err) {
+        lastError = err;
+        const msg = err instanceof Error ? err.message : String(err);
+        if (!msg.includes('BENEFIT_CODE_ALREADY_EXISTS')) {
+          throw err;
+        }
+      }
+    }
+
+    if (!createdItem) {
+      throw lastError instanceof Error
+        ? lastError
+        : new Error('No se pudieron generar códigos únicos para el lote.');
+    }
+
+    created.push(createdItem);
+  }
+
+  return created;
 }
 
 /**
@@ -1106,6 +1267,13 @@ export async function validateBenefitCodeQuote(params: {
           const msg = 'Este código se encuentra vencido.';
           return { valid: false, message: msg, error: msg };
         }
+        if (parsed.usageMode === 'LIMITED_USE') {
+          const limit = parsed.maxUses ?? DEFAULT_LIMITED_USE_MAX_USES;
+          if (parsed.status === 'CONSUMED' || parsed.timesUsed >= limit) {
+            const msg = 'Este código alcanzó el límite máximo de usos disponibles.';
+            return { valid: false, message: msg, error: msg };
+          }
+        }
         if (parsed.usageMode === 'REUSABLE' && (row.status === 'CONSUMED' || row.status === 'LOCKED')) {
           await db
             .from('benefit_codes')
@@ -1367,6 +1535,13 @@ export async function prepareBenefitCodeForPaywayAttempt(
           throw new Error('BENEFIT_CODE_LOCKED_OR_INVALID');
         }
 
+        if (usageMode === 'LIMITED_USE') {
+          const limit = parsed.maxUses ?? DEFAULT_LIMITED_USE_MAX_USES;
+          if (parsed.status === 'CONSUMED' || parsed.timesUsed >= limit) {
+            throw new Error('BENEFIT_CODE_LOCKED_OR_INVALID');
+          }
+        }
+
         if (usageMode === 'REUSABLE') {
           // Ensure reusable code is ACTIVE and not globally locked
           if (row.status !== 'ACTIVE') {
@@ -1403,7 +1578,7 @@ export async function prepareBenefitCodeForPaywayAttempt(
 /**
  * Consumes or records usage of a benefit code upon Payway payment confirmation.
  * Ensures the appointment snapshot is written before confirmation emails are sent,
- * and keeps REUSABLE codes in ACTIVE status.
+ * keeps REUSABLE codes in ACTIVE status, and marks LIMITED_USE codes CONSUMED upon reaching maxUses.
  */
 export async function consumeBenefitCodeForPaywayAttempt(
   db: any,
@@ -1476,11 +1651,20 @@ export async function consumeBenefitCodeForPaywayAttempt(
 
     const nowIso = new Date().toISOString();
     const isReusable = parsedCode.usageMode === 'REUSABLE';
+    const isLimitedUse = parsedCode.usageMode === 'LIMITED_USE';
+    const limitedMaxUses = parsedCode.maxUses ?? DEFAULT_LIMITED_USE_MAX_USES;
     const { meta } = parseInternalNoteMetadata(codeRow.internal_note);
     const nextTimesUsed = (parsedCode.timesUsed || 0) + 1;
+    const nextStatus = isReusable
+      ? 'ACTIVE'
+      : isLimitedUse
+        ? nextTimesUsed >= limitedMaxUses
+          ? 'CONSUMED'
+          : 'ACTIVE'
+        : 'CONSUMED';
 
     const codeUpdate: Record<string, any> = {
-      status: isReusable ? 'ACTIVE' : 'CONSUMED',
+      status: nextStatus,
       consumed_at: nowIso,
       consumed_appointment_id: appointmentId,
       consumed_client_id: appt.client_id ?? null,

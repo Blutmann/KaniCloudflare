@@ -49,11 +49,14 @@ import {
   BENEFIT_TYPE_DEFINITIONS,
   BENEFIT_USAGE_MODE_DEFINITIONS,
   BENEFIT_VALIDITY_TYPE_DEFINITIONS,
+  DEFAULT_LIMITED_USE_MAX_USES,
   calculateValidityDates,
   computeBenefitCodeStatus,
   formatBuenosAiresDate,
   formatBuenosAiresDateTime,
+  generateContextualBenefitCodeSuggestions,
   getBuenosAiresTodayDateString,
+  type BenefitBatchCount,
   type BenefitCodeItem,
   type BenefitCodeStatus,
   type BenefitCodeType,
@@ -63,6 +66,7 @@ import {
 } from '@/lib/kani-benefit-codes';
 import {
   adminCreateBenefitCodeFn,
+  adminCreateBenefitCodesBatchFn,
   adminDeleteBenefitCodeFn,
   adminDisableBenefitCodeFn,
   staffListBenefitCodesReadOnlyFn,
@@ -183,6 +187,7 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
   const [createOpen, setCreateOpen] = useState(false);
   const [selectedType, setSelectedType] = useState<BenefitCodeType>('PERCENT_10');
   const [selectedUsageMode, setSelectedUsageMode] = useState<BenefitUsageMode>('SINGLE_USE');
+  const [selectedBatchCount, setSelectedBatchCount] = useState<BenefitBatchCount>(1);
   const [selectedValidityType, setSelectedValidityType] = useState<BenefitValidityType>('NO_EXPIRATION');
   const [createStartDate, setCreateStartDate] = useState(getBuenosAiresTodayDateString());
   const [createEndDate, setCreateEndDate] = useState('');
@@ -190,9 +195,12 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
   const [createDurationUnit, setCreateDurationUnit] = useState<BenefitDurationUnit>('DAYS');
   const [internalNote, setInternalNote] = useState('');
   const [customCode, setCustomCode] = useState('');
+  const [suggestionSeed, setSuggestionSeed] = useState(0);
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState('');
   const [createdItem, setCreatedItem] = useState<BenefitCodeItem | null>(null);
+  const [createdBatchItems, setCreatedBatchItems] = useState<BenefitCodeItem[]>([]);
+  const [copiedAllBatch, setCopiedAllBatch] = useState(false);
 
   // Edit Validity Modal State (Reusable codes)
   const [codeToEditValidity, setCodeToEditValidity] = useState<BenefitCodeItem | null>(null);
@@ -334,6 +342,33 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
     });
   }, [editValidityType, editStartDate, editEndDate, editDurationValue, editDurationUnit]);
 
+  const existingCodesList = useMemo(() => items.map((it) => it.code), [items]);
+
+  const codeSuggestions = useMemo(() => {
+    void suggestionSeed;
+    return generateContextualBenefitCodeSuggestions({
+      type: selectedType,
+      usageMode: selectedUsageMode,
+      existingCodes: existingCodesList,
+      count: 2,
+    });
+  }, [selectedType, selectedUsageMode, existingCodesList, suggestionSeed]);
+
+  const cycleBatchCount = () => {
+    setSelectedBatchCount((prev) => (prev === 1 ? 5 : prev === 5 ? 10 : 1));
+  };
+
+  const handleCopyAllBatch = async (codes: string[]) => {
+    try {
+      await navigator.clipboard.writeText(codes.join('\n'));
+      setCopiedAllBatch(true);
+      setTimeout(() => setCopiedAllBatch(false), 2500);
+      showToast(`${codes.length} códigos copiados correctamente`, 'success');
+    } catch {
+      showToast('No se pudieron copiar los códigos', 'error');
+    }
+  };
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     setCreating(true);
@@ -353,25 +388,53 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
       } catch {
         // Fallback
       }
-      const newItem = await adminCreateBenefitCodeFn({
-        data: {
-          type: selectedType,
-          usageMode: selectedUsageMode,
-          validityType: selectedValidityType,
-          startDate: createStartDate,
-          endDate: selectedValidityType === 'DATE_RANGE' ? createEndDate : undefined,
-          durationValue: selectedValidityType === 'CUSTOM_DURATION' ? createDurationValue : undefined,
-          durationUnit: selectedValidityType === 'CUSTOM_DURATION' ? createDurationUnit : undefined,
-          internalNote: internalNote.trim() || undefined,
-          code: customCode.trim() || undefined,
-          token,
-        },
-      });
-      setCreatedItem(newItem);
-      setInternalNote('');
-      setCustomCode('');
-      setCreateOpen(false);
-      await loadCodes();
+
+      if (selectedBatchCount > 1) {
+        const batchCreated = await adminCreateBenefitCodesBatchFn({
+          data: {
+            type: selectedType,
+            usageMode: selectedUsageMode,
+            batchCount: selectedBatchCount,
+            maxUses: selectedUsageMode === 'LIMITED_USE' ? DEFAULT_LIMITED_USE_MAX_USES : undefined,
+            prefix: customCode.trim() || undefined,
+            validityType: selectedValidityType,
+            startDate: createStartDate,
+            endDate: selectedValidityType === 'DATE_RANGE' ? createEndDate : undefined,
+            durationValue: selectedValidityType === 'CUSTOM_DURATION' ? createDurationValue : undefined,
+            durationUnit: selectedValidityType === 'CUSTOM_DURATION' ? createDurationUnit : undefined,
+            internalNote: internalNote.trim() || undefined,
+            token,
+          },
+        });
+        setCreatedBatchItems(batchCreated || []);
+        setCreatedItem(null);
+        setCopiedAllBatch(false);
+        setInternalNote('');
+        setCustomCode('');
+        await loadCodes();
+      } else {
+        const newItem = await adminCreateBenefitCodeFn({
+          data: {
+            type: selectedType,
+            usageMode: selectedUsageMode,
+            maxUses: selectedUsageMode === 'LIMITED_USE' ? DEFAULT_LIMITED_USE_MAX_USES : undefined,
+            validityType: selectedValidityType,
+            startDate: createStartDate,
+            endDate: selectedValidityType === 'DATE_RANGE' ? createEndDate : undefined,
+            durationValue: selectedValidityType === 'CUSTOM_DURATION' ? createDurationValue : undefined,
+            durationUnit: selectedValidityType === 'CUSTOM_DURATION' ? createDurationUnit : undefined,
+            internalNote: internalNote.trim() || undefined,
+            code: customCode.trim() || undefined,
+            token,
+          },
+        });
+        setCreatedItem(newItem);
+        setCreatedBatchItems([]);
+        setInternalNote('');
+        setCustomCode('');
+        setCreateOpen(false);
+        await loadCodes();
+      }
     } catch (err) {
       setCreateError(err instanceof Error ? err.message : 'No se pudo generar el código.');
     } finally {
@@ -593,13 +656,18 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
   const openCreateDialog = () => {
     setCreateOpen(true);
     setCreatedItem(null);
+    setCreatedBatchItems([]);
+    setCopiedAllBatch(false);
     setCreateError('');
     setSelectedUsageMode('SINGLE_USE');
+    setSelectedBatchCount(1);
     setSelectedValidityType('NO_EXPIRATION');
     setCreateStartDate(getBuenosAiresTodayDateString());
     setCreateEndDate('');
     setCreateDurationValue(7);
     setCreateDurationUnit('DAYS');
+    setCustomCode('');
+    setSuggestionSeed((s) => s + 1);
   };
 
   return (
@@ -875,14 +943,21 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                 const usageMode = item.usageMode || 'SINGLE_USE';
                 const usageDef = BENEFIT_USAGE_MODE_DEFINITIONS[usageMode];
                 const isReusable = usageMode === 'REUSABLE';
+                const isLimitedUse = usageMode === 'LIMITED_USE';
+                const maxUsesLimit = isLimitedUse
+                  ? (typeof item.maxUses === 'number' && item.maxUses > 0 ? item.maxUses : DEFAULT_LIMITED_USE_MAX_USES)
+                  : null;
                 const status = item.status;
                 const statusDisplay = getStatusDisplay(status);
                 const isCopied = copiedCode === item.code;
                 const isExpanded = expandedCodeIds.has(item.id);
                 const usagesList = item.usages || [];
                 const usageCount = item.timesUsed ?? usagesList.length;
+                const limitedProgressPct =
+                  maxUsesLimit !== null ? Math.min(100, Math.round((usageCount / maxUsesLimit) * 100)) : 0;
                 const hasLegacyUsage =
                   !isReusable &&
+                  !isLimitedUse &&
                   (usageCount > 0 ||
                     status === 'CONSUMED' ||
                     !!item.clientName ||
@@ -936,11 +1011,31 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                           )}
                         </div>
                         <p className="kani-dcard-subtitle">
-                          {getBenefitHeadline(item.type)} · {usageCount === 1 ? '1 uso' : `${usageCount} usos`}
+                          {getBenefitHeadline(item.type)} ·{' '}
+                          {isLimitedUse && maxUsesLimit !== null
+                            ? `${usageCount}/${maxUsesLimit} usos`
+                            : usageCount === 1
+                              ? '1 uso'
+                              : `${usageCount} usos`}
                         </p>
+                        {isLimitedUse && maxUsesLimit !== null && (
+                          <div
+                            className="kani-dcard-quota-bar"
+                            role="progressbar"
+                            aria-label={`Cupo utilizado: ${usageCount} de ${maxUsesLimit} usos`}
+                            aria-valuenow={usageCount}
+                            aria-valuemin={0}
+                            aria-valuemax={maxUsesLimit}
+                          >
+                            <div
+                              className={`kani-dcard-quota-fill${usageCount >= maxUsesLimit ? ' is-full' : ''}`}
+                              style={{ width: `${limitedProgressPct}%` }}
+                            />
+                          </div>
+                        )}
                       </div>
                       <div className="kani-dcard-top-actions">
-                        {canManageCodes && status !== 'DELETED' && isReusable && (
+                        {canManageCodes && status !== 'DELETED' && (isReusable || (isLimitedUse && status !== 'CONSUMED')) && (
                           <button
                             type="button"
                             className="v2-secondary kani-dcard-btn-edit-compact"
@@ -1333,7 +1428,70 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
             <KaniModalClose label="Cerrar" />
           </div>
 
-          {createdItem ? (
+          {createdBatchItems.length > 0 ? (
+            <div className="benefit-code-dialog-scroll-body kani-modal-body">
+              <div className="p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/30 space-y-3">
+                <div className="text-center space-y-1">
+                  <p className="text-xs text-emerald-500 font-semibold uppercase tracking-wider">
+                    ¡{createdBatchItems.length} códigos generados con éxito!
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {BENEFIT_USAGE_MODE_DEFINITIONS[selectedUsageMode].label} ·{' '}
+                    {BENEFIT_TYPE_DEFINITIONS[selectedType].shortLabel} · {createValidityPreview.summary}
+                  </p>
+                </div>
+                <ul
+                  className="max-h-56 overflow-y-auto space-y-1.5 pr-0.5"
+                  aria-label="Lista de códigos generados"
+                >
+                  {createdBatchItems.map((batchItem) => {
+                    const isRowCopied = copiedCode === batchItem.code;
+                    return (
+                      <li
+                        key={batchItem.id || batchItem.code}
+                        className="flex items-center justify-between gap-2 bg-background px-3 py-2 rounded border border-emerald-500/30"
+                      >
+                        <span className="font-mono text-xs sm:text-sm font-semibold tracking-wider text-foreground select-all truncate">
+                          {batchItem.code}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => void handleCopy(batchItem.code)}
+                          className="shrink-0 inline-flex items-center justify-center w-8 h-8 rounded-md border border-border text-muted-foreground hover:text-foreground transition-colors"
+                          aria-label={`Copiar código ${batchItem.code}`}
+                        >
+                          {isRowCopied ? <Check size={14} aria-hidden="true" /> : <Copy size={14} aria-hidden="true" />}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+                <div className="pt-1 flex justify-center gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => void handleCopyAllBatch(createdBatchItems.map((i) => i.code))}
+                    className="action-brand text-xs min-h-[38px]"
+                  >
+                    {copiedAllBatch ? <Check size={14} className="mr-1" /> : <Copy size={14} className="mr-1" />}
+                    <span>{copiedAllBatch ? '¡Copiados!' : 'Copiar todos'}</span>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setCreatedBatchItems([]);
+                      setCreateOpen(false);
+                    }}
+                    className="v2-secondary text-xs min-h-[38px]"
+                  >
+                    Cerrar
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ) : createdItem ? (
             <div className="benefit-code-dialog-scroll-body kani-modal-body">
               <div className="p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-center space-y-3">
                 <p className="text-xs text-emerald-500 font-semibold uppercase tracking-wider">¡Código generado con éxito!</p>
@@ -1342,7 +1500,7 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                 </p>
                 <div className="text-xs text-muted-foreground space-y-1">
                   <p>
-                    Modalidad: <strong className="text-foreground">{BENEFIT_USAGE_MODE_DEFINITIONS[createdItem.usageMode || selectedUsageMode].label}</strong>
+                    Cantidad de usos: <strong className="text-foreground">{BENEFIT_USAGE_MODE_DEFINITIONS[createdItem.usageMode || selectedUsageMode].label}</strong>
                   </p>
                   <p>
                     Beneficio: <strong className="text-foreground">{BENEFIT_TYPE_DEFINITIONS[createdItem.type].label}</strong>
@@ -1377,37 +1535,34 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
           ) : (
             <form onSubmit={handleCreate} className="benefit-code-dialog-form flex flex-col flex-1 min-h-0">
               <div className="benefit-code-dialog-scroll-body kani-modal-body">
-                {/* 1. Modalidad de uso */}
+                {/* 1. Cantidad de usos (3 pills en una fila) */}
                 <div className="space-y-1.5 sm:space-y-2">
                   <label className="text-xs font-semibold text-foreground block">
-                    Modalidad de uso:
+                    Cantidad de usos:
                   </label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {(['SINGLE_USE', 'REUSABLE'] as const).map((mode) => {
+                  <div className="grid grid-cols-3 gap-2">
+                    {(['SINGLE_USE', 'LIMITED_USE', 'REUSABLE'] as const).map((mode) => {
                       const def = BENEFIT_USAGE_MODE_DEFINITIONS[mode];
                       const isSelected = selectedUsageMode === mode;
                       return (
                         <label
                           key={mode}
-                          className={`flex flex-col justify-center p-2.5 rounded-lg border cursor-pointer transition-colors min-h-[44px] ${
+                          className={`flex flex-col items-center justify-center text-center px-2 py-2 rounded-lg border cursor-pointer transition-colors min-h-[42px] min-w-0 ${
                             isSelected
                               ? 'bg-gold/10 border-gold shadow-xs'
                               : 'bg-background border-border hover:bg-muted/40'
                           }`}
                         >
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="radio"
-                              name="usage_mode"
-                              value={mode}
-                              checked={isSelected}
-                              onChange={() => setSelectedUsageMode(mode)}
-                              className="accent-gold text-gold shrink-0"
-                            />
-                            <span className="text-xs sm:text-sm font-semibold text-foreground leading-tight">{def.label}</span>
-                          </div>
-                          <span className="hidden sm:block text-[11px] text-muted-foreground mt-1 leading-snug">
-                            {def.description}
+                          <input
+                            type="radio"
+                            name="usage_mode"
+                            value={mode}
+                            checked={isSelected}
+                            onChange={() => setSelectedUsageMode(mode)}
+                            className="sr-only"
+                          />
+                          <span className="text-xs font-semibold text-foreground leading-tight whitespace-nowrap truncate max-w-full">
+                            {def.label}
                           </span>
                         </label>
                       );
@@ -1465,29 +1620,52 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                   </div>
                 </div>
 
-                {/* 3. Vigencia */}
+                {/* 3. Vigencia | Cantidad (botón cíclico 1X → 5X → 10X) */}
                 <div className="space-y-2 pt-2 border-t border-border/50">
-                  <div className="flex items-baseline justify-between gap-3">
-                    <label htmlFor="create-validity-type" className="text-xs font-semibold text-foreground shrink-0">
-                      Vigencia:
-                    </label>
-                    <span className="text-[11px] font-medium text-muted-foreground text-right whitespace-nowrap">
-                      Buenos Aires (UTC-3)
-                    </span>
-                  </div>
+                  <div className="flex items-end gap-2">
+                    <div className="flex-1 min-w-0 space-y-1.5">
+                      <div className="flex items-baseline justify-between gap-2">
+                        <label htmlFor="create-validity-type" className="text-xs font-semibold text-foreground shrink-0">
+                          Vigencia:
+                        </label>
+                        <span className="hidden sm:inline text-[11px] font-medium text-muted-foreground text-right whitespace-nowrap">
+                          Buenos Aires (UTC-3)
+                        </span>
+                      </div>
+                      <select
+                        id="create-validity-type"
+                        value={selectedValidityType}
+                        onChange={(e) => setSelectedValidityType(e.target.value as BenefitValidityType)}
+                        className="h-10 w-full px-3 text-xs bg-background border border-input rounded-md text-foreground focus:outline-none focus:ring-1 focus:ring-gold"
+                      >
+                        <option value="NO_EXPIRATION">Sin vencimiento</option>
+                        <option value="ONE_WEEK">Durante una semana (7 días)</option>
+                        <option value="ONE_MONTH">Durante un mes (mes calendario)</option>
+                        <option value="CUSTOM_DURATION">Duración personalizada (X días, semanas o meses)</option>
+                        <option value="DATE_RANGE">Desde una fecha hasta otra</option>
+                      </select>
+                    </div>
 
-                  <select
-                    id="create-validity-type"
-                    value={selectedValidityType}
-                    onChange={(e) => setSelectedValidityType(e.target.value as BenefitValidityType)}
-                    className="h-10 w-full px-3 text-xs bg-background border border-input rounded-md text-foreground focus:outline-none focus:ring-1 focus:ring-gold"
-                  >
-                    <option value="NO_EXPIRATION">Sin vencimiento</option>
-                    <option value="ONE_WEEK">Durante una semana (7 días)</option>
-                    <option value="ONE_MONTH">Durante un mes (mes calendario)</option>
-                    <option value="CUSTOM_DURATION">Duración personalizada (X días, semanas o meses)</option>
-                    <option value="DATE_RANGE">Desde una fecha hasta otra</option>
-                  </select>
+                    <div className="w-[84px] shrink-0 space-y-1.5">
+                      <span className="text-xs font-semibold text-foreground block text-center">
+                        Cantidad
+                      </span>
+                      <button
+                        type="button"
+                        onClick={cycleBatchCount}
+                        data-testid="batch-count-cycle-btn"
+                        aria-label={`Cantidad de códigos a generar: ${selectedBatchCount}X`}
+                        title="Tocar para alternar 1X → 5X → 10X"
+                        className={`h-10 w-full rounded-md border text-xs font-bold tracking-wide transition-colors flex items-center justify-center ${
+                          selectedBatchCount > 1
+                            ? 'bg-gold/15 border-gold text-foreground shadow-xs'
+                            : 'bg-background border-input text-foreground hover:bg-muted/40'
+                        }`}
+                      >
+                        {selectedBatchCount}X
+                      </button>
+                    </div>
+                  </div>
 
                   {/* Campos progresivos según vigencia */}
                   {selectedValidityType !== 'NO_EXPIRATION' && (
@@ -1576,21 +1754,53 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                   </div>
                 </div>
 
-                {/* 4. Código personalizado (opcional) */}
-                <div className="space-y-1">
-                  <label htmlFor="create-custom-code" className="text-xs font-semibold text-foreground block">
-                    Código personalizado (opcional)
-                  </label>
+                {/* 4. Código personalizado / Prefijo del lote + 2 sugerencias contextuales */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <label htmlFor="create-custom-code" className="text-xs font-semibold text-foreground block">
+                      {selectedBatchCount > 1
+                        ? `Prefijo del lote ×${selectedBatchCount} (opcional)`
+                        : 'Código personalizado (opcional)'}
+                    </label>
+                    {selectedBatchCount === 1 && (
+                      <button
+                        type="button"
+                        onClick={() => setSuggestionSeed((s) => s + 1)}
+                        className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors"
+                        aria-label="Generar nuevas sugerencias de código"
+                      >
+                        <RefreshCw size={11} aria-hidden="true" />
+                        <span>Nuevas</span>
+                      </button>
+                    )}
+                  </div>
                   <Input
                     id="create-custom-code"
                     value={customCode}
                     onChange={(e) => setCustomCode(e.target.value.toUpperCase())}
-                    placeholder="Ej: KANI-VIP-2026"
+                    placeholder={selectedBatchCount > 1 ? 'Ej: KANI-VIP' : 'Ej: KANI-VIP-2026'}
                     className="text-xs font-mono uppercase bg-background"
-                    maxLength={32}
+                    maxLength={selectedBatchCount > 1 ? 24 : 32}
                   />
+                  {selectedBatchCount === 1 && codeSuggestions.length > 0 && (
+                    <div className="grid grid-cols-2 gap-2 pt-0.5" data-testid="code-suggestions-grid">
+                      {codeSuggestions.slice(0, 2).map((suggestion) => (
+                        <button
+                          key={suggestion}
+                          type="button"
+                          onClick={() => setCustomCode(suggestion)}
+                          title={suggestion}
+                          className="min-w-0 w-full px-2.5 py-1.5 rounded-md border border-border bg-muted/30 hover:border-gold/70 hover:bg-gold/10 text-[11px] font-mono font-medium text-foreground truncate text-center transition-colors"
+                        >
+                          {suggestion}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                   <span className="hidden sm:block text-[11px] text-muted-foreground">
-                    Si se deja vacío, el sistema generará un código seguro e irrepetible.
+                    {selectedBatchCount > 1
+                      ? `Se generarán ${selectedBatchCount} códigos únicos automáticamente con sufijo aleatorio.`
+                      : 'Si se deja vacío, el sistema generará un código seguro e irrepetible.'}
                   </span>
                 </div>
 
@@ -1618,7 +1828,13 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                   className="action-positive min-h-[44px] text-xs font-semibold"
                 >
                   {creating ? <RefreshCw size={14} className="animate-spin mr-1.5" /> : <Sparkles size={14} className="mr-1.5" />}
-                  <span>{creating ? 'Generando…' : 'Crear código'}</span>
+                  <span>
+                    {creating
+                      ? 'Generando…'
+                      : selectedBatchCount > 1
+                        ? `Crear ${selectedBatchCount} códigos`
+                        : 'Crear código'}
+                  </span>
                 </Button>
               </DialogFooter>
             </form>
