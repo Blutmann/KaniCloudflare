@@ -15,7 +15,8 @@ describe('Kani — Contacto, Botones del Header y Menú por Rol', () => {
       expect(contactoCode).toContain('createFileRoute("/contacto")');
       expect(contactoCode).toContain('https://www.kanibarber.com/contacto');
       expect(contactoCode).toContain('pageHead');
-      expect(contactoCode).toContain('Kani Barber Studio - Contacto');
+      expect(contactoCode).toContain('Kani · Contacto');
+      expect(contactoCode).toContain('Kani Barber Studio · Contacto y Ubicación');
     });
 
     it('ruta previa /estudio implementa redirección 301 permanente en el cliente', () => {

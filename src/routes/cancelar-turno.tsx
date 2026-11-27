@@ -44,9 +44,10 @@ export const Route = createFileRoute('/cancelar-turno')({
     return pageHead(
       'Cancelar Turno · Kani Barber Studio',
       'Gestión segura de cancelación de reservas en Kani Barber Studio.',
-      'Kani Barber Studio - Cancelar Turno',
+      'Kani · Cancelar turno',
       {
         canonicalPath: '/cancelar-turno',
+        ogTitle: 'Kani Barber Studio · Cancelar turno',
         noindex: hasTokenParams,
       },
     );

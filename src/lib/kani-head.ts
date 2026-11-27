@@ -6,6 +6,7 @@ export type PageHeadOptions = {
   noindex?: boolean;
   robots?: string;
   ogImage?: string;
+  ogTitle?: string;
   jsonLd?: Record<string, unknown> | Array<Record<string, unknown>>;
 };
 
@@ -64,19 +65,20 @@ export function pageHead(
 ) {
   const canonicalUrl = resolveCanonicalUrl(options?.canonicalPath);
   const ogImage = options?.ogImage || KANI_DEFAULT_OG_IMAGE;
+  const ogTitle = options?.ogTitle || documentTitle;
   const robotsContent = options?.robots ?? (options?.noindex ? "noindex, nofollow" : undefined);
 
   const meta: Array<Record<string, string>> = [
     { title: documentTitle },
     { name: "description", content: description },
-    { property: "og:title", content: documentTitle },
+    { property: "og:title", content: ogTitle },
     { property: "og:description", content: description },
     { property: "og:type", content: "website" },
     { property: "og:site_name", content: "Kani Barber Studio" },
     { property: "og:locale", content: "es_AR" },
     { property: "og:image", content: ogImage },
     { name: "twitter:card", content: "summary_large_image" },
-    { name: "twitter:title", content: documentTitle },
+    { name: "twitter:title", content: ogTitle },
     { name: "twitter:description", content: description },
     { name: "twitter:image", content: ogImage },
   ];

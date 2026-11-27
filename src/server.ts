@@ -147,6 +147,11 @@ export default {
         return handleTurnoIcsRequest(request);
       }
 
+      if (url.pathname === "/api/google-reviews") {
+        const { handleGoogleReviewsRequest } = await import("./lib/kani-google-reviews.server");
+        return await handleGoogleReviewsRequest(request);
+      }
+
       if (url.pathname === "/api/webhook/mercadopago") {
         const { handleMercadoPagoWebhook } = await import("./lib/kani-mercadopago-webhook.server");
         return await handleMercadoPagoWebhook(request);

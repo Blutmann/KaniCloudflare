@@ -14,9 +14,10 @@ export const Route = createFileRoute('/reservar')({
     pageHead(
       'Reservá tu turno',
       'Reservá tu turno en Kani Barber Studio.',
-      'Kani Barber Studio - Reservar turno',
+      'Kani · Reservar turno',
       {
         canonicalPath: '/reservar',
+        ogTitle: 'Kani Barber Studio · Reservá tu turno',
         jsonLd: buildKaniLocalBusinessJsonLd(`${KANI_SITE_ORIGIN}/reservar`),
       },
     ),

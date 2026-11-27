@@ -475,7 +475,7 @@ html[data-theme] .liquid-glass-reservation .booking-page .booking-progress > but
   html[data-theme] .site-shell .liquid-glass-reservation .booking-scroll-content {
     flex: 1 1 auto !important;
     min-height: 0 !important;
-    padding: 20px 12px 16px !important;
+    padding: 20px 12px 28px !important;
   }
 
   html[data-theme] .site-shell .liquid-glass-reservation .booking-page .section-title,
@@ -504,7 +504,7 @@ html[data-theme] .liquid-glass-reservation .booking-page .booking-progress > but
 
 @media (max-width: 360px) {
   html[data-theme] .site-shell .liquid-glass-reservation .booking-scroll-content {
-    padding: 18px 10px 14px !important;
+    padding: 18px 10px 26px !important;
   }
 
   html[data-theme] .site-shell .liquid-glass-reservation .booking-page .booking-progress {
