@@ -11,84 +11,22 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ActivarCuentaRouteImport } from './routes/activar-cuenta'
-import { Route as AdminRouteImport } from './routes/admin'
-import { Route as AdminLiquidRouteImport } from './routes/admin-liquid'
-import { Route as AdminV2RouteImport } from './routes/admin-v2'
-import { Route as AdminV2LiquidRouteImport } from './routes/admin-v2-liquid'
-import { Route as CancelarRouteImport } from './routes/cancelar'
 import { Route as CancelarTurnoRouteImport } from './routes/cancelar-turno'
-import { Route as CancelarTurnoOldRouteImport } from './routes/cancelar-turno-old'
 import { Route as CaseStudyRouteImport } from './routes/case-study'
 import { Route as ContactoRouteImport } from './routes/contacto'
-import { Route as ContactoLiquidRouteImport } from './routes/contacto-liquid'
-import { Route as ContactoOldRouteImport } from './routes/contacto-old'
-import { Route as EstudioRouteImport } from './routes/estudio'
 import { Route as PanelAdministracionRouteImport } from './routes/panel-administracion'
-import { Route as PanelAdministracionOldRouteImport } from './routes/panel-administracion-old'
 import { Route as PanelDescuentosRouteImport } from './routes/panel-descuentos'
 import { Route as PanelHorariosRouteImport } from './routes/panel-horarios'
 import { Route as PanelMembresiasRouteImport } from './routes/panel-membresias'
 import { Route as PanelTurnosRouteImport } from './routes/panel-turnos'
-import { Route as PanelV2RouteImport } from './routes/panel-v2'
 import { Route as PoliticaDePrivacidadRouteImport } from './routes/politica-de-privacidad'
-import { Route as PoliticaDePrivacidadLiquidRouteImport } from './routes/politica-de-privacidad-liquid'
-import { Route as PoliticaDePrivacidadOldRouteImport } from './routes/politica-de-privacidad-old'
-import { Route as ReservaV2RouteImport } from './routes/reserva-v2'
-import { Route as ReservaV3RouteImport } from './routes/reserva-v3'
-import { Route as ReservaV4RouteImport } from './routes/reserva-v4'
-import { Route as ReservaV5RouteImport } from './routes/reserva-v5'
 import { Route as ReservarRouteImport } from './routes/reservar'
-import { Route as ReservarMercadopagoRouteImport } from './routes/reservar-mercadopago'
-import { Route as ReservarTurnoRouteImport } from './routes/reservar-turno'
-import { Route as ReservarTurnoLiquidRouteImport } from './routes/reservar-turno-liquid'
-import { Route as ReservarTurnoMercadopagoRouteImport } from './routes/reservar-turno-mercadopago'
-import { Route as ReservarTurnoOldRouteImport } from './routes/reservar-turno-old'
 import { Route as RestablecerContrasenaRouteImport } from './routes/restablecer-contrasena'
 import { Route as TerminosYCondicionesRouteImport } from './routes/terminos-y-condiciones'
-import { Route as TerminosYCondicionesLiquidRouteImport } from './routes/terminos-y-condiciones-liquid'
-import { Route as TerminosYCondicionesOldRouteImport } from './routes/terminos-y-condiciones-old'
-import { Route as AdminLiquidIndexRouteImport } from './routes/admin-liquid.index'
-import { Route as AdminLiquidClientesRouteImport } from './routes/admin-liquid.clientes'
-import { Route as AdminLiquidDatosRouteImport } from './routes/admin-liquid.datos'
-import { Route as AdminLiquidDescuentosRouteImport } from './routes/admin-liquid.descuentos'
-import { Route as AdminLiquidHorariosRouteImport } from './routes/admin-liquid.horarios'
-import { Route as AdminLiquidInicioRouteImport } from './routes/admin-liquid.inicio'
-import { Route as AdminLiquidMantenimientoRouteImport } from './routes/admin-liquid.mantenimiento'
-import { Route as AdminLiquidMembresiasRouteImport } from './routes/admin-liquid.membresias'
-import { Route as AdminLiquidPagosRouteImport } from './routes/admin-liquid.pagos'
-import { Route as AdminLiquidTurnosRouteImport } from './routes/admin-liquid.turnos'
-import { Route as AdminV2LiquidIndexRouteImport } from './routes/admin-v2-liquid.index'
-import { Route as AdminV2LiquidEstadisticasRouteImport } from './routes/admin-v2-liquid.estadisticas'
-import { Route as AdminV2IndexRouteImport } from './routes/admin-v2.index'
-import { Route as AdminV2ClientesRouteImport } from './routes/admin-v2.clientes'
-import { Route as AdminV2DatosRouteImport } from './routes/admin-v2.datos'
-import { Route as AdminV2HorariosRouteImport } from './routes/admin-v2.horarios'
-import { Route as AdminV2InicioRouteImport } from './routes/admin-v2.inicio'
-import { Route as AdminV2MantenimientoRouteImport } from './routes/admin-v2.mantenimiento'
-import { Route as AdminV2PagosRouteImport } from './routes/admin-v2.pagos'
-import { Route as AdminV2TurnosRouteImport } from './routes/admin-v2.turnos'
-import { Route as AdminIndexRouteImport } from './routes/admin.index'
-import { Route as AdminDatosRouteImport } from './routes/admin.datos'
-import { Route as AdminEstadisticasRouteImport } from './routes/admin.estadisticas'
-import { Route as AdminHorariosRouteImport } from './routes/admin.horarios'
-import { Route as AdminMantenimientoRouteImport } from './routes/admin.mantenimiento'
-import { Route as AdminMovilRouteImport } from './routes/admin.movil'
-import { Route as AdminPagosRouteImport } from './routes/admin.pagos'
-import { Route as AdminTurnosRouteImport } from './routes/admin.turnos'
 import { Route as MembresiaTokenRouteImport } from './routes/membresia.$token'
 import { Route as PagoErrorRouteImport } from './routes/pago.error'
 import { Route as PagoExitoRouteImport } from './routes/pago.exito'
 import { Route as PagoPendienteRouteImport } from './routes/pago.pendiente'
-import { Route as PanelAdministracionOldIndexRouteImport } from './routes/panel-administracion-old.index'
-import { Route as PanelAdministracionOldClientesRouteImport } from './routes/panel-administracion-old.clientes'
-import { Route as PanelAdministracionOldDatosRouteImport } from './routes/panel-administracion-old.datos'
-import { Route as PanelAdministracionOldDescuentosRouteImport } from './routes/panel-administracion-old.descuentos'
-import { Route as PanelAdministracionOldHorariosRouteImport } from './routes/panel-administracion-old.horarios'
-import { Route as PanelAdministracionOldInicioRouteImport } from './routes/panel-administracion-old.inicio'
-import { Route as PanelAdministracionOldMantenimientoRouteImport } from './routes/panel-administracion-old.mantenimiento'
-import { Route as PanelAdministracionOldMembresiasRouteImport } from './routes/panel-administracion-old.membresias'
-import { Route as PanelAdministracionOldPagosRouteImport } from './routes/panel-administracion-old.pagos'
-import { Route as PanelAdministracionOldTurnosRouteImport } from './routes/panel-administracion-old.turnos'
 import { Route as PanelAdministracionIndexRouteImport } from './routes/panel-administracion.index'
 import { Route as PanelAdministracionClientesRouteImport } from './routes/panel-administracion.clientes'
 import { Route as PanelAdministracionDatosRouteImport } from './routes/panel-administracion.datos'
@@ -99,25 +37,7 @@ import { Route as PanelAdministracionMantenimientoRouteImport } from './routes/p
 import { Route as PanelAdministracionMembresiasRouteImport } from './routes/panel-administracion.membresias'
 import { Route as PanelAdministracionPagosRouteImport } from './routes/panel-administracion.pagos'
 import { Route as PanelAdministracionTurnosRouteImport } from './routes/panel-administracion.turnos'
-import { Route as PanelV2IndexRouteImport } from './routes/panel-v2.index'
-import { Route as PanelV2EstadisticasRouteImport } from './routes/panel-v2.estadisticas'
 import { Route as VerificarMembresiaTokenRouteImport } from './routes/verificar-membresia.$token'
-import { Route as AdminV2LiquidNegocioIndexRouteImport } from './routes/admin-v2-liquid.negocio.index'
-import { Route as AdminV2LiquidNegocioDescuentosRouteImport } from './routes/admin-v2-liquid.negocio.descuentos'
-import { Route as AdminV2LiquidNegocioMembresiasRouteImport } from './routes/admin-v2-liquid.negocio.membresias'
-import { Route as AdminV2LiquidNegocioPagosRouteImport } from './routes/admin-v2-liquid.negocio.pagos'
-import { Route as AdminV2LiquidOperacionIndexRouteImport } from './routes/admin-v2-liquid.operacion.index'
-import { Route as AdminV2LiquidOperacionClientesRouteImport } from './routes/admin-v2-liquid.operacion.clientes'
-import { Route as AdminV2LiquidOperacionHorariosRouteImport } from './routes/admin-v2-liquid.operacion.horarios'
-import { Route as AdminV2LiquidOperacionTurnosRouteImport } from './routes/admin-v2-liquid.operacion.turnos'
-import { Route as PanelV2NegocioIndexRouteImport } from './routes/panel-v2.negocio.index'
-import { Route as PanelV2NegocioDescuentosRouteImport } from './routes/panel-v2.negocio.descuentos'
-import { Route as PanelV2NegocioMembresiasRouteImport } from './routes/panel-v2.negocio.membresias'
-import { Route as PanelV2NegocioPagosRouteImport } from './routes/panel-v2.negocio.pagos'
-import { Route as PanelV2OperacionIndexRouteImport } from './routes/panel-v2.operacion.index'
-import { Route as PanelV2OperacionClientesRouteImport } from './routes/panel-v2.operacion.clientes'
-import { Route as PanelV2OperacionHorariosRouteImport } from './routes/panel-v2.operacion.horarios'
-import { Route as PanelV2OperacionTurnosRouteImport } from './routes/panel-v2.operacion.turnos'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -129,39 +49,9 @@ const ActivarCuentaRoute = ActivarCuentaRouteImport.update({
   path: '/activar-cuenta',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminRoute = AdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminLiquidRoute = AdminLiquidRouteImport.update({
-  id: '/admin-liquid',
-  path: '/admin-liquid',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminV2Route = AdminV2RouteImport.update({
-  id: '/admin-v2',
-  path: '/admin-v2',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminV2LiquidRoute = AdminV2LiquidRouteImport.update({
-  id: '/admin-v2-liquid',
-  path: '/admin-v2-liquid',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CancelarRoute = CancelarRouteImport.update({
-  id: '/cancelar',
-  path: '/cancelar',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const CancelarTurnoRoute = CancelarTurnoRouteImport.update({
   id: '/cancelar-turno',
   path: '/cancelar-turno',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CancelarTurnoOldRoute = CancelarTurnoOldRouteImport.update({
-  id: '/cancelar-turno-old',
-  path: '/cancelar-turno-old',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CaseStudyRoute = CaseStudyRouteImport.update({
@@ -174,29 +64,9 @@ const ContactoRoute = ContactoRouteImport.update({
   path: '/contacto',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ContactoLiquidRoute = ContactoLiquidRouteImport.update({
-  id: '/contacto-liquid',
-  path: '/contacto-liquid',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ContactoOldRoute = ContactoOldRouteImport.update({
-  id: '/contacto-old',
-  path: '/contacto-old',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const EstudioRoute = EstudioRouteImport.update({
-  id: '/estudio',
-  path: '/estudio',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const PanelAdministracionRoute = PanelAdministracionRouteImport.update({
   id: '/panel-administracion',
   path: '/panel-administracion',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PanelAdministracionOldRoute = PanelAdministracionOldRouteImport.update({
-  id: '/panel-administracion-old',
-  path: '/panel-administracion-old',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PanelDescuentosRoute = PanelDescuentosRouteImport.update({
@@ -219,76 +89,14 @@ const PanelTurnosRoute = PanelTurnosRouteImport.update({
   path: '/panel-turnos',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PanelV2Route = PanelV2RouteImport.update({
-  id: '/panel-v2',
-  path: '/panel-v2',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const PoliticaDePrivacidadRoute = PoliticaDePrivacidadRouteImport.update({
   id: '/politica-de-privacidad',
   path: '/politica-de-privacidad',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PoliticaDePrivacidadLiquidRoute =
-  PoliticaDePrivacidadLiquidRouteImport.update({
-    id: '/politica-de-privacidad-liquid',
-    path: '/politica-de-privacidad-liquid',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const PoliticaDePrivacidadOldRoute = PoliticaDePrivacidadOldRouteImport.update({
-  id: '/politica-de-privacidad-old',
-  path: '/politica-de-privacidad-old',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ReservaV2Route = ReservaV2RouteImport.update({
-  id: '/reserva-v2',
-  path: '/reserva-v2',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ReservaV3Route = ReservaV3RouteImport.update({
-  id: '/reserva-v3',
-  path: '/reserva-v3',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ReservaV4Route = ReservaV4RouteImport.update({
-  id: '/reserva-v4',
-  path: '/reserva-v4',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ReservaV5Route = ReservaV5RouteImport.update({
-  id: '/reserva-v5',
-  path: '/reserva-v5',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ReservarRoute = ReservarRouteImport.update({
   id: '/reservar',
   path: '/reservar',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ReservarMercadopagoRoute = ReservarMercadopagoRouteImport.update({
-  id: '/reservar-mercadopago',
-  path: '/reservar-mercadopago',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ReservarTurnoRoute = ReservarTurnoRouteImport.update({
-  id: '/reservar-turno',
-  path: '/reservar-turno',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ReservarTurnoLiquidRoute = ReservarTurnoLiquidRouteImport.update({
-  id: '/reservar-turno-liquid',
-  path: '/reservar-turno-liquid',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ReservarTurnoMercadopagoRoute =
-  ReservarTurnoMercadopagoRouteImport.update({
-    id: '/reservar-turno-mercadopago',
-    path: '/reservar-turno-mercadopago',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ReservarTurnoOldRoute = ReservarTurnoOldRouteImport.update({
-  id: '/reservar-turno-old',
-  path: '/reservar-turno-old',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RestablecerContrasenaRoute = RestablecerContrasenaRouteImport.update({
@@ -300,159 +108,6 @@ const TerminosYCondicionesRoute = TerminosYCondicionesRouteImport.update({
   id: '/terminos-y-condiciones',
   path: '/terminos-y-condiciones',
   getParentRoute: () => rootRouteImport,
-} as any)
-const TerminosYCondicionesLiquidRoute =
-  TerminosYCondicionesLiquidRouteImport.update({
-    id: '/terminos-y-condiciones-liquid',
-    path: '/terminos-y-condiciones-liquid',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const TerminosYCondicionesOldRoute = TerminosYCondicionesOldRouteImport.update({
-  id: '/terminos-y-condiciones-old',
-  path: '/terminos-y-condiciones-old',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminLiquidIndexRoute = AdminLiquidIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AdminLiquidRoute,
-} as any)
-const AdminLiquidClientesRoute = AdminLiquidClientesRouteImport.update({
-  id: '/clientes',
-  path: '/clientes',
-  getParentRoute: () => AdminLiquidRoute,
-} as any)
-const AdminLiquidDatosRoute = AdminLiquidDatosRouteImport.update({
-  id: '/datos',
-  path: '/datos',
-  getParentRoute: () => AdminLiquidRoute,
-} as any)
-const AdminLiquidDescuentosRoute = AdminLiquidDescuentosRouteImport.update({
-  id: '/descuentos',
-  path: '/descuentos',
-  getParentRoute: () => AdminLiquidRoute,
-} as any)
-const AdminLiquidHorariosRoute = AdminLiquidHorariosRouteImport.update({
-  id: '/horarios',
-  path: '/horarios',
-  getParentRoute: () => AdminLiquidRoute,
-} as any)
-const AdminLiquidInicioRoute = AdminLiquidInicioRouteImport.update({
-  id: '/inicio',
-  path: '/inicio',
-  getParentRoute: () => AdminLiquidRoute,
-} as any)
-const AdminLiquidMantenimientoRoute =
-  AdminLiquidMantenimientoRouteImport.update({
-    id: '/mantenimiento',
-    path: '/mantenimiento',
-    getParentRoute: () => AdminLiquidRoute,
-  } as any)
-const AdminLiquidMembresiasRoute = AdminLiquidMembresiasRouteImport.update({
-  id: '/membresias',
-  path: '/membresias',
-  getParentRoute: () => AdminLiquidRoute,
-} as any)
-const AdminLiquidPagosRoute = AdminLiquidPagosRouteImport.update({
-  id: '/pagos',
-  path: '/pagos',
-  getParentRoute: () => AdminLiquidRoute,
-} as any)
-const AdminLiquidTurnosRoute = AdminLiquidTurnosRouteImport.update({
-  id: '/turnos',
-  path: '/turnos',
-  getParentRoute: () => AdminLiquidRoute,
-} as any)
-const AdminV2LiquidIndexRoute = AdminV2LiquidIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AdminV2LiquidRoute,
-} as any)
-const AdminV2LiquidEstadisticasRoute =
-  AdminV2LiquidEstadisticasRouteImport.update({
-    id: '/estadisticas',
-    path: '/estadisticas',
-    getParentRoute: () => AdminV2LiquidRoute,
-  } as any)
-const AdminV2IndexRoute = AdminV2IndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AdminV2Route,
-} as any)
-const AdminV2ClientesRoute = AdminV2ClientesRouteImport.update({
-  id: '/clientes',
-  path: '/clientes',
-  getParentRoute: () => AdminV2Route,
-} as any)
-const AdminV2DatosRoute = AdminV2DatosRouteImport.update({
-  id: '/datos',
-  path: '/datos',
-  getParentRoute: () => AdminV2Route,
-} as any)
-const AdminV2HorariosRoute = AdminV2HorariosRouteImport.update({
-  id: '/horarios',
-  path: '/horarios',
-  getParentRoute: () => AdminV2Route,
-} as any)
-const AdminV2InicioRoute = AdminV2InicioRouteImport.update({
-  id: '/inicio',
-  path: '/inicio',
-  getParentRoute: () => AdminV2Route,
-} as any)
-const AdminV2MantenimientoRoute = AdminV2MantenimientoRouteImport.update({
-  id: '/mantenimiento',
-  path: '/mantenimiento',
-  getParentRoute: () => AdminV2Route,
-} as any)
-const AdminV2PagosRoute = AdminV2PagosRouteImport.update({
-  id: '/pagos',
-  path: '/pagos',
-  getParentRoute: () => AdminV2Route,
-} as any)
-const AdminV2TurnosRoute = AdminV2TurnosRouteImport.update({
-  id: '/turnos',
-  path: '/turnos',
-  getParentRoute: () => AdminV2Route,
-} as any)
-const AdminIndexRoute = AdminIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminDatosRoute = AdminDatosRouteImport.update({
-  id: '/datos',
-  path: '/datos',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminEstadisticasRoute = AdminEstadisticasRouteImport.update({
-  id: '/estadisticas',
-  path: '/estadisticas',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminHorariosRoute = AdminHorariosRouteImport.update({
-  id: '/horarios',
-  path: '/horarios',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminMantenimientoRoute = AdminMantenimientoRouteImport.update({
-  id: '/mantenimiento',
-  path: '/mantenimiento',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminMovilRoute = AdminMovilRouteImport.update({
-  id: '/movil',
-  path: '/movil',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminPagosRoute = AdminPagosRouteImport.update({
-  id: '/pagos',
-  path: '/pagos',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminTurnosRoute = AdminTurnosRouteImport.update({
-  id: '/turnos',
-  path: '/turnos',
-  getParentRoute: () => AdminRoute,
 } as any)
 const MembresiaTokenRoute = MembresiaTokenRouteImport.update({
   id: '/membresia/$token',
@@ -474,66 +129,6 @@ const PagoPendienteRoute = PagoPendienteRouteImport.update({
   path: '/pago/pendiente',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PanelAdministracionOldIndexRoute =
-  PanelAdministracionOldIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => PanelAdministracionOldRoute,
-  } as any)
-const PanelAdministracionOldClientesRoute =
-  PanelAdministracionOldClientesRouteImport.update({
-    id: '/clientes',
-    path: '/clientes',
-    getParentRoute: () => PanelAdministracionOldRoute,
-  } as any)
-const PanelAdministracionOldDatosRoute =
-  PanelAdministracionOldDatosRouteImport.update({
-    id: '/datos',
-    path: '/datos',
-    getParentRoute: () => PanelAdministracionOldRoute,
-  } as any)
-const PanelAdministracionOldDescuentosRoute =
-  PanelAdministracionOldDescuentosRouteImport.update({
-    id: '/descuentos',
-    path: '/descuentos',
-    getParentRoute: () => PanelAdministracionOldRoute,
-  } as any)
-const PanelAdministracionOldHorariosRoute =
-  PanelAdministracionOldHorariosRouteImport.update({
-    id: '/horarios',
-    path: '/horarios',
-    getParentRoute: () => PanelAdministracionOldRoute,
-  } as any)
-const PanelAdministracionOldInicioRoute =
-  PanelAdministracionOldInicioRouteImport.update({
-    id: '/inicio',
-    path: '/inicio',
-    getParentRoute: () => PanelAdministracionOldRoute,
-  } as any)
-const PanelAdministracionOldMantenimientoRoute =
-  PanelAdministracionOldMantenimientoRouteImport.update({
-    id: '/mantenimiento',
-    path: '/mantenimiento',
-    getParentRoute: () => PanelAdministracionOldRoute,
-  } as any)
-const PanelAdministracionOldMembresiasRoute =
-  PanelAdministracionOldMembresiasRouteImport.update({
-    id: '/membresias',
-    path: '/membresias',
-    getParentRoute: () => PanelAdministracionOldRoute,
-  } as any)
-const PanelAdministracionOldPagosRoute =
-  PanelAdministracionOldPagosRouteImport.update({
-    id: '/pagos',
-    path: '/pagos',
-    getParentRoute: () => PanelAdministracionOldRoute,
-  } as any)
-const PanelAdministracionOldTurnosRoute =
-  PanelAdministracionOldTurnosRouteImport.update({
-    id: '/turnos',
-    path: '/turnos',
-    getParentRoute: () => PanelAdministracionOldRoute,
-  } as any)
 const PanelAdministracionIndexRoute =
   PanelAdministracionIndexRouteImport.update({
     id: '/',
@@ -594,190 +189,31 @@ const PanelAdministracionTurnosRoute =
     path: '/turnos',
     getParentRoute: () => PanelAdministracionRoute,
   } as any)
-const PanelV2IndexRoute = PanelV2IndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => PanelV2Route,
-} as any)
-const PanelV2EstadisticasRoute = PanelV2EstadisticasRouteImport.update({
-  id: '/estadisticas',
-  path: '/estadisticas',
-  getParentRoute: () => PanelV2Route,
-} as any)
 const VerificarMembresiaTokenRoute = VerificarMembresiaTokenRouteImport.update({
   id: '/verificar-membresia/$token',
   path: '/verificar-membresia/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminV2LiquidNegocioIndexRoute =
-  AdminV2LiquidNegocioIndexRouteImport.update({
-    id: '/negocio/',
-    path: '/negocio/',
-    getParentRoute: () => AdminV2LiquidRoute,
-  } as any)
-const AdminV2LiquidNegocioDescuentosRoute =
-  AdminV2LiquidNegocioDescuentosRouteImport.update({
-    id: '/negocio/descuentos',
-    path: '/negocio/descuentos',
-    getParentRoute: () => AdminV2LiquidRoute,
-  } as any)
-const AdminV2LiquidNegocioMembresiasRoute =
-  AdminV2LiquidNegocioMembresiasRouteImport.update({
-    id: '/negocio/membresias',
-    path: '/negocio/membresias',
-    getParentRoute: () => AdminV2LiquidRoute,
-  } as any)
-const AdminV2LiquidNegocioPagosRoute =
-  AdminV2LiquidNegocioPagosRouteImport.update({
-    id: '/negocio/pagos',
-    path: '/negocio/pagos',
-    getParentRoute: () => AdminV2LiquidRoute,
-  } as any)
-const AdminV2LiquidOperacionIndexRoute =
-  AdminV2LiquidOperacionIndexRouteImport.update({
-    id: '/operacion/',
-    path: '/operacion/',
-    getParentRoute: () => AdminV2LiquidRoute,
-  } as any)
-const AdminV2LiquidOperacionClientesRoute =
-  AdminV2LiquidOperacionClientesRouteImport.update({
-    id: '/operacion/clientes',
-    path: '/operacion/clientes',
-    getParentRoute: () => AdminV2LiquidRoute,
-  } as any)
-const AdminV2LiquidOperacionHorariosRoute =
-  AdminV2LiquidOperacionHorariosRouteImport.update({
-    id: '/operacion/horarios',
-    path: '/operacion/horarios',
-    getParentRoute: () => AdminV2LiquidRoute,
-  } as any)
-const AdminV2LiquidOperacionTurnosRoute =
-  AdminV2LiquidOperacionTurnosRouteImport.update({
-    id: '/operacion/turnos',
-    path: '/operacion/turnos',
-    getParentRoute: () => AdminV2LiquidRoute,
-  } as any)
-const PanelV2NegocioIndexRoute = PanelV2NegocioIndexRouteImport.update({
-  id: '/negocio/',
-  path: '/negocio/',
-  getParentRoute: () => PanelV2Route,
-} as any)
-const PanelV2NegocioDescuentosRoute =
-  PanelV2NegocioDescuentosRouteImport.update({
-    id: '/negocio/descuentos',
-    path: '/negocio/descuentos',
-    getParentRoute: () => PanelV2Route,
-  } as any)
-const PanelV2NegocioMembresiasRoute =
-  PanelV2NegocioMembresiasRouteImport.update({
-    id: '/negocio/membresias',
-    path: '/negocio/membresias',
-    getParentRoute: () => PanelV2Route,
-  } as any)
-const PanelV2NegocioPagosRoute = PanelV2NegocioPagosRouteImport.update({
-  id: '/negocio/pagos',
-  path: '/negocio/pagos',
-  getParentRoute: () => PanelV2Route,
-} as any)
-const PanelV2OperacionIndexRoute = PanelV2OperacionIndexRouteImport.update({
-  id: '/operacion/',
-  path: '/operacion/',
-  getParentRoute: () => PanelV2Route,
-} as any)
-const PanelV2OperacionClientesRoute =
-  PanelV2OperacionClientesRouteImport.update({
-    id: '/operacion/clientes',
-    path: '/operacion/clientes',
-    getParentRoute: () => PanelV2Route,
-  } as any)
-const PanelV2OperacionHorariosRoute =
-  PanelV2OperacionHorariosRouteImport.update({
-    id: '/operacion/horarios',
-    path: '/operacion/horarios',
-    getParentRoute: () => PanelV2Route,
-  } as any)
-const PanelV2OperacionTurnosRoute = PanelV2OperacionTurnosRouteImport.update({
-  id: '/operacion/turnos',
-  path: '/operacion/turnos',
-  getParentRoute: () => PanelV2Route,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/activar-cuenta': typeof ActivarCuentaRoute
-  '/admin': typeof AdminRouteWithChildren
-  '/admin-liquid': typeof AdminLiquidRouteWithChildren
-  '/admin-v2': typeof AdminV2RouteWithChildren
-  '/admin-v2-liquid': typeof AdminV2LiquidRouteWithChildren
-  '/cancelar': typeof CancelarRoute
   '/cancelar-turno': typeof CancelarTurnoRoute
-  '/cancelar-turno-old': typeof CancelarTurnoOldRoute
   '/case-study': typeof CaseStudyRoute
   '/contacto': typeof ContactoRoute
-  '/contacto-liquid': typeof ContactoLiquidRoute
-  '/contacto-old': typeof ContactoOldRoute
-  '/estudio': typeof EstudioRoute
   '/panel-administracion': typeof PanelAdministracionRouteWithChildren
-  '/panel-administracion-old': typeof PanelAdministracionOldRouteWithChildren
   '/panel-descuentos': typeof PanelDescuentosRoute
   '/panel-horarios': typeof PanelHorariosRoute
   '/panel-membresias': typeof PanelMembresiasRoute
   '/panel-turnos': typeof PanelTurnosRoute
-  '/panel-v2': typeof PanelV2RouteWithChildren
   '/politica-de-privacidad': typeof PoliticaDePrivacidadRoute
-  '/politica-de-privacidad-liquid': typeof PoliticaDePrivacidadLiquidRoute
-  '/politica-de-privacidad-old': typeof PoliticaDePrivacidadOldRoute
-  '/reserva-v2': typeof ReservaV2Route
-  '/reserva-v3': typeof ReservaV3Route
-  '/reserva-v4': typeof ReservaV4Route
-  '/reserva-v5': typeof ReservaV5Route
   '/reservar': typeof ReservarRoute
-  '/reservar-mercadopago': typeof ReservarMercadopagoRoute
-  '/reservar-turno': typeof ReservarTurnoRoute
-  '/reservar-turno-liquid': typeof ReservarTurnoLiquidRoute
-  '/reservar-turno-mercadopago': typeof ReservarTurnoMercadopagoRoute
-  '/reservar-turno-old': typeof ReservarTurnoOldRoute
   '/restablecer-contrasena': typeof RestablecerContrasenaRoute
   '/terminos-y-condiciones': typeof TerminosYCondicionesRoute
-  '/terminos-y-condiciones-liquid': typeof TerminosYCondicionesLiquidRoute
-  '/terminos-y-condiciones-old': typeof TerminosYCondicionesOldRoute
-  '/admin-liquid/clientes': typeof AdminLiquidClientesRoute
-  '/admin-liquid/datos': typeof AdminLiquidDatosRoute
-  '/admin-liquid/descuentos': typeof AdminLiquidDescuentosRoute
-  '/admin-liquid/horarios': typeof AdminLiquidHorariosRoute
-  '/admin-liquid/inicio': typeof AdminLiquidInicioRoute
-  '/admin-liquid/mantenimiento': typeof AdminLiquidMantenimientoRoute
-  '/admin-liquid/membresias': typeof AdminLiquidMembresiasRoute
-  '/admin-liquid/pagos': typeof AdminLiquidPagosRoute
-  '/admin-liquid/turnos': typeof AdminLiquidTurnosRoute
-  '/admin-v2-liquid/estadisticas': typeof AdminV2LiquidEstadisticasRoute
-  '/admin-v2/clientes': typeof AdminV2ClientesRoute
-  '/admin-v2/datos': typeof AdminV2DatosRoute
-  '/admin-v2/horarios': typeof AdminV2HorariosRoute
-  '/admin-v2/inicio': typeof AdminV2InicioRoute
-  '/admin-v2/mantenimiento': typeof AdminV2MantenimientoRoute
-  '/admin-v2/pagos': typeof AdminV2PagosRoute
-  '/admin-v2/turnos': typeof AdminV2TurnosRoute
-  '/admin/datos': typeof AdminDatosRoute
-  '/admin/estadisticas': typeof AdminEstadisticasRoute
-  '/admin/horarios': typeof AdminHorariosRoute
-  '/admin/mantenimiento': typeof AdminMantenimientoRoute
-  '/admin/movil': typeof AdminMovilRoute
-  '/admin/pagos': typeof AdminPagosRoute
-  '/admin/turnos': typeof AdminTurnosRoute
   '/membresia/$token': typeof MembresiaTokenRoute
   '/pago/error': typeof PagoErrorRoute
   '/pago/exito': typeof PagoExitoRoute
   '/pago/pendiente': typeof PagoPendienteRoute
-  '/panel-administracion-old/clientes': typeof PanelAdministracionOldClientesRoute
-  '/panel-administracion-old/datos': typeof PanelAdministracionOldDatosRoute
-  '/panel-administracion-old/descuentos': typeof PanelAdministracionOldDescuentosRoute
-  '/panel-administracion-old/horarios': typeof PanelAdministracionOldHorariosRoute
-  '/panel-administracion-old/inicio': typeof PanelAdministracionOldInicioRoute
-  '/panel-administracion-old/mantenimiento': typeof PanelAdministracionOldMantenimientoRoute
-  '/panel-administracion-old/membresias': typeof PanelAdministracionOldMembresiasRoute
-  '/panel-administracion-old/pagos': typeof PanelAdministracionOldPagosRoute
-  '/panel-administracion-old/turnos': typeof PanelAdministracionOldTurnosRoute
   '/panel-administracion/clientes': typeof PanelAdministracionClientesRoute
   '/panel-administracion/datos': typeof PanelAdministracionDatosRoute
   '/panel-administracion/descuentos': typeof PanelAdministracionDescuentosRoute
@@ -787,101 +223,27 @@ export interface FileRoutesByFullPath {
   '/panel-administracion/membresias': typeof PanelAdministracionMembresiasRoute
   '/panel-administracion/pagos': typeof PanelAdministracionPagosRoute
   '/panel-administracion/turnos': typeof PanelAdministracionTurnosRoute
-  '/panel-v2/estadisticas': typeof PanelV2EstadisticasRoute
   '/verificar-membresia/$token': typeof VerificarMembresiaTokenRoute
-  '/admin-liquid/': typeof AdminLiquidIndexRoute
-  '/admin-v2-liquid/': typeof AdminV2LiquidIndexRoute
-  '/admin-v2/': typeof AdminV2IndexRoute
-  '/admin/': typeof AdminIndexRoute
-  '/panel-administracion-old/': typeof PanelAdministracionOldIndexRoute
   '/panel-administracion/': typeof PanelAdministracionIndexRoute
-  '/panel-v2/': typeof PanelV2IndexRoute
-  '/admin-v2-liquid/negocio/descuentos': typeof AdminV2LiquidNegocioDescuentosRoute
-  '/admin-v2-liquid/negocio/membresias': typeof AdminV2LiquidNegocioMembresiasRoute
-  '/admin-v2-liquid/negocio/pagos': typeof AdminV2LiquidNegocioPagosRoute
-  '/admin-v2-liquid/operacion/clientes': typeof AdminV2LiquidOperacionClientesRoute
-  '/admin-v2-liquid/operacion/horarios': typeof AdminV2LiquidOperacionHorariosRoute
-  '/admin-v2-liquid/operacion/turnos': typeof AdminV2LiquidOperacionTurnosRoute
-  '/panel-v2/negocio/descuentos': typeof PanelV2NegocioDescuentosRoute
-  '/panel-v2/negocio/membresias': typeof PanelV2NegocioMembresiasRoute
-  '/panel-v2/negocio/pagos': typeof PanelV2NegocioPagosRoute
-  '/panel-v2/operacion/clientes': typeof PanelV2OperacionClientesRoute
-  '/panel-v2/operacion/horarios': typeof PanelV2OperacionHorariosRoute
-  '/panel-v2/operacion/turnos': typeof PanelV2OperacionTurnosRoute
-  '/admin-v2-liquid/negocio/': typeof AdminV2LiquidNegocioIndexRoute
-  '/admin-v2-liquid/operacion/': typeof AdminV2LiquidOperacionIndexRoute
-  '/panel-v2/negocio/': typeof PanelV2NegocioIndexRoute
-  '/panel-v2/operacion/': typeof PanelV2OperacionIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/activar-cuenta': typeof ActivarCuentaRoute
-  '/cancelar': typeof CancelarRoute
   '/cancelar-turno': typeof CancelarTurnoRoute
-  '/cancelar-turno-old': typeof CancelarTurnoOldRoute
   '/case-study': typeof CaseStudyRoute
   '/contacto': typeof ContactoRoute
-  '/contacto-liquid': typeof ContactoLiquidRoute
-  '/contacto-old': typeof ContactoOldRoute
-  '/estudio': typeof EstudioRoute
   '/panel-descuentos': typeof PanelDescuentosRoute
   '/panel-horarios': typeof PanelHorariosRoute
   '/panel-membresias': typeof PanelMembresiasRoute
   '/panel-turnos': typeof PanelTurnosRoute
   '/politica-de-privacidad': typeof PoliticaDePrivacidadRoute
-  '/politica-de-privacidad-liquid': typeof PoliticaDePrivacidadLiquidRoute
-  '/politica-de-privacidad-old': typeof PoliticaDePrivacidadOldRoute
-  '/reserva-v2': typeof ReservaV2Route
-  '/reserva-v3': typeof ReservaV3Route
-  '/reserva-v4': typeof ReservaV4Route
-  '/reserva-v5': typeof ReservaV5Route
   '/reservar': typeof ReservarRoute
-  '/reservar-mercadopago': typeof ReservarMercadopagoRoute
-  '/reservar-turno': typeof ReservarTurnoRoute
-  '/reservar-turno-liquid': typeof ReservarTurnoLiquidRoute
-  '/reservar-turno-mercadopago': typeof ReservarTurnoMercadopagoRoute
-  '/reservar-turno-old': typeof ReservarTurnoOldRoute
   '/restablecer-contrasena': typeof RestablecerContrasenaRoute
   '/terminos-y-condiciones': typeof TerminosYCondicionesRoute
-  '/terminos-y-condiciones-liquid': typeof TerminosYCondicionesLiquidRoute
-  '/terminos-y-condiciones-old': typeof TerminosYCondicionesOldRoute
-  '/admin-liquid/clientes': typeof AdminLiquidClientesRoute
-  '/admin-liquid/datos': typeof AdminLiquidDatosRoute
-  '/admin-liquid/descuentos': typeof AdminLiquidDescuentosRoute
-  '/admin-liquid/horarios': typeof AdminLiquidHorariosRoute
-  '/admin-liquid/inicio': typeof AdminLiquidInicioRoute
-  '/admin-liquid/mantenimiento': typeof AdminLiquidMantenimientoRoute
-  '/admin-liquid/membresias': typeof AdminLiquidMembresiasRoute
-  '/admin-liquid/pagos': typeof AdminLiquidPagosRoute
-  '/admin-liquid/turnos': typeof AdminLiquidTurnosRoute
-  '/admin-v2-liquid/estadisticas': typeof AdminV2LiquidEstadisticasRoute
-  '/admin-v2/clientes': typeof AdminV2ClientesRoute
-  '/admin-v2/datos': typeof AdminV2DatosRoute
-  '/admin-v2/horarios': typeof AdminV2HorariosRoute
-  '/admin-v2/inicio': typeof AdminV2InicioRoute
-  '/admin-v2/mantenimiento': typeof AdminV2MantenimientoRoute
-  '/admin-v2/pagos': typeof AdminV2PagosRoute
-  '/admin-v2/turnos': typeof AdminV2TurnosRoute
-  '/admin/datos': typeof AdminDatosRoute
-  '/admin/estadisticas': typeof AdminEstadisticasRoute
-  '/admin/horarios': typeof AdminHorariosRoute
-  '/admin/mantenimiento': typeof AdminMantenimientoRoute
-  '/admin/movil': typeof AdminMovilRoute
-  '/admin/pagos': typeof AdminPagosRoute
-  '/admin/turnos': typeof AdminTurnosRoute
   '/membresia/$token': typeof MembresiaTokenRoute
   '/pago/error': typeof PagoErrorRoute
   '/pago/exito': typeof PagoExitoRoute
   '/pago/pendiente': typeof PagoPendienteRoute
-  '/panel-administracion-old/clientes': typeof PanelAdministracionOldClientesRoute
-  '/panel-administracion-old/datos': typeof PanelAdministracionOldDatosRoute
-  '/panel-administracion-old/descuentos': typeof PanelAdministracionOldDescuentosRoute
-  '/panel-administracion-old/horarios': typeof PanelAdministracionOldHorariosRoute
-  '/panel-administracion-old/inicio': typeof PanelAdministracionOldInicioRoute
-  '/panel-administracion-old/mantenimiento': typeof PanelAdministracionOldMantenimientoRoute
-  '/panel-administracion-old/membresias': typeof PanelAdministracionOldMembresiasRoute
-  '/panel-administracion-old/pagos': typeof PanelAdministracionOldPagosRoute
-  '/panel-administracion-old/turnos': typeof PanelAdministracionOldTurnosRoute
   '/panel-administracion/clientes': typeof PanelAdministracionClientesRoute
   '/panel-administracion/datos': typeof PanelAdministracionDatosRoute
   '/panel-administracion/descuentos': typeof PanelAdministracionDescuentosRoute
@@ -891,109 +253,29 @@ export interface FileRoutesByTo {
   '/panel-administracion/membresias': typeof PanelAdministracionMembresiasRoute
   '/panel-administracion/pagos': typeof PanelAdministracionPagosRoute
   '/panel-administracion/turnos': typeof PanelAdministracionTurnosRoute
-  '/panel-v2/estadisticas': typeof PanelV2EstadisticasRoute
   '/verificar-membresia/$token': typeof VerificarMembresiaTokenRoute
-  '/admin-liquid': typeof AdminLiquidIndexRoute
-  '/admin-v2-liquid': typeof AdminV2LiquidIndexRoute
-  '/admin-v2': typeof AdminV2IndexRoute
-  '/admin': typeof AdminIndexRoute
-  '/panel-administracion-old': typeof PanelAdministracionOldIndexRoute
   '/panel-administracion': typeof PanelAdministracionIndexRoute
-  '/panel-v2': typeof PanelV2IndexRoute
-  '/admin-v2-liquid/negocio/descuentos': typeof AdminV2LiquidNegocioDescuentosRoute
-  '/admin-v2-liquid/negocio/membresias': typeof AdminV2LiquidNegocioMembresiasRoute
-  '/admin-v2-liquid/negocio/pagos': typeof AdminV2LiquidNegocioPagosRoute
-  '/admin-v2-liquid/operacion/clientes': typeof AdminV2LiquidOperacionClientesRoute
-  '/admin-v2-liquid/operacion/horarios': typeof AdminV2LiquidOperacionHorariosRoute
-  '/admin-v2-liquid/operacion/turnos': typeof AdminV2LiquidOperacionTurnosRoute
-  '/panel-v2/negocio/descuentos': typeof PanelV2NegocioDescuentosRoute
-  '/panel-v2/negocio/membresias': typeof PanelV2NegocioMembresiasRoute
-  '/panel-v2/negocio/pagos': typeof PanelV2NegocioPagosRoute
-  '/panel-v2/operacion/clientes': typeof PanelV2OperacionClientesRoute
-  '/panel-v2/operacion/horarios': typeof PanelV2OperacionHorariosRoute
-  '/panel-v2/operacion/turnos': typeof PanelV2OperacionTurnosRoute
-  '/admin-v2-liquid/negocio': typeof AdminV2LiquidNegocioIndexRoute
-  '/admin-v2-liquid/operacion': typeof AdminV2LiquidOperacionIndexRoute
-  '/panel-v2/negocio': typeof PanelV2NegocioIndexRoute
-  '/panel-v2/operacion': typeof PanelV2OperacionIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/activar-cuenta': typeof ActivarCuentaRoute
-  '/admin': typeof AdminRouteWithChildren
-  '/admin-liquid': typeof AdminLiquidRouteWithChildren
-  '/admin-v2': typeof AdminV2RouteWithChildren
-  '/admin-v2-liquid': typeof AdminV2LiquidRouteWithChildren
-  '/cancelar': typeof CancelarRoute
   '/cancelar-turno': typeof CancelarTurnoRoute
-  '/cancelar-turno-old': typeof CancelarTurnoOldRoute
   '/case-study': typeof CaseStudyRoute
   '/contacto': typeof ContactoRoute
-  '/contacto-liquid': typeof ContactoLiquidRoute
-  '/contacto-old': typeof ContactoOldRoute
-  '/estudio': typeof EstudioRoute
   '/panel-administracion': typeof PanelAdministracionRouteWithChildren
-  '/panel-administracion-old': typeof PanelAdministracionOldRouteWithChildren
   '/panel-descuentos': typeof PanelDescuentosRoute
   '/panel-horarios': typeof PanelHorariosRoute
   '/panel-membresias': typeof PanelMembresiasRoute
   '/panel-turnos': typeof PanelTurnosRoute
-  '/panel-v2': typeof PanelV2RouteWithChildren
   '/politica-de-privacidad': typeof PoliticaDePrivacidadRoute
-  '/politica-de-privacidad-liquid': typeof PoliticaDePrivacidadLiquidRoute
-  '/politica-de-privacidad-old': typeof PoliticaDePrivacidadOldRoute
-  '/reserva-v2': typeof ReservaV2Route
-  '/reserva-v3': typeof ReservaV3Route
-  '/reserva-v4': typeof ReservaV4Route
-  '/reserva-v5': typeof ReservaV5Route
   '/reservar': typeof ReservarRoute
-  '/reservar-mercadopago': typeof ReservarMercadopagoRoute
-  '/reservar-turno': typeof ReservarTurnoRoute
-  '/reservar-turno-liquid': typeof ReservarTurnoLiquidRoute
-  '/reservar-turno-mercadopago': typeof ReservarTurnoMercadopagoRoute
-  '/reservar-turno-old': typeof ReservarTurnoOldRoute
   '/restablecer-contrasena': typeof RestablecerContrasenaRoute
   '/terminos-y-condiciones': typeof TerminosYCondicionesRoute
-  '/terminos-y-condiciones-liquid': typeof TerminosYCondicionesLiquidRoute
-  '/terminos-y-condiciones-old': typeof TerminosYCondicionesOldRoute
-  '/admin-liquid/clientes': typeof AdminLiquidClientesRoute
-  '/admin-liquid/datos': typeof AdminLiquidDatosRoute
-  '/admin-liquid/descuentos': typeof AdminLiquidDescuentosRoute
-  '/admin-liquid/horarios': typeof AdminLiquidHorariosRoute
-  '/admin-liquid/inicio': typeof AdminLiquidInicioRoute
-  '/admin-liquid/mantenimiento': typeof AdminLiquidMantenimientoRoute
-  '/admin-liquid/membresias': typeof AdminLiquidMembresiasRoute
-  '/admin-liquid/pagos': typeof AdminLiquidPagosRoute
-  '/admin-liquid/turnos': typeof AdminLiquidTurnosRoute
-  '/admin-v2-liquid/estadisticas': typeof AdminV2LiquidEstadisticasRoute
-  '/admin-v2/clientes': typeof AdminV2ClientesRoute
-  '/admin-v2/datos': typeof AdminV2DatosRoute
-  '/admin-v2/horarios': typeof AdminV2HorariosRoute
-  '/admin-v2/inicio': typeof AdminV2InicioRoute
-  '/admin-v2/mantenimiento': typeof AdminV2MantenimientoRoute
-  '/admin-v2/pagos': typeof AdminV2PagosRoute
-  '/admin-v2/turnos': typeof AdminV2TurnosRoute
-  '/admin/datos': typeof AdminDatosRoute
-  '/admin/estadisticas': typeof AdminEstadisticasRoute
-  '/admin/horarios': typeof AdminHorariosRoute
-  '/admin/mantenimiento': typeof AdminMantenimientoRoute
-  '/admin/movil': typeof AdminMovilRoute
-  '/admin/pagos': typeof AdminPagosRoute
-  '/admin/turnos': typeof AdminTurnosRoute
   '/membresia/$token': typeof MembresiaTokenRoute
   '/pago/error': typeof PagoErrorRoute
   '/pago/exito': typeof PagoExitoRoute
   '/pago/pendiente': typeof PagoPendienteRoute
-  '/panel-administracion-old/clientes': typeof PanelAdministracionOldClientesRoute
-  '/panel-administracion-old/datos': typeof PanelAdministracionOldDatosRoute
-  '/panel-administracion-old/descuentos': typeof PanelAdministracionOldDescuentosRoute
-  '/panel-administracion-old/horarios': typeof PanelAdministracionOldHorariosRoute
-  '/panel-administracion-old/inicio': typeof PanelAdministracionOldInicioRoute
-  '/panel-administracion-old/mantenimiento': typeof PanelAdministracionOldMantenimientoRoute
-  '/panel-administracion-old/membresias': typeof PanelAdministracionOldMembresiasRoute
-  '/panel-administracion-old/pagos': typeof PanelAdministracionOldPagosRoute
-  '/panel-administracion-old/turnos': typeof PanelAdministracionOldTurnosRoute
   '/panel-administracion/clientes': typeof PanelAdministracionClientesRoute
   '/panel-administracion/datos': typeof PanelAdministracionDatosRoute
   '/panel-administracion/descuentos': typeof PanelAdministracionDescuentosRoute
@@ -1003,110 +285,30 @@ export interface FileRoutesById {
   '/panel-administracion/membresias': typeof PanelAdministracionMembresiasRoute
   '/panel-administracion/pagos': typeof PanelAdministracionPagosRoute
   '/panel-administracion/turnos': typeof PanelAdministracionTurnosRoute
-  '/panel-v2/estadisticas': typeof PanelV2EstadisticasRoute
   '/verificar-membresia/$token': typeof VerificarMembresiaTokenRoute
-  '/admin-liquid/': typeof AdminLiquidIndexRoute
-  '/admin-v2-liquid/': typeof AdminV2LiquidIndexRoute
-  '/admin-v2/': typeof AdminV2IndexRoute
-  '/admin/': typeof AdminIndexRoute
-  '/panel-administracion-old/': typeof PanelAdministracionOldIndexRoute
   '/panel-administracion/': typeof PanelAdministracionIndexRoute
-  '/panel-v2/': typeof PanelV2IndexRoute
-  '/admin-v2-liquid/negocio/descuentos': typeof AdminV2LiquidNegocioDescuentosRoute
-  '/admin-v2-liquid/negocio/membresias': typeof AdminV2LiquidNegocioMembresiasRoute
-  '/admin-v2-liquid/negocio/pagos': typeof AdminV2LiquidNegocioPagosRoute
-  '/admin-v2-liquid/operacion/clientes': typeof AdminV2LiquidOperacionClientesRoute
-  '/admin-v2-liquid/operacion/horarios': typeof AdminV2LiquidOperacionHorariosRoute
-  '/admin-v2-liquid/operacion/turnos': typeof AdminV2LiquidOperacionTurnosRoute
-  '/panel-v2/negocio/descuentos': typeof PanelV2NegocioDescuentosRoute
-  '/panel-v2/negocio/membresias': typeof PanelV2NegocioMembresiasRoute
-  '/panel-v2/negocio/pagos': typeof PanelV2NegocioPagosRoute
-  '/panel-v2/operacion/clientes': typeof PanelV2OperacionClientesRoute
-  '/panel-v2/operacion/horarios': typeof PanelV2OperacionHorariosRoute
-  '/panel-v2/operacion/turnos': typeof PanelV2OperacionTurnosRoute
-  '/admin-v2-liquid/negocio/': typeof AdminV2LiquidNegocioIndexRoute
-  '/admin-v2-liquid/operacion/': typeof AdminV2LiquidOperacionIndexRoute
-  '/panel-v2/negocio/': typeof PanelV2NegocioIndexRoute
-  '/panel-v2/operacion/': typeof PanelV2OperacionIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/activar-cuenta'
-    | '/admin'
-    | '/admin-liquid'
-    | '/admin-v2'
-    | '/admin-v2-liquid'
-    | '/cancelar'
     | '/cancelar-turno'
-    | '/cancelar-turno-old'
     | '/case-study'
     | '/contacto'
-    | '/contacto-liquid'
-    | '/contacto-old'
-    | '/estudio'
     | '/panel-administracion'
-    | '/panel-administracion-old'
     | '/panel-descuentos'
     | '/panel-horarios'
     | '/panel-membresias'
     | '/panel-turnos'
-    | '/panel-v2'
     | '/politica-de-privacidad'
-    | '/politica-de-privacidad-liquid'
-    | '/politica-de-privacidad-old'
-    | '/reserva-v2'
-    | '/reserva-v3'
-    | '/reserva-v4'
-    | '/reserva-v5'
     | '/reservar'
-    | '/reservar-mercadopago'
-    | '/reservar-turno'
-    | '/reservar-turno-liquid'
-    | '/reservar-turno-mercadopago'
-    | '/reservar-turno-old'
     | '/restablecer-contrasena'
     | '/terminos-y-condiciones'
-    | '/terminos-y-condiciones-liquid'
-    | '/terminos-y-condiciones-old'
-    | '/admin-liquid/clientes'
-    | '/admin-liquid/datos'
-    | '/admin-liquid/descuentos'
-    | '/admin-liquid/horarios'
-    | '/admin-liquid/inicio'
-    | '/admin-liquid/mantenimiento'
-    | '/admin-liquid/membresias'
-    | '/admin-liquid/pagos'
-    | '/admin-liquid/turnos'
-    | '/admin-v2-liquid/estadisticas'
-    | '/admin-v2/clientes'
-    | '/admin-v2/datos'
-    | '/admin-v2/horarios'
-    | '/admin-v2/inicio'
-    | '/admin-v2/mantenimiento'
-    | '/admin-v2/pagos'
-    | '/admin-v2/turnos'
-    | '/admin/datos'
-    | '/admin/estadisticas'
-    | '/admin/horarios'
-    | '/admin/mantenimiento'
-    | '/admin/movil'
-    | '/admin/pagos'
-    | '/admin/turnos'
     | '/membresia/$token'
     | '/pago/error'
     | '/pago/exito'
     | '/pago/pendiente'
-    | '/panel-administracion-old/clientes'
-    | '/panel-administracion-old/datos'
-    | '/panel-administracion-old/descuentos'
-    | '/panel-administracion-old/horarios'
-    | '/panel-administracion-old/inicio'
-    | '/panel-administracion-old/mantenimiento'
-    | '/panel-administracion-old/membresias'
-    | '/panel-administracion-old/pagos'
-    | '/panel-administracion-old/turnos'
     | '/panel-administracion/clientes'
     | '/panel-administracion/datos'
     | '/panel-administracion/descuentos'
@@ -1116,101 +318,27 @@ export interface FileRouteTypes {
     | '/panel-administracion/membresias'
     | '/panel-administracion/pagos'
     | '/panel-administracion/turnos'
-    | '/panel-v2/estadisticas'
     | '/verificar-membresia/$token'
-    | '/admin-liquid/'
-    | '/admin-v2-liquid/'
-    | '/admin-v2/'
-    | '/admin/'
-    | '/panel-administracion-old/'
     | '/panel-administracion/'
-    | '/panel-v2/'
-    | '/admin-v2-liquid/negocio/descuentos'
-    | '/admin-v2-liquid/negocio/membresias'
-    | '/admin-v2-liquid/negocio/pagos'
-    | '/admin-v2-liquid/operacion/clientes'
-    | '/admin-v2-liquid/operacion/horarios'
-    | '/admin-v2-liquid/operacion/turnos'
-    | '/panel-v2/negocio/descuentos'
-    | '/panel-v2/negocio/membresias'
-    | '/panel-v2/negocio/pagos'
-    | '/panel-v2/operacion/clientes'
-    | '/panel-v2/operacion/horarios'
-    | '/panel-v2/operacion/turnos'
-    | '/admin-v2-liquid/negocio/'
-    | '/admin-v2-liquid/operacion/'
-    | '/panel-v2/negocio/'
-    | '/panel-v2/operacion/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/activar-cuenta'
-    | '/cancelar'
     | '/cancelar-turno'
-    | '/cancelar-turno-old'
     | '/case-study'
     | '/contacto'
-    | '/contacto-liquid'
-    | '/contacto-old'
-    | '/estudio'
     | '/panel-descuentos'
     | '/panel-horarios'
     | '/panel-membresias'
     | '/panel-turnos'
     | '/politica-de-privacidad'
-    | '/politica-de-privacidad-liquid'
-    | '/politica-de-privacidad-old'
-    | '/reserva-v2'
-    | '/reserva-v3'
-    | '/reserva-v4'
-    | '/reserva-v5'
     | '/reservar'
-    | '/reservar-mercadopago'
-    | '/reservar-turno'
-    | '/reservar-turno-liquid'
-    | '/reservar-turno-mercadopago'
-    | '/reservar-turno-old'
     | '/restablecer-contrasena'
     | '/terminos-y-condiciones'
-    | '/terminos-y-condiciones-liquid'
-    | '/terminos-y-condiciones-old'
-    | '/admin-liquid/clientes'
-    | '/admin-liquid/datos'
-    | '/admin-liquid/descuentos'
-    | '/admin-liquid/horarios'
-    | '/admin-liquid/inicio'
-    | '/admin-liquid/mantenimiento'
-    | '/admin-liquid/membresias'
-    | '/admin-liquid/pagos'
-    | '/admin-liquid/turnos'
-    | '/admin-v2-liquid/estadisticas'
-    | '/admin-v2/clientes'
-    | '/admin-v2/datos'
-    | '/admin-v2/horarios'
-    | '/admin-v2/inicio'
-    | '/admin-v2/mantenimiento'
-    | '/admin-v2/pagos'
-    | '/admin-v2/turnos'
-    | '/admin/datos'
-    | '/admin/estadisticas'
-    | '/admin/horarios'
-    | '/admin/mantenimiento'
-    | '/admin/movil'
-    | '/admin/pagos'
-    | '/admin/turnos'
     | '/membresia/$token'
     | '/pago/error'
     | '/pago/exito'
     | '/pago/pendiente'
-    | '/panel-administracion-old/clientes'
-    | '/panel-administracion-old/datos'
-    | '/panel-administracion-old/descuentos'
-    | '/panel-administracion-old/horarios'
-    | '/panel-administracion-old/inicio'
-    | '/panel-administracion-old/mantenimiento'
-    | '/panel-administracion-old/membresias'
-    | '/panel-administracion-old/pagos'
-    | '/panel-administracion-old/turnos'
     | '/panel-administracion/clientes'
     | '/panel-administracion/datos'
     | '/panel-administracion/descuentos'
@@ -1220,108 +348,28 @@ export interface FileRouteTypes {
     | '/panel-administracion/membresias'
     | '/panel-administracion/pagos'
     | '/panel-administracion/turnos'
-    | '/panel-v2/estadisticas'
     | '/verificar-membresia/$token'
-    | '/admin-liquid'
-    | '/admin-v2-liquid'
-    | '/admin-v2'
-    | '/admin'
-    | '/panel-administracion-old'
     | '/panel-administracion'
-    | '/panel-v2'
-    | '/admin-v2-liquid/negocio/descuentos'
-    | '/admin-v2-liquid/negocio/membresias'
-    | '/admin-v2-liquid/negocio/pagos'
-    | '/admin-v2-liquid/operacion/clientes'
-    | '/admin-v2-liquid/operacion/horarios'
-    | '/admin-v2-liquid/operacion/turnos'
-    | '/panel-v2/negocio/descuentos'
-    | '/panel-v2/negocio/membresias'
-    | '/panel-v2/negocio/pagos'
-    | '/panel-v2/operacion/clientes'
-    | '/panel-v2/operacion/horarios'
-    | '/panel-v2/operacion/turnos'
-    | '/admin-v2-liquid/negocio'
-    | '/admin-v2-liquid/operacion'
-    | '/panel-v2/negocio'
-    | '/panel-v2/operacion'
   id:
     | '__root__'
     | '/'
     | '/activar-cuenta'
-    | '/admin'
-    | '/admin-liquid'
-    | '/admin-v2'
-    | '/admin-v2-liquid'
-    | '/cancelar'
     | '/cancelar-turno'
-    | '/cancelar-turno-old'
     | '/case-study'
     | '/contacto'
-    | '/contacto-liquid'
-    | '/contacto-old'
-    | '/estudio'
     | '/panel-administracion'
-    | '/panel-administracion-old'
     | '/panel-descuentos'
     | '/panel-horarios'
     | '/panel-membresias'
     | '/panel-turnos'
-    | '/panel-v2'
     | '/politica-de-privacidad'
-    | '/politica-de-privacidad-liquid'
-    | '/politica-de-privacidad-old'
-    | '/reserva-v2'
-    | '/reserva-v3'
-    | '/reserva-v4'
-    | '/reserva-v5'
     | '/reservar'
-    | '/reservar-mercadopago'
-    | '/reservar-turno'
-    | '/reservar-turno-liquid'
-    | '/reservar-turno-mercadopago'
-    | '/reservar-turno-old'
     | '/restablecer-contrasena'
     | '/terminos-y-condiciones'
-    | '/terminos-y-condiciones-liquid'
-    | '/terminos-y-condiciones-old'
-    | '/admin-liquid/clientes'
-    | '/admin-liquid/datos'
-    | '/admin-liquid/descuentos'
-    | '/admin-liquid/horarios'
-    | '/admin-liquid/inicio'
-    | '/admin-liquid/mantenimiento'
-    | '/admin-liquid/membresias'
-    | '/admin-liquid/pagos'
-    | '/admin-liquid/turnos'
-    | '/admin-v2-liquid/estadisticas'
-    | '/admin-v2/clientes'
-    | '/admin-v2/datos'
-    | '/admin-v2/horarios'
-    | '/admin-v2/inicio'
-    | '/admin-v2/mantenimiento'
-    | '/admin-v2/pagos'
-    | '/admin-v2/turnos'
-    | '/admin/datos'
-    | '/admin/estadisticas'
-    | '/admin/horarios'
-    | '/admin/mantenimiento'
-    | '/admin/movil'
-    | '/admin/pagos'
-    | '/admin/turnos'
     | '/membresia/$token'
     | '/pago/error'
     | '/pago/exito'
     | '/pago/pendiente'
-    | '/panel-administracion-old/clientes'
-    | '/panel-administracion-old/datos'
-    | '/panel-administracion-old/descuentos'
-    | '/panel-administracion-old/horarios'
-    | '/panel-administracion-old/inicio'
-    | '/panel-administracion-old/mantenimiento'
-    | '/panel-administracion-old/membresias'
-    | '/panel-administracion-old/pagos'
-    | '/panel-administracion-old/turnos'
     | '/panel-administracion/clientes'
     | '/panel-administracion/datos'
     | '/panel-administracion/descuentos'
@@ -1331,72 +379,25 @@ export interface FileRouteTypes {
     | '/panel-administracion/membresias'
     | '/panel-administracion/pagos'
     | '/panel-administracion/turnos'
-    | '/panel-v2/estadisticas'
     | '/verificar-membresia/$token'
-    | '/admin-liquid/'
-    | '/admin-v2-liquid/'
-    | '/admin-v2/'
-    | '/admin/'
-    | '/panel-administracion-old/'
     | '/panel-administracion/'
-    | '/panel-v2/'
-    | '/admin-v2-liquid/negocio/descuentos'
-    | '/admin-v2-liquid/negocio/membresias'
-    | '/admin-v2-liquid/negocio/pagos'
-    | '/admin-v2-liquid/operacion/clientes'
-    | '/admin-v2-liquid/operacion/horarios'
-    | '/admin-v2-liquid/operacion/turnos'
-    | '/panel-v2/negocio/descuentos'
-    | '/panel-v2/negocio/membresias'
-    | '/panel-v2/negocio/pagos'
-    | '/panel-v2/operacion/clientes'
-    | '/panel-v2/operacion/horarios'
-    | '/panel-v2/operacion/turnos'
-    | '/admin-v2-liquid/negocio/'
-    | '/admin-v2-liquid/operacion/'
-    | '/panel-v2/negocio/'
-    | '/panel-v2/operacion/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ActivarCuentaRoute: typeof ActivarCuentaRoute
-  AdminRoute: typeof AdminRouteWithChildren
-  AdminLiquidRoute: typeof AdminLiquidRouteWithChildren
-  AdminV2Route: typeof AdminV2RouteWithChildren
-  AdminV2LiquidRoute: typeof AdminV2LiquidRouteWithChildren
-  CancelarRoute: typeof CancelarRoute
   CancelarTurnoRoute: typeof CancelarTurnoRoute
-  CancelarTurnoOldRoute: typeof CancelarTurnoOldRoute
   CaseStudyRoute: typeof CaseStudyRoute
   ContactoRoute: typeof ContactoRoute
-  ContactoLiquidRoute: typeof ContactoLiquidRoute
-  ContactoOldRoute: typeof ContactoOldRoute
-  EstudioRoute: typeof EstudioRoute
   PanelAdministracionRoute: typeof PanelAdministracionRouteWithChildren
-  PanelAdministracionOldRoute: typeof PanelAdministracionOldRouteWithChildren
   PanelDescuentosRoute: typeof PanelDescuentosRoute
   PanelHorariosRoute: typeof PanelHorariosRoute
   PanelMembresiasRoute: typeof PanelMembresiasRoute
   PanelTurnosRoute: typeof PanelTurnosRoute
-  PanelV2Route: typeof PanelV2RouteWithChildren
   PoliticaDePrivacidadRoute: typeof PoliticaDePrivacidadRoute
-  PoliticaDePrivacidadLiquidRoute: typeof PoliticaDePrivacidadLiquidRoute
-  PoliticaDePrivacidadOldRoute: typeof PoliticaDePrivacidadOldRoute
-  ReservaV2Route: typeof ReservaV2Route
-  ReservaV3Route: typeof ReservaV3Route
-  ReservaV4Route: typeof ReservaV4Route
-  ReservaV5Route: typeof ReservaV5Route
   ReservarRoute: typeof ReservarRoute
-  ReservarMercadopagoRoute: typeof ReservarMercadopagoRoute
-  ReservarTurnoRoute: typeof ReservarTurnoRoute
-  ReservarTurnoLiquidRoute: typeof ReservarTurnoLiquidRoute
-  ReservarTurnoMercadopagoRoute: typeof ReservarTurnoMercadopagoRoute
-  ReservarTurnoOldRoute: typeof ReservarTurnoOldRoute
   RestablecerContrasenaRoute: typeof RestablecerContrasenaRoute
   TerminosYCondicionesRoute: typeof TerminosYCondicionesRoute
-  TerminosYCondicionesLiquidRoute: typeof TerminosYCondicionesLiquidRoute
-  TerminosYCondicionesOldRoute: typeof TerminosYCondicionesOldRoute
   MembresiaTokenRoute: typeof MembresiaTokenRoute
   PagoErrorRoute: typeof PagoErrorRoute
   PagoExitoRoute: typeof PagoExitoRoute
@@ -1420,53 +421,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ActivarCuentaRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin': {
-      id: '/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AdminRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin-liquid': {
-      id: '/admin-liquid'
-      path: '/admin-liquid'
-      fullPath: '/admin-liquid'
-      preLoaderRoute: typeof AdminLiquidRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin-v2': {
-      id: '/admin-v2'
-      path: '/admin-v2'
-      fullPath: '/admin-v2'
-      preLoaderRoute: typeof AdminV2RouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin-v2-liquid': {
-      id: '/admin-v2-liquid'
-      path: '/admin-v2-liquid'
-      fullPath: '/admin-v2-liquid'
-      preLoaderRoute: typeof AdminV2LiquidRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/cancelar': {
-      id: '/cancelar'
-      path: '/cancelar'
-      fullPath: '/cancelar'
-      preLoaderRoute: typeof CancelarRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/cancelar-turno': {
       id: '/cancelar-turno'
       path: '/cancelar-turno'
       fullPath: '/cancelar-turno'
       preLoaderRoute: typeof CancelarTurnoRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/cancelar-turno-old': {
-      id: '/cancelar-turno-old'
-      path: '/cancelar-turno-old'
-      fullPath: '/cancelar-turno-old'
-      preLoaderRoute: typeof CancelarTurnoOldRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/case-study': {
@@ -1483,39 +442,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ContactoRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/contacto-liquid': {
-      id: '/contacto-liquid'
-      path: '/contacto-liquid'
-      fullPath: '/contacto-liquid'
-      preLoaderRoute: typeof ContactoLiquidRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/contacto-old': {
-      id: '/contacto-old'
-      path: '/contacto-old'
-      fullPath: '/contacto-old'
-      preLoaderRoute: typeof ContactoOldRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/estudio': {
-      id: '/estudio'
-      path: '/estudio'
-      fullPath: '/estudio'
-      preLoaderRoute: typeof EstudioRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/panel-administracion': {
       id: '/panel-administracion'
       path: '/panel-administracion'
       fullPath: '/panel-administracion'
       preLoaderRoute: typeof PanelAdministracionRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/panel-administracion-old': {
-      id: '/panel-administracion-old'
-      path: '/panel-administracion-old'
-      fullPath: '/panel-administracion-old'
-      preLoaderRoute: typeof PanelAdministracionOldRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/panel-descuentos': {
@@ -1546,13 +477,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PanelTurnosRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/panel-v2': {
-      id: '/panel-v2'
-      path: '/panel-v2'
-      fullPath: '/panel-v2'
-      preLoaderRoute: typeof PanelV2RouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/politica-de-privacidad': {
       id: '/politica-de-privacidad'
       path: '/politica-de-privacidad'
@@ -1560,88 +484,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PoliticaDePrivacidadRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/politica-de-privacidad-liquid': {
-      id: '/politica-de-privacidad-liquid'
-      path: '/politica-de-privacidad-liquid'
-      fullPath: '/politica-de-privacidad-liquid'
-      preLoaderRoute: typeof PoliticaDePrivacidadLiquidRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/politica-de-privacidad-old': {
-      id: '/politica-de-privacidad-old'
-      path: '/politica-de-privacidad-old'
-      fullPath: '/politica-de-privacidad-old'
-      preLoaderRoute: typeof PoliticaDePrivacidadOldRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/reserva-v2': {
-      id: '/reserva-v2'
-      path: '/reserva-v2'
-      fullPath: '/reserva-v2'
-      preLoaderRoute: typeof ReservaV2RouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/reserva-v3': {
-      id: '/reserva-v3'
-      path: '/reserva-v3'
-      fullPath: '/reserva-v3'
-      preLoaderRoute: typeof ReservaV3RouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/reserva-v4': {
-      id: '/reserva-v4'
-      path: '/reserva-v4'
-      fullPath: '/reserva-v4'
-      preLoaderRoute: typeof ReservaV4RouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/reserva-v5': {
-      id: '/reserva-v5'
-      path: '/reserva-v5'
-      fullPath: '/reserva-v5'
-      preLoaderRoute: typeof ReservaV5RouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/reservar': {
       id: '/reservar'
       path: '/reservar'
       fullPath: '/reservar'
       preLoaderRoute: typeof ReservarRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/reservar-mercadopago': {
-      id: '/reservar-mercadopago'
-      path: '/reservar-mercadopago'
-      fullPath: '/reservar-mercadopago'
-      preLoaderRoute: typeof ReservarMercadopagoRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/reservar-turno': {
-      id: '/reservar-turno'
-      path: '/reservar-turno'
-      fullPath: '/reservar-turno'
-      preLoaderRoute: typeof ReservarTurnoRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/reservar-turno-liquid': {
-      id: '/reservar-turno-liquid'
-      path: '/reservar-turno-liquid'
-      fullPath: '/reservar-turno-liquid'
-      preLoaderRoute: typeof ReservarTurnoLiquidRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/reservar-turno-mercadopago': {
-      id: '/reservar-turno-mercadopago'
-      path: '/reservar-turno-mercadopago'
-      fullPath: '/reservar-turno-mercadopago'
-      preLoaderRoute: typeof ReservarTurnoMercadopagoRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/reservar-turno-old': {
-      id: '/reservar-turno-old'
-      path: '/reservar-turno-old'
-      fullPath: '/reservar-turno-old'
-      preLoaderRoute: typeof ReservarTurnoOldRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/restablecer-contrasena': {
@@ -1657,216 +504,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/terminos-y-condiciones'
       preLoaderRoute: typeof TerminosYCondicionesRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/terminos-y-condiciones-liquid': {
-      id: '/terminos-y-condiciones-liquid'
-      path: '/terminos-y-condiciones-liquid'
-      fullPath: '/terminos-y-condiciones-liquid'
-      preLoaderRoute: typeof TerminosYCondicionesLiquidRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/terminos-y-condiciones-old': {
-      id: '/terminos-y-condiciones-old'
-      path: '/terminos-y-condiciones-old'
-      fullPath: '/terminos-y-condiciones-old'
-      preLoaderRoute: typeof TerminosYCondicionesOldRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin-liquid/': {
-      id: '/admin-liquid/'
-      path: '/'
-      fullPath: '/admin-liquid/'
-      preLoaderRoute: typeof AdminLiquidIndexRouteImport
-      parentRoute: typeof AdminLiquidRoute
-    }
-    '/admin-liquid/clientes': {
-      id: '/admin-liquid/clientes'
-      path: '/clientes'
-      fullPath: '/admin-liquid/clientes'
-      preLoaderRoute: typeof AdminLiquidClientesRouteImport
-      parentRoute: typeof AdminLiquidRoute
-    }
-    '/admin-liquid/datos': {
-      id: '/admin-liquid/datos'
-      path: '/datos'
-      fullPath: '/admin-liquid/datos'
-      preLoaderRoute: typeof AdminLiquidDatosRouteImport
-      parentRoute: typeof AdminLiquidRoute
-    }
-    '/admin-liquid/descuentos': {
-      id: '/admin-liquid/descuentos'
-      path: '/descuentos'
-      fullPath: '/admin-liquid/descuentos'
-      preLoaderRoute: typeof AdminLiquidDescuentosRouteImport
-      parentRoute: typeof AdminLiquidRoute
-    }
-    '/admin-liquid/horarios': {
-      id: '/admin-liquid/horarios'
-      path: '/horarios'
-      fullPath: '/admin-liquid/horarios'
-      preLoaderRoute: typeof AdminLiquidHorariosRouteImport
-      parentRoute: typeof AdminLiquidRoute
-    }
-    '/admin-liquid/inicio': {
-      id: '/admin-liquid/inicio'
-      path: '/inicio'
-      fullPath: '/admin-liquid/inicio'
-      preLoaderRoute: typeof AdminLiquidInicioRouteImport
-      parentRoute: typeof AdminLiquidRoute
-    }
-    '/admin-liquid/mantenimiento': {
-      id: '/admin-liquid/mantenimiento'
-      path: '/mantenimiento'
-      fullPath: '/admin-liquid/mantenimiento'
-      preLoaderRoute: typeof AdminLiquidMantenimientoRouteImport
-      parentRoute: typeof AdminLiquidRoute
-    }
-    '/admin-liquid/membresias': {
-      id: '/admin-liquid/membresias'
-      path: '/membresias'
-      fullPath: '/admin-liquid/membresias'
-      preLoaderRoute: typeof AdminLiquidMembresiasRouteImport
-      parentRoute: typeof AdminLiquidRoute
-    }
-    '/admin-liquid/pagos': {
-      id: '/admin-liquid/pagos'
-      path: '/pagos'
-      fullPath: '/admin-liquid/pagos'
-      preLoaderRoute: typeof AdminLiquidPagosRouteImport
-      parentRoute: typeof AdminLiquidRoute
-    }
-    '/admin-liquid/turnos': {
-      id: '/admin-liquid/turnos'
-      path: '/turnos'
-      fullPath: '/admin-liquid/turnos'
-      preLoaderRoute: typeof AdminLiquidTurnosRouteImport
-      parentRoute: typeof AdminLiquidRoute
-    }
-    '/admin-v2-liquid/': {
-      id: '/admin-v2-liquid/'
-      path: '/'
-      fullPath: '/admin-v2-liquid/'
-      preLoaderRoute: typeof AdminV2LiquidIndexRouteImport
-      parentRoute: typeof AdminV2LiquidRoute
-    }
-    '/admin-v2-liquid/estadisticas': {
-      id: '/admin-v2-liquid/estadisticas'
-      path: '/estadisticas'
-      fullPath: '/admin-v2-liquid/estadisticas'
-      preLoaderRoute: typeof AdminV2LiquidEstadisticasRouteImport
-      parentRoute: typeof AdminV2LiquidRoute
-    }
-    '/admin-v2/': {
-      id: '/admin-v2/'
-      path: '/'
-      fullPath: '/admin-v2/'
-      preLoaderRoute: typeof AdminV2IndexRouteImport
-      parentRoute: typeof AdminV2Route
-    }
-    '/admin-v2/clientes': {
-      id: '/admin-v2/clientes'
-      path: '/clientes'
-      fullPath: '/admin-v2/clientes'
-      preLoaderRoute: typeof AdminV2ClientesRouteImport
-      parentRoute: typeof AdminV2Route
-    }
-    '/admin-v2/datos': {
-      id: '/admin-v2/datos'
-      path: '/datos'
-      fullPath: '/admin-v2/datos'
-      preLoaderRoute: typeof AdminV2DatosRouteImport
-      parentRoute: typeof AdminV2Route
-    }
-    '/admin-v2/horarios': {
-      id: '/admin-v2/horarios'
-      path: '/horarios'
-      fullPath: '/admin-v2/horarios'
-      preLoaderRoute: typeof AdminV2HorariosRouteImport
-      parentRoute: typeof AdminV2Route
-    }
-    '/admin-v2/inicio': {
-      id: '/admin-v2/inicio'
-      path: '/inicio'
-      fullPath: '/admin-v2/inicio'
-      preLoaderRoute: typeof AdminV2InicioRouteImport
-      parentRoute: typeof AdminV2Route
-    }
-    '/admin-v2/mantenimiento': {
-      id: '/admin-v2/mantenimiento'
-      path: '/mantenimiento'
-      fullPath: '/admin-v2/mantenimiento'
-      preLoaderRoute: typeof AdminV2MantenimientoRouteImport
-      parentRoute: typeof AdminV2Route
-    }
-    '/admin-v2/pagos': {
-      id: '/admin-v2/pagos'
-      path: '/pagos'
-      fullPath: '/admin-v2/pagos'
-      preLoaderRoute: typeof AdminV2PagosRouteImport
-      parentRoute: typeof AdminV2Route
-    }
-    '/admin-v2/turnos': {
-      id: '/admin-v2/turnos'
-      path: '/turnos'
-      fullPath: '/admin-v2/turnos'
-      preLoaderRoute: typeof AdminV2TurnosRouteImport
-      parentRoute: typeof AdminV2Route
-    }
-    '/admin/': {
-      id: '/admin/'
-      path: '/'
-      fullPath: '/admin/'
-      preLoaderRoute: typeof AdminIndexRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/datos': {
-      id: '/admin/datos'
-      path: '/datos'
-      fullPath: '/admin/datos'
-      preLoaderRoute: typeof AdminDatosRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/estadisticas': {
-      id: '/admin/estadisticas'
-      path: '/estadisticas'
-      fullPath: '/admin/estadisticas'
-      preLoaderRoute: typeof AdminEstadisticasRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/horarios': {
-      id: '/admin/horarios'
-      path: '/horarios'
-      fullPath: '/admin/horarios'
-      preLoaderRoute: typeof AdminHorariosRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/mantenimiento': {
-      id: '/admin/mantenimiento'
-      path: '/mantenimiento'
-      fullPath: '/admin/mantenimiento'
-      preLoaderRoute: typeof AdminMantenimientoRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/movil': {
-      id: '/admin/movil'
-      path: '/movil'
-      fullPath: '/admin/movil'
-      preLoaderRoute: typeof AdminMovilRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/pagos': {
-      id: '/admin/pagos'
-      path: '/pagos'
-      fullPath: '/admin/pagos'
-      preLoaderRoute: typeof AdminPagosRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/turnos': {
-      id: '/admin/turnos'
-      path: '/turnos'
-      fullPath: '/admin/turnos'
-      preLoaderRoute: typeof AdminTurnosRouteImport
-      parentRoute: typeof AdminRoute
     }
     '/membresia/$token': {
       id: '/membresia/$token'
@@ -1895,76 +532,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/pago/pendiente'
       preLoaderRoute: typeof PagoPendienteRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/panel-administracion-old/': {
-      id: '/panel-administracion-old/'
-      path: '/'
-      fullPath: '/panel-administracion-old/'
-      preLoaderRoute: typeof PanelAdministracionOldIndexRouteImport
-      parentRoute: typeof PanelAdministracionOldRoute
-    }
-    '/panel-administracion-old/clientes': {
-      id: '/panel-administracion-old/clientes'
-      path: '/clientes'
-      fullPath: '/panel-administracion-old/clientes'
-      preLoaderRoute: typeof PanelAdministracionOldClientesRouteImport
-      parentRoute: typeof PanelAdministracionOldRoute
-    }
-    '/panel-administracion-old/datos': {
-      id: '/panel-administracion-old/datos'
-      path: '/datos'
-      fullPath: '/panel-administracion-old/datos'
-      preLoaderRoute: typeof PanelAdministracionOldDatosRouteImport
-      parentRoute: typeof PanelAdministracionOldRoute
-    }
-    '/panel-administracion-old/descuentos': {
-      id: '/panel-administracion-old/descuentos'
-      path: '/descuentos'
-      fullPath: '/panel-administracion-old/descuentos'
-      preLoaderRoute: typeof PanelAdministracionOldDescuentosRouteImport
-      parentRoute: typeof PanelAdministracionOldRoute
-    }
-    '/panel-administracion-old/horarios': {
-      id: '/panel-administracion-old/horarios'
-      path: '/horarios'
-      fullPath: '/panel-administracion-old/horarios'
-      preLoaderRoute: typeof PanelAdministracionOldHorariosRouteImport
-      parentRoute: typeof PanelAdministracionOldRoute
-    }
-    '/panel-administracion-old/inicio': {
-      id: '/panel-administracion-old/inicio'
-      path: '/inicio'
-      fullPath: '/panel-administracion-old/inicio'
-      preLoaderRoute: typeof PanelAdministracionOldInicioRouteImport
-      parentRoute: typeof PanelAdministracionOldRoute
-    }
-    '/panel-administracion-old/mantenimiento': {
-      id: '/panel-administracion-old/mantenimiento'
-      path: '/mantenimiento'
-      fullPath: '/panel-administracion-old/mantenimiento'
-      preLoaderRoute: typeof PanelAdministracionOldMantenimientoRouteImport
-      parentRoute: typeof PanelAdministracionOldRoute
-    }
-    '/panel-administracion-old/membresias': {
-      id: '/panel-administracion-old/membresias'
-      path: '/membresias'
-      fullPath: '/panel-administracion-old/membresias'
-      preLoaderRoute: typeof PanelAdministracionOldMembresiasRouteImport
-      parentRoute: typeof PanelAdministracionOldRoute
-    }
-    '/panel-administracion-old/pagos': {
-      id: '/panel-administracion-old/pagos'
-      path: '/pagos'
-      fullPath: '/panel-administracion-old/pagos'
-      preLoaderRoute: typeof PanelAdministracionOldPagosRouteImport
-      parentRoute: typeof PanelAdministracionOldRoute
-    }
-    '/panel-administracion-old/turnos': {
-      id: '/panel-administracion-old/turnos'
-      path: '/turnos'
-      fullPath: '/panel-administracion-old/turnos'
-      preLoaderRoute: typeof PanelAdministracionOldTurnosRouteImport
-      parentRoute: typeof PanelAdministracionOldRoute
     }
     '/panel-administracion/': {
       id: '/panel-administracion/'
@@ -2036,20 +603,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PanelAdministracionTurnosRouteImport
       parentRoute: typeof PanelAdministracionRoute
     }
-    '/panel-v2/': {
-      id: '/panel-v2/'
-      path: '/'
-      fullPath: '/panel-v2/'
-      preLoaderRoute: typeof PanelV2IndexRouteImport
-      parentRoute: typeof PanelV2Route
-    }
-    '/panel-v2/estadisticas': {
-      id: '/panel-v2/estadisticas'
-      path: '/estadisticas'
-      fullPath: '/panel-v2/estadisticas'
-      preLoaderRoute: typeof PanelV2EstadisticasRouteImport
-      parentRoute: typeof PanelV2Route
-    }
     '/verificar-membresia/$token': {
       id: '/verificar-membresia/$token'
       path: '/verificar-membresia/$token'
@@ -2057,229 +610,8 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VerificarMembresiaTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin-v2-liquid/negocio/': {
-      id: '/admin-v2-liquid/negocio/'
-      path: '/negocio'
-      fullPath: '/admin-v2-liquid/negocio/'
-      preLoaderRoute: typeof AdminV2LiquidNegocioIndexRouteImport
-      parentRoute: typeof AdminV2LiquidRoute
-    }
-    '/admin-v2-liquid/negocio/descuentos': {
-      id: '/admin-v2-liquid/negocio/descuentos'
-      path: '/negocio/descuentos'
-      fullPath: '/admin-v2-liquid/negocio/descuentos'
-      preLoaderRoute: typeof AdminV2LiquidNegocioDescuentosRouteImport
-      parentRoute: typeof AdminV2LiquidRoute
-    }
-    '/admin-v2-liquid/negocio/membresias': {
-      id: '/admin-v2-liquid/negocio/membresias'
-      path: '/negocio/membresias'
-      fullPath: '/admin-v2-liquid/negocio/membresias'
-      preLoaderRoute: typeof AdminV2LiquidNegocioMembresiasRouteImport
-      parentRoute: typeof AdminV2LiquidRoute
-    }
-    '/admin-v2-liquid/negocio/pagos': {
-      id: '/admin-v2-liquid/negocio/pagos'
-      path: '/negocio/pagos'
-      fullPath: '/admin-v2-liquid/negocio/pagos'
-      preLoaderRoute: typeof AdminV2LiquidNegocioPagosRouteImport
-      parentRoute: typeof AdminV2LiquidRoute
-    }
-    '/admin-v2-liquid/operacion/': {
-      id: '/admin-v2-liquid/operacion/'
-      path: '/operacion'
-      fullPath: '/admin-v2-liquid/operacion/'
-      preLoaderRoute: typeof AdminV2LiquidOperacionIndexRouteImport
-      parentRoute: typeof AdminV2LiquidRoute
-    }
-    '/admin-v2-liquid/operacion/clientes': {
-      id: '/admin-v2-liquid/operacion/clientes'
-      path: '/operacion/clientes'
-      fullPath: '/admin-v2-liquid/operacion/clientes'
-      preLoaderRoute: typeof AdminV2LiquidOperacionClientesRouteImport
-      parentRoute: typeof AdminV2LiquidRoute
-    }
-    '/admin-v2-liquid/operacion/horarios': {
-      id: '/admin-v2-liquid/operacion/horarios'
-      path: '/operacion/horarios'
-      fullPath: '/admin-v2-liquid/operacion/horarios'
-      preLoaderRoute: typeof AdminV2LiquidOperacionHorariosRouteImport
-      parentRoute: typeof AdminV2LiquidRoute
-    }
-    '/admin-v2-liquid/operacion/turnos': {
-      id: '/admin-v2-liquid/operacion/turnos'
-      path: '/operacion/turnos'
-      fullPath: '/admin-v2-liquid/operacion/turnos'
-      preLoaderRoute: typeof AdminV2LiquidOperacionTurnosRouteImport
-      parentRoute: typeof AdminV2LiquidRoute
-    }
-    '/panel-v2/negocio/': {
-      id: '/panel-v2/negocio/'
-      path: '/negocio'
-      fullPath: '/panel-v2/negocio/'
-      preLoaderRoute: typeof PanelV2NegocioIndexRouteImport
-      parentRoute: typeof PanelV2Route
-    }
-    '/panel-v2/negocio/descuentos': {
-      id: '/panel-v2/negocio/descuentos'
-      path: '/negocio/descuentos'
-      fullPath: '/panel-v2/negocio/descuentos'
-      preLoaderRoute: typeof PanelV2NegocioDescuentosRouteImport
-      parentRoute: typeof PanelV2Route
-    }
-    '/panel-v2/negocio/membresias': {
-      id: '/panel-v2/negocio/membresias'
-      path: '/negocio/membresias'
-      fullPath: '/panel-v2/negocio/membresias'
-      preLoaderRoute: typeof PanelV2NegocioMembresiasRouteImport
-      parentRoute: typeof PanelV2Route
-    }
-    '/panel-v2/negocio/pagos': {
-      id: '/panel-v2/negocio/pagos'
-      path: '/negocio/pagos'
-      fullPath: '/panel-v2/negocio/pagos'
-      preLoaderRoute: typeof PanelV2NegocioPagosRouteImport
-      parentRoute: typeof PanelV2Route
-    }
-    '/panel-v2/operacion/': {
-      id: '/panel-v2/operacion/'
-      path: '/operacion'
-      fullPath: '/panel-v2/operacion/'
-      preLoaderRoute: typeof PanelV2OperacionIndexRouteImport
-      parentRoute: typeof PanelV2Route
-    }
-    '/panel-v2/operacion/clientes': {
-      id: '/panel-v2/operacion/clientes'
-      path: '/operacion/clientes'
-      fullPath: '/panel-v2/operacion/clientes'
-      preLoaderRoute: typeof PanelV2OperacionClientesRouteImport
-      parentRoute: typeof PanelV2Route
-    }
-    '/panel-v2/operacion/horarios': {
-      id: '/panel-v2/operacion/horarios'
-      path: '/operacion/horarios'
-      fullPath: '/panel-v2/operacion/horarios'
-      preLoaderRoute: typeof PanelV2OperacionHorariosRouteImport
-      parentRoute: typeof PanelV2Route
-    }
-    '/panel-v2/operacion/turnos': {
-      id: '/panel-v2/operacion/turnos'
-      path: '/operacion/turnos'
-      fullPath: '/panel-v2/operacion/turnos'
-      preLoaderRoute: typeof PanelV2OperacionTurnosRouteImport
-      parentRoute: typeof PanelV2Route
-    }
   }
 }
-
-interface AdminRouteChildren {
-  AdminDatosRoute: typeof AdminDatosRoute
-  AdminEstadisticasRoute: typeof AdminEstadisticasRoute
-  AdminHorariosRoute: typeof AdminHorariosRoute
-  AdminMantenimientoRoute: typeof AdminMantenimientoRoute
-  AdminMovilRoute: typeof AdminMovilRoute
-  AdminPagosRoute: typeof AdminPagosRoute
-  AdminTurnosRoute: typeof AdminTurnosRoute
-  AdminIndexRoute: typeof AdminIndexRoute
-}
-
-const AdminRouteChildren: AdminRouteChildren = {
-  AdminDatosRoute: AdminDatosRoute,
-  AdminEstadisticasRoute: AdminEstadisticasRoute,
-  AdminHorariosRoute: AdminHorariosRoute,
-  AdminMantenimientoRoute: AdminMantenimientoRoute,
-  AdminMovilRoute: AdminMovilRoute,
-  AdminPagosRoute: AdminPagosRoute,
-  AdminTurnosRoute: AdminTurnosRoute,
-  AdminIndexRoute: AdminIndexRoute,
-}
-
-const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
-
-interface AdminLiquidRouteChildren {
-  AdminLiquidClientesRoute: typeof AdminLiquidClientesRoute
-  AdminLiquidDatosRoute: typeof AdminLiquidDatosRoute
-  AdminLiquidDescuentosRoute: typeof AdminLiquidDescuentosRoute
-  AdminLiquidHorariosRoute: typeof AdminLiquidHorariosRoute
-  AdminLiquidInicioRoute: typeof AdminLiquidInicioRoute
-  AdminLiquidMantenimientoRoute: typeof AdminLiquidMantenimientoRoute
-  AdminLiquidMembresiasRoute: typeof AdminLiquidMembresiasRoute
-  AdminLiquidPagosRoute: typeof AdminLiquidPagosRoute
-  AdminLiquidTurnosRoute: typeof AdminLiquidTurnosRoute
-  AdminLiquidIndexRoute: typeof AdminLiquidIndexRoute
-}
-
-const AdminLiquidRouteChildren: AdminLiquidRouteChildren = {
-  AdminLiquidClientesRoute: AdminLiquidClientesRoute,
-  AdminLiquidDatosRoute: AdminLiquidDatosRoute,
-  AdminLiquidDescuentosRoute: AdminLiquidDescuentosRoute,
-  AdminLiquidHorariosRoute: AdminLiquidHorariosRoute,
-  AdminLiquidInicioRoute: AdminLiquidInicioRoute,
-  AdminLiquidMantenimientoRoute: AdminLiquidMantenimientoRoute,
-  AdminLiquidMembresiasRoute: AdminLiquidMembresiasRoute,
-  AdminLiquidPagosRoute: AdminLiquidPagosRoute,
-  AdminLiquidTurnosRoute: AdminLiquidTurnosRoute,
-  AdminLiquidIndexRoute: AdminLiquidIndexRoute,
-}
-
-const AdminLiquidRouteWithChildren = AdminLiquidRoute._addFileChildren(
-  AdminLiquidRouteChildren,
-)
-
-interface AdminV2RouteChildren {
-  AdminV2ClientesRoute: typeof AdminV2ClientesRoute
-  AdminV2DatosRoute: typeof AdminV2DatosRoute
-  AdminV2HorariosRoute: typeof AdminV2HorariosRoute
-  AdminV2InicioRoute: typeof AdminV2InicioRoute
-  AdminV2MantenimientoRoute: typeof AdminV2MantenimientoRoute
-  AdminV2PagosRoute: typeof AdminV2PagosRoute
-  AdminV2TurnosRoute: typeof AdminV2TurnosRoute
-  AdminV2IndexRoute: typeof AdminV2IndexRoute
-}
-
-const AdminV2RouteChildren: AdminV2RouteChildren = {
-  AdminV2ClientesRoute: AdminV2ClientesRoute,
-  AdminV2DatosRoute: AdminV2DatosRoute,
-  AdminV2HorariosRoute: AdminV2HorariosRoute,
-  AdminV2InicioRoute: AdminV2InicioRoute,
-  AdminV2MantenimientoRoute: AdminV2MantenimientoRoute,
-  AdminV2PagosRoute: AdminV2PagosRoute,
-  AdminV2TurnosRoute: AdminV2TurnosRoute,
-  AdminV2IndexRoute: AdminV2IndexRoute,
-}
-
-const AdminV2RouteWithChildren =
-  AdminV2Route._addFileChildren(AdminV2RouteChildren)
-
-interface AdminV2LiquidRouteChildren {
-  AdminV2LiquidEstadisticasRoute: typeof AdminV2LiquidEstadisticasRoute
-  AdminV2LiquidIndexRoute: typeof AdminV2LiquidIndexRoute
-  AdminV2LiquidNegocioDescuentosRoute: typeof AdminV2LiquidNegocioDescuentosRoute
-  AdminV2LiquidNegocioMembresiasRoute: typeof AdminV2LiquidNegocioMembresiasRoute
-  AdminV2LiquidNegocioPagosRoute: typeof AdminV2LiquidNegocioPagosRoute
-  AdminV2LiquidOperacionClientesRoute: typeof AdminV2LiquidOperacionClientesRoute
-  AdminV2LiquidOperacionHorariosRoute: typeof AdminV2LiquidOperacionHorariosRoute
-  AdminV2LiquidOperacionTurnosRoute: typeof AdminV2LiquidOperacionTurnosRoute
-  AdminV2LiquidNegocioIndexRoute: typeof AdminV2LiquidNegocioIndexRoute
-  AdminV2LiquidOperacionIndexRoute: typeof AdminV2LiquidOperacionIndexRoute
-}
-
-const AdminV2LiquidRouteChildren: AdminV2LiquidRouteChildren = {
-  AdminV2LiquidEstadisticasRoute: AdminV2LiquidEstadisticasRoute,
-  AdminV2LiquidIndexRoute: AdminV2LiquidIndexRoute,
-  AdminV2LiquidNegocioDescuentosRoute: AdminV2LiquidNegocioDescuentosRoute,
-  AdminV2LiquidNegocioMembresiasRoute: AdminV2LiquidNegocioMembresiasRoute,
-  AdminV2LiquidNegocioPagosRoute: AdminV2LiquidNegocioPagosRoute,
-  AdminV2LiquidOperacionClientesRoute: AdminV2LiquidOperacionClientesRoute,
-  AdminV2LiquidOperacionHorariosRoute: AdminV2LiquidOperacionHorariosRoute,
-  AdminV2LiquidOperacionTurnosRoute: AdminV2LiquidOperacionTurnosRoute,
-  AdminV2LiquidNegocioIndexRoute: AdminV2LiquidNegocioIndexRoute,
-  AdminV2LiquidOperacionIndexRoute: AdminV2LiquidOperacionIndexRoute,
-}
-
-const AdminV2LiquidRouteWithChildren = AdminV2LiquidRoute._addFileChildren(
-  AdminV2LiquidRouteChildren,
-)
 
 interface PanelAdministracionRouteChildren {
   PanelAdministracionClientesRoute: typeof PanelAdministracionClientesRoute
@@ -2310,109 +642,21 @@ const PanelAdministracionRouteChildren: PanelAdministracionRouteChildren = {
 const PanelAdministracionRouteWithChildren =
   PanelAdministracionRoute._addFileChildren(PanelAdministracionRouteChildren)
 
-interface PanelAdministracionOldRouteChildren {
-  PanelAdministracionOldClientesRoute: typeof PanelAdministracionOldClientesRoute
-  PanelAdministracionOldDatosRoute: typeof PanelAdministracionOldDatosRoute
-  PanelAdministracionOldDescuentosRoute: typeof PanelAdministracionOldDescuentosRoute
-  PanelAdministracionOldHorariosRoute: typeof PanelAdministracionOldHorariosRoute
-  PanelAdministracionOldInicioRoute: typeof PanelAdministracionOldInicioRoute
-  PanelAdministracionOldMantenimientoRoute: typeof PanelAdministracionOldMantenimientoRoute
-  PanelAdministracionOldMembresiasRoute: typeof PanelAdministracionOldMembresiasRoute
-  PanelAdministracionOldPagosRoute: typeof PanelAdministracionOldPagosRoute
-  PanelAdministracionOldTurnosRoute: typeof PanelAdministracionOldTurnosRoute
-  PanelAdministracionOldIndexRoute: typeof PanelAdministracionOldIndexRoute
-}
-
-const PanelAdministracionOldRouteChildren: PanelAdministracionOldRouteChildren =
-  {
-    PanelAdministracionOldClientesRoute: PanelAdministracionOldClientesRoute,
-    PanelAdministracionOldDatosRoute: PanelAdministracionOldDatosRoute,
-    PanelAdministracionOldDescuentosRoute:
-      PanelAdministracionOldDescuentosRoute,
-    PanelAdministracionOldHorariosRoute: PanelAdministracionOldHorariosRoute,
-    PanelAdministracionOldInicioRoute: PanelAdministracionOldInicioRoute,
-    PanelAdministracionOldMantenimientoRoute:
-      PanelAdministracionOldMantenimientoRoute,
-    PanelAdministracionOldMembresiasRoute:
-      PanelAdministracionOldMembresiasRoute,
-    PanelAdministracionOldPagosRoute: PanelAdministracionOldPagosRoute,
-    PanelAdministracionOldTurnosRoute: PanelAdministracionOldTurnosRoute,
-    PanelAdministracionOldIndexRoute: PanelAdministracionOldIndexRoute,
-  }
-
-const PanelAdministracionOldRouteWithChildren =
-  PanelAdministracionOldRoute._addFileChildren(
-    PanelAdministracionOldRouteChildren,
-  )
-
-interface PanelV2RouteChildren {
-  PanelV2EstadisticasRoute: typeof PanelV2EstadisticasRoute
-  PanelV2IndexRoute: typeof PanelV2IndexRoute
-  PanelV2NegocioDescuentosRoute: typeof PanelV2NegocioDescuentosRoute
-  PanelV2NegocioMembresiasRoute: typeof PanelV2NegocioMembresiasRoute
-  PanelV2NegocioPagosRoute: typeof PanelV2NegocioPagosRoute
-  PanelV2OperacionClientesRoute: typeof PanelV2OperacionClientesRoute
-  PanelV2OperacionHorariosRoute: typeof PanelV2OperacionHorariosRoute
-  PanelV2OperacionTurnosRoute: typeof PanelV2OperacionTurnosRoute
-  PanelV2NegocioIndexRoute: typeof PanelV2NegocioIndexRoute
-  PanelV2OperacionIndexRoute: typeof PanelV2OperacionIndexRoute
-}
-
-const PanelV2RouteChildren: PanelV2RouteChildren = {
-  PanelV2EstadisticasRoute: PanelV2EstadisticasRoute,
-  PanelV2IndexRoute: PanelV2IndexRoute,
-  PanelV2NegocioDescuentosRoute: PanelV2NegocioDescuentosRoute,
-  PanelV2NegocioMembresiasRoute: PanelV2NegocioMembresiasRoute,
-  PanelV2NegocioPagosRoute: PanelV2NegocioPagosRoute,
-  PanelV2OperacionClientesRoute: PanelV2OperacionClientesRoute,
-  PanelV2OperacionHorariosRoute: PanelV2OperacionHorariosRoute,
-  PanelV2OperacionTurnosRoute: PanelV2OperacionTurnosRoute,
-  PanelV2NegocioIndexRoute: PanelV2NegocioIndexRoute,
-  PanelV2OperacionIndexRoute: PanelV2OperacionIndexRoute,
-}
-
-const PanelV2RouteWithChildren =
-  PanelV2Route._addFileChildren(PanelV2RouteChildren)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ActivarCuentaRoute: ActivarCuentaRoute,
-  AdminRoute: AdminRouteWithChildren,
-  AdminLiquidRoute: AdminLiquidRouteWithChildren,
-  AdminV2Route: AdminV2RouteWithChildren,
-  AdminV2LiquidRoute: AdminV2LiquidRouteWithChildren,
-  CancelarRoute: CancelarRoute,
   CancelarTurnoRoute: CancelarTurnoRoute,
-  CancelarTurnoOldRoute: CancelarTurnoOldRoute,
   CaseStudyRoute: CaseStudyRoute,
   ContactoRoute: ContactoRoute,
-  ContactoLiquidRoute: ContactoLiquidRoute,
-  ContactoOldRoute: ContactoOldRoute,
-  EstudioRoute: EstudioRoute,
   PanelAdministracionRoute: PanelAdministracionRouteWithChildren,
-  PanelAdministracionOldRoute: PanelAdministracionOldRouteWithChildren,
   PanelDescuentosRoute: PanelDescuentosRoute,
   PanelHorariosRoute: PanelHorariosRoute,
   PanelMembresiasRoute: PanelMembresiasRoute,
   PanelTurnosRoute: PanelTurnosRoute,
-  PanelV2Route: PanelV2RouteWithChildren,
   PoliticaDePrivacidadRoute: PoliticaDePrivacidadRoute,
-  PoliticaDePrivacidadLiquidRoute: PoliticaDePrivacidadLiquidRoute,
-  PoliticaDePrivacidadOldRoute: PoliticaDePrivacidadOldRoute,
-  ReservaV2Route: ReservaV2Route,
-  ReservaV3Route: ReservaV3Route,
-  ReservaV4Route: ReservaV4Route,
-  ReservaV5Route: ReservaV5Route,
   ReservarRoute: ReservarRoute,
-  ReservarMercadopagoRoute: ReservarMercadopagoRoute,
-  ReservarTurnoRoute: ReservarTurnoRoute,
-  ReservarTurnoLiquidRoute: ReservarTurnoLiquidRoute,
-  ReservarTurnoMercadopagoRoute: ReservarTurnoMercadopagoRoute,
-  ReservarTurnoOldRoute: ReservarTurnoOldRoute,
   RestablecerContrasenaRoute: RestablecerContrasenaRoute,
   TerminosYCondicionesRoute: TerminosYCondicionesRoute,
-  TerminosYCondicionesLiquidRoute: TerminosYCondicionesLiquidRoute,
-  TerminosYCondicionesOldRoute: TerminosYCondicionesOldRoute,
   MembresiaTokenRoute: MembresiaTokenRoute,
   PagoErrorRoute: PagoErrorRoute,
   PagoExitoRoute: PagoExitoRoute,

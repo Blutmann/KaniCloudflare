@@ -100,7 +100,6 @@ describe("KANI Motion System v1.3 — Extensión a modales accionables", () => {
     expect(read("components/kani/booking-recovery-modal.tsx")).not.toContain('transitionMode="container-transform"');
     expect(read("components/kani/admin-maintenance.tsx")).not.toContain('transitionMode="container-transform"');
     expect(read("components/kani/experimental/payway-booking.tsx")).not.toContain('transitionMode="container-transform"');
-    expect(read("components/kani/experimental/payway-booking-v5.tsx")).not.toContain('transitionMode="container-transform"');
   });
 
   it("2. ManualAppointmentDialog en mode='EDIT' también activa container-transform desde su botón origen", () => {

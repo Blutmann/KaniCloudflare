@@ -121,9 +121,11 @@ describe('KANI BARBER STUDIO — V12.47.5: Cancelación Liquid Glass y Actualiza
       expect(cancelarTsx).toContain('No, conservar turno');
     });
 
-    it('Conserva la ruta anterior cancelar-turno-old para trazabilidad y auditoría', () => {
-      const oldPath = path.join(root, 'src/routes/cancelar-turno-old.tsx');
-      expect(fs.existsSync(oldPath)).toBe(true);
+    it('Redirige 301 desde /cancelar-turno-old a /cancelar-turno server-side', async () => {
+      const { getLegacyRouteRedirectUrl } = await import('@/lib/kani-seo-routing.server');
+      expect(getLegacyRouteRedirectUrl('https://www.kanibarber.com/cancelar-turno-old?id=1&token=abc')).toBe(
+        'https://www.kanibarber.com/cancelar-turno?id=1&token=abc',
+      );
     });
   });
 

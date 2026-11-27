@@ -68,21 +68,32 @@ describe("SEO Técnico & Consolidación de Redirects (Fase 1 + Fase 2)", () => {
       expect(terminosCode).toContain("canonicalPath: '/terminos-y-condiciones'");
     });
 
-    it("rutas transaccionales y legacy requeridas declaran noindex, nofollow", () => {
+    it("rutas transaccionales y de portfolio activas declaran noindex, nofollow y las legacy eliminadas redirigen 301", () => {
       const noindexRoutes = [
         "src/routes/pago.exito.tsx",
         "src/routes/pago.error.tsx",
         "src/routes/pago.pendiente.tsx",
         "src/routes/case-study.tsx",
-        "src/routes/cancelar-turno-old.tsx",
       ];
       for (const relPath of noindexRoutes) {
         const code = fs.readFileSync(path.join(rootDir, relPath), "utf-8");
         expect(code, `${relPath} debe declarar noindex: true`).toContain("noindex: true");
       }
 
-      const adminCode = fs.readFileSync(path.join(rootDir, "src/routes/admin.tsx"), "utf-8");
-      expect(adminCode).toContain("noindex, nofollow");
+      // Rutas legacy eliminadas en Fase 3 deben redirigir 301 server-side
+      expect(fs.existsSync(path.join(rootDir, "src/routes/cancelar-turno-old.tsx"))).toBe(false);
+      expect(fs.existsSync(path.join(rootDir, "src/routes/admin.tsx"))).toBe(false);
+      expect(getLegacyRouteRedirectUrl("https://www.kanibarber.com/reservar-turno-old")).toBe("https://www.kanibarber.com/reservar");
+      expect(getLegacyRouteRedirectUrl("https://www.kanibarber.com/reserva-v2")).toBe("https://www.kanibarber.com/reservar");
+      expect(getLegacyRouteRedirectUrl("https://www.kanibarber.com/reserva-v3")).toBe("https://www.kanibarber.com/reservar");
+      expect(getLegacyRouteRedirectUrl("https://www.kanibarber.com/reserva-v5")).toBe("https://www.kanibarber.com/reservar");
+      expect(getLegacyRouteRedirectUrl("https://www.kanibarber.com/contacto-old")).toBe("https://www.kanibarber.com/contacto");
+      expect(getLegacyRouteRedirectUrl("https://www.kanibarber.com/politica-de-privacidad-old")).toBe("https://www.kanibarber.com/politica-de-privacidad");
+      expect(getLegacyRouteRedirectUrl("https://www.kanibarber.com/terminos-y-condiciones-old")).toBe("https://www.kanibarber.com/terminos-y-condiciones");
+      expect(getLegacyRouteRedirectUrl("https://www.kanibarber.com/admin/pagos")).toBe("https://www.kanibarber.com/panel-administracion/pagos");
+      expect(getLegacyRouteRedirectUrl("https://www.kanibarber.com/panel-administracion-old/turnos")).toBe("https://www.kanibarber.com/panel-administracion/turnos");
+      expect(getLegacyRouteRedirectUrl("https://www.kanibarber.com/panel-v2/operacion/turnos")).toBe("https://www.kanibarber.com/panel-administracion/turnos");
+      expect(getLegacyRouteRedirectUrl("https://www.kanibarber.com/admin-v2-liquid/negocio/pagos")).toBe("https://www.kanibarber.com/panel-administracion/pagos");
 
       const cancelarCode = fs.readFileSync(path.join(rootDir, "src/routes/cancelar-turno.tsx"), "utf-8");
       expect(cancelarCode).toContain("canonicalPath: '/cancelar-turno'");

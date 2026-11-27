@@ -4,23 +4,38 @@ const EXACT_REDIRECTS: Record<string, string> = {
   "/": "/reservar",
   "/reservar-turno": "/reservar",
   "/reservar-turno-liquid": "/reservar",
+  "/reservar-turno-old": "/reservar",
+  "/reserva-v2": "/reservar",
+  "/reserva-v3": "/reservar",
   "/reserva-v4": "/reservar",
+  "/reserva-v5": "/reservar",
   "/reservar-mercadopago": "/reservar",
   "/reservar-turno-mercadopago": "/reservar",
   "/contacto-liquid": "/contacto",
+  "/contacto-old": "/contacto",
   "/estudio": "/contacto",
   "/cancelar": "/cancelar-turno",
   "/cancelar-turno-old": "/cancelar-turno",
   "/politica-de-privacidad-liquid": "/politica-de-privacidad",
+  "/politica-de-privacidad-old": "/politica-de-privacidad",
   "/terminos-y-condiciones-liquid": "/terminos-y-condiciones",
+  "/terminos-y-condiciones-old": "/terminos-y-condiciones",
   "/admin": "/panel-administracion",
-  "/admin/mantenimiento": "/panel-administracion/mantenimiento",
+  "/admin/datos": "/panel-administracion/datos",
   "/admin/estadisticas": "/panel-administracion/datos",
+  "/admin/horarios": "/panel-administracion/horarios",
+  "/admin/mantenimiento": "/panel-administracion/mantenimiento",
+  "/admin/movil": "/panel-administracion/turnos",
+  "/admin/pagos": "/panel-administracion/pagos",
+  "/admin/turnos": "/panel-administracion/turnos",
   "/admin-liquid": "/panel-administracion",
   "/admin-v2": "/panel-administracion/inicio",
+  "/admin-v2-liquid": "/panel-administracion",
+  "/panel-v2": "/panel-administracion",
+  "/panel-administracion-old": "/panel-administracion",
 };
 
-const ADMIN_LIQUID_SUBPATHS = new Set([
+const PANEL_ADMIN_SUBPATHS = new Set([
   "inicio",
   "turnos",
   "pagos",
@@ -41,6 +56,18 @@ const ADMIN_V2_SUBPATHS = new Set([
   "datos",
   "mantenimiento",
 ]);
+
+const PANEL_V2_SUBPATH_MAP: Record<string, string> = {
+  estadisticas: "/panel-administracion/datos",
+  negocio: "/panel-administracion/pagos",
+  "negocio/pagos": "/panel-administracion/pagos",
+  "negocio/descuentos": "/panel-administracion/descuentos",
+  "negocio/membresias": "/panel-administracion/membresias",
+  operacion: "/panel-administracion/turnos",
+  "operacion/turnos": "/panel-administracion/turnos",
+  "operacion/horarios": "/panel-administracion/horarios",
+  "operacion/clientes": "/panel-administracion/clientes",
+};
 
 const NOINDEX_PREFIXES = [
   "/panel-administracion",
@@ -74,7 +101,7 @@ function matchesPrefix(normalizedPath: string, prefix: string): boolean {
 }
 
 /**
- * Resolves Phase 2 server-side HTTP 301 redirects for root and legacy aliases.
+ * Resolves Phase 2/3 server-side HTTP 301 redirects for root and legacy aliases.
  * Preserves query parameters and hash fragments, and avoids redirect chains.
  */
 export function getLegacyRouteRedirectUrl(rawUrl: string): string | null {
@@ -90,7 +117,15 @@ export function getLegacyRouteRedirectUrl(rawUrl: string): string | null {
 
     if (normalized.startsWith("/admin-liquid/")) {
       const rest = normalized.slice("/admin-liquid/".length);
-      if (ADMIN_LIQUID_SUBPATHS.has(rest)) {
+      if (PANEL_ADMIN_SUBPATHS.has(rest)) {
+        url.pathname = `/panel-administracion/${rest}`;
+        return url.toString();
+      }
+    }
+
+    if (normalized.startsWith("/panel-administracion-old/")) {
+      const rest = normalized.slice("/panel-administracion-old/".length);
+      if (PANEL_ADMIN_SUBPATHS.has(rest)) {
         url.pathname = `/panel-administracion/${rest}`;
         return url.toString();
       }
@@ -100,6 +135,24 @@ export function getLegacyRouteRedirectUrl(rawUrl: string): string | null {
       const rest = normalized.slice("/admin-v2/".length);
       if (ADMIN_V2_SUBPATHS.has(rest)) {
         url.pathname = `/panel-administracion/${rest}`;
+        return url.toString();
+      }
+    }
+
+    if (normalized.startsWith("/panel-v2/")) {
+      const rest = normalized.slice("/panel-v2/".length);
+      const target = PANEL_V2_SUBPATH_MAP[rest];
+      if (target) {
+        url.pathname = target;
+        return url.toString();
+      }
+    }
+
+    if (normalized.startsWith("/admin-v2-liquid/")) {
+      const rest = normalized.slice("/admin-v2-liquid/".length);
+      const target = PANEL_V2_SUBPATH_MAP[rest];
+      if (target) {
+        url.pathname = target;
         return url.toString();
       }
     }
