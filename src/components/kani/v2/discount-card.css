@@ -23,6 +23,19 @@
   gap: 8px;
 }
 
+.kani-dtoolbar-export-btn:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--gold, #c9a15d) 55%, var(--dc-border));
+  color: var(--dc-text);
+}
+
+html[data-theme="dark"] .kani-dcode-rotate-btn {
+  border-left-color: rgba(255, 255, 255, 0.15);
+}
+
+html[data-theme="light"] .kani-dcode-rotate-btn {
+  border-left-color: rgba(0, 0, 0, 0.1);
+}
+
 .kani-dgrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));

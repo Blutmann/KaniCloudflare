@@ -12,11 +12,13 @@ import {
   Clock,
   Copy,
   Edit2,
+  FileSpreadsheet,
   FileText,
   Gift,
   HelpCircle,
   History,
   Info,
+  Loader2,
   Pause,
   Plus,
   Power,
@@ -74,6 +76,7 @@ import {
   adminToggleBenefitCodeStatusFn,
   adminUpdateBenefitCodeValidityFn,
 } from '@/lib/kani-benefit-codes.functions';
+import { downloadBenefitCodesXlsx } from '@/lib/kani-benefit-codes-xlsx';
 import { money, formatServiceName } from '@/lib/kani-model';
 import '@/components/kani/v2/discount-card.css';
 
@@ -224,6 +227,7 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
   // Copy indicator & single-instance bottom toast
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [showSummary, setShowSummary] = useState(false);
+  const [exportingExcel, setExportingExcel] = useState(false);
   const [toastState, setToastState] = useState<{
     text: string;
     variant: 'success' | 'error';
@@ -656,6 +660,24 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
     });
   }, [items, statusFilter, searchTerm, sortBy]);
 
+  const handleExportExcel = async () => {
+    if (exportingExcel || filteredAndSortedItems.length === 0) return;
+    setExportingExcel(true);
+    try {
+      await downloadBenefitCodesXlsx(filteredAndSortedItems);
+      showToast(
+        filteredAndSortedItems.length === 1
+          ? '1 código exportado a Excel'
+          : `${filteredAndSortedItems.length} códigos exportados a Excel`,
+        'success'
+      );
+    } catch {
+      showToast('No se pudo exportar el archivo Excel', 'error');
+    } finally {
+      setExportingExcel(false);
+    }
+  };
+
   const openCreateDialog = () => {
     setCreateOpen(true);
     setCreatedItem(null);
@@ -886,13 +908,31 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
           </section>
 
           {/* Barra compacta de resultados y acciones principales (estilo Membresías) */}
-          {hideHeading && (
-            <div className="kani-dtoolbar">
+          <div className={hideHeading ? 'kani-dtoolbar' : 'flex items-center justify-between gap-2'}>
+            <div className="flex items-center justify-between gap-2 flex-1 sm:flex-initial min-w-0">
               <span className="kani-dtoolbar-count">
                 {filteredAndSortedItems.length === 1
                   ? '1 descuento encontrado'
                   : `${filteredAndSortedItems.length} descuentos encontrados`}
               </span>
+              <button
+                type="button"
+                onClick={() => void handleExportExcel()}
+                disabled={exportingExcel || loading || filteredAndSortedItems.length === 0}
+                aria-busy={exportingExcel}
+                aria-label="Exportar códigos a Excel"
+                title="Exportar códigos a Excel"
+                data-testid="export-benefit-codes-excel-btn"
+                className="v2-secondary kani-dtoolbar-export-btn inline-flex items-center justify-center w-10 h-10 shrink-0 rounded-xl border border-border text-muted-foreground hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                {exportingExcel ? (
+                  <Loader2 size={17} className="animate-spin" aria-hidden="true" />
+                ) : (
+                  <FileSpreadsheet size={17} aria-hidden="true" />
+                )}
+              </button>
+            </div>
+            {hideHeading && (
               <div className="kani-dtoolbar-actions">
                 <Button
                   variant="outline"
@@ -916,8 +956,8 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                   </Button>
                 )}
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
           {/* Lista de Códigos / Estado de Carga / Estado Vacío */}
           {loading ? (
@@ -1764,13 +1804,13 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                       ? `Prefijo del lote ×${selectedBatchCount} (opcional)`
                       : 'Código personalizado (opcional)'}
                   </label>
-                  <div className="relative">
+                  <div className="kani-dcode-input-group flex items-stretch overflow-hidden rounded-md border border-input bg-background p-0 focus-within:ring-1 focus-within:ring-gold">
                     <Input
                       id="create-custom-code"
                       value={customCode}
                       onChange={(e) => setCustomCode(e.target.value.toUpperCase())}
                       placeholder={selectedBatchCount > 1 ? 'KANI-VIP' : currentSuggestion}
-                      className={`text-xs font-mono uppercase bg-background${selectedBatchCount === 1 ? ' pr-10' : ''}`}
+                      className="flex-1 min-w-0 border-0 shadow-none rounded-none focus-visible:ring-0 focus-visible:ring-offset-0 text-xs font-mono uppercase bg-transparent"
                       maxLength={selectedBatchCount > 1 ? 24 : 32}
                     />
                     {selectedBatchCount === 1 && (
@@ -1780,9 +1820,9 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                         data-testid="rotate-suggestion-btn"
                         aria-label="Rotar sugerencia de código"
                         title="Otra sugerencia"
-                        className="absolute right-1.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-md inline-flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+                        className="kani-dcode-rotate-btn w-12 shrink-0 self-stretch h-auto p-0 rounded-none border-l border-black/10 dark:border-white/15 inline-flex items-center justify-center text-muted-foreground hover:text-gold hover:bg-gold/10 transition-colors"
                       >
-                        <RefreshCw size={14} aria-hidden="true" />
+                        <RefreshCw size={15} aria-hidden="true" />
                       </button>
                     )}
                   </div>
