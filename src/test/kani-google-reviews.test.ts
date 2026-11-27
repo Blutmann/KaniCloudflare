@@ -95,12 +95,17 @@ describe("Google Reviews server endpoint & studio hours", () => {
     // Wednesday 15:00 ART (18:00 UTC) -> Open
     expect(getStudioOpenStatus(new Date("2026-11-25T18:00:00Z"))).toEqual({
       isOpen: true,
-      label: "Abierto ahora · Hasta las 20:00",
+      label: "Abierto · Hasta las 20:00 hs",
     });
-    // Sunday 15:00 ART (18:00 UTC) -> Closed until Monday
+    // Sunday 15:00 ART (18:00 UTC) -> Closed
     expect(getStudioOpenStatus(new Date("2026-11-29T18:00:00Z"))).toEqual({
       isOpen: false,
-      label: "Cerrado · Abre lunes 10:00",
+      label: "Cerrado",
+    });
+    // Weekday 20:30 ART (23:30 UTC) -> Closed
+    expect(getStudioOpenStatus(new Date("2026-11-25T23:30:00Z"))).toEqual({
+      isOpen: false,
+      label: "Cerrado",
     });
   });
 });

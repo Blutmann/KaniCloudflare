@@ -95,6 +95,11 @@ html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani
   box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.18);
 }
 
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-status-pill.is-closed .kani-contacto-status-dot {
+  background: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
+}
+
 html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .booking-step-heading-title.section-title {
   font-size: 22px !important;
   font-weight: 600 !important;
@@ -650,8 +655,8 @@ html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani
 
 html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-map-wrap {
   width: 100%;
-  height: 152px !important;
-  border-radius: 0 0 20px 20px;
+  height: 140px !important;
+  border-radius: 0;
   overflow: hidden;
 }
 
@@ -661,6 +666,71 @@ html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani
 
 html[data-theme="dark"] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-map-wrap {
   background: #141418;
+}
+
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-reviews-embedded {
+  border-top: 1px solid rgba(148, 144, 138, 0.22);
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-reviews-embedded {
+  border-top-color: rgba(255, 255, 255, 0.1);
+}
+
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-reviews-skeleton.is-embedded {
+  padding: 12px 16px;
+  border-radius: 0;
+  border: none;
+  background: transparent;
+}
+
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-reviews-live {
+  padding: 12px 16px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-reviews-fallback-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 16px;
+  min-height: 46px;
+  text-decoration: none;
+  color: inherit;
+  transition: background 160ms ease, opacity 160ms ease;
+}
+
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-reviews-fallback-row:hover,
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-reviews-fallback-row:focus-visible {
+  background: rgba(148, 144, 138, 0.08);
+}
+
+html[data-theme="dark"] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-reviews-fallback-row:hover,
+html[data-theme="dark"] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-reviews-fallback-row:focus-visible {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-reviews-fallback-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--foreground);
+}
+
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-reviews-fallback-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--foreground);
 }
 
 html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-review-row {
@@ -718,6 +788,27 @@ html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani
 html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-review-link:focus-visible {
   outline: 2px solid var(--gold, #c8a96b);
   outline-offset: 3px;
+}
+
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-whatsapp-micro {
+  margin: 14px 0 2px;
+  text-align: center;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--muted-foreground);
+}
+
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-whatsapp-micro-link {
+  color: var(--foreground);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: opacity 160ms ease;
+}
+
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-whatsapp-micro-link:hover,
+html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-whatsapp-micro-link:focus-visible {
+  opacity: 0.78;
 }
 
 html[data-theme] .site-shell .liquid-glass-page[data-lg-section="contact"] .kani-contacto-cta .booking-cta-inner {
