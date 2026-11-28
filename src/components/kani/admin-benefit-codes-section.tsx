@@ -1822,7 +1822,7 @@ export function BenefitCodesAdminSection({ hideHeading = false }: { hideHeading?
                         data-testid="rotate-suggestion-btn"
                         aria-label="Rotar sugerencia de código"
                         title="Otra sugerencia"
-                        className="kani-dcode-rotate-btn w-12 shrink-0 self-stretch h-auto p-0 rounded-none border-l border-black/10 dark:border-white/15 inline-flex items-center justify-center text-muted-foreground hover:text-gold hover:bg-gold/10 transition-colors"
+                        className="kani-dcode-rotate-btn w-11 shrink-0 self-stretch h-auto p-0 border-0 bg-transparent inline-flex items-center justify-center text-muted-foreground hover:text-gold transition-colors"
                       >
                         <RefreshCw size={15} aria-hidden="true" />
                       </button>
