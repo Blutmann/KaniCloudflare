@@ -268,7 +268,7 @@ export function V2Appointments({
   );
   const [action, setAction] = useState<{
     appointment: RealAppointment;
-    status: "CANCELLED";
+    mode: "CANCEL" | "CLOSE_PAST";
   } | null>(null);
   const [manualDialog, setManualDialog] = useState<{
     open: boolean;
@@ -428,16 +428,20 @@ export function V2Appointments({
     setWhatsAppModal({ appointment: a, mode: "INVALID_PHONE" });
   }
 
-  async function cancelAppointment() {
+  async function updateAppointmentActionStatus(targetStatus: "CANCELLED" | "NO_SHOW") {
     if (!action || busy) return;
     setBusy(true);
     setMessage("");
     try {
-      await updateRealAppointmentStatus(action.appointment.id, action.status);
+      await updateRealAppointmentStatus(action.appointment.id, targetStatus);
       setAction(null);
       await data.refresh({ silent: true });
-      setMessage("Turno actualizado.");
-      showToast("Turno actualizado.", "success");
+      const msg =
+        targetStatus === "NO_SHOW"
+          ? "Turno marcado como inasistencia."
+          : "Turno actualizado.";
+      setMessage(msg);
+      showToast(msg, "success");
     } catch (e) {
       const errMsg = appointmentErrorMessage(e);
       setMessage(errMsg);
@@ -748,6 +752,8 @@ export function V2Appointments({
           >
             <option value="ALL">Todos</option>
             <option value="CONFIRMED">Confirmado</option>
+            <option value="COMPLETED">Completado</option>
+            <option value="NO_SHOW">Inasistencia</option>
             <option value="CANCELLED">Cancelado</option>
           </select>
         </AdminFilterCell>
@@ -772,6 +778,7 @@ export function V2Appointments({
         )}
         {rows.map((a, index) => {
           const isFinished = isAppointmentTemporallyFinished(a);
+          const showPastPendingBadge = isFinished && a.statusCode === "CONFIRMED";
           const waDirectUrl = getWhatsAppDirectSendUrl(a.phone);
           const canOperate =
             isStaffOperator(staff.profile.role) || a.barberId === staff.profile.barber_id;
@@ -845,7 +852,7 @@ export function V2Appointments({
                             🔁 Fijo
                           </span>
                         )}
-                        {isFinished && (
+                        {showPastPendingBadge && (
                           <span className="v2-past-badge">Finalizado</span>
                         )}
                       </div>
@@ -946,7 +953,7 @@ export function V2Appointments({
                           aria-label="Cancelar turno"
                           title="Cancelar turno"
                           disabled={busy}
-                          onClick={() => setAction({ appointment: a, status: "CANCELLED" })}
+                          onClick={() => setAction({ appointment: a, mode: showPastPendingBadge ? "CLOSE_PAST" : "CANCEL" })}
                         >
                           <X size={18} aria-hidden="true" />
                         </button>
@@ -980,7 +987,7 @@ export function V2Appointments({
                       🔁 Fijo
                     </span>
                   )}
-                  {isFinished && (
+                  {showPastPendingBadge && (
                     <span className="v2-past-badge">Finalizado</span>
                   )}
                 </div>
@@ -1090,7 +1097,7 @@ export function V2Appointments({
                         type="button"
                         className="v2-destructive action-reject v2-action-btn"
                         disabled={busy}
-                        onClick={() => setAction({ appointment: a, status: "CANCELLED" })}
+                        onClick={() => setAction({ appointment: a, mode: showPastPendingBadge ? "CLOSE_PAST" : "CANCEL" })}
                       >
                         Cancelar turno
                       </button>,
@@ -1192,12 +1199,14 @@ export function V2Appointments({
       >
         <DialogContent className="v2-dialog max-w-[calc(100vw-24px)] max-h-[calc(100dvh-32px)] overflow-y-auto" transitionMode="container-transform">
           <DialogTitle className="pr-10">
-            Cancelar turno
+            {action?.mode === "CLOSE_PAST" ? "Cerrar turno pasado" : "Cancelar turno"}
           </DialogTitle>
           <DialogDescription>
-            {action?.appointment.recurringRuleId
-              ? "Este turno pertenece a una serie fija. Elegí si querés cancelar solo esta fecha o finalizar toda la serie:"
-              : "¿Estás seguro que querés cancelar el turno?"}
+            {action?.mode === "CLOSE_PAST"
+              ? "¿El cliente no asistió o necesitás cancelarlo?"
+              : action?.appointment.recurringRuleId
+                ? "Este turno pertenece a una serie fija. Elegí si querés cancelar solo esta fecha o finalizar toda la serie:"
+                : "¿Estás seguro que querés cancelar el turno?"}
           </DialogDescription>
           {action && (
             <div className="v2-cancel-appointment-summary flex flex-col gap-1 rounded-lg border border-border/60 bg-muted/30 px-3 py-2.5 text-sm">
@@ -1210,13 +1219,53 @@ export function V2Appointments({
               <span className="text-muted-foreground">{action.appointment.time} hs.</span>
             </div>
           )}
-          {action?.appointment.recurringRuleId ? (
+          {action?.mode === "CLOSE_PAST" ? (
+            <div className="flex flex-col gap-2">
+              <button
+                type="button"
+                className="v2-primary"
+                disabled={busy}
+                onClick={() => void updateAppointmentActionStatus("NO_SHOW")}
+              >
+                {busy ? "Guardando…" : "Marcar inasistencia"}
+              </button>
+              {action.appointment.recurringRuleId ? (
+                <>
+                  <button
+                    type="button"
+                    className="v2-secondary"
+                    disabled={busy}
+                    onClick={() => void updateAppointmentActionStatus("CANCELLED")}
+                  >
+                    {busy ? "Guardando…" : "Cancelar solo esta fecha"}
+                  </button>
+                  <button
+                    type="button"
+                    className="v2-destructive action-reject"
+                    disabled={busy}
+                    onClick={() => void cancelRecurringSeries()}
+                  >
+                    {busy ? "Guardando…" : "Finalizar toda la serie fija"}
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  className="v2-destructive action-reject"
+                  disabled={busy}
+                  onClick={() => void updateAppointmentActionStatus("CANCELLED")}
+                >
+                  {busy ? "Guardando…" : "Cancelar turno"}
+                </button>
+              )}
+            </div>
+          ) : action?.appointment.recurringRuleId ? (
             <div className="flex flex-col gap-2">
               <button
                 type="button"
                 className="v2-secondary"
                 disabled={busy}
-                onClick={() => void cancelAppointment()}
+                onClick={() => void updateAppointmentActionStatus("CANCELLED")}
               >
                 {busy ? "Guardando…" : "Cancelar solo esta fecha"}
               </button>
@@ -1234,7 +1283,7 @@ export function V2Appointments({
               type="button"
               className="v2-destructive action-reject"
               disabled={busy}
-              onClick={() => void cancelAppointment()}
+              onClick={() => void updateAppointmentActionStatus("CANCELLED")}
             >
               {busy ? "Guardando…" : "Cancelar turno"}
             </button>

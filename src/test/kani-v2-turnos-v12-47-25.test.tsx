@@ -223,7 +223,7 @@ describe('V12.47.25 — UI /admin/turnos (V2Appointments)', () => {
     expect((screen.getByLabelText('Fecha hasta') as HTMLInputElement).value).toBe(tomorrow);
   });
 
-  it('simplifica selector de Estado a Todos, Confirmado, Cancelado sin romper badges históricos', () => {
+  it('expone los 4 estados reales en el selector de Estado (Todos, Confirmado, Completado, Inasistencia, Cancelado)', () => {
     const today = businessDateToday();
     testState.appointments = [
       {
@@ -232,7 +232,7 @@ describe('V12.47.25 — UI /admin/turnos (V2Appointments)', () => {
         barber: 'Lautaro',
         date: today,
         time: '10:00',
-        name: 'Histórico Realizado',
+        name: 'Histórico Completado',
         phone: '+5491122334455',
         statusCode: 'COMPLETED',
         serviceName: 'Corte',
@@ -242,10 +242,10 @@ describe('V12.47.25 — UI /admin/turnos (V2Appointments)', () => {
     render(<V2Appointments />);
     const statusSelect = screen.getByLabelText('Estado') as HTMLSelectElement;
     const optionTexts = Array.from(statusSelect.options).map((o) => o.text);
-    expect(optionTexts).toEqual(['Todos', 'Confirmado', 'Cancelado']);
+    expect(optionTexts).toEqual(['Todos', 'Confirmado', 'Completado', 'Inasistencia', 'Cancelado']);
 
-    // Registro histórico sigue mostrando su badge en Todos
-    expect(screen.getByText('Realizado')).toBeInTheDocument();
+    // Registro completado muestra su badge unificado en Todos
+    expect(document.querySelector('.v2-status-completed')).toHaveTextContent('Completado');
   });
 
   it('diferencia turnos con horario finalizado con clase atenuada y badge Finalizado sin bloquear acciones', () => {

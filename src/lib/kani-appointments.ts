@@ -218,6 +218,8 @@ export function appointmentErrorMessage(error: unknown) {
   if (message.includes('BARBER_CANNOT_CANCEL_MANUAL_APPOINTMENT')) return 'No tenés permisos para cancelar turnos manuales.';
   if (message.includes('BARBER_CANNOT_REASSIGN_APPOINTMENT')) return 'No podés reasignar un turno a otro barbero.';
   if (message.includes('MANUAL_APPOINTMENT_NOT_ALLOWED')) return 'No tenés permisos para agendar en la agenda de otro barbero.';
+  if (message.includes('STATUS_TRANSITION_NOT_ALLOWED')) return 'No se puede cambiar el estado actual de este turno.';
+  if (message.includes('STATUS_NOT_ALLOWED')) return 'El estado solicitado no está habilitado para este turno.';
   if (message.includes('AUTH_REQUIRED')) return 'Tenés que iniciar sesión para realizar esta acción.';
   if (message.includes('create_manual_appointment') || message.includes('PGRST202')) {
     return 'La base de datos aún no tiene aplicada la migración de turnos manuales (create_manual_appointment). Aplicá la migración pendiente en Supabase.';
