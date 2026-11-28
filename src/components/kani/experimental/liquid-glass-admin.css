@@ -5663,33 +5663,32 @@ html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active)
 }
 
 html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell .kani-modal-body .kani-dcode-input-group .kani-dcode-rotate-btn {
-  width: 48px !important;
-  min-width: 48px !important;
-  max-width: 48px !important;
-  flex: 0 0 48px !important;
+  width: 44px !important;
+  min-width: 44px !important;
+  max-width: 44px !important;
+  flex: 0 0 44px !important;
   height: auto !important;
   min-height: 0 !important;
   max-height: none !important;
   align-self: stretch !important;
   border: none !important;
-  border-left: 1px solid rgba(255, 255, 255, 0.14) !important;
+  border-left: none !important;
   border-radius: 0 !important;
   margin: 0 !important;
   padding: 0 !important;
   background: transparent !important;
+  background-color: transparent !important;
   box-shadow: none !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
   cursor: pointer !important;
-}
-
-html[data-theme="light"] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell .kani-modal-body .kani-dcode-input-group .kani-dcode-rotate-btn {
-  border-left-color: rgba(0, 0, 0, 0.12) !important;
+  transition: color 160ms ease, opacity 160ms ease;
 }
 
 html[data-theme] :is(body, body[data-lg-admin="true"], body.liquid-glass-active) [data-slot="dialog-content"].kani-modal-shell .kani-modal-body .kani-dcode-input-group .kani-dcode-rotate-btn:hover {
-  background: rgba(201, 161, 93, 0.12) !important;
+  background: transparent !important;
+  background-color: transparent !important;
   color: var(--gold, #c9a15d) !important;
 }
 
