@@ -69,9 +69,9 @@ export function Empty({ children }: { children: ReactNode }) {
 export const statusLabels: Record<string, string> = {
   PENDING: "Pendiente de pago",
   CONFIRMED: "Confirmado",
-  COMPLETED: "Realizado",
+  COMPLETED: "Completado",
   CANCELLED: "Cancelado",
-  NO_SHOW: "No asistió",
+  NO_SHOW: "Inasistencia",
 };
 export function Status({ code }: { code: string }) {
   return (
